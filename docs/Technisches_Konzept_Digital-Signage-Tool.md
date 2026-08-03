@@ -774,7 +774,7 @@ Crash vor 3 → nur eine `.part`-Leiche; Crash nach 3 vor 4 → eine fertige Wai
 
 1. **[D1-Lock]** Referenzen prüfen. Referenziert (ListItem zeigt darauf)? → Fehler `asset_referenziert` (mit `referenzenIds`), Abbruch. Sonst: Asset-Eintrag aus D1 entfernen, schreiben. **Referenzprüfung und Entfernen im selben kritischen Abschnitt** → schließt die TOCTOU-Lücke gegen ein gleichzeitiges Setzen einer neuen Referenz durch den `composer`.
 2. `fs.unlink` der Datei *(außerhalb des Locks)*, auf Windows mit **Retry + Backoff** bei `EBUSY`/`EPERM` (Handle der Vorschau hängt evtl. Millisekunden nach; der Render-Fall ist durch die serielle Queue bereits ausgeschlossen).
-3. Schlägt `unlink` endgültig fehl → Pfad in `pendingDeletions` (D3); der Reconcile beim nächsten Start holt es nach.
+3. Schlägt `unlink` endgültig fehl → Pfad in `pendingDeletions` (**Q2**, `projects/<id>/queue-retry.json` – gehört der Auftragsverwaltung, 9.3); der Reconcile beim nächsten Öffnen des Projekts holt es nach (9.4.7).
 
 **Bewusster Trade-off (D1 zuerst):** Referenz-Konsistenz ist **immer** garantiert (nie zeigt ein ListItem auf eine gelöschte Datei = nie ein kaputter Render). Preis: bei fehlgeschlagenem `unlink` liegt kurzzeitig eine Datei **ohne** D1-Eintrag auf der Platte (Speicher erst nach Reconcile frei). Konsistenz gewinnt gegen Aufräum-Sauberkeit.
 
@@ -786,7 +786,7 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 
 - **Datei in `media/` ohne D1-Eintrag** (Crash-/`unlink`-Waise, `.part`-Leiche) → löschen, Speicher zurück.
 - **D1-Eintrag ohne Datei** → `Asset.zustand = "fehlt"`. Die UI zeigt ihn rot; der `render-service` bricht **früh** mit `medium_fehlt` ab statt mitten im Lauf.
-- **`pendingDeletions` aus D3** → jetzt nachholen.
+- **`pendingDeletions` aus Q2** (`projects/<id>/queue-retry.json`) → jetzt nachholen. Q2 liegt **pro Projekt**, weil ausstehende Löschungen zum Projekt gehören und mit ihm verschwinden (9.3).
 
 #### 9.4.8 Invarianten (bindend)
 
