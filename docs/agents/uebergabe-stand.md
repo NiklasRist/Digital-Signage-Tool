@@ -20,8 +20,8 @@
 | **M2 Torwächter** | ⬜ zugeschnitten (Abschnitt 4), **noch nicht geschrieben** |
 | **M3–M7** | ⬜ offen |
 
-Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** — **nicht** nach `main` gemergt und
-**nicht** gepusht. Merge wäre `git checkout main && git merge --ff-only planung/ad-v1.2-tk-v2.3-issues`.
+Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** und die Arbeit geht **auf diesem Branch
+weiter** (so vom Nutzer entschieden) — nicht nach `main` mergen, nicht ungefragt pushen.
 
 ## 2. Der Ablauf, der sich bewährt hat
 
@@ -104,6 +104,43 @@ Vertrag **TK 9.3**. Der `Auftrag`-Typ existiert schon (**#16**). Milestone-Titel
   Q4 dauerhaft rotierend, `warteschlangen-journal.json` app-weit.
 - **Ereignisse tragen keine Ergebnis-Hülle** und keinen Endzustand (9.1.1).
 - **`render_aktiv` ist entfallen** — die serielle Ordnung macht die Kollision unmöglich.
+
+## 4b. Reihenfolge: erst das Grundgerüst, dann die M1-Entscheidungen
+
+**Wichtig, sonst drängt man den Nutzer zu Entscheidungen, die noch nicht dran sind.**
+
+Die 21 Issues mit `braucht-entscheidung` sind **keine Liste, die vor dem Anfangen abzuarbeiten
+ist**. Sie sind gestaffelt:
+
+1. **M0 (#1–#12) zuerst** — der Nutzer baut das Grundgerüst selbst. Die dortigen offenen Punkte
+   gehören in **diesen** Bauprozess: Watch-Tool (#2), CSP-Wortlaut (#3), Datenort (#5),
+   macOS-Zielformat (#7).
+2. **Erst wenn das Gerüst steht, werden die M1-Punkte überhaupt beantwortbar.** Vorher fehlt die
+   Grundlage: Ob der `config-store` eine eigene Serialisierung braucht (#31), lässt sich am
+   laufenden Gerüst beurteilen — vorher ist es Spekulation.
+
+### Entscheidungen und Experimente nicht verwechseln
+
+Ein STOPP-Punkt kann zwei sehr verschiedene Dinge sein, und nur die erste Art lässt sich „beantworten":
+
+- **Entscheidung** — eine Produkt- oder Design-Wahl, die der Nutzer treffen kann und muss:
+  „Datenort neben der EXE oder in `userData`?", „Dateiname mit oder ohne Zeitstempel?",
+  „welcher Fehlercode bei fehlendem aktivem Projekt?"
+- **Experiment** — eine empirische Frage über Plattformverhalten. Die kann **niemand entscheiden**,
+  sie muss **ausprobiert** werden: Reicht `requestSingleInstanceLock()` für zwei Kopien derselben
+  portablen EXE auf denselben Daten (#51)? Zeigt `PORTABLE_EXECUTABLE_DIR` wirklich auf den
+  Stick-Ort (#5)? Löst `document.fonts.ready` bei Canvas-Text zu früh auf (#8)? Startet der TV die
+  USB-Schleife nach dem Einschalten von selbst (R-01)?
+
+**Genau deshalb kommt das Grundgerüst zuerst:** Es ist die Vorrichtung, mit der man die Experimente
+überhaupt durchführen kann. Ein Experiment vorab „zu entscheiden" heißt raten — und Raten ist das,
+was die ganze Konstruktion verhindern soll.
+
+Wer also an M2–M7 weiterschreibt: **das geht parallel**, es hängt nicht am Gerüst. Aber die offenen
+Punkte in M0/M1 nicht als Bringschuld des Nutzers behandeln, und **keine** Antworten erfinden, um
+Issues „fertig" aussehen zu lassen.
+
+---
 
 ## 5. Wovon die Finger lassen
 
