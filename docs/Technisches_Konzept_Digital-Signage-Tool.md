@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 2.4 (HLD vollständig, geprüft)
+**Version:** 2.5 (HLD vollständig, geprüft)
 **Datum:** 03.08.2026
 **Status:** In Planung
 
@@ -35,7 +35,7 @@ Alle länger laufenden oder dateiverändernden Vorgänge (Import, Löschen von M
 | UI | React + Vite |
 | Reihenfolge (DnD) | dnd-kit |
 | Segment-Rendering | HTML5-Canvas → PNG |
-| Video/Encoding | gebündeltes `ffmpeg` (`ffmpeg-static` + `fluent-ffmpeg`) |
+| Video/Encoding | gebündeltes `ffmpeg` **und `ffprobe`** (`ffmpeg-static` + `ffprobe-static` + `fluent-ffmpeg`) |
 | Datenhaltung | JSON je Projekt (`lowdb`); SQLite optional |
 | Verpackung | `electron-builder`, Portable-Target |
 
@@ -344,8 +344,10 @@ Diese Konventionen gelten für **jede** Operation über die Renderer↔Main-Gren
 ```
 Ergebnis<T> =
   | { ok: true,  wert: T }
-  | { ok: false, fehler: { code: Fehlercode, meldung: string } }
+  | { ok: false, fehler: { code: Fehlercode, meldung: string, daten?: Fehlerdaten } }
 ```
+
+**Strukturierte Fehlerdaten (`daten`, optional).** Manche Fehler sind erst mit ihren Nutzdaten bedienbar: `asset_referenziert` muss die **betroffenen Listenelemente** nennen (`{ referenzenIds: string[] }`, 9.4.9), `vorlage_referenziert` beide Trefferlisten (9.12.1). Ohne dieses Feld bliebe von der Zusage „der Code trägt echtes Verhalten" nur der Code selbst übrig, und der geführte Reparatur-Modus (FA-19) könnte den Nutzer nirgendwohin führen. Regeln: Das Feld ist **optional** – Codes ohne Zusatzdaten lassen es weg; seine Form ist **je Fehlercode festgelegt und typisiert** (dokumentiert dort, wo der Code vergeben wird: 9.4.9, 9.6.4, 9.12.1); es ist **kein Freitext-Anhang** und **kein Ersatz für `meldung`**. Ein Aufrufer, der `daten` nicht kennt, funktioniert unverändert weiter.
 
 *Begründung (bitte nicht „vereinfachen"):* Renderer und Main sind **getrennte Prozesse**; alles dazwischen wird serialisiert. Wirft der Main `new Error(...)` mit einem eigenen Feld `code`, kommt beim Renderer **nicht** dieser Fehler an, sondern eine verpackte Meldung der Art
 
@@ -628,8 +630,9 @@ JournalEintrag {               // Q4 – eine Zeile je Bewegung
 | `label` | UI-Klartext, z. B. „Import: sommer-aktion.mp4" | Anzeige im `queue-panel` |
 | `payload` | `ImportRequest` \| `LöschRequest` \| `RenderRequest` \| `ExportRequest` | vollständig aufbewahrt → Wiederholung ohne Neu-Eingabe möglich |
 | `fortschritt` | 0–100 oder `null` | grober Fortschritt (bei `render` aus `RenderProgress`, 9.2.7); `null` wo unbestimmt |
-| `versuche` | Anzahl bisheriger Ausführungen | macht wiederholtes Scheitern sichtbar |
-| `fehler` | `{ code, meldung }` oder `null` | gesetzt bei `fehlgeschlagen`; `code` stammt aus dem Fachdienst |
+| `versuche` | Anzahl **tatsächlich gestarteter** Ausführungen | macht wiederholtes Scheitern sichtbar; wird **beim Start** einer Ausführung erhöht (s. 9.3.3) |
+| `fehler` | `{ code, meldung, daten? }` oder `null` | gesetzt bei `fehlgeschlagen`; `code` stammt aus dem Fachdienst, `daten` trägt die Nutzdaten des Codes (9.1.1) |
+| `ergebnis` | fachliche Nutzdaten des Dienstes oder `null` | gesetzt bei `erfolg`: `import` → der fertige `Asset` (9.4.4), `loeschen` → `{ assetId }`, `render` → Pfad/Größe/Dauer (9.2.3), `export` → `{ zielPfad, dateigroesse }` (9.6.1). **Ohne dieses Feld erführe die Oberfläche nie, was ein Auftrag hervorgebracht hat** – ein Import bliebe unsichtbar, bis der Nutzer das Projekt neu öffnet |
 | `erstelltAm` | ISO-8601 UTC | Reihenfolge/Anzeige |
 
 #### 9.3.2 Auftragsarten
@@ -658,14 +661,15 @@ JournalEintrag {               // Q4 – eine Zeile je Bewegung
 ```
 
 - **`anstehend` → `laeuft`:** nur wenn **kein** anderer Auftrag `laeuft` (serielle Invariante). Auswahl in FIFO-Reihenfolge.
-- **`fehlgeschlagen`/`abgebrochen`/`erfolg`** sind terminal. `fehlgeschlagen` ist über `wiederhole` reaktivierbar; der **selbe** Eintrag wird wieder `anstehend` und **ans Ende** gestellt, `versuche` +1 (kein neuer Eintrag).
+- **`fehlgeschlagen`/`abgebrochen`/`erfolg`** sind terminal. `fehlgeschlagen` ist über `wiederhole` reaktivierbar; der **selbe** Eintrag wird wieder `anstehend` und **ans Ende** gestellt (kein neuer Eintrag).
+- **`versuche` wird beim Übergang `anstehend` → `laeuft` erhöht**, also genau dann, wenn eine Ausführung **tatsächlich beginnt** – **nicht** beim Wiedereinreihen. Das Feld zählt „bisherige Ausführungen" (9.3.1); würde `wiederhole` erhöhen, stünde ein einmal gelaufener, gescheiterter Auftrag bei `0`, und eine nie gestartete Wiederholung würde mitgezählt. `ProtokollEintrag.versuch` (9.3) ist der Wert dieses Laufs und beginnt damit bei 1.
 
 #### 9.3.4 IPC-Oberfläche
 
 ```
 reiheEin(art, payload) → Ergebnis<{ auftragId }>   // kehrt SOFORT zurück; sagt nichts über den Ausgang
 entferne(auftragId)    → Ergebnis<void>            // anstehend: aus Schlange nehmen; laeuft+render: Abbruch (→ cancelRender)
-wiederhole(auftragId)  → Ergebnis<void>            // fehlgeschlagen → anstehend, ans Ende, versuche +1
+wiederhole(auftragId)  → Ergebnis<void>            // fehlgeschlagen → anstehend, ans Ende (versuche steigt erst beim Start, 9.3.3)
 holeStand()            → Ergebnis<Auftrag[]>       // Snapshot für die UI (z. B. beim Öffnen des Panels)
 ```
 ```
@@ -684,7 +688,7 @@ Alle vier Aufrufe sind **Instant** und tragen die Ergebnis-Hülle (9.1.1): `Erge
 - **Render friert seinen Eingang beim Einreihen ein:** die geordnete Liste + Profil des `RenderRequest` werden **zum Einreih-Zeitpunkt** als Snapshot genommen. Spätere Listenänderungen betreffen einen bereits eingereihten Render **nicht** (verhindert „gedrückt, dann getweakt, anderes Video").
 - **Determinismus durch sichtbare Reihenfolge:** Reihenfolge zweier Aufträge = Einreih-Reihenfolge, im Panel sichtbar. Beispiel: `loeschen` vor `render` eingereiht → Asset ist weg, der Render scheitert deterministisch mit `medium_fehlt` (9.4); umgekehrt läuft der Render zuerst und nutzt das Asset. Der Nutzer sieht die Reihenfolge und kann sie über `entferne`/`wiederhole` steuern.
 - **Differenzierte Persistenz (vier Speicher):** **Q1** (aktive Warteschlange) ist flüchtig — nach Neustart leer; **Q2** (Fehlschläge + `pendingDeletions`) überlebt den Neustart und wird nach Erledigung gelöscht; **Q3** (Protokoll) ist dauerhaft und **unbegrenzt**; **Q4** (Journal) ist dauerhaft, aber **rotierend**. Die aktive Queue wird also *nicht* persistiert, die Wiederhol-Fähigkeit und die Historie sehr wohl.
-- **Wiederholen bleibt ein Eintrag:** `wiederhole` verschiebt den bestehenden Q2-Eintrag zurück nach `anstehend` (ans Ende) und erhöht `versuche`; es entsteht **kein** Duplikat. Nach Erfolg/Verwerfen verschwindet der Q2-Eintrag.
+- **Wiederholen bleibt ein Eintrag:** `wiederhole` verschiebt den bestehenden Q2-Eintrag zurück nach `anstehend` (ans Ende); `versuche` steigt beim **Start** der Wiederholung (9.3.3). Es entsteht **kein** Duplikat. Nach Erfolg/Verwerfen verschwindet der Q2-Eintrag.
 
 #### 9.3.6 Verzahnung mit `render-service`
 
@@ -737,7 +741,7 @@ Der bestehende Vertrag 9.2 (`renderReel`, `RenderRequest`/`RenderResult`, `Rende
 | `projektId` | Ziel-Projekt; bestimmt den `media/`-Ordner |
 | `quellPfad` | absoluter Pfad der Quelldatei (aus `öffneMedienDialog`) |
 
-**Auftrags**-Ergebnis bei Erfolg: der fertige `Asset` (9.4.4). Es reist über den **Auftrags-Zustand**, **nicht** als `Ergebnis<T>` einer Aufrufantwort (9.1.1); der Aufruf selbst ist `reiheEin('import', …)` → `Ergebnis<{ auftragId }>`. Fehlercodes: 9.4.9.
+**Auftrags**-Ergebnis bei Erfolg: der fertige `Asset` (9.4.4) – er steht in **`Auftrag.ergebnis`** (9.3.1) und erreicht die Oberfläche über den Auftrags-Zustand (`queue:geaendert`/`holeStand`), **nicht** als `Ergebnis<T>` einer Aufrufantwort (9.1.1); der Aufruf selbst ist `reiheEin('import', …)` → `Ergebnis<{ auftragId }>`. Fehlercodes: 9.4.9.
 
 **`löscheMedium` (Auftrag `art: loeschen`):** Eingang `LöschRequest`:
 
@@ -746,7 +750,7 @@ Der bestehende Vertrag 9.2 (`renderReel`, `RenderRequest`/`RenderResult`, `Rende
 | `projektId` | Projekt-Kontext |
 | `assetId` | zu löschender Asset |
 
-**Auftrags**-Ergebnis bei Erfolg: `{ assetId }` – ebenfalls über den Auftrags-Zustand (s. o.). Fehlercodes: 9.4.9.
+**Auftrags**-Ergebnis bei Erfolg: `{ assetId }` in **`Auftrag.ergebnis`** – ebenfalls über den Auftrags-Zustand (s. o.). Fehlercodes: 9.4.9.
 
 #### 9.4.4 Der `Asset`-Typ
 
@@ -766,7 +770,7 @@ Asset {
 #### 9.4.5 Import-Ablauf (atomar)
 
 1. Quelle → `media/.staging/<uuid>.<ext>.part` kopieren *(langsam, **außerhalb** des D1-Locks)*.
-2. `ffprobe` auf die `.part`-Datei, **mit Timeout** *(außerhalb des Locks)*.
+2. `ffprobe` auf die `.part`-Datei, **mit Timeout** *(außerhalb des Locks)*. `ffprobe` wird **mitgeliefert** (Abschnitt 3) und wie `ffmpeg` im gepackten Zustand aufgelöst und beim Start selbstgetestet – `ffmpeg-static` allein enthält es **nicht**.
 3. `fs.rename` `.part` → `media/<uuid>.<ext>` — **atomar**, weil gleiche Partition (Staging liegt in `media/`; cross-volume-rename wäre copy+delete und **nicht** atomar).
 4. **[D1-Lock]** Asset in D1 anhängen und schreiben *(Millisekunden)*.
 
@@ -776,7 +780,7 @@ Crash vor 3 → nur eine `.part`-Leiche; Crash nach 3 vor 4 → eine fertige Wai
 
 1. **[D1-Lock]** Referenzen prüfen. Referenziert (ListItem zeigt darauf)? → Fehler `asset_referenziert` (mit `referenzenIds`), Abbruch. Sonst: Asset-Eintrag aus D1 entfernen, schreiben. **Referenzprüfung und Entfernen im selben kritischen Abschnitt** → schließt die TOCTOU-Lücke gegen ein gleichzeitiges Setzen einer neuen Referenz durch den `composer`.
 2. `fs.unlink` der Datei *(außerhalb des Locks)*, auf Windows mit **Retry + Backoff** bei `EBUSY`/`EPERM` (Handle der Vorschau hängt evtl. Millisekunden nach; der Render-Fall ist durch die serielle Queue bereits ausgeschlossen).
-3. Schlägt `unlink` endgültig fehl → Pfad in `pendingDeletions` (**Q2**, `projects/<id>/queue-retry.json` – gehört der Auftragsverwaltung, 9.3); der Reconcile beim nächsten Öffnen des Projekts holt es nach (9.4.7).
+3. Schlägt `unlink` endgültig fehl → **`dateiname`** (ohne Verzeichnisanteil, s. 9.4.8 Punkt 1) in `pendingDeletions` (**Q2**, `projects/<id>/queue-retry.json` – gehört der Auftragsverwaltung, 9.3); der Reconcile beim nächsten Öffnen des Projekts holt es nach (9.4.7). *Bewusst nicht der absolute Pfad:* Die App ist portabel – ein gespeicherter OS-Pfad wird ungültig, sobald der Ordner umzieht (USB-Stick), und der Reconcile suchte an der falschen Stelle.
 
 **Bewusster Trade-off (D1 zuerst):** Referenz-Konsistenz ist **immer** garantiert (nie zeigt ein ListItem auf eine gelöschte Datei = nie ein kaputter Render). Preis: bei fehlgeschlagenem `unlink` liegt kurzzeitig eine Datei **ohne** D1-Eintrag auf der Platte (Speicher erst nach Reconcile frei). Konsistenz gewinnt gegen Aufräum-Sauberkeit.
 
@@ -819,7 +823,7 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 | Fehlercode | Ursache |
 |---|---|
 | `asset_nicht_gefunden` | `assetId` existiert nicht in D1 |
-| `asset_referenziert` | ein ListItem zeigt noch darauf; enthält `referenzenIds: string[]` |
+| `asset_referenziert` | ein ListItem zeigt noch darauf; trägt `daten: { referenzenIds: string[] }` (strukturierte Fehlerdaten, 9.1.1) |
 | `datei_fehler` | Datei konnte nicht gelöscht werden (nach Retry) → als `pendingDeletion` vorgemerkt |
 
 ---
@@ -1567,6 +1571,8 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v2.5 (03.08.2026), beim Zuschnitt der M3-Issues gefunden:** (1) **Strukturierte Fehlerdaten** (`fehler.daten`, 9.1.1) – `asset_referenziert` musste laut 9.4.9 die betroffenen Listenelemente nennen, konnte sie aber nirgends transportieren; damit war der geführte Reparatur-Modus (FA-19) nicht bedienbar. (2) **`Auftrag.ergebnis`** (9.3.1) – das Auftrags-Ergebnis („der fertige `Asset`", 9.4.3) hatte keinen Weg zur Oberfläche; ein Import wäre unsichtbar geblieben. (3) **`ffprobe` wird mitgeliefert** (Abschnitt 3, 9.4.5) – `ffmpeg-static` enthält es nicht, der Import braucht es für Maße und Dauer. (4) **`versuche` steigt beim Start** statt beim Wiedereinreihen (9.3.1/9.3.3/9.3.4/9.3.5, vom Auftraggeber entschieden). (5) **`pendingDeletions` speichern den `dateiname`**, nicht den absoluten Pfad (9.4.6) – die App ist portabel.
 >
 > **Nachgezogen in v2.4 (03.08.2026), beim Zuschnitt der M2-Issues gefunden:** (1) **`pendingDeletions` sind keine Aufträge** – 9.3 hat sie zum automatischen Neu-Einreihen beim Start erklärt, was 9.4.6/9.4.7 widerspricht und deterministisch mit `asset_nicht_gefunden` gescheitert wäre; die Auftragsverwaltung **verwahrt** sie jetzt nur, ausgeführt werden sie vom Reconcile des `media-service` (9.3, 9.4.7). (2) **`listeAusgaben` (9.5.2) ergänzt** – die Ausgabe-Liste (FA-22) und die Dateiauswahl beim Export (9.6.1) hatten **keine** Datenquelle; das Auflisten des Ausgabeordners gehört zur Pfad-Autorität (9.5.7).
 >

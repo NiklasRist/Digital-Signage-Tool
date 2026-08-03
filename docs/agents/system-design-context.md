@@ -6,7 +6,7 @@
 > Projekt beschädigen. Deshalb: jede lokale Entscheidung muss zu den hier festgelegten globalen
 > Invarianten passen. Im Zweifel lieber strikter an den Vertrag halten als „clever" abweichen.
 >
-> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.4** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
+> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.5** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
 
 ---
 
@@ -31,7 +31,8 @@ MP4 `<ausgabeName>.mp4` (Name frei, FA-22), **H.264 High / Level 4.0**, **1920×
 
 ## 3. Tech-Stack (entschieden)
 Electron + TypeScript + React + Vite; dnd-kit; HTML5-Canvas → PNG für Aktions-Segmente; gebündeltes
-ffmpeg (`ffmpeg-static` + `fluent-ffmpeg`); Datenhaltung JSON je Projekt (`lowdb`), SQLite optional;
+ffmpeg **und ffprobe** (`ffmpeg-static` + `ffprobe-static` + `fluent-ffmpeg`; `ffmpeg-static` allein
+enthält **kein** ffprobe, der Medien-Import braucht es für Maße und Dauer); Datenhaltung JSON je Projekt (`lowdb`), SQLite optional;
 Verpackung `electron-builder` Portable (Win 10/11 + macOS 13+, kein Installer, ohne Admin).
 
 ## 4. Architektur
@@ -56,8 +57,12 @@ bedient, gilt **ausnahmslos** Folgendes. Diese Regeln sind der häufigste Ort f�
   über IPC.
 - **Einheitliche Ergebnis-Hülle – NIEMALS Exceptions über die Grenze:**
   ```
-  Ergebnis<T> = { ok: true, wert: T } | { ok: false, fehler: { code: Fehlercode, meldung: string } }
+  Ergebnis<T> = { ok: true, wert: T } | { ok: false, fehler: { code: Fehlercode, meldung: string, daten?: Fehlerdaten } }
   ```
+  **`daten` (optional, NEU in v2.5):** strukturierte Nutzdaten des Fehlers – `asset_referenziert` trägt
+  `{ referenzenIds: string[] }` (9.4.9), `vorlage_referenziert` beide Trefferlisten (9.12.1). Form **je
+  Fehlercode** festgelegt, dort dokumentiert, wo der Code vergeben wird. Ohne dieses Feld könnte der
+  geführte Reparatur-Modus (FA-19) den Nutzer nirgendwohin führen. **Kein Freitext-Anhang.**
   **Warum kein `throw`:** Renderer und Main sind getrennte Prozesse; Electron serialisiert alles
   dazwischen. Ein `new Error()` mit eigenem Feld `code` kommt beim Aufrufer nur noch als **Text** an
   (`"Error invoking remote method '…': …"`) – **Fehlerklasse und `code` sind verloren**. An unseren
@@ -137,7 +142,11 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
     Auftrag scheiterte deterministisch mit `asset_nicht_gefunden`.
 - `Auftrag`: `auftragId`, `art`, `status` (`anstehend`/`laeuft`/`erfolg`/`fehlgeschlagen`/`abgebrochen`),
   `label`, `payload` (Request des Fachdiensts, vollständig aufbewahrt → Wiederholen ohne Neu-Eingabe),
-  `fortschritt`, `versuche`, `fehler`, `erstelltAm`.
+  `fortschritt`, `versuche`, `fehler`, **`ergebnis`**, `erstelltAm`.
+  **`ergebnis` (NEU in v2.5):** die fachlichen Nutzdaten bei Erfolg – `import` → der fertige `Asset`,
+  `loeschen` → `{ assetId }`, `render` → Pfad/Größe/Dauer, `export` → `{ zielPfad, dateigroesse }`;
+  sonst `null`. Ohne dieses Feld erführe die Oberfläche nie, was ein Auftrag hervorgebracht hat.
+  **`versuche` steigt beim START einer Ausführung**, nicht beim Wiedereinreihen (9.3.3).
 - IPC: `reiheEin(art,payload)→{auftragId}`, `entferne(auftragId)`, `wiederhole(auftragId)` (→ selber
   Eintrag ans Ende, `versuche`+1, KEIN Duplikat), `holeStand()→Auftrag[]`, Push `QueueGeändert(Auftrag[])`.
 - **Render friert seinen Eingang beim Einreihen ein** (Liste+Profil als Snapshot; spätere Edits ändern
