@@ -31,6 +31,8 @@ Issues sind nach außen sichtbar und in Masse mühsam zurückzunehmen.
 | `docs/Anforderungsdokument_Digital-Signage-Tool.md` (v1.2) | das **WAS**: FA-01…FA-22, NFA-01…NFA-09, Akzeptanzkriterien 1–9, Risiken R-01…R-06, Glossar |
 | `docs/Technisches_Konzept_Digital-Signage-Tool.md` (v2.3) | das **WIE**: Architektur, Datenbestand, DFD (Abschnitt 7), **Abschnitt 9 = HLD mit allen Modul-Verträgen 9.1–9.14** |
 | `docs/agents/system-design-context.md` | verdichteter Agent-Kontext; **Abschnitt 4b** = IPC-Vertrag |
+| `docs/agents/uebergabe-stand.md` | **WO WIR STEHEN**: welche Meilensteine angelegt sind, der fertige M2-Zuschnitt, die wiederkehrenden Fehlermuster, die Werkzeuge |
+| `docs/agents/m1-pruefbefund.md` | Befund des M1-Prüflaufs – die konkreten Fehler, die zu vermeiden sind |
 | `CLAUDE.md` | Projekt-Briefing, Arbeitsweise, Entscheidungshistorie |
 
 **Abschnitt 9 des Technischen Konzepts ist die Quelle der Wahrheit für jedes Issue.** Wenn dein
@@ -615,9 +617,12 @@ Erzeuge (falls nicht vorhanden) und verwende:
 3. **Volltexte** – alle Issues nach der Vorlage aus Abschnitt 7 in `docs/agents/issues-draft.md`.
 4. **Selbstprüfung** – Checkliste Abschnitt 12 abarbeiten und das Ergebnis berichten.
 5. **Freigabe einholen.** Erst danach anlegen.
-6. **Anlegen** mit `gh`: vorher `gh repo view` prüfen (Remote vorhanden? sonst fragen), Labels und
-   Milestones anlegen, dann Issues aus den Draft-Dateien. Issue-Körper aus Datei übergeben
-   (`gh issue create --body-file …`) – **nicht** als Inline-String mit Umlauten und Backticks.
+6. **Anlegen** mit `python tools/create-issues.py <verzeichnis> "<Milestone>"` – erst **ohne**
+   `--go` (Trockenlauf: zeigt Titel und Labels, legt nichts an), dann mit `--go`. Der Trockenlauf ist
+   Pflicht: beim M1-Lauf hat er zwei Skriptfehler aufgedeckt, bevor etwas nach außen ging.
+   Vorher `gh repo view` prüfen (Remote vorhanden? sonst fragen) und fehlende Labels/Milestones
+   anlegen. Issue-Körper immer **aus Datei** (`--body-file`), nie als Inline-String – Umlaute und
+   Backticks überleben das Quoting nicht.
    Danach die Abhängigkeits-Nummern in den Texten nachziehen (die kennst du erst nach dem Anlegen).
 
 **Titel-Konvention:** `[<modul>] <Verb> <Gegenstand>` – z. B.
