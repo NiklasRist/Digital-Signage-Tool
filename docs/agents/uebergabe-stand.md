@@ -4,7 +4,7 @@
 > Das **Wie** der Issue-Erstellung steht vollständig in `issue-generation-prompt.md` — dort
 > beginnen, diese Datei ist nur der Stand darüber.
 >
-> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.3**
+> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.4**
 
 ---
 
@@ -15,9 +15,10 @@
    alle Invarianten zum Wörtlich-Zitieren, die Pflicht-Vorlage samt ausgefülltem Beispiel und die
    fünf Regeln A–E. **Vollständig lesen, nicht querlesen** — die Regeln C, D und E sind aus
    konkreten Fehlern entstanden, die zweimal aufgetreten sind.
-3. **`docs/agents/m1-pruefbefund.md`** — die Fehler des letzten Durchgangs im Detail. Wer sie kennt,
-   macht sie nicht nochmal.
-4. Dann **Abschnitt 4 dieser Datei**: M2 ist fertig zugeschnitten, 16 Issues. Losschreiben.
+3. **`docs/agents/m2-pruefbefund.md`** und **`m1-pruefbefund.md`** — die Fehler der letzten beiden
+   Durchgänge im Detail. Wer sie kennt, macht sie nicht nochmal. **M2 zuerst**: dort steht, was der
+   Briefing-Ansatz gebracht hat und welches Muster (Regel A auf Modulebene) noch offen war.
+4. Dann **Abschnitt 4 dieser Datei**: M2 ist fertig, **M3 ist der nächste** Meilenstein.
 
 **Kein Produktivcode.** Das Projekt ist in der Planungsphase — Code erst, wenn der Nutzer
 ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schreiben, nicht sie umzusetzen.
@@ -36,7 +37,7 @@ ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schre
 |---|---|
 | **M0 Grundgerüst** | ✅ **Issues #1–#12** angelegt, geprüft, korrigiert |
 | **M1 Fundament** | ✅ **Issues #13–#52** angelegt, geprüft, korrigiert (`M1-XX → #(XX+12)`) |
-| **M2 Torwächter** | ⬜ zugeschnitten (Abschnitt 4), **noch nicht geschrieben** |
+| **M2 Torwächter** | ✅ **Issues #53–#71** angelegt, geprüft, korrigiert (`M2-XX → #(XX+52)`) |
 | **M3–M7** | ⬜ offen |
 
 Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** und die Arbeit geht **auf diesem Branch
@@ -78,7 +79,30 @@ Bei M0 und M1 **dieselben** vier. Wer sie beim Schreiben vermeidet, spart den ha
 **Beleg, dass es hilft:** M1-37/38/39 entstanden **nach** den Regeln C/D/E. M1-37 und M1-38 hatten
 **null** Befunde, M1-39 nur die Testdatei-Zeile. Die 29 älteren Issues brauchten 370 Zeilen Korrektur.
 
-## 4. M2 – Torwächter (`auftrags-manager`, P6): fertiger Zuschnitt
+## 4. M2 – Torwächter (`auftrags-manager`, P6): ERLEDIGT, Issues #53–#71
+
+**Stand 03.08.2026:** 19 Issues geschrieben, von vier Prüfern geprüft (~45 Befunde, 11 kritische),
+in drei Durchgängen korrigiert und angelegt. Details: `m2-pruefbefund.md`. Die Volltexte liegen als
+**eine Datei je Issue** in `docs/agents/m2/` — das ist das Format, das `create-issues.py` frisst;
+das Mapping steht in `docs/agents/m2/map.json`.
+
+**Was der Durchgang gelehrt hat (gilt ab M3):**
+
+1. **Eine Briefing-Datei vor dem Schreiben zahlt sich aus.** Alle Festlegungen, die das Technische
+   Konzept offen lässt, gehören ausgeschrieben in eine Vorgabe, die jeder schreibende Agent liest.
+   Ergebnis: Regel D zu 100 % eingehalten (bei M1 sieben Verstöße), Regel E lückenlos.
+2. **Regel A gilt auch zwischen Modulen.** Ein Aufruf darf nie nur als Issue-Nummer dastehen
+   („über M2-04 anhängen") — **Name und Signatur** gehören ins Issue. Das betraf alle 18 Texte.
+3. **Die teuren Befunde liegen an den Nähten**, nicht in den einzelnen Issues. Ein Querschnitts-Prüfer,
+   der nur Verzahnung, Abhängigkeitsgraph und doppelte Zuständigkeit prüft, hat sich gelohnt.
+4. **Lokale Detailfragen selbst entscheiden**, statt sie in den STOPP-Block zu legen. Sonst trägt das
+   Label `braucht-entscheidung` 17 von 18 Issues und ist wertlos. Nach 15 Entscheidungen: 9 von 19.
+
+**Die verbliebenen 9 Entscheidungs-Issues:** #53 · #61 · #64 · #65 · #67 · #68 · #69 · #70 · #71
+(Begründung je Issue in `m2-pruefbefund.md`).
+
+<details>
+<summary>Der ursprüngliche Zuschnitt (16 Issues) — zur Nachvollziehbarkeit</summary>
 
 Vertrag **TK 9.3**. Der `Auftrag`-Typ existiert schon (**#16**). Milestone-Titel: `M2 – Torwächter`.
 
@@ -97,9 +121,30 @@ Vertrag **TK 9.3**. Der `Auftrag`-Typ existiert schon (**#16**). Milestone-Titel
 | M2-11 | [auftrags-manager] `wiederhole` | 9.3.4, 9.3.5 |
 | M2-12 | [auftrags-manager] `holeStand` | 9.3.4 |
 | M2-13 | [auftrags-manager] Ereignis `QueueGeändert` | 9.3.4, 9.1.1 |
-| M2-14 | [auftrags-manager] `pendingDeletions` beim Projektstart nachholen | 9.3, 9.4.7 |
+| M2-14 | [auftrags-manager] `pendingDeletions` in Q2 führen: lesen, ergänzen, streichen (**kein** Auftrag) | 9.3, 9.4.7 |
 | M2-15 | [auftrags-manager] Neustart: Q1 leer, Q2 laden | 9.3, 9.3.5 |
 | M2-16 | [auftrags-manager] Verzahnung mit `render-service` | 9.3.6 |
+| **M2-17** | [auftrags-manager] Atomares, **serialisiertes** Schreiben der Queue-Dateien (Q2/Q3/Q4) | 9.5.4 |
+| **M2-18** | [auftrags-manager] Auftrag abschließen: terminaler Übergang, Q3-Eintrag, Q2-Pflege, nächsten freigeben | 9.3, 9.3.3 |
+
+**Nachträge vom 03.08. (vom Nutzer entschieden, Zuschnitt jetzt 18 Issues):**
+
+- **M2-17 neu:** Q2, Q3 und Q4 sind drei Dateien mit derselben Anforderung. TK 9.5.4: „Die
+  Auftragsverwaltungs-Speicher Q2/Q3 (eigene Dateien, 9.3) haben ihre **eigene** Serialisierung."
+  Ohne gemeinsamen Baustein bauen drei Agents drei Schreibmechanismen.
+- **M2-18 neu:** Der terminale Übergang hatte im 16er-Schnitt **kein Zuhause** – damit wäre die Regel
+  „ein Q3-Eintrag je beendetem Versuch" heimatlos gewesen. Dieselbe Lückenklasse wie M1-28, wo die
+  Kaskade perfekt beschrieben war und das eigentliche Löschen fehlte.
+- **M2-14 geändert:** `pendingDeletions` sind **keine** Aufträge (TK v2.4). Die Auftragsverwaltung
+  **verwahrt** sie und bietet dem `media-service` main-intern Lesen/Ergänzen/Streichen an; **ausgeführt**
+  wird vom Reconcile (9.4.7). Ein erneut eingereihter `loeschen`-Auftrag wäre **immer** an
+  `asset_nicht_gefunden` gescheitert, weil beim Löschen der D1-Eintrag zuerst verschwindet.
+- **Keine Leseoperation für Q3.** Die Ausgabe-Liste (FA-22) speist sich aus dem **Ausgabeordner**
+  (`listeAusgaben`, TK 9.5.2 – neu in v2.4), nicht aus dem Protokoll: Das Änderungsdatum der Datei **ist**
+  der Renderzeitpunkt, weil sie atomar dorthin gelangt. Q3 bleibt in v1 **bewusst nur schreibend**
+  (Historie/Nachweis inkl. Fehlschläge). Das gehört ausdrücklich ins Q3-Issue, sonst „ergänzt" es ein Agent.
+- **`entferne` bleibt bei drei Fällen** (9.3.4 klärt es): anstehend → aus der Schlange; laufender Render →
+  `cancelRender`; **beendeter** Auftrag → `nicht_gefunden`. „Verwerfen" wird **keine** Operation.
 
 **Neue Labels dafür:** `modul:auftrags-manager` (Farbe `1d76db`).
 
@@ -123,6 +168,22 @@ Vertrag **TK 9.3**. Der `Auftrag`-Typ existiert schon (**#16**). Milestone-Titel
   Q4 dauerhaft rotierend, `warteschlangen-journal.json` app-weit.
 - **Ereignisse tragen keine Ergebnis-Hülle** und keinen Endzustand (9.1.1).
 - **`render_aktiv` ist entfallen** — die serielle Ordnung macht die Kollision unmöglich.
+
+</details>
+
+⚠ **Offen und terminiert, gehört NICHT zu M2:** Für `listeAusgaben` (TK 9.5.2, neu in v2.4) gibt es
+**noch kein Issue**. Es ist eine **`project-store`**-Operation, also fachlich M1 – der Milestone ist
+aber schon angelegt (#13–#52). Entweder als Nachzügler in M1 (wie seinerzeit M1-40 `Marke`) oder zu
+Beginn von **M6**, wo `export-service` sie zuerst braucht. **Vor M6 entscheiden**, sonst fällt die
+Operation zwischen die Meilensteine – und ohne sie hat weder die Ausgabe-Liste (FA-22) noch der
+Export-Dialog eine Datenquelle.
+
+⚠ **Drei Doku-Nachträge aus dem M2-Lauf** (eigener Schritt, eigene Freigabe, Word + Markdown zusammen):
+**TK 9.3.3/9.3.4/9.3.5** – `versuche` +1 gehört an den Start, nicht an `wiederhole` (vom Nutzer am
+03.08. entschieden; das Feld heißt „Anzahl bisheriger Ausführungen", sonst stünde ein gescheiterter
+Auftrag bei null) · **TK 9.4.6 Schritt 3** – „Pfad in `pendingDeletions`" → `dateiname` ohne
+Verzeichnisanteil (passend zu 9.4.8 und zur portablen Auslieferung) · **M7** – „Abbrechen" wird nur bei
+laufendem `render` angeboten.
 
 ## 4b. Reihenfolge: erst das Grundgerüst, dann die M1-Entscheidungen
 
@@ -197,6 +258,12 @@ mit eigener Freigabe, weil beide `.docx` mitgezogen werden müssen.
 | Word erzeugen | `node tools/generate-docx.js <in.md> <out.docx> [--dfd tools/assets/dfd.png]` |
 | DFD neu rendern | SVG im TK ändern → `node tools/render-dfd.js <svg> tools/assets/dfd.png` → Word neu |
 | Issues anlegen | `python tools/create-issues.py <verzeichnis> "<Milestone>" [--go]` |
+| Querverweise nachziehen | `python tools/verweise-nachziehen.py <verzeichnis> [--go]` (nach dem Anlegen) |
+
+**`create-issues.py` wählt die Label über ein PROFIL je Meilenstein** (Präfix der Dateinamen:
+`M2-07.md` → Profil `M2`). Ein unbekannter Präfix **bricht ab** statt zu raten — für M3 also erst ein
+Profil anlegen. Der Trockenlauf prüft zusätzlich, ob alle Label und der Milestone auf GitHub
+existieren; `gh issue create` legt beides **nicht** an und bräche sonst mitten in der Reihe ab.
 
 `NODE_PATH="C:/Users/acer/programming/node_modules"` setzen — die Abhängigkeiten liegen im
 übergeordneten Ordner, nicht im Repo.

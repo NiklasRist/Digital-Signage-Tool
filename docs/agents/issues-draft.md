@@ -8,7 +8,9 @@
 > v2.2 (`docs/Technisches_Konzept_Digital-Signage-Tool.md`).
 >
 > **Fortschritt:** M0 ✅ (Issues #1–#12) · M1 ✅ geschrieben, geprüft, korrigiert und **angelegt**
-> (M1-01…M1-40 = Issues **#13–#52**, Milestone „M1 – Fundament") · M2–M7 offen.
+> (M1-01…M1-40 = Issues **#13–#52**, Milestone „M1 – Fundament") · M2 ✅ **angelegt**
+> (M2-01…M2-19 = Issues **#53–#71**, Milestone „M2 – Torwächter"; Volltexte in `docs/agents/m2/`,
+> s. Abschnitt am Dateiende) · M3–M7 offen.
 >
 > **Achtung vor dem Anlegen:** M1-01…M1-29 entstanden **vor** den Regeln C/D/E und vor der
 > Anforderungsänderung vom 02.08. (mehrere benannte Ausgabedateien, FA-22). Sie brauchen denselben
@@ -5003,3 +5005,44 @@ Entfällt (Typdefinition, keine Laufzeit-Fehlerpfade).
 
 ## Bezug
 TK 9.11.2, TK 9.5.6, TK 9.10.4, TK 9.10.5, Anforderungsdokument 4.2
+
+
+---
+
+## Milestone M2 – Torwächter (`auftrags-manager`, P6)
+
+> **Die Volltexte stehen NICHT hier, sondern als eine Datei je Issue in `docs/agents/m2/`.**
+> Das ist das Format, das `tools/create-issues.py` liest – und bewusst die einzige Quelle: Die Texte
+> zusätzlich hierher zu kopieren, hieße zwei Fassungen zu pflegen, die unweigerlich auseinanderlaufen.
+> (Bei M0/M1 lagen die Texte noch im Draft selbst; ab M2 gilt das Dateiformat.)
+>
+> **Stand:** 19 Issues, geschrieben 03.08.2026, von vier unabhängigen Prüfern geprüft (~45 Befunde,
+> 11 kritische), in drei Durchgängen korrigiert und angelegt. Befund und Begründungen:
+> `docs/agents/m2-pruefbefund.md`. Mapping maschinenlesbar: `docs/agents/m2/map.json`.
+>
+> **Aus dem Prüflauf entstanden:** M2-17 (gemeinsamer Schreib-Baustein), M2-18 (Auftrag abschließen)
+> und M2-19 (IPC-Verdrahtung – ohne sie hätte die Oberfläche die Warteschlange nie erreicht).
+>
+> **`braucht-entscheidung` tragen 9 der 19:** #53, #61, #64, #65, #67, #68, #69, #70, #71.
+
+| M2-Nr. | GitHub-Issue | Titel |
+|---|---|---|
+| M2-01 | [#53](https://github.com/NiklasRist/Digital-Signage-Tool/issues/53) | [contracts] Typen ProtokollEintrag und JournalEintrag definieren |
+| M2-02 | [#54](https://github.com/NiklasRist/Digital-Signage-Tool/issues/54) | [auftrags-manager] Q1-Warteschlange im Arbeitsspeicher führen |
+| M2-03 | [#55](https://github.com/NiklasRist/Digital-Signage-Tool/issues/55) | [auftrags-manager] Q2-Wiederholungsspeicher je Projekt führen |
+| M2-04 | [#56](https://github.com/NiklasRist/Digital-Signage-Tool/issues/56) | [auftrags-manager] Q3-Ausführungsprotokoll anhängen |
+| M2-05 | [#57](https://github.com/NiklasRist/Digital-Signage-Tool/issues/57) | [auftrags-manager] Q4-Warteschlangenjournal rotierend führen |
+| M2-06 | [#58](https://github.com/NiklasRist/Digital-Signage-Tool/issues/58) | [auftrags-manager] Zustandsübergänge der Aufträge prüfen |
+| M2-07 | [#59](https://github.com/NiklasRist/Digital-Signage-Tool/issues/59) | [auftrags-manager] Nächsten Auftrag seriell freigeben |
+| M2-08 | [#60](https://github.com/NiklasRist/Digital-Signage-Tool/issues/60) | [auftrags-manager] Fachdienst-Handler registrieren und ausführen |
+| M2-09 | [#61](https://github.com/NiklasRist/Digital-Signage-Tool/issues/61) | [auftrags-manager] reiheEin implementieren |
+| M2-10 | [#62](https://github.com/NiklasRist/Digital-Signage-Tool/issues/62) | [auftrags-manager] entferne implementieren |
+| M2-11 | [#63](https://github.com/NiklasRist/Digital-Signage-Tool/issues/63) | [auftrags-manager] wiederhole implementieren |
+| M2-12 | [#64](https://github.com/NiklasRist/Digital-Signage-Tool/issues/64) | [auftrags-manager] holeStand implementieren |
+| M2-13 | [#65](https://github.com/NiklasRist/Digital-Signage-Tool/issues/65) | [auftrags-manager] Ereignis queue:geaendert senden |
+| M2-14 | [#66](https://github.com/NiklasRist/Digital-Signage-Tool/issues/66) | [auftrags-manager] pendingDeletions in Q2 führen |
+| M2-15 | [#67](https://github.com/NiklasRist/Digital-Signage-Tool/issues/67) | [auftrags-manager] Beim Öffnen eines Projekts Q2 laden |
+| M2-16 | [#68](https://github.com/NiklasRist/Digital-Signage-Tool/issues/68) | [auftrags-manager] Render-Handler verzahnen |
+| M2-17 | [#69](https://github.com/NiklasRist/Digital-Signage-Tool/issues/69) | [auftrags-manager] Queue-Dateien atomar und serialisiert lesen und schreiben |
+| M2-18 | [#70](https://github.com/NiklasRist/Digital-Signage-Tool/issues/70) | [auftrags-manager] Auftrag abschließen und die Schlange weiterdrehen |
+| M2-19 | [#71](https://github.com/NiklasRist/Digital-Signage-Tool/issues/71) | [auftrags-manager] Die vier Queue-Kanäle und das Ereignis verdrahten |
