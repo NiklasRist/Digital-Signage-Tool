@@ -65,7 +65,12 @@ BLOCKIEREND = {
     32,  # rundet der Store oder erst der Render-Pfad?
     35,  # Wiederhol-Strategie, Verhalten bei Flush-Fehler beim Beenden
     39,  # reicht requestSingleInstanceLock fuer zwei Kopien derselben portablen EXE?
+    # --- Nachzuegler vom 03.08. (M1-41..M1-46, Nummern ab #72) ---
+    42,  # zaehlt Aktion.bildRef als Referenz? -> entscheidet, ob ein Loeschen blockiert
 }
+# Nachzuegler: D1-Mutationen (41-43) bzw. Nutzlast-Validierung an der Grenze (45/46).
+RISIKO_DATEN  |= {41, 42, 43}
+RISIKO_SICHER |= {45, 46}
 
 # --- M2 (Torwächter, auftrags-manager) --------------------------------------
 # Datenverlust: die Speicher, in denen echte Nutzdaten liegen (Wiederhol-Fähigkeit,
@@ -91,6 +96,18 @@ M2_BLOCKIEREND = {
     19,  # Aufrufzeitpunkt der Verdrahtung, Versand bei mehreren Fenstern
 }
 
+def hat_fehlertabelle(body, codes):
+    """True, wenn der Abschnitt "Fehlerpfade" eine TABELLENZEILE mit echtem Code hat.
+
+    Bewusst nur Zeilen, die mit "|" beginnen: Ein reines Typ-Issue traegt dort
+    "entfaellt", nennt Fehlercodes aber im erklaerenden Fliesstext darunter - das
+    hat im ersten M3-Trockenlauf faelschlich das Label ausgeloest (M3-01).
+    """
+    abschnitt = body.split("## Fehlerpfade")[-1].split("## Nicht selbst entscheiden")[0]
+    treffer = [z for z in abschnitt.splitlines() if z.lstrip().startswith("|")]
+    return any(re.search(r"`(" + codes + r")`", z) for z in treffer)
+
+
 def labels_m2(nr, titel, body):
     L = []
     if "[contracts]" in titel:
@@ -102,17 +119,65 @@ def labels_m2(nr, titel, body):
     # Nur wenn der Abschnitt "Fehlerpfade" wirklich eine Tabelle MIT Codes traegt.
     # Ueber den ganzen Body gesucht traefe das auch reine Typ-Issues, die einen
     # Fehlercode nur im Fliesstext erwaehnen (M2-01 im ersten Trockenlauf).
-    abschnitt = body.split("## Fehlerpfade")[-1].split("## Nicht selbst entscheiden")[0]
-    if any(z.lstrip().startswith("|") for z in abschnitt.split("\n")) and \
-       re.search(r"`(ungueltige_eingabe|nicht_gefunden|speicher_fehler|unbekannter_fehler)`", abschnitt):
+    if hat_fehlertabelle(body, r"ungueltige_eingabe|nicht_gefunden|speicher_fehler|unbekannter_fehler"):
         L.append("art:fehlerbehandlung")
     if nr in M2_BLOCKIEREND: L.append("braucht-entscheidung")
+    return L
+
+# --- M3 (Medien, media-service) ---------------------------------------------
+# Datenverlust: alles, was Mediendateien kopiert, umbenennt, loescht oder den
+# D1-Zustand eines Assets aendert. M3-13 (offene Loeschungen nachholen) steht
+# NICHT drin - es ruft nur M3-09 und aendert selbst nichts.
+M3_RISIKO_DATEN = {7, 8, 9, 10, 11, 12}
+# Sicherheit: Nutzlast-Validierung an der Prozessgrenze (TK 9.1.1 Punkt 6).
+M3_RISIKO_SICHER = {16}
+# Verpackung: ffprobe-Binary im gepackten Zustand (asar-Falle, s. #6).
+M3_RISIKO_VERPACKUNG = {5}
+# Haertung: Wiederholversuche gegen gesperrte Dateien auf Windows.
+M3_HAERTUNG = {9}
+# Reine Typ-/Konstantendateien ohne Logik.
+M3_TYPEN = {1, 2}
+
+# `braucht-entscheidung` fuer M3, nach Prueflauf und Korrektur (03.08.): 6 von 17.
+# Zwei davon sind EXPERIMENTE, keine Entscheidungen - sie lassen sich erst am
+# laufenden Grundgeruest beantworten (s. uebergabe-stand.md Abschnitt 4b).
+M3_BLOCKIEREND = {
+     5,  # Laenge der ffprobe-Zeitgrenze: zu kurz weist gute Dateien ab, zu lang blockiert die Queue
+     6,  # EXPERIMENT: liefert unser geb. ffprobe die Drehung als tags.rotate oder als side_data_list?
+     7,  # meldet das Kopieren Fortschritt? -> zusaetzlicher Parameter = Schnittstellenaenderung
+     8,  # dieselbe Fortschrittsfrage auf der Ablaufebene
+     9,  # EXPERIMENT: Anzahl/Abstand der Wiederholversuche bei EBUSY/EPERM auf Windows
+    17,  # was gilt, wenn Schritt 2 oder 3 scheitert, Schritt 1 aber gelang
+}
+
+def labels_m3(nr, titel, body):
+    L = []
+    if "[contracts]" in titel:
+        L += ["modul:contracts", "ebene:geteilt", "art:typen"]
+    elif "[ipc-gateway]" in titel:
+        L += ["modul:ipc", "ebene:main", "art:logik"]
+    elif "[media-service]" in titel:
+        L += ["modul:media-service", "ebene:main"]
+        L += ["art:typen"] if nr in M3_TYPEN else ["art:logik"]
+    if nr in M3_RISIKO_DATEN:       L.append("risiko:datenverlust")
+    if nr in M3_RISIKO_SICHER:      L.append("risiko:sicherheit")
+    if nr in M3_RISIKO_VERPACKUNG:  L.append("risiko:verpackung")
+    if nr in M3_HAERTUNG:           L.append("art:haertung")
+    if hat_fehlertabelle(body, r"ungueltige_eingabe|nicht_gefunden|speicher_fehler|unbekannter_fehler"
+                               r"|datei_fehler|kopier_fehler|probe_fehler|asset_referenziert|asset_nicht_gefunden"):
+        L.append("art:fehlerbehandlung")
+    if nr in M3_BLOCKIEREND: L.append("braucht-entscheidung")
     return L
 
 def labels_fuer(nr, titel, body):
     L = []
     if "[contracts]" in titel:
         L += ["modul:contracts", "ebene:geteilt", "art:typen"]
+    elif "[ipc-gateway]" in titel:
+        # Nachzuegler M1-45/M1-46 (03.08.): die Verdrahtung der Kanaele. Die alte
+        # `[ipc]`-Bedingung darunter trifft sie NICHT ("[ipc]" ist kein Teilstring
+        # von "[ipc-gateway]") - ohne diesen Zweig blieben beide ohne Modul-Label.
+        L += ["modul:ipc", "ebene:main", "art:logik"]
     elif "[ipc]" in titel:
         L += ["modul:ipc"]
         L += ["ebene:main"] if nr == 11 else (["ebene:renderer"] if nr == 12 else ["ebene:geteilt", "art:typen"])
@@ -147,10 +212,10 @@ PRAEFIXE = {re.match(r"^([A-Za-z0-9]+)-", f).group(1) for f in dateien}
 if len(PRAEFIXE) != 1:
     print("ABBRUCH: uneinheitliche Praefixe in", B, "->", sorted(PRAEFIXE)); sys.exit(1)
 PRAEFIX = PRAEFIXE.pop()
-PROFIL = {"M1": labels_fuer, "M2": labels_m2}.get(PRAEFIX)
+PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3}.get(PRAEFIX)
 if PROFIL is None:
     print(f"ABBRUCH: kein Label-Profil fuer Praefix '{PRAEFIX}'."
-          f" Bekannt: M1, M2. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
+          f" Bekannt: M1, M2, M3. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
 print(f"Profil: {PRAEFIX}  |  Milestone: {MILE}  |  {len(dateien)} Dateien aus {B}\n")
 
 eintraege = []
