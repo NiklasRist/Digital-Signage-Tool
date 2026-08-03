@@ -6,7 +6,7 @@
 > Projekt beschädigen. Deshalb: jede lokale Entscheidung muss zu den hier festgelegten globalen
 > Invarianten passen. Im Zweifel lieber strikter an den Vertrag halten als „clever" abweichen.
 >
-> **Stand:** 02.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.3** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
+> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.4** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
 
 ---
 
@@ -130,6 +130,11 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   - **Warum Q3/Q4 getrennt:** Q3 = „was wurde produziert" (nutzerlesbar), Q4 = „was passierte in der Schlange"
     (Diagnose). Zusammen in einem Speicher würde die Historie im Bewegungsrauschen untergehen.
   - **Ein Auftrag, der die Schlange nie verlassen hat, erzeugt KEINEN Q3-Eintrag** – nur Q4-Bewegungen.
+  - **`pendingDeletions` sind KEINE Aufträge** (v2.4, 03.08.): Die Auftragsverwaltung **verwahrt** sie nur in Q2
+    und bietet dem `media-service` **main-intern** (kein IPC-Kanal) Lesen/Ergänzen/Streichen an; **ausgeführt**
+    wird die offene Löschung vom **Reconcile des `media-service`** beim Projektöffnen (9.4.7). Grund: Ein
+    `loeschen`-Auftrag beginnt mit dem Entfernen des D1-Eintrags – der ist längst weg, ein erneut eingereihter
+    Auftrag scheiterte deterministisch mit `asset_nicht_gefunden`.
 - `Auftrag`: `auftragId`, `art`, `status` (`anstehend`/`laeuft`/`erfolg`/`fehlgeschlagen`/`abgebrochen`),
   `label`, `payload` (Request des Fachdiensts, vollständig aufbewahrt → Wiederholen ohne Neu-Eingabe),
   `fortschritt`, `versuche`, `fehler`, `erstelltAm`.
@@ -189,6 +194,11 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   resolven **über** ihn (kennen das Layout nicht selbst). Der **Renderer** lädt Medien (Vorschau/Thumbnails)
   **nur lesend** über das Main-Protokoll `media://<projektId>/<dateiname>` – nie absolute Pfade, kein
   `..`-Ausbruch, read-only. „Nur der Main berührt das Dateisystem" bleibt gewahrt.
+- **`listeAusgaben(projektId) → Ergebnis<AusgabeDatei[]>` (9.5.2, v2.4, 03.08.):** listet `projects/<id>/output/`
+  (`{dateiname, dateigroesse, geaendertAm}`, absteigend nach `geaendertAm`, nur fertige `.mp4`, fehlender Ordner
+  = leere Liste). **Einzige** Quelle für die Ausgabe-Liste (FA-22) **und** die Dateiauswahl beim Export (9.6.1).
+  **NICHT** aus Q3 speisen – Q3 ist Historie/Nachweis, `listeAusgaben` zeigt den Ist-Bestand. Reiner Lesezugriff,
+  **ohne** D1-Schreib-Lock. Beim `project-store`, weil er die Pfad-Autorität ist.
 
 ## 9b2. Ausgabedateien: mehrere je Projekt (FA-22) – TK 9.2.1/9.2.6, AD 4.7  ⟵ NEU 02.08.
 - Ausgabeordner ist **projektbezogen**: `projects/<id>/output/`. NICHT app-weit – sonst überschreibt ein

@@ -3,15 +3,15 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 2.3 (HLD vollständig, geprüft)
-**Datum:** 02.08.2026
+**Version:** 2.4 (HLD vollständig, geprüft)
+**Datum:** 03.08.2026
 **Status:** In Planung
 
 ---
 
 ## 1. Zweck und Einordnung
 
-Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.0** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
+Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.2** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
 
 ## 2. Architektur-Überblick
 
@@ -560,7 +560,7 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 
 1. **Torwächter (Zulassung):** bestimmt, *welcher* Auftrag jetzt laufen darf — serielle Freigabe, **genau einer** gleichzeitig (der einzige Sperr-Mechanismus des Systems; FA-16 ff., NFA-09).
 2. **Zustandsführung:** verfolgt jeden Auftrag über seinen Lebenszyklus (9.3.3).
-3. **Wiederholung:** hält Fehlschläge vor und reiht sie auf Wunsch (oder – bei `pendingDeletions` – automatisch beim Start) neu ein.
+3. **Wiederholung:** hält Fehlschläge vor und reiht sie **auf Wunsch** wieder ein (`wiederhole`, 9.3.4). **`pendingDeletions` sind ausdrücklich KEINE Aufträge:** Sie werden in Q2 nur **verwahrt**; nachgeholt werden sie vom Reconcile des `media-service` beim Öffnen des Projekts (9.4.7). *Begründung:* Ein `loeschen`-Auftrag beginnt laut 9.4.6 mit dem Entfernen des D1-Eintrags – bei einer offenen Löschung ist der längst weg, ein erneut eingereihter Auftrag scheiterte also deterministisch mit `asset_nicht_gefunden`. Übrig bleibt allein das Entfernen der Datei, und das gehört dem `media-service`.
 4. **Persistenz-Hoheit:** entscheidet, was flüchtig bleibt und was den Neustart überlebt — dafür die vier Speicher unten.
 
 Sie setzt sich als Steuerungs- und Sichtbarkeits-Schicht **vor** die fachlichen Dienste (`media-service`, `render-service`, `export-service`); deren interne Verträge bleiben unberührt. Sie **plant, ordnet und protokolliert** nur — sie ersetzt keine Fachlogik.
@@ -575,6 +575,8 @@ Sie setzt sich als Steuerungs- und Sichtbarkeits-Schicht **vor** die fachlichen 
 | **Q4 Warteschlangen-Journal** | **Bewegungen** der Schlange (eingereiht/gestartet/entfernt/erneut eingereiht) | **dauerhaft, rotierend** (letzte N) | `warteschlangen-journal.json` (app-weit) | rein **diagnostisch** („warum lief das nie?"); getrennt von Q3, damit das Protokoll lesbar bleibt |
 
 Q2 liegt **pro Projekt** (Fehlschläge/pendingDeletions gehören zum Projekt und werden bei dessen Öffnen nachgeholt, vgl. 9.4.7); Q3 und Q4 sind **app-weit**. Die Ausgabe-Historie wandert damit von D3 in Q3.
+
+**Eigentum und Ausführung trennen sich bei `pendingDeletions`:** Die Datei `queue-retry.json` **gehört** der Auftragsverwaltung – sie allein schreibt sie (eigene Serialisierung, 9.5.4) und bietet dem `media-service` **main-intern** (kein IPC-Kanal) an, die offenen Löschungen zu **lesen**, zu **ergänzen** und einzeln zu **streichen**. **Ausgeführt** wird eine offene Löschung dagegen vom Reconcile des `media-service` (9.4.7) – nicht über die Warteschlange und nicht als Auftrag.
 
 **Datensätze von Q3 und Q4:**
 
@@ -864,6 +866,26 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 | `setzeTrim` | `elementId`, `trimStart`, `trimEnde` → `Ergebnis<Listenelement>` (validiert `0 ≤ start < ende ≤ Videodauer`) |
 | `setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s** für Bild/Segment) |
 
+**Ausgabedateien (FA-22):**
+
+| Operation | Eingang → Ausgang |
+|---|---|
+| `listeAusgaben` | `projektId` → `Ergebnis<AusgabeDatei[]>` – Inhalt von `projects/<id>/output/`, absteigend nach `geaendertAm` |
+
+```
+AusgabeDatei {
+  dateiname:    string   // MIT Endung, z. B. "sommeraktion.mp4"
+  dateigroesse: number   // Bytes
+  geaendertAm:  string   // ISO-8601 UTC – zugleich der Renderzeitpunkt (die Datei entsteht atomar, 9.2.6)
+}
+```
+
+- **Wozu:** Sie speist die **Ausgabe-Liste** der Oberfläche (FA-22: „Datum und Uhrzeit stehen in der Ausgabe-Liste der Anwendung, **nicht** im Dateinamen") und die **Auswahl im Export** (`ExportRequest.dateiname`, 9.6.1). Ohne diese Operation gäbe es keine Quelle für beides.
+- **Warum beim `project-store`:** Er ist die **Pfad-Autorität** (9.5.7) und löst `(projektId, ausgabeName)` ohnehin auf. Ein zweiter Ort, der das Ordner-Layout kennt, ist damit ausgeschlossen. Der Renderer bekommt **Dateinamen, nie absolute Pfade**.
+- **`geaendertAm` ist der Renderzeitpunkt, nicht das Protokoll.** Weil die fertige Datei in **einem** Schritt in den Ausgabeordner gebracht wird (Rename-mit-Ersetzen, 9.2.6), ist ihr Änderungsdatum genau der Zeitpunkt des erfolgreichen Renders. **Q3 ist NICHT die Quelle dieser Liste** – Q3 ist Historie und Nachweis (auch der Fehlschläge), die Ausgabe-Liste zeigt den **Ist-Bestand** des Ordners.
+- **Abweichung von der Abschnittsüberschrift:** Diese Operation liest **nur** den Ausgabeordner; sie fasst `project.json` nicht an und läuft deshalb **ohne** das D1-Schreib-Lock.
+- Gelistet werden **ausschließlich fertige `.mp4`-Dateien**; Arbeitsdateien (`.part`, Temporäres) bleiben unsichtbar. Fehlt der Ordner (noch nie gerendert), ist das Ergebnis eine **leere Liste**, **kein** Fehler.
+
 #### 9.5.3 Löschsemantik – bewusste Asymmetrie
 
 - **Medium löschen** (`media-service` 9.4.6): **blockiert** bei Referenz (`asset_referenziert`). Die Datei ist die schwere, geteilte Ressource; versehentlicher Verlust wäre teuer.
@@ -913,7 +935,7 @@ Besitzt `config.json` (app-weit): aktives Projekt, letztes Export-Ziel, UI-Vorei
 
 #### 9.5.7 Pfad-Autorität & `media://`-Protokoll
 
-- **`project-store` ist die eine Pfad-Autorität.** Er löst `(projektId, dateiname) → absoluter Pfad` auf – die **einzige** Quelle der Wahrheit für das Datei-Layout eines Projekts (`projects/<id>/media/<datei>`). Jeder Main-Dienst, der eine Mediendatei anfassen muss, **resolved den Pfad über den `project-store`**, statt das Layout selbst zu kennen: `media-service` (kopieren/löschen), `render-service` (lesen beim Normalisieren), `export-service` (Quelle: die gewählte Datei aus `projects/<id>/output/`). Er löst ebenso `(projektId, ausgabeName) → projects/<id>/output/<name>.mp4` auf. So kann eine Layout-Änderung nirgends auseinanderlaufen.
+- **`project-store` ist die eine Pfad-Autorität.** Er löst `(projektId, dateiname) → absoluter Pfad` auf – die **einzige** Quelle der Wahrheit für das Datei-Layout eines Projekts (`projects/<id>/media/<datei>`). Jeder Main-Dienst, der eine Mediendatei anfassen muss, **resolved den Pfad über den `project-store`**, statt das Layout selbst zu kennen: `media-service` (kopieren/löschen), `render-service` (lesen beim Normalisieren), `export-service` (Quelle: die gewählte Datei aus `projects/<id>/output/`). Er löst ebenso `(projektId, ausgabeName) → projects/<id>/output/<name>.mp4` auf und **listet diesen Ordner** (`listeAusgaben`, 9.5.2). So kann eine Layout-Änderung nirgends auseinanderlaufen.
 - **`media://`-Protokoll (Renderer-Lesezugriff).** Für die Vorschau (P5) und Thumbnails (`composer`, `action-editor`) muss der **Renderer** Medien anzeigen. Dafür registriert der Main ein eigenes Protokoll **`media://<projektId>/<dateiname>`**, dessen Handler die Auflösung des `project-store` nutzt und die Datei **nur lesend** ausliefert. Der Renderer verwendet diese URLs direkt in `<video>`/`<img>`.
 - **Sicherheits-Invarianten:** Der Renderer sieht **nur relative** Referenzen (`dateiname`), **nie** absolute Pfade. Der Resolver stellt sicher, dass das Ziel **innerhalb** des `media/`-Ordners des Projekts bleibt (kein `..`-Ausbruch, keine Symlink-Flucht); Zugriff strikt **read-only**. Die Regel „**nur der Main berührt das Dateisystem**" bleibt gewahrt: der Main löst auf und liefert die Bytes; der Renderer erhält eine URL, keinen direkten Dateizugriff.
 
@@ -941,6 +963,8 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 | `zielPfad` | gewählter Zielordner (z. B. USB-Wurzel) |
 
 **Auftrags**-Ergebnis bei Erfolg: `{ zielPfad, dateigroesse }` – über den **Auftrags-Zustand**, **nicht** als Aufrufantwort (9.1.1); der Aufruf ist `reiheEin('export', …)` → `Ergebnis<{ auftragId }>`. Fehlercodes: 9.6.4.
+
+**Woher `dateiname` kommt:** Die Auswahl speist sich aus `listeAusgaben` (9.5.2); der Renderer liest den Ausgabeordner **nie** selbst und kennt **keine** absoluten Pfade.
 
 #### 9.6.2 Ablauf (atomar, vorab geprüft)
 
@@ -1543,5 +1567,7 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v2.4 (03.08.2026), beim Zuschnitt der M2-Issues gefunden:** (1) **`pendingDeletions` sind keine Aufträge** – 9.3 hat sie zum automatischen Neu-Einreihen beim Start erklärt, was 9.4.6/9.4.7 widerspricht und deterministisch mit `asset_nicht_gefunden` gescheitert wäre; die Auftragsverwaltung **verwahrt** sie jetzt nur, ausgeführt werden sie vom Reconcile des `media-service` (9.3, 9.4.7). (2) **`listeAusgaben` (9.5.2) ergänzt** – die Ausgabe-Liste (FA-22) und die Dateiauswahl beim Export (9.6.1) hatten **keine** Datenquelle; das Auflisten des Ausgabeordners gehört zur Pfad-Autorität (9.5.7).
 >
 > **Nächster Schritt – nur nach ausdrücklicher Freigabe:** Überführung in agent-taugliche Tasks. Bis dahin gilt weiter die Planungsphase (kein Code).
