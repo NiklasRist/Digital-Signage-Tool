@@ -1,0 +1,64 @@
+# ── Abhängigkeiten ────────────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Build-Ausgaben ────────────────────────────────────────────────────────────
+# dist/renderer und dist/main entstehen aus dem Vite- bzw. Main-Build (Issue #2)
+dist/
+out/
+build/
+# electron-builder legt die portable EXE und das macOS-Bundle hier ab (Issue #7).
+# Beide sind gross und reproduzierbar -> gehoeren nicht in die Historie.
+release/
+dist_electron/
+
+# ── Tests & Werkzeuge ─────────────────────────────────────────────────────────
+coverage/
+.vitest/
+*.tsbuildinfo
+
+# ── Word-Sperrdateien ─────────────────────────────────────────────────────────
+# Word legt beim Oeffnen einer .docx eine versteckte ~$-Datei daneben. Die darf
+# nie eingecheckt werden, und ihre Anwesenheit ist unser Signal, dass die .docx
+# gerade gesperrt ist (siehe Doku-Workflow in CLAUDE.md).
+~$*.docx
+~$*.doc
+
+# ── Zwischenstaende des Doku-Generators ───────────────────────────────────────
+# Die .docx werden atomar ueber eine .neu-Datei platziert; bricht das ab, bleibt
+# eine Leiche liegen.
+*.docx.neu
+*.docx.part
+
+# ── Betriebssystem-Artefakte ──────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+._*
+
+# ── Editor ────────────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+
+# ── Geheimnisse ───────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+
+# ── Laufzeitdaten der App ─────────────────────────────────────────────────────
+# VORLAEUFIG: Wo die App ihre Daten ablegt, ist noch nicht entschieden (Issue #5 -
+# neben der portablen EXE oder in userData). Faellt die Entscheidung auf "neben der
+# EXE", wuerde ein Dev-Start diese Ordner im Repo anlegen. Nach der Entscheidung
+# pruefen, ob diese Zeilen noch stimmen.
+/projects/
+/config.json
+/vorlagen.json
+/vorlagen.json.bak
+/protokoll.json
+/warteschlangen-journal.json
