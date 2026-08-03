@@ -2,9 +2,9 @@
 
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
-**Bearbeitung:** [Name], Berufspraktikum
-**Datum:** 30.06.2026
-**Version:** 0.3 (Entwurf)
+**Bearbeitung:** Niklas Rist, Berufspraktikum
+**Datum:** 02.08.2026
+**Version:** 1.2 (Entwurf)
 **Status:** In Abstimmung
 
 ---
@@ -57,11 +57,11 @@ Die Wiedergabe erfolgt auf einem vorhandenen Consumer-Fernseher. Es steht **kein
 
 Das System ist bewusst zweigeteilt, um die Einschränkungen des Consumer-Fernsehers zu umgehen:
 
-1. **Management- und Render-Tool (auf dem Laptop):** Verwaltung von Videos und Produkten/Aktionen, Festlegung der Reihenfolge, Rendering zu einer einzigen MP4-Datei, Ablage auf USB.
+1. **Management- und Render-Tool (auf dem Laptop):** Verwaltung von Videos und Produkten/Aktionen, Festlegung der Reihenfolge, Rendering zu **einer durchgehenden MP4-Datei je Lauf**, Ablage auf USB. Ein Projekt kann **mehrere solche Ausgabedateien** unter frei gewählten Namen vorhalten (FA-22, Abschnitt 4.7).
 2. **Wiedergabe (am Fernseher):** Der Fernseher gibt die fertige MP4 vom USB-Speicher im Demo-/Store-Modus als Endlosschleife aus.
 
 ```
-[Laptop: Management- & Render-Tool]  --rendert-->  [eine MP4]  --kopiert-->  [USB-Stick]  --steckt in-->  [TV: Demo-Modus, Endlosschleife]
+[Laptop: Management- & Render-Tool]  --rendert-->  [benannte MP4]  --kopiert-->  [USB-Stick]  --steckt in-->  [TV: Datei wählen, Endlosschleife]
 ```
 
 **Begründung der Entkopplung:** Eine eigene App direkt auf dem Fernseher ist für den Dauerbetrieb ungeeignet, da Consumer-Geräte sideloadete Apps nicht automatisch beim Booten starten, sich nach Abstürzen nicht selbst wiederherstellen und durch Firmware-Updates oder ablaufende Zertifikate ausfallen können. Die gewählte Lösung verlagert die gesamte Software auf den Laptop und nutzt am Fernseher nur die robuste, eingebaute USB-Wiedergabe.
@@ -79,13 +79,23 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-03 | Inhalte bearbeiten/löschen | Vorhandene Videos und Produkte/Aktionen können bearbeitet und entfernt werden. | Muss |
 | FA-04 | Aktions-Segment erzeugen | Aus einem Produkt/einer Aktion (Text + optional Bild) wird ein anzeigbares Video-/Bildsegment mit definierter Anzeigedauer erzeugt. | Muss |
 | FA-05 | Reihenfolge festlegen | Alle Elemente (Videos + Aktions-Segmente) können zu einer Wiedergabeliste zusammengestellt und in der Reihenfolge angeordnet werden (z. B. per Drag-and-drop). | Muss |
-| FA-06 | Anzeigedauer steuern | Je Element (insb. Aktions-Segmente) ist eine individuelle Anzeigedauer einstellbar. | Soll |
+| FA-06 | Anzeigedauer steuern | Je Element (Bilder, Aktions-Segmente) ist eine individuelle Anzeigedauer einstellbar; die Bedienung erfolgt über einen **einheitlichen Dauer-/Trim-Regler** – Kürzen *und* Verlängern per Griff, s. 4.4. | Soll |
 | FA-07 | Vorschau | Die zusammengestellte Sequenz kann vor dem Rendern in der Anwendung vorab betrachtet werden. | Soll |
-| FA-08 | Ausgabe-Rendering | Aus der Wiedergabeliste wird **eine einzige MP4-Datei** in definierter Auflösung und Codierung erzeugt (Verkettung aller Segmente). | Muss |
-| FA-09 | Export auf USB | Die fertige MP4 kann in einen Zielordner bzw. direkt auf den USB-Speicher exportiert werden. | Muss |
-| FA-10 | Projekt speichern/laden | Eine Zusammenstellung kann gespeichert und später wieder geladen werden, um Inhalte effizient zu aktualisieren statt neu anzulegen. | Soll |
+| FA-08 | Ausgabe-Rendering | Aus der Wiedergabeliste wird **je Lauf eine einzige, durchgehende MP4-Datei** in definierter Auflösung und Codierung erzeugt (Verkettung aller Segmente). Dass es **eine** Datei ist, ist wesentlich: nur so läuft die Schleife am Fernseher ohne sichtbaren Übergang (Risiko R-04). | Muss |
+| FA-09 | Export auf USB | Eine gewählte Ausgabedatei kann in einen Zielordner bzw. direkt auf den USB-Speicher exportiert werden – **unter ihrem eigenen Namen**. Auf dem Speicher dürfen mehrere Ausgabedateien nebeneinander liegen. | Muss |
+| FA-10 | Projektverwaltung | Projekte werden in einer Übersicht geführt (Name, Erstell-/Änderungsdatum, Speicherort) und können angelegt, geöffnet, dupliziert und gelöscht werden – um Inhalte effizient zu aktualisieren statt neu anzulegen. Das Sichern selbst erfolgt automatisch (FA-15). | Soll |
 | FA-11 | Einheitliches Grundlayout | Aktions-Segmente verwenden ein einheitliches Grundlayout im Corporate Design von Fitnessworld24 (Logo, Farbwelt, Typografie), abgeleitet aus dem Markenauftritt der Website fitnessworld24.li. | Soll |
 | FA-12 | Gestalterischer Spielraum | Innerhalb des Grundlayouts sind definierte Bereiche frei gestaltbar (z. B. Überschrift, Motiv-/Produktbild, Preis bzw. Call-to-Action, Akzentfarbe), damit jede Werbung individuell und wirkungsvoll gestaltet werden kann. | Soll |
+| FA-13 | Vorlagen erstellen & bearbeiten | Über die eingebauten Vorlagen hinaus können **eigene Vorlagen angelegt und bearbeitet** werden – **bereits im Prototyp**. Dabei wird die **Art** der Vorlage gewählt: vollflächiges Segment, **Split-Screen-Band** oder **Einblendung** (s. 4.5). Eine eigene Vorlage arrangiert nur die **freien Zonen** (Position/Größe/Feldzuordnung) innerhalb des **festen Markenrahmens** (Logo, Sicherheitsabstände), der nicht abschaltbar ist. Datengetrieben – eine eigene Vorlage ist nur ein neuer Datensatz, kein Code-Umbau. | Muss |
+| FA-14 | Video trimmen | Ein Video-Element kann am Anfang und Ende beschnitten werden (Trim-Start/-Ende); nur der gewählte Ausschnitt wird wiedergegeben und gerendert. **Nicht-destruktiv** – die Originaldatei bleibt unverändert; der Trim liegt am Listenelement. Bedienung über denselben Dauer-/Trim-Regler wie FA-06 (s. 4.4). | Soll |
+| FA-15 | Automatisches Speichern & Sitzung | Änderungen (Liste, Reihenfolge, Trim, Aktionen) werden **fortlaufend automatisch** gesichert – **kein manuelles Speichern, kein Datenverlust** (Rückgrat von NFA-02). Beim Start öffnet die App automatisch das **zuletzt aktive Projekt** und stellt letztes Export-Ziel und UI-Voreinstellungen wieder her. | Soll |
+| FA-16 | Prozessübersicht (Auftrags-Queue) | Länger laufende oder dateiverändernde Vorgänge (Medien-Import, Löschen von Medien, finaler Render, USB-Export) werden als Aufträge in einer sichtbaren Warteschlange geführt; erkennbar ist jederzeit, welcher Auftrag läuft, welche anstehen und welche fehlgeschlagen sind. | Muss |
+| FA-17 | Fehlgeschlagene Vorgänge wiederholen | Ein fehlgeschlagener Auftrag bleibt mit Fehlergrund sichtbar und kann erneut ausgeführt werden; er wird dabei ans Ende der Warteschlange gestellt. | Muss |
+| FA-18 | Vorgänge abbrechen/entfernen | Ein noch nicht gestarteter Auftrag kann aus der Warteschlange entfernt, ein laufender Render abgebrochen werden. | Soll |
+| FA-19 | Geführte Reparatur kaputter Elemente | Verweisen Elemente auf ein **fehlendes Medium** (z. B. extern gelöschte Datei), führt die Anwendung den Nutzer **vor dem Rendern** aktiv durch die Reparatur: kaputte Elemente werden **nacheinander** hervorgehoben („X von N behoben") und können **neu verknüpft/importiert, ersetzt oder entfernt** werden; der Render wird **erst freigegeben, wenn alle behoben** sind. Betrifft auch **Aktions-Bilder** – fehlt das Bild einer Aktion, wird die Aktion repariert, was in einem Schritt **alle** Listenelemente behebt, die diese Aktion verwenden. | Soll |
+| FA-20 | Parallele Anzeige (Split-Screen / Einblendung) — **Hauptbetriebsart** | Werbeinhalte laufen **parallel während eines Videos**: entweder als **Split-Screen** (Video oben verkleinert, Werbeband darunter, nichts verdeckt) oder als **Einblendung** (Video vollflächig, Band überlagernd). Während eines Videos können **mehrere Aktionen nacheinander** im Band rotieren. Die sequenzielle Werbepause (FA-04) bleibt zusätzlich möglich. Details: 4.5. | Muss |
+| FA-21 | Rückgängig / Wiederherstellen | **Beide** Editoren – Projekt-Bearbeitung und Vorlagen-Editor – bieten **Undo/Redo** für Bearbeitungsschritte (Liste, Reihenfolge, Trim, Dauer, Aktionen, Zonen). **Nicht** rückgängig machbar sind abgeschlossene Vorgänge mit Dateiwirkung (Import, Löschen von Medien, Render, Export) – ein gelöschtes Medium muss neu importiert werden. | Muss |
+| FA-22 | Mehrere benannte Ausgabedateien | Ein Projekt kann **mehrere** gerenderte MP4-Dateien vorhalten. Beim Speichern eines Renders vergibt der Nutzer den Dateinamen; vorbelegt ist der **zuletzt verwendete** Name, sodass wiederholtes Rendern die vorige Fassung standardmäßig **ersetzt** und der Ordner nicht zuläuft. Ein abweichender Name legt eine zusätzliche Datei an. Datum und Uhrzeit stehen in der Ausgabe-Liste der Anwendung, **nicht** im Dateinamen. | Muss |
 
 ### 4.1 Gestaltung der Aktions-Segmente (Corporate Design)
 
@@ -141,6 +151,79 @@ Aus dem Markenauftritt (Export der Website-Tokens) ergibt sich folgende Gestaltu
 
 **Logo & Primärfarbe (geklärt):** Die verbindliche Primärfarbe ist `#FF4040`. Das offizielle Logo liegt vor (Quelle: Markenauftritt / Website).
 
+### 4.3 Prozessverwaltung (Auftrags-Queue)
+
+Länger laufende oder dateiverändernde Vorgänge — **Medien-Import, Löschen von Medien, finaler Render und USB-Export** — laufen nicht unsichtbar im Hintergrund, sondern werden als **Aufträge** in einer für den Nutzer sichtbaren Warteschlange geführt (FA-16). Damit bleibt der Systemzustand jederzeit nachvollziehbar, und Fehler gehen nicht verloren.
+
+- **Sichtbarkeit (FA-16):** Zu jedem Zeitpunkt ist erkennbar, welcher Auftrag gerade läuft, welche anstehen und welche fehlgeschlagen sind (jeweils mit Klartext-Bezeichnung, bei Fehlern mit Fehlergrund).
+- **Serielle Ausführung (NFA-09):** Es läuft stets nur **ein** Auftrag gleichzeitig; die übrigen warten in Reihenfolge. Das macht den Ablauf vorhersehbar und verhindert Konflikte — z. B. wartet das Löschen eines Mediums, das gerade in einen laufenden Render einfließt, automatisch, bis der Render fertig ist.
+- **Wiederholen (FA-17):** Ein fehlgeschlagener Auftrag (z. B. Import einer beschädigten Datei, Export auf einen vollen USB-Stick) kann per Klick erneut ausgeführt werden; er wird dabei ans Ende der Warteschlange gestellt.
+- **Abbrechen/Entfernen (FA-18):** Ein noch nicht gestarteter Auftrag kann aus der Warteschlange entfernt, ein laufender Render abgebrochen werden.
+- **Lebensdauer:** Die *aktive* Warteschlange (laufende/anstehende Vorgänge) ist ein reines Laufzeit-Hilfsmittel und nach einem Neustart der Anwendung leer. **Fehlgeschlagene Vorgänge bleiben jedoch erhalten** – auch über einen Neustart hinweg –, damit sie nicht verloren gehen und später erneut ausgeführt werden können (FA-17).
+
+Die interaktive Vorschau (FA-07) ist **kein** Auftrag und läuft unabhängig von der Warteschlange.
+
+### 4.4 Dauer und Trim – einheitliche Bedienung
+
+Dauer (FA-06) und Trim (FA-14) werden für **alle** Elementtypen über **denselben** Bedien-Baustein gesteuert – einen Balken mit Griffen, an denen der Nutzer die effektive Dauer zieht. Kürzen *und* Verlängern fühlen sich überall gleich an („wie Trimmen"); nur die Grenzen unterscheiden sich je nach Elementtyp:
+
+- **Video (FA-14):** zwei Griffe (Anfang/Ende) innerhalb der **Quelllänge** des Videos. Kürzen schneidet Anfang/Ende weg; Verlängern ist **nur bis zur Quelllänge** möglich (mehr Material existiert nicht). Der Schnitt ist **nicht-destruktiv** – die Originaldatei bleibt unverändert.
+- **Bild / Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s** einstellbar (Standard 10 s). Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte Maximaldauer; Kürzen und Verlängern laufen über denselben Regler.
+
+Der Regler zeigt die aktuelle effektive Dauer numerisch an. So bleibt die Bedienung über Video, Bild und Aktions-Segment hinweg konsistent, obwohl technisch ein Trim (Ausschnitt) und eine reine Anzeigedauer dahinterstehen.
+
+
+---
+
+### 4.5 Betriebsarten für Werbeinhalte (FA-20) — Split-Screen ist die Hauptbetriebsart
+
+Werbeinhalte erscheinen auf **drei** Wegen. **Hauptbetriebsart ist die parallele Anzeige während eines Videos**; die sequenzielle Werbepause ist die zusätzliche Möglichkeit:
+
+1. **Split-Screen (Hauptbetriebsart):** Während ein **Video läuft**, erscheint **darunter** ein durchgehendes **Werbeband**. Das Video wird dafür verkleinert, aber **nichts wird verdeckt**. Im Band können **mehrere Aktionen nacheinander rotieren**, solange das Video läuft.
+2. **Einblendung (parallel, überlagernd):** Das Video bleibt **vollflächig**; das Werbeband liegt **darüber** und verdeckt den unteren Bildbereich. Vorteil: das Video behält seine volle Größe, ohne Seitenbalken.
+3. **Sequenziell (Werbepause):** Eine Aktion wird als **eigenes, vollflächiges Segment** zwischen den Videos gezeigt (FA-04).
+
+Welche Art eine Vorlage bedient, wird **bei der Vorlagenerstellung gewählt** (FA-13).
+
+**Geometrie beim Split-Screen:** Der Bildrahmen bleibt 1920 × 1080. Die **Bandhöhe legt die Vorlage fest** (eingebaute Vorlage: **162 px**, 15 %); das Video nutzt die restliche Höhe (bei 162 px also **918 px**). Weil **kein Beschnitt** erlaubt ist, wird ein 16:9-Video höhenbegrenzt eingepasst (bei 918 px → **1632 × 918**); die verbleibenden Flächen links und rechts (je 144 px) werden in der **dunklen Markenfarbe** gefüllt, damit der Split gestaltet wirkt und nicht wie ungenutzter Platz.
+
+**Bewusste Konsequenz beim Split-Screen:** Das Video erscheint kleiner (bei 162 px Band ca. 72 % der Fläche) — reine Geometrie bei festem 16:9-Rahmen, kein Fehler. Wer das Video in **voller** Größe behalten will, nutzt die **Einblendung** (Art 2), die dafür den unteren Bildbereich verdeckt.
+
+**Platz im Band:** In ein 162 px hohes Band passt eine **kompakte Zeile** (Logo, Titel, Preis/CTA); eine längere Beschreibung ist dort nicht vorgesehen. Höhere Bänder sind über eigene Vorlagen möglich — sie verkleinern beim Split-Screen entsprechend das Video.
+
+### 4.6 Vorlagen bearbeiten: Arbeitskopie und explizites Speichern (FA-13)
+
+Vorlagen werden typischerweise **anhand eines konkreten Projekts** gestaltet – man sieht am echten Inhalt, ob das Layout trägt. Damit dabei nicht versehentlich laufende Werbung verändert wird, gilt ein **Zwei-Stufen-Ablauf**:
+
+1. **Bearbeiten:** Wer eine Vorlage öffnet, arbeitet auf einer **Arbeitskopie**. Diese wird **automatisch gesichert** (nichts geht verloren), die genutzte Vorlage bleibt aber **unberührt**. Experimentieren ist damit gefahrlos.
+2. **Abschließen:** Am Ende wird **explizit gespeichert**, mit der Wahl zwischen
+   - **„Vorlage überarbeiten"** – die Änderungen wandern in die bestehende Vorlage. Vorher wird angezeigt, **wie viele Aktionen in wie vielen Projekten** davon betroffen sind, denn alle ändern ihr Aussehen.
+   - **„Als neue eigenständige Vorlage"** – es entsteht eine zusätzliche Vorlage; die ursprüngliche bleibt unverändert.
+   - **„Verwerfen"** – der Bearbeitungsstand wird fallengelassen.
+
+**Eingebaute Vorlagen** lassen sich nicht überarbeiten; bei ihnen steht nur „als neue eigenständige Vorlage" zur Verfügung (sie bleiben als verlässliche Ausgangsbasis erhalten). **Halbfertige Arbeitskopien** stehen nicht zur Auswahl für Aktionen – sie können also nicht versehentlich in ein Video geraten.
+
+---
+
+### 4.7 Ausgabedateien: Benennung, Ersetzen, Export (FA-22)
+
+Ein Projekt hält seine gerenderten Videos in einem **eigenen Ausgabeordner** (`projects/<projekt-id>/output/`).
+Dass der Ordner **zum Projekt** gehört, ist wesentlich: Läge er anwendungsweit, würde ein Render in
+Projekt B die noch nicht exportierte Datei von Projekt A überschreiben.
+
+- **Benennung:** Der Nutzer vergibt beim Speichern des Renders den Dateinamen (z. B.
+  `sommeraktion.mp4`). **Kein Zeitstempel im Namen** – Datum und Uhrzeit der Erzeugung zeigt die
+  Anwendung in ihrer Ausgabe-Liste an. So bleibt der Name stabil, und eine neue Fassung ersetzt die
+  alte auch auf dem USB-Speicher, statt sich daneben anzusammeln.
+- **Ersetzen als Standard:** Vorbelegt ist der **zuletzt verwendete** Name. Wer nur eine Kleinigkeit
+  korrigiert und neu rendert, überschreibt damit die vorige Fassung – nach zehn Probeläufen liegt
+  **eine** Datei im Ordner, nicht zehn. Wer eine Fassung behalten will, vergibt einen neuen Namen.
+- **Schutz der vorigen Fassung:** Ein Render, der abbricht oder fehlschlägt, darf die vorhandene
+  Datei **nicht** beschädigen. Geschrieben wird zuerst vollständig unter einem Arbeitsnamen; erst die
+  fertige Datei ersetzt die alte (technisch verbindlich im Technischen Konzept 9.2.6).
+- **Export:** Der Nutzer wählt, **welche** Ausgabedatei auf den USB-Speicher geht; sie behält dort
+  ihren Namen. Mehrere Dateien dürfen nebeneinander liegen.
+
 ---
 
 ## 5. Nicht-funktionale Anforderungen
@@ -149,12 +232,13 @@ Aus dem Markenauftritt (Export der Website-Tokens) ergibt sich folgende Gestaltu
 |---|---|---|---|
 | NFA-01 | Bedienbarkeit | Übersichtliche, intuitive Oberfläche, ohne technische Vorkenntnisse durch Studio-Personal bedienbar. | Muss |
 | NFA-02 | Stabilität | Die Anwendung arbeitet zuverlässig; ein Renderlauf läuft reproduzierbar und ohne Datenverlust durch. | Muss |
-| NFA-03 | Ausgabe-Kompatibilität | Das erzeugte Video ist mit dem Media Player des Samsung-Fernsehers kompatibel (Container/Codec, z. B. MP4 mit H.264-Video und AAC-Audio). | Muss |
+| NFA-03 | Ausgabe-Kompatibilität | Das erzeugte Video ist mit dem Media Player des Samsung-Fernsehers kompatibel (Container/Codec: MP4, H.264 High/Level 4.0, `yuv420p`, BT.709, mit **stiller** AAC-Tonspur – verbindlich in 9.2.4). | Muss |
 | NFA-04 | USB-Kompatibilität | Die Ausgabe funktioniert von einem gängig formatierten USB-Speicher (z. B. exFAT/FAT32). | Muss |
 | NFA-05 | Performance | Das Rendern einer üblichen Sequenz erfolgt in vertretbarer Zeit auf dem Arbeitsplatzrechner. | Soll |
 | NFA-06 | Offline-Fähigkeit | Die Anwendung funktioniert vollständig lokal, ohne Internet- oder Serververbindung. | Muss |
 | NFA-07 | Wartbarkeit | Klar strukturierter, dokumentierter Aufbau, damit das Tool später erweitert werden kann. | Soll |
 | NFA-08 | Portabilität | Die Anwendung lässt sich auf einem Standard-Arbeitsplatzrechner einrichten und betreiben. | Soll |
+| NFA-09 | Serielle Verarbeitung | Länger laufende Vorgänge (Import, Löschen, Render, Export) werden nacheinander ausgeführt; es läuft maximal ein Auftrag gleichzeitig. Das garantiert einen vorhersehbaren, konfliktfreien Ablauf. | Muss |
 
 ---
 
@@ -165,7 +249,7 @@ Die konkrete Technologiewahl ist nicht festgeschrieben; vorgeschlagen wird:
 - **Render-Engine:** `ffmpeg` für das Verketten der Clips, das Erzeugen der Aktions-Segmente (Bild/Text → Videosegment) und das Encoding der finalen MP4.
 - **Benutzeroberfläche:** Web- oder Desktop-Oberfläche (z. B. Browser-App oder Electron) mit Liste, Drag-and-drop-Reihenfolge und Vorschau.
 - **Datenhaltung:** lokale Speicherung der Projektdaten (z. B. JSON oder SQLite) sowie der importierten Medien im Dateisystem.
-- **Zielformat der Ausgabe:** MP4 (H.264 / AAC), 3840 × 2160 oder 1920 × 1080.
+- **Zielformat der Ausgabe:** MP4, **H.264 High / Level 4.0**, **1920 × 1080, 30 fps**, `yuv420p`, **BT.709**, gedeckeltes VBR (10–12 Mbit/s), **stille AAC-Tonspur**, `+faststart`. Verbindlich als `RenderProfile` im Technischen Konzept 9.2.4. Die zunächst offene 4K-Option ist zugunsten von 1080p entschieden.
 
 ---
 
@@ -173,10 +257,12 @@ Die konkrete Technologiewahl ist nicht festgeschrieben; vorgeschlagen wird:
 
 Die Wiedergabe der fertigen MP4 erfolgt über den eingebauten Media Player. Folgende Punkte sind für einen stabilen Dauerbetrieb relevant:
 
-- **Wiederholung:** Quelle USB wählen und „Wiederholen / Repeat All" aktivieren, damit das Video als Endlosschleife läuft.
+- **Wiederholung:** Quelle USB wählen, die gewünschte Datei starten und **„Wiederholen: eine Datei" („Repeat One")** aktivieren, damit **genau dieses** Video als Endlosschleife läuft.
+- **Warum nicht „Repeat All":** Liegen mehrere Ausgabedateien auf dem Speicher (FA-22), würde „Repeat All" den Ordner durchlaufen und bei **jedem** Dateiwechsel kurz die Bedienleiste zeigen (Risiko R-04). Genau das soll die eine durchgehende Datei je Schleife vermeiden.
 - **Demo-/Store-Modus:** Über den Store-Modus (mit deaktiviertem Demo-Overlay/E-POP) kann der Fernseher die USB-Schleife nach dem Einschalten automatisch starten. Dieses Verhalten ist **modell- und firmwareabhängig und am vorhandenen Gerät zu verifizieren** (siehe Risiken).
 - **Energieoptionen:** Automatisches Ausschalten, Energiesparmodus und Bildschirmschoner sind zu deaktivieren, damit der Loop nicht unterbrochen wird.
-- **Aktualisierung der Inhalte:** Inhalte werden aktualisiert, indem die MP4 auf dem USB-Speicher durch eine neue Version ersetzt wird.
+- **Aktualisierung der Inhalte:** Inhalte werden aktualisiert, indem die MP4 auf dem USB-Speicher durch eine neue Version **gleichen Namens** ersetzt wird. Behält die Datei ihren Namen, bleibt die am Fernseher eingestellte Auswahl gültig; ein neuer Name erfordert, die Datei am Gerät erneut auszuwählen.
+- **Mehrere Dateien auf dem Speicher:** Zulässig (FA-22). Das Personal wählt die gewünschte Datei am Gerät aus. Je mehr Dateien, desto größer die Verwechslungsgefahr – sprechende Namen helfen.
 
 ---
 
@@ -209,9 +295,9 @@ Nicht Bestandteil der ersten Version:
 | R-01 | Auto-Start im Demo-Modus | Ob der konkrete Fernseher (UE85AU7170, FW T-KSU2EDEUC-2111.1) die USB-Schleife nach dem Einschalten automatisch startet, muss am Gerät getestet werden. |
 | R-02 | Manueller Neustart | Ohne funktionierenden Auto-Start muss der Loop nach Stromausfall/Einschalten manuell gestartet werden – Ablauf für das Personal definieren. |
 | R-03 | Codec-/Format-Kompatibilität | Konkrete Encoding-Parameter sind am Gerät zu verifizieren (Auflösung, Bitrate, Audiospur). |
-| R-04 | Steuerleisten-Einblendung | Beim Wiederholen kann sich kurz eine Bedienleiste einblenden; durch eine einzige lange MP4 wird dies minimiert. |
+| R-04 | Steuerleisten-Einblendung | Beim Wiederholen kann sich kurz eine Bedienleiste einblenden; durch eine einzige lange MP4 **je Schleife** wird dies minimiert. **Verschärft durch FA-22:** Liegen mehrere Dateien auf dem Speicher, muss am Gerät „Repeat One" (nicht „Repeat All") eingestellt sein – sonst tritt der Effekt bei jedem Dateiwechsel auf (Abschnitt 7). |
 | R-05 | Energie-/Timeout-Verhalten | Energiespar- und Abschalt-Einstellungen müssen korrekt gesetzt sein, damit die Schleife nicht abbricht. |
-| R-06 | Ton | Voraussichtlich **kein Ton** – das Video wird stummgeschaltet ausgespielt (Audio würde im Studio stören). Finale Festlegung steht noch aus. |
+| R-06 | Ton | **ENTSCHIEDEN:** Die Ausgabe ist **still**, enthält aber eine **stille AAC-Tonspur** – manche Player/TVs erwarten eine Audiospur und verhalten sich bei rein-Video-MP4 eigenartig. Verbindlich im Technischen Konzept 9.2.4. |
 
 ---
 
@@ -230,9 +316,14 @@ Bei späterem Bedarf ohne Architekturbruch erweiterbar:
 Die erste Version gilt als erfolgreich, wenn:
 
 1. Videos sowie Produkte/Aktionen über die Oberfläche angelegt, bearbeitet, gelöscht und in der Reihenfolge angeordnet werden können (FA-01 bis FA-05).
-2. Aus der Zusammenstellung **eine** abspielbare MP4-Datei erzeugt und auf einen USB-Speicher exportiert wird (FA-08, FA-09).
+2. Aus der Zusammenstellung **eine durchgehende** abspielbare MP4-Datei erzeugt und auf einen USB-Speicher exportiert wird (FA-08, FA-09).
 3. Diese MP4 auf dem Studio-Fernseher als Endlosschleife wiedergegeben wird (Abschnitt 7).
 4. Die Bedienung ohne technische Vorkenntnisse möglich ist (NFA-01).
+5. Länger laufende Vorgänge (Import, Render, Export) in der Prozessübersicht sichtbar sind und fehlgeschlagene Vorgänge erneut ausgeführt werden können (FA-16, FA-17).
+6. Änderungen gehen nicht verloren: die Anwendung speichert fortlaufend automatisch und stellt beim Start das zuletzt aktive Projekt wieder her (FA-15, NFA-02).
+7. Fehlende Medien werden vor dem Rendern erkannt und der Nutzer wird geführt, bis alle kaputten Elemente behoben sind (FA-19).
+8. Werbeinhalte können **parallel** während eines Videos als Band unten angezeigt werden, mit mehreren rotierenden Aktionen (FA-20, Abschnitt 4.5).
+9. Ein Projekt kann mehrere benannte Ausgabedateien vorhalten; erneutes Rendern unter demselben Namen ersetzt die vorige Fassung, ohne sie bei einem Fehlschlag zu beschädigen (FA-22, Abschnitt 4.7).
 
 ---
 
@@ -242,3 +333,9 @@ Die erste Version gilt als erfolgreich, wenn:
 - **Aktions-Segment:** Aus einem Produkt/einer Aktion erzeugter Video- oder Bildabschnitt mit fester Anzeigedauer.
 - **Rendering:** Erzeugen der finalen Videodatei aus den zusammengestellten Einzelelementen.
 - **Demo-/Store-Modus:** Betriebsmodus des Fernsehers, der u. a. die automatische USB-Wiedergabe ermöglicht.
+- **Split-Screen:** Hauptbetriebsart – das Video läuft verkleinert oben, darunter ein Werbeband; nichts wird verdeckt (4.5).
+- **Einblendung:** Parallele Anzeige, bei der das Video vollflächig bleibt und das Werbeband darüber liegt (verdeckt den unteren Bildbereich).
+- **Werbeband (Band):** Der schmale Bereich mit Werbeinhalt bei Split-Screen bzw. Einblendung; seine Höhe legt die Vorlage fest.
+- **Vorlage:** Datengetriebene Layout-Definition aus Zonen (feste Markenzonen + freie Zonen). Ihre *Art* bestimmt, ob sie ein vollflächiges Segment, ein Split-Screen-Band oder eine Einblendung beschreibt.
+- **Arbeitskopie:** Bearbeitungsstand einer Vorlage. Wird automatisch gesichert, verändert die genutzte Vorlage aber erst beim expliziten Speichern (4.6).
+- **Auftrag / Auftrags-Queue:** Ein länger laufender oder dateiverändernder Vorgang (Import, Löschen, Render, Export) wird als *Auftrag* in einer *Warteschlange* (Queue) geführt. Aufträge werden nacheinander abgearbeitet und sind für den Nutzer sichtbar (laufend, anstehend, fehlgeschlagen).
