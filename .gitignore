@@ -30,6 +30,13 @@ coverage/
 *.docx.neu
 *.docx.part
 
+# ── Erzeugte Issue-Bodies ─────────────────────────────────────────────────────
+# create-issues.py schreibt aus jeder <Meilenstein>/<Kuerzel>.md den Issue-Body
+# ohne Kopfzeile nach <Meilenstein>/bodies/. Reines Zwischenprodukt: jederzeit aus
+# der Quelldatei + map.json reproduzierbar, und nach dem Nachziehen der Verweise
+# eine zweite Fassung desselben Textes - genau die Doppelung, die wir vermeiden.
+docs/agents/*/bodies/
+
 # ── Betriebssystem-Artefakte ──────────────────────────────────────────────────
 Thumbs.db
 ehthumbs.db
