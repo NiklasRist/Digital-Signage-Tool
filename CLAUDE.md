@@ -25,7 +25,8 @@
 ## Projekt in Kürze
 - Tool für das Fitnessstudio Fitnessworld24 (Baller Gruppe). Erste Stufe: EIN Studio, EIN Bildschirm.
 - Hardware: nur ein Samsung Consumer-TV (UE85AU7170, 85", Tizen) + USB-Stick. Kein Mediaplayer.
-- Lösung: Ein Desktop-Tool auf dem Laptop erzeugt EINE fertige loop.mp4; der TV spielt sie vom USB
+- Lösung: Ein Desktop-Tool auf dem Laptop erzeugt je Lauf EINE durchgehende, frei benannte MP4
+  (FA-22, mehrere je Projekt möglich); der TV spielt sie vom USB
   als MANUELL gestartete Endlosschleife. Der TV ist nur „dummer" Player (eigene Smart-TV-App
   ungeeignet: kein Autostart beim Booten, Firmware-/Zertifikatsprobleme).
 
@@ -47,7 +48,7 @@
   SQLite optional; Verpackung electron-builder Portable (Win 10/11 + macOS 13+, kein Installer, ohne Admin).
 - Render-Pipeline (bereits prototypisch mit echtem ffmpeg getestet): jedes Element auf identisches
   Profil normalisieren (scale + pad), dann per ffmpeg concat-Demuxer mit -c copy verlustfrei und
-  schnell zu loop.mp4 zusammenfügen.
+  schnell zur fertigen Ausgabedatei zusammenfügen.
 - Datenmodell-Entscheidungen: (1) Medien ins Projekt KOPIEREN; (2) Aktionen REFERENZIERBAR
   (Bibliothek je Projekt, Mehrfachnutzung erlaubt); (3) Medien PRO PROJEKT; (4) Segment-PNGs IMMER
   NEU rendern (flüchtig); (5) Vorlagen DATENGETRIEBEN ab v1 (zwei eingebaute: „Vollbild", „Split").
@@ -59,9 +60,9 @@
   P4 Finaler Render + Export, P5 Vorschau.
 - Speicher: D1 Projekt-Store, D2 Medienordner, D3 App-Konfig, T1 flüchtiger Render-Arbeitsbereich.
 - ZWEI Render-Arten mit gleichem Eingang (Liste + Medien): P5 Vorschau (UI-Simulation, OHNE ffmpeg,
-  → Bildschirm) und P4 finaler Render (ffmpeg → loop.mp4 → USB).
+  → Bildschirm) und P4 finaler Render (ffmpeg → benannte Ausgabe-MP4 → USB).
 - Vorschau = UI-Simulation: Aktions-Segmente nutzen exakt dasselbe Canvas-Bild wie der finale Render
-  (pixelgleich), Videos laufen nativ; finale Kontrolle bleibt die gerenderte loop.mp4.
+  (pixelgleich), Videos laufen nativ; finale Kontrolle bleibt die gerenderte Ausgabedatei.
 
 ## HLD-Modulschnitt (von mir bestätigt)
 - Renderer: ipc-client, app-shell, composer [P3], action-editor [P2],
@@ -97,7 +98,8 @@
    - ERLEDIGT: project-store/config-store [D1/D3] (9.5) – D1-Lock, Auto-Save (entprellt 3–5 s + Sofort-Flush,
      atomar, .bak-Backup), Lösch-Asymmetrie (Medium blockiert / Aktion kaskadiert medienschonend), schemaVersion.
    - ERLEDIGT: export-service (9.6) – Auftrag art:export, FAT32-Wächter vorab, atomar (.part+Rename-Ersetzen,
-     alte loop.mp4 geschützt), fsync vor Erfolg, Zielname exakt loop.mp4, letztes Ziel in config-store.
+     vorhandene Zieldatei geschützt), fsync vor Erfolg, Zielname = QUELLNAME (der Zwang auf exakt
+     loop.mp4 ist mit FA-22 ENTFALLEN), letztes Ziel in config-store.
    - ERLEDIGT: composer [P3] (9.7) – Renderer-UI Liste/Reorder/Dauer/Trim, optimistisch mit Abgleich
      (synchron abgelehnt→Rollback / Auto-Save-Fehler→kein Rollback, warnen+retry), Thumbnails renderer-seitig.
      + 9.5.4-Ergänzung (Instant-Op vs. Speichern). + 9.7.5 GEFÜHRTER Reparatur-Modus für kaputte Elemente
@@ -158,7 +160,8 @@
      Übergabe-Prompt Abschnitt 7: Regel C (verbindlich = entschieden; Offenes NUR im STOPP-Block,
      nie beides), Regel D (Zitate wörtlich oder gar nicht - ein erfundenes TK-Zitat war drin),
      Regel E (jeder DoD-Punkt muss im erlaubten Dateibereich erfüllbar sein).
-   - M1 im Draft angefangen (M1-01..M1-29), NOCH NICHT vollständig und NICHT angelegt. Es fehlen:
+   - [HISTORISCH, überholt durch den Eintrag weiter unten] M1 im Draft angefangen (M1-01..M1-29),
+     damals noch nicht vollständig und nicht angelegt. Es fehlten:
      entferneElement, ordneNeu, setzeTrim, setzeDauer (TK 9.5.2), Auto-Speichern (9.5.4),
      Einzel-Instanz (9.5.4), Pfad-Autorität + media://-Auflösung (9.5.7).
      ACHTUNG: die 29 entstanden VOR den Regeln C/D/E - vor dem Anlegen gegenprüfen.

@@ -8,6 +8,25 @@
 
 ---
 
+## 0. Womit du anfängst
+
+1. **Diese Datei ganz lesen.** Sie ist kurz.
+2. **`docs/agents/issue-generation-prompt.md`** — das ist der eigentliche Auftrag: Modulschnitt,
+   alle Invarianten zum Wörtlich-Zitieren, die Pflicht-Vorlage samt ausgefülltem Beispiel und die
+   fünf Regeln A–E. **Vollständig lesen, nicht querlesen** — die Regeln C, D und E sind aus
+   konkreten Fehlern entstanden, die zweimal aufgetreten sind.
+3. **`docs/agents/m1-pruefbefund.md`** — die Fehler des letzten Durchgangs im Detail. Wer sie kennt,
+   macht sie nicht nochmal.
+4. Dann **Abschnitt 4 dieser Datei**: M2 ist fertig zugeschnitten, 16 Issues. Losschreiben.
+
+**Kein Produktivcode.** Das Projekt ist in der Planungsphase — Code erst, wenn der Nutzer
+ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schreiben, nicht sie umzusetzen.
+
+**Lies Abschnitt 4b, bevor du den Nutzer nach Entscheidungen fragst.** Es gibt 21 Issues mit
+`braucht-entscheidung`, aber die sind **keine** Bringschuld, die vorher abzuarbeiten wäre.
+
+---
+
 ## 1. Wo wir stehen
 
 **Planung fertig und geprüft.** Beide Dokumente sind vollständig, mehrfach geprüft und mit den
