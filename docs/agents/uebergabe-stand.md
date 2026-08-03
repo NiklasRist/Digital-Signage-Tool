@@ -38,8 +38,8 @@ ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schre
 | **M0 Grundgerüst** | ✅ **Issues #1–#12** angelegt, geprüft, korrigiert |
 | **M1 Fundament** | ✅ **Issues #13–#52** angelegt, geprüft, korrigiert (`M1-XX → #(XX+12)`) |
 | **M2 Torwächter** | ✅ **Issues #53–#71** angelegt, geprüft, korrigiert (`M2-XX → #(XX+52)`) |
-| **M1-Nachzügler** | 🟡 **6 Texte geschrieben und korrigiert**, `docs/agents/m1-nachzuegler/` — **Prüflauf und Anlegen stehen aus** |
-| **M3 Medien** | 🟡 **17 Texte geschrieben und korrigiert**, `docs/agents/m3/` — **Prüflauf und Anlegen stehen aus** |
+| **M1-Nachzügler** | ✅ **Issues #72–#77** angelegt, geprüft, korrigiert (`M1-41…46 → #72…#77`) |
+| **M3 Medien** | ✅ **Issues #78–#94** angelegt, geprüft, korrigiert (`M3-XX → #(XX+77)`) |
 | **M4–M7** | ⬜ offen |
 
 Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** und die Arbeit geht **auf diesem Branch
@@ -187,11 +187,15 @@ Auftrag bei null) · **TK 9.4.6 Schritt 3** – „Pfad in `pendingDeletions`" �
 Verzeichnisanteil (passend zu 9.4.8 und zur portablen Auslieferung) · **M7** – „Abbrechen" wird nur bei
 laufendem `render` angeboten.
 
-## 4c. M3 – Medien (`media-service`, P1) und die sechs M1-Nachzügler: WO ES STEHT
+## 4c. M3 – Medien (`media-service`, P1) und die sechs M1-Nachzügler: ERLEDIGT
 
-**Stand 03.08.2026: geschrieben und korrigiert, aber NICHT geprüft und NICHT angelegt.**
-Wer hier weitermacht, fängt beim **Prüflauf** an (Abschnitt 2, Schritt 3) — vier Prüfer wie bei M2,
-davon einer im Querschnitt. Danach korrigieren, anlegen, Verweise nachziehen, Doku.
+**Stand 03.08.2026: geschrieben, von vier Prüfern geprüft (~45 Befunde, 5 kritische), korrigiert
+und angelegt.** Nachzügler `M1-41…46 → #72…#77` (Meilenstein M1), Medien `M3-01…17 → #78…#94`
+(Meilenstein M3). Volltexte als eine Datei je Issue in `docs/agents/m1-nachzuegler/` bzw.
+`docs/agents/m3/`, Mapping je Verzeichnis in `map.json`.
+
+**Der nächste Meilenstein ist M4 (Pixel).** Ablauf wie gehabt: Zuschnitt zeigen, Briefing schreiben,
+parallel schreiben lassen, vier Prüfer, korrigieren, Trockenlauf, Freigabe, anlegen, Verweise.
 
 - **17 Texte für M3** in `docs/agents/m3/` (M3-01…M3-17). Der harte Kern liegt in M3-07 bis M3-10:
   Kopie ins Staging → atomarer Rename; beim Löschen **D1 zuerst**, Datei danach. Falsch herum gebaut

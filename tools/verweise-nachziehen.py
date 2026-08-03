@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Schreibt Querverweise in bereits angelegten Issues auf die echten Nummern um.
 
-    python tools/verweise-nachziehen.py <verzeichnis> [--go]
+    python tools/verweise-nachziehen.py <verzeichnis> [<weitere-map.json> ...] [--go]
 
 Beim Anlegen kennt niemand die Issue-Nummern - die Texte tragen deshalb noch die
 Planungs-Kürzel (`M2-07`). Dieses Skript ersetzt sie anhand von <verzeichnis>/map.json
@@ -32,11 +32,30 @@ if not mapping:
     print("ABBRUCH: map.json ist leer."); sys.exit(1)
 
 # Praefix aus dem Mapping ableiten (alle Schluessel teilen ihn, s. create-issues.py)
-PRAEFIX = sorted(mapping)[0].split("-")[0]
-MUSTER  = re.compile(r"\b" + re.escape(PRAEFIX) + r"-(\d+)\b")
+# Nur die EIGENEN Issues werden durchlaufen; fremde Mappings dienen allein dem
+# Nachschlagen (sonst sucht das Skript Bodies fremder Verzeichnisse).
+EIGENE = dict(mapping)
+
+# Weitere Mappings dazuladen: Texte verweisen ueber Meilenstein-Grenzen hinweg
+# (M3-17 wird von M1-45 gerufen, M3 ruft M1-41/42/43 auf). Ohne die fremden
+# Mappings blieben genau diese Verweise als Kuerzel stehen - unklickbar und beim
+# naechsten Lauf nicht mehr aufloesbar.
+for extra in sys.argv[2:]:
+    if not extra.endswith(".json"):
+        continue
+    zusatz = json.loads(io.open(extra, encoding="utf-8").read())
+    doppelt = set(zusatz) & set(mapping)
+    if doppelt:
+        print("ABBRUCH: Schluessel in zwei Mappings:", sorted(doppelt)); sys.exit(1)
+    mapping.update(zusatz)
+    print(f"Zusatz-Mapping: {extra} ({len(zusatz)} Eintraege)")
+
+# Alle vorkommenden Praefixe bedienen, nicht nur den eigenen.
+PRAEFIXE = sorted({k.split("-")[0] for k in mapping})
+MUSTER   = re.compile(r"\b(" + "|".join(re.escape(x) for x in PRAEFIXE) + r")-(\d+)\b")
 
 unbekannt, gesamt, betroffen = set(), 0, []
-for key in sorted(mapping):
+for key in sorted(EIGENE):
     pfad = f"{OUT}/{key}.md"
     if not os.path.exists(pfad):
         print(f"  {key}: KEIN Body unter {pfad} - uebersprungen"); continue
@@ -44,7 +63,7 @@ for key in sorted(mapping):
 
     def ersetze(m):
         global unbekannt
-        schluessel = f"{PRAEFIX}-{m.group(1)}"
+        schluessel = f"{m.group(1)}-{m.group(2)}"
         if schluessel not in mapping:
             unbekannt.add(schluessel); return m.group(0)
         return f"#{mapping[schluessel]}"

@@ -33,6 +33,27 @@
 > ausschließlich in „Nicht selbst entscheiden", nie beides; **Regel D** – Zitate wörtlich oder
 > gar nicht; **Regel E** – jeder DoD-Punkt muss im erlaubten Dateibereich erfüllbar sein.
 
+## M1-Nachzügler und M3 → GitHub-Mapping
+
+Angelegt am 03.08.2026. Die Volltexte liegen **eine Datei je Issue** in
+`docs/agents/m1-nachzuegler/` bzw. `docs/agents/m3/` — nicht in diesem Draft. Dort stehen sie
+in der Kürzel-Schreibweise (`M3-08`), auf GitHub sind die Verweise als `#`-Nummern aufgelöst.
+
+| Kürzel | Issue | Kürzel | Issue |
+|---|---|---|---|
+| M1-41 | [#72](https://github.com/NiklasRist/Digital-Signage-Tool/issues/72) | M3-07 | [#84](https://github.com/NiklasRist/Digital-Signage-Tool/issues/84) |
+| M1-42 | [#73](https://github.com/NiklasRist/Digital-Signage-Tool/issues/73) | M3-08 | [#85](https://github.com/NiklasRist/Digital-Signage-Tool/issues/85) |
+| M1-43 | [#74](https://github.com/NiklasRist/Digital-Signage-Tool/issues/74) | M3-09 | [#86](https://github.com/NiklasRist/Digital-Signage-Tool/issues/86) |
+| M1-44 | [#75](https://github.com/NiklasRist/Digital-Signage-Tool/issues/75) | M3-10 | [#87](https://github.com/NiklasRist/Digital-Signage-Tool/issues/87) |
+| M1-45 | [#76](https://github.com/NiklasRist/Digital-Signage-Tool/issues/76) | M3-11 | [#88](https://github.com/NiklasRist/Digital-Signage-Tool/issues/88) |
+| M1-46 | [#77](https://github.com/NiklasRist/Digital-Signage-Tool/issues/77) | M3-12 | [#89](https://github.com/NiklasRist/Digital-Signage-Tool/issues/89) |
+| M3-01 | [#78](https://github.com/NiklasRist/Digital-Signage-Tool/issues/78) | M3-13 | [#90](https://github.com/NiklasRist/Digital-Signage-Tool/issues/90) |
+| M3-02 | [#79](https://github.com/NiklasRist/Digital-Signage-Tool/issues/79) | M3-14 | [#91](https://github.com/NiklasRist/Digital-Signage-Tool/issues/91) |
+| M3-03 | [#80](https://github.com/NiklasRist/Digital-Signage-Tool/issues/80) | M3-15 | [#92](https://github.com/NiklasRist/Digital-Signage-Tool/issues/92) |
+| M3-04 | [#81](https://github.com/NiklasRist/Digital-Signage-Tool/issues/81) | M3-16 | [#93](https://github.com/NiklasRist/Digital-Signage-Tool/issues/93) |
+| M3-05 | [#82](https://github.com/NiklasRist/Digital-Signage-Tool/issues/82) | M3-17 | [#94](https://github.com/NiklasRist/Digital-Signage-Tool/issues/94) |
+| M3-06 | [#83](https://github.com/NiklasRist/Digital-Signage-Tool/issues/83) | | |
+
 ## M0 → GitHub-Mapping
 
 Repo: `NiklasRist/Digital-Signage-Tool` (privat) · Milestone „M0 – Grundgerüst" (#1) ·
