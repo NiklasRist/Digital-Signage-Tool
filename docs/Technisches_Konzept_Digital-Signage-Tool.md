@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 2.5 (HLD vollständig, geprüft)
+**Version:** 2.6 (HLD vollständig, geprüft)
 **Datum:** 03.08.2026
 **Status:** In Planung
 
@@ -772,13 +772,13 @@ Asset {
 1. Quelle → `media/.staging/<uuid>.<ext>.part` kopieren *(langsam, **außerhalb** des D1-Locks)*.
 2. `ffprobe` auf die `.part`-Datei, **mit Timeout** *(außerhalb des Locks)*. `ffprobe` wird **mitgeliefert** (Abschnitt 3) und wie `ffmpeg` im gepackten Zustand aufgelöst und beim Start selbstgetestet – `ffmpeg-static` allein enthält es **nicht**.
 3. `fs.rename` `.part` → `media/<uuid>.<ext>` — **atomar**, weil gleiche Partition (Staging liegt in `media/`; cross-volume-rename wäre copy+delete und **nicht** atomar).
-4. **[D1-Lock]** Asset in D1 anhängen und schreiben *(Millisekunden)*.
+4. **[D1-Lock]** Asset in D1 anhängen, danach **Sofort-Flush** (9.5.4) – der Auftrag meldet Erfolg erst, wenn der Eintrag auf der Platte steht *(Millisekunden)*. Scheitert der Flush → `speicher_fehler` (9.4.9).
 
 Crash vor 3 → nur eine `.part`-Leiche; Crash nach 3 vor 4 → eine fertige Waise ohne D1-Eintrag. Beides räumt der Reconcile (9.4.7) auf.
 
 #### 9.4.6 Lösch-Ablauf (D1 zuerst)
 
-1. **[D1-Lock]** Referenzen prüfen. Referenziert (ListItem zeigt darauf)? → Fehler `asset_referenziert` (mit `referenzenIds`), Abbruch. Sonst: Asset-Eintrag aus D1 entfernen, schreiben. **Referenzprüfung und Entfernen im selben kritischen Abschnitt** → schließt die TOCTOU-Lücke gegen ein gleichzeitiges Setzen einer neuen Referenz durch den `composer`.
+1. **[D1-Lock]** Referenzen prüfen. Referenziert (ListItem zeigt darauf)? → Fehler `asset_referenziert` (mit `referenzenIds`), Abbruch. Sonst: Asset-Eintrag aus D1 entfernen, danach **Sofort-Flush** (9.5.4) – erst wenn der Eintrag **dauerhaft** weg ist, darf Schritt 2 die Datei anfassen; sonst wäre „D1 zuerst" nur im Arbeitsspeicher wahr und ein Absturz dazwischen ließe einen Eintrag ohne Datei zurück. Scheitert der Flush → `speicher_fehler`, die Datei bleibt unangetastet. **Referenzprüfung und Entfernen im selben kritischen Abschnitt** → schließt die TOCTOU-Lücke gegen ein gleichzeitiges Setzen einer neuen Referenz durch den `composer`.
 2. `fs.unlink` der Datei *(außerhalb des Locks)*, auf Windows mit **Retry + Backoff** bei `EBUSY`/`EPERM` (Handle der Vorschau hängt evtl. Millisekunden nach; der Render-Fall ist durch die serielle Queue bereits ausgeschlossen).
 3. Schlägt `unlink` endgültig fehl → **`dateiname`** (ohne Verzeichnisanteil, s. 9.4.8 Punkt 1) in `pendingDeletions` (**Q2**, `projects/<id>/queue-retry.json` – gehört der Auftragsverwaltung, 9.3); der Reconcile beim nächsten Öffnen des Projekts holt es nach (9.4.7). *Bewusst nicht der absolute Pfad:* Die App ist portabel – ein gespeicherter OS-Pfad wird ungültig, sobald der Ordner umzieht (USB-Stick), und der Reconcile suchte an der falschen Stelle.
 
@@ -791,7 +791,7 @@ Crash vor 3 → nur eine `.part`-Leiche; Crash nach 3 vor 4 → eine fertige Wai
 Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vorschau hält dann Handles):
 
 - **Datei in `media/` ohne D1-Eintrag** (Crash-/`unlink`-Waise, `.part`-Leiche) → löschen, Speicher zurück.
-- **D1-Eintrag ohne Datei** → `Asset.zustand = "fehlt"`. Die UI zeigt ihn rot; der `render-service` bricht **früh** mit `medium_fehlt` ab statt mitten im Lauf.
+- **D1-Eintrag ohne Datei** → `Asset.zustand = "fehlt"`. Die UI zeigt ihn rot; der `render-service` bricht **früh** mit `medium_fehlt` ab statt mitten im Lauf. **Umgekehrt gilt dasselbe:** Ist die Datei wieder da (der Nutzer hat sie zurückkopiert, ein Netzlaufwerk war offline), wird `zustand` auf `"ok"` zurückgesetzt. Ohne diese Rückrichtung bliebe ein einmal als fehlend markiertes Medium **für immer** rot und unbenutzbar, obwohl es vorhanden ist.
 - **`pendingDeletions` aus Q2** (`projects/<id>/queue-retry.json`) → jetzt nachholen. Q2 liegt **pro Projekt**, weil ausstehende Löschungen zum Projekt gehören und mit ihm verschwinden (9.3).
 
 #### 9.4.8 Invarianten (bindend)
@@ -909,7 +909,8 @@ AusgabeDatei {
 #### 9.5.4 Auto-Speichern (Invarianten, bindend)
 
 - **Entprellt 3–5 s** nach der letzten Änderung (kein Platten-Hämmern beim Slider-Ziehen).
-- **Sofort-Flush** unabhängig vom Timer: **vor** jedem Render/Export, **bei** Projektwechsel, **beim Beenden**. Beim Beenden **blockiert** die App, bis der Schreibvorgang abgeschlossen ist (kein Schließen mit ausstehendem Schreiben).
+- **Sofort-Flush** unabhängig vom Timer: **vor** jedem Render/Export, **bei** Projektwechsel, **beim Beenden**, **und am Ende jedes Auftrags, der D1 verändert hat** (Import, Löschen – s. 9.4.5/9.4.6). Beim Beenden **blockiert** die App, bis der Schreibvorgang abgeschlossen ist (kein Schließen mit ausstehendem Schreiben).
+  *Warum Aufträge dazugehören:* Die Entprellung fängt **schnelle, wiederholte Bearbeitungen** ab (Slider-Ziehen). Ein Auftrag ist das Gegenteil davon – er läuft einmal, dauert bei einem großen Video Minuten, und die Mediendatei liegt am Ende bereits auf der Platte. Ein Absturz in den 3–5 s danach ließe eine **Waise** zurück, die der Reconcile beim nächsten Start **stillschweigend löscht** (9.4.7): Der Nutzer hat minutenlang gewartet und findet nichts vor. Ein Schreibvorgang **je Auftrag** (nicht je Tastendruck) verhindert das. Zugleich wird damit die Reihenfolge „D1 zuerst, Datei danach" (9.4.6) auch **über einen Absturz hinweg** wahr und nicht nur im Arbeitsspeicher – und der Auftrag kann einen Schreibfehler überhaupt melden (`speicher_fehler`, 9.4.9), statt Erfolg zu melden und später still zu scheitern.
 - **Atomar:** Schreiben nach Temp-Datei + Rename (gleiche Partition). `project.json` ist **nie** halb geschrieben.
 - **Ein Backup:** `project.json.bak` = letzte heile Version. Ist `project.json` beim Laden defekt → aus `.bak` wiederherstellen; ist auch das defekt → **Fehler melden**, **nicht** leer/verlustbehaftet weiterstarten.
 - **Genau eine App-Instanz (Voraussetzung für das ganze Lock-Design):** Das D1-Schreib-Lock ist ein **prozessinternes** Lock. Zwei gleichzeitig laufende App-Instanzen hätten **zwei unabhängige** Locks auf derselben `project.json` – das Ergebnis wäre ein Lost Update und damit **Datenkorruption**. Deshalb erzwingt die App beim Start eine **Einzel-Instanz-Sperre**; ein zweiter Start **fokussiert das bestehende Fenster** statt eine zweite Instanz zu öffnen.
@@ -1572,6 +1573,8 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v2.6 (03.08.2026), beim Prüflauf der M3-Issues gefunden:** Das automatische Speichern ist **entprellt** (3–5 s), 9.4.5 Schritt 4 verlangte aber „anhängen **und schreiben**" – beides zusammen ging nicht, und der Fehlercode `speicher_fehler` (9.4.9) war auf beiden Wegen **unerreichbar**: Der Auftrag hätte Erfolg gemeldet und wäre Sekunden später still gescheitert. Aufgelöst durch einen vierten Eintrag in der bestehenden Sofort-Flush-Liste (9.5.4): **Ein Auftrag, der D1 verändert, schreibt am Ende sofort.** Die Entprellung bleibt für Bearbeitungen unverändert – sie fängt Slider-Ziehen ab, nicht Aufträge. Nebeneffekt: „D1 zuerst, Datei danach" (9.4.6) gilt jetzt auch **über einen Absturz hinweg**.
 >
 > **Nachgezogen in v2.5 (03.08.2026), beim Zuschnitt der M3-Issues gefunden:** (1) **Strukturierte Fehlerdaten** (`fehler.daten`, 9.1.1) – `asset_referenziert` musste laut 9.4.9 die betroffenen Listenelemente nennen, konnte sie aber nirgends transportieren; damit war der geführte Reparatur-Modus (FA-19) nicht bedienbar. (2) **`Auftrag.ergebnis`** (9.3.1) – das Auftrags-Ergebnis („der fertige `Asset`", 9.4.3) hatte keinen Weg zur Oberfläche; ein Import wäre unsichtbar geblieben. (3) **`ffprobe` wird mitgeliefert** (Abschnitt 3, 9.4.5) – `ffmpeg-static` enthält es nicht, der Import braucht es für Maße und Dauer. (4) **`versuche` steigt beim Start** statt beim Wiedereinreihen (9.3.1/9.3.3/9.3.4/9.3.5, vom Auftraggeber entschieden). (5) **`pendingDeletions` speichern den `dateiname`**, nicht den absoluten Pfad (9.4.6) – die App ist portabel. (6) **`speicher_fehler` bei `löscheMedium`** ergänzt (9.4.9) – der D1-Schreibfehler beim Entfernen des Eintrags war real möglich (volle Platte), aber in der als vollständig geführten Fehlercode-Tabelle nicht vorgesehen; die Lücke fiel erst auf, als der Fachdienst-Fehlercode typisiert durchgereicht wurde.
 >

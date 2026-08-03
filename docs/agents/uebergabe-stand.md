@@ -4,7 +4,7 @@
 > Das **Wie** der Issue-Erstellung steht vollständig in `issue-generation-prompt.md` — dort
 > beginnen, diese Datei ist nur der Stand darüber.
 >
-> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.5**
+> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.6**
 
 ---
 

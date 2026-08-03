@@ -6,7 +6,7 @@
 > Projekt beschädigen. Deshalb: jede lokale Entscheidung muss zu den hier festgelegten globalen
 > Invarianten passen. Im Zweifel lieber strikter an den Vertrag halten als „clever" abweichen.
 >
-> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.5** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
+> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.6** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
 
 ---
 

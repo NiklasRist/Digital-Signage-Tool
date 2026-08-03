@@ -3,7 +3,7 @@
 > **Verwendung:** Diesen Text vollständig als ersten Prompt in eine frische Session geben.
 > Er ist absichtlich selbsttragend – die ausführende Instanz braucht keinen Vorverlauf.
 >
-> **Stand der Grundlage:** Anforderungsdokument **v1.2**, Technisches Konzept **v2.5**,
+> **Stand der Grundlage:** Anforderungsdokument **v1.2**, Technisches Konzept **v2.6**,
 > Agent-Kontext `docs/agents/system-design-context.md`. Zuletzt abgeglichen: 03.08.2026.
 
 ---
@@ -29,7 +29,7 @@ Issues sind nach außen sichtbar und in Masse mühsam zurückzunehmen.
 | Datei | Rolle |
 |---|---|
 | `docs/Anforderungsdokument_Digital-Signage-Tool.md` (v1.2) | das **WAS**: FA-01…FA-22, NFA-01…NFA-09, Akzeptanzkriterien 1–9, Risiken R-01…R-06, Glossar |
-| `docs/Technisches_Konzept_Digital-Signage-Tool.md` (v2.5) | das **WIE**: Architektur, Datenbestand, DFD (Abschnitt 7), **Abschnitt 9 = HLD mit allen Modul-Verträgen 9.1–9.14** |
+| `docs/Technisches_Konzept_Digital-Signage-Tool.md` (v2.6) | das **WIE**: Architektur, Datenbestand, DFD (Abschnitt 7), **Abschnitt 9 = HLD mit allen Modul-Verträgen 9.1–9.14** |
 | `docs/agents/system-design-context.md` | verdichteter Agent-Kontext; **Abschnitt 4b** = IPC-Vertrag |
 | `docs/agents/uebergabe-stand.md` | **WO WIR STEHEN**: welche Meilensteine angelegt sind, der fertige M2-Zuschnitt, die wiederkehrenden Fehlermuster, die Werkzeuge |
 | `docs/agents/m1-pruefbefund.md` | Befund des M1-Prüflaufs – die konkreten Fehler, die zu vermeiden sind |

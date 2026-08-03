@@ -32,7 +32,7 @@
 
 ## Die zwei Dokumente (liegen bei)
 - Anforderungsdokument v1.2 = das „WAS" (Funktionen, Regeln, Ausgabe-Profil, Akzeptanz).
-- Technisches Konzept v2.5 = das „WIE" (Architektur, Datenbestand, DFD, HLD Abschnitt 9).
+- Technisches Konzept v2.6 = das „WIE" (Architektur, Datenbestand, DFD, HLD Abschnitt 9).
   Bitte beide unbedingt lesen, bevor du etwas vorschlägst.
 - WORKFLOW: Markdown ist Quelle der Wahrheit; beide .docx werden daraus generiert mit
   `node tools/generate-docx.js <in.md> <out.docx> [--dfd tools/assets/dfd.png]`. Nach jeder
