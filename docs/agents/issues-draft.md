@@ -10,7 +10,9 @@
 > **Fortschritt:** M0 ✅ (Issues #1–#12) · M1 ✅ geschrieben, geprüft, korrigiert und **angelegt**
 > (M1-01…M1-40 = Issues **#13–#52**, Milestone „M1 – Fundament") · M2 ✅ **angelegt**
 > (M2-01…M2-19 = Issues **#53–#71**, Milestone „M2 – Torwächter"; Volltexte in `docs/agents/m2/`,
-> s. Abschnitt am Dateiende) · M3–M7 offen.
+> s. Abschnitt am Dateiende) · **M3 + 6 M1-Nachzügler geschrieben und korrigiert, aber NOCH NICHT
+> geprüft und NICHT angelegt** (`docs/agents/m3/`, `docs/agents/m1-nachzuegler/`; Stand und nächster
+> Schritt in `uebergabe-stand.md` Abschnitt 4c) · M4–M7 offen.
 >
 > **Achtung vor dem Anlegen:** M1-01…M1-29 entstanden **vor** den Regeln C/D/E und vor der
 > Anforderungsänderung vom 02.08. (mehrere benannte Ausgabedateien, FA-22). Sie brauchen denselben

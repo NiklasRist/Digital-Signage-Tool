@@ -38,7 +38,9 @@ ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schre
 | **M0 Grundgerüst** | ✅ **Issues #1–#12** angelegt, geprüft, korrigiert |
 | **M1 Fundament** | ✅ **Issues #13–#52** angelegt, geprüft, korrigiert (`M1-XX → #(XX+12)`) |
 | **M2 Torwächter** | ✅ **Issues #53–#71** angelegt, geprüft, korrigiert (`M2-XX → #(XX+52)`) |
-| **M3–M7** | ⬜ offen |
+| **M1-Nachzügler** | 🟡 **6 Texte geschrieben und korrigiert**, `docs/agents/m1-nachzuegler/` — **Prüflauf und Anlegen stehen aus** |
+| **M3 Medien** | 🟡 **17 Texte geschrieben und korrigiert**, `docs/agents/m3/` — **Prüflauf und Anlegen stehen aus** |
+| **M4–M7** | ⬜ offen |
 
 Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** und die Arbeit geht **auf diesem Branch
 weiter** (so vom Nutzer entschieden) — nicht nach `main` mergen, nicht ungefragt pushen.
@@ -184,6 +186,40 @@ Export-Dialog eine Datenquelle.
 Auftrag bei null) · **TK 9.4.6 Schritt 3** – „Pfad in `pendingDeletions`" → `dateiname` ohne
 Verzeichnisanteil (passend zu 9.4.8 und zur portablen Auslieferung) · **M7** – „Abbrechen" wird nur bei
 laufendem `render` angeboten.
+
+## 4c. M3 – Medien (`media-service`, P1) und die sechs M1-Nachzügler: WO ES STEHT
+
+**Stand 03.08.2026: geschrieben und korrigiert, aber NICHT geprüft und NICHT angelegt.**
+Wer hier weitermacht, fängt beim **Prüflauf** an (Abschnitt 2, Schritt 3) — vier Prüfer wie bei M2,
+davon einer im Querschnitt. Danach korrigieren, anlegen, Verweise nachziehen, Doku.
+
+- **17 Texte für M3** in `docs/agents/m3/` (M3-01…M3-17). Der harte Kern liegt in M3-07 bis M3-10:
+  Kopie ins Staging → atomarer Rename; beim Löschen **D1 zuerst**, Datei danach. Falsch herum gebaut
+  zeigt die Liste auf eine Datei, die es nicht mehr gibt.
+- **6 Nachzügler** in `docs/agents/m1-nachzuegler/` (M1-41…M1-46), Meilenstein **M1**, nicht M3:
+  drei Asset-Operationen des `project-store` (ohne sie kann der Medien-Dienst nichts eintragen —
+  TK 9.4.1 verbietet ihm eigene D1-Schreibvorgänge), `listeAusgaben` (der Nachtrag aus v2.4) und
+  **zwei IPC-Verdrahtungen**.
+- **Die Nummern-Faustregel gilt für die Nachzügler NICHT.** `#41`–`#46` sind längst vergeben; sie
+  bekommen fortlaufende Nummern **ab #72**, M3 danach. In den Texten steht deshalb `M1-41` …, nie
+  eine erfundene `#`-Nummer.
+
+**Warum es die Nachzügler überhaupt gibt — der wichtigste Befund dieses Durchgangs:**
+Von 40 M1-Issues melden genau **zwei** ihren IPC-Kanal an: der generische Wrapper (#23) und die
+Registry (#25). **Keine einzige der rund 18 Operationen** tut es. M1 wäre fertig gebaut worden, und
+die Oberfläche käme an nichts heran. Derselbe Befund wie bei M2 (dort wurde daraus #71), nur eine
+Ebene größer. Aufgefallen ist er erst, weil für M3 zu klären war, wer den Aufräumlauf anstößt.
+
+**Zwei Regeln, die aus diesem Durchgang folgen:**
+
+1. **Eine Vertragsänderung erzwingt einen Zitat-Abgleich über ALLE angelegten Issues.** Regel D gilt
+   auch rückwärts. Nach der Anhebung auf TK v2.5 trugen **14 der 71** Issues wörtliche Zitate der
+   geänderten Stellen — bei dreien hätte ein Agent daraufhin den Versuchszähler doppelt hochgezählt.
+   Vorgehen: alle Bodies ziehen, auf die alten Wortlaute suchen, mechanisch ersetzen, gegenprüfen.
+2. **Nach jeder Änderung auf GitHub die lokalen Quelldateien angleichen.** `docs/agents/<m>/` ist die
+   Quelle der Wahrheit; wird nur GitHub nachgezogen, überschreibt der nächste Lauf die Korrekturen
+   stillschweigend. Kontrolle: lokale Datei normalisieren (`M2-07` → `#59`) und gegen den Body
+   diffen — bei M2 waren so zuletzt 19 von 19 deckungsgleich.
 
 ## 4b. Reihenfolge: erst das Grundgerüst, dann die M1-Entscheidungen
 
