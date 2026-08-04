@@ -6,7 +6,7 @@
 > Projekt beschädigen. Deshalb: jede lokale Entscheidung muss zu den hier festgelegten globalen
 > Invarianten passen. Im Zweifel lieber strikter an den Vertrag halten als „clever" abweichen.
 >
-> **Stand:** 04.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.7** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
+> **Stand:** 04.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.9** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
 
 ---
 
@@ -93,7 +93,9 @@ bedient, gilt **ausnahmslos** Folgendes. Diese Regeln sind der häufigste Ort f�
   ein zweiter, konkurrierender Weg neben Aufruf-Ergebnis und Auftrags-Zustand. `rufeAuf` (`#24`)
   bleibt Request/Response; **vor M5-32 hatte der Renderer überhaupt keinen Empfangsweg**, damit war
   `queue:geaendert` unbeobachtbar und der „nicht gespeichert"-Hinweis (Fehlerklasse 2, 9.7.3) nicht
-  baubar. **Offen:** `project:autoSpeichernStatus` hat im Main noch **keinen Sender** (M6/M7).
+  baubar. **`render:fortschritt` hat seit M6 einen Sender** (v2.8, ausdrücklich anzumeldender Kanal,
+  9.2.7 – Nutzlast und Empfänger gab es längst, **es fehlte allein der Sender**).
+  **Offen bleibt:** `project:autoSpeichernStatus` hat im Main noch **keinen Sender** (**M7**).
 - **Kein Ereignis für Renderer-interne Änderungen (Regel E1, entschieden 04.08.):** Es gibt
   **kein** `project:geaendert` und **kein** `vorlagen:geaendert`. `composer`, `action-editor` und
   `vorlagen-editor` laufen im **selben** Renderer-Prozess – ein IPC-Ereignis wäre eine Reise durch
@@ -139,6 +141,41 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   `concat`-Schritt nutzt `-c copy` und setzt **identische** Parameter aller `seg_*.mp4` voraus
   (Codec, Profil, Auflösung, fps, Zeitbasis, Pixelformat, Streamlayout); Zwischenclips **tonlos**;
   Standbild (`bild`/`segment`) über `dauer` bei 30 fps aushalten; nur der Main am Dateisystem.
+- **Staging der FERTIGEN Datei im Projekt-Ausgabeordner, NICHT in `<Temp>` (v2.8, wichtigste
+  M6-Entscheidung):** In `<Temp>`/T1 liegen nur **Zwischendateien** (`seg_*.mp4`, PNGs, concat-Liste).
+  Die fertige Datei entsteht als **`projects/<id>/output/<name>.mp4.part`** und wird **im selben
+  Ordner** umbenannt. **Grund:** Umbenennen ist nur auf **derselben Partition** unteilbar; die App ist
+  portabel, ihr Datenort kann auf dem USB-Stick liegen, `<Temp>` liegt auf `C:`. Sonst wäre der
+  abschließende `rename` ein **`EXDEV`**-Fehler, und der naheliegende Ausweg „kopieren und löschen"
+  hebt FA-22 / Akzeptanzkriterium 9 auf – ein Absturz mitten im Kopieren zerstört die **letzte
+  funktionierende** Ausgabedatei. **Beim Entwickeln fällt das nie auf**, weil dort Temp und Daten auf
+  derselben Platte liegen. **Folgen:** Abbruch und Fehlschlag räumen **auch** die `.part`-Datei weg;
+  **`listeAusgaben` darf `.part` nicht listen.**
+- **„Verifiziert" ist definiert (v2.8, TK 9.2.6):** einmal **`ffprobe`** auf die fertige Datei,
+  Prüfung gegen das Ausgabe-Profil (**Dauer im erwarteten Rahmen, 1920×1080, 30 fps, `yuv420p`,
+  Tonspur vorhanden**); erst danach ersetzt sie die vorherige Fassung, sonst `ffmpeg_fehler`. Das ist
+  die **einzige** Stelle, an der ein stiller Encoder-Fehler auffällt, bevor die letzte funktionierende
+  Datei überschrieben wird und die neue **ungeprüft auf den Fernseher** geht. **Keine Existenzprüfung
+  daraus machen.** Die Toleranz der Dauerprüfung ist **fest 0,5 s** – **keine relative Toleranz**
+  („1 % der Dauer" ließe bei einem 30-Minuten-Reel ein ganzes fehlendes Segment durch).
+- **Geschlossene Fehlercode-Tabelle (v2.8, TK 9.2.3):** `medium_fehlt`, `ungueltiges_element`,
+  `ungueltige_eingabe`, `ffmpeg_fehler`, `kein_platz`, `speicher_fehler`, `unbekannter_fehler`.
+  **`abgebrochen` ist KEIN Fehlercode, sondern ein Status.** Die betroffene Element-ID reist als
+  **`Auftrag.fehler.daten = { elementId }`** (9.1.1) – ohne diesen Weg erreichte sie die Oberfläche
+  nie, obwohl der Reparatur-Modus (FA-19) die Stelle benennen muss.
+- **`historieEintrag` gibt es NICHT mehr (v2.8, ersatzlos gestrichen).** Das `RenderResult` liefert
+  Pfad, Größe und Gesamtdauer; den **Q3-Eintrag baut die Auftragsverwaltung selbst** (Abschnitt 8).
+  Zwei Quellen für dieselbe Information laufen auseinander – und **Q3 ist dauerhaft**. Q3
+  protokolliert auch **Fehlschlag und Abbruch**; dort bleibt nur `ausgabe` `null`.
+- **`render:fortschritt` ist ein anzumeldender Kanal (v2.8, TK 9.2.7).** Nutzlast war seit je
+  definiert, der Empfänger existiert seit M5 (`abonniere`, `#151`) – **es fehlte allein der Sender**.
+  Daneben behält die Warteschlange ihren groben Prozentwert (`Auftrag.fortschritt`).
+- **ffmpeg-Aufrufe: die Position eines Arguments entscheidet über seine Bedeutung.** `-ss` **vor**
+  dem zugehörigen `-i` ist eine **Eingangs**-Option; steht es zwischen zwei `-i`, gehört es dem
+  **falschen** Eingang, und der Ausschnitt beginnt bei Frame 0 – **richtige Länge, falscher Inhalt**,
+  von einer Dauerprüfung **nicht** zu bemerken. Ein Argument-Array ist nie „nur eine Liste".
+  Ebenso bindend: **`-progress` muss gesetzt sein**, sonst ist die gesamte Fortschrittskette tot –
+  `-loglevel error` unterdrückt zusätzlich die voreingestellte Statuszeile.
 
 ## 8. Auftragsverwaltung (auftrags-manager, Prozess P6) – TK 9.3  ⟵ NEU, zentral
 - **Mehr als eine Queue: ein Verwaltungs-Subsystem** mit vier Aufgaben: (1) Torwächter/Zulassung –
@@ -155,6 +192,11 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
     einen NEUEN Eintrag mit höherem `versuch` → Fehlerhistorie bleibt sichtbar, auch wenn Q2 geleert wird.
     `ProtokollEintrag { id, auftragId, art, projektId, versuch, begonnenAm, beendetAm, ergebnis, fehler,
     ausgabe{pfad,dateigroesse,gesamtdauer}|null }` – enthält die Ausgabe-Historie (früher D3) als Teilmenge.
+    **`gesamtdauer` ist `number | null` (v2.8):** Beim `export` ist sie `null` – er kopiert eine fertige
+    Datei und kennt ihre Spieldauer nicht; **sein Zielpfad steht im Feld `pfad`** (der **vollständige
+    Pfad der Zieldatei**, nicht nur der Zielordner). **Niemals eine Dauer schätzen** – der Eintrag ist
+    dauerhaft. Den Eintrag baut die Auftragsverwaltung **selbst**; die Fachdienste liefern **keinen**
+    Historie-Eintrag mit (`historieEintrag` ist in v2.8 ersatzlos gestrichen).
   - **Q4 Warteschlangen-Journal** – *dauerhaft, ROTIEREND* (letzte N) – `warteschlangen-journal.json` (app-weit).
     `JournalEintrag { zeit, auftragId, bewegung, position }` mit `bewegung: eingereiht|gestartet|entfernt|
     erneut_eingereiht`. Rein **diagnostisch**.
@@ -176,7 +218,15 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
 - IPC: `reiheEin(art,payload)→{auftragId}`, `entferne(auftragId)`, `wiederhole(auftragId)` (→ selber
   Eintrag ans Ende, `versuche`+1, KEIN Duplikat), `holeStand()→Auftrag[]`, Push `QueueGeändert(Auftrag[])`.
 - **Render friert seinen Eingang beim Einreihen ein** (Liste+Profil als Snapshot; spätere Edits ändern
-  einen eingereihten Render nicht).
+  einen eingereihten Render nicht). **Folge (v2.8):** Auch `art` und `höhe` der Band-Vorlage werden
+  beim Einreihen **abgeleitet und mitgeführt** – s. 9h.
+- **Sofort-Flush von D1: erster Schritt IM HANDLER (v2.8, TK 9.3.3/9.5.4)** – nach dem Statuswechsel,
+  **bevor** der `render`- bzw. `export`-Handler irgendetwas tut; scheitert er → `speicher_fehler`,
+  Ziel unberührt. **Der Torwächter darf ihn NICHT auslösen:** sein Auswahl- und
+  Statuswechsel-Abschnitt ist bewusst **synchron**, ein `await` darin bräche die serielle Invariante
+  **lautlos**. **Beim Einreihen zu flushen ist ebenso falsch:** Die Schlange ist streng seriell,
+  zwischen Einreihen und Start können **Minuten** liegen, in denen der Nutzer weiterarbeitet – ein
+  Flush beim Einreihen schriebe einen überholten Stand fest und verlöre genau diese Arbeit.
 - **Instant-Operationen sind KEINE Aufträge** (reine D1-Schreibvorgänge, Millisekunden): Aktion
   anlegen/bearbeiten, Liste umsortieren, Trim setzen, **Aktion** löschen, Datei-Dialog. Laufen direkt
   über das eine `project-store`-Lock, erscheinen nicht im `queue-panel`. Auch die **Vorschau** (P5) ist
@@ -260,10 +310,15 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
 - `RenderRequest.ausgabeName` (Dateiname **ohne** Endung) bestimmt das Ziel. Vorbelegt mit
   `Project.letzterAusgabeName` → gleicher Name **ersetzt** die vorige Fassung, neuer Name legt eine
   zusätzliche Datei an. **Kein Zeitstempel im Namen** – Datum zeigt die UI aus dem Q3-Protokoll.
-- **Atomar, alte Fassung geschützt:** ffmpeg schreibt NIE direkt auf den Zielnamen, sondern nach T1;
-  erst die fertige, verifizierte Datei wird per Rename-mit-Ersetzen in den Ausgabeordner gebracht
-  (gleiche Partition). Ein Fehlschlag lässt die vorhandene Datei unversehrt. **Ohne diese Regel
-  zerstört ein misslungener Probelauf die letzte funktionierende Ausgabe.**
+- **Atomar, alte Fassung geschützt:** ffmpeg schreibt NIE direkt auf den Zielnamen, sondern
+  **auf `<name>.mp4.part` IM Ausgabeordner selbst** (`projects/<id>/output/`, **korrigiert in v2.8** –
+  vorher stand hier T1); erst die fertige, **verifizierte** Datei (ffprobe-Prüfung, s. Abschnitt 7)
+  wird per Rename-mit-Ersetzen **im selben Ordner** auf den Zielnamen gebracht. Ein Fehlschlag lässt
+  die vorhandene Datei unversehrt. **Ohne diese Regel zerstört ein misslungener Probelauf die letzte
+  funktionierende Ausgabe.** **Warum nicht T1/`<Temp>`:** Rename ist nur auf **derselben Partition**
+  unteilbar – bei portabler App auf dem Stick wäre es `EXDEV`, und „kopieren und löschen" hebt den
+  Schutz auf. In T1 bleiben nur die **Zwischen**dateien. Abbruch/Fehlschlag räumen die `.part` weg;
+  **`listeAusgaben` listet `.part` nicht**.
 - **Name ist Nutzereingabe → validieren:** kein Pfadtrenner, kein `..`, keine für Windows/macOS/FAT32
   unzulässigen Zeichen (`< > : " | ? *`, Steuerzeichen), nicht leer, keine reservierten Windows-Namen
   (`CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`). Aufgelöster Pfad muss **innerhalb**
@@ -283,6 +338,16 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   Quellname** – der frühere Zwang auf `loop.mp4` ist ENTFALLEN (FA-22), mehrere Dateien dürfen auf dem
   Stick liegen; Name ist Nutzereingabe → validieren (keine Pfadtrenner, kein `..`); Rename-mit-Ersetzen
   plattformsicher. Kein zweites Lock (Serialisierung via Queue).
+- **Quelldatei NUR über die Pfad-Autorität auflösen (v2.8):** Endung abschneiden und
+  **`loeseAusgabePfad`** benutzen; Dateinamen **ohne** `.mp4` werden abgewiesen. **Kein eigenes
+  `join`** – sonst baut man den Pfad selbst zusammen und **umgeht die Schranke gegen Pfad-Ausbrüche**,
+  die genau dort und nur dort sitzt.
+- **`speicher_fehler` ist der SIEBTE Fehlercode (v2.9, TK 9.6.4):** der **Sofort-Flush von D1**
+  scheitert – er läuft als **erster Schritt im `export`-Handler**, bevor irgendetwas kopiert wird
+  (Abschnitt 8). Das **Ziel bleibt unberührt**. **Nicht** `schreib_fehler` nehmen: der meint das
+  **Kopieren**, die übrigen fünf Codes betreffen das **Ziel** – der Flush aber den **Datenort**.
+  Render-Pfad und `media-service` nennen dieselbe Ursache längst `speicher_fehler`; **dieselbe
+  Ursache bekommt denselben Namen**, und der Code steht **dauerhaft** in Q3.
 
 ## 9d. composer [P3] (Renderer) – TK 9.7
 - Renderer-UI zum **Zusammenstellen**: Bibliothek → geordnete Liste, dnd-kit reorder, Dauer/Trim-Regler
@@ -312,6 +377,9 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   **Kein** Auftrag (interaktiv, unabhängig).
 - Segment via `template-canvas` (pixelgleich); Bild `<img>` contain-auf-Schwarz; Video `<video>` trimStart→trimEnde;
   **alle Medien über `media://`** (9.5.7), nie absolute Pfade.
+- **Im Split-Modus zeigt auch die Vorschau die Restflächen in `flaecheDunkel`** (v2.8, 9.9.2) – nicht
+  schwarz. Sonst laufen Vorschau und Render an genau der Stelle auseinander, die der Nutzer am
+  häufigsten sieht (Split ist die **Hauptbetriebsart**).
 - **Zeitleiste frame-gerundet** (== render 9.2.6, composer 9.7.4); native Wiedergabe Best-Effort. Kaputte
   Elemente → Platzhalter (Reparatur im composer 9.7.5). Grenze (Abschnitt 8): nicht farb-/bitraten-genau,
   finale Kontrolle bleibt die gerenderte Ausgabedatei.
@@ -377,7 +445,37 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   das Video** (Trim) – das Band verändert sie nie.
 - **Invarianten:** Einblendung **nur bei `"video"`**-Items. Band-PNGs sind **deckend** (kein Alpha – echter
   Split ohne Überdeckung), Größe **1920×162**. Ohne Einblendung bleibt alles wie bisher (vollflächig, schwarze Balken).
+- **Die Bandhöhe `H` MUSS GERADE SEIN (v2.9, bindend).** Das Ausgabe-Profil schreibt `yuv420p` vor
+  (Abschnitt 2); dieses Pixelformat tastet die Farbe in **beiden** Richtungen um Faktor zwei unter und
+  verlangt deshalb **gerade Höhen und gerade Versätze**. Bei ungeradem `H` bricht **jede** der beiden
+  Kompositionsarten: bei `split` ist die Videofläche `1080 − H` ungerade, bei `einblendung` liegt das
+  Overlay bei `y = 1080 − H` auf einer **ungeraden** Zeile. Durchgesetzt wird das **an der Quelle**:
+  `vorlagen-editor` **sperrt** sofort, `vorlagen-store` **weist ab** (auf **jedem** setzenden Weg) –
+  sonst erführe der Nutzer den Fehler erst beim Render, aus einer Filterkette statt von der Stelle, an
+  der er die Zahl eingegeben hat. Der `render-service` prüft **zusätzlich** →
+  `ungueltiges_element`. Die eingebaute Band-Vorlage erfüllt die Regel (`höhe: 162`).
+- **Die Split-Videobreite wird auf ein VIELFACHES VON 4 ABGERUNDET (v2.9, bindend).** Die gerade
+  Bandhöhe allein genügt **nicht**: `(1080 − H) × 16/9` ist nur ganzzahlig, wenn `1080 − H` durch
+  **18** teilbar ist (H = 162 → 918 → 1632 ✓ trifft das **zufällig**; H = 200 → 880 × 16/9 = 1564,44 ✗),
+  und der zentrierte Versatz `(1920 − Breite) / 2` ist nur bei einer **durch 4** teilbaren Breite
+  gerade (1564 → 178 ✓, 1562 → 179 ✗). Abrunden auf ein Vielfaches von 4 erfüllt **beide** Bedingungen
+  in einem Schritt; der Rest von höchstens 3 px verschwindet unsichtbar in den seitlichen
+  `flaecheDunkel`-Flächen. **Aufrunden ist VERBOTEN** – es vergrößerte das Video über den Video-Bereich
+  hinaus und bräche die Zusage „contain ohne Beschnitt". **Nicht selbst eine andere Rundung erfinden:**
+  Die eingebaute Vorlage geht als einzige zufällig auf und **verdeckt den Mangel** in jedem Test.
+- **Die Restflächen tragen die Farb-Rolle `flaecheDunkel` (#2F2E2E, v2.8)**, geholt über
+  `leseMarke()` – **nie** als Hexzahl in eine Filterkette getippt. „Dunkle Markenfarbe" ist bei
+  **zwölf** Farb-Rollen keine Angabe; ohne die Festlegung wählte jeder Agent eine andere und Render
+  und Vorschau liefen auseinander. 9.11.2 beschreibt die Rolle als „Segment- und **Band**-Hintergrund" –
+  damit sind Band und Seitenflächen **dieselbe** Fläche und der Split wirkt aus einem Guss.
 - **Datenmodell:** `Listenelement.einblendung = { bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`.
+  **Im `RenderItemVideo` trägt `einblendung` zusätzlich `art` und `höhe` (v2.8)** – beide werden
+  **beim Einreihen** aus der Band-Vorlage abgeleitet und im Auftrag **mitgeführt**, nicht zur Laufzeit
+  nachgeschlagen. **Grund:** Der Render-Eingang wird beim Einreihen eingefroren (Abschnitt 8); schlüge
+  der Main die Vorlage erst beim Start nach, passten die **bereits gezeichneten** Band-PNGs (1920 × H)
+  nach einer zwischenzeitlichen Vorlagenänderung nicht mehr zur Höhe → verzerrtes oder falsch
+  platziertes Band im fertigen Video. Nebeneffekt: **`render-service` braucht keine Abhängigkeit zum
+  `vorlagen-store`.**
   `Vorlage.art = "vollflaeche" | "band"` bestimmt die Zeichenfläche (1920×1080 bzw. 1920×162).
   Eingebaute Band-Vorlage „Band-Standard" ist in TK 9.11.1 mit Pixelwerten definiert – **bewusst ohne
   Beschreibungs-Zone** (in 162 px passt nur eine kompakte Zeile).
@@ -389,14 +487,17 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   Ops: `listeVorlagen`, `erstelleVorlage`, `bearbeiteVorlage`, `dupliziereVorlage`, `löscheVorlage`.
 - **Invarianten:** eingebaute Vorlagen **unveränderlich + unlöschbar** (anpassen = duplizieren) · Löschen nur
   wenn KEIN Projekt sie nutzt → Prüfung liest **alle** project.json · **`art` nach dem Anlegen unveränderlich**
-  (Wechsel würde alle Zonen-Rahmen ungültig machen) · `höhe` nur bei split/einblendung, >0 und <1080 ·
+  (Wechsel würde alle Zonen-Rahmen ungültig machen) · `höhe` nur bei split/einblendung, >0, <1080
+  **und GERADZAHLIG** (v2.9, Begründung `yuv420p` in 9h) – der Store weist eine ungerade Höhe auf
+  **jedem** setzenden Weg ab (`erstelleVorlage`, `speichereArbeitskopie`, `uebernehmeInParent`) ·
   feste Zonen nie entfernbar/verschiebbar.
 - **`vorlagen-editor` [Renderer]:** Art wählen (vollflaeche/split/einblendung), Bandhöhe, Zonen anlegen/
   verschieben/bemaßen, `bindung` + `wennLeer`, Text-Parameter. **Canvas + Zahlen-Inspektor** (Ziehen trifft
   exakte Werte nicht), **Zonen-Liste = Zeichenreihenfolge** (kein z-index), Einrasten an Sicherheitsabstand/
   Kanten/8-px-Raster. **Live-Vorschau NUR über template-canvas** mit **echter Aktion** aus der Bibliothek +
   **Felder testweise leerbar**, damit `wennLeer` und Überlauf-Kaskade sichtbar werden. Prüfungen: außerhalb
-  der Fläche/`höhe` ungültig/Textzone ohne Parameter = **Sperre**; Sicherheitsabstand überschritten =
+  der Fläche/`höhe` ungültig (**einschließlich ungerader Bandhöhe**, v2.9)/Textzone ohne Parameter =
+  **Sperre**; Sicherheitsabstand überschritten =
   **Warnung**; Überlappung = **erlaubt** (Hintergrund/Scrim). Feste Zonen sichtbar aber gesperrt.
 - **`parent`-Feld = die Merge-Beziehung (User-Entwurf):** „Vorlage bearbeiten" legt eine **Arbeitskopie** mit
   `parent = Original` an (auto-gespeichert, Original unberührt, nicht auswählbar). Am Ende **explizit**:
@@ -485,10 +586,16 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   `design/design-tokens.json` sind aussortiert und NICHT zu verwenden).
 
 ## 11. Status & offene Verträge
-- **Aktuelle Fassungen: Anforderungsdokument v1.2 / TK v2.7 (04.08.2026).** Nachträge seit v2.2:
+- **Aktuelle Fassungen: Anforderungsdokument v1.2 / TK v2.9 (04.08.2026).** Nachträge seit v2.2:
   v2.4 (`pendingDeletions` sind keine Aufträge, `listeAusgaben`), v2.5 (`Auftrag.ergebnis`,
-  `fehler.daten`, ffprobe wird mitgeliefert), **v2.7 (`setzeEinblendung`, `setzeElementReferenz` –
-  s. 9b)**. **Merke:** Eine Vertragsänderung erzwingt einen **Zitat-Abgleich über alle bereits
+  `fehler.daten`, ffprobe wird mitgeliefert), v2.7 (`setzeEinblendung`, `setzeElementReferenz` –
+  s. 9b), **v2.8 (neun Entscheidungen aus dem M6-Zuschnitt: `.part`-Staging im Ausgabeordner –
+  s. 7/9b2 · `art`+`höhe` im Auftrag – s. 9h · `historieEintrag` gestrichen · `gesamtdauer`
+  `number|null` – s. 8 · Sofort-Flush im Handler – s. 8 · „verifiziert" definiert – s. 7 ·
+  `flaecheDunkel` für die Restflächen – s. 9h · `render:fortschritt` als Kanal – s. 4b ·
+  geschlossene Fehlercode-Tabelle des `render-service` – s. 7)**, **v2.9 (`speicher_fehler` als
+  siebter Export-Code – s. 9c · gerade Bandhöhen · Split-Breite auf Vielfaches von 4 abrunden –
+  beides s. 9h)**. **Merke:** Eine Vertragsänderung erzwingt einen **Zitat-Abgleich über alle bereits
   angelegten Issues** – Regel D gilt rückwärts.
 - **HLD VOLLSTÄNDIG und vollständig geprüft (Anforderungsdokument v1.1 / TK v2.2).** Ausgearbeitet sind alle Modul-Verträge:
   `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5),

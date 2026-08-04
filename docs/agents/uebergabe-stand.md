@@ -4,7 +4,7 @@
 > Das **Wie** der Issue-Erstellung steht vollständig in `issue-generation-prompt.md` — dort
 > beginnen, diese Datei ist nur der Stand darüber.
 >
-> **Stand:** 04.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.7**
+> **Stand:** 04.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.9**
 
 ---
 
@@ -18,9 +18,10 @@
 3. **`docs/agents/m2-pruefbefund.md`** und **`m1-pruefbefund.md`** — die Fehler der letzten beiden
    Durchgänge im Detail. Wer sie kennt, macht sie nicht nochmal. **M2 zuerst**: dort steht, was der
    Briefing-Ansatz gebracht hat und welches Muster (Regel A auf Modulebene) noch offen war.
-4. Dann **Abschnitt 4 dieser Datei**: M2 bis M5 sind fertig, **M6 ist der nächste** Meilenstein
+4. Dann **Abschnitt 4 dieser Datei**: M2 bis M6 sind fertig, **nur noch M7 ist offen**
    (Abschnitt 4d hält fest, was der M5-Durchgang gelehrt hat und welche drei Entscheidungen
-   E1–E3 auch für M6/M7 gelten).
+   E1–E3 auch für M6/M7 gelten; **Abschnitt 4e** hält den M6-Durchgang fest – die neun
+   Entscheidungen aus TK v2.8, die drei Nachträge aus v2.9 und die vier schwersten Befunde).
 
 **Kein Produktivcode.** Das Projekt ist in der Planungsphase — Code erst, wenn der Nutzer
 ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schreiben, nicht sie umzusetzen.
@@ -28,8 +29,9 @@ ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schre
 **Lies Abschnitt 4b, bevor du den Nutzer nach Entscheidungen fragst.** Es gibt 21 Issues mit
 `braucht-entscheidung`, aber die sind **keine** Bringschuld, die vorher abzuarbeiten wäre.
 (Die 21 sind die aus **M0 und M1**, `#1`–`#52`. Über **alle** Meilensteine sind es am 04.08.2026
-**63**: 21 in `#1`–`#52`, 9 in M2, 7 in den M1-Nachzüglern + M3, 11 in M4, 15 in M5. Der Satz
-unten gilt für alle gleichermaßen.)
+**68**: 21 in `#1`–`#52`, 9 in M2, 7 in den M1-Nachzüglern + M3, 11 in M4, 15 in M5, **5 in M6**.
+Der Satz unten gilt für alle gleichermaßen. **Von den fünf M6-Punkten sind drei Experimente**,
+keine Entscheidungen – s. Abschnitt 4b, „Entscheidungen und Experimente nicht verwechseln".)
 
 ---
 
@@ -47,7 +49,8 @@ unten gilt für alle gleichermaßen.)
 | **M3 Medien** | ✅ **Issues #78–#94** angelegt, geprüft, korrigiert (`M3-XX → #(XX+77)`) |
 | **M4 Pixel** | ✅ **Issues #95–#119** angelegt, geprüft, korrigiert (`M4-XX → #(XX+94)`) |
 | **M5 Inhalte** | ✅ **Issues #120–#155** angelegt, geprüft, korrigiert (`M5-XX → #(XX+119)`) |
-| **M6–M7** | ⬜ offen |
+| **M6 Render & Export** | ✅ **Issues #156–#192** angelegt, geprüft, korrigiert (`M6-XX → #(XX+155)`) |
+| **M7** | ⬜ offen |
 
 Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** und die Arbeit geht **auf diesem Branch
 weiter** (so vom Nutzer entschieden) — nicht nach `main` mergen, nicht ungefragt pushen.
@@ -326,6 +329,148 @@ unverändert v1.2.**
 Bootstrap-Eintrag `verdrahteProjectStoreNachtragIPC()`, Zählung an 6 Stellen angepasst) ·
 #120/#152/#153 (die Vermerke „TK ist nachzuziehen" sind mit v2.7 erledigt). Danach lokale
 Quelldateien gegen GitHub geprüft: **36/36 deckungsgleich** (Regel aus Abschnitt 4c, Punkt 2).
+
+## 4e. M6 – Render & Export (`ffmpeg-adapter`, `render-service` P4, `export-service`): ERLEDIGT, Issues #156–#192
+
+**Stand 04.08.2026:** 37 Issues geschrieben, geprüft, korrigiert und angelegt, Milestone
+„M6 – Render & Export", `M6-XX → #(XX+155)`. Volltexte als **eine Datei je Issue** in
+`docs/agents/m6/`, Mapping maschinenlesbar in `docs/agents/m6/map.json`. **921 Querverweise** auf
+`#`-Nummern aufgelöst.
+
+**Aufteilung nach Modul:** `contracts` M6-01/M6-02 · `ffmpeg-adapter` M6-03…M6-15 ·
+`render-service` M6-16…M6-26 + M6-34 · `export-service` M6-27…M6-33 + M6-35 ·
+`ipc-gateway` M6-36 · `project-store` M6-37.
+
+**Vier neue Labels:** `modul:ffmpeg-adapter`, `modul:render-service`, `modul:export-service` und
+**`risiko:tv-ausgabe`** – das letzte ist neu und eigen für M6: *Ein Fehler fällt hier nicht im Test
+auf, sondern erst am Fernseher im Studio.* Es trägt 15 der 37 Issues (#161–#170, #174, #176, #177,
+#180, #181), also praktisch die gesamte Kette, die Pixel und Container-Parameter festlegt.
+
+**`braucht-entscheidung` tragen nur 5 der 37:** #163 · #168 · #184 · #191 · #192 – auffällig wenige
+nach 15 bei M5. Und **drei davon sind Experimente, keine Entscheidungen** (Autorotation des
+mitgelieferten ffmpeg-Binaries, ob es `qtrle` kennt, FAT32-Erkennung auf Windows und macOS). Sie
+lassen sich **nicht beantworten, nur ausprobieren** – s. Abschnitt 4b. Nicht als Bringschuld des
+Nutzers behandeln.
+
+### Der Prüflauf hat ein zusätzliches Issue erzwungen (Zuschnitt war 36, angelegt sind 37)
+
+**M6-37 (#192) `[project-store]` Das aktive Projekt main-intern herausgeben.** `sofortFlush` (#47)
+verlangt ein `Project` als Eingabe, und **kein einziges Issue in sechs Meilensteinen gibt es
+main-intern heraus**. Damit war der seit TK v2.8 verlangte Sofort-Flush weder in #68 noch in M6-33
+baubar. **Dieselbe Lückenklasse zum vierten Mal** – nach M1 (#72–#77), M2 (#71) und M5 (#153):
+eine fertige Funktion ohne Zugang, jedes Issue für sich richtig, die Naht dazwischen leer.
+
+### Die vier schwersten Befunde – die lehrreichsten des ganzen Projekts
+
+1. **`-ss` stand an der falschen Stelle (M6-12, `#167`).** Im **verbindlichen** Argument-Array lag es
+   zwischen zwei `-i` und wurde damit zur Eingangs-Option des **falschen** Eingangs. Der Ausschnitt
+   hätte immer bei Frame 0 begonnen: **richtige Länge, falscher Inhalt** – und die eigene
+   DoD-Prüfung wäre **grün** durchgelaufen, weil sie die Dauer misst, nicht den Bildinhalt. Das
+   Issue **beschreibt diese Falle in seiner eigenen Einleitung** und tappt dann hinein. Merksatz:
+   Bei ffmpeg entscheidet die **Position** eines Arguments über seine Bedeutung; ein Argument-Array
+   ist deshalb nie „nur eine Liste".
+2. **`-progress` wurde nirgends gesetzt.** Die ganze Fortschrittskette
+   M6-05 (`#160`) → M6-22 (`#177`) → M6-23 (`#178`) → M6-36 (`#191`) wäre gebaut und **tot**
+   gewesen; `-loglevel error` unterdrückt zusätzlich die voreingestellte Statuszeile, an der ein
+   Agent den Mangel hätte bemerken können. **Zwei Prüfer meldeten es unabhängig voneinander.**
+   Behoben im **festen Vorspann von M6-03 (`#158`)**, an genau **einer** Stelle – nicht in jedem
+   der Aufrufer.
+3. **Zwei Funktionen gleichen Namens im selben Ordner.** `segmentDateiname` wurde in M6-20 (`#175`)
+   und M6-22 (`#177`) definiert – **gleiche Signatur, verschiedenes Ergebnis**. Ein falscher Import
+   **kompiliert fehlerfrei** und setzt ffmpeg auf Dateien, die es nicht gibt. Der Typprüfer schützt
+   hier nicht; nur ein Querschnittsblick über die Dateinamen eines Moduls findet das.
+4. **Die Toleranz der Dauerprüfung war rechnerisch falsch (M6-25, `#180`).**
+   `max(0.5, 1 % der Dauer)` hätte bei einem 30-Minuten-Reel ±18 s durchgewinkt – also ein
+   **vollständig fehlendes Segment**, genau den Fall, gegen den die Prüfung überhaupt existiert.
+   Jetzt **fest 0,5 s**. Merksatz: Eine relative Toleranz wächst mit dem Fehler, den sie fangen soll.
+
+### Die neun Entscheidungen des M6-Zuschnitts → TK v2.8
+
+Alle neun folgen Prinzipien, die im Projekt bereits entschieden sind; jede ist umkehrbar.
+
+- **E-3 (die wichtigste) – Staging der fertigen Datei im Projekt-Ausgabeordner, nicht in `<Temp>`.**
+  ffmpeg schreibt nach `projects/<id>/output/<name>.mp4.part` und benennt **im selben Ordner** um.
+  Umbenennen ist nur auf **derselben Partition** unteilbar; die App ist portabel, ihr Datenort kann
+  auf dem Stick liegen, `<Temp>` liegt auf C:. Sonst wäre der abschließende `rename` ein
+  **`EXDEV`**-Fehler, der naheliegende Ausweg „kopieren und löschen" hebt **Akzeptanzkriterium 9**
+  auf – ein Absturz beim Kopieren zerstört die letzte funktionierende Ausgabedatei. **Beim
+  Entwickeln fällt das nie auf**, weil dort Temp und Daten auf derselben Platte liegen.
+  Mitgezogen: Abbruch und Fehlschlag räumen die `.part`-Datei weg, `listeAusgaben` darf sie nicht listen.
+- **E-5 – `art` und `höhe` der Band-Vorlage wandern in den `RenderRequest`.** 9.3.5 friert den
+  Render-Eingang **beim Einreihen** ein; ein Nachschlagen zur Laufzeit wäre das Gegenteil. Ändert
+  jemand die Band-Vorlage, während der Auftrag wartet, passen die **bereits gezeichneten** Band-PNGs
+  nicht mehr zur nachgeschlagenen Höhe → verzerrtes oder falsch platziertes Band. Nebeneffekt:
+  `render-service` braucht keine Abhängigkeit zum `vorlagen-store`.
+- **E-1 – `historieEintrag` ersatzlos gestrichen.** Den Q3-Eintrag baut die Auftragsverwaltung
+  längst selbst. Zwei Quellen für dieselbe Information laufen auseinander, und **Q3 ist dauerhaft** –
+  ein doppelt geführtes Datum darin bleibt für immer falsch. Dieselbe Begründung entfernte schon das
+  `position`-Feld. **Der Punkt steht seit #19 offen und hat über fünf Meilensteine keinen Abnehmer
+  gefunden – das ist selbst der Befund: Ein Feld, das niemand braucht, ist keins.**
+- **E-4 – der Sofort-Flush läuft als *erster Schritt im Handler*.** Beim Nachziehen kam heraus, dass
+  die vom TK zuvor genannte Stelle – der **Torwächter** – gar kein `await` enthalten darf: Sein
+  Auswahl- und Statuswechsel-Abschnitt ist bewusst synchron, ein `await` bräche die serielle
+  Invariante **lautlos**. **Niemand hätte ihn gebaut:** #59 darf nicht, #68 verbot ihn sich selbst.
+  Beim Einreihen zu flushen wäre ebenfalls falsch – zwischen Einreihen und Start können Minuten
+  liegen, in denen der Nutzer weiterarbeitet.
+- **E-6 – „verifiziert" heißt: einmal `ffprobe` auf die fertige Datei**, geprüft gegen das
+  Ausgabe-Profil (Dauer, 1920×1080, 30 fps, `yuv420p`, Tonspur vorhanden). Das ist die **einzige**
+  Stelle, an der ein stiller Encoder-Fehler noch auffällt, bevor er die letzte funktionierende Datei
+  ersetzt – und die Datei geht danach **ungeprüft auf den Fernseher**. ffprobe wird seit v2.5 ohnehin
+  mitgeliefert. Ohne die Definition wäre daraus in der Praxis eine Existenzprüfung geworden.
+- **E-9 – `render:fortschritt` wird als anzumeldender Kanal geführt.** Nutzlast war seit je
+  vollständig definiert (9.2.7), der Empfänger existiert seit M5 (`abonniere`, #151) – **es fehlte
+  allein der Sender**. Die Warteschlange behält daneben ihren groben Prozentwert (#68 unverändert).
+- **E-2 – `ausgabe.gesamtdauer` wird `number | null`.** Beim `export` ist sie `null`: Er kopiert eine
+  fertige Datei und kennt ihre Spieldauer nicht; sein **Zielpfad** steht im Feld `pfad`. Ein Feld, das
+  leer sein darf, ist einfacher als zwei Formen – die Alternative wäre eine **erfundene Dauer im
+  dauerhaften Protokoll**.
+- **E-7 – der Export löst seine Quelldatei über `loeseAusgabePfad` (#49) auf**, schneidet dafür die
+  Endung ab und weist Namen ohne `.mp4` zurück. **Kein eigenes `join`** – sonst baut der Agent den
+  Pfad selbst zusammen und umgeht die Schranke gegen Pfad-Ausbrüche. Muss ausdrücklich im Issue stehen.
+- **E-8 – die Restflächen der Split-Komposition tragen die Farb-Rolle `flaecheDunkel` (#2F2E2E)**,
+  geholt über `leseMarke()` (#29), **nie** als Hexzahl in einer Filterkette. „Dunkle Markenfarbe" ist
+  bei **zwölf** Farb-Rollen keine Angabe; jeder Agent hätte eine andere gewählt und Render und
+  Vorschau wären auseinandergelaufen. 9.11.2 beschreibt die Rolle als „Segment- und Band-Hintergrund" –
+  damit sind Band und Seitenflächen **dieselbe** Fläche.
+
+### TK v2.9 (04.08.2026, beim M6-Prüflauf gefunden, vom Nutzer entschieden)
+
+1. **`speicher_fehler` ist der siebte Fehlercode des `export-service`** (9.6.4). Der Flush-Fehlschlag
+   im Export-Handler hatte **keinen** Code: `schreib_fehler` meint dort das **Kopieren**, die übrigen
+   fünf betreffen das **Ziel** – der Flush aber den **Datenort**. Der Export hätte einen realen,
+   benennbaren Fehler als `unbekannter_fehler` oder unter einem selbst erfundenen Namen gemeldet.
+2. **Bandhöhen müssen *gerade* sein.** `yuv420p` tastet die Farbe in beiden Richtungen um Faktor zwei
+   unter und verlangt **gerade Höhen und gerade Versätze**. Bei ungeradem `H` bricht **jede** der
+   beiden Kompositionsarten: bei `split` ist die Videofläche `1080 − H` ungerade, bei `einblendung`
+   liegt das Overlay auf einer ungeraden Zeile. Durchgesetzt **an der Quelle** (Editor sperrt, Store
+   weist ab), der Render prüft zusätzlich.
+3. **Die Split-Videobreite wird auf ein Vielfaches von 4 abgerundet.** Die gerade Bandhöhe allein
+   rettet die Geometrie **nicht**: `(1080 − H) × 16/9` ist nur ganzzahlig, wenn `1080 − H` durch 18
+   teilbar ist, und der zentrierte x-Versatz `(1920 − Breite) / 2` ist nur bei einer durch 4 teilbaren
+   Breite gerade. **Die eingebaute Vorlage (`H = 162`) geht als einzige zufällig auf und hätte den
+   Mangel verdeckt.** Aufrunden ist verboten – es bräche die Zusage „contain ohne Beschnitt".
+
+`.md` und `.docx` sind synchron (geprüft). **Anforderungsdokument unverändert v1.2.**
+
+### Rückwärts nachgezogen (Regel aus 4c, Punkt 1)
+
+Die Vertragsänderung erzwang den Zitat-Abgleich über **alle** angelegten Issues. Nachgezogen wurden:
+**#3** (aus sieben Anmeldungen werden **zehn**, plus `raeumeVerwaisteArbeitsbereiche()` als
+Startschritt – und `verdrahteExportUndFortschrittIPC` muss **nach** dem Fenster stehen, weil es als
+einzige Verdrahtung ein `BrowserWindow` braucht) · **#47** (trug noch „gerufen wird sie vom
+Torwächter" – durch E-4 überholt) · #17 · #19 · #53 · #62 · #68 · #70 · #134 ·
+#72/#73/#74/#87 · sowie #95/#96/#100/#102/#155 und #103/#117/#148 (Bandhöhe).
+
+### Was der Durchgang methodisch bestätigt hat
+
+- **Zum vierten Mal in Folge: alle kritischen Befunde sitzen an den NÄHTEN zwischen Issues, keiner
+  innerhalb eines Issues.** Der Querschnitts-Prüfer bleibt der Prüfer mit der höchsten Trefferquote.
+- **Regel D hielt über rund 300 geprüfte Zitate praktisch fehlerfrei, Regel C ohne Verstoß in 37
+  Dateien, Regel E 37/37.** Die Regeln greifen; die verbleibende Fehlerklasse ist **ausschließlich**
+  die Verzahnung.
+- **Neu bei M6 und nur hier:** Die schwersten Befunde waren **rechnerisch/positionell** (Argument-
+  Reihenfolge, Toleranzformel, Geradzahligkeit), nicht vertraglich. Ein Prüfer, der nur Signaturen
+  abgleicht, findet sie **nicht** – bei ffmpeg-Issues muss jemand **nachrechnen**.
 
 ## 4b. Reihenfolge: erst das Grundgerüst, dann die M1-Entscheidungen
 

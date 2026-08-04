@@ -283,6 +283,60 @@ def labels_m5(nr, titel, body):
     if nr in M5_BLOCKIEREND: L.append("braucht-entscheidung")
     return L
 
+# ------------------------------------------------------ M6 (Render & Export)
+# Der Meilenstein, der die Datei erzeugt, die im Studio auf dem Fernseher laeuft.
+# Besonderheit gegenueber M1-M5: Ein Fehler faellt hier NICHT im Test auf - ffmpeg
+# meldet Erfolg, die Datei entsteht, sie laeuft auf dem Laptop, und erst am
+# Consumer-TV ruckelt sie, zeigt falsche Farben oder friert nach dem ersten
+# Segment ein. Deshalb ein eigenes Risiko-Label (s. u.).
+
+# TV-KRITISCH: hier entscheidet sich, ob die MP4 am Samsung-Fernseher laeuft.
+# Encoder-Flags, Tonspur, Filterketten, Trim, concat, Uniformitaet, Verifikation.
+M6_TV = {6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 19, 21, 22, 25, 26}
+# D1/Ausgabedatei/Stick - alles, was Arbeit oder eine gute Datei zerstoeren kann.
+M6_RISIKO_DATEN = {17, 24, 25, 26, 31, 32, 33, 37}
+# Prozessgrenze und Kanal-Anmeldung.
+M6_RISIKO_SICHER = {3, 4, 36}
+# Reine Typdateien ohne Logik.
+M6_TYPEN = {1, 2}
+
+# `braucht-entscheidung` fuer M6, nach Prueflauf und Korrektur: 5 von 37.
+# Auffaellig: drei davon sind EXPERIMENTE (Abschnitt 4b des Uebergabe-Prompts) -
+# Plattform- und Binary-Verhalten laesst sich nicht am Schreibtisch entscheiden.
+M6_BLOCKIEREND = {
+     8,  # EXPERIMENT: dreht das mitgelieferte ffmpeg hochkant aufgenommene Videos richtig
+    13,  # EXPERIMENT: kennt das Binary qtrle (Alpha in der Bandspur), sonst welches Ersatzformat
+    29,  # EXPERIMENT: wie erkennt man FAT32 auf Windows und macOS zuverlaessig
+    36,  # an welches BrowserWindow gehen Ereignisse (offen seit #71, betrifft zwei Verdrahtungen)
+    37,  # wo liegt der Halter des aktiven Project (drei benannte Varianten)
+}
+
+def labels_m6(nr, titel, body):
+    L = []
+    if "[contracts]" in titel:
+        L += ["modul:contracts", "ebene:geteilt", "art:typen"]
+    elif "[ipc-gateway]" in titel:
+        L += ["modul:ipc", "ebene:main", "art:logik"]
+    elif "[ffmpeg-adapter]" in titel:
+        L += ["modul:ffmpeg-adapter", "ebene:main", "art:logik"]
+    elif "[render-service]" in titel:
+        L += ["modul:render-service", "ebene:main"]
+        L += ["art:typen"] if nr in M6_TYPEN else ["art:logik"]
+    elif "[export-service]" in titel:
+        L += ["modul:export-service", "ebene:main"]
+        L += ["art:typen"] if nr in M6_TYPEN else ["art:logik"]
+    elif "[project-store]" in titel:
+        L += ["modul:project-store", "ebene:main", "art:logik"]
+    if nr in M6_RISIKO_DATEN:  L.append("risiko:datenverlust")
+    if nr in M6_RISIKO_SICHER: L.append("risiko:sicherheit")
+    if nr in M6_TV:            L.append("risiko:tv-ausgabe")
+    if hat_fehlertabelle(body, r"ungueltige_eingabe|nicht_gefunden|speicher_fehler|unbekannter_fehler"
+                               r"|medium_fehlt|ungueltiges_element|ffmpeg_fehler|kein_platz"
+                               r"|ziel_gesperrt|keine_ausgabe|schreib_fehler"):
+        L.append("art:fehlerbehandlung")
+    if nr in M6_BLOCKIEREND: L.append("braucht-entscheidung")
+    return L
+
 def labels_fuer(nr, titel, body):
     L = []
     if "[contracts]" in titel:
@@ -327,10 +381,10 @@ if len(PRAEFIXE) != 1:
     print("ABBRUCH: uneinheitliche Praefixe in", B, "->", sorted(PRAEFIXE)); sys.exit(1)
 PRAEFIX = PRAEFIXE.pop()
 PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3,
-          "M4": labels_m4, "M5": labels_m5}.get(PRAEFIX)
+          "M4": labels_m4, "M5": labels_m5, "M6": labels_m6}.get(PRAEFIX)
 if PROFIL is None:
     print(f"ABBRUCH: kein Label-Profil fuer Praefix '{PRAEFIX}'."
-          f" Bekannt: M1, M2, M3, M4, M5. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
+          f" Bekannt: M1, M2, M3, M4, M5, M6. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
 print(f"Profil: {PRAEFIX}  |  Milestone: {MILE}  |  {len(dateien)} Dateien aus {B}\n")
 
 eintraege = []

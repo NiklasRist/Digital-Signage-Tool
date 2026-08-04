@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 2.8 (HLD vollständig, geprüft)
+**Version:** 2.9 (HLD vollständig, geprüft)
 **Datum:** 04.08.2026
 **Status:** In Planung
 
@@ -423,7 +423,7 @@ Gemeinsam je Item: `id` (Rückverfolgung/Fehlerzuordnung). Bei `"segment"` werde
 | Feld | Inhalt |
 |---|---|
 | `art` | `"split"` \| `"einblendung"` – Kompositionsart (Band **unter** bzw. **über** dem Video, 9.2.8) |
-| `höhe` | Bandhöhe `H` in Pixeln (ganzzahlig) |
+| `höhe` | Bandhöhe `H` in Pixeln (ganzzahlig und **gerade**, 9.2.8) |
 | `abschnitte` | geordnete Folge `{ png (Binärpuffer, 1920 × H), dauer }` |
 
 *Warum `art` und `höhe` im Auftrag stehen und nicht zur Laufzeit nachgeschlagen werden:* Der Render **friert seinen Eingang beim Einreihen ein** (9.3.5). Beide Werte stammen aus der Band-Vorlage und werden **beim Einreihen** aus ihr abgeleitet. Würde der Main die Vorlage stattdessen erst beim Start des Auftrags im `vorlagen-store` nachschlagen, wäre der Eingang **nicht** eingefroren: Ändert jemand die Bandhöhe, während der Auftrag in der Warteschlange wartet, passten die bereits gezeichneten Band-PNGs (1920 × H **zum Einreih-Zeitpunkt**) nicht mehr zur nachgeschlagenen Höhe – das Band im fertigen Video wäre verzerrt oder falsch platziert. So bleibt der Auftrag **in sich geschlossen**, und der `render-service` braucht **keine** Abhängigkeit zum `vorlagen-store`. Der Renderer kennt beide Werte ohnehin: er hat das Band damit gezeichnet.
@@ -463,11 +463,11 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bere
 | Code | Wann | Was der Nutzer tun kann |
 |---|---|---|
 | `medium_fehlt` | Ein referenziertes Medium liegt nicht (mehr) in `media/` oder ist vom Reconcile als `zustand: "fehlt"` markiert (9.4.7). Geprüft **vor** dem ersten `ffmpeg`-Aufruf, nicht mitten im Lauf | Über den geführten Reparatur-Modus (9.7.5) neu verknüpfen/importieren, ersetzen oder das Element entfernen |
-| `ungueltiges_element` | Ein einzelnes `RenderItem` ist in sich unstimmig: Trim außerhalb der Quelldauer, `dauer` außerhalb 10–45 s, `"segment"` ohne PNG-Puffer, `einblendung` ohne Abschnitte oder mit `höhe` ≥ 1080, PNG-Maße ≠ der erwarteten Fläche (1920 × 1080 bzw. 1920 × `höhe`) | Das benannte Element im `composer` korrigieren (Dauer/Trim/Band) und erneut rendern |
+| `ungueltiges_element` | Ein einzelnes `RenderItem` ist in sich unstimmig: Trim außerhalb der Quelldauer, `dauer` außerhalb 10–45 s, `"segment"` ohne PNG-Puffer, `einblendung` ohne Abschnitte, mit `höhe` ≥ 1080 oder mit **ungerader** `höhe` (9.2.8), PNG-Maße ≠ der erwarteten Fläche (1920 × 1080 bzw. 1920 × `höhe`) | Das benannte Element im `composer` korrigieren (Dauer/Trim/Band) und erneut rendern |
 | `ungueltige_eingabe` | Die **Anfrage** verletzt den Vertrag, unabhängig von einzelnen Elementen: unzulässiger `ausgabeName` (9.2.6), leere Elementliste, unbekannte `art`, fehlende `projektId`. Generischer Code aus 9.1.1 Punkt 3 – **ohne jede Wirkung** auf Daten oder Dateien | Zielnamen korrigieren bzw. mindestens ein Element in die Liste legen |
 | `ffmpeg_fehler` | Ein `ffmpeg`-/`ffprobe`-Aufruf endet mit Fehlerstatus oder liefert keine verwertbare Ausgabe (defekter Stream, nicht dekodierbare Quelle) – **einschließlich einer fehlgeschlagenen Verifikation** der fertigen Datei (9.2.6) | Wiederholen (Q2, FA-17); bleibt es dabei, das im Fehler benannte Element austauschen. Die vorherige Ausgabedatei ist unversehrt |
 | `kein_platz` | Zu wenig freier Speicher – für T1 (Zwischenclips) **oder** für `<name>.mp4.part` im Ausgabeordner. Beide Orte können auf **verschiedenen** Laufwerken liegen | Platz schaffen, dann den Auftrag wiederholen |
-| `speicher_fehler` | Schreib- oder Rename-Fehler am **Ziel** jenseits von Platzmangel: fehlende Rechte, Ausgabeordner nicht anlegbar, Zieldatei durch einen anderen Prozess gesperrt (nach Retry) | Die Ausgabedatei in Player/Explorer schließen, Rechte prüfen, wiederholen |
+| `speicher_fehler` | Schreib- oder Rename-Fehler am **Ziel** jenseits von Platzmangel: fehlende Rechte, Ausgabeordner nicht anlegbar, Zieldatei durch einen anderen Prozess gesperrt (nach Retry) – **ebenso** ein gescheiterter Sofort-Flush von D1 zu Beginn des Handlers (9.3.3, 9.5.4) | Die Ausgabedatei in Player/Explorer schließen, Rechte prüfen, wiederholen |
 | `unbekannter_fehler` | Jede nicht zuordenbare Ausnahme; das Gateway übersetzt sie (9.1.1 Punkt 8) – **kein** Stacktrace in der Oberfläche | Wiederholen; der Versuch steht mit Zeitstempel in Q3 |
 
 **`abgebrochen` ist *kein* Fehlercode.** Ein vom Nutzer abgebrochener Lauf endet über `status: "abgebrochen"` (9.2.7) und trägt **kein** `fehler`-Objekt – sonst gäbe es zwei Wege, denselben Ausgang zu melden, und die Oberfläche zeigte einen Abbruch als Fehler an.
@@ -561,10 +561,12 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 |---|---|
 | Video-Bereich | **1920 × (1080 − H)** bei y = 0 |
 | Band | **1920 × H** bei y = 1080 − H |
-| Video eingepasst (16:9) | höhenbegrenzt → Breite = (1080 − H) × 16/9, zentriert |
+| Video eingepasst (16:9) | höhenbegrenzt → Breite = (1080 − H) × 16/9, **abgerundet auf das nächstkleinere Vielfache von 4**, zentriert |
 | Restflächen | links/rechts – gefüllt mit der Farb-Rolle **`flaecheDunkel`** (s. u.) |
 
 *Beispiel mit der eingebauten Vorlage (H = 162):* Video-Bereich 1920 × 918, Video real **1632 × 918** zentriert (x = 144), Restflächen je **144 px**.
+
+**Warum die Breite auf ein Vielfaches von 4 abgerundet wird – bindend:** `yuv420p` (9.2.4) tastet die Farbe in **beiden** Richtungen um den Faktor zwei unter und verlangt deshalb eine gerade Breite **und** einen geraden x-Versatz. Die gerade Bandhöhe (Punkt oben) allein genügt dafür **nicht**: (1080 − H) × 16/9 ist nur ganzzahlig, wenn 1080 − H durch 18 teilbar ist – H = 162 trifft das zufällig (918 → 1632), H = 200 nicht (880 × 16/9 = 1564,44). Und selbst eine gerade Breite reicht nicht, weil der Versatz (1920 − Breite) / 2 nur dann gerade ist, wenn die Breite durch 4 teilbar ist (1564 → 178 ✓, 1562 → 179 ✗). Abrunden auf ein Vielfaches von 4 erfüllt beide Bedingungen in einem Schritt. Der Rest von höchstens 3 px geht in die seitlichen `flaecheDunkel`-Flächen – er ist unsichtbar, weil die Restflächen ohnehin dort liegen. **Aufrunden ist verboten:** Es würde das Video über den Video-Bereich hinaus vergrößern und damit die Zusage „contain ohne Beschnitt" brechen.
 
 **Bewusste Abweichung vom Ausgabe-Profil – nur hier:** 9.2.4 schreibt **schwarze** Balken vor. In der Split-Komposition werden die Restflächen **in der Markenfarbe** gefüllt, damit der Split gestaltet wirkt und nicht wie ungenutzter Platz. Die Einpassung bleibt **„contain" ohne Beschnitt**.
 
@@ -591,6 +593,7 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 - Parallele Bänder gibt es **nur bei `"video"`-Items**; `"bild"` und `"segment"` sind bereits vollflächige Standbilder.
 - **Deckkraft folgt der Vorlagenart:** `split`-Bänder sind **deckend** (echter Split, keine Überdeckung); `einblendung`-Bänder tragen **Alpha** (sie überlagern das Video). `template-canvas` liefert beide in **1920 × H** (9.10.2).
 - **Die Bandhöhe `H` stammt ausschließlich aus der Vorlage** – sie ist **kein** Wert am Listenelement und **nicht** pro Element überschreibbar. So bleibt das Erscheinungsbild an die Vorlage gebunden. Dass `H` (und `art`) im `RenderRequest` **mitreisen** (9.2.2), ist **keine** zweite Quelle: Es ist der beim Einreihen eingefrorene Stand **derselben** Vorlage (9.3.5) – dieselbe Beziehung wie zwischen Aktion und fertigem Segment-PNG.
+- **Die Bandhöhe `H` muss *gerade* sein.** Das Ausgabe-Profil schreibt `yuv420p` vor (9.2.4); dieses Pixelformat tastet die Farbe in **beiden** Richtungen um den Faktor zwei unter und verlangt deshalb **gerade Höhen und gerade Versätze**. Bei ungeradem `H` bricht **jede** der beiden Kompositionsarten: bei `split` ist die Videofläche `1080 − H` ungerade, bei `einblendung` liegt das Overlay bei `y = 1080 − H` auf einer **ungeraden** Zeile. Durchgesetzt wird das **an der Quelle**, wo die Höhe entsteht: der `vorlagen-editor` sperrt eine ungerade Bandhöhe sofort (9.12.2), der `vorlagen-store` weist sie ab (9.12.1) – sonst erführe der Nutzer den Fehler erst beim Render, nachdem er die Vorlage fertig gebaut hat. Der `render-service` prüft sie **zusätzlich** und meldet `ungueltiges_element` (9.2.3), damit ein Auftrag aus einem älteren Bestand nicht mitten im Lauf scheitert. Die eingebaute Band-Vorlage erfüllt die Regel (`höhe: 162`, 9.11.1).
 - **Alle Abschnitte eines Elements nutzen dieselbe Band-Vorlage** (eine `bandVorlageId` pro Einblendung) – damit `H` und die Kompositionsart während eines Videos nicht wechseln. Ein Wechsel mitten im Video würde die Geometrie springen lassen.
 - **Ohne** Band bleibt die Verarbeitung **unverändert**: Video vollflächig 1920 × 1080 mit **schwarzen** Balken nach 9.2.4.
 
@@ -1047,6 +1050,9 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 | `kein_platz` | zu wenig freier Speicher am Ziel |
 | `ziel_gesperrt` | Zieldatei durch anderen Prozess gesperrt (nach Retry) |
 | `schreib_fehler` | sonstiger I/O-Fehler beim Kopieren |
+| `speicher_fehler` | der **Sofort-Flush von D1** scheitert – er läuft als **erster Schritt im `export`-Handler**, bevor irgendetwas kopiert wird (9.3.3, 9.5.4): Platte voll, fehlende Rechte, `project.json` gesperrt. Das Ziel bleibt **unberührt**, es wurde nichts geschrieben. Der Nutzer schafft Platz bzw. prüft die Rechte am **Datenort** (nicht am Ziel) und reiht den Auftrag erneut ein |
+
+**Warum derselbe Name wie im Render-Pfad – und nicht `schreib_fehler`:** Vor der Ergänzung hatte der als **vollständig** geführte Satz für diese Ursache **keinen** passenden Code: `schreib_fehler` meint hier ausdrücklich das **Kopieren**, die übrigen fünf betreffen sämtlich das **Ziel** – der gescheiterte Flush trifft aber den **Datenort** und lässt das Ziel unangetastet. Der Render-Pfad meldet dieselbe Ursache bereits als `speicher_fehler` (9.2.3), der `media-service` ebenso (9.4.9). **Dieselbe Ursache bekommt denselben Namen.** Alles andere zwänge die Oberfläche, **zwei** Namen für **eine** Sache zu kennen (zwei Meldungstexte, zwei Zweige im Reparatur-/Wiederhol-Pfad) – und der Code steht **dauerhaft** im Protokoll Q3 (9.3): eine hier erfundene Bezeichnung bliebe für immer darin stehen und wäre später nicht mehr zusammenführbar.
 
 #### 9.6.5 Verzahnung (config-store & Queue)
 
@@ -1260,7 +1266,8 @@ Vorlage {
   id:        string        // "vollbild" | "split" | "band-standard" | <uuid> bei eigenen
   name:      string        // Anzeigename
   art:       "vollflaeche" | "split" | "einblendung"   // Fläche + Kompositionsart (s. u.)
-  höhe:      number | null // nur bei "split"/"einblendung": Bandhöhe in px; bei "vollflaeche" null
+  höhe:      number | null // nur bei "split"/"einblendung": Bandhöhe in px, GERADZAHLIG (Punkt 8);
+                           //   bei "vollflaeche" null
   parent:    string | null // Herkunft: ID der Vorlage, von der diese abgeleitet wurde.
                            //   ≠ null → ARBEITSKOPIE (in Bearbeitung, nicht auswählbar)
                            //   = null → eigenständige, nutzbare Vorlage
@@ -1305,6 +1312,7 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 5. **Eigene Vorlagen dürfen freie Zonen hinzufügen, ändern, umordnen und entfernen** – auch **dekorative** Zonen (`bindung: null`) mit eigener Füllung, Radius oder statischem Text. So lässt sich Neues ergänzen, **ohne** das `Aktion`-Datenmodell zu erweitern. Ebenso ist `wennLeer` je Zone frei wählbar.
 6. **`text.*` speist die Überlauf-Kaskade** (9.10.6): `maxZeilen` = Stufe 1 (Umbruch), `größeMax`→`größeMin` = Stufe 2 (Verkleinern), danach Stufe 3 („…").
 7. **Farben und Schriften sind Rollen-Verweise in die `Marke`** (z. B. `farbRolle: "akzent"`, `schriftRolle: "headlineDisplay"`), **keine** Hex-Werte oder Font-Namen. So bleibt ein Marken-Wechsel ein Datenwert und keine Vorlagen-Änderung.
+8. **`höhe` ist geradzahlig** – bei `art: "split"` und `"einblendung"` muss die Bandhöhe eine **gerade** Zahl sein (Wertebereich > 0 und < 1080, 9.12.1). Grund ist das Ausgabe-Profil `yuv420p` (9.2.4): Es verlangt gerade Höhen und gerade Versätze. Bei ungerader Höhe ist die Videofläche `1080 − höhe` (bei `split`) bzw. der Overlay-Versatz `y = 1080 − höhe` (bei `einblendung`) ungerade – **beide** Kompositionsarten aus 9.2.8 brechen. Geprüft wird schon im Editor (Sperre, 9.12.2), nicht erst beim Render.
 
 **Gemeinsame Basis der eingebauten Vorlagen**
 
@@ -1507,7 +1515,7 @@ Vorlage X bearbeiten
 - **Arbeitskopien (`parent ≠ null`) sind nicht auswählbar.** `composer` und `action-editor` bekommen sie nicht angeboten – halbfertige Vorlagen können nicht in einen Render geraten.
 - **`uebernehmeInParent` ist gesperrt, wenn der Parent eingebaut ist.** Eingebaute Vorlagen bleiben unveränderlich (9.11.1.1); dort bleibt nur `alsEigenstaendige`. Der Editor macht das vorher sichtbar, statt beim Speichern zu scheitern.
 - **`art` ist nach dem Anlegen unveränderlich** – auch über die Arbeitskopie. Ein Wechsel würde alle Zonen-Rahmen ungültig machen (andere Fläche); stattdessen neu anlegen.
-- **`höhe` nur bei `split`/`einblendung`**, Wertebereich > 0 und < 1080. Bei `vollflaeche` immer `null`.
+- **`höhe` nur bei `split`/`einblendung`**, Wertebereich > 0 und < 1080 **und geradzahlig** (9.11.1 Punkt 8, Begründung `yuv420p` in 9.2.8). Bei `vollflaeche` immer `null`. Der Store weist eine ungerade Höhe ab – auf **jedem** Weg, der sie setzen kann (`erstelleVorlage`, `speichereArbeitskopie`, `uebernehmeInParent`); der Editor sperrt sie bereits vorher (9.12.2).
 - **Feste Zonen (`rolle: "fest"`) dürfen nie entfernt oder verschoben werden** – auch nicht in eigenen Vorlagen (Markenrahmen erzwungen, FA-11).
 - **Löschen nur, wenn die Vorlage in *keinem* Projekt mehr benutzt wird.** Die Prüfung muss **beide** Referenzarten erfassen – das ist die entscheidende Feinheit:
   1. **`aktion.vorlagenId`** – Aktionen, die die Vorlage als vollflächiges Segment nutzen.
@@ -1536,6 +1544,7 @@ Vorlage X bearbeiten
 |---|---|
 | Zone ganz oder teilweise **außerhalb der Fläche** | **Sperre** – nicht speicherbar |
 | `höhe` ≤ 0 oder ≥ 1080 (bei `split`/`einblendung`) | **Sperre** |
+| `höhe` **ungerade** (bei `split`/`einblendung`) | **Sperre** – `yuv420p` verlangt gerade Höhen und Versätze; ungerade bricht **beide** Kompositionsarten (9.2.8, 9.11.1 Punkt 8) |
 | Textzone ohne Text-Parameter (Größenbereich, Max-Zeilen) | **Sperre** |
 | Zone überschreitet den **Sicherheitsabstand** (5 %, 9.10.5) | **Warnung** – am TV evtl. abgeschnitten |
 | Zonen **überlappen** | **erlaubt** – wird für Hintergrund und Scrim gebraucht |
@@ -1619,6 +1628,13 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v2.9 (04.08.2026), beim Prüflauf der M6-Issues gefunden:**
+>
+> 1. **`speicher_fehler` ist der siebte Fehlercode des `export-service`** (9.6.4). Der Sofort-Flush von D1 läuft seit v2.8 als **erster Schritt im `export`-Handler** (9.3.3, 9.5.4); scheitert er, hatte der als **vollständig** geführte Satz aus 9.6.4 keinen passenden Code – `schreib_fehler` meint dort ausdrücklich das **Kopieren**, die übrigen fünf betreffen das **Ziel**, der Flush aber den **Datenort**. *Folge ohne die Änderung:* Der Export hätte einen realen, benennbaren Fehler als `unbekannter_fehler` oder – schlimmer – unter einem selbst erfundenen Namen gemeldet. Der Render-Pfad kennt für dieselbe Ursache längst `speicher_fehler` (9.2.3), der `media-service` ebenso (9.4.9); zwei Namen für eine Sache zwängen die Oberfläche zu zwei Meldungstexten und zwei Zweigen, und der Code steht **dauerhaft** in Q3. Mitgezogen: 9.2.3 nennt den gescheiterten Flush jetzt ausdrücklich mit – seine Beschreibung war auf Fehler **am Ziel** verengt und deckte den Fall im Render-Handler streng gelesen selbst nicht ab.
+> 2. **Bandhöhen müssen gerade sein** (Invariante 9.2.8, Datenmodell 9.11.1 Punkt 8, **Sperre** im Editor 9.12.2, Abweisung im Store 9.12.1, zusätzliche Render-Prüfung 9.2.3 / Feldbeschreibung 9.2.2). Das Ausgabe-Profil verlangt `yuv420p` (9.2.4); dieses Pixelformat tastet die Farbe in beiden Richtungen um den Faktor zwei unter und verlangt deshalb gerade Höhen **und** gerade Versätze. *Folge ohne die Änderung:* Bei ungerader Bandhöhe `H` bricht **jede** der beiden Kompositionsarten aus 9.2.8 – bei `split` ist die Videofläche `1080 − H` ungerade, bei `einblendung` liegt das Overlay bei `y = 1080 − H` auf einer ungeraden Zeile. Der Nutzer erführe das erst **beim Render**, nachdem er die Vorlage fertig gebaut hat, und der Fehler käme aus einer Filterkette statt von der Stelle, an der die Zahl eingegeben wurde. Die eingebaute Band-Vorlage (`höhe: 162`) und die Beispielrechnungen in 9.2.8 und 9.11.2 sind bereits geradzahlig – die Lücke war deshalb unauffällig.
+>
+> 3. **Die Split-Videobreite wird auf ein Vielfaches von 4 abgerundet** (9.2.8). *Folge ohne die Änderung:* Die gerade Bandhöhe aus Punkt 2 rettet die Split-Geometrie nur scheinbar – (1080 − H) × 16/9 ist bei den meisten geraden H **nicht** ganzzahlig, und der zentrierte x-Versatz wäre selbst bei gerader Breite oft ungerade. `yuv420p` verlangt beides gerade; der Agent hätte die Rundung selbst erfunden, in drei Dateien unterschiedlich, und die eingebaute Vorlage (H = 162) hätte den Mangel verdeckt, weil sie als einzige zufällig aufgeht.
 >
 > **Nachgezogen in v2.8 (04.08.2026), beim Zuschnitt der M6-Issues gefunden:**
 >

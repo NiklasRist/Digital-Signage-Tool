@@ -5,7 +5,7 @@
 > Wird nach Abschnitt 11 des Übergabe-Prompts (`docs/agents/issue-generation-prompt.md`)
 > milestone-weise befüllt und je Milestone dem Nutzer zur Kontrolle vorgelegt, bevor der nächste
 > Milestone geschrieben wird. Quelle der Wahrheit für jeden fachlichen Inhalt: Technisches Konzept
-> **v2.7** (`docs/Technisches_Konzept_Digital-Signage-Tool.md`).
+> **v2.9** (`docs/Technisches_Konzept_Digital-Signage-Tool.md`).
 >
 > **Fortschritt (Stand 04.08.2026):** M0 ✅ (Issues #1–#12) · M1 ✅ geschrieben, geprüft, korrigiert
 > und **angelegt** (M1-01…M1-40 = Issues **#13–#52**, Milestone „M1 – Fundament") · M2 ✅ **angelegt**
@@ -13,8 +13,10 @@
 > s. Abschnitt am Dateiende) · M3 + 6 M1-Nachzügler ✅ **angelegt** (Issues **#72–#94**;
 > `docs/agents/m3/`, `docs/agents/m1-nachzuegler/`) · M4 ✅ **angelegt** (M4-01…M4-25 = Issues
 > **#95–#119**, Milestone „M4 – Pixel"; `docs/agents/m4/`) · M5 ✅ **angelegt** (M5-01…M5-36 =
-> Issues **#120–#155**, Milestone „M5 – Inhalte"; `docs/agents/m5/`) · **M6–M7 offen.**
-> Stand und nächster Schritt: `uebergabe-stand.md`, Abschnitte 4c und 4d.
+> Issues **#120–#155**, Milestone „M5 – Inhalte"; `docs/agents/m5/`) · M6 ✅ **angelegt**
+> (M6-01…M6-37 = Issues **#156–#192**, Milestone „M6 – Render & Export"; `docs/agents/m6/`) ·
+> **nur noch M7 offen.**
+> Stand und nächster Schritt: `uebergabe-stand.md`, Abschnitte 4c, 4d und 4e.
 >
 > **Achtung vor dem Anlegen:** M1-01…M1-29 entstanden **vor** den Regeln C/D/E und vor der
 > Anforderungsänderung vom 02.08. (mehrere benannte Ausgabedateien, FA-22). Sie brauchen denselben
@@ -34,6 +36,40 @@
 > gelten: **Regel C** – in „Signatur (verbindlich)" darf nur Entschiedenes stehen, Offenes
 > ausschließlich in „Nicht selbst entscheiden", nie beides; **Regel D** – Zitate wörtlich oder
 > gar nicht; **Regel E** – jeder DoD-Punkt muss im erlaubten Dateibereich erfüllbar sein.
+
+## M6 → GitHub-Mapping
+
+Angelegt am 04.08.2026. Volltexte: eine Datei je Issue in `docs/agents/m6/`, Mapping
+maschinenlesbar in `docs/agents/m6/map.json`. Milestone „M6 – Render & Export",
+`M6-XX → #(XX+155)`. **Aus dem Prüflauf entstand M6-37** (`project-store`: das aktive Projekt
+main-intern herausgeben – ohne das war der Sofort-Flush aus TK v2.8 nicht baubar) – der Zuschnitt
+hatte 36 Issues. 921 Querverweise aufgelöst.
+**Vier neue Labels:** `modul:ffmpeg-adapter`, `modul:render-service`, `modul:export-service`,
+**`risiko:tv-ausgabe`** (15 der 37: #161–#170, #174, #176, #177, #180, #181).
+**`braucht-entscheidung` tragen nur 5 der 37:** #163, #168, #184, #191, #192 – **drei davon sind
+Experimente**, keine Entscheidungen.
+
+| Kürzel | Issue | Kürzel | Issue |
+|---|---|---|---|
+| M6-01 | [#156](https://github.com/NiklasRist/Digital-Signage-Tool/issues/156) | M6-20 | [#175](https://github.com/NiklasRist/Digital-Signage-Tool/issues/175) |
+| M6-02 | [#157](https://github.com/NiklasRist/Digital-Signage-Tool/issues/157) | M6-21 | [#176](https://github.com/NiklasRist/Digital-Signage-Tool/issues/176) |
+| M6-03 | [#158](https://github.com/NiklasRist/Digital-Signage-Tool/issues/158) | M6-22 | [#177](https://github.com/NiklasRist/Digital-Signage-Tool/issues/177) |
+| M6-04 | [#159](https://github.com/NiklasRist/Digital-Signage-Tool/issues/159) | M6-23 | [#178](https://github.com/NiklasRist/Digital-Signage-Tool/issues/178) |
+| M6-05 | [#160](https://github.com/NiklasRist/Digital-Signage-Tool/issues/160) | M6-24 | [#179](https://github.com/NiklasRist/Digital-Signage-Tool/issues/179) |
+| M6-06 | [#161](https://github.com/NiklasRist/Digital-Signage-Tool/issues/161) | M6-25 | [#180](https://github.com/NiklasRist/Digital-Signage-Tool/issues/180) |
+| M6-07 | [#162](https://github.com/NiklasRist/Digital-Signage-Tool/issues/162) | M6-26 | [#181](https://github.com/NiklasRist/Digital-Signage-Tool/issues/181) |
+| M6-08 | [#163](https://github.com/NiklasRist/Digital-Signage-Tool/issues/163) | M6-27 | [#182](https://github.com/NiklasRist/Digital-Signage-Tool/issues/182) |
+| M6-09 | [#164](https://github.com/NiklasRist/Digital-Signage-Tool/issues/164) | M6-28 | [#183](https://github.com/NiklasRist/Digital-Signage-Tool/issues/183) |
+| M6-10 | [#165](https://github.com/NiklasRist/Digital-Signage-Tool/issues/165) | M6-29 | [#184](https://github.com/NiklasRist/Digital-Signage-Tool/issues/184) |
+| M6-11 | [#166](https://github.com/NiklasRist/Digital-Signage-Tool/issues/166) | M6-30 | [#185](https://github.com/NiklasRist/Digital-Signage-Tool/issues/185) |
+| M6-12 | [#167](https://github.com/NiklasRist/Digital-Signage-Tool/issues/167) | M6-31 | [#186](https://github.com/NiklasRist/Digital-Signage-Tool/issues/186) |
+| M6-13 | [#168](https://github.com/NiklasRist/Digital-Signage-Tool/issues/168) | M6-32 | [#187](https://github.com/NiklasRist/Digital-Signage-Tool/issues/187) |
+| M6-14 | [#169](https://github.com/NiklasRist/Digital-Signage-Tool/issues/169) | M6-33 | [#188](https://github.com/NiklasRist/Digital-Signage-Tool/issues/188) |
+| M6-15 | [#170](https://github.com/NiklasRist/Digital-Signage-Tool/issues/170) | M6-34 | [#189](https://github.com/NiklasRist/Digital-Signage-Tool/issues/189) |
+| M6-16 | [#171](https://github.com/NiklasRist/Digital-Signage-Tool/issues/171) | M6-35 | [#190](https://github.com/NiklasRist/Digital-Signage-Tool/issues/190) |
+| M6-17 | [#172](https://github.com/NiklasRist/Digital-Signage-Tool/issues/172) | M6-36 | [#191](https://github.com/NiklasRist/Digital-Signage-Tool/issues/191) |
+| M6-18 | [#173](https://github.com/NiklasRist/Digital-Signage-Tool/issues/173) | M6-37 | [#192](https://github.com/NiklasRist/Digital-Signage-Tool/issues/192) |
+| M6-19 | [#174](https://github.com/NiklasRist/Digital-Signage-Tool/issues/174) | | |
 
 ## M5 → GitHub-Mapping
 
@@ -1637,7 +1673,7 @@ export interface RenderItemVideo {
   trimEnde: number                 // Sekunden
   einblendung: {
     art: 'split' | 'einblendung'     // Kompositionsart: Band UNTER bzw. ÜBER dem Video (TK 9.2.8)
-    höhe: number                     // Bandhöhe H in Pixeln (ganzzahlig)
+    höhe: number                     // Bandhöhe H in Pixeln (ganzzahlig und gerade, TK 9.2.8)
     bandVorlageId: string
     abschnitte: Array<{ png: Uint8Array; dauer: number }>   // Band-PNGs bereits gerendert, je 1920 × höhe
     // Uint8Array (nicht ArrayBuffer/Buffer): überlebt Electrons structured clone
@@ -1688,7 +1724,7 @@ Element gar nicht erst in den Auftrag.
 | Eingang | Bedeutung | Grenzen/Validierung |
 |---|---|---|
 | – | reine Typdefinition | – |
-| `einblendung.art` / `einblendung.höhe` | Kompositionsart und Bandhöhe, beim Einreihen aus der Band-Vorlage abgeleitet | `art` ∈ { `split`, `einblendung` }; `höhe` ganzzahlig, > 0 und < 1080 (Prüfung selbst ist Sache von `render-service`, M6 – hier nur die Typen) |
+| `einblendung.art` / `einblendung.höhe` | Kompositionsart und Bandhöhe, beim Einreihen aus der Band-Vorlage abgeleitet | `art` ∈ { `split`, `einblendung` }; `höhe` ganzzahlig, **gerade**, > 0 und < 1080 – `yuv420p` verlangt gerade Höhen und gerade Versätze, bei ungerader Höhe brechen **beide** Kompositionsarten aus 9.2.8 (TK 9.11.1 Punkt 8; durchgesetzt an der Quelle: `vorlagen-editor` sperrt, `vorlagen-store` weist ab). Die Prüfung im Auftrag selbst ist Sache von `render-service`, M6 – hier nur die Typen |
 | `ausgabeName` | Dateiname ohne Endung für die Zieldatei | keine Pfadtrenner, kein `..`, keine für Windows/macOS/FAT32 unzulässigen Zeichen, nicht leer, keine reservierten Windows-Namen (Validierung selbst ist Sache von `render-service`, M6 – hier nur der Typ `string`) |
 
 Ausgang bei Erfolg: `RenderRequest`/`RenderItem` sind im ganzen Projekt importierbar; TypeScript
@@ -1706,7 +1742,7 @@ Ausgang bei Fehler: entfällt.
   sich aus der Listenposition, nicht aus einem separaten Feld." (TK 9.2.1)
 - „**Die `einblendung` eines `"video"`-Items trägt die Geometrie mit:** `art` | `"split"` \|
   `"einblendung"` – Kompositionsart (Band **unter** bzw. **über** dem Video, 9.2.8) · `höhe` |
-  Bandhöhe `H` in Pixeln (ganzzahlig) · `abschnitte` | geordnete Folge `{ png (Binärpuffer,
+  Bandhöhe `H` in Pixeln (ganzzahlig und **gerade**, 9.2.8) · `abschnitte` | geordnete Folge `{ png (Binärpuffer,
   1920 × H), dauer }`" (TK 9.2.2)
 - „Die Art wird **beim Einreihen** des Render-Auftrags aus der Band-Vorlage abgeleitet und zusammen
   mit der Bandhöhe `H` als `einblendung.art` / `einblendung.höhe` im `RenderRequest`
