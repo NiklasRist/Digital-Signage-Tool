@@ -5,6 +5,10 @@
   "description": "Desktop-Werkzeug, das aus Medien und Aktions-Segmenten eine durchgehende MP4 fuer den Studio-Bildschirm erzeugt (Baller Gruppe / Fitnessworld24).",
   "license": "UNLICENSED",
   "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build:renderer && npm run build:main",
+    "build:renderer": "vite build",
+    "build:main": "node scripts/build-main.mjs",
     "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer",
     "typecheck:main": "tsc -p tsconfig.main.json --noEmit",
     "typecheck:preload": "tsc -p tsconfig.preload.json --noEmit",
@@ -12,6 +16,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "electron": "^43.2.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.7.2",
+    "vite": "^8.2.0"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.3.0"
   }
 }

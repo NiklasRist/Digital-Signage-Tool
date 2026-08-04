@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Content-Security-Policy: verbietet dem Renderer alles Entfernte. Die App laedt
+      nie aus dem Netz - Medien kommen ueber media:// (#9), Schriften liegen gebuendelt
+      bei (#8). 'unsafe-inline' fuer style-src, weil React Stile inline setzt.
+      Im Dev-Modus ergaenzt Vite den HMR-Client; er laeuft ueber denselben Origin.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data: blob: media:; media-src 'self' blob: media:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws:"
+    />
+    <title>Digital-Signage-Tool</title>
+  </head>
+  <body>
+    <div id="wurzel"></div>
+    <script type="module" src="/src/renderer/main.tsx"></script>
+  </body>
+</html>
