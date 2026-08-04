@@ -1382,7 +1382,8 @@ export interface Aktion {
   cta: string | null
   standardDauer: number | null     // nur Vorgabe, s. TK 9.8.4
   vorlagenId: string
-  akzentfarbe: string              // Rollen-Verweis in die Markenpalette, kein Hex
+  akzentfarbe: string | null       // Rollen-Verweis in die Markenpalette, kein Hex;
+                                   // null = kein Wert gewaehlt, dann gilt der Markenwert
 }
 ```
 
@@ -1405,12 +1406,24 @@ Aktion {
   cta:          string | null   // Call-to-Action, z. B. "Gratis Probetraining"
   standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4)
   vorlagenId:   string          // gewählte Vorlage (eingebaut oder eigene, FA-13)
-  akzentfarbe:  string          // aus der Markenpalette (feste Auswahl, v1)
+  akzentfarbe:  string | null   // aus der Markenpalette (feste Auswahl, v1); ERSETZT beim Zeichnen
+                                //   die Akzent-Rollen der Vorlage (9.10.9). null = Markenwert gilt
 }
 ```
 (TK 9.8.2, wörtlich übernommen)
 - „Bild = Referenz, nie Kopie: die Aktion hält nur eine Asset-ID." (TK 9.8.4)
 - „Akzentfarbe nur aus der Markenpalette (feste Auswahl in v1, kein freier Farbwähler)." (TK 9.8.4)
+- „**Ist `aktion.akzentfarbe` nicht gesetzt, gilt der Markenwert** der jeweiligen Rolle. Das ist
+  der reguläre Rückfall und **kein** Fehler; eine Aktion ohne gewählte Akzentfarbe sieht aus wie
+  die Vorlage sie vorsieht." (TK 9.10.9)
+
+**ENTSCHIEDEN (TK v3.0) – `akzentfarbe` ist `string | null`, und der Nullfall ist ein zugesagter
+Zustand, kein Versehen.** Die Akzentfarbe einer Aktion **ersetzt beim Zeichnen** die drei
+Akzent-Rollen ihrer Vorlage (`akzent`, `akzentKraeftig`, `akzentTief`, TK 9.10.9); wählt eine Aktion
+keine, gilt der Markenwert. *Begründung:* Ohne die Nullbarkeit gäbe es den zugesagten Zustand
+„nicht gesetzt" überhaupt nicht – jede Aktion trüge zwingend eine Rolle, und der reguläre Rückfall
+auf die Vorlage wäre nur über einen erfundenen Sonderwert (leerer String) darstellbar, den jede
+lesende Stelle anders auslegt. `null` ist hier ein **Wert mit Bedeutung**, nicht ein fehlender Wert.
 
 ## Fehlerpfade (vollständig)
 Entfällt (Typdefinition; Validierung – Titel Pflicht – ist Sache der `erstelleAktion`/
@@ -1425,6 +1438,10 @@ Entfällt (Typdefinition; Validierung – Titel Pflicht – ist Sache der `erste
 ## Definition of Done
 - [ ] `Aktion`-Interface exakt wie oben
 - [ ] `titel` ist non-optional (`string`, nicht `string | null`)
+- [ ] `akzentfarbe` ist `string | null` – **nicht** `string`, **nicht** optional (`akzentfarbe?:`).
+      `null` bedeutet: keine Akzentfarbe gewählt, es gilt der Markenwert (TK 9.8.2 / 9.10.9) – und
+      ist ein gültiger Zustand; ein optionales Feld würde denselben Zustand ein zweites Mal als
+      `undefined` ausdrücken
 - [ ] Keine Datei außerhalb von `src/shared/contracts/aktion.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
@@ -3197,8 +3214,9 @@ TK 9.5.1, TK 9.5.2, TK 9.5.4, TK 9.5.5
 ### Issue M1-23: [project-store] listeProjekte implementieren
 
 ## Ziel (in einem Satz)
-Eine Instant-Operation liefert leichte Metadaten (ID, Name, Erstell-/Änderungsdatum, Ordner) aller
-vorhandenen Projekte, ohne sie vollständig zu laden.
+Eine Instant-Operation liefert leichte Metadaten (ID, Name, Erstell-/Änderungsdatum, Ordner,
+Beschädigt-Kennzeichen) aller vorhandenen Projekte, ohne sie vollständig zu laden – **einschließlich**
+der Projekte mit defekter `project.json`, die gekennzeichnet statt weggelassen werden.
 
 ## Modul & Datei
 - Modul: `project-store` [D1] (Main)
@@ -3215,14 +3233,18 @@ erscheinen lassen, obwohl TK 9.5.1 explizit nur **ein** aktives Projekt im Speic
 ## Signatur (verbindlich – NICHT ändern)
 ```ts
 export interface ProjektMeta {
-  id: string
-  name: string
-  erstelltAm: string
-  geaendertAm: string
-  ordner: string
+  id: string          // = Ordnername unter projects/
+  name: string        // aus project.json; bei beschaedigt: true der ORDNERNAME als Behelf
+  erstelltAm: string  // ISO-8601 UTC; bei beschaedigt: true aus den Ordner-Zeitstempeln
+  geaendertAm: string // ISO-8601 UTC; bei beschaedigt: true aus den Ordner-Zeitstempeln
+  ordner: string      // relativer Ordnername
+  beschaedigt: boolean // true = weder project.json noch project.json.bak lesbar
 }
 export async function listeProjekte(): Promise<Ergebnis<ProjektMeta[]>>
 ```
+
+**Läuft unter dem D1-Lock** (`mitD1Lock`, M1-20) – ausdrücklich entschieden, obwohl die Operation nur
+liest; Begründung im ENTSCHIEDEN-Block unten.
 
 ## Eingang → Ausgang
 | Eingang | Bedeutung | Grenzen/Validierung |
@@ -3230,57 +3252,123 @@ export async function listeProjekte(): Promise<Ergebnis<ProjektMeta[]>>
 | – | liest `projects/`-Ordner | – |
 
 Ausgang bei Erfolg: Array aller gefundenen Projekte (leeres Array, wenn keine existieren – **kein**
-Fehler).
+Fehler); defekte Projekte sind **enthalten**, mit `beschaedigt: true`.
 Ausgang bei Fehler: `speicher_fehler` nur bei I/O-Fehler beim Lesen des `projects/`-Verzeichnisses
-selbst (nicht bei einzelnen defekten Projekten – s. „Nicht selbst entscheiden").
+selbst – **nicht** bei einzelnen defekten Projekten, die sind ein regulärer Listeneintrag.
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
-- „`listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geändertAm, ordner)"
+- „| `listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geaendertAm,
+  ordner, **beschaedigt**) – listet **auch** Projekte mit defekter `project.json`,
+  gekennzeichnet statt weggelassen (s. u.) |" (TK 9.5.2)
+- „Die **Projekt-Liste** (FA-10) sind leichte Metadaten (Name, Erstell-/Änderungsdatum, Ordner,
+  **Kennzeichnung beschädigter Projekte**), bei Bedarf aus dem `projects/`-Ordner gelesen – der
+  Scan läuft **unter dem D1-Lock** (Begründung: 9.5.2)." (TK 9.5.1) – **kein** vollständiges
+  Laden jedes Projekts.
+- „**Ein beschädigtes Projekt wird MIT WARNHINWEIS gelistet, nicht weggelassen (bindend).**"
   (TK 9.5.2)
-- „Die **Projekt-Liste** (FA-10) sind leichte Metadaten … bei Bedarf aus dem `projects/`-Ordner
-  gelesen." (TK 9.5.1) – **kein** vollständiges Laden jedes Projekts.
+- „**`listeProjekte` nimmt das D1-Lock, obwohl sie nur liest (bindend).**" (TK 9.5.2)
 - Der Abschnittstitel von TK 9.5.2 lautet „**Operationen (Instant, über das D1-Lock)**" und
-  `listeProjekte` ist eine der fünf darin aufgeführten Operationen – laut TK-Gliederung läuft sie
-  also ebenfalls über `mitD1Lock` (M1-20).
+  `listeProjekte` ist eine der fünf darin aufgeführten Operationen; das Lock ist für sie
+  zusätzlich **ausdrücklich** festgeschrieben (s. o.) – sie läuft über `mitD1Lock` (M1-20).
+
+**ENTSCHIEDEN (TK v3.0, 9.5.2) – ein beschädigtes Projekt wird MIT `beschaedigt: true` gelistet,
+nicht weggelassen.** Wörtlich: „Ist die `project.json` eines Ordners unlesbar oder ungültig **und**
+lässt sie sich auch nicht aus `project.json.bak` wiederherstellen (9.5.4), erscheint der Eintrag
+**trotzdem** in der Liste: mit dem **Ordnernamen** als Behelfs-Bezeichnung und `beschaedigt: true`.
+Die Oberfläche kennzeichnet ihn sichtbar und lässt ihn **nicht öffnen** – ein `öffneProjekt` auf
+ihn scheitert unverändert nach der Regel aus 9.5.4 (Fehler melden, **nicht** leer weiterstarten)."
+(TK 9.5.2)
+
+*Begründung (TK 9.5.2):* „Die **Medien des Nutzers liegen weiterhin im Ordner**
+(`projects/<id>/media/`), ebenso die gerenderten Ausgaben. Ein weggelassenes Projekt sieht für ihn
+aus wie ein **verlorenes** – er würde von vorn anfangen, obwohl seine Arbeit noch vollständig auf
+der Platte liegt." Und: „Ein stilles Ausblenden wäre außerdem der einzige Ort im ganzen System, an
+dem ein Datenfehler **ohne jede Meldung** verschwindet – das widerspricht 9.1.1 Punkt 7
+(„kein stiller Fehlschlag")."
+
+**Verbindlich für die Umsetzung, damit hier nichts geraten wird:**
+
+- **Reihenfolge der Quellen je Ordner:** erst `project.json`; ist sie unlesbar oder ungültig, dann
+  `project.json.bak` (die letzte heile Version, TK 9.5.4). Gelingt eine der beiden, ist
+  `beschaedigt: false`, und die Metadaten stammen aus der gelesenen Datei. Erst wenn **beide**
+  scheitern, ist `beschaedigt: true` – so schreibt es die Felddefinition selbst:
+  „`beschaedigt: boolean         // true = weder project.json noch project.json.bak lesbar`"
+  (TK 9.5.2).
+- **Behelfswerte bei `beschaedigt: true`:** `name` = der **Ordnername**, `id` = der Ordnername,
+  `ordner` = der Ordnername, `erstelltAm`/`geaendertAm` = die **Ordner-Zeitstempel** (ISO-8601 UTC).
+  **Kein** erfundener Name, **kein** leerer String und **keine** Nullwerte – die
+  Behelfs-Bezeichnung ist genau das, was der Nutzer im Dateisystem sieht, und damit das Einzige,
+  womit er den Ordner wiederfindet.
+- **Diese Operation repariert nichts.** Sie schreibt keine `project.json` zurück, benennt nichts
+  um, legt nichts an und löscht nichts – auch nicht die kaputte Datei. Sie **liest** und **meldet**.
+
+**ENTSCHIEDEN (TK v3.0, 9.5.2) – `listeProjekte` nimmt das D1-Lock, obwohl sie nur liest.** Damit
+ist sie die **Ausnahme** zur Regel „lesen braucht kein Lock" – anders als `listeAusgaben` (M1-44),
+die ohne Lock läuft. *Begründung, wörtlich:* „Der Verzeichnis-Scan läuft über **fremde**
+Projektordner, und `dupliziereProjekt` erzeugt einen solchen Ordner **schrittweise**
+(`project.json` schreiben, `media/` kopieren). Ein Scan mitten hinein läse ein Projekt in einem
+**halbkopierten Zwischenzustand** ein – je nach Reihenfolge mit fehlender oder halb geschriebener
+`project.json`, also als **fälschlich beschädigt** gemeldetes Projekt, das Minuten später völlig
+in Ordnung ist. Das Lock macht den Scan gegen laufende Schreibvorgänge dicht; sein Preis ist eine
+kurze Wartezeit beim Öffnen der Projektliste." (TK 9.5.2)
+
+Das ist **kein** Nebendetail: Ohne das Lock wäre die neu eingeführte Kennzeichnung
+`beschaedigt: true` an genau der Stelle unzuverlässig, an der sie am meisten erschreckt – während
+einer laufenden Duplizierung.
 
 ## Fehlerpfade (vollständig)
 | Situation | Code | Verhalten |
 |---|---|---|
 | `projects/`-Ordner existiert nicht (erster Start) | – (kein Fehler) | leeres Array |
 | `projects/`-Verzeichnis selbst nicht lesbar (Rechte) | `speicher_fehler` | – |
-| ein einzelnes Unterverzeichnis hat eine defekte `project.json` | – (kein Fehler für die Liste) | s. „Nicht selbst entscheiden" |
+| ein einzelnes Unterverzeichnis hat eine defekte `project.json`, aber eine lesbare `project.json.bak` | – (kein Fehler) | Metadaten aus der `.bak`, `beschaedigt: false` |
+| ein Unterverzeichnis hat **weder** eine lesbare `project.json` **noch** eine lesbare `project.json.bak` (auch: keine von beiden vorhanden) | – (kein Fehler) | Eintrag **mit** `beschaedigt: true`, Ordnername als `name`, Ordner-Zeitstempel als Datumsangaben; **nicht** weglassen, **nicht** abbrechen |
+| das D1-Lock ist gerade von einem Schreibvorgang belegt | – (kein Fehler) | **warten**, wie jede andere Operation über `mitD1Lock` (M1-20); **kein** Scan am Lock vorbei, **kein** Zeitlimit, **kein** ungesperrter Schnellpfad |
 
 ## Nicht selbst entscheiden – STOPP und fragen
-- Wie mit einem einzelnen defekten Projekt in der Liste umgegangen wird (Metadaten lassen sich
-  ohne volles Parsen evtl. nicht zuverlässig lesen, wenn `project.json` beschädigt ist) – zwei
-  Optionen: das Projekt aus der Liste weglassen (Gefahr: Nutzer sieht sein Projekt nicht mehr und
-  denkt, es sei weg) oder mit einem Fehler-Badge auflisten (Gefahr: mehr UI-Komplexität in M7). Ohne
-  Vorgabe im TK zur Diskussion stellen statt einseitig zu entscheiden.
-- `listeProjekte` ist ein reiner **Lesezugriff** auf `projects/`. Ob dafür wirklich das
-  **Schreib**-Lock (`mitD1Lock`) genommen werden muss, oder ob der TK-Abschnittstitel „über das
-  D1-Lock" nur pauschal für alle fünf Operationen formuliert ist, ohne dass ein reiner Verzeichnis-
-  Scan das im Wortsinn bräuchte, ist eine echte Sachfrage. Dagegen spricht: ein Verzeichnis-Scan
-  während einer laufenden `dupliziereProjekt`-Kopie (M1-24, kopiert `media/` außerhalb des Locks,
-  aber `project.json` innerhalb) könnte sonst ein Projekt in einem inkonsistenten Zwischenzustand
-  einlesen. Nicht selbst entscheiden – klären, ob `mitD1Lock` hier wörtlich genommen wird oder ob
-  ein leichteres Read-Lock/keine Sperre reicht.
+- **Verbot – ein defektes Projekt nicht weglassen und nicht „aufhübschen".** Kein stilles
+  Überspringen, kein Sammel-Fehler statt der Liste, kein erfundener Anzeigename. Der Eintrag mit
+  `beschaedigt: true` und dem Ordnernamen ist verbindlich (TK 9.5.2).
+- **Verbot – ein defektes Projekt macht die GANZE Operation nicht kaputt.** Ein unlesbarer
+  Unterordner liefert einen gekennzeichneten Eintrag, **keinen** `speicher_fehler` für die ganze
+  Liste. `speicher_fehler` gibt es nur, wenn das `projects/`-Verzeichnis **selbst** nicht lesbar
+  ist.
+- **Verbot – das Lock nicht umgehen.** Kein ungesperrter „Schnellpfad", kein eigenes Read-Lock,
+  kein Zeitlimit auf `mitD1Lock`. Dass eine reine Leseoperation das Schreib-Lock nimmt, ist eine
+  ausdrückliche Entscheidung mit Begründung (TK 9.5.2) und keine übersehene Ungenauigkeit.
+- **Verbot – hier wird nichts geöffnet.** Diese Operation lädt kein Projekt in den Speicher und
+  entscheidet nicht, ob eines geöffnet werden darf. Dass ein beschädigtes Projekt **nicht**
+  geöffnet werden kann, setzt `öffneProjekt` durch (TK 9.5.2 / 9.5.4), nicht diese Datei.
 
 ## Definition of Done
-- [ ] `listeProjekte()` liefert korrekte Metadaten für alle intakten Projekte
+- [ ] `listeProjekte()` liefert korrekte Metadaten für alle intakten Projekte, jeweils mit
+      `beschaedigt: false`
+- [ ] Ein Projektordner mit kaputter `project.json` **und** kaputter/fehlender `project.json.bak`
+      erscheint in der Liste mit `beschaedigt: true`, `name` gleich dem **Ordnernamen** und
+      Datumsangaben aus den Ordner-Zeitstempeln – er wird **nicht** weggelassen, und die Operation
+      liefert **kein** `ok: false`
+- [ ] Ein Projektordner mit kaputter `project.json`, aber lesbarer `project.json.bak` erscheint mit
+      `beschaedigt: false` und den Metadaten aus der `.bak`
+- [ ] Ein intaktes und ein beschädigtes Projekt nebeneinander → **beide** stehen in der Liste
+      (Regressionstest gegen das stille Überspringen)
 - [ ] Fehlender `projects/`-Ordner liefert ein leeres Array, keinen Fehler
 - [ ] Kein vollständiges Parsen der `liste`/`assets`/`aktionen`-Arrays jedes Projekts (nur die
       Metadatenfelder)
-- [ ] Läuft innerhalb von `mitD1Lock` (TK 9.5.2 Abschnittstitel; s. STOPP-Punkt zur Sachfrage
-      Lese- vs. Schreibzugriff)
+- [ ] Läuft innerhalb von `mitD1Lock` (M1-20) – ausdrücklich entschieden (TK 9.5.2:
+      „**`listeProjekte` nimmt das D1-Lock, obwohl sie nur liest (bindend).**"); der Test belegt,
+      dass der Verzeichnis-Scan **innerhalb** des Locks läuft und nicht daneben
+- [ ] Die Datei schreibt nichts: kein `writeFile`, kein `rename`, kein `mkdir`, kein `unlink`
+      (Grep-Probe) – auch nicht auf eine kaputte `project.json`
 - [ ] Keine Datei außerhalb von `src/main/project-store/liste-projekte.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
 - Blockiert von: #1 (S1, liefert Ordnerstruktur/TS-Toolchain), #5 (S5, liefert `ermittleDatenOrt()`
-  – Basispfad für `projects/`)
+  – Basispfad für `projects/`), M1-20 (`mitD1Lock` – das D1-Lock, das diese Operation nimmt)
 - Blockiert: M7-Issues (Projektverwaltung-UI)
 
 ## Bezug
-TK 9.5.1, TK 9.5.2
+TK 9.5.1, TK 9.5.2, TK 9.5.4 (`project.json.bak`, `öffneProjekt` bei Defekt),
+TK 9.1.1 Punkt 7, FA-10
 
 ---
 

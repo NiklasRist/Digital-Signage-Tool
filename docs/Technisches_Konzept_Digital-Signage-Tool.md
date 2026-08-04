@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 2.9 (HLD vollständig, geprüft)
+**Version:** 3.0 (HLD vollständig, geprüft)
 **Datum:** 04.08.2026
 **Status:** In Planung
 
@@ -46,7 +46,7 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 **A — Persistente Fachdaten** (Projektmaterial)
 
 - **Projekt** – ID, Name, Erstell-/Änderungsdatum, geordnete Elementliste. *(FA-15, FA-10)*
-- **Aktion/Produkt** – ID, Titel (Pflicht), Beschreibung?, Preis?, Bildreferenz?, CTA?, Anzeigedauer?, Vorlagen-ID, Akzentfarbe. *(FA-02, 4.1)*
+- **Aktion/Produkt** – ID, Titel (Pflicht), Beschreibung?, Preis?, Bildreferenz?, CTA?, Anzeigedauer?, Vorlagen-ID, Akzentfarbe? (ersetzt die Akzent-Rollen der Vorlage, 9.10.9). *(FA-02, 4.1)*
 - **Medium (Asset)** – ID, Typ (video|image), Dateiname, Maße, Dauer (Video, via ffprobe), Importdatum. *(FA-01)*
 - **Listenelement** – ID, Art (Video|Bild|Aktions-Segment), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`. Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
 - **Vorlage** – datengetriebene Layout-Definition: `art` (vollflächig | Split-Band | Einblendung), `höhe` (bei Bändern), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Vollbild", „Split", „Band-Standard". **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
@@ -387,6 +387,8 @@ Wo eine Operation **nichts** zu melden hat, lautet die Nutzlast `void`: **`Ergeb
 
 **9. Binärdaten** (Segment- und Band-PNGs) reisen als **Binärpuffer**, nicht als Base64 (9.1, Punkt 3) – die Hülle ändert daran nichts.
 
+**10. Die App hat GENAU EIN Fenster – und jedes Ereignis geht an dieses eine Fenster.** Damit ist die **Empfängerfrage** für alle Main→Renderer-Ereignisse (`render:fortschritt` 9.2.7, `queue:geaendert` 9.3.4, die Auto-Speichern-Meldung 9.5.4) **einheitlich beantwortet**: Der Sender im Main adressiert das eine Fenster; es gibt **keine** Verteilerlogik, **keine** Empfängerliste, **kein** „an alle Fenster senden". Wer im Main ein Ereignis verschickt, hat **keine** Wahl zu treffen. *Begründung:* Die erste Stufe ist **ein Studio, ein Bildschirm, ein Laptop** (Anforderungsdokument, Abschnitt 3); die App ist ein Werkzeug für **einen** Bearbeiter, der eine Wiedergabeliste zusammenstellt und rendert. Ein zweites Fenster hätte in diesem Ablauf keine Aufgabe – es brächte nur die Frage mit, welches Fenster den Fortschritt sieht, wer den Abbruch auslösen darf und was passiert, wenn ein Fenster geschlossen wird, während ein Auftrag läuft. Diese Frage bleibt **ungestellt**, solange es nur ein Fenster gibt. *Vorsorglich mitgeschleppt wird sie nicht:* Käme später ein zweites Fenster, ist die Nachbesserung überschaubar und liegt an den **Verdrahtungsstellen** (Sender im Main, Anmeldung im `ipc-gateway`) – sie wird dann **bewusst** gemacht, statt heute in jedem Modul eine Verteilerlogik zu tragen, die nie gebraucht wird. **Diese Festlegung ist nicht dasselbe wie die Einzel-Instanz-Sperre (9.5.4):** Jene verhindert einen **zweiten Prozess** auf denselben Daten, diese legt fest, dass der **eine** Prozess **ein** Fenster führt.
+
 ### 9.2 Schnittstelle `render-service`: Operation `renderReel`
 
 **Richtung:** Renderer → Main **über die Auftrags-Queue** (`reiheEin`, `art: render`) – **kein** direkter Request/Response-Aufruf (9.3.4); Main → Renderer (Fortschritts-Ereignisse 9.2.7, Endergebnis über den Auftrags-Zustand), ausschließlich über den typisierten IPC-Vertrag.
@@ -523,7 +525,7 @@ Diese Zusicherungen sind Teil des Vertrags und dürfen von keiner lokalen Entsch
 
 Während eines laufenden Renders läuft der Kanal in **beide** Richtungen; beide Richtungen korrelieren über die `renderId` des Laufs:
 
-- **Main → Renderer:** Fortschritts-Ereignisse (`RenderProgress`) auf dem Kanal **`render:fortschritt`**.
+- **Main → Renderer:** Fortschritts-Ereignisse (`RenderProgress`) auf dem Kanal **`render:fortschritt`** – an **das eine Fenster** der App (9.1.1 Punkt 10); der Sender hat keinen Empfänger auszuwählen.
 - **Renderer → Main:** Abbruch-Signal (`cancelRender`).
 
 **Der Kanal `render:fortschritt` wird gebaut, nicht nur erwähnt.** Er ist in 9.1.1 Punkt 4 als Beispiel für die Ereignis-Namenskonvention genannt; das ist **kein** Platzhalter: Der `render-service` meldet darauf, das `ipc-gateway` meldet ihn an, der Renderer abonniert ihn. *Begründung:* Ein Render kann Minuten dauern; ein Balken ohne Kontext lässt offen, ob überhaupt etwas passiert. Die Nutzlast steht unten vollständig fest, und der Empfänger im Renderer existiert. **Daneben behält die Warteschlange ihren groben Prozentwert:** `RenderProgress.prozent` speist `Auftrag.fortschritt` (9.3.6), der über `queue:geaendert` in die Warteschlangen-Leiste geht. Zwei Kanäle mit verschiedenem Zweck – der eine detailliert und flüchtig für die Render-Ansicht, der andere grob im Auftrags-Zustand.
@@ -721,6 +723,7 @@ holeStand()            → Ergebnis<Auftrag[]>       // Snapshot für die UI (z.
 ```
 QueueGeändert(Auftrag[])   // Main → Renderer: Push bei jeder Zustandsänderung → speist das queue-panel
                            // Ereignis: OHNE Hülle und ohne Endzustand (9.1.1 Punkte 5 und 2)
+                           // Empfänger: DAS EINE Fenster der App (9.1.1 Punkt 10)
 ```
 
 Alle vier Aufrufe sind **Instant** und tragen die Ergebnis-Hülle (9.1.1): `Ergebnis<void>` heißt „eingereiht/entfernt/wiederholt", **nicht** „fertig". Ein `entferne` auf einen bereits beendeten Auftrag ist kein Erfolg, sondern `nicht_gefunden`.
@@ -883,7 +886,7 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 
 - Besitzt `project.json` je Projekt (Projekt, Aktionen-Bibliothek, Liste, Vorlagen-Ref) und das **eine D1-Schreib-Lock**.
 - Das **aktive** Projekt lebt zur Laufzeit **im Speicher** (Quelle der Wahrheit während der Sitzung; Lesezugriffe sind sofortig). Nur *ein* Projekt ist gleichzeitig geladen.
-- Die **Projekt-Liste** (FA-10) sind leichte Metadaten (Name, Erstell-/Änderungsdatum, Ordner), bei Bedarf aus dem `projects/`-Ordner gelesen.
+- Die **Projekt-Liste** (FA-10) sind leichte Metadaten (Name, Erstell-/Änderungsdatum, Ordner, **Kennzeichnung beschädigter Projekte**), bei Bedarf aus dem `projects/`-Ordner gelesen – der Scan läuft **unter dem D1-Lock** (Begründung: 9.5.2).
 - Führt alle **Instant-Operationen** aus (nicht über die Queue): Aktion CRUD, Liste ordnen, Trim/Dauer setzen.
 - Ist die **Pfad-Autorität** des Projekts: löst `(projektId, dateiname) → absoluter Pfad` auf und trägt das `media://`-Protokoll für den Renderer-Lesezugriff (9.5.7).
 
@@ -895,9 +898,26 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 |---|---|
 | `erstelleProjekt` | `name` → `Ergebnis<Projekt>` (neuer Ordner + leeres `project.json`) |
 | `öffneProjekt` | `id` → `Ergebnis<Projekt>` (lädt in den Speicher; setzt aktives Projekt via `config-store`) |
-| `listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geändertAm, ordner) |
+| `listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geaendertAm, ordner, **beschaedigt**) – listet **auch** Projekte mit defekter `project.json`, gekennzeichnet statt weggelassen (s. u.) |
 | `dupliziereProjekt` | `id`, `neuerName` → `Ergebnis<Projekt>` (kopiert `project.json` **und** `media/`) |
 | `löscheProjekt` | `id` → `Ergebnis<void>` (entfernt den Projektordner; war es aktiv, fällt `config-store` sanft zurück) |
+
+```
+ProjektMeta {
+  id:          string          // = Ordnername unter projects/
+  name:        string          // aus project.json; bei beschaedigt: true der ORDNERNAME als Behelf
+  erstelltAm:  string          // ISO-8601 UTC; bei beschaedigt: true aus den Ordner-Zeitstempeln
+  geaendertAm: string          // ISO-8601 UTC; bei beschaedigt: true aus den Ordner-Zeitstempeln
+  ordner:      string          // relativer Ordnername
+  beschaedigt: boolean         // true = weder project.json noch project.json.bak lesbar
+}
+```
+
+**Ein beschädigtes Projekt wird MIT WARNHINWEIS gelistet, nicht weggelassen (bindend).** Ist die `project.json` eines Ordners unlesbar oder ungültig **und** lässt sie sich auch nicht aus `project.json.bak` wiederherstellen (9.5.4), erscheint der Eintrag **trotzdem** in der Liste: mit dem **Ordnernamen** als Behelfs-Bezeichnung und `beschaedigt: true`. Die Oberfläche kennzeichnet ihn sichtbar und lässt ihn **nicht öffnen** – ein `öffneProjekt` auf ihn scheitert unverändert nach der Regel aus 9.5.4 (Fehler melden, **nicht** leer weiterstarten).
+
+*Begründung:* Die **Medien des Nutzers liegen weiterhin im Ordner** (`projects/<id>/media/`), ebenso die gerenderten Ausgaben. Ein weggelassenes Projekt sieht für ihn aus wie ein **verlorenes** – er würde von vorn anfangen, obwohl seine Arbeit noch vollständig auf der Platte liegt. Sichtbar mit Warnung ist die **ehrlichere** und zugleich die **reparierbare** Variante: Der Eintrag ist der einzige Hinweis darauf, dass dort etwas zu retten ist. Ein stilles Ausblenden wäre außerdem der einzige Ort im ganzen System, an dem ein Datenfehler **ohne jede Meldung** verschwindet – das widerspricht 9.1.1 Punkt 7 („kein stiller Fehlschlag").
+
+**`listeProjekte` nimmt das D1-Lock, obwohl sie nur liest (bindend).** Sie ist damit die **Ausnahme** zur Regel „lesen braucht kein Lock" – anders als `listeAusgaben` (s. u.), die nur einen Ordner ausliest. *Begründung:* Der Verzeichnis-Scan läuft über **fremde** Projektordner, und `dupliziereProjekt` erzeugt einen solchen Ordner **schrittweise** (`project.json` schreiben, `media/` kopieren). Ein Scan mitten hinein läse ein Projekt in einem **halbkopierten Zwischenzustand** ein – je nach Reihenfolge mit fehlender oder halb geschriebener `project.json`, also als **fälschlich beschädigt** gemeldetes Projekt, das Minuten später völlig in Ordnung ist. Das Lock macht den Scan gegen laufende Schreibvorgänge dicht; sein Preis ist eine kurze Wartezeit beim Öffnen der Projektliste.
 
 **Aktionen (Bibliothek, referenzierbar):**
 
@@ -966,7 +986,7 @@ AusgabeDatei {
   **Wichtig für die portable Auslieferung:** Die Sperre muss an den **Datenort** gebunden sein (den App-Ordner mit `projects/`), nicht an den Programmpfad. Sonst könnten zwei Kopien der portablen EXE, die auf **dieselben** Daten zeigen, beide starten – genau der Fall, den die Sperre verhindern soll.
 - **Lock-Grenze:** Das D1-Lock schützt **nur** `project.json`. Die Auftragsverwaltungs-Speicher Q2/Q3 (eigene Dateien, 9.3) haben ihre **eigene** Serialisierung – der `auftrags-manager` hängt **nicht** am `project-store`-Lock.
 - **Instant-Op vs. Speichern getrennt:** Eine Instant-Operation (9.5.2) validiert und wendet **im Speicher** an, *bevor* sie „ok" meldet – ihr Erfolg bedeutet „gültig übernommen", **nicht** „schon auf Platte". Die Platten-Schreibung ist die entprellte Auto-Speicherung.
-- **Speicherfehler sind sichtbar (NFA-02):** Scheitert eine Auto-Speicherung (Platte voll, Rechte), wird das **nicht still verschluckt** – die UI zeigt dauerhaft „nicht gespeichert" + automatischer Wiederholversuch; die Änderungen **bleiben im Speicher** (kein Rollback, kein Arbeitsverlust). Erst nach erfolgreichem Schreiben verschwindet der Hinweis.
+- **Speicherfehler sind sichtbar (NFA-02):** Scheitert eine Auto-Speicherung (Platte voll, Rechte), wird das **nicht still verschluckt** – die UI zeigt dauerhaft „nicht gespeichert" + automatischer Wiederholversuch; die Änderungen **bleiben im Speicher** (kein Rollback, kein Arbeitsverlust). Erst nach erfolgreichem Schreiben verschwindet der Hinweis. Der Weg dorthin ist ein **Ereignis vom Main** (das Auto-Speichern läuft ohne Aufruf aus dem Renderer, es gibt also keine Antwort, an die sich die Meldung hängen könnte); Empfänger ist **das eine Fenster** der App (9.1.1 Punkt 10).
 
 #### 9.5.5 `schemaVersion` & Migration
 
@@ -1136,7 +1156,8 @@ Aktion {
   cta:          string | null   // Call-to-Action, z. B. "Gratis Probetraining"
   standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4)
   vorlagenId:   string          // gewählte Vorlage (eingebaut oder eigene, FA-13)
-  akzentfarbe:  string          // aus der Markenpalette (feste Auswahl, v1)
+  akzentfarbe:  string | null   // aus der Markenpalette (feste Auswahl, v1); ERSETZT beim Zeichnen
+                                //   die Akzent-Rollen der Vorlage (9.10.9). null = Markenwert gilt
 }
 ```
 
@@ -1152,6 +1173,7 @@ Aktion {
 - **Titel ist Pflicht:** eine Aktion ohne Titel ist nicht speicherbar.
 - **Bild = Referenz, nie Kopie:** die Aktion hält nur eine Asset-ID; das Asset bleibt projektweit und wird beim Löschen der Aktion **nicht** angetastet (9.5.3).
 - **Akzentfarbe nur aus der Markenpalette** (feste Auswahl in v1, kein freier Farbwähler) – so bricht keine Aktion aus dem Corporate Design aus.
+- **Die Akzentfarbe ERSETZT die Akzent-Rollen der Vorlage – sie ist kein Zierwert.** Beim Zeichnen liefert jede Zone, die eine der drei Akzent-Rollen `akzent`, `akzentKraeftig` oder `akzentTief` auflöst, den Wert aus `aktion.akzentfarbe` statt des Markenwerts; alle übrigen Rollen bleiben unberührt (vollständige Regel: 9.10.9). **Die Vorlage bestimmt, WO Akzentfarbe hingehört; die Aktion bestimmt, WELCHE.** Für den Editor heißt das zweierlei: Die Farbwahl ist **sofort in der Live-Vorschau sichtbar** (sie geht durch dieselbe Zeichenroutine, 9.8.3), und sie wirkt **nur dort, wo die Vorlage Akzentfarbe vorgesehen hat** – der Editor verspricht also **nicht**, dass jede Vorlage sichtbar auf die Farbwahl reagiert. Wählt eine Aktion **keine** Akzentfarbe, gilt der Markenwert; das ist gültig und kein Fehler.
 - **Fester Markenrahmen immer erzwungen** (Logo, Sicherheitsabstände, FA-11); der Editor gestaltet nur die **freien Zonen** (FA-12).
 - **`standardDauer` ist nur ein Default:** maßgeblich für den Render ist die **Listenelement-Dauer** (composer, Anforderungsdokument 4.4). Beim Platzieren wird `standardDauer` als Startwert übernommen, danach überschreibbar.
 
@@ -1206,6 +1228,8 @@ zeichneSegment(aktion, vorlage, marke) → SegmentBild        // Canvas 1920×10
 
 **Invariante:** Es gibt **keinen zweiten Zeichenpfad.** Anzeige und Export stammen immer aus **demselben** Aufruf – sonst driften Vorschau und Endvideo auseinander.
 
+**Die `aktion` liefert nicht nur Feldinhalte, sondern auch Farbe.** Sie ist der dritte Eingang der **Farb-Rollen-Auflösung**: Ihre `akzentfarbe` ersetzt die Akzent-Rollen der Vorlage (9.10.9). Wer beim Auflösen einer `farbRolle` nur `vorlage` und `marke` heranzieht, erfüllt den Vertrag **nicht** – die Farbwahl der Aktion bliebe wirkungslos.
+
 #### 9.10.2 Ausgabe-Festlegungen
 
 | Feld | Wert |
@@ -1252,6 +1276,30 @@ Ist `aktion.bildRef` ein `fehlt`-Asset (9.4.7), zeichnet `template-canvas` einen
 - Kennt **keine** Dateisystem-Pfade – Motive kommen ausschließlich über `media://` (9.5.7).
 - Entscheidet **nicht** über Dauer (Listenelement/`composer`) und **nicht** über Reihenfolge.
 - Ist **kein** Auftrag der Queue – eine reine, synchron aufrufbare Renderer-Funktion.
+
+#### 9.10.9 Farb-Rollen-Auflösung: die Akzentfarbe der Aktion ersetzt die Akzent-Rollen
+
+Bisher blieb offen, **wie** `aktion.akzentfarbe` (9.8.2) auf das gezeichnete Segment wirkt: Die Vorlage nennt Farben nur als **Rollen** (9.11.1, Punkt 7), die Aktion bringt eine Akzentfarbe mit – aber die Zeichenroutine reichte sie nie an die Zonen-Auflösung weiter. Wirkung: **gar keine**. Das ist hiermit entschieden.
+
+**Die Regel (bindend):** Beim Zeichnen einer Zone wird jeder `farbRolle`-Verweis über **eine** Auflösungsfunktion aufgelöst, die **drei** Eingänge kennt – die Rolle, die `Marke` und die **`Aktion`**:
+
+```
+löseFarbe(farbRolle, marke, aktion) →
+    aktion.akzentfarbe   , wenn farbRolle ∈ { "akzent", "akzentKraeftig", "akzentTief" }
+                           UND aktion.akzentfarbe gesetzt ist
+    marke.farben[farbRolle] , sonst
+```
+
+- **Die drei Akzent-Rollen** sind `akzent`, `akzentKraeftig` und `akzentTief` (9.11.2). **`flaecheAkzentZart` gehört NICHT dazu** – trotz des Namens ist es eine **Flächen**-Rolle für dezente Hintergründe, und ein Hintergrund, der bei jeder Aktion die Farbe wechselt, war nie gemeint.
+- **Alle übrigen Rollen bleiben unberührt** – Text-Rollen (`textAufDunkel`, `textAufHell`, `textSekundaer`), Flächen-Rollen (`flaecheDunkel`, `flaecheSehrDunkel`, `flaecheHell`, `flaecheAkzentZart`), `linie` sowie `scrimStart`/`scrimEnde`. Sie kommen **immer** aus der `Marke`.
+- **Ist `aktion.akzentfarbe` nicht gesetzt, gilt der Markenwert** der jeweiligen Rolle. Das ist der reguläre Rückfall und **kein** Fehler; eine Aktion ohne gewählte Akzentfarbe sieht aus wie die Vorlage sie vorsieht.
+- **Es gibt genau eine Auflösungsstelle.** Keine Zonen-Sorte (Text, Bild, Deko, Verlauf) darf `marke.farben[...]` direkt lesen – sonst wirkt die Akzentfarbe in der Pille, aber nicht im Verlauf dahinter, und niemand fände den Grund. Auch `deko.verlauf` (`vonFarbRolle`/`bisFarbRolle`) läuft durch dieselbe Funktion.
+
+**Begründung:** So entstehen aus **einer** Vorlage ohne jede Zusatzarbeit verschiedene Anmutungen – dieselbe „Vollbild"-Vorlage trägt eine rote und eine blaue Aktion. Der **Aufbau** der Vorlage bleibt dabei unangetastet: Sie sagt weiterhin, **welche** Zone Akzentfarbe trägt (Preis-Pille, CTA-Pille, Badge), und diese Aussage gilt unabhängig davon, welche Farbe die einzelne Aktion mitbringt. Die Alternative – Vorlagen je Farbe zu duplizieren – hätte die Bibliothek vervielfacht und jede Layout-Korrektur mehrfach nötig gemacht. Zugleich bleibt die Farbwahl auf die **Markenpalette** begrenzt (9.8.4): Es entsteht **kein** freier Farbwähler, und keine Aktion kann aus dem Corporate Design ausbrechen.
+
+**Folge für den Vorlagenbau (bindend):** Eine Vorlage darf sich **nicht auf den Kontrast zwischen zwei Akzent-Rollen verlassen** – etwa Fläche `akzent` mit Text `akzentTief` in derselben Zone. Nach der Ersetzung tragen **alle drei** Rollen denselben Wert, der Text wäre unsichtbar. Wo lesbarer Kontrast auf einer Akzentfläche gebraucht wird, ist der Text eine **Text-Rolle** (`textAufDunkel` / `textAufHell`). Die eingebauten Vorlagen halten das bereits ein (9.11.1): Ihre Akzent-Pillen (`preis`, `cta`) tragen Akzentfarbe **als Fläche**, ihr Text kommt aus einer Text-Rolle.
+
+**Abgrenzung – wo die Regel NICHT gilt:** Die Ersetzung geschieht **ausschließlich** in der Zonen-Auflösung von `template-canvas`. Die Restflächen der Split-Komposition (9.2.8) füllt der `render-service` mit `flaecheDunkel` – **keine** Akzent-Rolle, also unverändert der Markenwert. Der `render-service` bekommt dadurch **keine** Kenntnis von Aktionen: Er sieht ohnehin nur fertige Pixel (Variante A, 9.1) und eine einzige Farbe aus der Marke. Ebenso unberührt bleiben Vorschau (9.9) und `composer`-Thumbnails – sie zeichnen über **dieselbe** Routine und bekommen die Ersetzung geschenkt.
 
 ---
 
@@ -1311,7 +1359,9 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 4. **Feste Zonen sind Teil der Vorlage**, nicht hartkodiert – dadurch bleibt FA-13 ein reiner Datensatz. Der Editor darf Zonen mit `rolle: "fest"` **nicht** ändern, verschieben oder entfernen (Markenrahmen erzwungen, FA-11).
 5. **Eigene Vorlagen dürfen freie Zonen hinzufügen, ändern, umordnen und entfernen** – auch **dekorative** Zonen (`bindung: null`) mit eigener Füllung, Radius oder statischem Text. So lässt sich Neues ergänzen, **ohne** das `Aktion`-Datenmodell zu erweitern. Ebenso ist `wennLeer` je Zone frei wählbar.
 6. **`text.*` speist die Überlauf-Kaskade** (9.10.6): `maxZeilen` = Stufe 1 (Umbruch), `größeMax`→`größeMin` = Stufe 2 (Verkleinern), danach Stufe 3 („…").
-7. **Farben und Schriften sind Rollen-Verweise in die `Marke`** (z. B. `farbRolle: "akzent"`, `schriftRolle: "headlineDisplay"`), **keine** Hex-Werte oder Font-Namen. So bleibt ein Marken-Wechsel ein Datenwert und keine Vorlagen-Änderung.
+7. **Farben und Schriften sind Rollen-Verweise in die `Marke`** (z. B. `farbRolle: "akzent"`, `schriftRolle: "headlineElegant"`), **keine** Hex-Werte oder Font-Namen. So bleibt ein Marken-Wechsel ein Datenwert und keine Vorlagen-Änderung.
+
+   **Die Akzent-Rollen sind der eine Rollen-Satz, den die Aktion überschreibt.** Löst eine Zone eine der drei Akzent-Rollen **`akzent`**, **`akzentKraeftig`** oder **`akzentTief`** (9.11.2) auf, liefert die Auflösung **nicht** den Markenwert, sondern den Wert aus **`aktion.akzentfarbe`** (9.8.2). Alle übrigen Rollen – Text- und Flächen-Rollen einschließlich `flaecheDunkel` und `flaecheAkzentZart` – bleiben **unberührt**. **Die Vorlage bestimmt also, WO Akzentfarbe hingehört; die Aktion bestimmt, WELCHE Farbe der Markenpalette dort landet.** Ist `aktion.akzentfarbe` nicht gesetzt, gilt **der Markenwert** der jeweiligen Rolle – der Fall ist ausdrücklich vorgesehen und **kein** Fehler. Die Regeln der Auflösung stehen vollständig in 9.10.9; hier steht nur, dass die Rollen-Verweise der Vorlage davon betroffen sind.
 8. **`höhe` ist geradzahlig** – bei `art: "split"` und `"einblendung"` muss die Bandhöhe eine **gerade** Zahl sein (Wertebereich > 0 und < 1080, 9.12.1). Grund ist das Ausgabe-Profil `yuv420p` (9.2.4): Es verlangt gerade Höhen und gerade Versätze. Bei ungerader Höhe ist die Videofläche `1080 − höhe` (bei `split`) bzw. der Overlay-Versatz `y = 1080 − höhe` (bei `einblendung`) ungerade – **beide** Kompositionsarten aus 9.2.8 brechen. Geprüft wird schon im Editor (Sperre, 9.12.2), nicht erst beim Render.
 
 **Gemeinsame Basis der eingebauten Vorlagen**
@@ -1493,6 +1543,30 @@ Vorlagen sind **app-weit** (9.11.1.1) und liegen damit **außerhalb** von `proje
 | `alsEigenstaendige` | `arbeitsId`, `name` → `Ergebnis<Vorlage>` – setzt **`parent = null`**, Arbeitskopie wird eine echte Vorlage |
 | `verwerfeArbeitskopie` | `arbeitsId` → `Ergebnis<void>` |
 | `löscheVorlage` | `id` → `Ergebnis<void>`; im Fehlerfall Code `vorlage_referenziert` mit **beiden** Trefferlisten: betroffene **Aktionen** und betroffene **Listenelemente**, je mit Projekt |
+| `pruefeVorlagenReferenzen` | `id` → `Ergebnis<Vorlagennutzung>` – **rein lesend**: ermittelt über **alle** Projekte, welche Aktionen und welche Listenelemente die Vorlage benutzen, und gibt die Treffer **namentlich** zurück (nicht nur Zahlen). Verändert **nichts** |
+
+**`pruefeVorlagenReferenzen` – die Nutzung wird VOR dem Überarbeiten und VOR dem Löschen angezeigt.** 9.12.2 verlangt die Anzeige seit je („wird von 7 Aktionen in 2 Projekten verwendet"), aber die Operationsliste kannte keine Operation dafür – die Zählung existierte nur **intern** als Sperre beim Löschen und war von der Oberfläche aus **nicht erreichbar**. Diese Operation schließt die Lücke.
+
+- **Ausgang – der Typ existiert bereits:** `Vorlagennutzung` ist genau das, was `löscheVorlage` im Fehlerfall als `fehler.daten` des Codes `vorlage_referenziert` trägt (9.1.1). Es wird **kein zweiter Typ** dafür erfunden:
+
+  ```
+  VorlagenReferenz {           // ein Fundort
+    projektId:   string
+    projektName: string        // für die Meldung „… in 2 Projekten"
+    id:          string        // Aktions-ID bzw. Listenelement-ID des Treffers
+  }
+
+  Vorlagennutzung {
+    aktionen:       VorlagenReferenz[]   // Treffer über aktion.vorlagenId
+    listenelemente: VorlagenReferenz[]   // Treffer über listenelement.einblendung.bandVorlageId
+  }
+  ```
+
+- **Dieselbe Prüfung wie die Lösch-Sperre, nur ohne Wirkung.** Sie erfasst **beide** Referenzarten und liest **alle** `project.json` (s. die Lösch-Invariante unten). Es gibt **einen** Prüf-Mechanismus, den die Anzeige und die Sperre gemeinsam benutzen – zwei Zählungen liefen unweigerlich auseinander, und die harmlosere von beiden wäre die falsche.
+- **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `vorlagen:pruefeVorlagenReferenzen`. Ohne Anmeldung im `ipc-gateway` bliebe die Operation eine Main-Funktion ohne Aufrufer.
+- **Kein Lock, keine Wirkung:** Sie schreibt nichts, sie reiht nichts ein, sie ist **kein** Auftrag der Queue (9.3.2) – ein Instant-Aufruf wie die übrigen Leseoperationen. Eine **leere** Nutzung (beide Listen leer) ist ein **gültiges Ergebnis**, kein Fehler: Sie bedeutet „diese Vorlage ist frei".
+
+*Begründung:* Eine Vorlage ist **app-weit** (9.11.1.1). Ihr Überarbeiten (`uebernehmeInParent`) ändert das Aussehen von Aktionen in Projekten, die der Nutzer gerade **gar nicht offen hat** – und der Merge ist ein vollständiges Ersetzen, kein Feld-Abgleich. Ohne die Anzeige trifft er diese Entscheidung **blind**. Beim Löschen ist die Lage noch schärfer: Dort steht er sonst vor einem bloßen „geht nicht", ohne zu erfahren, **was** ihn blockiert und wo er aufräumen müsste. Die Treffer müssen deshalb **namentlich** kommen (Projekt und Fundstelle), nicht als Zahl – eine Zahl sagt ihm, dass es ein Problem gibt, aber nicht, wo.
 
 **Der Arbeitskopie-Fluss (Kern von FA-13):**
 
@@ -1557,7 +1631,7 @@ Vorlage X bearbeiten
 - **Zonen-Rahmen in absoluten Pixeln** der jeweiligen Vorlagen-Fläche (9.11.1); Eingaben werden auf die Fläche **begrenzt**.
 - **Feste Zonen sind sichtbar, aber gesperrt** – der Nutzer sieht den Markenrahmen, kann ihn aber nicht verändern.
 - **Bearbeitet wird immer eine Arbeitskopie** (9.12.1). Der Editor zeigt durchgehend, **ob** er auf einer Arbeitskopie sitzt und **welcher Parent** dahintersteht – und beim Speichern die zwei Wege: **„Vorlage überarbeiten"** (Merge in den Parent) oder **„als neue eigenständige Vorlage"** (`parent = null`). Ist der Parent eingebaut, ist „überarbeiten" **von Anfang an deaktiviert** samt Begründung.
-- **Nutzung wird angezeigt,** bevor überarbeitet oder gelöscht wird („wird von 7 Aktionen in 2 Projekten verwendet") – ein Merge verändert **alle** davon. Die Lösch-Sperre selbst sitzt im `vorlagen-store`.
+- **Nutzung wird angezeigt,** bevor überarbeitet oder gelöscht wird („wird von 7 Aktionen in 2 Projekten verwendet") – ein Merge verändert **alle** davon. Die Zahlen kommen aus **`pruefeVorlagenReferenzen`** (9.12.1) und aus **keiner** zweiten, editor-eigenen Zählung. Weil die Operation die Treffer **namentlich** liefert, zeigt der Editor sie **aufklappbar** (Projekt + Fundstelle), statt es bei der Zahl zu belassen: Beim Löschen ist genau diese Liste die einzige Auskunft darüber, wo aufgeräumt werden müsste. Die Lösch-**Sperre** selbst sitzt weiterhin im `vorlagen-store`; der Editor macht sie nur **vorher sichtbar**, statt den Nutzer in ein „geht nicht" laufen zu lassen.
 - **Undo/Redo** gilt im Editor für alle Zonen- und Parameter-Änderungen (9.13).
 
 ### 9.13 Undo/Redo (Projekt-Bearbeitung und Vorlagen-Editor)
@@ -1628,6 +1702,13 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.0 (04.08.2026), vom Auftraggeber entschieden:**
+>
+> 1. **Die Akzentfarbe einer Aktion ersetzt die Akzent-Rollen ihrer Vorlage** (9.10.9 neu, mitgezogen 9.10.1, 9.11.1 Punkt 7, 9.8.2, 9.8.4). Löst eine Zone eine der drei Akzent-Rollen `akzent`, `akzentKraeftig`, `akzentTief` (9.11.2) auf, liefert die Auflösung den Wert aus `aktion.akzentfarbe` statt des Markenwerts; alle übrigen Rollen bleiben unberührt, und ohne gesetzte Akzentfarbe gilt der Markenwert. *Folge ohne die Entscheidung:* `aktion.akzentfarbe` war seit 9.8.2 im Datenmodell und in FA-12 versprochen, hatte aber **keine Wirkung** – die Vorlage nennt Farben nur als Rollen (9.11.1 Punkt 7), und die Zeichenroutine reichte die Aktion nie an die Zonen-Auflösung weiter. Der Nutzer hätte eine Farbe gewählt und im Segment nichts davon gesehen; ein Agent hätte die Lücke lokal geschlossen – der eine im `action-editor`, der nächste in `template-canvas`, ein dritter gar nicht. Mitentschieden, weil es sonst sofort wieder offen wäre: `akzentfarbe` ist **`string | null`** (ohne Nullbarkeit gäbe es den zugesagten Zustand „nicht gesetzt" nicht), `flaecheAkzentZart` gehört **nicht** zu den Akzent-Rollen (es ist trotz des Namens eine Flächen-Rolle), es gibt **genau eine** Auflösungsstelle (sonst wirkt die Farbe in der Pille, aber nicht im Verlauf dahinter), und eine Vorlage darf sich **nicht** auf den Kontrast **zwischen zwei** Akzent-Rollen verlassen – nach der Ersetzung tragen alle drei denselben Wert, ein Text in `akzentTief` auf einer Fläche in `akzent` wäre unsichtbar. Unberührt bleibt der `render-service`: Die Restflächen der Split-Komposition tragen `flaecheDunkel` (9.2.8) – keine Akzent-Rolle –, er braucht also weiterhin **keine** Kenntnis von Aktionen.
+> 2. **Die Nutzung einer Vorlage wird vor dem Überarbeiten und vor dem Löschen angezeigt** – neue lesende Operation `pruefeVorlagenReferenzen` (`id` → `Ergebnis<Vorlagennutzung>`) in 9.12.1, mitgezogen 9.12.2. Sie liefert die Treffer **namentlich** (Aktionen und Listenelemente, je mit Projekt), verändert nichts und bekommt den eigenen Kanal `vorlagen:pruefeVorlagenReferenzen`. *Folge ohne die Entscheidung:* 9.12.2 verlangte die Anzeige („wird von 7 Aktionen in 2 Projekten verwendet"), die Operationsliste 9.12.1 kannte aber **keine** Operation dafür – die Zählung existierte nur intern als Sperre beim Löschen und war von der Oberfläche aus **nicht erreichbar**. Eine Vorlage ist app-weit: Ihr Überarbeiten ändert das Aussehen von Aktionen in Projekten, die gerade **gar nicht offen** sind, und der Merge ist ein vollständiges Ersetzen (9.12.1) – der Nutzer hätte blind entschieden. Beim gescheiterten Löschen stünde er vor einem bloßen „geht nicht", ohne zu erfahren, wo aufzuräumen wäre. Der Rückgabetyp `Vorlagennutzung` ist **nicht neu**: Es ist derselbe, den `vorlage_referenziert` als `fehler.daten` trägt (9.1.1) – ein zweiter Typ hätte zwei Zählungen bedeutet, die auseinanderlaufen.
+> 3. **Die App hat genau ein Fenster, und jedes Ereignis geht an dieses eine Fenster** (9.1.1 Punkt 10 neu, mitgezogen 9.2.7, 9.3.4, 9.5.4). *Folge ohne die Entscheidung:* Für **jedes** Main→Renderer-Ereignis (`render:fortschritt`, `queue:geaendert`, die Auto-Speichern-Meldung) wäre offen geblieben, **wen** der Sender adressiert – jeder Agent hätte es anders gelöst, vom festgehaltenen Fenster-Handle bis zur Rundsendung an alle Fenster, und ein minutenlanger Render meldete seinen Fortschritt womöglich ins Leere. Die erste Stufe ist ein Studio, ein Bildschirm, ein Laptop: Ein zweites Fenster hätte keine Aufgabe, brächte aber sofort die Fragen mit, wer den Abbruch auslösen darf und was ein geschlossenes Fenster während eines laufenden Auftrags bedeutet. Käme später ein zweites Fenster, ist die Nachbesserung überschaubar und liegt an den Verdrahtungsstellen – sie wird dann **bewusst** gemacht, statt vorsorglich mitgeschleppt zu werden. Nicht zu verwechseln mit der Einzel-Instanz-Sperre (9.5.4): Jene verhindert einen zweiten **Prozess**, diese legt fest, dass der eine Prozess **ein Fenster** führt.
+> 4. **Ein Projekt mit beschädigter `project.json` wird mit Warnhinweis gelistet, nicht weggelassen** (9.5.2, `listeProjekte`). `ProjektMeta` trägt dafür das Feld **`beschaedigt: boolean`**; der Eintrag erscheint mit dem **Ordnernamen** als Behelfs-Bezeichnung und lässt sich nicht öffnen. *Folge ohne die Entscheidung:* Ein weggelassenes Projekt sieht für den Nutzer aus wie ein **verlorenes** – er finge neu an, obwohl seine Medien und seine gerenderten Ausgaben unversehrt im Ordner liegen. Es wäre zudem der einzige Ort im System, an dem ein Datenfehler **ohne jede Meldung** verschwindet, gegen 9.1.1 Punkt 7. Sichtbar mit Warnung ist die ehrlichere und die reparierbare Variante. **Mitentschieden:** `listeProjekte` **nimmt das D1-Lock, obwohl sie nur liest** – ein Verzeichnis-Scan während einer laufenden `dupliziereProjekt` (die den Zielordner schrittweise aufbaut) läse sonst ein Projekt in einem **halbkopierten** Zwischenzustand ein und meldete es als beschädigt, obwohl es Minuten später vollständig in Ordnung ist. Damit ist sie die bewusste Ausnahme gegenüber `listeAusgaben`, die ohne Lock läuft (9.5.2).
 >
 > **Nachgezogen in v2.9 (04.08.2026), beim Prüflauf der M6-Issues gefunden:**
 >
