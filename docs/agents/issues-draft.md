@@ -1636,10 +1636,13 @@ export interface RenderItemVideo {
   trimStart: number                // Sekunden
   trimEnde: number                 // Sekunden
   einblendung: {
+    art: 'split' | 'einblendung'     // Kompositionsart: Band UNTER bzw. ÜBER dem Video (TK 9.2.8)
+    höhe: number                     // Bandhöhe H in Pixeln (ganzzahlig)
     bandVorlageId: string
-    abschnitte: Array<{ png: Uint8Array; dauer: number }>   // Band-PNGs bereits gerendert
+    abschnitte: Array<{ png: Uint8Array; dauer: number }>   // Band-PNGs bereits gerendert, je 1920 × höhe
     // Uint8Array (nicht ArrayBuffer/Buffer): überlebt Electrons structured clone
     // verlustfrei und ist der kleinste gemeinsame Nenner zwischen Renderer und Main.
+    // Feldname MIT Umlaut ("höhe") wie im Vertrag und wie in Vorlage (#95) – nicht "hoehe".
   } | null
 }
 
@@ -1658,10 +1661,34 @@ export interface RenderItemSegment {
 }
 ```
 
+**Warum `art` und `höhe` IM Auftrag stehen und nicht zur Laufzeit nachgeschlagen werden** (TK 9.2.2,
+wörtlich):
+
+> „Der Render **friert seinen Eingang beim Einreihen ein** (9.3.5). Beide Werte stammen aus der
+> Band-Vorlage und werden **beim Einreihen** aus ihr abgeleitet. Würde der Main die Vorlage
+> stattdessen erst beim Start des Auftrags im `vorlagen-store` nachschlagen, wäre der Eingang
+> **nicht** eingefroren: Ändert jemand die Bandhöhe, während der Auftrag in der Warteschlange
+> wartet, passten die bereits gezeichneten Band-PNGs (1920 × H **zum Einreih-Zeitpunkt**) nicht mehr
+> zur nachgeschlagenen Höhe – das Band im fertigen Video wäre verzerrt oder falsch platziert. So
+> bleibt der Auftrag **in sich geschlossen**, und der `render-service` braucht **keine** Abhängigkeit
+> zum `vorlagen-store`. Der Renderer kennt beide Werte ohnehin: er hat das Band damit gezeichnet."
+> (TK 9.2.2)
+
+`bandVorlageId` reist **nur zur Nachvollziehbarkeit** mit: Sie sagt, aus welcher Vorlage `art` und
+`höhe` stammen. Der `render-service` löst sie **nicht** auf und fragt den `vorlagen-store` **nicht** –
+maßgeblich sind allein die beiden mitgereisten Werte. Wer hier eine Auflösung einbaut, hebt genau die
+eben zitierte Einfrier-Zusage wieder auf.
+
+`art` ist eine **Zwei-Werte-Union** (`'split' | 'einblendung'`), **nicht** die dreiwertige
+`VorlagenArt` aus #95: Ein Band ist nie `'vollflaeche'`. `höhe` ist hier `number` (nicht
+`number | null` wie in der `Vorlage`) – ein Band ohne Höhe gibt es nicht; fehlt sie, gehört das
+Element gar nicht erst in den Auftrag.
+
 ## Eingang → Ausgang
 | Eingang | Bedeutung | Grenzen/Validierung |
 |---|---|---|
 | – | reine Typdefinition | – |
+| `einblendung.art` / `einblendung.höhe` | Kompositionsart und Bandhöhe, beim Einreihen aus der Band-Vorlage abgeleitet | `art` ∈ { `split`, `einblendung` }; `höhe` ganzzahlig, > 0 und < 1080 (Prüfung selbst ist Sache von `render-service`, M6 – hier nur die Typen) |
 | `ausgabeName` | Dateiname ohne Endung für die Zieldatei | keine Pfadtrenner, kein `..`, keine für Windows/macOS/FAT32 unzulässigen Zeichen, nicht leer, keine reservierten Windows-Namen (Validierung selbst ist Sache von `render-service`, M6 – hier nur der Typ `string`) |
 
 Ausgang bei Erfolg: `RenderRequest`/`RenderItem` sind im ganzen Projekt importierbar; TypeScript
@@ -1677,6 +1704,21 @@ Ausgang bei Fehler: entfällt.
   final; das ist der Kern von Variante A." (TK 9.2.2)
 - „Jedes `RenderItem` trägt eine `id` zur eindeutigen **Fehlerzuordnung**; die Reihenfolge ergibt
   sich aus der Listenposition, nicht aus einem separaten Feld." (TK 9.2.1)
+- „**Die `einblendung` eines `"video"`-Items trägt die Geometrie mit:** `art` | `"split"` \|
+  `"einblendung"` – Kompositionsart (Band **unter** bzw. **über** dem Video, 9.2.8) · `höhe` |
+  Bandhöhe `H` in Pixeln (ganzzahlig) · `abschnitte` | geordnete Folge `{ png (Binärpuffer,
+  1920 × H), dauer }`" (TK 9.2.2)
+- „Die Art wird **beim Einreihen** des Render-Auftrags aus der Band-Vorlage abgeleitet und zusammen
+  mit der Bandhöhe `H` als `einblendung.art` / `einblendung.höhe` im `RenderRequest`
+  **mitgeführt** (9.2.2). Der `render-service` schlägt die Vorlage **nicht** zur Laufzeit nach – sein
+  Eingang ist beim Einreihen eingefroren (9.3.5), und die Band-PNGs sind bereits in `1920 × H`
+  gezeichnet." (TK 9.2.8)
+- „**Die Bandhöhe `H` stammt ausschließlich aus der Vorlage** – sie ist **kein** Wert am
+  Listenelement und **nicht** pro Element überschreibbar. […] Dass `H` (und `art`) im
+  `RenderRequest` **mitreisen** (9.2.2), ist **keine** zweite Quelle: Es ist der beim Einreihen
+  eingefrorene Stand **derselben** Vorlage (9.3.5) – dieselbe Beziehung wie zwischen Aktion und
+  fertigem Segment-PNG." (TK 9.2.8) – deshalb bekommt `Listenelement.einblendung` (M1-03) **keine**
+  Felder `art`/`höhe`; nur der Render-Auftrag trägt sie.
 - „`ausgabeName` | Dateiname **ohne** Endung | Zieldatei `projects/<id>/output/<ausgabeName>.mp4`
   (FA-22). Vorbelegt mit `Project.letzterAusgabeName`; ein gleicher Name **ersetzt** die vorige
   Fassung, ein neuer legt eine zusätzliche Datei an" (TK 9.2.1)
@@ -1695,6 +1737,9 @@ Entfällt (Typdefinition; Validierung ist Sache von `render-service`, M6).
 
 ## Definition of Done
 - [ ] `RenderRequest`, `RenderItem` (drei Varianten) exakt wie oben
+- [ ] `RenderItemVideo.einblendung` trägt **beide** Geometrie-Felder: `art: 'split' | 'einblendung'`
+      und `höhe: number` (mit Umlaut geschrieben) – ein Typ-Test belegt, dass ein `einblendung`-Objekt
+      ohne `art` bzw. ohne `höhe` **nicht** kompiliert und dass `art: 'vollflaeche'` abgelehnt wird
 - [ ] TypeScript verengt bei `art`-Diskriminierung nachweislich korrekt (Test: Zugriff auf
       `.png` nur im `segment`-Zweig kompiliert)
 - [ ] Keine Aktions-/Vorlagendaten in `RenderItemSegment` (nur `png`+`dauer`+`id`)
@@ -1702,7 +1747,8 @@ Entfällt (Typdefinition; Validierung ist Sache von `render-service`, M6).
 
 ## Abhängigkeiten
 - Blockiert von: #1, M1-06 (`RenderProfile`)
-- Blockiert: M6-Issues (render-service, ffmpeg-adapter)
+- Blockiert: #134 (der `composer` befüllt `einblendung.art`/`einblendung.höhe` beim Einreihen aus der
+  Band-Vorlage), M6-Issues (render-service, ffmpeg-adapter)
 
 ## Bezug
 TK 9.1, TK 9.2.1, TK 9.2.2, TK 9.2.8
@@ -1848,15 +1894,13 @@ könnte durchrutschen, ohne dass ein Protokoll-Eintrag (Q3) entsteht.
 ```ts
 // src/shared/contracts/render-result.ts
 export type RenderResult =
-  | { status: 'erfolg'; renderId: string; ausgabePfad: string; gesamtdauer: number; dateigroesse: number; historieEintrag: HistorieEintrag }
+  | { status: 'erfolg'; renderId: string; ausgabePfad: string; gesamtdauer: number; dateigroesse: number }
   | { status: 'fehler'; renderId: string; fehlercode: string; fehlerhaftesElementId: string | null; meldung: string }
   | { status: 'abgebrochen'; renderId: string; abgebrochenBei: number | null }
 
-// HistorieEintrag: TK 9.2.3 nennt nur die Inhalte "ID, Datum, Pfad, Dauer, Größe", legt aber
-// weder exakte Feldnamen/Typen noch fest, ob "ID" hier bereits die auftragId ist und ob Datum
-// vom render-service selbst oder erst vom auftrags-manager beim Schreiben nach Q3 ergänzt wird
-// (s. "Nicht selbst entscheiden" unten). Platzhalter, bis das geklärt ist:
-export type HistorieEintrag = unknown
+// KEIN Feld `historieEintrag` und KEIN Typ `HistorieEintrag`. Beide sind mit TK v2.8 ersatzlos
+// gestrichen (TK 9.2.3). Der Q3-Protokolleintrag wird ALLEIN von der Auftragsverwaltung gebaut;
+// der render-service liefert nur, was NUR ER weiss: Pfad, Groesse und Gesamtdauer.
 
 export interface RenderProgress {
   renderId: string
@@ -1873,46 +1917,82 @@ export interface RenderProgress {
 |---|---|---|
 | – | reine Typdefinition | – |
 
-Ausgang bei Erfolg: `RenderResult` verengt bei `status === 'erfolg'` typsicher auf `ausgabePfad`,
-`gesamtdauer`, `dateigroesse` **und** `historieEintrag` (Inhalt ID/Datum/Pfad/Dauer/Größe, s.
-Invarianten – exakte Feldstruktur noch offen, s. STOPP-Block); `RenderProgress` trägt keine
-Endzustände.
+Ausgang bei Erfolg: `RenderResult` verengt bei `status === 'erfolg'` typsicher auf **genau drei**
+Nutzdaten-Felder – `ausgabePfad`, `gesamtdauer`, `dateigroesse` – und auf nichts sonst;
+`RenderProgress` trägt keine Endzustände.
 Ausgang bei Fehler: entfällt.
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
 - „Genau **ein** terminaler Ausgang je Lauf, diskriminiert über `status` ∈ { `erfolg`, `fehler`,
   `abgebrochen` }. Alle drei tragen die `renderId`." (TK 9.2.3)
-- „Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei und **kein** Historie-Eintrag; eine
-  **bereits vorhandene Datei gleichen Namens bleibt unversehrt** (9.2.6); der
-  Arbeitsbereich T1 ist in beiden Fällen aufgeräumt." (TK 9.2.3)
+- „**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von der
+  Auftragsverwaltung** gebaut (9.3) – sie besitzt ohnehin `auftragId`, `art`, `projektId`,
+  `versuch`, `begonnenAm` und `beendetAm`. Der `render-service` liefert nur, was **nur er** weiß:
+  Pfad, Größe und Gesamtdauer; daraus wird `ProtokollEintrag.ausgabe`. *Begründung:* Zwei Quellen
+  für dieselbe Information laufen unweigerlich auseinander (dieselbe Regel entfernte schon das
+  `position`-Feld, 9.11.3, und die doppelte Ablage der offenen Löschungen, 9.3) – und **Q3 ist
+  dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer falsch." (TK 9.2.3)
+- „Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bereits vorhandene
+  Datei gleichen Namens bleibt unversehrt** (9.2.6). Aufgeräumt sind in beiden Fällen **der
+  Arbeitsbereich T1 *und* die angefangene `<name>.mp4.part` im Ausgabeordner** […] **Der
+  Q3-Protokolleintrag entsteht trotzdem:** Q3 hält *einen Eintrag je beendetem Versuch*, also auch
+  für Fehlschlag und Abbruch (9.3); nur das Feld `ausgabe` bleibt dort `null`." (TK 9.2.3)
 - „**Keine** Restzeit-Schätzung – bei `ffmpeg` unzuverlässig." (TK 9.2.7)
 - „Der Fortschrittskanal trägt **keinen** Endzustand. Erfolg, Fehler und Abbruch kommen
   **ausschließlich** über das `RenderResult`." (TK 9.2.7)
-- „`historieEintrag` | ID, Datum, Pfad, Dauer, Größe → von der Auftragsverwaltung ins Protokoll Q3
-  geschrieben (9.3)" (TK 9.2.3)
 - „`RenderResult` bestimmt den terminalen Auftrags-`status` (erfolg/fehlgeschlagen/abgebrochen) und
-  liefert bei Erfolg die reichen Nutzdaten (Pfad, Größe, Dauer, Historie-Eintrag)." (TK 9.3.6)
+  liefert bei Erfolg die Nutzdaten **Pfad, Größe und Gesamtdauer** (9.2.3) – daraus baut die
+  Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Einen fertig vorbereiteten
+  Historie-Eintrag liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe
+  Information." (TK 9.3.6)
+- „**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.**
+  `RenderResult.fehlerhaftesElementId` ist Modul-intern; beim Abschluss des Auftrags übernimmt die
+  Auftragsverwaltung `fehlercode` → `Auftrag.fehler.code`, `meldung` → `Auftrag.fehler.meldung` und
+  `fehlerhaftesElementId` → **`Auftrag.fehler.daten = { elementId }`** (9.1.1, 9.3.1)." (TK 9.2.3) –
+  das Feld bleibt deshalb hier im `RenderResult`, wandert aber **nicht** unverändert weiter; die
+  Übersetzung macht #68.
+- „**`gesamtdauer`** | Summe der (getrimmten) Elementdauern in Sekunden – **framegerundet** gezählt
+  (Frame-Anzahl / 30, s. 9.2.6)" (TK 9.2.3) – `number`, nie `null`. (Nullbar ist allein
+  `ProtokollEintrag.ausgabe.gesamtdauer` (#53), weil der **Export** keine Dauer kennt; der Render
+  kennt sie immer.)
 
 ## Fehlerpfade (vollständig)
-Entfällt (Typdefinition; `fehlercode` referenziert den Fehlercode-Typ aus M1-10, hier als `string`
-platzhalterhaft, präzisiert sobald M1-10 existiert – Reihenfolge beachten, s. Abhängigkeiten).
+Entfällt (Typdefinition). `fehlercode` bleibt hier bewusst `string` – aus demselben Grund, aus dem
+`Auftrag.fehler.code` (M1-04) und `ProtokollEintrag.fehler.code` (#53) `string` sind: Der **geteilte**
+Vertrag kennt die fachlichen Fehlercode-Unionen der Main-Module nicht. Die Enge sitzt dort, wo der
+Code **entsteht** (M6, `render-service`) und wo er in den typisierten Auftrag übersetzt wird (#68).
+Die zulässigen Werte stehen in TK 9.2.3 und sind in #68 ausgeschrieben – s. STOPP-Block.
+
+## Bereits entschieden – nicht erneut abwägen
+- **ENTSCHIEDEN (TK v2.8) – es gibt KEIN Feld `historieEintrag` und KEINEN Typ `HistorieEintrag`.**
+  Der frühere Platzhalter `export type HistorieEintrag = unknown` ist ersatzlos gestrichen und darf
+  **nicht** wieder angelegt werden – auch nicht „vorsichtshalber", auch nicht als optionales Feld.
+  *Begründung (TK 9.2.3):* Die Auftragsverwaltung baut den Q3-Eintrag ohnehin selbst und besitzt
+  dafür bereits `auftragId`, `art`, `projektId`, `versuch`, `begonnenAm` und `beendetAm`. Zwei
+  Quellen für dieselbe Information laufen unweigerlich auseinander – dieselbe Regel hat im Projekt
+  schon das `position`-Feld (TK 9.11.3) und die doppelte Ablage der offenen Löschungen (TK 9.3)
+  entfernt. Und **Q3 ist dauerhaft und unbegrenzt**: ein doppelt geführtes Datum darin bliebe für
+  immer falsch. Der `render-service` liefert deshalb genau das, was **nur er** weiß – `ausgabePfad`,
+  `dateigroesse`, `gesamtdauer`.
 
 ## Nicht selbst entscheiden – STOPP und fragen
-- Ob `fehlercode` in `RenderResult` bereits hier auf die konkrete Fehlercode-Union aus M1-10
-  verweist oder als `string` bleibt, bis M1-10 abgeschlossen ist – falls die Bearbeitungsreihenfolge
-  das nicht zulässt, `string` verwenden und in M1-10 nachschärfen, nicht raten.
-- **Exakte Struktur von `HistorieEintrag`:** TK 9.2.3 nennt nur die Inhalte „ID, Datum, Pfad, Dauer,
-  Größe", TK 9.3.6 bestätigt sie sinngemäß als „Pfad, Größe, Dauer, Historie-Eintrag", legt aber
-  weder Feldnamen/Typen fest noch, ob `ID` hier die `auftragId` ist oder eine eigene ID, und ob
-  `render-service` das Objekt bereits vollständig befüllt oder der `auftrags-manager` beim
-  Schreiben nach Q3 (`protokoll.json`, 9.3) `auftragId`/Datum erst ergänzt. **Nicht raten** –
-  nachfragen, bevor M2 (Q3-Mapping) darauf aufbaut.
+- Ob `fehlercode` in `RenderResult` **typisiert** wird oder `string` bleibt. TK 9.2.3 führt seit
+  v2.8 einen **geschlossenen** Satz von Render-Fehlercodes (`medium_fehlt`, `ungueltiges_element`,
+  `ungueltige_eingabe`, `ffmpeg_fehler`, `kein_platz`, `speicher_fehler`, `unbekannter_fehler`) –
+  die Werte sind also bekannt. Offen ist, **wo** dieser Satz typmäßig steht: Der geteilte Vertrag
+  soll die fachlichen Unionen der Main-Module ausdrücklich **nicht** kennen (dieselbe Begründung
+  hält `Auftrag.fehler.code` (M1-04) und `ProtokollEintrag.fehler.code` (#53) auf `string`), der
+  `render-service` selbst entsteht aber erst in M6. **Nicht raten:** Bis zur Klärung bleibt
+  `fehlercode: string`; die Wertliste steht ausgeschrieben in #68, das den `string` auf den
+  typisierten Code des Auftrags abbildet.
 
 ## Definition of Done
-- [ ] `RenderResult` (drei diskriminierte Varianten), `RenderProgress` und der `HistorieEintrag`-
-      Platzhalter exakt wie oben
-- [ ] TypeScript verengt bei `status`-Diskriminierung nachweislich korrekt (inkl. `historieEintrag`
-      nur im `erfolg`-Zweig)
+- [ ] `RenderResult` (drei diskriminierte Varianten) und `RenderProgress` exakt wie oben
+- [ ] TypeScript verengt bei `status`-Diskriminierung nachweislich korrekt (Test: `ausgabePfad` ist
+      nur im `erfolg`-Zweig zugreifbar, `fehlercode` nur im `fehler`-Zweig)
+- [ ] Die Zeichenkette `historieEintrag` und der Typname `HistorieEintrag` kommen in der Datei
+      **nicht** vor (Grep-Probe); der `erfolg`-Zweig hat **genau** die Felder `status`, `renderId`,
+      `ausgabePfad`, `gesamtdauer`, `dateigroesse`
 - [ ] Keine Datei außerhalb von `src/shared/contracts/render-result.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
@@ -4260,9 +4340,15 @@ export function planeAutoSpeicherung(projekt: Project): void
 export async function sofortFlush(projekt: Project): Promise<Ergebnis<void>>
 // bricht einen laufenden Entprellungstimer ab und schreibt projekt sofort via schreibeProjekt
 // (M1-34); MUSS von der aufrufenden Stelle innerhalb von mitD1Lock (M1-20) ausgeführt werden;
-// wird aufgerufen: vor jedem Render/Export, bei Projektwechsel (öffneProjekt, M1-22), beim
-// Beenden der App (Aufrufer wartet das zurückgegebene Promise ab, bevor die App tatsächlich
-// schließt)
+// wird in VIER Fällen aufgerufen (TK 9.5.4):
+//   (1) unmittelbar bevor ein render- oder export-Auftrag STARTET - ausgeloest vom MAIN beim
+//       Uebergang anstehend -> laeuft (Torwaechter #59), NICHT beim Einreihen;
+//   (2) bei Projektwechsel (öffneProjekt, M1-22);
+//   (3) beim Beenden der App (Aufrufer wartet das zurückgegebene Promise ab, bevor die App
+//       tatsächlich schließt);
+//   (4) am Ende jedes Auftrags, der D1 verändert hat (Import, Löschen - TK 9.4.5/9.4.6).
+// DIESE Datei ruft sich nicht selbst - sie stellt sofortFlush bereit, die Ausloeser sitzen
+// bei den vier genannten Stellen.
 
 export function aufAutoSpeichernEreignis(
   hoerer: (ereignis: AutoSpeichernEreignis) => void,
@@ -4285,9 +4371,19 @@ automatischer Wiederholversuch wird angestoßen (s. Invarianten).
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
 - „**Entprellt 3–5 s** nach der letzten Änderung (kein Platten-Hämmern beim Slider-Ziehen)." (TK
   9.5.4)
-- „**Sofort-Flush** unabhängig vom Timer: **vor** jedem Render/Export, **bei** Projektwechsel,
-  **beim** Beenden. Beim Beenden **blockiert** die App, bis der Schreibvorgang abgeschlossen ist
-  (kein Schließen mit ausstehendem Schreiben)." (TK 9.5.4)
+- „**Sofort-Flush** unabhängig vom Timer, in vier Fällen: (1) **unmittelbar bevor ein `render`- oder
+  `export`-Auftrag startet**, (2) **bei** Projektwechsel, (3) **beim Beenden**, (4) **am Ende jedes
+  Auftrags, der D1 verändert hat** (Import, Löschen – s. 9.4.5/9.4.6). Beim Beenden **blockiert** die
+  App, bis der Schreibvorgang abgeschlossen ist (kein Schließen mit ausstehendem Schreiben)."
+  (TK 9.5.4)
+- „*Wer Fall 1 auslöst und wann – ausdrücklich festgelegt:* Der **Main** löst ihn aus, und zwar beim
+  Übergang `anstehend` → `laeuft` (9.3.3) – also **unmittelbar vor dem Start**, **nicht** beim
+  Einreihen. *Begründung:* Die Warteschlange ist streng seriell; zwischen Einreihen und Start können
+  **Minuten** liegen, und der Nutzer darf in dieser Zeit weiterarbeiten. Ein Flush beim Einreihen
+  schriebe einen Stand fest, der beim Start längst überholt ist, und verlöre bei einem Absturz genau
+  die Arbeit dazwischen. Dass der **Main** auslöst und nicht der Renderer, spart zudem einen
+  IPC-Kanal […]" (TK 9.5.4) – **diese Datei baut den Auslöser nicht**; sie stellt `sofortFlush`
+  bereit, gerufen wird sie vom Torwächter (#59) bzw. von den drei anderen Stellen.
 - „**Instant-Op vs. Speichern getrennt:** Eine Instant-Operation (9.5.2) validiert und wendet **im
   Speicher** an, *bevor* sie „ok" meldet – ihr Erfolg bedeutet „gültig übernommen", **nicht** „schon
   auf Platte". Die Platten-Schreibung ist die entprellte Auto-Speicherung." (TK 9.5.4)

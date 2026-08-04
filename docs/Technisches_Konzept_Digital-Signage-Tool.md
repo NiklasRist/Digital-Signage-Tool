@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 2.7 (HLD vollständig, geprüft)
-**Datum:** 03.08.2026
+**Version:** 2.8 (HLD vollständig, geprüft)
+**Datum:** 04.08.2026
 **Status:** In Planung
 
 ---
@@ -50,7 +50,7 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 - **Medium (Asset)** – ID, Typ (video|image), Dateiname, Maße, Dauer (Video, via ffprobe), Importdatum. *(FA-01)*
 - **Listenelement** – ID, Art (Video|Bild|Aktions-Segment), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`. Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
 - **Vorlage** – datengetriebene Layout-Definition: `art` (vollflächig | Split-Band | Einblendung), `höhe` (bei Bändern), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Vollbild", „Split", „Band-Standard". **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
-- **Ausführungs-Protokoll / Ausgabe-Historie** – ID, Projekt-ID, Datum, Pfad, Dauer, Größe. Geführt von der Auftragsverwaltung als Speicher **Q3** (append-only, dauerhaft), nicht mehr in D3. *(Abschnitt 7, 9.3)*
+- **Ausführungs-Protokoll / Ausgabe-Historie** – ID, Projekt-ID, Datum, Pfad, Dauer (nur bei Render, sonst leer – 9.3), Größe. Geführt von der Auftragsverwaltung als Speicher **Q3** (append-only, dauerhaft), nicht mehr in D3. *(Abschnitt 7, 9.3)*
 
 **B — App-/Konfigurationsdaten** (persistent, app-weit)
 
@@ -59,7 +59,8 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 
 **C — Temporäre Arbeitsdaten auf der Platte** (pro Renderlauf, danach löschbar)
 
-- gerenderte Segment-PNGs, normalisierte Zwischenclips `seg_*.mp4`, concat-Liste, Staging der fertigen Ausgabedatei vor dem Verschieben in den Projekt-Ausgabeordner.
+- gerenderte Segment-PNGs, normalisierte Zwischenclips `seg_*.mp4`, concat-Liste.
+- **Nicht** hier: die **fertige** Ausgabedatei. Sie entsteht direkt im Projekt-Ausgabeordner als `<name>.mp4.part` und wird dort umbenannt (Begründung: Abschnitt 6 und 9.2.6). T1 hält ausschließlich Zwischenprodukte.
 
 **D — Reine Laufzeitdaten** (nur Arbeitsspeicher)
 
@@ -83,7 +84,7 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 
 ## 6. Speicher- und Ordnerkonventionen
 
-Aus den Entscheidungen 1 + 3 folgt: jedes Projekt besitzt einen eigenen Ordner mit `media/`-Unterordner; Listenelemente verweisen **relativ** dorthin, nie auf Originalpfade. Aus Entscheidung 4 folgt: Segment-PNGs, Zwischenclips und concat-Liste leben ausschließlich im temporären Bereich (T1) und werden nach jedem Lauf verworfen.
+Aus den Entscheidungen 1 + 3 folgt: jedes Projekt besitzt einen eigenen Ordner mit `media/`-Unterordner; Listenelemente verweisen **relativ** dorthin, nie auf Originalpfade. Aus Entscheidung 4 folgt: Segment-PNGs, Zwischenclips und concat-Liste leben ausschließlich im temporären Bereich (T1) und werden nach jedem Lauf verworfen. Die **fertige** Ausgabedatei gehört ausdrücklich **nicht** dazu – sie entsteht direkt im Projekt-Ausgabeordner (Begründung unten).
 
 ```
 <App-Ordner>/
@@ -98,12 +99,16 @@ Aus den Entscheidungen 1 + 3 folgt: jedes Projekt besitzt einen eigenen Ordner m
       project.json.bak       # A: letzte heile Version (Auto-Speichern-Backup, 9.5.4)
       media/                 # A/D2: kopierte Videos und Bilder
       output/                # A: gerenderte MP4s DIESES Projekts – mehrere, frei benannt (FA-22)
+        <name>.mp4           # A: fertige Ausgabedatei
+        <name>.mp4.part      # C: laufender Render – HIER, nicht in <Temp> (9.2.6)
       queue-retry.json       # Q2: offene Fehlschläge + pendingDeletions (persistent bis erledigt)
-<Temp>/reel-XXXX/            # C/T1: flüchtig (PNG, seg_*.mp4, concat.txt)
+<Temp>/reel-XXXX/            # C/T1: flüchtig (PNG, seg_*.mp4, concat.txt) – NUR Zwischenprodukte
                              # Q1 (aktive Warteschlange) lebt nur im RAM, keine Datei
 ```
 
 **Der Ausgabeordner gehört zum Projekt** (`projects/<id>/output/`), nicht zur Anwendung. Läge er app-weit, überschriebe ein Render in Projekt B die noch nicht exportierte Ausgabe von Projekt A – ein stiller Datenverlust. Je Projekt dürfen **mehrere** benannte MP4s darin liegen (FA-22, Anforderungsdokument 4.7).
+
+**Die fertige Ausgabedatei wird im Ausgabeordner selbst gestaget, nicht in `<Temp>`.** `ffmpeg` schreibt den finalen `concat`-Schritt nach `projects/<id>/output/<name>.mp4.part`; erst die fertige und verifizierte Datei wird **innerhalb desselben Ordners** per Rename-mit-Ersetzen zu `<name>.mp4` (9.2.6). *Begründung:* Umbenennen ist nur auf **derselben Partition** unteilbar. Die App ist **portabel** – ihr Datenort kann auf einem USB-Stick oder einem zweiten Laufwerk liegen, `<Temp>` liegt dagegen auf der Systemplatte. Läge das Staging in `<Temp>`, wäre der abschließende `rename` ein laufwerksübergreifender Aufruf und schlüge mit `EXDEV` fehl; der naheliegende Ausweg „kopieren und löschen" ist **nicht** unteilbar und hebt damit genau die Schutzzusage aus FA-22 / Akzeptanzkriterium 9 auf: Ein Absturz mitten im Kopieren zerstört die letzte funktionierende Ausgabedatei. Der Fehler fiele beim Entwickeln **nicht** auf, weil dort Temp und Daten auf derselben Platte liegen. **T1 behält** die Segment-PNGs, die Zwischenclips `seg_*.mp4` und die concat-Liste – nur das Staging der Enddatei wandert in den Ausgabeordner.
 
 Die Auftragsverwaltung legt ihre persistenten Speicher als schlanke JSON-Dateien ab: **Q2** je Projekt (`queue-retry.json` – Fehlschläge/pendingDeletions gehören zum Projekt und werden bei dessen Öffnen nachgeholt) sowie **Q3** und **Q4** app-weit (`protokoll.json` – projektübergreifendes Protokoll; `warteschlangen-journal.json` – diagnostische Bewegungen, rotierend). **Q1** ist rein flüchtig.
 
@@ -243,7 +248,7 @@ Das folgende zusammengeführte DFD zeigt die Autoren-Prozesse, die Speicher, die
 | D1 | Projekt-Store | Projekte, Aktionen, Liste, Vorlagen-Ref | persistent | P1, P2, P3 |
 | D2 | Medienordner | kopierte Videos/Bilder je Projekt | persistent | P1 |
 | D3 | App-Konfig | aktives Projekt, Marke, UI-Voreinstellungen | persistent | App |
-| T1 | Render-Arbeitsbereich | Segment-PNGs, `seg_*.mp4`, concat-Liste | flüchtig | P4 |
+| T1 | Render-Arbeitsbereich | Segment-PNGs, `seg_*.mp4`, concat-Liste – **nicht** die fertige Ausgabedatei (9.2.6) | flüchtig | P4 |
 | Q1 | Aktive Warteschlange | anstehende Aufträge + laufender Auftrag | **flüchtig (RAM)** | P6 |
 | Q2 | Wiederholungs-Speicher | offene Fehlschläge (mit `payload`) + `pendingDeletions` | **persistent bis erledigt** | P6 |
 | Q3 | Ausführungs-Protokoll | ein Eintrag je beendetem Versuch (append-only) | **dauerhaft, unbegrenzt** | P6 |
@@ -269,6 +274,7 @@ Q1–Q4 gehören zur Auftragsverwaltung (P6) und tragen **jeweils eigene Persist
 | 11 | D3 | Marke (für Aktions-Segmente) | P4 / P5 |
 | 12 | P4 | ffmpeg-Aufrufe / Clips | ffmpeg |
 | 13 | P4 | Segment-PNGs, `seg_*.mp4`, concat-Liste | T1 |
+| 13a | P4 | fertige Ausgabe-MP4 (`<name>.mp4.part` → Rename, 9.2.6) | `projects/<id>/output/` |
 | 14 | P4 | gewählte Ausgabe-MP4 | USB |
 | 15 | P1 / P4 | Ergebnis (erfolg/fehler) | P6 |
 | 16 | P6 | anstehender/laufender Auftrag | Q1 |
@@ -311,7 +317,7 @@ Dieser Abschnitt übersetzt die Prozesse **P1–P7** in konkrete Module mit scha
 - **Main (Node):** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher Q1–Q4, 9.3), `media-service` [P1] (9.4), `project-store` [D1] (besitzt das eine D1-Schreib-Lock **und** ist Pfad-Autorität + trägt das `media://`-Protokoll, 9.5.7), `config-store` [D3], `vorlagen-store` (app-weite Vorlagen-Bibliothek, 9.12.1), `render-service` [P4] (9.2), `export-service`, `ffmpeg-adapter` (enthält den getesteten `buildReel`-Kern).
 - **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …). Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag.
 
-**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1) sowie die **`app-shell`** (9.14). **Noch offen:** das Datenmodell `Marke` (9.11.2) und die Punkte am Schluss von Abschnitt 9.
+**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1) sowie die **`app-shell`** (9.14). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
 
 ### 9.1 IPC-Vertrag: Granularität (Variante A) und Konventionen
 
@@ -369,7 +375,7 @@ Wo eine Operation **nichts** zu melden hat, lautet die Nutzlast `void`: **`Ergeb
 
 **3. Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9.6.4, 9.12.1) plus die generischen `ungueltige_eingabe`, `nicht_gefunden`, `unbekannter_fehler`. **Eine rohe Exception-Meldung wird nie zum Code.**
 
-**4. Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vorlagen:löscheVorlage`. Ereignisse (Main → Renderer) heißen `<modul>:<ereignis>`, z. B. `queue:geaendert`, `render:fortschritt`. Damit erfindet niemand eigene Kanalnamen.
+**4. Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vorlagen:löscheVorlage`. Ereignisse (Main → Renderer) heißen `<modul>:<ereignis>`, z. B. `queue:geaendert`, `render:fortschritt`. Damit erfindet niemand eigene Kanalnamen. **Diese beiden Ereignis-Kanäle sind keine bloßen Beispiele:** `queue:geaendert` (9.3.4) und `render:fortschritt` (9.2.7) sind die Ereignis-Kanäle der v1 und werden **tatsächlich gebaut und angemeldet** – Sender im Main, Anmeldung im `ipc-gateway`, Abonnent im Renderer.
 
 **5. Ereignisse sind Einbahnstraßen und tragen keinen Endzustand** (für `RenderProgress` bereits festgelegt, 9.2.7). Terminale Zustände kommen ausschließlich über Aufruf-Ergebnis bzw. Auftrags-Zustand.
 
@@ -406,11 +412,21 @@ Der Ausgabe-**Pfad** ist **nicht** Teil der Anfrage – nur der **Name**: Der Ma
 
 | `art` | Nutzdaten | Herkunft der Pixel | über IPC? |
 |---|---|---|---|
-| `"video"` | `medienRef` (relativer Pfad in `media/`), `trimStart`, `trimEnde` (Sekunden; **framegenauer** Schnitt s. 9.2.6), optional `einblendung` (Band-Abschnitte als PNG-Puffer + Dauern, s. 9.2.8) | Datei in D2; Band-Pixel vom Renderer | **teilweise** – Video per Pfad, Band-PNGs über IPC |
+| `"video"` | `medienRef` (relativer Pfad in `media/`), `trimStart`, `trimEnde` (Sekunden; **framegenauer** Schnitt s. 9.2.6), optional `einblendung` (**`art`**, **`höhe`** und die Band-Abschnitte als PNG-Puffer + Dauern, s. u. und 9.2.8) | Datei in D2; Band-Pixel vom Renderer | **teilweise** – Video per Pfad, Band-PNGs über IPC |
 | `"bild"` | `medienRef` (relativer Pfad), `dauer` | Datei in D2 | **nein** – Main liest per Pfad |
 | `"segment"` | `png` (Binärpuffer), `dauer` | Renderer via `template-canvas` | **ja** – einziger Pixel-Transport |
 
 Gemeinsam je Item: `id` (Rückverfolgung/Fehlerzuordnung). Bei `"segment"` werden **keine** Aktions-/Vorlagendaten mitgeschickt – die Pixel sind bereits final; das ist der Kern von Variante A.
+
+**Die `einblendung` eines `"video"`-Items trägt die Geometrie mit:**
+
+| Feld | Inhalt |
+|---|---|
+| `art` | `"split"` \| `"einblendung"` – Kompositionsart (Band **unter** bzw. **über** dem Video, 9.2.8) |
+| `höhe` | Bandhöhe `H` in Pixeln (ganzzahlig) |
+| `abschnitte` | geordnete Folge `{ png (Binärpuffer, 1920 × H), dauer }` |
+
+*Warum `art` und `höhe` im Auftrag stehen und nicht zur Laufzeit nachgeschlagen werden:* Der Render **friert seinen Eingang beim Einreihen ein** (9.3.5). Beide Werte stammen aus der Band-Vorlage und werden **beim Einreihen** aus ihr abgeleitet. Würde der Main die Vorlage stattdessen erst beim Start des Auftrags im `vorlagen-store` nachschlagen, wäre der Eingang **nicht** eingefroren: Ändert jemand die Bandhöhe, während der Auftrag in der Warteschlange wartet, passten die bereits gezeichneten Band-PNGs (1920 × H **zum Einreih-Zeitpunkt**) nicht mehr zur nachgeschlagenen Höhe – das Band im fertigen Video wäre verzerrt oder falsch platziert. So bleibt der Auftrag **in sich geschlossen**, und der `render-service` braucht **keine** Abhängigkeit zum `vorlagen-store`. Der Renderer kennt beide Werte ohnehin: er hat das Band damit gezeichnet.
 
 #### 9.2.3 Ausgang: `RenderResult`
 
@@ -423,13 +439,14 @@ Genau **ein** terminaler Ausgang je Lauf, diskriminiert über `status` ∈ { `er
 | `ausgabePfad` | absoluter Pfad der erzeugten `projects/<id>/output/<name>.mp4` |
 | `gesamtdauer` | Summe der (getrimmten) Elementdauern in Sekunden – **framegerundet** gezählt (Frame-Anzahl / 30, s. 9.2.6) |
 | `dateigroesse` | Größe in Bytes |
-| `historieEintrag` | ID, Datum, Pfad, Dauer, Größe → von der Auftragsverwaltung ins Protokoll Q3 geschrieben (9.3) |
+
+**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von der Auftragsverwaltung** gebaut (9.3) – sie besitzt ohnehin `auftragId`, `art`, `projektId`, `versuch`, `begonnenAm` und `beendetAm`. Der `render-service` liefert nur, was **nur er** weiß: Pfad, Größe und Gesamtdauer; daraus wird `ProtokollEintrag.ausgabe`. *Begründung:* Zwei Quellen für dieselbe Information laufen unweigerlich auseinander (dieselbe Regel entfernte schon das `position`-Feld, 9.11.3, und die doppelte Ablage der offenen Löschungen, 9.3) – und **Q3 ist dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer falsch.
 
 **`fehler`:**
 
 | Feld | Inhalt |
 |---|---|
-| `fehlercode` | z. B. `medium_fehlt`, `ffmpeg_fehler`, `ungueltiges_element` |
+| `fehlercode` | **einer** der Codes aus der Tabelle unten – ein geschlossener Satz, keine freie Zeichenkette |
 | `fehlerhaftesElementId` | betroffenes `RenderItem` (falls zuordenbar) |
 | `meldung` | für den Nutzer aufbereiteter Klartext |
 
@@ -439,7 +456,23 @@ Genau **ein** terminaler Ausgang je Lauf, diskriminiert über `status` ∈ { `er
 |---|---|
 | `abgebrochenBei` | zuletzt bearbeiteter `elementIndex` (optional, für die UI) |
 
-Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei und **kein** Historie-Eintrag; eine **bereits vorhandene Datei gleichen Namens bleibt unversehrt** (9.2.6); der Arbeitsbereich T1 ist in beiden Fällen aufgeräumt.
+Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bereits vorhandene Datei gleichen Namens bleibt unversehrt** (9.2.6). Aufgeräumt sind in beiden Fällen **der Arbeitsbereich T1 *und* die angefangene `<name>.mp4.part` im Ausgabeordner** – sonst bliebe im Ausgabeordner eine wachsende Leiche liegen. **Der Q3-Protokolleintrag entsteht trotzdem:** Q3 hält *einen Eintrag je beendetem Versuch*, also auch für Fehlschlag und Abbruch (9.3); nur das Feld `ausgabe` bleibt dort `null`.
+
+**Fehlercodes des `render-service` (geschlossener Satz):**
+
+| Code | Wann | Was der Nutzer tun kann |
+|---|---|---|
+| `medium_fehlt` | Ein referenziertes Medium liegt nicht (mehr) in `media/` oder ist vom Reconcile als `zustand: "fehlt"` markiert (9.4.7). Geprüft **vor** dem ersten `ffmpeg`-Aufruf, nicht mitten im Lauf | Über den geführten Reparatur-Modus (9.7.5) neu verknüpfen/importieren, ersetzen oder das Element entfernen |
+| `ungueltiges_element` | Ein einzelnes `RenderItem` ist in sich unstimmig: Trim außerhalb der Quelldauer, `dauer` außerhalb 10–45 s, `"segment"` ohne PNG-Puffer, `einblendung` ohne Abschnitte oder mit `höhe` ≥ 1080, PNG-Maße ≠ der erwarteten Fläche (1920 × 1080 bzw. 1920 × `höhe`) | Das benannte Element im `composer` korrigieren (Dauer/Trim/Band) und erneut rendern |
+| `ungueltige_eingabe` | Die **Anfrage** verletzt den Vertrag, unabhängig von einzelnen Elementen: unzulässiger `ausgabeName` (9.2.6), leere Elementliste, unbekannte `art`, fehlende `projektId`. Generischer Code aus 9.1.1 Punkt 3 – **ohne jede Wirkung** auf Daten oder Dateien | Zielnamen korrigieren bzw. mindestens ein Element in die Liste legen |
+| `ffmpeg_fehler` | Ein `ffmpeg`-/`ffprobe`-Aufruf endet mit Fehlerstatus oder liefert keine verwertbare Ausgabe (defekter Stream, nicht dekodierbare Quelle) – **einschließlich einer fehlgeschlagenen Verifikation** der fertigen Datei (9.2.6) | Wiederholen (Q2, FA-17); bleibt es dabei, das im Fehler benannte Element austauschen. Die vorherige Ausgabedatei ist unversehrt |
+| `kein_platz` | Zu wenig freier Speicher – für T1 (Zwischenclips) **oder** für `<name>.mp4.part` im Ausgabeordner. Beide Orte können auf **verschiedenen** Laufwerken liegen | Platz schaffen, dann den Auftrag wiederholen |
+| `speicher_fehler` | Schreib- oder Rename-Fehler am **Ziel** jenseits von Platzmangel: fehlende Rechte, Ausgabeordner nicht anlegbar, Zieldatei durch einen anderen Prozess gesperrt (nach Retry) | Die Ausgabedatei in Player/Explorer schließen, Rechte prüfen, wiederholen |
+| `unbekannter_fehler` | Jede nicht zuordenbare Ausnahme; das Gateway übersetzt sie (9.1.1 Punkt 8) – **kein** Stacktrace in der Oberfläche | Wiederholen; der Versuch steht mit Zeitstempel in Q3 |
+
+**`abgebrochen` ist *kein* Fehlercode.** Ein vom Nutzer abgebrochener Lauf endet über `status: "abgebrochen"` (9.2.7) und trägt **kein** `fehler`-Objekt – sonst gäbe es zwei Wege, denselben Ausgang zu melden, und die Oberfläche zeigte einen Abbruch als Fehler an.
+
+**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.** `RenderResult.fehlerhaftesElementId` ist Modul-intern; beim Abschluss des Auftrags übernimmt die Auftragsverwaltung `fehlercode` → `Auftrag.fehler.code`, `meldung` → `Auftrag.fehler.meldung` und `fehlerhaftesElementId` → **`Auftrag.fehler.daten = { elementId }`** (9.1.1, 9.3.1). Ohne diesen Weg käme die ID **nie** beim Nutzer an – obwohl 9.2.1 die `RenderItem.id` genau damit begründet („eindeutige Fehlerzuordnung") und der Reparatur-Modus (FA-19) die Stelle benennen muss, zu der er führt. Die Form von `daten` ist damit **je Fehlercode festgelegt**: `{ elementId: string }` bei `medium_fehlt` und `ungueltiges_element`, sonst nicht gesetzt.
 
 #### 9.2.4 `RenderProfile` (aktuell fest)
 
@@ -455,7 +488,7 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei und **kein**
 | **Pixel-Seitenverhältnis** | **1:1** (quadratisch, SAR 1:1) | Quellvideos mit nicht-quadratischen Pixeln würden am TV **verzerrt** dargestellt |
 | Abtastung | **progressiv** | kein Interlacing |
 | **Audio** | **stille AAC-Spur** (48 kHz, mono, niedrige Bitrate) – in **jedem** Segment identisch | Manche Player/TVs erwarten eine Audiospur und verhalten sich bei rein-Video-MP4 eigenartig. Das Ergebnis ist trotzdem **still** (Anforderungsdokument R-06 ist damit **entschieden**) |
-| Seitenverhältnis-Politik | einpassen + schwarze Balken (`pad`; Letterbox/Pillarbox), **kein** Beschnitt | Ausnahme: Split-Komposition füllt in Markenfarbe (9.2.8) |
+| Seitenverhältnis-Politik | einpassen + schwarze Balken (`pad`; Letterbox/Pillarbox), **kein** Beschnitt | Ausnahme: Split-Komposition füllt in der Farb-Rolle `flaecheDunkel` (9.2.8, 9.11.2) |
 | Container / Dateiname | **MP4** mit **`+faststart`** / `<ausgabeName>.mp4` (frei, FA-22) | Index vorn – hilft Playern, die ihn früh erwarten |
 
 **Ausdrücklich verboten** (typische „für mehr Qualität"-Fehlgriffe, die den TV aussperren): 10-Bit-Tiefe, 4:2:2/4:4:4-Abtastung, exotisch hohe Referenzframe-Zahlen, offene GOPs, unbegrenztes CRF ohne VBV-Deckel.
@@ -465,7 +498,7 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei und **kein**
 #### 9.2.5 Verantwortungsteilung an der Grenze
 
 - **Renderer:** rendert Segment-PNGs (`template-canvas`, pixelgleich zur Vorschau), stellt den `RenderRequest` zusammen, übergibt Segment-Pixel als Binärpuffer. Schreibt **nichts** auf die Platte.
-- **Main (`render-service`):** schreibt die PNGs nach T1; **normalisiert jedes Element** (`scale` + `pad` → Profil) zu einem Zwischenclip `seg_*.mp4`; verkettet die Zwischenclips per concat-Demuxer (`-c copy`) zur fertigen Ausgabedatei; nutzt `ffprobe` für Maße/Dauer, wo nötig; schreibt das Ergebnis in den **Projekt-Ausgabeordner** (`projects/<id>/output/<name>.mp4`, atomar – s. 9.2.6) und meldet den Historie-Eintrag an die Auftragsverwaltung (Protokoll Q3, 9.3); **verwirft T1** nach dem Lauf. Die absoluten Pfade der Importe (`medienRef`) löst er über die Pfad-Autorität `project-store` auf (9.5.7), statt das Layout selbst zu kennen.
+- **Main (`render-service`):** schreibt die PNGs nach T1; **normalisiert jedes Element** (`scale` + `pad` → Profil) zu einem Zwischenclip `seg_*.mp4`; verkettet die Zwischenclips per concat-Demuxer (`-c copy`) **direkt in den Projekt-Ausgabeordner** nach `projects/<id>/output/<name>.mp4.part`; **verifiziert** die fertige Datei mit `ffprobe` gegen das Profil und benennt sie erst danach im selben Ordner per Rename-mit-Ersetzen um (atomar – s. 9.2.6); nutzt `ffprobe` auch sonst für Maße/Dauer, wo nötig; meldet **Pfad, Größe und Gesamtdauer** als Auftrags-Ergebnis an die Auftragsverwaltung, die daraus den Q3-Protokolleintrag baut (9.3) – er wird **nicht** vom `render-service` vorgefertigt; **verwirft T1** nach dem Lauf. Die absoluten Pfade der Importe (`medienRef`) löst er über die Pfad-Autorität `project-store` auf (9.5.7), statt das Layout selbst zu kennen.
 - **Nicht Teil dieser Operation:** USB-Export (`export-service`) und Vorschau (P5, läuft ganz ohne diese Schnittstelle).
 
 #### 9.2.6 Invarianten (Vorgaben an die Umsetzung)
@@ -480,7 +513,9 @@ Diese Zusicherungen sind Teil des Vertrags und dürfen von keiner lokalen Entsch
 - **Video-Trim ist framegenau (30 fps):** Bei `"video"`-Items wird der Ausschnitt `[trimStart, trimEnde)` **framegenau** geschnitten – über **decode-basiertes (akkurates) Seeking**, nicht das schnelle Keyframe-Seeking (zulässig, weil ohnehin neu codiert wird; ein keyframe-approximativer Schnitt läge je nach GOP-Länge um bis zu Sekunden daneben). Beide Grenzen werden auf **dasselbe** 30-fps-Raster gerundet: `startFrame = round(trimStart × 30)`, `endFrame = round(trimEnde × 30)`; behalten werden die Frames `[startFrame, endFrame)`. Die effektive Elementdauer ist damit `(endFrame − startFrame) / 30` – **nicht** die rohe Sekundendifferenz. Der Zwischenclip ist **CFR** (konstante Bildrate 30 fps), damit die Frame-Anzahl deterministisch bleibt. Dieselbe Rundungsregel gilt ausnahmslos (kein `floor` an einer, `round` an anderer Stelle) – sonst weicht die Dauer um einen Frame ab.
 - **`gesamtdauer` zählt gerundete Frame-Dauern:** Die im `RenderResult` gemeldete `gesamtdauer` summiert die **gerundeten** Elementdauern (Frame-Anzahl / 30), nicht die rohen Trim-Sekunden – sonst driften die angezeigte Gesamtlänge (5.3, 30-Minuten-Warnung) und die tatsächliche Länge der Ausgabedatei auseinander.
 - **Vorschau-Abgleich:** Die Vorschau (P5, natives `<video>`) kann um bis zu einen Frame anders schneiden (Browser-Seek); **maßgeblich ist die gerenderte Ausgabedatei** (Abschnitt 8). Die hier definierte Render-Regel ist verbindlich und deterministisch.
-- **Die Ausgabedatei entsteht atomar – die vorige Fassung ist geschützt (FA-22):** Weil der Standard-Zielname der **zuletzt verwendete** ist, überschreibt ein Render im Regelfall eine vorhandene, gute Datei. `ffmpeg` schreibt deshalb **nie** direkt auf den Zielnamen, sondern in den Arbeitsbereich T1; erst die **fertige und verifizierte** Datei wird per Rename-mit-Ersetzen in den Projekt-Ausgabeordner gebracht (dieselbe Partition). Ein Abbruch, ein Fehler oder ein Absturz lässt die vorhandene Datei damit **unversehrt** – ohne diese Regel zerstörte ein fehlgeschlagener Probelauf die letzte funktionierende Ausgabe.
+- **Die Ausgabedatei entsteht atomar – die vorige Fassung ist geschützt (FA-22):** Weil der Standard-Zielname der **zuletzt verwendete** ist, überschreibt ein Render im Regelfall eine vorhandene, gute Datei. `ffmpeg` schreibt deshalb **nie** direkt auf den Zielnamen, sondern auf **`projects/<id>/output/<ausgabeName>.mp4.part`**; erst die **fertige und verifizierte** Datei wird **innerhalb desselben Ordners** per Rename-mit-Ersetzen zu `<ausgabeName>.mp4`. Ein Abbruch, ein Fehler oder ein Absturz lässt die vorhandene Datei damit **unversehrt** – ohne diese Regel zerstörte ein fehlgeschlagener Probelauf die letzte funktionierende Ausgabe. Endet der Lauf nicht mit Erfolg, wird die `.part`-Datei entfernt (9.2.3).
+- **Das Staging liegt im Ausgabeordner, NICHT in T1 (`<Temp>`):** Umbenennen ist nur auf **derselben Partition** unteilbar. Die App ist **portabel** – ihr Datenort kann auf einem USB-Stick oder einem zweiten Laufwerk liegen, während `<Temp>` auf der Systemplatte liegt. Ein `rename` aus `<Temp>` in den Ausgabeordner wäre dann ein laufwerksübergreifender Aufruf und schlüge mit **`EXDEV`** fehl; der naheliegende Ausweg „kopieren und löschen" ist **nicht** unteilbar und hebt genau die eben zugesagte Schutzwirkung (FA-22, Akzeptanzkriterium 9) wieder auf – ein Absturz mitten im Kopieren zerstörte die letzte funktionierende Ausgabedatei. Der Fehler fiele beim Entwickeln **nicht** auf, weil dort Temp und Daten auf derselben Platte liegen. **T1 bleibt** für Segment-PNGs, Zwischenclips `seg_*.mp4` und concat-Liste zuständig (Abschnitt 6).
+- **„Verifiziert" ist definiert, nicht Auslegungssache:** Bevor die fertige Datei die vorherige Fassung ersetzt, wird sie **genau einmal** mit `ffprobe` ausgelesen und gegen das Ausgabe-Profil (9.2.4) geprüft: **Dauer** im erwarteten Rahmen (die framegerundete `gesamtdauer`, mit enger Toleranz), **1920 × 1080**, **30 fps**, **`yuv420p`**, **Tonspur vorhanden**. Weicht etwas ab → `ffmpeg_fehler` (9.2.3), die `.part`-Datei wird verworfen, die vorherige Fassung bleibt stehen. *Begründung:* Das ist die **einzige** Stelle, an der ein stiller Encoder-Fehler (abgebrochener Stream, still gedroppte Tonspur, falsches Pixelformat) noch auffällt, **bevor** er die letzte funktionierende Datei ersetzt – danach geht die Datei ungeprüft auf den Fernseher im Studio. Ein bis zwei Sekunden nach einem mehrminütigen Render sind dafür vertretbar; `ffprobe` wird ohnehin mitgeliefert (Abschnitt 3).
 - **Der Ausgabename ist Nutzereingabe und wird validiert (FA-22):** Erlaubt ist ein reiner Dateiname **ohne** Endung – **keine** Pfadtrenner (`/`, `\`), **kein** `..`, keine für Windows/macOS/FAT32 unzulässigen Zeichen (`< > : " | ? *`, Steuerzeichen), nicht leer, keine reservierten Windows-Namen (`CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`). Der aufgelöste Pfad muss **innerhalb** von `projects/<id>/output/` liegen. Verstoß → `ungueltige_eingabe`, **ohne** Wirkung. Andernfalls könnte ein Name wie `../../config` aus dem Projekt ausbrechen.
 - **Nur der Main schreibt/liest das Dateisystem;** der Renderer liefert ausschließlich Bytes über IPC.
 
@@ -488,10 +523,12 @@ Diese Zusicherungen sind Teil des Vertrags und dürfen von keiner lokalen Entsch
 
 Während eines laufenden Renders läuft der Kanal in **beide** Richtungen; beide Richtungen korrelieren über die `renderId` des Laufs:
 
-- **Main → Renderer:** Fortschritts-Ereignisse (`RenderProgress`).
+- **Main → Renderer:** Fortschritts-Ereignisse (`RenderProgress`) auf dem Kanal **`render:fortschritt`**.
 - **Renderer → Main:** Abbruch-Signal (`cancelRender`).
 
-**Fortschritts-Ereignis `RenderProgress` (Main → Renderer):**
+**Der Kanal `render:fortschritt` wird gebaut, nicht nur erwähnt.** Er ist in 9.1.1 Punkt 4 als Beispiel für die Ereignis-Namenskonvention genannt; das ist **kein** Platzhalter: Der `render-service` meldet darauf, das `ipc-gateway` meldet ihn an, der Renderer abonniert ihn. *Begründung:* Ein Render kann Minuten dauern; ein Balken ohne Kontext lässt offen, ob überhaupt etwas passiert. Die Nutzlast steht unten vollständig fest, und der Empfänger im Renderer existiert. **Daneben behält die Warteschlange ihren groben Prozentwert:** `RenderProgress.prozent` speist `Auftrag.fortschritt` (9.3.6), der über `queue:geaendert` in die Warteschlangen-Leiste geht. Zwei Kanäle mit verschiedenem Zweck – der eine detailliert und flüchtig für die Render-Ansicht, der andere grob im Auftrags-Zustand.
+
+**Fortschritts-Ereignis `RenderProgress` (Main → Renderer, Kanal `render:fortschritt`):**
 
 | Feld | Inhalt |
 |---|---|
@@ -505,7 +542,7 @@ Während eines laufenden Renders läuft der Kanal in **beide** Richtungen; beide
 
 **Drosselung (Vertrag, nicht nur Umsetzung):** Ereignisse an den Element-Grenzen (Beginn/Ende je `seg_*.mp4`) plus grobe Zwischen-Ticks; **kein** Pro-Frame-Feuerwerk über IPC (Obergrenze wenige Ereignisse/Sekunde). Die genaue Rate ist Umsetzungsdetail, *dass* gedrosselt wird, ist verbindlich.
 
-**Abbruch `cancelRender` (Renderer → Main):** Signal mit `renderId`. Der Main stoppt den laufenden `ffmpeg`-Prozess, räumt T1 auf und schließt den Lauf mit `RenderResult { status: abgebrochen }` ab (9.2.3). In v1 verfügbar. In der Praxis ist der Render **ein Auftrag der Auftrags-Queue** (9.3); der Nutzer löst den Abbruch über das `queue-panel` aus, das intern `cancelRender(renderId)` aufruft. `auftragId` und `renderId` bleiben dabei fest verknüpft (9.3).
+**Abbruch `cancelRender` (Renderer → Main):** Signal mit `renderId`. Der Main stoppt den laufenden `ffmpeg`-Prozess, räumt T1 **und die angefangene `<name>.mp4.part` im Ausgabeordner** auf und schließt den Lauf mit `RenderResult { status: abgebrochen }` ab (9.2.3). In v1 verfügbar. In der Praxis ist der Render **ein Auftrag der Auftrags-Queue** (9.3); der Nutzer löst den Abbruch über das `queue-panel` aus, das intern `cancelRender(renderId)` aufruft. `auftragId` und `renderId` bleiben dabei fest verknüpft (9.3).
 
 **Abgrenzung (damit sich nichts doppelt):**
 
@@ -516,27 +553,29 @@ Während eines laufenden Renders läuft der Kanal in **beide** Richtungen; beide
 
 Ein `"video"`-Item kann eine **Einblendung** tragen: unter dem laufenden Video zeigt ein **Werbeband** eine oder mehrere rotierende Aktionen (Anforderungsdokument 4.5).
 
-Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vorlage** (`art`, 9.11.1) – gewählt bei der Vorlagenerstellung:
+Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vorlage** (`art`, 9.11.1) – gewählt bei der Vorlagenerstellung. **Genauer:** Die Art wird **beim Einreihen** des Render-Auftrags aus der Band-Vorlage abgeleitet und zusammen mit der Bandhöhe `H` als `einblendung.art` / `einblendung.höhe` im `RenderRequest` **mitgeführt** (9.2.2). Der `render-service` schlägt die Vorlage **nicht** zur Laufzeit nach – sein Eingang ist beim Einreihen eingefroren (9.3.5), und die Band-PNGs sind bereits in `1920 × H` gezeichnet.
 
-**Art A – `split` (Hauptbetriebsart): Band *unter* dem verkleinerten Video.** Die **Bandhöhe `H` kommt aus der Vorlage**, die Geometrie leitet sich daraus ab:
+**Art A – `split` (Hauptbetriebsart): Band *unter* dem verkleinerten Video.** Die **Bandhöhe `H` stammt aus der Band-Vorlage** und liegt dem Render als `einblendung.höhe` vor; die Geometrie leitet sich daraus ab:
 
 | Bereich | Rahmen im 1920×1080-Bild |
 |---|---|
 | Video-Bereich | **1920 × (1080 − H)** bei y = 0 |
 | Band | **1920 × H** bei y = 1080 − H |
 | Video eingepasst (16:9) | höhenbegrenzt → Breite = (1080 − H) × 16/9, zentriert |
-| Restflächen | links/rechts – gefüllt mit der **dunklen Markenfarbe** |
+| Restflächen | links/rechts – gefüllt mit der Farb-Rolle **`flaecheDunkel`** (s. u.) |
 
 *Beispiel mit der eingebauten Vorlage (H = 162):* Video-Bereich 1920 × 918, Video real **1632 × 918** zentriert (x = 144), Restflächen je **144 px**.
 
 **Bewusste Abweichung vom Ausgabe-Profil – nur hier:** 9.2.4 schreibt **schwarze** Balken vor. In der Split-Komposition werden die Restflächen **in der Markenfarbe** gefüllt, damit der Split gestaltet wirkt und nicht wie ungenutzter Platz. Die Einpassung bleibt **„contain" ohne Beschnitt**.
+
+**Welche Markenfarbe – festgelegt:** die Farb-Rolle **`flaecheDunkel`** (9.11.2). Sie ist dort ausdrücklich als „Segment- und **Band**-Hintergrund" beschrieben; damit sind Band und seitliche Restflächen **dieselbe** Fläche und der Split wirkt aus einem Guss. Der `render-service` holt den Wert **über die Marke** (`config-store.leseMarke`, 9.5.6) und tippt ihn **nie** als Hexzahl in eine Filterkette – sonst hätte das Projekt zwei Quellen für dieselbe Farbe (9.11.1, Punkt 7).
 
 **Art B – `einblendung`: Band *über* dem vollflächigen Video.** Das Video wird wie gewohnt auf **1920 × 1080** normalisiert (schwarze Balken nach 9.2.4, **keine** Verkleinerung, **keine** Markenfarb-Flächen). Das Band (1920 × H, **mit Alpha**) wird **unten überlagert** (y = 1080 − H). Vorteil: das Video behält seine volle Größe; dafür verdeckt das Band den unteren Bildbereich.
 
 **Aufbau – in beiden Arten genau eine Re-Encodierung, Pipeline unverändert:**
 
 1. **Band-Spur** erzeugen: die Band-PNGs der Abschnitte (von `template-canvas` mit einer `split`- bzw. `einblendung`-Vorlage) mit ihren Dauern zu einer **1920 × H**-Spur bei **30 fps CFR** verketten.
-2. **Video vorbereiten:** bei `split` **contain** in den Video-Bereich skalieren und mit **Markenfarbe** auffüllen; bei `einblendung` normal auf 1920 × 1080 nach 9.2.4.
+2. **Video vorbereiten:** bei `split` **contain** in den Video-Bereich skalieren und mit **`flaecheDunkel`** auffüllen (Wert aus der Marke, s. o.); bei `einblendung` normal auf 1920 × 1080 nach 9.2.4.
 3. **Zusammensetzen:** bei `split` beide Spuren **vertikal stapeln** (`vstack`); bei `einblendung` die Band-Spur **unten überlagern** (`overlay`, Alpha respektiert).
 4. Ergebnis ist der Zwischenclip `seg_*.mp4` im Profil. Der finale `concat -c copy` (9.2.6) bleibt **völlig unangetastet** – die Kern-Pipeline gilt in beiden Arten weiter.
 
@@ -551,7 +590,7 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 
 - Parallele Bänder gibt es **nur bei `"video"`-Items**; `"bild"` und `"segment"` sind bereits vollflächige Standbilder.
 - **Deckkraft folgt der Vorlagenart:** `split`-Bänder sind **deckend** (echter Split, keine Überdeckung); `einblendung`-Bänder tragen **Alpha** (sie überlagern das Video). `template-canvas` liefert beide in **1920 × H** (9.10.2).
-- **Die Bandhöhe `H` stammt ausschließlich aus der Vorlage** – sie ist **kein** Wert am Listenelement und **nicht** pro Element überschreibbar. So bleibt das Erscheinungsbild an die Vorlage gebunden.
+- **Die Bandhöhe `H` stammt ausschließlich aus der Vorlage** – sie ist **kein** Wert am Listenelement und **nicht** pro Element überschreibbar. So bleibt das Erscheinungsbild an die Vorlage gebunden. Dass `H` (und `art`) im `RenderRequest` **mitreisen** (9.2.2), ist **keine** zweite Quelle: Es ist der beim Einreihen eingefrorene Stand **derselben** Vorlage (9.3.5) – dieselbe Beziehung wie zwischen Aktion und fertigem Segment-PNG.
 - **Alle Abschnitte eines Elements nutzen dieselbe Band-Vorlage** (eine `bandVorlageId` pro Einblendung) – damit `H` und die Kompositionsart während eines Videos nicht wechseln. Ein Wechsel mitten im Video würde die Geometrie springen lassen.
 - **Ohne** Band bleibt die Verarbeitung **unverändert**: Video vollflächig 1920 × 1080 mit **schwarzen** Balken nach 9.2.4.
 
@@ -593,7 +632,9 @@ ProtokollEintrag {              // Q3 – ein Eintrag je BEENDETEM Versuch
   beendetAm:  string            // ISO-8601 UTC  → die Dauer ergibt sich daraus
   ergebnis:   "erfolg" | "fehlgeschlagen" | "abgebrochen"
   fehler:     { code, meldung } | null
-  ausgabe:    { pfad, dateigroesse, gesamtdauer } | null   // nur bei erfolgreichem render/export
+  ausgabe:    { pfad:         string,
+                dateigroesse: number,
+                gesamtdauer:  number | null } | null       // nur bei erfolgreichem render/export
 }
 
 JournalEintrag {               // Q4 – eine Zeile je Bewegung
@@ -603,6 +644,8 @@ JournalEintrag {               // Q4 – eine Zeile je Bewegung
   position:  number | null      // Platz in der Schlange, wo sinnvoll
 }
 ```
+
+**`ausgabe.gesamtdauer` darf `null` sein – und ist es beim Export immer.** Ein `render` kennt die Spieldauer der erzeugten Datei (framegerundet, 9.2.6); ein `export` kopiert nur eine fertige Datei und kennt sie **nicht** – er müsste sie eigens mit `ffprobe` ermitteln, ohne dass jemand den Wert braucht. Deshalb ein **nullbares Feld** statt zweier Formen von `ausgabe`: Ein Feld, das leer sein darf, ist leichter zu lesen und zu schreiben als eine zweite Variante, und die Frage „was wurde produziert" beantwortet der **Pfad**, nicht die Dauer. **`pfad` ist beim `render` die erzeugte Ausgabedatei, beim `export` die Zieldatei auf dem Stick** (`zielPfad` + Dateiname, 9.6.1) – in beiden Fällen die Datei, die dieser Versuch hervorgebracht hat.
 
 **Wann geschrieben wird – abgeleitet aus der Zustandsmaschine (9.3.3):**
 
@@ -660,7 +703,7 @@ JournalEintrag {               // Q4 – eine Zeile je Bewegung
                     laeuft ───────────────▶ abgebrochen
 ```
 
-- **`anstehend` → `laeuft`:** nur wenn **kein** anderer Auftrag `laeuft` (serielle Invariante). Auswahl in FIFO-Reihenfolge.
+- **`anstehend` → `laeuft`:** nur wenn **kein** anderer Auftrag `laeuft` (serielle Invariante). Auswahl in FIFO-Reihenfolge. Bei `render` und `export` erzwingt der Main den **Sofort-Flush** von D1 (9.5.4) – nicht beim Einreihen. **Er läuft als erster Schritt IM HANDLER**, also nach dem Statuswechsel und bevor der Handler die eigentliche Arbeit aufnimmt. Begründung: Die Auswahl des nächsten Auftrags und der Statuswechsel bilden einen **synchronen** Abschnitt ohne `await` – nur so ist die serielle Invariante bewiesen. Ein Flush ist asynchron; dazwischengeschoben, öffnete er genau das Fenster, in dem ein zweiter Auftrag starten könnte. Nach dem Statuswechsel ist der Platz belegt, ein `await` also gefahrlos.
 - **`fehlgeschlagen`/`abgebrochen`/`erfolg`** sind terminal. `fehlgeschlagen` ist über `wiederhole` reaktivierbar; der **selbe** Eintrag wird wieder `anstehend` und **ans Ende** gestellt (kein neuer Eintrag).
 - **`versuche` wird beim Übergang `anstehend` → `laeuft` erhöht**, also genau dann, wenn eine Ausführung **tatsächlich beginnt** – **nicht** beim Wiedereinreihen. Das Feld zählt „bisherige Ausführungen" (9.3.1); würde `wiederhole` erhöhen, stünde ein einmal gelaufener, gescheiterter Auftrag bei `0`, und eine nie gestartete Wiederholung würde mitgezählt. `ProtokollEintrag.versuch` (9.3) ist der Wert dieses Laufs und beginnt damit bei 1.
 
@@ -694,7 +737,7 @@ Alle vier Aufrufe sind **Instant** und tragen die Ergebnis-Hülle (9.1.1): `Erge
 
 Der bestehende Vertrag 9.2 (`renderReel`, `RenderRequest`/`RenderResult`, `RenderProgress`, `cancelRender`) bleibt vollständig gültig. Die Queue nutzt ihn:
 
-- Ein `render`-Auftrag führt beim Start intern `renderReel(payload)` aus. `RenderProgress.prozent` speist `Auftrag.fortschritt`; `RenderResult` bestimmt den terminalen Auftrags-`status` (erfolg/fehlgeschlagen/abgebrochen) und liefert bei Erfolg die reichen Nutzdaten (Pfad, Größe, Dauer, Historie-Eintrag).
+- Ein `render`-Auftrag führt beim Start intern `renderReel(payload)` aus – **nach** dem Sofort-Flush von D1 (9.5.4). `RenderProgress.prozent` (Kanal `render:fortschritt`, 9.2.7) speist `Auftrag.fortschritt`; `RenderResult` bestimmt den terminalen Auftrags-`status` (erfolg/fehlgeschlagen/abgebrochen) und liefert bei Erfolg die Nutzdaten **Pfad, Größe und Gesamtdauer** (9.2.3) – daraus baut die Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Einen fertig vorbereiteten Historie-Eintrag liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe Information.
 - `entferne` auf einen laufenden `render` delegiert an `cancelRender(renderId)`; die `renderId` liegt im `RenderRequest` des Auftrags — `auftragId` und `renderId` bleiben fest verknüpft.
 - Der frühere Fehlercode `render_aktiv` **entfällt** — durch die serielle Ordnung kann die Kollision, die er gemeldet hätte, gar nicht mehr auftreten.
 
@@ -889,9 +932,9 @@ AusgabeDatei {
 
 - **Wozu:** Sie speist die **Ausgabe-Liste** der Oberfläche (FA-22: „Datum und Uhrzeit stehen in der Ausgabe-Liste der Anwendung, **nicht** im Dateinamen") und die **Auswahl im Export** (`ExportRequest.dateiname`, 9.6.1). Ohne diese Operation gäbe es keine Quelle für beides.
 - **Warum beim `project-store`:** Er ist die **Pfad-Autorität** (9.5.7) und löst `(projektId, ausgabeName)` ohnehin auf. Ein zweiter Ort, der das Ordner-Layout kennt, ist damit ausgeschlossen. Der Renderer bekommt **Dateinamen, nie absolute Pfade**.
-- **`geaendertAm` ist der Renderzeitpunkt, nicht das Protokoll.** Weil die fertige Datei in **einem** Schritt in den Ausgabeordner gebracht wird (Rename-mit-Ersetzen, 9.2.6), ist ihr Änderungsdatum genau der Zeitpunkt des erfolgreichen Renders. **Q3 ist NICHT die Quelle dieser Liste** – Q3 ist Historie und Nachweis (auch der Fehlschläge), die Ausgabe-Liste zeigt den **Ist-Bestand** des Ordners.
+- **`geaendertAm` ist der Renderzeitpunkt, nicht das Protokoll.** Die Datei wird als `<name>.mp4.part` **im Ausgabeordner selbst** geschrieben und bekommt erst nach der Verifikation ihren endgültigen Namen (Rename-mit-Ersetzen im selben Ordner, 9.2.6). Das Umbenennen lässt das Änderungsdatum unberührt, also ist es der Zeitpunkt, zu dem der Render seinen letzten Byte geschrieben hat – Sekunden vor der Fertigmeldung. **Q3 ist NICHT die Quelle dieser Liste** – Q3 ist Historie und Nachweis (auch der Fehlschläge), die Ausgabe-Liste zeigt den **Ist-Bestand** des Ordners.
 - **Abweichung von der Abschnittsüberschrift:** Diese Operation liest **nur** den Ausgabeordner; sie fasst `project.json` nicht an und läuft deshalb **ohne** das D1-Schreib-Lock.
-- Gelistet werden **ausschließlich fertige `.mp4`-Dateien**; Arbeitsdateien (`.part`, Temporäres) bleiben unsichtbar. Fehlt der Ordner (noch nie gerendert), ist das Ergebnis eine **leere Liste**, **kein** Fehler.
+- Gelistet werden **ausschließlich fertige `.mp4`-Dateien**; Arbeitsdateien (`.part`, Temporäres) bleiben unsichtbar. **Das ist bindend, nicht kosmetisch:** Während eines laufenden Renders liegt eine wachsende `<name>.mp4.part` **in genau diesem Ordner** (9.2.6). Würde sie mitgelistet, böte die Oberfläche eine halbfertige Datei zum Export an. Fehlt der Ordner (noch nie gerendert), ist das Ergebnis eine **leere Liste**, **kein** Fehler.
 
 #### 9.5.3 Löschsemantik – bewusste Asymmetrie
 
@@ -911,7 +954,8 @@ AusgabeDatei {
 #### 9.5.4 Auto-Speichern (Invarianten, bindend)
 
 - **Entprellt 3–5 s** nach der letzten Änderung (kein Platten-Hämmern beim Slider-Ziehen).
-- **Sofort-Flush** unabhängig vom Timer: **vor** jedem Render/Export, **bei** Projektwechsel, **beim Beenden**, **und am Ende jedes Auftrags, der D1 verändert hat** (Import, Löschen – s. 9.4.5/9.4.6). Beim Beenden **blockiert** die App, bis der Schreibvorgang abgeschlossen ist (kein Schließen mit ausstehendem Schreiben).
+- **Sofort-Flush** unabhängig vom Timer, in vier Fällen: (1) **als erster Schritt im `render`- bzw. `export`-Handler**, bevor dieser die eigentliche Arbeit aufnimmt (9.3.3 – nicht im Torwächter, dessen Auswahl- und Statuswechsel-Abschnitt kein `await` enthalten darf), (2) **bei** Projektwechsel, (3) **beim Beenden**, (4) **am Ende jedes Auftrags, der D1 verändert hat** (Import, Löschen – s. 9.4.5/9.4.6). Beim Beenden **blockiert** die App, bis der Schreibvorgang abgeschlossen ist (kein Schließen mit ausstehendem Schreiben).
+  *Wer Fall 1 auslöst und wann – ausdrücklich festgelegt:* Der **Main** löst ihn aus, und zwar beim Übergang `anstehend` → `laeuft` (9.3.3) – also **unmittelbar vor dem Start**, **nicht** beim Einreihen. *Begründung:* Die Warteschlange ist streng seriell; zwischen Einreihen und Start können **Minuten** liegen, und der Nutzer darf in dieser Zeit weiterarbeiten. Ein Flush beim Einreihen schriebe einen Stand fest, der beim Start längst überholt ist, und verlöre bei einem Absturz genau die Arbeit dazwischen. Dass der **Main** auslöst und nicht der Renderer, spart zudem einen IPC-Kanal: Der Renderer müsste sonst vor jedem `reiheEin` erst „jetzt speichern" rufen und auf die Antwort warten. (Der eingereihte Render selbst arbeitet unabhängig davon auf seinem **eingefrorenen** Snapshot, 9.3.5 – der Flush sichert die *Projektdaten*, nicht den Auftrags-Eingang.)
   *Warum Aufträge dazugehören:* Die Entprellung fängt **schnelle, wiederholte Bearbeitungen** ab (Slider-Ziehen). Ein Auftrag ist das Gegenteil davon – er läuft einmal, dauert bei einem großen Video Minuten, und die Mediendatei liegt am Ende bereits auf der Platte. Ein Absturz in den 3–5 s danach ließe eine **Waise** zurück, die der Reconcile beim nächsten Start **stillschweigend löscht** (9.4.7): Der Nutzer hat minutenlang gewartet und findet nichts vor. Ein Schreibvorgang **je Auftrag** (nicht je Tastendruck) verhindert das. Zugleich wird damit die Reihenfolge „D1 zuerst, Datei danach" (9.4.6) auch **über einen Absturz hinweg** wahr und nicht nur im Arbeitsspeicher – und der Auftrag kann einen Schreibfehler überhaupt melden (`speicher_fehler`, 9.4.9), statt Erfolg zu melden und später still zu scheitern.
 - **Atomar:** Schreiben nach Temp-Datei + Rename (gleiche Partition). `project.json` ist **nie** halb geschrieben.
 - **Ein Backup:** `project.json.bak` = letzte heile Version. Ist `project.json` beim Laden defekt → aus `.bak` wiederherstellen; ist auch das defekt → **Fehler melden**, **nicht** leer/verlustbehaftet weiterstarten.
@@ -970,7 +1014,7 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 | `dateiname` | **welche** Ausgabedatei kopiert wird (FA-22) – aufgelöst zu `projects/<id>/output/<dateiname>` |
 | `zielPfad` | gewählter Zielordner (z. B. USB-Wurzel) |
 
-**Auftrags**-Ergebnis bei Erfolg: `{ zielPfad, dateigroesse }` – über den **Auftrags-Zustand**, **nicht** als Aufrufantwort (9.1.1); der Aufruf ist `reiheEin('export', …)` → `Ergebnis<{ auftragId }>`. Fehlercodes: 9.6.4.
+**Auftrags**-Ergebnis bei Erfolg: `{ zielPfad, dateigroesse }` – über den **Auftrags-Zustand**, **nicht** als Aufrufantwort (9.1.1); der Aufruf ist `reiheEin('export', …)` → `Ergebnis<{ auftragId }>`. `zielPfad` ist hier der **vollständige Pfad der geschriebenen Zieldatei** (Zielordner + `dateiname`), nicht der Ordner allein – aus ihm wird `ProtokollEintrag.ausgabe.pfad` (9.3). Fehlercodes: 9.6.4.
 
 **Woher `dateiname` kommt:** Die Auswahl speist sich aus `listeAusgaben` (9.5.2); der Renderer liest den Ausgabeordner **nie** selbst und kennt **keine** absoluten Pfade.
 
@@ -1129,7 +1173,7 @@ Aktion {
 - **Video:** natives `<video>` von `trimStart` bis `trimEnde`.
 - **Medienzugriff ausschließlich über `media://`** (9.5.7) – der `preview-player` sieht **nie** absolute Pfade, sondern lädt `media://<projektId>/<dateiname>` in `<video>`/`<img>`.
 - **Parallele Anzeige (FA-20, 9.2.8) – beide Modi:** Trägt ein Video eine Einblendung, bestimmt die **`art` der Band-Vorlage**, was die Bühne simuliert – **genau wie im Render**. Die Bandhöhe `H` kommt aus der Vorlage; die Geometrie wird **daraus abgeleitet**, nie hartkodiert:
-  - **`split`:** Das `<video>` wird in den oberen Bereich **1920 × (1080 − H)** gelegt (`contain`), die Restflächen links/rechts in der **Markenfarbe** gefüllt; das Band-Canvas (**1920 × H**) sitzt **darunter**.
+  - **`split`:** Das `<video>` wird in den oberen Bereich **1920 × (1080 − H)** gelegt (`contain`), die Restflächen links/rechts in der Farb-Rolle **`flaecheDunkel`** gefüllt – **derselben**, die der Render benutzt (9.2.8, 9.11.2); das Band-Canvas (**1920 × H**) sitzt **darunter**.
   - **`einblendung`:** Das `<video>` bleibt **vollflächig** 1920 × 1080 (schwarze Balken nach 9.2.4); das Band-Canvas (**1920 × H**, mit **Alpha**) liegt **darüber** am unteren Rand. Die Überlagerung im DOM respektiert den Alphakanal von sich aus.
 - **Zeitverhalten identisch zum Render:** Das Band **wechselt zeitgesteuert** nach den Abschnitts-Dauern (frame-gerundet), **wiederholt** sich, wenn die Folge kürzer als das (getrimmte) Video ist, und wird am Videoende **abgeschnitten** – **dieselben** Regeln wie 9.2.8.
 - **Invariante:** Die Vorschau **rechnet die Geometrie nach derselben Formel** wie `render-service` (9.2.8). Eine eigene, abweichende Herleitung im Renderer würde genau die Übereinstimmung zerstören, für die der `preview-player` existiert.
@@ -1575,6 +1619,18 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v2.8 (04.08.2026), beim Zuschnitt der M6-Issues gefunden:**
+>
+> 1. **Das Staging der fertigen Ausgabedatei wandert aus `<Temp>` in den Projekt-Ausgabeordner** (Abschnitt 4/6, 7.2/7.3, 9.2.5, 9.2.6): `ffmpeg` schreibt nach `projects/<id>/output/<name>.mp4.part` und benennt **im selben Ordner** um. *Folge ohne die Änderung:* Umbenennen ist nur auf **derselben Partition** unteilbar; die App ist portabel, ihr Datenort kann auf einem anderen Laufwerk liegen als `<Temp>`. Der abschließende `rename` wäre dann ein `EXDEV`-Fehler, und der naheliegende Ausweg „kopieren und löschen" hebt die Schutzzusage aus FA-22 / Akzeptanzkriterium 9 auf – ein Absturz beim Kopieren zerstört die letzte funktionierende Ausgabedatei. Beim Entwickeln fiele das **nie** auf, weil dort Temp und Daten auf derselben Platte liegen. Mitgezogen: Abbruch und Fehlschlag räumen jetzt **auch** die `.part`-Datei weg (9.2.3, 9.2.7), und `listeAusgaben` darf sie nicht listen (9.5.2).
+> 2. **`einblendung` im `RenderItemVideo` trägt `art` und `höhe`** (9.2.2, 9.2.8). *Folge ohne die Änderung:* 9.3.5 friert den Render-Eingang beim Einreihen ein – schlüge der Main die Band-Vorlage erst beim Start nach, wäre er es **nicht**. Eine zwischenzeitliche Vorlagenänderung ließe die bereits gezeichneten Band-PNGs (1920 × H) nicht mehr zur nachgeschlagenen Höhe passen: verzerrtes oder falsch platziertes Band im fertigen Video. Zusätzlich entfällt damit eine Abhängigkeit `render-service` → `vorlagen-store`. 9.2.8 sagt jetzt, dass die Art beim **Einreihen** aus der Vorlage abgeleitet und im Auftrag **mitgeführt** wird.
+> 3. **`historieEintrag` ersatzlos gestrichen** (9.2.3, 9.2.5, 9.3.6). Das `RenderResult` liefert Pfad, Größe und Gesamtdauer; den Q3-Eintrag baut die Auftragsverwaltung selbst (9.3). *Folge ohne die Änderung:* zwei Quellen für dieselbe Information laufen auseinander – und **Q3 ist dauerhaft**, ein doppelt geführtes Datum darin bliebe für immer falsch. Dieselbe Regel entfernte schon das `position`-Feld (9.11.3). Nebenbefund beim Streichen: 9.2.3 behauptete, bei Fehler und Abbruch entstehe „**kein** Historie-Eintrag" – das widersprach 9.3 („ein Eintrag je **beendetem** Versuch"). Jetzt steht dort ausdrücklich, dass Q3 auch Fehlschlag und Abbruch protokolliert und nur `ausgabe` `null` bleibt.
+> 4. **`ausgabe.gesamtdauer` wird `number | null`** (9.3). Beim `export` ist sie `null` – er kopiert eine fertige Datei und kennt ihre Spieldauer nicht; sein Zielpfad steht im Feld `pfad`. *Folge ohne die Änderung:* entweder zwei Formen von `ausgabe` oder eine erfundene Dauer im dauerhaften Protokoll. Mitgezogen: 9.6.1 stellt klar, dass das Export-Ergebnis den **vollständigen Pfad der Zieldatei** trägt, nicht nur den Zielordner.
+> 5. **Der Sofort-Flush vor Render/Export wird vom MAIN ausgelöst, und zwar als erster Schritt IM HANDLER** – nach dem Statuswechsel, bevor der Handler arbeitet (9.5.4, 9.3.3). Der Torwächter selbst darf ihn **nicht** auslösen: Sein Auswahl- und Statuswechsel-Abschnitt ist bewusst synchron, und ein `await` darin bräche die serielle Invariante lautlos. *Folge ohne die Änderung:* Die Schlange ist streng seriell, zwischen Einreihen und Start können Minuten liegen; ein Flush beim Einreihen schriebe einen überholten Stand fest und verlöre bei einem Absturz genau die Arbeit dazwischen. Die Formulierung „vor jedem Render/Export" ließ zudem offen, **wer** auslöst – jeder Agent hätte es anders gebaut.
+> 6. **„Verifiziert" ist jetzt definiert** (9.2.6): einmal `ffprobe` auf die fertige Datei, Prüfung gegen das Ausgabe-Profil (Dauer im erwarteten Rahmen, 1920 × 1080, 30 fps, `yuv420p`, Tonspur vorhanden); erst danach ersetzt sie die vorherige Fassung, sonst `ffmpeg_fehler`. *Folge ohne die Änderung:* 9.2.6 verlangte eine „fertige und **verifizierte**" Datei, ohne zu sagen, was das heißt – in der Praxis wäre daraus eine Existenzprüfung geworden. Das ist die **einzige** Stelle, an der ein stiller Encoder-Fehler auffällt, bevor die letzte funktionierende Datei überschrieben wird und die Datei ungeprüft auf den Fernseher geht.
+> 7. **Die Restflächen der Split-Komposition tragen die Farb-Rolle `flaecheDunkel`** (9.2.8, mitgezogen 9.2.4 und 9.9.2), geholt über die Marke (`leseMarke`, 9.5.6), **nie** als Hexzahl in einer Filterkette. *Folge ohne die Änderung:* „dunkle Markenfarbe" ist keine Angabe – bei zwölf Farb-Rollen (9.11.2) hätte jeder Agent eine andere gewählt, und Render und Vorschau wären auseinandergelaufen. `flaecheDunkel` ist in 9.11.2 ausdrücklich „Segment- und **Band**-Hintergrund"; damit sind Band und Seitenflächen dieselbe Fläche.
+> 8. **Das Ereignis `render:fortschritt` wird ausdrücklich als anzumeldender Kanal geführt** (9.2.7, 9.1.1 Punkt 4). *Folge ohne die Änderung:* 9.1.1 nannte es nur als Namens-**Beispiel**; die Nutzlast war seit je vollständig definiert und der Empfänger im Renderer vorhanden – gefehlt hätte allein der Sender, und ein minutenlanger Render liefe ohne jede Rückmeldung. Die Warteschlange behält daneben ihren groben Prozentwert (`Auftrag.fortschritt`, 9.3.6).
+> 9. **Der `render-service` hat jetzt eine geschlossene Fehlercode-Tabelle** (9.2.3), im Stil von 9.4.9 und 9.6.4: `medium_fehlt`, `ungueltiges_element`, `ungueltige_eingabe`, `ffmpeg_fehler`, `kein_platz`, `speicher_fehler`, `unbekannter_fehler`; **`abgebrochen` ist kein Fehlercode**, sondern ein Status. *Folge ohne die Änderung:* Das TK nannte drei Codes „z. B." – ein offener Satz an genau der Stelle, an der 9.1.1 Punkt 3 einen **geschlossenen, typisierten** verlangt; jeder Agent hätte eigene Codes erfunden. Ergänzt ist außerdem der Transportweg der betroffenen Element-ID: `fehlerhaftesElementId` → **`Auftrag.fehler.daten = { elementId }`** (9.1.1). Ohne ihn erreichte die ID die Oberfläche **nie**, obwohl 9.2.1 die `RenderItem.id` genau damit begründet und der Reparatur-Modus (FA-19) die Stelle benennen muss.
 >
 > **Nachgezogen in v2.7 (04.08.2026), beim Prüflauf der M5-Issues gefunden:** Zwei Operationen des `project-store` fehlten in der als vollständig geführten Liste 9.5.2. (1) **`setzeEinblendung`** – 9.7.2 verlangt sie ausdrücklich („Band-Vorlage wählen, Abschnitte hinzufügen/ordnen/entfernen"), die Operationsliste kannte sie nicht; damit wäre FA-20 (Split-Screen) gar nicht bedienbar gewesen. (2) **`setzeElementReferenz`** – 9.7.5 nennt als Fix-Optionen des Reparatur-Modus „neu verknüpft/importiert, **ersetzt** oder entfernt", es gab aber **keine** Operation, die `Listenelement.ref` umsetzen kann. Von drei Fix-Optionen war nur „entfernen" ausführbar, und FA-19 samt Akzeptanzkriterium 7 war unerfüllbar. Verschärfend: Ein Neuimport vergibt eine **neue** UUID (9.4.4), das Element hätte also weiter auf das fehlende Asset gezeigt. Der Zielbestand folgt der `art` des Elements – bei `segment` ist die Referenz eine **Aktions**-ID, nicht eine Asset-ID. Beide Operationen brauchen einen Kanal; 9.1.1 Punkt 4 gilt unverändert.
 >
