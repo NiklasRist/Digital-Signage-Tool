@@ -40,7 +40,8 @@ ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schre
 | **M2 Torwächter** | ✅ **Issues #53–#71** angelegt, geprüft, korrigiert (`M2-XX → #(XX+52)`) |
 | **M1-Nachzügler** | ✅ **Issues #72–#77** angelegt, geprüft, korrigiert (`M1-41…46 → #72…#77`) |
 | **M3 Medien** | ✅ **Issues #78–#94** angelegt, geprüft, korrigiert (`M3-XX → #(XX+77)`) |
-| **M4–M7** | ⬜ offen |
+| **M4 Pixel** | ✅ **Issues #95–#119** angelegt, geprüft, korrigiert (`M4-XX → #(XX+94)`) |
+| **M5–M7** | ⬜ offen |
 
 Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** und die Arbeit geht **auf diesem Branch
 weiter** (so vom Nutzer entschieden) — nicht nach `main` mergen, nicht ungefragt pushen.
@@ -194,7 +195,7 @@ und angelegt.** Nachzügler `M1-41…46 → #72…#77` (Meilenstein M1), Medien 
 (Meilenstein M3). Volltexte als eine Datei je Issue in `docs/agents/m1-nachzuegler/` bzw.
 `docs/agents/m3/`, Mapping je Verzeichnis in `map.json`.
 
-**Der nächste Meilenstein ist M4 (Pixel).** Ablauf wie gehabt: Zuschnitt zeigen, Briefing schreiben,
+**Der nächste Meilenstein ist M5 (Inhalte).** Ablauf wie gehabt: Zuschnitt zeigen, Briefing schreiben,
 parallel schreiben lassen, vier Prüfer, korrigieren, Trockenlauf, Freigabe, anlegen, Verweise.
 
 - **17 Texte für M3** in `docs/agents/m3/` (M3-01…M3-17). Der harte Kern liegt in M3-07 bis M3-10:

@@ -33,6 +33,26 @@
 > ausschließlich in „Nicht selbst entscheiden", nie beides; **Regel D** – Zitate wörtlich oder
 > gar nicht; **Regel E** – jeder DoD-Punkt muss im erlaubten Dateibereich erfüllbar sein.
 
+## M4 → GitHub-Mapping
+
+Angelegt am 03.08.2026. Volltexte: eine Datei je Issue in `docs/agents/m4/`.
+
+| Kürzel | Issue | Kürzel | Issue |
+|---|---|---|---|
+| M4-01 | [#95](https://github.com/NiklasRist/Digital-Signage-Tool/issues/95) | M4-14 | [#108](https://github.com/NiklasRist/Digital-Signage-Tool/issues/108) |
+| M4-02 | [#96](https://github.com/NiklasRist/Digital-Signage-Tool/issues/96) | M4-15 | [#109](https://github.com/NiklasRist/Digital-Signage-Tool/issues/109) |
+| M4-03 | [#97](https://github.com/NiklasRist/Digital-Signage-Tool/issues/97) | M4-16 | [#110](https://github.com/NiklasRist/Digital-Signage-Tool/issues/110) |
+| M4-04 | [#98](https://github.com/NiklasRist/Digital-Signage-Tool/issues/98) | M4-17 | [#111](https://github.com/NiklasRist/Digital-Signage-Tool/issues/111) |
+| M4-05 | [#99](https://github.com/NiklasRist/Digital-Signage-Tool/issues/99) | M4-18 | [#112](https://github.com/NiklasRist/Digital-Signage-Tool/issues/112) |
+| M4-06 | [#100](https://github.com/NiklasRist/Digital-Signage-Tool/issues/100) | M4-19 | [#113](https://github.com/NiklasRist/Digital-Signage-Tool/issues/113) |
+| M4-07 | [#101](https://github.com/NiklasRist/Digital-Signage-Tool/issues/101) | M4-20 | [#114](https://github.com/NiklasRist/Digital-Signage-Tool/issues/114) |
+| M4-08 | [#102](https://github.com/NiklasRist/Digital-Signage-Tool/issues/102) | M4-21 | [#115](https://github.com/NiklasRist/Digital-Signage-Tool/issues/115) |
+| M4-09 | [#103](https://github.com/NiklasRist/Digital-Signage-Tool/issues/103) | M4-22 | [#116](https://github.com/NiklasRist/Digital-Signage-Tool/issues/116) |
+| M4-10 | [#104](https://github.com/NiklasRist/Digital-Signage-Tool/issues/104) | M4-23 | [#117](https://github.com/NiklasRist/Digital-Signage-Tool/issues/117) |
+| M4-11 | [#105](https://github.com/NiklasRist/Digital-Signage-Tool/issues/105) | M4-24 | [#118](https://github.com/NiklasRist/Digital-Signage-Tool/issues/118) |
+| M4-12 | [#106](https://github.com/NiklasRist/Digital-Signage-Tool/issues/106) | M4-25 | [#119](https://github.com/NiklasRist/Digital-Signage-Tool/issues/119) |
+| M4-13 | [#107](https://github.com/NiklasRist/Digital-Signage-Tool/issues/107) | | |
+
 ## M1-Nachzügler und M3 → GitHub-Mapping
 
 Angelegt am 03.08.2026. Die Volltexte liegen **eine Datei je Issue** in

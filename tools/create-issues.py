@@ -169,6 +169,58 @@ def labels_m3(nr, titel, body):
     if nr in M3_BLOCKIEREND: L.append("braucht-entscheidung")
     return L
 
+
+# --- M4 (Pixel: template-canvas, Vorlagen) ----------------------------------
+# Datenverlust: die app-weite Vorlagen-Bibliothek schreiben bzw. loeschen.
+M4_RISIKO_DATEN = {4, 13}
+# Sicherheit: Nutzlast-Validierung an der Prozessgrenze.
+M4_RISIKO_SICHER = {15}
+# Pixelgleichheit: alles, was zeichnet oder das Gezeichnete ausgibt. Der Kern
+# des Meilensteins - driftet hier etwas, sieht der Nutzer etwas anderes als der
+# Fernseher, und zwar lautlos.
+M4_PIXEL = {2, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}
+# Verpackung: gebuendelte Schriften bzw. gebuendeltes Logo im gepackten Zustand.
+M4_RISIKO_VERPACKUNG = {16, 25}
+# Reine Typ-/Datendateien ohne Logik.
+M4_TYPEN = {1, 2, 3}
+
+# `braucht-entscheidung` fuer M4, nach Prueflauf und Korrektur: 11 von 25.
+# Auffaellig viele EXPERIMENTE - Canvas-, Schrift- und Bundler-Verhalten laesst
+# sich nicht am Schreibtisch entscheiden, sondern nur am Grundgeruest ausprobieren.
+M4_BLOCKIEREND = {
+     4,  # wie erfaehrt die Oberflaeche von einem gescheiterten entprellten Schreibvorgang
+     6,  # welche festen Zonen bekommt ein Band != 162 px und eine einblendung-Vorlage
+     8,  # Bandhoehe aendern vs. feste Zone hintergrund, die nicht veraendert werden darf
+    12,  # ungespeicherte Aenderungen des aktiven Projekts + Vollstaendigkeit der Projektliste (#35)
+    13,  # dieselbe Frage mit unmittelbarer Datenverlust-Folge
+    15,  # bekommt die Nutzungsanzeige (TK 9.12.2) einen eigenen Kanal
+    16,  # EXPERIMENT: genuegt FontFace.load() fuer Canvas-Text (offen in #8)
+    17,  # Reichweite von media:// (offen in #50) + voruebergehender Ladefehler vs. fehlendes Medium
+    23,  # ueberschreibt aktion.akzentfarbe die Farb-Rollen der Vorlage
+    24,  # EXPERIMENT: verunreinigt media:// das Canvas -> toBlob scheitert bei JEDEM Motiv
+    25,  # wie wird aus marke.logo.datei eine ladbare Bundle-URL, und wer ruft wann vor
+}
+
+def labels_m4(nr, titel, body):
+    L = []
+    if "[contracts]" in titel:
+        L += ["modul:contracts", "ebene:geteilt", "art:typen"]
+    elif "[vorlagen-store]" in titel:
+        L += ["modul:vorlagen-store", "ebene:main"]
+        L += ["art:typen"] if nr in M4_TYPEN else ["art:logik"]
+    elif "[template-canvas]" in titel:
+        L += ["modul:template-canvas", "ebene:renderer"]
+        L += ["art:typen"] if nr in M4_TYPEN else ["art:logik"]
+    if nr in M4_RISIKO_DATEN:      L.append("risiko:datenverlust")
+    if nr in M4_RISIKO_SICHER:     L.append("risiko:sicherheit")
+    if nr in M4_RISIKO_VERPACKUNG: L.append("risiko:verpackung")
+    if nr in M4_PIXEL:             L.append("risiko:pixelgleichheit")
+    if hat_fehlertabelle(body, r"ungueltige_eingabe|nicht_gefunden|speicher_fehler|unbekannter_fehler"
+                               r"|vorlage_referenziert|parent_eingebaut|png_export_fehler"):
+        L.append("art:fehlerbehandlung")
+    if nr in M4_BLOCKIEREND: L.append("braucht-entscheidung")
+    return L
+
 def labels_fuer(nr, titel, body):
     L = []
     if "[contracts]" in titel:
@@ -212,10 +264,10 @@ PRAEFIXE = {re.match(r"^([A-Za-z0-9]+)-", f).group(1) for f in dateien}
 if len(PRAEFIXE) != 1:
     print("ABBRUCH: uneinheitliche Praefixe in", B, "->", sorted(PRAEFIXE)); sys.exit(1)
 PRAEFIX = PRAEFIXE.pop()
-PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3}.get(PRAEFIX)
+PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3, "M4": labels_m4}.get(PRAEFIX)
 if PROFIL is None:
     print(f"ABBRUCH: kein Label-Profil fuer Praefix '{PRAEFIX}'."
-          f" Bekannt: M1, M2, M3. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
+          f" Bekannt: M1, M2, M3, M4. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
 print(f"Profil: {PRAEFIX}  |  Milestone: {MILE}  |  {len(dateien)} Dateien aus {B}\n")
 
 eintraege = []
