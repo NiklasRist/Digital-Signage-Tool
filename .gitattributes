@@ -1,0 +1,13 @@
+# ── Erzeugte Lock-Datei ───────────────────────────────────────────────────────
+# package-lock.json wird von npm vollstaendig erzeugt und NIE von Hand bearbeitet.
+# "binary" heisst hier nicht, dass die Datei binaer waere - es schaltet drei Dinge ab:
+#   -diff   kein tausendzeiliger Diff bei jeder Abhaengigkeits-Aenderung
+#   -merge  Git versucht NICHT, die Datei zeilenweise zusammenzufuehren. Damit landen
+#           bei einem Merge keine <<<<<<< Konflikt-Marker MITTEN in der Datei - die
+#           haben das Zusammenfuehren bisher so schmerzhaft gemacht.
+#   -text   keine CRLF-Umschreibung, die sonst allein durch Windows Aenderungen erzeugt
+# Bei einem Konflikt NIE im Editor herumbessern, sondern regenerieren lassen:
+#   git checkout --ours package-lock.json && npm install && git add package-lock.json
+# Das ist korrekt, weil package.json (die WIRKLICHE Quelle) normal gemergt wurde und
+# npm die Lock-Datei daraus vollstaendig neu ableitet.
+package-lock.json binary linguist-generated=true

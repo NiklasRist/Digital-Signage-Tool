@@ -7,10 +7,22 @@
 // Standardwert, wuerde eine vergessene Ueberschreibung in einer Kind-Konfiguration
 // lautlos die falsche Umgebung einblenden - und der Fehler faellt dann erst im
 // gepackten Build auf.
+//
+// Zu "noUncheckedIndexedAccess": "strict" zwingt bereits ueberall dazu, undefined zu
+// behandeln - mit EINER Ausnahme: Array-Zugriffe. TypeScript kennt bei
+// "Listenelement[]" nur die Elementart, nicht die LAENGE, und nimmt bei
+// "elemente[i]" deshalb einfach an, dass dort etwas liegt. Genau dort entstehen
+// Off-by-one-Fehler (Reparatur-Modus "X von N", Umsortieren, abschnitte[0]), die erst
+// beim Nutzer auffallen. Der Schalter schliesst dieses letzte Loch: "elemente[i]" ist
+// "Listenelement | undefined".
+// WICHTIG: Die Fluchttuer "elemente[i]!" hebt das wieder auf und laesst den Code
+// zugleich geprueft aussehen - schlechter als kein Schalter. Ein spaeteres
+// Linting-Setup muss @typescript-eslint/no-non-null-assertion aktivieren.
 {
   "compilerOptions": {
     "target": "ES2022",
     "strict": true,
+    "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,

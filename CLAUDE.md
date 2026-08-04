@@ -336,6 +336,18 @@
    BASIS: docs/agents/issue-generation-prompt.md ist die selbsttragende Übergabe-Prompt dafür
    (Modulschnitt, alle Invarianten zum Wörtlich-Zitieren, Pflicht-Issue-Vorlage + ausgefülltes Beispiel,
    Meilensteine M0-M7 inkl. Grundgerüst-Issues S1-S12, Labels, Dry-Run-vor-Freigabe-Ablauf).
+   OFFEN (04.08.): noUncheckedIndexedAccess ist in tsconfig.base.json AN. Der Schalter ist nur die
+   halbe Miete - die Fluchttür `elemente[i]!` hebt ihn auf und lässt den Code zugleich geprüft
+   aussehen. M0 enthält KEIN Linting-Issue (#1-#12 geprüft), das Verbot
+   @typescript-eslint/no-non-null-assertion hat also noch keinen Ort. Entweder ein neues M0-Issue
+   oder eine Ergänzung an #11 (Test-Setup).
+   HINWEIS package-lock.json: bleibt im Repo (04.08. entschieden). Grund: ffmpeg-static liefert eine
+   BINÄRDATEI mit, electron bringt Chromium mit (davon hängt der Canvas-Determinismus aus TK 9.10 ab)
+   und electron-builder baut die EXE - driften diese Versionen still, ändert sich das fertige Video,
+   ohne dass die App einen Fehler zeigt. Die Konflikt-Schmerzen sind stattdessen über .gitattributes
+   entschärft (`package-lock.json binary` -> keine Konflikt-Marker in der Datei). Bei einem Konflikt
+   NIE von Hand mergen, sondern regenerieren:
+   `git checkout --ours package-lock.json && npm install && git add package-lock.json`
    HINWEIS Doku-Workflow: .docx NIE schreiben, während Word offen ist (Vorfall 03.07.: Schreiben-während-offen
    + harter Neustart hat Datei beschädigt). Generieren → Staging → validieren → nur bei freier Datei platzieren,
    sonst stoppen und User bitten. Keine Retry-Kopier-Schleifen.
