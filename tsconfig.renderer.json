@@ -1,0 +1,22 @@
+// Renderer (React-UI). Sieht DOM und den geteilten Vertrag - KEINE Node-Typen.
+//
+// "types": [] ist der tragende Schalter dieser Datei: ohne ihn zieht TypeScript JEDES
+// Paket unter node_modules/@types automatisch ein, also auch @types/node, sobald der
+// Main es installiert. Ein `import fs from "fs"` im Renderer wuerde dann anstandslos
+// durchkompilieren und die Regel "Nur der Main-Prozess beruehrt ffmpeg und Dateisystem."
+// (TK 2) waere nur noch Konvention, nicht mehr vom Compiler erzwungen. Mit "types": []
+// scheitert derselbe Import beim Typecheck.
+//
+// Diesen Schalter nicht anfassen und einen Verstoss nicht per "skipLibCheck" wegdruecken
+// (Issue #1, STOPP-Block) - stattdessen melden.
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [],
+    "jsx": "react-jsx"
+  },
+  "include": ["src/renderer/**/*", "src/shared/**/*"]
+}

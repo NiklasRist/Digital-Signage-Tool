@@ -1,0 +1,22 @@
+// Gemeinsame Compiler-Optionen fuer alle drei Prozesse. Diese Datei wird NIE direkt
+// kompiliert - sie hat bewusst kein "include". Kompiliert wird immer eine der drei
+// abgeleiteten Konfigurationen (main / preload / renderer).
+//
+// Bewusst NICHT hier gesetzt: "lib", "types", "module" und "moduleResolution". Genau
+// diese vier Schalter trennen die Prozesse voneinander (TK 2). Stuende hier ein
+// Standardwert, wuerde eine vergessene Ueberschreibung in einer Kind-Konfiguration
+// lautlos die falsche Umgebung einblenden - und der Fehler faellt dann erst im
+// gepackten Build auf.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  }
+}

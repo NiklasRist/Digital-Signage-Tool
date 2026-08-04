@@ -1,0 +1,17 @@
+// Preload-Skript. Der einzige Ort, der beide Welten sieht: es laeuft im Kontext des
+// Renderer-Fensters (daher DOM), hat aber Zugriff auf contextBridge/ipcRenderer (daher
+// Node-Typen). Genau deshalb ist die contextBridge-Flaeche (#4) die einzige erlaubte
+// Bruecke - der Renderer selbst bekommt Node nie zu sehen.
+//
+// "module": "CommonJS" ist keine Geschmacksfrage: Electron laedt Preload-Skripte im
+// Sandbox-Modus als CommonJS; ESM wird dort nicht ausgefuehrt.
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"]
+  },
+  "include": ["src/preload/**/*", "src/shared/**/*"]
+}

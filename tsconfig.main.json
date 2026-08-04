@@ -1,0 +1,13 @@
+// Main-Prozess (Node). Sieht Node-Typen und den geteilten Vertrag - aber KEIN DOM.
+// "lib" ohne DOM heisst: "document", "window" und die uebrigen Browser-Typen existieren
+// hier nicht. Main-Code, der versehentlich Renderer-APIs anfasst, bricht beim Typecheck.
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022"],
+    "types": ["node"]
+  },
+  "include": ["src/main/**/*", "src/shared/**/*"]
+}
