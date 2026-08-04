@@ -6,7 +6,7 @@
 > Projekt beschädigen. Deshalb: jede lokale Entscheidung muss zu den hier festgelegten globalen
 > Invarianten passen. Im Zweifel lieber strikter an den Vertrag halten als „clever" abweichen.
 >
-> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.6** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
+> **Stand:** 04.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.7** · Phase: PLANUNG (Task-Überführung läuft, kein Code).
 
 ---
 
@@ -83,6 +83,30 @@ bedient, gilt **ausnahmslos** Folgendes. Diese Regeln sind der häufigste Ort f�
   `<modul>:<ereignis>` (`queue:geaendert`, `render:fortschritt`). Keine eigenen Namensschemata erfinden.
 - **Ereignisse sind Einbahnstraßen**, tragen **keine** Hülle und **keinen Endzustand**. Terminale
   Zustände kommen nur über Aufruf-Ergebnis bzw. Auftrags-Zustand.
+- **Empfangsweg im Renderer: `abonniere` (M5-32, `#151`)** – ⟵ NEU 04.08.
+  `abonniere<T>(kanal: string, hoerer: (nutzlast: T) => void): () => void` in
+  `src/renderer/ipc-client/ereignisse.ts`. **Der Rückgabewert IST die Abmeldung** – jedes Modul, das
+  sich anmeldet, muss sich beim Aufräumen wieder abmelden, sonst hängt nach jedem Reiterwechsel ein
+  weiterer Hörer am selben Kanal und der älteste (= veralteste) feuert zuletzt über den aktuellen
+  Stand. Die Funktion **castet nur den Typ**: nichts auspacken, nicht umformen, **nie** in eine
+  `Ergebnis`-Hülle zwingen und aus einer Meldung **nie** einen Endzustand ableiten – sonst entsteht
+  ein zweiter, konkurrierender Weg neben Aufruf-Ergebnis und Auftrags-Zustand. `rufeAuf` (`#24`)
+  bleibt Request/Response; **vor M5-32 hatte der Renderer überhaupt keinen Empfangsweg**, damit war
+  `queue:geaendert` unbeobachtbar und der „nicht gespeichert"-Hinweis (Fehlerklasse 2, 9.7.3) nicht
+  baubar. **Offen:** `project:autoSpeichernStatus` hat im Main noch **keinen Sender** (M6/M7).
+- **Kein Ereignis für Renderer-interne Änderungen (Regel E1, entschieden 04.08.):** Es gibt
+  **kein** `project:geaendert` und **kein** `vorlagen:geaendert`. `composer`, `action-editor` und
+  `vorlagen-editor` laufen im **selben** Renderer-Prozess – ein IPC-Ereignis wäre eine Reise durch
+  den Main und zurück, nur um zwei Modulen mitzuteilen, was im selben Speicher längst passiert ist.
+  Stattdessen: **jede Operation liefert den neuen Stand zurück**, der Aufrufer gibt ihn an die
+  gemeinsame Sicht weiter (Projekt: M5-02 `#121`, Vorlagen: M5-36 `#155`). Module **außerhalb** des
+  besitzenden Ordners importieren die Sicht **nicht**, sie bekommen die Aktualisierungsfunktion als
+  **Parameter**. Wer sie beim Aufbau der Oberfläche durchreicht, ist `app-shell` (**M7**).
+- **Renderer-Signaturen nutzen `Ergebnis<T, string>` (Regel E3, entschieden 04.08.):** Die
+  fachlichen Fehlercode-Unionen liegen in `src/main/**` und dürfen vom Renderer **nicht** importiert
+  werden (Prozessgrenze). Der geteilte Vertrag löst es genauso (`Auftrag.fehler.code` ist `string`) –
+  **die Enge sitzt dort, wo der Code entsteht.** Verglichen wird gegen die Code-Literale als
+  Zeichenketten. **Die Union NIE ein zweites Mal in `src/renderer/**` deklarieren.**
 - **Der Main validiert JEDE eingehende Nutzlast** – er vertraut dem Renderer nicht. Ungültig →
   `ungueltige_eingabe` **ohne jede Wirkung auf die Daten**. Ein Renderer-Fehler darf D1 nie beschädigen.
 - **Kein stiller Fehlschlag:** jede Operation antwortet. Unerwartete Ausnahmen fängt das Gateway und
@@ -90,10 +114,12 @@ bedient, gilt **ausnahmslos** Folgendes. Diese Regeln sind der häufigste Ort f�
 
 ## 5. Modulschnitt (HLD)
 - **Renderer:** `ipc-client`, `app-shell`, `composer` [P3], `action-editor` [P2],
+  `vorlagen-editor` (Zonen auf einer Arbeitskopie, 9.12/9i),
   `template-canvas` (geteilt: Segment → PNG), `preview-player` [P5], `queue-panel` (Sicht auf die Queue).
 - **Main:** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher
   Q1–Q4), `media-service` [P1], `project-store` [D1] (besitzt DAS EINE D1-Schreib-Lock),
-  `config-store` [D3], `render-service` [P4], `export-service`, `ffmpeg-adapter` (getesteter `buildReel`-Kern).
+  `config-store` [D3], `vorlagen-store` (`vorlagen.json` app-weit, eigene Serialisierung, 9.12/9i),
+  `render-service` [P4], `export-service`, `ffmpeg-adapter` (getesteter `buildReel`-Kern).
 - **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest,
   Auftrag …).
 
@@ -189,6 +215,25 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
 - **Instant-Operationen** (nicht Queue): Projektverwaltung (erstelle/öffne/liste/dupliziere/lösche),
   Aktion CRUD, Liste (fügeHinzu/entferne/ordneNeu/setzeTrim/setzeDauer). Validierung: Trim `0≤start<ende≤Videodauer`;
   Dauer Bild/Segment 10–45 s.
+- **Zwei weitere Instant-Operationen (9.5.2, NEU in TK v2.7, 04.08.)** – beide fehlten in der als
+  **vollständig** geführten Operationsliste und wurden erst beim M5-Prüflauf gefunden:
+  - **`setzeEinblendung(elementId, einblendung: Einblendung | null) → Ergebnis<Listenelement>`** –
+    **nur bei `art: "video"`**; setzt Band-Vorlage und Abschnittsfolge **in einem Zug** (FA-20, 9.2.8).
+    Die **Bandhöhe kommt ausschließlich aus der Vorlage** und ist **kein** Wert am Listenelement.
+    Wird das Band leer, ist `einblendung = null`; das **Videoelement bleibt** (9.5.3). Ohne sie wäre
+    FA-20 (Split-Screen, die **Hauptbetriebsart**) gar nicht bedienbar gewesen, obwohl 9.7.2 sie
+    ausdrücklich verlangt.
+  - **`setzeElementReferenz(elementId, referenz) → Ergebnis<Listenelement>`** – setzt die Referenz
+    eines **bestehenden** Elements um, **ohne** seine Position und seine `id` zu verlieren. Der
+    Zielbestand folgt der `art`: `video`/`bild` → Asset in `Project.assets` mit passendem `typ`,
+    **`segment` → Aktion in `Project.aktionen`** (eine **Aktions**-ID, keine Asset-ID!). Bei `video`
+    werden `trimStart`/`trimEnde` auf `null` **zurückgesetzt**, weil sie sich auf die alte Quelllänge
+    bezogen. Sie trägt die Fix-Optionen „neu verknüpfen/importieren" und „ersetzen" des
+    Reparatur-Modus (FA-19, 9.7.5) – **ohne sie war von drei Fix-Optionen nur „entfernen"
+    ausführbar** und Akzeptanzkriterium 7 unerfüllbar. Verschärfend: Ein Neuimport vergibt eine
+    **neue** UUID (9.4.4), das Element hätte sonst weiter auf das fehlende Asset gezeigt.
+  - Beide brauchen einen **IPC-Kanal** (9.1.1 Punkt 4) – verdrahtet in M5-34 (`#153`), zusätzlich zu
+    den vierzehn `project`-Kanälen aus `#76`.
 - **Auto-Speichern:** entprellt **3–5 s** + **Sofort-Flush** vor Render/Export, bei Projektwechsel, beim
   Beenden (App **blockiert**, bis geschrieben). **Atomar** (temp+rename). **Backup** `project.json.bak`:
   Laden defekt → aus `.bak`, sonst **Fehler melden** (nie leer/verlustbehaftet starten). `schemaVersion`
@@ -255,7 +300,12 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   Nutzer wird in den Bearbeitungsmodus **zurückgeleitet und geführt**: kaputte Elemente **eins nach dem
   anderen** hervorheben („X von N behoben"), pro Element Fix-Optionen (**neu verknüpfen/importieren**,
   **ersetzen**, **entfernen**); Render erst frei, wenn **alle** behoben. Nutzt bestehende Ops (media-service,
-  project-store).
+  project-store). **Konkret (v2.7):** „neu verknüpfen/importieren" und „ersetzen" laufen über
+  **`setzeElementReferenz`** (9.5.2, s. 9b), „entfernen" über `entferneElement`.
+- **Zeichenvoraussetzungen vor dem ersten Thumbnail (M5-35, `#154`):** Marken-Schriften, Logo und
+  Motive müssen **geladen** sein, bevor der composer zeichnet. Wer den composer öffnet, **ohne**
+  vorher im Aktions-Editor gewesen zu sein, zeichnete sonst für jedes Bild einen **Platzhalter** –
+  und **9.10.7 verbietet den Platzhalter im finalen Render**.
 
 ## 9e. preview-player [P5] (Renderer) – TK 9.9
 - **UI-Simulation ohne ffmpeg** (16:9-Bühne), Transport (Play/Pause, Zeitleiste, aktuelles Element, Gesamtdauer).
@@ -435,6 +485,11 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   `design/design-tokens.json` sind aussortiert und NICHT zu verwenden).
 
 ## 11. Status & offene Verträge
+- **Aktuelle Fassungen: Anforderungsdokument v1.2 / TK v2.7 (04.08.2026).** Nachträge seit v2.2:
+  v2.4 (`pendingDeletions` sind keine Aufträge, `listeAusgaben`), v2.5 (`Auftrag.ergebnis`,
+  `fehler.daten`, ffprobe wird mitgeliefert), **v2.7 (`setzeEinblendung`, `setzeElementReferenz` –
+  s. 9b)**. **Merke:** Eine Vertragsänderung erzwingt einen **Zitat-Abgleich über alle bereits
+  angelegten Issues** – Regel D gilt rückwärts.
 - **HLD VOLLSTÄNDIG und vollständig geprüft (Anforderungsdokument v1.1 / TK v2.2).** Ausgearbeitet sind alle Modul-Verträge:
   `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5),
   `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10),

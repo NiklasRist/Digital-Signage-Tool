@@ -32,7 +32,7 @@
 
 ## Die zwei Dokumente (liegen bei)
 - Anforderungsdokument v1.2 = das „WAS" (Funktionen, Regeln, Ausgabe-Profil, Akzeptanz).
-- Technisches Konzept v2.6 = das „WIE" (Architektur, Datenbestand, DFD, HLD Abschnitt 9).
+- Technisches Konzept v2.7 = das „WIE" (Architektur, Datenbestand, DFD, HLD Abschnitt 9).
   Bitte beide unbedingt lesen, bevor du etwas vorschlägst.
 - WORKFLOW: Markdown ist Quelle der Wahrheit; beide .docx werden daraus generiert mit
   `node tools/generate-docx.js <in.md> <out.docx> [--dfd tools/assets/dfd.png]`. Nach jeder
@@ -193,7 +193,8 @@
    - BELEG, dass die Regeln wirken: M1-37/38/39 entstanden NACH Regel C/D/E - M1-37 und M1-38
      hatten NULL Befunde, M1-39 nur die Testdatei-Zeile.
    - M0 hatte dieselbe Regel-E-Lücke in #4/#6/#8 - auf GitHub korrigiert.
-   - M2-M7 offen. Dry-Run in docs/agents/issues-draft.md, Freigabe vor jedem Anlegen.
+   - [HISTORISCH, überholt: M2-M5 sind angelegt, s. unten] M2-M7 offen. Dry-Run in
+     docs/agents/issues-draft.md, Freigabe vor jedem Anlegen.
    - ANFORDERUNGSÄNDERUNG 02.08. (AD v1.2 / TK v2.3): MEHRERE benannte Ausgabedateien je Projekt.
      Ausgabeordner jetzt projects/<id>/output/ statt app-weit (app-weit war ein FEHLER: Render in
      Projekt B hätte die Datei von Projekt A überschrieben - beim Issue-Schreiben gefunden).
@@ -270,6 +271,68 @@
      FALLE, die zwei Stunden gekostet hätte: Ein per Skript geschriebenes "\b" im Suchmuster wurde
      als Backspace-Steuerzeichen in die Datei geschrieben - das Muster fand lautlos NULL Treffer.
      Bei generierten Regex-Zeilen immer das kompilierte Muster mit repr() gegenprüfen.
+     ZWEITE FALLE derselben Klasse (04.08., aus M5): Beim Schreiben von Python-Skripten über den
+     Datei-Schreibweg wurde das schliessende deutsche Anführungszeichen (U+201D) still zu einem
+     ASCII-Anführungszeichen normalisiert und beendete damit das String-Literal - Fehlermeldung
+     "unterminated string literal" an einer Stelle, die im Editor KORREKT aussieht. Gegenmittel:
+     Sonderzeichen über chr(0x201D) aufbauen und die tatsächlichen Codepoints prüfen, nie das
+     Schriftbild. Merke ausserdem: Das TK verwendet durchgehend "..." mit ASCII-Schlusszeichen -
+     U+201D ist dort ein Fremdkörper und muss vereinheitlicht werden.
+   - M4 (Pixel) angelegt: 25 Issues #95-#119, Milestone "M4 - Pixel", M4-XX -> #(XX+94), Volltexte
+     in docs/agents/m4/ (map.json). ACHTUNG: Die Befunde dieses Durchgangs sind hier NIE festgehalten
+     worden - wer sie braucht, findet nur die Issues selbst und den Draft-Abschnitt.
+   - M5 FERTIG (04.08.): 36 Issues #120-#155 (Milestone "M5 - Inhalte", M5-XX -> #(XX+119)).
+     Volltexte in docs/agents/m5/, Mapping in docs/agents/m5/map.json. Aufteilung: project-store
+     M5-01 + M5-33; composer M5-02..M5-15 + M5-35; action-editor M5-16..M5-23; vorlagen-editor
+     M5-24..M5-31 + M5-36; ipc-client M5-32; ipc-gateway M5-34. Drei neue Labels: modul:composer,
+     modul:action-editor, modul:vorlagen-editor. 467 Querverweise aufgelöst. Label
+     braucht-entscheidung: 15 von 36.
+     ZUSCHNITT WAR 31 - der PRÜFLAUF hat FÜNF Issues ERZWUNGEN, alle fünf an den NÄHTEN:
+     (1) Der Renderer konnte gar keine Ereignisse empfangen: ipc-client (#24) kannte nur rufeAuf
+     (Invoke), damit war queue:geaendert unbeobachtbar und der "nicht gespeichert"-Hinweis
+     (Fehlerklasse 2, TK 9.7.3) nicht baubar - VIER Autoren meldeten es unabhängig -> M5-32 (#151),
+     abonniere(kanal, hoerer) -> () => void.
+     (2) Listenelement.ref konnte niemand umsetzen: TK 9.7.5 nennt drei Fix-Optionen ("neu
+     verknüpft/importiert, ersetzt oder entfernt"), TK 9.5.2 hatte keine Operation dafür -
+     ausführbar war nur "entfernen", also FA-19 und Akzeptanzkriterium 7 UNERFÜLLBAR. Verschärfend:
+     Ein Neuimport vergibt eine NEUE UUID, das Element hätte weiter auf das fehlende Asset gezeigt.
+     -> M5-33 (#152) + TK v2.7.
+     (3) Zwei Kanäle ohne Anmeldung: #76 meldet genau 14 project-Kanäle an und verbietet einen
+     fünfzehnten; setzeEinblendung und setzeElementReferenz wären fertige Main-Funktionen OHNE
+     AUFRUFER gewesen - dieselbe Lückenklasse wie in M1 und M2, jetzt zum dritten Mal -> M5-34 (#153).
+     (4) Der composer hätte Platzhalter in die MP4 gebrannt: M5-09/M5-15 setzten Schriften, Logo und
+     Motive als bereit voraus und verwiesen dafür auf M5-02, das nichts davon tat. Wer den composer
+     öffnet, ohne vorher im Aktions-Editor gewesen zu sein, hätte für jedes Bild einen Platzhalter
+     gezeichnet - TK 9.10.7 verbietet genau das im finalen Render -> M5-35 (#154).
+     (5) Der Vorlagen-Editor war nicht betretbar: für erstelleVorlage, listeArbeitskopien und
+     löscheVorlage gab es in ganz M5 keinen Aufrufer, und FA-13 ist ein MUSS -> M5-36 (#155).
+     DREI ÜBERGREIFENDE ENTSCHEIDUNGEN, die auch für M6/M7 gelten:
+     E1 - KEINE project:geaendert/vorlagen:geaendert-Ereignisse. composer, action-editor und
+     vorlagen-editor laufen im SELBEN Renderer-Prozess; ein IPC-Ereignis wäre eine Reise durch den
+     Main und zurück, nur um zwei Modulen mitzuteilen, was im selben Speicher schon passiert ist.
+     Stattdessen: Jede Operation liefert den neuen Stand zurück, der Aufrufer gibt ihn an die
+     gemeinsame Sicht weiter (Projekt: M5-02, Vorlagen: M5-36). Module ausserhalb des besitzenden
+     Ordners bekommen die Aktualisierungsfunktion als PARAMETER, nicht per Import. Wer sie
+     durchreicht, ist app-shell (M7).
+     E2 - Ereignisse vom Main laufen über abonniere (M5-32). OFFEN bleibt, dass
+     project:autoSpeichernStatus im Main KEINEN Sender hat: Empfänger da, Sender nicht.
+     E3 - Renderer-Signaturen nutzen Ergebnis<T, string>. Fachliche Fehlercode-Unionen liegen in
+     src/main/** und dürfen vom Renderer nicht importiert werden; die Enge sitzt dort, wo der Code
+     entsteht. Ohne diese Regel hätte jedes Renderer-Issue die Union ein zweites Mal definiert.
+     MUSTER zum dritten Mal bestätigt: alle kritischen Befunde sitzen an den NÄHTEN zwischen Issues,
+     keiner innerhalb eines Issues. Regel A und D halten inzwischen (rund 60 fremde Signaturen
+     geprüft, keine einzige falsch rekonstruiert - die M4-Fehlerklasse ist geschlossen; über 350
+     Zitate verifiziert).
+   - TK v2.7 (04.08., beim M5-Prüflauf gefunden, vom User entschieden): Operationsliste 9.5.2 um
+     setzeEinblendung und setzeElementReferenz ergänzt. .md und .docx synchron (ZIP/XML ok,
+     0 Backticks, Absatz-Diff = nur diese Änderungen). Anforderungsdokument unverändert v1.2.
+     NACHGEZOGEN auf GitHub: #76 (DoD "genau 14 Kanäle" -> "die vierzehn dieses Issues", Verbot auf
+     DIESE Datei eingegrenzt), #24 (DoD: window.api nur AUSSERHALB von src/renderer/ipc-client/
+     verboten; Ereignisse über abonniere), #3 (siebter Bootstrap-Eintrag
+     verdrahteProjectStoreNachtragIPC(), Zählung an 6 Stellen), #120/#152/#153 (die "TK ist
+     nachzuziehen"-Vermerke sind mit v2.7 erledigt). Lokale Quelldateien gegen GitHub geprüft:
+     36/36 deckungsgleich.
+   - M6-M7 offen.
    BASIS: docs/agents/issue-generation-prompt.md ist die selbsttragende Übergabe-Prompt dafür
    (Modulschnitt, alle Invarianten zum Wörtlich-Zitieren, Pflicht-Issue-Vorlage + ausgefülltes Beispiel,
    Meilensteine M0-M7 inkl. Grundgerüst-Issues S1-S12, Labels, Dry-Run-vor-Freigabe-Ablauf).

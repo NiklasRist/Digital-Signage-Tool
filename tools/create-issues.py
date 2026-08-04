@@ -221,6 +221,68 @@ def labels_m4(nr, titel, body):
     if nr in M4_BLOCKIEREND: L.append("braucht-entscheidung")
     return L
 
+# ---------------------------------------------------------------- M5 (Inhalte)
+# Die drei Bedien-Oberflaechen plus vier Nachtraege, die der Prueflauf erzwungen
+# hat (M5-32 Ereignis-Abo, M5-33 setzeElementReferenz, M5-34 deren Verdrahtung,
+# M5-35 Zeichenvoraussetzungen, M5-36 Vorlagen-Uebersicht).
+
+# Alles, was D1 oder vorlagen.json veraendert bzw. Arbeit verlieren kann.
+M5_RISIKO_DATEN = {1, 7, 15, 24, 30, 33}
+# Alles, was zeichnet oder das Zeichnen vorbereitet - Vorschau muss pixelgleich
+# zum finalen Segment-PNG sein, sonst sieht der Fernseher etwas anderes als der Nutzer.
+M5_PIXEL = {9, 11, 21, 25, 26, 27, 28, 29, 31, 35}
+# Prozessgrenze: der einzige Renderer-Zugang zu Main-Ereignissen.
+M5_RISIKO_SICHER = {32, 34}
+# Ueberwiegend Bedienoberflaeche statt Fachlogik.
+M5_UI = {3, 4, 5, 6, 10, 13, 14, 16, 18, 19, 20, 23, 24, 25, 26, 27, 28, 30, 31, 36}
+
+# `braucht-entscheidung` fuer M5, nach Prueflauf und Korrektur: 15 von 36.
+# Die drei uebergreifenden Fragen (E1 Renderer-Sicht, E2 Ereignisse, E3 Fehlercodes)
+# sind ENTSCHIEDEN und deshalb hier NICHT mehr vertreten - sonst haetten 26 das Label.
+M5_BLOCKIEREND = {
+     1,  # Existenz-/Art-Pruefung der bandVorlageId (project-store -> vorlagen-store) + Dauer-Bereich
+     2,  # es gibt keinen nebenwirkungsfreien Lese-Kanal fuer den Projektstand
+     6,  # Verhalten des Reglers bei zustand 'fehlt'
+     7,  # project:autoSpeichernStatus hat im Main keinen Sender -> Fehlerklasse 2 unversorgt
+    15,  # Rueckfrage bei vorhandener Ausgabedatei + wer den Sofort-Flush vor dem Render ausloest
+    16,  # gilt ein bildRef auf ein Video als kaputt
+    17,  # darf ein leeres aenderungen-Objekt gesendet werden
+    19,  # prueft ueberhaupt jemand main-seitig, dass bildRef auf ein existierendes Asset zeigt
+    20,  # wie wirkt akzentfarbe auf das gezeichnete Segment (offen in #117/#112)
+    24,  # Flush-Ausloeser beim Reiterwechsel + Bandhoehe/Name (Vertragsluecke, haengt an #102)
+    30,  # die Nutzungsanzeige (TK 9.12.2) hat keinen Kanal (#106/#109)
+    32,  # was tut abonniere, wenn window.api.on fehlt (dieselbe Antwort wie die offene Frage in #24)
+    33,  # darf das Ziel zustand 'fehlt' sein (offen in #41) + Zeitpunkt von Project.geaendertAm
+    35,  # voruebergehender Ladefehler vs. fehlendes Medium; wer nach dem Import den Bestand leert
+    36,  # offener Zweig aus #100 (feste Zonen bei abweichender Bandhoehe / art einblendung)
+}
+
+def labels_m5(nr, titel, body):
+    L = []
+    if "[project-store]" in titel:
+        L += ["modul:project-store", "ebene:main", "art:logik"]
+    elif "[ipc-gateway]" in titel:
+        L += ["modul:ipc", "ebene:main", "art:logik"]
+    elif "[ipc-client]" in titel:
+        L += ["modul:ipc", "ebene:renderer", "art:logik"]
+    elif "[composer]" in titel:
+        L += ["modul:composer", "ebene:renderer"]
+    elif "[action-editor]" in titel:
+        L += ["modul:action-editor", "ebene:renderer"]
+    elif "[vorlagen-editor]" in titel:
+        L += ["modul:vorlagen-editor", "ebene:renderer"]
+    # Renderer-Module: art:ui wo bedient wird, art:logik wo gerechnet wird.
+    if "ebene:renderer" in L and "art:logik" not in L:
+        L.append("art:ui" if nr in M5_UI else "art:logik")
+    if nr in M5_RISIKO_DATEN:  L.append("risiko:datenverlust")
+    if nr in M5_RISIKO_SICHER: L.append("risiko:sicherheit")
+    if nr in M5_PIXEL:         L.append("risiko:pixelgleichheit")
+    if hat_fehlertabelle(body, r"ungueltige_eingabe|nicht_gefunden|speicher_fehler|unbekannter_fehler"
+                               r"|vorlage_referenziert|parent_eingebaut|kaputte_elemente"):
+        L.append("art:fehlerbehandlung")
+    if nr in M5_BLOCKIEREND: L.append("braucht-entscheidung")
+    return L
+
 def labels_fuer(nr, titel, body):
     L = []
     if "[contracts]" in titel:
@@ -264,10 +326,11 @@ PRAEFIXE = {re.match(r"^([A-Za-z0-9]+)-", f).group(1) for f in dateien}
 if len(PRAEFIXE) != 1:
     print("ABBRUCH: uneinheitliche Praefixe in", B, "->", sorted(PRAEFIXE)); sys.exit(1)
 PRAEFIX = PRAEFIXE.pop()
-PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3, "M4": labels_m4}.get(PRAEFIX)
+PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3,
+          "M4": labels_m4, "M5": labels_m5}.get(PRAEFIX)
 if PROFIL is None:
     print(f"ABBRUCH: kein Label-Profil fuer Praefix '{PRAEFIX}'."
-          f" Bekannt: M1, M2, M3, M4. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
+          f" Bekannt: M1, M2, M3, M4, M5. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
 print(f"Profil: {PRAEFIX}  |  Milestone: {MILE}  |  {len(dateien)} Dateien aus {B}\n")
 
 eintraege = []

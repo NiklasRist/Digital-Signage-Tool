@@ -5,14 +5,16 @@
 > Wird nach Abschnitt 11 des Übergabe-Prompts (`docs/agents/issue-generation-prompt.md`)
 > milestone-weise befüllt und je Milestone dem Nutzer zur Kontrolle vorgelegt, bevor der nächste
 > Milestone geschrieben wird. Quelle der Wahrheit für jeden fachlichen Inhalt: Technisches Konzept
-> v2.2 (`docs/Technisches_Konzept_Digital-Signage-Tool.md`).
+> **v2.7** (`docs/Technisches_Konzept_Digital-Signage-Tool.md`).
 >
-> **Fortschritt:** M0 ✅ (Issues #1–#12) · M1 ✅ geschrieben, geprüft, korrigiert und **angelegt**
-> (M1-01…M1-40 = Issues **#13–#52**, Milestone „M1 – Fundament") · M2 ✅ **angelegt**
+> **Fortschritt (Stand 04.08.2026):** M0 ✅ (Issues #1–#12) · M1 ✅ geschrieben, geprüft, korrigiert
+> und **angelegt** (M1-01…M1-40 = Issues **#13–#52**, Milestone „M1 – Fundament") · M2 ✅ **angelegt**
 > (M2-01…M2-19 = Issues **#53–#71**, Milestone „M2 – Torwächter"; Volltexte in `docs/agents/m2/`,
-> s. Abschnitt am Dateiende) · **M3 + 6 M1-Nachzügler geschrieben und korrigiert, aber NOCH NICHT
-> geprüft und NICHT angelegt** (`docs/agents/m3/`, `docs/agents/m1-nachzuegler/`; Stand und nächster
-> Schritt in `uebergabe-stand.md` Abschnitt 4c) · M4–M7 offen.
+> s. Abschnitt am Dateiende) · M3 + 6 M1-Nachzügler ✅ **angelegt** (Issues **#72–#94**;
+> `docs/agents/m3/`, `docs/agents/m1-nachzuegler/`) · M4 ✅ **angelegt** (M4-01…M4-25 = Issues
+> **#95–#119**, Milestone „M4 – Pixel"; `docs/agents/m4/`) · M5 ✅ **angelegt** (M5-01…M5-36 =
+> Issues **#120–#155**, Milestone „M5 – Inhalte"; `docs/agents/m5/`) · **M6–M7 offen.**
+> Stand und nächster Schritt: `uebergabe-stand.md`, Abschnitte 4c und 4d.
 >
 > **Achtung vor dem Anlegen:** M1-01…M1-29 entstanden **vor** den Regeln C/D/E und vor der
 > Anforderungsänderung vom 02.08. (mehrere benannte Ausgabedateien, FA-22). Sie brauchen denselben
@@ -32,6 +34,36 @@
 > gelten: **Regel C** – in „Signatur (verbindlich)" darf nur Entschiedenes stehen, Offenes
 > ausschließlich in „Nicht selbst entscheiden", nie beides; **Regel D** – Zitate wörtlich oder
 > gar nicht; **Regel E** – jeder DoD-Punkt muss im erlaubten Dateibereich erfüllbar sein.
+
+## M5 → GitHub-Mapping
+
+Angelegt am 04.08.2026. Volltexte: eine Datei je Issue in `docs/agents/m5/`, Mapping
+maschinenlesbar in `docs/agents/m5/map.json`. Milestone „M5 – Inhalte", `M5-XX → #(XX+119)`.
+**Aus dem Prüflauf entstanden M5-32…M5-36** (Ereignis-Abo, `setzeElementReferenz`, die zwei
+fehlenden Kanäle, Zeichenvoraussetzungen, Vorlagen-Übersicht) – der Zuschnitt hatte 31 Issues.
+**`braucht-entscheidung` tragen 15 der 36:** #120, #121, #125, #126, #134, #135, #136, #138,
+#139, #143, #149, #151, #152, #154, #155.
+
+| Kürzel | Issue | Kürzel | Issue |
+|---|---|---|---|
+| M5-01 | [#120](https://github.com/NiklasRist/Digital-Signage-Tool/issues/120) | M5-19 | [#138](https://github.com/NiklasRist/Digital-Signage-Tool/issues/138) |
+| M5-02 | [#121](https://github.com/NiklasRist/Digital-Signage-Tool/issues/121) | M5-20 | [#139](https://github.com/NiklasRist/Digital-Signage-Tool/issues/139) |
+| M5-03 | [#122](https://github.com/NiklasRist/Digital-Signage-Tool/issues/122) | M5-21 | [#140](https://github.com/NiklasRist/Digital-Signage-Tool/issues/140) |
+| M5-04 | [#123](https://github.com/NiklasRist/Digital-Signage-Tool/issues/123) | M5-22 | [#141](https://github.com/NiklasRist/Digital-Signage-Tool/issues/141) |
+| M5-05 | [#124](https://github.com/NiklasRist/Digital-Signage-Tool/issues/124) | M5-23 | [#142](https://github.com/NiklasRist/Digital-Signage-Tool/issues/142) |
+| M5-06 | [#125](https://github.com/NiklasRist/Digital-Signage-Tool/issues/125) | M5-24 | [#143](https://github.com/NiklasRist/Digital-Signage-Tool/issues/143) |
+| M5-07 | [#126](https://github.com/NiklasRist/Digital-Signage-Tool/issues/126) | M5-25 | [#144](https://github.com/NiklasRist/Digital-Signage-Tool/issues/144) |
+| M5-08 | [#127](https://github.com/NiklasRist/Digital-Signage-Tool/issues/127) | M5-26 | [#145](https://github.com/NiklasRist/Digital-Signage-Tool/issues/145) |
+| M5-09 | [#128](https://github.com/NiklasRist/Digital-Signage-Tool/issues/128) | M5-27 | [#146](https://github.com/NiklasRist/Digital-Signage-Tool/issues/146) |
+| M5-10 | [#129](https://github.com/NiklasRist/Digital-Signage-Tool/issues/129) | M5-28 | [#147](https://github.com/NiklasRist/Digital-Signage-Tool/issues/147) |
+| M5-11 | [#130](https://github.com/NiklasRist/Digital-Signage-Tool/issues/130) | M5-29 | [#148](https://github.com/NiklasRist/Digital-Signage-Tool/issues/148) |
+| M5-12 | [#131](https://github.com/NiklasRist/Digital-Signage-Tool/issues/131) | M5-30 | [#149](https://github.com/NiklasRist/Digital-Signage-Tool/issues/149) |
+| M5-13 | [#132](https://github.com/NiklasRist/Digital-Signage-Tool/issues/132) | M5-31 | [#150](https://github.com/NiklasRist/Digital-Signage-Tool/issues/150) |
+| M5-14 | [#133](https://github.com/NiklasRist/Digital-Signage-Tool/issues/133) | M5-32 | [#151](https://github.com/NiklasRist/Digital-Signage-Tool/issues/151) |
+| M5-15 | [#134](https://github.com/NiklasRist/Digital-Signage-Tool/issues/134) | M5-33 | [#152](https://github.com/NiklasRist/Digital-Signage-Tool/issues/152) |
+| M5-16 | [#135](https://github.com/NiklasRist/Digital-Signage-Tool/issues/135) | M5-34 | [#153](https://github.com/NiklasRist/Digital-Signage-Tool/issues/153) |
+| M5-17 | [#136](https://github.com/NiklasRist/Digital-Signage-Tool/issues/136) | M5-35 | [#154](https://github.com/NiklasRist/Digital-Signage-Tool/issues/154) |
+| M5-18 | [#137](https://github.com/NiklasRist/Digital-Signage-Tool/issues/137) | M5-36 | [#155](https://github.com/NiklasRist/Digital-Signage-Tool/issues/155) |
 
 ## M4 → GitHub-Mapping
 

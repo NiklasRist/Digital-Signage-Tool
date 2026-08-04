@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 2.6 (HLD vollständig, geprüft)
+**Version:** 2.7 (HLD vollständig, geprüft)
 **Datum:** 03.08.2026
 **Status:** In Planung
 
@@ -870,6 +870,8 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 | `ordneNeu` | `reihenfolge` (elementIds) → `Ergebnis<void>` |
 | `setzeTrim` | `elementId`, `trimStart`, `trimEnde` → `Ergebnis<Listenelement>` (validiert `0 ≤ start < ende ≤ Videodauer`) |
 | `setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s** für Bild/Segment) |
+| `setzeEinblendung` | `elementId`, `einblendung` (`Einblendung` **oder** `null`) → `Ergebnis<Listenelement>` – **nur bei `art: "video"`**; setzt Band-Vorlage und Abschnittsfolge in einem Zug (FA-20, 9.2.8). Die Bandhöhe kommt **ausschließlich** aus der Vorlage und ist kein Wert am Listenelement. Wird das Band leer, ist `einblendung = null`; das Videoelement **bleibt** (9.5.3) |
+| `setzeElementReferenz` | `elementId`, `referenz` → `Ergebnis<Listenelement>` – setzt die Referenz eines bestehenden Elements um, **ohne** seine Position und seine `id` zu verlieren. Der Zielbestand folgt der `art`: `video`/`bild` → Asset in `Project.assets` mit passendem `typ`, `segment` → Aktion in `Project.aktionen`. Bei `video` werden `trimStart`/`trimEnde` auf `null` zurückgesetzt, weil sie sich auf die alte Quelllänge bezogen. Trägt die Fix-Optionen „neu verknüpfen/importieren" und „durch ein anderes ersetzen" des Reparatur-Modus (FA-19, 9.7.5) |
 
 **Ausgabedateien (FA-22):**
 
@@ -1573,6 +1575,8 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v2.7 (04.08.2026), beim Prüflauf der M5-Issues gefunden:** Zwei Operationen des `project-store` fehlten in der als vollständig geführten Liste 9.5.2. (1) **`setzeEinblendung`** – 9.7.2 verlangt sie ausdrücklich („Band-Vorlage wählen, Abschnitte hinzufügen/ordnen/entfernen"), die Operationsliste kannte sie nicht; damit wäre FA-20 (Split-Screen) gar nicht bedienbar gewesen. (2) **`setzeElementReferenz`** – 9.7.5 nennt als Fix-Optionen des Reparatur-Modus „neu verknüpft/importiert, **ersetzt** oder entfernt", es gab aber **keine** Operation, die `Listenelement.ref` umsetzen kann. Von drei Fix-Optionen war nur „entfernen" ausführbar, und FA-19 samt Akzeptanzkriterium 7 war unerfüllbar. Verschärfend: Ein Neuimport vergibt eine **neue** UUID (9.4.4), das Element hätte also weiter auf das fehlende Asset gezeigt. Der Zielbestand folgt der `art` des Elements – bei `segment` ist die Referenz eine **Aktions**-ID, nicht eine Asset-ID. Beide Operationen brauchen einen Kanal; 9.1.1 Punkt 4 gilt unverändert.
 >
 > **Nachgezogen in v2.6 (03.08.2026), beim Prüflauf der M3-Issues gefunden:** Das automatische Speichern ist **entprellt** (3–5 s), 9.4.5 Schritt 4 verlangte aber „anhängen **und schreiben**" – beides zusammen ging nicht, und der Fehlercode `speicher_fehler` (9.4.9) war auf beiden Wegen **unerreichbar**: Der Auftrag hätte Erfolg gemeldet und wäre Sekunden später still gescheitert. Aufgelöst durch einen vierten Eintrag in der bestehenden Sofort-Flush-Liste (9.5.4): **Ein Auftrag, der D1 verändert, schreibt am Ende sofort.** Die Entprellung bleibt für Bearbeitungen unverändert – sie fängt Slider-Ziehen ab, nicht Aufträge. Nebeneffekt: „D1 zuerst, Datei danach" (9.4.6) gilt jetzt auch **über einen Absturz hinweg**.
 >

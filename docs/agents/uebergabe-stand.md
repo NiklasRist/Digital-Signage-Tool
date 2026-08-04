@@ -4,7 +4,7 @@
 > Das **Wie** der Issue-Erstellung steht vollständig in `issue-generation-prompt.md` — dort
 > beginnen, diese Datei ist nur der Stand darüber.
 >
-> **Stand:** 03.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.6**
+> **Stand:** 04.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.7**
 
 ---
 
@@ -18,13 +18,18 @@
 3. **`docs/agents/m2-pruefbefund.md`** und **`m1-pruefbefund.md`** — die Fehler der letzten beiden
    Durchgänge im Detail. Wer sie kennt, macht sie nicht nochmal. **M2 zuerst**: dort steht, was der
    Briefing-Ansatz gebracht hat und welches Muster (Regel A auf Modulebene) noch offen war.
-4. Dann **Abschnitt 4 dieser Datei**: M2 ist fertig, **M3 ist der nächste** Meilenstein.
+4. Dann **Abschnitt 4 dieser Datei**: M2 bis M5 sind fertig, **M6 ist der nächste** Meilenstein
+   (Abschnitt 4d hält fest, was der M5-Durchgang gelehrt hat und welche drei Entscheidungen
+   E1–E3 auch für M6/M7 gelten).
 
 **Kein Produktivcode.** Das Projekt ist in der Planungsphase — Code erst, wenn der Nutzer
 ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schreiben, nicht sie umzusetzen.
 
 **Lies Abschnitt 4b, bevor du den Nutzer nach Entscheidungen fragst.** Es gibt 21 Issues mit
 `braucht-entscheidung`, aber die sind **keine** Bringschuld, die vorher abzuarbeiten wäre.
+(Die 21 sind die aus **M0 und M1**, `#1`–`#52`. Über **alle** Meilensteine sind es am 04.08.2026
+**63**: 21 in `#1`–`#52`, 9 in M2, 7 in den M1-Nachzüglern + M3, 11 in M4, 15 in M5. Der Satz
+unten gilt für alle gleichermaßen.)
 
 ---
 
@@ -41,7 +46,8 @@ ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schre
 | **M1-Nachzügler** | ✅ **Issues #72–#77** angelegt, geprüft, korrigiert (`M1-41…46 → #72…#77`) |
 | **M3 Medien** | ✅ **Issues #78–#94** angelegt, geprüft, korrigiert (`M3-XX → #(XX+77)`) |
 | **M4 Pixel** | ✅ **Issues #95–#119** angelegt, geprüft, korrigiert (`M4-XX → #(XX+94)`) |
-| **M5–M7** | ⬜ offen |
+| **M5 Inhalte** | ✅ **Issues #120–#155** angelegt, geprüft, korrigiert (`M5-XX → #(XX+119)`) |
+| **M6–M7** | ⬜ offen |
 
 Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** und die Arbeit geht **auf diesem Branch
 weiter** (so vom Nutzer entschieden) — nicht nach `main` mergen, nicht ungefragt pushen.
@@ -174,6 +180,10 @@ Vertrag **TK 9.3**. Der `Auftrag`-Typ existiert schon (**#16**). Milestone-Titel
 
 </details>
 
+✅ **ERLEDIGT (03.08.), der folgende Absatz ist nur noch Nachvollzug:** `listeAusgaben` wurde als
+M1-Nachzügler **M1-44 = `#75`** angelegt (Milestone M1). Die Frage unten ist damit beantwortet –
+**nicht** erneut zur Entscheidung stellen.
+
 ⚠ **Offen und terminiert, gehört NICHT zu M2:** Für `listeAusgaben` (TK 9.5.2, neu in v2.4) gibt es
 **noch kein Issue**. Es ist eine **`project-store`**-Operation, also fachlich M1 – der Milestone ist
 aber schon angelegt (#13–#52). Entweder als Nachzügler in M1 (wie seinerzeit M1-40 `Marke`) oder zu
@@ -195,8 +205,9 @@ und angelegt.** Nachzügler `M1-41…46 → #72…#77` (Meilenstein M1), Medien 
 (Meilenstein M3). Volltexte als eine Datei je Issue in `docs/agents/m1-nachzuegler/` bzw.
 `docs/agents/m3/`, Mapping je Verzeichnis in `map.json`.
 
-**Der nächste Meilenstein ist M5 (Inhalte).** Ablauf wie gehabt: Zuschnitt zeigen, Briefing schreiben,
-parallel schreiben lassen, vier Prüfer, korrigieren, Trockenlauf, Freigabe, anlegen, Verweise.
+**Der nächste Meilenstein war M5 (Inhalte)** – inzwischen erledigt, s. Abschnitt 4d. Ablauf wie gehabt:
+Zuschnitt zeigen, Briefing schreiben, parallel schreiben lassen, vier Prüfer, korrigieren, Trockenlauf,
+Freigabe, anlegen, Verweise.
 
 - **17 Texte für M3** in `docs/agents/m3/` (M3-01…M3-17). Der harte Kern liegt in M3-07 bis M3-10:
   Kopie ins Staging → atomarer Rename; beim Löschen **D1 zuerst**, Datei danach. Falsch herum gebaut
@@ -225,6 +236,96 @@ Ebene größer. Aufgefallen ist er erst, weil für M3 zu klären war, wer den Au
    Quelle der Wahrheit; wird nur GitHub nachgezogen, überschreibt der nächste Lauf die Korrekturen
    stillschweigend. Kontrolle: lokale Datei normalisieren (`M2-07` → `#59`) und gegen den Body
    diffen — bei M2 waren so zuletzt 19 von 19 deckungsgleich.
+
+## 4d. M5 – Inhalte (`composer` P3, `action-editor` P2, `vorlagen-editor`): ERLEDIGT, Issues #120–#155
+
+**Stand 04.08.2026:** 36 Issues geschrieben, geprüft, korrigiert und angelegt, Milestone
+„M5 – Inhalte", `M5-XX → #(XX+119)`. Volltexte als **eine Datei je Issue** in `docs/agents/m5/`,
+Mapping maschinenlesbar in `docs/agents/m5/map.json`. `braucht-entscheidung` tragen **15 der 36**:
+#120 · #121 · #125 · #126 · #134 · #135 · #136 · #138 · #139 · #143 · #149 · #151 · #152 · #154 · #155.
+
+**Aufteilung nach Modul:** `project-store` M5-01 + M5-33 · `composer` M5-02…M5-15 + M5-35 ·
+`action-editor` M5-16…M5-23 · `vorlagen-editor` M5-24…M5-31 + M5-36 · `ipc-client` M5-32 ·
+`ipc-gateway` M5-34. **Drei neue Labels:** `modul:composer`, `modul:action-editor`,
+`modul:vorlagen-editor`. 467 Querverweise auf `#`-Nummern aufgelöst.
+
+### Der Prüflauf hat fünf zusätzliche Issues erzwungen (Zuschnitt war 31, angelegt sind 36)
+
+Das ist der lehrreiche Teil dieses Durchgangs: **Keiner** der fünf Befunde steckte in einem Issue –
+alle fünf saßen an einer **Naht**, an der jedes einzelne Issue für sich richtig war.
+
+1. **Der Renderer konnte keine Ereignisse empfangen.** `ipc-client` (#24) kannte genau **eine**
+   Funktion: `rufeAuf` (Request/Response). Alles, was der Main **von sich aus** meldet, kam nirgends
+   an: `queue:geaendert` war unbeobachtbar, die Warteschlangen-Leiste hätte pollen müssen, und der
+   „nicht gespeichert"-Hinweis (Fehlerklasse 2, TK 9.7.3) war schlicht nicht baubar – der
+   schädlichste stille Fehler, den dieses Werkzeug haben kann. **Vier Autoren meldeten es
+   unabhängig voneinander.** → **M5-32 (#151)**, `abonniere(kanal, hoerer) → () => void`.
+2. **`Listenelement.ref` konnte niemand umsetzen.** TK 9.7.5 nennt drei Fix-Optionen des
+   Reparatur-Modus („neu verknüpft/importiert, ersetzt oder entfernt"), die Operationsliste 9.5.2
+   hatte für zwei davon **keine** Operation. Ausführbar war nur „entfernen" → **FA-19 und
+   Akzeptanzkriterium 7 unerfüllbar**. Verschärfend: Ein Neuimport vergibt eine **neue** UUID
+   (9.4.4) – das Element hätte danach **weiter** auf das fehlende Asset gezeigt.
+   → **M5-33 (#152)** + **TK v2.7**.
+3. **Zwei Kanäle ohne Anmeldung.** #76 meldet **genau 14** `project`-Kanäle an und verbietet einen
+   fünfzehnten. `setzeEinblendung` und `setzeElementReferenz` wären damit fertige Main-Funktionen
+   **ohne Aufrufer** gewesen – **dieselbe Lückenklasse wie in M1 (#72–#77) und M2 (#71)**, jetzt
+   zum dritten Mal. → **M5-34 (#153)**.
+4. **Der `composer` hätte Platzhalter in die MP4 gebrannt.** M5-09 und M5-15 setzten Schriften,
+   Logo und Motive als **bereit** voraus und verwiesen dafür auf M5-02, das nichts davon tat. Wer
+   den composer öffnet, **ohne** vorher im Aktions-Editor gewesen zu sein, hätte für jedes Bild
+   einen Platzhalter gezeichnet – **TK 9.10.7 verbietet genau das im finalen Render.**
+   → **M5-35 (#154)**.
+5. **Der Vorlagen-Editor war nicht betretbar.** Für `erstelleVorlage`, `listeArbeitskopien` und
+   `löscheVorlage` gab es in ganz M5 **keinen Aufrufer** – und **FA-13 ist ein MUSS**.
+   → **M5-36 (#155)**.
+
+### Drei übergreifende Entscheidungen – gelten auch für M6 und M7
+
+- **E1 – keine `project:geaendert`/`vorlagen:geaendert`-Ereignisse.** `composer`, `action-editor`
+  und `vorlagen-editor` laufen im **selben** Renderer-Prozess; ein IPC-Ereignis wäre eine Reise
+  durch den Main und zurück, nur um zwei Modulen mitzuteilen, was im selben Speicher längst
+  passiert ist. Stattdessen: **Jede Operation liefert den neuen Stand zurück**, der Aufrufer gibt
+  ihn an die gemeinsame Sicht weiter (Projekt: M5-02 / Vorlagen: M5-36). Module **außerhalb** des
+  besitzenden Ordners bekommen die Aktualisierungsfunktion als **Parameter**, nicht per Import.
+  **Wer sie durchreicht, ist `app-shell` – das ist M7**, nicht M5.
+- **E2 – Ereignisse vom Main laufen über `abonniere` (M5-32).** **Offen bleibt:**
+  `project:autoSpeichernStatus` hat im Main **keinen Sender** – Empfänger da, Sender nicht. Das
+  gehört in M6/M7 geschlossen, sonst bleibt Fehlerklasse 2 trotz M5-32 stumm.
+- **E3 – Renderer-Signaturen nutzen `Ergebnis<T, string>`.** Die fachlichen Fehlercode-Unionen
+  liegen in `src/main/**` und dürfen vom Renderer nicht importiert werden; **die Enge sitzt dort,
+  wo der Code entsteht** (so schon im geteilten Vertrag gelöst, vgl. `Auftrag.fehler.code`). Ohne
+  diese Regel hätte **jedes** Renderer-Issue die Union ein zweites Mal definiert. Verglichen wird
+  gegen die Code-Literale als Zeichenketten.
+
+### Was der Durchgang methodisch bestätigt hat
+
+- **Zum dritten Mal in Folge: alle kritischen Befunde sitzen an den NÄHTEN zwischen Issues, keiner
+  innerhalb eines Issues.** Der Querschnitts-Prüfer ist damit kein Extra mehr, sondern der Prüfer
+  mit der höchsten Trefferquote.
+- **Regel A und Regel D halten.** Rund 60 fremde Signaturen geprüft, **keine einzige** falsch
+  rekonstruiert – die M4-Fehlerklasse ist geschlossen; über 350 Zitate verifiziert.
+- **Neue Falle beim Werkzeugbau (gehört zur Escape-Sequenz-Notiz):** Beim Schreiben von
+  Python-Skripten über den Datei-Schreibweg wurde das schließende deutsche Anführungszeichen
+  (U+201D) still zu einem ASCII-`"` normalisiert und beendete damit das String-Literal. Die
+  Fehlermeldung („unterminated string literal") zeigte auf eine Stelle, die im Editor **korrekt
+  aussieht**. Gegenmittel: Sonderzeichen über `chr(0x201D)` aufbauen und die tatsächlichen
+  Codepoints prüfen – nicht das Schriftbild. **Zusatz:** Das TK verwendet durchgehend `„…"` mit
+  ASCII-Schlusszeichen; U+201D ist dort ein Fremdkörper und muss vereinheitlicht werden.
+
+### TK v2.7 (04.08.2026, beim M5-Prüflauf gefunden, vom Nutzer entschieden)
+
+Operationsliste **9.5.2** um zwei fehlende `project-store`-Operationen ergänzt:
+**`setzeEinblendung`** (ohne sie wäre FA-20/Split-Screen gar nicht bedienbar gewesen, obwohl 9.7.2
+sie ausdrücklich verlangt) und **`setzeElementReferenz`** (Befund 2). `.md` und `.docx` sind
+synchron (ZIP/XML ok, 0 Backticks, Absatz-Diff = nur diese Änderungen). **Anforderungsdokument
+unverändert v1.2.**
+
+**Auf GitHub nachgezogen:** #76 (DoD „genau 14 Kanäle" → „die vierzehn dieses Issues", Verbot auf
+**diese** Datei eingegrenzt) · #24 (DoD: `window.api` nur **außerhalb** von
+`src/renderer/ipc-client/` verboten; Ereignisse laufen über `abonniere`) · #3 (siebter
+Bootstrap-Eintrag `verdrahteProjectStoreNachtragIPC()`, Zählung an 6 Stellen angepasst) ·
+#120/#152/#153 (die Vermerke „TK ist nachzuziehen" sind mit v2.7 erledigt). Danach lokale
+Quelldateien gegen GitHub geprüft: **36/36 deckungsgleich** (Regel aus Abschnitt 4c, Punkt 2).
 
 ## 4b. Reihenfolge: erst das Grundgerüst, dann die M1-Entscheidungen
 
