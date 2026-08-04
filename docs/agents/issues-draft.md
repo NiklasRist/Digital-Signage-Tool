@@ -129,6 +129,14 @@ Planungsreferenz.
 | S10 | [#10](https://github.com/NiklasRist/Digital-Signage-Tool/issues/10) |
 | S11 | [#11](https://github.com/NiklasRist/Digital-Signage-Tool/issues/11) |
 | S12 | [#12](https://github.com/NiklasRist/Digital-Signage-Tool/issues/12) |
+| M0-13 | [#193](https://github.com/NiklasRist/Digital-Signage-Tool/issues/193) |
+
+**Nachzügler M0-13 (#193), angelegt am 04.08.2026 beim Bauen von #1.** Die 1:1-Regel oben gilt
+für ihn **nicht**: GitHub zählt fortlaufend über das ganze Repo, und M6 lag zu dem Zeitpunkt schon
+auf #156–#192. Volltext: `docs/agents/m0/M0-13-eslint.md`. Anlass: `tsconfig.base.json` setzt seit
+#1 `noUncheckedIndexedAccess`, aber die Fluchttür `elemente[i]!` hebt den Schalter auf und lässt
+den Code zugleich geprüft aussehen — und M0 enthielt kein Linting-Issue, an dem das Verbot
+`@typescript-eslint/no-non-null-assertion` hätte hängen können.
 
 ---
 
@@ -249,81 +257,28 @@ TK 2, TK 9 (Modulübersicht), CLAUDE.md „Tech-Stack"
 
 ### Issue S2: [grundgeruest] Vite-Renderer- und Main-Build mit dev/build-Skripten einrichten
 
-## Ziel (in einem Satz)
-Der Renderer läuft im Dev-Modus mit Hot-Module-Reload über Vite, der Main-Prozess wird bei
-Änderungen neu gestartet, und `ffmpeg-static` bleibt in beiden Fällen eine externe Abhängigkeit
-statt eingebündelt zu werden.
-
-## Modul & Datei
-- Modul: Grundgerüst (Build-Tooling)
-- Datei: `vite.config.ts`, `package.json` (Skripte `dev`, `build`), Main-Watch-Konfiguration
-- Vertrag: kein TK-Abschnitt; TK 3 „Technologie-Stack" (Vite, ffmpeg-static)
-- Prozess/Speicher: –
-
-## Warum das im Gesamtsystem wichtig ist
-`ffmpeg-static` liefert eine große, plattformspezifische Binärdatei. Bündelt Vite oder der
-Main-Build sie versehentlich in ein JS-Bundle statt sie als externe Node-Abhängigkeit zu
-behandeln, bricht entweder der Build oder die Binärdatei landet korrumpiert im Bundle – der
-Fehler zeigt sich erst beim ersten echten Render-Aufruf. Verwandt mit S6 (dort wird der Pfad im
-**gepackten** Zustand aufgelöst; hier geht es um den **Build-Schritt**, der das Binary nicht
-anfassen darf).
-
-## Signatur (verbindlich – NICHT ändern)
-```
-package.json Skripte:
-  "dev":   startet Vite-Devserver (Renderer, HMR) + Main-Prozess mit Auto-Neustart bei Main-Änderungen
-  "build": baut Renderer (Vite) UND Main (separater TS-Build) für electron-builder (S7)
-vite.config.ts:
-  base: './'                       // relative Pfade für file://-Laden im gepackten Zustand
-  build.outDir: 'dist/renderer'
-```
-
-## Eingang → Ausgang
-| Eingang | Bedeutung | Grenzen/Validierung |
-|---|---|---|
-| Quellcode in `src/main/`, `src/renderer/` | zu bauender Code | – |
-| `ffmpeg-static`-Modul | externe Binärabhängigkeit | MUSS in Main- und Bundler-Config als `external` markiert sein |
-
-Ausgang bei Erfolg: `npm run dev` öffnet ein Electron-Fenster mit HMR im Renderer; `npm run build`
-erzeugt `dist/renderer` + `dist/main`, `ffmpeg-static` bleibt unangetastet in `node_modules`.
-Ausgang bei Fehler: entfällt (Build-Zeit).
-
-## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
-- „gebündeltes ffmpeg (ffmpeg-static + fluent-ffmpeg)" (CLAUDE.md, Wichtigste Festlegungen) – die
-  Bündelung erfolgt über electron-builder/asarUnpack (S6/S7), **nicht** über den JS-Bundler.
-- „Nur der Main-Prozess berührt ffmpeg und Dateisystem" (TK 2) – der Main-Build darf daher kein
-  Browser-Target (`lib: dom`) verwenden.
-
-## Fehlerpfade (vollständig)
-Entfällt – Build-Zeit-Issue.
-
-## Nicht selbst entscheiden – STOPP und fragen
-- Welches Tool den Main-Prozess im Dev-Modus neu startet (z. B. `tsx watch`, `nodemon`,
-  `electron-vite`) – Optionen mit Trade-offs vorlegen statt eigenmächtig eine Dependency
-  hinzuzufügen.
-- Ob `ffmpeg-static` explizit in `vite.config.ts` UND in der Main-Build-Config als
-  `external`/`noExternal`-Ausnahme eingetragen werden muss – abhängig vom gewählten
-  Main-Bundler; im Zweifel nachfragen statt zu raten.
-
-## Definition of Done
-- [ ] Der Vite-Devserver startet eigenständig und ist unter der konfigurierten URL mit
-      funktionierendem HMR erreichbar; das Watch-Tool erkennt Änderungen unter `src/main/**` und
-      löst einen Neustart aus, sobald ein Main-Entry existiert. (Der Ende-zu-Ende-Nachweis
-      „Fenster öffnet sich, Renderer lädt mit HMR" gehört zur Definition of Done von S3, weil dort
-      der Main-Entry entsteht.)
-- [ ] `npm run build` erzeugt lauffähige `dist/`-Ausgabe für S7
-- [ ] `ffmpeg-static` erscheint nach `npm run build` unverändert (Binärgröße identisch zu
-      `node_modules/ffmpeg-static`) – keine Bundler-Transformation
-- [ ] Keine Datei außerhalb der genannten geändert
-
-## Abhängigkeiten
-- Blockiert von: S1
-- Blockiert: S3, S6, S7, S10
-
-## Bezug
-TK 3, CLAUDE.md „Tech-Stack"
-
----
+> **Dieser Text ist überholt. Der gültige Stand liegt in `docs/agents/m0/M0-02-build.md`.**
+>
+> Beim Bauen am 04.08.2026 wurde #2 nachgezogen und der alte Volltext hier entfernt, statt ihn
+> zu aktualisieren — zwei Fassungen desselben Issues sind genau die Doppelung, die ab M2 mit
+> „eine Datei je Issue" abgeschafft wurde. Was sich geändert hat:
+>
+> - **Preload wird mitgebaut.** In ganz M0 baute ihn niemand: #4 schreibt seinen Code, #3
+>   verweist im Fenster auf den Pfad — erzeugt hätte die Datei keiner.
+> - **Renderer-Einstiegspunkt ergänzt** (`index.html`, `src/renderer/main.tsx`). #10 nennt in
+>   seiner Datei-Liste nur `App.tsx` und `shell/`; ohne Einstiegspunkt kann `vite build` nichts
+>   erzeugen, der zweite DoD-Punkt wäre unerfüllbar gewesen.
+> - **Beide STOPP-Punkte entschieden** und in die Signatur überführt: Vite + esbuild + eigenes
+>   Dev-Skript (statt electron-vite, das `electron.vite.config.ts` und `out/` verlangt hätte);
+>   `ffmpeg-static` steht in der esbuild-Config als `external`, in `vite.config.ts` bewusst
+>   **nicht** — dort soll ein Renderer-Import den Build zum Scheitern bringen, nicht still
+>   durchgehen.
+> - **DoD zu `ffmpeg-static` verschärft:** Der Größenvergleich ist nur mit einem tatsächlichen
+>   Import aussagekräftig; ohne Import war gar nichts zu bündeln und der Punkt wäre still
+>   bestanden worden.
+> - **Neu offen:** Vite warnt zu `"type": "module"`. Beide naheliegenden Auflösungen greifen den
+>   Bestand an (Umbenennen widerspricht der Signatur; `"type": "module"` bricht den
+>   Electron-Main). Steht als STOPP-Punkt im Issue.
 
 ### Issue S3: [grundgeruest] Main-Bootstrap mit abgesicherter Fenster-Konfiguration erstellen
 
