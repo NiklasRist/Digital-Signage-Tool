@@ -336,11 +336,13 @@
    BASIS: docs/agents/issue-generation-prompt.md ist die selbsttragende Übergabe-Prompt dafür
    (Modulschnitt, alle Invarianten zum Wörtlich-Zitieren, Pflicht-Issue-Vorlage + ausgefülltes Beispiel,
    Meilensteine M0-M7 inkl. Grundgerüst-Issues S1-S12, Labels, Dry-Run-vor-Freigabe-Ablauf).
-   OFFEN (04.08.): noUncheckedIndexedAccess ist in tsconfig.base.json AN. Der Schalter ist nur die
-   halbe Miete - die Fluchttür `elemente[i]!` hebt ihn auf und lässt den Code zugleich geprüft
-   aussehen. M0 enthält KEIN Linting-Issue (#1-#12 geprüft), das Verbot
-   @typescript-eslint/no-non-null-assertion hat also noch keinen Ort. Entweder ein neues M0-Issue
-   oder eine Ergänzung an #11 (Test-Setup).
+   ERLEDIGT (04.08.): noUncheckedIndexedAccess ist in tsconfig.base.json AN. Der Schalter ist nur
+   die halbe Miete - die Fluchttür `elemente[i]!` hebt ihn auf und lässt den Code zugleich geprüft
+   aussehen. M0 enthielt KEIN Linting-Issue, das Verbot @typescript-eslint/no-non-null-assertion
+   hatte also keinen Ort -> neues M0-Issue #193, Quelle docs/agents/m0/M0-13-eslint.md.
+   MERKE zur Nummerierung: ein neues Issue verschiebt NICHTS - GitHub zählt fortlaufend über das
+   ganze Repo. Ein M0-Nachzügler bekommt die nächste freie Nummer (hier #193, weil M6 schon auf
+   #156-#192 lag), nicht eine Nummer innerhalb von M0.
    HINWEIS package-lock.json: bleibt im Repo (04.08. entschieden). Grund: ffmpeg-static liefert eine
    BINÄRDATEI mit, electron bringt Chromium mit (davon hängt der Canvas-Determinismus aus TK 9.10 ab)
    und electron-builder baut die EXE - driften diese Versionen still, ändert sich das fertige Video,
