@@ -401,8 +401,9 @@ M7_BLOCKIEREND = {
     61,  # Ordnen per Ziehen oder Knoepfen; Dauer-Grenzen fuer Abschnitte
     62,  # Abrufzeitpunkt der Nutzungsanzeige; Bezeichnung einer Fundstelle
     64,  # Darstellungsform des Overlays; Nutzer verlaesst die Fuehrung
-    65,  # Wortlaut der Lade-/Fehlerflaeche (die uebrigen drei sind entschieden)
     66,  # Herkunft des gemerkten Klappzustands; Darstellung sehr langer Listen
+    # 65 traegt es NICHT mehr: bei der Teilung sind seine offenen Fragen nach
+    # M7-69 gewandert, und dort ist nur noch ein Wortlaut offen - lokales Detail.
     68,  # Aufteilung von Wiedergabeliste, Bibliothek und Vorschau im Reiter
 }
 # M7-69 traegt bewusst KEIN Label: seine einzige offene Stelle ist der Wortlaut
