@@ -3239,6 +3239,8 @@ export interface ProjektMeta {
   geaendertAm: string // ISO-8601 UTC; bei beschaedigt: true aus den Ordner-Zeitstempeln
   ordner: string      // relativer Ordnername
   beschaedigt: boolean // true = weder project.json noch project.json.bak lesbar
+  anzahlMedien: number   // Dateien in media/ - aus dem ORDNER gezaehlt, nicht aus project.json
+  anzahlAusgaben: number // fertige .mp4 in output/ - Zaehlweise wie listeAusgaben (.part zaehlt nicht)
 }
 export async function listeProjekte(): Promise<Ergebnis<ProjektMeta[]>>
 ```
@@ -3270,6 +3272,18 @@ selbst – **nicht** bei einzelnen defekten Projekten, die sind ein regulärer L
 - Der Abschnittstitel von TK 9.5.2 lautet „**Operationen (Instant, über das D1-Lock)**" und
   `listeProjekte` ist eine der fünf darin aufgeführten Operationen; das Lock ist für sie
   zusätzlich **ausdrücklich** festgeschrieben (s. o.) – sie läuft über `mitD1Lock` (M1-20).
+- Die beiden mit TK v3.1 ergänzten Felder, wörtlich aus der Felddefinition (TK 9.5.2):
+  „`  anzahlMedien:   number       // Dateien in media/ – aus dem ORDNER gezählt, nicht aus project.json`"
+  und
+  „`  anzahlAusgaben: number       // fertige .mp4 in output/ – Zählweise wie listeAusgaben (.part zählt nicht)`"
+- „**`löscheProjekt` nennt vorher, was verschwindet (bindend).** Die Bestätigung ist **keine**
+  schlichte Ja/Nein-Abfrage. Sie nennt **drei** Angaben und einen Hinweis: den **Projektnamen**, die
+  **Anzahl der enthaltenen Medien**, die **Anzahl der gerenderten Ausgabedateien** und dass der
+  Vorgang **nicht rückgängig zu machen** ist" (TK 9.5.2) – die Bereitstellung beider Zahlen ist
+  Aufgabe **dieser** Operation.
+- „Die beiden Zahlen kommen aus `ProjektMeta.anzahlMedien` / `anzahlAusgaben` (s. o.) und damit
+  aus **derselben** Quelle wie die Projektliste – die Oberfläche zählt **nicht** selbst nach."
+  (TK 9.5.2)
 
 **ENTSCHIEDEN (TK v3.0, 9.5.2) – ein beschädigtes Projekt wird MIT `beschaedigt: true` gelistet,
 nicht weggelassen.** Wörtlich: „Ist die `project.json` eines Ordners unlesbar oder ungültig **und**
@@ -3301,6 +3315,38 @@ dem ein Datenfehler **ohne jede Meldung** verschwindet – das widerspricht 9.1.
   womit er den Ordner wiederfindet.
 - **Diese Operation repariert nichts.** Sie schreibt keine `project.json` zurück, benennt nichts
   um, legt nichts an und löscht nichts – auch nicht die kaputte Datei. Sie **liest** und **meldet**.
+
+**ERGÄNZT (TK v3.1, 9.5.2) – `ProjektMeta` trägt zwei ZÄHLFELDER: `anzahlMedien` und
+`anzahlAusgaben`.** Beide werden **aus dem Ordner gezählt**, nicht aus `project.json`. Sie sind der
+Grund, warum die Löschbestätigung überhaupt sagen kann, was verschwindet – der Vertrag verlangt
+dort ausdrücklich drei Angaben (Name, Anzahl Medien, Anzahl Ausgabedateien) und verbietet der
+Oberfläche, selbst nachzuzählen (beide Stellen wörtlich in den Invarianten).
+
+*Begründung der Ordner-Zählung, wörtlich:* „Die Ordner-Zählung ist Pflicht, weil die Zahlen auch
+für ein **beschädigtes** Projekt stimmen müssen, dessen `project.json` unlesbar ist – dort ist
+„ist da noch etwas zu retten?" die eigentliche Frage." (TK, Entscheidungsliste v3.1) Genau deshalb
+dürfen die Zahlen **nicht** aus `Project.assets` abgeleitet werden: Bei `beschaedigt: true` gibt es
+kein `assets`-Array, und ausgerechnet dann wäre die Zahl 0 die gefährlichste aller Antworten – sie
+läse sich wie „da ist nichts mehr", während der Ordner voll ist.
+
+**Wie gezählt wird (verbindlich, damit hier nichts geraten wird):**
+
+- **`anzahlMedien`** = Zahl der regulären **Dateien** unmittelbar in `medienOrdner(meta.id)` (M1-37).
+  Unterordner zählen nicht mit, es wird **nicht** rekursiv gezählt, und es findet **keine**
+  Endungsprüfung statt (D2 enthält genau die importierten Medien; eine Endungsliste hier wäre eine
+  zweite, abweichende Vorstellung davon, was ein Medium ist).
+- **`anzahlAusgaben`** = Zahl der Dateien in `ausgabeOrdner(meta.id)` (M1-37) nach **derselben**
+  Zählweise wie `listeAusgaben` (M1-44): reguläre Dateien, deren Name auf `.mp4` endet, verglichen
+  **ohne** Rücksicht auf Groß-/Kleinschreibung. `.part`, `.tmp`, `.mp4.part` und Unterordner zählen
+  **nicht** mit. Der Vertrag sagt es selbst: „Gelistet werden **ausschließlich fertige
+  `.mp4`-Dateien**" (TK 9.5.2). **Aber:** `listeAusgaben` wird hier **nicht aufgerufen** – sie liefert
+  Dateigrößen und Zeitstempel je Datei und läuft **ohne** Lock; dieser Scan läuft **innerhalb** des
+  D1-Locks und braucht nur eine Zahl. Nachgebaut wird die **Regel**, nicht der Aufruf.
+- **Ein fehlender oder unlesbarer Unterordner ergibt `0`**, **keinen** Fehler und **kein** `null`.
+  `media/` und `output/` entstehen erst beim ersten Import bzw. beim ersten Render; ihr Fehlen ist
+  der Normalfall eines frischen Projekts.
+- **Beide Zahlen werden auch bei `beschaedigt: true` gefüllt** – dort sind sie die einzige
+  belastbare Angabe des Eintrags.
 
 **ENTSCHIEDEN (TK v3.0, 9.5.2) – `listeProjekte` nimmt das D1-Lock, obwohl sie nur liest.** Damit
 ist sie die **Ausnahme** zur Regel „lesen braucht kein Lock" – anders als `listeAusgaben` (M1-44),
@@ -3354,6 +3400,16 @@ einer laufenden Duplizierung.
 - [ ] Fehlender `projects/`-Ordner liefert ein leeres Array, keinen Fehler
 - [ ] Kein vollständiges Parsen der `liste`/`assets`/`aktionen`-Arrays jedes Projekts (nur die
       Metadatenfelder)
+- [ ] `anzahlMedien` zählt die regulären Dateien in `media/`: ein Projekt mit 3 Mediendateien und
+      einem Unterordner liefert **3**; ein Projekt ohne `media/`-Ordner liefert **0** und keinen
+      Fehler
+- [ ] `anzahlAusgaben` zählt nur fertige `.mp4`: ein `output/`-Ordner mit `a.mp4`, `B.MP4`,
+      `c.mp4.part`, `d.tmp` und einem Unterordner liefert **2**
+- [ ] Beide Zahlen stimmen auch bei `beschaedigt: true` – ein Projekt mit unlesbarer `project.json`
+      und `project.json.bak`, aber 5 Dateien in `media/`, liefert `anzahlMedien: 5` (dieser Test ist
+      der Nachweis, dass **nicht** aus `project.json` gezählt wird)
+- [ ] Die Ordnerpfade kommen aus `medienOrdner`/`ausgabeOrdner` (M1-37); die Datei bildet keinen
+      Medien- oder Ausgabepfad selbst (Grep-Probe auf `'media'` und `'output'` als Literal)
 - [ ] Läuft innerhalb von `mitD1Lock` (M1-20) – ausdrücklich entschieden (TK 9.5.2:
       „**`listeProjekte` nimmt das D1-Lock, obwohl sie nur liest (bindend).**"); der Test belegt,
       dass der Verzeichnis-Scan **innerhalb** des Locks läuft und nicht daneben
@@ -3363,7 +3419,10 @@ einer laufenden Duplizierung.
 
 ## Abhängigkeiten
 - Blockiert von: #1 (S1, liefert Ordnerstruktur/TS-Toolchain), #5 (S5, liefert `ermittleDatenOrt()`
-  – Basispfad für `projects/`), M1-20 (`mitD1Lock` – das D1-Lock, das diese Operation nimmt)
+  – Basispfad für `projects/`), M1-20 (`mitD1Lock` – das D1-Lock, das diese Operation nimmt,
+  M1-37 (Pfad-Autorität: `medienOrdner(projektId): string` und `ausgabeOrdner(projektId): string` –
+  die beiden Ordner, die für `anzahlMedien`/`anzahlAusgaben` gezählt werden; **keine** eigene
+  Pfadbildung)
 - Blockiert: M7-Issues (Projektverwaltung-UI)
 
 ## Bezug
