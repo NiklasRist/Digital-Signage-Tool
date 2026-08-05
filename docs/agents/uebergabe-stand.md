@@ -4,7 +4,7 @@
 > Das **Wie** der Issue-Erstellung steht vollständig in `issue-generation-prompt.md` — dort
 > beginnen, diese Datei ist nur der Stand darüber.
 >
-> **Stand:** 04.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.9**
+> **Stand:** 05.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v3.1**
 
 ---
 
@@ -18,10 +18,13 @@
 3. **`docs/agents/m2-pruefbefund.md`** und **`m1-pruefbefund.md`** — die Fehler der letzten beiden
    Durchgänge im Detail. Wer sie kennt, macht sie nicht nochmal. **M2 zuerst**: dort steht, was der
    Briefing-Ansatz gebracht hat und welches Muster (Regel A auf Modulebene) noch offen war.
-4. Dann **Abschnitt 4 dieser Datei**: M2 bis M6 sind fertig, **nur noch M7 ist offen**
-   (Abschnitt 4d hält fest, was der M5-Durchgang gelehrt hat und welche drei Entscheidungen
-   E1–E3 auch für M6/M7 gelten; **Abschnitt 4e** hält den M6-Durchgang fest – die neun
-   Entscheidungen aus TK v2.8, die drei Nachträge aus v2.9 und die vier schwersten Befunde).
+4. Dann **Abschnitt 4 dieser Datei**: **M0 bis M7 sind vollständig angelegt** – die
+   Issue-Überführung ist damit abgeschlossen (Abschnitt 4d hält fest, was der M5-Durchgang
+   gelehrt hat und welche drei Entscheidungen E1–E3 auch für M6/M7 gelten; **Abschnitt 4e**
+   hält den M6-Durchgang fest – die neun Entscheidungen aus TK v2.8, die drei Nachträge aus
+   v2.9 und die vier schwersten Befunde; **Abschnitt 4f** den M7-Durchgang – die sieben
+   schwersten Befunde, die neue Fehlerklasse „überholte Tatsachenbehauptung" und die
+   Werkzeug-Härtung gegen die 65 536-Zeichen-Grenze).
 
 **Kein Produktivcode.** Das Projekt ist in der Planungsphase — Code erst, wenn der Nutzer
 ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schreiben, nicht sie umzusetzen.
@@ -29,7 +32,8 @@ ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schre
 **Lies Abschnitt 4b, bevor du den Nutzer nach Entscheidungen fragst.** Es gibt 21 Issues mit
 `braucht-entscheidung`, aber die sind **keine** Bringschuld, die vorher abzuarbeiten wäre.
 (Die 21 sind die aus **M0 und M1**, `#1`–`#52`. Über **alle** Meilensteine sind es am 04.08.2026
-**68**: 21 in `#1`–`#52`, 9 in M2, 7 in den M1-Nachzüglern + M3, 11 in M4, 15 in M5, **5 in M6**.
+**68**: 21 in `#1`–`#52`, 9 in M2, 7 in den M1-Nachzüglern + M3, 11 in M4, 15 in M5, **5 in M6**;
+mit M7 kommen **38** dazu → **106** über alle Meilensteine (Stand 05.08.2026).
 Der Satz unten gilt für alle gleichermaßen. **Von den fünf M6-Punkten sind drei Experimente**,
 keine Entscheidungen – s. Abschnitt 4b, „Entscheidungen und Experimente nicht verwechseln".)
 
@@ -50,7 +54,12 @@ keine Entscheidungen – s. Abschnitt 4b, „Entscheidungen und Experimente nich
 | **M4 Pixel** | ✅ **Issues #95–#119** angelegt, geprüft, korrigiert (`M4-XX → #(XX+94)`) |
 | **M5 Inhalte** | ✅ **Issues #120–#155** angelegt, geprüft, korrigiert (`M5-XX → #(XX+119)`) |
 | **M6 Render & Export** | ✅ **Issues #156–#192** angelegt, geprüft, korrigiert (`M6-XX → #(XX+155)`) |
-| **M7** | ⬜ offen |
+| **M7 Oberfläche & Komfort** | ✅ **Issues #194–#262** angelegt, geprüft, korrigiert (`M7-XX → #(XX+193)` **nur bis M7-59**; danach Mapping aus `docs/agents/m7/map.json`) |
+
+**Damit sind alle acht Meilensteine M0–M7 angelegt; die Issue-Überführung ist abgeschlossen.**
+**`#193` gehört NICHT zu M7**, sondern als Nachtrag zu **M0**
+(`[grundgeruest] ESLint-Setup mit Verbot der Nicht-Null-Behauptung`) – es liegt nur numerisch
+zwischen M6 und M7. M7 beginnt bei `#194`.
 
 Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** und die Arbeit geht **auf diesem Branch
 weiter** (so vom Nutzer entschieden) — nicht nach `main` mergen, nicht ungefragt pushen.
@@ -471,6 +480,97 @@ Torwächter" – durch E-4 überholt) · #17 · #19 · #53 · #62 · #68 · #70 
 - **Neu bei M6 und nur hier:** Die schwersten Befunde waren **rechnerisch/positionell** (Argument-
   Reihenfolge, Toleranzformel, Geradzahligkeit), nicht vertraglich. Ein Prüfer, der nur Signaturen
   abgleicht, findet sie **nicht** – bei ffmpeg-Issues muss jemand **nachrechnen**.
+
+## 4f. M7 – Oberfläche & Komfort (`app-shell`, `queue-panel`, `preview-player`, `projekt-verwaltung`): ERLEDIGT, Issues #194–#262
+
+**Stand 05.08.2026:** **69 Issues** geschrieben, geprüft, korrigiert und angelegt, Milestone
+„M7 – Oberfläche & Komfort". Volltexte als **eine Datei je Issue** in `docs/agents/m7/`, Mapping
+maschinenlesbar in `docs/agents/m7/map.json`. **2756 Querverweise** auf `#`-Nummern aufgelöst –
+mit Abstand der größte Meilenstein des Projekts.
+
+**Fünf neue Labels:** `modul:app-shell`, `modul:queue-panel`, `modul:preview-player`,
+`modul:projekt-verwaltung`, `modul:renderer-gemeinsam`. **`braucht-entscheidung` tragen 38 der
+69** – der höchste Anteil aller Meilensteine, was zur Sache passt: Die Oberfläche ist die Ebene,
+auf der das Technische Konzept am wenigsten vorgibt.
+
+### Die Nummern-Faustregel gilt NUR bis M7-59 – nicht rechnen, abschreiben
+
+`M7-XX → #(XX+193)` stimmt für **M7-01…M7-59** (`#194`–`#252`). Danach **nicht** mehr:
+**M7-60 → `#259`**, **M7-61…M7-64 + M7-66/M7-67 → `#253`–`#258`**, **M7-65 → `#260`**,
+**M7-68 → `#261`**, **M7-69 → `#262`**. Grund s. „Werkzeug-Härtung" unten.
+**Immer aus `docs/agents/m7/map.json` abschreiben.** (Am Rand: **`#193` gehört zu M0**, nicht zu
+M7 – ein später nachgetragenes Grundgerüst-Issue.)
+
+### Die sieben schwersten Befunde – der lehrreiche Teil
+
+1. **Es gab keinen Weg, ein Projekt anzulegen.** `erstelleProjekt`, `listeProjekte`,
+   `dupliziereProjekt` und `löscheProjekt` sind **seit M1 gebaut** – und **kein einziges Issue
+   rief sie auf**. Die Anwendung wäre **beim ersten Start unbenutzbar** gewesen: kein Projekt, kein
+   Reiterinhalt, kein Weg hinein. Der schwerste Befund des Projekts, gemessen an der Folge.
+2. **Es gab keinen Weg, ein Video zu importieren** – und **FA-01 ist ein MUSS**. Der Import wurde
+   in den vorhandenen Issues genau **zweimal** gerufen, beide Male für das **Bild einer Aktion**.
+   Das Kernmedium des Werkzeugs hatte keinen Zugang.
+3. **M5 hat die gesamte Bedienlogik als reine `.ts`-Dateien gebaut** – konsequent nach Regel E und
+   in jedem einzelnen Issue richtig –, aber **niemand zeichnete** die Wiedergabeliste, den
+   Aktions-Editor oder den Vorlagen-Editor. **FA-05 und Akzeptanzkriterium 1 waren nicht
+   erfüllbar.** Logik ohne Darstellung ist kein bedienbares Programm.
+4. **Die Bandbearbeitung (FA-20) hatte keine Oberfläche** – und das ist die **Hauptbetriebsart**.
+5. **Undo war gebaut und wirkungslos.** TK 9.13.2 verlangt einen **Schnappschuss vor jeder
+   Instant-Operation**; sämtliche Instant-Operationen liegen aber in Modulen, die Undo
+   **ausdrücklich ausschließen**. Gelöst über eine **Hülle um die gemeinsame Projekt-Sicht**
+   (M7-50, `#243`) – der Schnappschuss entsteht an **einer** Stelle, die jede Änderung passiert,
+   statt in dreißig aufrufenden Modulen.
+6. **Der Renderer-Bootstrap fehlte.** **Sieben** Einstiegspunkte ohne Aufrufer: der
+   Auftrags-Auswerter, die Sitzungswiederherstellung, der Aufbau der gemeinsamen Sichten, die
+   Reiterbelegung, der Speicherhinweis und die Warteschlangen-Leiste. → M7-65 (`#260`) und
+   M7-69 (`#262`). **Sechste Wiederholung derselben Lückenklasse** („fertige Funktion ohne
+   Aufrufer") – nach M1 (#72–#77), M2 (#71), M5 (#153), M6 (#192) und M7-63 (#255).
+   **Nicht mit dem Main-Bootstrap #3 verwechseln:** #3 verdrahtet den **Main**.
+7. **Zwei `medienUrl`-Fassungen mit entgegengesetzter Abnahme** – die eine verlangt
+   **Prozent-Kodierung**, die andere prüft ausdrücklich „**ohne Kodierungsumbau**". Heute fällt das
+   nicht auf, **weil die Dateinamen UUIDs sind** und darin kein kodierpflichtiges Zeichen vorkommt.
+   Das ist ein **Zufall der Belegung, kein Vertrag** – zusammengeführt in M7-67 (`#258`), die
+   `media`-Adresse wird an **genau einer** Stelle gebildet.
+
+### NEUE FEHLERKLASSE – überholte Tatsachenbehauptungen (M7 eigen, gehört in die Regeln)
+
+M7 ist so groß, dass **früh geschriebene Dateien nicht wissen, was späte liefern**. Weil Regel B
+von jedem Issue verlangt, seine Lücken zu melden, standen am Ende rund **fünfzehn
+Melde-Aufträge** in den Texten, die **ins Leere zielten**: „Braucht einen Baustein, den kein Issue
+liefert" – obwohl ein späteres Issue ihn längst lieferte.
+
+**Warum das gefährlich ist:** Ein Agent, der so einen Satz liest, **baut nicht**. Er meldet und
+wartet. Eine überholte Tatsachenbehauptung ist damit **so blockierend wie eine echte Lücke** –
+nur unsichtbar, weil formal nichts fehlt.
+
+> **NEUE REGEL:** **Wer ein Issue anlegt, das die Lücke eines früheren schließt, streicht dort die
+> Melde-Aufforderung.** Der Verweis auf das neue Issue tritt an ihre Stelle. Das ist die
+> Vorwärts-Entsprechung zur Rückwärts-Regel aus 4c Punkt 1 (Vertragsänderung → Zitat-Abgleich über
+> alle angelegten Issues).
+
+### Werkzeug-Härtung: die 65 536-Zeichen-Grenze von GitHub
+
+`create-issues.py` **überspringt jetzt Einträge, die schon in `map.json` stehen.**
+
+**Anlass:** GitHub lehnt Bodies über **65 536 Zeichen** ab. **M7-60** und **M7-65** lagen bei rund
+**77 000** und scheiterten, während **65** andere im selben Lauf durchliefen. **Ohne die Härtung
+hätte ein zweiter Lauf 65 Duplikate angelegt** – und Duplikate auf GitHub sind teurer zu beseitigen
+als jeder Schreibfehler im Text.
+
+**Beide Issues wurden GETEILT, nicht gekürzt.** Ein Kürzungsversuch hat nachgerechnet: **M7-65
+läge selbst mit vollständig leerem Signaturblock noch bei 61 561 Zeichen.** Kürzen hätte also
+Inhalt kosten müssen, den die Regeln A–E ausdrücklich verlangen. Geteilt wurde entlang der Sache
+(M7-60 → M7-60 + M7-68, M7-65 → M7-65 + M7-69), **nach** dem Anlegen von M7-61…M7-67 – daher die
+Sprünge in der Nummernvergabe.
+
+### Was der Durchgang methodisch bestätigt hat
+
+- **Zum fünften Mal in Folge sitzen die kritischen Befunde an den NÄHTEN** – und in M7 an der
+  größten Naht überhaupt: der zwischen **Logik** (M1–M6) und **Bedienung**. Die Befunde 1 bis 4
+  sind alle von derselben Art: Etwas ist vollständig gebaut und für den Nutzer **nicht erreichbar**.
+- **Die Lückenklasse „fertige Funktion ohne Aufrufer" ist jetzt in JEDEM Meilenstein seit M1
+  aufgetreten** und wurde **jedes Mal erst im Prüflauf** gefunden. Die billigere Vorsorge steht seit
+  M7-63 (`#255`) im Vermerk: ein Zuschnitt-Schritt „für jede Operation – **wer ruft sie?**".
 
 ## 4b. Reihenfolge: erst das Grundgerüst, dann die M1-Entscheidungen
 

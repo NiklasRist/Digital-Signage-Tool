@@ -5,7 +5,7 @@
 > Wird nach Abschnitt 11 des Übergabe-Prompts (`docs/agents/issue-generation-prompt.md`)
 > milestone-weise befüllt und je Milestone dem Nutzer zur Kontrolle vorgelegt, bevor der nächste
 > Milestone geschrieben wird. Quelle der Wahrheit für jeden fachlichen Inhalt: Technisches Konzept
-> **v2.9** (`docs/Technisches_Konzept_Digital-Signage-Tool.md`).
+> **v3.1** (`docs/Technisches_Konzept_Digital-Signage-Tool.md`).
 >
 > **Fortschritt (Stand 04.08.2026):** M0 ✅ (Issues #1–#12) · M1 ✅ geschrieben, geprüft, korrigiert
 > und **angelegt** (M1-01…M1-40 = Issues **#13–#52**, Milestone „M1 – Fundament") · M2 ✅ **angelegt**
@@ -15,8 +15,9 @@
 > **#95–#119**, Milestone „M4 – Pixel"; `docs/agents/m4/`) · M5 ✅ **angelegt** (M5-01…M5-36 =
 > Issues **#120–#155**, Milestone „M5 – Inhalte"; `docs/agents/m5/`) · M6 ✅ **angelegt**
 > (M6-01…M6-37 = Issues **#156–#192**, Milestone „M6 – Render & Export"; `docs/agents/m6/`) ·
-> **nur noch M7 offen.**
-> Stand und nächster Schritt: `uebergabe-stand.md`, Abschnitte 4c, 4d und 4e.
+> M7 ✅ **angelegt** (M7-01…M7-69 = Issues **#194–#262**, Milestone
+> „M7 – Oberfläche & Komfort"; `docs/agents/m7/`) · **alle Meilensteine M0–M7 sind angelegt.**
+> Stand und nächster Schritt: `uebergabe-stand.md`, Abschnitte 4c, 4d, 4e und 4f.
 >
 > **Achtung vor dem Anlegen:** M1-01…M1-29 entstanden **vor** den Regeln C/D/E und vor der
 > Anforderungsänderung vom 02.08. (mehrere benannte Ausgabedateien, FA-22). Sie brauchen denselben
@@ -36,6 +37,62 @@
 > gelten: **Regel C** – in „Signatur (verbindlich)" darf nur Entschiedenes stehen, Offenes
 > ausschließlich in „Nicht selbst entscheiden", nie beides; **Regel D** – Zitate wörtlich oder
 > gar nicht; **Regel E** – jeder DoD-Punkt muss im erlaubten Dateibereich erfüllbar sein.
+
+## M7 → GitHub-Mapping
+
+Angelegt am 05.08.2026. Volltexte: eine Datei je Issue in `docs/agents/m7/`, Mapping
+maschinenlesbar in `docs/agents/m7/map.json`. Milestone „M7 – Oberfläche & Komfort".
+**69 Issues, `#194`–`#262`.** 2756 Querverweise aufgelöst.
+**Fünf neue Labels:** `modul:app-shell`, `modul:queue-panel`, `modul:preview-player`,
+`modul:projekt-verwaltung`, `modul:renderer-gemeinsam`.
+**`braucht-entscheidung` tragen 38 der 69.**
+
+> **ACHTUNG – die Faustregel `M7-XX → #(XX+193)` gilt NUR BIS M7-59 (`#252`).** Danach stimmt sie
+> **nicht** mehr, und Nachrechnen führt auf falsche Issues. **Grund:** GitHub lehnt Bodies über
+> **65 536 Zeichen** ab. **M7-60** und **M7-65** lagen bei rund **77 000** Zeichen und scheiterten
+> beim Anlegen, während die übrigen 65 durchliefen. Beide wurden anschließend **geteilt** statt
+> gekürzt (M7-60 → M7-60 + M7-68, M7-65 → M7-65 + M7-69) und **nach** M7-61…M7-67 angelegt – daher
+> die Sprünge. Konkret: M7-60 → `#259`, M7-61…M7-67 → `#253`–`#258` (M7-65 fehlt darin),
+> M7-65 → `#260`, M7-68 → `#261`, M7-69 → `#262`.
+> **Immer aus `docs/agents/m7/map.json` abschreiben, nie rechnen.**
+
+| Kürzel | Issue | Kürzel | Issue |
+|---|---|---|---|
+| M7-01 | [#194](https://github.com/NiklasRist/Digital-Signage-Tool/issues/194) | M7-36 | [#229](https://github.com/NiklasRist/Digital-Signage-Tool/issues/229) |
+| M7-02 | [#195](https://github.com/NiklasRist/Digital-Signage-Tool/issues/195) | M7-37 | [#230](https://github.com/NiklasRist/Digital-Signage-Tool/issues/230) |
+| M7-03 | [#196](https://github.com/NiklasRist/Digital-Signage-Tool/issues/196) | M7-38 | [#231](https://github.com/NiklasRist/Digital-Signage-Tool/issues/231) |
+| M7-04 | [#197](https://github.com/NiklasRist/Digital-Signage-Tool/issues/197) | M7-39 | [#232](https://github.com/NiklasRist/Digital-Signage-Tool/issues/232) |
+| M7-05 | [#198](https://github.com/NiklasRist/Digital-Signage-Tool/issues/198) | M7-40 | [#233](https://github.com/NiklasRist/Digital-Signage-Tool/issues/233) |
+| M7-06 | [#199](https://github.com/NiklasRist/Digital-Signage-Tool/issues/199) | M7-41 | [#234](https://github.com/NiklasRist/Digital-Signage-Tool/issues/234) |
+| M7-07 | [#200](https://github.com/NiklasRist/Digital-Signage-Tool/issues/200) | M7-42 | [#235](https://github.com/NiklasRist/Digital-Signage-Tool/issues/235) |
+| M7-08 | [#201](https://github.com/NiklasRist/Digital-Signage-Tool/issues/201) | M7-43 | [#236](https://github.com/NiklasRist/Digital-Signage-Tool/issues/236) |
+| M7-09 | [#202](https://github.com/NiklasRist/Digital-Signage-Tool/issues/202) | M7-44 | [#237](https://github.com/NiklasRist/Digital-Signage-Tool/issues/237) |
+| M7-10 | [#203](https://github.com/NiklasRist/Digital-Signage-Tool/issues/203) | M7-45 | [#238](https://github.com/NiklasRist/Digital-Signage-Tool/issues/238) |
+| M7-11 | [#204](https://github.com/NiklasRist/Digital-Signage-Tool/issues/204) | M7-46 | [#239](https://github.com/NiklasRist/Digital-Signage-Tool/issues/239) |
+| M7-12 | [#205](https://github.com/NiklasRist/Digital-Signage-Tool/issues/205) | M7-47 | [#240](https://github.com/NiklasRist/Digital-Signage-Tool/issues/240) |
+| M7-13 | [#206](https://github.com/NiklasRist/Digital-Signage-Tool/issues/206) | M7-48 | [#241](https://github.com/NiklasRist/Digital-Signage-Tool/issues/241) |
+| M7-14 | [#207](https://github.com/NiklasRist/Digital-Signage-Tool/issues/207) | M7-49 | [#242](https://github.com/NiklasRist/Digital-Signage-Tool/issues/242) |
+| M7-15 | [#208](https://github.com/NiklasRist/Digital-Signage-Tool/issues/208) | M7-50 | [#243](https://github.com/NiklasRist/Digital-Signage-Tool/issues/243) |
+| M7-16 | [#209](https://github.com/NiklasRist/Digital-Signage-Tool/issues/209) | M7-51 | [#244](https://github.com/NiklasRist/Digital-Signage-Tool/issues/244) |
+| M7-17 | [#210](https://github.com/NiklasRist/Digital-Signage-Tool/issues/210) | M7-52 | [#245](https://github.com/NiklasRist/Digital-Signage-Tool/issues/245) |
+| M7-18 | [#211](https://github.com/NiklasRist/Digital-Signage-Tool/issues/211) | M7-53 | [#246](https://github.com/NiklasRist/Digital-Signage-Tool/issues/246) |
+| M7-19 | [#212](https://github.com/NiklasRist/Digital-Signage-Tool/issues/212) | M7-54 | [#247](https://github.com/NiklasRist/Digital-Signage-Tool/issues/247) |
+| M7-20 | [#213](https://github.com/NiklasRist/Digital-Signage-Tool/issues/213) | M7-55 | [#248](https://github.com/NiklasRist/Digital-Signage-Tool/issues/248) |
+| M7-21 | [#214](https://github.com/NiklasRist/Digital-Signage-Tool/issues/214) | M7-56 | [#249](https://github.com/NiklasRist/Digital-Signage-Tool/issues/249) |
+| M7-22 | [#215](https://github.com/NiklasRist/Digital-Signage-Tool/issues/215) | M7-57 | [#250](https://github.com/NiklasRist/Digital-Signage-Tool/issues/250) |
+| M7-23 | [#216](https://github.com/NiklasRist/Digital-Signage-Tool/issues/216) | M7-58 | [#251](https://github.com/NiklasRist/Digital-Signage-Tool/issues/251) |
+| M7-24 | [#217](https://github.com/NiklasRist/Digital-Signage-Tool/issues/217) | M7-59 | [#252](https://github.com/NiklasRist/Digital-Signage-Tool/issues/252) |
+| M7-25 | [#218](https://github.com/NiklasRist/Digital-Signage-Tool/issues/218) | M7-60 | [#259](https://github.com/NiklasRist/Digital-Signage-Tool/issues/259) |
+| M7-26 | [#219](https://github.com/NiklasRist/Digital-Signage-Tool/issues/219) | M7-61 | [#253](https://github.com/NiklasRist/Digital-Signage-Tool/issues/253) |
+| M7-27 | [#220](https://github.com/NiklasRist/Digital-Signage-Tool/issues/220) | M7-62 | [#254](https://github.com/NiklasRist/Digital-Signage-Tool/issues/254) |
+| M7-28 | [#221](https://github.com/NiklasRist/Digital-Signage-Tool/issues/221) | M7-63 | [#255](https://github.com/NiklasRist/Digital-Signage-Tool/issues/255) |
+| M7-29 | [#222](https://github.com/NiklasRist/Digital-Signage-Tool/issues/222) | M7-64 | [#256](https://github.com/NiklasRist/Digital-Signage-Tool/issues/256) |
+| M7-30 | [#223](https://github.com/NiklasRist/Digital-Signage-Tool/issues/223) | M7-65 | [#260](https://github.com/NiklasRist/Digital-Signage-Tool/issues/260) |
+| M7-31 | [#224](https://github.com/NiklasRist/Digital-Signage-Tool/issues/224) | M7-66 | [#257](https://github.com/NiklasRist/Digital-Signage-Tool/issues/257) |
+| M7-32 | [#225](https://github.com/NiklasRist/Digital-Signage-Tool/issues/225) | M7-67 | [#258](https://github.com/NiklasRist/Digital-Signage-Tool/issues/258) |
+| M7-33 | [#226](https://github.com/NiklasRist/Digital-Signage-Tool/issues/226) | M7-68 | [#261](https://github.com/NiklasRist/Digital-Signage-Tool/issues/261) |
+| M7-34 | [#227](https://github.com/NiklasRist/Digital-Signage-Tool/issues/227) | M7-69 | [#262](https://github.com/NiklasRist/Digital-Signage-Tool/issues/262) |
+| M7-35 | [#228](https://github.com/NiklasRist/Digital-Signage-Tool/issues/228) |  |  |
 
 ## M6 → GitHub-Mapping
 

@@ -337,6 +337,113 @@ def labels_m6(nr, titel, body):
     if nr in M6_BLOCKIEREND: L.append("braucht-entscheidung")
     return L
 
+# -------------------------------------------- M7 (Oberflaeche & Komfort)
+# Der letzte Meilenstein und der groesste: 67 Issues. Er ist die Schicht, die
+# den Unterbau bedienbar macht - und beim Zuschnitt kam heraus, wie viele Tueren
+# fehlten (kein Weg, ein Projekt anzulegen; kein Weg, ein Video zu importieren;
+# niemand zeichnete die Wiedergabeliste). Aus 41 geplanten wurden 67.
+
+# Alles, was Arbeit vernichten kann: Loeschen, Rueckgaengig, Sitzung, Handles.
+M7_RISIKO_DATEN = {3, 33, 36, 40, 41, 42, 43, 44, 50, 52, 53}
+# Prozessgrenze, Kanal-Anmeldung, Ereignis-Versand.
+M7_RISIKO_SICHER = {45, 47, 63, 65}
+# Die Vorschau muss pixelgleich zum finalen Render sein - sonst erteilt sie eine
+# Freigabe, die sie nicht decken kann.
+M7_PIXEL = {19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 46, 49, 67}
+# Reine Typ-/Vertragsdateien ohne Fachlogik.
+M7_TYPEN = {54, 67}
+# Ueberwiegend Bedienoberflaeche.
+# M7-60 ist nach der Teilung reine Logik (composer-montage.ts); die Ansichten
+# sind M7-68 (composer/index.tsx) und M7-69 (App.tsx).
+M7_UI = {2, 5, 9, 10, 13, 14, 16, 17, 18, 19, 22, 23, 24, 25, 26, 28, 29, 30,
+         31, 32, 33, 34, 36, 37, 38, 39, 55, 56, 57, 58, 59, 61, 62, 64, 66,
+         68, 69}
+
+# `braucht-entscheidung` fuer M7: 37 von 67 - deutlich mehr als in M2-M6.
+# Das ist keine Nachlaessigkeit, sondern die Natur der Schicht: M1-M6 haben den
+# Unterbau gebaut, wo fast jede Frage technisch entscheidbar war. M7 ist das,
+# was der Nutzer anfasst, und dort sind die offenen Punkte ueberwiegend echte
+# Produkt- und Bedienentscheidungen. Reine Wortlaut- und Darstellungsfragen sind
+# NICHT enthalten - die sind lokale Details und in den Issues entschieden.
+M7_BLOCKIEREND = {
+     4,  # Verhalten bei gescheitertem Sichtaufbau + Zugangsform fuer den preview-player
+     6,  # letzterAusgabeName nach einem Render veraltet in der Renderer-Sicht (FA-22)
+     7,  # beeinflusst der "nicht gespeichert"-Hinweis das Beenden
+     8,  # Zeitpunkt von aktualisiereReparatur; haengende Uebergabe aufraeumen
+    10,  # Gleichlauf der Brauchbarkeitsregel mit #131
+    11,  # Typfilter beim Aktions-Bild-Import
+    12,  # Lebensdauer des Sicht-Aufbaus - bestimmt, wie oft holeStand laeuft
+    13,  # Gestaltung von ton:'hervorgehoben' - Markenentscheidung
+    14,  # Verhalten bei sehr vielen Fehlschlaegen; Anzeige von versuche
+    15,  # Sichtbarkeit der Element-Kennung im Fortschritt
+    16,  # Entfernen waehrend eines laufenden Vorgaengers sperren
+    17,  # es gibt keinen Weg, einen Fehlschlag zu VERWERFEN (Vertragsfrage)
+    18,  # Anzeigeort der betroffenen Elemente; eigener Uebersetzer fuer den Vorlagen-Editor
+    28,  # Form des template-canvas-Platzhalters und Reichweite der Konsistenz
+    32,  # letzterAusgabeName im Duplikat zuruecksetzen
+    33,  # #121 hat keinen Weg, die Projekt-Sicht zu LEEREN (Vertragsluecke)
+    35,  # Drag-and-drop-Ablegebereich fuer den Import
+    36,  # wer einen spaeten asset_referenziert-Fehlschlag mit Namen zeigt
+    40,  # Groessengrenze je Schnappschuss
+    41,  # gilt im Reiter Projekte wirklich kein Rueckgaengig
+    43,  # leereVorlagenHistorie beim Editor-Schluss; Verhalten nach alsEigenstaendige
+    44,  # Lock-Verschachtelung durch listeVorlagen; Asset mit zustand 'fehlt'; Hoechstlaenge
+    46,  # Anzeige bei unzulaessiger Bandhoehe
+    49,  # unbekannte Vorlage; gescheiterte Vorbereitung
+    51,  # Aufteilung composer/Vorschau im Reiter Zusammenstellen
+    52,  # Feinheit einer "Aenderung"; Verhalten nach alsEigenstaendige
+    55,  # Tastaturbedienung des Reorder; Mehrfachauswahl
+    56,  # Rasterung des Reglers; Zahlen-Eingabefeld
+    57,  # Speicherzeitpunkt der Bearbeitungsfelder; halbfertiger Entwurf beim Wechsel
+    58,  # Name bei "als neue Vorlage"; Gesten-Granularitaet
+    59,  # Editor-Sitzung beim Projektwechsel; Sortierung der Projektliste
+    60,  # Anordnung im Reiter; Ende der Fuehrung; Ort der Fix-Auswahl
+    61,  # Ordnen per Ziehen oder Knoepfen; Dauer-Grenzen fuer Abschnitte
+    62,  # Abrufzeitpunkt der Nutzungsanzeige; Bezeichnung einer Fundstelle
+    64,  # Darstellungsform des Overlays; Nutzer verlaesst die Fuehrung
+    65,  # Wortlaut der Lade-/Fehlerflaeche (die uebrigen drei sind entschieden)
+    66,  # Herkunft des gemerkten Klappzustands; Darstellung sehr langer Listen
+    68,  # Aufteilung von Wiedergabeliste, Bibliothek und Vorschau im Reiter
+}
+# M7-69 traegt bewusst KEIN Label: seine einzige offene Stelle ist der Wortlaut
+# zweier Flaechen - ein lokales Detail, keine Entscheidung des Auftraggebers.
+
+def labels_m7(nr, titel, body):
+    L = []
+    if "[contracts]" in titel:
+        L += ["modul:contracts", "ebene:geteilt", "art:typen"]
+    elif "[ipc-gateway]" in titel:
+        L += ["modul:ipc", "ebene:main", "art:logik"]
+    elif "[project-store]" in titel:
+        L += ["modul:project-store", "ebene:main", "art:logik"]
+    elif "[app-shell]" in titel:
+        L += ["modul:app-shell", "ebene:renderer"]
+    elif "[queue-panel]" in titel:
+        L += ["modul:queue-panel", "ebene:renderer"]
+    elif "[preview-player]" in titel:
+        L += ["modul:preview-player", "ebene:renderer"]
+    elif "[projekt-verwaltung]" in titel:
+        L += ["modul:projekt-verwaltung", "ebene:renderer"]
+    elif "[renderer-gemeinsam]" in titel:
+        L += ["modul:renderer-gemeinsam", "ebene:renderer"]
+    elif "[composer]" in titel:
+        L += ["modul:composer", "ebene:renderer"]
+    elif "[action-editor]" in titel:
+        L += ["modul:action-editor", "ebene:renderer"]
+    elif "[vorlagen-editor]" in titel:
+        L += ["modul:vorlagen-editor", "ebene:renderer"]
+    if "ebene:renderer" in L and "art:logik" not in L:
+        L.append("art:typen" if nr in M7_TYPEN else ("art:ui" if nr in M7_UI else "art:logik"))
+    if nr in M7_RISIKO_DATEN:  L.append("risiko:datenverlust")
+    if nr in M7_RISIKO_SICHER: L.append("risiko:sicherheit")
+    if nr in M7_PIXEL:         L.append("risiko:pixelgleichheit")
+    if hat_fehlertabelle(body, r"ungueltige_eingabe|nicht_gefunden|speicher_fehler|unbekannter_fehler"
+                               r"|asset_referenziert|kaputte_elemente|vorlage_referenziert"
+                               r"|medium_fehlt|keine_ausgabe|ziel_gesperrt"):
+        L.append("art:fehlerbehandlung")
+    if nr in M7_BLOCKIEREND: L.append("braucht-entscheidung")
+    return L
+
 def labels_fuer(nr, titel, body):
     L = []
     if "[contracts]" in titel:
@@ -381,10 +488,11 @@ if len(PRAEFIXE) != 1:
     print("ABBRUCH: uneinheitliche Praefixe in", B, "->", sorted(PRAEFIXE)); sys.exit(1)
 PRAEFIX = PRAEFIXE.pop()
 PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3,
-          "M4": labels_m4, "M5": labels_m5, "M6": labels_m6}.get(PRAEFIX)
+          "M4": labels_m4, "M5": labels_m5, "M6": labels_m6,
+          "M7": labels_m7}.get(PRAEFIX)
 if PROFIL is None:
     print(f"ABBRUCH: kein Label-Profil fuer Praefix '{PRAEFIX}'."
-          f" Bekannt: M1, M2, M3, M4, M5, M6. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
+          f" Bekannt: M1, M2, M3, M4, M5, M6, M7. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
 print(f"Profil: {PRAEFIX}  |  Milestone: {MILE}  |  {len(dateien)} Dateien aus {B}\n")
 
 eintraege = []
@@ -434,8 +542,20 @@ if gh_miles is not None:
 if not GO:
     print("\n--- TROCKENLAUF, nichts angelegt. Mit --go ausführen. ---"); sys.exit(0)
 
+# Ein vorhandenes map.json bedeutet: dieser Meilenstein wurde schon (teilweise)
+# angelegt. Diese Eintraege werden UEBERSPRUNGEN und ihre Nummern uebernommen.
+# Ohne das legt ein zweiter Lauf alles doppelt an und ueberschreibt das Mapping
+# mit nur den neuen Nummern - beim M7-Lauf waeren das 65 Duplikate gewesen.
+# Anlass: GitHub lehnt Bodies ueber 65536 Zeichen ab (M7-60 und M7-65 mit rund
+# 77000). Ein Teil-Lauf ist damit ein REALER Fall, kein Ausnahmefehler.
 mapping = {}
+if os.path.exists(MAP):
+    mapping = {k: int(v) for k, v in json.loads(io.open(MAP, encoding="utf-8").read()).items()}
+    print(f"map.json vorhanden: {len(mapping)} Eintraege werden uebersprungen\n")
+
 for e in eintraege:
+    if e["key"] in mapping:
+        print(f"  {e['key']} -> #{mapping[e['key']]} (schon angelegt, uebersprungen)"); continue
     cmd = ["gh", "issue", "create", "--title", e["titel"], "--body-file", e["body"],
            "--milestone", MILE]
     for l in e["labels"]: cmd += ["--label", l]
@@ -448,4 +568,4 @@ for e in eintraege:
     print(f"  {e['key']} -> #{nummer}")
 
 io.open(MAP, "w", encoding="utf-8").write(json.dumps(mapping, indent=1))
-print(f"\nangelegt: {len(mapping)} von {len(eintraege)} -> Mapping in {MAP}")
+print(f"\nim Mapping: {len(mapping)} von {len(eintraege)} -> {MAP}")
