@@ -1519,7 +1519,8 @@ Ordnungsquelle (kein `position`-Feld) und der korrekten Feldbelegung je Element-
 ## Modul & Datei
 - Modul: `contracts/types` (geteilt)
 - Datei: `src/shared/contracts/project.ts`
-- Vertrag: Technisches Konzept **9.11.3** (Quelle der Wahrheit)
+- Vertrag: Technisches Konzept **9.11.3** (Quelle der Wahrheit) für `Project`/`Listenelement`/
+  `Einblendung`; **9.5.2** (Quelle der Wahrheit) für `Bearbeitungsstand`
 - Prozess/Speicher: D1
 
 ## Warum das im Gesamtsystem wichtig ist
@@ -1529,6 +1530,14 @@ Array-Reihenfolge wäre eine zweite Quelle für dieselbe Information; TK betont 
 „zwei Quellen für dieselbe Information unweigerlich auseinanderlaufen" – ein Agent, der later ein
 `ordneNeu` implementiert, dürfte dann nicht versucht sein, zusätzlich ein `position`-Feld zu
 pflegen.
+
+`Bearbeitungsstand` gehört aus demselben Grund in **diese** Datei: Er ist strukturell nichts
+anderes als ein **Ausschnitt aus `Project`** – dieselben zwei Felder (`aktionen`, `liste`), dieselben
+Elementtypen. Eine eigene Datei für zwei Felder, die aus der Nachbardatei stammen, wäre eine
+Trennung ohne Gewinn; sie hätte hier sogar Schaden angerichtet, weil sie einen **M1**-Baustein
+(`löscheAktion`, M1-28) von einem **M7**-Baustein abhängig gemacht hätte. Das Technische Konzept
+nennt für den Typ **keine** Datei – die Zuordnung ist eine reine Schnitt-Entscheidung, kein
+Vertragspunkt.
 
 ## Signatur (verbindlich – NICHT ändern)
 ```ts
@@ -1559,7 +1568,29 @@ export interface Einblendung {
   bandVorlageId: string
   abschnitte: Array<{ aktionRef: string; dauer: number }>
 }
+
+// Ausschnitt aus Project: genau die zwei Felder, die Undo/Redo fuehrt (TK 9.5.2).
+// KEINE eigene Datei - dieselben Felder, dieselben Elementtypen wie oben.
+export interface Bearbeitungsstand {
+  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts
+  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,
+                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)
+}
 ```
+
+**Kein neuer Import nötig.** `Aktion` wird von `Project.aktionen` ohnehin schon gebraucht,
+`Listenelement` steht in **derselben** Datei. Sollte die Datei wider Erwarten ohne Import von
+`Aktion` auskommen (weil `Project` anders geschnitten wurde als hier vorgegeben), ist der Import
+`import type { Aktion } from './aktion'` (M1-02) zu ergänzen – **kein** zweiter Typ `Aktion`.
+
+**Warum `Bearbeitungsstand` hier und nicht in einer eigenen Datei (entschieden).** Der Typ reist
+über IPC – der Renderer hält die Historie, der Main schreibt sie zurück –, gehört also in den
+geteilten Bereich. Innerhalb davon gehört er in **diese** Datei, weil er ein Ausschnitt aus
+`Project` ist: `aktionen: Aktion[]` und `liste: Listenelement[]` sind zeichengleich die Felder von
+`Project`. Der Vertrag sagt es selbst: „*Warum `Bearbeitungsstand` und nicht `Projekt`:* Es ist
+derselbe Ausschnitt, den der Schnappschuss ohnehin führt (`aktionen` + `liste`, 9.5.2/9.13.2)"
+(TK 9.5.2). Die Operation `setzeBearbeitungsstand` bleibt davon unberührt – sie liegt in **#237**
+(`src/main/project-store/bearbeitungsstand.ts`); hier entsteht **nur** der Typ.
 
 ## Eingang → Ausgang
 | Eingang | Bedeutung | Grenzen/Validierung |
@@ -1582,6 +1613,18 @@ Ausgang bei Fehler: entfällt.
   `trimStart`/`trimEnde` gesetzt, `einblendung` erlaubt · `bild` → `ref`=Asset(bild), `dauer`
   gesetzt (10–45s), `trimStart`/`trimEnde`/`einblendung`=`null` · `segment` → `ref`=Aktion, `dauer`
   gesetzt (10–45s), `trimStart`/`trimEnde`/`einblendung`=`null`.
+- „**Ausdrücklich NICHT enthalten: `assets` und `letzterAusgabeName`.** Der `Bearbeitungsstand`
+  trägt **nur** `aktionen` und `liste`. *Begründung:* Beide anderen Felder werden von **Aufträgen**
+  verändert – `assets` vom Import und vom Löschen (9.4.5/9.4.6), `letzterAusgabeName` vom Render
+  (FA-22) –, und Aufträge sind nach 9.13.3 **grundsätzlich nicht undo-fähig**." (TK 9.5.2)
+- „Zöge ein Undo sie mit, verschwände ein soeben importiertes Medium aus dem Datenbestand,
+  **während seine Datei weiter auf der Platte liegt**: eine Waise, die der Reconcile beim nächsten
+  Start stillschweigend löscht (9.4.7) – Datenverlust durch einen Knopf, der Datenverlust
+  verhindern soll." (TK 9.5.2) – **deshalb** hat `Bearbeitungsstand` genau zwei Felder und nicht
+  drei oder vier. Wer ihn hier um `assets` oder `letzterAusgabeName` erweitert, baut diesen
+  Datenverlust ein.
+- „Die Regel ergänzt 9.13.3 (ein D1-verändernder Auftrag **leert** die Historie) an ihrer Flanke:
+  Jene verhindert einen **veralteten** Schnappschuss, diese begrenzt seinen **Umfang**." (TK 9.5.2)
 - **Bewusste Vereinfachung:** `Listenelement` bleibt ein **flaches** Interface, keine
   diskriminierte Union über `art`. Die Belegungsregel oben (aus der TK-9.11.3-Tabelle) wird damit
   **nicht** vom Typsystem erzwungen, sondern **ausschließlich** in den Operationen validiert
@@ -1600,14 +1643,26 @@ Entfällt (Typdefinition; die Belegungs-Validierung je `art` ist Sache der `proj
 - [ ] `liste` ist `Listenelement[]`, kein zusätzliches Sortier-/Positionsfeld irgendwo im Projekt
 - [ ] Ein Kommentar im Code verweist auf die Belegungstabelle (TK 9.11.3), da TypeScript sie nicht
       erzwingen kann
+- [ ] `Bearbeitungsstand` existiert in **dieser** Datei mit **genau** den zwei Feldern
+      `aktionen: Aktion[]` und `liste: Listenelement[]` – kein `assets`, kein
+      `letzterAusgabeName`, kein `id`, kein weiteres Feld
+- [ ] Grep-Probe: es gibt **keine** Datei `src/shared/contracts/bearbeitungsstand.ts`; der Typ wird
+      im ganzen Projekt aus `src/shared/contracts/project.ts` importiert
+- [ ] Ein Kommentar am Typ hält fest, dass es sich um den **Ausschnitt aus `Project`** handelt, den
+      Undo/Redo führt (TK 9.5.2), und dass `assets`/`letzterAusgabeName` bewusst fehlen
+- [ ] Keine Funktion, keine Konstante, kein Re-Export zum Typ `Bearbeitungsstand` in dieser Datei –
+      die **Operation** `setzeBearbeitungsstand` gehört zu #237 und wird hier **nicht** angefasst
 - [ ] Keine Datei außerhalb von `src/shared/contracts/project.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
 - Blockiert von: #1, M1-01 (Asset), M1-02 (Aktion)
-- Blockiert: alle M1-project-store-Issues, M5/M6-Issues
+- Blockiert: alle M1-project-store-Issues, M5/M6-Issues; über `Bearbeitungsstand` zusätzlich
+  **M1-28** (`löscheAktion` – M1, seit TK v3.2 trägt die Rückgabe den `stand`), **#76**, **#142**,
+  **#234**, **#235**, **#237**, **#240**, **#243**, **#250**
 
 ## Bezug
-TK 9.11.3, TK 9.2.8 (Einblendung)
+TK 9.11.3, TK 9.2.8 (Einblendung), TK 9.5.2 (`Bearbeitungsstand`), TK 9.13.2 (wofür der
+Schnappschuss gebraucht wird)
 
 ---
 
@@ -3859,7 +3914,7 @@ Wiedergabeliste reißen.
 
 ## Signatur (verbindlich – NICHT ändern)
 ```ts
-import type { Bearbeitungsstand } from '../../shared/contracts/bearbeitungsstand'
+import type { Bearbeitungsstand } from '../../shared/contracts/project'
 
 export async function löscheAktion(id: string): Promise<Ergebnis<{
   stand: Bearbeitungsstand
@@ -3868,21 +3923,29 @@ export async function löscheAktion(id: string): Promise<Ergebnis<{
 }>>
 ```
 
-Der Typ `Bearbeitungsstand` wird **nicht hier** definiert, sondern in **#237**
-(`src/shared/contracts/bearbeitungsstand.ts`) – er wird von dort importiert und **nicht** ein
-zweites Mal deklariert. Wörtlich aus der definierenden Quelle:
+Der Typ `Bearbeitungsstand` wird **nicht hier** definiert, sondern in **M1-03**
+(`src/shared/contracts/project.ts`, derselben Datei wie `Project` und `Listenelement`) – er wird
+von dort importiert und **nicht** ein zweites Mal deklariert. Wörtlich aus der definierenden
+Quelle:
 
 ```ts
-// #237 – src/shared/contracts/bearbeitungsstand.ts   (DEFINIERENDE QUELLE)
+// M1-03 – src/shared/contracts/project.ts   (DEFINIERENDE QUELLE)
 export interface Bearbeitungsstand {
   aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts
-  liste: Listenelement[]      // die vollstaendige Wiedergabeliste,
+  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,
                               // Reihenfolge = Array-Reihenfolge (TK 9.11.3)
 }
 ```
 
-**Weicht die tatsächliche Fassung in #237 davon ab, ist das ein Vertragsfehler: melden, NICHT
-eigenmächtig anpassen.**
+**Weicht die tatsächliche Fassung in M1-03 davon ab, ist das ein Vertragsfehler: melden, NICHT
+eigenmächtig anpassen.** Insbesondere **keine** eigene Datei
+`src/shared/contracts/bearbeitungsstand.ts` anlegen – der Typ ist ein **Ausschnitt aus `Project`**
+(dieselben zwei Felder, dieselben Elementtypen) und liegt deshalb in `project.ts`.
+
+**Kein Meilenstein-Rückstand mehr.** Der Typ kam früher aus #237 (Milestone **M7**); damit war
+dieses **M1**-Issue nicht abschließbar, bevor ein M7-Baustein gebaut ist. Mit dem Umzug nach M1-03
+liegt die einzige Typ-Abhängigkeit dieser Rückgabe **innerhalb von M1** – dieses Issue hängt an
+**keinem** späteren Meilenstein.
 
 ## Eingang → Ausgang
 | Eingang | Bedeutung | Grenzen/Validierung |
@@ -3980,9 +4043,11 @@ womit Rückgängig ausgerechnet für das versehentliche Löschen wirkungslos wä
 - [ ] Keine Datei außerhalb von `src/main/project-store/loesche-aktion.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
-- Blockiert von: M1-26, M1-03 (Listenelement/Einblendung-Typen), **#237** (Typ `Bearbeitungsstand` in
-  `src/shared/contracts/bearbeitungsstand.ts`; seit TK v3.2 Teil dieser Rückgabe – die Datei
-  entsteht dort, **nicht** hier)
+- Blockiert von: M1-26, **M1-03** (`Listenelement`/`Einblendung`-Typen **und** der Typ
+  `Bearbeitungsstand` in `src/shared/contracts/project.ts`; seit TK v3.2 Teil dieser Rückgabe – der
+  Typ entsteht dort, **nicht** hier). **Alle Blocker liegen in M1** – dieses Issue hängt an
+  **keinem** späteren Meilenstein. (Bis zum Umzug stand hier #237 aus **M7**; das war eine
+  Meilenstein-Umkehrung und ist behoben.)
 - Blockiert: M5-Issues (composer, action-editor)
 
 ## Bezug
