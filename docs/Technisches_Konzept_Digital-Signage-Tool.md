@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.1 (HLD vollständig, geprüft)
-**Datum:** 04.08.2026
+**Version:** 3.2 (HLD vollständig, geprüft)
+**Datum:** 05.08.2026
 **Status:** In Planung
 
 ---
@@ -441,10 +441,13 @@ Genau **ein** terminaler Ausgang je Lauf, diskriminiert über `status` ∈ { `er
 | Feld | Inhalt |
 |---|---|
 | `ausgabePfad` | absoluter Pfad der erzeugten `projects/<id>/output/<name>.mp4` |
+| `ausgabeName` | der **tatsächlich verwendete** Ausgabename **ohne Endung** – derselbe Wert, der im `RenderRequest` stand (9.2.1) |
 | `gesamtdauer` | Summe der (getrimmten) Elementdauern in Sekunden – **framegerundet** gezählt (Frame-Anzahl / 30, s. 9.2.6) |
 | `dateigroesse` | Größe in Bytes |
 
-**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von der Auftragsverwaltung** gebaut (9.3) – sie besitzt ohnehin `auftragId`, `art`, `projektId`, `versuch`, `begonnenAm` und `beendetAm`. Der `render-service` liefert nur, was **nur er** weiß: Pfad, Größe und Gesamtdauer; daraus wird `ProtokollEintrag.ausgabe`. *Begründung:* Zwei Quellen für dieselbe Information laufen unweigerlich auseinander (dieselbe Regel entfernte schon das `position`-Feld, 9.11.3, und die doppelte Ablage der offenen Löschungen, 9.3) – und **Q3 ist dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer falsch.
+**Warum `ausgabeName` mitgeliefert wird (bindend).** Der `render-service` setzt bei Erfolg `Project.letzterAusgabeName` in D1 (FA-22); genau dieser Wert belegt beim **nächsten** Render das Namensfeld vor. Ohne ihn im Ergebnis erführe die Oberfläche vom neuen Namen **nichts** und schlüge weiter den alten vor – der Nutzer überschriebe nicht die Datei, die er überschreiben wollte, oder legte versehentlich eine zweite an. *Begründung für diesen Weg statt des naheliegenden:* **eine** Quelle der Wahrheit statt zweier. Merkte sich die Oberfläche den Namen selbst, liefen beide Werte spätestens dann auseinander, wenn ein Render **fehlschlägt** (D1 bleibt unverändert, die Oberfläche hätte den Namen längst übernommen) oder wenn die App **neu startet** (der Renderer-Zustand ist weg, D1 nicht). Der Wert steht zudem **dauerhaft** in Q3 (9.3) – dort allerdings **nicht** als eigenes Feld: `ProtokollEintrag.ausgabe` trägt weiterhin nur `pfad`, `dateigroesse` und `gesamtdauer`, und der Name ist im Pfad bereits enthalten. Ein zweites Feld für dieselbe Information wäre genau die Doppelführung, die schon `historieEintrag` und `position` entfernt hat.
+
+**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von der Auftragsverwaltung** gebaut (9.3) – sie besitzt ohnehin `auftragId`, `art`, `projektId`, `versuch`, `begonnenAm` und `beendetAm`. Der `render-service` liefert nur, was **nur er** weiß: Pfad, Größe, Gesamtdauer und den verwendeten Ausgabenamen; aus den ersten dreien wird `ProtokollEintrag.ausgabe` – der Name geht **nicht** eigens ins Protokoll, er steckt im Pfad (s. o.). *Begründung:* Zwei Quellen für dieselbe Information laufen unweigerlich auseinander (dieselbe Regel entfernte schon das `position`-Feld, 9.11.3, und die doppelte Ablage der offenen Löschungen, 9.3) – und **Q3 ist dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer falsch.
 
 **`fehler`:**
 
@@ -502,7 +505,7 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bere
 #### 9.2.5 Verantwortungsteilung an der Grenze
 
 - **Renderer:** rendert Segment-PNGs (`template-canvas`, pixelgleich zur Vorschau), stellt den `RenderRequest` zusammen, übergibt Segment-Pixel als Binärpuffer. Schreibt **nichts** auf die Platte.
-- **Main (`render-service`):** schreibt die PNGs nach T1; **normalisiert jedes Element** (`scale` + `pad` → Profil) zu einem Zwischenclip `seg_*.mp4`; verkettet die Zwischenclips per concat-Demuxer (`-c copy`) **direkt in den Projekt-Ausgabeordner** nach `projects/<id>/output/<name>.mp4.part`; **verifiziert** die fertige Datei mit `ffprobe` gegen das Profil und benennt sie erst danach im selben Ordner per Rename-mit-Ersetzen um (atomar – s. 9.2.6); nutzt `ffprobe` auch sonst für Maße/Dauer, wo nötig; meldet **Pfad, Größe und Gesamtdauer** als Auftrags-Ergebnis an die Auftragsverwaltung, die daraus den Q3-Protokolleintrag baut (9.3) – er wird **nicht** vom `render-service` vorgefertigt; **verwirft T1** nach dem Lauf. Die absoluten Pfade der Importe (`medienRef`) löst er über die Pfad-Autorität `project-store` auf (9.5.7), statt das Layout selbst zu kennen.
+- **Main (`render-service`):** schreibt die PNGs nach T1; **normalisiert jedes Element** (`scale` + `pad` → Profil) zu einem Zwischenclip `seg_*.mp4`; verkettet die Zwischenclips per concat-Demuxer (`-c copy`) **direkt in den Projekt-Ausgabeordner** nach `projects/<id>/output/<name>.mp4.part`; **verifiziert** die fertige Datei mit `ffprobe` gegen das Profil und benennt sie erst danach im selben Ordner per Rename-mit-Ersetzen um (atomar – s. 9.2.6); nutzt `ffprobe` auch sonst für Maße/Dauer, wo nötig; meldet **Pfad, Ausgabename, Größe und Gesamtdauer** als Auftrags-Ergebnis an die Auftragsverwaltung, die daraus den Q3-Protokolleintrag baut (9.3) – er wird **nicht** vom `render-service` vorgefertigt; **verwirft T1** nach dem Lauf. Die absoluten Pfade der Importe (`medienRef`) löst er über die Pfad-Autorität `project-store` auf (9.5.7), statt das Layout selbst zu kennen.
 - **Nicht Teil dieser Operation:** USB-Export (`export-service`) und Vorschau (P5, läuft ganz ohne diese Schnittstelle).
 
 #### 9.2.6 Invarianten (Vorgaben an die Umsetzung)
@@ -684,7 +687,7 @@ JournalEintrag {               // Q4 – eine Zeile je Bewegung
 | `fortschritt` | 0–100 oder `null` | grober Fortschritt (bei `render` aus `RenderProgress`, 9.2.7); `null` wo unbestimmt |
 | `versuche` | Anzahl **tatsächlich gestarteter** Ausführungen | macht wiederholtes Scheitern sichtbar; wird **beim Start** einer Ausführung erhöht (s. 9.3.3) |
 | `fehler` | `{ code, meldung, daten? }` oder `null` | gesetzt bei `fehlgeschlagen`; `code` stammt aus dem Fachdienst, `daten` trägt die Nutzdaten des Codes (9.1.1) |
-| `ergebnis` | fachliche Nutzdaten des Dienstes oder `null` | gesetzt bei `erfolg`: `import` → der fertige `Asset` (9.4.4), `loeschen` → `{ assetId }`, `render` → Pfad/Größe/Dauer (9.2.3), `export` → `{ zielPfad, dateigroesse }` (9.6.1). **Ohne dieses Feld erführe die Oberfläche nie, was ein Auftrag hervorgebracht hat** – ein Import bliebe unsichtbar, bis der Nutzer das Projekt neu öffnet |
+| `ergebnis` | fachliche Nutzdaten des Dienstes oder `null` | gesetzt bei `erfolg`: `import` → der fertige `Asset` (9.4.4), `loeschen` → `{ assetId }`, `render` → Pfad/**Ausgabename**/Größe/Dauer (9.2.3), `export` → `{ zielPfad, dateigroesse }` (9.6.1). **Ohne dieses Feld erführe die Oberfläche nie, was ein Auftrag hervorgebracht hat** – ein Import bliebe unsichtbar, bis der Nutzer das Projekt neu öffnet |
 | `erstelltAm` | ISO-8601 UTC | Reihenfolge/Anzeige |
 
 #### 9.3.2 Auftragsarten
@@ -747,7 +750,7 @@ Alle vier Aufrufe sind **Instant** und tragen die Ergebnis-Hülle (9.1.1): `Erge
 
 Der bestehende Vertrag 9.2 (`renderReel`, `RenderRequest`/`RenderResult`, `RenderProgress`, `cancelRender`) bleibt vollständig gültig. Die Queue nutzt ihn:
 
-- Ein `render`-Auftrag führt beim Start intern `renderReel(payload)` aus – **nach** dem Sofort-Flush von D1 (9.5.4). `RenderProgress.prozent` (Kanal `render:fortschritt`, 9.2.7) speist `Auftrag.fortschritt`; `RenderResult` bestimmt den terminalen Auftrags-`status` (erfolg/fehlgeschlagen/abgebrochen) und liefert bei Erfolg die Nutzdaten **Pfad, Größe und Gesamtdauer** (9.2.3) – daraus baut die Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Einen fertig vorbereiteten Historie-Eintrag liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe Information.
+- Ein `render`-Auftrag führt beim Start intern `renderReel(payload)` aus – **nach** dem Sofort-Flush von D1 (9.5.4). `RenderProgress.prozent` (Kanal `render:fortschritt`, 9.2.7) speist `Auftrag.fortschritt`; `RenderResult` bestimmt den terminalen Auftrags-`status` (erfolg/fehlgeschlagen/abgebrochen) und liefert bei Erfolg die Nutzdaten **Pfad, Ausgabename, Größe und Gesamtdauer** (9.2.3) – daraus baut die Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Der **Ausgabename** reist dabei **nur** in `Auftrag.ergebnis`: Über ihn erfährt die Oberfläche, welcher Name tatsächlich verwendet wurde, und hält ihre Vorbelegung mit `Project.letzterAusgabeName` (FA-22) im Gleichklang. In `ProtokollEintrag.ausgabe` steht er **nicht** – er ist dort bereits Teil des Pfades. Einen fertig vorbereiteten Historie-Eintrag liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe Information.
 - `entferne` auf einen laufenden `render` delegiert an `cancelRender(renderId)`; die `renderId` liegt im `RenderRequest` des Auftrags — `auftragId` und `renderId` bleiben fest verknüpft.
 - Der frühere Fehlercode `render_aktiv` **entfällt** — durch die serielle Ordnung kann die Kollision, die er gemeldet hätte, gar nicht mehr auftreten.
 
@@ -904,7 +907,7 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 | `öffneProjekt` | `id` → `Ergebnis<Projekt>` (lädt in den Speicher; setzt aktives Projekt via `config-store`) |
 | `listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geaendertAm, ordner, **beschaedigt**) – listet **auch** Projekte mit defekter `project.json`, gekennzeichnet statt weggelassen (s. u.) |
 | `dupliziereProjekt` | `id`, `neuerName` → `Ergebnis<Projekt>` (kopiert `project.json` **und** `media/`) |
-| `löscheProjekt` | `id` → `Ergebnis<void>` (entfernt den Projektordner; war es aktiv, fällt `config-store` sanft zurück). Die Oberfläche **muss vorher benennen, was verschwindet** – s. u. |
+| `löscheProjekt` | `id` → `Ergebnis<void>` (entfernt den Projektordner; war es aktiv, fällt `config-store` sanft zurück – und die Oberfläche leert ihre gemeinsame Projekt-Sicht, 9.7.4). Die Oberfläche **muss vorher benennen, was verschwindet** – s. u. |
 | `öffneProjektordner` | `projektId` → `Ergebnis<void>` – öffnet den Projektordner im **Datei-Explorer des Betriebssystems**; eigener Kanal `project:öffneProjektordner`, s. u. |
 
 ```
@@ -944,7 +947,11 @@ ProjektMeta {
 |---|---|
 | `erstelleAktion` | `aktionsdaten` → `Ergebnis<Aktion>` |
 | `bearbeiteAktion` | `id`, `aktionsdaten` → `Ergebnis<Aktion>` |
-| `löscheAktion` | `id` → `Ergebnis<{ entfernteElementIds: string[], geaenderteElementIds: string[] }>` – **Kaskade**: entfernte Listenelemente **und** Videos mit gekürztem Band, s. 9.5.3 |
+| `löscheAktion` | `id` → `Ergebnis<{ stand: Bearbeitungsstand, entfernteElementIds: string[], geaenderteElementIds: string[] }>` – **Kaskade**: entfernte Listenelemente **und** Videos mit gekürztem Band, s. 9.5.3. `stand` ist der **vollständige neue Stand** nach der Kaskade (Aktions-Bibliothek **und** Wiedergabeliste), die beiden Kennungslisten beschreiben, **was sich geändert hat** |
+
+**`löscheAktion` liefert den neuen Stand, nicht nur die Kennungen (bindend).** Der Rückgabewert trägt **beides**: den vollständigen `stand` (Typ `Bearbeitungsstand`, s. u. bei `setzeBearbeitungsstand`) **und** die bisherigen Listen `entfernteElementIds`/`geaenderteElementIds`. Beide werden gebraucht, aber für Verschiedenes: Der **Stand** aktualisiert die Sicht, die **Kennungen** erklären dem Nutzer die Wirkung („aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt", 9.5.3) und benennen die Stellen, die die Oberfläche hervorheben kann.
+
+*Begründung:* 9.13.1 führt „Aktionen: anlegen, bearbeiten, **löschen**" unter „Umfasst", ist also **undo-fähig**; 9.13.2 verlangt dafür einen Schnappschuss, und der entsteht beim **Übergang der Sicht von einem Stand auf den nächsten**. Aus bloßen Kennungen lässt sich der neue Stand nicht bilden – der einzige Weg dorthin wäre ein **Neuladen** des Projekts, und das setzt die Sicht an der Schnappschuss-Stelle **vorbei**: Undo wäre gebaut und für genau den Fall wirkungslos, für den es am dringendsten gebraucht wird. Mit dem Stand läuft das Löschen über **denselben** Weg wie jede andere Änderung, der Schnappschuss entsteht von selbst, und Rückgängig braucht **keinen** Sonderfall. **Ausdrücklich verworfen** wurde ein zweiter Eingang in die Rückgängig-Verwaltung allein für diesen Fall: Eine Ausnahme von der Regel „Schnappschüsse entstehen an genau **einer** Stelle" ist genau die Art Sonderfall, die in diesem Projekt bisher die teuersten Fehler verursacht hat. *Warum `Bearbeitungsstand` und nicht `Projekt`:* Es ist derselbe Ausschnitt, den der Schnappschuss ohnehin führt (`aktionen` + `liste`, 9.5.2/9.13.2) – ein zweiter, weiterer Typ an dieser Stelle brächte `assets` und `letzterAusgabeName` mit, die `löscheAktion` gar nicht anfasst und die nach 9.13.2 **nicht** in den Schnappschuss gehören.
 
 **Liste:**
 
@@ -1015,7 +1022,7 @@ AusgabeDatei {
 
   **Randfall:** Wird ein Band durch das Entfernen leer (keine Abschnitte mehr), entfällt die **Einblendung ganz** (`einblendung = null`) – das **Videoelement bleibt**. Ein Band mit null Abschnitten hätte nichts zu zeigen, und der Render müsste eine Bandspur der Länge 0 bauen.
 
-  **Rückgabe:** `löscheAktion` meldet **beide** Wirkungen – `entfernteElementIds` (entfernte Listenelemente) **und** `geaenderteElementIds` (Videos, deren Band gekürzt oder entfernt wurde) – damit die UI vorher präzise warnen kann („wird aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos").
+  **Rückgabe:** `löscheAktion` meldet **beide** Wirkungen – `entfernteElementIds` (entfernte Listenelemente) **und** `geaenderteElementIds` (Videos, deren Band gekürzt oder entfernt wurde) – damit die UI präzise benennen kann, was geschehen ist („aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt"). **Zusätzlich trägt die Rückgabe den vollständigen neuen `stand`** (Aktions-Bibliothek und Wiedergabeliste **nach** der Kaskade, 9.5.2): Er ist es, der die Sicht auf das Projekt weiterschaltet und damit den Undo-Schnappschuss auslöst (9.13.2) – die Kennungen allein könnten das nicht, aus ihnen ist der neue Stand nicht rekonstruierbar.
 
   Die von der Aktion **verwendeten Medien-Assets bleiben unangetastet** und projektweit verfügbar – eine Aktion *referenziert* ein Asset nur, sie besitzt es nicht.
 
@@ -1057,7 +1064,7 @@ Besitzt `config.json` (app-weit): aktives Projekt, letztes Export-Ziel, UI-Vorei
 | `setzeUIVoreinstellung` | `schlüssel`, `wert` → `Ergebnis<void>` |
 
 - **Marke gebündelt & read-only** im MVP (Palette #FF4040 …, Logo fix); ein Marken-Editor ist kein MVP (wie FA-13).
-- **Sitzungswiederherstellung (FA-15):** beim Start das zuletzt aktive Projekt laden; **fehlt** es (extern gelöscht) → sanfter Rückfall auf „kein aktives Projekt / Projektliste", **kein** Absturz.
+- **Sitzungswiederherstellung (FA-15):** beim Start das zuletzt aktive Projekt laden; **fehlt** es (extern gelöscht) → sanfter Rückfall auf „kein aktives Projekt / Projektliste", **kein** Absturz. Im Renderer wird dieser Zustand über `leereProjektSicht()` hergestellt (9.7.4) – derselbe Weg wie nach dem Löschen des aktiven Projekts.
 - Gleiche Schreib-Invarianten wie 9.5.4 (atomar, `schemaVersion`).
 
 #### 9.5.7 Pfad-Autorität & `media://`-Protokoll
@@ -1158,7 +1165,10 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 #### 9.7.4 Invarianten (bindend)
 
 - **Gesamtlänge = frame-gerundete Summe** der Elementdauern – **dieselbe** Rundungsregel wie `render-service` (9.2.6), sonst weicht die angezeigte Länge von der echten Ausgabedatei ab. Die 30-Minuten-Warnung (5.3) hängt daran.
-- **`project-store` ist die Wahrheit:** die Liste im composer ist nur eine Sicht; nach jeder Mutation mit dem Rückgabestand abgleichen.
+- **`project-store` ist die Wahrheit:** die Liste im composer ist nur eine Sicht; nach jeder Mutation mit dem Rückgabestand abgleichen. Diese Sicht ist die **gemeinsame Sicht auf das offene Projekt**; sie kennt neben einem geladenen Projekt ausdrücklich den Zustand **„kein Projekt geladen"** (s. u.).
+- **Die gemeinsame Sicht lässt sich leeren – `leereProjektSicht()` (bindend).** Neben dem Weiterschalten auf einen neuen Stand gibt es **genau eine** Operation, die die Sicht in den Zustand **„kein Projekt geladen"** zurückversetzt. Sie nimmt keinen Eingang und liefert nichts; danach ist kein Projekt geladen, und die Oberfläche zeigt den Zustand, den 9.5.6 als **sanften Rückfall auf „kein aktives Projekt / Projektliste"** beschreibt (9.14.3: der Reiter **Projekte** bleibt ohne offenes Projekt voll benutzbar). Gerufen wird sie, wo ein Projekt **aufhört, offen zu sein**, ohne dass ein anderes an seine Stelle tritt – vor allem nach `löscheProjekt` (9.5.2) auf das **aktive** Projekt.
+
+  *Begründung:* Der Zustand „kein Projekt geladen" ist im Datentyp der Sicht **bereits vorgesehen**; es fehlte allein der **Weg dorthin**. Ohne ihn zeigt die Oberfläche nach dem Löschen des aktiven Projekts weiter dessen Liste, Aktionen und Vorschau – **Geisterdaten**, auf die jeder Klick ins Leere läuft, während der Ordner auf der Platte schon weg ist. **Ausdrücklich verboten ist die naheliegende Notlösung**, statt dessen ein **leeres Projekt mit erfundener Kennung** in die Sicht zu setzen: Das sähe richtig aus, aber jede folgende Instant-Operation liefe in `nicht_gefunden` (9.1.1), und das Auto-Speichern (9.5.4) legte womöglich einen Projektordner an, den **niemand angelegt hat**.
 - **Angezeigte Reihenfolge = gerenderte Reihenfolge** – keine versteckte Sortierung.
 - **Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur Vorschau), Bild direkt als `<img>`. Der Main bekommt **keine** Thumbnail-Pflicht (konsistent mit Variante A).
 - **Kaputte Stellen blockieren den Render und starten die geführte Reparatur (9.7.5):** zeigt ein Listenelement **oder ein Band-Abschnitt** auf ein `fehlt`-Asset (media-service 9.4.7), wird die Stelle **rot markiert**; ein Render wird nicht gestartet (er würde mit `medium_fehlt` scheitern bzw. einen Platzhalter einbetten), sondern der Nutzer in den Reparatur-Modus geführt.
@@ -1777,6 +1787,14 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.2 (05.08.2026), vom Auftraggeber entschieden:**
+>
+> 1. **Die gemeinsame Projekt-Sicht bekommt einen Weg, geleert zu werden** – neue Operation **`leereProjektSicht()`** in 9.7.4, mitgezogen 9.5.2 (`löscheProjekt`) und 9.5.6 (Sitzungswiederherstellung). Sie versetzt die Sicht in den Zustand **„kein Projekt geladen"**; gerufen wird sie, wo ein Projekt aufhört, offen zu sein, ohne dass ein anderes an seine Stelle tritt – vor allem nach dem Löschen des **aktiven** Projekts. *Folge ohne die Entscheidung:* Der Zustand war im Datentyp der Sicht **ausdrücklich vorgesehen**, es gab aber **keine** Operation, die ihn herstellt. Die Oberfläche zeigte nach dem Löschen des aktiven Projekts weiter dessen Liste, Aktionen und Vorschau – **Geisterdaten**, auf die jeder Klick ins Leere läuft, während der Ordner auf der Platte bereits weg ist; der von 9.5.6 verlangte **sanfte Rückfall** auf „kein aktives Projekt / Projektliste" war mit den vorhandenen Mitteln nicht herstellbar. **Ausdrücklich verboten** ist die naheliegende Notlösung, ein **leeres Projekt mit erfundener Kennung** in die Sicht zu setzen: Es sähe richtig aus, aber jede folgende Instant-Operation liefe in `nicht_gefunden` (9.1.1), und das Auto-Speichern (9.5.4) legte womöglich einen Projektordner an, den **niemand angelegt hat**.
+>
+> 2. **Das Render-Ergebnis trägt den verwendeten Ausgabenamen** – neues Feld **`ausgabeName`** im `RenderResult` bei `status: "erfolg"` (9.2.3, mitgezogen 9.2.5, 9.3.1 und 9.3.6). Es ist der Name **ohne Endung**, genau so, wie er im `RenderRequest` stand. *Folge ohne die Entscheidung:* Der `render-service` setzt bei Erfolg `Project.letzterAusgabeName` in D1 (FA-22), das Auftrags-Ergebnis trug aber nur Pfad, Dateigröße und Gesamtdauer – die Oberfläche erführe vom neuen Namen **nichts** und schlüge beim nächsten Render weiter den alten vor. Der Nutzer überschriebe also nicht die Datei, die er überschreiben wollte, oder legte versehentlich eine zweite an. Der Weg über das Ergebnis ist **eine** Quelle der Wahrheit statt zweier: Merkte sich die Oberfläche den Namen selbst, liefen beide Werte spätestens bei einem **fehlgeschlagenen** Render (D1 unverändert) oder nach einem **Neustart** (Renderer-Zustand weg) auseinander – und der Wert steht **dauerhaft** in Q3. **Nicht** mitgezogen wurde `ProtokollEintrag.ausgabe` (9.3): Es trägt weiterhin nur `pfad`, `dateigroesse` und `gesamtdauer`, denn der Name steckt im Pfad; ein zweites Feld dafür wäre genau die Doppelführung, die schon `historieEintrag` (v2.8) und `position` (9.11.3) entfernt hat.
+>
+> 3. **`löscheAktion` liefert den vollständigen neuen Stand** – die Rückgabe wird `Ergebnis<{ stand: Bearbeitungsstand, entfernteElementIds, geaenderteElementIds }>` (9.5.2, mitgezogen 9.5.3). Die beiden Kennungslisten **bleiben**: Der `stand` schaltet die Sicht weiter, die Kennungen erklären dem Nutzer die Wirkung („aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt") und benennen die hervorzuhebenden Stellen. *Folge ohne die Entscheidung:* 9.13.1 führt „Aktionen: anlegen, bearbeiten, **löschen**" unter „Umfasst", ist also undo-fähig; 9.13.2 verlangt dafür einen Schnappschuss, und der entsteht beim **Übergang der Sicht von einem Stand auf den nächsten**. Aus bloßen Kennungen ist der neue Stand nicht bildbar – der einzige Weg dorthin wäre ein **Neuladen** des Projekts, und das setzt die Sicht an der Schnappschuss-Stelle **vorbei**: Undo wäre gebaut und ausgerechnet für das **versehentliche Löschen** wirkungslos. **Ausdrücklich verworfen** wurde ein zweiter Eingang in die Rückgängig-Verwaltung nur für diesen Fall – eine Ausnahme von der Regel „Schnappschüsse entstehen an genau **einer** Stelle" ist die Art Sonderfall, die in diesem Projekt bisher die teuersten Fehler verursacht hat. Der Typ ist `Bearbeitungsstand` und **nicht** `Projekt`, weil das genau der Ausschnitt ist, den der Schnappschuss ohnehin führt (`aktionen` + `liste`); `assets` und `letzterAusgabeName` gehören nach 9.13.2 nicht hinein und werden von `löscheAktion` auch nicht angefasst.
 >
 > **Nachgezogen in v3.1 (04.08.2026), vom Auftraggeber entschieden und beim M7-Zuschnitt gefunden:**
 >

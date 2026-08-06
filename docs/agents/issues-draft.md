@@ -2004,13 +2004,15 @@ könnte durchrutschen, ohne dass ein Protokoll-Eintrag (Q3) entsteht.
 ```ts
 // src/shared/contracts/render-result.ts
 export type RenderResult =
-  | { status: 'erfolg'; renderId: string; ausgabePfad: string; gesamtdauer: number; dateigroesse: number }
+  | { status: 'erfolg'; renderId: string; ausgabePfad: string; ausgabeName: string; gesamtdauer: number; dateigroesse: number }
   | { status: 'fehler'; renderId: string; fehlercode: string; fehlerhaftesElementId: string | null; meldung: string }
   | { status: 'abgebrochen'; renderId: string; abgebrochenBei: number | null }
 
 // KEIN Feld `historieEintrag` und KEIN Typ `HistorieEintrag`. Beide sind mit TK v2.8 ersatzlos
 // gestrichen (TK 9.2.3). Der Q3-Protokolleintrag wird ALLEIN von der Auftragsverwaltung gebaut;
-// der render-service liefert nur, was NUR ER weiss: Pfad, Groesse und Gesamtdauer.
+// der render-service liefert nur, was NUR ER weiss: Pfad, Ausgabename, Groesse und Gesamtdauer.
+// `ausgabeName` ist der tatsaechlich verwendete Name OHNE Endung (TK v3.2, 9.2.3). Er reist NUR
+// in `Auftrag.ergebnis` und geht NICHT in `ProtokollEintrag.ausgabe` – dort steckt er im Pfad.
 
 export interface RenderProgress {
   renderId: string
@@ -2027,21 +2029,32 @@ export interface RenderProgress {
 |---|---|---|
 | – | reine Typdefinition | – |
 
-Ausgang bei Erfolg: `RenderResult` verengt bei `status === 'erfolg'` typsicher auf **genau drei**
-Nutzdaten-Felder – `ausgabePfad`, `gesamtdauer`, `dateigroesse` – und auf nichts sonst;
+Ausgang bei Erfolg: `RenderResult` verengt bei `status === 'erfolg'` typsicher auf **genau vier**
+Nutzdaten-Felder – `ausgabePfad`, `ausgabeName`, `gesamtdauer`, `dateigroesse` – und auf nichts sonst;
 `RenderProgress` trägt keine Endzustände.
 Ausgang bei Fehler: entfällt.
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
 - „Genau **ein** terminaler Ausgang je Lauf, diskriminiert über `status` ∈ { `erfolg`, `fehler`,
   `abgebrochen` }. Alle drei tragen die `renderId`." (TK 9.2.3)
+- „| `ausgabeName` | der **tatsächlich verwendete** Ausgabename **ohne Endung** – derselbe Wert,
+  der im `RenderRequest` stand (9.2.1) |" (TK 9.2.3)
+- „Ohne ihn im Ergebnis erführe die Oberfläche vom neuen Namen **nichts** und schlüge weiter den
+  alten vor – der Nutzer überschriebe nicht die Datei, die er überschreiben wollte, oder legte
+  versehentlich eine zweite an." (TK 9.2.3)
+- „Der Wert steht zudem **dauerhaft** in Q3 (9.3) – dort allerdings **nicht** als eigenes Feld:
+  `ProtokollEintrag.ausgabe` trägt weiterhin nur `pfad`, `dateigroesse` und `gesamtdauer`, und der
+  Name ist im Pfad bereits enthalten." (TK 9.2.3) – `ausgabeName` steht deshalb **hier** im
+  `RenderResult`, aber **nicht** in `ProtokollEintrag` (#53).
 - „**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von der
   Auftragsverwaltung** gebaut (9.3) – sie besitzt ohnehin `auftragId`, `art`, `projektId`,
   `versuch`, `begonnenAm` und `beendetAm`. Der `render-service` liefert nur, was **nur er** weiß:
-  Pfad, Größe und Gesamtdauer; daraus wird `ProtokollEintrag.ausgabe`. *Begründung:* Zwei Quellen
-  für dieselbe Information laufen unweigerlich auseinander (dieselbe Regel entfernte schon das
-  `position`-Feld, 9.11.3, und die doppelte Ablage der offenen Löschungen, 9.3) – und **Q3 ist
-  dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer falsch." (TK 9.2.3)
+  Pfad, Größe, Gesamtdauer und den verwendeten Ausgabenamen; aus den ersten dreien wird
+  `ProtokollEintrag.ausgabe` – der Name geht **nicht** eigens ins Protokoll, er steckt im Pfad
+  (s. o.). *Begründung:* Zwei Quellen für dieselbe Information laufen unweigerlich auseinander
+  (dieselbe Regel entfernte schon das `position`-Feld, 9.11.3, und die doppelte Ablage der offenen
+  Löschungen, 9.3) – und **Q3 ist dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer
+  falsch." (TK 9.2.3)
 - „Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bereits vorhandene
   Datei gleichen Namens bleibt unversehrt** (9.2.6). Aufgeräumt sind in beiden Fällen **der
   Arbeitsbereich T1 *und* die angefangene `<name>.mp4.part` im Ausgabeordner** […] **Der
@@ -2051,10 +2064,14 @@ Ausgang bei Fehler: entfällt.
 - „Der Fortschrittskanal trägt **keinen** Endzustand. Erfolg, Fehler und Abbruch kommen
   **ausschließlich** über das `RenderResult`." (TK 9.2.7)
 - „`RenderResult` bestimmt den terminalen Auftrags-`status` (erfolg/fehlgeschlagen/abgebrochen) und
-  liefert bei Erfolg die Nutzdaten **Pfad, Größe und Gesamtdauer** (9.2.3) – daraus baut die
-  Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Einen fertig vorbereiteten
-  Historie-Eintrag liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe
-  Information." (TK 9.3.6)
+  liefert bei Erfolg die Nutzdaten **Pfad, Ausgabename, Größe und Gesamtdauer** (9.2.3) – daraus
+  baut die Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Der
+  **Ausgabename** reist dabei **nur** in `Auftrag.ergebnis`: Über ihn erfährt die Oberfläche,
+  welcher Name tatsächlich verwendet wurde, und hält ihre Vorbelegung mit
+  `Project.letzterAusgabeName` (FA-22) im Gleichklang. In `ProtokollEintrag.ausgabe` steht er
+  **nicht** – er ist dort bereits Teil des Pfades. Einen fertig vorbereiteten Historie-Eintrag
+  liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe Information."
+  (TK 9.3.6)
 - „**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.**
   `RenderResult.fehlerhaftesElementId` ist Modul-intern; beim Abschluss des Auftrags übernimmt die
   Auftragsverwaltung `fehlercode` → `Auftrag.fehler.code`, `meldung` → `Auftrag.fehler.meldung` und
@@ -2083,7 +2100,16 @@ Die zulässigen Werte stehen in TK 9.2.3 und sind in #68 ausgeschrieben – s. S
   schon das `position`-Feld (TK 9.11.3) und die doppelte Ablage der offenen Löschungen (TK 9.3)
   entfernt. Und **Q3 ist dauerhaft und unbegrenzt**: ein doppelt geführtes Datum darin bliebe für
   immer falsch. Der `render-service` liefert deshalb genau das, was **nur er** weiß – `ausgabePfad`,
-  `dateigroesse`, `gesamtdauer`.
+  `ausgabeName`, `dateigroesse`, `gesamtdauer`.
+- **ENTSCHIEDEN (TK v3.2) – der `erfolg`-Zweig trägt `ausgabeName`, der `ProtokollEintrag` NICHT.**
+  Das Feld ist der Name **ohne Endung**, genau so, wie er im `RenderRequest` (M1-05) stand – nicht der
+  Dateiname mit `.mp4` und nicht aus `ausgabePfad` abgeleitet. *Begründung (TK 9.2.3/9.3.6):* Der
+  `render-service` setzt bei Erfolg `Project.letzterAusgabeName` in D1 (FA-22); genau dieser Wert
+  belegt beim nächsten Render das Namensfeld vor. Ohne ihn im Ergebnis hätte die Oberfläche keine
+  Quelle dafür außer einer eigenen Merkvariablen – und die liefe spätestens bei einem
+  **fehlgeschlagenen** Render (D1 unverändert) oder nach einem **Neustart** (Renderer-Zustand weg)
+  auseinander. Umgekehrt bekommt `ProtokollEintrag.ausgabe` (#53) **kein** zweites Feld dafür: Der
+  Name steckt im Pfad, und Q3 ist dauerhaft – eine Doppelführung dort bliebe für immer falsch.
 
 ## Nicht selbst entscheiden – STOPP und fragen
 - Ob `fehlercode` in `RenderResult` **typisiert** wird oder `string` bleibt. TK 9.2.3 führt seit
@@ -2102,7 +2128,9 @@ Die zulässigen Werte stehen in TK 9.2.3 und sind in #68 ausgeschrieben – s. S
       nur im `erfolg`-Zweig zugreifbar, `fehlercode` nur im `fehler`-Zweig)
 - [ ] Die Zeichenkette `historieEintrag` und der Typname `HistorieEintrag` kommen in der Datei
       **nicht** vor (Grep-Probe); der `erfolg`-Zweig hat **genau** die Felder `status`, `renderId`,
-      `ausgabePfad`, `gesamtdauer`, `dateigroesse`
+      `ausgabePfad`, `ausgabeName`, `gesamtdauer`, `dateigroesse`
+- [ ] `ausgabeName` ist im `erfolg`-Zweig `string` (nicht optional, nicht nullbar) und kommt in
+      **keinem** anderen Zweig vor (Test: der Zugriff ist nur nach `status === 'erfolg'` möglich)
 - [ ] Keine Datei außerhalb von `src/shared/contracts/render-result.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
@@ -3831,20 +3859,45 @@ Wiedergabeliste reißen.
 
 ## Signatur (verbindlich – NICHT ändern)
 ```ts
+import type { Bearbeitungsstand } from '../../shared/contracts/bearbeitungsstand'
+
 export async function löscheAktion(id: string): Promise<Ergebnis<{
+  stand: Bearbeitungsstand
   entfernteElementIds: string[]
   geaenderteElementIds: string[]
 }>>
 ```
+
+Der Typ `Bearbeitungsstand` wird **nicht hier** definiert, sondern in **#237**
+(`src/shared/contracts/bearbeitungsstand.ts`) – er wird von dort importiert und **nicht** ein
+zweites Mal deklariert. Wörtlich aus der definierenden Quelle:
+
+```ts
+// #237 – src/shared/contracts/bearbeitungsstand.ts   (DEFINIERENDE QUELLE)
+export interface Bearbeitungsstand {
+  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts
+  liste: Listenelement[]      // die vollstaendige Wiedergabeliste,
+                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)
+}
+```
+
+**Weicht die tatsächliche Fassung in #237 davon ab, ist das ein Vertragsfehler: melden, NICHT
+eigenmächtig anpassen.**
 
 ## Eingang → Ausgang
 | Eingang | Bedeutung | Grenzen/Validierung |
 |---|---|---|
 | `id` | zu löschende Aktion | muss existieren |
 
-Ausgang bei Erfolg: `entfernteElementIds` = IDs der entfernten Segment-Listenelemente (Fall 1),
-`geaenderteElementIds` = IDs der Video-Listenelemente, deren Band-Abschnitte gekürzt/entfernt
-wurden (Fall 2). Die referenzierten Medien-**Assets** bleiben unangetastet. Die Aktion mit der
+Ausgang bei Erfolg: `stand` = der **vollständige neue Stand** des Projekts **nach** der Kaskade –
+`aktionen` (die Bibliothek **ohne** die gelöschte Aktion) und `liste` (die Wiedergabeliste nach
+Entfernen bzw. Kürzen). `entfernteElementIds` = IDs der entfernten Segment-Listenelemente
+(Fall 1), `geaenderteElementIds` = IDs der Video-Listenelemente, deren Band-Abschnitte
+gekürzt/entfernt wurden (Fall 2). `stand.aktionen` und `stand.liste` sind **genau** die beiden
+Felder des gespeicherten Projekts nach der Änderung – nicht neu sortiert, nicht gefiltert, nicht
+kopiert-und-verändert. `assets` und `letzterAusgabeName` gehören **nicht** in den `stand` und
+werden von dieser Operation ohnehin nicht angefasst. Die referenzierten Medien-**Assets** bleiben
+unangetastet. Die Aktion mit der
 übergebenen `id` ist danach **nicht mehr** in `Project.aktionen` enthalten – die Kaskade entfernt
 die Referenzen, aber `löscheAktion` löscht am Ende auch den Aktions-Datensatz selbst.
 Ausgang bei Fehler: `nicht_gefunden`.
@@ -3859,6 +3912,18 @@ Ausgang bei Fehler: `nicht_gefunden`.
   **Einblendung ganz** (`einblendung = null`) – das **Videoelement bleibt**." (TK 9.5.3)
 - „**Rückgabe:** `löscheAktion` meldet **beide** Wirkungen – `entfernteElementIds` … **und**
   `geaenderteElementIds`." (TK 9.5.3)
+- „**Zusätzlich trägt die Rückgabe den vollständigen neuen `stand`** (Aktions-Bibliothek und
+  Wiedergabeliste **nach** der Kaskade, 9.5.2): Er ist es, der die Sicht auf das Projekt
+  weiterschaltet und damit den Undo-Schnappschuss auslöst (9.13.2) – die Kennungen allein könnten
+  das nicht, aus ihnen ist der neue Stand nicht rekonstruierbar." (TK 9.5.3)
+- „Der Rückgabewert trägt **beides**: den vollständigen `stand` (Typ `Bearbeitungsstand`, s. u. bei
+  `setzeBearbeitungsstand`) **und** die bisherigen Listen
+  `entfernteElementIds`/`geaenderteElementIds`. Beide werden gebraucht, aber für Verschiedenes: Der
+  **Stand** aktualisiert die Sicht, die **Kennungen** erklären dem Nutzer die Wirkung" (TK 9.5.2)
+- „*Warum `Bearbeitungsstand` und nicht `Projekt`:* Es ist derselbe Ausschnitt, den der
+  Schnappschuss ohnehin führt (`aktionen` + `liste`, 9.5.2/9.13.2)" (TK 9.5.2) – der `stand` ist
+  deshalb **kein** `Project`: kein `id`, kein `assets`, kein `letzterAusgabeName`, kein
+  `schemaVersion`.
 - „Die von der Aktion **verwendeten Medien-Assets bleiben unangetastet** und projektweit
   verfügbar – eine Aktion *referenziert* ein Asset nur, sie besitzt es nicht." (TK 9.5.3)
 
@@ -3869,7 +3934,19 @@ Reihenfolge das geschieht. Festgelegt: Erst wird die Kaskade vollständig aufgel
 entfernen, Band-Abschnitte kürzen/Einblendung leeren), **danach** wird die Aktion aus
 `Project.aktionen` entfernt – beides in **einem** Durchlauf unter demselben `mitD1Lock`, damit kein
 Zwischenzustand mit verwaisten Referenzen (Listenelemente oder Band-Abschnitte, die auf eine bereits
-gelöschte Aktion zeigen) von außen sichtbar wird.
+gelöschte Aktion zeigen) von außen sichtbar wird. Der zurückgegebene `stand` wird **nach** beiden
+Schritten und **innerhalb** desselben `mitD1Lock` gebildet – er ist damit derselbe Stand, der
+gespeichert wird, und kein Zwischenstand.
+
+**ENTSCHIEDEN (TK v3.2) – die Rückgabe trägt den Stand ZUSÄTZLICH zu den Kennungen, nicht
+anstelle.** Beide Kennungslisten bleiben unverändert erhalten. *Begründung (TK 9.5.2/9.5.3):*
+Sie leisten Verschiedenes – der `stand` schaltet die gemeinsame Projekt-Sicht weiter und löst
+damit den Undo-Schnappschuss aus (TK 9.13.2), die Kennungen erklären dem Nutzer die Wirkung
+(„aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt", TK 9.5.3) und benennen
+die Stellen, die die Oberfläche hervorheben kann. Ohne den `stand` bliebe der einzige Weg zur
+neuen Sicht ein **Neuladen** des Projekts – und das liefe an der Schnappschuss-Stelle vorbei,
+womit Rückgängig ausgerechnet für das versehentliche Löschen wirkungslos wäre (FA-21 ist ein
+**Muss**).
 
 ## Fehlerpfade (vollständig)
 | Situation | Code | Verhalten |
@@ -3889,11 +3966,23 @@ gelöschte Aktion zeigen) von außen sichtbar wird.
 - [ ] Referenzierte Assets sind nach dem Löschen unverändert in `Project.assets` vorhanden
 - [ ] Die Aktion mit der übergebenen `id` ist nach Erfolg nicht mehr in `Project.aktionen` enthalten
 - [ ] Rückgabe enthält beide Listen korrekt befüllt (auch wenn eine davon leer ist)
+- [ ] Die Rückgabe trägt `stand` mit **genau** den Schlüsseln `aktionen` und `liste`
+      (`'assets' in stand === false`, `'letzterAusgabeName' in stand === false`,
+      `'id' in stand === false`) – benannter Test
+- [ ] `stand.aktionen` enthält die gelöschte `id` **nicht** mehr und ist im Übrigen inhaltlich
+      gleich der Bibliothek vor dem Aufruf; `stand.liste` entspricht **genau** der Liste nach der
+      Kaskade (entfernte Segment-Elemente fehlen, gekürzte Videos sind enthalten, Reihenfolge der
+      verbliebenen Elemente unverändert)
+- [ ] Der zurückgegebene `stand` stimmt mit dem **gespeicherten** Projekt überein (Test liest das
+      Projekt nach dem Aufruf und vergleicht `aktionen` und `liste`)
+- [ ] Bei `nicht_gefunden` wird **kein** `stand` geliefert (die Ergebnis-Hülle trägt keinen Wert)
 - [ ] Läuft innerhalb von `mitD1Lock`
 - [ ] Keine Datei außerhalb von `src/main/project-store/loesche-aktion.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
-- Blockiert von: M1-26, M1-03 (Listenelement/Einblendung-Typen)
+- Blockiert von: M1-26, M1-03 (Listenelement/Einblendung-Typen), **#237** (Typ `Bearbeitungsstand` in
+  `src/shared/contracts/bearbeitungsstand.ts`; seit TK v3.2 Teil dieser Rückgabe – die Datei
+  entsteht dort, **nicht** hier)
 - Blockiert: M5-Issues (composer, action-editor)
 
 ## Bezug
