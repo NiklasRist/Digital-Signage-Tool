@@ -1,10 +1,10 @@
 # Issue M0-02 (#2): [grundgeruest] Vite-Renderer- und Main-Build mit dev/build-Skripten einrichten
 
 <!--
-Lokale Quelle zu GitHub-Issue #2, Stand 04.08.2026 nach dem Nachziehen beim Bauen
-(Preload-Bau, Renderer-Einstiegspunkt, beide STOPP-Punkte entschieden).
-ACHTUNG: docs/agents/issues-draft.md enthaelt unter "Issue S2" noch die ALTE Fassung.
-Diese Datei hier ist der aktuelle Stand.
+Lokale Quelle zu GitHub-Issue #2. Stand 04.08.2026 nach dem Review:
+Rahmen-Verletzung vermerkt, "lauffaehig" als DoD-Kriterium zurueckgeholt,
+Hinweis auf die DoD-Umschreibung ergaenzt, Verweis auf #7 zum type-Feld.
+ACHTUNG: docs/agents/issues-draft.md zeigt unter "Issue S2" nur noch hierher.
 -->
 
 ## Ziel (in einem Satz)
@@ -30,6 +30,15 @@ externe Abhängigkeit statt eingebündelt zu werden.
 > 2. **Der Renderer hatte keinen Einstiegspunkt.** #10 nennt in seiner Datei-Liste nur `App.tsx`
 >    und `shell/`. Ohne `index.html` und eine Einstiegsdatei kann `vite build` nichts erzeugen –
 >    der zweite DoD-Punkt dieses Issues wäre unerfüllbar gewesen.
+>
+> **Damit ist der DoD-Punkt „Keine Datei außerhalb der genannten" gegen den URSPRÜNGLICHEN
+> Rahmen verletzt** (Review vom 04.08.). Der Rahmen lautete wörtlich: `vite.config.ts`,
+> `package.json`, „Main-Watch-Konfiguration". Tatsächlich geändert wurden zusätzlich
+> `index.html`, `src/renderer/main.tsx` und `src/main/index.ts` — sowie `scripts/build-main.mjs`
+> und `scripts/dev.mjs` (als „Main-Watch-Konfiguration" vertretbar) und `package-lock.json`
+> (Folge der Installation). Die Erweiterung wurde nachträglich freigegeben; sie bleibt eine
+> **Abweichung vom ursprünglichen Vertrag** und steht hier, damit die oben mitgewachsene
+> Datei-Liste sie nicht verdeckt.
 
 ## Warum das im Gesamtsystem wichtig ist
 `ffmpeg-static` liefert eine große, plattformspezifische Binärdatei. Bündelt Vite oder der
@@ -103,16 +112,32 @@ Weiterhin offen und **nicht** selbst zu entscheiden:
   greifen den Bestand an: Umbenennen nach `vite.config.mts` widerspricht der verbindlichen
   Signatur, und `"type": "module"` in `package.json` würde `dist/main/index.js` zu ESM erklären
   und den Electron-Main brechen. Heute nur eine Warnung – vorlegen, bevor jemand daran dreht.
+  **Die Entscheidung ist nach #7 verwiesen** (04.08.2026): Dort wird ohnehin das `"main"`-Feld
+  festgelegt, und der einzige tragfähige Weg (`"type": "module"` **plus** esbuild-Ausgabe auf
+  `.cjs`) berührt genau dieses Dateilayout. Begründung ausgeschrieben im STOPP-Block von #7.
 
 ## Definition of Done
+
+> **Diese DoD wurde am 04.08. beim Bauen umgeschrieben.** Vier Punkte wurden **strenger**
+> (Import-Nachweis bei ffmpeg-static, `@vite/client` als HMR-Beleg, Preload im Watcher, Typecheck
+> als eigener Punkt). Ein Punkt wurde dabei versehentlich **lockerer**: Aus „erzeugt *lauffähige*
+> `dist/`-Ausgabe" wurde „erzeugt diese drei Dateien" — eine Verhaltens-Aussage durch eine
+> Datei-Aussage ersetzt. Das ist mit der Fassung unten zurückgenommen. **Regel daraus: Wer eine
+> DoD ändert, sagt je Punkt, ob strenger oder lockerer — und begründet jede Lockerung.**
+
 - [ ] Der Vite-Devserver startet eigenständig und ist unter der konfigurierten URL mit
       funktionierendem HMR erreichbar (nachweisbar daran, dass das ausgelieferte HTML den
       `@vite/client` enthält); das Watch-Tool erkennt Änderungen unter `src/main/**` und
       `src/preload/**` und löst einen Neustart aus. (Der Ende-zu-Ende-Nachweis „Fenster öffnet
       sich, Renderer lädt mit HMR" gehört zur Definition of Done von #3, weil dort der
       Main-Entry entsteht.)
-- [ ] `npm run build` erzeugt `dist/renderer/`, `dist/main/index.js` **und**
-      `dist/preload/index.js` für #7
+- [ ] `npm run build` erzeugt eine **lauffähige** Ausgabe für #7: `dist/renderer/`,
+      `dist/main/index.js` **und** `dist/preload/index.js`. „Lauffähig" ist das Kriterium, nicht
+      „die Dateien existieren" — nachzuweisen mit: `node --check` auf beide Bundles, `index.html`
+      verweist **relativ** (`./assets/…`, sonst bricht das `file://`-Laden im gepackten Zustand),
+      die referenzierte Asset-Datei existiert am aufgelösten Pfad, und Electron startet mit dem
+      gebauten Main ohne Absturz und ohne Fehlerausgabe. (Ein *sichtbares* Fenster kann erst #3
+      liefern.)
 - [ ] `ffmpeg-static` erscheint nach `npm run build` unverändert (Binärgröße identisch zu
       `node_modules/ffmpeg-static`) – keine Bundler-Transformation. Der Nachweis ist **mit** einem
       tatsächlichen Import zu führen: eine vorübergehend angelegte Datei unter `src/main/`, die
@@ -130,4 +155,6 @@ Weiterhin offen und **nicht** selbst zu entscheiden:
 
 ## Bezug
 TK 3, CLAUDE.md „Tech-Stack"
+
+
 
