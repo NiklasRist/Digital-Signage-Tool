@@ -4,7 +4,7 @@
 > Das **Wie** der Issue-Erstellung steht vollständig in `issue-generation-prompt.md` — dort
 > beginnen, diese Datei ist nur der Stand darüber.
 >
-> **Stand:** 04.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v2.7**
+> **Stand:** 05.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v3.1**
 
 ---
 
@@ -18,9 +18,13 @@
 3. **`docs/agents/m2-pruefbefund.md`** und **`m1-pruefbefund.md`** — die Fehler der letzten beiden
    Durchgänge im Detail. Wer sie kennt, macht sie nicht nochmal. **M2 zuerst**: dort steht, was der
    Briefing-Ansatz gebracht hat und welches Muster (Regel A auf Modulebene) noch offen war.
-4. Dann **Abschnitt 4 dieser Datei**: M2 bis M5 sind fertig, **M6 ist der nächste** Meilenstein
-   (Abschnitt 4d hält fest, was der M5-Durchgang gelehrt hat und welche drei Entscheidungen
-   E1–E3 auch für M6/M7 gelten).
+4. Dann **Abschnitt 4 dieser Datei**: **M0 bis M7 sind vollständig angelegt** – die
+   Issue-Überführung ist damit abgeschlossen (Abschnitt 4d hält fest, was der M5-Durchgang
+   gelehrt hat und welche drei Entscheidungen E1–E3 auch für M6/M7 gelten; **Abschnitt 4e**
+   hält den M6-Durchgang fest – die neun Entscheidungen aus TK v2.8, die drei Nachträge aus
+   v2.9 und die vier schwersten Befunde; **Abschnitt 4f** den M7-Durchgang – die sieben
+   schwersten Befunde, die neue Fehlerklasse „überholte Tatsachenbehauptung" und die
+   Werkzeug-Härtung gegen die 65 536-Zeichen-Grenze).
 
 **Kein Produktivcode.** Das Projekt ist in der Planungsphase — Code erst, wenn der Nutzer
 ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schreiben, nicht sie umzusetzen.
@@ -28,8 +32,10 @@ ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schre
 **Lies Abschnitt 4b, bevor du den Nutzer nach Entscheidungen fragst.** Es gibt 21 Issues mit
 `braucht-entscheidung`, aber die sind **keine** Bringschuld, die vorher abzuarbeiten wäre.
 (Die 21 sind die aus **M0 und M1**, `#1`–`#52`. Über **alle** Meilensteine sind es am 04.08.2026
-**63**: 21 in `#1`–`#52`, 9 in M2, 7 in den M1-Nachzüglern + M3, 11 in M4, 15 in M5. Der Satz
-unten gilt für alle gleichermaßen.)
+**68**: 21 in `#1`–`#52`, 9 in M2, 7 in den M1-Nachzüglern + M3, 11 in M4, 15 in M5, **5 in M6**;
+mit M7 kommen **38** dazu → **106** über alle Meilensteine (Stand 05.08.2026).
+Der Satz unten gilt für alle gleichermaßen. **Von den fünf M6-Punkten sind drei Experimente**,
+keine Entscheidungen – s. Abschnitt 4b, „Entscheidungen und Experimente nicht verwechseln".)
 
 ---
 
@@ -47,7 +53,13 @@ unten gilt für alle gleichermaßen.)
 | **M3 Medien** | ✅ **Issues #78–#94** angelegt, geprüft, korrigiert (`M3-XX → #(XX+77)`) |
 | **M4 Pixel** | ✅ **Issues #95–#119** angelegt, geprüft, korrigiert (`M4-XX → #(XX+94)`) |
 | **M5 Inhalte** | ✅ **Issues #120–#155** angelegt, geprüft, korrigiert (`M5-XX → #(XX+119)`) |
-| **M6–M7** | ⬜ offen |
+| **M6 Render & Export** | ✅ **Issues #156–#192** angelegt, geprüft, korrigiert (`M6-XX → #(XX+155)`) |
+| **M7 Oberfläche & Komfort** | ✅ **Issues #194–#262** angelegt, geprüft, korrigiert (`M7-XX → #(XX+193)` **nur bis M7-59**; danach Mapping aus `docs/agents/m7/map.json`) |
+
+**Damit sind alle acht Meilensteine M0–M7 angelegt; die Issue-Überführung ist abgeschlossen.**
+**`#193` gehört NICHT zu M7**, sondern als Nachtrag zu **M0**
+(`[grundgeruest] ESLint-Setup mit Verbot der Nicht-Null-Behauptung`) – es liegt nur numerisch
+zwischen M6 und M7. M7 beginnt bei `#194`.
 
 Alles liegt im Branch **`planung/ad-v1.2-tk-v2.3-issues`** und die Arbeit geht **auf diesem Branch
 weiter** (so vom Nutzer entschieden) — nicht nach `main` mergen, nicht ungefragt pushen.
@@ -326,6 +338,239 @@ unverändert v1.2.**
 Bootstrap-Eintrag `verdrahteProjectStoreNachtragIPC()`, Zählung an 6 Stellen angepasst) ·
 #120/#152/#153 (die Vermerke „TK ist nachzuziehen" sind mit v2.7 erledigt). Danach lokale
 Quelldateien gegen GitHub geprüft: **36/36 deckungsgleich** (Regel aus Abschnitt 4c, Punkt 2).
+
+## 4e. M6 – Render & Export (`ffmpeg-adapter`, `render-service` P4, `export-service`): ERLEDIGT, Issues #156–#192
+
+**Stand 04.08.2026:** 37 Issues geschrieben, geprüft, korrigiert und angelegt, Milestone
+„M6 – Render & Export", `M6-XX → #(XX+155)`. Volltexte als **eine Datei je Issue** in
+`docs/agents/m6/`, Mapping maschinenlesbar in `docs/agents/m6/map.json`. **921 Querverweise** auf
+`#`-Nummern aufgelöst.
+
+**Aufteilung nach Modul:** `contracts` M6-01/M6-02 · `ffmpeg-adapter` M6-03…M6-15 ·
+`render-service` M6-16…M6-26 + M6-34 · `export-service` M6-27…M6-33 + M6-35 ·
+`ipc-gateway` M6-36 · `project-store` M6-37.
+
+**Vier neue Labels:** `modul:ffmpeg-adapter`, `modul:render-service`, `modul:export-service` und
+**`risiko:tv-ausgabe`** – das letzte ist neu und eigen für M6: *Ein Fehler fällt hier nicht im Test
+auf, sondern erst am Fernseher im Studio.* Es trägt 15 der 37 Issues (#161–#170, #174, #176, #177,
+#180, #181), also praktisch die gesamte Kette, die Pixel und Container-Parameter festlegt.
+
+**`braucht-entscheidung` tragen nur 5 der 37:** #163 · #168 · #184 · #191 · #192 – auffällig wenige
+nach 15 bei M5. Und **drei davon sind Experimente, keine Entscheidungen** (Autorotation des
+mitgelieferten ffmpeg-Binaries, ob es `qtrle` kennt, FAT32-Erkennung auf Windows und macOS). Sie
+lassen sich **nicht beantworten, nur ausprobieren** – s. Abschnitt 4b. Nicht als Bringschuld des
+Nutzers behandeln.
+
+### Der Prüflauf hat ein zusätzliches Issue erzwungen (Zuschnitt war 36, angelegt sind 37)
+
+**M6-37 (#192) `[project-store]` Das aktive Projekt main-intern herausgeben.** `sofortFlush` (#47)
+verlangt ein `Project` als Eingabe, und **kein einziges Issue in sechs Meilensteinen gibt es
+main-intern heraus**. Damit war der seit TK v2.8 verlangte Sofort-Flush weder in #68 noch in M6-33
+baubar. **Dieselbe Lückenklasse zum vierten Mal** – nach M1 (#72–#77), M2 (#71) und M5 (#153):
+eine fertige Funktion ohne Zugang, jedes Issue für sich richtig, die Naht dazwischen leer.
+
+### Die vier schwersten Befunde – die lehrreichsten des ganzen Projekts
+
+1. **`-ss` stand an der falschen Stelle (M6-12, `#167`).** Im **verbindlichen** Argument-Array lag es
+   zwischen zwei `-i` und wurde damit zur Eingangs-Option des **falschen** Eingangs. Der Ausschnitt
+   hätte immer bei Frame 0 begonnen: **richtige Länge, falscher Inhalt** – und die eigene
+   DoD-Prüfung wäre **grün** durchgelaufen, weil sie die Dauer misst, nicht den Bildinhalt. Das
+   Issue **beschreibt diese Falle in seiner eigenen Einleitung** und tappt dann hinein. Merksatz:
+   Bei ffmpeg entscheidet die **Position** eines Arguments über seine Bedeutung; ein Argument-Array
+   ist deshalb nie „nur eine Liste".
+2. **`-progress` wurde nirgends gesetzt.** Die ganze Fortschrittskette
+   M6-05 (`#160`) → M6-22 (`#177`) → M6-23 (`#178`) → M6-36 (`#191`) wäre gebaut und **tot**
+   gewesen; `-loglevel error` unterdrückt zusätzlich die voreingestellte Statuszeile, an der ein
+   Agent den Mangel hätte bemerken können. **Zwei Prüfer meldeten es unabhängig voneinander.**
+   Behoben im **festen Vorspann von M6-03 (`#158`)**, an genau **einer** Stelle – nicht in jedem
+   der Aufrufer.
+3. **Zwei Funktionen gleichen Namens im selben Ordner.** `segmentDateiname` wurde in M6-20 (`#175`)
+   und M6-22 (`#177`) definiert – **gleiche Signatur, verschiedenes Ergebnis**. Ein falscher Import
+   **kompiliert fehlerfrei** und setzt ffmpeg auf Dateien, die es nicht gibt. Der Typprüfer schützt
+   hier nicht; nur ein Querschnittsblick über die Dateinamen eines Moduls findet das.
+4. **Die Toleranz der Dauerprüfung war rechnerisch falsch (M6-25, `#180`).**
+   `max(0.5, 1 % der Dauer)` hätte bei einem 30-Minuten-Reel ±18 s durchgewinkt – also ein
+   **vollständig fehlendes Segment**, genau den Fall, gegen den die Prüfung überhaupt existiert.
+   Jetzt **fest 0,5 s**. Merksatz: Eine relative Toleranz wächst mit dem Fehler, den sie fangen soll.
+
+### Die neun Entscheidungen des M6-Zuschnitts → TK v2.8
+
+Alle neun folgen Prinzipien, die im Projekt bereits entschieden sind; jede ist umkehrbar.
+
+- **E-3 (die wichtigste) – Staging der fertigen Datei im Projekt-Ausgabeordner, nicht in `<Temp>`.**
+  ffmpeg schreibt nach `projects/<id>/output/<name>.mp4.part` und benennt **im selben Ordner** um.
+  Umbenennen ist nur auf **derselben Partition** unteilbar; die App ist portabel, ihr Datenort kann
+  auf dem Stick liegen, `<Temp>` liegt auf C:. Sonst wäre der abschließende `rename` ein
+  **`EXDEV`**-Fehler, der naheliegende Ausweg „kopieren und löschen" hebt **Akzeptanzkriterium 9**
+  auf – ein Absturz beim Kopieren zerstört die letzte funktionierende Ausgabedatei. **Beim
+  Entwickeln fällt das nie auf**, weil dort Temp und Daten auf derselben Platte liegen.
+  Mitgezogen: Abbruch und Fehlschlag räumen die `.part`-Datei weg, `listeAusgaben` darf sie nicht listen.
+- **E-5 – `art` und `höhe` der Band-Vorlage wandern in den `RenderRequest`.** 9.3.5 friert den
+  Render-Eingang **beim Einreihen** ein; ein Nachschlagen zur Laufzeit wäre das Gegenteil. Ändert
+  jemand die Band-Vorlage, während der Auftrag wartet, passen die **bereits gezeichneten** Band-PNGs
+  nicht mehr zur nachgeschlagenen Höhe → verzerrtes oder falsch platziertes Band. Nebeneffekt:
+  `render-service` braucht keine Abhängigkeit zum `vorlagen-store`.
+- **E-1 – `historieEintrag` ersatzlos gestrichen.** Den Q3-Eintrag baut die Auftragsverwaltung
+  längst selbst. Zwei Quellen für dieselbe Information laufen auseinander, und **Q3 ist dauerhaft** –
+  ein doppelt geführtes Datum darin bleibt für immer falsch. Dieselbe Begründung entfernte schon das
+  `position`-Feld. **Der Punkt steht seit #19 offen und hat über fünf Meilensteine keinen Abnehmer
+  gefunden – das ist selbst der Befund: Ein Feld, das niemand braucht, ist keins.**
+- **E-4 – der Sofort-Flush läuft als *erster Schritt im Handler*.** Beim Nachziehen kam heraus, dass
+  die vom TK zuvor genannte Stelle – der **Torwächter** – gar kein `await` enthalten darf: Sein
+  Auswahl- und Statuswechsel-Abschnitt ist bewusst synchron, ein `await` bräche die serielle
+  Invariante **lautlos**. **Niemand hätte ihn gebaut:** #59 darf nicht, #68 verbot ihn sich selbst.
+  Beim Einreihen zu flushen wäre ebenfalls falsch – zwischen Einreihen und Start können Minuten
+  liegen, in denen der Nutzer weiterarbeitet.
+- **E-6 – „verifiziert" heißt: einmal `ffprobe` auf die fertige Datei**, geprüft gegen das
+  Ausgabe-Profil (Dauer, 1920×1080, 30 fps, `yuv420p`, Tonspur vorhanden). Das ist die **einzige**
+  Stelle, an der ein stiller Encoder-Fehler noch auffällt, bevor er die letzte funktionierende Datei
+  ersetzt – und die Datei geht danach **ungeprüft auf den Fernseher**. ffprobe wird seit v2.5 ohnehin
+  mitgeliefert. Ohne die Definition wäre daraus in der Praxis eine Existenzprüfung geworden.
+- **E-9 – `render:fortschritt` wird als anzumeldender Kanal geführt.** Nutzlast war seit je
+  vollständig definiert (9.2.7), der Empfänger existiert seit M5 (`abonniere`, #151) – **es fehlte
+  allein der Sender**. Die Warteschlange behält daneben ihren groben Prozentwert (#68 unverändert).
+- **E-2 – `ausgabe.gesamtdauer` wird `number | null`.** Beim `export` ist sie `null`: Er kopiert eine
+  fertige Datei und kennt ihre Spieldauer nicht; sein **Zielpfad** steht im Feld `pfad`. Ein Feld, das
+  leer sein darf, ist einfacher als zwei Formen – die Alternative wäre eine **erfundene Dauer im
+  dauerhaften Protokoll**.
+- **E-7 – der Export löst seine Quelldatei über `loeseAusgabePfad` (#49) auf**, schneidet dafür die
+  Endung ab und weist Namen ohne `.mp4` zurück. **Kein eigenes `join`** – sonst baut der Agent den
+  Pfad selbst zusammen und umgeht die Schranke gegen Pfad-Ausbrüche. Muss ausdrücklich im Issue stehen.
+- **E-8 – die Restflächen der Split-Komposition tragen die Farb-Rolle `flaecheDunkel` (#2F2E2E)**,
+  geholt über `leseMarke()` (#29), **nie** als Hexzahl in einer Filterkette. „Dunkle Markenfarbe" ist
+  bei **zwölf** Farb-Rollen keine Angabe; jeder Agent hätte eine andere gewählt und Render und
+  Vorschau wären auseinandergelaufen. 9.11.2 beschreibt die Rolle als „Segment- und Band-Hintergrund" –
+  damit sind Band und Seitenflächen **dieselbe** Fläche.
+
+### TK v2.9 (04.08.2026, beim M6-Prüflauf gefunden, vom Nutzer entschieden)
+
+1. **`speicher_fehler` ist der siebte Fehlercode des `export-service`** (9.6.4). Der Flush-Fehlschlag
+   im Export-Handler hatte **keinen** Code: `schreib_fehler` meint dort das **Kopieren**, die übrigen
+   fünf betreffen das **Ziel** – der Flush aber den **Datenort**. Der Export hätte einen realen,
+   benennbaren Fehler als `unbekannter_fehler` oder unter einem selbst erfundenen Namen gemeldet.
+2. **Bandhöhen müssen *gerade* sein.** `yuv420p` tastet die Farbe in beiden Richtungen um Faktor zwei
+   unter und verlangt **gerade Höhen und gerade Versätze**. Bei ungeradem `H` bricht **jede** der
+   beiden Kompositionsarten: bei `split` ist die Videofläche `1080 − H` ungerade, bei `einblendung`
+   liegt das Overlay auf einer ungeraden Zeile. Durchgesetzt **an der Quelle** (Editor sperrt, Store
+   weist ab), der Render prüft zusätzlich.
+3. **Die Split-Videobreite wird auf ein Vielfaches von 4 abgerundet.** Die gerade Bandhöhe allein
+   rettet die Geometrie **nicht**: `(1080 − H) × 16/9` ist nur ganzzahlig, wenn `1080 − H` durch 18
+   teilbar ist, und der zentrierte x-Versatz `(1920 − Breite) / 2` ist nur bei einer durch 4 teilbaren
+   Breite gerade. **Die eingebaute Vorlage (`H = 162`) geht als einzige zufällig auf und hätte den
+   Mangel verdeckt.** Aufrunden ist verboten – es bräche die Zusage „contain ohne Beschnitt".
+
+`.md` und `.docx` sind synchron (geprüft). **Anforderungsdokument unverändert v1.2.**
+
+### Rückwärts nachgezogen (Regel aus 4c, Punkt 1)
+
+Die Vertragsänderung erzwang den Zitat-Abgleich über **alle** angelegten Issues. Nachgezogen wurden:
+**#3** (aus sieben Anmeldungen werden **zehn**, plus `raeumeVerwaisteArbeitsbereiche()` als
+Startschritt – und `verdrahteExportUndFortschrittIPC` muss **nach** dem Fenster stehen, weil es als
+einzige Verdrahtung ein `BrowserWindow` braucht) · **#47** (trug noch „gerufen wird sie vom
+Torwächter" – durch E-4 überholt) · #17 · #19 · #53 · #62 · #68 · #70 · #134 ·
+#72/#73/#74/#87 · sowie #95/#96/#100/#102/#155 und #103/#117/#148 (Bandhöhe).
+
+### Was der Durchgang methodisch bestätigt hat
+
+- **Zum vierten Mal in Folge: alle kritischen Befunde sitzen an den NÄHTEN zwischen Issues, keiner
+  innerhalb eines Issues.** Der Querschnitts-Prüfer bleibt der Prüfer mit der höchsten Trefferquote.
+- **Regel D hielt über rund 300 geprüfte Zitate praktisch fehlerfrei, Regel C ohne Verstoß in 37
+  Dateien, Regel E 37/37.** Die Regeln greifen; die verbleibende Fehlerklasse ist **ausschließlich**
+  die Verzahnung.
+- **Neu bei M6 und nur hier:** Die schwersten Befunde waren **rechnerisch/positionell** (Argument-
+  Reihenfolge, Toleranzformel, Geradzahligkeit), nicht vertraglich. Ein Prüfer, der nur Signaturen
+  abgleicht, findet sie **nicht** – bei ffmpeg-Issues muss jemand **nachrechnen**.
+
+## 4f. M7 – Oberfläche & Komfort (`app-shell`, `queue-panel`, `preview-player`, `projekt-verwaltung`): ERLEDIGT, Issues #194–#262
+
+**Stand 05.08.2026:** **69 Issues** geschrieben, geprüft, korrigiert und angelegt, Milestone
+„M7 – Oberfläche & Komfort". Volltexte als **eine Datei je Issue** in `docs/agents/m7/`, Mapping
+maschinenlesbar in `docs/agents/m7/map.json`. **2756 Querverweise** auf `#`-Nummern aufgelöst –
+mit Abstand der größte Meilenstein des Projekts.
+
+**Fünf neue Labels:** `modul:app-shell`, `modul:queue-panel`, `modul:preview-player`,
+`modul:projekt-verwaltung`, `modul:renderer-gemeinsam`. **`braucht-entscheidung` tragen 38 der
+69** – der höchste Anteil aller Meilensteine, was zur Sache passt: Die Oberfläche ist die Ebene,
+auf der das Technische Konzept am wenigsten vorgibt.
+
+### Die Nummern-Faustregel gilt NUR bis M7-59 – nicht rechnen, abschreiben
+
+`M7-XX → #(XX+193)` stimmt für **M7-01…M7-59** (`#194`–`#252`). Danach **nicht** mehr:
+**M7-60 → `#259`**, **M7-61…M7-64 + M7-66/M7-67 → `#253`–`#258`**, **M7-65 → `#260`**,
+**M7-68 → `#261`**, **M7-69 → `#262`**. Grund s. „Werkzeug-Härtung" unten.
+**Immer aus `docs/agents/m7/map.json` abschreiben.** (Am Rand: **`#193` gehört zu M0**, nicht zu
+M7 – ein später nachgetragenes Grundgerüst-Issue.)
+
+### Die sieben schwersten Befunde – der lehrreiche Teil
+
+1. **Es gab keinen Weg, ein Projekt anzulegen.** `erstelleProjekt`, `listeProjekte`,
+   `dupliziereProjekt` und `löscheProjekt` sind **seit M1 gebaut** – und **kein einziges Issue
+   rief sie auf**. Die Anwendung wäre **beim ersten Start unbenutzbar** gewesen: kein Projekt, kein
+   Reiterinhalt, kein Weg hinein. Der schwerste Befund des Projekts, gemessen an der Folge.
+2. **Es gab keinen Weg, ein Video zu importieren** – und **FA-01 ist ein MUSS**. Der Import wurde
+   in den vorhandenen Issues genau **zweimal** gerufen, beide Male für das **Bild einer Aktion**.
+   Das Kernmedium des Werkzeugs hatte keinen Zugang.
+3. **M5 hat die gesamte Bedienlogik als reine `.ts`-Dateien gebaut** – konsequent nach Regel E und
+   in jedem einzelnen Issue richtig –, aber **niemand zeichnete** die Wiedergabeliste, den
+   Aktions-Editor oder den Vorlagen-Editor. **FA-05 und Akzeptanzkriterium 1 waren nicht
+   erfüllbar.** Logik ohne Darstellung ist kein bedienbares Programm.
+4. **Die Bandbearbeitung (FA-20) hatte keine Oberfläche** – und das ist die **Hauptbetriebsart**.
+5. **Undo war gebaut und wirkungslos.** TK 9.13.2 verlangt einen **Schnappschuss vor jeder
+   Instant-Operation**; sämtliche Instant-Operationen liegen aber in Modulen, die Undo
+   **ausdrücklich ausschließen**. Gelöst über eine **Hülle um die gemeinsame Projekt-Sicht**
+   (M7-50, `#243`) – der Schnappschuss entsteht an **einer** Stelle, die jede Änderung passiert,
+   statt in dreißig aufrufenden Modulen.
+6. **Der Renderer-Bootstrap fehlte.** **Sieben** Einstiegspunkte ohne Aufrufer: der
+   Auftrags-Auswerter, die Sitzungswiederherstellung, der Aufbau der gemeinsamen Sichten, die
+   Reiterbelegung, der Speicherhinweis und die Warteschlangen-Leiste. → M7-65 (`#260`) und
+   M7-69 (`#262`). **Sechste Wiederholung derselben Lückenklasse** („fertige Funktion ohne
+   Aufrufer") – nach M1 (#72–#77), M2 (#71), M5 (#153), M6 (#192) und M7-63 (#255).
+   **Nicht mit dem Main-Bootstrap #3 verwechseln:** #3 verdrahtet den **Main**.
+7. **Zwei `medienUrl`-Fassungen mit entgegengesetzter Abnahme** – die eine verlangt
+   **Prozent-Kodierung**, die andere prüft ausdrücklich „**ohne Kodierungsumbau**". Heute fällt das
+   nicht auf, **weil die Dateinamen UUIDs sind** und darin kein kodierpflichtiges Zeichen vorkommt.
+   Das ist ein **Zufall der Belegung, kein Vertrag** – zusammengeführt in M7-67 (`#258`), die
+   `media`-Adresse wird an **genau einer** Stelle gebildet.
+
+### NEUE FEHLERKLASSE – überholte Tatsachenbehauptungen (M7 eigen, gehört in die Regeln)
+
+M7 ist so groß, dass **früh geschriebene Dateien nicht wissen, was späte liefern**. Weil Regel B
+von jedem Issue verlangt, seine Lücken zu melden, standen am Ende rund **fünfzehn
+Melde-Aufträge** in den Texten, die **ins Leere zielten**: „Braucht einen Baustein, den kein Issue
+liefert" – obwohl ein späteres Issue ihn längst lieferte.
+
+**Warum das gefährlich ist:** Ein Agent, der so einen Satz liest, **baut nicht**. Er meldet und
+wartet. Eine überholte Tatsachenbehauptung ist damit **so blockierend wie eine echte Lücke** –
+nur unsichtbar, weil formal nichts fehlt.
+
+> **NEUE REGEL:** **Wer ein Issue anlegt, das die Lücke eines früheren schließt, streicht dort die
+> Melde-Aufforderung.** Der Verweis auf das neue Issue tritt an ihre Stelle. Das ist die
+> Vorwärts-Entsprechung zur Rückwärts-Regel aus 4c Punkt 1 (Vertragsänderung → Zitat-Abgleich über
+> alle angelegten Issues).
+
+### Werkzeug-Härtung: die 65 536-Zeichen-Grenze von GitHub
+
+`create-issues.py` **überspringt jetzt Einträge, die schon in `map.json` stehen.**
+
+**Anlass:** GitHub lehnt Bodies über **65 536 Zeichen** ab. **M7-60** und **M7-65** lagen bei rund
+**77 000** und scheiterten, während **65** andere im selben Lauf durchliefen. **Ohne die Härtung
+hätte ein zweiter Lauf 65 Duplikate angelegt** – und Duplikate auf GitHub sind teurer zu beseitigen
+als jeder Schreibfehler im Text.
+
+**Beide Issues wurden GETEILT, nicht gekürzt.** Ein Kürzungsversuch hat nachgerechnet: **M7-65
+läge selbst mit vollständig leerem Signaturblock noch bei 61 561 Zeichen.** Kürzen hätte also
+Inhalt kosten müssen, den die Regeln A–E ausdrücklich verlangen. Geteilt wurde entlang der Sache
+(M7-60 → M7-60 + M7-68, M7-65 → M7-65 + M7-69), **nach** dem Anlegen von M7-61…M7-67 – daher die
+Sprünge in der Nummernvergabe.
+
+### Was der Durchgang methodisch bestätigt hat
+
+- **Zum fünften Mal in Folge sitzen die kritischen Befunde an den NÄHTEN** – und in M7 an der
+  größten Naht überhaupt: der zwischen **Logik** (M1–M6) und **Bedienung**. Die Befunde 1 bis 4
+  sind alle von derselben Art: Etwas ist vollständig gebaut und für den Nutzer **nicht erreichbar**.
+- **Die Lückenklasse „fertige Funktion ohne Aufrufer" ist jetzt in JEDEM Meilenstein seit M1
+  aufgetreten** und wurde **jedes Mal erst im Prüflauf** gefunden. Die billigere Vorsorge steht seit
+  M7-63 (`#255`) im Vermerk: ein Zuschnitt-Schritt „für jede Operation – **wer ruft sie?**".
 
 ## 4b. Reihenfolge: erst das Grundgerüst, dann die M1-Entscheidungen
 

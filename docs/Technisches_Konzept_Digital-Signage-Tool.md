@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 2.8 (HLD vollständig, geprüft)
-**Datum:** 04.08.2026
+**Version:** 3.2 (HLD vollständig, geprüft)
+**Datum:** 05.08.2026
 **Status:** In Planung
 
 ---
@@ -17,7 +17,7 @@ Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderunge
 
 Die Anwendung ist eine **Electron-Desktop-App** (portable, Windows + macOS). Sie besteht aus zwei Laufzeit-Bereichen, verbunden über IPC:
 
-- **Renderer (React-UI):** Medienliste, Drag-and-drop, Aktions-Editor, **Vorlagen-Editor**, Vorschau, Canvas-Rendering der Segmente und Bänder.
+- **Renderer (React-UI):** Medienliste, Drag-and-drop, Aktions-Editor, **Vorlagen-Editor**, **Projektverwaltung**, Vorschau, Canvas-Rendering der Segmente und Bänder.
 - **Main-Prozess (Node):** Orchestrierung, Dateisystem, Projektspeicher, Aufruf des gebündelten `ffmpeg`. Der Renderer erhält Lesezugriff auf Medien (Vorschau, Thumbnails) ausschließlich über ein vom Main bereitgestelltes `media://`-Protokoll (Pfad-Autorität: `project-store`, 9.5.7).
 
 Der Main-Prozess ist der einzige Bereich mit `ffmpeg`- und Dateisystem-Zugriff. Begründung der Entkopplung vom Fernseher: Anforderungsdokument, Abschnitt 3.
@@ -46,7 +46,7 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 **A — Persistente Fachdaten** (Projektmaterial)
 
 - **Projekt** – ID, Name, Erstell-/Änderungsdatum, geordnete Elementliste. *(FA-15, FA-10)*
-- **Aktion/Produkt** – ID, Titel (Pflicht), Beschreibung?, Preis?, Bildreferenz?, CTA?, Anzeigedauer?, Vorlagen-ID, Akzentfarbe. *(FA-02, 4.1)*
+- **Aktion/Produkt** – ID, Titel (Pflicht), Beschreibung?, Preis?, Bildreferenz?, CTA?, Anzeigedauer?, Vorlagen-ID, Akzentfarbe? (ersetzt die Akzent-Rollen der Vorlage, 9.10.9). *(FA-02, 4.1)*
 - **Medium (Asset)** – ID, Typ (video|image), Dateiname, Maße, Dauer (Video, via ffprobe), Importdatum. *(FA-01)*
 - **Listenelement** – ID, Art (Video|Bild|Aktions-Segment), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`. Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
 - **Vorlage** – datengetriebene Layout-Definition: `art` (vollflächig | Split-Band | Einblendung), `höhe` (bei Bändern), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Vollbild", „Split", „Band-Standard". **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
@@ -313,11 +313,11 @@ Dieser Abschnitt übersetzt die Prozesse **P1–P7** in konkrete Module mit scha
 
 **Modulübersicht:**
 
-- **Renderer (React-UI):** `ipc-client`, `app-shell` (Rahmen + Navigation, 9.14), `composer` [P3], `action-editor` [P2], `template-canvas` (geteilt: Segment → PNG, **einzige Pixelquelle**, 9.10), `preview-player` [P5], `vorlagen-editor` (9.12.2), `queue-panel` (Sicht auf die Auftrags-Queue).
+- **Renderer (React-UI):** `ipc-client`, `app-shell` (Rahmen + Navigation, 9.14), `composer` [P3], `action-editor` [P2], `template-canvas` (geteilt: Segment → PNG, **einzige Pixelquelle**, 9.10), `preview-player` [P5], `vorlagen-editor` (9.12.2), `projekt-verwaltung` (Projektverwaltung FA-10, 9.14.3), `queue-panel` (Sicht auf die Auftrags-Queue).
 - **Main (Node):** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher Q1–Q4, 9.3), `media-service` [P1] (9.4), `project-store` [D1] (besitzt das eine D1-Schreib-Lock **und** ist Pfad-Autorität + trägt das `media://`-Protokoll, 9.5.7), `config-store` [D3], `vorlagen-store` (app-weite Vorlagen-Bibliothek, 9.12.1), `render-service` [P4] (9.2), `export-service`, `ffmpeg-adapter` (enthält den getesteten `buildReel`-Kern).
-- **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …). Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag.
+- **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …) **und die reine Bandgeometrie-Rechnung** `berechneBandGeometrie` (9.2.8) – die einzige Stelle, an der `render-service` und `preview-player` dieselbe Formel benutzen, statt sie zweimal zu schreiben. Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag.
 
-**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1) sowie die **`app-shell`** (9.14). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
+**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1) sowie die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
 
 ### 9.1 IPC-Vertrag: Granularität (Variante A) und Konventionen
 
@@ -387,6 +387,10 @@ Wo eine Operation **nichts** zu melden hat, lautet die Nutzlast `void`: **`Ergeb
 
 **9. Binärdaten** (Segment- und Band-PNGs) reisen als **Binärpuffer**, nicht als Base64 (9.1, Punkt 3) – die Hülle ändert daran nichts.
 
+**10. Die App hat GENAU EIN Fenster – und jedes Ereignis geht an dieses eine Fenster.** Damit ist die **Empfängerfrage** für alle Main→Renderer-Ereignisse (`render:fortschritt` 9.2.7, `queue:geaendert` 9.3.4, die Auto-Speichern-Meldung 9.5.4) **einheitlich beantwortet**: Der Sender im Main adressiert das eine Fenster; es gibt **keine** Verteilerlogik, **keine** Empfängerliste, **kein** „an alle Fenster senden". Wer im Main ein Ereignis verschickt, hat **keine** Wahl zu treffen. *Begründung:* Die erste Stufe ist **ein Studio, ein Bildschirm, ein Laptop** (Anforderungsdokument, Abschnitt 3); die App ist ein Werkzeug für **einen** Bearbeiter, der eine Wiedergabeliste zusammenstellt und rendert. Ein zweites Fenster hätte in diesem Ablauf keine Aufgabe – es brächte nur die Frage mit, welches Fenster den Fortschritt sieht, wer den Abbruch auslösen darf und was passiert, wenn ein Fenster geschlossen wird, während ein Auftrag läuft. Diese Frage bleibt **ungestellt**, solange es nur ein Fenster gibt. *Vorsorglich mitgeschleppt wird sie nicht:* Käme später ein zweites Fenster, ist die Nachbesserung überschaubar und liegt an den **Verdrahtungsstellen** (Sender im Main, Anmeldung im `ipc-gateway`) – sie wird dann **bewusst** gemacht, statt heute in jedem Modul eine Verteilerlogik zu tragen, die nie gebraucht wird. **Diese Festlegung ist nicht dasselbe wie die Einzel-Instanz-Sperre (9.5.4):** Jene verhindert einen **zweiten Prozess** auf denselben Daten, diese legt fest, dass der **eine** Prozess **ein** Fenster führt.
+
+**Ereignisse vor dem Aufbau des Fensters verfallen still – es wird NICHT gepuffert (bindend).** Fällt eine Meldung an, bevor das eine Fenster geladen und der Abonnent angemeldet ist, geht sie **verloren**; der Sender im Main merkt sich **nichts** und wiederholt **nichts**. Den Ausgleich schafft die Oberfläche selbst, und zwar in **genau dieser Reihenfolge**: Beim Aufbau holt sie **einmal den vollständigen Stand** über eine lesende Operation und **abonniert erst danach** das zugehörige Ereignis. Für die Warteschlange gibt es diese Leseoperation bereits – **`holeStand()`** (9.3.4), ausdrücklich „Snapshot für die UI"; die Warteschlangen-Leiste nutzt sie so (9.14.2). *Begründung:* Ein Puffer müsste zwei Fragen beantworten, die niemand beantworten kann, ohne zu raten – **wie lange** er hält (das Fenster könnte nie kommen) und **was er bei Überlauf verwirft** (ein verworfenes `queue:geaendert` hinterlässt eine dauerhaft falsche Anzeige). „Erst holen, dann abonnieren" lässt dagegen **keine Lücke**: Ein Ereignis, das zwischen Lesen und Abonnieren fällt, ist im gelesenen Stand entweder schon enthalten oder kommt als nächstes Ereignis nach. Die umgekehrte Reihenfolge (erst abonnieren, dann holen) wäre **falsch** – die Antwort auf das Holen könnte einen **älteren** Stand tragen als ein zwischenzeitlich empfangenes Ereignis und es damit überschreiben.
+
 ### 9.2 Schnittstelle `render-service`: Operation `renderReel`
 
 **Richtung:** Renderer → Main **über die Auftrags-Queue** (`reiheEin`, `art: render`) – **kein** direkter Request/Response-Aufruf (9.3.4); Main → Renderer (Fortschritts-Ereignisse 9.2.7, Endergebnis über den Auftrags-Zustand), ausschließlich über den typisierten IPC-Vertrag.
@@ -423,7 +427,7 @@ Gemeinsam je Item: `id` (Rückverfolgung/Fehlerzuordnung). Bei `"segment"` werde
 | Feld | Inhalt |
 |---|---|
 | `art` | `"split"` \| `"einblendung"` – Kompositionsart (Band **unter** bzw. **über** dem Video, 9.2.8) |
-| `höhe` | Bandhöhe `H` in Pixeln (ganzzahlig) |
+| `höhe` | Bandhöhe `H` in Pixeln (ganzzahlig und **gerade**, 9.2.8) |
 | `abschnitte` | geordnete Folge `{ png (Binärpuffer, 1920 × H), dauer }` |
 
 *Warum `art` und `höhe` im Auftrag stehen und nicht zur Laufzeit nachgeschlagen werden:* Der Render **friert seinen Eingang beim Einreihen ein** (9.3.5). Beide Werte stammen aus der Band-Vorlage und werden **beim Einreihen** aus ihr abgeleitet. Würde der Main die Vorlage stattdessen erst beim Start des Auftrags im `vorlagen-store` nachschlagen, wäre der Eingang **nicht** eingefroren: Ändert jemand die Bandhöhe, während der Auftrag in der Warteschlange wartet, passten die bereits gezeichneten Band-PNGs (1920 × H **zum Einreih-Zeitpunkt**) nicht mehr zur nachgeschlagenen Höhe – das Band im fertigen Video wäre verzerrt oder falsch platziert. So bleibt der Auftrag **in sich geschlossen**, und der `render-service` braucht **keine** Abhängigkeit zum `vorlagen-store`. Der Renderer kennt beide Werte ohnehin: er hat das Band damit gezeichnet.
@@ -437,10 +441,13 @@ Genau **ein** terminaler Ausgang je Lauf, diskriminiert über `status` ∈ { `er
 | Feld | Inhalt |
 |---|---|
 | `ausgabePfad` | absoluter Pfad der erzeugten `projects/<id>/output/<name>.mp4` |
+| `ausgabeName` | der **tatsächlich verwendete** Ausgabename **ohne Endung** – derselbe Wert, der im `RenderRequest` stand (9.2.1) |
 | `gesamtdauer` | Summe der (getrimmten) Elementdauern in Sekunden – **framegerundet** gezählt (Frame-Anzahl / 30, s. 9.2.6) |
 | `dateigroesse` | Größe in Bytes |
 
-**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von der Auftragsverwaltung** gebaut (9.3) – sie besitzt ohnehin `auftragId`, `art`, `projektId`, `versuch`, `begonnenAm` und `beendetAm`. Der `render-service` liefert nur, was **nur er** weiß: Pfad, Größe und Gesamtdauer; daraus wird `ProtokollEintrag.ausgabe`. *Begründung:* Zwei Quellen für dieselbe Information laufen unweigerlich auseinander (dieselbe Regel entfernte schon das `position`-Feld, 9.11.3, und die doppelte Ablage der offenen Löschungen, 9.3) – und **Q3 ist dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer falsch.
+**Warum `ausgabeName` mitgeliefert wird (bindend).** Der `render-service` setzt bei Erfolg `Project.letzterAusgabeName` in D1 (FA-22); genau dieser Wert belegt beim **nächsten** Render das Namensfeld vor. Ohne ihn im Ergebnis erführe die Oberfläche vom neuen Namen **nichts** und schlüge weiter den alten vor – der Nutzer überschriebe nicht die Datei, die er überschreiben wollte, oder legte versehentlich eine zweite an. *Begründung für diesen Weg statt des naheliegenden:* **eine** Quelle der Wahrheit statt zweier. Merkte sich die Oberfläche den Namen selbst, liefen beide Werte spätestens dann auseinander, wenn ein Render **fehlschlägt** (D1 bleibt unverändert, die Oberfläche hätte den Namen längst übernommen) oder wenn die App **neu startet** (der Renderer-Zustand ist weg, D1 nicht). Der Wert steht zudem **dauerhaft** in Q3 (9.3) – dort allerdings **nicht** als eigenes Feld: `ProtokollEintrag.ausgabe` trägt weiterhin nur `pfad`, `dateigroesse` und `gesamtdauer`, und der Name ist im Pfad bereits enthalten. Ein zweites Feld für dieselbe Information wäre genau die Doppelführung, die schon `historieEintrag` und `position` entfernt hat.
+
+**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von der Auftragsverwaltung** gebaut (9.3) – sie besitzt ohnehin `auftragId`, `art`, `projektId`, `versuch`, `begonnenAm` und `beendetAm`. Der `render-service` liefert nur, was **nur er** weiß: Pfad, Größe, Gesamtdauer und den verwendeten Ausgabenamen; aus den ersten dreien wird `ProtokollEintrag.ausgabe` – der Name geht **nicht** eigens ins Protokoll, er steckt im Pfad (s. o.). *Begründung:* Zwei Quellen für dieselbe Information laufen unweigerlich auseinander (dieselbe Regel entfernte schon das `position`-Feld, 9.11.3, und die doppelte Ablage der offenen Löschungen, 9.3) – und **Q3 ist dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer falsch.
 
 **`fehler`:**
 
@@ -463,11 +470,11 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bere
 | Code | Wann | Was der Nutzer tun kann |
 |---|---|---|
 | `medium_fehlt` | Ein referenziertes Medium liegt nicht (mehr) in `media/` oder ist vom Reconcile als `zustand: "fehlt"` markiert (9.4.7). Geprüft **vor** dem ersten `ffmpeg`-Aufruf, nicht mitten im Lauf | Über den geführten Reparatur-Modus (9.7.5) neu verknüpfen/importieren, ersetzen oder das Element entfernen |
-| `ungueltiges_element` | Ein einzelnes `RenderItem` ist in sich unstimmig: Trim außerhalb der Quelldauer, `dauer` außerhalb 10–45 s, `"segment"` ohne PNG-Puffer, `einblendung` ohne Abschnitte oder mit `höhe` ≥ 1080, PNG-Maße ≠ der erwarteten Fläche (1920 × 1080 bzw. 1920 × `höhe`) | Das benannte Element im `composer` korrigieren (Dauer/Trim/Band) und erneut rendern |
+| `ungueltiges_element` | Ein einzelnes `RenderItem` ist in sich unstimmig: Trim außerhalb der Quelldauer, `dauer` außerhalb 10–45 s, `"segment"` ohne PNG-Puffer, `einblendung` ohne Abschnitte, mit `höhe` ≥ 1080 oder mit **ungerader** `höhe` (9.2.8), PNG-Maße ≠ der erwarteten Fläche (1920 × 1080 bzw. 1920 × `höhe`) | Das benannte Element im `composer` korrigieren (Dauer/Trim/Band) und erneut rendern |
 | `ungueltige_eingabe` | Die **Anfrage** verletzt den Vertrag, unabhängig von einzelnen Elementen: unzulässiger `ausgabeName` (9.2.6), leere Elementliste, unbekannte `art`, fehlende `projektId`. Generischer Code aus 9.1.1 Punkt 3 – **ohne jede Wirkung** auf Daten oder Dateien | Zielnamen korrigieren bzw. mindestens ein Element in die Liste legen |
 | `ffmpeg_fehler` | Ein `ffmpeg`-/`ffprobe`-Aufruf endet mit Fehlerstatus oder liefert keine verwertbare Ausgabe (defekter Stream, nicht dekodierbare Quelle) – **einschließlich einer fehlgeschlagenen Verifikation** der fertigen Datei (9.2.6) | Wiederholen (Q2, FA-17); bleibt es dabei, das im Fehler benannte Element austauschen. Die vorherige Ausgabedatei ist unversehrt |
 | `kein_platz` | Zu wenig freier Speicher – für T1 (Zwischenclips) **oder** für `<name>.mp4.part` im Ausgabeordner. Beide Orte können auf **verschiedenen** Laufwerken liegen | Platz schaffen, dann den Auftrag wiederholen |
-| `speicher_fehler` | Schreib- oder Rename-Fehler am **Ziel** jenseits von Platzmangel: fehlende Rechte, Ausgabeordner nicht anlegbar, Zieldatei durch einen anderen Prozess gesperrt (nach Retry) | Die Ausgabedatei in Player/Explorer schließen, Rechte prüfen, wiederholen |
+| `speicher_fehler` | Schreib- oder Rename-Fehler am **Ziel** jenseits von Platzmangel: fehlende Rechte, Ausgabeordner nicht anlegbar, Zieldatei durch einen anderen Prozess gesperrt (nach Retry) – **ebenso** ein gescheiterter Sofort-Flush von D1 zu Beginn des Handlers (9.3.3, 9.5.4) | Die Ausgabedatei in Player/Explorer schließen, Rechte prüfen, wiederholen |
 | `unbekannter_fehler` | Jede nicht zuordenbare Ausnahme; das Gateway übersetzt sie (9.1.1 Punkt 8) – **kein** Stacktrace in der Oberfläche | Wiederholen; der Versuch steht mit Zeitstempel in Q3 |
 
 **`abgebrochen` ist *kein* Fehlercode.** Ein vom Nutzer abgebrochener Lauf endet über `status: "abgebrochen"` (9.2.7) und trägt **kein** `fehler`-Objekt – sonst gäbe es zwei Wege, denselben Ausgang zu melden, und die Oberfläche zeigte einen Abbruch als Fehler an.
@@ -498,7 +505,7 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bere
 #### 9.2.5 Verantwortungsteilung an der Grenze
 
 - **Renderer:** rendert Segment-PNGs (`template-canvas`, pixelgleich zur Vorschau), stellt den `RenderRequest` zusammen, übergibt Segment-Pixel als Binärpuffer. Schreibt **nichts** auf die Platte.
-- **Main (`render-service`):** schreibt die PNGs nach T1; **normalisiert jedes Element** (`scale` + `pad` → Profil) zu einem Zwischenclip `seg_*.mp4`; verkettet die Zwischenclips per concat-Demuxer (`-c copy`) **direkt in den Projekt-Ausgabeordner** nach `projects/<id>/output/<name>.mp4.part`; **verifiziert** die fertige Datei mit `ffprobe` gegen das Profil und benennt sie erst danach im selben Ordner per Rename-mit-Ersetzen um (atomar – s. 9.2.6); nutzt `ffprobe` auch sonst für Maße/Dauer, wo nötig; meldet **Pfad, Größe und Gesamtdauer** als Auftrags-Ergebnis an die Auftragsverwaltung, die daraus den Q3-Protokolleintrag baut (9.3) – er wird **nicht** vom `render-service` vorgefertigt; **verwirft T1** nach dem Lauf. Die absoluten Pfade der Importe (`medienRef`) löst er über die Pfad-Autorität `project-store` auf (9.5.7), statt das Layout selbst zu kennen.
+- **Main (`render-service`):** schreibt die PNGs nach T1; **normalisiert jedes Element** (`scale` + `pad` → Profil) zu einem Zwischenclip `seg_*.mp4`; verkettet die Zwischenclips per concat-Demuxer (`-c copy`) **direkt in den Projekt-Ausgabeordner** nach `projects/<id>/output/<name>.mp4.part`; **verifiziert** die fertige Datei mit `ffprobe` gegen das Profil und benennt sie erst danach im selben Ordner per Rename-mit-Ersetzen um (atomar – s. 9.2.6); nutzt `ffprobe` auch sonst für Maße/Dauer, wo nötig; meldet **Pfad, Ausgabename, Größe und Gesamtdauer** als Auftrags-Ergebnis an die Auftragsverwaltung, die daraus den Q3-Protokolleintrag baut (9.3) – er wird **nicht** vom `render-service` vorgefertigt; **verwirft T1** nach dem Lauf. Die absoluten Pfade der Importe (`medienRef`) löst er über die Pfad-Autorität `project-store` auf (9.5.7), statt das Layout selbst zu kennen.
 - **Nicht Teil dieser Operation:** USB-Export (`export-service`) und Vorschau (P5, läuft ganz ohne diese Schnittstelle).
 
 #### 9.2.6 Invarianten (Vorgaben an die Umsetzung)
@@ -523,7 +530,7 @@ Diese Zusicherungen sind Teil des Vertrags und dürfen von keiner lokalen Entsch
 
 Während eines laufenden Renders läuft der Kanal in **beide** Richtungen; beide Richtungen korrelieren über die `renderId` des Laufs:
 
-- **Main → Renderer:** Fortschritts-Ereignisse (`RenderProgress`) auf dem Kanal **`render:fortschritt`**.
+- **Main → Renderer:** Fortschritts-Ereignisse (`RenderProgress`) auf dem Kanal **`render:fortschritt`** – an **das eine Fenster** der App (9.1.1 Punkt 10); der Sender hat keinen Empfänger auszuwählen.
 - **Renderer → Main:** Abbruch-Signal (`cancelRender`).
 
 **Der Kanal `render:fortschritt` wird gebaut, nicht nur erwähnt.** Er ist in 9.1.1 Punkt 4 als Beispiel für die Ereignis-Namenskonvention genannt; das ist **kein** Platzhalter: Der `render-service` meldet darauf, das `ipc-gateway` meldet ihn an, der Renderer abonniert ihn. *Begründung:* Ein Render kann Minuten dauern; ein Balken ohne Kontext lässt offen, ob überhaupt etwas passiert. Die Nutzlast steht unten vollständig fest, und der Empfänger im Renderer existiert. **Daneben behält die Warteschlange ihren groben Prozentwert:** `RenderProgress.prozent` speist `Auftrag.fortschritt` (9.3.6), der über `queue:geaendert` in die Warteschlangen-Leiste geht. Zwei Kanäle mit verschiedenem Zweck – der eine detailliert und flüchtig für die Render-Ansicht, der andere grob im Auftrags-Zustand.
@@ -561,10 +568,14 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 |---|---|
 | Video-Bereich | **1920 × (1080 − H)** bei y = 0 |
 | Band | **1920 × H** bei y = 1080 − H |
-| Video eingepasst (16:9) | höhenbegrenzt → Breite = (1080 − H) × 16/9, zentriert |
+| Video eingepasst (16:9) | höhenbegrenzt → Breite = (1080 − H) × 16/9, **abgerundet auf das nächstkleinere Vielfache von 4**, zentriert |
 | Restflächen | links/rechts – gefüllt mit der Farb-Rolle **`flaecheDunkel`** (s. u.) |
 
 *Beispiel mit der eingebauten Vorlage (H = 162):* Video-Bereich 1920 × 918, Video real **1632 × 918** zentriert (x = 144), Restflächen je **144 px**.
+
+**Warum die Breite auf ein Vielfaches von 4 abgerundet wird – bindend:** `yuv420p` (9.2.4) tastet die Farbe in **beiden** Richtungen um den Faktor zwei unter und verlangt deshalb eine gerade Breite **und** einen geraden x-Versatz. Die gerade Bandhöhe (Punkt oben) allein genügt dafür **nicht**: (1080 − H) × 16/9 ist nur ganzzahlig, wenn 1080 − H durch 18 teilbar ist – H = 162 trifft das zufällig (918 → 1632), H = 200 nicht (880 × 16/9 = 1564,44). Und selbst eine gerade Breite reicht nicht, weil der Versatz (1920 − Breite) / 2 nur dann gerade ist, wenn die Breite durch 4 teilbar ist (1564 → 178 ✓, 1562 → 179 ✗). Abrunden auf ein Vielfaches von 4 erfüllt beide Bedingungen in einem Schritt. Der Rest von höchstens 3 px geht in die seitlichen `flaecheDunkel`-Flächen – er ist unsichtbar, weil die Restflächen ohnehin dort liegen. **Aufrunden ist verboten:** Es würde das Video über den Video-Bereich hinaus vergrößern und damit die Zusage „contain ohne Beschnitt" brechen.
+
+**Die Rechnung liegt im geteilten Bereich, die Prüfung im `render-service` (bindend).** Die **reine** Geometrie-Rechnung – Videofläche, eingepasste Breite mit der Vierer-Abrundung, Versätze, Bandposition – ist eine Funktion **ohne Seiteneffekte** und gehört deshalb in den **geteilten Bereich** (`contracts`, Abschnitt 9): `berechneBandGeometrie(höhe) → BandGeometrie { videoBereichBreite, videoBereichHöhe, videoBreite, videoHöhe, videoVersatzX, videoVersatzY, bandY }`. **`render-service` (9.2.8) und `preview-player` (9.9.2) rufen dieselbe Funktion auf**; keiner von beiden rechnet selbst. Die **Prüfung** dagegen – zulässige Bandhöhe, Fehlercode `ungueltiges_element` (9.2.3) – bleibt im `render-service`: Sie ist Torwächter-Arbeit am Auftrags-Eingang, kennt Fehlercodes des Main und hat in einer reinen Rechenfunktion nichts zu suchen. *Begründung:* 9.9.2 verlangt seit je, dass die Vorschau „die Geometrie nach derselben Formel" rechnet. Solange die Formel im Main liegt, kann der Renderer sie **nicht importieren** (9.1) – er müsste sie **abschreiben**, und abgeschriebene Formeln driften. Verschärfend ist, dass ein Abschreibfehler bei der eingebauten Vorlage **unsichtbar** bliebe: H = 162 ergibt 1632, ein Vielfaches von 4, die Abrundung ändert dort **nichts**. Wer sie weglässt, merkt es erst, wenn ein Nutzer eine **eigene** Band-Vorlage baut – dann laufen Vorschau und fertiges Video auseinander, und zwar genau bei dem Nutzer, der es am wenigsten nachvollziehen kann.
 
 **Bewusste Abweichung vom Ausgabe-Profil – nur hier:** 9.2.4 schreibt **schwarze** Balken vor. In der Split-Komposition werden die Restflächen **in der Markenfarbe** gefüllt, damit der Split gestaltet wirkt und nicht wie ungenutzter Platz. Die Einpassung bleibt **„contain" ohne Beschnitt**.
 
@@ -591,6 +602,7 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 - Parallele Bänder gibt es **nur bei `"video"`-Items**; `"bild"` und `"segment"` sind bereits vollflächige Standbilder.
 - **Deckkraft folgt der Vorlagenart:** `split`-Bänder sind **deckend** (echter Split, keine Überdeckung); `einblendung`-Bänder tragen **Alpha** (sie überlagern das Video). `template-canvas` liefert beide in **1920 × H** (9.10.2).
 - **Die Bandhöhe `H` stammt ausschließlich aus der Vorlage** – sie ist **kein** Wert am Listenelement und **nicht** pro Element überschreibbar. So bleibt das Erscheinungsbild an die Vorlage gebunden. Dass `H` (und `art`) im `RenderRequest` **mitreisen** (9.2.2), ist **keine** zweite Quelle: Es ist der beim Einreihen eingefrorene Stand **derselben** Vorlage (9.3.5) – dieselbe Beziehung wie zwischen Aktion und fertigem Segment-PNG.
+- **Die Bandhöhe `H` muss *gerade* sein.** Das Ausgabe-Profil schreibt `yuv420p` vor (9.2.4); dieses Pixelformat tastet die Farbe in **beiden** Richtungen um den Faktor zwei unter und verlangt deshalb **gerade Höhen und gerade Versätze**. Bei ungeradem `H` bricht **jede** der beiden Kompositionsarten: bei `split` ist die Videofläche `1080 − H` ungerade, bei `einblendung` liegt das Overlay bei `y = 1080 − H` auf einer **ungeraden** Zeile. Durchgesetzt wird das **an der Quelle**, wo die Höhe entsteht: der `vorlagen-editor` sperrt eine ungerade Bandhöhe sofort (9.12.2), der `vorlagen-store` weist sie ab (9.12.1) – sonst erführe der Nutzer den Fehler erst beim Render, nachdem er die Vorlage fertig gebaut hat. Der `render-service` prüft sie **zusätzlich** und meldet `ungueltiges_element` (9.2.3), damit ein Auftrag aus einem älteren Bestand nicht mitten im Lauf scheitert. Die eingebaute Band-Vorlage erfüllt die Regel (`höhe: 162`, 9.11.1).
 - **Alle Abschnitte eines Elements nutzen dieselbe Band-Vorlage** (eine `bandVorlageId` pro Einblendung) – damit `H` und die Kompositionsart während eines Videos nicht wechseln. Ein Wechsel mitten im Video würde die Geometrie springen lassen.
 - **Ohne** Band bleibt die Verarbeitung **unverändert**: Video vollflächig 1920 × 1080 mit **schwarzen** Balken nach 9.2.4.
 
@@ -675,7 +687,7 @@ JournalEintrag {               // Q4 – eine Zeile je Bewegung
 | `fortschritt` | 0–100 oder `null` | grober Fortschritt (bei `render` aus `RenderProgress`, 9.2.7); `null` wo unbestimmt |
 | `versuche` | Anzahl **tatsächlich gestarteter** Ausführungen | macht wiederholtes Scheitern sichtbar; wird **beim Start** einer Ausführung erhöht (s. 9.3.3) |
 | `fehler` | `{ code, meldung, daten? }` oder `null` | gesetzt bei `fehlgeschlagen`; `code` stammt aus dem Fachdienst, `daten` trägt die Nutzdaten des Codes (9.1.1) |
-| `ergebnis` | fachliche Nutzdaten des Dienstes oder `null` | gesetzt bei `erfolg`: `import` → der fertige `Asset` (9.4.4), `loeschen` → `{ assetId }`, `render` → Pfad/Größe/Dauer (9.2.3), `export` → `{ zielPfad, dateigroesse }` (9.6.1). **Ohne dieses Feld erführe die Oberfläche nie, was ein Auftrag hervorgebracht hat** – ein Import bliebe unsichtbar, bis der Nutzer das Projekt neu öffnet |
+| `ergebnis` | fachliche Nutzdaten des Dienstes oder `null` | gesetzt bei `erfolg`: `import` → der fertige `Asset` (9.4.4), `loeschen` → `{ assetId }`, `render` → Pfad/**Ausgabename**/Größe/Dauer (9.2.3), `export` → `{ zielPfad, dateigroesse }` (9.6.1). **Ohne dieses Feld erführe die Oberfläche nie, was ein Auftrag hervorgebracht hat** – ein Import bliebe unsichtbar, bis der Nutzer das Projekt neu öffnet |
 | `erstelltAm` | ISO-8601 UTC | Reihenfolge/Anzeige |
 
 #### 9.3.2 Auftragsarten
@@ -718,6 +730,7 @@ holeStand()            → Ergebnis<Auftrag[]>       // Snapshot für die UI (z.
 ```
 QueueGeändert(Auftrag[])   // Main → Renderer: Push bei jeder Zustandsänderung → speist das queue-panel
                            // Ereignis: OHNE Hülle und ohne Endzustand (9.1.1 Punkte 5 und 2)
+                           // Empfänger: DAS EINE Fenster der App (9.1.1 Punkt 10)
 ```
 
 Alle vier Aufrufe sind **Instant** und tragen die Ergebnis-Hülle (9.1.1): `Ergebnis<void>` heißt „eingereiht/entfernt/wiederholt", **nicht** „fertig". Ein `entferne` auf einen bereits beendeten Auftrag ist kein Erfolg, sondern `nicht_gefunden`.
@@ -737,7 +750,7 @@ Alle vier Aufrufe sind **Instant** und tragen die Ergebnis-Hülle (9.1.1): `Erge
 
 Der bestehende Vertrag 9.2 (`renderReel`, `RenderRequest`/`RenderResult`, `RenderProgress`, `cancelRender`) bleibt vollständig gültig. Die Queue nutzt ihn:
 
-- Ein `render`-Auftrag führt beim Start intern `renderReel(payload)` aus – **nach** dem Sofort-Flush von D1 (9.5.4). `RenderProgress.prozent` (Kanal `render:fortschritt`, 9.2.7) speist `Auftrag.fortschritt`; `RenderResult` bestimmt den terminalen Auftrags-`status` (erfolg/fehlgeschlagen/abgebrochen) und liefert bei Erfolg die Nutzdaten **Pfad, Größe und Gesamtdauer** (9.2.3) – daraus baut die Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Einen fertig vorbereiteten Historie-Eintrag liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe Information.
+- Ein `render`-Auftrag führt beim Start intern `renderReel(payload)` aus – **nach** dem Sofort-Flush von D1 (9.5.4). `RenderProgress.prozent` (Kanal `render:fortschritt`, 9.2.7) speist `Auftrag.fortschritt`; `RenderResult` bestimmt den terminalen Auftrags-`status` (erfolg/fehlgeschlagen/abgebrochen) und liefert bei Erfolg die Nutzdaten **Pfad, Ausgabename, Größe und Gesamtdauer** (9.2.3) – daraus baut die Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Der **Ausgabename** reist dabei **nur** in `Auftrag.ergebnis`: Über ihn erfährt die Oberfläche, welcher Name tatsächlich verwendet wurde, und hält ihre Vorbelegung mit `Project.letzterAusgabeName` (FA-22) im Gleichklang. In `ProtokollEintrag.ausgabe` steht er **nicht** – er ist dort bereits Teil des Pfades. Einen fertig vorbereiteten Historie-Eintrag liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe Information.
 - `entferne` auf einen laufenden `render` delegiert an `cancelRender(renderId)`; die `renderId` liegt im `RenderRequest` des Auftrags — `auftragId` und `renderId` bleiben fest verknüpft.
 - Der frühere Fehlercode `render_aktiv` **entfällt** — durch die serielle Ordnung kann die Kollision, die er gemeldet hätte, gar nicht mehr auftreten.
 
@@ -880,7 +893,7 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 
 - Besitzt `project.json` je Projekt (Projekt, Aktionen-Bibliothek, Liste, Vorlagen-Ref) und das **eine D1-Schreib-Lock**.
 - Das **aktive** Projekt lebt zur Laufzeit **im Speicher** (Quelle der Wahrheit während der Sitzung; Lesezugriffe sind sofortig). Nur *ein* Projekt ist gleichzeitig geladen.
-- Die **Projekt-Liste** (FA-10) sind leichte Metadaten (Name, Erstell-/Änderungsdatum, Ordner), bei Bedarf aus dem `projects/`-Ordner gelesen.
+- Die **Projekt-Liste** (FA-10) sind leichte Metadaten (Name, Erstell-/Änderungsdatum, Ordner, **Kennzeichnung beschädigter Projekte**), bei Bedarf aus dem `projects/`-Ordner gelesen – der Scan läuft **unter dem D1-Lock** (Begründung: 9.5.2).
 - Führt alle **Instant-Operationen** aus (nicht über die Queue): Aktion CRUD, Liste ordnen, Trim/Dauer setzen.
 - Ist die **Pfad-Autorität** des Projekts: löst `(projektId, dateiname) → absoluter Pfad` auf und trägt das `media://`-Protokoll für den Renderer-Lesezugriff (9.5.7).
 
@@ -892,9 +905,41 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 |---|---|
 | `erstelleProjekt` | `name` → `Ergebnis<Projekt>` (neuer Ordner + leeres `project.json`) |
 | `öffneProjekt` | `id` → `Ergebnis<Projekt>` (lädt in den Speicher; setzt aktives Projekt via `config-store`) |
-| `listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geändertAm, ordner) |
+| `listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geaendertAm, ordner, **beschaedigt**) – listet **auch** Projekte mit defekter `project.json`, gekennzeichnet statt weggelassen (s. u.) |
 | `dupliziereProjekt` | `id`, `neuerName` → `Ergebnis<Projekt>` (kopiert `project.json` **und** `media/`) |
-| `löscheProjekt` | `id` → `Ergebnis<void>` (entfernt den Projektordner; war es aktiv, fällt `config-store` sanft zurück) |
+| `löscheProjekt` | `id` → `Ergebnis<void>` (entfernt den Projektordner; war es aktiv, fällt `config-store` sanft zurück – und die Oberfläche leert ihre gemeinsame Projekt-Sicht, 9.7.4). Die Oberfläche **muss vorher benennen, was verschwindet** – s. u. |
+| `öffneProjektordner` | `projektId` → `Ergebnis<void>` – öffnet den Projektordner im **Datei-Explorer des Betriebssystems**; eigener Kanal `project:öffneProjektordner`, s. u. |
+
+```
+ProjektMeta {
+  id:             string       // = Ordnername unter projects/
+  name:           string       // aus project.json; bei beschaedigt: true der ORDNERNAME als Behelf
+  erstelltAm:     string       // ISO-8601 UTC; bei beschaedigt: true aus den Ordner-Zeitstempeln
+  geaendertAm:    string       // ISO-8601 UTC; bei beschaedigt: true aus den Ordner-Zeitstempeln
+  ordner:         string       // relativer Ordnername
+  beschaedigt:    boolean      // true = weder project.json noch project.json.bak lesbar
+  anzahlMedien:   number       // Dateien in media/ – aus dem ORDNER gezählt, nicht aus project.json
+  anzahlAusgaben: number       // fertige .mp4 in output/ – Zählweise wie listeAusgaben (.part zählt nicht)
+}
+```
+
+**Ein beschädigtes Projekt wird MIT WARNHINWEIS gelistet, nicht weggelassen (bindend).** Ist die `project.json` eines Ordners unlesbar oder ungültig **und** lässt sie sich auch nicht aus `project.json.bak` wiederherstellen (9.5.4), erscheint der Eintrag **trotzdem** in der Liste: mit dem **Ordnernamen** als Behelfs-Bezeichnung und `beschaedigt: true`. Die Oberfläche kennzeichnet ihn sichtbar und lässt ihn **nicht öffnen** – ein `öffneProjekt` auf ihn scheitert unverändert nach der Regel aus 9.5.4 (Fehler melden, **nicht** leer weiterstarten).
+
+*Begründung:* Die **Medien des Nutzers liegen weiterhin im Ordner** (`projects/<id>/media/`), ebenso die gerenderten Ausgaben. Ein weggelassenes Projekt sieht für ihn aus wie ein **verlorenes** – er würde von vorn anfangen, obwohl seine Arbeit noch vollständig auf der Platte liegt. Sichtbar mit Warnung ist die **ehrlichere** und zugleich die **reparierbare** Variante: Der Eintrag ist der einzige Hinweis darauf, dass dort etwas zu retten ist. Ein stilles Ausblenden wäre außerdem der einzige Ort im ganzen System, an dem ein Datenfehler **ohne jede Meldung** verschwindet – das widerspricht 9.1.1 Punkt 7 („kein stiller Fehlschlag").
+
+**`listeProjekte` nimmt das D1-Lock, obwohl sie nur liest (bindend).** Sie ist damit die **Ausnahme** zur Regel „lesen braucht kein Lock" – anders als `listeAusgaben` (s. u.), die nur einen Ordner ausliest. *Begründung:* Der Verzeichnis-Scan läuft über **fremde** Projektordner, und `dupliziereProjekt` erzeugt einen solchen Ordner **schrittweise** (`project.json` schreiben, `media/` kopieren). Ein Scan mitten hinein läse ein Projekt in einem **halbkopierten Zwischenzustand** ein – je nach Reihenfolge mit fehlender oder halb geschriebener `project.json`, also als **fälschlich beschädigt** gemeldetes Projekt, das Minuten später völlig in Ordnung ist. Das Lock macht den Scan gegen laufende Schreibvorgänge dicht; sein Preis ist eine kurze Wartezeit beim Öffnen der Projektliste.
+
+**`löscheProjekt` nennt vorher, was verschwindet (bindend).** Die Bestätigung ist **keine** schlichte Ja/Nein-Abfrage. Sie nennt **drei** Angaben und einen Hinweis: den **Projektnamen**, die **Anzahl der enthaltenen Medien**, die **Anzahl der gerenderten Ausgabedateien** und dass der Vorgang **nicht rückgängig zu machen** ist (Beispiel: „Projekt Sommeraktion löschen? Der Ordner enthält 14 Medien und 3 gerenderte Ausgabedateien. Das lässt sich nicht rückgängig machen."). Die beiden Zahlen kommen aus `ProjektMeta.anzahlMedien` / `anzahlAusgaben` (s. o.) und damit aus **derselben** Quelle wie die Projektliste – die Oberfläche zählt **nicht** selbst nach.
+
+*Begründung:* Der Projektordner enthält **alle importierten Videos und Bilder** (`media/`, D2) **und alle fertigen Ausgabedateien** (`output/`, FA-22). Beides ist Arbeit, die der Nutzer nicht in Minuten wiederherstellt: Die Medien müsste er erneut zusammensuchen und importieren, die Ausgaben erneut rendern. Undo greift hier **nicht** – 9.13.3 schließt Vorgänge mit Dateiwirkung ausdrücklich aus, und der Ordner ist nach dem Löschen weg. Eine Abfrage, die nur nach „wirklich?" fragt, verschweigt damit genau die **Tragweite**, die der Nutzer zum Entscheiden bräuchte; die Zahlen machen den Unterschied zwischen einem leeren Probeprojekt und drei Wochen Arbeit sichtbar, **bevor** er klickt.
+
+*Warum die Zahlen aus dem Ordner gezählt werden und nicht aus `project.json`:* Sie müssen auch für ein **beschädigtes** Projekt stimmen (`beschaedigt: true`, s. o.) – gerade dort ist die Frage „ist da noch etwas zu retten?" die eigentliche Entscheidungsgrundlage, und `project.json` ist genau in diesem Fall nicht lesbar. Für `output/` ist die Ordner-Zählung ohnehin die richtige (`listeAusgaben` zählt ebenso den **Ist-Bestand**, s. u.); Arbeitsdateien (`.part`) zählen dabei **nicht** mit.
+
+**`öffneProjektordner` – der Weg zu dem, was noch da ist.** Die Operation öffnet `projects/<projektId>/` im **Datei-Explorer des Betriebssystems** (Explorer unter Windows, Finder unter macOS) und meldet `Ergebnis<void>`; ein unbekanntes oder fehlendes Projekt ergibt `nicht_gefunden`. Sie ist ein **Instant-Aufruf**, **kein** Auftrag der Queue (sie verändert nichts) und braucht das D1-Lock **nicht**. Angeboten wird sie vor allem bei einem **beschädigten** Projekt (s. o.), das sich nicht öffnen lässt – daneben aber überall in der Projektverwaltung (9.14.3).
+
+*Warum sie zum `project-store` gehört:* Er ist die **Pfad-Autorität** (9.5.7); der Renderer kennt **keine absoluten Pfade** und könnte den Ordner deshalb gar nicht benennen. Ein zweiter Ort, der das Ordner-Layout kennt, ist damit ausgeschlossen. Sie braucht nach 9.1.1 Punkt 4 einen **eigenen IPC-Kanal** (`project:öffneProjektordner`) – ohne Anmeldung im `ipc-gateway` bliebe sie eine Main-Funktion ohne Aufrufer.
+
+*Warum es sie überhaupt gibt:* Der Sinn der Entscheidung aus v3.0 (beschädigtes Projekt **mit Warnhinweis listen** statt weglassen) war, dass der Nutzer **erfährt**, dass in diesem Ordner noch etwas zu retten ist – seine Medien und seine gerenderten Ausgaben liegen unversehrt darin. Ohne einen **Weg dorthin** bleibt es bei der bloßen Information: Den Ablageort der portablen Anwendung kennt der typische Nutzer nicht, und die App zeigt ihm absichtlich nirgends einen absoluten Pfad. Ein Knopf, der den Ordner öffnet, macht aus der Auskunft eine **Handlungsmöglichkeit** – und er ist das gelindeste Mittel dafür: kein Reparatur-Versuch am kaputten JSON, kein Datei-Browser in der App.
 
 **Aktionen (Bibliothek, referenzierbar):**
 
@@ -902,7 +947,11 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 |---|---|
 | `erstelleAktion` | `aktionsdaten` → `Ergebnis<Aktion>` |
 | `bearbeiteAktion` | `id`, `aktionsdaten` → `Ergebnis<Aktion>` |
-| `löscheAktion` | `id` → `Ergebnis<{ entfernteElementIds: string[], geaenderteElementIds: string[] }>` – **Kaskade**: entfernte Listenelemente **und** Videos mit gekürztem Band, s. 9.5.3 |
+| `löscheAktion` | `id` → `Ergebnis<{ stand: Bearbeitungsstand, entfernteElementIds: string[], geaenderteElementIds: string[] }>` – **Kaskade**: entfernte Listenelemente **und** Videos mit gekürztem Band, s. 9.5.3. `stand` ist der **vollständige neue Stand** nach der Kaskade (Aktions-Bibliothek **und** Wiedergabeliste), die beiden Kennungslisten beschreiben, **was sich geändert hat** |
+
+**`löscheAktion` liefert den neuen Stand, nicht nur die Kennungen (bindend).** Der Rückgabewert trägt **beides**: den vollständigen `stand` (Typ `Bearbeitungsstand`, s. u. bei `setzeBearbeitungsstand`) **und** die bisherigen Listen `entfernteElementIds`/`geaenderteElementIds`. Beide werden gebraucht, aber für Verschiedenes: Der **Stand** aktualisiert die Sicht, die **Kennungen** erklären dem Nutzer die Wirkung („aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt", 9.5.3) und benennen die Stellen, die die Oberfläche hervorheben kann.
+
+*Begründung:* 9.13.1 führt „Aktionen: anlegen, bearbeiten, **löschen**" unter „Umfasst", ist also **undo-fähig**; 9.13.2 verlangt dafür einen Schnappschuss, und der entsteht beim **Übergang der Sicht von einem Stand auf den nächsten**. Aus bloßen Kennungen lässt sich der neue Stand nicht bilden – der einzige Weg dorthin wäre ein **Neuladen** des Projekts, und das setzt die Sicht an der Schnappschuss-Stelle **vorbei**: Undo wäre gebaut und für genau den Fall wirkungslos, für den es am dringendsten gebraucht wird. Mit dem Stand läuft das Löschen über **denselben** Weg wie jede andere Änderung, der Schnappschuss entsteht von selbst, und Rückgängig braucht **keinen** Sonderfall. **Ausdrücklich verworfen** wurde ein zweiter Eingang in die Rückgängig-Verwaltung allein für diesen Fall: Eine Ausnahme von der Regel „Schnappschüsse entstehen an genau **einer** Stelle" ist genau die Art Sonderfall, die in diesem Projekt bisher die teuersten Fehler verursacht hat. *Warum `Bearbeitungsstand` und nicht `Projekt`:* Es ist derselbe Ausschnitt, den der Schnappschuss ohnehin führt (`aktionen` + `liste`, 9.5.2/9.13.2) – ein zweiter, weiterer Typ an dieser Stelle brächte `assets` und `letzterAusgabeName` mit, die `löscheAktion` gar nicht anfasst und die nach 9.13.2 **nicht** in den Schnappschuss gehören.
 
 **Liste:**
 
@@ -915,6 +964,32 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 | `setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s** für Bild/Segment) |
 | `setzeEinblendung` | `elementId`, `einblendung` (`Einblendung` **oder** `null`) → `Ergebnis<Listenelement>` – **nur bei `art: "video"`**; setzt Band-Vorlage und Abschnittsfolge in einem Zug (FA-20, 9.2.8). Die Bandhöhe kommt **ausschließlich** aus der Vorlage und ist kein Wert am Listenelement. Wird das Band leer, ist `einblendung = null`; das Videoelement **bleibt** (9.5.3) |
 | `setzeElementReferenz` | `elementId`, `referenz` → `Ergebnis<Listenelement>` – setzt die Referenz eines bestehenden Elements um, **ohne** seine Position und seine `id` zu verlieren. Der Zielbestand folgt der `art`: `video`/`bild` → Asset in `Project.assets` mit passendem `typ`, `segment` → Aktion in `Project.aktionen`. Bei `video` werden `trimStart`/`trimEnde` auf `null` zurückgesetzt, weil sie sich auf die alte Quelllänge bezogen. Trägt die Fix-Optionen „neu verknüpfen/importieren" und „durch ein anderes ersetzen" des Reparatur-Modus (FA-19, 9.7.5) |
+
+**Rückgängig/Wiederherstellen (FA-21):**
+
+| Operation | Eingang → Ausgang |
+|---|---|
+| `setzeBearbeitungsstand` | `stand` (`Bearbeitungsstand`) → `Ergebnis<Projekt>` – ersetzt `aktionen` **und** `liste` des geladenen Projekts **als Ganzes** durch den Schnappschuss, unter dem D1-Lock und **voll validiert**. Der einzige Rückschreib-Weg für Undo/Redo (9.13.2) |
+
+```
+Bearbeitungsstand {
+  aktionen: Aktion[]          // die vollständige Aktionen-Bibliothek des Projekts
+  liste:    Listenelement[]   // die vollständige Wiedergabeliste, Reihenfolge = Array-Reihenfolge (9.11.3)
+}
+```
+
+**Warum es diese Operation braucht (bindend).** 9.13.2 legt Undo **schnappschuss-basiert** fest – ausdrücklich **nicht** über inverse Operationen. Die übrigen Operationen dieser Liste sind aber **feingranular**, und für zwei Fälle aus 9.13.1 („Umfasst") gibt es damit **überhaupt keinen** Rückweg:
+
+1. **`entferneElement`** – die naheliegende Umkehrung `fügeElementHinzu` vergibt eine **neue** `id` (9.11.4) und hängt das Element **ans Ende**. Position **und** Identität des ursprünglichen Elements sind verloren; alles, was auf die alte `id` zeigt, zeigt ins Leere.
+2. **`löscheAktion`** – die Kaskade aus 9.5.3 entfernt Listenelemente **und** kürzt Band-Abschnitte in Videos. **Nichts davon** lässt sich mit den vorhandenen Operationen zurückschreiben: Es gibt keine Operation, die ein entferntes Element an **seiner alten Stelle** mit **seiner alten `id`** wieder einsetzt, und keine, die eine Abschnittsfolge samt Reihenfolge wiederherstellt.
+
+Ohne diese Operation wäre FA-21 – ein **Muss** – für genau die Fälle unerfüllbar, in denen Undo am dringendsten gebraucht wird (versehentliches Löschen). Ein Agent, der die Lücke lokal schließt, baut zwangsläufig die verbotenen inversen Operationen nach.
+
+**Ausdrücklich NICHT enthalten: `assets` und `letzterAusgabeName`.** Der `Bearbeitungsstand` trägt **nur** `aktionen` und `liste`. *Begründung:* Beide anderen Felder werden von **Aufträgen** verändert – `assets` vom Import und vom Löschen (9.4.5/9.4.6), `letzterAusgabeName` vom Render (FA-22) –, und Aufträge sind nach 9.13.3 **grundsätzlich nicht undo-fähig**. Zöge ein Undo sie mit, verschwände ein soeben importiertes Medium aus dem Datenbestand, **während seine Datei weiter auf der Platte liegt**: eine Waise, die der Reconcile beim nächsten Start stillschweigend löscht (9.4.7) – Datenverlust durch einen Knopf, der Datenverlust verhindern soll. Die Regel ergänzt 9.13.3 (ein D1-verändernder Auftrag **leert** die Historie) an ihrer Flanke: Jene verhindert einen **veralteten** Schnappschuss, diese begrenzt seinen **Umfang**.
+
+**Volle Validierung – der Schnappschuss ist keine Vertrauensfrage (bindend).** Die Operation prüft den eingehenden Stand **vollständig**, so als käme er von außen (9.1.1 Punkt 6): **jede** Referenz muss auflösbar sein (`art: "video"`/`"bild"` → ein `Asset` in `Project.assets` mit passendem `typ`; `art: "segment"` → eine `Aktion` in `stand.aktionen`; jede `einblendung.abschnitte[].aktionRef` ebenso; jede `bandVorlageId` eine vorhandene Vorlage), **jede** Dauer muss im zulässigen Bereich liegen (10–45 s bei Bild/Segment, Trim `0 ≤ start < ende ≤ Videodauer`), **jede** `art` muss gültig sein, und die `id`s müssen eindeutig sein. Scheitert eine Prüfung, gilt `ungueltige_eingabe` **ohne jede Wirkung** – ein halb eingespielter Schnappschuss wäre schlimmer als ein nicht ausgeführtes Undo. *Warum trotz „der Stand kam ja aus unserem eigenen Speicher":* Zwischen Schnappschuss und Undo kann ein Auftrag `assets` verändert haben; die Historie wird zwar geleert (9.13.3), aber die Prüfung ist die **strukturelle** Absicherung dieser Zusage statt bloßer Disziplin. Ein Undo darf D1 unter **keinen** Umständen in einen Zustand bringen, den der Render später mit `medium_fehlt` quittiert.
+
+**Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `project:setzeBearbeitungsstand`. Undo/Redo läuft im Renderer (`composer`, `action-editor`), die Operation im Main – ohne Anmeldung im `ipc-gateway` bliebe sie eine Main-Funktion ohne Aufrufer. Dasselbe gilt für `öffneProjektordner` (s. o.); **beide** Operationen dieser Fassung brauchen je einen Kanal.
 
 **Ausgabedateien (FA-22):**
 
@@ -947,7 +1022,7 @@ AusgabeDatei {
 
   **Randfall:** Wird ein Band durch das Entfernen leer (keine Abschnitte mehr), entfällt die **Einblendung ganz** (`einblendung = null`) – das **Videoelement bleibt**. Ein Band mit null Abschnitten hätte nichts zu zeigen, und der Render müsste eine Bandspur der Länge 0 bauen.
 
-  **Rückgabe:** `löscheAktion` meldet **beide** Wirkungen – `entfernteElementIds` (entfernte Listenelemente) **und** `geaenderteElementIds` (Videos, deren Band gekürzt oder entfernt wurde) – damit die UI vorher präzise warnen kann („wird aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos").
+  **Rückgabe:** `löscheAktion` meldet **beide** Wirkungen – `entfernteElementIds` (entfernte Listenelemente) **und** `geaenderteElementIds` (Videos, deren Band gekürzt oder entfernt wurde) – damit die UI präzise benennen kann, was geschehen ist („aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt"). **Zusätzlich trägt die Rückgabe den vollständigen neuen `stand`** (Aktions-Bibliothek und Wiedergabeliste **nach** der Kaskade, 9.5.2): Er ist es, der die Sicht auf das Projekt weiterschaltet und damit den Undo-Schnappschuss auslöst (9.13.2) – die Kennungen allein könnten das nicht, aus ihnen ist der neue Stand nicht rekonstruierbar.
 
   Die von der Aktion **verwendeten Medien-Assets bleiben unangetastet** und projektweit verfügbar – eine Aktion *referenziert* ein Asset nur, sie besitzt es nicht.
 
@@ -957,13 +1032,20 @@ AusgabeDatei {
 - **Sofort-Flush** unabhängig vom Timer, in vier Fällen: (1) **als erster Schritt im `render`- bzw. `export`-Handler**, bevor dieser die eigentliche Arbeit aufnimmt (9.3.3 – nicht im Torwächter, dessen Auswahl- und Statuswechsel-Abschnitt kein `await` enthalten darf), (2) **bei** Projektwechsel, (3) **beim Beenden**, (4) **am Ende jedes Auftrags, der D1 verändert hat** (Import, Löschen – s. 9.4.5/9.4.6). Beim Beenden **blockiert** die App, bis der Schreibvorgang abgeschlossen ist (kein Schließen mit ausstehendem Schreiben).
   *Wer Fall 1 auslöst und wann – ausdrücklich festgelegt:* Der **Main** löst ihn aus, und zwar beim Übergang `anstehend` → `laeuft` (9.3.3) – also **unmittelbar vor dem Start**, **nicht** beim Einreihen. *Begründung:* Die Warteschlange ist streng seriell; zwischen Einreihen und Start können **Minuten** liegen, und der Nutzer darf in dieser Zeit weiterarbeiten. Ein Flush beim Einreihen schriebe einen Stand fest, der beim Start längst überholt ist, und verlöre bei einem Absturz genau die Arbeit dazwischen. Dass der **Main** auslöst und nicht der Renderer, spart zudem einen IPC-Kanal: Der Renderer müsste sonst vor jedem `reiheEin` erst „jetzt speichern" rufen und auf die Antwort warten. (Der eingereihte Render selbst arbeitet unabhängig davon auf seinem **eingefrorenen** Snapshot, 9.3.5 – der Flush sichert die *Projektdaten*, nicht den Auftrags-Eingang.)
   *Warum Aufträge dazugehören:* Die Entprellung fängt **schnelle, wiederholte Bearbeitungen** ab (Slider-Ziehen). Ein Auftrag ist das Gegenteil davon – er läuft einmal, dauert bei einem großen Video Minuten, und die Mediendatei liegt am Ende bereits auf der Platte. Ein Absturz in den 3–5 s danach ließe eine **Waise** zurück, die der Reconcile beim nächsten Start **stillschweigend löscht** (9.4.7): Der Nutzer hat minutenlang gewartet und findet nichts vor. Ein Schreibvorgang **je Auftrag** (nicht je Tastendruck) verhindert das. Zugleich wird damit die Reihenfolge „D1 zuerst, Datei danach" (9.4.6) auch **über einen Absturz hinweg** wahr und nicht nur im Arbeitsspeicher – und der Auftrag kann einen Schreibfehler überhaupt melden (`speicher_fehler`, 9.4.9), statt Erfolg zu melden und später still zu scheitern.
+- **Scheitert der Sofort-Flush beim BEENDEN, schließt die App NICHT (bindend).** Der Fall (3) oben sagt, die App blockiere bis zum Abschluss des Schreibvorgangs – was bei seinem **Fehlschlag** geschieht, ist damit festgelegt, und zwar **in dieser Reihenfolge**:
+  1. **Die App schließt nicht.** Das Beenden wird abgebrochen, das Fenster bleibt stehen, die Änderungen bleiben **im Speicher** (kein Rollback – wie bei jedem anderen Speicherfehler, s. u.).
+  2. **Der Fehler wird gezeigt – mit einer auf die Ursache zugeschnittenen Handlungsempfehlung**, nicht als roher Fehlertext. Bei zu wenig Platz: „Die Platte ist voll. Schaffen Sie Platz und versuchen Sie es erneut." Bei nicht erreichbarem Datenort: „Der Speicherort ist nicht erreichbar. Stecken Sie den Datenträger wieder ein." Für andere Ursachen bleibt der generische Text – die **Empfehlung** ist der Punkt, nicht die Vollständigkeit der Liste.
+  3. **Ein Knopf „Erneut versuchen"** stößt denselben Schreibversuch noch einmal an. Gelingt er, schließt die App wie geplant.
+  4. **Daneben ein ausdrücklich benannter Ausweg: „Trotzdem schließen und Änderungen verwerfen."** Er ist als Verlust **benannt**, nicht als „Abbrechen" getarnt.
+
+  *Begründung:* Ein **stilles** Schließen widerspräche der zugesagten Verlustfreiheit (FA-15, NFA-02) – der Nutzer hätte die App normal beendet und fände beim nächsten Start einen alten Stand vor, ohne je erfahren zu haben, dass etwas fehlt. Ein **bloßes Blockieren ohne Ausweg** wäre das andere Extrem: ein Programm, das sich nicht mehr schließen lässt, weil eine Datei nicht schreibbar ist. Der eigentliche Wert liegt im **Wiederholen**: Die beiden häufigsten Ursachen – volle Platte, abgezogener USB-Datenträger mit dem Datenort – kann der Nutzer in **einer Minute** beheben, und dann muss er **nichts** verlieren. Genau dafür ist Punkt 4 auch nur der letzte Ausweg und nie die vorausgewählte Antwort.
 - **Atomar:** Schreiben nach Temp-Datei + Rename (gleiche Partition). `project.json` ist **nie** halb geschrieben.
 - **Ein Backup:** `project.json.bak` = letzte heile Version. Ist `project.json` beim Laden defekt → aus `.bak` wiederherstellen; ist auch das defekt → **Fehler melden**, **nicht** leer/verlustbehaftet weiterstarten.
 - **Genau eine App-Instanz (Voraussetzung für das ganze Lock-Design):** Das D1-Schreib-Lock ist ein **prozessinternes** Lock. Zwei gleichzeitig laufende App-Instanzen hätten **zwei unabhängige** Locks auf derselben `project.json` – das Ergebnis wäre ein Lost Update und damit **Datenkorruption**. Deshalb erzwingt die App beim Start eine **Einzel-Instanz-Sperre**; ein zweiter Start **fokussiert das bestehende Fenster** statt eine zweite Instanz zu öffnen.
   **Wichtig für die portable Auslieferung:** Die Sperre muss an den **Datenort** gebunden sein (den App-Ordner mit `projects/`), nicht an den Programmpfad. Sonst könnten zwei Kopien der portablen EXE, die auf **dieselben** Daten zeigen, beide starten – genau der Fall, den die Sperre verhindern soll.
 - **Lock-Grenze:** Das D1-Lock schützt **nur** `project.json`. Die Auftragsverwaltungs-Speicher Q2/Q3 (eigene Dateien, 9.3) haben ihre **eigene** Serialisierung – der `auftrags-manager` hängt **nicht** am `project-store`-Lock.
 - **Instant-Op vs. Speichern getrennt:** Eine Instant-Operation (9.5.2) validiert und wendet **im Speicher** an, *bevor* sie „ok" meldet – ihr Erfolg bedeutet „gültig übernommen", **nicht** „schon auf Platte". Die Platten-Schreibung ist die entprellte Auto-Speicherung.
-- **Speicherfehler sind sichtbar (NFA-02):** Scheitert eine Auto-Speicherung (Platte voll, Rechte), wird das **nicht still verschluckt** – die UI zeigt dauerhaft „nicht gespeichert" + automatischer Wiederholversuch; die Änderungen **bleiben im Speicher** (kein Rollback, kein Arbeitsverlust). Erst nach erfolgreichem Schreiben verschwindet der Hinweis.
+- **Speicherfehler sind sichtbar (NFA-02):** Scheitert eine Auto-Speicherung (Platte voll, Rechte), wird das **nicht still verschluckt** – die UI zeigt dauerhaft „nicht gespeichert" + automatischer Wiederholversuch; die Änderungen **bleiben im Speicher** (kein Rollback, kein Arbeitsverlust). Erst nach erfolgreichem Schreiben verschwindet der Hinweis. Der Weg dorthin ist ein **Ereignis vom Main** auf dem Kanal **`project:autoSpeichernStatus`** (das Auto-Speichern läuft ohne Aufruf aus dem Renderer, es gibt also keine Antwort, an die sich die Meldung hängen könnte); Empfänger ist **das eine Fenster** der App (9.1.1 Punkt 10). Der `vorlagen-store` hat für seinen eigenen Speicher ein **gleichartiges** Ereignis auf einem **eigenen** Kanal (9.12.1).
 
 #### 9.5.5 `schemaVersion` & Migration
 
@@ -982,7 +1064,7 @@ Besitzt `config.json` (app-weit): aktives Projekt, letztes Export-Ziel, UI-Vorei
 | `setzeUIVoreinstellung` | `schlüssel`, `wert` → `Ergebnis<void>` |
 
 - **Marke gebündelt & read-only** im MVP (Palette #FF4040 …, Logo fix); ein Marken-Editor ist kein MVP (wie FA-13).
-- **Sitzungswiederherstellung (FA-15):** beim Start das zuletzt aktive Projekt laden; **fehlt** es (extern gelöscht) → sanfter Rückfall auf „kein aktives Projekt / Projektliste", **kein** Absturz.
+- **Sitzungswiederherstellung (FA-15):** beim Start das zuletzt aktive Projekt laden; **fehlt** es (extern gelöscht) → sanfter Rückfall auf „kein aktives Projekt / Projektliste", **kein** Absturz. Im Renderer wird dieser Zustand über `leereProjektSicht()` hergestellt (9.7.4) – derselbe Weg wie nach dem Löschen des aktiven Projekts.
 - Gleiche Schreib-Invarianten wie 9.5.4 (atomar, `schemaVersion`).
 
 #### 9.5.7 Pfad-Autorität & `media://`-Protokoll
@@ -1047,6 +1129,9 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 | `kein_platz` | zu wenig freier Speicher am Ziel |
 | `ziel_gesperrt` | Zieldatei durch anderen Prozess gesperrt (nach Retry) |
 | `schreib_fehler` | sonstiger I/O-Fehler beim Kopieren |
+| `speicher_fehler` | der **Sofort-Flush von D1** scheitert – er läuft als **erster Schritt im `export`-Handler**, bevor irgendetwas kopiert wird (9.3.3, 9.5.4): Platte voll, fehlende Rechte, `project.json` gesperrt. Das Ziel bleibt **unberührt**, es wurde nichts geschrieben. Der Nutzer schafft Platz bzw. prüft die Rechte am **Datenort** (nicht am Ziel) und reiht den Auftrag erneut ein |
+
+**Warum derselbe Name wie im Render-Pfad – und nicht `schreib_fehler`:** Vor der Ergänzung hatte der als **vollständig** geführte Satz für diese Ursache **keinen** passenden Code: `schreib_fehler` meint hier ausdrücklich das **Kopieren**, die übrigen fünf betreffen sämtlich das **Ziel** – der gescheiterte Flush trifft aber den **Datenort** und lässt das Ziel unangetastet. Der Render-Pfad meldet dieselbe Ursache bereits als `speicher_fehler` (9.2.3), der `media-service` ebenso (9.4.9). **Dieselbe Ursache bekommt denselben Namen.** Alles andere zwänge die Oberfläche, **zwei** Namen für **eine** Sache zu kennen (zwei Meldungstexte, zwei Zweige im Reparatur-/Wiederhol-Pfad) – und der Code steht **dauerhaft** im Protokoll Q3 (9.3): eine hier erfundene Bezeichnung bliebe für immer darin stehen und wäre später nicht mehr zusammenführbar.
 
 #### 9.6.5 Verzahnung (config-store & Queue)
 
@@ -1080,7 +1165,10 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 #### 9.7.4 Invarianten (bindend)
 
 - **Gesamtlänge = frame-gerundete Summe** der Elementdauern – **dieselbe** Rundungsregel wie `render-service` (9.2.6), sonst weicht die angezeigte Länge von der echten Ausgabedatei ab. Die 30-Minuten-Warnung (5.3) hängt daran.
-- **`project-store` ist die Wahrheit:** die Liste im composer ist nur eine Sicht; nach jeder Mutation mit dem Rückgabestand abgleichen.
+- **`project-store` ist die Wahrheit:** die Liste im composer ist nur eine Sicht; nach jeder Mutation mit dem Rückgabestand abgleichen. Diese Sicht ist die **gemeinsame Sicht auf das offene Projekt**; sie kennt neben einem geladenen Projekt ausdrücklich den Zustand **„kein Projekt geladen"** (s. u.).
+- **Die gemeinsame Sicht lässt sich leeren – `leereProjektSicht()` (bindend).** Neben dem Weiterschalten auf einen neuen Stand gibt es **genau eine** Operation, die die Sicht in den Zustand **„kein Projekt geladen"** zurückversetzt. Sie nimmt keinen Eingang und liefert nichts; danach ist kein Projekt geladen, und die Oberfläche zeigt den Zustand, den 9.5.6 als **sanften Rückfall auf „kein aktives Projekt / Projektliste"** beschreibt (9.14.3: der Reiter **Projekte** bleibt ohne offenes Projekt voll benutzbar). Gerufen wird sie, wo ein Projekt **aufhört, offen zu sein**, ohne dass ein anderes an seine Stelle tritt – vor allem nach `löscheProjekt` (9.5.2) auf das **aktive** Projekt.
+
+  *Begründung:* Der Zustand „kein Projekt geladen" ist im Datentyp der Sicht **bereits vorgesehen**; es fehlte allein der **Weg dorthin**. Ohne ihn zeigt die Oberfläche nach dem Löschen des aktiven Projekts weiter dessen Liste, Aktionen und Vorschau – **Geisterdaten**, auf die jeder Klick ins Leere läuft, während der Ordner auf der Platte schon weg ist. **Ausdrücklich verboten ist die naheliegende Notlösung**, statt dessen ein **leeres Projekt mit erfundener Kennung** in die Sicht zu setzen: Das sähe richtig aus, aber jede folgende Instant-Operation liefe in `nicht_gefunden` (9.1.1), und das Auto-Speichern (9.5.4) legte womöglich einen Projektordner an, den **niemand angelegt hat**.
 - **Angezeigte Reihenfolge = gerenderte Reihenfolge** – keine versteckte Sortierung.
 - **Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur Vorschau), Bild direkt als `<img>`. Der Main bekommt **keine** Thumbnail-Pflicht (konsistent mit Variante A).
 - **Kaputte Stellen blockieren den Render und starten die geführte Reparatur (9.7.5):** zeigt ein Listenelement **oder ein Band-Abschnitt** auf ein `fehlt`-Asset (media-service 9.4.7), wird die Stelle **rot markiert**; ein Render wird nicht gestartet (er würde mit `medium_fehlt` scheitern bzw. einen Platzhalter einbetten), sondern der Nutzer in den Reparatur-Modus geführt.
@@ -1130,7 +1218,8 @@ Aktion {
   cta:          string | null   // Call-to-Action, z. B. "Gratis Probetraining"
   standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4)
   vorlagenId:   string          // gewählte Vorlage (eingebaut oder eigene, FA-13)
-  akzentfarbe:  string          // aus der Markenpalette (feste Auswahl, v1)
+  akzentfarbe:  string | null   // aus der Markenpalette (feste Auswahl, v1); ERSETZT beim Zeichnen
+                                //   die Akzent-Rollen der Vorlage (9.10.9). null = Markenwert gilt
 }
 ```
 
@@ -1146,6 +1235,7 @@ Aktion {
 - **Titel ist Pflicht:** eine Aktion ohne Titel ist nicht speicherbar.
 - **Bild = Referenz, nie Kopie:** die Aktion hält nur eine Asset-ID; das Asset bleibt projektweit und wird beim Löschen der Aktion **nicht** angetastet (9.5.3).
 - **Akzentfarbe nur aus der Markenpalette** (feste Auswahl in v1, kein freier Farbwähler) – so bricht keine Aktion aus dem Corporate Design aus.
+- **Die Akzentfarbe ERSETZT die Akzent-Rollen der Vorlage – sie ist kein Zierwert.** Beim Zeichnen liefert jede Zone, die eine der drei Akzent-Rollen `akzent`, `akzentKraeftig` oder `akzentTief` auflöst, den Wert aus `aktion.akzentfarbe` statt des Markenwerts; alle übrigen Rollen bleiben unberührt (vollständige Regel: 9.10.9). **Die Vorlage bestimmt, WO Akzentfarbe hingehört; die Aktion bestimmt, WELCHE.** Für den Editor heißt das zweierlei: Die Farbwahl ist **sofort in der Live-Vorschau sichtbar** (sie geht durch dieselbe Zeichenroutine, 9.8.3), und sie wirkt **nur dort, wo die Vorlage Akzentfarbe vorgesehen hat** – der Editor verspricht also **nicht**, dass jede Vorlage sichtbar auf die Farbwahl reagiert. Wählt eine Aktion **keine** Akzentfarbe, gilt der Markenwert; das ist gültig und kein Fehler.
 - **Fester Markenrahmen immer erzwungen** (Logo, Sicherheitsabstände, FA-11); der Editor gestaltet nur die **freien Zonen** (FA-12).
 - **`standardDauer` ist nur ein Default:** maßgeblich für den Render ist die **Listenelement-Dauer** (composer, Anforderungsdokument 4.4). Beim Platzieren wird `standardDauer` als Startwert übernommen, danach überschreibbar.
 
@@ -1176,7 +1266,7 @@ Aktion {
   - **`split`:** Das `<video>` wird in den oberen Bereich **1920 × (1080 − H)** gelegt (`contain`), die Restflächen links/rechts in der Farb-Rolle **`flaecheDunkel`** gefüllt – **derselben**, die der Render benutzt (9.2.8, 9.11.2); das Band-Canvas (**1920 × H**) sitzt **darunter**.
   - **`einblendung`:** Das `<video>` bleibt **vollflächig** 1920 × 1080 (schwarze Balken nach 9.2.4); das Band-Canvas (**1920 × H**, mit **Alpha**) liegt **darüber** am unteren Rand. Die Überlagerung im DOM respektiert den Alphakanal von sich aus.
 - **Zeitverhalten identisch zum Render:** Das Band **wechselt zeitgesteuert** nach den Abschnitts-Dauern (frame-gerundet), **wiederholt** sich, wenn die Folge kürzer als das (getrimmte) Video ist, und wird am Videoende **abgeschnitten** – **dieselben** Regeln wie 9.2.8.
-- **Invariante:** Die Vorschau **rechnet die Geometrie nach derselben Formel** wie `render-service` (9.2.8). Eine eigene, abweichende Herleitung im Renderer würde genau die Übereinstimmung zerstören, für die der `preview-player` existiert.
+- **Invariante:** Die Vorschau **rechnet die Geometrie nach derselben Formel** wie `render-service` (9.2.8). **Genauer: nicht „nach derselben Formel", sondern mit derselben Funktion.** Die reine Rechnung liegt im **geteilten Bereich** – `berechneBandGeometrie(höhe) → BandGeometrie` (9.2.8) –, und der `preview-player` **ruft sie auf**, statt sie nachzubilden. Eine eigene, abweichende Herleitung im Renderer würde genau die Übereinstimmung zerstören, für die der `preview-player` existiert; besonders tückisch ist dabei die **Vierer-Abrundung** der Videobreite, die bei der eingebauten Band-Vorlage (H = 162 → 1632) **zufällig aufgeht** und erst bei eigenen Vorlagen auffiele. Die **Prüfung** der Bandhöhe bleibt beim `render-service` – der `preview-player` prüft nichts und meldet keine Fehlercodes.
 
 #### 9.9.3 Invarianten (bindend)
 
@@ -1199,6 +1289,8 @@ zeichneSegment(aktion, vorlage, marke) → SegmentBild        // Canvas 1920×10
 ```
 
 **Invariante:** Es gibt **keinen zweiten Zeichenpfad.** Anzeige und Export stammen immer aus **demselben** Aufruf – sonst driften Vorschau und Endvideo auseinander.
+
+**Die `aktion` liefert nicht nur Feldinhalte, sondern auch Farbe.** Sie ist der dritte Eingang der **Farb-Rollen-Auflösung**: Ihre `akzentfarbe` ersetzt die Akzent-Rollen der Vorlage (9.10.9). Wer beim Auflösen einer `farbRolle` nur `vorlage` und `marke` heranzieht, erfüllt den Vertrag **nicht** – die Farbwahl der Aktion bliebe wirkungslos.
 
 #### 9.10.2 Ausgabe-Festlegungen
 
@@ -1247,6 +1339,30 @@ Ist `aktion.bildRef` ein `fehlt`-Asset (9.4.7), zeichnet `template-canvas` einen
 - Entscheidet **nicht** über Dauer (Listenelement/`composer`) und **nicht** über Reihenfolge.
 - Ist **kein** Auftrag der Queue – eine reine, synchron aufrufbare Renderer-Funktion.
 
+#### 9.10.9 Farb-Rollen-Auflösung: die Akzentfarbe der Aktion ersetzt die Akzent-Rollen
+
+Bisher blieb offen, **wie** `aktion.akzentfarbe` (9.8.2) auf das gezeichnete Segment wirkt: Die Vorlage nennt Farben nur als **Rollen** (9.11.1, Punkt 7), die Aktion bringt eine Akzentfarbe mit – aber die Zeichenroutine reichte sie nie an die Zonen-Auflösung weiter. Wirkung: **gar keine**. Das ist hiermit entschieden.
+
+**Die Regel (bindend):** Beim Zeichnen einer Zone wird jeder `farbRolle`-Verweis über **eine** Auflösungsfunktion aufgelöst, die **drei** Eingänge kennt – die Rolle, die `Marke` und die **`Aktion`**:
+
+```
+löseFarbe(farbRolle, marke, aktion) →
+    aktion.akzentfarbe   , wenn farbRolle ∈ { "akzent", "akzentKraeftig", "akzentTief" }
+                           UND aktion.akzentfarbe gesetzt ist
+    marke.farben[farbRolle] , sonst
+```
+
+- **Die drei Akzent-Rollen** sind `akzent`, `akzentKraeftig` und `akzentTief` (9.11.2). **`flaecheAkzentZart` gehört NICHT dazu** – trotz des Namens ist es eine **Flächen**-Rolle für dezente Hintergründe, und ein Hintergrund, der bei jeder Aktion die Farbe wechselt, war nie gemeint.
+- **Alle übrigen Rollen bleiben unberührt** – Text-Rollen (`textAufDunkel`, `textAufHell`, `textSekundaer`), Flächen-Rollen (`flaecheDunkel`, `flaecheSehrDunkel`, `flaecheHell`, `flaecheAkzentZart`), `linie` sowie `scrimStart`/`scrimEnde`. Sie kommen **immer** aus der `Marke`.
+- **Ist `aktion.akzentfarbe` nicht gesetzt, gilt der Markenwert** der jeweiligen Rolle. Das ist der reguläre Rückfall und **kein** Fehler; eine Aktion ohne gewählte Akzentfarbe sieht aus wie die Vorlage sie vorsieht.
+- **Es gibt genau eine Auflösungsstelle.** Keine Zonen-Sorte (Text, Bild, Deko, Verlauf) darf `marke.farben[...]` direkt lesen – sonst wirkt die Akzentfarbe in der Pille, aber nicht im Verlauf dahinter, und niemand fände den Grund. Auch `deko.verlauf` (`vonFarbRolle`/`bisFarbRolle`) läuft durch dieselbe Funktion.
+
+**Begründung:** So entstehen aus **einer** Vorlage ohne jede Zusatzarbeit verschiedene Anmutungen – dieselbe „Vollbild"-Vorlage trägt eine rote und eine blaue Aktion. Der **Aufbau** der Vorlage bleibt dabei unangetastet: Sie sagt weiterhin, **welche** Zone Akzentfarbe trägt (Preis-Pille, CTA-Pille, Badge), und diese Aussage gilt unabhängig davon, welche Farbe die einzelne Aktion mitbringt. Die Alternative – Vorlagen je Farbe zu duplizieren – hätte die Bibliothek vervielfacht und jede Layout-Korrektur mehrfach nötig gemacht. Zugleich bleibt die Farbwahl auf die **Markenpalette** begrenzt (9.8.4): Es entsteht **kein** freier Farbwähler, und keine Aktion kann aus dem Corporate Design ausbrechen.
+
+**Folge für den Vorlagenbau (bindend):** Eine Vorlage darf sich **nicht auf den Kontrast zwischen zwei Akzent-Rollen verlassen** – etwa Fläche `akzent` mit Text `akzentTief` in derselben Zone. Nach der Ersetzung tragen **alle drei** Rollen denselben Wert, der Text wäre unsichtbar. Wo lesbarer Kontrast auf einer Akzentfläche gebraucht wird, ist der Text eine **Text-Rolle** (`textAufDunkel` / `textAufHell`). Die eingebauten Vorlagen halten das bereits ein (9.11.1): Ihre Akzent-Pillen (`preis`, `cta`) tragen Akzentfarbe **als Fläche**, ihr Text kommt aus einer Text-Rolle.
+
+**Abgrenzung – wo die Regel NICHT gilt:** Die Ersetzung geschieht **ausschließlich** in der Zonen-Auflösung von `template-canvas`. Die Restflächen der Split-Komposition (9.2.8) füllt der `render-service` mit `flaecheDunkel` – **keine** Akzent-Rolle, also unverändert der Markenwert. Der `render-service` bekommt dadurch **keine** Kenntnis von Aktionen: Er sieht ohnehin nur fertige Pixel (Variante A, 9.1) und eine einzige Farbe aus der Marke. Ebenso unberührt bleiben Vorschau (9.9) und `composer`-Thumbnails – sie zeichnen über **dieselbe** Routine und bekommen die Ersetzung geschenkt.
+
 ---
 
 ### 9.11 Geteilte Datenmodelle: `Vorlage` und `Marke`
@@ -1260,7 +1376,8 @@ Vorlage {
   id:        string        // "vollbild" | "split" | "band-standard" | <uuid> bei eigenen
   name:      string        // Anzeigename
   art:       "vollflaeche" | "split" | "einblendung"   // Fläche + Kompositionsart (s. u.)
-  höhe:      number | null // nur bei "split"/"einblendung": Bandhöhe in px; bei "vollflaeche" null
+  höhe:      number | null // nur bei "split"/"einblendung": Bandhöhe in px, GERADZAHLIG (Punkt 8);
+                           //   bei "vollflaeche" null
   parent:    string | null // Herkunft: ID der Vorlage, von der diese abgeleitet wurde.
                            //   ≠ null → ARBEITSKOPIE (in Bearbeitung, nicht auswählbar)
                            //   = null → eigenständige, nutzbare Vorlage
@@ -1304,7 +1421,10 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 4. **Feste Zonen sind Teil der Vorlage**, nicht hartkodiert – dadurch bleibt FA-13 ein reiner Datensatz. Der Editor darf Zonen mit `rolle: "fest"` **nicht** ändern, verschieben oder entfernen (Markenrahmen erzwungen, FA-11).
 5. **Eigene Vorlagen dürfen freie Zonen hinzufügen, ändern, umordnen und entfernen** – auch **dekorative** Zonen (`bindung: null`) mit eigener Füllung, Radius oder statischem Text. So lässt sich Neues ergänzen, **ohne** das `Aktion`-Datenmodell zu erweitern. Ebenso ist `wennLeer` je Zone frei wählbar.
 6. **`text.*` speist die Überlauf-Kaskade** (9.10.6): `maxZeilen` = Stufe 1 (Umbruch), `größeMax`→`größeMin` = Stufe 2 (Verkleinern), danach Stufe 3 („…").
-7. **Farben und Schriften sind Rollen-Verweise in die `Marke`** (z. B. `farbRolle: "akzent"`, `schriftRolle: "headlineDisplay"`), **keine** Hex-Werte oder Font-Namen. So bleibt ein Marken-Wechsel ein Datenwert und keine Vorlagen-Änderung.
+7. **Farben und Schriften sind Rollen-Verweise in die `Marke`** (z. B. `farbRolle: "akzent"`, `schriftRolle: "headlineElegant"`), **keine** Hex-Werte oder Font-Namen. So bleibt ein Marken-Wechsel ein Datenwert und keine Vorlagen-Änderung.
+
+   **Die Akzent-Rollen sind der eine Rollen-Satz, den die Aktion überschreibt.** Löst eine Zone eine der drei Akzent-Rollen **`akzent`**, **`akzentKraeftig`** oder **`akzentTief`** (9.11.2) auf, liefert die Auflösung **nicht** den Markenwert, sondern den Wert aus **`aktion.akzentfarbe`** (9.8.2). Alle übrigen Rollen – Text- und Flächen-Rollen einschließlich `flaecheDunkel` und `flaecheAkzentZart` – bleiben **unberührt**. **Die Vorlage bestimmt also, WO Akzentfarbe hingehört; die Aktion bestimmt, WELCHE Farbe der Markenpalette dort landet.** Ist `aktion.akzentfarbe` nicht gesetzt, gilt **der Markenwert** der jeweiligen Rolle – der Fall ist ausdrücklich vorgesehen und **kein** Fehler. Die Regeln der Auflösung stehen vollständig in 9.10.9; hier steht nur, dass die Rollen-Verweise der Vorlage davon betroffen sind.
+8. **`höhe` ist geradzahlig** – bei `art: "split"` und `"einblendung"` muss die Bandhöhe eine **gerade** Zahl sein (Wertebereich > 0 und < 1080, 9.12.1). Grund ist das Ausgabe-Profil `yuv420p` (9.2.4): Es verlangt gerade Höhen und gerade Versätze. Bei ungerader Höhe ist die Videofläche `1080 − höhe` (bei `split`) bzw. der Overlay-Versatz `y = 1080 − höhe` (bei `einblendung`) ungerade – **beide** Kompositionsarten aus 9.2.8 brechen. Geprüft wird schon im Editor (Sperre, 9.12.2), nicht erst beim Render.
 
 **Gemeinsame Basis der eingebauten Vorlagen**
 
@@ -1474,6 +1594,10 @@ Vorlagen sind **app-weit** (9.11.1.1) und liegen damit **außerhalb** von `proje
 
 **Besitzt** `vorlagen.json` (app-weite Vorlagen-Bibliothek) samt **eigener** Schreib-Serialisierung. Die Schreib-Invarianten sind **dieselben** wie in 9.5.4: **atomar** (Temp + Rename), **`vorlagen.json.bak`** als letzte heile Version, **`schemaVersion`**, und Speicherfehler werden **sichtbar** gemacht statt still verschluckt.
 
+**Sichtbar heißt: derselbe Melde-Weg wie beim `project-store`, auf einem eigenen Kanal (bindend).** Der `vorlagen-store` sendet bei einem gescheiterten Schreibvorgang ein **Ereignis vom Main** an das eine Fenster (9.1.1 Punkt 10) – Kanal **`vorlagen:autoSpeichernStatus`**, Nutzlast und Verhalten **gleichartig** zu `project:autoSpeichernStatus` (9.5.4): dauerhafter Hinweis „nicht gespeichert" in der Oberfläche, automatischer Wiederholversuch, die Änderungen **bleiben im Speicher** (kein Rollback), und der Hinweis verschwindet erst nach erfolgreichem Schreiben. Ohne Anmeldung im `ipc-gateway` bliebe er ein Sender ohne Empfänger.
+
+*Begründung:* Bis hierher stand die Zusage „sichtbar statt still verschluckt" **ohne Ereignis und ohne Kanal** da – sie war damit **nicht umsetzbar**. Das Speichern der Arbeitskopie läuft **entprellt und ohne Aufruf** aus dem Renderer (s. u.), es gibt also – genau wie beim Auto-Speichern von D1 – **keine Antwort**, an die sich eine Fehlermeldung hängen könnte. Die Folge wäre gewesen: Eine im Vorlagen-Editor über Minuten aufgebaute Vorlage geht **lautlos** verloren, und der Nutzer merkt es erst beim nächsten Start, wenn seine Zonen wieder auf dem alten Stand stehen. Ein **eigener** Kanal statt einer Mitbenutzung von `project:autoSpeichernStatus` ist nötig, weil die Oberfläche die beiden Fälle **unterscheiden** muss: Der eine bedeutet „dein Projekt ist nicht gesichert", der andere „deine Vorlage ist nicht gesichert" – und die Vorlagen-Bibliothek ist **app-weit**, sie hängt nicht am geladenen Projekt.
+
 | Operation | Eingang → Ausgang |
 |---|---|
 | `listeVorlagen` | – → `Ergebnis<Vorlage[]>` – **nur nutzbare** (`parent = null`); Arbeitskopien erscheinen hier **nicht** |
@@ -1485,6 +1609,30 @@ Vorlagen sind **app-weit** (9.11.1.1) und liegen damit **außerhalb** von `proje
 | `alsEigenstaendige` | `arbeitsId`, `name` → `Ergebnis<Vorlage>` – setzt **`parent = null`**, Arbeitskopie wird eine echte Vorlage |
 | `verwerfeArbeitskopie` | `arbeitsId` → `Ergebnis<void>` |
 | `löscheVorlage` | `id` → `Ergebnis<void>`; im Fehlerfall Code `vorlage_referenziert` mit **beiden** Trefferlisten: betroffene **Aktionen** und betroffene **Listenelemente**, je mit Projekt |
+| `pruefeVorlagenReferenzen` | `id` → `Ergebnis<Vorlagennutzung>` – **rein lesend**: ermittelt über **alle** Projekte, welche Aktionen und welche Listenelemente die Vorlage benutzen, und gibt die Treffer **namentlich** zurück (nicht nur Zahlen). Verändert **nichts** |
+
+**`pruefeVorlagenReferenzen` – die Nutzung wird VOR dem Überarbeiten und VOR dem Löschen angezeigt.** 9.12.2 verlangt die Anzeige seit je („wird von 7 Aktionen in 2 Projekten verwendet"), aber die Operationsliste kannte keine Operation dafür – die Zählung existierte nur **intern** als Sperre beim Löschen und war von der Oberfläche aus **nicht erreichbar**. Diese Operation schließt die Lücke.
+
+- **Ausgang – der Typ existiert bereits:** `Vorlagennutzung` ist genau das, was `löscheVorlage` im Fehlerfall als `fehler.daten` des Codes `vorlage_referenziert` trägt (9.1.1). Es wird **kein zweiter Typ** dafür erfunden:
+
+  ```
+  VorlagenReferenz {           // ein Fundort
+    projektId:   string
+    projektName: string        // für die Meldung „… in 2 Projekten"
+    id:          string        // Aktions-ID bzw. Listenelement-ID des Treffers
+  }
+
+  Vorlagennutzung {
+    aktionen:       VorlagenReferenz[]   // Treffer über aktion.vorlagenId
+    listenelemente: VorlagenReferenz[]   // Treffer über listenelement.einblendung.bandVorlageId
+  }
+  ```
+
+- **Dieselbe Prüfung wie die Lösch-Sperre, nur ohne Wirkung.** Sie erfasst **beide** Referenzarten und liest **alle** `project.json` (s. die Lösch-Invariante unten). Es gibt **einen** Prüf-Mechanismus, den die Anzeige und die Sperre gemeinsam benutzen – zwei Zählungen liefen unweigerlich auseinander, und die harmlosere von beiden wäre die falsche.
+- **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `vorlagen:pruefeVorlagenReferenzen`. Ohne Anmeldung im `ipc-gateway` bliebe die Operation eine Main-Funktion ohne Aufrufer.
+- **Kein Lock, keine Wirkung:** Sie schreibt nichts, sie reiht nichts ein, sie ist **kein** Auftrag der Queue (9.3.2) – ein Instant-Aufruf wie die übrigen Leseoperationen. Eine **leere** Nutzung (beide Listen leer) ist ein **gültiges Ergebnis**, kein Fehler: Sie bedeutet „diese Vorlage ist frei".
+
+*Begründung:* Eine Vorlage ist **app-weit** (9.11.1.1). Ihr Überarbeiten (`uebernehmeInParent`) ändert das Aussehen von Aktionen in Projekten, die der Nutzer gerade **gar nicht offen hat** – und der Merge ist ein vollständiges Ersetzen, kein Feld-Abgleich. Ohne die Anzeige trifft er diese Entscheidung **blind**. Beim Löschen ist die Lage noch schärfer: Dort steht er sonst vor einem bloßen „geht nicht", ohne zu erfahren, **was** ihn blockiert und wo er aufräumen müsste. Die Treffer müssen deshalb **namentlich** kommen (Projekt und Fundstelle), nicht als Zahl – eine Zahl sagt ihm, dass es ein Problem gibt, aber nicht, wo.
 
 **Der Arbeitskopie-Fluss (Kern von FA-13):**
 
@@ -1507,7 +1655,7 @@ Vorlage X bearbeiten
 - **Arbeitskopien (`parent ≠ null`) sind nicht auswählbar.** `composer` und `action-editor` bekommen sie nicht angeboten – halbfertige Vorlagen können nicht in einen Render geraten.
 - **`uebernehmeInParent` ist gesperrt, wenn der Parent eingebaut ist.** Eingebaute Vorlagen bleiben unveränderlich (9.11.1.1); dort bleibt nur `alsEigenstaendige`. Der Editor macht das vorher sichtbar, statt beim Speichern zu scheitern.
 - **`art` ist nach dem Anlegen unveränderlich** – auch über die Arbeitskopie. Ein Wechsel würde alle Zonen-Rahmen ungültig machen (andere Fläche); stattdessen neu anlegen.
-- **`höhe` nur bei `split`/`einblendung`**, Wertebereich > 0 und < 1080. Bei `vollflaeche` immer `null`.
+- **`höhe` nur bei `split`/`einblendung`**, Wertebereich > 0 und < 1080 **und geradzahlig** (9.11.1 Punkt 8, Begründung `yuv420p` in 9.2.8). Bei `vollflaeche` immer `null`. Der Store weist eine ungerade Höhe ab – auf **jedem** Weg, der sie setzen kann (`erstelleVorlage`, `speichereArbeitskopie`, `uebernehmeInParent`); der Editor sperrt sie bereits vorher (9.12.2).
 - **Feste Zonen (`rolle: "fest"`) dürfen nie entfernt oder verschoben werden** – auch nicht in eigenen Vorlagen (Markenrahmen erzwungen, FA-11).
 - **Löschen nur, wenn die Vorlage in *keinem* Projekt mehr benutzt wird.** Die Prüfung muss **beide** Referenzarten erfassen – das ist die entscheidende Feinheit:
   1. **`aktion.vorlagenId`** – Aktionen, die die Vorlage als vollflächiges Segment nutzen.
@@ -1536,6 +1684,7 @@ Vorlage X bearbeiten
 |---|---|
 | Zone ganz oder teilweise **außerhalb der Fläche** | **Sperre** – nicht speicherbar |
 | `höhe` ≤ 0 oder ≥ 1080 (bei `split`/`einblendung`) | **Sperre** |
+| `höhe` **ungerade** (bei `split`/`einblendung`) | **Sperre** – `yuv420p` verlangt gerade Höhen und Versätze; ungerade bricht **beide** Kompositionsarten (9.2.8, 9.11.1 Punkt 8) |
 | Textzone ohne Text-Parameter (Größenbereich, Max-Zeilen) | **Sperre** |
 | Zone überschreitet den **Sicherheitsabstand** (5 %, 9.10.5) | **Warnung** – am TV evtl. abgeschnitten |
 | Zonen **überlappen** | **erlaubt** – wird für Hintergrund und Scrim gebraucht |
@@ -1548,7 +1697,7 @@ Vorlage X bearbeiten
 - **Zonen-Rahmen in absoluten Pixeln** der jeweiligen Vorlagen-Fläche (9.11.1); Eingaben werden auf die Fläche **begrenzt**.
 - **Feste Zonen sind sichtbar, aber gesperrt** – der Nutzer sieht den Markenrahmen, kann ihn aber nicht verändern.
 - **Bearbeitet wird immer eine Arbeitskopie** (9.12.1). Der Editor zeigt durchgehend, **ob** er auf einer Arbeitskopie sitzt und **welcher Parent** dahintersteht – und beim Speichern die zwei Wege: **„Vorlage überarbeiten"** (Merge in den Parent) oder **„als neue eigenständige Vorlage"** (`parent = null`). Ist der Parent eingebaut, ist „überarbeiten" **von Anfang an deaktiviert** samt Begründung.
-- **Nutzung wird angezeigt,** bevor überarbeitet oder gelöscht wird („wird von 7 Aktionen in 2 Projekten verwendet") – ein Merge verändert **alle** davon. Die Lösch-Sperre selbst sitzt im `vorlagen-store`.
+- **Nutzung wird angezeigt,** bevor überarbeitet oder gelöscht wird („wird von 7 Aktionen in 2 Projekten verwendet") – ein Merge verändert **alle** davon. Die Zahlen kommen aus **`pruefeVorlagenReferenzen`** (9.12.1) und aus **keiner** zweiten, editor-eigenen Zählung. Weil die Operation die Treffer **namentlich** liefert, zeigt der Editor sie **aufklappbar** (Projekt + Fundstelle), statt es bei der Zahl zu belassen: Beim Löschen ist genau diese Liste die einzige Auskunft darüber, wo aufgeräumt werden müsste. Die Lösch-**Sperre** selbst sitzt weiterhin im `vorlagen-store`; der Editor macht sie nur **vorher sichtbar**, statt den Nutzer in ein „geht nicht" laufen zu lassen.
 - **Undo/Redo** gilt im Editor für alle Zonen- und Parameter-Änderungen (9.13).
 
 ### 9.13 Undo/Redo (Projekt-Bearbeitung und Vorlagen-Editor)
@@ -1568,10 +1717,11 @@ Vorlage X bearbeiten
 #### 9.13.2 Mechanismus
 
 - **Schnappschuss-basiert:** Vor jeder Instant-Operation wird ein Schnappschuss des betroffenen Datensatzes gehalten; Undo stellt ihn wieder her. **Nicht** über „inverse Operationen" – eine falsch implementierte Umkehrung ist eine stille Fehlerquelle, ein Schnappschuss ist trivial korrekt.
+- **Der Rückschreib-Weg der Projekt-Bearbeitung ist `setzeBearbeitungsstand` (9.5.2) – und zwar der einzige.** Der Schnappschuss umfasst `aktionen` **und** `liste`, und er wird **als Ganzes** zurückgeschrieben, unter dem D1-Lock und voll validiert. **Verboten** ist der Versuch, ein Undo aus den feingranularen Operationen (`fügeElementHinzu`, `ordneNeu`, `setzeTrim` …) zusammenzusetzen: Genau das wären die oben ausgeschlossenen inversen Operationen, und für `entferneElement` und `löscheAktion` ist es nachweislich unmöglich – `fügeElementHinzu` vergibt eine **neue** `id` und hängt ans Ende, und die Lösch-Kaskade aus 9.5.3 (Listenelemente **und** Band-Abschnitte) hat gar keine Umkehrung. `assets` und `letzterAusgabeName` gehören **nicht** in den Schnappschuss (Begründung in 9.5.2).
 - **Zwei getrennte Historien:** Projekt-Bearbeitung und Vorlagen-Editor haben **eigene** Stapel (sie bearbeiten verschiedene Datensätze) und werden nie vermischt.
 - **Begrenzte Tiefe** (Größenordnung 50 Schritte), damit der Speicherbedarf gedeckelt bleibt.
 - **Nur Laufzeit** (Kategorie D): die Historie wird **nicht** persistiert und ist nach Projektwechsel, Editor-Schluss oder App-Neustart leer.
-- **Undo/Redo läuft über denselben Pfad wie eine normale Änderung** – es aktualisiert den Speicher und löst das gewohnte Auto-Speichern (9.5.4) aus. **Kein** Sonderweg, der Platte und Speicher auseinanderlaufen ließe.
+- **Undo/Redo läuft über denselben Pfad wie eine normale Änderung** – es ruft `setzeBearbeitungsstand` (9.5.2) auf wie jede andere Instant-Operation, aktualisiert damit den Speicher und löst das gewohnte Auto-Speichern (9.5.4) aus. **Kein** Sonderweg, der Platte und Speicher auseinanderlaufen ließe: Ein Undo, das nur die Anzeige zurücksetzt, ohne dass das entprellte Speichern anspringt, wäre nach dem nächsten Start wieder verschwunden.
 
 #### 9.13.3 Invariante gegen Datenverlust (wichtig)
 
@@ -1583,7 +1733,7 @@ Vorlage X bearbeiten
 
 ### 9.14 Modul `app-shell` (Renderer): Aufbau und Navigation
 
-**Fachlich:** Die `app-shell` ist der Rahmen, der die fünf Renderer-Oberflächen anordnet und den Wechsel zwischen ihnen führt. Ohne sie wäre offen, wo `composer`, `action-editor`, `vorlagen-editor`, `preview-player` und `queue-panel` überhaupt leben.
+**Fachlich:** Die `app-shell` ist der Rahmen, der die **sechs** Renderer-Oberflächen anordnet und den Wechsel zwischen ihnen führt. Ohne sie wäre offen, wo `composer`, `action-editor`, `vorlagen-editor`, `preview-player`, `projekt-verwaltung` und `queue-panel` überhaupt leben.
 
 #### 9.14.1 Grundstruktur: Modus-Reiter + Warteschlangen-Leiste
 
@@ -1594,7 +1744,7 @@ Vorlage X bearbeiten
 │     Zusammenstellen = composer [P3]  +  preview-player [P5]               │
 │     Aktionen        = action-editor [P2]  + große Live-Vorschau           │
 │     Vorlagen        = vorlagen-editor (Canvas + Zonen-Liste + Inspektor)  │
-│     Projekte        = Projektverwaltung (FA-10)                           │
+│     Projekte        = projekt-verwaltung (FA-10, 9.14.3)                  │
 │                                                                           │
 ├───────────────────────────────────────────────────────────────────────────┤
 │ queue-panel als schmale Leiste: „Render läuft · 3 von 7"  ▸ aufklappbar   │
@@ -1606,11 +1756,29 @@ Vorlage X bearbeiten
 #### 9.14.2 Invarianten (bindend)
 
 - **Die Warteschlangen-Leiste ist in *jedem* Reiter sichtbar.** Sie ist die einzige Stelle, an der laufende, anstehende und fehlgeschlagene Aufträge erkennbar sind (FA-16) – sie darf nie hinter einem Moduswechsel verschwinden. Eingeklappt zeigt sie den Zustand in einer Zeile, aufgeklappt die volle Liste (9.3.4).
+- **Die Warteschlangen-Leiste holt beim Aufbau ERST den Stand und abonniert DANACH.** Ereignisse, die vor dem Aufbau des Fensters anfallen, **verfallen still** – es wird nicht gepuffert (9.1.1 Punkt 10). Deshalb ruft die Leiste beim Aufbau **einmal `holeStand()`** (9.3.4, „Snapshot für die UI") und abonniert **erst anschließend** `queue:geaendert`. Die umgekehrte Reihenfolge wäre falsch: Die Antwort auf `holeStand()` könnte einen **älteren** Stand tragen als ein zwischenzeitlich empfangenes Ereignis und es überschreiben. *Warum das hier besonders zählt:* Beim Start liegen bereits **Fehlschläge aus Q2** vor (persistent, 9.3.5) – ohne das anfängliche Holen bliebe die Leiste leer, bis zufällig der nächste Auftrag etwas ändert, und ein fehlgeschlagener Render vom Vortag wäre unsichtbar und damit nicht wiederholbar.
 - **Der geführte Reparatur-Modus wechselt den Reiter.** Führt die Reparatur eines Aktions-Bildes in den `action-editor` (9.7.5, 9.8.5), wechselt die Shell in den Reiter **Aktionen**, hebt die betroffene Aktion hervor und **kehrt danach zum Reiter Zusammenstellen zurück**, zur nächsten kaputten Stelle. Der Fortschritt „X von N behoben" bleibt dabei **über den Reiterwechsel hinweg** sichtbar – sonst verliert der Nutzer den Faden.
 - **Ein Reiterwechsel verwirft nie Arbeit.** Instant-Änderungen sind bereits gesichert (9.5.4); eine offene Vorlagen-**Arbeitskopie** bleibt beim Verlassen des Reiters erhalten (9.12.1) und wird beim Zurückkehren fortgesetzt. Es gibt **keinen** „ungespeicherten Zustand", der beim Wechseln verlorengeht.
 - **Undo/Redo gilt im jeweils aktiven Reiter** und arbeitet auf dessen Historie (9.13.2: getrennte Stapel für Projekt-Bearbeitung und Vorlagen-Editor). Ein Reiterwechsel **vermischt** die Historien nicht.
-- **Ohne offenes Projekt sind die Reiter Zusammenstellen/Aktionen leer statt kaputt.** Beim Start ohne wiederherstellbares Projekt (9.5.6) landet der Nutzer im Reiter **Projekte**; die anderen Reiter zeigen einen Hinweis, keine Fehlermeldung.
-- **Die Shell rendert selbst keine Inhalte** – sie ordnet an, wechselt und hält die Warteschlangen-Leiste. Alles Fachliche liegt in den fünf Modulen.
+- **Ohne offenes Projekt sind die Reiter Zusammenstellen/Aktionen leer statt kaputt.** Beim Start ohne wiederherstellbares Projekt (9.5.6) landet der Nutzer im Reiter **Projekte**; **Zusammenstellen** und **Aktionen** zeigen dort einen Hinweis mit dem Weg zum Reiter Projekte, keine Fehlermeldung. **Ausgenommen sind Projekte und Vorlagen:** Beide bleiben ohne offenes Projekt **voll benutzbar** – der Reiter Projekte ist die Einstiegsstelle, und die Vorlagen-Bibliothek ist **app-weit** (9.11.1.1), gehört also keinem Projekt. Wer eine Vorlage bauen will, bevor er ein Projekt anlegt, darf das; ein Hinweis dort wäre eine erfundene Abhängigkeit.
+- **Die Shell rendert selbst keine Inhalte** – sie ordnet an, wechselt und hält die Warteschlangen-Leiste. Alles Fachliche liegt in den **sechs** Modulen (einschließlich `projekt-verwaltung`, 9.14.3).
+
+#### 9.14.3 Modul `projekt-verwaltung` [Renderer]
+
+**Die Projektverwaltung ist ein eigenes Modul, kein Teil der Shell (bindend).** 9.14.1 belegt den Reiter **Projekte** mit ihr (FA-10); 9.14.2 sagt zugleich, die Shell rendere **selbst keine Inhalte**. Beides zusammen ging nur auf, solange niemand nachfragte, **wem** dieser Reiter gehört. Er gehört dem Renderer-Modul **`projekt-verwaltung`** – dem sechsten.
+
+*Begründung:* Die Projektverwaltung ist **echte Fachlichkeit**, keine Anordnung. Sie führt **fünf** Vorgänge – Projekt **anlegen**, **öffnen**, **duplizieren**, **löschen** und **beschädigte kennzeichnen** –, davon einen mit **Datenverlustrisiko** (`löscheProjekt` entfernt Medien und gerenderte Ausgaben unwiederbringlich, 9.5.2) und einen mit eigener Sonderbehandlung (beschädigte Projekte: Warnhinweis, nicht öffenbar, „Ordner öffnen"). Eine Shell, die das mitträgt, ist nicht mehr der dünne Rahmen, als den 9.14.2 sie beschreibt – und die Invariante „die Shell rendert selbst keine Inhalte" wäre von Anfang an gebrochen gewesen. Getrennt bleibt sie prüfbar: Die Shell hält Reiter und Warteschlangen-Leiste, das Modul hält die Projekte.
+
+**Ist:** die Liste der Projekte (`listeProjekte`, 9.5.2) mit Name, Datum und **Beschädigt-Kennzeichnung**; die Bedienung der fünf Vorgänge über die Operationen des `project-store`; die **Lösch-Bestätigung**, die Name, Medienzahl, Ausgabenzahl und die Unumkehrbarkeit nennt (9.5.2); der Knopf **„Ordner öffnen"** (`öffneProjektordner`, 9.5.2), vor allem beim beschädigten Projekt.
+
+**Ist NICHT:** kein Dateisystem-Zugriff, keine absoluten Pfade (die Pfad-Autorität ist der `project-store`, 9.5.7), keine eigene Reparatur einer defekten `project.json`, kein Verzeichnis-Browser in der App.
+
+**Invarianten (bindend):**
+
+- **Ein beschädigtes Projekt wird gezeigt, aber nicht geöffnet** (9.5.2): sichtbare Kennzeichnung, „Öffnen" deaktiviert, „Ordner öffnen" **aktiv**. Es aus der Liste zu nehmen ist verboten – das ist der einzige Hinweis darauf, dass dort etwas zu retten ist.
+- **Kein Löschen ohne die drei Angaben.** Name, Anzahl Medien und Anzahl Ausgabedateien stammen aus `ProjektMeta` (9.5.2) und werden **nicht** in der Oberfläche nachgezählt.
+- **Beim Öffnen eines Projekts wechselt die Shell in den Reiter Zusammenstellen** – der Nutzer landet dort, wo er weiterarbeitet, statt in der Liste stehen zu bleiben.
+- **Der Reiter Projekte bleibt ohne offenes Projekt voll benutzbar.** Er ist die Einstiegsstelle beim Start ohne wiederherstellbares Projekt (9.14.2, 9.5.6) – als einziger Reiter zeigt er dann keinen Hinweis, sondern Inhalt.
 
 ---
 
@@ -1619,6 +1787,46 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.2 (05.08.2026), vom Auftraggeber entschieden:**
+>
+> 1. **Die gemeinsame Projekt-Sicht bekommt einen Weg, geleert zu werden** – neue Operation **`leereProjektSicht()`** in 9.7.4, mitgezogen 9.5.2 (`löscheProjekt`) und 9.5.6 (Sitzungswiederherstellung). Sie versetzt die Sicht in den Zustand **„kein Projekt geladen"**; gerufen wird sie, wo ein Projekt aufhört, offen zu sein, ohne dass ein anderes an seine Stelle tritt – vor allem nach dem Löschen des **aktiven** Projekts. *Folge ohne die Entscheidung:* Der Zustand war im Datentyp der Sicht **ausdrücklich vorgesehen**, es gab aber **keine** Operation, die ihn herstellt. Die Oberfläche zeigte nach dem Löschen des aktiven Projekts weiter dessen Liste, Aktionen und Vorschau – **Geisterdaten**, auf die jeder Klick ins Leere läuft, während der Ordner auf der Platte bereits weg ist; der von 9.5.6 verlangte **sanfte Rückfall** auf „kein aktives Projekt / Projektliste" war mit den vorhandenen Mitteln nicht herstellbar. **Ausdrücklich verboten** ist die naheliegende Notlösung, ein **leeres Projekt mit erfundener Kennung** in die Sicht zu setzen: Es sähe richtig aus, aber jede folgende Instant-Operation liefe in `nicht_gefunden` (9.1.1), und das Auto-Speichern (9.5.4) legte womöglich einen Projektordner an, den **niemand angelegt hat**.
+>
+> 2. **Das Render-Ergebnis trägt den verwendeten Ausgabenamen** – neues Feld **`ausgabeName`** im `RenderResult` bei `status: "erfolg"` (9.2.3, mitgezogen 9.2.5, 9.3.1 und 9.3.6). Es ist der Name **ohne Endung**, genau so, wie er im `RenderRequest` stand. *Folge ohne die Entscheidung:* Der `render-service` setzt bei Erfolg `Project.letzterAusgabeName` in D1 (FA-22), das Auftrags-Ergebnis trug aber nur Pfad, Dateigröße und Gesamtdauer – die Oberfläche erführe vom neuen Namen **nichts** und schlüge beim nächsten Render weiter den alten vor. Der Nutzer überschriebe also nicht die Datei, die er überschreiben wollte, oder legte versehentlich eine zweite an. Der Weg über das Ergebnis ist **eine** Quelle der Wahrheit statt zweier: Merkte sich die Oberfläche den Namen selbst, liefen beide Werte spätestens bei einem **fehlgeschlagenen** Render (D1 unverändert) oder nach einem **Neustart** (Renderer-Zustand weg) auseinander – und der Wert steht **dauerhaft** in Q3. **Nicht** mitgezogen wurde `ProtokollEintrag.ausgabe` (9.3): Es trägt weiterhin nur `pfad`, `dateigroesse` und `gesamtdauer`, denn der Name steckt im Pfad; ein zweites Feld dafür wäre genau die Doppelführung, die schon `historieEintrag` (v2.8) und `position` (9.11.3) entfernt hat.
+>
+> 3. **`löscheAktion` liefert den vollständigen neuen Stand** – die Rückgabe wird `Ergebnis<{ stand: Bearbeitungsstand, entfernteElementIds, geaenderteElementIds }>` (9.5.2, mitgezogen 9.5.3). Die beiden Kennungslisten **bleiben**: Der `stand` schaltet die Sicht weiter, die Kennungen erklären dem Nutzer die Wirkung („aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt") und benennen die hervorzuhebenden Stellen. *Folge ohne die Entscheidung:* 9.13.1 führt „Aktionen: anlegen, bearbeiten, **löschen**" unter „Umfasst", ist also undo-fähig; 9.13.2 verlangt dafür einen Schnappschuss, und der entsteht beim **Übergang der Sicht von einem Stand auf den nächsten**. Aus bloßen Kennungen ist der neue Stand nicht bildbar – der einzige Weg dorthin wäre ein **Neuladen** des Projekts, und das setzt die Sicht an der Schnappschuss-Stelle **vorbei**: Undo wäre gebaut und ausgerechnet für das **versehentliche Löschen** wirkungslos. **Ausdrücklich verworfen** wurde ein zweiter Eingang in die Rückgängig-Verwaltung nur für diesen Fall – eine Ausnahme von der Regel „Schnappschüsse entstehen an genau **einer** Stelle" ist die Art Sonderfall, die in diesem Projekt bisher die teuersten Fehler verursacht hat. Der Typ ist `Bearbeitungsstand` und **nicht** `Projekt`, weil das genau der Ausschnitt ist, den der Schnappschuss ohnehin führt (`aktionen` + `liste`); `assets` und `letzterAusgabeName` gehören nach 9.13.2 nicht hinein und werden von `löscheAktion` auch nicht angefasst.
+>
+> **Nachgezogen in v3.1 (04.08.2026), vom Auftraggeber entschieden und beim M7-Zuschnitt gefunden:**
+>
+> 1. **Rückgängig/Wiederherstellen bekommt einen eigenen Rückschreib-Weg** – neue Instant-Operation **`setzeBearbeitungsstand`** (`stand` → `Ergebnis<Projekt>`) in 9.5.2, mitgezogen 9.13.2. Sie ersetzt `aktionen` **und** `liste` **als Ganzes** durch einen Schnappschuss, unter dem D1-Lock und **voll validiert** (jede Referenz auflösbar, jede Dauer im Bereich, jede `art` gültig, `id`s eindeutig). *Folge ohne die Entscheidung:* 9.13.2 verlangt schnappschuss-basiertes Undo und verbietet inverse Operationen ausdrücklich – „eine falsch implementierte Umkehrung ist eine stille Fehlerquelle, ein Schnappschuss ist trivial korrekt". Die Operationsliste 9.5.2 ist aber feingranular, und für **zwei** in 9.13.1 ausdrücklich unter „Umfasst" geführte Fälle gab es **keinen** Rückweg: `entferneElement` (die naheliegende Umkehrung `fügeElementHinzu` vergibt eine **neue** UUID und hängt ans Ende – Position und Identität sind weg) und `löscheAktion` (die Kaskade aus 9.5.3 entfernt Listenelemente **und** Band-Abschnitte; nichts davon ist zurückschreibbar). FA-21 ist ein **Muss** und wäre genau für das versehentliche Löschen unerfüllbar geblieben; ein Agent hätte die Lücke mit eben den verbotenen inversen Operationen geschlossen. **Ausdrücklich NICHT enthalten:** `assets` und `letzterAusgabeName` – beide werden von **Aufträgen** verändert (Import, Löschen, Render), und Aufträge sind nach 9.13.3 grundsätzlich nicht undo-fähig. Ein Undo, das sie mitzöge, ließe ein importiertes Medium aus dem Datenbestand verschwinden, während seine **Datei weiter auf der Platte liegt** – eine Waise, die der Reconcile still löscht (9.4.7). Undo nimmt denselben Pfad wie eine normale Änderung, damit das Auto-Speichern anspringt (9.13.2).
+>
+> 2. **Scheitert der Sofort-Flush beim BEENDEN, schließt die App nicht** (9.5.4). Festgelegt ist die Reihenfolge: (1) die App schließt **nicht**, die Änderungen bleiben im Speicher; (2) der Fehler wird mit einer **auf die Ursache zugeschnittenen Handlungsempfehlung** gezeigt („Die Platte ist voll. Schaffen Sie Platz und versuchen Sie es erneut." / „Der Speicherort ist nicht erreichbar. Stecken Sie den Datenträger wieder ein."); (3) ein Knopf **„Erneut versuchen"** stößt den Schreibversuch neu an; (4) daneben der ausdrücklich benannte Ausweg **„Trotzdem schließen und Änderungen verwerfen"**. *Folge ohne die Entscheidung:* 9.5.4 sagte nur, die App blockiere bis zum Abschluss des Schreibvorgangs – über den **Fehlschlag** stand nirgends etwas. Ein stilles Schließen widerspricht der zugesagten Verlustfreiheit (FA-15, NFA-02): Der Nutzer beendet normal und findet beim nächsten Start einen alten Stand vor. Ein bloßes Blockieren ohne Ausweg lässt ihn vor einem Programm sitzen, das sich nicht mehr schließen lässt. Der eigentliche Wert ist der **Wiederholen-Knopf**: Die häufigsten Ursachen – volle Platte, abgezogener Datenträger – behebt der Nutzer in einer Minute, und dann muss er **nichts** verlieren.
+>
+> 3. **Das Löschen eines Projekts nennt vorher, was verschwindet** (9.5.2, mitgezogen 9.14.3). Die Bestätigung nennt **Projektname**, **Anzahl der Medien**, **Anzahl der gerenderten Ausgabedateien** und die **Unumkehrbarkeit**. Dafür trägt `ProjektMeta` zwei neue Felder – **`anzahlMedien`** und **`anzahlAusgaben`** –, beide **aus dem Ordner gezählt**, nicht aus `project.json`. *Folge ohne die Entscheidung:* Der Projektordner enthält **alle** importierten Medien und **alle** fertigen Ausgabedateien; 9.13.3 schließt Undo für Vorgänge mit Dateiwirkung aus, der Ordner ist danach weg. Eine schlichte Ja/Nein-Abfrage verschweigt genau die **Tragweite** – sie sieht bei einem leeren Probeprojekt aus wie bei drei Wochen Arbeit. Die Ordner-Zählung ist Pflicht, weil die Zahlen auch für ein **beschädigtes** Projekt stimmen müssen, dessen `project.json` unlesbar ist – dort ist „ist da noch etwas zu retten?" die eigentliche Frage.
+>
+> 4. **Ein beschädigtes Projekt bietet „Ordner öffnen" an** – neue Operation **`öffneProjektordner`** (`projektId` → `Ergebnis<void>`) in 9.5.2, eigener Kanal `project:öffneProjektordner`, angeboten in 9.14.3. Sie gehört zum `project-store`, weil er die **Pfad-Autorität** ist (9.5.7). *Folge ohne die Entscheidung:* Der Sinn der v3.0-Entscheidung (beschädigtes Projekt mit Warnhinweis **listen** statt weglassen) war, dass der Nutzer **erfährt**, dass in dem Ordner etwas zu retten ist. Ohne einen **Weg dorthin** bliebe es bei dieser Information: Den Ablageort der portablen Anwendung kennt er typischerweise nicht, und die App zeigt ihm absichtlich nirgends einen absoluten Pfad (9.5.7). Im Renderer wäre die Operation nicht baubar – er kennt keine Pfade.
+>
+> 5. **Die Bandgeometrie-Rechnung wandert in den geteilten Bereich** – **`berechneBandGeometrie(höhe) → BandGeometrie`** (Abschnitt 9 Modulübersicht, Invariante in 9.2.8, mitgezogen 9.9.2). Die **reine** Rechnung (Videofläche, eingepasste Breite mit Vierer-Abrundung, Versätze, Bandposition) wird von **Vorschau und `render-service` gemeinsam** benutzt; die **Prüfung** (zulässige Höhe, Fehlercode `ungueltiges_element`) bleibt im `render-service`. *Folge ohne die Änderung:* 9.9.2 verlangt seit je, dass die Vorschau „die Geometrie nach derselben Formel" rechnet wie 9.2.8 – die Rechnung lag aber im Main, und der Renderer darf dort nicht importieren (9.1). Ein Agent hätte sie **abgeschrieben**, und der Fehler wäre **unsichtbar** geblieben: Bei der eingebauten Band-Vorlage (H = 162) geht die Vierer-Abrundung **zufällig** auf (1632), sie ändert dort nichts. Auseinandergelaufen wären Vorschau und fertiges Video erst bei **eigenen** Vorlagen – beim Nutzer, nicht beim Entwickler.
+>
+> 6. **Der `vorlagen-store` bekommt das Melde-Ereignis für Speicherfehler** – Kanal **`vorlagen:autoSpeichernStatus`**, gleichartig zu `project:autoSpeichernStatus` (9.12.1, mitgezogen 9.5.4, wo der Kanalname des `project-store` jetzt ausgeschrieben steht). *Folge ohne die Änderung:* 9.12.1 sagte, die Schreib-Invarianten seien „dieselben wie in 9.5.4 … und Speicherfehler werden **sichtbar** gemacht statt still verschluckt" – es gab dafür aber **weder Ereignis noch Kanal**, die Zusage war nicht umsetzbar. Das Speichern der Arbeitskopie läuft entprellt und **ohne Aufruf** aus dem Renderer; es gibt also keine Antwort, an die sich eine Meldung hängen könnte. Eine über Minuten gebaute Vorlage wäre **lautlos** verlorengegangen. Ein **eigener** Kanal ist nötig, weil die Oberfläche „dein Projekt ist nicht gesichert" von „deine Vorlage ist nicht gesichert" unterscheiden muss – die Vorlagen-Bibliothek ist app-weit und hängt nicht am geladenen Projekt.
+>
+> 7. **Die Projektverwaltung ist die sechste Renderer-Oberfläche** – neues Modul **`projekt-verwaltung`** (Modulübersicht Abschnitt 9, Vertragsabsatz 9.14.3, mitgezogen 9.14 Einleitung, 9.14.1 Skizze und 9.14.2: „fünf" → „sechs"). *Folge ohne die Änderung:* 9.14.1 belegte den Reiter „Projekte = Projektverwaltung (FA-10)", 9.14.2 sagte zugleich „Die Shell rendert selbst keine Inhalte … Alles Fachliche liegt in den **fünf** Modulen" – und die Projektverwaltung war keins davon. Der Widerspruch hätte die Fachlichkeit in die Shell wandern lassen, obwohl es echte Fachlichkeit mit **fünf** Vorgängen (anlegen, öffnen, duplizieren, löschen, beschädigte kennzeichnen) und einem **Datenverlustrisiko** ist; ein Rahmen, der so etwas mitträgt, ist nicht mehr die dünne Schicht, als die 9.14.2 ihn beschreibt.
+>
+> 8. **Ereignisse vor dem Aufbau des Fensters verfallen still – es wird nicht gepuffert** (9.1.1 Punkt 10, mitgezogen 9.14.2 für die Warteschlangen-Leiste). Stattdessen holt die Oberfläche beim Aufbau **einmal den vollständigen Stand** (für die Warteschlange: `holeStand()`, 9.3.4) und **abonniert erst danach**. *Folge ohne die Änderung:* v3.0 legte fest, dass es genau ein Fenster gibt und jedes Ereignis dorthin geht – offen blieb, was mit Meldungen geschieht, die **vor** dem Laden anfallen. Ein Puffer müsste zwei Fragen beantworten, die niemand beantworten kann, ohne zu raten: **wie lange** er hält und **was er bei Überlauf verwirft** – ein verworfenes `queue:geaendert` hinterlässt eine dauerhaft falsche Anzeige. „Erst holen, dann abonnieren" ist die einzige Reihenfolge, die **keine Lücke** lässt; die umgekehrte überschriebe ein bereits empfangenes Ereignis mit einem älteren Stand. Ohne das anfängliche Holen bliebe die Warteschlangen-Leiste beim Start leer, obwohl **Fehlschläge aus Q2** (persistent, 9.3.5) vorliegen – ein fehlgeschlagener Render vom Vortag wäre unsichtbar und nicht wiederholbar.
+>
+> **Nachgezogen in v3.0 (04.08.2026), vom Auftraggeber entschieden:**
+>
+> 1. **Die Akzentfarbe einer Aktion ersetzt die Akzent-Rollen ihrer Vorlage** (9.10.9 neu, mitgezogen 9.10.1, 9.11.1 Punkt 7, 9.8.2, 9.8.4). Löst eine Zone eine der drei Akzent-Rollen `akzent`, `akzentKraeftig`, `akzentTief` (9.11.2) auf, liefert die Auflösung den Wert aus `aktion.akzentfarbe` statt des Markenwerts; alle übrigen Rollen bleiben unberührt, und ohne gesetzte Akzentfarbe gilt der Markenwert. *Folge ohne die Entscheidung:* `aktion.akzentfarbe` war seit 9.8.2 im Datenmodell und in FA-12 versprochen, hatte aber **keine Wirkung** – die Vorlage nennt Farben nur als Rollen (9.11.1 Punkt 7), und die Zeichenroutine reichte die Aktion nie an die Zonen-Auflösung weiter. Der Nutzer hätte eine Farbe gewählt und im Segment nichts davon gesehen; ein Agent hätte die Lücke lokal geschlossen – der eine im `action-editor`, der nächste in `template-canvas`, ein dritter gar nicht. Mitentschieden, weil es sonst sofort wieder offen wäre: `akzentfarbe` ist **`string | null`** (ohne Nullbarkeit gäbe es den zugesagten Zustand „nicht gesetzt" nicht), `flaecheAkzentZart` gehört **nicht** zu den Akzent-Rollen (es ist trotz des Namens eine Flächen-Rolle), es gibt **genau eine** Auflösungsstelle (sonst wirkt die Farbe in der Pille, aber nicht im Verlauf dahinter), und eine Vorlage darf sich **nicht** auf den Kontrast **zwischen zwei** Akzent-Rollen verlassen – nach der Ersetzung tragen alle drei denselben Wert, ein Text in `akzentTief` auf einer Fläche in `akzent` wäre unsichtbar. Unberührt bleibt der `render-service`: Die Restflächen der Split-Komposition tragen `flaecheDunkel` (9.2.8) – keine Akzent-Rolle –, er braucht also weiterhin **keine** Kenntnis von Aktionen.
+> 2. **Die Nutzung einer Vorlage wird vor dem Überarbeiten und vor dem Löschen angezeigt** – neue lesende Operation `pruefeVorlagenReferenzen` (`id` → `Ergebnis<Vorlagennutzung>`) in 9.12.1, mitgezogen 9.12.2. Sie liefert die Treffer **namentlich** (Aktionen und Listenelemente, je mit Projekt), verändert nichts und bekommt den eigenen Kanal `vorlagen:pruefeVorlagenReferenzen`. *Folge ohne die Entscheidung:* 9.12.2 verlangte die Anzeige („wird von 7 Aktionen in 2 Projekten verwendet"), die Operationsliste 9.12.1 kannte aber **keine** Operation dafür – die Zählung existierte nur intern als Sperre beim Löschen und war von der Oberfläche aus **nicht erreichbar**. Eine Vorlage ist app-weit: Ihr Überarbeiten ändert das Aussehen von Aktionen in Projekten, die gerade **gar nicht offen** sind, und der Merge ist ein vollständiges Ersetzen (9.12.1) – der Nutzer hätte blind entschieden. Beim gescheiterten Löschen stünde er vor einem bloßen „geht nicht", ohne zu erfahren, wo aufzuräumen wäre. Der Rückgabetyp `Vorlagennutzung` ist **nicht neu**: Es ist derselbe, den `vorlage_referenziert` als `fehler.daten` trägt (9.1.1) – ein zweiter Typ hätte zwei Zählungen bedeutet, die auseinanderlaufen.
+> 3. **Die App hat genau ein Fenster, und jedes Ereignis geht an dieses eine Fenster** (9.1.1 Punkt 10 neu, mitgezogen 9.2.7, 9.3.4, 9.5.4). *Folge ohne die Entscheidung:* Für **jedes** Main→Renderer-Ereignis (`render:fortschritt`, `queue:geaendert`, die Auto-Speichern-Meldung) wäre offen geblieben, **wen** der Sender adressiert – jeder Agent hätte es anders gelöst, vom festgehaltenen Fenster-Handle bis zur Rundsendung an alle Fenster, und ein minutenlanger Render meldete seinen Fortschritt womöglich ins Leere. Die erste Stufe ist ein Studio, ein Bildschirm, ein Laptop: Ein zweites Fenster hätte keine Aufgabe, brächte aber sofort die Fragen mit, wer den Abbruch auslösen darf und was ein geschlossenes Fenster während eines laufenden Auftrags bedeutet. Käme später ein zweites Fenster, ist die Nachbesserung überschaubar und liegt an den Verdrahtungsstellen – sie wird dann **bewusst** gemacht, statt vorsorglich mitgeschleppt zu werden. Nicht zu verwechseln mit der Einzel-Instanz-Sperre (9.5.4): Jene verhindert einen zweiten **Prozess**, diese legt fest, dass der eine Prozess **ein Fenster** führt.
+> 4. **Ein Projekt mit beschädigter `project.json` wird mit Warnhinweis gelistet, nicht weggelassen** (9.5.2, `listeProjekte`). `ProjektMeta` trägt dafür das Feld **`beschaedigt: boolean`**; der Eintrag erscheint mit dem **Ordnernamen** als Behelfs-Bezeichnung und lässt sich nicht öffnen. *Folge ohne die Entscheidung:* Ein weggelassenes Projekt sieht für den Nutzer aus wie ein **verlorenes** – er finge neu an, obwohl seine Medien und seine gerenderten Ausgaben unversehrt im Ordner liegen. Es wäre zudem der einzige Ort im System, an dem ein Datenfehler **ohne jede Meldung** verschwindet, gegen 9.1.1 Punkt 7. Sichtbar mit Warnung ist die ehrlichere und die reparierbare Variante. **Mitentschieden:** `listeProjekte` **nimmt das D1-Lock, obwohl sie nur liest** – ein Verzeichnis-Scan während einer laufenden `dupliziereProjekt` (die den Zielordner schrittweise aufbaut) läse sonst ein Projekt in einem **halbkopierten** Zwischenzustand ein und meldete es als beschädigt, obwohl es Minuten später vollständig in Ordnung ist. Damit ist sie die bewusste Ausnahme gegenüber `listeAusgaben`, die ohne Lock läuft (9.5.2).
+>
+> **Nachgezogen in v2.9 (04.08.2026), beim Prüflauf der M6-Issues gefunden:**
+>
+> 1. **`speicher_fehler` ist der siebte Fehlercode des `export-service`** (9.6.4). Der Sofort-Flush von D1 läuft seit v2.8 als **erster Schritt im `export`-Handler** (9.3.3, 9.5.4); scheitert er, hatte der als **vollständig** geführte Satz aus 9.6.4 keinen passenden Code – `schreib_fehler` meint dort ausdrücklich das **Kopieren**, die übrigen fünf betreffen das **Ziel**, der Flush aber den **Datenort**. *Folge ohne die Änderung:* Der Export hätte einen realen, benennbaren Fehler als `unbekannter_fehler` oder – schlimmer – unter einem selbst erfundenen Namen gemeldet. Der Render-Pfad kennt für dieselbe Ursache längst `speicher_fehler` (9.2.3), der `media-service` ebenso (9.4.9); zwei Namen für eine Sache zwängen die Oberfläche zu zwei Meldungstexten und zwei Zweigen, und der Code steht **dauerhaft** in Q3. Mitgezogen: 9.2.3 nennt den gescheiterten Flush jetzt ausdrücklich mit – seine Beschreibung war auf Fehler **am Ziel** verengt und deckte den Fall im Render-Handler streng gelesen selbst nicht ab.
+> 2. **Bandhöhen müssen gerade sein** (Invariante 9.2.8, Datenmodell 9.11.1 Punkt 8, **Sperre** im Editor 9.12.2, Abweisung im Store 9.12.1, zusätzliche Render-Prüfung 9.2.3 / Feldbeschreibung 9.2.2). Das Ausgabe-Profil verlangt `yuv420p` (9.2.4); dieses Pixelformat tastet die Farbe in beiden Richtungen um den Faktor zwei unter und verlangt deshalb gerade Höhen **und** gerade Versätze. *Folge ohne die Änderung:* Bei ungerader Bandhöhe `H` bricht **jede** der beiden Kompositionsarten aus 9.2.8 – bei `split` ist die Videofläche `1080 − H` ungerade, bei `einblendung` liegt das Overlay bei `y = 1080 − H` auf einer ungeraden Zeile. Der Nutzer erführe das erst **beim Render**, nachdem er die Vorlage fertig gebaut hat, und der Fehler käme aus einer Filterkette statt von der Stelle, an der die Zahl eingegeben wurde. Die eingebaute Band-Vorlage (`höhe: 162`) und die Beispielrechnungen in 9.2.8 und 9.11.2 sind bereits geradzahlig – die Lücke war deshalb unauffällig.
+>
+> 3. **Die Split-Videobreite wird auf ein Vielfaches von 4 abgerundet** (9.2.8). *Folge ohne die Änderung:* Die gerade Bandhöhe aus Punkt 2 rettet die Split-Geometrie nur scheinbar – (1080 − H) × 16/9 ist bei den meisten geraden H **nicht** ganzzahlig, und der zentrierte x-Versatz wäre selbst bei gerader Breite oft ungerade. `yuv420p` verlangt beides gerade; der Agent hätte die Rundung selbst erfunden, in drei Dateien unterschiedlich, und die eingebaute Vorlage (H = 162) hätte den Mangel verdeckt, weil sie als einzige zufällig aufgeht.
 >
 > **Nachgezogen in v2.8 (04.08.2026), beim Zuschnitt der M6-Issues gefunden:**
 >

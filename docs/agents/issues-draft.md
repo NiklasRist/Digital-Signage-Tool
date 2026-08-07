@@ -5,7 +5,7 @@
 > Wird nach Abschnitt 11 des Übergabe-Prompts (`docs/agents/issue-generation-prompt.md`)
 > milestone-weise befüllt und je Milestone dem Nutzer zur Kontrolle vorgelegt, bevor der nächste
 > Milestone geschrieben wird. Quelle der Wahrheit für jeden fachlichen Inhalt: Technisches Konzept
-> **v2.7** (`docs/Technisches_Konzept_Digital-Signage-Tool.md`).
+> **v3.1** (`docs/Technisches_Konzept_Digital-Signage-Tool.md`).
 >
 > **Fortschritt (Stand 04.08.2026):** M0 ✅ (Issues #1–#12) · M1 ✅ geschrieben, geprüft, korrigiert
 > und **angelegt** (M1-01…M1-40 = Issues **#13–#52**, Milestone „M1 – Fundament") · M2 ✅ **angelegt**
@@ -13,8 +13,11 @@
 > s. Abschnitt am Dateiende) · M3 + 6 M1-Nachzügler ✅ **angelegt** (Issues **#72–#94**;
 > `docs/agents/m3/`, `docs/agents/m1-nachzuegler/`) · M4 ✅ **angelegt** (M4-01…M4-25 = Issues
 > **#95–#119**, Milestone „M4 – Pixel"; `docs/agents/m4/`) · M5 ✅ **angelegt** (M5-01…M5-36 =
-> Issues **#120–#155**, Milestone „M5 – Inhalte"; `docs/agents/m5/`) · **M6–M7 offen.**
-> Stand und nächster Schritt: `uebergabe-stand.md`, Abschnitte 4c und 4d.
+> Issues **#120–#155**, Milestone „M5 – Inhalte"; `docs/agents/m5/`) · M6 ✅ **angelegt**
+> (M6-01…M6-37 = Issues **#156–#192**, Milestone „M6 – Render & Export"; `docs/agents/m6/`) ·
+> M7 ✅ **angelegt** (M7-01…M7-69 = Issues **#194–#262**, Milestone
+> „M7 – Oberfläche & Komfort"; `docs/agents/m7/`) · **alle Meilensteine M0–M7 sind angelegt.**
+> Stand und nächster Schritt: `uebergabe-stand.md`, Abschnitte 4c, 4d, 4e und 4f.
 >
 > **Achtung vor dem Anlegen:** M1-01…M1-29 entstanden **vor** den Regeln C/D/E und vor der
 > Anforderungsänderung vom 02.08. (mehrere benannte Ausgabedateien, FA-22). Sie brauchen denselben
@@ -34,6 +37,96 @@
 > gelten: **Regel C** – in „Signatur (verbindlich)" darf nur Entschiedenes stehen, Offenes
 > ausschließlich in „Nicht selbst entscheiden", nie beides; **Regel D** – Zitate wörtlich oder
 > gar nicht; **Regel E** – jeder DoD-Punkt muss im erlaubten Dateibereich erfüllbar sein.
+
+## M7 → GitHub-Mapping
+
+Angelegt am 05.08.2026. Volltexte: eine Datei je Issue in `docs/agents/m7/`, Mapping
+maschinenlesbar in `docs/agents/m7/map.json`. Milestone „M7 – Oberfläche & Komfort".
+**69 Issues, `#194`–`#262`.** 2756 Querverweise aufgelöst.
+**Fünf neue Labels:** `modul:app-shell`, `modul:queue-panel`, `modul:preview-player`,
+`modul:projekt-verwaltung`, `modul:renderer-gemeinsam`.
+**`braucht-entscheidung` tragen 38 der 69.**
+
+> **ACHTUNG – die Faustregel `M7-XX → #(XX+193)` gilt NUR BIS M7-59 (`#252`).** Danach stimmt sie
+> **nicht** mehr, und Nachrechnen führt auf falsche Issues. **Grund:** GitHub lehnt Bodies über
+> **65 536 Zeichen** ab. **M7-60** und **M7-65** lagen bei rund **77 000** Zeichen und scheiterten
+> beim Anlegen, während die übrigen 65 durchliefen. Beide wurden anschließend **geteilt** statt
+> gekürzt (M7-60 → M7-60 + M7-68, M7-65 → M7-65 + M7-69) und **nach** M7-61…M7-67 angelegt – daher
+> die Sprünge. Konkret: M7-60 → `#259`, M7-61…M7-67 → `#253`–`#258` (M7-65 fehlt darin),
+> M7-65 → `#260`, M7-68 → `#261`, M7-69 → `#262`.
+> **Immer aus `docs/agents/m7/map.json` abschreiben, nie rechnen.**
+
+| Kürzel | Issue | Kürzel | Issue |
+|---|---|---|---|
+| M7-01 | [#194](https://github.com/NiklasRist/Digital-Signage-Tool/issues/194) | M7-36 | [#229](https://github.com/NiklasRist/Digital-Signage-Tool/issues/229) |
+| M7-02 | [#195](https://github.com/NiklasRist/Digital-Signage-Tool/issues/195) | M7-37 | [#230](https://github.com/NiklasRist/Digital-Signage-Tool/issues/230) |
+| M7-03 | [#196](https://github.com/NiklasRist/Digital-Signage-Tool/issues/196) | M7-38 | [#231](https://github.com/NiklasRist/Digital-Signage-Tool/issues/231) |
+| M7-04 | [#197](https://github.com/NiklasRist/Digital-Signage-Tool/issues/197) | M7-39 | [#232](https://github.com/NiklasRist/Digital-Signage-Tool/issues/232) |
+| M7-05 | [#198](https://github.com/NiklasRist/Digital-Signage-Tool/issues/198) | M7-40 | [#233](https://github.com/NiklasRist/Digital-Signage-Tool/issues/233) |
+| M7-06 | [#199](https://github.com/NiklasRist/Digital-Signage-Tool/issues/199) | M7-41 | [#234](https://github.com/NiklasRist/Digital-Signage-Tool/issues/234) |
+| M7-07 | [#200](https://github.com/NiklasRist/Digital-Signage-Tool/issues/200) | M7-42 | [#235](https://github.com/NiklasRist/Digital-Signage-Tool/issues/235) |
+| M7-08 | [#201](https://github.com/NiklasRist/Digital-Signage-Tool/issues/201) | M7-43 | [#236](https://github.com/NiklasRist/Digital-Signage-Tool/issues/236) |
+| M7-09 | [#202](https://github.com/NiklasRist/Digital-Signage-Tool/issues/202) | M7-44 | [#237](https://github.com/NiklasRist/Digital-Signage-Tool/issues/237) |
+| M7-10 | [#203](https://github.com/NiklasRist/Digital-Signage-Tool/issues/203) | M7-45 | [#238](https://github.com/NiklasRist/Digital-Signage-Tool/issues/238) |
+| M7-11 | [#204](https://github.com/NiklasRist/Digital-Signage-Tool/issues/204) | M7-46 | [#239](https://github.com/NiklasRist/Digital-Signage-Tool/issues/239) |
+| M7-12 | [#205](https://github.com/NiklasRist/Digital-Signage-Tool/issues/205) | M7-47 | [#240](https://github.com/NiklasRist/Digital-Signage-Tool/issues/240) |
+| M7-13 | [#206](https://github.com/NiklasRist/Digital-Signage-Tool/issues/206) | M7-48 | [#241](https://github.com/NiklasRist/Digital-Signage-Tool/issues/241) |
+| M7-14 | [#207](https://github.com/NiklasRist/Digital-Signage-Tool/issues/207) | M7-49 | [#242](https://github.com/NiklasRist/Digital-Signage-Tool/issues/242) |
+| M7-15 | [#208](https://github.com/NiklasRist/Digital-Signage-Tool/issues/208) | M7-50 | [#243](https://github.com/NiklasRist/Digital-Signage-Tool/issues/243) |
+| M7-16 | [#209](https://github.com/NiklasRist/Digital-Signage-Tool/issues/209) | M7-51 | [#244](https://github.com/NiklasRist/Digital-Signage-Tool/issues/244) |
+| M7-17 | [#210](https://github.com/NiklasRist/Digital-Signage-Tool/issues/210) | M7-52 | [#245](https://github.com/NiklasRist/Digital-Signage-Tool/issues/245) |
+| M7-18 | [#211](https://github.com/NiklasRist/Digital-Signage-Tool/issues/211) | M7-53 | [#246](https://github.com/NiklasRist/Digital-Signage-Tool/issues/246) |
+| M7-19 | [#212](https://github.com/NiklasRist/Digital-Signage-Tool/issues/212) | M7-54 | [#247](https://github.com/NiklasRist/Digital-Signage-Tool/issues/247) |
+| M7-20 | [#213](https://github.com/NiklasRist/Digital-Signage-Tool/issues/213) | M7-55 | [#248](https://github.com/NiklasRist/Digital-Signage-Tool/issues/248) |
+| M7-21 | [#214](https://github.com/NiklasRist/Digital-Signage-Tool/issues/214) | M7-56 | [#249](https://github.com/NiklasRist/Digital-Signage-Tool/issues/249) |
+| M7-22 | [#215](https://github.com/NiklasRist/Digital-Signage-Tool/issues/215) | M7-57 | [#250](https://github.com/NiklasRist/Digital-Signage-Tool/issues/250) |
+| M7-23 | [#216](https://github.com/NiklasRist/Digital-Signage-Tool/issues/216) | M7-58 | [#251](https://github.com/NiklasRist/Digital-Signage-Tool/issues/251) |
+| M7-24 | [#217](https://github.com/NiklasRist/Digital-Signage-Tool/issues/217) | M7-59 | [#252](https://github.com/NiklasRist/Digital-Signage-Tool/issues/252) |
+| M7-25 | [#218](https://github.com/NiklasRist/Digital-Signage-Tool/issues/218) | M7-60 | [#259](https://github.com/NiklasRist/Digital-Signage-Tool/issues/259) |
+| M7-26 | [#219](https://github.com/NiklasRist/Digital-Signage-Tool/issues/219) | M7-61 | [#253](https://github.com/NiklasRist/Digital-Signage-Tool/issues/253) |
+| M7-27 | [#220](https://github.com/NiklasRist/Digital-Signage-Tool/issues/220) | M7-62 | [#254](https://github.com/NiklasRist/Digital-Signage-Tool/issues/254) |
+| M7-28 | [#221](https://github.com/NiklasRist/Digital-Signage-Tool/issues/221) | M7-63 | [#255](https://github.com/NiklasRist/Digital-Signage-Tool/issues/255) |
+| M7-29 | [#222](https://github.com/NiklasRist/Digital-Signage-Tool/issues/222) | M7-64 | [#256](https://github.com/NiklasRist/Digital-Signage-Tool/issues/256) |
+| M7-30 | [#223](https://github.com/NiklasRist/Digital-Signage-Tool/issues/223) | M7-65 | [#260](https://github.com/NiklasRist/Digital-Signage-Tool/issues/260) |
+| M7-31 | [#224](https://github.com/NiklasRist/Digital-Signage-Tool/issues/224) | M7-66 | [#257](https://github.com/NiklasRist/Digital-Signage-Tool/issues/257) |
+| M7-32 | [#225](https://github.com/NiklasRist/Digital-Signage-Tool/issues/225) | M7-67 | [#258](https://github.com/NiklasRist/Digital-Signage-Tool/issues/258) |
+| M7-33 | [#226](https://github.com/NiklasRist/Digital-Signage-Tool/issues/226) | M7-68 | [#261](https://github.com/NiklasRist/Digital-Signage-Tool/issues/261) |
+| M7-34 | [#227](https://github.com/NiklasRist/Digital-Signage-Tool/issues/227) | M7-69 | [#262](https://github.com/NiklasRist/Digital-Signage-Tool/issues/262) |
+| M7-35 | [#228](https://github.com/NiklasRist/Digital-Signage-Tool/issues/228) |  |  |
+
+## M6 → GitHub-Mapping
+
+Angelegt am 04.08.2026. Volltexte: eine Datei je Issue in `docs/agents/m6/`, Mapping
+maschinenlesbar in `docs/agents/m6/map.json`. Milestone „M6 – Render & Export",
+`M6-XX → #(XX+155)`. **Aus dem Prüflauf entstand M6-37** (`project-store`: das aktive Projekt
+main-intern herausgeben – ohne das war der Sofort-Flush aus TK v2.8 nicht baubar) – der Zuschnitt
+hatte 36 Issues. 921 Querverweise aufgelöst.
+**Vier neue Labels:** `modul:ffmpeg-adapter`, `modul:render-service`, `modul:export-service`,
+**`risiko:tv-ausgabe`** (15 der 37: #161–#170, #174, #176, #177, #180, #181).
+**`braucht-entscheidung` tragen nur 5 der 37:** #163, #168, #184, #191, #192 – **drei davon sind
+Experimente**, keine Entscheidungen.
+
+| Kürzel | Issue | Kürzel | Issue |
+|---|---|---|---|
+| M6-01 | [#156](https://github.com/NiklasRist/Digital-Signage-Tool/issues/156) | M6-20 | [#175](https://github.com/NiklasRist/Digital-Signage-Tool/issues/175) |
+| M6-02 | [#157](https://github.com/NiklasRist/Digital-Signage-Tool/issues/157) | M6-21 | [#176](https://github.com/NiklasRist/Digital-Signage-Tool/issues/176) |
+| M6-03 | [#158](https://github.com/NiklasRist/Digital-Signage-Tool/issues/158) | M6-22 | [#177](https://github.com/NiklasRist/Digital-Signage-Tool/issues/177) |
+| M6-04 | [#159](https://github.com/NiklasRist/Digital-Signage-Tool/issues/159) | M6-23 | [#178](https://github.com/NiklasRist/Digital-Signage-Tool/issues/178) |
+| M6-05 | [#160](https://github.com/NiklasRist/Digital-Signage-Tool/issues/160) | M6-24 | [#179](https://github.com/NiklasRist/Digital-Signage-Tool/issues/179) |
+| M6-06 | [#161](https://github.com/NiklasRist/Digital-Signage-Tool/issues/161) | M6-25 | [#180](https://github.com/NiklasRist/Digital-Signage-Tool/issues/180) |
+| M6-07 | [#162](https://github.com/NiklasRist/Digital-Signage-Tool/issues/162) | M6-26 | [#181](https://github.com/NiklasRist/Digital-Signage-Tool/issues/181) |
+| M6-08 | [#163](https://github.com/NiklasRist/Digital-Signage-Tool/issues/163) | M6-27 | [#182](https://github.com/NiklasRist/Digital-Signage-Tool/issues/182) |
+| M6-09 | [#164](https://github.com/NiklasRist/Digital-Signage-Tool/issues/164) | M6-28 | [#183](https://github.com/NiklasRist/Digital-Signage-Tool/issues/183) |
+| M6-10 | [#165](https://github.com/NiklasRist/Digital-Signage-Tool/issues/165) | M6-29 | [#184](https://github.com/NiklasRist/Digital-Signage-Tool/issues/184) |
+| M6-11 | [#166](https://github.com/NiklasRist/Digital-Signage-Tool/issues/166) | M6-30 | [#185](https://github.com/NiklasRist/Digital-Signage-Tool/issues/185) |
+| M6-12 | [#167](https://github.com/NiklasRist/Digital-Signage-Tool/issues/167) | M6-31 | [#186](https://github.com/NiklasRist/Digital-Signage-Tool/issues/186) |
+| M6-13 | [#168](https://github.com/NiklasRist/Digital-Signage-Tool/issues/168) | M6-32 | [#187](https://github.com/NiklasRist/Digital-Signage-Tool/issues/187) |
+| M6-14 | [#169](https://github.com/NiklasRist/Digital-Signage-Tool/issues/169) | M6-33 | [#188](https://github.com/NiklasRist/Digital-Signage-Tool/issues/188) |
+| M6-15 | [#170](https://github.com/NiklasRist/Digital-Signage-Tool/issues/170) | M6-34 | [#189](https://github.com/NiklasRist/Digital-Signage-Tool/issues/189) |
+| M6-16 | [#171](https://github.com/NiklasRist/Digital-Signage-Tool/issues/171) | M6-35 | [#190](https://github.com/NiklasRist/Digital-Signage-Tool/issues/190) |
+| M6-17 | [#172](https://github.com/NiklasRist/Digital-Signage-Tool/issues/172) | M6-36 | [#191](https://github.com/NiklasRist/Digital-Signage-Tool/issues/191) |
+| M6-18 | [#173](https://github.com/NiklasRist/Digital-Signage-Tool/issues/173) | M6-37 | [#192](https://github.com/NiklasRist/Digital-Signage-Tool/issues/192) |
+| M6-19 | [#174](https://github.com/NiklasRist/Digital-Signage-Tool/issues/174) | | |
 
 ## M5 → GitHub-Mapping
 
@@ -1301,7 +1394,8 @@ export interface Aktion {
   cta: string | null
   standardDauer: number | null     // nur Vorgabe, s. TK 9.8.4
   vorlagenId: string
-  akzentfarbe: string              // Rollen-Verweis in die Markenpalette, kein Hex
+  akzentfarbe: string | null       // Rollen-Verweis in die Markenpalette, kein Hex;
+                                   // null = kein Wert gewaehlt, dann gilt der Markenwert
 }
 ```
 
@@ -1324,12 +1418,24 @@ Aktion {
   cta:          string | null   // Call-to-Action, z. B. "Gratis Probetraining"
   standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4)
   vorlagenId:   string          // gewählte Vorlage (eingebaut oder eigene, FA-13)
-  akzentfarbe:  string          // aus der Markenpalette (feste Auswahl, v1)
+  akzentfarbe:  string | null   // aus der Markenpalette (feste Auswahl, v1); ERSETZT beim Zeichnen
+                                //   die Akzent-Rollen der Vorlage (9.10.9). null = Markenwert gilt
 }
 ```
 (TK 9.8.2, wörtlich übernommen)
 - „Bild = Referenz, nie Kopie: die Aktion hält nur eine Asset-ID." (TK 9.8.4)
 - „Akzentfarbe nur aus der Markenpalette (feste Auswahl in v1, kein freier Farbwähler)." (TK 9.8.4)
+- „**Ist `aktion.akzentfarbe` nicht gesetzt, gilt der Markenwert** der jeweiligen Rolle. Das ist
+  der reguläre Rückfall und **kein** Fehler; eine Aktion ohne gewählte Akzentfarbe sieht aus wie
+  die Vorlage sie vorsieht." (TK 9.10.9)
+
+**ENTSCHIEDEN (TK v3.0) – `akzentfarbe` ist `string | null`, und der Nullfall ist ein zugesagter
+Zustand, kein Versehen.** Die Akzentfarbe einer Aktion **ersetzt beim Zeichnen** die drei
+Akzent-Rollen ihrer Vorlage (`akzent`, `akzentKraeftig`, `akzentTief`, TK 9.10.9); wählt eine Aktion
+keine, gilt der Markenwert. *Begründung:* Ohne die Nullbarkeit gäbe es den zugesagten Zustand
+„nicht gesetzt" überhaupt nicht – jede Aktion trüge zwingend eine Rolle, und der reguläre Rückfall
+auf die Vorlage wäre nur über einen erfundenen Sonderwert (leerer String) darstellbar, den jede
+lesende Stelle anders auslegt. `null` ist hier ein **Wert mit Bedeutung**, nicht ein fehlender Wert.
 
 ## Fehlerpfade (vollständig)
 Entfällt (Typdefinition; Validierung – Titel Pflicht – ist Sache der `erstelleAktion`/
@@ -1344,6 +1450,10 @@ Entfällt (Typdefinition; Validierung – Titel Pflicht – ist Sache der `erste
 ## Definition of Done
 - [ ] `Aktion`-Interface exakt wie oben
 - [ ] `titel` ist non-optional (`string`, nicht `string | null`)
+- [ ] `akzentfarbe` ist `string | null` – **nicht** `string`, **nicht** optional (`akzentfarbe?:`).
+      `null` bedeutet: keine Akzentfarbe gewählt, es gilt der Markenwert (TK 9.8.2 / 9.10.9) – und
+      ist ein gültiger Zustand; ein optionales Feld würde denselben Zustand ein zweites Mal als
+      `undefined` ausdrücken
 - [ ] Keine Datei außerhalb von `src/shared/contracts/aktion.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
@@ -1364,7 +1474,8 @@ Ordnungsquelle (kein `position`-Feld) und der korrekten Feldbelegung je Element-
 ## Modul & Datei
 - Modul: `contracts/types` (geteilt)
 - Datei: `src/shared/contracts/project.ts`
-- Vertrag: Technisches Konzept **9.11.3** (Quelle der Wahrheit)
+- Vertrag: Technisches Konzept **9.11.3** (Quelle der Wahrheit) für `Project`/`Listenelement`/
+  `Einblendung`; **9.5.2** (Quelle der Wahrheit) für `Bearbeitungsstand`
 - Prozess/Speicher: D1
 
 ## Warum das im Gesamtsystem wichtig ist
@@ -1374,6 +1485,14 @@ Array-Reihenfolge wäre eine zweite Quelle für dieselbe Information; TK betont 
 „zwei Quellen für dieselbe Information unweigerlich auseinanderlaufen" – ein Agent, der later ein
 `ordneNeu` implementiert, dürfte dann nicht versucht sein, zusätzlich ein `position`-Feld zu
 pflegen.
+
+`Bearbeitungsstand` gehört aus demselben Grund in **diese** Datei: Er ist strukturell nichts
+anderes als ein **Ausschnitt aus `Project`** – dieselben zwei Felder (`aktionen`, `liste`), dieselben
+Elementtypen. Eine eigene Datei für zwei Felder, die aus der Nachbardatei stammen, wäre eine
+Trennung ohne Gewinn; sie hätte hier sogar Schaden angerichtet, weil sie einen **M1**-Baustein
+(`löscheAktion`, M1-28) von einem **M7**-Baustein abhängig gemacht hätte. Das Technische Konzept
+nennt für den Typ **keine** Datei – die Zuordnung ist eine reine Schnitt-Entscheidung, kein
+Vertragspunkt.
 
 ## Signatur (verbindlich – NICHT ändern)
 ```ts
@@ -1404,7 +1523,29 @@ export interface Einblendung {
   bandVorlageId: string
   abschnitte: Array<{ aktionRef: string; dauer: number }>
 }
+
+// Ausschnitt aus Project: genau die zwei Felder, die Undo/Redo fuehrt (TK 9.5.2).
+// KEINE eigene Datei - dieselben Felder, dieselben Elementtypen wie oben.
+export interface Bearbeitungsstand {
+  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts
+  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,
+                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)
+}
 ```
+
+**Kein neuer Import nötig.** `Aktion` wird von `Project.aktionen` ohnehin schon gebraucht,
+`Listenelement` steht in **derselben** Datei. Sollte die Datei wider Erwarten ohne Import von
+`Aktion` auskommen (weil `Project` anders geschnitten wurde als hier vorgegeben), ist der Import
+`import type { Aktion } from './aktion'` (M1-02) zu ergänzen – **kein** zweiter Typ `Aktion`.
+
+**Warum `Bearbeitungsstand` hier und nicht in einer eigenen Datei (entschieden).** Der Typ reist
+über IPC – der Renderer hält die Historie, der Main schreibt sie zurück –, gehört also in den
+geteilten Bereich. Innerhalb davon gehört er in **diese** Datei, weil er ein Ausschnitt aus
+`Project` ist: `aktionen: Aktion[]` und `liste: Listenelement[]` sind zeichengleich die Felder von
+`Project`. Der Vertrag sagt es selbst: „*Warum `Bearbeitungsstand` und nicht `Projekt`:* Es ist
+derselbe Ausschnitt, den der Schnappschuss ohnehin führt (`aktionen` + `liste`, 9.5.2/9.13.2)"
+(TK 9.5.2). Die Operation `setzeBearbeitungsstand` bleibt davon unberührt – sie liegt in **#237**
+(`src/main/project-store/bearbeitungsstand.ts`); hier entsteht **nur** der Typ.
 
 ## Eingang → Ausgang
 | Eingang | Bedeutung | Grenzen/Validierung |
@@ -1427,6 +1568,18 @@ Ausgang bei Fehler: entfällt.
   `trimStart`/`trimEnde` gesetzt, `einblendung` erlaubt · `bild` → `ref`=Asset(bild), `dauer`
   gesetzt (10–45s), `trimStart`/`trimEnde`/`einblendung`=`null` · `segment` → `ref`=Aktion, `dauer`
   gesetzt (10–45s), `trimStart`/`trimEnde`/`einblendung`=`null`.
+- „**Ausdrücklich NICHT enthalten: `assets` und `letzterAusgabeName`.** Der `Bearbeitungsstand`
+  trägt **nur** `aktionen` und `liste`. *Begründung:* Beide anderen Felder werden von **Aufträgen**
+  verändert – `assets` vom Import und vom Löschen (9.4.5/9.4.6), `letzterAusgabeName` vom Render
+  (FA-22) –, und Aufträge sind nach 9.13.3 **grundsätzlich nicht undo-fähig**." (TK 9.5.2)
+- „Zöge ein Undo sie mit, verschwände ein soeben importiertes Medium aus dem Datenbestand,
+  **während seine Datei weiter auf der Platte liegt**: eine Waise, die der Reconcile beim nächsten
+  Start stillschweigend löscht (9.4.7) – Datenverlust durch einen Knopf, der Datenverlust
+  verhindern soll." (TK 9.5.2) – **deshalb** hat `Bearbeitungsstand` genau zwei Felder und nicht
+  drei oder vier. Wer ihn hier um `assets` oder `letzterAusgabeName` erweitert, baut diesen
+  Datenverlust ein.
+- „Die Regel ergänzt 9.13.3 (ein D1-verändernder Auftrag **leert** die Historie) an ihrer Flanke:
+  Jene verhindert einen **veralteten** Schnappschuss, diese begrenzt seinen **Umfang**." (TK 9.5.2)
 - **Bewusste Vereinfachung:** `Listenelement` bleibt ein **flaches** Interface, keine
   diskriminierte Union über `art`. Die Belegungsregel oben (aus der TK-9.11.3-Tabelle) wird damit
   **nicht** vom Typsystem erzwungen, sondern **ausschließlich** in den Operationen validiert
@@ -1445,14 +1598,26 @@ Entfällt (Typdefinition; die Belegungs-Validierung je `art` ist Sache der `proj
 - [ ] `liste` ist `Listenelement[]`, kein zusätzliches Sortier-/Positionsfeld irgendwo im Projekt
 - [ ] Ein Kommentar im Code verweist auf die Belegungstabelle (TK 9.11.3), da TypeScript sie nicht
       erzwingen kann
+- [ ] `Bearbeitungsstand` existiert in **dieser** Datei mit **genau** den zwei Feldern
+      `aktionen: Aktion[]` und `liste: Listenelement[]` – kein `assets`, kein
+      `letzterAusgabeName`, kein `id`, kein weiteres Feld
+- [ ] Grep-Probe: es gibt **keine** Datei `src/shared/contracts/bearbeitungsstand.ts`; der Typ wird
+      im ganzen Projekt aus `src/shared/contracts/project.ts` importiert
+- [ ] Ein Kommentar am Typ hält fest, dass es sich um den **Ausschnitt aus `Project`** handelt, den
+      Undo/Redo führt (TK 9.5.2), und dass `assets`/`letzterAusgabeName` bewusst fehlen
+- [ ] Keine Funktion, keine Konstante, kein Re-Export zum Typ `Bearbeitungsstand` in dieser Datei –
+      die **Operation** `setzeBearbeitungsstand` gehört zu #237 und wird hier **nicht** angefasst
 - [ ] Keine Datei außerhalb von `src/shared/contracts/project.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
 - Blockiert von: #1, M1-01 (Asset), M1-02 (Aktion)
-- Blockiert: alle M1-project-store-Issues, M5/M6-Issues
+- Blockiert: alle M1-project-store-Issues, M5/M6-Issues; über `Bearbeitungsstand` zusätzlich
+  **M1-28** (`löscheAktion` – M1, seit TK v3.2 trägt die Rückgabe den `stand`), **#76**, **#142**,
+  **#234**, **#235**, **#237**, **#240**, **#243**, **#250**
 
 ## Bezug
-TK 9.11.3, TK 9.2.8 (Einblendung)
+TK 9.11.3, TK 9.2.8 (Einblendung), TK 9.5.2 (`Bearbeitungsstand`), TK 9.13.2 (wofür der
+Schnappschuss gebraucht wird)
 
 ---
 
@@ -1592,7 +1757,7 @@ export interface RenderItemVideo {
   trimEnde: number                 // Sekunden
   einblendung: {
     art: 'split' | 'einblendung'     // Kompositionsart: Band UNTER bzw. ÜBER dem Video (TK 9.2.8)
-    höhe: number                     // Bandhöhe H in Pixeln (ganzzahlig)
+    höhe: number                     // Bandhöhe H in Pixeln (ganzzahlig und gerade, TK 9.2.8)
     bandVorlageId: string
     abschnitte: Array<{ png: Uint8Array; dauer: number }>   // Band-PNGs bereits gerendert, je 1920 × höhe
     // Uint8Array (nicht ArrayBuffer/Buffer): überlebt Electrons structured clone
@@ -1643,7 +1808,7 @@ Element gar nicht erst in den Auftrag.
 | Eingang | Bedeutung | Grenzen/Validierung |
 |---|---|---|
 | – | reine Typdefinition | – |
-| `einblendung.art` / `einblendung.höhe` | Kompositionsart und Bandhöhe, beim Einreihen aus der Band-Vorlage abgeleitet | `art` ∈ { `split`, `einblendung` }; `höhe` ganzzahlig, > 0 und < 1080 (Prüfung selbst ist Sache von `render-service`, M6 – hier nur die Typen) |
+| `einblendung.art` / `einblendung.höhe` | Kompositionsart und Bandhöhe, beim Einreihen aus der Band-Vorlage abgeleitet | `art` ∈ { `split`, `einblendung` }; `höhe` ganzzahlig, **gerade**, > 0 und < 1080 – `yuv420p` verlangt gerade Höhen und gerade Versätze, bei ungerader Höhe brechen **beide** Kompositionsarten aus 9.2.8 (TK 9.11.1 Punkt 8; durchgesetzt an der Quelle: `vorlagen-editor` sperrt, `vorlagen-store` weist ab). Die Prüfung im Auftrag selbst ist Sache von `render-service`, M6 – hier nur die Typen |
 | `ausgabeName` | Dateiname ohne Endung für die Zieldatei | keine Pfadtrenner, kein `..`, keine für Windows/macOS/FAT32 unzulässigen Zeichen, nicht leer, keine reservierten Windows-Namen (Validierung selbst ist Sache von `render-service`, M6 – hier nur der Typ `string`) |
 
 Ausgang bei Erfolg: `RenderRequest`/`RenderItem` sind im ganzen Projekt importierbar; TypeScript
@@ -1661,7 +1826,7 @@ Ausgang bei Fehler: entfällt.
   sich aus der Listenposition, nicht aus einem separaten Feld." (TK 9.2.1)
 - „**Die `einblendung` eines `"video"`-Items trägt die Geometrie mit:** `art` | `"split"` \|
   `"einblendung"` – Kompositionsart (Band **unter** bzw. **über** dem Video, 9.2.8) · `höhe` |
-  Bandhöhe `H` in Pixeln (ganzzahlig) · `abschnitte` | geordnete Folge `{ png (Binärpuffer,
+  Bandhöhe `H` in Pixeln (ganzzahlig und **gerade**, 9.2.8) · `abschnitte` | geordnete Folge `{ png (Binärpuffer,
   1920 × H), dauer }`" (TK 9.2.2)
 - „Die Art wird **beim Einreihen** des Render-Auftrags aus der Band-Vorlage abgeleitet und zusammen
   mit der Bandhöhe `H` als `einblendung.art` / `einblendung.höhe` im `RenderRequest`
@@ -1849,13 +2014,15 @@ könnte durchrutschen, ohne dass ein Protokoll-Eintrag (Q3) entsteht.
 ```ts
 // src/shared/contracts/render-result.ts
 export type RenderResult =
-  | { status: 'erfolg'; renderId: string; ausgabePfad: string; gesamtdauer: number; dateigroesse: number }
+  | { status: 'erfolg'; renderId: string; ausgabePfad: string; ausgabeName: string; gesamtdauer: number; dateigroesse: number }
   | { status: 'fehler'; renderId: string; fehlercode: string; fehlerhaftesElementId: string | null; meldung: string }
   | { status: 'abgebrochen'; renderId: string; abgebrochenBei: number | null }
 
 // KEIN Feld `historieEintrag` und KEIN Typ `HistorieEintrag`. Beide sind mit TK v2.8 ersatzlos
 // gestrichen (TK 9.2.3). Der Q3-Protokolleintrag wird ALLEIN von der Auftragsverwaltung gebaut;
-// der render-service liefert nur, was NUR ER weiss: Pfad, Groesse und Gesamtdauer.
+// der render-service liefert nur, was NUR ER weiss: Pfad, Ausgabename, Groesse und Gesamtdauer.
+// `ausgabeName` ist der tatsaechlich verwendete Name OHNE Endung (TK v3.2, 9.2.3). Er reist NUR
+// in `Auftrag.ergebnis` und geht NICHT in `ProtokollEintrag.ausgabe` – dort steckt er im Pfad.
 
 export interface RenderProgress {
   renderId: string
@@ -1872,21 +2039,32 @@ export interface RenderProgress {
 |---|---|---|
 | – | reine Typdefinition | – |
 
-Ausgang bei Erfolg: `RenderResult` verengt bei `status === 'erfolg'` typsicher auf **genau drei**
-Nutzdaten-Felder – `ausgabePfad`, `gesamtdauer`, `dateigroesse` – und auf nichts sonst;
+Ausgang bei Erfolg: `RenderResult` verengt bei `status === 'erfolg'` typsicher auf **genau vier**
+Nutzdaten-Felder – `ausgabePfad`, `ausgabeName`, `gesamtdauer`, `dateigroesse` – und auf nichts sonst;
 `RenderProgress` trägt keine Endzustände.
 Ausgang bei Fehler: entfällt.
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
 - „Genau **ein** terminaler Ausgang je Lauf, diskriminiert über `status` ∈ { `erfolg`, `fehler`,
   `abgebrochen` }. Alle drei tragen die `renderId`." (TK 9.2.3)
+- „| `ausgabeName` | der **tatsächlich verwendete** Ausgabename **ohne Endung** – derselbe Wert,
+  der im `RenderRequest` stand (9.2.1) |" (TK 9.2.3)
+- „Ohne ihn im Ergebnis erführe die Oberfläche vom neuen Namen **nichts** und schlüge weiter den
+  alten vor – der Nutzer überschriebe nicht die Datei, die er überschreiben wollte, oder legte
+  versehentlich eine zweite an." (TK 9.2.3)
+- „Der Wert steht zudem **dauerhaft** in Q3 (9.3) – dort allerdings **nicht** als eigenes Feld:
+  `ProtokollEintrag.ausgabe` trägt weiterhin nur `pfad`, `dateigroesse` und `gesamtdauer`, und der
+  Name ist im Pfad bereits enthalten." (TK 9.2.3) – `ausgabeName` steht deshalb **hier** im
+  `RenderResult`, aber **nicht** in `ProtokollEintrag` (#53).
 - „**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von der
   Auftragsverwaltung** gebaut (9.3) – sie besitzt ohnehin `auftragId`, `art`, `projektId`,
   `versuch`, `begonnenAm` und `beendetAm`. Der `render-service` liefert nur, was **nur er** weiß:
-  Pfad, Größe und Gesamtdauer; daraus wird `ProtokollEintrag.ausgabe`. *Begründung:* Zwei Quellen
-  für dieselbe Information laufen unweigerlich auseinander (dieselbe Regel entfernte schon das
-  `position`-Feld, 9.11.3, und die doppelte Ablage der offenen Löschungen, 9.3) – und **Q3 ist
-  dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer falsch." (TK 9.2.3)
+  Pfad, Größe, Gesamtdauer und den verwendeten Ausgabenamen; aus den ersten dreien wird
+  `ProtokollEintrag.ausgabe` – der Name geht **nicht** eigens ins Protokoll, er steckt im Pfad
+  (s. o.). *Begründung:* Zwei Quellen für dieselbe Information laufen unweigerlich auseinander
+  (dieselbe Regel entfernte schon das `position`-Feld, 9.11.3, und die doppelte Ablage der offenen
+  Löschungen, 9.3) – und **Q3 ist dauerhaft**: ein doppelt geführtes Datum darin bliebe für immer
+  falsch." (TK 9.2.3)
 - „Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bereits vorhandene
   Datei gleichen Namens bleibt unversehrt** (9.2.6). Aufgeräumt sind in beiden Fällen **der
   Arbeitsbereich T1 *und* die angefangene `<name>.mp4.part` im Ausgabeordner** […] **Der
@@ -1896,10 +2074,14 @@ Ausgang bei Fehler: entfällt.
 - „Der Fortschrittskanal trägt **keinen** Endzustand. Erfolg, Fehler und Abbruch kommen
   **ausschließlich** über das `RenderResult`." (TK 9.2.7)
 - „`RenderResult` bestimmt den terminalen Auftrags-`status` (erfolg/fehlgeschlagen/abgebrochen) und
-  liefert bei Erfolg die Nutzdaten **Pfad, Größe und Gesamtdauer** (9.2.3) – daraus baut die
-  Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Einen fertig vorbereiteten
-  Historie-Eintrag liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe
-  Information." (TK 9.3.6)
+  liefert bei Erfolg die Nutzdaten **Pfad, Ausgabename, Größe und Gesamtdauer** (9.2.3) – daraus
+  baut die Auftragsverwaltung `Auftrag.ergebnis` **und** den Q3-Protokolleintrag. Der
+  **Ausgabename** reist dabei **nur** in `Auftrag.ergebnis`: Über ihn erfährt die Oberfläche,
+  welcher Name tatsächlich verwendet wurde, und hält ihre Vorbelegung mit
+  `Project.letzterAusgabeName` (FA-22) im Gleichklang. In `ProtokollEintrag.ausgabe` steht er
+  **nicht** – er ist dort bereits Teil des Pfades. Einen fertig vorbereiteten Historie-Eintrag
+  liefert der `render-service` **nicht**; das wäre eine zweite Quelle für dieselbe Information."
+  (TK 9.3.6)
 - „**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.**
   `RenderResult.fehlerhaftesElementId` ist Modul-intern; beim Abschluss des Auftrags übernimmt die
   Auftragsverwaltung `fehlercode` → `Auftrag.fehler.code`, `meldung` → `Auftrag.fehler.meldung` und
@@ -1928,7 +2110,16 @@ Die zulässigen Werte stehen in TK 9.2.3 und sind in #68 ausgeschrieben – s. S
   schon das `position`-Feld (TK 9.11.3) und die doppelte Ablage der offenen Löschungen (TK 9.3)
   entfernt. Und **Q3 ist dauerhaft und unbegrenzt**: ein doppelt geführtes Datum darin bliebe für
   immer falsch. Der `render-service` liefert deshalb genau das, was **nur er** weiß – `ausgabePfad`,
-  `dateigroesse`, `gesamtdauer`.
+  `ausgabeName`, `dateigroesse`, `gesamtdauer`.
+- **ENTSCHIEDEN (TK v3.2) – der `erfolg`-Zweig trägt `ausgabeName`, der `ProtokollEintrag` NICHT.**
+  Das Feld ist der Name **ohne Endung**, genau so, wie er im `RenderRequest` (M1-05) stand – nicht der
+  Dateiname mit `.mp4` und nicht aus `ausgabePfad` abgeleitet. *Begründung (TK 9.2.3/9.3.6):* Der
+  `render-service` setzt bei Erfolg `Project.letzterAusgabeName` in D1 (FA-22); genau dieser Wert
+  belegt beim nächsten Render das Namensfeld vor. Ohne ihn im Ergebnis hätte die Oberfläche keine
+  Quelle dafür außer einer eigenen Merkvariablen – und die liefe spätestens bei einem
+  **fehlgeschlagenen** Render (D1 unverändert) oder nach einem **Neustart** (Renderer-Zustand weg)
+  auseinander. Umgekehrt bekommt `ProtokollEintrag.ausgabe` (#53) **kein** zweites Feld dafür: Der
+  Name steckt im Pfad, und Q3 ist dauerhaft – eine Doppelführung dort bliebe für immer falsch.
 
 ## Nicht selbst entscheiden – STOPP und fragen
 - Ob `fehlercode` in `RenderResult` **typisiert** wird oder `string` bleibt. TK 9.2.3 führt seit
@@ -1947,7 +2138,9 @@ Die zulässigen Werte stehen in TK 9.2.3 und sind in #68 ausgeschrieben – s. S
       nur im `erfolg`-Zweig zugreifbar, `fehlercode` nur im `fehler`-Zweig)
 - [ ] Die Zeichenkette `historieEintrag` und der Typname `HistorieEintrag` kommen in der Datei
       **nicht** vor (Grep-Probe); der `erfolg`-Zweig hat **genau** die Felder `status`, `renderId`,
-      `ausgabePfad`, `gesamtdauer`, `dateigroesse`
+      `ausgabePfad`, `ausgabeName`, `gesamtdauer`, `dateigroesse`
+- [ ] `ausgabeName` ist im `erfolg`-Zweig `string` (nicht optional, nicht nullbar) und kommt in
+      **keinem** anderen Zweig vor (Test: der Zugriff ist nur nach `status === 'erfolg'` möglich)
 - [ ] Keine Datei außerhalb von `src/shared/contracts/render-result.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
@@ -3116,8 +3309,9 @@ TK 9.5.1, TK 9.5.2, TK 9.5.4, TK 9.5.5
 ### Issue M1-23: [project-store] listeProjekte implementieren
 
 ## Ziel (in einem Satz)
-Eine Instant-Operation liefert leichte Metadaten (ID, Name, Erstell-/Änderungsdatum, Ordner) aller
-vorhandenen Projekte, ohne sie vollständig zu laden.
+Eine Instant-Operation liefert leichte Metadaten (ID, Name, Erstell-/Änderungsdatum, Ordner,
+Beschädigt-Kennzeichen) aller vorhandenen Projekte, ohne sie vollständig zu laden – **einschließlich**
+der Projekte mit defekter `project.json`, die gekennzeichnet statt weggelassen werden.
 
 ## Modul & Datei
 - Modul: `project-store` [D1] (Main)
@@ -3134,14 +3328,20 @@ erscheinen lassen, obwohl TK 9.5.1 explizit nur **ein** aktives Projekt im Speic
 ## Signatur (verbindlich – NICHT ändern)
 ```ts
 export interface ProjektMeta {
-  id: string
-  name: string
-  erstelltAm: string
-  geaendertAm: string
-  ordner: string
+  id: string          // = Ordnername unter projects/
+  name: string        // aus project.json; bei beschaedigt: true der ORDNERNAME als Behelf
+  erstelltAm: string  // ISO-8601 UTC; bei beschaedigt: true aus den Ordner-Zeitstempeln
+  geaendertAm: string // ISO-8601 UTC; bei beschaedigt: true aus den Ordner-Zeitstempeln
+  ordner: string      // relativer Ordnername
+  beschaedigt: boolean // true = weder project.json noch project.json.bak lesbar
+  anzahlMedien: number   // Dateien in media/ - aus dem ORDNER gezaehlt, nicht aus project.json
+  anzahlAusgaben: number // fertige .mp4 in output/ - Zaehlweise wie listeAusgaben (.part zaehlt nicht)
 }
 export async function listeProjekte(): Promise<Ergebnis<ProjektMeta[]>>
 ```
+
+**Läuft unter dem D1-Lock** (`mitD1Lock`, M1-20) – ausdrücklich entschieden, obwohl die Operation nur
+liest; Begründung im ENTSCHIEDEN-Block unten.
 
 ## Eingang → Ausgang
 | Eingang | Bedeutung | Grenzen/Validierung |
@@ -3149,57 +3349,180 @@ export async function listeProjekte(): Promise<Ergebnis<ProjektMeta[]>>
 | – | liest `projects/`-Ordner | – |
 
 Ausgang bei Erfolg: Array aller gefundenen Projekte (leeres Array, wenn keine existieren – **kein**
-Fehler).
+Fehler); defekte Projekte sind **enthalten**, mit `beschaedigt: true`.
 Ausgang bei Fehler: `speicher_fehler` nur bei I/O-Fehler beim Lesen des `projects/`-Verzeichnisses
-selbst (nicht bei einzelnen defekten Projekten – s. „Nicht selbst entscheiden").
+selbst – **nicht** bei einzelnen defekten Projekten, die sind ein regulärer Listeneintrag.
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
-- „`listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geändertAm, ordner)"
+- „| `listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geaendertAm,
+  ordner, **beschaedigt**) – listet **auch** Projekte mit defekter `project.json`,
+  gekennzeichnet statt weggelassen (s. u.) |" (TK 9.5.2)
+- „Die **Projekt-Liste** (FA-10) sind leichte Metadaten (Name, Erstell-/Änderungsdatum, Ordner,
+  **Kennzeichnung beschädigter Projekte**), bei Bedarf aus dem `projects/`-Ordner gelesen – der
+  Scan läuft **unter dem D1-Lock** (Begründung: 9.5.2)." (TK 9.5.1) – **kein** vollständiges
+  Laden jedes Projekts.
+- „**Ein beschädigtes Projekt wird MIT WARNHINWEIS gelistet, nicht weggelassen (bindend).**"
   (TK 9.5.2)
-- „Die **Projekt-Liste** (FA-10) sind leichte Metadaten … bei Bedarf aus dem `projects/`-Ordner
-  gelesen." (TK 9.5.1) – **kein** vollständiges Laden jedes Projekts.
+- „**`listeProjekte` nimmt das D1-Lock, obwohl sie nur liest (bindend).**" (TK 9.5.2)
 - Der Abschnittstitel von TK 9.5.2 lautet „**Operationen (Instant, über das D1-Lock)**" und
-  `listeProjekte` ist eine der fünf darin aufgeführten Operationen – laut TK-Gliederung läuft sie
-  also ebenfalls über `mitD1Lock` (M1-20).
+  `listeProjekte` ist eine der fünf darin aufgeführten Operationen; das Lock ist für sie
+  zusätzlich **ausdrücklich** festgeschrieben (s. o.) – sie läuft über `mitD1Lock` (M1-20).
+- Die beiden mit TK v3.1 ergänzten Felder, wörtlich aus der Felddefinition (TK 9.5.2):
+  „`  anzahlMedien:   number       // Dateien in media/ – aus dem ORDNER gezählt, nicht aus project.json`"
+  und
+  „`  anzahlAusgaben: number       // fertige .mp4 in output/ – Zählweise wie listeAusgaben (.part zählt nicht)`"
+- „**`löscheProjekt` nennt vorher, was verschwindet (bindend).** Die Bestätigung ist **keine**
+  schlichte Ja/Nein-Abfrage. Sie nennt **drei** Angaben und einen Hinweis: den **Projektnamen**, die
+  **Anzahl der enthaltenen Medien**, die **Anzahl der gerenderten Ausgabedateien** und dass der
+  Vorgang **nicht rückgängig zu machen** ist" (TK 9.5.2) – die Bereitstellung beider Zahlen ist
+  Aufgabe **dieser** Operation.
+- „Die beiden Zahlen kommen aus `ProjektMeta.anzahlMedien` / `anzahlAusgaben` (s. o.) und damit
+  aus **derselben** Quelle wie die Projektliste – die Oberfläche zählt **nicht** selbst nach."
+  (TK 9.5.2)
+
+**ENTSCHIEDEN (TK v3.0, 9.5.2) – ein beschädigtes Projekt wird MIT `beschaedigt: true` gelistet,
+nicht weggelassen.** Wörtlich: „Ist die `project.json` eines Ordners unlesbar oder ungültig **und**
+lässt sie sich auch nicht aus `project.json.bak` wiederherstellen (9.5.4), erscheint der Eintrag
+**trotzdem** in der Liste: mit dem **Ordnernamen** als Behelfs-Bezeichnung und `beschaedigt: true`.
+Die Oberfläche kennzeichnet ihn sichtbar und lässt ihn **nicht öffnen** – ein `öffneProjekt` auf
+ihn scheitert unverändert nach der Regel aus 9.5.4 (Fehler melden, **nicht** leer weiterstarten)."
+(TK 9.5.2)
+
+*Begründung (TK 9.5.2):* „Die **Medien des Nutzers liegen weiterhin im Ordner**
+(`projects/<id>/media/`), ebenso die gerenderten Ausgaben. Ein weggelassenes Projekt sieht für ihn
+aus wie ein **verlorenes** – er würde von vorn anfangen, obwohl seine Arbeit noch vollständig auf
+der Platte liegt." Und: „Ein stilles Ausblenden wäre außerdem der einzige Ort im ganzen System, an
+dem ein Datenfehler **ohne jede Meldung** verschwindet – das widerspricht 9.1.1 Punkt 7
+(„kein stiller Fehlschlag")."
+
+**Verbindlich für die Umsetzung, damit hier nichts geraten wird:**
+
+- **Reihenfolge der Quellen je Ordner:** erst `project.json`; ist sie unlesbar oder ungültig, dann
+  `project.json.bak` (die letzte heile Version, TK 9.5.4). Gelingt eine der beiden, ist
+  `beschaedigt: false`, und die Metadaten stammen aus der gelesenen Datei. Erst wenn **beide**
+  scheitern, ist `beschaedigt: true` – so schreibt es die Felddefinition selbst:
+  „`beschaedigt: boolean         // true = weder project.json noch project.json.bak lesbar`"
+  (TK 9.5.2).
+- **Behelfswerte bei `beschaedigt: true`:** `name` = der **Ordnername**, `id` = der Ordnername,
+  `ordner` = der Ordnername, `erstelltAm`/`geaendertAm` = die **Ordner-Zeitstempel** (ISO-8601 UTC).
+  **Kein** erfundener Name, **kein** leerer String und **keine** Nullwerte – die
+  Behelfs-Bezeichnung ist genau das, was der Nutzer im Dateisystem sieht, und damit das Einzige,
+  womit er den Ordner wiederfindet.
+- **Diese Operation repariert nichts.** Sie schreibt keine `project.json` zurück, benennt nichts
+  um, legt nichts an und löscht nichts – auch nicht die kaputte Datei. Sie **liest** und **meldet**.
+
+**ERGÄNZT (TK v3.1, 9.5.2) – `ProjektMeta` trägt zwei ZÄHLFELDER: `anzahlMedien` und
+`anzahlAusgaben`.** Beide werden **aus dem Ordner gezählt**, nicht aus `project.json`. Sie sind der
+Grund, warum die Löschbestätigung überhaupt sagen kann, was verschwindet – der Vertrag verlangt
+dort ausdrücklich drei Angaben (Name, Anzahl Medien, Anzahl Ausgabedateien) und verbietet der
+Oberfläche, selbst nachzuzählen (beide Stellen wörtlich in den Invarianten).
+
+*Begründung der Ordner-Zählung, wörtlich:* „Die Ordner-Zählung ist Pflicht, weil die Zahlen auch
+für ein **beschädigtes** Projekt stimmen müssen, dessen `project.json` unlesbar ist – dort ist
+„ist da noch etwas zu retten?" die eigentliche Frage." (TK, Entscheidungsliste v3.1) Genau deshalb
+dürfen die Zahlen **nicht** aus `Project.assets` abgeleitet werden: Bei `beschaedigt: true` gibt es
+kein `assets`-Array, und ausgerechnet dann wäre die Zahl 0 die gefährlichste aller Antworten – sie
+läse sich wie „da ist nichts mehr", während der Ordner voll ist.
+
+**Wie gezählt wird (verbindlich, damit hier nichts geraten wird):**
+
+- **`anzahlMedien`** = Zahl der regulären **Dateien** unmittelbar in `medienOrdner(meta.id)` (M1-37).
+  Unterordner zählen nicht mit, es wird **nicht** rekursiv gezählt, und es findet **keine**
+  Endungsprüfung statt (D2 enthält genau die importierten Medien; eine Endungsliste hier wäre eine
+  zweite, abweichende Vorstellung davon, was ein Medium ist).
+- **`anzahlAusgaben`** = Zahl der Dateien in `ausgabeOrdner(meta.id)` (M1-37) nach **derselben**
+  Zählweise wie `listeAusgaben` (M1-44): reguläre Dateien, deren Name auf `.mp4` endet, verglichen
+  **ohne** Rücksicht auf Groß-/Kleinschreibung. `.part`, `.tmp`, `.mp4.part` und Unterordner zählen
+  **nicht** mit. Der Vertrag sagt es selbst: „Gelistet werden **ausschließlich fertige
+  `.mp4`-Dateien**" (TK 9.5.2). **Aber:** `listeAusgaben` wird hier **nicht aufgerufen** – sie liefert
+  Dateigrößen und Zeitstempel je Datei und läuft **ohne** Lock; dieser Scan läuft **innerhalb** des
+  D1-Locks und braucht nur eine Zahl. Nachgebaut wird die **Regel**, nicht der Aufruf.
+- **Ein fehlender oder unlesbarer Unterordner ergibt `0`**, **keinen** Fehler und **kein** `null`.
+  `media/` und `output/` entstehen erst beim ersten Import bzw. beim ersten Render; ihr Fehlen ist
+  der Normalfall eines frischen Projekts.
+- **Beide Zahlen werden auch bei `beschaedigt: true` gefüllt** – dort sind sie die einzige
+  belastbare Angabe des Eintrags.
+
+**ENTSCHIEDEN (TK v3.0, 9.5.2) – `listeProjekte` nimmt das D1-Lock, obwohl sie nur liest.** Damit
+ist sie die **Ausnahme** zur Regel „lesen braucht kein Lock" – anders als `listeAusgaben` (M1-44),
+die ohne Lock läuft. *Begründung, wörtlich:* „Der Verzeichnis-Scan läuft über **fremde**
+Projektordner, und `dupliziereProjekt` erzeugt einen solchen Ordner **schrittweise**
+(`project.json` schreiben, `media/` kopieren). Ein Scan mitten hinein läse ein Projekt in einem
+**halbkopierten Zwischenzustand** ein – je nach Reihenfolge mit fehlender oder halb geschriebener
+`project.json`, also als **fälschlich beschädigt** gemeldetes Projekt, das Minuten später völlig
+in Ordnung ist. Das Lock macht den Scan gegen laufende Schreibvorgänge dicht; sein Preis ist eine
+kurze Wartezeit beim Öffnen der Projektliste." (TK 9.5.2)
+
+Das ist **kein** Nebendetail: Ohne das Lock wäre die neu eingeführte Kennzeichnung
+`beschaedigt: true` an genau der Stelle unzuverlässig, an der sie am meisten erschreckt – während
+einer laufenden Duplizierung.
 
 ## Fehlerpfade (vollständig)
 | Situation | Code | Verhalten |
 |---|---|---|
 | `projects/`-Ordner existiert nicht (erster Start) | – (kein Fehler) | leeres Array |
 | `projects/`-Verzeichnis selbst nicht lesbar (Rechte) | `speicher_fehler` | – |
-| ein einzelnes Unterverzeichnis hat eine defekte `project.json` | – (kein Fehler für die Liste) | s. „Nicht selbst entscheiden" |
+| ein einzelnes Unterverzeichnis hat eine defekte `project.json`, aber eine lesbare `project.json.bak` | – (kein Fehler) | Metadaten aus der `.bak`, `beschaedigt: false` |
+| ein Unterverzeichnis hat **weder** eine lesbare `project.json` **noch** eine lesbare `project.json.bak` (auch: keine von beiden vorhanden) | – (kein Fehler) | Eintrag **mit** `beschaedigt: true`, Ordnername als `name`, Ordner-Zeitstempel als Datumsangaben; **nicht** weglassen, **nicht** abbrechen |
+| das D1-Lock ist gerade von einem Schreibvorgang belegt | – (kein Fehler) | **warten**, wie jede andere Operation über `mitD1Lock` (M1-20); **kein** Scan am Lock vorbei, **kein** Zeitlimit, **kein** ungesperrter Schnellpfad |
 
 ## Nicht selbst entscheiden – STOPP und fragen
-- Wie mit einem einzelnen defekten Projekt in der Liste umgegangen wird (Metadaten lassen sich
-  ohne volles Parsen evtl. nicht zuverlässig lesen, wenn `project.json` beschädigt ist) – zwei
-  Optionen: das Projekt aus der Liste weglassen (Gefahr: Nutzer sieht sein Projekt nicht mehr und
-  denkt, es sei weg) oder mit einem Fehler-Badge auflisten (Gefahr: mehr UI-Komplexität in M7). Ohne
-  Vorgabe im TK zur Diskussion stellen statt einseitig zu entscheiden.
-- `listeProjekte` ist ein reiner **Lesezugriff** auf `projects/`. Ob dafür wirklich das
-  **Schreib**-Lock (`mitD1Lock`) genommen werden muss, oder ob der TK-Abschnittstitel „über das
-  D1-Lock" nur pauschal für alle fünf Operationen formuliert ist, ohne dass ein reiner Verzeichnis-
-  Scan das im Wortsinn bräuchte, ist eine echte Sachfrage. Dagegen spricht: ein Verzeichnis-Scan
-  während einer laufenden `dupliziereProjekt`-Kopie (M1-24, kopiert `media/` außerhalb des Locks,
-  aber `project.json` innerhalb) könnte sonst ein Projekt in einem inkonsistenten Zwischenzustand
-  einlesen. Nicht selbst entscheiden – klären, ob `mitD1Lock` hier wörtlich genommen wird oder ob
-  ein leichteres Read-Lock/keine Sperre reicht.
+- **Verbot – ein defektes Projekt nicht weglassen und nicht „aufhübschen".** Kein stilles
+  Überspringen, kein Sammel-Fehler statt der Liste, kein erfundener Anzeigename. Der Eintrag mit
+  `beschaedigt: true` und dem Ordnernamen ist verbindlich (TK 9.5.2).
+- **Verbot – ein defektes Projekt macht die GANZE Operation nicht kaputt.** Ein unlesbarer
+  Unterordner liefert einen gekennzeichneten Eintrag, **keinen** `speicher_fehler` für die ganze
+  Liste. `speicher_fehler` gibt es nur, wenn das `projects/`-Verzeichnis **selbst** nicht lesbar
+  ist.
+- **Verbot – das Lock nicht umgehen.** Kein ungesperrter „Schnellpfad", kein eigenes Read-Lock,
+  kein Zeitlimit auf `mitD1Lock`. Dass eine reine Leseoperation das Schreib-Lock nimmt, ist eine
+  ausdrückliche Entscheidung mit Begründung (TK 9.5.2) und keine übersehene Ungenauigkeit.
+- **Verbot – hier wird nichts geöffnet.** Diese Operation lädt kein Projekt in den Speicher und
+  entscheidet nicht, ob eines geöffnet werden darf. Dass ein beschädigtes Projekt **nicht**
+  geöffnet werden kann, setzt `öffneProjekt` durch (TK 9.5.2 / 9.5.4), nicht diese Datei.
 
 ## Definition of Done
-- [ ] `listeProjekte()` liefert korrekte Metadaten für alle intakten Projekte
+- [ ] `listeProjekte()` liefert korrekte Metadaten für alle intakten Projekte, jeweils mit
+      `beschaedigt: false`
+- [ ] Ein Projektordner mit kaputter `project.json` **und** kaputter/fehlender `project.json.bak`
+      erscheint in der Liste mit `beschaedigt: true`, `name` gleich dem **Ordnernamen** und
+      Datumsangaben aus den Ordner-Zeitstempeln – er wird **nicht** weggelassen, und die Operation
+      liefert **kein** `ok: false`
+- [ ] Ein Projektordner mit kaputter `project.json`, aber lesbarer `project.json.bak` erscheint mit
+      `beschaedigt: false` und den Metadaten aus der `.bak`
+- [ ] Ein intaktes und ein beschädigtes Projekt nebeneinander → **beide** stehen in der Liste
+      (Regressionstest gegen das stille Überspringen)
 - [ ] Fehlender `projects/`-Ordner liefert ein leeres Array, keinen Fehler
 - [ ] Kein vollständiges Parsen der `liste`/`assets`/`aktionen`-Arrays jedes Projekts (nur die
       Metadatenfelder)
-- [ ] Läuft innerhalb von `mitD1Lock` (TK 9.5.2 Abschnittstitel; s. STOPP-Punkt zur Sachfrage
-      Lese- vs. Schreibzugriff)
+- [ ] `anzahlMedien` zählt die regulären Dateien in `media/`: ein Projekt mit 3 Mediendateien und
+      einem Unterordner liefert **3**; ein Projekt ohne `media/`-Ordner liefert **0** und keinen
+      Fehler
+- [ ] `anzahlAusgaben` zählt nur fertige `.mp4`: ein `output/`-Ordner mit `a.mp4`, `B.MP4`,
+      `c.mp4.part`, `d.tmp` und einem Unterordner liefert **2**
+- [ ] Beide Zahlen stimmen auch bei `beschaedigt: true` – ein Projekt mit unlesbarer `project.json`
+      und `project.json.bak`, aber 5 Dateien in `media/`, liefert `anzahlMedien: 5` (dieser Test ist
+      der Nachweis, dass **nicht** aus `project.json` gezählt wird)
+- [ ] Die Ordnerpfade kommen aus `medienOrdner`/`ausgabeOrdner` (M1-37); die Datei bildet keinen
+      Medien- oder Ausgabepfad selbst (Grep-Probe auf `'media'` und `'output'` als Literal)
+- [ ] Läuft innerhalb von `mitD1Lock` (M1-20) – ausdrücklich entschieden (TK 9.5.2:
+      „**`listeProjekte` nimmt das D1-Lock, obwohl sie nur liest (bindend).**"); der Test belegt,
+      dass der Verzeichnis-Scan **innerhalb** des Locks läuft und nicht daneben
+- [ ] Die Datei schreibt nichts: kein `writeFile`, kein `rename`, kein `mkdir`, kein `unlink`
+      (Grep-Probe) – auch nicht auf eine kaputte `project.json`
 - [ ] Keine Datei außerhalb von `src/main/project-store/liste-projekte.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
 - Blockiert von: #1 (S1, liefert Ordnerstruktur/TS-Toolchain), #5 (S5, liefert `ermittleDatenOrt()`
-  – Basispfad für `projects/`)
+  – Basispfad für `projects/`), M1-20 (`mitD1Lock` – das D1-Lock, das diese Operation nimmt,
+  M1-37 (Pfad-Autorität: `medienOrdner(projektId): string` und `ausgabeOrdner(projektId): string` –
+  die beiden Ordner, die für `anzahlMedien`/`anzahlAusgaben` gezählt werden; **keine** eigene
+  Pfadbildung)
 - Blockiert: M7-Issues (Projektverwaltung-UI)
 
 ## Bezug
-TK 9.5.1, TK 9.5.2
+TK 9.5.1, TK 9.5.2, TK 9.5.4 (`project.json.bak`, `öffneProjekt` bei Defekt),
+TK 9.1.1 Punkt 7, FA-10
 
 ---
 
@@ -3546,20 +3869,53 @@ Wiedergabeliste reißen.
 
 ## Signatur (verbindlich – NICHT ändern)
 ```ts
+import type { Bearbeitungsstand } from '../../shared/contracts/project'
+
 export async function löscheAktion(id: string): Promise<Ergebnis<{
+  stand: Bearbeitungsstand
   entfernteElementIds: string[]
   geaenderteElementIds: string[]
 }>>
 ```
+
+Der Typ `Bearbeitungsstand` wird **nicht hier** definiert, sondern in **M1-03**
+(`src/shared/contracts/project.ts`, derselben Datei wie `Project` und `Listenelement`) – er wird
+von dort importiert und **nicht** ein zweites Mal deklariert. Wörtlich aus der definierenden
+Quelle:
+
+```ts
+// M1-03 – src/shared/contracts/project.ts   (DEFINIERENDE QUELLE)
+export interface Bearbeitungsstand {
+  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts
+  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,
+                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)
+}
+```
+
+**Weicht die tatsächliche Fassung in M1-03 davon ab, ist das ein Vertragsfehler: melden, NICHT
+eigenmächtig anpassen.** Insbesondere **keine** eigene Datei
+`src/shared/contracts/bearbeitungsstand.ts` anlegen – der Typ ist ein **Ausschnitt aus `Project`**
+(dieselben zwei Felder, dieselben Elementtypen) und liegt deshalb in `project.ts`.
+
+**Kein Meilenstein-Rückstand mehr.** Der Typ kam früher aus #237 (Milestone **M7**); damit war
+dieses **M1**-Issue nicht abschließbar, bevor ein M7-Baustein gebaut ist. Mit dem Umzug nach M1-03
+liegt die einzige Typ-Abhängigkeit dieser Rückgabe **innerhalb von M1** – dieses Issue hängt an
+**keinem** späteren Meilenstein.
 
 ## Eingang → Ausgang
 | Eingang | Bedeutung | Grenzen/Validierung |
 |---|---|---|
 | `id` | zu löschende Aktion | muss existieren |
 
-Ausgang bei Erfolg: `entfernteElementIds` = IDs der entfernten Segment-Listenelemente (Fall 1),
-`geaenderteElementIds` = IDs der Video-Listenelemente, deren Band-Abschnitte gekürzt/entfernt
-wurden (Fall 2). Die referenzierten Medien-**Assets** bleiben unangetastet. Die Aktion mit der
+Ausgang bei Erfolg: `stand` = der **vollständige neue Stand** des Projekts **nach** der Kaskade –
+`aktionen` (die Bibliothek **ohne** die gelöschte Aktion) und `liste` (die Wiedergabeliste nach
+Entfernen bzw. Kürzen). `entfernteElementIds` = IDs der entfernten Segment-Listenelemente
+(Fall 1), `geaenderteElementIds` = IDs der Video-Listenelemente, deren Band-Abschnitte
+gekürzt/entfernt wurden (Fall 2). `stand.aktionen` und `stand.liste` sind **genau** die beiden
+Felder des gespeicherten Projekts nach der Änderung – nicht neu sortiert, nicht gefiltert, nicht
+kopiert-und-verändert. `assets` und `letzterAusgabeName` gehören **nicht** in den `stand` und
+werden von dieser Operation ohnehin nicht angefasst. Die referenzierten Medien-**Assets** bleiben
+unangetastet. Die Aktion mit der
 übergebenen `id` ist danach **nicht mehr** in `Project.aktionen` enthalten – die Kaskade entfernt
 die Referenzen, aber `löscheAktion` löscht am Ende auch den Aktions-Datensatz selbst.
 Ausgang bei Fehler: `nicht_gefunden`.
@@ -3574,6 +3930,18 @@ Ausgang bei Fehler: `nicht_gefunden`.
   **Einblendung ganz** (`einblendung = null`) – das **Videoelement bleibt**." (TK 9.5.3)
 - „**Rückgabe:** `löscheAktion` meldet **beide** Wirkungen – `entfernteElementIds` … **und**
   `geaenderteElementIds`." (TK 9.5.3)
+- „**Zusätzlich trägt die Rückgabe den vollständigen neuen `stand`** (Aktions-Bibliothek und
+  Wiedergabeliste **nach** der Kaskade, 9.5.2): Er ist es, der die Sicht auf das Projekt
+  weiterschaltet und damit den Undo-Schnappschuss auslöst (9.13.2) – die Kennungen allein könnten
+  das nicht, aus ihnen ist der neue Stand nicht rekonstruierbar." (TK 9.5.3)
+- „Der Rückgabewert trägt **beides**: den vollständigen `stand` (Typ `Bearbeitungsstand`, s. u. bei
+  `setzeBearbeitungsstand`) **und** die bisherigen Listen
+  `entfernteElementIds`/`geaenderteElementIds`. Beide werden gebraucht, aber für Verschiedenes: Der
+  **Stand** aktualisiert die Sicht, die **Kennungen** erklären dem Nutzer die Wirkung" (TK 9.5.2)
+- „*Warum `Bearbeitungsstand` und nicht `Projekt`:* Es ist derselbe Ausschnitt, den der
+  Schnappschuss ohnehin führt (`aktionen` + `liste`, 9.5.2/9.13.2)" (TK 9.5.2) – der `stand` ist
+  deshalb **kein** `Project`: kein `id`, kein `assets`, kein `letzterAusgabeName`, kein
+  `schemaVersion`.
 - „Die von der Aktion **verwendeten Medien-Assets bleiben unangetastet** und projektweit
   verfügbar – eine Aktion *referenziert* ein Asset nur, sie besitzt es nicht." (TK 9.5.3)
 
@@ -3584,7 +3952,19 @@ Reihenfolge das geschieht. Festgelegt: Erst wird die Kaskade vollständig aufgel
 entfernen, Band-Abschnitte kürzen/Einblendung leeren), **danach** wird die Aktion aus
 `Project.aktionen` entfernt – beides in **einem** Durchlauf unter demselben `mitD1Lock`, damit kein
 Zwischenzustand mit verwaisten Referenzen (Listenelemente oder Band-Abschnitte, die auf eine bereits
-gelöschte Aktion zeigen) von außen sichtbar wird.
+gelöschte Aktion zeigen) von außen sichtbar wird. Der zurückgegebene `stand` wird **nach** beiden
+Schritten und **innerhalb** desselben `mitD1Lock` gebildet – er ist damit derselbe Stand, der
+gespeichert wird, und kein Zwischenstand.
+
+**ENTSCHIEDEN (TK v3.2) – die Rückgabe trägt den Stand ZUSÄTZLICH zu den Kennungen, nicht
+anstelle.** Beide Kennungslisten bleiben unverändert erhalten. *Begründung (TK 9.5.2/9.5.3):*
+Sie leisten Verschiedenes – der `stand` schaltet die gemeinsame Projekt-Sicht weiter und löst
+damit den Undo-Schnappschuss aus (TK 9.13.2), die Kennungen erklären dem Nutzer die Wirkung
+(„aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt", TK 9.5.3) und benennen
+die Stellen, die die Oberfläche hervorheben kann. Ohne den `stand` bliebe der einzige Weg zur
+neuen Sicht ein **Neuladen** des Projekts – und das liefe an der Schnappschuss-Stelle vorbei,
+womit Rückgängig ausgerechnet für das versehentliche Löschen wirkungslos wäre (FA-21 ist ein
+**Muss**).
 
 ## Fehlerpfade (vollständig)
 | Situation | Code | Verhalten |
@@ -3604,11 +3984,25 @@ gelöschte Aktion zeigen) von außen sichtbar wird.
 - [ ] Referenzierte Assets sind nach dem Löschen unverändert in `Project.assets` vorhanden
 - [ ] Die Aktion mit der übergebenen `id` ist nach Erfolg nicht mehr in `Project.aktionen` enthalten
 - [ ] Rückgabe enthält beide Listen korrekt befüllt (auch wenn eine davon leer ist)
+- [ ] Die Rückgabe trägt `stand` mit **genau** den Schlüsseln `aktionen` und `liste`
+      (`'assets' in stand === false`, `'letzterAusgabeName' in stand === false`,
+      `'id' in stand === false`) – benannter Test
+- [ ] `stand.aktionen` enthält die gelöschte `id` **nicht** mehr und ist im Übrigen inhaltlich
+      gleich der Bibliothek vor dem Aufruf; `stand.liste` entspricht **genau** der Liste nach der
+      Kaskade (entfernte Segment-Elemente fehlen, gekürzte Videos sind enthalten, Reihenfolge der
+      verbliebenen Elemente unverändert)
+- [ ] Der zurückgegebene `stand` stimmt mit dem **gespeicherten** Projekt überein (Test liest das
+      Projekt nach dem Aufruf und vergleicht `aktionen` und `liste`)
+- [ ] Bei `nicht_gefunden` wird **kein** `stand` geliefert (die Ergebnis-Hülle trägt keinen Wert)
 - [ ] Läuft innerhalb von `mitD1Lock`
 - [ ] Keine Datei außerhalb von `src/main/project-store/loesche-aktion.ts` (+ zugehörige Testdatei) geändert
 
 ## Abhängigkeiten
-- Blockiert von: M1-26, M1-03 (Listenelement/Einblendung-Typen)
+- Blockiert von: M1-26, **M1-03** (`Listenelement`/`Einblendung`-Typen **und** der Typ
+  `Bearbeitungsstand` in `src/shared/contracts/project.ts`; seit TK v3.2 Teil dieser Rückgabe – der
+  Typ entsteht dort, **nicht** hier). **Alle Blocker liegen in M1** – dieses Issue hängt an
+  **keinem** späteren Meilenstein. (Bis zum Umzug stand hier #237 aus **M7**; das war eine
+  Meilenstein-Umkehrung und ist behoben.)
 - Blockiert: M5-Issues (composer, action-editor)
 
 ## Bezug
