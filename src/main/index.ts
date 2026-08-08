@@ -16,8 +16,14 @@
 
 import path from "node:path";
 
-import { app, BrowserWindow, session } from "electron";
+import { app, BrowserWindow, dialog, session } from "electron";
 
+import {
+  ermittleFfmpegPfad,
+  ermittleFfprobePfad,
+  pruefeFfmpegVerfuegbar,
+  pruefeFfprobeVerfuegbar,
+} from "./ffmpeg-pfad";
 import {
   registriereMediaProtokollHandlerStub,
   registriereMediaProtokollSchema,
@@ -154,6 +160,48 @@ function erstelleHauptfenster(): BrowserWindow {
   return fenster;
 }
 
+/**
+ * Prueft die beiden mitgelieferten Binaries (#6) und bricht bei einem Fehlschlag den
+ * Start ab.
+ *
+ * @returns true, wenn beide benutzbar sind und der Start weitergehen darf.
+ *
+ * Die Meldung nennt den GEPRUEFTEN PFAD. Ohne ihn steht der Nutzer vor "ffmpeg fehlt"
+ * und hat keinen Anhaltspunkt, wo die App gesucht hat - beim portablen Betrieb ist
+ * genau das die entscheidende Angabe.
+ */
+async function pruefeBinariesOderBrichAb(): Promise<boolean> {
+  const ffmpegPfad = ermittleFfmpegPfad();
+  const ffprobePfad = ermittleFfprobePfad();
+
+  const [ffmpegOk, ffprobeOk] = await Promise.all([
+    pruefeFfmpegVerfuegbar(ffmpegPfad),
+    pruefeFfprobeVerfuegbar(ffprobePfad),
+  ]);
+
+  if (ffmpegOk && ffprobeOk) {
+    return true;
+  }
+
+  // Beide Zeilen werden gezeigt, nicht nur die erste fehlgeschlagene: Fehlen beide,
+  // ist ein Bericht ueber eines davon irrefuehrend.
+  const zeilen = [
+    "Die Anwendung kann nicht starten, weil ein mitgeliefertes Programm fehlt oder",
+    "nicht ausfuehrbar ist. Das ist ein Fehler der Auslieferung, kein Bedienfehler.",
+    "",
+    `ffmpeg  (Video-Ausgabe): ${ffmpegOk ? "in Ordnung" : "NICHT BENUTZBAR"}`,
+    `   ${ffmpegPfad || "(kein Pfad ermittelt)"}`,
+    `ffprobe (Medien-Import): ${ffprobeOk ? "in Ordnung" : "NICHT BENUTZBAR"}`,
+    `   ${ffprobePfad || "(kein Pfad ermittelt)"}`,
+  ];
+  dialog.showErrorBox("Digital-Signage-Tool: Start nicht moeglich", zeilen.join("\n"));
+
+  // `exit` statt `quit`: `quit` durchliefe den Beenden-Ablauf mit den Sofort-Flushs -
+  // dabei ist hier noch nichts geladen, was gespeichert werden koennte.
+  app.exit(1);
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // Startablauf - die Reihenfolge ist Teil des Vertrags (#3)
 // ---------------------------------------------------------------------------
@@ -181,8 +229,25 @@ registriereMediaProtokollSchema();
 // Schreib-Locks auf derselben project.json - Lost Update und damit Datenkorruption
 // (TK 9.5.4). Eine hier improvisierte zweite Sperre waere schlimmer als keine.
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   // SCHRITT 3 ist erreicht (app.whenReady()).
+
+  // SCHRITT 3a - SELBSTTEST DER BEIDEN BINARIES (#6).
+  //
+  // Steht NICHT in der urspruenglichen Reihenfolge von #3; #6 verlangt den Aufruf
+  // "beim App-Start (#3-Bootstrap)", ohne die Stelle zu nennen. Er steht hier ganz
+  // vorn, weil ein Abbruch alles Weitere ueberfluessig macht: Es waere sinnlos,
+  // Kanaele anzumelden und ein Fenster zu bauen, um dann doch abzubrechen.
+  //
+  // ENTSCHIEDEN (Produktentscheidung, 08.08.2026): Faellt EINER der beiden Tests
+  // durch, startet die App NICHT. Beide Binaries werden mitgeliefert - fehlt eines,
+  // ist die Auslieferung defekt, und das kann das Studio-Personal nicht beheben. Eine
+  // halb laufende App erzeugt spaeter Fehler, die niemand mehr auf diese Ursache
+  // zurueckfuehrt: ohne ffmpeg scheitert jeder Render, ohne ffprobe jeder Import - und
+  // zwar weit entfernt von hier.
+  if (!(await pruefeBinariesOderBrichAb())) {
+    return;
+  }
 
   // SCHRITT 4: Muss nach app.whenReady() und VOR dem Laden des Fensters stehen.
   // Vorerst ein Stub, der jede Anfrage mit 404 beantwortet; die Aufloesung kommt vom

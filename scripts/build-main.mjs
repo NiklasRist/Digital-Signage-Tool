@@ -19,13 +19,22 @@ import { pathToFileURL } from "node:url";
  *                     Build laeuft durch, der Fehler zeigt sich erst beim ersten
  *                     echten Render-Aufruf. Das Buendeln uebernimmt electron-builder
  *                     ueber asarUnpack (#6/#7), nicht dieser Bundler.
+ * - ffprobe-static    dasselbe, eigenes Paket (ffmpeg-static enthaelt KEIN ffprobe,
+ *                     TK 3). NACHGETRAGEN BEIM BAUEN VON #6 - der Eintrag fehlte, und
+ *                     der Fehler war genau so lautlos wie oben beschrieben: esbuild
+ *                     buendelte das Paket, dessen Pfadberechnung geht aber von seinem
+ *                     EIGENEN __dirname aus und zeigte danach auf
+ *                     dist/main/bin/win32/x64/ffprobe.exe - eine Datei, die es nicht
+ *                     gibt. Build gruen, Selbsttest rot. Aufgefallen ist es nur, weil
+ *                     #6 den Selbsttest ueberhaupt eingefuehrt hat; ohne ihn waere der
+ *                     erste Medien-Import in M3 daran gescheitert.
  * - fluent-ffmpeg     laedt seine Module zur Laufzeit dynamisch nach; gebuendelt
  *                     findet es sie nicht mehr.
  *
  * Diese Liste ist der einzige Ort, an dem die Regel steht. Wer hier etwas entfernt,
  * hebt sie auf.
  */
-const EXTERN = ["electron", "ffmpeg-static", "fluent-ffmpeg"];
+const EXTERN = ["electron", "ffmpeg-static", "ffprobe-static", "fluent-ffmpeg"];
 
 /** @type {import("esbuild").BuildOptions} */
 const gemeinsam = {
