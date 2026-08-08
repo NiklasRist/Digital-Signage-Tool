@@ -5,10 +5,11 @@
 // ist Teil des Vertrags aus #3, nicht Geschmackssache - die Begruendung steht jeweils
 // am Aufrufpunkt.
 //
-// STAND HEUTE: Von den dreizehn Anmeldungen, den beiden Beenden-Funktionen und den
-// zwei Protokoll-Registrierungen (#9) existiert KEINE EINZIGE - sie entstehen erst in
-// M1 bis M7. Sie stehen deshalb als benannte Luecken (Funktionsname + Issue-Nummer)
-// an ihrem Platz. Ausdruecklich KEINE Attrappen: Eine leere Ersatzfunktion wuerde
+// STAND HEUTE: Gebaut sind die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4).
+// Von den dreizehn Anmeldungen, den beiden Beenden-Funktionen und der
+// Einzel-Instanz-Sperre existiert KEINE EINZIGE - sie entstehen erst in M1 bis M7. Sie
+// stehen deshalb als benannte Luecken (Funktionsname + Issue-Nummer) an ihrem Platz.
+// Ausdruecklich KEINE Attrappen: Eine leere Ersatzfunktion wuerde
 // einen Kanal registrieren, der zu funktionieren scheint, und die echte Verdrahtung
 // spaeter an der doppelten Registrierung scheitern lassen - oder, schlimmer, sie tut
 // es nicht und der Renderer redet fuer immer mit der Attrappe (#3).
@@ -16,6 +17,11 @@
 import path from "node:path";
 
 import { app, BrowserWindow, session } from "electron";
+
+import {
+  registriereMediaProtokollHandlerStub,
+  registriereMediaProtokollSchema,
+} from "./media-protokoll";
 
 /**
  * Im Entwicklungslauf setzt scripts/dev.mjs diese Variable auf die URL des
@@ -71,6 +77,21 @@ const CSP_GEMEINSAM = [
   "form-action 'none'",
 ];
 
+// `media:` steht ABSICHTLICH NICHT in connect-src, obwohl #9 das Schema mit dem
+// Privileg `supportFetchAPI: true` anmeldet.
+//
+// Gemessen beim Bauen von #9: `fetch('media://...')` scheitert auch dann, wenn
+// connect-src es erlaubt - und der Protokoll-Handler wird dabei NICHT EINMAL ERREICHT
+// (nachgewiesen mit einer Protokollzeile im Handler selbst). Die Ursache liegt also
+// nicht in der CSP, sondern davor: `media://` ist gegenueber der Seite ein fremder
+// Ursprung, und Electron kennt dafuer ein eigenes Schema-Privileg (`corsEnabled`), das
+// in der verbindlichen Signatur von #9 nicht steht.
+//
+// Ein `media:` in connect-src waere daher heute eine Erlaubnis, die nichts
+// freischaltet. Wird `corsEnabled` spaeter ergaenzt, gehoert dieser Eintrag im selben
+// Zug dazu - vorher nicht. Der Ladeweg ueber <img>/<video> ist davon nicht betroffen:
+// er faellt unter img-src/media-src, erreicht den Handler und funktioniert (in beiden
+// Modi geprueft).
 const CSP_DEV = [...CSP_GEMEINSAM, "connect-src 'self' ws:"].join("; ");
 const CSP_PROD = [...CSP_GEMEINSAM, "connect-src 'self'"].join("; ");
 
@@ -137,11 +158,10 @@ function erstelleHauptfenster(): BrowserWindow {
 // Startablauf - die Reihenfolge ist Teil des Vertrags (#3)
 // ---------------------------------------------------------------------------
 
-// SCHRITT 1: registriereMediaProtokollSchema() - #9, src/main/media-protokoll.ts
-// LUECKE. Muss VOR app.whenReady() laufen: Ein privilegiertes Custom-Schema, das zu
-// spaet registriert wird, greift im Renderer nicht zuverlaessig. #9 darf laut eigener
-// Definition of Done keine Datei ausserhalb von media-protokoll.ts aendern - wer diese
-// Luecke schliesst, ist deshalb noch offen (gemeldet).
+// SCHRITT 1: Muss VOR app.whenReady() laufen. Ein privilegiertes Custom-Schema, das
+// zu spaet angemeldet wird, greift im Renderer nicht zuverlaessig - und zwar ohne
+// Fehlermeldung.
+registriereMediaProtokollSchema();
 
 // SCHRITT 2: erzwingeEinzelInstanz(datenOrt, beiZweitemStart) - #51,
 //            src/main/project-store/einzel-instanz.ts
@@ -164,8 +184,10 @@ function erstelleHauptfenster(): BrowserWindow {
 void app.whenReady().then(() => {
   // SCHRITT 3 ist erreicht (app.whenReady()).
 
-  // SCHRITT 4: registriereMediaProtokollHandlerStub() - #9
-  // LUECKE. Muss nach app.whenReady() und VOR dem Laden des Fensters stehen.
+  // SCHRITT 4: Muss nach app.whenReady() und VOR dem Laden des Fensters stehen.
+  // Vorerst ein Stub, der jede Anfrage mit 404 beantwortet; die Aufloesung kommt vom
+  // M1-Issue "project-store: media://-Handler" (Pfad-Autoritaet, TK 9.5.7).
+  registriereMediaProtokollHandlerStub();
 
   setzeCspHeader();
 
@@ -224,6 +246,8 @@ void app.whenReady().then(() => {
   // Punkt 10). Deshalb wird hier nichts gepuffert und NICHT auf did-finish-load
   // gewartet.
   void fenster;
+
+
 
   // SCHRITT 8: raeumeVerwaisteArbeitsbereiche() - #172
   // LUECKE. Entfernt reel-*-Ordner, die ein frueherer Absturz im Temp-Bereich

@@ -4,15 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!--
-      Content-Security-Policy: verbietet dem Renderer alles Entfernte. Die App laedt
-      nie aus dem Netz - Medien kommen ueber media:// (#9), Schriften liegen gebuendelt
-      bei (#8). 'unsafe-inline' fuer style-src, weil React Stile inline setzt.
-      Im Dev-Modus ergaenzt Vite den HMR-Client; er laeuft ueber denselben Origin.
+      HIER STEHT ABSICHTLICH KEINE Content-Security-Policy MEHR.
+
+      Sie wird vom Main-Prozess als Antwort-Header gesetzt (src/main/index.ts, #3), und
+      zwar in zwei Fassungen: Der Entwicklungslauf braucht den HMR-WebSocket, die
+      ausgelieferte App nicht. Ein statisches <meta> kann diesen Unterschied nicht
+      abbilden - es traegt in beiden Faellen denselben Text und schleppte die
+      HMR-Erlaubnis in den Produktivbuild.
+
+      Warum ZWEI Quellen aktiv schaedlich sind und nicht nur unordentlich: Bei mehreren
+      Richtlinien gilt die SCHNITTMENGE, jede fuer sich blockiert. Beim Bauen von #9 ist
+      das konkret aufgeschlagen - eine Lockerung im Header blieb wirkungslos, weil
+      dieses <meta> sie weiter verbot, und die CSP-Verletzung zeigte weiter auf eine
+      Richtlinie, die im Header laengst korrigiert war. Gesucht haette man den Fehler an
+      der falschen Stelle. (Die Lockerung selbst hat sich danach als unnoetig
+      herausgestellt und wurde zurueckgenommen - der Doppel-Ort blieb der eigentliche
+      Befund.)
+
+      Dass der Header-Weg traegt, ist gemessen, nicht angenommen: Die Richtlinie
+      `base-uri` steht NUR im Header, und ein <base>-Versuch im Renderer wird sowohl im
+      Dev-Modus (http://) als auch im Produktivbuild (file://) blockiert.
     -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; img-src 'self' data: blob: media:; media-src 'self' blob: media:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws:"
-    />
     <title>Digital-Signage-Tool</title>
   </head>
   <body>
