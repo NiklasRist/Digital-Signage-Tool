@@ -1,0 +1,63 @@
+# Verpackung (#7): portable Auslieferung, kein Installer, keine Admin-Rechte.
+#
+# "Verpackung: electron-builder, Portable-Target" (TK 3)
+
+appId: de.ballergruppe.digital-signage-tool
+productName: Digital-Signage-Tool
+
+directories:
+  output: release
+
+# Was ins Paket wandert. dist/ ist das Ergebnis von "npm run build" (Vite fuer den
+# Renderer, esbuild fuer Main und Preload). Die Produktiv-Abhaengigkeiten aus
+# node_modules nimmt electron-builder von sich aus mit - dort liegen die beiden
+# Binaries.
+files:
+  - dist/**
+  - package.json
+
+# BINARIES MUESSEN AUSGEPACKT NEBEN DEM ARCHIV LIEGEN.
+#
+# Der Anwendungscode wandert in ein Archiv (app.asar). Node kann daraus lesen, aber das
+# Betriebssystem kann eine Datei DARIN NICHT AUSFUEHREN - ein Programm, das gestartet
+# werden soll, muss als echte Datei vorliegen. Ohne diese beiden Eintraege laeuft der
+# Build sauber durch, und die fertige App scheitert beim ersten Render bzw. beim ersten
+# Import mit einem Fehler, der nach einem fehlenden Programm aussieht, obwohl es
+# mitgeliefert wurde. src/main/ffmpeg-pfad.ts (#6) biegt die gemeldeten Pfade
+# entsprechend von app.asar auf app.asar.unpacked um.
+#
+# ffprobe ist ein EIGENES Paket: ffmpeg-static enthaelt kein ffprobe (TK 3), und der
+# Medien-Import liest damit Masse und Dauer (TK 9.4.5).
+asarUnpack:
+  - "**/ffmpeg-static/**"
+  - "**/ffprobe-static/**"
+
+# KEIN extraResources. Marken-Schriften und Logo (#8) sind normale Renderer-Assets und
+# liegen im Bundle: Der Renderer kann wegen der Sicherheitsflags aus #3
+# (contextIsolation, sandbox, nodeIntegration: false) gar nicht auf
+# process.resourcesPath zugreifen, und Schrift-URLs loesen relativ zum Renderer-Bundle
+# auf. Ueber extraResources waeren sie nur im Main-Prozess erreichbar - also nutzlos.
+
+win:
+  # NSIS-basiert, aber ohne Installer-Dialog: eine einzelne EXE, die ohne
+  # Admin-Rechte laeuft.
+  #
+  # ACHTUNG - dieses Ziel ENTPACKT die Anwendung bei jedem Start nach <Temp>. Deshalb
+  # darf der Datenort NICHT aus process.execPath oder process.resourcesPath abgeleitet
+  # werden; src/main/datenort.ts (#5) nutzt PORTABLE_EXECUTABLE_DIR, das
+  # electron-builder genau dafuer setzt.
+  target: portable
+
+mac:
+  # ENTSCHIEDEN: zip, nicht dir.
+  #
+  # Vorgegeben war nur, was NICHT geht: kein dmg, kein pkg, kein Installer, keine
+  # Admin-Rechte. Von den beiden verbliebenen Moeglichkeiten ist zip die brauchbarere -
+  # EINE Datei, die sich weitergeben und auf einen Datentraeger legen laesst, waehrend
+  # `dir` einen Ordner hinterlaesst, den man erst von Hand packen muesste. Ausgepackt
+  # ist es dasselbe Bundle.
+  #
+  # Signierung und Notarisierung sind nicht geplant (TK/Übergabe). Beim ersten Start
+  # wird macOS die App deshalb als unbekannt melden.
+  target: zip
+  category: public.app-category.video

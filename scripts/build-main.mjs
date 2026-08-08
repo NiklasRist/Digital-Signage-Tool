@@ -56,11 +56,11 @@ const gemeinsam = {
 const ziele = [
   {
     name: "main",
-    optionen: { ...gemeinsam, entryPoints: ["src/main/index.ts"], outfile: "dist/main/index.js" },
+    optionen: { ...gemeinsam, entryPoints: ["src/main/index.ts"], outfile: "dist/main/index.cjs" },
   },
   {
     name: "preload",
-    optionen: { ...gemeinsam, entryPoints: ["src/preload/index.ts"], outfile: "dist/preload/index.js" },
+    optionen: { ...gemeinsam, entryPoints: ["src/preload/index.ts"], outfile: "dist/preload/index.cjs" },
   },
 ];
 

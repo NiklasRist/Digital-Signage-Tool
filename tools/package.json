@@ -1,0 +1,4 @@
+{
+  "//": "Haelt tools/ bei CommonJS (#7). Die Wurzel-package.json traegt seit #7 \"type\": \"module\"; ohne diese Datei wuerde Node jede .js hier als ESM lesen, und generate-docx.js und render-dfd.js scheiterten an ihren require()-Aufrufen. Das haette den in CLAUDE.md dokumentierten Doku-Workflow gebrochen (node tools/generate-docx.js <in.md> <out.docx>). Diese Datei laesst den Befehl unveraendert.",
+  "type": "commonjs"
+}

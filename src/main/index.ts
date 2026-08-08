@@ -143,7 +143,7 @@ function erstelleHauptfenster(): BrowserWindow {
       // Der Preload wird von esbuild nach dist/preload/index.js gebaut (#2); sein
       // Inhalt kommt aus #4. Der Pfad ist relativ zu dist/main/, wo diese Datei
       // gebuendelt landet.
-      preload: path.join(__dirname, "../preload/index.js"),
+      preload: path.join(__dirname, "../preload/index.cjs"),
     },
   });
 

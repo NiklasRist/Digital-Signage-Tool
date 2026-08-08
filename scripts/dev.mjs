@@ -32,7 +32,7 @@ function starteNeu(devUrl) {
       neustartLaeuft = true;
       elektron.kill();
     }
-    elektron = spawn(elektronPfad, ["dist/main/index.js"], {
+    elektron = spawn(elektronPfad, ["dist/main/index.cjs"], {
       stdio: "inherit",
       env: {
         ...process.env,

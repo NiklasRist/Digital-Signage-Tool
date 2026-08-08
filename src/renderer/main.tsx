@@ -14,6 +14,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
+import { ladeMarkenSchriften } from "./styles/schriften";
 
 const wurzel = document.getElementById("wurzel");
 if (!wurzel) {
@@ -22,8 +23,22 @@ if (!wurzel) {
   throw new Error('Anker-Element "#wurzel" fehlt in index.html.');
 }
 
-createRoot(wurzel).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// Schriften VOR dem ersten Zeichnen laden (#8, TK 9.10.3).
+//
+// WARUM DIESER AUFRUF HIER STEHEN MUSS - teuer gelernt: Ohne ihn ist
+// ladeMarkenSchriften() tote Materie. Vite buendelt nur, was erreichbar ist; die vier
+// woff2-Dateien landeten dann WEDER in dist/renderer/assets/ NOCH im fertigen Paket.
+// Beim Abnehmen von #8 ist genau das passiert und zunaechst unbemerkt geblieben, weil
+// die Pruefsonde selbst den fehlenden Import mitbrachte - der Nachweis hat also seine
+// eigene Voraussetzung geschaffen. Aufgefallen ist es erst beim Blick in die fertige
+// app.asar (#7).
+//
+// Zustaendig fuer den Renderer-Bootstrap ist spaeter M7-65 (#260); wandert der Aufruf
+// dorthin, muss er dort VOR dem ersten Canvas-Zeichnen stehen, nicht irgendwo.
+void ladeMarkenSchriften().finally(() => {
+  createRoot(wurzel).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+});
