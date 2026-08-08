@@ -29,6 +29,25 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+
+    // Prueft die .d.ts-Dateien fremder Pakete nicht mit (#3).
+    //
+    // ANLASS: "electron.d.ts" beschreibt auch Renderer-Dinge (<webview>, MessagePort,
+    // VideoFrame) und braucht dafuer DOM-Typen. Der Main sieht bewusst KEIN DOM
+    // ("lib": ["ES2022"] in tsconfig.main.json) - sobald irgendeine Main-Datei
+    // "electron" importiert, meldet tsc daher 13 Fehler IN electron.d.ts, ohne dass an
+    // unserem Code etwas falsch waere.
+    //
+    // WARUM DAS DIE PROZESS-TRENNUNG NICHT AUFWEICHT: Der Schalter unterdrueckt
+    // ausschliesslich Fehler INNERHALB fremder .d.ts-Dateien. Er ruehrt weder an "lib"
+    // noch an "types" noch an der Modulaufloesung - also an keinem der Schalter, die
+    // die Trennung aus #1 tragen. Nachgewiesen mit zwei Gegenproben, beide MIT
+    // aktivem skipLibCheck: "document" in src/main/ bricht weiter (TS2584), "node:fs"
+    // in src/renderer/ bricht weiter (TS2307).
+    //
+    // Die naheliegende Alternative - DOM zur "lib" des Main hinzufuegen - waere genau
+    // der Weg, der die Trennung aufhebt, und ist deshalb ausgeschlossen.
+    "skipLibCheck": true
   }
 }
