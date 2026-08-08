@@ -278,7 +278,8 @@ src/
   preload/         // contextBridge-Fläche (S4)
     index.ts       // Platzhalter: export {} — echte Implementierung folgt aus S4
   renderer/        // ipc-client, app-shell, composer, action-editor, template-canvas,
-                    // preview-player, vorlagen-editor, queue-panel
+                    // preview-player, vorlagen-editor, projekt-verwaltung, queue-panel
+                    // + gemeinsam (KEIN Modul: geteilter Renderer-Bereich, TK 9)
     ipc-client/index.ts       // Platzhalter: export {} — echte Implementierung folgt aus dem jeweiligen späteren Issue
     app-shell/index.ts        // Platzhalter: export {} — echte Implementierung folgt aus dem jeweiligen späteren Issue
     composer/index.ts         // Platzhalter: export {} — echte Implementierung folgt aus dem jeweiligen späteren Issue
@@ -287,6 +288,8 @@ src/
     preview-player/index.ts   // Platzhalter: export {} — echte Implementierung folgt aus dem jeweiligen späteren Issue
     vorlagen-editor/index.ts  // Platzhalter: export {} — echte Implementierung folgt aus dem jeweiligen späteren Issue
     queue-panel/index.ts      // Platzhalter: export {} — echte Implementierung folgt aus dem jeweiligen späteren Issue
+    projekt-verwaltung/index.ts // Platzhalter: export {} — echte Implementierung folgt aus dem jeweiligen späteren Issue
+    gemeinsam/index.ts        // Platzhalter: export {} — echte Implementierung folgt aus dem jeweiligen späteren Issue
   shared/
     contracts/     // geteilte Typen (Ergebnis<T>, S12; Domänentypen ab M1)
       index.ts     // Platzhalter: export {} — echte Implementierung folgt aus S12 / M1
@@ -3161,7 +3164,9 @@ freigegeben – kein hängendes Lock nach einer Exception).
 - „Besitzt `project.json` je Projekt … und das **eine D1-Schreib-Lock**." (TK 9.5.1)
 - „**[D1-Lock]** Referenzen prüfen. Referenziert (ListItem zeigt darauf)? → Fehler
   `asset_referenziert` (mit `referenzenIds`), Abbruch. Sonst: Asset-Eintrag aus D1 entfernen,
-  schreiben. **Referenzprüfung und Entfernen im selben kritischen Abschnitt** → schließt die
+  danach **Sofort-Flush** (9.5.4) – erst wenn der Eintrag **dauerhaft** weg ist, darf Schritt 2
+  die Datei anfassen […] Scheitert der Flush → `speicher_fehler`, die Datei bleibt unangetastet.
+  **Referenzprüfung und Entfernen im selben kritischen Abschnitt** → schließt die
   TOCTOU-Lücke gegen ein gleichzeitiges Setzen einer neuen Referenz durch den `composer`."
   (TK 9.4.6)
 - „**Kein zweites Lock.** Serialisierung von Operationen liefert die Queue (9.3), Serialisierung
@@ -3690,7 +3695,8 @@ Ausgang bei Fehler: `nicht_gefunden`, `speicher_fehler` (I/O beim Löschen).
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
 - „`löscheProjekt` | `id` → `Ergebnis<void>` (entfernt den Projektordner; war es aktiv, fällt
-  `config-store` sanft zurück)" (TK 9.5.2)
+  `config-store` sanft zurück – und die Oberfläche leert ihre gemeinsame Projekt-Sicht,
+  9.7.4)" (TK 9.5.2)
 - „**fehlt** es (extern gelöscht) → sanfter Rückfall auf ‚kein aktives Projekt / Projektliste',
   **kein** Absturz." (TK 9.5.6, sinngemäß auch für den Fall „selbst gelöscht" geltend)
 
@@ -5077,7 +5083,8 @@ kein Fehlerfall).
   **resolved den Pfad über den `project-store`**, statt das Layout selbst zu kennen:
   `media-service` (kopieren/löschen), `render-service` (lesen beim Normalisieren),
   `export-service` (Quelle: die gewählte Datei aus `projects/<id>/output/`). Er löst ebenso
-  `(projektId, ausgabeName) → projects/<id>/output/<name>.mp4` auf. So kann eine Layout-Änderung
+  `(projektId, ausgabeName) → projects/<id>/output/<name>.mp4` auf und **listet diesen Ordner**
+  (`listeAusgaben`, 9.5.2). So kann eine Layout-Änderung
   nirgends auseinanderlaufen." (TK 9.5.7)
 - „**Der Ausgabename ist Nutzereingabe und wird validiert (FA-22):** Erlaubt ist ein reiner
   Dateiname **ohne** Endung – **keine** Pfadtrenner (`/`, `\`), **kein** `..`, keine für Windows/macOS/FAT32

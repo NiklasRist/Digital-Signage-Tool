@@ -37,6 +37,11 @@ coverage/
 # eine zweite Fassung desselben Textes - genau die Doppelung, die wir vermeiden.
 docs/agents/*/bodies/
 
+# Zwischenlager von tools/zitate-pruefen.py: die 262 Issue-Bodies, damit ein
+# zweiter Lauf nicht erneut laedt. Genau wie bodies/ ein reines Zwischenprodukt,
+# jederzeit aus GitHub wiederherstellbar - und die Wahrheit steht dort, nicht hier.
+.zitat-cache/
+
 # ── Betriebssystem-Artefakte ──────────────────────────────────────────────────
 Thumbs.db
 ehthumbs.db

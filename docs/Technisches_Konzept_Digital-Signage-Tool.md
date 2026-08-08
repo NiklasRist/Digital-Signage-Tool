@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.2 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.2 (HLD vollständig, geprüft)
+**Version:** 3.3 (HLD vollständig, geprüft)
 **Datum:** 05.08.2026
 **Status:** In Planung
 
@@ -313,7 +313,7 @@ Dieser Abschnitt übersetzt die Prozesse **P1–P7** in konkrete Module mit scha
 
 **Modulübersicht:**
 
-- **Renderer (React-UI):** `ipc-client`, `app-shell` (Rahmen + Navigation, 9.14), `composer` [P3], `action-editor` [P2], `template-canvas` (geteilt: Segment → PNG, **einzige Pixelquelle**, 9.10), `preview-player` [P5], `vorlagen-editor` (9.12.2), `projekt-verwaltung` (Projektverwaltung FA-10, 9.14.3), `queue-panel` (Sicht auf die Auftrags-Queue).
+- **Renderer (React-UI):** `ipc-client`, `app-shell` (Rahmen + Navigation, 9.14), `composer` [P3], `action-editor` [P2], `template-canvas` (geteilt: Segment → PNG, **einzige Pixelquelle**, 9.10), `preview-player` [P5], `vorlagen-editor` (9.12.2), `projekt-verwaltung` (Projektverwaltung FA-10, 9.14.3), `queue-panel` (Sicht auf die Auftrags-Queue). **Dazu `gemeinsam` – kein Modul, sondern der geteilte Renderer-Bereich:** ein Ort ohne Eigentümer, aus dem **jedes** Renderer-Modul direkt importieren darf. Er trägt, was mehrere Module benutzen und keines besitzt – heute das Register der offenen `<video>`-Handles, das vor dem Löschen eines Mediums freigegeben werden muss (9.4.6). *Warum nicht `src/shared/`:* Dort läge **Modul-Zustand**, und der Main-Prozess bekäme beim Import eine **zweite, eigene** Instanz davon – ein Register, das nie etwas enthält und niemandem auffällt. *Warum kein Durchreichen als Parameter:* Der Eintrag entsteht am **unteren Ende** zweier Bauteilketten (Vorschau-Video und Vorschaubild); ein Register, dessen Inhalt davon abhängt, ob jede Zwischenstufe die Funktion weitergereicht hat, ist keins.
 - **Main (Node):** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher Q1–Q4, 9.3), `media-service` [P1] (9.4), `project-store` [D1] (besitzt das eine D1-Schreib-Lock **und** ist Pfad-Autorität + trägt das `media://`-Protokoll, 9.5.7), `config-store` [D3], `vorlagen-store` (app-weite Vorlagen-Bibliothek, 9.12.1), `render-service` [P4] (9.2), `export-service`, `ffmpeg-adapter` (enthält den getesteten `buildReel`-Kern).
 - **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …) **und die reine Bandgeometrie-Rechnung** `berechneBandGeometrie` (9.2.8) – die einzige Stelle, an der `render-service` und `preview-player` dieselbe Formel benutzen, statt sie zweimal zu schreiben. Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag.
 
@@ -1787,6 +1787,8 @@ Vorlage X bearbeiten
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.3 (05.08.2026), beim Bauen von #1 gefunden:** **Der geteilte Renderer-Bereich `gemeinsam` fehlte in der Modulliste (Abschnitt 9).** Sechs Issues schreiben nach `src/renderer/gemeinsam/`, und M7 führt dafür ein eigenes Label – die Liste kannte ihn nicht. *Folge ohne die Änderung:* Die Modulliste ist die **einzige** Autorität für die Ordnerstruktur des Grundgerüsts; #1 baut sein Gerüst gegen genau diese Zeile und wird daran abgenommen. Der Ordner wäre also nicht entstanden, und sechs Issues hätten in ein Verzeichnis geschrieben, das es nicht gibt. Dieselbe Lücke hatte kurz zuvor schon `projekt-verwaltung` getroffen: Der Ordner fehlte, #1 galt trotzdem als erfüllt, und es fiel erst beim Bauen auf.
 >
 > **Nachgezogen in v3.2 (05.08.2026), vom Auftraggeber entschieden:**
 >
