@@ -5,12 +5,22 @@ import { defineConfig } from "vite";
 //
 // Zur STOPP-Frage aus #2 ("muss ffmpeg-static auch hier als external stehen?"):
 // NEIN, und zwar bewusst nicht. "external" hiesse: "dieser Import bleibt stehen und
-// wird zur Laufzeit aufgeloest" - der Build liefe dann durch und die App braeche erst
-// im Browser-Kontext des Renderers, wo es kein require() gibt. Ohne den Eintrag
-// scheitert schon der BUILD, laut und mit Dateinamen. Das ist hier das gewuenschte
-// Verhalten: Der Renderer darf ffmpeg nie importieren ("Nur der Main-Prozess beruehrt
-// ffmpeg und Dateisystem.", TK 2), also soll der Versuch auffallen und nicht
-// stillschweigend gelingen.
+// wird zur Laufzeit aufgeloest" - die App braeche dann erst im Browser-Kontext des
+// Renderers, wo es kein require() gibt.
+//
+// ACHTUNG - hier stand, ohne den Eintrag scheitere "schon der BUILD, laut und mit
+// Dateinamen". Das ist beim Abnehmen von #2 nachgemessen worden und stimmt NICHT:
+// Ein `import ffmpegPfad from "ffmpeg-static"` in src/renderer/ laeuft durch. Vite
+// stubbt die davon benutzten Node-Bausteine (path, os) und WARNT nur
+// ("has been externalized for browser compatibility"); Exitcode bleibt 0. Auch der
+// Renderer-Typecheck greift nicht: "types": [] sperrt nur ambiente @types-Pakete,
+// also das nackte fs/path - ffmpeg-static bringt eigene Typen mit.
+//
+// Es gibt fuer diesen Fall also DERZEIT KEINE Schranke. Die Sperre "Nur der
+// Main-Prozess beruehrt ffmpeg und Dateisystem." (TK 2) haengt hier allein an der
+// Aufmerksamkeit des Schreibenden. Der richtige Ort dafuer ist eine Lint-Regel, die
+// Importe aus src/renderer/** auf ffmpeg-static und die Node-Bausteine verbietet -
+// vermerkt in #193 (ESLint-Setup). Bis dahin: nicht darauf verlassen.
 export default defineConfig({
   // Relative Pfade, weil das gepackte Fenster die Seite ueber file:// laedt (#3).
   // Mit dem Standard "/" wuerde der Browser unter file:// im Wurzelverzeichnis des
