@@ -189,7 +189,26 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 > die Klasse, für die die Regel gilt: *eine Meldung ohne Recht führt dazu, dass ein Agent wartet
 > statt baut.*
 >
-> **Zwei verbindliche Reihenfolgen**, beide beim Schreiben entdeckt, nicht beim Prüfen:
+> **SECHS verbindliche Reihenfolgen** – im zweiten Prüflauf vollständig erhoben. Vier davon kannte
+> jeweils nur **eine** Seite; sie stehen deshalb hier zentral, nicht nur in den Issues:
+>
+> | Reihenfolge | Grund | beidseitig? |
+> |---|---|---|
+> | **M8-47 vor M8-01** | M8-01 kommentiert `AbgeleiteteMarkenReferenz` mit `marke.parent === markeId`; `parent` entsteht erst in M8-47 | nein – M8-01 kennt M8-47 nicht |
+> | **M8-43 vor M8-44** | `#181` importiert `leseMarke` **main-intern**; M8-44s Grep-Probe auf den Kanalnamen ist dagegen blind | **ja** |
+> | **M8-37 vor M8-43** | beide fassen `render-ausloesen.ts` an; M8-37 legt die Bindung an, M8-43 benutzt sie | nein |
+> | **M8-40 vor M8-41** | beide fassen `inhalte.tsx` an | nein – von M8-41 gemeldet |
+> | **M8-45 vor M8-46** | dieselben Deklarationen in `#136`; M8-45 ändert Art und Typ, M8-46 fügt hinzu | **ja** |
+> | **M8-44 vor M8-31** | Schlüsselmengen-Test in M8-31s DoD – **kein** Typecheck, die schwächste Kante | nein |
+>
+> **ACHTUNG – RINGSCHLUSS.** Diese Kanten bilden zusammen einen Kreis:
+> `M8-43 → M8-44 → M8-31 → M8-39 → M8-37 → M8-43`. **Kein einzelnes Issue kann ihn sehen** – M8-43
+> erklärt die schließende Kante sogar ausdrücklich für frei. Vier der fünf Kanten sind harte
+> Kompilier-Abhängigkeiten; die **schwächste ist M8-44 vor M8-31**, weil sie nur an einem
+> DoD-Testumfang hängt, nicht am Typecheck. **Dort ist der Ring aufzuschneiden** – aber das ist eine
+> Entscheidung, die ausgesprochen werden muss, kein Nebenbefund.
+>
+> *(Die ersten beiden wurden schon beim Schreiben entdeckt, nicht beim Prüfen:)*
 > **M8-43 vor M8-44** (sonst bricht der `render-service` an einer Stelle, die M8-44 nicht anfassen
 > darf) und **M8-45 vor M8-46** (beide ändern dieselben Deklarationen in `#136`; M8-45 ändert Art
 > und Typ vorhandener Einträge, M8-46 fügt danach hinzu).
