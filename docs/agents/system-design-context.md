@@ -6,7 +6,7 @@
 > Projekt beschädigen. Deshalb: jede lokale Entscheidung muss zu den hier festgelegten globalen
 > Invarianten passen. Im Zweifel lieber strikter an den Vertrag halten als „clever" abweichen.
 >
-> **Stand:** 10.08.2026 · Anforderungsdokument **v1.3** · Technisches Konzept **v3.6** · Phase: BAU (M0 läuft auf `bau/m0-01-grundgeruest`). Meilensteine M0–M7 sind als Issues angelegt; **M8 (Marken) ist geschrieben, aber NOCH NICHT angelegt** – seine Volltexte liegen in `docs/agents/m8/`.
+> **Stand:** 10.08.2026 · Anforderungsdokument **v1.3** · Technisches Konzept **v3.7** · Phase: BAU (M0 läuft auf `bau/m0-01-grundgeruest`). Meilensteine M0–M7 sind als Issues angelegt; **M8 (Marken) ist geschrieben, aber NOCH NICHT angelegt** – seine Volltexte liegen in `docs/agents/m8/`.
 
 ---
 
@@ -220,11 +220,13 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   („1 % der Dauer" ließe bei einem 30-Minuten-Reel ein ganzes fehlendes Segment durch).
 - **Geschlossene Fehlercode-Tabelle (v2.8, TK 9.2.3):** `medium_fehlt`, `ungueltiges_element`,
   `ungueltige_eingabe`, `ffmpeg_fehler`, `kein_platz`, `speicher_fehler`, `unbekannter_fehler`.
-  **ACHTER Code seit v3.6: `marken_datei_fehlt`** – ein **importiertes** Logo oder eine **importierte**
-  Schrift einer beteiligten Marke fehlt (9.15.3). Geprüft **vor** dem ersten ffmpeg-Aufruf, genau wie
-  `medium_fehlt`, und vom Reparatur-Modus abgedeckt. **Seine `daten`-Form ist `{ markeId, art,
-  schriftRolle? }`, NICHT `elementId`**: Es fehlt eine Datei der **Marke**, und dieselbe Marke kann an
-  beliebig vielen Elementen hängen – eine einzelne Element-ID benennte willkürlich eines davon.
+  **Es bleiben SIEBEN. `marken_datei_fehlt` gehört NICHT dazu** (v3.7; v3.6 hatte ihn kurzzeitig als
+  achten Code geführt – **zurückgenommen**). **Der `render-service` bekommt nie eine Marken-Datei zu
+  sehen:** Bei Variante A liefert der Renderer alle gezeichneten Pixel als fertiges PNG, und der
+  einzige verbleibende Marken-Bezug – die Restflächen-Farbe – reist als **fertiger Hex-Wert** im
+  Auftrag mit (`einblendung.flaecheDunkel`, s. 9h). Eine Datei-Prüfung hier bräche einen Lauf ab,
+  dessen PNGs bereits **fertig und korrekt** sind. Die Prüfung sitzt im **Renderer vor dem Zeichnen**
+  (9.15.3, s. 9f/9m).
   **`abgebrochen` ist KEIN Fehlercode, sondern ein Status.** Die betroffene Element-ID reist als
   **`Auftrag.fehler.daten = { elementId }`** (9.1.1) – ohne diesen Weg erreichte sie die Oberfläche
   nie, obwohl der Reparatur-Modus (FA-19) die Stelle benennen muss.
@@ -555,9 +557,11 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   Vorschau ≠ Endvideo + Markenbruch. **Seit v3.4 ist das nicht mehr der einzige Fall (9.10.4/9.15.3):**
   **Importierte** Schriften werden **je Marke** registriert und geladen, **bevor die erste Zone
   gezeichnet wird**, und der Nachweis über `document.fonts.check()` gilt für sie mit. **Fehlt eine
-  importierte Datei zur Renderzeit, bricht der Render FRÜH ab** (`marken_datei_fehlt`, vor dem ersten
-  ffmpeg-Aufruf) – **kein** stiller Rückfall auf die gebündelte Schrift; der zeigte den Markenbruch
-  erst am Fernseher.
+  importierte Datei, entsteht GAR KEIN Segment-PNG** (v3.7) – der `composer` führt in den
+  Reparatur-Modus (9.7.5), und der Auftrag wird **nicht eingereiht**. **Kein** stiller Rückfall auf die
+  gebündelte Schrift; der zeigte den Markenbruch erst am Fernseher. *(Bis v3.6 stand hier „bricht der
+  Render früh ab, vor dem ersten ffmpeg-Aufruf" – das war die falsche Stelle: Wenn der `render-service`
+  läuft, sind die Pixel längst gezeichnet.)*
 - **Ersatz-Logo, wenn die Marke keins hat (9.10.10, v3.4).** `Marke.logo` ist `| null` – bei
   Werbepartnern der Normalfall. Dann wird in **jeder** Zone mit `bindung: logo` der **`marke.name`**
   gezeichnet, auf einer Fläche in **`marke.farben.akzent`** (der **Marken**-Akzentfarbe, nie
@@ -670,15 +674,22 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   eingebauten Band-Vorlage (H = 162) ändert die Vierer-Abrundung **nichts** (1632). Auseinander
   liefen Vorschau und fertiges Video erst bei **eigenen** Vorlagen – **beim Nutzer, nicht beim
   Entwickler**.
-- **Die Restflächen tragen die Farb-Rolle `flaecheDunkel` (v2.8)**, geholt über
-  **`leseMarke(markeId)`** aus dem `marken-store` (9.15.1) – **nie** als Hexzahl in eine Filterkette
-  getippt. **Seit v3.4 zwingend mit Argument** (bis v3.3 hatte `leseMarke` **kein** Argument, 9.15.4),
-  und die Quelle ist **`Project.standardMarkeId`** – die **Projekt**-Standardmarke, **nicht** die Marke
-  der gerade sichtbaren Aktion. Dasselbe gilt für den **Band-Hintergrund**. *Begründung („Rahmen
-  stabil, Inhalt wechselt", 9.15.4):* Rotieren im Band Aktionen verschiedener Partner, wechselte sonst
-  die Flächenfarbe im Sekundenrhythmus – links und rechts neben dem Video und im Bandhintergrund. Auf
-  einem 85-Zoll-Schirm ist das unruhig, nicht professionell. `#2F2E2E` ist dabei nur noch der Wert der
-  **eingebauten** Marke, keine Konstante. „Dunkle Markenfarbe" ist bei
+- **Die Restflächen tragen die Farb-Rolle `flaecheDunkel` (v2.8)** – **nie** als Hexzahl in eine
+  Filterkette getippt. **Die Quelle ist `Project.standardMarkeId`** – die **Projekt**-Standardmarke,
+  **nicht** die Marke der gerade sichtbaren Aktion; dasselbe gilt für den **Band-Hintergrund**.
+  *Begründung („Rahmen stabil, Inhalt wechselt", 9.15.4):* Rotieren im Band Aktionen verschiedener
+  Partner, wechselte sonst die Flächenfarbe im Sekundenrhythmus – links und rechts neben dem Video und
+  im Bandhintergrund. Auf einem 85-Zoll-Schirm ist das unruhig, nicht professionell. `#2F2E2E` ist
+  dabei nur noch der Wert der **eingebauten** Marke, keine Konstante.
+- **AUFGELÖST WIRD BEIM EINREIHEN, NICHT ZUR LAUFZEIT (v3.7, bindend).** Der **Renderer** löst die
+  Rolle über `leseMarke(markeId)` auf – mit derselben Marke, mit der er die Band-PNGs zeichnet – und
+  legt den **fertigen Hex-Wert** als Pflichtfeld **`einblendung.flaecheDunkel`** in den
+  `RenderRequest` (9.2.2). Der `render-service` **schlägt KEINE Marke nach** und braucht **null**
+  Marken-Zugriff. *Folge ohne die Einfrierung:* Ändert jemand die Marke, während der Auftrag in der
+  Warteschlange wartet, füllte der Render die Restflächen in einer **anderen Farbe als die bereits
+  gezeichneten Band-PNGs** – nebeneinander im selben Bild. Derselbe Fehler wie bei einer
+  nachgeschlagenen Bandhöhe, nur sichtbarer. *Warum der Wert und nicht die `markeId`:* Eine Kennung
+  wäre **nicht** eingefroren – die Marke dahinter kann sich ändern, ohne dass die Zuordnung sich ändert. „Dunkle Markenfarbe" ist bei
   **zwölf** Farb-Rollen keine Angabe; ohne die Festlegung wählte jeder Agent eine andere und Render
   und Vorschau liefen auseinander. 9.11.2 beschreibt die Rolle als „Segment- und **Band**-Hintergrund" –
   damit sind Band und Seitenflächen **dieselbe** Fläche und der Split wirkt aus einem Guss.
@@ -936,8 +947,10 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
 - **Fehlercodes (9.15.5, vollständig):** `marke_referenziert` · `marke_eingebaut` ·
   `marke_nicht_gefunden` · `ungueltige_eingabe` (unbekannte Rolle, Ableitungskette länger als eine
   Stufe, Datei nicht in der Whitelist) · **`marken_datei_fehlt`** (importiertes Logo oder importierte
-  Schrift fehlt – **beim Render, vor dem ersten ffmpeg-Aufruf**; s. den offenen Punkt in Abschnitt 7) ·
-  `speicher_fehler`.
+  Schrift fehlt) · `speicher_fehler`. **`marken_datei_fehlt` wird im RENDERER festgestellt** – beim
+  Vorbereiten der Marke **vor** dem Zeichnen (9.10.3/9.10.4). Dann entsteht **kein** Segment-PNG, der
+  `composer` führt in den Reparatur-Modus (9.7.5), und der Auftrag wird **gar nicht erst eingereiht**.
+  **NICHT** im `render-service` – der sieht nie eine Marken-Datei (s. Abschnitt 7).
 - **Migration von v3.3 (9.15.1):** Die bisher in `config.json` geführte Marke war ein **namenloses
   Wertobjekt**. Die Migration legt daraus die **eingebaute** Marke in `marken.json` an
   (`eingebaut: true`, `parent: null`, **neue `id`**), setzt `Project.standardMarkeId` und
@@ -960,7 +973,7 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   `design/design-tokens.json` sind aussortiert und NICHT zu verwenden).
 
 ## 11. Status & offene Verträge
-- **Aktuelle Fassungen: Anforderungsdokument v1.3 / TK v3.6 (10.08.2026).** Nachträge seit v2.2:
+- **Aktuelle Fassungen: Anforderungsdokument v1.3 / TK v3.7 (10.08.2026).** Nachträge seit v2.2:
   v2.4 (`pendingDeletions` sind keine Aufträge, `listeAusgaben`), v2.5 (`Auftrag.ergebnis`,
   `fehler.daten`, ffprobe wird mitgeliefert), v2.7 (`setzeEinblendung`, `setzeElementReferenz` –
   s. 9b), **v2.8 (neun Entscheidungen aus dem M6-Zuschnitt: `.part`-Staging im Ausgabeordner –
@@ -990,6 +1003,10 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   zurückgenommene Palettenzwang stand zitierfähig weiter in 9.11.1 · `Marke` fehlte in der UUID-Liste –
   und vier Entscheidungen: `marken_datei_fehlt` als achter Code in 9.2.3 – s. 7 · fünfter Reiter
   [Marken] – s. 5 · Sicherheitsabstand gehört der Marke – s. 9j/9k · Protokoll `marken://` – s. 9m)**,
+  **v3.7 (NIMMT v3.6-Punkt 5 ZURÜCK: `marken_datei_fehlt` ist KEIN Render-Fehlercode – der
+  `render-service` sieht bei Variante A nie eine Marken-Datei; die Prüfung sitzt im Renderer vor dem
+  Zeichnen. Sein einziger Marken-Bezug ist die Restflächen-Farbe, und die reist als fertiger Hex-Wert
+  `einblendung.flaecheDunkel` eingefroren im Auftrag mit – s. 7/9h/9m)**,
   **v3.5 (Herkunfts-Stempel `herkunftJeFeld` an der aufgelösten Marke, damit der Editor „geerbt vs.
   eigen" zeigen kann, ohne dass es eine zweite, unaufgelöste Leseoperation gibt; Wertvergleich als
   Ersatz ausdrücklich verboten – s. 9j/9m)**.

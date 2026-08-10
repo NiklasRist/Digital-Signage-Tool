@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.3 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.6 (HLD vollständig, geprüft)
+**Version:** 3.7 (HLD vollständig, geprüft)
 **Datum:** 10.08.2026
 **Status:** In Planung
 
@@ -440,6 +440,11 @@ Gemeinsam je Item: `id` (Rückverfolgung/Fehlerzuordnung). Bei `"segment"` werde
 | `art` | `"split"` \| `"einblendung"` – Kompositionsart (Band **unter** bzw. **über** dem Video, 9.2.8) |
 | `höhe` | Bandhöhe `H` in Pixeln (ganzzahlig und **gerade**, 9.2.8) |
 | `abschnitte` | geordnete Folge `{ png (Binärpuffer, 1920 × H), dauer }` |
+| `flaecheDunkel` | **fertiger Hex-Wert** für die Restflächen der Split-Komposition (9.2.8) – **kein** Rollen-Name, **keine** `markeId` |
+
+**`flaecheDunkel` reist aus demselben Grund mit (v3.7) – und ist der EINZIGE Marken-Bezug des `render-service`.** Bei Variante A liefert der Renderer **alle** gezeichneten Pixel als PNG; Logo und Schriften einer Marke wirken sich ausschließlich über diese PNGs aus. Was ffmpeg selbst noch einfärbt, ist die **Restfläche** der Split-Komposition – und dafür genügt **ein Farbwert**. Er wird **beim Einreihen** aus der Projekt-Standardmarke aufgelöst (9.15.4) und als fertiger Hex-Wert eingefroren. *Folge ohne die Einfrierung:* Ändert jemand die Marke, während der Auftrag in der Warteschlange wartet, füllte der `render-service` die Restflächen in einer **anderen** Farbe als die bereits gezeichneten Band-PNGs – **nebeneinander im selben Bild**. Es ist derselbe Fehler wie bei einer nachgeschlagenen Bandhöhe, nur sichtbarer. *Warum der Wert und nicht die `markeId`:* Eine mitgereiste Kennung wäre **nicht** eingefroren – die Marke dahinter kann sich ändern, ohne dass die Zuordnung sich ändert. Und der Renderer kennt den Wert ohnehin: **er hat das Band damit gezeichnet.**
+
+*Das Feld ist Pflicht, auch wenn `art: "einblendung"` es nicht benutzt* (dort wird nichts gefüllt, das Band überlagert mit Alpha). Ein optionales Feld hätte den Fall „`split` ohne Farbe" zugelassen – und dann müsste der `render-service` raten oder eine Hexzahl tippen, was 9.11.1 Punkt 7 verbietet.
 
 *Warum `art` und `höhe` im Auftrag stehen und nicht zur Laufzeit nachgeschlagen werden:* Der Render **friert seinen Eingang beim Einreihen ein** (9.3.5). Beide Werte stammen aus der Band-Vorlage und werden **beim Einreihen** aus ihr abgeleitet. Würde der Main die Vorlage stattdessen erst beim Start des Auftrags im `vorlagen-store` nachschlagen, wäre der Eingang **nicht** eingefroren: Ändert jemand die Bandhöhe, während der Auftrag in der Warteschlange wartet, passten die bereits gezeichneten Band-PNGs (1920 × H **zum Einreih-Zeitpunkt**) nicht mehr zur nachgeschlagenen Höhe – das Band im fertigen Video wäre verzerrt oder falsch platziert. So bleibt der Auftrag **in sich geschlossen**, und der `render-service` braucht **keine** Abhängigkeit zum `vorlagen-store`. Der Renderer kennt beide Werte ohnehin: er hat das Band damit gezeichnet.
 
@@ -481,7 +486,6 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bere
 | Code | Wann | Was der Nutzer tun kann |
 |---|---|---|
 | `medium_fehlt` | Ein referenziertes Medium liegt nicht (mehr) in `media/` oder ist vom Reconcile als `zustand: "fehlt"` markiert (9.4.7). Geprüft **vor** dem ersten `ffmpeg`-Aufruf, nicht mitten im Lauf | Über den geführten Reparatur-Modus (9.7.5) neu verknüpfen/importieren, ersetzen oder das Element entfernen |
-| `marken_datei_fehlt` | Ein **importiertes** Logo oder eine **importierte** Schrift einer beteiligten Marke liegt nicht (mehr) in `marken-assets/<markeId>/` (9.15.3). Geprüft **vor** dem ersten `ffmpeg`-Aufruf – wie `medium_fehlt`, aus demselben Grund: Ein stiller Rückfall auf die gebündelte Schrift zeigte den Markenbruch erst am Fernseher | Über den geführten Reparatur-Modus (9.7.5) die Datei neu importieren oder im `marken-editor` entfernen (dann gilt wieder der geerbte bzw. gebündelte Wert, 9.15.1) |
 | `ungueltiges_element` | Ein einzelnes `RenderItem` ist in sich unstimmig: Trim außerhalb der Quelldauer, `dauer` außerhalb 10–45 s, `"segment"` ohne PNG-Puffer, `einblendung` ohne Abschnitte, mit `höhe` ≥ 1080 oder mit **ungerader** `höhe` (9.2.8), PNG-Maße ≠ der erwarteten Fläche (1920 × 1080 bzw. 1920 × `höhe`) | Das benannte Element im `composer` korrigieren (Dauer/Trim/Band) und erneut rendern |
 | `ungueltige_eingabe` | Die **Anfrage** verletzt den Vertrag, unabhängig von einzelnen Elementen: unzulässiger `ausgabeName` (9.2.6), leere Elementliste, unbekannte `art`, fehlende `projektId`. Generischer Code aus 9.1.1 Punkt 3 – **ohne jede Wirkung** auf Daten oder Dateien | Zielnamen korrigieren bzw. mindestens ein Element in die Liste legen |
 | `ffmpeg_fehler` | Ein `ffmpeg`-/`ffprobe`-Aufruf endet mit Fehlerstatus oder liefert keine verwertbare Ausgabe (defekter Stream, nicht dekodierbare Quelle) – **einschließlich einer fehlgeschlagenen Verifikation** der fertigen Datei (9.2.6) | Wiederholen (Q2, FA-17); bleibt es dabei, das im Fehler benannte Element austauschen. Die vorherige Ausgabedatei ist unversehrt |
@@ -491,7 +495,9 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bere
 
 **`abgebrochen` ist *kein* Fehlercode.** Ein vom Nutzer abgebrochener Lauf endet über `status: "abgebrochen"` (9.2.7) und trägt **kein** `fehler`-Objekt – sonst gäbe es zwei Wege, denselben Ausgang zu melden, und die Oberfläche zeigte einen Abbruch als Fehler an.
 
-**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.** `RenderResult.fehlerhaftesElementId` ist Modul-intern; beim Abschluss des Auftrags übernimmt die Auftragsverwaltung `fehlercode` → `Auftrag.fehler.code`, `meldung` → `Auftrag.fehler.meldung` und `fehlerhaftesElementId` → **`Auftrag.fehler.daten = { elementId }`** (9.1.1, 9.3.1). Ohne diesen Weg käme die ID **nie** beim Nutzer an – obwohl 9.2.1 die `RenderItem.id` genau damit begründet („eindeutige Fehlerzuordnung") und der Reparatur-Modus (FA-19) die Stelle benennen muss, zu der er führt. Die Form von `daten` ist damit **je Fehlercode festgelegt**: `{ elementId: string }` bei `medium_fehlt` und `ungueltiges_element`, **`{ markeId: string, art: "logo" | "schrift", schriftRolle?: SchriftRolle }` bei `marken_datei_fehlt`** (nicht `elementId`: Es fehlt eine Datei der **Marke**, und dieselbe Marke kann an beliebig vielen Elementen hängen – eine einzelne Element-ID benennte willkürlich eines davon und führte den Reparatur-Modus an die falsche Stelle), sonst nicht gesetzt.
+**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.** `RenderResult.fehlerhaftesElementId` ist Modul-intern; beim Abschluss des Auftrags übernimmt die Auftragsverwaltung `fehlercode` → `Auftrag.fehler.code`, `meldung` → `Auftrag.fehler.meldung` und `fehlerhaftesElementId` → **`Auftrag.fehler.daten = { elementId }`** (9.1.1, 9.3.1). Ohne diesen Weg käme die ID **nie** beim Nutzer an – obwohl 9.2.1 die `RenderItem.id` genau damit begründet („eindeutige Fehlerzuordnung") und der Reparatur-Modus (FA-19) die Stelle benennen muss, zu der er führt. Die Form von `daten` ist damit **je Fehlercode festgelegt**: `{ elementId: string }` bei `medium_fehlt` und `ungueltiges_element`, sonst nicht gesetzt.
+
+**`marken_datei_fehlt` ist KEIN Fehlercode des `render-service` (v3.7, zurückgenommen).** v3.6 hatte ihn hier als achten Code aufgenommen; das war falsch. **Der `render-service` bekommt nie eine Marken-Datei zu sehen:** Bei Variante A liefert der Renderer alle gezeichneten Pixel als fertiges PNG (9.2.2), und der einzige verbleibende Marken-Bezug – die Restflächen-Farbe – reist seit v3.7 als fertiger Hex-Wert mit. Eine Datei-Prüfung an dieser Stelle prüfte **die falsche Sache zum falschen Zeitpunkt**: Sie bräche einen Lauf ab, dessen PNGs bereits fertig **und korrekt** sind – ob die Quelldatei noch auf der Platte liegt, ist für dieses Video ohne Bedeutung. Wo die Prüfung stattdessen sitzt, steht in 9.15.3.
 
 #### 9.2.4 `RenderProfile` (aktuell fest)
 
@@ -591,7 +597,7 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 
 **Bewusste Abweichung vom Ausgabe-Profil – nur hier:** 9.2.4 schreibt **schwarze** Balken vor. In der Split-Komposition werden die Restflächen **in der Markenfarbe** gefüllt, damit der Split gestaltet wirkt und nicht wie ungenutzter Platz. Die Einpassung bleibt **„contain" ohne Beschnitt**.
 
-**Welche Markenfarbe – festgelegt:** die Farb-Rolle **`flaecheDunkel`** (9.11.2). Sie ist dort ausdrücklich als „Segment- und **Band**-Hintergrund" beschrieben; damit sind Band und seitliche Restflächen **dieselbe** Fläche und der Split wirkt aus einem Guss. Der `render-service` holt den Wert **über die Marke** (`marken-store.leseMarke(markeId)`, 9.15.1 – die **Projekt-Standardmarke** `Project.standardMarkeId`, 9.15.4) und tippt ihn **nie** als Hexzahl in eine Filterkette – sonst hätte das Projekt zwei Quellen für dieselbe Farbe (9.11.1, Punkt 7).
+**Welche Markenfarbe – festgelegt:** die Farb-Rolle **`flaecheDunkel`** (9.11.2). Sie ist dort ausdrücklich als „Segment- und **Band**-Hintergrund" beschrieben; damit sind Band und seitliche Restflächen **dieselbe** Fläche und der Split wirkt aus einem Guss. **Aufgelöst wird die Rolle beim EINREIHEN, nicht zur Laufzeit (v3.7):** Der Renderer liest sie aus der **Projekt-Standardmarke** (`Project.standardMarkeId`, 9.15.4) – derselben Marke, mit der er die Band-PNGs zeichnet – und legt den fertigen Hex-Wert als `einblendung.flaecheDunkel` in den Auftrag (9.2.2). Der `render-service` **schlägt keine Marke nach**; er nimmt den eingefrorenen Wert und tippt **nie** eine Hexzahl selbst in eine Filterkette (9.11.1, Punkt 7). *Bis v3.6 stand hier ein Nachschlag zur Laufzeit – erst über `config-store.leseMarke`, dann über `marken-store.leseMarke(markeId)`. Beides verletzte die Einfrier-Zusage aus 9.3.5.*
 
 **Art B – `einblendung`: Band *über* dem vollflächigen Video.** Das Video wird wie gewohnt auf **1920 × 1080** normalisiert (schwarze Balken nach 9.2.4, **keine** Verkleinerung, **keine** Markenfarb-Flächen). Das Band (1920 × H, **mit Alpha**) wird **unten überlagert** (y = 1080 − H). Vorteil: das Video behält seine volle Größe; dafür verdeckt das Band den unteren Bildbereich.
 
@@ -2017,11 +2023,18 @@ jetzt eine **`herkunft`** (9.11.2).
   Marke** registriert und geladen, **bevor** die erste Zone gezeichnet wird, und der Nachweis aus
   9.10.4 (alle Familien über `document.fonts.check()` verfügbar) gilt für sie mit. Ohne das rendert der
   Canvas still auf eine Fallback-Schrift → **Vorschau ≠ Endvideo und Markenbruch**.
-- **Fehlt eine importierte Datei zur Renderzeit, bricht der Render FRÜH ab** – vor dem ersten
-  ffmpeg-Aufruf, mit dem Fehlercode `marken_datei_fehlt`. Dieselbe Linie wie `medium_fehlt` (9.4.7)
-  und wie das Verbot, einen Platzhalter in den finalen Render zu geben (9.10.7). Ein stiller Rückfall
-  zeigte den Markenbruch erst am Fernseher. Der geführte Reparatur-Modus (FA-19, 9.7.5) deckt den Fall
-  mit ab: Es ist dieselbe Klasse – eine Referenz zeigt ins Leere.
+- **Fehlt eine importierte Datei, wird gar nicht erst gezeichnet – die Prüfung sitzt im RENDERER,
+  vor dem Zeichnen (v3.7, geschärft).** Bis v3.6 stand hier „bricht der Render früh ab, vor dem ersten
+  ffmpeg-Aufruf". Das war an der falschen Stelle verortet: Der `render-service` bekommt bei Variante A
+  **nie** eine Marken-Datei zu sehen (9.2.2, 9.2.3) – wenn er läuft, sind die Pixel längst gezeichnet.
+  Die Datei wird gebraucht, **während** `template-canvas` zeichnet, und genau dort greift schon
+  9.10.3/9.10.4: Schriften und Motive müssen **vor** dem Zeichnen geladen sein, nachgewiesen über
+  `document.fonts.check()`. Schlägt das Laden fehl, **entsteht kein Segment-PNG**; der `composer`
+  behandelt das wie jede andere ins Leere zeigende Referenz und führt in den **geführten
+  Reparatur-Modus** (FA-19, 9.7.5) – und dort gilt: **Render erst frei, wenn alles behoben ist.** Der
+  fehlerhafte Auftrag wird also **gar nicht erst eingereiht**. Ein stiller Rückfall auf die gebündelte
+  Schrift bleibt verboten (er zeigte den Markenbruch erst am Fernseher), ebenso ein Platzhalter im
+  finalen Render (9.10.7).
 - **Ablage neben den Daten, nicht im Programmordner.** `marken-assets/` liegt im Datenort (Abschnitt 6).
   So wandern importierte Schriften mit den Daten – bei portabler Auslieferung genau richtig.
 - **Lizenzen:** Für importierte Schriften trägt der Nutzer die Rechte (Risiko R-07). Die Anwendung
@@ -2059,7 +2072,7 @@ Identität und Rahmen sind stabil.
 | `marke_eingebaut` | Löschen der eingebauten Marke versucht |
 | `marke_nicht_gefunden` | unbekannte `markeId` |
 | `ungueltige_eingabe` | unbekannte Rolle, Ableitungskette länger als eine Stufe, Datei nicht in der Whitelist |
-| `marken_datei_fehlt` | importiertes Logo oder importierte Schrift fehlt – **beim Render**, vor dem ersten ffmpeg-Aufruf. **Gemeldet wird er vom `render-service`**: Er steht seit v3.6 als **achter** Code in dessen geschlossener Tabelle (9.2.3), samt der Form von `fehler.daten` |
+| `marken_datei_fehlt` | Eine importierte Datei der Marke liegt nicht (mehr) in `marken-assets/<markeId>/`. **Festgestellt wird das im RENDERER, beim Vorbereiten der Marke vor dem Zeichnen** (9.15.3, 9.10.4) – **nicht** im `render-service`, der nie eine Marken-Datei sieht (9.2.3). Das betroffene Segment wird nicht gezeichnet, der `composer` führt in den Reparatur-Modus (9.7.5), der Auftrag wird **gar nicht erst eingereiht** |
 | `speicher_fehler` | `marken.json` nicht schreibbar (Platte voll, Rechte) |
 
 ---
@@ -2070,7 +2083,15 @@ Identität und Rahmen sind stabil.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
-> **Nachgezogen in v3.6 (10.08.2026) – acht Befunde aus dem Abgleich des Agent-Kontextdokuments gegen v3.2–v3.5. Vier Nachzüge, vier vom Auftraggeber entschieden:**
+> **Nachgezogen in v3.7 (10.08.2026), vom Auftraggeber entschieden – beim Zuschnitt der M8-Lücken gefunden. NIMMT PUNKT 5 AUS v3.6 ZURÜCK:**
+>
+> 1. **Der `render-service` bekommt NIE eine Marken-Datei zu sehen – `marken_datei_fehlt` ist dort kein Fehlercode** (9.2.3, 9.15.3, 9.15.5). *Wie der Fehler entstand:* v3.4 schrieb in 9.15.3 „Fehlt eine importierte Datei zur Renderzeit, bricht der Render **früh** ab – vor dem ersten ffmpeg-Aufruf"; v3.6 machte daraufhin die geschlossene Fehlercode-Tabelle 9.2.3 „konsistent" und nahm den Code als achten auf – **ohne zu prüfen, ob die Behauptung trägt.** Sie trägt nicht: Bei **Variante A** liefert der Renderer alle gezeichneten Pixel als fertiges PNG (9.2.2 – „die Pixel sind bereits final"), Logo und Schriften wirken ausschließlich über diese PNGs. Wenn der `render-service` läuft, ist längst alles gezeichnet. Eine Datei-Prüfung dort bräche einen Lauf ab, dessen PNGs **fertig und korrekt** sind. *Dieselbe Fehlerklasse wie beim v3.4-Nachzug zu 7.2 (v3.6 Punkt 1): eine Aussage des eigenen Dokuments übernommen, statt sie gegen die Sache zu halten.*
+>
+> 2. **Die Prüfung sitzt im RENDERER, vor dem Zeichnen** (9.15.3). Dort greift sie ohnehin schon: 9.10.3/9.10.4 verlangen geladene Schriften **vor** dem Zeichnen, nachgewiesen über `document.fonts.check()`. Schlägt das Laden fehl, entsteht **kein** Segment-PNG, der `composer` führt in den geführten Reparatur-Modus (FA-19, 9.7.5), und dort gilt „Render erst frei, wenn alles behoben ist" – der fehlerhafte Auftrag wird **gar nicht erst eingereiht**. `marken_datei_fehlt` bleibt Fehlercode der Marken-Verwaltung (9.15.5), wandert aber aus dem Render-Pfad.
+>
+> 3. **Der einzige Marken-Bezug des `render-service` ist EINE FARBE – und sie wird beim Einreihen eingefroren** (9.2.2, 9.2.8): neues Pflichtfeld **`einblendung.flaecheDunkel`**, ein **fertiger Hex-Wert**, aufgelöst aus der Projekt-Standardmarke durch den Renderer – derselben Marke, mit der er die Band-PNGs zeichnet. *Folge ohne die Einfrierung:* Ändert jemand die Marke, während der Auftrag wartet, füllte der `render-service` die Restflächen in einer **anderen** Farbe als die bereits gezeichneten Band-PNGs – **nebeneinander im selben Bild**. Es ist derselbe Fehler wie bei einer nachgeschlagenen Bandhöhe (v2.8), nur sichtbarer. *Warum der Wert und nicht die `markeId`:* Eine Kennung wäre **nicht** eingefroren – die Marke dahinter kann sich ändern, ohne dass die Zuordnung sich ändert. **Damit braucht der `render-service` null Marken-Zugriff**, und die im M8-Zuschnitt vermerkte Lücke „`RenderRequest` trägt keine `markeId`" ist nicht zu schließen, sondern **hinfällig**.
+>
+> **Nachgezogen in v3.6 (10.08.2026) – acht Befunde aus dem Abgleich des Agent-Kontextdokuments gegen v3.2–v3.5. Vier Nachzüge, vier vom Auftraggeber entschieden. ACHTUNG: Punkt 5 ist mit v3.7 zurückgenommen:**
 >
 > 1. **NACHZUG, und zugleich eine falsche Erledigt-Meldung im eigenen Verzeichnis: der Speicher `V2` fehlte in 7.2 und 7.3.** Der v3.4-Eintrag unten nennt „(Abschnitt 6, DFD, **7.2**)" als nachgezogen – **7.2 war es nicht**: Der Speicher-Katalog führte weiterhin `D3 | App-Konfig | aktives Projekt, Marke, UI-Voreinstellungen` – mit der **Marke** mitten in D3 –, die Datenfluss-Tabelle 7.3 in Zeile 4 und Zeile 11 ebenso, und Abschnitt 4 (Kategorie B) sprach von „Marken-/Design-Konfiguration" – **direkt unter einer DFD-Bildunterschrift, die das Gegenteil sagt** („Die Marke kommt seit v3.4 aus V2, nicht mehr aus D3"). Jetzt: `V2` als eigene Katalog-Zeile, `D3` ohne Marke, Datenfluss 11 von `V2` statt `D3` samt Kontext-Quelle, Kategorie B als „Marken-Bestand". *Lehre:* Eine Erledigt-Meldung im Änderungsverzeichnis ist selbst eine Tatsachenbehauptung und muss geprüft werden – sonst deckt sie die Lücke zu, die sie zu schließen behauptet.
 >
@@ -2080,7 +2101,7 @@ Identität und Rahmen sind stabil.
 >
 > 4. **NACHZUG: `Marke` fehlte in der UUID-Aufzählung (9.11.4)**, obwohl 9.11.2 `id: string // UUID` führt; und die Einordnung in Abschnitt 1 verwies noch auf **Anforderungsdokument v1.2**.
 >
-> 5. **ENTSCHIEDEN: `marken_datei_fehlt` wird der ACHTE Code in der geschlossenen Tabelle des `render-service`** (9.2.3), mit `medium_fehlt` als Vorbild – geprüft **vor** dem ersten ffmpeg-Aufruf, vom Reparatur-Modus abgedeckt. *Folge ohne die Entscheidung:* 9.15.3/9.15.5 verlangen den frühen Abbruch, aber die Tabelle in 9.2.3 ist als **geschlossen** deklariert – der Code wäre entweder ein Vertragsbruch gewesen oder still zu `unbekannter_fehler` degradiert. Mitentschieden ist die Form von `fehler.daten`: **`{ markeId, art, schriftRolle? }`**, **nicht** `elementId` – es fehlt eine Datei der **Marke**, und dieselbe Marke kann an beliebig vielen Elementen hängen; eine einzelne Element-ID benennte willkürlich eines davon und führte den Reparatur-Modus an die falsche Stelle.
+> 5. **[MIT v3.7 ZURÜCKGENOMMEN – dieser Punkt gilt NICHT mehr und ist NICHT zitierfähig; die Begründung steht in v3.7 Punkt 1. Der folgende Text ist nur noch Beleg dafür, was entschieden WAR.]** ENTSCHIEDEN: `marken_datei_fehlt` wird der ACHTE Code in der geschlossenen Tabelle des `render-service` (9.2.3), mit `medium_fehlt` als Vorbild – geprüft **vor** dem ersten ffmpeg-Aufruf, vom Reparatur-Modus abgedeckt. *Folge ohne die Entscheidung:* 9.15.3/9.15.5 verlangen den frühen Abbruch, aber die Tabelle in 9.2.3 ist als **geschlossen** deklariert – der Code wäre entweder ein Vertragsbruch gewesen oder still zu `unbekannter_fehler` degradiert. Mitentschieden ist die Form von `fehler.daten`: **`{ markeId, art, schriftRolle? }`**, **nicht** `elementId` – es fehlt eine Datei der **Marke**, und dieselbe Marke kann an beliebig vielen Elementen hängen; eine einzelne Element-ID benennte willkürlich eines davon und führte den Reparatur-Modus an die falsche Stelle.
 >
 > 6. **ENTSCHIEDEN: Der `marken-editor` bekommt einen FÜNFTEN Reiter [Marken]** (9.14.1/9.14.2). *Folge ohne die Entscheidung:* Die Modulübersicht führte ihn, 9.14.2 sprach weiter von „den **sechs** Modulen", und die Reiter-Skizze kannte ihn nicht – **es gab keinen Weg, ihn zu erreichen**, und FA-24 ist ein Muss. Es ist dieselbe Lückenklasse, die schon `projekt-verwaltung` in v3.1 getroffen hat. Begründung wie dort: app-weiter Bestand neben der app-weiten Vorlagen-Bibliothek, und er braucht die Live-Vorschau in lesbarer Größe. Mitentschieden: **sechs → sieben** Module; der Reiter Marken bleibt **ohne offenes Projekt benutzbar** (wie Vorlagen und Projekte); und die **Undo/Redo-Bedienelemente sind dort abgeschaltet** – der Marken-Bestand hat in v1 bewusst keine Historie (9.15.2), und an den Stapel des zuletzt aktiven Reiters gebunden widerriefe ein Klick im Marken-Reiter die letzte Änderung an einem **Projekt**.
 >
