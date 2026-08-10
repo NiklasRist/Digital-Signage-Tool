@@ -356,6 +356,21 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
 - **Was geschieht, wenn der Flush beim Beenden fehlschlägt?** TK 9.5.4 bindet es für `project.json`
   („schließt die App **nicht**"), TK 9.15.1 sagt zu Marken nur, die Schreib-Invarianten seien
   „dieselben", und der nötige Dialog lebt im Renderer. Betrifft `#47`, `#98` und M8-36 gleichermaßen.
+- **`Project.standardMarkeId` ist nach M8-47 ein Pflichtfeld ohne Befüller für NEUE Projekte.**
+  `erstelleProjekt` (**#33**) baut das initiale `Project` und weiß von keiner Marke; M8-07 migriert
+  nur **bereits geladene** Projekte. Suche über alle M8-Volltexte nach `erstelleProjekt`: **null
+  Treffer**. *Zehnte Wiederholung derselben Lückenklasse.* Erschwerend: `erstelleProjekt` müßte die
+  **eingebaute** Marke kennen – das wäre eine neue Abhängigkeit `project-store` → `marken-store`,
+  also eine Vertragsfrage, keine Zeile. **Verboten ist der naheliegende Ausweg**, das Feld optional
+  zu machen: Damit wäre die Lücke zugedeckt statt geschlossen.
+- **`Marke.sicherheit`, `.radien` und `.schatten` stehen in `#52` als LITERALTYPEN**
+  (`{ horizontal: 96; vertikal: 54 }`). M8-47 zieht sie auf `number` – **ohne diesen Schritt wäre das
+  Feld typseitig unveränderlich** und die Bereichsprüfung aus M8-11/M8-35 hätte genau einen
+  zulässigen Punkt. *Ursache: Der TK-Codeblock 9.11.2 zeigt Beispielwerte; wer ihn buchstäblich nach
+  TypeScript überträgt – also Regel D folgt –, baut Literaltypen. Eine TK-Präzisierung wäre die
+  saubere Vorsorge.*
+- **Erzwingen die zwei neuen Pflichtfelder eine `schemaVersion`-Erhöhung für `project.json`?**
+  Betrifft #34/#46/#48; M8-47 läßt `AKTUELLE_SCHEMA_VERSION` bewußt auf `1`.
 - **Der Kontrast-Schwellenwert** ist weiterhin nirgends genannt (M8-19 führt ihn als Pflicht-Parameter,
   M8-28 als Prop – beide erfinden bewusst keine Zahl).
 - **Gegen welche Marke zeichnet der `vorlagen-editor`?** Er hat **keinen** Projektzugang, also auch
