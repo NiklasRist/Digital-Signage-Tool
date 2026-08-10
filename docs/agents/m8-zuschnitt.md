@@ -29,7 +29,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 ---
 
-## 39 neue Issues
+## 46 neue Issues
 
 ### contracts (geteilt) – 2
 
@@ -172,6 +172,29 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 ---
 
+### Nach dem Prüflauf ergänzt (10./11.08.) – 7
+
+| Nr. | Issue | Warum es fehlte |
+|---|---|---|
+| **M8-41** | [app-shell] Der fünfte Modus-Reiter [Marken] | Der Reiter wird in `reiter.ts` (#194) und `inhalte.tsx` (#244) angelegt – **kein** Issue beanspruchte sie. Elf Editor-Issues wären gebaut und **unerreichbar** gewesen. Neunte Wiederholung der Lückenklasse |
+| **M8-42** | [template-canvas] `#119` `logo-laden.ts` je `markeId` | Vier Issues setzten `holeLogo(markeId)`, die `herkunft`-Verzweigung und `leereLogoBestand()` voraus – **alle** sperrten sich die Datei. M8-39 war ohne sie **nicht baubar** |
+| **M8-43** | Die `flaecheDunkel`-Kette: `#17` → `#134` → `#177` → **`#181`** | Vier Glieder, dazwischen kompiliert nichts. Der Zuschnitt adressierte **das falsche**: `#177` ruft `leseMarke` **nie** und sagt das selbst – der Aufruf steht in `#181` |
+| **M8-44** | [config-store] `leseMarke` und `config:leseMarke` ersatzlos zurückbauen | TK 9.5.6 führt die Operation nicht mehr; gebaut ist sie trotzdem. **M8-43 läuft davor** – `#181` importiert main-intern, die Grep-Probe ist dagegen blind |
+| **M8-45** | Die freie Akzentfarbe in `#139` und `#112` nachziehen | `#139`: „kein freier Farbwähler, nie ein Hex-Wert"; `#112` **wirft** bei `'#FF4040'` – dem neuen Normalfall. Seit v3.4 überholt, nie nachgezogen |
+| **M8-46** | Ein Weg, `Aktion.markeId` zu setzen | Pflichtfeld ohne Setzweg – das Wort kam in **keinem** angelegten Issue vor. FA-23 wäre nicht benutzbar |
+| **M8-47** | [contracts] Die geteilten Typen erweitern (`#52`, `#14`, `#15`, `#21`) | Die **Grundlage aller 46 Issues** stand als Tabellenzeile **ohne Ausführenden**. Ohne sie importiert jedes zweite Issue ins Leere |
+
+> **Alle sieben stammen aus dem Prüflauf** (`m8-pruefbefund.md`). Sechs davon sind Eingriffe in
+> **abgenommene** Verträge, die vorher nur als Tabellenzeile ohne Adressaten geführt wurden – genau
+> die Klasse, für die die Regel gilt: *eine Meldung ohne Recht führt dazu, dass ein Agent wartet
+> statt baut.*
+>
+> **Zwei verbindliche Reihenfolgen**, beide beim Schreiben entdeckt, nicht beim Prüfen:
+> **M8-43 vor M8-44** (sonst bricht der `render-service` an einer Stelle, die M8-44 nicht anfassen
+> darf) und **M8-45 vor M8-46** (beide ändern dieselben Deklarationen in `#136`; M8-45 ändert Art
+> und Typ vorhandener Einträge, M8-46 fügt danach hinzu).
+
+
 ## Edits an bestehenden Issues
 
 Ohne diese Edits sind die neuen Issues nicht baubar. **Jeder braucht ein ausdrücklich vergebenes
@@ -181,15 +204,15 @@ Editierrecht** – eine Meldung ohne Recht führt dazu, dass ein Agent wartet st
 
 | Typ | Issue | Was sich ändert |
 |---|---|---|
-| `Marke` | **#52** (M1-40) | `id`, `name`, `parent`, `eingebaut`; `logo` wird `\| null`; `Schrift.herkunft`; `Herkunft`; **`herkunftJeFeld`** (v3.5) |
-| `Aktion` | **#14** (M1-02) | neues Pflichtfeld `markeId`; `akzentfarbe` ist **freier** Hex-Wert |
-| `Project` | **#15** (M1-03) | neues Feld `standardMarkeId` |
+| `Marke` | **#52** (M1-40) → **M8-47** | `id`, `name`, `parent`, `eingebaut`; `logo` wird `\| null`; `Schrift.herkunft`; `Herkunft`; **`herkunftJeFeld`** (v3.5) |
+| `Aktion` | **#14** (M1-02) → **M8-47** (Typ) / **M8-45** (Verhalten) / **M8-46** (Setzweg) | neues Pflichtfeld `markeId`; `akzentfarbe` ist **freier** Hex-Wert |
+| `Project` | **#15** (M1-03) → **M8-47** | neues Feld `standardMarkeId` |
 
 ### Vom Verifikationslauf gefunden
 
 | Issue | Datei | Was sich ändert | Grund |
 |---|---|---|---|
-| **#119** (M4-25) | `template-canvas/logo-laden.ts` | Bestand **je `markeId`** statt Einzelwert; `holeLogo()` → `holeLogo(markeId)`; Ladeweg nach `herkunft` verzweigen (`gebuendelt` → Bundle, `importiert` → `marken://`); `leereLogoBestand()` wird gebraucht | lädt heute **ein** gebündeltes, projektunabhängiges Logo; begründet mit „read-only, kann sich zur Laufzeit nicht ändern" – seit v3.4 falsch |
+| **#119** (M4-25) → **M8-42** | `template-canvas/logo-laden.ts` | Bestand **je `markeId`** statt Einzelwert; `holeLogo()` → `holeLogo(markeId)`; Ladeweg nach `herkunft` verzweigen (`gebuendelt` → Bundle, `importiert` → `marken://`); `leereLogoBestand()` wird gebraucht | lädt heute **ein** gebündeltes, projektunabhängiges Logo; begründet mit „read-only, kann sich zur Laufzeit nicht ändern" – seit v3.4 falsch |
 | **#117** (M4-23) | `template-canvas/zeichne-segment.ts` | vierter Parameter `rahmenMarke`; `logo === null`-Zweig | Recht liegt bei **M8-21** – bereits vergeben |
 | **#128, #134, #140, #150, #217** | die **fünf** Aufrufer von `zeichneSegment` | vierter Parameter `rahmenMarke`; `#134` löst zusätzlich `Project.standardMarkeId` auf | zugewiesen an **M8-37** |
 | **#154** (M5-35) | `composer`-Zeichenvoraussetzungen | **zweiter** Renderer-Aufrufer von `config:leseMarke`, das M8-07 abschafft | neu, 10.08. gefunden |
@@ -205,14 +228,14 @@ Editierrecht** – eine Meldung ohne Recht führt dazu, dass ein Agent wartet st
 | **#244** (M7-51) | `app-shell/inhalte-zugaenge.ts` | durchgereichtes Feld | M8-38 |
 | **#260** (M7-65) | `app-shell/bootstrap.ts` | Bootstrap-Schritt + Begründungstext | M8-38 |
 | **#250** (M7-57) u. a. | Konsumenten von `p.marke` | Lesezugriff umstellen | **Umfang ungeprüft** – ein Grep über alle M7-Volltexte nach `.marke` steht aus |
-| **#29** | `config-store/lese-marke.ts` | **Operation und Kanal `config:leseMarke` entfallen ersatzlos** | **entschieden** – TK 9.5.6 führt `leseMarke` gar nicht mehr in der Operationstabelle |
+| **#29** → **M8-44** | `config-store/lese-marke.ts` | **Operation und Kanal `config:leseMarke` entfallen ersatzlos** | **entschieden** – TK 9.5.6 führt `leseMarke` gar nicht mehr in der Operationstabelle |
 | **#197** (M7-04), **#154** (M5-35) | `app-shell/sichten.ts`, `composer` | streichen den Aufruf von `config:leseMarke`, statt ihn umzubiegen | Folge derselben Entscheidung |
 
 ### Aus der Entscheidung zu den Sicherheitsabstand-Grenzen (10.08.)
 
 | Issue | Datei | Was sich ändert |
 |---|---|---|
-| **#21** (M1-09) | `src/shared/contracts/konstanten.ts` | neue Konstante **`SICHERHEITSABSTAND_BEREICH`** = `{ horizontal: { min: 0, max: 480 }, vertikal: { min: 0, max: 270 } }` – gelesen von **M8-11** (Main-Validierung) **und** M8-35 (frühe Rückmeldung am Formular) |
+| **#21** (M1-09) → **M8-47** | `src/shared/contracts/konstanten.ts` | neue Konstante **`SICHERHEITSABSTAND_BEREICH`** = `{ horizontal: { min: 0, max: 480 }, vertikal: { min: 0, max: 270 } }` – gelesen von **M8-11** (Main-Validierung) **und** M8-35 (frühe Rückmeldung am Formular) |
 
 > **Ohne diesen Edit importieren M8-11 und M8-35 ins Leere.** Die Konstante liegt bewusst in
 > `konstanten.ts` neben `SICHERHEITSABSTAND_PX` (der **Vorbelegung**) und `DAUER_BEREICH` (dem
@@ -240,9 +263,9 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
 
 | Issue | Datei | Was sich ändert |
 |---|---|---|
-| **#9** (S9) | `src/main/media-protokoll.ts` | `registriereMediaProtokollSchema()` **entfällt**, ersetzt durch `export const MEDIA_SCHEMA: CustomScheme`. Der Handler-Stub bleibt unverändert |
-| **#3** | `src/main/index.ts` (CSP) | `marken:` in **`img-src`** (Logos über `<img>`) und **`font-src`** (importierte Schriften). **Nicht** in `media-src` (aus Marken kommen keine Videos), **nicht** in `connect-src` – aus demselben Grund, aus dem `media:` dort fehlt (s. u.). Ohne Nachzug lädt der Renderer kein importiertes Logo und keine importierte Schrift, und zwar **still** |
-| **#3** | `src/main/index.ts` (Zählung) | Die Anmeldungen wachsen von **dreizehn auf fünfzehn** – `verdrahteMarkenIPC()` als **elfte** ohne Fenster (ans Ende von Schritt 5, hinter `meldeExportHandlerAn()`), `verdrahteMarkenSpeicherstatusIPC(fenster)` als **vierte** mit Fenster (Schritt 7, direkt hinter `verdrahteSpeicherstatusIPC`). `#3` nennt die Zahl an mehreren Stellen im Text |
+| **#9** (S9) → **M8-36** benennt ihn; **Ausführender offen** | `src/main/media-protokoll.ts` | `registriereMediaProtokollSchema()` **entfällt**, ersetzt durch `export const MEDIA_SCHEMA: CustomScheme`. Der Handler-Stub bleibt unverändert |
+| **#3** → **M8-36** | `src/main/index.ts` (CSP) | `marken:` in **`img-src`** (Logos über `<img>`) und **`font-src`** (importierte Schriften). **Nicht** in `media-src` (aus Marken kommen keine Videos), **nicht** in `connect-src` – aus demselben Grund, aus dem `media:` dort fehlt (s. u.). Ohne Nachzug lädt der Renderer kein importiertes Logo und keine importierte Schrift, und zwar **still** |
+| **#3** → **M8-36** | `src/main/index.ts` (Zählung) | Die Anmeldungen wachsen von **dreizehn auf fünfzehn** – `verdrahteMarkenIPC()` als **elfte** ohne Fenster (ans Ende von Schritt 5, hinter `meldeExportHandlerAn()`), `verdrahteMarkenSpeicherstatusIPC(fenster)` als **vierte** mit Fenster (Schritt 7, direkt hinter `verdrahteSpeicherstatusIPC`). `#3` nennt die Zahl an mehreren Stellen im Text |
 
 > **Die CSP ist bereits GEBAUT** (`src/main/index.ts`, aus `#3`) und lautet heute
 > `img-src 'self' data: blob: media:` · `media-src 'self' blob: media:` · `font-src 'self' data:`.
@@ -267,9 +290,9 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
 
 | Issue | Datei | Was sich ändert |
 |---|---|---|
-| **#17** (M1-05) | `shared/contracts/render-request.ts` | neues Pflichtfeld **`einblendung.flaecheDunkel: string`** (fertiger Hex-Wert) |
-| **#134** (M5-15) | `composer/render-ausloesen.ts` | **befüllt** das Feld beim Einreihen – Auflösung aus `Project.standardMarkeId`, derselben Marke, mit der die Band-PNGs gezeichnet wurden |
-| **#177** (M6-22) | `render-service/normalisieren.ts` | nimmt den Wert **aus dem Auftrag**, statt `leseMarke()` (**#29**) zu rufen und selbst aufzulösen |
+| **#17** (M1-05) → **M8-43** | `shared/contracts/render-request.ts` | neues Pflichtfeld **`einblendung.flaecheDunkel: string`** (fertiger Hex-Wert) |
+| **#134** (M5-15) → **M8-37** (Parameter) + **M8-43** (Feld) | `composer/render-ausloesen.ts` | **befüllt** das Feld beim Einreihen – Auflösung aus `Project.standardMarkeId`, derselben Marke, mit der die Band-PNGs gezeichnet wurden |
+| **#177** (M6-22) → **M8-43** | `render-service/normalisieren.ts` | nimmt den Wert **aus dem Auftrag**, statt `leseMarke()` (**#29**) zu rufen und selbst aufzulösen |
 
 > Diese drei sind die vollständige Kette: Typ – Befüller – Verbraucher. **Fehlte der mittlere**, wäre
 > das Feld vorhanden und immer leer; das ist die Lückenklasse „Feld ohne Befüller".
@@ -321,6 +344,20 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
   auseinanderlaufen, ohne dass etwas bricht."*
 - **Dateiname beim Import** (Originalname oder neutral?) und Verhalten bei Namenskollision.
 - **Das eingebaute Logo** (Dateiname, `seitenverhaeltnis`) ist nirgends festgenagelt.
+- **`#173` (`pruefeRenderRequest`) prüft `flaecheDunkel` nicht** – und **kein** Issue beansprucht die
+  Datei. Dieselbe Lückenklasse, diesmal beim Vertragsprüfer selbst (beim Schreiben von M8-43 gefunden).
+- **`#250` trägt die zurückgenommene Palettenzusage als VERBINDLICHE Invariante** („kein Farbwähler,
+  kein Hex-Eingabefeld") und hat keine Markenwahl. Die Datei gehört **M8-40** (beim Schreiben von
+  M8-45 gefunden).
+- **Alt-Aktionen mit einem ROLLENNAMEN in `akzentfarbe` haben keine Migration.** M8-07 fasst nur
+  `markeId` und `standardMarkeId` an. *Anmerkung: Es gibt keine ausgelieferte Fassung, also
+  vermutlich keine Altdaten – aber das ist eine **Entscheidung**, keine Selbstverständlichkeit, und
+  sie gehört ausgesprochen.*
+- **Was geschieht, wenn der Flush beim Beenden fehlschlägt?** TK 9.5.4 bindet es für `project.json`
+  („schließt die App **nicht**"), TK 9.15.1 sagt zu Marken nur, die Schreib-Invarianten seien
+  „dieselben", und der nötige Dialog lebt im Renderer. Betrifft `#47`, `#98` und M8-36 gleichermaßen.
+- **Der Kontrast-Schwellenwert** ist weiterhin nirgends genannt (M8-19 führt ihn als Pflicht-Parameter,
+  M8-28 als Prop – beide erfinden bewusst keine Zahl).
 - **Gegen welche Marke zeichnet der `vorlagen-editor`?** Er hat **keinen** Projektzugang, also auch
   keine `Project.standardMarkeId`. Bis v3.5 war das gleichgültig – seit v3.6 **`Marke.sicherheit`
   bearbeitbar** ist, entscheidet die Marke darüber, **wo die Sicherheitslinie liegt**, die der Editor
