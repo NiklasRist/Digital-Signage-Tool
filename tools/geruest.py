@@ -10,7 +10,29 @@
 
 import json, io, os, re, sys, collections
 
-SIG = re.compile(r'^## Signatur[^\n]*\n+```(?:ts|tsx|typescript)?\n(.*?)^```', re.M | re.S)
+# Der Signaturblock wird NICHT mit einem einzigen Muster gesucht. Zwischen der
+# Ueberschrift und dem Codezaun darf Prosa stehen (#247 tut das), und ein Muster, das
+# beliebige Zwischenzeilen mit verschachtelten Quantoren ueberspringt, laeuft sich in
+# langen Issue-Texten fest (gemessen: >3 Minuten ohne Ergebnis).
+SIG_UEBERSCHRIFT = re.compile(r'^## Signatur.*$', re.M)
+ZAUN_AUF = re.compile(r'^```(?:ts|tsx|typescript)?[ \t]*$', re.M)
+ZAUN_ZU = re.compile(r'^```[ \t]*$', re.M)
+
+
+def sig_block(text):
+    """Erster ts-Codeblock nach der Signatur-Ueberschrift, vor der naechsten ##-Ueberschrift."""
+    m = SIG_UEBERSCHRIFT.search(text)
+    if not m:
+        return None
+    rest = text[m.end():]
+    naechste = re.search(r'^## ', rest, re.M)
+    bereich = rest[:naechste.start()] if naechste else rest
+    auf = ZAUN_AUF.search(bereich)
+    if not auf:
+        return None
+    ab = bereich[auf.end():].lstrip('\n')
+    zu = ZAUN_ZU.search(ab)
+    return ab[:zu.start()] if zu else None
 PFAD_KOMMENTAR = re.compile(r'^//\s*(src/[A-Za-z0-9_\-./]+\.(?:ts|tsx))\s*$')
 DATEI_ZEILE = re.compile(r'^- \*{0,2}Datei(?:en)?[^`\n]*`([^`]+)`', re.M)
 FUNK_START = re.compile(r'^\s*(?:export\s+)?(?:declare\s+)?(?:async\s+)?function\s+[A-Za-z_$]')
@@ -21,8 +43,7 @@ OFFEN_ENDE = (',', '|', '&', '(', '<', '=>', ':', '+')
 
 def block_von(body):
     b = (body or '').replace('\r\n', '\n')
-    m = SIG.search(b)
-    return m.group(1) if m else None
+    return sig_block(b)
 
 
 def zielpfade(body, block):

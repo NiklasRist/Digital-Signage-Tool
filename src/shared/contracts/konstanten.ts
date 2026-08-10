@@ -15,4 +15,4 @@ export const SICHERHEITSABSTAND_PX = { horizontal: 96, vertikal: 54 } as const
 export const AKTUELLE_SCHEMA_VERSION = 1
 // „Aktuelle schemaVersion | 1 | wird von öffneProjekt, schreibeProjekt und der Migration
 //  gelesen (9.5.5) – eine Stelle, sonst laufen drei Kopien auseinander" (TK 9.11.4, wörtlich)
-export { FORMAT_WHITELIST } from '../asset' // Re-Export aus #13 – hier NICHT dupliziert
+export { FORMAT_WHITELIST } from './asset' // Re-Export aus #13 – hier NICHT dupliziert
