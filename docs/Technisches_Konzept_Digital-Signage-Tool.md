@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.3 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.7 (HLD vollständig, geprüft)
+**Version:** 3.8 (HLD vollständig, geprüft)
 **Datum:** 10.08.2026
 **Status:** In Planung
 
@@ -1691,6 +1691,7 @@ Listenelement {
 | Dauer-Bereich | **10–45 s** | Validierung in `setzeDauer` (9.5.2) |
 | Sicherheitsabstand (**Vorbelegung**) | **96 / 54 px** | **Nur der Startwert der eingebauten Marke** – der geltende Wert steht in `Marke.sicherheit` und ist seit v3.4 **bearbeitbar** (FA-24). Wer zeichnet oder prüft, liest ihn aus der **Marke** (9.10.5, 9.11.2), **nie** aus dieser Konstante |
 | Format-Whitelist | MP4 / JPG, PNG, WebP | Dialog **und** Import-Prüfung (9.4.2) |
+| Sicherheitsabstand-**Bereich** | **0…480 / 0…270 px** | erlaubte Spanne beim Bearbeiten (9.15.2). Geprüft im **Main** (`bearbeiteMarke`, 9.15.1 – der Vertrag verlangt es, 9.1.1 Punkt 6) **und** im Editor (frühe Rückmeldung am Formular) – **aus dieser einen Konstante**, nie als zweites Zahlenpaar. Obergrenze = ein Viertel der Kante; **0 ist erlaubt** (warnen statt sperren, wie bei der Akzentfarbe – Risiko R-08) |
 | Aktuelle `schemaVersion` | **1** | wird von `öffneProjekt`, `schreibeProjekt` und der Migration gelesen (9.5.5) – **eine** Stelle, sonst laufen drei Kopien auseinander |
 
 ---
@@ -2083,6 +2084,24 @@ Identität und Rahmen sind stabil.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
+> **Nachgezogen in v3.8 (10.08.2026), vom Auftraggeber entschieden:**
+>
+> 1. **Der Sicherheitsabstand bekommt einen erlaubten Bereich als eigene Konstante** (9.11.4):
+> **0…480 px** waagerecht, **0…270 px** senkrecht – je ein Viertel der Kante. *Anlass:* Mit v3.6 ist
+> `Marke.sicherheit` **bearbeitbar** geworden, aber **niemand prüfte den Wert**: Der Editor hätte
+> lokale Grenzen gesetzt, `bearbeiteMarke` gar keine – obwohl 9.1.1 Punkt 6 verlangt, dass der Main
+> **jede** eingehende Nutzlast validiert. Zwei Zahlenpaare an zwei Orten wären auseinandergelaufen
+> und als „der Editor lässt 500 zu, der Store lehnt ab" aufgefallen. Jetzt lesen **beide** dieselbe
+> Konstante. *Warum `0` erlaubt bleibt:* Ein Abstand von 0 hebt den Overscan-Schutz auf – das ist
+> dieselbe Linie wie bei der freien Akzentfarbe: **warnen, nicht sperren**, „Die Restverantwortung
+> bleibt beim Nutzer; maßgeblich ist die Kontrolle am Gerät." (Risiko R-08)
+>
+> **Ausdrücklich NICHT mitentschieden:** `radien`, `schatten`, `logo.seitenverhaeltnis` und
+> `slogan.text` werden **weiterhin nicht** validiert, und es werden **keine** Grenzen erfunden. Ihre
+> Fehlwirkung ist **rein optisch** (verzogene Pillen, unsichtbarer Schatten) – kein Datenverlust,
+> kein Renderabbruch. Beim Sicherheitsabstand ist das anders: Ein Extremwert hebt die
+> Sicherheitszusage **aller** Vorlagen auf, und Vorlagen sind app-weit.
+>
 > **Nachgezogen in v3.7 (10.08.2026), vom Auftraggeber entschieden – beim Zuschnitt der M8-Lücken gefunden. NIMMT PUNKT 5 AUS v3.6 ZURÜCK:**
 >
 > 1. **Der `render-service` bekommt NIE eine Marken-Datei zu sehen – `marken_datei_fehlt` ist dort kein Fehlercode** (9.2.3, 9.15.3, 9.15.5). *Wie der Fehler entstand:* v3.4 schrieb in 9.15.3 „Fehlt eine importierte Datei zur Renderzeit, bricht der Render **früh** ab – vor dem ersten ffmpeg-Aufruf"; v3.6 machte daraufhin die geschlossene Fehlercode-Tabelle 9.2.3 „konsistent" und nahm den Code als achten auf – **ohne zu prüfen, ob die Behauptung trägt.** Sie trägt nicht: Bei **Variante A** liefert der Renderer alle gezeichneten Pixel als fertiges PNG (9.2.2 – „die Pixel sind bereits final"), Logo und Schriften wirken ausschließlich über diese PNGs. Wenn der `render-service` läuft, ist längst alles gezeichnet. Eine Datei-Prüfung dort bräche einen Lauf ab, dessen PNGs **fertig und korrekt** sind. *Dieselbe Fehlerklasse wie beim v3.4-Nachzug zu 7.2 (v3.6 Punkt 1): eine Aussage des eigenen Dokuments übernommen, statt sie gegen die Sache zu halten.*
@@ -2187,7 +2206,7 @@ Identität und Rahmen sind stabil.
 > 4. **`ausgabe.gesamtdauer` wird `number | null`** (9.3). Beim `export` ist sie `null` – er kopiert eine fertige Datei und kennt ihre Spieldauer nicht; sein Zielpfad steht im Feld `pfad`. *Folge ohne die Änderung:* entweder zwei Formen von `ausgabe` oder eine erfundene Dauer im dauerhaften Protokoll. Mitgezogen: 9.6.1 stellt klar, dass das Export-Ergebnis den **vollständigen Pfad der Zieldatei** trägt, nicht nur den Zielordner.
 > 5. **Der Sofort-Flush vor Render/Export wird vom MAIN ausgelöst, und zwar als erster Schritt IM HANDLER** – nach dem Statuswechsel, bevor der Handler arbeitet (9.5.4, 9.3.3). Der Torwächter selbst darf ihn **nicht** auslösen: Sein Auswahl- und Statuswechsel-Abschnitt ist bewusst synchron, und ein `await` darin bräche die serielle Invariante lautlos. *Folge ohne die Änderung:* Die Schlange ist streng seriell, zwischen Einreihen und Start können Minuten liegen; ein Flush beim Einreihen schriebe einen überholten Stand fest und verlöre bei einem Absturz genau die Arbeit dazwischen. Die Formulierung „vor jedem Render/Export" ließ zudem offen, **wer** auslöst – jeder Agent hätte es anders gebaut.
 > 6. **„Verifiziert" ist jetzt definiert** (9.2.6): einmal `ffprobe` auf die fertige Datei, Prüfung gegen das Ausgabe-Profil (Dauer im erwarteten Rahmen, 1920 × 1080, 30 fps, `yuv420p`, Tonspur vorhanden); erst danach ersetzt sie die vorherige Fassung, sonst `ffmpeg_fehler`. *Folge ohne die Änderung:* 9.2.6 verlangte eine „fertige und **verifizierte**" Datei, ohne zu sagen, was das heißt – in der Praxis wäre daraus eine Existenzprüfung geworden. Das ist die **einzige** Stelle, an der ein stiller Encoder-Fehler auffällt, bevor die letzte funktionierende Datei überschrieben wird und die Datei ungeprüft auf den Fernseher geht.
-> 7. **Die Restflächen der Split-Komposition tragen die Farb-Rolle `flaecheDunkel`** (9.2.8, mitgezogen 9.2.4 und 9.9.2), geholt über die Marke (`leseMarke`; seit v3.4 im `marken-store`, 9.15.1, und aus der **Projekt-Standardmarke**, 9.15.4), **nie** als Hexzahl in einer Filterkette. *Folge ohne die Änderung:* „dunkle Markenfarbe" ist keine Angabe – bei zwölf Farb-Rollen (9.11.2) hätte jeder Agent eine andere gewählt, und Render und Vorschau wären auseinandergelaufen. `flaecheDunkel` ist in 9.11.2 ausdrücklich „Segment- und **Band**-Hintergrund"; damit sind Band und Seitenflächen dieselbe Fläche.
+> 7. **Die Restflächen der Split-Komposition tragen die Farb-Rolle `flaecheDunkel`** (9.2.8, mitgezogen 9.2.4 und 9.9.2), geholt über die Marke (`leseMarke`; seit v3.4 im `marken-store`, 9.15.1, und aus der **Projekt-Standardmarke**, 9.15.4), **nie** als Hexzahl in einer Filterkette. *Folge ohne die Änderung:* „dunkle Markenfarbe" ist keine Angabe – bei dreizehn Farb-Rollen (9.11.2) hätte jeder Agent eine andere gewählt, und Render und Vorschau wären auseinandergelaufen. `flaecheDunkel` ist in 9.11.2 ausdrücklich „Segment- und **Band**-Hintergrund"; damit sind Band und Seitenflächen dieselbe Fläche.
 > 8. **Das Ereignis `render:fortschritt` wird ausdrücklich als anzumeldender Kanal geführt** (9.2.7, 9.1.1 Punkt 4). *Folge ohne die Änderung:* 9.1.1 nannte es nur als Namens-**Beispiel**; die Nutzlast war seit je vollständig definiert und der Empfänger im Renderer vorhanden – gefehlt hätte allein der Sender, und ein minutenlanger Render liefe ohne jede Rückmeldung. Die Warteschlange behält daneben ihren groben Prozentwert (`Auftrag.fortschritt`, 9.3.6).
 > 9. **Der `render-service` hat jetzt eine geschlossene Fehlercode-Tabelle** (9.2.3), im Stil von 9.4.9 und 9.6.4: `medium_fehlt`, `ungueltiges_element`, `ungueltige_eingabe`, `ffmpeg_fehler`, `kein_platz`, `speicher_fehler`, `unbekannter_fehler`; **`abgebrochen` ist kein Fehlercode**, sondern ein Status. *Folge ohne die Änderung:* Das TK nannte drei Codes „z. B." – ein offener Satz an genau der Stelle, an der 9.1.1 Punkt 3 einen **geschlossenen, typisierten** verlangt; jeder Agent hätte eigene Codes erfunden. Ergänzt ist außerdem der Transportweg der betroffenen Element-ID: `fehlerhaftesElementId` → **`Auftrag.fehler.daten = { elementId }`** (9.1.1). Ohne ihn erreichte die ID die Oberfläche **nie**, obwohl 9.2.1 die `RenderItem.id` genau damit begründet und der Reparatur-Modus (FA-19) die Stelle benennen muss.
 >

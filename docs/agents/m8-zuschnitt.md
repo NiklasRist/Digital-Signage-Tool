@@ -191,7 +191,28 @@ Editierrecht** – eine Meldung ohne Recht führt dazu, dass ein Agent wartet st
 | **#244** (M7-51) | `app-shell/inhalte-zugaenge.ts` | durchgereichtes Feld | M8-38 |
 | **#260** (M7-65) | `app-shell/bootstrap.ts` | Bootstrap-Schritt + Begründungstext | M8-38 |
 | **#250** (M7-57) u. a. | Konsumenten von `p.marke` | Lesezugriff umstellen | **Umfang ungeprüft** – ein Grep über alle M7-Volltexte nach `.marke` steht aus |
-| **#29 / #17** | `config-store/lese-marke.ts` | Rückbau bzw. Entfernen | hängt an der offenen Frage in M8-07 (s. u.) |
+| **#29** | `config-store/lese-marke.ts` | **Operation und Kanal `config:leseMarke` entfallen ersatzlos** | **entschieden** – TK 9.5.6 führt `leseMarke` gar nicht mehr in der Operationstabelle |
+| **#197** (M7-04), **#154** (M5-35) | `app-shell/sichten.ts`, `composer` | streichen den Aufruf von `config:leseMarke`, statt ihn umzubiegen | Folge derselben Entscheidung |
+
+### Aus der Entscheidung zu den Sicherheitsabstand-Grenzen (10.08.)
+
+| Issue | Datei | Was sich ändert |
+|---|---|---|
+| **#21** (M1-09) | `src/shared/contracts/konstanten.ts` | neue Konstante **`SICHERHEITSABSTAND_BEREICH`** = `{ horizontal: { min: 0, max: 480 }, vertikal: { min: 0, max: 270 } }` – gelesen von **M8-11** (Main-Validierung) **und** M8-35 (frühe Rückmeldung am Formular) |
+
+> **Ohne diesen Edit importieren M8-11 und M8-35 ins Leere.** Die Konstante liegt bewusst in
+> `konstanten.ts` neben `SICHERHEITSABSTAND_PX` (der **Vorbelegung**) und `DAUER_BEREICH` (dem
+> **erlaubten Bereich**) – nicht im Edit an `#52`, weil `contracts/marke.ts` nach dem Muster von
+> M3-01/M4-01 ausschließlich **Typen** enthält und Grenzen ein **Laufzeitwert** sind.
+>
+> **Bewusst NICHT mitentschieden:** `radien`, `schatten`, `logo.seitenverhaeltnis` und `slogan.text`
+> haben **dieselbe** Lücke – für sie validiert `bearbeiteMarke` ebenfalls nichts, und **niemand hat
+> Grenzen beschlossen**. M8-11 schreibt ausdrücklich fest, dass es **keine erfindet**. Heute gehen
+> `radien: { pille: -50, karte: 9999 }` oder `schatten.farbe: 'lila'` ungeprüft durch; die Wirkung
+> ist **rein optisch** – kein Datenverlust, kein Renderabbruch. Das ist der Unterschied zum
+> Sicherheitsabstand, wo ein Extremwert die Sicherheitszusage **aller** Vorlagen aufhebt. Offen zu
+> lassen, bis der Editor die Felder überhaupt anbietet, ist vertretbar – aber es ist eine
+> **Entscheidung**, keine Nachlässigkeit.
 
 ### Aus dem Electron-Zwang bei der Schema-Registrierung (10.08. entschieden)
 
@@ -206,7 +227,26 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
 | Issue | Datei | Was sich ändert |
 |---|---|---|
 | **#9** (S9) | `src/main/media-protokoll.ts` | `registriereMediaProtokollSchema()` **entfällt**, ersetzt durch `export const MEDIA_SCHEMA: CustomScheme`. Der Handler-Stub bleibt unverändert |
-| **#3** | `src/main/index.ts` (CSP) | Die in `#3` festgelegte CSP nennt `media:` bei `img-src`/`media-src`, **`marken:` nirgends** – ohne Nachzug lädt der Renderer kein importiertes Logo und keine importierte Schrift, und zwar **still** |
+| **#3** | `src/main/index.ts` (CSP) | `marken:` in **`img-src`** (Logos über `<img>`) und **`font-src`** (importierte Schriften). **Nicht** in `media-src` (aus Marken kommen keine Videos), **nicht** in `connect-src` – aus demselben Grund, aus dem `media:` dort fehlt (s. u.). Ohne Nachzug lädt der Renderer kein importiertes Logo und keine importierte Schrift, und zwar **still** |
+
+> **Die CSP ist bereits GEBAUT** (`src/main/index.ts`, aus `#3`) und lautet heute
+> `img-src 'self' data: blob: media:` · `media-src 'self' blob: media:` · `font-src 'self' data:`.
+> `font-src` kennt **kein** `media:`, weil Projektmedien keine Schriften sind – für `marken:` ist es
+> dagegen **zwingend**.
+>
+> **DAZU EIN EXPERIMENT, kein Textnachzug (neu, 10.08.):** Neben der CSP steht im gebauten Code ein
+> **gemessener** Befund: „`fetch('media://...')` scheitert auch dann, wenn `connect-src` es erlaubt –
+> und der Protokoll-Handler wird dabei **NICHT EINMAL ERREICHT** […] `media://` ist gegenüber der
+> Seite ein fremder Ursprung, und Electron kennt dafür ein eigenes Schema-Privileg (`corsEnabled`),
+> das in der verbindlichen Signatur von `#9` nicht steht." Die gebauten Privilegien sind `secure`,
+> `supportFetchAPI`, `stream`, `standard` – **kein `corsEnabled`**.
+> **Für `marken://` wiegt das schwerer als für `media://`:** Ein Logo lädt über `<img>` und ist
+> unbetroffen – eine **Schrift** lädt über `FontFace`, und das ist ein Cross-Origin-Ladeweg. Der
+> Verdacht lautet deshalb: **`marken` braucht `corsEnabled: true`**, sonst lädt keine importierte
+> Schrift, unabhängig von `font-src`. **Das ist ein Verdacht aus einer Ableitung, kein Messwert** –
+> gemessen wurde `fetch`, nicht `FontFace`. Nach der Projektregel ist es damit ein **Experiment**
+> (Schrift über `marken://` laden, einmal mit und einmal ohne `corsEnabled`), geführt im STOPP-Block
+> von M8-16.
 
 ### Aus TK v3.7 (die eingefrorene Restflächen-Farbe)
 
@@ -254,9 +294,16 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
   Entscheidung.
 - **M8-07: reihum oder träge migrieren?** Träge (beim Öffnen) macht die projektübergreifende
   Referenzprüfung (M8-12) für nie wieder geöffnete Projekte unzuverlässig; für „reihum beim Start"
-  gibt es keinen etablierten Schreibweg für nicht-aktive Projekte. **Mitzuklären:** ob „Feld aus
-  `config.json` entfernen" das persistierte JSON-Feld meint oder den Rückbau von
-  `config-store.leseMarke` (#29) – davon hängt ab, ob der Kanal verschwindet oder inhaltsleer wird.
+  gibt es keinen etablierten Schreibweg für nicht-aktive Projekte.
+  **ERLEDIGT – der zweite Teil dieser Frage ist beantwortet:** Ob „Feld aus `config.json` entfernen"
+  auch den Rückbau von `config-store.leseMarke` (#29) meint, stand offen. **Es meint ihn.** Die
+  Operationstabelle in TK 9.5.6 führt vier Operationen – `leseKonfig`, `setzeAktivesProjekt`,
+  `setzeExportZiel`, `setzeUIVoreinstellung` – und `leseMarke` ist **nicht** darunter. Der Vertrag
+  hatte die Operation längst abgeschafft; nur die Issues kannten den Stand nicht. Der Kanal
+  verschwindet **ersatzlos**; `baueSichten()` (#197) und `#154` streichen ihren Aufruf, statt ihn
+  umzubiegen. *Ein inhaltsleerer Kanal wäre ohnehin genau die Doppelung gewesen, die 9.5.6
+  ausschließt: „lägen `leseKonfig().marke` und `leseMarke(...)` nebeneinander, könnten sie
+  auseinanderlaufen, ohne dass etwas bricht."*
 - **Dateiname beim Import** (Originalname oder neutral?) und Verhalten bei Namenskollision.
 - **Das eingebaute Logo** (Dateiname, `seitenverhaeltnis`) ist nirgends festgenagelt.
 
