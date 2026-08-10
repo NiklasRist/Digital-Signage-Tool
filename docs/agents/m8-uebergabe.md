@@ -28,19 +28,19 @@ Sieben Prüfer, rund 100 Befunde, davon etwa 20 kritisch, fünf Ursachen.
 | **M8-31** | Neunter Kanal `marken:öffneMarkenDateiDialog` eingetragen. **Achtung:** Die acht Zählstellen hat der Autor nicht mehr geschafft – **von Hand nachgezogen** (aus „acht Instant-Kanäle" wurde neun, aus „neun Einträge" zehn, aus „8 Aufrufe" neun). Die verbliebenen „acht" in Zeile 21 und 33 sind **richtig** (Store-Operationen bzw. historischer Bezug) |
 | **M8-25** | IPC-Nutzlast trägt jetzt `schriftRolle: null` in Kanal-Angabe und DoD |
 | **M8-41** (neu) | „[app-shell] Der fünfte Modus-Reiter [Marken]", 508 Zeilen |
+| **M8-44** (neu) | „[config-store] `leseMarke` und den Kanal `config:leseMarke` ersatzlos zurückbauen", 381 Zeilen |
 | Textkorrekturen | M8-01, M8-02, M8-08, M8-09, M8-13, M8-17, M8-20, M8-24, M8-27 – teilweise |
 
 ---
 
 ## 2. Offen – in dieser Reihenfolge
 
-### 2.1 Vier neue Issues fehlen noch
+### 2.1 Drei neue Issues fehlen noch
 
 | Nr. | Inhalt | Warum es ein eigenes Issue ist |
 |---|---|---|
 | **M8-42** | `#119` `logo-laden.ts`: `holeLogo(markeId)`, Verzweigung nach `herkunft`, `leereLogoBestand()`, **Verhalten bei `logo === null`** | Vier Issues setzen es voraus, alle sperren sich die Datei. M8-39 ist ohne es **nicht baubar** |
 | **M8-43** | Die `flaecheDunkel`-Kette: **#17 → #134 → #177 → #181** | Vier Glieder, dazwischen kompiliert nichts. **Achtung:** Der Zuschnitt nennt fälschlich #177 als `leseMarke`-Aufrufer – es ist **#181**. Kollision mit M8-37 auf `render-ausloesen.ts` muss aufgelöst werden |
-| **M8-44** | `config:leseMarke` ersatzlos zurückbauen: #29, #77, Bootstrap #3 | TK 9.5.6 führt `leseMarke` nicht mehr in der Operationstabelle |
 | **M8-45** | Die freie Akzentfarbe in **#139** und **#112** nachziehen | **Der schwerste.** #139 sagt „kein freier Farbwähler, nie ein Hex-Wert"; #112 **wirft** bei `'#FF4040'` – dem neuen Normalfall |
 | **M8-46** | Ein Weg, `Aktion.markeId` zu setzen (#38, #136) | Pflichtfeld ohne Setzweg; das Wort kommt in **keinem** angelegten Issue vor |
 
