@@ -4,7 +4,12 @@
 > Technische Konzept offen lässt oder die aus Entscheidungen des Auftraggebers stammen. Bei M2 hat
 > genau so eine Datei die Zitat-Treue auf 100 % gebracht (vorher sieben Verstöße gegen Regel D).
 >
-> Grundlage: AD **v1.3**, TK **v3.4**. Milestone: `M8 – Marken`.
+> Grundlage: AD **v1.3**, TK **v3.7**. Milestone: `M8 – Marken`.
+>
+> **Diese Datei wurde am 10.08. von TK v3.4 auf v3.7 gehoben.** Vier Fassungen dazwischen haben
+> sieben Festlegungen gebracht, die M8 berühren – sie stehen in Abschnitt 3a. **Eine davon nimmt
+> Punkt 8 der Auftraggeber-Liste zurück.** Wenn du eine ältere Kopie dieser Datei vor dir hast:
+> wegwerfen.
 
 ---
 
@@ -12,10 +17,11 @@
 
 1. `docs/agents/issue-generation-prompt.md` – **Abschnitt 7 vollständig** (Pflicht-Vorlage + Regeln
    A–E), Abschnitt 5 (globale Invarianten), Abschnitt 8 (ausgefülltes Beispiel).
-2. `docs/Technisches_Konzept_Digital-Signage-Tool.md` (**v3.4**) – für M8 zentral: **9.15** (der ganze
-   Abschnitt), **9.10.10** (Ersatz-Logo), **9.11.2** (`Marke` samt Vererbungsregel), **9.10.9**
-   (Farb-Rollen-Auflösung und deren zwei Ausnahmen), **9.12.1** (`vorlagen-store` – das **Muster**,
-   dem der `marken-store` folgt), **9.5.4** (Schreib-Invarianten), **9.1.1** (Ergebnis-Hülle).
+2. `docs/Technisches_Konzept_Digital-Signage-Tool.md` (**v3.7**) – für M8 zentral: **9.15** (der ganze
+   Abschnitt), **9.10.10** (Ersatz-Logo), **9.11.2** (`Marke` samt Vererbungsregel **und dem
+   Herkunfts-Stempel `herkunftJeFeld`**), **9.10.9** (Farb-Rollen-Auflösung und deren zwei
+   Ausnahmen), **9.12.1** (`vorlagen-store` – das **Muster**, dem der `marken-store` folgt),
+   **9.5.4** (Schreib-Invarianten), **9.1.1** (Ergebnis-Hülle), **9.14.1** (der fünfte Reiter).
 3. `docs/Anforderungsdokument_Digital-Signage-Tool.md` (**v1.3**) – **FA-23**, **FA-24**,
    **Abschnitt 4.8**, **R-07**, **R-08**.
 4. `docs/agents/m8-zuschnitt.md` – dein Issue und seine Nachbarn.
@@ -49,7 +55,8 @@ Label `braucht-entscheidung` fast jedes Issue und ist wertlos. In den STOPP-Bloc
    `Project.standardMarkeId`, **nicht** aus der Marke der sichtbaren Aktion.
 6. **Löschen blockiert** bei Referenz (Aktionen **und** abgeleitete Marken), es kaskadiert nicht.
 7. **Eingebaute Marke unlöschbar, aber bearbeitbar** – anders als die eingebauten Vorlagen.
-8. **Fehlt eine importierte Datei beim Render → früher Abbruch**, vor dem ersten ffmpeg-Aufruf.
+8. **[MIT TK v3.7 ZURÜCKGENOMMEN – siehe Abschnitt 3a, Punkt 7. Nicht mehr gültig, nicht zitieren.]**
+   Fehlt eine importierte Datei beim Render → früher Abbruch, vor dem ersten ffmpeg-Aufruf.
 9. **Kontrast: warnen, nicht blockieren.**
 10. **Marke ohne Logo → Ersatz-Logo:** Markenname auf Akzentfarbe, Standardschrift.
 11. **Dessen Akzentfarbe ist die der MARKE**, nicht die der Aktion – stabil wie ein echtes Logo.
@@ -61,6 +68,48 @@ Werte stehen fest und vollständig in **TK 9.11.2** (Farb-Rollen, Schrift-Rollen
 Radien, Schatten) und **AD 4.2**. **Das ist keine offene Frage** – schreib die Werte aus, und leg
 **keinen** STOPP-Punkt dazu an. Es ist auch **keine** Funktion für den Nutzer: Er legt die eingebaute
 Marke nicht an, sie ist einfach da.
+
+## 3a. Was seit TK v3.4 dazugekommen ist – ENTSCHIEDEN, nicht mehr fragen
+
+Diese sieben Punkte sind **nach** dem ersten Schreiben von M8 entstanden. Wo sie einer älteren
+Festlegung widersprechen, **gewinnen sie**.
+
+1. **Die aufgelöste Marke trägt einen Herkunfts-Stempel je Feld** (TK v3.5, 9.11.2/9.15.1):
+   `herkunftJeFeld: MarkenHerkunftJeFeld` mit `"eigen" | "geerbt"` je Farb- und Schrift-Rolle und je
+   Nicht-Rollen-Feld, beim `logo` zusätzlich `"keins"`. **Er hängt an JEDER herausgegebenen Marke** –
+   auch an den Rückgaben von `erstelleMarke`, `bearbeiteMarke`, `importiereMarkenDatei` und
+   `entferneMarkenDatei`, damit der Editor nach einer Änderung **keinen zweiten Aufruf** braucht. Bei
+   `parent === null` durchgehend `"eigen"`, **nie** leer. **Einziger Leser ist der `marken-editor`**;
+   er ist **Metadatum, nie Wertquelle**. **VERBOTEN: ein Feld-für-Feld-Vergleich zweier Marken als
+   Ersatz** – setzt der Nutzer bewusst denselben Wert wie der Parent, gälte das Feld als „geerbt",
+   obwohl es sich bei einer Parent-Änderung **nicht** mitändert. *(Löst den Widerspruch, den beim
+   ersten Schreiben drei Agents unabhängig gemeldet haben.)*
+2. **Das Lese-Protokoll heißt `marken://<markeId>/<dateiname>`** (v3.6, 9.15.3) – **nicht**
+   `marken-assets://`. Der **Ordner** heißt weiterhin `marken-assets/`. Gleiche Schutzregeln wie
+   `media://`: nur lesend, kein `..`-Ausbruch, keine absoluten Pfade im Renderer. **Angemeldet vor
+   `app.ready`.** Pfad-Autorität ist der `marken-store`.
+3. **Der `marken-editor` sitzt in einem eigenen, FÜNFTEN Reiter [Marken]** (v3.6, 9.14.1), neben
+   [Vorlagen]. Ohne offenes Projekt **voll benutzbar** (app-weiter Bestand). **Undo/Redo ist dort
+   abgeschaltet** – der Marken-Bestand hat in v1 keine Historie; an den Stapel des zuletzt aktiven
+   Reiters gebunden widerriefe ein Klick dort die letzte Änderung an einem **Projekt**.
+4. **`Marke.sicherheit` ist ein bearbeitbares Feld** (v3.6, 9.11.4/9.11.2). Die 96/54 px in
+   `contracts/types` sind **nur noch die Vorbelegung der eingebauten Marke**. Wer zeichnet oder
+   prüft, liest den Wert aus der **Marke**, nie aus der Konstanten.
+5. **FA-24 verlangt auch Slogan und Sicherheitsabstand als bearbeitbar** – dafür gibt es jetzt
+   **M8-34** und **M8-35**.
+6. **Der Dateidialog für `.woff2` und Logo-Bilder ist ein eigenes Issue: M8-33.** `quellPfad` in
+   M8-15 kommt von dort. `öffneMedienDialog` (9.4.3) ist **nicht** verwendbar – es filtert auf die
+   Bild-/Video-Whitelist.
+7. **`marken_datei_fehlt` ist KEIN Fehlercode des `render-service`** (v3.7, 9.2.3/9.15.3) – **das
+   nimmt Punkt 8 der Liste oben zurück.** Der `render-service` bekommt bei **Variante A** nie eine
+   Marken-Datei zu sehen: Der Renderer liefert alle gezeichneten Pixel als fertiges PNG („die Pixel
+   sind bereits final", 9.2.2). Eine Prüfung dort bräche einen Lauf ab, dessen PNGs bereits **fertig
+   und korrekt** sind. **Die Prüfung sitzt im Renderer vor dem Zeichnen** (M8-17): Schlägt das Laden
+   fehl, entsteht **kein** Segment-PNG, der `composer` führt in den Reparatur-Modus (9.7.5), und der
+   Auftrag wird **gar nicht erst eingereiht**. *Folge: Das Issue M8-18 ist ersatzlos entfallen; seine
+   Nummer bleibt unbesetzt.* Der einzige Marken-Bezug des `render-service` ist die Restflächen-Farbe,
+   und die reist seit v3.7 als **fertiger Hex-Wert** `einblendung.flaecheDunkel` eingefroren im
+   Auftrag mit.
 
 ## 4. Festlegungen, die ich beim Zuschnitt getroffen habe
 
@@ -120,7 +169,7 @@ Wörtlich aus TK 9.5.4 / 9.12.1:
 | `marke_eingebaut` | Löschen der eingebauten Marke versucht |
 | `marke_nicht_gefunden` | unbekannte `markeId` |
 | `ungueltige_eingabe` | unbekannte Rolle, Ableitungskette länger als eine Stufe, Datei nicht in der Whitelist |
-| `marken_datei_fehlt` | importiertes Logo oder importierte Schrift fehlt – **beim Render**, vor dem ersten ffmpeg-Aufruf |
+| `marken_datei_fehlt` | Eine importierte Datei der Marke liegt nicht (mehr) in `marken-assets/<markeId>/`. **Festgestellt im RENDERER, beim Vorbereiten der Marke vor dem Zeichnen** (M8-17) – **nicht** im `render-service`, s. Abschnitt 3a Punkt 7 |
 | `speicher_fehler` | `marken.json` nicht schreibbar |
 
 ## 8. Fallen, die schon einmal Geld gekostet haben
@@ -128,6 +177,15 @@ Wörtlich aus TK 9.5.4 / 9.12.1:
 - **Fertige Funktion ohne Aufrufer.** In **fünf** Meilensteinen aufgetreten: Operationen, die niemand
   am `ipc-gateway` anmeldet – gebaut, funktionsfähig, für die Oberfläche unerreichbar. Deshalb ist
   M8-31 von Anfang an dabei. Wenn du eine Operation schreibst, prüfe: **wer ruft sie?**
+  **In M8 ist sie trotzdem dreimal wieder aufgetreten** und hat drei Issues erzwungen: der
+  Dateidialog, den niemand baute (**M8-33**), die Protokoll-Registrierung, die niemand aus dem
+  Bootstrap rief (**M8-36**), und der Marken-Zugang, den niemand in `sichten.ts` verdrahtete
+  (**M8-38**). Die Prüffrage lautet **nicht** „habe ich die Funktion geschrieben?", sondern
+  **„gibt es zu jedem vorausgesetzten Artefakt einen Erzeuger, und zu jeder Funktion einen Rufer?"**
+- **Feld ohne Befüller** – die Umkehrung derselben Klasse. Ein neues Vertragsfeld braucht **drei**
+  Stellen: den Typ, den **Befüller** und den Verbraucher. Fehlt der mittlere, ist das Feld vorhanden
+  und immer leer, und der Typecheck merkt nichts. *(Beispiel aus v3.7: `einblendung.flaecheDunkel`
+  braucht `#17`, `#134` **und** `#177`.)*
 - **Zwei Quellen für dieselbe Information.** Die Vererbung wird an **genau einer** Stelle aufgelöst
   (M8-05). Neunzehn Aufrufer holen die Marke – neunzehn eigene Vererbungslogiken liefen auseinander.
 - **Stiller Schrift-Rückfall.** Ist eine Schrift beim Zeichnen nicht geladen, nimmt der Canvas
