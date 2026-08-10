@@ -690,7 +690,7 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   gezeichneten Band-PNGs** – nebeneinander im selben Bild. Derselbe Fehler wie bei einer
   nachgeschlagenen Bandhöhe, nur sichtbarer. *Warum der Wert und nicht die `markeId`:* Eine Kennung
   wäre **nicht** eingefroren – die Marke dahinter kann sich ändern, ohne dass die Zuordnung sich ändert. „Dunkle Markenfarbe" ist bei
-  **zwölf** Farb-Rollen keine Angabe; ohne die Festlegung wählte jeder Agent eine andere und Render
+  **dreizehn** Farb-Rollen keine Angabe; ohne die Festlegung wählte jeder Agent eine andere und Render
   und Vorschau liefen auseinander. 9.11.2 beschreibt die Rolle als „Segment- und **Band**-Hintergrund" –
   damit sind Band und Seitenflächen **dieselbe** Fläche und der Split wirkt aus einem Guss.
 - **Datenmodell:** `Listenelement.einblendung = { bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`.
@@ -780,7 +780,7 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   setzt der Nutzer bewusst denselben Wert wie der Parent, gälte das Feld als „geerbt", obwohl es sich
   bei einer Parent-Änderung **nicht** mitändert.
 - **Vorlagen verweisen NUR über Rollen** (`farbRolle`/`schriftRolle`), nie auf Hex/Schriftnamen.
-- **ROLLEN sind fest, WERTE sind frei (9.15.2).** Der Satz der zwölf Farb- und vier Schrift-Rollen ist
+- **ROLLEN sind fest, WERTE sind frei (9.15.2).** Der Satz der dreizehn Farb- und vier Schrift-Rollen ist
   unverändert der Vertrag, auf den **jede** Vorlage verweist; der Editor kann **keine** Rolle
   hinzufügen oder entfernen (eine fehlende Rolle brächte jede Vorlage zum Stillstand). Die **Hexwerte
   und Schriftdateien unten sind die der EINGEBAUTEN Marke Fitnessworld24** – seit v3.4 nicht mehr die
