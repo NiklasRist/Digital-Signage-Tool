@@ -6,6 +6,7 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
 export function registriereHandler<T, F extends string>(
   kanal: string,
   validiere: (nutzlast: unknown) => Ergebnis<unknown, 'ungueltige_eingabe'> | { ok: true; wert: unknown },

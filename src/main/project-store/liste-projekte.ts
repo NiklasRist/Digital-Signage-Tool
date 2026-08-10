@@ -6,6 +6,7 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
 export interface ProjektMeta {
   id: string          // = Ordnername unter projects/
   name: string        // aus project.json; bei beschaedigt: true der ORDNERNAME als Behelf

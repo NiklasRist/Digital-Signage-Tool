@@ -6,6 +6,8 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Aktion } from './aktion'
+import type { Asset } from './asset'
 export interface Project {
   id: string
   name: string

@@ -6,6 +6,9 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Asset } from '../../shared/contracts/asset'
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
+
 // Fehlercode-Union des Moduls `project-store` – sie wird HIER deklariert (Begründung unten);
 // #73 und #74 liegen in derselben Datei und verwenden sie, #75 (`ausgaben.ts`) importiert sie
 // von hier. Diese Zeile ist Teil dieses Issues.

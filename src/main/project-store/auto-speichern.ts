@@ -6,6 +6,8 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis, Fehlercode } from '../../shared/contracts/ergebnis'
+import type { Project } from '../../shared/contracts/project'
 export type AutoSpeichernEreignis =
   | { typ: "gespeichert" }
   | { typ: "fehler"; code: Fehlercode }

@@ -6,6 +6,9 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { ExportRequest } from './export-request'
+import type { ImportRequest, LöschRequest } from './medien-request'
+import type { RenderRequest } from './render-request'
 export type AuftragArt = 'import' | 'loeschen' | 'render' | 'export'
 export type AuftragStatus = 'anstehend' | 'laeuft' | 'erfolg' | 'fehlgeschlagen' | 'abgebrochen'
 

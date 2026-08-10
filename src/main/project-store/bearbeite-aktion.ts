@@ -6,6 +6,8 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Aktion } from '../../shared/contracts/aktion'
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
 export async function bearbeiteAktion(
   id: string,
   aktionsdaten: Partial<Omit<Aktion, 'id'>>,

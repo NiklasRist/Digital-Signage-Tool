@@ -6,6 +6,8 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { Einblendung, Listenelement } from '../../shared/contracts/project'
 export async function setzeEinblendung(
   elementId: string,
   einblendung: Einblendung | null,   // null = Band entfernen; Typ aus #15

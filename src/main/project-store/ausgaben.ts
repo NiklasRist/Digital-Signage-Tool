@@ -6,6 +6,8 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'
 export interface AusgabeDatei {
   dateiname: string       // MIT Endung, z. B. "sommeraktion.mp4"
   dateigroesse: number    // Bytes

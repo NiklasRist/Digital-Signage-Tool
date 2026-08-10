@@ -6,6 +6,8 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Vorlage } from '../../shared/contracts/vorlage'
+
 export function löseArbeitskopienVomParent(
   bestand: Vorlage[],
   parentId: string,

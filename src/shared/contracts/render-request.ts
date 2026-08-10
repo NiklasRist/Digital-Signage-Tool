@@ -6,6 +6,7 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { RenderProfile } from './render-profile'
 export interface RenderRequest {
   renderId: string
   projektId: string

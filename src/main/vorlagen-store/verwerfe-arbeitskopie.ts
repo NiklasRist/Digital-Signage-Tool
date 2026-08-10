@@ -6,6 +6,9 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { VorlagenFehlercode } from './fehlercodes'
+
 export async function verwerfeArbeitskopie(
   arbeitsId: string,
 ): Promise<Ergebnis<void, VorlagenFehlercode>> {

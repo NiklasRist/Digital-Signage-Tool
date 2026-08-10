@@ -6,6 +6,8 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { Listenelement } from '../../shared/contracts/project'
 export async function setzeElementReferenz(
   elementId: string,
   referenz: string,   // Ziel-ID; WELCHER Bestand gemeint ist, entscheidet die art des Elements:

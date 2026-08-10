@@ -6,6 +6,7 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
 export async function setzeAktivesProjekt(projektId: string): Promise<Ergebnis<void>> {
   throw new Error(
     "Noch nicht umgesetzt - Rumpf gehoert zu Issue #27."

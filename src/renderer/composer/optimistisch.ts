@@ -6,6 +6,8 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
+
 /** Ereignisform des Auto-Speicherns, wie sie #47 im Main definiert (dort:
  *  `AutoSpeichernEreignis`). Sie trägt KEINE Ergebnis-Hülle – Ereignisse tragen keine (TK 9.1.1). */
 export type SpeicherEreignis =

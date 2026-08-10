@@ -6,6 +6,9 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { VorlagenFehlercode } from './fehlercodes'
+
 import type { Vorlagennutzung } from '../../shared/contracts/vorlage'
 
 // Der Typ gehört #95 und wird hier NUR importiert, NIE neu deklariert: Er reist als fehler.daten

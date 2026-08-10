@@ -6,6 +6,8 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { BrowserWindow } from 'electron'
+
 export function verdrahteExportUndFortschrittIPC(fenster: BrowserWindow): void {
   throw new Error(
     "Noch nicht umgesetzt - Rumpf gehoert zu Issue #191."

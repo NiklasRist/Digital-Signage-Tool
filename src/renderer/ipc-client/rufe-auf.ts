@@ -6,6 +6,7 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
+import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 export async function rufeAuf<T, F extends string = GenerischerFehlercode>(
   kanal: string,
   nutzlast?: unknown,
