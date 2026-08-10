@@ -29,7 +29,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 ---
 
-## 37 neue Issues
+## 38 neue Issues
 
 ### contracts (geteilt) – 2
 
@@ -127,7 +127,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 > `vorlagen-editor` seine Sicherheitslinie gegen eine **benannte** Marke zeichnen.
 > Beide gehören in M8-22 als weitere Rückmelder an `uebernimmAktualisierteMarke`.
 
-### Verdrahtung – 4
+### Verdrahtung und geteilte Bausteine – 5
 
 | Nr. | Issue |
 |---|---|
@@ -135,6 +135,16 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 | M8-32 | [app-shell] Zugang zur gemeinsamen Marken-Sicht bereitstellen |
 | **M8-37** | **NEU: Die vier bestehenden Aufrufer von `zeichneSegment` an die neue Signatur anpassen** (`action-editor`, `composer`-Thumbnails, `preview-player`, Render-Vorbereitung) – dazu `holeLogo(markeId)` aus dem Edit an **#119** |
 | **M8-38** | **NEU: `sichten.ts` und den Renderer-Bootstrap auf den Marken-Zugang umstellen** – `Sichten.marke` fällt weg |
+
+| **M8-39** | **NEU: [gemeinsam] Marken fuer die Zeichner aufloesen und bereitstellen** – `markeId` → `Marke` ueber `leseMarke`, je Marke zwischengespeichert, Schriften und Logo vor dem ersten Zeichnen bereit |
+
+> **Warum M8-39 fehlte – die SIEBTE Wiederholung derselben Lueckenklasse.** Bis v3.3 gab es **eine**
+> app-weite Marke, durchgereicht ueber `Sichten.marke`; die Beschaffung war trivial und stand
+> deshalb in keinem Issue. Seit jede Aktion ihre eigene `markeId` traegt, muss sie **je Segment**
+> aufgeloest werden – und `marken:leseMarke` wird im Renderer nur von M8-22 (die im Editor
+> **geoeffnete** Marke), M8-37 und M8-38 gerufen. Die fuenf Zeichner bekommen `marke: Marke` als
+> Parameter, **beschafft haette sie niemand**. Der Ort ist der geteilte Bereich
+> `src/renderer/gemeinsam/`: Alle fuenf brauchen es, keiner besitzt es.
 
 > **Der Einstieg in den Editor ist entschieden (TK v3.6):** ein **fünfter Reiter [Marken]**, neben
 > [Vorlagen] – app-weiter Bestand, ohne offenes Projekt benutzbar, Undo/Redo dort **abgeschaltet**.
@@ -167,11 +177,36 @@ Editierrecht** – eine Meldung ohne Recht führt dazu, dass ein Agent wartet st
 |---|---|---|---|
 | **#119** (M4-25) | `template-canvas/logo-laden.ts` | Bestand **je `markeId`** statt Einzelwert; `holeLogo()` → `holeLogo(markeId)`; Ladeweg nach `herkunft` verzweigen (`gebuendelt` → Bundle, `importiert` → `marken://`); `leereLogoBestand()` wird gebraucht | lädt heute **ein** gebündeltes, projektunabhängiges Logo; begründet mit „read-only, kann sich zur Laufzeit nicht ändern" – seit v3.4 falsch |
 | **#117** (M4-23) | `template-canvas/zeichne-segment.ts` | vierter Parameter `rahmenMarke`; `logo === null`-Zweig | Recht liegt bei **M8-21** – bereits vergeben |
+| **#128, #134, #140, #150, #217** | die **fünf** Aufrufer von `zeichneSegment` | vierter Parameter `rahmenMarke`; `#134` löst zusätzlich `Project.standardMarkeId` auf | zugewiesen an **M8-37** |
+| **#154** (M5-35) | `composer`-Zeichenvoraussetzungen | **zweiter** Renderer-Aufrufer von `config:leseMarke`, das M8-07 abschafft | neu, 10.08. gefunden |
+
+> **Zwei Korrekturen an der eigenen Zuschnitt-Annahme (10.08., beim Schreiben von M8-37 gefunden):**
+> Es sind **fünf** Aufrufer von `zeichneSegment`, nicht vier, und **keiner liegt in M6** – die in
+> M8-21 als „Render-Vorbereitung/M6" geführte Stelle ist `#134` im `composer` (M5). Übersehen worden
+> war **`#150`** (`vorlagen-editor/editor-vorschau.ts`) – ausgerechnet der einzige Aufrufer außerhalb
+> des Renders, der eine **`einblendung`**-Vorlage zeichnet und bei dem `rahmenMarke` überhaupt von
+> `marke` abweichen kann. Und **`#154`** stand in keiner Edit-Liste, obwohl er `config:leseMarke`
+> ruft.
 | **#197** (M7-04) | `app-shell/sichten.ts` | `marke: Marke` → Marken-Zugang; Schritt 1 von `baueSichten()` von `config:leseMarke` umstellen | M8-38 |
 | **#244** (M7-51) | `app-shell/inhalte-zugaenge.ts` | durchgereichtes Feld | M8-38 |
 | **#260** (M7-65) | `app-shell/bootstrap.ts` | Bootstrap-Schritt + Begründungstext | M8-38 |
 | **#250** (M7-57) u. a. | Konsumenten von `p.marke` | Lesezugriff umstellen | **Umfang ungeprüft** – ein Grep über alle M7-Volltexte nach `.marke` steht aus |
 | **#29 / #17** | `config-store/lese-marke.ts` | Rückbau bzw. Entfernen | hängt an der offenen Frage in M8-07 (s. u.) |
+
+### Aus dem Electron-Zwang bei der Schema-Registrierung (10.08. entschieden)
+
+`protocol.registerSchemesAsPrivileged(customSchemes: CustomScheme[])` nimmt ein **Array** und darf
+laut `electron.d.ts` **nur einmal** gerufen werden. Heute planten `#9` (für `media`) und M8-16 (für
+`marken`) **je einen eigenen** Aufruf. *Folge ohne die Änderung – und beide Ausgänge sind still:*
+Entweder wäre `marken://` nicht privilegiert, **oder `media://` hätte aufgehört zu funktionieren**,
+und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas auf die Marken zeigt.
+**Entschieden:** Die Module liefern ihre Schema-Beschreibung als **Daten**, der Bootstrap ruft
+**einmal** auf.
+
+| Issue | Datei | Was sich ändert |
+|---|---|---|
+| **#9** (S9) | `src/main/media-protokoll.ts` | `registriereMediaProtokollSchema()` **entfällt**, ersetzt durch `export const MEDIA_SCHEMA: CustomScheme`. Der Handler-Stub bleibt unverändert |
+| **#3** | `src/main/index.ts` (CSP) | Die in `#3` festgelegte CSP nennt `media:` bei `img-src`/`media-src`, **`marken:` nirgends** – ohne Nachzug lädt der Renderer kein importiertes Logo und keine importierte Schrift, und zwar **still** |
 
 ### Aus TK v3.7 (die eingefrorene Restflächen-Farbe)
 
