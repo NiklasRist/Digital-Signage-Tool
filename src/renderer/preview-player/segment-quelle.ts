@@ -7,6 +7,13 @@
 // dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 //
+// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
+// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
+// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
+// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
+// stehen; ihr Nichtmehrstimmen IST das Signal.
+// GERUEST-PRUEFSUMME: 54b89c769f947cb6
+//
 // ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
 // Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
 // nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile

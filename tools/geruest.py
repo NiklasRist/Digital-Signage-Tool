@@ -8,7 +8,7 @@
 #
 # Aufruf: python geruest.py <issues.json> <zielwurzel> [--nur N,N,N]
 
-import json, io, os, re, sys, collections
+import json, io, os, re, sys, collections, hashlib
 
 # Der Signaturblock wird NICHT mit einem einzigen Muster gesucht. Zwischen der
 # Ueberschrift und dem Codezaun darf Prosa stehen (#247 tut das), und ein Muster, das
@@ -233,6 +233,48 @@ BEGRUENDUNG = (
 )
 
 
+PRUEFSUMME_ZEILE = '// GERUEST-PRUEFSUMME: '
+
+
+def herkunft(text):
+    """Nummer des Issues, aus dem diese Datei erzeugt wurde - oder None."""
+    m = re.search(r'^// GENERIERT aus dem Signaturblock von Issue #(\d+)\.', text, re.M)
+    return int(m.group(1)) if m else None
+
+
+def pruefsumme(text):
+    return hashlib.sha1(text.encode('utf-8')).hexdigest()[:16]
+
+
+def zerlege(text):
+    """Trennt eine erzeugte Datei in (vermerkte Pruefsumme, Rumpftext ohne Kopf).
+
+    Der Kopf endet an der ersten Leerzeile - dieses Format erzeugt `kopf` selbst.
+    Liefert (None, None), wenn die Datei nicht von diesem Werkzeug stammt.
+    """
+    t = ohne_nachtrag(text)
+    m = re.search(r'^' + re.escape(PRUEFSUMME_ZEILE) + r'([0-9a-f]+)\s*$', t, re.M)
+    if not m:
+        return None, None
+    trenn = t.find('\n\n')
+    if trenn == -1:
+        return None, None
+    return m.group(1), t[trenn + 2:]
+
+
+def ohne_nachtrag(text):
+    """Entfernt, was der Nachlauf `setze_direktiven` an eine Datei angehaengt hat.
+
+    Ohne diese Umkehrung schluege der Byte-Vergleich bei JEDER Datei an, die eine
+    Abschaltzeile bekommen hat - der Generator schreibt sie ja ohne, der Nachlauf setzt
+    sie danach. Das Ergebnis waeren 192 falsche Abweichungs-Meldungen, und eine echte
+    ginge darin unter.
+    """
+    if text.startswith(DIREKTIVE):
+        text = text[len(DIREKTIVE):]
+    return text.replace('\n' + BEGRUENDUNG + '\n', '\n\n', 1)
+
+
 def setze_direktiven(ziel):
     """Fragt ESLint, welche erzeugten Dateien no-unused-vars melden, und versieht NUR diese.
 
@@ -275,7 +317,7 @@ def setze_direktiven(ziel):
     return gesetzt
 
 
-def kopf(nr, titel, pfad):
+def kopf(nr, titel, pfad, summe):
     return (
         '// GENERIERT aus dem Signaturblock von Issue #%d.\n'
         '// %s\n'
@@ -283,8 +325,15 @@ def kopf(nr, titel, pfad):
         '// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht\n'
         '// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt\n'
         '// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den\n'
-        '// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.\n\n'
-        % (nr, titel)
+        '// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.\n'
+        '//\n'
+        '// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.\n'
+        '// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann\n'
+        '// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie\n'
+        '// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach\n'
+        '// stehen; ihr Nichtmehrstimmen IST das Signal.\n'
+        '%s%s\n\n'
+        % (nr, titel, PRUEFSUMME_ZEILE, summe)
     )
 
 
@@ -300,7 +349,9 @@ def main():
 
     beansprucht = collections.defaultdict(list)
     geschrieben, ohne_ziel, ohne_block, ruempfe = 0, [], [], 0
-    uebersprungen = []
+    unveraendert = []   # Datei stimmt Byte fuer Byte - unberuehrter Platzhalter
+    abweichend = []     # Datei weicht ab - jemand hat gearbeitet, NICHT anfassen
+    erneuert = []       # unberuehrter Platzhalter, Issue geaendert -> neu geschrieben
     konstanten = 0
 
     for iss in sorted(m17, key=lambda x: x['number']):
@@ -329,26 +380,77 @@ def main():
                            if not PFAD_KOMMENTAR.match(z.strip()))
 
         voll = os.path.join(ziel, pfad.replace('/', os.sep))
-        # Vorhandene Dateien NIE ueberschreiben. Zwei Dateien gehoeren planmaessig je
-        # zwei Issues (ergebnis.ts: #12 legt an, #22 erweitert; App.tsx: #10 legt das
-        # Skelett an, #262 ersetzt es). Ein Generatorlauf, der die fertige M0-Fassung
-        # durch ein werfendes Geruest ersetzt, macht aus gebautem Code eine Baustelle.
+        rumpf = inhalt.strip() + '\n'
+        neu = kopf(nr, iss['title'], pfad, pruefsumme(rumpf)) + rumpf
+
+        # BYTE-VERGLEICH statt "existiert schon" oder "vorher alles loeschen".
+        #
+        # Die beiden naheliegenden Regeln sind beide falsch, und zwar gegenlaeufig:
+        #   - "vorhandene ueberspringen" laesst eine geaenderte Signatur NIE im Code
+        #     ankommen. Genau so blieb #22 (Ergebnis<T, F>) liegen, waehrend 104
+        #     Typfehler auf ihn zeigten.
+        #   - "erst alle generierten loeschen, dann neu schreiben" trifft eine
+        #     GEFUELLTE Datei genauso wie einen unberuehrten Platzhalter. Der Kopf
+        #     bleibt beim Fuellen ja stehen ("Zu fuellen ist ausschliesslich der
+        #     Rumpf") - eine fertige Implementierung waere lautlos wieder ein
+        #     werfender Rumpf.
+        #
+        # Der Vergleich braucht weder Marker noch Vertrauen: Stimmt die Datei Byte fuer
+        # Byte mit dem ueberein, was dieser Lauf schreiben wuerde, hat sie niemand
+        # angefasst und darf ersetzt werden. Weicht sie ab, hat jemand gearbeitet -
+        # dann wird NICHT geschrieben, sondern gemeldet.
         if os.path.exists(voll):
-            uebersprungen.append((pfad, nr))
+            vorhanden = io.open(voll, encoding='utf-8', newline='').read()
+            vermerkt, ist_rumpf = zerlege(vorhanden)
+
+            if vermerkt is None:
+                # Keine Pruefsumme im Kopf: entweder von Hand geschrieben (M0) oder aus
+                # einem aelteren Lauf. Beides nicht anfassen.
+                abweichend.append((pfad, nr, 'fremd oder alt'))
+            elif vermerkt != pruefsumme(ist_rumpf):
+                # Der Inhalt weicht von dem ab, was der Generator hier zuletzt
+                # hinterlassen hat -> jemand hat gearbeitet. Unantastbar.
+                abweichend.append((pfad, nr, 'bearbeitet'))
+            elif herkunft(vorhanden) != nr:
+                # Die Datei stammt von einem ANDEREN Issue. Mehrere Issues duerfen
+                # dieselbe Datei beschreiben (assets.ts: #72, #73, #74). Ohne diese
+                # Pruefung ueberschriebe hier jedes folgende Issue das vorige - bei
+                # jedem Lauf aufs Neue, und der Inhalt haenge davon ab, wer zuletzt
+                # dran war.
+                abweichend.append((pfad, nr, 'gehoert #%s' % herkunft(vorhanden)))
+            elif ohne_nachtrag(vorhanden) == neu:
+                unveraendert.append(pfad)
+            else:
+                # Unberuehrt, aber das Issue hat sich seither geaendert: Der Vertrag
+                # gehoert in den Code. Genau dieser Fall ist bisher liegengeblieben
+                # (#22 stand im Issue, die Datei blieb alt, 104 Typfehler zeigten
+                # darauf).
+                io.open(voll, 'w', encoding='utf-8', newline='\n').write(neu)
+                erneuert.append((pfad, nr))
             continue
+
         os.makedirs(os.path.dirname(voll), exist_ok=True)
-        io.open(voll, 'w', encoding='utf-8', newline='\n').write(
-            kopf(nr, iss['title'], pfad) + inhalt.strip() + '\n')
+        io.open(voll, 'w', encoding='utf-8', newline='\n').write(neu)
         geschrieben += 1
 
-    print('Dateien geschrieben        :', geschrieben)
+    print('Dateien NEU geschrieben    :', geschrieben)
+    print('Unveraendert (Platzhalter) :', len(unveraendert))
+    print('Erneuert (Issue geaendert) :', len(erneuert))
     print('Abschaltzeilen gesetzt     :', setze_direktiven(ziel))
     print('Werfende Ruempfe angehaengt:', ruempfe)
     print('Werfende Konstanten belegt :', konstanten)
     print('Issues ohne Signaturblock  :', len(ohne_block), ohne_block[:15])
     print('Issues ohne Zieldatei      :', len(ohne_ziel), ohne_ziel[:15])
     mehrfach = {p: v for p, v in beansprucht.items() if len(v) > 1}
-    print('Uebersprungen (Datei existiert):', len(uebersprungen), uebersprungen)
+    if abweichend:
+        print()
+        print('!!! %d DATEI(EN) WEICHEN AB - NICHT ANGETASTET !!!' % len(abweichend))
+        print('    Diese Dateien stimmen nicht mit dem ueberein, was aus dem Issue folgen')
+        print('    wuerde. Entweder wurde der Rumpf gefuellt (dann ist das richtig so und')
+        print('    eine Vertragsaenderung ist VON HAND nachzuziehen), oder jemand hat die')
+        print('    Signatur in der Datei geaendert statt im Issue (dann gehoert sie zurueck).')
+        for p, nr, grund in abweichend:
+            print('      #%-4d %-52s [%s]' % (nr, p, grund))
     print('Dateien mit mehreren Issues:', len(mehrfach))
     for p, v in list(mehrfach.items())[:10]:
         print('   ', p, '->', v)
