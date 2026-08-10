@@ -216,6 +216,65 @@ def konstanten_belegen(text, issue_nr):
     return muster.subn(ersetze, text)
 
 
+DIREKTIVE = '/* eslint-disable @typescript-eslint/no-unused-vars */\n'
+
+BEGRUENDUNG = (
+    '//\n'
+    '// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:\n'
+    '// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber\n'
+    '// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile\n'
+    '// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie\n'
+    '// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,\n'
+    '// weil dann nichts mehr rot ist.\n'
+    '//\n'
+    '// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem\n'
+    '// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und\n'
+    '// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.\n'
+)
+
+
+def setze_direktiven(ziel):
+    """Fragt ESLint, welche erzeugten Dateien no-unused-vars melden, und versieht NUR diese.
+
+    Warum gefragt und nicht geraten: Ob eine Datei die Abschaltzeile braucht, haengt
+    nicht allein an den Parametern - auch Importe, die der werfende Rumpf benutzt
+    haette, zaehlen. Zwei Anlaeufe mit Heuristik lagen daneben: erst blieben 18 Dateien
+    mit echten Fehlern uebrig, dann trugen 18 die Zeile ueberfluessig. Eine Zeile, die
+    ESLint selbst als unnoetig meldet, ist kein Schoenheitsfehler - sie erzeugt eine
+    Warnung, die man ueberliest, und dann ueberliest man auch die naechste.
+
+    Faellt ESLint aus (nicht installiert, kaputte Konfiguration), wird NICHTS gesetzt
+    und das gemeldet - lieber sichtbar unfertig als stillschweigend halb.
+    """
+    import subprocess
+    try:
+        lauf = subprocess.run(['npx', 'eslint', '.', '--format', 'json'],
+                              cwd=ziel, capture_output=True, text=True,
+                              encoding='utf-8', shell=(os.name == 'nt'))
+        bericht = json.loads(lauf.stdout or '[]')
+    except (OSError, ValueError):
+        print('  ACHTUNG: ESLint nicht auswertbar - keine Abschaltzeile gesetzt.')
+        return 0
+
+    gesetzt = 0
+    for eintrag in bericht:
+        if not any(m.get('ruleId') == '@typescript-eslint/no-unused-vars'
+                   for m in eintrag.get('messages', [])):
+            continue
+        pfad = eintrag.get('filePath', '')
+        try:
+            t = io.open(pfad, encoding='utf-8').read()
+        except OSError:
+            continue
+        if 'GENERIERT aus dem Signaturblock' not in t or t.startswith(DIREKTIVE):
+            continue
+        # Die Begruendung wandert ans Ende des Kopfblocks, also vor die erste Leerzeile.
+        io.open(pfad, 'w', encoding='utf-8', newline='\n').write(
+            DIREKTIVE + t.replace('\n\n', '\n' + BEGRUENDUNG + '\n', 1))
+        gesetzt += 1
+    return gesetzt
+
+
 def kopf(nr, titel, pfad):
     return (
         '// GENERIERT aus dem Signaturblock von Issue #%d.\n'
@@ -283,6 +342,7 @@ def main():
         geschrieben += 1
 
     print('Dateien geschrieben        :', geschrieben)
+    print('Abschaltzeilen gesetzt     :', setze_direktiven(ziel))
     print('Werfende Ruempfe angehaengt:', ruempfe)
     print('Werfende Konstanten belegt :', konstanten)
     print('Issues ohne Signaturblock  :', len(ohne_block), ohne_block[:15])
