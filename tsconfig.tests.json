@@ -1,0 +1,30 @@
+// Typecheck fuer tests/ (#266).
+//
+// Warum es diese vierte Konfiguration ueberhaupt braucht: Die drei Prozess-
+// Konfigurationen decken je einen src/-Bereich ab und nennen tests/ in keinem
+// "include". "npm test" schliesst die Luecke NICHT - Vitest uebersetzt TypeScript ueber
+// esbuild und ENTFERNT die Typen, ohne sie zu pruefen. Ein Test, dessen ganze Aussage
+// auf Typebene liegt, laeuft dort gruen durch, auch wenn er falsch ist. Genau so ein
+// Test steht in tests/unit/ergebnis.spec.ts (#22): Er prueft, dass Ergebnis<T, F>
+// EXAKT die fachliche Union plus die drei generischen Codes zulaesst. Beim Bauen von
+// #22 musste das mit einem von Hand gestarteten tsc belegt werden.
+//
+// Diese Konfiguration ERSETZT die drei anderen nicht. Sie sieht den ganzen Baum und
+// ist daher zwangslaeufig weiter gefasst; die ENGE Pruefung je Prozess (kein DOM im
+// Main, keine Node-Typen im Renderer) bleibt allein Sache von tsconfig.main.json,
+// tsconfig.preload.json und tsconfig.renderer.json. Wer hier etwas lockert, lockert
+// NICHT dort - und wer dort etwas lockert, faellt hier nicht auf.
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    // DOM ist noetig, weil "include" auch src/renderer/ erfasst (React, document).
+    // Das ist der Preis dafuer, den ganzen Baum zu sehen - und der Grund, warum diese
+    // Konfiguration die Prozess-Trennung NICHT bewacht.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["node"]
+  },
+  "include": ["tests/**/*", "src/**/*"]
+}
