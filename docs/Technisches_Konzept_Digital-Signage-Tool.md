@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.3 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.5 (HLD vollständig, geprüft)
+**Version:** 3.6 (HLD vollständig, geprüft)
 **Datum:** 10.08.2026
 **Status:** In Planung
 
@@ -11,7 +11,7 @@
 
 ## 1. Zweck und Einordnung
 
-Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.2** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
+Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.3** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
 
 ## 2. Architektur-Überblick
 
@@ -55,7 +55,7 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 **B — App-/Konfigurationsdaten** (persistent, app-weit)
 
 - **App-Zustand** – aktives Projekt, letztes Export-Ziel, UI-Voreinstellungen. *(FA-15)*
-- **Marken-/Design-Konfiguration** – Palette, Schriften, Logo. *(4.2)*
+- **Marken-Bestand** – **mehrere** Marken (Farben, Schriften, Logo, Abstände, Slogan), eingebaute und **abgeleitete**; importierte Logos und Schriften je Marke. **App-weit** als Speicher **V2** geführt vom `marken-store` (9.15.1), **nicht** mehr im App-Zustand D3. *(FA-23, FA-24, 4.2, 4.8)*
 
 **C — Temporäre Arbeitsdaten auf der Platte** (pro Renderlauf, danach löschbar)
 
@@ -257,13 +257,14 @@ Das folgende zusammengeführte DFD zeigt die Autoren-Prozesse, die Speicher, die
 |---|---|---|---|---|
 | D1 | Projekt-Store | Projekte, Aktionen, Liste, Vorlagen-Ref | persistent | P1, P2, P3 |
 | D2 | Medienordner | kopierte Videos/Bilder je Projekt | persistent | P1 |
-| D3 | App-Konfig | aktives Projekt, Marke, UI-Voreinstellungen | persistent | App |
+| D3 | App-Konfig | aktives Projekt, Export-Ziel, UI-Voreinstellungen | persistent | App |
 | T1 | Render-Arbeitsbereich | Segment-PNGs, `seg_*.mp4`, concat-Liste – **nicht** die fertige Ausgabedatei (9.2.6) | flüchtig | P4 |
 | Q1 | Aktive Warteschlange | anstehende Aufträge + laufender Auftrag | **flüchtig (RAM)** | P6 |
 | Q2 | Wiederholungs-Speicher | offene Fehlschläge (mit `payload`) + `pendingDeletions` | **persistent bis erledigt** | P6 |
 | Q3 | Ausführungs-Protokoll | ein Eintrag je beendetem Versuch (append-only) | **dauerhaft, unbegrenzt** | P6 |
 | Q4 | Warteschlangen-Journal | Bewegungen: eingereiht/gestartet/entfernt/erneut eingereiht | **dauerhaft, rotierend** | P6 |
 | V1 | Vorlagen-Bibliothek | app-weite Vorlagen inkl. Arbeitskopien (`parent ≠ null`) | persistent | P7 |
+| V2 | Marken-Bestand | app-weite Marken inkl. abgeleiteter (`parent ≠ null`); importierte Logos und Schriften in `marken-assets/<markeId>/` | persistent | `marken-store` (9.15.1) |
 
 Q1–Q4 gehören zur Auftragsverwaltung (P6) und tragen **jeweils eigene Persistenz** (flüchtig → persistent-bis-erledigt → dauerhaft-unbegrenzt → dauerhaft-rotierend). Q3 enthält die frühere Ausgabe-Historie (erfolgreiche Renders) als Teilmenge; sie liegt damit bei P6 statt in D3.
 
@@ -274,14 +275,14 @@ Q1–Q4 gehören zur Auftragsverwaltung (P6) und tragen **jeweils eigene Persist
 | 1 | Nutzer | Aktion/Produkt (Titel u. a.) | P2 *(instant)* |
 | 2 | Nutzer | Reihenfolge, Dauer, Trim | P3 *(instant)* |
 | 3 | P2 / P3 | Aktion + Vorlagen-Ref, Listenelemente | D1 |
-| 4 | Nutzer / App | Einstellungen (aktives Projekt, Marke, UI) | D3 |
+| 4 | Nutzer / App | Einstellungen (aktives Projekt, Export-Ziel, UI) | D3 |
 | 5 | Nutzer | Auftrag (import/loeschen/render/export) | P6 |
 | 6 | P6 | Freigabe (genau einer, seriell) | P1 / P4 |
 | 7 | P1 | kopierte Mediendatei | D2 |
 | 8 | P1 | Asset-Datensatz (Pfad, Maße, Dauer) | D1 |
 | 9 | D1 | Liste + Aktionsdaten | P4 / P5 |
 | 10 | D2 | Mediendateien | P4 / P5 |
-| 11 | D3 | Marke (für Aktions-Segmente) | P4 / P5 |
+| 11 | V2 | Marke, aufgelöst (Aktions-Segmente: `aktion.markeId`; Band-Hintergrund und Split-Restflächen: `Project.standardMarkeId`, 9.15.4) | P4 / P5 |
 | 12 | P4 | ffmpeg-Aufrufe / Clips | ffmpeg |
 | 13 | P4 | Segment-PNGs, `seg_*.mp4`, concat-Liste | T1 |
 | 13a | P4 | fertige Ausgabe-MP4 (`<name>.mp4.part` → Rename, 9.2.6) | `projects/<id>/output/` |
@@ -480,6 +481,7 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bere
 | Code | Wann | Was der Nutzer tun kann |
 |---|---|---|
 | `medium_fehlt` | Ein referenziertes Medium liegt nicht (mehr) in `media/` oder ist vom Reconcile als `zustand: "fehlt"` markiert (9.4.7). Geprüft **vor** dem ersten `ffmpeg`-Aufruf, nicht mitten im Lauf | Über den geführten Reparatur-Modus (9.7.5) neu verknüpfen/importieren, ersetzen oder das Element entfernen |
+| `marken_datei_fehlt` | Ein **importiertes** Logo oder eine **importierte** Schrift einer beteiligten Marke liegt nicht (mehr) in `marken-assets/<markeId>/` (9.15.3). Geprüft **vor** dem ersten `ffmpeg`-Aufruf – wie `medium_fehlt`, aus demselben Grund: Ein stiller Rückfall auf die gebündelte Schrift zeigte den Markenbruch erst am Fernseher | Über den geführten Reparatur-Modus (9.7.5) die Datei neu importieren oder im `marken-editor` entfernen (dann gilt wieder der geerbte bzw. gebündelte Wert, 9.15.1) |
 | `ungueltiges_element` | Ein einzelnes `RenderItem` ist in sich unstimmig: Trim außerhalb der Quelldauer, `dauer` außerhalb 10–45 s, `"segment"` ohne PNG-Puffer, `einblendung` ohne Abschnitte, mit `höhe` ≥ 1080 oder mit **ungerader** `höhe` (9.2.8), PNG-Maße ≠ der erwarteten Fläche (1920 × 1080 bzw. 1920 × `höhe`) | Das benannte Element im `composer` korrigieren (Dauer/Trim/Band) und erneut rendern |
 | `ungueltige_eingabe` | Die **Anfrage** verletzt den Vertrag, unabhängig von einzelnen Elementen: unzulässiger `ausgabeName` (9.2.6), leere Elementliste, unbekannte `art`, fehlende `projektId`. Generischer Code aus 9.1.1 Punkt 3 – **ohne jede Wirkung** auf Daten oder Dateien | Zielnamen korrigieren bzw. mindestens ein Element in die Liste legen |
 | `ffmpeg_fehler` | Ein `ffmpeg`-/`ffprobe`-Aufruf endet mit Fehlerstatus oder liefert keine verwertbare Ausgabe (defekter Stream, nicht dekodierbare Quelle) – **einschließlich einer fehlgeschlagenen Verifikation** der fertigen Datei (9.2.6) | Wiederholen (Q2, FA-17); bleibt es dabei, das im Fehler benannte Element austauschen. Die vorherige Ausgabedatei ist unversehrt |
@@ -489,7 +491,7 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bere
 
 **`abgebrochen` ist *kein* Fehlercode.** Ein vom Nutzer abgebrochener Lauf endet über `status: "abgebrochen"` (9.2.7) und trägt **kein** `fehler`-Objekt – sonst gäbe es zwei Wege, denselben Ausgang zu melden, und die Oberfläche zeigte einen Abbruch als Fehler an.
 
-**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.** `RenderResult.fehlerhaftesElementId` ist Modul-intern; beim Abschluss des Auftrags übernimmt die Auftragsverwaltung `fehlercode` → `Auftrag.fehler.code`, `meldung` → `Auftrag.fehler.meldung` und `fehlerhaftesElementId` → **`Auftrag.fehler.daten = { elementId }`** (9.1.1, 9.3.1). Ohne diesen Weg käme die ID **nie** beim Nutzer an – obwohl 9.2.1 die `RenderItem.id` genau damit begründet („eindeutige Fehlerzuordnung") und der Reparatur-Modus (FA-19) die Stelle benennen muss, zu der er führt. Die Form von `daten` ist damit **je Fehlercode festgelegt**: `{ elementId: string }` bei `medium_fehlt` und `ungueltiges_element`, sonst nicht gesetzt.
+**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.** `RenderResult.fehlerhaftesElementId` ist Modul-intern; beim Abschluss des Auftrags übernimmt die Auftragsverwaltung `fehlercode` → `Auftrag.fehler.code`, `meldung` → `Auftrag.fehler.meldung` und `fehlerhaftesElementId` → **`Auftrag.fehler.daten = { elementId }`** (9.1.1, 9.3.1). Ohne diesen Weg käme die ID **nie** beim Nutzer an – obwohl 9.2.1 die `RenderItem.id` genau damit begründet („eindeutige Fehlerzuordnung") und der Reparatur-Modus (FA-19) die Stelle benennen muss, zu der er führt. Die Form von `daten` ist damit **je Fehlercode festgelegt**: `{ elementId: string }` bei `medium_fehlt` und `ungueltiges_element`, **`{ markeId: string, art: "logo" | "schrift", schriftRolle?: SchriftRolle }` bei `marken_datei_fehlt`** (nicht `elementId`: Es fehlt eine Datei der **Marke**, und dieselbe Marke kann an beliebig vielen Elementen hängen – eine einzelne Element-ID benennte willkürlich eines davon und führte den Reparatur-Modus an die falsche Stelle), sonst nicht gesetzt.
 
 #### 9.2.4 `RenderProfile` (aktuell fest)
 
@@ -589,7 +591,7 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 
 **Bewusste Abweichung vom Ausgabe-Profil – nur hier:** 9.2.4 schreibt **schwarze** Balken vor. In der Split-Komposition werden die Restflächen **in der Markenfarbe** gefüllt, damit der Split gestaltet wirkt und nicht wie ungenutzter Platz. Die Einpassung bleibt **„contain" ohne Beschnitt**.
 
-**Welche Markenfarbe – festgelegt:** die Farb-Rolle **`flaecheDunkel`** (9.11.2). Sie ist dort ausdrücklich als „Segment- und **Band**-Hintergrund" beschrieben; damit sind Band und seitliche Restflächen **dieselbe** Fläche und der Split wirkt aus einem Guss. Der `render-service` holt den Wert **über die Marke** (`config-store.leseMarke`, 9.5.6) und tippt ihn **nie** als Hexzahl in eine Filterkette – sonst hätte das Projekt zwei Quellen für dieselbe Farbe (9.11.1, Punkt 7).
+**Welche Markenfarbe – festgelegt:** die Farb-Rolle **`flaecheDunkel`** (9.11.2). Sie ist dort ausdrücklich als „Segment- und **Band**-Hintergrund" beschrieben; damit sind Band und seitliche Restflächen **dieselbe** Fläche und der Split wirkt aus einem Guss. Der `render-service` holt den Wert **über die Marke** (`marken-store.leseMarke(markeId)`, 9.15.1 – die **Projekt-Standardmarke** `Project.standardMarkeId`, 9.15.4) und tippt ihn **nie** als Hexzahl in eine Filterkette – sonst hätte das Projekt zwei Quellen für dieselbe Farbe (9.11.1, Punkt 7).
 
 **Art B – `einblendung`: Band *über* dem vollflächigen Video.** Das Video wird wie gewohnt auf **1920 × 1080** normalisiert (schwarze Balken nach 9.2.4, **keine** Verkleinerung, **keine** Markenfarb-Flächen). Das Band (1920 × H, **mit Alpha**) wird **unten überlagert** (y = 1080 − H). Vorteil: das Video behält seine volle Größe; dafür verdeckt das Band den unteren Bildbereich.
 
@@ -1370,7 +1372,7 @@ löseFarbe(farbRolle, marke, aktion) →
 - **Ist `aktion.akzentfarbe` nicht gesetzt, gilt der Markenwert** der jeweiligen Rolle. Das ist der reguläre Rückfall und **kein** Fehler; eine Aktion ohne gewählte Akzentfarbe sieht aus wie die Vorlage sie vorsieht.
 - **Es gibt genau eine Auflösungsstelle.** Keine Zonen-Sorte (Text, Bild, Deko, Verlauf) darf `marke.farben[...]` direkt lesen – sonst wirkt die Akzentfarbe in der Pille, aber nicht im Verlauf dahinter, und niemand fände den Grund. Auch `deko.verlauf` (`vonFarbRolle`/`bisFarbRolle`) läuft durch dieselbe Funktion.
 
-**Begründung:** So entstehen aus **einer** Vorlage ohne jede Zusatzarbeit verschiedene Anmutungen – dieselbe „Vollbild"-Vorlage trägt eine rote und eine blaue Aktion. Der **Aufbau** der Vorlage bleibt dabei unangetastet: Sie sagt weiterhin, **welche** Zone Akzentfarbe trägt (Preis-Pille, CTA-Pille, Badge), und diese Aussage gilt unabhängig davon, welche Farbe die einzelne Aktion mitbringt. Die Alternative – Vorlagen je Farbe zu duplizieren – hätte die Bibliothek vervielfacht und jede Layout-Korrektur mehrfach nötig gemacht. Zugleich bleibt die Farbwahl auf die **Markenpalette** begrenzt (9.8.4): Es entsteht **kein** freier Farbwähler, und keine Aktion kann aus dem Corporate Design ausbrechen.
+**Begründung:** So entstehen aus **einer** Vorlage ohne jede Zusatzarbeit verschiedene Anmutungen – dieselbe „Vollbild"-Vorlage trägt eine rote und eine blaue Aktion. Der **Aufbau** der Vorlage bleibt dabei unangetastet: Sie sagt weiterhin, **welche** Zone Akzentfarbe trägt (Preis-Pille, CTA-Pille, Badge), und diese Aussage gilt unabhängig davon, welche Farbe die einzelne Aktion mitbringt. Die Alternative – Vorlagen je Farbe zu duplizieren – hätte die Bibliothek vervielfacht und jede Layout-Korrektur mehrfach nötig gemacht. **Seit v3.4 ist die Farbwahl NICHT mehr auf die Markenpalette begrenzt** (9.8.4, FA-24): `akzentfarbe` ist ein **freier** Hex-Wert, damit Partner-Hausfarben darstellbar sind. Eine Aktion **kann** damit aus dem Corporate Design ausbrechen; die Gegenmaßnahme ist die **Kontrast-Warnung** (9.15.2), **nicht** die Sperre (Risiko R-08). *Bis v3.3 stand hier: „Zugleich bleibt die Farbwahl auf die Markenpalette begrenzt (9.8.4): Es entsteht kein freier Farbwähler, und keine Aktion kann aus dem Corporate Design ausbrechen." Dieser Satz ist mit v3.4 zurückgenommen; er stand bis v3.5 versehentlich weiter hier und war wörtlich zitierbar.*
 
 **Folge für den Vorlagenbau (bindend):** Eine Vorlage darf sich **nicht auf den Kontrast zwischen zwei Akzent-Rollen verlassen** – etwa Fläche `akzent` mit Text `akzentTief` in derselben Zone. Nach der Ersetzung tragen **alle drei** Rollen denselben Wert, der Text wäre unsichtbar. Wo lesbarer Kontrast auf einer Akzentfläche gebraucht wird, ist der Text eine **Text-Rolle** (`textAufDunkel` / `textAufHell`). Die eingebauten Vorlagen halten das bereits ein (9.11.1): Ihre Akzent-Pillen (`preis`, `cta`) tragen Akzentfarbe **als Fläche**, ihr Text kommt aus einer Text-Rolle.
 
@@ -1622,7 +1624,9 @@ die übrigen achtzehn Aufrufer (9.15.4) ändert sich nichts; sie lesen den Stemp
 
 *Begründung der Ersatzwahl:* „Arial Black" und „Avenir 85 Heavy" sind nicht frei lizenziert bzw. nicht auf jedem System vorhanden – als **gebündelte** Datei unbrauchbar. Arimo ist metrisch Helvetica-kompatibel, sodass Layouts nicht springen.
 
-**Sicherheitsabstand ist eine Eigenschaft des Bildrahmens, nicht der Vorlagenfläche.** Er gilt absolut im 1920×1080-Rahmen (96 px horizontal, 54 px vertikal, 9.10.5). **Wichtige Folge für Bänder:** Ein Band sitzt am unteren Rahmenrand – die unteren **54 px des Rahmens liegen damit *innerhalb* des Bandes**. Bei einem 162 px hohen Band sind also nur die oberen **108 px** sicher nutzbar; Inhalt darunter kann am TV abgeschnitten werden. Der `vorlagen-editor` zeigt diese Linie an und warnt (9.12.2).
+**Sicherheitsabstand ist eine Eigenschaft des Bildrahmens, nicht der Vorlagenfläche.** Er gilt absolut im 1920×1080-Rahmen (96 px horizontal, 54 px vertikal, 9.10.5).
+
+**Der Wert gehört der MARKE, nicht der Konstanten (v3.6, entschieden).** `Marke.sicherheit` ist seit v3.4 **bearbeitbar** – FA-24 nennt „Sicherheitsabstände" ausdrücklich. Die 96/54 px in 9.11.4 sind damit nur noch die **Vorbelegung der eingebauten Marke**; wer zeichnet oder prüft, liest den Wert aus der **jeweils zuständigen Marke** (9.15.4). **Folge, die beim Bauen zählt:** Vorlagen sind **app-weit** und kennen die Marke nicht, mit der sie später gezeichnet werden – eine für 54 px gebaute Vorlage ist bei einer Marke mit größerem Abstand **nicht mehr sicher**. Der `vorlagen-editor` zeichnet seine Sicherheitslinie deshalb gegen eine **benannte** Marke (die Projekt-Standardmarke bzw. die eingebaute, wenn kein Projekt offen ist) und **sagt dazu, gegen welche** – eine Linie ohne diese Angabe wäre eine Zusage, die die Vorlage nicht halten kann. **Wichtige Folge für Bänder:** Ein Band sitzt am unteren Rahmenrand – die unteren **54 px des Rahmens liegen damit *innerhalb* des Bandes**. Bei einem 162 px hohen Band sind also nur die oberen **108 px** sicher nutzbar; Inhalt darunter kann am TV abgeschnitten werden. Der `vorlagen-editor` zeigt diese Linie an und warnt (9.12.2).
 
 **Marken sind ein app-weiter Bestand und bearbeitbar** (`marken-store`, 9.15.1; FA-23/FA-24). *Bis v3.3 stand hier: „Marke ist in v1 gebündelt und read-only (`config-store.leseMarke`, 9.5.6); ein Marken-Editor ist kein MVP." Beides ist mit v3.4 überholt – die Marke gehört nicht mehr dem `config-store`, und der Editor ist ein Muss.* **Gebündelt bleiben** die vier OFL-Schriften und das Fitnessworld24-Logo; importierte Dateien tragen die Herkunft `importiert` (9.15.3).
 
@@ -1670,7 +1674,7 @@ Listenelement {
 
 #### 9.11.4 ID-Schema und Konstanten
 
-- **Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, `Auftrag`. **Keine** fortlaufenden Zähler: die kollidieren nach Löschen/Neu-Anlegen und beim Duplizieren von Projekten. **Keine** aus Namen abgeleiteten IDs: ein Umbenennen darf niemals Referenzen brechen.
+- **Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, **`Marke`** (9.11.2), `Auftrag`. **Keine** fortlaufenden Zähler: die kollidieren nach Löschen/Neu-Anlegen und beim Duplizieren von Projekten. **Keine** aus Namen abgeleiteten IDs: ein Umbenennen darf niemals Referenzen brechen.
 - **IDs werden nie wiederverwendet**, auch nicht nach dem Löschen.
 - **`dupliziereProjekt` vergibt eine neue Projekt-ID**, behält aber die projektinternen IDs (Assets, Aktionen, Listenelemente) – sie sind ohnehin nur projektweit eindeutig, und ein Umschreiben würde alle inneren Referenzen gefährden.
 - **Konstanten in `contracts/types`** (an *einer* Stelle, nicht verstreut):
@@ -1679,7 +1683,7 @@ Listenelement {
 |---|---|---|
 | Standard-Anzeigedauer | **10 s** | Vorbelegung für Bild/Segment und `Aktion.standardDauer` |
 | Dauer-Bereich | **10–45 s** | Validierung in `setzeDauer` (9.5.2) |
-| Sicherheitsabstand | **96 / 54 px** | im 1920×1080-Rahmen (9.10.5, 9.11.2) |
+| Sicherheitsabstand (**Vorbelegung**) | **96 / 54 px** | **Nur der Startwert der eingebauten Marke** – der geltende Wert steht in `Marke.sicherheit` und ist seit v3.4 **bearbeitbar** (FA-24). Wer zeichnet oder prüft, liest ihn aus der **Marke** (9.10.5, 9.11.2), **nie** aus dieser Konstante |
 | Format-Whitelist | MP4 / JPG, PNG, WebP | Dialog **und** Import-Prüfung (9.4.2) |
 | Aktuelle `schemaVersion` | **1** | wird von `öffneProjekt`, `schreibeProjekt` und der Migration gelesen (9.5.5) – **eine** Stelle, sonst laufen drei Kopien auseinander |
 
@@ -1832,17 +1836,18 @@ Vorlage X bearbeiten
 
 ### 9.14 Modul `app-shell` (Renderer): Aufbau und Navigation
 
-**Fachlich:** Die `app-shell` ist der Rahmen, der die **sechs** Renderer-Oberflächen anordnet und den Wechsel zwischen ihnen führt. Ohne sie wäre offen, wo `composer`, `action-editor`, `vorlagen-editor`, `preview-player`, `projekt-verwaltung` und `queue-panel` überhaupt leben.
+**Fachlich:** Die `app-shell` ist der Rahmen, der die **sieben** Renderer-Oberflächen anordnet und den Wechsel zwischen ihnen führt. Ohne sie wäre offen, wo `composer`, `action-editor`, `vorlagen-editor`, `marken-editor`, `preview-player`, `projekt-verwaltung` und `queue-panel` überhaupt leben.
 
 #### 9.14.1 Grundstruktur: Modus-Reiter + Warteschlangen-Leiste
 
 ```
-┌─ [Zusammenstellen] [Aktionen] [Vorlagen] [Projekte] ──────────────────────┐
+┌─ [Zusammenstellen] [Aktionen] [Vorlagen] [Marken] [Projekte] ─────────────┐
 │                                                                           │
 │   Der gewählte Reiter nutzt die ganze Fläche:                             │
 │     Zusammenstellen = composer [P3]  +  preview-player [P5]               │
 │     Aktionen        = action-editor [P2]  + große Live-Vorschau           │
 │     Vorlagen        = vorlagen-editor (Canvas + Zonen-Liste + Inspektor)  │
+│     Marken          = marken-editor (Liste + Rollen + Live-Vorschau)      │
 │     Projekte        = projekt-verwaltung (FA-10, 9.14.3)                  │
 │                                                                           │
 ├───────────────────────────────────────────────────────────────────────────┤
@@ -1850,7 +1855,9 @@ Vorlage X bearbeiten
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Begründung der Wahl:** `action-editor` und `vorlagen-editor` brauchen **beide** eine Live-Vorschau über `template-canvas` in **lesbarer** Größe (9.8, 9.12.2), der Vorlagen-Editor zusätzlich Canvas **plus** Zonen-Liste **plus** Inspektor. Eine schmale Seitenspalte oder ein Seitenblatt kann das nicht leisten. Reiter geben jeder Oberfläche die volle Fläche – auf einem Laptop-Bildschirm die tragfähige Lösung.
+**Begründung der Wahl:** `action-editor`, `vorlagen-editor` und `marken-editor` brauchen **alle drei** eine Live-Vorschau über `template-canvas` in **lesbarer** Größe (9.8, 9.12.2, 9.15.2), der Vorlagen-Editor zusätzlich Canvas **plus** Zonen-Liste **plus** Inspektor. Eine schmale Seitenspalte oder ein Seitenblatt kann das nicht leisten. Reiter geben jeder Oberfläche die volle Fläche – auf einem Laptop-Bildschirm die tragfähige Lösung.
+
+**Warum die Marken einen eigenen Reiter bekommen (v3.6, entschieden):** Der Marken-Bestand ist **app-weit** (V2) – dieselbe Lage wie die Vorlagen-Bibliothek (V1), und aus demselben Grund gehört er neben sie und nicht in ein Projekt. *Warum nicht als Unterbereich der Vorlagen:* Es sind **zwei getrennte Bestände** mit **zwei verschiedenen Undo-Regimen** – der Vorlagen-Editor hat Undo (9.13.2), der Marken-Editor hat in v1 **keins** (9.15.2). Ein gemeinsamer Reiter hätte dem Nutzer zwei Sorten von Rückgängig-Verhalten an derselben Stelle gezeigt. *Warum nicht als Dialog aus dem `action-editor`:* Dort **wird** die Marke zwar gewählt, aber 9.15.2 verlangt die Live-Vorschau über `template-canvas` – in einem Dialog ist sie zu klein, und es wäre genau die „schmale Seitenspalte", die der Absatz oben ausschließt.
 
 #### 9.14.2 Invarianten (bindend)
 
@@ -1858,9 +1865,9 @@ Vorlage X bearbeiten
 - **Die Warteschlangen-Leiste holt beim Aufbau ERST den Stand und abonniert DANACH.** Ereignisse, die vor dem Aufbau des Fensters anfallen, **verfallen still** – es wird nicht gepuffert (9.1.1 Punkt 10). Deshalb ruft die Leiste beim Aufbau **einmal `holeStand()`** (9.3.4, „Snapshot für die UI") und abonniert **erst anschließend** `queue:geaendert`. Die umgekehrte Reihenfolge wäre falsch: Die Antwort auf `holeStand()` könnte einen **älteren** Stand tragen als ein zwischenzeitlich empfangenes Ereignis und es überschreiben. *Warum das hier besonders zählt:* Beim Start liegen bereits **Fehlschläge aus Q2** vor (persistent, 9.3.5) – ohne das anfängliche Holen bliebe die Leiste leer, bis zufällig der nächste Auftrag etwas ändert, und ein fehlgeschlagener Render vom Vortag wäre unsichtbar und damit nicht wiederholbar.
 - **Der geführte Reparatur-Modus wechselt den Reiter.** Führt die Reparatur eines Aktions-Bildes in den `action-editor` (9.7.5, 9.8.5), wechselt die Shell in den Reiter **Aktionen**, hebt die betroffene Aktion hervor und **kehrt danach zum Reiter Zusammenstellen zurück**, zur nächsten kaputten Stelle. Der Fortschritt „X von N behoben" bleibt dabei **über den Reiterwechsel hinweg** sichtbar – sonst verliert der Nutzer den Faden.
 - **Ein Reiterwechsel verwirft nie Arbeit.** Instant-Änderungen sind bereits gesichert (9.5.4); eine offene Vorlagen-**Arbeitskopie** bleibt beim Verlassen des Reiters erhalten (9.12.1) und wird beim Zurückkehren fortgesetzt. Es gibt **keinen** „ungespeicherten Zustand", der beim Wechseln verlorengeht.
-- **Undo/Redo gilt im jeweils aktiven Reiter** und arbeitet auf dessen Historie (9.13.2: getrennte Stapel für Projekt-Bearbeitung und Vorlagen-Editor). Ein Reiterwechsel **vermischt** die Historien nicht.
-- **Ohne offenes Projekt sind die Reiter Zusammenstellen/Aktionen leer statt kaputt.** Beim Start ohne wiederherstellbares Projekt (9.5.6) landet der Nutzer im Reiter **Projekte**; **Zusammenstellen** und **Aktionen** zeigen dort einen Hinweis mit dem Weg zum Reiter Projekte, keine Fehlermeldung. **Ausgenommen sind Projekte und Vorlagen:** Beide bleiben ohne offenes Projekt **voll benutzbar** – der Reiter Projekte ist die Einstiegsstelle, und die Vorlagen-Bibliothek ist **app-weit** (9.11.1.1), gehört also keinem Projekt. Wer eine Vorlage bauen will, bevor er ein Projekt anlegt, darf das; ein Hinweis dort wäre eine erfundene Abhängigkeit.
-- **Die Shell rendert selbst keine Inhalte** – sie ordnet an, wechselt und hält die Warteschlangen-Leiste. Alles Fachliche liegt in den **sechs** Modulen (einschließlich `projekt-verwaltung`, 9.14.3).
+- **Undo/Redo gilt im jeweils aktiven Reiter** und arbeitet auf dessen Historie (9.13.2: getrennte Stapel für Projekt-Bearbeitung und Vorlagen-Editor). Ein Reiterwechsel **vermischt** die Historien nicht. **Der Reiter Marken hat in v1 KEINE Historie** (9.15.2, bewusste Grenze) – dort sind die Undo/Redo-Bedienelemente **abgeschaltet**, nicht etwa an den Stapel des zuletzt aktiven Reiters gebunden: Sonst widerriefe ein Klick im Marken-Reiter die letzte Änderung an einem **Projekt**.
+- **Ohne offenes Projekt sind die Reiter Zusammenstellen/Aktionen leer statt kaputt.** Beim Start ohne wiederherstellbares Projekt (9.5.6) landet der Nutzer im Reiter **Projekte**; **Zusammenstellen** und **Aktionen** zeigen dort einen Hinweis mit dem Weg zum Reiter Projekte, keine Fehlermeldung. **Ausgenommen sind Projekte, Vorlagen und Marken:** Alle drei bleiben ohne offenes Projekt **voll benutzbar** – der Reiter Projekte ist die Einstiegsstelle, und Vorlagen-Bibliothek (9.11.1.1) wie Marken-Bestand (9.15.1) sind **app-weit**, gehören also keinem Projekt. Wer eine Vorlage oder eine Marke bauen will, bevor er ein Projekt anlegt, darf das; ein Hinweis dort wäre eine erfundene Abhängigkeit.
+- **Die Shell rendert selbst keine Inhalte** – sie ordnet an, wechselt und hält die Warteschlangen-Leiste. Alles Fachliche liegt in den **sieben** Modulen (einschließlich `projekt-verwaltung`, 9.14.3, und `marken-editor`, 9.15.2).
 
 #### 9.14.3 Modul `projekt-verwaltung` [Renderer]
 
@@ -1994,6 +2001,13 @@ jetzt eine **`herkunft`** (9.11.2).
   das Fitnessworld24-Logo), `importiert` auf `marken-assets/<markeId>/`. Der Renderer bekommt
   importierte Dateien über ein **Lese-Protokoll** wie die Projektmedien (`media://`, 9.5.7) und **nie**
   über absolute Pfade. **Genau eine** Stelle löst auf – nicht jede Zonen-Sorte einzeln.
+- **Das Protokoll heißt `marken://<markeId>/<dateiname>` (v3.6, entschieden).** Gleiche Bauart und
+  gleiche Schutzregeln wie `media://` (9.5.7): **nur lesend**, kein `..`-Ausbruch, keine absoluten
+  Pfade im Renderer; die `markeId` steht an derselben Stelle, an der dort die `projektId` steht.
+  **Pfad-Autorität ist der `marken-store`**, nicht der `project-store` – deshalb ein **eigenes**
+  Protokoll und keine Erweiterung von `media://`: Sonst müsste eine Auflösungsstelle zwei
+  Ordnerlayouts kennen, die verschiedenen Modulen gehören. **Angemeldet wird es vor `app.ready`**,
+  wie `media://` (Registrierung als privilegiertes Schema).
 - **Import kopiert.** Die Quelldatei bleibt unberührt, die Kopie gehört der Marke – wie beim
   Medien-Import (9.4.5). Format-Whitelist: **`.woff2`** für Schriften, die Bild-Whitelist (9.4.2) für
   Logos. *Nur `.woff2`, weil die gebündelten Schriften dasselbe Format haben: ein Ladepfad statt zwei,
@@ -2045,7 +2059,7 @@ Identität und Rahmen sind stabil.
 | `marke_eingebaut` | Löschen der eingebauten Marke versucht |
 | `marke_nicht_gefunden` | unbekannte `markeId` |
 | `ungueltige_eingabe` | unbekannte Rolle, Ableitungskette länger als eine Stufe, Datei nicht in der Whitelist |
-| `marken_datei_fehlt` | importiertes Logo oder importierte Schrift fehlt – **beim Render**, vor dem ersten ffmpeg-Aufruf |
+| `marken_datei_fehlt` | importiertes Logo oder importierte Schrift fehlt – **beim Render**, vor dem ersten ffmpeg-Aufruf. **Gemeldet wird er vom `render-service`**: Er steht seit v3.6 als **achter** Code in dessen geschlossener Tabelle (9.2.3), samt der Form von `fehler.daten` |
 | `speicher_fehler` | `marken.json` nicht schreibbar (Platte voll, Rechte) |
 
 ---
@@ -2055,6 +2069,24 @@ Identität und Rahmen sind stabil.
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.6 (10.08.2026) – acht Befunde aus dem Abgleich des Agent-Kontextdokuments gegen v3.2–v3.5. Vier Nachzüge, vier vom Auftraggeber entschieden:**
+>
+> 1. **NACHZUG, und zugleich eine falsche Erledigt-Meldung im eigenen Verzeichnis: der Speicher `V2` fehlte in 7.2 und 7.3.** Der v3.4-Eintrag unten nennt „(Abschnitt 6, DFD, **7.2**)" als nachgezogen – **7.2 war es nicht**: Der Speicher-Katalog führte weiterhin `D3 | App-Konfig | aktives Projekt, Marke, UI-Voreinstellungen` – mit der **Marke** mitten in D3 –, die Datenfluss-Tabelle 7.3 in Zeile 4 und Zeile 11 ebenso, und Abschnitt 4 (Kategorie B) sprach von „Marken-/Design-Konfiguration" – **direkt unter einer DFD-Bildunterschrift, die das Gegenteil sagt** („Die Marke kommt seit v3.4 aus V2, nicht mehr aus D3"). Jetzt: `V2` als eigene Katalog-Zeile, `D3` ohne Marke, Datenfluss 11 von `V2` statt `D3` samt Kontext-Quelle, Kategorie B als „Marken-Bestand". *Lehre:* Eine Erledigt-Meldung im Änderungsverzeichnis ist selbst eine Tatsachenbehauptung und muss geprüft werden – sonst deckt sie die Lücke zu, die sie zu schließen behauptet.
+>
+> 2. **NACHZUG: 9.2.8 widersprach sich in sich selbst.** Ein Absatz sagte, der `render-service` hole `flaecheDunkel` über `config-store.leseMarke` (9.5.6) – sieben Zeilen weiter stand bereits richtig „aus der **Projekt-Standardmarke**". Jetzt einheitlich `marken-store.leseMarke(markeId)` aus `Project.standardMarkeId`.
+>
+> 3. **NACHZUG: 9.11.1 trug den zurückgenommenen Palettenzwang wörtlich zitierfähig weiter** – „Zugleich bleibt die Farbwahl auf die **Markenpalette** begrenzt (9.8.4): Es entsteht **kein** freier Farbwähler". 9.8.4 sagt seit v3.4 das Gegenteil und markiert den Satz ausdrücklich als zurückgenommen. *Warum das gefährlich war:* Regel D verlangt von jedem Issue **wörtliche** Zitate – wer diese Stelle zitierte, zitierte die abgeschaffte Welt und baute korrekt am Vertrag vorbei.
+>
+> 4. **NACHZUG: `Marke` fehlte in der UUID-Aufzählung (9.11.4)**, obwohl 9.11.2 `id: string // UUID` führt; und die Einordnung in Abschnitt 1 verwies noch auf **Anforderungsdokument v1.2**.
+>
+> 5. **ENTSCHIEDEN: `marken_datei_fehlt` wird der ACHTE Code in der geschlossenen Tabelle des `render-service`** (9.2.3), mit `medium_fehlt` als Vorbild – geprüft **vor** dem ersten ffmpeg-Aufruf, vom Reparatur-Modus abgedeckt. *Folge ohne die Entscheidung:* 9.15.3/9.15.5 verlangen den frühen Abbruch, aber die Tabelle in 9.2.3 ist als **geschlossen** deklariert – der Code wäre entweder ein Vertragsbruch gewesen oder still zu `unbekannter_fehler` degradiert. Mitentschieden ist die Form von `fehler.daten`: **`{ markeId, art, schriftRolle? }`**, **nicht** `elementId` – es fehlt eine Datei der **Marke**, und dieselbe Marke kann an beliebig vielen Elementen hängen; eine einzelne Element-ID benennte willkürlich eines davon und führte den Reparatur-Modus an die falsche Stelle.
+>
+> 6. **ENTSCHIEDEN: Der `marken-editor` bekommt einen FÜNFTEN Reiter [Marken]** (9.14.1/9.14.2). *Folge ohne die Entscheidung:* Die Modulübersicht führte ihn, 9.14.2 sprach weiter von „den **sechs** Modulen", und die Reiter-Skizze kannte ihn nicht – **es gab keinen Weg, ihn zu erreichen**, und FA-24 ist ein Muss. Es ist dieselbe Lückenklasse, die schon `projekt-verwaltung` in v3.1 getroffen hat. Begründung wie dort: app-weiter Bestand neben der app-weiten Vorlagen-Bibliothek, und er braucht die Live-Vorschau in lesbarer Größe. Mitentschieden: **sechs → sieben** Module; der Reiter Marken bleibt **ohne offenes Projekt benutzbar** (wie Vorlagen und Projekte); und die **Undo/Redo-Bedienelemente sind dort abgeschaltet** – der Marken-Bestand hat in v1 bewusst keine Historie (9.15.2), und an den Stapel des zuletzt aktiven Reiters gebunden widerriefe ein Klick im Marken-Reiter die letzte Änderung an einem **Projekt**.
+>
+> 7. **ENTSCHIEDEN: Der Sicherheitsabstand gehört der MARKE; die Konstante 96/54 px ist nur noch die Vorbelegung der eingebauten Marke** (9.11.4, 9.11.2). FA-24 nennt „Sicherheitsabstände" ausdrücklich als bearbeitbar und ist ein **Muss** – die Konstante hätte die Anforderung stillschweigend zurückgenommen. **Mitentschieden, weil es sonst sofort wieder offen wäre:** Vorlagen sind **app-weit** und kennen die Marke nicht, mit der sie später gezeichnet werden; eine für 54 px gebaute Vorlage ist bei einer Marke mit größerem Abstand **nicht mehr sicher**. Der `vorlagen-editor` zeichnet seine Sicherheitslinie deshalb gegen eine **benannte** Marke und **sagt dazu, gegen welche** – eine Linie ohne diese Angabe wäre eine Zusage, die die Vorlage nicht halten kann.
+>
+> 8. **ENTSCHIEDEN: Das Lese-Protokoll für `marken-assets/` heißt `marken://<markeId>/<dateiname>`** (9.15.3). Bis v3.5 stand dort nur „wie `media://`" – **ohne Namen**; der erste Agent, der ihn braucht, hätte ihn erfunden, und der zweite einen anderen. Gleiche Schutzregeln wie `media://` (nur lesend, kein `..`-Ausbruch, keine absoluten Pfade im Renderer), Anmeldung **vor `app.ready`**. *Warum kein Ausbau von `media://`:* Pfad-Autorität ist hier der **`marken-store`**, dort der `project-store` – eine gemeinsame Auflösungsstelle müsste zwei Ordnerlayouts kennen, die verschiedenen Modulen gehören.
 >
 > **Nachgezogen in v3.5 (10.08.2026), vom Auftraggeber entschieden – Widerspruch in 9.15, beim Schreiben von M8 dreifach unabhängig gemeldet:**
 >

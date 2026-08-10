@@ -6,7 +6,7 @@
 > Projekt beschädigen. Deshalb: jede lokale Entscheidung muss zu den hier festgelegten globalen
 > Invarianten passen. Im Zweifel lieber strikter an den Vertrag halten als „clever" abweichen.
 >
-> **Stand:** 10.08.2026 · Anforderungsdokument **v1.3** · Technisches Konzept **v3.5** · Phase: BAU (M0 läuft auf `bau/m0-01-grundgeruest`). Meilensteine M0–M7 sind als Issues angelegt; **M8 (Marken) ist geschrieben, aber NOCH NICHT angelegt** – seine Volltexte liegen in `docs/agents/m8/`.
+> **Stand:** 10.08.2026 · Anforderungsdokument **v1.3** · Technisches Konzept **v3.6** · Phase: BAU (M0 läuft auf `bau/m0-01-grundgeruest`). Meilensteine M0–M7 sind als Issues angelegt; **M8 (Marken) ist geschrieben, aber NOCH NICHT angelegt** – seine Volltexte liegen in `docs/agents/m8/`.
 
 ---
 
@@ -147,18 +147,19 @@ bedient, gilt **ausnahmslos** Folgendes. Diese Regeln sind der häufigste Ort f�
 ## 5. Modulschnitt (HLD)
 - **Renderer – der Rahmen:** `ipc-client` (`rufeAuf` + `abonniere`), `app-shell` (Rahmen,
   Reiter, Warteschlangen-Leiste, Undo-Stapel, Renderer-Bootstrap – s. 9l).
-- **Renderer – die SECHS fachlichen Oberflächen** (TK 9.14.2, seit v3.1 sechs statt fünf):
+- **Renderer – die SIEBEN fachlichen Oberflächen** (TK 9.14.2; v3.1 fünf → sechs, v3.6 sechs → sieben):
   `composer` [P3] · `action-editor` [P2] · `vorlagen-editor` (Zonen auf einer Arbeitskopie,
-  9.12/9i) · `preview-player` [P5] · `queue-panel` (Sicht auf die Queue) ·
-  **`projekt-verwaltung`** (NEU in v3.1: anlegen, öffnen, duplizieren, löschen, beschädigte
+  9.12/9i) · **`marken-editor`** (9.15.2, s. 9m) · `preview-player` [P5] · `queue-panel` (Sicht auf
+  die Queue) · **`projekt-verwaltung`** (NEU in v3.1: anlegen, öffnen, duplizieren, löschen, beschädigte
   kennzeichnen – FA-10). **Die Shell rendert selbst KEINE Inhalte**; alles Fachliche liegt in
-  diesen sechs. Vorher belegte 9.14.1 den Reiter „Projekte" mit Fachlichkeit, die keinem Modul
+  diesen sieben. Vorher belegte 9.14.1 den Reiter „Projekte" mit Fachlichkeit, die keinem Modul
   gehörte – sie wäre in die Shell gewandert, obwohl sie ein **Datenverlustrisiko** trägt.
-  **Dazu kommt mit v3.4 der `marken-editor`** (FA-24, 9.15.2, s. 9m). **OFFEN – nicht raten:** Ob
-  daraus „sieben Oberflächen" werden und **wo** er in der Shell sitzt, sagt das TK **nicht**: Die
-  Modulübersicht in TK Abschnitt 9 führt ihn, 9.14.2 spricht weiter von **sechs**, und die
-  Reiter-Skizze 9.14.1 kennt nur [Zusammenstellen] [Aktionen] [Vorlagen] [Projekte]. Wer eine
-  Marken-Oberfläche baut, **fragt vorher** statt einen Reiter zu erfinden.
+  **Dazu kommt mit v3.4 der `marken-editor`** (FA-24, 9.15.2, s. 9m) – damit sind es **SIEBEN**
+  fachliche Oberflächen. **Er sitzt in einem eigenen, FÜNFTEN Reiter [Marken]** (v3.6 entschieden,
+  9.14.1): [Zusammenstellen] [Aktionen] [Vorlagen] **[Marken]** [Projekte]. Wie Vorlagen und Projekte
+  bleibt er **ohne offenes Projekt voll benutzbar** (app-weiter Bestand). **Undo/Redo ist in diesem
+  Reiter ABGESCHALTET** – der Marken-Bestand hat in v1 bewusst keine Historie; an den Stapel des
+  zuletzt aktiven Reiters gebunden widerriefe ein Klick dort die letzte Änderung an einem **Projekt**.
 - **Renderer – geteilte Bausteine** (`src/renderer/**`, von mehreren Oberflächen benutzt):
   `template-canvas` (Segment/Band → PNG, **einzige Pixelquelle**, 9f) · die **gemeinsame
   Projekt-Sicht** und die **gemeinsame Vorlagen-Sicht** (Regel E1, s. 4b) · **`gemeinsam`**
@@ -219,10 +220,11 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   („1 % der Dauer" ließe bei einem 30-Minuten-Reel ein ganzes fehlendes Segment durch).
 - **Geschlossene Fehlercode-Tabelle (v2.8, TK 9.2.3):** `medium_fehlt`, `ungueltiges_element`,
   `ungueltige_eingabe`, `ffmpeg_fehler`, `kein_platz`, `speicher_fehler`, `unbekannter_fehler`.
-  **OFFEN seit v3.4 – nicht eigenmächtig ergänzen:** Der Render muss bei fehlender **importierter
-  Marken-Datei** vor dem ersten ffmpeg-Aufruf mit **`marken_datei_fehlt`** abbrechen (9.15.3/9.15.5),
-  dieser Code steht aber **nicht** in der als *geschlossen* geführten Tabelle 9.2.3. Ob 9.2.3 wächst
-  oder der Code beim `marken-store` bleibt, ist im TK **ungeklärt** – melden, nicht entscheiden.
+  **ACHTER Code seit v3.6: `marken_datei_fehlt`** – ein **importiertes** Logo oder eine **importierte**
+  Schrift einer beteiligten Marke fehlt (9.15.3). Geprüft **vor** dem ersten ffmpeg-Aufruf, genau wie
+  `medium_fehlt`, und vom Reparatur-Modus abgedeckt. **Seine `daten`-Form ist `{ markeId, art,
+  schriftRolle? }`, NICHT `elementId`**: Es fehlt eine Datei der **Marke**, und dieselbe Marke kann an
+  beliebig vielen Elementen hängen – eine einzelne Element-ID benennte willkürlich eines davon.
   **`abgebrochen` ist KEIN Fehlercode, sondern ein Status.** Die betroffene Element-ID reist als
   **`Auftrag.fehler.daten = { elementId }`** (9.1.1) – ohne diesen Weg erreichte sie die Oberfläche
   nie, obwohl der Reparatur-Modus (FA-19) die Stelle benennen muss.
@@ -590,10 +592,9 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   Das **Ersatz-Logo** nimmt `marke.farben.akzent`, **nie** `aktion.akzentfarbe` (9.10.9
   „Abgrenzung", 9.10.10) – ein Logo ist eine Konstante, sonst blinkte das „Logo" eines Partners in
   drei Farben, während drei seiner Aktionen rotieren.
-  **ACHTUNG BEIM ZITIEREN (Widerspruch im TK, gemeldet 10.08., noch nicht behoben):** In TK 9.11.1
-  steht weiterhin der Satz „Zugleich bleibt die Farbwahl auf die **Markenpalette** begrenzt (9.8.4):
-  Es entsteht **kein** freier Farbwähler". Dieser Satz ist **überholt** – 9.8.4 sagt heute das
-  Gegenteil. **Nicht zitieren, nicht danach bauen**, bis das TK bereinigt ist.
+  *(Der Satz „Zugleich bleibt die Farbwahl auf die Markenpalette begrenzt … kein freier Farbwähler"
+  stand bis v3.5 versehentlich weiter in 9.11.1 und war wörtlich zitierbar; **mit v3.6 ist er dort
+  ersetzt**.)*
 - **Fehlendes Motiv** → Platzhalter zeichnen (für action-editor 9.8.5); ein Segment mit Platzhalter darf
   **nie** in den finalen Render (Sperre im composer 9.7.5).
 - Kennt **keine** Dateipfade; entscheidet **nicht** über Dauer/Reihenfolge; **kein** Queue-Auftrag.
@@ -790,10 +791,14 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
 - **Marken sind ein app-weiter Bestand und BEARBEITBAR** (`marken-store`, 9.15.1; FA-23/FA-24, s. 9m).
   *Bis v3.3 stand hier: „Marke ist v1 gebündelt und read-only (`config-store.leseMarke`)." Beides ist
   mit v3.4 überholt* – die Marke gehört nicht mehr dem `config-store`, und der Editor ist ein **Muss**.
-- **OFFEN – Spannung im TK, nicht eigenmächtig auflösen:** `sicherheit` ist einerseits ein
-  **bearbeitbares Marken-Feld** (9.11.2, und 9.15 nennt ausdrücklich „Abstände"), andererseits führt
-  9.11.4 die 96/54 px als **Konstante in `contracts/types`** (s. 9k). Welche Ebene gewinnt, sagt das
-  TK nicht – melden.
+- **Der Sicherheitsabstand gehört der MARKE (v3.6 entschieden).** `Marke.sicherheit` ist bearbeitbar
+  (FA-24 nennt „Sicherheitsabstände" ausdrücklich); die **96/54 px in `contracts/types` sind nur noch
+  die Vorbelegung der eingebauten Marke** (s. 9k). **Wer zeichnet oder prüft, liest den Wert aus der
+  jeweils zuständigen Marke, NIE aus der Konstante.** **Folge, die beim Bauen zählt:** Vorlagen sind
+  **app-weit** und kennen die Marke nicht, mit der sie später gezeichnet werden – eine für 54 px
+  gebaute Vorlage ist bei einer Marke mit größerem Abstand **nicht mehr sicher**. Der
+  `vorlagen-editor` zeichnet seine Sicherheitslinie deshalb gegen eine **benannte** Marke und **sagt
+  dazu, gegen welche**.
 
 ## 9k. Datenshapes, IDs, Konstanten, Einzel-Instanz – TK 9.11.3/9.11.4, 9.5.4
 - `Project { id, name, erstelltAm, geaendertAm, schemaVersion, assets[], aktionen[], liste[],
@@ -824,7 +829,8 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   (Umbenennen darf keine Referenz brechen). IDs werden **nie wiederverwendet**.
   `dupliziereProjekt` vergibt eine **neue Projekt-ID**, behält aber die projektinternen IDs.
 - **Konstanten an EINER Stelle** (`contracts/types`): Standard-Anzeigedauer **10 s** · Bereich **10–45 s** ·
-  Sicherheitsabstand **96/54 px** · Format-Whitelist MP4/JPG/PNG/WebP.
+  Sicherheitsabstand **96/54 px – nur noch die VORBELEGUNG der eingebauten Marke** (v3.6; der geltende
+  Wert steht in `Marke.sicherheit` und ist bearbeitbar, s. 9j) · Format-Whitelist MP4/JPG/PNG/WebP.
 - **GENAU EINE App-Instanz** (9.5.4): Das D1-Lock ist prozessintern – zwei Instanzen = zwei Locks auf derselben
   `project.json` = **Datenkorruption**. Einzel-Instanz-Sperre beim Start, zweiter Start fokussiert das Fenster.
   **Portabel-Besonderheit:** Sperre muss an den **Datenort** (App-Ordner mit `projects/`) gebunden sein, nicht
@@ -916,8 +922,10 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   Programmordner – so wandern importierte Schriften bei portabler Auslieferung mit den Daten.
   **Lizenzen:** Für importierte Schriften trägt der **Nutzer** die Rechte (Risiko R-07) – die App
   brennt sie in ein Video, das weitergegeben und öffentlich gezeigt wird.
-  **OFFEN – nicht erfinden:** Das Protokoll für `marken-assets/` hat im TK **keinen Namen** (nur „wie
-  `media://`"). Wer ihn braucht, **fragt**.
+  **Das Protokoll heißt `marken://<markeId>/<dateiname>`** (v3.6 entschieden) – gleiche Bauart und
+  gleiche Schutzregeln wie `media://`, die `markeId` an der Stelle der `projektId`. **Angemeldet vor
+  `app.ready`.** Pfad-Autorität ist der **`marken-store`** (nicht der `project-store`) – deshalb ein
+  **eigenes** Protokoll und keine Erweiterung von `media://`.
 - **`marken-editor` (9.15.2):** Rollen fest / Werte frei (s. 9j) · **geerbt vs. eigen ausschließlich
   aus `herkunftJeFeld`**, nie aus einem Wertvergleich · **Kontrast-Warnung (FA-24): sichtbar warnen,
   die Wahl aber NICHT verhindern** – ein Schwellenwert machte genau die Partner-Hausfarben unbrauchbar,
@@ -952,7 +960,7 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   `design/design-tokens.json` sind aussortiert und NICHT zu verwenden).
 
 ## 11. Status & offene Verträge
-- **Aktuelle Fassungen: Anforderungsdokument v1.3 / TK v3.5 (10.08.2026).** Nachträge seit v2.2:
+- **Aktuelle Fassungen: Anforderungsdokument v1.3 / TK v3.6 (10.08.2026).** Nachträge seit v2.2:
   v2.4 (`pendingDeletions` sind keine Aufträge, `listeAusgaben`), v2.5 (`Auftrag.ergebnis`,
   `fehler.daten`, ffprobe wird mitgeliefert), v2.7 (`setzeEinblendung`, `setzeElementReferenz` –
   s. 9b), **v2.8 (neun Entscheidungen aus dem M6-Zuschnitt: `.part`-Staging im Ausgabeordner –
@@ -977,6 +985,11 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   · Ableitung mit EINER Auflösungsstelle · „Rahmen stabil, Inhalt wechselt" · Akzentfarbe wird freier
   Farbwert · Ersatz-Logo · Import-Riegel mit `herkunft` · eingebaute Marke unlöschbar aber bearbeitbar
   · Löschen blockiert statt zu kaskadieren · Migration aus `config.json` – alle s. 9m, dazu 9j/9f/9h)**,
+  **v3.6 (acht Befunde aus dem Abgleich DIESES Dokuments gegen v3.2–v3.5; vier Nachzüge – V2 fehlte in
+  7.2/7.3, obwohl der v3.4-Eintrag es als erledigt meldete · 9.2.8 widersprach sich selbst · der
+  zurückgenommene Palettenzwang stand zitierfähig weiter in 9.11.1 · `Marke` fehlte in der UUID-Liste –
+  und vier Entscheidungen: `marken_datei_fehlt` als achter Code in 9.2.3 – s. 7 · fünfter Reiter
+  [Marken] – s. 5 · Sicherheitsabstand gehört der Marke – s. 9j/9k · Protokoll `marken://` – s. 9m)**,
   **v3.5 (Herkunfts-Stempel `herkunftJeFeld` an der aufgelösten Marke, damit der Editor „geerbt vs.
   eigen" zeigen kann, ohne dass es eine zweite, unaufgelöste Leseoperation gibt; Wertvergleich als
   Ersatz ausdrücklich verboten – s. 9j/9m)**.
