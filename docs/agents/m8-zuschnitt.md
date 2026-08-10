@@ -228,6 +228,7 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
 |---|---|---|
 | **#9** (S9) | `src/main/media-protokoll.ts` | `registriereMediaProtokollSchema()` **entfällt**, ersetzt durch `export const MEDIA_SCHEMA: CustomScheme`. Der Handler-Stub bleibt unverändert |
 | **#3** | `src/main/index.ts` (CSP) | `marken:` in **`img-src`** (Logos über `<img>`) und **`font-src`** (importierte Schriften). **Nicht** in `media-src` (aus Marken kommen keine Videos), **nicht** in `connect-src` – aus demselben Grund, aus dem `media:` dort fehlt (s. u.). Ohne Nachzug lädt der Renderer kein importiertes Logo und keine importierte Schrift, und zwar **still** |
+| **#3** | `src/main/index.ts` (Zählung) | Die Anmeldungen wachsen von **dreizehn auf fünfzehn** – `verdrahteMarkenIPC()` als **elfte** ohne Fenster (ans Ende von Schritt 5, hinter `meldeExportHandlerAn()`), `verdrahteMarkenSpeicherstatusIPC(fenster)` als **vierte** mit Fenster (Schritt 7, direkt hinter `verdrahteSpeicherstatusIPC`). `#3` nennt die Zahl an mehreren Stellen im Text |
 
 > **Die CSP ist bereits GEBAUT** (`src/main/index.ts`, aus `#3`) und lautet heute
 > `img-src 'self' data: blob: media:` · `media-src 'self' blob: media:` · `font-src 'self' data:`.
