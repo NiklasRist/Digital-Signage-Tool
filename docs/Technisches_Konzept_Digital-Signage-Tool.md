@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.3 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.8 (HLD vollständig, geprüft)
+**Version:** 3.9 (HLD vollständig, geprüft)
 **Datum:** 10.08.2026
 **Status:** In Planung
 
@@ -1333,7 +1333,7 @@ zeichneSegment(aktion, vorlage, marke) → SegmentBild        // Canvas 1920×10
 
 #### 9.10.4 Marken-Schriften werden mitgeliefert
 
-**Playfair Display ist auf Windows/macOS nicht vorinstalliert.** Die Marken-Schriften werden daher als **Dateien mit der App gebündelt** und explizit registriert/geladen (`FontFace`), bevor gezeichnet wird. **Seit v3.4 gilt dasselbe für importierte Schriften** (FA-24): Sie werden **je Marke** registriert und geladen, **bevor** die erste Zone gezeichnet wird, und der Nachweis unten gilt für sie mit (9.15.3). Fehlt eine importierte Datei zur Renderzeit, bricht der Render **früh** ab (`marken_datei_fehlt`) – ein Rückfall auf die gebündelte Schrift wäre genau der stille Markenbruch, den dieser Abschnitt verhindert. Andernfalls rendert der Canvas still auf eine Fallback-Schrift → Vorschau ≠ Endvideo **und** Markenbruch. *(Konsequenz für die Verpackung: die Font-Dateien gehören ins Bundle.)*
+**Playfair Display ist auf Windows/macOS nicht vorinstalliert.** Die Marken-Schriften werden daher als **Dateien mit der App gebündelt** und explizit registriert/geladen (`FontFace`), bevor gezeichnet wird. **Seit v3.4 gilt dasselbe für importierte Schriften** (FA-24): Sie werden **je Marke** registriert und geladen, **bevor** die erste Zone gezeichnet wird, und der Nachweis unten gilt für sie mit (9.15.3). Fehlt eine importierte Datei, **entsteht gar kein Segment-PNG** – die Prüfung sitzt im **Renderer, vor dem Zeichnen** (9.15.3); ein Rückfall auf die gebündelte Schrift wäre genau der stille Markenbruch, den dieser Abschnitt verhindert. *(Bis v3.8 stand hier „bricht der Render früh ab (`marken_datei_fehlt`)" – der `render-service` sieht bei Variante A nie eine Marken-Datei, s. 9.2.3.)* Andernfalls rendert der Canvas still auf eine Fallback-Schrift → Vorschau ≠ Endvideo **und** Markenbruch. *(Konsequenz für die Verpackung: die Font-Dateien gehören ins Bundle.)*
 
 #### 9.10.5 Fester Markenrahmen & Sicherheitsabstand
 
@@ -2083,6 +2083,10 @@ Identität und Rahmen sind stabil.
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.9 (10.08.2026), im Prüflauf über M8 gefunden:**
+>
+> 1. **9.10.4 trug den mit v3.7 zurückgenommenen Satz weiter.** Dort stand bis hierher „Fehlt eine importierte Datei zur Renderzeit, bricht der Render **früh** ab (`marken_datei_fehlt`)" – genau die Formulierung, die v3.7 in 9.15.3 als falsch verortet zurückgenommen hat. *Warum das zählt:* Ein Issue (M8-17) hat den Satz **buchstäblich korrekt** zitiert und damit die abgeschaffte Zuständigkeit in einen verbindlichen Block getragen. Die Quelle widersprach sich selbst – und Regel A macht den bauenden Agenten von genau diesem Text abhängig; er hat keine zweite. *Fehlerklasse:* Eine Änderung als vollständig gemeldet, ohne **alle** Fundstellen zu prüfen. Das ist dieselbe, die v3.6 Punkt 1 dem v3.4-Nachzug zu 7.2 vorwirft und die v3.7 Punkt 1 an sich selbst festgestellt hat – **dreimal derselbe Fehler an einem Tag.** Die Gegenmaßnahme ist keine Sorgfaltsermahnung, sondern eine **Volltextsuche über die geänderte Aussage**, bevor eine Fassung als nachgezogen gilt.
 >
 > **Nachgezogen in v3.8 (10.08.2026), vom Auftraggeber entschieden:**
 >
