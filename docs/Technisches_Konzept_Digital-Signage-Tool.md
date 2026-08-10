@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.3 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.4 (HLD vollständig, geprüft)
+**Version:** 3.5 (HLD vollständig, geprüft)
 **Datum:** 10.08.2026
 **Status:** In Planung
 
@@ -1546,10 +1546,22 @@ Marke {
   radien:      { pille: 40, karte: 10, klein: 2 }
   schatten:    { versatzY: 4, weichzeichnen: 8, farbe: "#0000001A" }
   slogan:      { text: string, aktiv: boolean }
+  herkunftJeFeld: MarkenHerkunftJeFeld      // NUR Metadatum: welcher Zweig je Feld (s. unten)
 }
 Schrift { familie, gewicht, datei, herkunft }
 Herkunft = "gebuendelt" | "importiert"      // gebuendelt: Bundle-Asset (9.10.4);
                                             // importiert: marken-assets/<id>/ (9.15.3)
+
+MarkenHerkunftJeFeld {
+  farben:      { <FarbRolle>:   "eigen" | "geerbt" }
+  schriften:   { <SchriftRolle>: "eigen" | "geerbt" }
+  logo:        "eigen" | "geerbt" | "keins"   // keins = weder eigen noch geerbt gesetzt
+                                              //         -> Ersatz-Logo greift (9.10.10)
+  sicherheit:  "eigen" | "geerbt"
+  radien:      "eigen" | "geerbt"
+  schatten:    "eigen" | "geerbt"
+  slogan:      "eigen" | "geerbt"
+}
 ```
 
 **Ableitung – die Auflösungsregel (bindend):** Bei `parent ≠ null` sind `farben` und `schriften`
@@ -1567,8 +1579,20 @@ statt über eine Liste – beides ohne fachlichen Gewinn, denn zwei Stufen decke
 selbst. Das ist dieselbe Begründung wie bei den Farb-Rollen (9.10.9): **neunzehn** Aufrufer holen die
 Marke (9.15.1) – neunzehn eigene Vererbungslogiken liefen unweigerlich auseinander.
 
-```
-```
+**Der Stempel `herkunftJeFeld` – Metadatum, nie Wertquelle (bindend).** Beim Auflösen hält der
+`marken-store` fest, welchen Zweig er **je Feld** genommen hat. Der Stempel trägt **keine Werte**,
+sondern ausschließlich die Angabe `"eigen"` oder `"geerbt"`; die Werte selbst stehen wie bisher
+vollständig aufgelöst in der Marke. Damit bleibt die Auflösung an genau einer Stelle: Es gibt **keine**
+zweite Leseoperation und **keine** unaufgelöste Fassung, die ein Aufrufer versehentlich greifen könnte.
+Bei `parent === null` ist der Stempel **durchgehend `"eigen"`** – er ist **nie** leer oder undefiniert,
+damit kein Aufrufer einen Sonderfall behandeln muss. `logo` trägt zusätzlich `"keins"`, und zwar genau
+dann, wenn die aufgelöste `logo` `null` ist (weder eigen noch geerbt gesetzt) – dann greift das
+Ersatz-Logo (9.10.10).
+
+*Wozu er da ist:* Der `marken-editor` muss bei einer abgeleiteten Marke zeigen, **was geerbt und was
+eigen ist** (9.15.2) – aus den aufgelösten Werten allein ist das nicht rekonstruierbar, denn ein
+geerbter und ein selbst gesetzter Wert sehen danach identisch aus. **Er ist der einzige Leser.** Für
+die übrigen achtzehn Aufrufer (9.15.4) ändert sich nichts; sie lesen den Stempel nicht.
 
 **Farb-Rollen (v1, fest):**
 
@@ -1877,8 +1901,8 @@ und hängt nicht am geladenen Projekt.
 
 | Operation | Eingang → Ausgang |
 |---|---|
-| `listeMarken` | – → `Ergebnis<Marke[]>` – **aufgelöst**, einschließlich abgeleiteter |
-| `leseMarke` | `markeId` → `Ergebnis<Marke>` – **aufgelöst** (Vererbung angewandt, 9.11.2) |
+| `listeMarken` | – → `Ergebnis<Marke[]>` – **aufgelöst**, einschließlich abgeleiteter, je samt `herkunftJeFeld` |
+| `leseMarke` | `markeId` → `Ergebnis<Marke>` – **aufgelöst** (Vererbung angewandt, 9.11.2), samt `herkunftJeFeld` |
 | `erstelleMarke` | `name`, `parentId?` → `Ergebnis<Marke>` (`parentId` gesetzt → abgeleitet) |
 | `bearbeiteMarke` | `markeId`, `teilwerte` → `Ergebnis<Marke>` – **Auto-Speichern** während des Bearbeitens |
 | `importiereMarkenDatei` | `markeId`, `art: "logo"\|"schrift"`, `schriftRolle?`, `quellPfad` → `Ergebnis<Marke>` (kopiert nach `marken-assets/<markeId>/`, 9.15.3) |
@@ -1892,6 +1916,17 @@ und hängt nicht am geladenen Projekt.
   **fertige** Marken; kein Aufrufer sieht je eine Teilmenge. **Neunzehn** Issues holen die Marke
   (9.15.4); neunzehn eigene Vererbungslogiken liefen unweigerlich auseinander. Dieselbe Begründung wie
   bei den Farb-Rollen: „**Es gibt genau eine Auflösungsstelle.**" (9.10.9)
+- **Jede Marke, die dieses Modul herausgibt, trägt ihren Herkunfts-Stempel** (`herkunftJeFeld`,
+  9.11.2) – **auch** die Rückgaben von `erstelleMarke`, `bearbeiteMarke`, `importiereMarkenDatei` und
+  `entferneMarkenDatei`. *Warum am Objekt und nicht als eigene Operation:* Alle vier Schreib-
+  operationen **verändern** die Herkunft. Käme der Stempel getrennt, müsste der Editor nach jeder
+  Änderung ein zweites Mal nachfragen – vergäße er es einmal, zeigte er „geerbt" an einem Feld, das
+  gerade eigen geworden ist. Am Objekt hängend kann er nicht veralten.
+- **Der Stempel ist Metadatum, nie Wertquelle.** Er trägt **keine** Marken-Werte, nur die Zweig-
+  Angabe je Feld; die Werte stehen aufgelöst in der Marke selbst. **Einziger Leser ist der
+  `marken-editor`** (9.15.2). *Warum kein zweiter, „unaufgelöster" Lesepfad:* Er gäbe genau die
+  Teilmenge heraus, die der Punkt oben verbietet, und wäre nur durch die Disziplin von neunzehn
+  Aufrufern davor geschützt, versehentlich statt `leseMarke` benutzt zu werden.
 - **Löschen blockiert bei Referenz**, es kaskadiert **nicht** – wie bei den Vorlagen (9.12.1). Eine
   Marke steckt in Aktionen **und** möglicherweise in abgeleiteten Looks; eine Kaskade änderte das
   Aussehen vieler Aktionen auf einen Schlag. Geprüft wird über **alle** Projekte, nicht nur das
@@ -1927,6 +1962,14 @@ späteren Segment entspricht (9.10.1).
 - **Bei einer abgeleiteten Marke ist sichtbar, was geerbt und was eigen ist.** Ein Wert, den der Nutzer
   nicht setzt, bleibt geerbt und folgt künftigen Änderungen des Parents; ein gesetzter Wert löst sich
   davon. Ohne diese Anzeige wüsste niemand, warum sich eine Farbe „von selbst" geändert hat.
+  **Woher der Editor es weiß:** aus `Marke.herkunftJeFeld` (9.11.2) – dem Stempel, den der
+  `marken-store` beim Auflösen setzt und jeder Marke mitgibt. Der Editor rechnet **nichts** aus.
+- **Ein Feld-für-Feld-Vergleich zweier Marken als Ersatz für den Stempel ist verboten.** Naheliegend
+  wäre, die abgeleitete Marke gegen ihren Parent zu halten und „gleich" als „geerbt" zu lesen. Das ist
+  **strukturell falsch**: Setzt der Nutzer bewusst denselben Wert, den der Parent führt, gilt das Feld
+  nach diesem Vergleich als „geerbt" – obwohl es sich bei einer späteren Änderung des Parents **nicht**
+  mitändert. Die Anzeige stimmte im Moment des Hinsehens und wäre beim nächsten Parent-Update falsch;
+  genau die Frage, die diese Invariante beantworten soll, beantwortete sie dann verkehrt.
 - **Kontrast-Warnung (FA-24):** Der Editor berechnet den Kontrast zwischen Akzentfläche und dem darauf
   liegenden Text und **warnt sichtbar**, ohne die Wahl zu verhindern. *Begründung, warum nicht sperren:*
   Die Akzentfarbe ist seit FA-24 ein freier Wert, damit Partner-Hausfarben darstellbar sind – ein
@@ -2012,6 +2055,14 @@ Identität und Rahmen sind stabil.
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.5 (10.08.2026), vom Auftraggeber entschieden – Widerspruch in 9.15, beim Schreiben von M8 dreifach unabhängig gemeldet:**
+>
+> 1. **Die aufgelöste Marke trägt einen Herkunfts-Stempel je Feld** – neues Feld **`herkunftJeFeld`** und neuer Typ **`MarkenHerkunftJeFeld`** in 9.11.2, mitgezogen die Operationstabelle und die Invarianten in 9.15.1 sowie die Editor-Invariante in 9.15.2. *Anlass:* 9.15.1 verlangte „`leseMarke` und `listeMarken` liefern **fertige** Marken; kein Aufrufer sieht je eine Teilmenge", 9.15.2 zugleich „**Bei einer abgeleiteten Marke ist sichtbar, was geerbt und was eigen ist.**" **Beides zusammen war nicht erfüllbar:** Die Auflösung löscht genau die Angabe, die der Editor anzeigen muss – ein geerbter und ein selbst gesetzter Wert sehen danach identisch aus –, und **keine** der acht Operationen lieferte sie. Der `marken-editor` konnte seinen eigenen Vertrag nicht erfüllen; die Sichtbarkeit ist Teil von **FA-24** (Muss). *Wie der Fehler entstand:* Die Auflösungsregel sollte neunzehn Aufrufer davor schützen, je eine eigene Vererbungslogik zu bauen – das war und bleibt richtig. Dabei wurde der **eine** Aufrufer übersehen, der das Gegenteil braucht.
+>
+> 2. **Verworfen wurde eine zweite Leseoperation für den unaufgelösten Eintrag.** Sie wäre der naheliegende Weg gewesen, gäbe aber genau die **Teilmenge** heraus, die 9.15.1 verbietet, und wäre nur durch die Disziplin von neunzehn Aufrufern davor geschützt, versehentlich statt `leseMarke` benutzt zu werden – dieselbe Klasse wie die zwei `medienUrl`-Fassungen, die in M7 zusammengeführt werden mussten. Der Stempel dagegen lässt die Auflösung an **genau einer** Stelle und fügt ihr nur ein Metadatum hinzu: **keine** Werte, nur die Zweig-Angabe je Feld. **Ebenfalls verworfen:** eine getrennte Operation, die nur den Stempel liefert. Sie wäre sauberer getrennt, aber `bearbeiteMarke`, `importiereMarkenDatei` und `entferneMarkenDatei` **verändern die Herkunft** und geben nur die Marke zurück – der Editor müsste nach jeder Änderung ein zweites Mal nachfragen und zeigte, sobald er es einmal vergisst, „geerbt" an einem Feld, das gerade eigen geworden ist. Am Objekt hängend kann der Stempel nicht veralten. *Preis, bewusst in Kauf genommen:* Der Typ `Marke` wird für alle neunzehn Aufrufer größer, obwohl achtzehn davon den Stempel nie lesen; abgesichert durch die Invariante „Metadatum, nie Wertquelle, einziger Leser ist der `marken-editor`".
+>
+> 3. **Mitentschieden: Ein Feld-für-Feld-Vergleich zweier Marken ist als Ersatz ausdrücklich verboten** (9.15.2). *Folge ohne das Verbot:* Der Vergleich liegt nahe und stimmt meistens zufällig – aber setzt der Nutzer bewusst denselben Wert, den der Parent führt, gilt das Feld als „geerbt", obwohl es sich bei einer späteren Änderung des Parents **nicht** mitändert. Die Anzeige wäre im Moment des Hinsehens richtig und beim nächsten Parent-Update falsch. Mitentschieden außerdem: Bei `parent === null` ist der Stempel **durchgehend `"eigen"`** und nie leer, damit kein Aufrufer einen Sonderfall behandeln muss.
 >
 > **Nachgezogen in v3.4 (10.08.2026), vom Auftraggeber entschieden – Anforderungsänderung „Mehrere Marken":**
 >
