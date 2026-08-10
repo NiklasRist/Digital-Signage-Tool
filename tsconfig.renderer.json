@@ -9,6 +9,21 @@
 //
 // Diesen Schalter nicht anfassen und einen Verstoss nicht per "skipLibCheck" wegdruecken
 // (Issue #1, STOPP-Block) - stattdessen melden.
+//
+// ZUR EINORDNUNG, weil "skipLibCheck" seit #3 in tsconfig.base.json steht und von hier
+// GEERBT wird (#267): Das ist kein Bruch der Regel darueber. Der Schalter unterdrueckt
+// ausschliesslich Fehler INNERHALB fremder .d.ts-Dateien - noetig, weil electron.d.ts
+// auch Renderer-Dinge beschreibt (<webview>, MessagePort, VideoFrame) und dafuer
+// DOM-Typen braucht, die der Main bewusst nicht hat. Ohne ihn ist der Main-Typecheck rot
+// wegen fremden Codes. Was die Regel oben verbietet, bleibt verboten: einen Verstoss im
+// EIGENEN Code damit wegzudruecken.
+//
+// Der Unterschied ist nicht Auslegungssache, sondern gemessen. Belegt wird er von
+// tests/integration/prozess-trennung.spec.ts (#267): "document" im Main scheitert
+// weiterhin mit TS2584, "node:fs" hier mit TS2307, und ein erlaubter electron-Import im
+// Main laeuft durch - alles MIT aktivem skipLibCheck. Nimmt man "types": [] oben heraus,
+// wird dieser Test rot. Der Beleg ist damit wiederholbar und nicht mehr nur eine
+// Behauptung in einer Commit-Nachricht.
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
