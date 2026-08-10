@@ -6,12 +6,14 @@
 > Projekt beschädigen. Deshalb: jede lokale Entscheidung muss zu den hier festgelegten globalen
 > Invarianten passen. Im Zweifel lieber strikter an den Vertrag halten als „clever" abweichen.
 >
-> **Stand:** 05.08.2026 · Anforderungsdokument **v1.2** · Technisches Konzept **v3.1** · Phase: PLANUNG (Task-Überführung ABGESCHLOSSEN – alle Meilensteine M0–M7 sind als Issues angelegt; weiterhin kein Code).
+> **Stand:** 10.08.2026 · Anforderungsdokument **v1.3** · Technisches Konzept **v3.5** · Phase: BAU (M0 läuft auf `bau/m0-01-grundgeruest`). Meilensteine M0–M7 sind als Issues angelegt; **M8 (Marken) ist geschrieben, aber NOCH NICHT angelegt** – seine Volltexte liegen in `docs/agents/m8/`.
 
 ---
 
 ## 1. Projekt in Kürze
 - Tool für das Fitnessstudio Fitnessworld24 (Baller Gruppe). Erste Stufe: EIN Studio, EIN Bildschirm.
+  **Seit AD v1.3 wird im Studio auch für Dritte geworben** (Partner-Marken) und dieselbe Marke soll in
+  Saison-Anmutungen erscheinen – daher der Marken-Bestand (FA-23/FA-24, s. 9m).
 - Hardware: nur ein Samsung Consumer-TV (UE85AU7170, 85", Tizen) + USB-Stick. Kein Mediaplayer.
 - Lösung: Ein Desktop-Tool (Laptop) erzeugt je Lauf EINE durchgehende, frei benannte MP4; der TV spielt sie vom USB als
   manuell gestartete Endlosschleife. Der TV ist nur „dummer" Player.
@@ -42,7 +44,9 @@ Verpackung `electron-builder` Portable (Win 10/11 + macOS 13+, kein Installer, o
 - DFD-Prozesse: P1 Medienverwaltung, P2 Inhaltsverwaltung, P3 Zusammenstellung, P4 Finaler Render +
   Export, P5 Vorschau, **P6 Auftragsverwaltung** (gibt P1/P4 seriell frei), **P7 Vorlagenverwaltung**. Speicher: D1 Projekt-Store,
   D2 Medienordner, D3 App-Konfig, T1 flüchtiger Render-Arbeitsbereich, **Q1–Q4** (Speicher der
-  Auftragsverwaltung, s. Abschnitt 8), **V1** Vorlagen-Bibliothek (P7, s. 9i).
+  Auftragsverwaltung, s. Abschnitt 8), **V1** Vorlagen-Bibliothek (P7, s. 9i), **V2 Marken-Bestand**
+  (app-weit, s. 9m). **Die Marke kommt seit v3.4 aus V2, nicht mehr aus D3** – `config.json` führt nur
+  noch aktives Projekt, Export-Ziel und UI-Voreinstellungen.
 - Zwei Render-Arten, gleicher Eingang (Liste + Medien): **P5 Vorschau** (UI-Simulation, OHNE ffmpeg,
   → Bildschirm) und **P4 finaler Render** (ffmpeg → benannte Ausgabe-MP4 → USB). Vorschau-Segmente nutzen
   exakt dasselbe Canvas-Bild wie der finale Render (**pixelgleich**).
@@ -102,6 +106,11 @@ bedient, gilt **ausnahmslos** Folgendes. Diese Regeln sind der häufigste Ort f�
   **lautlos** verlorengegangen. **Zwei getrennte Kanäle**, weil die Oberfläche „dein Projekt ist
   nicht gesichert" von „deine Vorlage ist nicht gesichert" unterscheiden muss: Die
   Vorlagen-Bibliothek ist **app-weit** und hängt nicht am geladenen Projekt.
+  **DRITTER Statuskanal seit v3.4: `marken:autoSpeichernStatus`** (9.15.1) – aus demselben Grund
+  eigenständig: Der Marken-Bestand ist **app-weit** und hängt nicht am geladenen Projekt, also muss
+  die Oberfläche „deine **Marke** ist nicht gesichert" von den beiden anderen unterscheiden können.
+  Kanalfamilie der Marken-Operationen: **`marken:<operation>`**; ihre Fehlercodes stehen in **9.15.5**
+  (s. 9m) – die Aufzählung der fachlichen Code-Quellen oben ist damit 9.4.9, 9.6.4, 9.12.1 **und 9.15.5**.
 - **GENAU EIN FENSTER, und jedes Ereignis geht dorthin (v3.0, 9.1.1 Punkt 10).** Kein
   festgehaltenes Handle in einem Modul, keine Rundsendung an alle Fenster: Der **Bootstrap** erzeugt
   das eine `BrowserWindow` und **übergibt es als Parameter** an jede Verdrahtung, die einen Sender
@@ -145,15 +154,27 @@ bedient, gilt **ausnahmslos** Folgendes. Diese Regeln sind der häufigste Ort f�
   kennzeichnen – FA-10). **Die Shell rendert selbst KEINE Inhalte**; alles Fachliche liegt in
   diesen sechs. Vorher belegte 9.14.1 den Reiter „Projekte" mit Fachlichkeit, die keinem Modul
   gehörte – sie wäre in die Shell gewandert, obwohl sie ein **Datenverlustrisiko** trägt.
+  **Dazu kommt mit v3.4 der `marken-editor`** (FA-24, 9.15.2, s. 9m). **OFFEN – nicht raten:** Ob
+  daraus „sieben Oberflächen" werden und **wo** er in der Shell sitzt, sagt das TK **nicht**: Die
+  Modulübersicht in TK Abschnitt 9 führt ihn, 9.14.2 spricht weiter von **sechs**, und die
+  Reiter-Skizze 9.14.1 kennt nur [Zusammenstellen] [Aktionen] [Vorlagen] [Projekte]. Wer eine
+  Marken-Oberfläche baut, **fragt vorher** statt einen Reiter zu erfinden.
 - **Renderer – geteilte Bausteine** (`src/renderer/**`, von mehreren Oberflächen benutzt):
   `template-canvas` (Segment/Band → PNG, **einzige Pixelquelle**, 9f) · die **gemeinsame
-  Projekt-Sicht** und die **gemeinsame Vorlagen-Sicht** (Regel E1, s. 4b) · `renderer-gemeinsam`
-  (**Video-Handles vor dem Löschen freigeben** – sonst hält ein `<video>`-Element unter Windows
-  ein Handle auf eine Datei, die der `media-service` gerade entfernen soll: `EBUSY`).
+  Projekt-Sicht** und die **gemeinsame Vorlagen-Sicht** (Regel E1, s. 4b) · **`gemeinsam`**
+  (Ordner `src/renderer/gemeinsam/`, v3.3): **kein Modul, sondern ein Ort ohne Eigentümer, aus dem
+  JEDES Renderer-Modul direkt importieren darf** – er trägt, was mehrere Module benutzen und keines
+  besitzt. Heute: das Register der offenen `<video>`-Handles, das **vor dem Löschen eines Mediums**
+  freigegeben werden muss – sonst hält ein `<video>`-Element unter Windows ein Handle auf eine Datei,
+  die der `media-service` gerade entfernen soll: `EBUSY`. *Warum nicht `src/shared/`:* Dort läge
+  **Modul-Zustand**, und der Main-Prozess bekäme beim Import eine **zweite, eigene** Instanz davon –
+  ein Register, das nie etwas enthält und niemandem auffällt.
 - **Main:** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher
   Q1–Q4), `media-service` [P1], `project-store` [D1] (besitzt DAS EINE D1-Schreib-Lock),
   `config-store` [D3], `vorlagen-store` (`vorlagen.json` app-weit, eigene Serialisierung, 9.12/9i),
-  `render-service` [P4], `export-service`, `ffmpeg-adapter` (getesteter `buildReel`-Kern).
+  **`marken-store` [V2]** (`marken.json` app-weit, eigene Serialisierung, **löst die Marken-Vererbung
+  als einzige Stelle auf**, 9.15.1/9m), `render-service` [P4], `export-service`, `ffmpeg-adapter`
+  (getesteter `buildReel`-Kern).
 - **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest,
   Auftrag …). **Neu mit M7:** **`berechneBandGeometrie(höhe) → BandGeometrie`** (die **reine**
   Rechnung, s. 9h) · **`ProjektMeta`** und **`AusgabeDatei`** (die Oberfläche braucht beide, der
@@ -165,7 +186,9 @@ bedient, gilt **ausnahmslos** Folgendes. Diese Regeln sind der häufigste Ort f�
 1. Medien werden ins Projekt **kopiert** (nicht referenziert). 2. Aktionen sind **referenzierbare**
 Datensätze (Bibliothek je Projekt, Mehrfachnutzung erlaubt). 3. Medien liegen **pro Projekt**.
 4. Segment-PNGs werden **immer neu** gerendert (flüchtig, kein Cache v1). 5. Vorlagen **datengetrieben**
-ab v1 (zwei eingebaute: „Vollbild", „Split").
+ab v1 (zwei eingebaute: „Vollbild", „Split"). 6. **Marken sind APP-WEIT** (wie Vorlagen), nicht
+projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Logos und Schriften in
+`marken-assets/<markeId>/` – beides im **Datenort**, nicht im Programmordner (FA-23, 9.15, s. 9m).
 
 ## 7. Render-Pfad (render-service, P4) – TK 9.2
 - IPC-Granularität = **Variante A**: der Renderer rendert die Segment-PNGs (`template-canvas`,
@@ -196,11 +219,17 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   („1 % der Dauer" ließe bei einem 30-Minuten-Reel ein ganzes fehlendes Segment durch).
 - **Geschlossene Fehlercode-Tabelle (v2.8, TK 9.2.3):** `medium_fehlt`, `ungueltiges_element`,
   `ungueltige_eingabe`, `ffmpeg_fehler`, `kein_platz`, `speicher_fehler`, `unbekannter_fehler`.
+  **OFFEN seit v3.4 – nicht eigenmächtig ergänzen:** Der Render muss bei fehlender **importierter
+  Marken-Datei** vor dem ersten ffmpeg-Aufruf mit **`marken_datei_fehlt`** abbrechen (9.15.3/9.15.5),
+  dieser Code steht aber **nicht** in der als *geschlossen* geführten Tabelle 9.2.3. Ob 9.2.3 wächst
+  oder der Code beim `marken-store` bleibt, ist im TK **ungeklärt** – melden, nicht entscheiden.
   **`abgebrochen` ist KEIN Fehlercode, sondern ein Status.** Die betroffene Element-ID reist als
   **`Auftrag.fehler.daten = { elementId }`** (9.1.1) – ohne diesen Weg erreichte sie die Oberfläche
   nie, obwohl der Reparatur-Modus (FA-19) die Stelle benennen muss.
 - **`historieEintrag` gibt es NICHT mehr (v2.8, ersatzlos gestrichen).** Das `RenderResult` liefert
-  Pfad, Größe und Gesamtdauer; den **Q3-Eintrag baut die Auftragsverwaltung selbst** (Abschnitt 8).
+  **vier** Nutzdaten: **Pfad, `ausgabeName`, Größe und Gesamtdauer** (`ausgabeName` seit v3.2, 9.2.3 –
+  der **tatsächlich verwendete** Name **ohne** Endung, derselbe Wert, der im `RenderRequest` stand);
+  den **Q3-Eintrag baut die Auftragsverwaltung selbst** (Abschnitt 8).
   Zwei Quellen für dieselbe Information laufen auseinander – und **Q3 ist dauerhaft**. Q3
   protokolliert auch **Fehlschlag und Abbruch**; dort bleibt nur `ausgabe` `null`.
 - **`render:fortschritt` ist ein anzumeldender Kanal (v2.8, TK 9.2.7).** Nutzlast war seit je
@@ -248,8 +277,13 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   `label`, `payload` (Request des Fachdiensts, vollständig aufbewahrt → Wiederholen ohne Neu-Eingabe),
   `fortschritt`, `versuche`, `fehler`, **`ergebnis`**, `erstelltAm`.
   **`ergebnis` (NEU in v2.5):** die fachlichen Nutzdaten bei Erfolg – `import` → der fertige `Asset`,
-  `loeschen` → `{ assetId }`, `render` → Pfad/Größe/Dauer, `export` → `{ zielPfad, dateigroesse }`;
-  sonst `null`. Ohne dieses Feld erführe die Oberfläche nie, was ein Auftrag hervorgebracht hat.
+  `loeschen` → `{ assetId }`, `render` → **Pfad/Ausgabename/Größe/Dauer**, `export` →
+  `{ zielPfad, dateigroesse }`; sonst `null`. Ohne dieses Feld erführe die Oberfläche nie, was ein
+  Auftrag hervorgebracht hat. **Der `ausgabeName` reist NUR hier** (v3.2, 9.3.6): Über ihn erfährt die
+  Oberfläche, welcher Name tatsächlich verwendet wurde, und hält ihre Vorbelegung mit
+  `Project.letzterAusgabeName` (FA-22) im Gleichklang. **In `ProtokollEintrag.ausgabe` steht er NICHT**
+  – dort ist er bereits Teil des Pfades; ein zweites Feld wäre genau die Doppelführung, die schon
+  `historieEintrag` und `position` entfernt hat.
   **`versuche` steigt beim START einer Ausführung**, nicht beim Wiedereinreihen (9.3.3).
 - IPC: `reiheEin(art,payload)→{auftragId}`, `entferne(auftragId)`, `wiederhole(auftragId)` (→ selber
   Eintrag ans Ende, `versuche`+1, KEIN Duplikat), `holeStand()→Auftrag[]`, Push `QueueGeändert(Auftrag[])`.
@@ -374,10 +408,22 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   Wiederholen-Knopf:** volle Platte und abgezogener Datenträger sind in einer Minute behoben, und
   dann muss **nichts** verloren gehen.
 - **Lösch-Asymmetrie (wichtig):** **Medium** löschen **blockiert** bei Referenz (9.4.6). **Aktion** löschen
-  **kaskadiert**: Aktion + referenzierende Listenelemente weg (`entfernteElementIds` zurück), aber die
+  **kaskadiert**: Aktion + referenzierende Listenelemente weg, aber die
   **Medien-Assets bleiben** projektweit (Aktion referenziert Asset nur, besitzt es nicht).
-- **`config-store`** besitzt `config.json` (aktives Projekt, Export-Ziel, UI, **Marke read-only gebündelt**).
+  **Rückgabe seit v3.2 (9.5.2/9.5.3):** `Ergebnis<{ stand: Bearbeitungsstand, entfernteElementIds:
+  string[], geaenderteElementIds: string[] }>` – **`stand` ist der vollständige neue Stand** nach der
+  Kaskade (Aktions-Bibliothek **und** Wiedergabeliste), die beiden Kennungslisten beschreiben, **was
+  sich geändert hat**. Beides wird gebraucht, aber für Verschiedenes: Der **Stand** aktualisiert die
+  Sicht und löst damit den Undo-Schnappschuss aus (9.13.2) – aus den Kennungen allein ist er **nicht**
+  rekonstruierbar –, die **Kennungen** erklären dem Nutzer die Wirkung. `geaenderteElementIds` sind
+  Videos mit **gekürztem Band** (9.5.3).
+- **`config-store`** besitzt `config.json` (aktives Projekt, Export-Ziel, UI-Voreinstellungen).
+  **Die Marke liegt seit v3.4 NICHT mehr hier** (9.5.6): Sie ist ein app-weiter **Bestand** und gehört
+  dem `marken-store` (9.15.1, s. 9m); `leseMarke` ist dorthin gewandert und trägt jetzt eine `markeId`.
+  **`AppKonfig` führt das Feld ausdrücklich NICHT** – lägen `leseKonfig().marke` und `leseMarke(...)`
+  nebeneinander, könnten sie auseinanderlaufen, ohne dass etwas bricht.
   Sitzungswiederherstellung (FA-15): aktives Projekt beim Start laden; fehlt → sanfter Rückfall, kein Absturz.
+  Der Rückfall wird im Renderer über **`leereProjektSicht()`** hergestellt (v3.2, 9.7.4, s. 9d).
 - **Pfad-Autorität & `media://` (9.5.7, wichtig):** `project-store` löst `(projektId, dateiname) → absoluter Pfad`
   auf – **einzige** Quelle der Wahrheit fürs Datei-Layout. media-service/render-service/export-service
   resolven **über** ihn (kennen das Layout nicht selbst). Der **Renderer** lädt Medien (Vorschau/Thumbnails)
@@ -395,6 +441,10 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
 - `RenderRequest.ausgabeName` (Dateiname **ohne** Endung) bestimmt das Ziel. Vorbelegt mit
   `Project.letzterAusgabeName` → gleicher Name **ersetzt** die vorige Fassung, neuer Name legt eine
   zusätzliche Datei an. **Kein Zeitstempel im Namen** – Datum zeigt die UI aus dem Q3-Protokoll.
+  **Der Rückweg (v3.2, s. 7/8):** Welcher Name **tatsächlich** verwendet wurde, erfährt die Oberfläche
+  über **`ausgabeName` im Render-Ergebnis** (`RenderResult` → `Auftrag.ergebnis`). Ohne ihn schlüge sie
+  beim nächsten Render weiter den **alten** Namen vor – der Nutzer überschriebe also nicht die Datei,
+  die er überschreiben wollte, oder legte versehentlich eine zweite an.
 - **Atomar, alte Fassung geschützt:** ffmpeg schreibt NIE direkt auf den Zielnamen, sondern
   **auf `<name>.mp4.part` IM Ausgabeordner selbst** (`projects/<id>/output/`, **korrigiert in v2.8** –
   vorher stand hier T1); erst die fertige, **verifizierte** Datei (ffprobe-Prüfung, s. Abschnitt 7)
@@ -451,11 +501,25 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   anderen** hervorheben („X von N behoben"), pro Element Fix-Optionen (**neu verknüpfen/importieren**,
   **ersetzen**, **entfernen**); Render erst frei, wenn **alle** behoben. Nutzt bestehende Ops (media-service,
   project-store). **Konkret (v2.7):** „neu verknüpfen/importieren" und „ersetzen" laufen über
-  **`setzeElementReferenz`** (9.5.2, s. 9b), „entfernen" über `entferneElement`.
+  **`setzeElementReferenz`** (9.5.2, s. 9b), „entfernen" über `entferneElement`. **Seit v3.4 deckt der
+  Reparatur-Modus auch `marken_datei_fehlt` mit ab** (9.15.3): Es ist dieselbe Klasse – eine Referenz
+  zeigt ins Leere.
+- **Die gemeinsame Sicht lässt sich leeren – `leereProjektSicht()` (v3.2, 9.7.4, bindend).** Neben dem
+  Weiterschalten auf einen neuen Stand gibt es **genau eine** Operation, die die Sicht in den Zustand
+  **„kein Projekt geladen"** zurückversetzt; sie nimmt keinen Eingang und liefert nichts. Gerufen wird
+  sie, wo ein Projekt **aufhört, offen zu sein**, ohne dass ein anderes an seine Stelle tritt – vor
+  allem nach `löscheProjekt` auf das **aktive** Projekt und bei der Sitzungswiederherstellung (9.5.6).
+  **Ausdrücklich VERBOTEN ist die naheliegende Notlösung**, statt dessen ein **leeres Projekt mit
+  erfundener Kennung** in die Sicht zu setzen: Das sähe richtig aus, aber jede folgende
+  Instant-Operation liefe in `nicht_gefunden`, und das Auto-Speichern legte womöglich einen
+  Projektordner an, den **niemand angelegt hat**.
 - **Zeichenvoraussetzungen vor dem ersten Thumbnail (M5-35, `#154`):** Marken-Schriften, Logo und
   Motive müssen **geladen** sein, bevor der composer zeichnet. Wer den composer öffnet, **ohne**
   vorher im Aktions-Editor gewesen zu sein, zeichnete sonst für jedes Bild einen **Platzhalter** –
-  und **9.10.7 verbietet den Platzhalter im finalen Render**.
+  und **9.10.7 verbietet den Platzhalter im finalen Render**. **Seit v3.4 ist das nicht mehr EINE
+  Marke:** Zu laden ist je gezeichneter Fläche die **richtige** (Aktions-Marke bzw.
+  Projekt-Standardmarke, 9.15.4, s. 9m) samt ihren **importierten** Schriften (9.15.3); und `logo`
+  kann `null` sein – dann greift das **Ersatz-Logo** (9.10.10, s. 9f), kein Platzhalter.
 
 ## 9e. preview-player [P5] (Renderer) – TK 9.9
 - **UI-Simulation ohne ffmpeg** (16:9-Bühne), Transport (Play/Pause, Zeitleiste, aktuelles Element, Gesamtdauer).
@@ -464,13 +528,19 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   **alle Medien über `media://`** (9.5.7), nie absolute Pfade.
 - **Im Split-Modus zeigt auch die Vorschau die Restflächen in `flaecheDunkel`** (v2.8, 9.9.2) – nicht
   schwarz. Sonst laufen Vorschau und Render an genau der Stelle auseinander, die der Nutzer am
-  häufigsten sieht (Split ist die **Hauptbetriebsart**).
+  häufigsten sieht (Split ist die **Hauptbetriebsart**). **Die Farbe kommt aus der
+  Projekt-Standardmarke** (`Project.standardMarkeId`, 9.15.4), nicht aus der Marke der gerade
+  sichtbaren Aktion – **Vorschau und Vorschaubilder nehmen dieselbe Marke wie der Render, nie eine
+  andere.**
 - **Zeitleiste frame-gerundet** (== render 9.2.6, composer 9.7.4); native Wiedergabe Best-Effort. Kaputte
   Elemente → Platzhalter (Reparatur im composer 9.7.5). Grenze (Abschnitt 8): nicht farb-/bitraten-genau,
   finale Kontrolle bleibt die gerenderte Ausgabedatei.
 
 ## 9f. template-canvas (Renderer, geteilt) – TK 9.10  ⟵ EINZIGE PIXELQUELLE
-- `zeichneSegment(aktion, vorlage, marke)` → **Canvas 1920×1080**. Zwei Verwendungen aus **demselben**
+- `zeichneSegment(aktion, vorlage, marke)` → **Canvas 1920×1080**. `marke` ist die **fertig aufgelöste**
+  Marke aus `leseMarke(markeId)` (9.15.1) – **welche** Marke das ist, entscheidet nicht dieses Modul,
+  sondern die Tabelle in 9.15.4 (Aktions-Segment → `aktion.markeId`; Band-Hintergrund und
+  Split-Restflächen → `Project.standardMarkeId`; s. 9m). Zwei Verwendungen aus **demselben**
   Aufruf: **Anzeige** (nur per CSS herunterskaliert) und **Export** `alsPng(...)` → PNG-Bytes für den
   RenderRequest. **KEIN zweiter Zeichenpfad** – sonst bricht die Pixelgleichheit.
 - Konsumenten: `action-editor` (Live-Vorschau), `composer` (Thumbnails), `preview-player`, finaler Render.
@@ -478,8 +548,23 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   ignorieren** (feste Backing-Größe) · **Schriften VOR dem Zeichnen geladen** (Fallback-Schrift = Vertragsbruch)
   · **Bild VOR dem Zeichnen dekodiert** (via `media://`) · gleiche Eingabe → gleiches Bild (kein Zufall/Zeit/
   Datum) · **kein persistenter Cache**. Export = PNG, sRGB.
-- **Marken-Schriften werden GEBÜNDELT** mitgeliefert (Playfair Display ist auf Win/macOS nicht vorinstalliert)
-  und per `FontFace` geladen – sonst still Fallback-Schrift → Vorschau ≠ Endvideo + Markenbruch.
+- **Die vier OFL-Schriften und das Fitnessworld24-Logo werden GEBÜNDELT** mitgeliefert (Playfair Display
+  ist auf Win/macOS nicht vorinstalliert) und per `FontFace` geladen – sonst still Fallback-Schrift →
+  Vorschau ≠ Endvideo + Markenbruch. **Seit v3.4 ist das nicht mehr der einzige Fall (9.10.4/9.15.3):**
+  **Importierte** Schriften werden **je Marke** registriert und geladen, **bevor die erste Zone
+  gezeichnet wird**, und der Nachweis über `document.fonts.check()` gilt für sie mit. **Fehlt eine
+  importierte Datei zur Renderzeit, bricht der Render FRÜH ab** (`marken_datei_fehlt`, vor dem ersten
+  ffmpeg-Aufruf) – **kein** stiller Rückfall auf die gebündelte Schrift; der zeigte den Markenbruch
+  erst am Fernseher.
+- **Ersatz-Logo, wenn die Marke keins hat (9.10.10, v3.4).** `Marke.logo` ist `| null` – bei
+  Werbepartnern der Normalfall. Dann wird in **jeder** Zone mit `bindung: logo` der **`marke.name`**
+  gezeichnet, auf einer Fläche in **`marke.farben.akzent`** (der **Marken**-Akzentfarbe, nie
+  `aktion.akzentfarbe`), in der **gebündelten** Rolle `headlinePlakativ`. Textfarbe **nach gemessenem
+  Kontrast** (dieselbe Rechnung wie die Kontrast-Warnung, 9.15.2 – einmal gebaut, zweimal genutzt).
+  **KEIN „…" bei langen Namen** – ein abgeschnittener Markenname sieht nach Fehler aus, nicht nach
+  Gestaltung: verkleinern, dann zweizeilig. *Warum nicht die eigene Schrift der Marke:* Eine Marke ohne
+  Logo hat oft auch keine importierte Schrift – und hätte sie eine, könnte **genau diese Datei
+  fehlen**, dann wäre nicht einmal der Ersatz zeichenbar.
 - **Fester Markenrahmen immer** gezeichnet, nicht abschaltbar (FA-11). **Sicherheitsabstand 5 %** =
   **96 px** links/rechts, **54 px** oben/unten (TV-Overscan) – dort kein bedeutungstragender Inhalt.
 - **Text-Überlauf-Kaskade (verbindliche Reihenfolge):** (1) umbrechen bis Max-Zeilen → (2) Schriftgröße
@@ -497,6 +582,18 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   Wert, ein Text in `akzentTief` auf einer Fläche in `akzent` wäre **unsichtbar**. Der
   `render-service` bleibt unberührt (Restflächen tragen `flaecheDunkel`, keine Akzent-Rolle) – er
   braucht weiterhin **keine** Kenntnis von Aktionen.
+- **Zwei Ergänzungen aus v3.4 zum Block darüber.** (1) `akzentfarbe` ist seit FA-24 ein **FREIER**
+  Hex-Wert (9.8.2/9.8.4) – der frühere Zwang „nur aus der Markenpalette, kein freier Farbwähler" ist
+  **bewusst zurückgenommen**, weil Partner-Hausfarben in keiner Palette stehen. Eine Aktion **kann**
+  damit aus dem Corporate Design ausbrechen; Gegenmaßnahme ist die **Kontrast-Warnung** (9.15.2),
+  **nicht** die Sperre (Risiko R-08). (2) Es gibt eine **zweite** Ausnahme von der Ersetzungsregel:
+  Das **Ersatz-Logo** nimmt `marke.farben.akzent`, **nie** `aktion.akzentfarbe` (9.10.9
+  „Abgrenzung", 9.10.10) – ein Logo ist eine Konstante, sonst blinkte das „Logo" eines Partners in
+  drei Farben, während drei seiner Aktionen rotieren.
+  **ACHTUNG BEIM ZITIEREN (Widerspruch im TK, gemeldet 10.08., noch nicht behoben):** In TK 9.11.1
+  steht weiterhin der Satz „Zugleich bleibt die Farbwahl auf die **Markenpalette** begrenzt (9.8.4):
+  Es entsteht **kein** freier Farbwähler". Dieser Satz ist **überholt** – 9.8.4 sagt heute das
+  Gegenteil. **Nicht zitieren, nicht danach bauen**, bis das TK bereinigt ist.
 - **Fehlendes Motiv** → Platzhalter zeichnen (für action-editor 9.8.5); ein Segment mit Platzhalter darf
   **nie** in den finalen Render (Sperre im composer 9.7.5).
 - Kennt **keine** Dateipfade; entscheidet **nicht** über Dauer/Reihenfolge; **kein** Queue-Auftrag.
@@ -519,7 +616,8 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
 - `text.*` speist die Überlauf-Kaskade 9.10.6 (maxZeilen → größeMax/größeMin → „…").
 - **Eingebaute Vorlagen sind konkret festgelegt (TK 9.11.1):** gemeinsame Basis = Inhaltsbox x 96–1824,
   y 54–1026; **Logo 420×120 oben links** (dunkler Balken ist im Asset enthalten); Zone **`hintergrund`**
-  (Markenfarbe) wird **als erstes** gezeichnet, damit eine Aktion **ohne Bild nicht schwarz** rendert.
+  (Farb-Rolle der jeweils zuständigen Marke, s. 9m/9.15.4) wird **als erstes** gezeichnet, damit eine
+  Aktion **ohne Bild nicht schwarz** rendert.
   „Vollbild": motiv `cover` vollflächig + **`scrim`** (dunkler Verlauf, y 432 h 648) für Textlesbarkeit;
   Überschrift 96→56 px/2 Zeilen; Preis/CTA als Pillen rechts, `wennLeer: ausblenden`.
   „Split": Trennung x=960, motiv **`contain`** (kein Beschnitt am Produkt), Textspalte ab x 1056.
@@ -571,8 +669,15 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   eingebauten Band-Vorlage (H = 162) ändert die Vierer-Abrundung **nichts** (1632). Auseinander
   liefen Vorschau und fertiges Video erst bei **eigenen** Vorlagen – **beim Nutzer, nicht beim
   Entwickler**.
-- **Die Restflächen tragen die Farb-Rolle `flaecheDunkel` (#2F2E2E, v2.8)**, geholt über
-  `leseMarke()` – **nie** als Hexzahl in eine Filterkette getippt. „Dunkle Markenfarbe" ist bei
+- **Die Restflächen tragen die Farb-Rolle `flaecheDunkel` (v2.8)**, geholt über
+  **`leseMarke(markeId)`** aus dem `marken-store` (9.15.1) – **nie** als Hexzahl in eine Filterkette
+  getippt. **Seit v3.4 zwingend mit Argument** (bis v3.3 hatte `leseMarke` **kein** Argument, 9.15.4),
+  und die Quelle ist **`Project.standardMarkeId`** – die **Projekt**-Standardmarke, **nicht** die Marke
+  der gerade sichtbaren Aktion. Dasselbe gilt für den **Band-Hintergrund**. *Begründung („Rahmen
+  stabil, Inhalt wechselt", 9.15.4):* Rotieren im Band Aktionen verschiedener Partner, wechselte sonst
+  die Flächenfarbe im Sekundenrhythmus – links und rechts neben dem Video und im Bandhintergrund. Auf
+  einem 85-Zoll-Schirm ist das unruhig, nicht professionell. `#2F2E2E` ist dabei nur noch der Wert der
+  **eingebauten** Marke, keine Konstante. „Dunkle Markenfarbe" ist bei
   **zwölf** Farb-Rollen keine Angabe; ohne die Festlegung wählte jeder Agent eine andere und Render
   und Vorschau liefen auseinander. 9.11.2 beschreibt die Rolle als „Segment- und **Band**-Hintergrund" –
   damit sind Band und Seitenflächen **dieselbe** Fläche und der Split wirkt aus einem Guss.
@@ -637,15 +742,44 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   Elements nutzen dieselbe Band-Vorlage (sonst springt die Geometrie).
 
 ## 9j. Datenmodell `Marke` – TK 9.11.2
-- `Marke { farben{<Rolle>:hex}, schriften{<Rolle>:{familie,gewicht,datei}}, logo{datei,seitenverhaeltnis},
-  sicherheit{horizontal:96, vertikal:54}, radien{pille:40,karte:10,klein:2}, schatten{...}, slogan{text,aktiv} }`.
+- `Marke { id, name, parent: string|null, eingebaut: boolean, farben{<Rolle>:hex},
+  schriften{<Rolle>:Schrift}, logo{datei,herkunft,seitenverhaeltnis} | **null**,
+  sicherheit{horizontal:96, vertikal:54}, radien{pille:40,karte:10,klein:2}, schatten{...},
+  slogan{text,aktiv}, herkunftJeFeld }` · `Schrift { familie, gewicht, datei, herkunft }` ·
+  `Herkunft = "gebuendelt" | "importiert"`.
   Hex darf **8-stellig** sein (Alpha) – gebraucht für den Scrim.
+- **`logo` ist NULLBAR** – bei Werbepartnern der Normalfall. `null` → **Ersatz-Logo** (9.10.10, s. 9f).
+  Wer das übersieht, baut eine Marke, die sich gar nicht anlegen lässt.
+- **Ableitung (`parent ≠ null`), die Auflösungsregel:** `farben` und `schriften` sind dann
+  **Teilmengen** – für jede Rolle, die die abgeleitete Marke **nicht** setzt, gilt der Wert des
+  Parents, **feldweise, nicht objektweise**. Das gilt für **jedes** Feld außer `id`, `name`, `parent`
+  und `eingebaut`. **Ketten sind auf EINE Stufe begrenzt**: Ein Parent darf selbst keinen Parent haben
+  (sonst `ungueltige_eingabe`).
+- **Die Auflösung geschieht an genau EINER Stelle: im `marken-store`** (9.11.2/9.15.1, s. 9m).
+  `leseMarke`/`listeMarken` liefern **fertige** Marken – **kein Aufrufer sieht je eine Teilmenge,
+  keiner implementiert Vererbung selbst**. Es gibt **keine** zweite, „unaufgelöste" Leseoperation.
+- **`herkunftJeFeld` (v3.5) = Metadatum, nie Wertquelle.** Der Store hält beim Auflösen fest, welchen
+  Zweig er je Feld genommen hat: `MarkenHerkunftJeFeld { farben{<Rolle>:"eigen"|"geerbt"},
+  schriften{<Rolle>:"eigen"|"geerbt"}, logo:"eigen"|"geerbt"|"keins", sicherheit, radien, schatten,
+  slogan }`. **Einziger Leser ist der `marken-editor`** – er muss zeigen, was geerbt und was eigen ist
+  (FA-24); aus den aufgelösten Werten allein ist das **nicht** rekonstruierbar. Bei `parent === null`
+  durchgehend `"eigen"`, **nie** leer oder undefiniert. `logo` trägt `"keins"` genau dann, wenn die
+  aufgelöste `logo` `null` ist. **VERBOTEN: ein Feld-für-Feld-Vergleich zweier Marken als Ersatz** –
+  setzt der Nutzer bewusst denselben Wert wie der Parent, gälte das Feld als „geerbt", obwohl es sich
+  bei einer Parent-Änderung **nicht** mitändert.
 - **Vorlagen verweisen NUR über Rollen** (`farbRolle`/`schriftRolle`), nie auf Hex/Schriftnamen.
+- **ROLLEN sind fest, WERTE sind frei (9.15.2).** Der Satz der zwölf Farb- und vier Schrift-Rollen ist
+  unverändert der Vertrag, auf den **jede** Vorlage verweist; der Editor kann **keine** Rolle
+  hinzufügen oder entfernen (eine fehlende Rolle brächte jede Vorlage zum Stillstand). Die **Hexwerte
+  und Schriftdateien unten sind die der EINGEBAUTEN Marke Fitnessworld24** – seit v3.4 nicht mehr die
+  einzige Marke; eine andere Marke belegt dieselben Rollen mit anderen Werten.
 - **Farb-Rollen (fest v1):** `akzent` #FF4040 · `akzentKraeftig` #DF3131 · `akzentTief` #971316 ·
   `flaecheDunkel` #2F2E2E · `flaecheSehrDunkel` #4B090B · `flaecheHell` #FFFFFF · `flaecheAkzentZart` #F5AEAF ·
   `textAufDunkel` #FFFFFF · `textAufHell` #202020 · `textSekundaer` #8F8F8F · `linie` #CCCCCC ·
   `scrimStart` #00000000 / `scrimEnde` #000000B3.
-- **Schrift-Rollen (fest v1, alle GEBÜNDELT, alle OFL):** `headlineElegant` = **Playfair Display** 700 ·
+- **Schrift-Rollen (fest v1; die Dateien der eingebauten Marke sind GEBÜNDELT und OFL – eine Rolle
+  darf seit v3.4 aber auf eine importierte `.woff2` zeigen, `herkunft: "importiert"`):**
+  `headlineElegant` = **Playfair Display** 700 ·
   `headlinePlakativ` = **Archivo Black** 900 (freier Ersatz für Arial Black/Avenir Heavy) ·
   `fliesstext`/`fliesstextFett` = **Arimo** 400/700 (**metrisch Helvetica-kompatibel** → Textlängen fallen
   wie erwartet). Arial Black/Avenir sind NICHT bündelbar (Lizenz/Verfügbarkeit).
@@ -653,18 +787,39 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
 - **Sicherheitsabstand gehört zum BILDRAHMEN, nicht zur Vorlagenfläche** (96/54 px im 1920×1080).
   **Folge für Bänder:** ein Band am unteren Rahmenrand enthält die unteren 54 px des Rahmens → bei 162 px
   Band sind nur die oberen **108 px** sicher. Die eingebaute Band-Vorlage endet daher bei Band-y 90.
-- Marke ist v1 **gebündelt und read-only** (`config-store.leseMarke`).
+- **Marken sind ein app-weiter Bestand und BEARBEITBAR** (`marken-store`, 9.15.1; FA-23/FA-24, s. 9m).
+  *Bis v3.3 stand hier: „Marke ist v1 gebündelt und read-only (`config-store.leseMarke`)." Beides ist
+  mit v3.4 überholt* – die Marke gehört nicht mehr dem `config-store`, und der Editor ist ein **Muss**.
+- **OFFEN – Spannung im TK, nicht eigenmächtig auflösen:** `sicherheit` ist einerseits ein
+  **bearbeitbares Marken-Feld** (9.11.2, und 9.15 nennt ausdrücklich „Abstände"), andererseits führt
+  9.11.4 die 96/54 px als **Konstante in `contracts/types`** (s. 9k). Welche Ebene gewinnt, sagt das
+  TK nicht – melden.
 
 ## 9k. Datenshapes, IDs, Konstanten, Einzel-Instanz – TK 9.11.3/9.11.4, 9.5.4
-- `Project { id, name, erstelltAm, geaendertAm, schemaVersion, assets[], aktionen[], liste[] }`.
+- `Project { id, name, erstelltAm, geaendertAm, schemaVersion, assets[], aktionen[], liste[],
+  letzterAusgabeName: string|null, standardMarkeId: string }`.
   **`Vorlage`/`Marke` liegen NICHT im Projekt** (app-weit) – das Projekt hält nur Referenzen.
+  **`standardMarkeId` (FA-23, v3.4):** färbt **Band-Hintergrund und Split-Restflächen** und **belegt
+  neue Aktionen vor**; beim Anlegen die **eingebaute** Marke. `letzterAusgabeName` = Vorbelegung des
+  Render-Zielnamens (FA-22), `null` = noch nie gerendert.
+- `Aktion { id, titel, beschreibung, preis, bildRef, cta, standardDauer, vorlagenId, markeId,
+  akzentfarbe }` (9.8.2). **`markeId` ist PFLICHT – GENAU EINE Marke je Aktion** (FA-23), vorbelegt
+  mit `Project.standardMarkeId`; sie bestimmt Logo, Schriften und Farb-Rollen des Segments.
+  **`akzentfarbe` ist ein FREIER Hex-Wert** (FA-24, `string | null`; `null` = Markenwert gilt) und
+  **ersetzt beim Zeichnen die Akzent-Rollen der Vorlage** (9.10.9, s. 9f). `bildRef` ist stets eine
+  **Referenz** auf eine Asset-ID, nie ein eingebettetes Bild.
+- `Bearbeitungsstand { aktionen: Aktion[], liste: Listenelement[] }` (9.5.2) – der Ausschnitt, den
+  `setzeBearbeitungsstand`, die Rückgabe von `löscheAktion` (s. 9b) und der **Undo-Schnappschuss**
+  (9.13.2) gemeinsam führen. *Warum nicht `Project`:* Ein weiterer Typ brächte `assets` und
+  `letzterAusgabeName` mit, die `löscheAktion` gar nicht anfasst und die **nicht** in den Schnappschuss
+  gehören.
 - `Listenelement { id, art:"video"|"bild"|"segment", ref, dauer, trimStart, trimEnde, einblendung }`.
   Belegung: **video** → ref=Asset(video), dauer `null` (ergibt sich aus Trim), Trim gesetzt, Einblendung erlaubt ·
   **bild** → ref=Asset(bild), dauer 10–45 s, Trim `null`, keine Einblendung ·
   **segment** → ref=Aktion, dauer 10–45 s, Trim `null`, keine Einblendung.
 - **Reihenfolge = ARRAY-Reihenfolge, es gibt KEIN `position`-Feld** (gleiche Regel wie Zonen und RenderRequest 9.2.1).
   Zwei Quellen für dieselbe Information laufen unweigerlich auseinander.
-- **Alle IDs sind UUIDs** (Project, Asset, Aktion, Listenelement, Vorlage, Auftrag). **Keine Zähler**
+- **Alle IDs sind UUIDs** (Project, Asset, Aktion, Listenelement, Vorlage, **Marke**, Auftrag). **Keine Zähler**
   (kollidieren nach Löschen/Neu-Anlegen und beim Duplizieren), **keine** aus Namen abgeleiteten IDs
   (Umbenennen darf keine Referenz brechen). IDs werden **nie wiederverwendet**.
   `dupliziereProjekt` vergibt eine **neue Projekt-ID**, behält aber die projektinternen IDs.
@@ -719,6 +874,67 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   außerhalb des besitzenden Ordners importieren die gemeinsame Sicht **nicht**, sie bekommen die
   Funktion als **Parameter** – und der Durchreicher ist die `app-shell` (s. 4b).
 
+## 9m. Marken-Verwaltung: `marken-store` [V2] & `marken-editor` – TK 9.15  ⟵ NEU v3.4/v3.5
+- **Warum es das gibt:** Bis v3.3 gab es **eine** Marke, gebündelt und nur lesbar, geführt vom
+  `config-store`. Mit **FA-23** wird daraus ein **Bestand**. Zwei Anlässe: **Partner-/Fremdwerbung**
+  (Aktionen tragen die Marke Dritter) und **Saison-/Kampagnen-Looks** (dieselbe Marke in anderer
+  Anmutung). **FA-23 und FA-24 sind beide MUSS.**
+- **`marken-store` besitzt `marken.json`** (app-weit) samt **eigener** Schreib-Serialisierung.
+  Schreib-Invarianten **wie 9.5.4**: **atomar** (Temp + Rename), **`marken.json.bak`** als letzte heile
+  Version, **`schemaVersion`**, Speicherfehler werden **sichtbar** gemacht statt still verschluckt –
+  über den eigenen Kanal **`marken:autoSpeichernStatus`** (s. 4b).
+- **Die acht Operationen (9.15.1):** `listeMarken` → `Ergebnis<Marke[]>` (aufgelöst, je samt
+  `herkunftJeFeld`) · `leseMarke(markeId)` → `Ergebnis<Marke>` (aufgelöst, samt `herkunftJeFeld`) ·
+  `erstelleMarke(name, parentId?)` · `bearbeiteMarke(markeId, teilwerte)` (**Auto-Speichern** während
+  des Bearbeitens) · `importiereMarkenDatei(markeId, art, schriftRolle?, quellPfad)` ·
+  `entferneMarkenDatei(markeId, art, schriftRolle?)` (zurück auf den geerbten bzw. gebündelten Wert) ·
+  `löscheMarke(markeId)` · `pruefeMarkenReferenzen(markeId)` → `Ergebnis<Markennutzung>` (**rein
+  lesend**, über **alle** Projekte). **Alle vier Schreiboperationen geben die Marke MIT frischem
+  `herkunftJeFeld` zurück** (v3.5) – deshalb braucht der Editor nach einer Änderung **keinen** zweiten
+  Aufruf.
+- **Die Vererbung wird an genau EINER Stelle aufgelöst – hier** (s. 9j). Begründung wie bei den
+  Farb-Rollen: **neunzehn** Aufrufer holen die Marke (9.15.4); neunzehn eigene Vererbungslogiken
+  liefen unweigerlich auseinander.
+- **Löschen blockiert bei Referenz, es kaskadiert NICHT** – wie bei den Vorlagen. Geprüft wird über
+  **alle** Projekte, nicht nur das geladene, **und** über die abgeleiteten Marken; `marke_referenziert`
+  trägt **beide** Trefferlisten (betroffene **Aktionen** je mit Projekt, betroffene **abgeleitete
+  Marken**). Eine Kaskade änderte das Aussehen vieler Aktionen auf einen Schlag.
+- **Die eingebaute Marke ist NIE löschbar (`eingebaut: true`), aber BEARBEITBAR** – anders als die
+  eingebauten **Vorlagen**, die eingefroren sind. *Begründung der Abweichung:* Ändert Fitnessworld24
+  sein Erscheinungsbild, soll das ohne Umweg möglich sein und **in allen abgeleiteten Looks wirken**.
+  *Preis, bewusst in Kauf genommen:* Es gibt **keinen garantierten Urzustand**.
+- **Wer die Marke holt – und woher den Kontext (9.15.4, bindend):** Aktions-Segment (Vollfläche oder
+  Band-Abschnitt) → **`aktion.markeId`** · Band-Hintergrund → **`Project.standardMarkeId`** ·
+  Restflächen der Split-Komposition → **`Project.standardMarkeId`** · Vorschau und Vorschaubilder →
+  **dieselbe Marke wie beim Render, nie eine andere**. **„Rahmen stabil, Inhalt wechselt"** – s. die
+  Begründung in 9h.
+- **Import-Riegel (9.15.3):** **Zwei Herkünfte, eine Auflösung** – `gebuendelt` löst auf den
+  Bundle-Pfad auf, `importiert` auf `marken-assets/<markeId>/`. **Import kopiert** (Quelldatei bleibt
+  unberührt, wie beim Medien-Import). Whitelist: **nur `.woff2`** für Schriften (*ein Ladepfad statt
+  zwei*), Bild-Whitelist (9.4.2) für Logos. Der Renderer bekommt importierte Dateien über ein
+  **Lese-Protokoll wie `media://`** und **nie** über absolute Pfade. Ablage **im Datenort**, nicht im
+  Programmordner – so wandern importierte Schriften bei portabler Auslieferung mit den Daten.
+  **Lizenzen:** Für importierte Schriften trägt der **Nutzer** die Rechte (Risiko R-07) – die App
+  brennt sie in ein Video, das weitergegeben und öffentlich gezeigt wird.
+  **OFFEN – nicht erfinden:** Das Protokoll für `marken-assets/` hat im TK **keinen Namen** (nur „wie
+  `media://`"). Wer ihn braucht, **fragt**.
+- **`marken-editor` (9.15.2):** Rollen fest / Werte frei (s. 9j) · **geerbt vs. eigen ausschließlich
+  aus `herkunftJeFeld`**, nie aus einem Wertvergleich · **Kontrast-Warnung (FA-24): sichtbar warnen,
+  die Wahl aber NICHT verhindern** – ein Schwellenwert machte genau die Partner-Hausfarben unbrauchbar,
+  um die es geht (R-08); dieselbe Rechnung wählt beim **Ersatz-Logo** die Textfarbe (9.10.10, s. 9f) ·
+  **Löschen fragt vorher** und zeigt das Ergebnis von `pruefeMarkenReferenzen` · **KEIN Undo für den
+  Marken-Bestand in v1** (Undo deckt Projekt-Bearbeitung und Vorlagen-Editor ab; hier schützt der
+  `.bak`).
+- **Fehlercodes (9.15.5, vollständig):** `marke_referenziert` · `marke_eingebaut` ·
+  `marke_nicht_gefunden` · `ungueltige_eingabe` (unbekannte Rolle, Ableitungskette länger als eine
+  Stufe, Datei nicht in der Whitelist) · **`marken_datei_fehlt`** (importiertes Logo oder importierte
+  Schrift fehlt – **beim Render, vor dem ersten ffmpeg-Aufruf**; s. den offenen Punkt in Abschnitt 7) ·
+  `speicher_fehler`.
+- **Migration von v3.3 (9.15.1):** Die bisher in `config.json` geführte Marke war ein **namenloses
+  Wertobjekt**. Die Migration legt daraus die **eingebaute** Marke in `marken.json` an
+  (`eingebaut: true`, `parent: null`, **neue `id`**), setzt `Project.standardMarkeId` und
+  `Aktion.markeId` **aller** Projekte darauf und **entfernt das Feld aus `config.json`**.
+
 ## 10. Doku-Workflow (bindend)
 - **Markdown ist Quelle der Wahrheit.** Beide `.docx` werden daraus im Markenlayout **neu generiert**:
   `node tools/generate-docx.js <in.md> <out.docx> [--dfd tools/assets/dfd.png]`. Nach jeder Änderung
@@ -736,7 +952,7 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   `design/design-tokens.json` sind aussortiert und NICHT zu verwenden).
 
 ## 11. Status & offene Verträge
-- **Aktuelle Fassungen: Anforderungsdokument v1.2 / TK v3.1 (04.08.2026).** Nachträge seit v2.2:
+- **Aktuelle Fassungen: Anforderungsdokument v1.3 / TK v3.5 (10.08.2026).** Nachträge seit v2.2:
   v2.4 (`pendingDeletions` sind keine Aufträge, `listeAusgaben`), v2.5 (`Auftrag.ergebnis`,
   `fehler.daten`, ffprobe wird mitgeliefert), v2.7 (`setzeEinblendung`, `setzeElementReferenz` –
   s. 9b), **v2.8 (neun Entscheidungen aus dem M6-Zuschnitt: `.part`-Staging im Ausgabeordner –
@@ -752,7 +968,18 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
   Beenden · Löschbestätigung mit `anzahlMedien`/`anzahlAusgaben` · `öffneProjektordner` – die vier
   s. 9b · `berechneBandGeometrie` im geteilten Bereich – s. 9h · `vorlagen:autoSpeichernStatus` –
   s. 4b/9i · `projekt-verwaltung` als SECHSTE Renderer-Oberfläche – s. 5/9l · Ereignisse vor dem
-  Fensteraufbau verfallen still, „erst holen, dann abonnieren" – s. 4b)**.
+  Fensteraufbau verfallen still, „erst holen, dann abonnieren" – s. 4b)**, **v3.2 (drei
+  Entscheidungen: `leereProjektSicht()` – s. 9d · `ausgabeName` im `RenderResult` und in
+  `Auftrag.ergebnis`, NICHT in `ProtokollEintrag.ausgabe` – s. 7/8 · `löscheAktion` liefert den
+  vollständigen neuen `stand` samt Typ `Bearbeitungsstand` – s. 9b/9k)**, **v3.3 (der geteilte
+  Renderer-Bereich `src/renderer/gemeinsam/` fehlte in der Modulliste – s. 5)**, **v3.4 (neun
+  Entscheidungen, Anforderungsänderung „Mehrere Marken": Marken-Bestand statt einer gebündelten Marke
+  · Ableitung mit EINER Auflösungsstelle · „Rahmen stabil, Inhalt wechselt" · Akzentfarbe wird freier
+  Farbwert · Ersatz-Logo · Import-Riegel mit `herkunft` · eingebaute Marke unlöschbar aber bearbeitbar
+  · Löschen blockiert statt zu kaskadieren · Migration aus `config.json` – alle s. 9m, dazu 9j/9f/9h)**,
+  **v3.5 (Herkunfts-Stempel `herkunftJeFeld` an der aufgelösten Marke, damit der Editor „geerbt vs.
+  eigen" zeigen kann, ohne dass es eine zweite, unaufgelöste Leseoperation gibt; Wertvergleich als
+  Ersatz ausdrücklich verboten – s. 9j/9m)**.
   **Merke:** Eine Vertragsänderung erzwingt einen **Zitat-Abgleich über alle bereits
   angelegten Issues** – Regel D gilt rückwärts. **Und vorwärts (neu aus M7):** Wer ein Issue anlegt,
   das die **Lücke eines früheren schließt**, streicht dort die **Melde-Aufforderung** – sonst liest
@@ -762,10 +989,16 @@ ab v1 (zwei eingebaute: „Vollbild", „Split").
 - **HLD VOLLSTÄNDIG und vollständig geprüft (Anforderungsdokument v1.1 / TK v2.2).** Ausgearbeitet sind alle Modul-Verträge:
   `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5),
   `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10),
-  `vorlagen-store`/`vorlagen-editor` (9.12), `Undo/Redo` (9.13) – dazu alle geteilten Datenmodelle (9.11)
+  `vorlagen-store`/`vorlagen-editor` (9.12), `Undo/Redo` (9.13), **`app-shell` (9.14)**,
+  **`marken-store`/`marken-editor` (9.15)** – dazu alle geteilten Datenmodelle (9.11)
   und das Ausgabe-Profil (9.2.4). **Alle** Lücken des Prüfbefunds vom 03.07. sind geschlossen.
-  FA-Nummern lückenlos **01–21**; R-06 (Ton) ist entschieden.
-- **Anforderungs-Eckpunkte (Stand v1.1):** FA-13 Vorlagen erstellen/bearbeiten = **MUSS** (im Prototyp!),
+  FA-Nummern lückenlos **01–24** (FA-22 Ausgabedateien, FA-23 Marken-Bestand, FA-24 Marken-Editor);
+  R-06 (Ton) ist entschieden, **R-07 (Fremdschrift-Lizenzen) und R-08 (unlesbarer Kontrast) sind seit
+  v1.3 als Risiken geführt**.
+- **Anforderungs-Eckpunkte (Stand v1.3):** **FA-22 mehrere benannte Ausgabedateien je Projekt**
+  (s. 9b2), **FA-23 Marken-Bestand = MUSS**, **FA-24 Marken-Editor = MUSS** (beide s. 9m; mit ihnen
+  gilt der Markenrahmen **je Rahmen**, nicht mehr fürs ganze Video – AD 4.1/4.8),
+  FA-13 Vorlagen erstellen/bearbeiten = **MUSS** (im Prototyp!),
   FA-14 Trim (Soll), FA-15 Auto-Speichern & Sitzung (Soll), FA-16/17/18 Auftrags-Queue, FA-19 geführte
   Reparatur (Soll), **FA-20 parallele Anzeige = Muss und HAUPTBETRIEBSART**, FA-21 Undo/Redo (Muss).
   FA-10 = Projektverwaltung. **Einheitlicher Dauer-/Trim-Regler** (Anforderungsdok. 4.4): Video = 2 Griffe bis
