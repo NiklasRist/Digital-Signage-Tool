@@ -7,6 +7,7 @@
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { AppKonfig } from '../../shared/contracts/app-konfig'   // #265
 export async function schreibeConfig(konfig: AppKonfig): Promise<Ergebnis<void>> {
   throw new Error(
     "Noch nicht umgesetzt - Rumpf gehoert zu Issue #31."

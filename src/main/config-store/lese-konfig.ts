@@ -7,12 +7,14 @@
 // sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { AppKonfig } from '../../shared/contracts/app-konfig'   // #265
 export async function leseKonfig(): Promise<Ergebnis<AppKonfig>> {
   throw new Error(
     "Noch nicht umgesetzt - Rumpf gehoert zu Issue #26."
   );
 }
 // AppKonfig: { aktivesProjektId: string | null, letztesExportZiel: string | null,
-//              uiVoreinstellungen: Record<string, unknown>, marke: Marke }
+//              uiVoreinstellungen: Record<string, unknown> }   // #265 - OHNE marke;
+//              die Marke kommt ausschliesslich ueber leseMarke() (#29)
 // existiert config.json nicht (erster Start) → liefert Ergebnis<AppKonfig> mit sinnvollen
 // Defaults (aktivesProjektId: null, ...), OHNE Fehler
