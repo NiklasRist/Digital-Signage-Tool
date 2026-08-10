@@ -1,143 +1,113 @@
-# Übergabe M8 – Marken: Stand und was zuerst zu tun ist
+# Übergabe M8 – Stand nach dem Prüflauf
 
-> **Für eine neue Sitzung.** Voraussetzung: `uebergabe-stand.md` und `issue-generation-prompt.md`
-> gelesen. Diese Datei ist der Stand **von M8** darüber.
+> **Stand:** 10.08.2026, abends · AD **v1.3** · TK **v3.9** · Worktree `dst-planung`,
+> Branch `planung/ad-v1.2-tk-v2.3-issues`
 >
-> **Stand:** 10.08.2026 · AD **v1.3** · TK **v3.4** · Worktree `dst-planung`, Branch
-> `planung/ad-v1.2-tk-v2.3-issues`
+> **Die Arbeit wurde vom Sitzungs-Limit unterbrochen** (Reset 23:30). Vier Autoren liefen parallel,
+> zwei wurden mitten in einer Datei abgeschnitten. **Beide Bruchstellen sind geprüft und repariert** –
+> der Stand ist konsistent, nicht halbfertig.
 
 ---
 
-## 0. Kurzfassung
+## 0. Was gilt
 
-**M8 ist geschrieben, aber NICHT anlegereif.** 32 Volltexte liegen in `docs/agents/m8/`, dazu
-`BRIEFING.md`. **Kein Prüflauf gelaufen, nichts auf GitHub.**
+**Der Prüflauf ist gelaufen und vollständig dokumentiert:** `docs/agents/m8-pruefbefund.md`.
+Sieben Prüfer, rund 100 Befunde, davon etwa 20 kritisch, fünf Ursachen.
 
-Davor sind **drei Dinge** zu erledigen, in dieser Reihenfolge. Der erste braucht eine Entscheidung
-des Auftraggebers.
+**M8 ist NICHT anlegereif.** Was fehlt, steht in Abschnitt 2.
 
 ---
 
-## 1. ZUERST: ein Widerspruch im TK, der M8 blockiert
+## 1. Erledigt (committet)
 
-**Das ist ein Fehler in TK 9.15, geschrieben am 10.08.** Drei schreibende Agents haben ihn
-**unabhängig voneinander** gemeldet (in den STOPP-Blöcken von M8-08, M8-09 und M8-26).
+| Was | Stand |
+|---|---|
+| **TK v3.9** | 9.10.4 trug den mit v3.7 zurückgenommenen Satz weiter – behoben. `.md` + `.docx` synchron |
+| **Prüfbefund** | `m8-pruefbefund.md`, vollständig |
+| **M8-21** | Flaschenhals behoben: `logo === null → zeichneErsatzLogo` **und** `sindMarkenSchriftenBereit` sind eingebaut |
+| **M8-31** | Neunter Kanal `marken:öffneMarkenDateiDialog` eingetragen. **Achtung:** Die acht Zählstellen hat der Autor nicht mehr geschafft – **von Hand nachgezogen** (aus „acht Instant-Kanäle" wurde neun, aus „neun Einträge" zehn, aus „8 Aufrufe" neun). Die verbliebenen „acht" in Zeile 21 und 33 sind **richtig** (Store-Operationen bzw. historischer Bezug) |
+| **M8-25** | IPC-Nutzlast trägt jetzt `schriftRolle: null` in Kanal-Angabe und DoD |
+| **M8-41** (neu) | „[app-shell] Der fünfte Modus-Reiter [Marken]", 508 Zeilen |
+| Textkorrekturen | M8-01, M8-02, M8-08, M8-09, M8-13, M8-17, M8-20, M8-24, M8-27 – teilweise |
 
-**9.15.1 sagt:**
-> „`leseMarke(markeId)` liefert die **fertig aufgelöste** Marke; kein Aufrufer sieht je eine
-> Teilmenge, keiner implementiert Vererbung selbst."
+---
 
-**9.15.2 verlangt:**
-> „**Bei einer abgeleiteten Marke ist sichtbar, was geerbt und was eigen ist.** Ein Wert, den der
-> Nutzer nicht setzt, bleibt geerbt und folgt künftigen Änderungen des Parents."
+## 2. Offen – in dieser Reihenfolge
 
-**Beides gleichzeitig geht nicht.** Die aufgelöste Marke hat die Information, welcher Wert geerbt war,
-**gelöscht** – genau die, die der Editor anzeigen muss. Und **keine** der acht Operationen in 9.15.1
-liefert den unaufgelösten Eintrag. Der `marken-editor` kann seinen eigenen Vertrag nicht erfüllen;
-M8-26 ist mit dem aktuellen Vertrag **nicht baubar**.
+### 2.1 Vier neue Issues fehlen noch
 
-**Wie der Fehler entstand:** Die Auflösungsregel sollte 19 Aufrufer davor schützen, je eine eigene
-Vererbungslogik zu bauen (das war und bleibt richtig). Dabei wurde der **eine** Aufrufer übersehen,
-der das Gegenteil braucht.
-
-**Naheliegende Lösung – aber es ist eine Entscheidung, nicht meine:** eine zusätzliche Operation, die
-den **unaufgelösten** Eintrag liefert, ausdrücklich **nur** für den Editor, mit dem Verbot für alle
-anderen. Das ist eine Änderung an TK 9.15.1/9.15.2 und damit ein eigener Schritt mit eigener Freigabe
-(danach `.docx` neu erzeugen).
-
-**Vorher keinen Prüflauf starten** – er würde diesen Widerspruch in einem Dutzend Issues erneut melden.
-
-## 2. DANN: sieben Lücken im Zuschnitt
-
-Alle von den schreibenden Agents gefunden, keine davon repariert. Teils neue Issues, teils Edits an
-**bestehenden** Issues.
-
-| # | Lücke | Art |
+| Nr. | Inhalt | Warum es ein eigenes Issue ist |
 |---|---|---|
-| 1 | **Kein Dateidialog** für `.woff2` und Logo-Bilder. `importiereSchrift`/`importiereLogo` sind ohne ihn nicht auslösbar. Für Medien gibt es `öffneMedienDialog` (TK 9.4.3) – das Gegenstück fehlt. | **neues Issue** |
-| 2 | **FA-24 verlangt „Farben, Slogan, Sicherheitsabstände"** als editierbar. Kein M8-Issue deckt **Slogan** oder **Sicherheitsabstand** ab. | **neues Issue** (1–2) |
-| 3 | **`marken-assets`-Protokoll braucht Registrierung vor `app.ready`.** Für `media://` leistet das `#9`; ein Gegenstück fehlt im Zuschnitt. | **neues Issue** oder Edit `#9` |
-| 4 | **M4-25 lädt das Logo** fest verdrahtet als *ein* gebündeltes, projektunabhängiges – ohne `markeId`, ohne `herkunft`. Für keine Nicht-Standard-Marke ist ein Logo ladbar. | **Edit** `#119`-Umfeld |
-| 5 | **M4-23 `zeichneSegment`** braucht einen Zweig für `logo === null` (Ersatz-Logo) und einen vierten Parameter `rahmenMarke`. Das Editierrecht an M4-Dateien ist im Zuschnitt **nirgends vergeben**. | **Edit**, Zuständigkeit klären |
-| 6 | **`RenderRequest` trägt keine `markeId`** (Variante A: Segmente sind fertige Pixel). M8-18 kann damit nicht wissen, welche Marken zu prüfen sind. | **Edit `#17`** + Vertragsfrage |
-| 7 | **`RENDER_FEHLERCODES` in `#68`** ist eine als *unveränderlich* geführte Liste mit sieben Werten ohne `marken_datei_fehlt` – der Code würde still zu `unbekannter_fehler` degradiert. | **Edit `#68`** |
-| 8 | **M7-04 `Sichten.marke`** ist ein app-weiter Wert aus `config:leseMarke`. Den entfernt M8-07. Niemand zieht `sichten.ts`/`baueSichten()` und den M7-65-Bootstrap nach. | **Edit** M7-Dateien |
+| **M8-42** | `#119` `logo-laden.ts`: `holeLogo(markeId)`, Verzweigung nach `herkunft`, `leereLogoBestand()`, **Verhalten bei `logo === null`** | Vier Issues setzen es voraus, alle sperren sich die Datei. M8-39 ist ohne es **nicht baubar** |
+| **M8-43** | Die `flaecheDunkel`-Kette: **#17 → #134 → #177 → #181** | Vier Glieder, dazwischen kompiliert nichts. **Achtung:** Der Zuschnitt nennt fälschlich #177 als `leseMarke`-Aufrufer – es ist **#181**. Kollision mit M8-37 auf `render-ausloesen.ts` muss aufgelöst werden |
+| **M8-44** | `config:leseMarke` ersatzlos zurückbauen: #29, #77, Bootstrap #3 | TK 9.5.6 führt `leseMarke` nicht mehr in der Operationstabelle |
+| **M8-45** | Die freie Akzentfarbe in **#139** und **#112** nachziehen | **Der schwerste.** #139 sagt „kein freier Farbwähler, nie ein Hex-Wert"; #112 **wirft** bei `'#FF4040'` – dem neuen Normalfall |
+| **M8-46** | Ein Weg, `Aktion.markeId` zu setzen (#38, #136) | Pflichtfeld ohne Setzweg; das Wort kommt in **keinem** angelegten Issue vor |
 
-**Punkt 6 ist der schwerste.** Er berührt die IPC-Granularität (Variante A) und ist keine
-Textkorrektur: Entweder trägt der `RenderRequest` künftig Marken-Referenzen, oder die Prüfung wandert
-an eine andere Stelle. Das gehört dem Auftraggeber vorgelegt.
+Die vollständigen Aufträge für M8-42…M8-46 stehen im Prüfbefund, Abschnitt „Drei Funde, die über M8
+hinausgehen" und „Behebung".
 
-## 3. DANN: Nähte zwischen den parallel geschriebenen Dateien
+### 2.2 `flushBestand()` in M8-36 eintragen
 
-Die fünf schreibenden Agents liefen gleichzeitig. Drei haben ihre Dateien **nachträglich** gegen die
-der anderen abgeglichen und dabei echte Signatur-Abweichungen korrigiert (`erstelleMarke`s `parentId`
-als Pflicht-`string | null` statt optional; `schriftRolle` ebenso; `MarkenTeilwerte` mit einem
-Sentinel `{ geerbt: true }` statt eines einfachen `Partial`).
+M8-03 baut ihn, M8-03 und M8-04 verweisen den Aufruf an „#3 beim Beenden". M8-36 ist das einzige
+Issue an `src/main/index.ts` und schließt `before-quit` aus. **Datenverlust ohne Fehlermeldung** –
+und der Kanal, der es sichtbar machen würde, hat keinen Abonnenten.
 
-**Was noch offen ist:**
+### 2.3 Restliche Textkorrekturen
 
-- **M8-31 ist stale.** Sein „Fremde Signaturen"-Block zitiert die *älteren* Fassungen von
-  `erstelleMarke` und `MarkenTeilwerte`. Muss vor dem Anlegen nachgezogen werden.
-- **M8-22 ↔ M8-32 divergieren.** M8-32 nimmt `marken-bestand.ts` mit `MarkenBestand`/
-  `ladeMarkenBestand` an; M8-22 heißt `marken-uebersicht.ts` mit anderen Exportnamen und trägt
-  zusätzlich die „geöffnete Marke". Entstanden, weil M8-32 vor M8-22 geschrieben wurde.
-- **`Herkunft` (M8-11) vs. `MarkenHerkunft` (M8-22)** – zwei Namen für denselben Typ aus TK 9.11.2.
-- **M8-02 liegt bewusst NICHT in `contracts`.** Der Zuschnitt hatte es dort einsortiert; die
-  etablierte Projektregel sagt aber, fachliche Fehlercode-Unionen liegen in `src/main/**` (Präzedenz:
-  `VorlagenFehlercode` in M4-03). Neun Geschwister-Dateien folgen dieser Regel. Der Zuschnitt
-  (`m8-zuschnitt.md`, Abschnitt „contracts") ist an dieser Stelle **falsch** und sollte korrigiert
-  werden, nicht die Dateien.
+Aus dem Prüfbefund, noch offen: **M8-03, M8-07, M8-10, M8-23, M8-28, M8-30, M8-32, M8-39**.
+Besonders:
 
-## 4. Weitere offene Sachfragen aus den STOPP-Blöcken
+- **M8-10** – *braucht eine Entscheidung des Auftraggebers, nicht eine Korrektur:* Eine neu angelegte
+  eigenständige Marke bekommt heute eine tiefe Kopie der eingebauten **einschließlich `logo`**. Damit
+  trägt jede Partner-Marke ab Sekunde eins das Fitnessworld24-Logo, und der Ersatz-Logo-Pfad wird
+  **strukturell nie** ausgelöst. Beide Möglichkeiten (Logo mitkopieren / `logo: null`) gehören
+  vorgelegt.
+- **M8-32** – führt „Reiter oder Unterbereich" als offene Frage (seit v3.6 entschieden) und fordert,
+  M8-38 zu melden statt anzulegen.
+- **M8-28** – behauptet, `Marke.farben` seien immer 6-stellig; TK 9.11.2 erlaubt 8-stellig, M8-19
+  **wirft** dann.
+- **M8-23/24/25/27** – Verweise auf „BRIEFING Abschnitt M8-XX"; solche Abschnitte gibt es nicht.
 
-Nicht blockierend, aber vor dem Bauen zu klären:
+### 2.4 Die Edit-Zuweisungen
 
-- **Der Kontrast-Schwellenwert** ist nirgends genannt. M8-19 weigert sich bewusst, ihn festzulegen,
-  und übergibt ihn als Pflicht-Parameter; M8-28 führt ihn als Prop. Irgendwer muss die Zahl nennen.
-- **Die zwei Trefferlisten von `Markennutzung` decken `Project.standardMarkeId` nicht.** Eine Marke
-  ließe sich löschen, während sie noch Projekt-Standard ist – der nächste Render liefe in
-  `marke_nicht_gefunden`. Braucht eine dritte Liste oder eine bewusste Entscheidung.
-- **M8-07 Migration:** Reihum alle Projekte beim Start durchgehen, oder träge beim Öffnen? Träge
-  macht die projektübergreifende Referenzprüfung (M8-12) für nie wieder geöffnete Projekte
-  unzuverlässig. Für Reihum gibt es keinen etablierten Schreibweg für nicht-aktive Projekte.
-- **Der Dateiname beim Import** (Originalname oder neutral?) und das Verhalten bei Namenskollision.
-- **Das eingebaute Logo** (Dateiname, `seitenverhaeltnis`) ist nirgends festgenagelt – auch nicht im
-  Code-Repo.
+**Von sechzehn Edits haben drei einen Ausführenden.** Nach M8-42…M8-46 bleiben die kleineren; jede
+Zeile der Tabelle in `m8-zuschnitt.md` braucht einen Empfänger. Ohne ihn meldet ein Agent und baut
+nicht.
 
-## 5. Die Reihenfolge
+### 2.5 Zuschnitt nachziehen
 
-1. **TK-Widerspruch entscheiden** (Abschnitt 1) → AD/TK anpassen → `.docx` neu → committen.
-2. **Zuschnitt-Lücken** (Abschnitt 2) schließen: neue Issues zuschneiden, Edit-Ziele benennen.
-   Punkt 6 vorher dem Auftraggeber vorlegen.
-3. **Nähte glätten** (Abschnitt 3) – M8-31 nachziehen, M8-22/M8-32 vereinheitlichen.
-4. **Prüflauf** über alle M8-Issues, mehrere unabhängige Prüfer, je 6–8 Issues, gegen TK **und** die
-   Regeln A–E. Plus **ein Querschnitts-Prüfer** nur für die Nähte – bei M2 hat genau der die
-   teuersten Befunde gefunden.
-5. **Korrigieren** mit Diff-Kontrolle.
-6. **Anlegen:** `python tools/create-issues.py docs/agents/m8 "M8 – Marken"` – erst **trocken**, dann
-   `--go`. Labels vorher anlegen: `modul:marken-store`, `modul:marken-editor`.
-7. **Querverweise nachziehen** (`M8-XX` → echte `#`-Nummern, Mapping in `docs/agents/m8/map.json`).
-8. **DANN der Zitat-Abgleich** über die **54** bestehenden Issues – Umfang und Klassen stehen in
-   `marken-abgleich-umfang.md`. Er läuft zuletzt, damit die Klasse-3-Issues auf echte M8-Nummern
-   verweisen können.
+`m8-zuschnitt.md` kennt M8-41 noch nicht; die Zahl (39) und die Edit-Tabelle sind nachzuziehen.
 
-## 6. Was gut gelaufen ist – bitte beibehalten
+### 2.6 Dann: zweiter Prüflauf
 
-- **Die Briefing-Datei** (`docs/agents/m8/BRIEFING.md`) hat sich wieder bewährt: Die Agents haben
-  Zitate selbst verifiziert und dabei **eigene** Fehler gefunden („ein erfundenes Wort und eine
-  ungekennzeichnete Auslassung in TK-Zitaten"), bevor ein Prüfer sie sehen musste.
-- **Die Agents haben Widersprüche gemeldet statt sie zu überschreiben** – der TK-Widerspruch aus
-  Abschnitt 1 wurde dreifach unabhängig gefunden. Genau das soll Regel B leisten.
-- **Zwei Agents haben ihre eigenen Dateien nachträglich gegen die der Geschwister abgeglichen.** Das
-  war nicht beauftragt und hat echte Divergenzen abgefangen.
+Kürzer als der erste – nur über das Geänderte und die Nähte. **Ein Querschnitts-Prüfer ist Pflicht**;
+im ersten Lauf hat genau er die teuersten Befunde geliefert.
 
-## 7. Was schiefgelaufen ist – bitte anders machen
+---
 
-- **Fünf Agents gleichzeitig auf einem neuen Modul ist zu viel.** Die Signaturen entstehen erst beim
-  Schreiben; wer zuerst fertig ist, legt sie fest, und die Späteren müssen nachziehen. Beim nächsten
-  neuen Modul besser: **zuerst** die Typen und die Store-Signaturen (ein Agent, wenige Dateien),
-  **dann** parallel den Rest gegen diese festen Signaturen.
-- **Der Zuschnitt hat sieben Lücken übersehen** – alle an derselben Art Naht: eine bestehende,
-  „abgeschlossene" Datei, die erweitert werden muss (M4-23, M4-25, `#17`, `#68`, M7-04). Beim
-  Zuschnitt einer Anforderungsänderung gehört ein eigener Schritt dazu: **„welche bestehenden
-  Verträge muss das anfassen?"** – und die Edit-Rechte ausdrücklich vergeben.
+## 3. Zwei Dinge, die beim Weiterarbeiten Zeit sparen
+
+**Der gebaute Code ist die Autorität über Plattformverhalten.**
+`C:\Users\acer\programming\Digital-Signage-Tool\src\` enthält gemessene Befunde, die in keiner
+Planungsdatei stehen – die fertige CSP, die tatsächlich gesetzten Schema-Privilegien und der
+Messwert, dass `fetch('media://…')` den Handler nicht einmal erreicht. Zweimal an einem Tag hätte ich
+ohne diesen Blick geraten.
+
+**Die Werkzeugfalle mit den Anführungszeichen ist real.**
+Ein deutsches Schlusszeichen im Suchmuster beendet ein Python-String-Literal mitten im Satz. Heute
+zweimal aufgetreten. Zeilenbasiert arbeiten oder das Edit-Werkzeug nehmen.
+
+---
+
+## 4. Die Regel, die aus diesem Tag entstanden ist
+
+TK v3.9 hat sie in den Schlussblock geschrieben, weil derselbe Fehler **dreimal an einem Tag**
+auftrat (v3.6 wirft ihn v3.4 vor, v3.7 stellt ihn an sich selbst fest, v3.9 findet ihn erneut):
+
+> Eine Änderung gilt erst als nachgezogen, wenn eine **Volltextsuche über die geänderte Aussage**
+> gelaufen ist.
+
+Sie gilt auch für Issues, nicht nur fürs TK. Die drei ERLEDIGT-Vermerke zum Dialog-Kanal sind genau
+daran gescheitert: Sie wurden geschrieben, ohne M8-31 nachzuziehen – und haben die Meldung
+abgeschaltet, während die Lücke bestehen blieb.
