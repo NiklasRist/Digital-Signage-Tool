@@ -27,10 +27,25 @@
  * Datei zu einer zweiten Quelle der Wahrheit - und jedes Modul muesste beim Anlegen
  * eines neuen Codes eine fremde, geteilte Datei anfassen.
  */
-export type Fehlercode =
+export type GenerischerFehlercode =
   | "ungueltige_eingabe"
   | "nicht_gefunden"
   | "unbekannter_fehler";
+
+/**
+ * Frueherer Name derselben Union (#12). Bleibt als Alias bestehen, weil bereits
+ * Signaturen darauf verweisen.
+ *
+ * Warum ein Alias und keine zweite Aufzaehlung: Zwei Stellen mit denselben drei
+ * Literalen laufen irgendwann auseinander - jemand ergaenzt einen Code an einer von
+ * beiden, und ab dann bedeutet `Fehlercode` etwas anderes als `GenerischerFehlercode`,
+ * ohne dass irgendetwas bricht. Ein Alias kann das nicht.
+ *
+ * Der Name `GenerischerFehlercode` ist der tragende: Ihn verlangen die Signaturen aus
+ * M1 bis M7, und er sagt deutlicher, was gemeint ist - die generischen Codes im
+ * Gegensatz zu den fachlichen der einzelnen Module.
+ */
+export type Fehlercode = GenerischerFehlercode;
 
 /**
  * Ergebnis einer Instant-Operation.
@@ -53,17 +68,34 @@ export type Fehlercode =
  * sie erst auf die fuer seinen Code dokumentierte Form einzugrenzen. Ein unbesehener
  * Zugriff kompiliert nicht; mit `any` wuerde er es.
  *
- * NICHT MEHR LANGE EINPARAMETRIG: #22 (M1) erweitert diesen Typ um einen zweiten,
- * optionalen Typparameter fuer die fachliche Fehlercode-Union
- * (`Ergebnis<T, F extends string = GenerischerFehlercode>`). Bestehende Verwendungen
- * als `Ergebnis<T>` bleiben davon unberuehrt, weil der Parameter einen Vorgabewert
- * bekommt.
+ * ZUM ZWEITEN TYPPARAMETER `F` (#22): Ueber ihn haengt jedes Fachmodul seine EIGENE
+ * Fehlercode-Union ein - `Ergebnis<Asset, MediaFehlercode>`. Die drei generischen
+ * Codes kommen dabei IMMER hinzu (`F | GenerischerFehlercode`), ohne dass ein Modul
+ * sie erneut aufzaehlen muss.
+ *
+ * Warum die fachlichen Unionen NICHT hier stehen: Sie werden dort deklariert, wo der
+ * Code entsteht (media-service, vorlagen-store, export-service). Saemmelte diese Datei
+ * sie ein, muesste der geteilte Vertrag die Main-Module kennen - contracts/ zeigte
+ * dann auf Main-Code, und jedes neue Fehlercode-Issue muesste eine fremde, von allen
+ * genutzte Datei anfassen.
+ *
+ * Warum `F` und nicht "jedes Modul schreibt seine Vollunion selbst": Nur so bleibt der
+ * Code am Aufrufer typisiert sichtbar, ohne dass irgendwer generisch + fachlich von
+ * Hand gepflegt zusammenhaelt. Ein spaeterer Umbau auf Vollunionen traefe M3, M4 und
+ * M6 gleichzeitig.
+ *
+ * Der Vorgabewert haelt `Ergebnis<T>` einparametrig gueltig - jede Signatur aus #12
+ * kompiliert unveraendert weiter.
  */
-export type Ergebnis<T> =
+export type Ergebnis<T, F extends string = GenerischerFehlercode> =
   | { ok: true; wert: T }
   | {
       ok: false;
-      fehler: { code: Fehlercode; meldung: string; daten?: unknown };
+      fehler: {
+        code: F | GenerischerFehlercode;
+        meldung: string;
+        daten?: unknown;
+      };
     };
 
 /**
