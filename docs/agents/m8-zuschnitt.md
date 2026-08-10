@@ -29,7 +29,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 ---
 
-## 38 neue Issues
+## 39 neue Issues
 
 ### contracts (geteilt) – 2
 
@@ -127,7 +127,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 > `vorlagen-editor` seine Sicherheitslinie gegen eine **benannte** Marke zeichnen.
 > Beide gehören in M8-22 als weitere Rückmelder an `uebernimmAktualisierteMarke`.
 
-### Verdrahtung und geteilte Bausteine – 5
+### Verdrahtung und geteilte Bausteine – 6
 
 | Nr. | Issue |
 |---|---|
@@ -137,6 +137,20 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 | **M8-38** | **NEU: `sichten.ts` und den Renderer-Bootstrap auf den Marken-Zugang umstellen** – `Sichten.marke` fällt weg |
 
 | **M8-39** | **NEU: [gemeinsam] Marken fuer die Zeichner aufloesen und bereitstellen** – `markeId` → `Marke` ueber `leseMarke`, je Marke zwischengespeichert, Schriften und Logo vor dem ersten Zeichnen bereit |
+
+| **M8-40** | **NEU: [composer] Die Zeichner auf Marken je Aktion umstellen** – `Zeichenvoraussetzungen.marke` und die drei `…WurzelProps.marke` fallen **ersatzlos** weg |
+
+> **Warum M8-40 ein eigenes Issue ist und nicht Teil von M8-38:** `Zeichenvoraussetzungen.marke` und
+> die drei `WurzelProps.marke` fallen **zusammen** weg. Nur eines davon mitzunehmen zerschnitte eine
+> zusammenhängende Änderung in der Mitte – genau die Nahtstellen-Fehlerklasse, die dieses Projekt in
+> jedem Meilenstein Geld gekostet hat.
+>
+> **Beim Nachprüfen wuchs sein Dateibereich von fünf auf acht** – und dabei kam ein **sachlicher
+> Fehler** in einem abgenommenen Issue zutage: `split.tsx` (**#218**) führt heute **ein** `marke`,
+> das laut eigener Beschreibung „AUSSCHLIESSLICH die Farb-Rolle `flaecheDunkel`" liefert. Die kommt
+> nach TK 9.15.4 aus der **Projekt-Standardmarke** – der Band-Abschnitt **darin** trägt aber die
+> Marke der **rotierenden Aktion**. Es braucht dort **zwei** Marken; mit einer ist die Komposition
+> nicht korrekt darstellbar. Dasselbe gilt für `einblendung.tsx` (**#219**).
 
 > **Warum M8-39 fehlte – die SIEBTE Wiederholung derselben Lueckenklasse.** Bis v3.3 gab es **eine**
 > app-weite Marke, durchgereicht ueber `Sichten.marke`; die Beschaffung war trivial und stand
@@ -307,6 +321,13 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
   auseinanderlaufen, ohne dass etwas bricht."*
 - **Dateiname beim Import** (Originalname oder neutral?) und Verhalten bei Namenskollision.
 - **Das eingebaute Logo** (Dateiname, `seitenverhaeltnis`) ist nirgends festgenagelt.
+- **Gegen welche Marke zeichnet der `vorlagen-editor`?** Er hat **keinen** Projektzugang, also auch
+  keine `Project.standardMarkeId`. Bis v3.5 war das gleichgültig – seit v3.6 **`Marke.sicherheit`
+  bearbeitbar** ist, entscheidet die Marke darüber, **wo die Sicherheitslinie liegt**, die der Editor
+  zeichnet und gegen die er warnt (9.11.2). Eine Vorlage, die gegen die eingebaute Marke sicher
+  aussieht, kann es bei einer anderen nicht sein.
+- **Was geschieht beim Wechsel der Marke einer Aktion bei offenem Projekt?** Die Zeichner halten die
+  Marken vorab bereit (M8-40); ein Wechsel bringt eine Marke ins Spiel, die noch nicht bereitsteht.
 
 ## Textkorrekturen an den geschriebenen Volltexten
 
