@@ -4,11 +4,12 @@
 > Technische Konzept offen lässt oder die aus Entscheidungen des Auftraggebers stammen. Bei M2 hat
 > genau so eine Datei die Zitat-Treue auf 100 % gebracht (vorher sieben Verstöße gegen Regel D).
 >
-> Grundlage: AD **v1.4**, TK **v3.12**. Milestone: `M8 – Marken`.
+> Grundlage: AD **v1.4**, TK **v3.13**. Milestone: `M8 – Marken`.
 >
-> **Diese Datei wurde am 10.08. von TK v3.4 auf v3.7 gehoben und am 11.08. auf v3.12.** Die
+> **Diese Datei wurde am 10.08. von TK v3.4 auf v3.7 gehoben und am 11.08. auf v3.13.** Die
 > Fassungen dazwischen haben Festlegungen gebracht, die M8 berühren – sie stehen in Abschnitt 3a
-> (v3.5–v3.7) und **3b** (v3.8–v3.12). **Eine davon nimmt Punkt 8 der Auftraggeber-Liste zurück.**
+> (v3.5–v3.7) und **3b** (v3.8–v3.13). **Zwei davon greifen in die Auftraggeber-Liste ein: Punkt 8
+> ist zurückgenommen, Punkt 6 überholt.**
 > Wenn du eine ältere Kopie dieser Datei vor dir hast: wegwerfen.
 
 ---
@@ -17,7 +18,7 @@
 
 1. `docs/agents/issue-generation-prompt.md` – **Abschnitt 7 vollständig** (Pflicht-Vorlage + Regeln
    A–E), Abschnitt 5 (globale Invarianten), Abschnitt 8 (ausgefülltes Beispiel).
-2. `docs/Technisches_Konzept_Digital-Signage-Tool.md` (**v3.12**) – für M8 zentral: **9.15** (der ganze
+2. `docs/Technisches_Konzept_Digital-Signage-Tool.md` (**v3.13**) – für M8 zentral: **9.15** (der ganze
    Abschnitt), **9.10.10** (Ersatz-Logo), **9.11.2** (`Marke` samt Vererbungsregel **und dem
    Herkunfts-Stempel `herkunftJeFeld`**), **9.10.9** (Farb-Rollen-Auflösung und deren zwei
    Ausnahmen), **9.12.1** (`vorlagen-store` – das **Muster**, dem der `marken-store` folgt),
@@ -54,7 +55,9 @@ Label `braucht-entscheidung` fast jedes Issue und ist wertlos. In den STOPP-Bloc
    **zurückgenommen**.
 5. **Rahmen stabil, Inhalt wechselt:** Band-Hintergrund und Split-Restflächen aus
    `Project.standardMarkeId`, **nicht** aus der Marke der sichtbaren Aktion.
-6. **Löschen blockiert** bei Referenz (Aktionen **und** abgeleitete Marken), es kaskadiert nicht.
+6. **[MIT TK v3.11 ÜBERHOLT – siehe Abschnitt 3b, Punkt 5: es sind DREI Bedingungen, nicht zwei.
+   In dieser Fassung nicht mehr gültig, nicht zitieren.]**
+   **Löschen blockiert** bei Referenz (Aktionen **und** abgeleitete Marken), es kaskadiert nicht.
 7. **Eingebaute Marke unlöschbar, aber bearbeitbar** – anders als die eingebauten Vorlagen.
 8. **[MIT TK v3.7 ZURÜCKGENOMMEN – siehe Abschnitt 3a, Punkt 7. Nicht mehr gültig, nicht zitieren.]**
    Fehlt eine importierte Datei beim Render → früher Abbruch, vor dem ersten ffmpeg-Aufruf.
@@ -112,9 +115,9 @@ Festlegung widersprechen, **gewinnen sie**.
    und die reist seit v3.7 als **fertiger Hex-Wert** `einblendung.flaecheDunkel` eingefroren im
    Auftrag mit.
 
-## 3b. Was seit TK v3.7 dazugekommen ist (v3.8–v3.12) – ENTSCHIEDEN, nicht mehr fragen
+## 3b. Was seit TK v3.7 dazugekommen ist (v3.8–v3.13) – ENTSCHIEDEN, nicht mehr fragen
 
-> **Diese sieben Punkte sind der Grund, warum du das TK selbst aufschlagen musst und dich nicht auf
+> **Diese acht Punkte sind der Grund, warum du das TK selbst aufschlagen musst und dich nicht auf
 > Abschnitt 3a verlassen darfst.** Sie stammen aus dem zweiten Prüflauf und aus vier Entscheidungen
 > des Auftraggebers vom 11.08.2026.
 
@@ -157,10 +160,36 @@ Festlegung widersprechen, **gewinnen sie**.
    `marken-store` NICHT fragen** – der liest bereits umgekehrt, das wäre ein **Ringschluss zwischen
    zwei Main-Modulen**. Bindend: **`marken-store` → `project-store`, nie umgekehrt.**
 
-7. **`MarkenReferenz.id` heißt `aktionId`** (v3.12, 9.15.1). **Achtung beim Abschreiben:** Der
-   Nachbartyp `VorlagenReferenz` (9.12.1) heißt weiterhin `id` – **zu Recht**, weil eine Vorlage auch
-   von Listenelementen benutzt wird und der Fundort dort beides sein kann. Wer `VorlagenReferenz`
-   als Vorbild zitiert, zitiert `id`; wer `MarkenReferenz` deklariert, schreibt `aktionId`.
+7. **`MarkenReferenz.id` heißt `aktionId`** (v3.12, 9.15.1) – **und seit v3.13 sind ALLE DREI
+   Fundort-Formen benannte Typen**, keine anonymen Formen mehr. Wörtlich aus dem Änderungsvermerk zu
+   v3.13: „**Alle drei Fundort-Formen sind jetzt benannt** – eine anonyme daneben wäre die einzige
+   Ausnahme geblieben." Der Vertrag (9.15.1) schreibt sie so:
+   ```
+   MarkenReferenz {             // ein Fundort in einem Projekt
+     projektId:   string
+     projektName: string        // für die Meldung „… in 2 Projekten"
+     aktionId:    string        // Aktions-ID des Treffers (v3.12: hiess vorher id)
+   }
+
+   AbgeleiteteMarkenReferenz {  // eine abgeleitete Marke – KEIN Projekt-Bezug (v3.13)
+     markeId:   string
+     markeName: string          // für die Meldung
+   }
+
+   StandardmarkenReferenz {     // ein Projekt, das die Marke als Standard führt (v3.13)
+     projektId:   string
+     projektName: string
+   }
+   ```
+   `Markennutzung` führt sie als `aktionen: MarkenReferenz[]`, `abgeleiteteMarken:
+   AbgeleiteteMarkenReferenz[]` und `standardInProjekten: StandardmarkenReferenz[]`. **Beachte die
+   Feldnamen bei den abgeleiteten Marken:** `markeId`/`markeName`, **nicht** `id`/`name` – der
+   Vertrag folgt hier ausdrücklich „**der genaueren Fassung**", weil sie sagen, **worauf** sie
+   zeigen, und sich damit sichtbar von `MarkenReferenz.projektId` unterscheiden.
+   **Achtung beim Abschreiben:** Der Nachbartyp `VorlagenReferenz` (9.12.1) heißt weiterhin `id` –
+   **zu Recht**, weil eine Vorlage auch von Listenelementen benutzt wird und der Fundort dort beides
+   sein kann. **Er wird NICHT mitumbenannt.** Wer `VorlagenReferenz` als Vorbild zitiert, zitiert
+   `id`; wer `MarkenReferenz` deklariert, schreibt `aktionId`.
 
 8. **Scheitert der Sofort-Flush von `marken.json` beim BEENDEN, schließt die App NICHT** (v3.11,
    9.15.1 – **Quelle bleibt 9.5.4**, dort steht der Vertrag, hier nur der zweite Fundort). Vier
