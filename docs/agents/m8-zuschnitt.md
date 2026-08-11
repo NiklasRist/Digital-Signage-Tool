@@ -29,7 +29,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 ---
 
-## 46 neue Issues
+## 47 neue Issues
 
 ### contracts (geteilt) – 2
 
@@ -172,7 +172,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 ---
 
-### Nach dem Prüflauf ergänzt (10./11.08.) – 7
+### Nach dem Prüflauf ergänzt (10./11.08.) – 8
 
 | Nr. | Issue | Warum es fehlte |
 |---|---|---|
@@ -182,14 +182,15 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 | **M8-44** | [config-store] `leseMarke` und `config:leseMarke` ersatzlos zurückbauen | TK 9.5.6 führt die Operation nicht mehr; gebaut ist sie trotzdem. **M8-43 läuft davor** – `#181` importiert main-intern, die Grep-Probe ist dagegen blind |
 | **M8-45** | Die freie Akzentfarbe in `#139` und `#112` nachziehen | `#139`: „kein freier Farbwähler, nie ein Hex-Wert"; `#112` **wirft** bei `'#FF4040'` – dem neuen Normalfall. Seit v3.4 überholt, nie nachgezogen |
 | **M8-46** | Ein Weg, `Aktion.markeId` zu setzen | Pflichtfeld ohne Setzweg – das Wort kam in **keinem** angelegten Issue vor. FA-23 wäre nicht benutzbar |
-| **M8-47** | [contracts] Die geteilten Typen erweitern (`#52`, `#14`, `#15`, `#21`) | Die **Grundlage aller 46 Issues** stand als Tabellenzeile **ohne Ausführenden**. Ohne sie importiert jedes zweite Issue ins Leere |
+| **M8-47** | [contracts] Die geteilten Typen erweitern (`#52`, `#14`, `#15`, `#21`) | Die **Grundlage der übrigen 46 Issues** stand als Tabellenzeile **ohne Ausführenden**. Ohne sie importiert jedes zweite Issue ins Leere |
+| **M8-48** | [marken-editor] Die Wurzel-Komponente `src/renderer/marken-editor/index.tsx` – **und seit dem 11.08. ihre Montage in `src/renderer/App.tsx` (#262)** | M8-41 baut den Reiter, aber **niemand baute den Bildschirm dahinter**: elf geschriebene Editor-Bausteine mit zusammen zweiundzwanzig Funktionen hatten **keinen Aufrufer**. Dieselbe Lückenklasse und dieselbe Naht wie in M7: Logik gebaut, Bedienung fehlt |
 
-> **Alle sieben stammen aus dem Prüflauf** (`m8-pruefbefund.md`). Sechs davon sind Eingriffe in
+> **Alle acht stammen aus dem Prüflauf** (`m8-pruefbefund.md`). Sechs davon sind Eingriffe in
 > **abgenommene** Verträge, die vorher nur als Tabellenzeile ohne Adressaten geführt wurden – genau
 > die Klasse, für die die Regel gilt: *eine Meldung ohne Recht führt dazu, dass ein Agent wartet
 > statt baut.*
 >
-> **SECHS verbindliche Reihenfolgen** – im zweiten Prüflauf vollständig erhoben. Vier davon kannte
+> **SIEBEN verbindliche Reihenfolgen** – im zweiten Prüflauf vollständig erhoben. Vier davon kannte
 > jeweils nur **eine** Seite; sie stehen deshalb hier zentral, nicht nur in den Issues:
 >
 > | Reihenfolge | Grund | beidseitig? |
@@ -200,6 +201,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 > | **M8-40 vor M8-41** | beide fassen `inhalte.tsx` an | nein – von M8-41 gemeldet |
 > | **M8-45 vor M8-46** | dieselben Deklarationen in `#136`; M8-45 ändert Art und Typ, M8-46 fügt hinzu | **ja** |
 > | **M8-44 vor M8-31** | Schlüsselmengen-Test in M8-31s DoD – **kein** Typecheck, die schwächste Kante | nein |
+> | **M8-41 vor M8-48** | M8-41 deklariert `MarkenEditorWurzelProps` und `ModulWurzeln.markenEditor`; M8-48 schreibt die Deklaration ab, füllt sie aus **und belegt das Feld in `src/renderer/App.tsx` (#262)** – ohne die Deklaration gibt es dort nichts zu belegen (11.08. ergänzt) | **ja** |
 >
 > **ACHTUNG – RINGSCHLUSS.** Diese Kanten bilden zusammen einen Kreis:
 > `M8-43 → M8-44 → M8-31 → M8-39 → M8-37 → M8-43`. **Kein einzelnes Issue kann ihn sehen** – M8-43
@@ -235,6 +237,7 @@ Editierrecht** – eine Meldung ohne Recht führt dazu, dass ein Agent wartet st
 | **#117** (M4-23) | `template-canvas/zeichne-segment.ts` | vierter Parameter `rahmenMarke`; `logo === null`-Zweig | Recht liegt bei **M8-21** – bereits vergeben |
 | **#128, #134, #140, #150, #217** | die **fünf** Aufrufer von `zeichneSegment` | vierter Parameter `rahmenMarke`; `#134` löst zusätzlich `Project.standardMarkeId` auf | zugewiesen an **M8-37** |
 | **#154** (M5-35) | `composer`-Zeichenvoraussetzungen | **zweiter** Renderer-Aufrufer von `config:leseMarke`, das M8-07 abschafft | neu, 10.08. gefunden |
+| **#262** (M7-69) → **M8-48** | `src/renderer/App.tsx` | Import der neuen Wurzel; `markenEditor` als **sechster** Eintrag in `ModulWurzeln`; die Zahl „fünf" wird an den **drei** Stellen, die die Modul-Wurzeln zählen, zu „sechs" (die „genau fünf" Felder der `Reiterumgebung` bleiben **fünf**). **Sonst nichts** | 11.08. entschieden. `App.tsx` gehörte weder M8-41 noch M8-48 – zwischen beiden wäre der Typecheck dort rot geblieben und niemand hätte ihn grün machen dürfen. Recht liegt bei **M8-48**, dem **späteren** der beiden: Es erzeugt den Wert, der eingesetzt wird; M8-41 hätte zu seinem Zeitpunkt nichts zu übergeben |
 
 > **Zwei Korrekturen an der eigenen Zuschnitt-Annahme (10.08., beim Schreiben von M8-37 gefunden):**
 > Es sind **fünf** Aufrufer von `zeichneSegment`, nicht vier, und **keiner liegt in M6** – die in
@@ -254,7 +257,7 @@ Editierrecht** – eine Meldung ohne Recht führt dazu, dass ein Agent wartet st
 
 | Issue | Datei | Was sich ändert |
 |---|---|---|
-| **#21** (M1-09) → **M8-47** | `src/shared/contracts/konstanten.ts` | neue Konstante **`SICHERHEITSABSTAND_BEREICH`** = `{ horizontal: { min: 0, max: 480 }, vertikal: { min: 0, max: 270 } }` – gelesen von **M8-11** (Main-Validierung) **und** M8-35 (frühe Rückmeldung am Formular) |
+| **#21** (M1-09) → **M8-47** | `src/shared/contracts/konstanten.ts` | **zwei** neue Konstanten: **`SICHERHEITSABSTAND_BEREICH`** = `{ horizontal: { min: 0, max: 480 }, vertikal: { min: 0, max: 270 } }` – gelesen von **M8-11** (Main-Validierung) **und** M8-35 (frühe Rückmeldung am Formular) – sowie **`KONTRAST_SCHWELLE`** = `4.5` (TK v3.10, WCAG AA), gelesen **allein** von M8-48 und als Prop weitergereicht; M8-19 und M8-28 importieren sie ausdrücklich **nicht** |
 
 > **Ohne diesen Edit importieren M8-11 und M8-35 ins Leere.** Die Konstante liegt bewusst in
 > `konstanten.ts` neben `SICHERHEITSABSTAND_PX` (der **Vorbelegung**) und `DAUER_BEREICH` (dem
@@ -342,9 +345,11 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
 
 ## Was noch offen ist und vor dem Prüflauf geklärt werden muss
 
-- **Der Kontrast-Schwellenwert ist nirgends genannt.** M8-19 weigert sich bewusst, ihn festzulegen,
-  und übergibt ihn als Pflicht-Parameter; M8-28 führt ihn als Prop. **Irgendwer muss die Zahl
-  nennen.**
+- **Der Kontrast-Schwellenwert ist nirgends genannt** – **ERLEDIGT (TK v3.10):** **4,5:1** (WCAG AA
+  für normalen Text; 3:1 gilt nur für große Schrift, und die Marken-Vorschau zeigt beides). Die Zahl
+  steht an **genau einer** Stelle – `KONTRAST_SCHWELLE` in `konstanten.ts` (M8-47). M8-19 und M8-28
+  behalten ihre Weigerung: Sie nehmen den Wert entgegen und importieren ihn **nicht**. Gelesen wird
+  er allein von **M8-48**.
 - **`Markennutzung` deckt `Project.standardMarkeId` nicht.** Die zwei Trefferlisten erfassen Aktionen
   und abgeleitete Marken – eine Marke ließe sich löschen, während sie noch **Projekt-Standard** ist,
   und der nächste Render liefe in `marke_nicht_gefunden`. Braucht eine dritte Liste oder eine bewusste
@@ -390,8 +395,6 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
   saubere Vorsorge.*
 - **Erzwingen die zwei neuen Pflichtfelder eine `schemaVersion`-Erhöhung für `project.json`?**
   Betrifft #34/#46/#48; M8-47 läßt `AKTUELLE_SCHEMA_VERSION` bewußt auf `1`.
-- **Der Kontrast-Schwellenwert** ist weiterhin nirgends genannt (M8-19 führt ihn als Pflicht-Parameter,
-  M8-28 als Prop – beide erfinden bewusst keine Zahl).
 - **Gegen welche Marke zeichnet der `vorlagen-editor`?** Er hat **keinen** Projektzugang, also auch
   keine `Project.standardMarkeId`. Bis v3.5 war das gleichgültig – seit v3.6 **`Marke.sicherheit`
   bearbeitbar** ist, entscheidet die Marke darüber, **wo die Sicherheitslinie liegt**, die der Editor
