@@ -514,11 +514,18 @@ M8_BLOCKIEREND = {
     55,  # beim Beenden ist der Renderer u. U. abgebaut - dann zeigt niemand
          # Empfehlung und Wiederholen-Knopf (gilt fuer alle drei Speicher)
     56,  # schemaVersion; Nutzer-Meldung bei Marken-Fehlschlag
+    57,  # aktualisiereProjektliste() nach JEDEM Wechsel = Verzeichnis-Scan
+         # ueber alle Projektordner unter dem D1-Lock, und der Regelfall ist
+         # laut TK 9.14.3, dass mehrere Projekte hintereinander umgestellt
+         # werden. Eine gezielte Auffrischung eines Eintrags gibt es nicht.
 }
-# 50 und 57 tragen es NICHT: 50 belegt ein Feld und hat nur Verbote im
-# STOPP-Block; 57 schliesst M8-52 an und erbt dessen offene Frage, statt eine
-# eigene zu haben - dieselbe Frage zweimal zu etikettieren waere das Rauschen,
-# das die Regel vermeiden soll.
+# 50 traegt es NICHT: Es belegt ein Feld in App.tsx und hat nur Verbote im
+# STOPP-Block.
+# ZU 57: Ich hatte es zunaechst ausgenommen, weil es M8-52 nur anschliesst und
+# dessen offene Frage erbt. Der Autor hat widersprochen - es hat eine EIGENE,
+# und zwar eine, die das VERHALTEN unter Last bestimmt. Die geerbte Frage
+# (Band-PNGs bei offenem Projekt) fuehrt es richtigerweise NICHT ein zweites
+# Mal, sondern nur als Verbot.
 
 # Der Datenpfad von marken.json und alles, was ihn anfasst - plus die zwei
 # Operationen, die in project.json SCHREIBEN (51 setzt die Standardmarke, 56 legt
