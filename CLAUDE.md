@@ -3,11 +3,37 @@
 ## Deine Rolle & meine Arbeitsweise
 - Du hilfst mir (Berufspraktikant bei der Baller Gruppe) bei Planung und später Entwicklung
   eines Digital-Signage-Tools. Im Anhang: zwei Dokumente, die den Stand festhalten.
-- WIR SIND IN DER PLANUNGSPHASE. Kein Code, keine Task-Listen, bis ich ausdrücklich sage
-  „wir sind nicht mehr im Plan". Wenn du anfängst zu coden, ohne dass ich es sage: stopp.
+- [ÜBERHOLT seit 04.08.2026, bleibt als Beleg stehen] „WIR SIND IN DER PLANUNGSPHASE. Kein Code,
+  keine Task-Listen, bis ich ausdrücklich sage ‚wir sind nicht mehr im Plan'."
+  ES WIRD GEBAUT. Der Satz galt bis zum 04.08.2026; seither entsteht Code. Wer ihn heute befolgt,
+  weigert sich zu arbeiten. Der aktuelle Stand steht im Abschnitt „STAND HEUTE" direkt darunter.
 - Arbeite Schritt für Schritt, ein Thema pro Schritt, und frag am Ende kurz nach Bestätigung,
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
+
+## STAND HEUTE (10.08.2026) – gilt vor allen älteren Angaben weiter unten
+Dieses Dokument ist gewachsen und enthält viel Historie. Wo eine ältere Zeile diesem Abschnitt
+widerspricht, gilt dieser Abschnitt. Die Historie bleibt stehen, weil die Begründungen darin wertvoll
+sind – aber sie ist Vergangenheit, nicht Anweisung.
+
+- **Es wird gebaut.** M0 (Grundgerüst) ist fertig: Typecheck, Lint, Tests und Build sind grün, und
+  eine portable Windows-EXE startet. Offen an M0 sind nur zwei Punkte, die nur der User erledigen
+  kann: das macOS-Artefakt und `npm run dist` aus einem normalen Terminal (beides #7).
+- **Ein Branch für alles: `main`.** Die früheren Stränge `bau/m0-01-grundgeruest` und
+  `planung/ad-v1.2-tk-v2.3-issues` sind am 10.08.2026 konfliktfrei nach `main` gemergt. Neue Arbeit
+  bekommt einen eigenen Branch von `main`, je Issue einer. Die Anweisung „NICHT nach main mergen"
+  weiter unten ist damit überholt.
+- **Dokumente: Technisches Konzept v3.13, Anforderungsdokument v1.4.** Ältere Versionsangaben in
+  diesem Dokument (v2.x, v3.3, v1.2) sind Historie.
+- **Meilensteine M0 bis M8.** M8 (Marken) ist am 10.08.2026 mit 56 Issues dazugekommen – mehrere
+  Marken, app-weit gespeichert, mit Editor. AD/TK sind dafür bereits nachgezogen.
+- **Das Funktionsgerüst steht.** 231 Dateien mit 463 werfenden Rümpfen, erzeugt aus den
+  „Signatur (verbindlich)"-Blöcken der Issues durch `tools/geruest.py`. Ein Agent füllt **nur den
+  Rumpf**; Signaturen ändert man im Issue, nicht in der Datei. Der Generator vergleicht beim
+  erneuten Lauf Byte für Byte und fasst eine bearbeitete Datei **nie** an.
+- **Der Bootstrap wird über eine Kette verdrahtet:** #268 → #269 → #270 → #271 → #272 → #273 →
+  #274 → #331, je ein Glied als letztes Issue seines Meilensteins. Erst #331 stellt fest, dass
+  `src/main/index.ts` lückenlos ist.
 - Planungsziel: scharfe Modulgrenzen + Schnittstellen. Ich baue das Grundgerüst selbst und lasse
   die Funktionen von Agents füllen – die brauchen vollen Projektkontext und ihren Platz im Ganzen.
 - WARUM der Kontext kritisch ist: Die Agents füllen einzelne, kleine Funktionen (oft nur ~30 Zeilen),
@@ -31,8 +57,8 @@
   ungeeignet: kein Autostart beim Booten, Firmware-/Zertifikatsprobleme).
 
 ## Die zwei Dokumente (liegen bei)
-- Anforderungsdokument v1.2 = das „WAS" (Funktionen, Regeln, Ausgabe-Profil, Akzeptanz).
-- Technisches Konzept v3.3 = das „WIE" (Architektur, Datenbestand, DFD, HLD Abschnitt 9).
+- Anforderungsdokument v1.4 = das „WAS" (Funktionen, Regeln, Ausgabe-Profil, Akzeptanz).
+- Technisches Konzept v3.13 = das „WIE" (Architektur, Datenbestand, DFD, HLD Abschnitt 9).
   Bitte beide unbedingt lesen, bevor du etwas vorschlägst.
 - WORKFLOW: Markdown ist Quelle der Wahrheit; beide .docx werden daraus generiert mit
   `node tools/generate-docx.js <in.md> <out.docx> [--dfd tools/assets/dfd.png]`. Nach jeder
@@ -150,7 +176,8 @@
    reicht requestSingleInstanceLock für zwei EXE-Kopien? zeigt PORTABLE_EXECUTABLE_DIR auf den Stick?).
    Experimente kann niemand entscheiden, sie müssen ausprobiert werden - und das Grundgerüst ist die
    Vorrichtung dafür. Deshalb kommt es zuerst. Nicht zu Entscheidungen drängen, die noch nicht dran sind.
-   Arbeit läuft auf dem Branch planung/ad-v1.2-tk-v2.3-issues, NICHT nach main mergen.
+   [ÜBERHOLT 10.08.2026: Alles liegt auf main, s. „STAND HEUTE" oben.] Arbeit lief auf dem Branch
+   planung/ad-v1.2-tk-v2.3-issues, damals NICHT nach main gemergt.
    - M0 (Grundgerüst) = Issues #1-#12, angelegt, GEPRÜFT und korrigiert (23.07.).
      Prüflauf fand 9 Befunde, 4 kritisch: #1 DoD wegen TS18003 nicht erfüllbar (leere Ordner);
      #5 fehlendes PORTABLE_EXECUTABLE_DIR (NSIS-Portable entpackt nach Temp -> Datenverlust);
@@ -461,6 +488,7 @@
      M7-45 -> #238 (verdrahteSpeicherstatusIPC), M7-47 -> #240 (verdrahteProjectStoreNachtrag2IPC).
      Zaehlung an allen 9 Stellen im Text angepasst.
    - ALLE MEILENSTEINE M0-M7 SIND ANGELEGT. Die Issue-Ueberfuehrung ist abgeschlossen.
+     [NACHTRAG 10.08.2026: M8 (Marken) ist mit 56 Issues dazugekommen, #275-#330.]
 4. LÄUFT: BAU. Seit 04.08. wird gebaut, Branch bau/m0-01-grundgeruest (von der Planungsbranch-Spitze
    abgezweigt, weil main 21 Commits zurücklag und weder .gitignore noch CLAUDE.md noch die aktuellen
    Dokumente hatte). Nicht nach main gemergt.
