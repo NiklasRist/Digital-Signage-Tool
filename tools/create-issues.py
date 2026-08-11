@@ -655,17 +655,24 @@ print(f"{'Issue':7} {'Labels':<95} Titel")
 for e in eintraege:
     print(f"{e['key']:7} {','.join(e['labels']):<95} {e['titel'][:60]}")
 
-# GitHub lehnt Issue-Bodies ueber 65536 ZEICHEN ab (nicht Bytes - in UTF-8 sind
-# deutsche Umlaute zwei Bytes, `wc -c` taeuscht also nach oben). Beim M7-Lauf ist
-# das ERST BEIM ANLEGEN aufgefallen: zwei Issues scheiterten, 65 liefen durch, und
-# ohne die map.json-Haertung haette ein zweiter Lauf 65 Duplikate erzeugt. Die
-# Pruefung gehoert deshalb VOR den Lauf, nicht in einen Kommentar.
+# GitHub lehnt Issue-Bodies ueber 65536 ab. Die Fehlermeldung lautet "Body is too
+# long (maximum is 65536 characters)" - GEMESSEN WIRD ABER IN UTF-8-BYTES.
+# EMPIRISCH BELEGT beim M8-Lauf: M8-48 mit 64754 Zeichen / 66337 Bytes wurde
+# ABGELEHNT, M8-57 mit 64048 Zeichen / 65079 Bytes lief DURCH. Haetten Zeichen
+# gezaehlt, waeren beide durchgelaufen.
+# Fuer deutsche Texte ist der Unterschied betraechtlich: Jeder Umlaut, jedes
+# scharfe S und jeder Gedankenstrich zaehlt doppelt oder dreifach - bei M8-48
+# waren es 1583 Bytes mehr als Zeichen, also gut 2 %.
 GRENZE = 65536
-zu_gross = [(e["key"], len(io.open(e["body"], encoding="utf-8").read()))
+gemessen = [(e["key"], len(io.open(e["body"], encoding="utf-8").read().encode("utf-8")))
             for e in eintraege]
-zu_gross = [(k, n) for k, n in zu_gross if n > GRENZE]
-print("\nGroessen-Pruefung:", f"alle unter {GRENZE} Zeichen" if not zu_gross else
+zu_gross = [(k, n) for k, n in gemessen if n > GRENZE]
+knapp    = [(k, n) for k, n in gemessen if GRENZE - 1500 < n <= GRENZE]
+print("\nGroessen-Pruefung:", f"alle unter {GRENZE} UTF-8-Bytes" if not zu_gross else
       "UEBER DER GRENZE -> " + ", ".join(f"{k}: {n} (+{n-GRENZE})" for k, n in zu_gross))
+if knapp:
+    print("   KNAPP (unter 1500 Bytes Reserve, jede weitere Korrektur kippt sie): "
+          + ", ".join(f"{k}: {GRENZE-n}" for k, n in knapp))
 if zu_gross:
     print("   GitHub wuerde diese Bodies ABLEHNEN. Teilen (M7-Praezedenz), nicht kuerzen -"
           "\n   die ausgeschriebenen Fremdsignaturen sind der Grund, warum Regel A haelt.")
@@ -702,7 +709,8 @@ if not GO:
 if zu_gross:
     print("\nABBRUCH: "
           + ", ".join(k for k, _ in zu_gross)
-          + " ueberschreiten die GitHub-Grenze. Erst teilen, dann anlegen."); sys.exit(1)
+          + " ueberschreiten die GitHub-Grenze (UTF-8-BYTES, nicht Zeichen)."
+            " Erst teilen oder kuerzen, dann anlegen."); sys.exit(1)
 
 # Ein vorhandenes map.json bedeutet: dieser Meilenstein wurde schon (teilweise)
 # angelegt. Diese Eintraege werden UEBERSPRUNGEN und ihre Nummern uebernommen.
