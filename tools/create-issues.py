@@ -453,10 +453,77 @@ def labels_m7(nr, titel, body):
 #                        das Label dafuer heisst seit M7 `modul:renderer-gemeinsam`
 #                        (dort gebaut: video-handles.ts, M7-53).
 # Wer hier ein neues `modul:`-Label erfindet, spaltet eine bestehende Menge.
-M8_UI = {20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 34, 35, 41, 48, 50}
+M8_UI = {20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 34, 35, 41, 48, 52, 53, 55, 57}
+# NICHT als UI gezaehlt: 50 (belegt nur ein Feld in App.tsx, zeichnet nichts) und
+# 54 (datei-import.ts oeffnet den Dialog und ruft den Import - reine Logik; die
+# Schaltflaechen dazu zeichnet 48).
 
-# Der Datenpfad von marken.json und alles, was ihn anfasst.
-M8_RISIKO_DATEN = {3, 4, 7, 11, 13, 15, 36}
+# `braucht-entscheidung`: 30 von 49 (61 %). Das ist HOCH - zum Vergleich M6 mit
+# 5 von 37. Der Grund ist die Lage von M8: TK 9.15 beschreibt ein neues Subsystem,
+# das NACHTRAEGLICH in sieben fertige Meilensteine eingesetzt wird; die meisten
+# offenen Fragen sitzen an genau diesen Naehten, nicht im Inneren der Issues.
+# Das Kriterium ist streng angewandt: Ein STOPP-Block enthaelt VERBOTE ("hier
+# keine Pfadaufloesung einbauen") und ECHTE OFFENE FRAGEN. Nur die zweite Art
+# zaehlt, und auch nur, wenn sie die SCHNITTSTELLE oder das VERHALTEN festlegt.
+# Als ERLEDIGT/ENTSCHIEDEN gekennzeichnete Eintraege zaehlen NICHT - sie zitieren
+# den alten Wortlaut nur zur Nachvollziehbarkeit.
+# NICHT enthalten sind deshalb u. a.: 23 (nur zwei Verbote), 31 (Hinweis auf
+# M8-11), 35 (seit 10.08. entschieden), 43 (Melde-Auftrag mit tragbarem
+# Zwischenverhalten), 44 (drei ERLEDIGT), 49/50 (die Abspaltungen vom 11.08. -
+# beide tragen nur Verbote; ihre offenen Fragen blieben bei M8-36 bzw. M8-48).
+M8_BLOCKIEREND = {
+     3,  # Retry/fsync/.bak; Lesen-Aendern-Schreiben ueber Aufrufe hinweg nicht atomar
+     4,  # welche Sofort-Flush-Ausloeser gelten fuer marken.json; Wiederholstrategie
+     5,  # Fehlerverhalten bei Parent-Kette und unvollstaendigem Parent - neuer Code?
+     6,  # Dateiname und Seitenverhaeltnis des gebuendelten Logos; Slogan-Text
+     7,  # Migration reihum beim Start oder traege beim Oeffnen; defektes Projekt
+    10,  # Parent-Existenzpruefung unter Nebenlaeufigkeit wiederholen?
+    11,  # Bedeutung des Rueckgabewerts bei entprelltem Schreiben; wer prueft Hex?
+    12,  # standardMarkeId fehlt als dritte Referenzart; Sofort-Flush vor der Pruefung
+    13,  # Loeschen trotz standardMarkeId-Referenz; Flush vor Referenzpruefung
+    14,  # Symlink-Pruefung und Gross-/Kleinschreibung des Pfadvergleichs
+    15,  # Zieldateiname und Namenskonflikt; Herkunft des Seitenverhaeltnisses
+    16,  # EXPERIMENT corsEnabled fuer FontFace; Geltungsbereich, Statuscodes
+    20,  # Verkleinerungsstufen und Innenabstand des Ersatz-Logos
+    21,  # gilt die Rahmen-Ausnahme auch fuer eine Logo-Zone der Band-Vorlage
+    22,  # Sofort-Flush beim Verlassen des Marken-Reiters? Kein Kanal vorgesehen
+    24,  # importierte Schrift laesst sich nirgends entfernen
+    27,  # Widerspruch zu M8-22: wer laedt die Uebersicht nach dem Ableiten neu
+    28,  # achtstelliger Hex-Wert in marke.farben - drei Wege, keiner gewaehlt
+    29,  # Darstellung des TOCTOU-Falls beim Loeschen (Verhalten, nicht Layout)
+    32,  # niemand abonniert marken:autoSpeichernStatus
+    34,  # was bedeutet slogan.aktiv=false fuer die Zone
+    36,  # was geschieht, wenn der Marken-Flush beim Beenden scheitert
+    39,  # zaehlt eine ins Leere zeigende aktion.markeId als kaputte Stelle
+    40,  # gegen welche Marke zeichnet der vorlagen-editor; Markenwechsel
+    41,  # braucht die Editor-Wurzel zeichnen: ZeichenZugang; wer graut Undo aus
+    42,  # wie wird aus gebuendelter logo.datei eine URL; verunreinigt marken://
+    45,  # Migration von Rollennamen in akzentfarbe; wer warnt bei Aktionsfarbe
+    46,  # wer reicht die Marken-Liste in den action-editor (Ring mit M8-40)
+    47,  # schemaVersion-Erhoehung fuer project.json (der standardMarkeId-Teil
+         # ist mit M8-56 erledigt)
+    48,  # Live-Vorschau nicht baubar; TOCTOU (Dialog-Ausloeser und
+         # Speicherhinweis sind mit M8-54/M8-55 erledigt)
+    51,  # gemeinsame Projekt-Sicht beim geladenen Projekt; geaendertAm;
+         # main-interner Bulk-Aufruf
+    52,  # geoeffnetes Projekt, dessen Standardmarke waehrend bereits
+         # gezeichneter Band-PNGs wechselt
+    53,  # wer bei der AKTIONS-Akzentfarbe warnt (R-08) und gegen welche
+         # Textfarbe; Alt-Daten mit Rollennamen in akzentfarbe
+    54,  # eine importierte Schrift laesst sich nirgends wieder entfernen
+    55,  # beim Beenden ist der Renderer u. U. abgebaut - dann zeigt niemand
+         # Empfehlung und Wiederholen-Knopf (gilt fuer alle drei Speicher)
+    56,  # schemaVersion; Nutzer-Meldung bei Marken-Fehlschlag
+}
+# 50 und 57 tragen es NICHT: 50 belegt ein Feld und hat nur Verbote im
+# STOPP-Block; 57 schliesst M8-52 an und erbt dessen offene Frage, statt eine
+# eigene zu haben - dieselbe Frage zweimal zu etikettieren waere das Rauschen,
+# das die Regel vermeiden soll.
+
+# Der Datenpfad von marken.json und alles, was ihn anfasst - plus die zwei
+# Operationen, die in project.json SCHREIBEN (51 setzt die Standardmarke, 56 legt
+# ein Projekt an).
+M8_RISIKO_DATEN = {3, 4, 7, 11, 13, 15, 36, 51, 56}
 # Pfadaufloesung, Import-Whitelist und die Schema-Privilegien des Protokolls.
 M8_RISIKO_SICHER = {14, 15, 16, 36, 49}
 # Was am Ende Pixel erzeugt - ein Fehler faellt hier erst am Fernseher auf.
