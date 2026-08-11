@@ -445,6 +445,65 @@ def labels_m7(nr, titel, body):
     if nr in M7_BLOCKIEREND: L.append("braucht-entscheidung")
     return L
 
+# ---------------------------------------------------------------- M8 (Marken)
+# Zwei Titel-Praefixe haben KEINE eigene Modul-Marke, und zwar mit Absicht:
+#   [Main-Bootstrap]  -> src/main/index.ts gehoert keinem Modul; #3 (M0) traegt
+#                        dort ebenfalls nur `ebene:main`.
+#   [gemeinsam]       -> src/renderer/gemeinsam/ ist der geteilte Renderer-Bereich;
+#                        das Label dafuer heisst seit M7 `modul:renderer-gemeinsam`
+#                        (dort gebaut: video-handles.ts, M7-53).
+# Wer hier ein neues `modul:`-Label erfindet, spaltet eine bestehende Menge.
+M8_UI = {20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 34, 35, 41, 48, 50}
+
+# Der Datenpfad von marken.json und alles, was ihn anfasst.
+M8_RISIKO_DATEN = {3, 4, 7, 11, 13, 15, 36}
+# Pfadaufloesung, Import-Whitelist und die Schema-Privilegien des Protokolls.
+M8_RISIKO_SICHER = {14, 15, 16, 36, 49}
+# Was am Ende Pixel erzeugt - ein Fehler faellt hier erst am Fernseher auf.
+M8_PIXEL = {17, 19, 20, 21, 39, 40, 42, 43}
+
+def labels_m8(nr, titel, body):
+    L = []
+    if "[contracts]" in titel:
+        L += ["modul:contracts", "ebene:geteilt", "art:typen"]
+    elif "[marken-store]" in titel:
+        L += ["modul:marken-store", "ebene:main", "art:logik"]
+    elif "[marken-editor]" in titel:
+        L += ["modul:marken-editor", "ebene:renderer"]
+    elif "[template-canvas]" in titel:
+        L += ["modul:template-canvas", "ebene:renderer"]
+    elif "[gemeinsam]" in titel:
+        L += ["modul:renderer-gemeinsam", "ebene:renderer"]
+    elif "[app-shell]" in titel:
+        L += ["modul:app-shell", "ebene:renderer"]
+    elif "[composer]" in titel:
+        L += ["modul:composer", "ebene:renderer"]
+    elif "[action-editor]" in titel:
+        L += ["modul:action-editor", "ebene:renderer"]
+    elif "[vorlagen-editor]" in titel:
+        L += ["modul:vorlagen-editor", "ebene:renderer"]
+    elif "[config-store]" in titel:
+        L += ["modul:config-store", "ebene:main", "art:logik"]
+    elif "[project-store]" in titel:
+        L += ["modul:project-store", "ebene:main", "art:logik"]
+    elif "[ipc-gateway]" in titel:
+        L += ["modul:ipc", "ebene:main", "art:logik"]
+    elif "[render-service]" in titel:
+        L += ["modul:render-service", "ebene:main", "art:logik"]
+    elif "[Main-Bootstrap]" in titel:
+        L += ["ebene:main", "art:logik"]
+    if "ebene:renderer" in L and "art:logik" not in L:
+        L.append("art:ui" if nr in M8_UI else "art:logik")
+    if nr in M8_RISIKO_DATEN:  L.append("risiko:datenverlust")
+    if nr in M8_RISIKO_SICHER: L.append("risiko:sicherheit")
+    if nr in M8_PIXEL:         L.append("risiko:pixelgleichheit")
+    if hat_fehlertabelle(body, r"marke_referenziert|marke_eingebaut|marke_nicht_gefunden"
+                               r"|marken_datei_fehlt|ungueltige_eingabe|nicht_gefunden"
+                               r"|speicher_fehler|unbekannter_fehler"):
+        L.append("art:fehlerbehandlung")
+    if nr in M8_BLOCKIEREND: L.append("braucht-entscheidung")
+    return L
+
 def labels_fuer(nr, titel, body):
     L = []
     if "[contracts]" in titel:
@@ -516,6 +575,21 @@ print(f"{'Issue':7} {'Labels':<95} Titel")
 for e in eintraege:
     print(f"{e['key']:7} {','.join(e['labels']):<95} {e['titel'][:60]}")
 
+# GitHub lehnt Issue-Bodies ueber 65536 ZEICHEN ab (nicht Bytes - in UTF-8 sind
+# deutsche Umlaute zwei Bytes, `wc -c` taeuscht also nach oben). Beim M7-Lauf ist
+# das ERST BEIM ANLEGEN aufgefallen: zwei Issues scheiterten, 65 liefen durch, und
+# ohne die map.json-Haertung haette ein zweiter Lauf 65 Duplikate erzeugt. Die
+# Pruefung gehoert deshalb VOR den Lauf, nicht in einen Kommentar.
+GRENZE = 65536
+zu_gross = [(e["key"], len(io.open(e["body"], encoding="utf-8").read()))
+            for e in eintraege]
+zu_gross = [(k, n) for k, n in zu_gross if n > GRENZE]
+print("\nGroessen-Pruefung:", f"alle unter {GRENZE} Zeichen" if not zu_gross else
+      "UEBER DER GRENZE -> " + ", ".join(f"{k}: {n} (+{n-GRENZE})" for k, n in zu_gross))
+if zu_gross:
+    print("   GitHub wuerde diese Bodies ABLEHNEN. Teilen (M7-Praezedenz), nicht kuerzen -"
+          "\n   die ausgeschriebenen Fremdsignaturen sind der Grund, warum Regel A haelt.")
+
 print("\nLabel-Verteilung:")
 from collections import Counter
 for lab, c in sorted(Counter(l for e in eintraege for l in e["labels"]).items()):
@@ -542,6 +616,13 @@ if gh_miles is not None:
 
 if not GO:
     print("\n--- TROCKENLAUF, nichts angelegt. Mit --go ausführen. ---"); sys.exit(0)
+
+# Ein zu grosser Body ist ein sicherer Fehlschlag, kein Risiko - also gar nicht
+# erst loslaufen und die Reihe auf halbem Weg zerreissen.
+if zu_gross:
+    print("\nABBRUCH: "
+          + ", ".join(k for k, _ in zu_gross)
+          + " ueberschreiten die GitHub-Grenze. Erst teilen, dann anlegen."); sys.exit(1)
 
 # Ein vorhandenes map.json bedeutet: dieser Meilenstein wurde schon (teilweise)
 # angelegt. Diese Eintraege werden UEBERSPRUNGEN und ihre Nummern uebernommen.

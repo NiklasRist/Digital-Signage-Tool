@@ -29,7 +29,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 ---
 
-## 47 neue Issues
+## 49 neue Issues
 
 ### contracts (geteilt) – 2
 
@@ -172,7 +172,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 ---
 
-### Nach dem Prüflauf ergänzt (10./11.08.) – 8
+### Nach dem Prüflauf ergänzt (10./11.08.) – 8, plus 2 aus der Größengrenze
 
 | Nr. | Issue | Warum es fehlte |
 |---|---|---|
@@ -185,12 +185,29 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 | **M8-47** | [contracts] Die geteilten Typen erweitern (`#52`, `#14`, `#15`, `#21`) | Die **Grundlage der übrigen 46 Issues** stand als Tabellenzeile **ohne Ausführenden**. Ohne sie importiert jedes zweite Issue ins Leere |
 | **M8-48** | [marken-editor] Die Wurzel-Komponente `src/renderer/marken-editor/index.tsx` – **und seit dem 11.08. ihre Montage in `src/renderer/App.tsx` (#262)** | M8-41 baut den Reiter, aber **niemand baute den Bildschirm dahinter**: elf geschriebene Editor-Bausteine mit zusammen zweiundzwanzig Funktionen hatten **keinen Aufrufer**. Dieselbe Lückenklasse und dieselbe Naht wie in M7: Logik gebaut, Bedienung fehlt |
 
+> **M8-49 und M8-50 stammen NICHT aus dem Prüflauf, sondern aus einer harten Grenze:** GitHub lehnt
+> Issue-Bodies über **65 536 Zeichen** ab. `M8-36` lag bei 72 311, `M8-48` bei 75 520 – beide wären
+> beim Anlegen gescheitert, während die übrigen durchgelaufen wären (genau der M7-60/M7-65-Fall).
+> Geteilt wurde **nicht willkürlich**, sondern an der Naht, die beide Dateien ohnehin hatten: Jede
+> hatte sich den **Edit an einer fremden Datei** einverleibt. Danach gilt „ein Issue, eine Datei"
+> wieder – die Teilung ist also auch ohne die Grenze der sauberere Schnitt.
+>
+> | Nr. | Aus | Datei | Harte Reihenfolge |
+> |---|---|---|---|
+> | **M8-49** | M8-36 | `src/main/media-protokoll.ts` (**#9**) – `MEDIA_SCHEMA` statt Registrier-Funktion | **vor** M8-36 |
+> | **M8-50** | M8-48 | `src/renderer/App.tsx` (**#262**) – die sechste Modul-Wurzel montieren | **nach** M8-48 |
+>
+> **Das Anlege-Skript prüft die Grenze jetzt vorab** und bricht ab, statt die Reihe auf halbem Weg
+> zu zerreißen. **Beide Restdateien liegen weiterhin knapp darunter** (M8-36: 64 970, M8-48: s.
+> Nachtrag) – wer dort etwas ergänzt, muss an anderer Stelle kürzen.
+
 > **Alle acht stammen aus dem Prüflauf** (`m8-pruefbefund.md`). Sechs davon sind Eingriffe in
 > **abgenommene** Verträge, die vorher nur als Tabellenzeile ohne Adressaten geführt wurden – genau
 > die Klasse, für die die Regel gilt: *eine Meldung ohne Recht führt dazu, dass ein Agent wartet
 > statt baut.*
 >
-> **SIEBEN verbindliche Reihenfolgen** – im zweiten Prüflauf vollständig erhoben. Vier davon kannte
+> **NEUN verbindliche Reihenfolgen** – im zweiten Prüflauf vollständig erhoben; die letzten zwei
+> sind mit der Teilung vom 11.08. dazugekommen. Vier davon kannte
 > jeweils nur **eine** Seite; sie stehen deshalb hier zentral, nicht nur in den Issues:
 >
 > | Reihenfolge | Grund | beidseitig? |
@@ -201,7 +218,9 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 > | **M8-40 vor M8-41** | beide fassen `inhalte.tsx` an | nein – von M8-41 gemeldet |
 > | **M8-45 vor M8-46** | dieselben Deklarationen in `#136`; M8-45 ändert Art und Typ, M8-46 fügt hinzu | **ja** |
 > | **M8-44 vor M8-31** | Schlüsselmengen-Test in M8-31s DoD – **kein** Typecheck, die schwächste Kante | nein |
-> | **M8-41 vor M8-48** | M8-41 deklariert `MarkenEditorWurzelProps` und `ModulWurzeln.markenEditor`; M8-48 schreibt die Deklaration ab, füllt sie aus **und belegt das Feld in `src/renderer/App.tsx` (#262)** – ohne die Deklaration gibt es dort nichts zu belegen (11.08. ergänzt) | **ja** |
+> | **M8-41 vor M8-48** | M8-41 deklariert `MarkenEditorWurzelProps` und `ModulWurzeln.markenEditor`; M8-48 schreibt die Deklaration ab und füllt sie aus (11.08. ergänzt) | **ja** |
+> | **M8-48 vor M8-50** | M8-50 belegt `ModulWurzeln.markenEditor` in `src/renderer/App.tsx` (**#262**) mit der Wurzel-Komponente, die M8-48 erst erzeugt – vorher gäbe es nichts zu übergeben. Aus **demselben** Grund konnte der Edit nicht an M8-41 gehen | **ja** |
+> | **M8-49 vor M8-36** | M8-49 ersetzt `registriereMediaProtokollSchema()` durch `MEDIA_SCHEMA`, das M8-36 für den kombinierten Einmal-Aufruf braucht. **Dazwischen übersetzt das Projekt nicht** – `index.ts` importiert dann einen Export, den es nicht mehr gibt. Benannt und gewollt, kein Defekt; dieselbe Bauart wie M8-43 → M8-44 | **ja** |
 >
 > **ACHTUNG – RINGSCHLUSS.** Diese Kanten bilden zusammen einen Kreis:
 > `M8-43 → M8-44 → M8-31 → M8-39 → M8-37 → M8-43`. **Kein einzelnes Issue kann ihn sehen** – M8-43
@@ -285,7 +304,7 @@ und dann fehlten in der Vorschau sämtliche Projektmedien, ohne dass irgendetwas
 
 | Issue | Datei | Was sich ändert |
 |---|---|---|
-| **#9** (S9) → **M8-36** benennt ihn; **Ausführender offen** | `src/main/media-protokoll.ts` | `registriereMediaProtokollSchema()` **entfällt**, ersetzt durch `export const MEDIA_SCHEMA: CustomScheme`. Der Handler-Stub bleibt unverändert |
+| **#9** (S9) → **M8-49** | `src/main/media-protokoll.ts` | `registriereMediaProtokollSchema()` **entfällt**, ersetzt durch `export const MEDIA_SCHEMA: CustomScheme`. Der Handler-Stub bleibt unverändert. **M8-49 läuft vor M8-36** – und zwischen beiden übersetzt das Projekt nicht (`index.ts` importiert dann einen Export, den es nicht mehr gibt). Das ist benannt und gewollt, kein Defekt; dieselbe Bauart wie M8-43 → M8-44 |
 | **#3** → **M8-36** | `src/main/index.ts` (CSP) | `marken:` in **`img-src`** (Logos über `<img>`) und **`font-src`** (importierte Schriften). **Nicht** in `media-src` (aus Marken kommen keine Videos), **nicht** in `connect-src` – aus demselben Grund, aus dem `media:` dort fehlt (s. u.). Ohne Nachzug lädt der Renderer kein importiertes Logo und keine importierte Schrift, und zwar **still** |
 | **#3** → **M8-36** | `src/main/index.ts` (Zählung) | Die Anmeldungen wachsen von **dreizehn auf fünfzehn** – `verdrahteMarkenIPC()` als **elfte** ohne Fenster (ans Ende von Schritt 5, hinter `meldeExportHandlerAn()`), `verdrahteMarkenSpeicherstatusIPC(fenster)` als **vierte** mit Fenster (Schritt 7, direkt hinter `verdrahteSpeicherstatusIPC`). `#3` nennt die Zahl an mehreren Stellen im Text |
 
