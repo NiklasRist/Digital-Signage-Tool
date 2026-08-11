@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.4 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.11 (HLD vollständig, geprüft)
+**Version:** 3.12 (HLD vollständig, geprüft)
 **Datum:** 11.08.2026
 **Status:** In Planung
 
@@ -938,8 +938,17 @@ ProjektMeta {
   beschaedigt:    boolean      // true = weder project.json noch project.json.bak lesbar
   anzahlMedien:   number       // Dateien in media/ – aus dem ORDNER gezählt, nicht aus project.json
   anzahlAusgaben: number       // fertige .mp4 in output/ – Zählweise wie listeAusgaben (.part zählt nicht)
+  standardMarkeId: string | null  // Project.standardMarkeId; bei beschaedigt: true null (v3.12)
 }
 ```
+
+**Warum `standardMarkeId` in `ProjektMeta` steht (v3.12).** 9.14.3 verlangt, dass der Nutzer je
+Projektzeile die **aktuelle Marke sieht** und sie dort wechseln kann (FA-23, in der Projektverwaltung).
+Ohne dieses Feld gäbe es dafür **keine Quelle**: `ladeProjekt` **öffnet** ein Projekt – es ist höchstens
+eines gleichzeitig geladen (9.5.1), taugt also nicht als Anzeige-Abfrage für eine **Liste** –, und
+`pruefeMarkenReferenzen` (9.15.1) prüft je **Marke** über alle Projekte, nicht je Projekt. Das Feld folgt
+derselben Behelfs-Regel wie `name`: Bei `beschaedigt: true` ist `project.json` unlesbar, dann steht dort
+**`null`**, und die Zeile zeigt die Auswahl **deaktiviert** statt stillschweigend wirkungslos.
 
 **`erstelleProjekt` bekommt die Standardmarke ÜBERGEBEN – der Handler holt sie (v3.11, bindend).**
 `Project.standardMarkeId` ist ein **Pflichtfeld** (9.11.3), und `erstelleProjekt` ist die Stelle, an der
@@ -2025,7 +2034,7 @@ von beiden wäre die falsche.
 MarkenReferenz {             // ein Fundort in einem Projekt
   projektId:   string
   projektName: string        // für die Meldung „… in 2 Projekten"
-  id:          string        // Aktions-ID des Treffers
+  aktionId:    string        // Aktions-ID des Treffers (v3.12: hiess vorher id)
 }
 
 Markennutzung {
@@ -2252,6 +2261,12 @@ Identität und Rahmen sind stabil.
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.12 (11.08.2026) – zwei Feld-Befunde aus dem Schreiben der M8-Issues:**
+>
+> 1. **`ProjektMeta` trägt `standardMarkeId: string | null`** (9.5.2). *Anlass:* 9.14.3 verlangt seit v3.11, dass der Nutzer je Projektzeile die **aktuelle Marke sieht** und dort wechselt – eine **Quelle** dafür gab es nicht. `ladeProjekt` **öffnet** ein Projekt und es ist höchstens eines gleichzeitig geladen (9.5.1), taugt also nicht als Abfrage für eine **Liste**; `pruefeMarkenReferenzen` prüft je **Marke** über alle Projekte, nicht je Projekt. *Folge ohne das Feld:* Die Auswahl wäre gebaut und hätte nichts anzuzeigen – die Anforderung stünde erfüllt im Dokument und wäre unerfüllbar im Code. Bei `beschaedigt: true` steht **`null`** (dieselbe Behelfs-Regel wie bei `name`), und die Auswahl erscheint **deaktiviert** statt stillschweigend wirkungslos.
+>
+> 2. **`MarkenReferenz.id` heißt jetzt `aktionId`** (9.15.1). *Anlass:* Das Feld hieß `id` nach dem Vorbild `VorlagenReferenz` (9.12.1) – **dort zu Recht**, weil eine Vorlage sowohl von Aktionen als auch von Listenelementen benutzt wird und der Fundort beides sein kann. Eine Marke wird **nur** von Aktionen referenziert; `id` ist dort nicht allgemein, sondern nur ungenau. *Warum das mehr als Kosmetik ist:* Das Issue, das den Typ **definiert**, hatte bereits `aktionId` deklariert, während der Vertrag `id` sagte. Wer den Vertrag zitiert – und Regel D verlangt genau das –, hätte ein anderes Feld gebaut als wer die Typdefinition liest. Der Vertrag folgt hier der genaueren Fassung.
 >
 > **Nachgezogen in v3.11 (11.08.2026), vom Auftraggeber entschieden – fünf Befunde rund um die Projekt-Standardmarke und das eingebaute Logo:**
 >
