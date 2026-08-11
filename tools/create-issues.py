@@ -556,6 +556,12 @@ def labels_m8(nr, titel, body):
         L += ["modul:action-editor", "ebene:renderer"]
     elif "[vorlagen-editor]" in titel:
         L += ["modul:vorlagen-editor", "ebene:renderer"]
+    elif "[projekt-verwaltung]" in titel:
+        # Nachtrag 11.08.: M8-52 und M8-57 sind erst nach dem ersten Profil
+        # entstanden. Ohne diesen Zweig fielen beide durch die ganze Kette und
+        # bekamen WEDER modul: NOCH ebene: - und damit auch kein art:, weil das
+        # an "ebene:renderer" haengt. Im Trockenlauf sichtbar geworden.
+        L += ["modul:projekt-verwaltung", "ebene:renderer"]
     elif "[config-store]" in titel:
         L += ["modul:config-store", "ebene:main", "art:logik"]
     elif "[project-store]" in titel:
@@ -623,7 +629,7 @@ if len(PRAEFIXE) != 1:
 PRAEFIX = PRAEFIXE.pop()
 PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3,
           "M4": labels_m4, "M5": labels_m5, "M6": labels_m6,
-          "M7": labels_m7}.get(PRAEFIX)
+          "M7": labels_m7, "M8": labels_m8}.get(PRAEFIX)
 if PROFIL is None:
     print(f"ABBRUCH: kein Label-Profil fuer Praefix '{PRAEFIX}'."
           f" Bekannt: M1, M2, M3, M4, M5, M6, M7. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
