@@ -29,7 +29,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 ---
 
-## 49 neue Issues
+## 57 neue Issues
 
 ### contracts (geteilt) – 2
 
@@ -183,7 +183,26 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 | **M8-45** | Die freie Akzentfarbe in `#139` und `#112` nachziehen | `#139`: „kein freier Farbwähler, nie ein Hex-Wert"; `#112` **wirft** bei `'#FF4040'` – dem neuen Normalfall. Seit v3.4 überholt, nie nachgezogen |
 | **M8-46** | Ein Weg, `Aktion.markeId` zu setzen | Pflichtfeld ohne Setzweg – das Wort kam in **keinem** angelegten Issue vor. FA-23 wäre nicht benutzbar |
 | **M8-47** | [contracts] Die geteilten Typen erweitern (`#52`, `#14`, `#15`, `#21`) | Die **Grundlage der übrigen 46 Issues** stand als Tabellenzeile **ohne Ausführenden**. Ohne sie importiert jedes zweite Issue ins Leere |
-| **M8-48** | [marken-editor] Die Wurzel-Komponente `src/renderer/marken-editor/index.tsx` – **und seit dem 11.08. ihre Montage in `src/renderer/App.tsx` (#262)** | M8-41 baut den Reiter, aber **niemand baute den Bildschirm dahinter**: elf geschriebene Editor-Bausteine mit zusammen zweiundzwanzig Funktionen hatten **keinen Aufrufer**. Dieselbe Lückenklasse und dieselbe Naht wie in M7: Logik gebaut, Bedienung fehlt |
+| **M8-48** | [marken-editor] Die Wurzel-Komponente `src/renderer/marken-editor/index.tsx` | M8-41 baut den Reiter, aber **niemand baute den Bildschirm dahinter**: elf geschriebene Editor-Bausteine mit zusammen zweiundzwanzig Funktionen hatten **keinen Aufrufer**. Dieselbe Lückenklasse und dieselbe Naht wie in M7: Logik gebaut, Bedienung fehlt. *(Die Montage in `App.tsx` ist mit der Teilung nach **M8-50** gewandert.)* |
+
+---
+
+### Aus den vier Entscheidungen vom 11.08. und dem Schreiben der fünf Issues – 7
+
+| Nr. | Issue | Warum es fehlte |
+|---|---|---|
+| **M8-51** | [project-store] `setzeStandardMarke(projektId, markeId)` | Mit E-2 wird die Projekt-Standardmarke wechselbar; TK v3.11 führt die Operation, **gebaut hatte sie niemand**. Sie prüft die `markeId` **nicht selbst** – das tut ihr Handler, sonst entstünde ein Ringschluss `project-store` → `marken-store` |
+| **M8-52** | [projekt-verwaltung] Die Projekt-Standardmarke wechseln | Der **Ausweg** aus der neuen Löschsperre. Ohne ihn wäre die Sperre eine **Sackgasse**: Die Marke ließe sich nie löschen, weil sich der Grund nicht beseitigen ließe |
+| **M8-53** | [action-editor] Markenwahl und freier Farbwähler in `#250` | **M8-45 und M8-46 brechen die Datei absichtlich**, M8-40 behält sich nur Props und Zeichenweg vor. Ohne dieses Issue bleibt der Typecheck rot – und `#250` trägt die mit v3.4 zurückgenommene Palettenzusage noch als **verbindliche** Invariante |
+| **M8-54** | [marken-editor] `datei-import.ts` – den Dateidialog auslösen | `öffneMarkenDateiDialog` war gebaut (M8-33) und angemeldet (M8-31), aber **niemand rief ihn renderer-seitig**. FA-24 ist ein **MUSS** und verlangt den Import von Logo und Schriftdateien – er war aus der Oberfläche **nicht auslösbar** |
+| **M8-55** | [app-shell] Der Empfänger für `marken:autoSpeichernStatus` | Sender ohne Empfänger. **Drei Issues vermuteten drei verschiedene Anzeiger** (M8-04 den `marken-editor`, M8-32 den `app-shell`, M8-48 sich selbst) – daran blieb die Lücke unentdeckt |
+| **M8-56** | [project-store] `erstelleProjekt(name, standardMarkeId)` | E-3 steht seit v3.11 im Vertrag, **gebaut hätte es niemand**: Jedes neue Projekt trüge ein leeres Pflichtfeld. Folgt dem bereits gebauten Vorbild `project:öffneProjekt` → `oeffneProjektAblauf` (`#94`) |
+| **M8-57** | [projekt-verwaltung] Die Standardmarken-Auswahl anschließen | M8-52 war gebaut und **unerreichbar**: `ProjektVerwaltungWurzelProps` kennt keine Marken, und `ProjektMeta` trug bis TK v3.12 keine `standardMarkeId` – die Projektliste wusste gar nicht, welche Marke ein Projekt führt |
+
+> **Vier davon sind erneut „gebaut, aber niemand ruft es auf"** (M8-54, M8-55, M8-56, M8-57). Die
+> Lückenklasse ist damit in **jedem** Meilenstein seit M1 aufgetreten. Neu ist nur, dass sie diesmal
+> **vor** dem Anlegen gefunden wurde – und zwar nicht von einem Prüflauf, sondern von den
+> **schreibenden** Agenten beim Abschreiben der Nachbar-Signaturen.
 
 > **M8-49 und M8-50 stammen NICHT aus dem Prüflauf, sondern aus einer harten Grenze:** GitHub lehnt
 > Issue-Bodies über **65 536 Zeichen** ab. `M8-36` lag bei 72 311, `M8-48` bei 75 520 – beide wären
