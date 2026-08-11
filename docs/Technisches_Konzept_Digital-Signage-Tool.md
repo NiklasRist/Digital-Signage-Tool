@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.4 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.12 (HLD vollständig, geprüft)
+**Version:** 3.13 (HLD vollständig, geprüft)
 **Datum:** 11.08.2026
 **Status:** In Planung
 
@@ -2037,11 +2037,20 @@ MarkenReferenz {             // ein Fundort in einem Projekt
   aktionId:    string        // Aktions-ID des Treffers (v3.12: hiess vorher id)
 }
 
+AbgeleiteteMarkenReferenz {  // eine abgeleitete Marke – KEIN Projekt-Bezug (v3.13)
+  markeId:   string
+  markeName: string          // für die Meldung
+}
+
+StandardmarkenReferenz {     // ein Projekt, das die Marke als Standard führt (v3.13)
+  projektId:   string
+  projektName: string
+}
+
 Markennutzung {
   aktionen:            MarkenReferenz[]                  // Treffer über aktion.markeId
-  abgeleiteteMarken:   { id: string, name: string }[]     // Marken mit parent = dieser markeId
-  standardInProjekten: { projektId: string, projektName: string }[]
-                                                          // Treffer über Project.standardMarkeId
+  abgeleiteteMarken:   AbgeleiteteMarkenReferenz[]        // Marken mit parent = dieser markeId
+  standardInProjekten: StandardmarkenReferenz[]           // Treffer über Project.standardMarkeId
 }
 ```
 
@@ -2261,6 +2270,10 @@ Identität und Rahmen sind stabil.
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.13 (11.08.2026) – alle drei Fundort-Formen tragen jetzt Namen:**
+>
+> 1. **`abgeleiteteMarken` und `standardInProjekten` sind benannte Typen** – `AbgeleiteteMarkenReferenz { markeId, markeName }` und `StandardmarkenReferenz { projektId, projektName }` (9.15.1). *Anlass:* Der Vertrag zeigte beide als **anonyme Formen** (`{ id: string, name: string }[]` bzw. `{ projektId: string, projektName: string }[]`), während das Issue, das den Typ **definiert**, sie seit jeher benannt führt – und bei den abgeleiteten Marken mit **anderen Feldnamen** (`markeId`/`markeName` statt `id`/`name`). *Warum das zählt:* Es ist derselbe Befund wie v3.12 Punkt 2, nur eine Zeile weiter – wer den Vertrag zitiert (und Regel D verlangt genau das), baut andere Felder als wer die Typdefinition liest, und beides übersetzt fehlerfrei. **Der Vertrag folgt wieder der genaueren Fassung:** `markeId`/`markeName` sagen, **worauf** sie zeigen, und unterscheiden sich damit sichtbar von `MarkenReferenz.projektId`. **Alle drei Fundort-Formen sind jetzt benannt** – eine anonyme daneben wäre die einzige Ausnahme geblieben.
 >
 > **Nachgezogen in v3.12 (11.08.2026) – zwei Feld-Befunde aus dem Schreiben der M8-Issues:**
 >
