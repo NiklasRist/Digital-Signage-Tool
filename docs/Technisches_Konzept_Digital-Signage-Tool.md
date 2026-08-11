@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.3 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.9 (HLD vollständig, geprüft)
+**Version:** 3.10 (HLD vollständig, geprüft)
 **Datum:** 10.08.2026
 **Status:** In Planung
 
@@ -1691,6 +1691,7 @@ Listenelement {
 | Dauer-Bereich | **10–45 s** | Validierung in `setzeDauer` (9.5.2) |
 | Sicherheitsabstand (**Vorbelegung**) | **96 / 54 px** | **Nur der Startwert der eingebauten Marke** – der geltende Wert steht in `Marke.sicherheit` und ist seit v3.4 **bearbeitbar** (FA-24). Wer zeichnet oder prüft, liest ihn aus der **Marke** (9.10.5, 9.11.2), **nie** aus dieser Konstante |
 | Format-Whitelist | MP4 / JPG, PNG, WebP | Dialog **und** Import-Prüfung (9.4.2) |
+| **`KONTRAST_SCHWELLE`** | **4,5 : 1** | Ab hier warnt der `marken-editor` (9.15.2, FA-24). WCAG AA für Fließtext. **Warnung, keine Sperre** – die Restverantwortung bleibt beim Nutzer (R-08). Gelesen von der Kontrast-Rechnung **und** vom Editor – **aus dieser einen Konstante** |
 | Sicherheitsabstand-**Bereich** | **0…480 / 0…270 px** | erlaubte Spanne beim Bearbeiten (9.15.2). Geprüft im **Main** (`bearbeiteMarke`, 9.15.1 – der Vertrag verlangt es, 9.1.1 Punkt 6) **und** im Editor (frühe Rückmeldung am Formular) – **aus dieser einen Konstante**, nie als zweites Zahlenpaar. Obergrenze = ein Viertel der Kante; **0 ist erlaubt** (warnen statt sperren, wie bei der Akzentfarbe – Risiko R-08) |
 | Aktuelle `schemaVersion` | **1** | wird von `öffneProjekt`, `schreibeProjekt` und der Migration gelesen (9.5.5) – **eine** Stelle, sonst laufen drei Kopien auseinander |
 
@@ -1951,6 +1952,13 @@ und hängt nicht am geladenen Projekt.
   soll das ohne Umweg möglich sein und **in allen abgeleiteten Looks wirken**; ein eingefrorenes
   Original hätte eine Kopie daneben erzeugt und das Original veralten lassen. Preis: Es gibt keinen
   garantierten Urzustand, auf den man zurücksetzen kann.
+- **Eine neu angelegte EIGENSTÄNDIGE Marke bekommt `logo: null` (v3.10).** `erstelleMarke` übernimmt
+  die Wertfelder der eingebauten Marke als tiefe Kopie – Farben, Schriften, Abstände, Radien,
+  Schatten, Slogan –, **das Logo aber nicht**. *Begründung:* Sonst trüge jede Partner-Marke ab
+  Sekunde eins ein fremdes Logo, das der Nutzer aktiv entfernen müsste, und der **Ersatz-Logo-Pfad
+  (9.10.10) würde strukturell nie ausgelöst**. Mit `null` zeigt die Marke sofort ihren **eigenen
+  Namen** – laut 9.10.10 der Normalfall für Werbepartner. Folge für den Stempel: `herkunftJeFeld.logo`
+  ist dann **`"keins"`**, nicht `"eigen"` (9.11.2).
 - **Ableitungsketten sind auf eine Stufe begrenzt** (9.11.2): `erstelleMarke` mit einer `parentId`,
   deren Marke selbst einen Parent hat, wird mit `ungueltige_eingabe` abgewiesen.
 - **`schemaVersion` und Migration** wie 9.5.5. **Für den Übergang von v3.3 wichtig:** Die bisher in
@@ -1990,6 +1998,13 @@ späteren Segment entspricht (9.10.1).
   Schwellenwert machte genau die unbrauchbar. Die Restverantwortung bleibt beim Nutzer (Risiko R-08).
   **Dieselbe Rechnung** wählt beim Ersatz-Logo automatisch die Textfarbe (9.10.10) – einmal gebaut,
   zweimal genutzt.
+  **Der Schwellenwert ist `4,5:1` (v3.10 entschieden)** – WCAG AA für Fließtext, geführt als Konstante
+  **`KONTRAST_SCHWELLE`** (9.11.4). *Warum überhaupt eine Zahl, wo doch nicht gesperrt wird:* Ohne sie
+  ist „warnt sichtbar" nicht baubar – die Warnung braucht eine Grenze, ab der sie erscheint. *Warum
+  4,5 und nicht 3:* Die 3:1-Schwelle gilt für **große** Schrift; auf einem 85-Zoll-Schirm aus mehreren
+  Metern ist der ungünstigere Wert der ehrlichere, und da die Warnung **nicht** sperrt, kostet eine zu
+  früh erscheinende Warnung nichts außer einem Hinweis. **Die Zahl steht an genau einer Stelle** –
+  weder `kontrastVerhaeltnis` noch der Editor führen eine eigene.
 - **Löschen fragt vorher.** Vor `löscheMarke` zeigt der Editor das Ergebnis von
   `pruefeMarkenReferenzen`: welche Aktionen in welchen Projekten und welche abgeleiteten Looks
   betroffen sind.
@@ -2083,6 +2098,12 @@ Identität und Rahmen sind stabil.
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.10 (11.08.2026), vom Auftraggeber entschieden – aus dem zweiten Prüflauf über M8:**
+>
+> 1. **Der Kontrast-Schwellenwert ist `4,5:1`** (9.15.2, Konstante `KONTRAST_SCHWELLE` in 9.11.4). *Anlass:* Seit v3.4 warnt der Editor bei zu geringem Kontrast – **eine Zahl stand nirgends**. Zwei Issues führten sie deshalb bewusst als Parameter ohne Vorgabe und verboten sich per Grep-Probe, eine zu erfinden; ohne Entscheidung wären beide unvollständig geblieben. *Warum 4,5 und nicht 3:* Die 3:1-Schwelle gilt für **große** Schrift. Auf einem 85-Zoll-Schirm aus mehreren Metern ist der ungünstigere Wert der ehrlichere – und weil die Warnung **nicht sperrt** (R-08), kostet eine zu früh erscheinende Warnung nichts außer einem Hinweis, eine zu spät ausbleibende dagegen die Lesbarkeit am Gerät. **Eine Stelle, nicht zwei:** Weder `kontrastVerhaeltnis` noch der Editor führen eine eigene Zahl – dieselbe Linie wie beim Sicherheitsabstand-Bereich (v3.8).
+>
+> 2. **Eine neu angelegte eigenständige Marke bekommt `logo: null`** (9.15.1, mitgezogen 9.10.10). *Anlass:* `erstelleMarke` kopiert die Werte der eingebauten Marke – kopierte es auch das **Logo**, trüge jede Partner-Marke ab Sekunde eins das Fitnessworld24-Logo, das der Nutzer aktiv entfernen müsste. *Folge ohne die Entscheidung, und sie wiegt schwerer:* Der **Ersatz-Logo-Pfad würde strukturell nie ausgelöst** – 9.10.10 wäre vollständig gebaut und toter Code. Mit `null` zeigt die neue Marke sofort **ihren eigenen Namen** auf ihrer Akzentfläche, was 9.10.10 ausdrücklich als Normalfall für Partner beschreibt. Die übrigen sechs Wertfelder bleiben eine tiefe Kopie. Mitentschieden: `herkunftJeFeld.logo` ist dann **`"keins"`**, nicht `"eigen"` (9.11.2).
 >
 > **Nachgezogen in v3.9 (10.08.2026), im Prüflauf über M8 gefunden:**
 >
