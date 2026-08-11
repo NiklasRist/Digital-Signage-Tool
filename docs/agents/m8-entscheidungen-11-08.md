@@ -65,10 +65,11 @@ Lückenklasse, die in jedem Meilenstein aufgetreten ist, nur diesmal vom Auftrag
 - **Issues:** M8-01 (Typ `Markennutzung`), M8-12 (Referenzprüfung), M8-13 (Löschen), M8-29
   (Lösch-Vorwarnung) – und **mindestens ein neues Issue** für die Auswahl selbst.
 
-**Offen und beim Ausarbeiten zu entscheiden:** **Wo** die Auswahl sitzt. Die Projekt-Standardmarke
-ist eine Eigenschaft des **Projekts**, nicht des Marken-Bestands – sie gehört damit eher in die
-Projekt-Verwaltung oder an den Kopf der Zusammenstellung als in den Marken-Reiter. Das ist eine
-Bedienfrage und wird beim Zuschnitt des neuen Issues vorgelegt, nicht hier geraten.
+**Wo die Auswahl sitzt – vom Auftraggeber entschieden (11.08.):** in der **Projekt-Verwaltung**
+(`modul:projekt-verwaltung`, Reiter [Projekte]), **nicht** im Marken-Reiter und **nicht** am Kopf
+der Zusammenstellung. Das passt zur Sache: Die Projekt-Standardmarke ist eine Eigenschaft des
+**Projekts**; der Marken-Reiter verwaltet den app-weiten **Bestand** und weiß von Projekten nichts.
+Damit steht die Auswahl auch dort, wo der Nutzer beim blockierten Löschen hingeschickt wird.
 
 ---
 
@@ -115,25 +116,39 @@ der beim Beenden bereits abgebaut sein kann.
 **Entschieden:** **Das Beenden wird abgebrochen**, der Nutzer wird gewarnt, und er bekommt einen
 **Lösungsvorschlag oder einen geführten Reparaturvorgang** – nicht nur eine Fehlermeldung.
 
-**Warum das mehr ist als eine Meldung:** Das Muster existiert im Projekt bereits als **FA-19**
-(geführte Reparatur kaputter Elemente): zurückleiten, eins nach dem anderen, „X von N", und der
-blockierte Vorgang wird erst freigegeben, wenn alles behoben ist. Ein Marken-Schreibfehler ist
-derselbe Fall in klein – und ohne Führung stünde der Nutzer vor einer App, die sich nicht schließen
-lässt, ohne zu wissen, warum.
+**FEHLER IN MEINER ENTSCHEIDUNGSVORLAGE – hier festgehalten, weil er teuer hätte werden können.**
+Ich habe dem Auftraggeber als Option 1 angeboten: „Wie `project.json`: schließen – die App schließt
+trotzdem, der Fehlschlag landet im Protokoll." **Das ist das Gegenteil dessen, was der Vertrag
+sagt.** TK 9.5.4 legt für `project.json` seit langem **bindend** fest:
 
-**Was beim Ausarbeiten zu klären ist – ausdrücklich NICHT hier geraten:**
-- **Der Renderer muss beim Beenden noch leben**, sonst gibt es niemanden, der Warnung und Führung
-  zeigt. Das berührt die Reihenfolge in `before-quit` (`#3`/M8-36) und ist die eigentliche
-  technische Frage dieser Entscheidung.
-- **Was die Führung anbietet.** Naheliegend: erneut versuchen; den Datenort prüfen (voll, gesperrt,
-  schreibgeschützt); als letzten Ausweg die Änderung **bewusst verwerfen** und schließen. Der letzte
-  Punkt ist wichtig, sonst ist eine App mit dauerhaft defektem Datenort **unschließbar** – der
-  Nutzer bliebe nur mit dem Task-Manager übrig.
-- **Gilt dasselbe für `project.json`?** TK 9.5.4 sagt heute ausdrücklich das **Gegenteil** („schließt
-  die App **nicht**"). Zwei verschiedene Verhaltensweisen für zwei Dateien desselben Datenorts sind
-  schwer zu erklären und schwer zu bauen. **Das ist die nächste Frage an den Auftraggeber** und wird
-  zusammen mit dem TK-Nachzug vorgelegt.
+> „**Scheitert der Sofort-Flush beim BEENDEN, schließt die App NICHT (bindend).**" – und zwar in
+> dieser Reihenfolge: (1) das Beenden wird abgebrochen, die Änderungen bleiben **im Speicher**;
+> (2) der Fehler wird **mit einer auf die Ursache zugeschnittenen Handlungsempfehlung** gezeigt
+> („Die Platte ist voll. Schaffen Sie Platz und versuchen Sie es erneut." / „Der Speicherort ist
+> nicht erreichbar. Stecken Sie den Datenträger wieder ein."); (3) ein Knopf **„Erneut versuchen"**
+> stößt denselben Schreibversuch neu an; (4) daneben der ausdrücklich benannte Ausweg **„Trotzdem
+> schließen und Änderungen verwerfen"**, als Verlust benannt und nie vorausgewählt.
 
-**Betrifft:** M8-03/M8-04 (Flush), M8-36 (Beenden-Ablauf), `#47`/`#98` (die zwei anderen Flushes),
-TK 9.5.4 und 9.15.1, und mit hoher Wahrscheinlichkeit das Anforderungsdokument (FA-19 oder eine
-eigene Anforderung).
+Hätte der Auftraggeber meine Option 1 gewählt, wäre eine abgenommene Invariante gebrochen worden,
+**ohne dass es jemandem aufgefallen wäre**. Dieselbe Fehlerklasse, die ich an anderer Stelle in
+diesem Projekt mehrfach benannt habe: eine Behauptung über den Vertrag aufstellen, ohne sie
+nachzuschlagen. **Lehre: Wer eine Auswahlfrage zu einem geregelten Sachverhalt stellt, muss die
+bestehende Regelung vorher LESEN – die Optionen sind sonst Erfindungen.**
+
+**Was daraus folgt – die Entscheidung schrumpft erheblich:**
+- Für **`project.json` ist NICHTS zu ändern.** Die gewählte Behandlung ist dort bereits Vertrag; die
+  ausdrückliche Bestätigung „gleiches Verhalten für `project.json`" ist damit erfüllt.
+- Was die gewählte „geführte Reparatur" verlangt, ist **inhaltlich genau 9.5.4 Punkt 2 bis 4** –
+  Empfehlung, Wiederholen, benannter Ausweg. Es ist **kein** neuer FA-19-Fall und **keine** neue
+  Anforderung.
+- **Zu tun bleibt genau eins:** TK **9.15.1** sagt zu `marken.json` bis heute nur, die
+  Schreib-Invarianten seien „dieselben". Diese vier Schritte müssen dort **ausgeschrieben** stehen –
+  sonst bleibt es Auslegung, und genau deshalb führt M8-36 die Frage als offen.
+
+**Bleibt technisch zu klären (nicht hier geraten):** **Der Renderer muss beim Beenden noch leben**,
+sonst zeigt niemand Empfehlung und Wiederholen-Knopf. Das gilt für `project.json` genauso und ist
+damit **kein** neues Problem dieser Entscheidung – aber es ist in keinem Issue gelöst. Betrifft die
+Reihenfolge in `before-quit` (`#3`/M8-36).
+
+**Betrifft:** TK 9.15.1 (ausschreiben), M8-03/M8-04 (Flush), M8-36 (Beenden-Ablauf). **Nicht**
+betroffen: TK 9.5.4, `#47`, `#98`, das Anforderungsdokument.
