@@ -26,6 +26,10 @@
    schwersten Befunde, die neue Fehlerklasse „überholte Tatsachenbehauptung" und die
    Werkzeug-Härtung gegen die 65 536-Zeichen-Grenze).
 
+5. **`docs/agents/m8-uebergabe.md`** – falls du an **M8 (Marken)** weiterarbeitest: Der Meilenstein
+   ist **geschrieben, aber nicht anlegereif**. Es blockiert ein Widerspruch in TK 9.15, der eine
+   Entscheidung des Auftraggebers braucht. **Dort zuerst lesen, nicht hier.**
+
 **Kein Produktivcode.** Das Projekt ist in der Planungsphase — Code erst, wenn der Nutzer
 ausdrücklich sagt „wir sind nicht mehr im Plan". Aufgabe ist, Issues zu schreiben, nicht sie umzusetzen.
 

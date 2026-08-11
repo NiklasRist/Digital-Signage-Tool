@@ -1,0 +1,2798 @@
+[
+ [
+  8,
+  "**Playfair Display ist auf Windows/macOS nicht vorinstalliert.** Die Marken-Schriften werden da"
+ ],
+ [
+  12,
+  "**Strukturierte Fehlerdaten (`daten`, optional).** Manche Fehler sind erst mit ihren Nutzdaten "
+ ],
+ [
+  20,
+  "**Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, `Auftrag`. "
+ ],
+ [
+  22,
+  "Das Feld ist **optional** – Codes ohne Zusatzdaten lassen es weg; seine Form ist **je Fehlercod"
+ ],
+ [
+  29,
+  "`leseMarke` | – → `Ergebnis<Marke>` (**nur lesend**)"
+ ],
+ [
+  33,
+  "`erstelleProjekt` | `name` → `Ergebnis<Projekt>` (neuer Ordner + leeres `project.json`)"
+ ],
+ [
+  52,
+  "**Marke ist in v1 gebündelt und read-only** (`config-store.leseMarke`, 9.5.6); ein Marken-Edito"
+ ],
+ [
+  61,
+  "**Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, `Auftrag`. "
+ ],
+ [
+  76,
+  "**Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, `Auftrag`"
+ ],
+ [
+  77,
+  "**Marke gebündelt & read-only** im MVP (Palette #FF4040 …, Logo fix); ein Marken-Editor ist kei"
+ ],
+ [
+  97,
+  "**Strukturierte Fehlerdaten (`daten`, optional).** Manche Fehler sind erst mit ihren Nutzdaten "
+ ],
+ [
+  100,
+  "**Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, `Auftrag`. "
+ ],
+ [
+  104,
+  "**Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, `Auftrag`. "
+ ],
+ [
+  109,
+  "**Strukturierte Fehlerdaten (`daten`, optional).** Manche Fehler sind erst mit ihren Nutzdaten "
+ ],
+ [
+  110,
+  "**Playfair Display ist auf Windows/macOS nicht vorinstalliert.** Die Marken-Schriften werden da"
+ ],
+ [
+  112,
+  "**Marke ist in v1 gebündelt und read-only** (`config-store.leseMarke`, 9.5.6); ein Marken-Edito"
+ ],
+ [
+  119,
+  "**Marke ist in v1 gebündelt und read-only** (`config-store.leseMarke`, 9.5.6); ein Marken-Edito"
+ ],
+ [
+  138,
+  "**je Fehlercode festgelegt und typisiert** (dokumentiert dort, wo der Code vergeben wird: 9.4.9"
+ ],
+ [
+  139,
+  "**Akzentfarbe nur aus der Markenpalette** (feste Auswahl in v1, kein freier Farbwähler) – so br"
+ ],
+ [
+  139,
+  "aus der Markenpalette (feste Auswahl, v1)"
+ ],
+ [
+  139,
+  "**Marke ist in v1 gebündelt und read-only** (`config-store.leseMarke`, 9.5.6); ein Marken-Edito"
+ ],
+ [
+  139,
+  "**Akzentfarbe nur aus der Markenpalette** (feste Auswahl in v1, kein freier Farbwähler) – so br"
+ ],
+ [
+  139,
+  "**Marke ist in v1 gebündelt und read-only** (`config-store.leseMarke`, 9.5.6); ein Marken-Edito"
+ ],
+ [
+  144,
+  "**Sicherheitsabstand ist eine Eigenschaft des Bildrahmens, nicht der Vorlagenfläche.** Er gilt "
+ ],
+ [
+  148,
+  "**Sicherheitsabstand ist eine Eigenschaft des Bildrahmens, nicht der Vorlagenfläche.** Er gilt "
+ ],
+ [
+  152,
+  "**Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, `Auftrag`. "
+ ],
+ [
+  164,
+  "Der `render-service` holt den Wert **über die Marke** (`config-store.leseMarke`, 9.5.6) und tip"
+ ],
+ [
+  164,
+  "**Video vorbereiten:** bei `split` **contain** in den Video-Bereich skalieren und mit **`flaech"
+ ],
+ [
+  171,
+  "seine Form ist **je Fehlercode festgelegt und typisiert** (dokumentiert dort, wo der Code verge"
+ ],
+ [
+  177,
+  "Der `render-service` holt den Wert **über die Marke** (`config-store.leseMarke`, 9.5.6) und tip"
+ ],
+ [
+  197,
+  "**Marke gebündelt & read-only** im MVP (Palette #FF4040 …, Logo fix); ein Marken-Editor ist kei"
+ ],
+ [
+  197,
+  "**Marke gebündelt & read-only** im MVP (Palette #FF4040 …, Logo fix); ein Marken-Editor ist kei"
+ ],
+ [
+  211,
+  "Regeln: Das Feld ist **optional** – Codes ohne Zusatzdaten lassen es weg; seine Form ist **je F"
+ ],
+ [
+  218,
+  "**`split`:** Das `<video>` wird in den oberen Bereich **1920 × (1080 − H)** gelegt (`contain`),"
+ ],
+ [
+  218,
+  "Der `render-service` holt den Wert **über die Marke** (`config-store.leseMarke`, 9.5.6) und tip"
+ ],
+ [
+  221,
+  "**Marke ist in v1 gebündelt und read-only** (`config-store.leseMarke`, 9.5.6); ein Marken-Edito"
+ ],
+ [
+  224,
+  "`erstelleProjekt` | `name` → `Ergebnis<Projekt>` (neuer Ordner + leeres `project.json`)"
+ ],
+ [
+  224,
+  "`erstelleProjekt` | `name` → `Ergebnis<Projekt>` (neuer Ordner + leeres `project.json`)"
+ ],
+ [
+  250,
+  "**Akzentfarbe nur aus der Markenpalette** (feste Auswahl in v1, kein freier Farbwähler) – so br"
+ ],
+ [
+  265,
+  "Besitzt `config.json` (app-weit): aktives Projekt, letztes Export-Ziel, UI-Voreinstellungen, Ma"
+ ],
+ [
+  280,
+  "Balken ist im Asset enthalten"
+ ],
+ [
+  316,
+  "Der `render-service` holt den Wert **über die Marke** (`config-store.leseMarke`, 9.5.6) …"
+ ],
+ [
+  1,
+  "Nur der Main-Prozess berührt ffmpeg und Dateisystem."
+ ],
+ [
+  1,
+  "Renderer ↔ Main reden AUSSCHLIESSLICH über den typisierten IPC-Vertrag."
+ ],
+ [
+  2,
+  "Nur der Main-Prozess berührt ffmpeg und Dateisystem"
+ ],
+ [
+  3,
+  "Nur der Main-Prozess berührt ffmpeg und Dateisystem"
+ ],
+ [
+  3,
+  "**Sofort-Flush** unabhängig vom Timer, in vier Fällen: (1) **unmittelbar bevor ein `render`- od"
+ ],
+ [
+  3,
+  "Nur der Main-Prozess berührt ffmpeg und Dateisystem."
+ ],
+ [
+  4,
+  "Ereignisse sind Einbahnstraßen und tragen keine Hülle und keinen Endzustand."
+ ],
+ [
+  5,
+  "an den DATENORT gebunden"
+ ],
+ [
+  5,
+  "Die Sperre muss an den DATENORT gebunden sein, nicht an den Programmpfad."
+ ],
+ [
+  5,
+  "**Wichtig für die portable Auslieferung:** Die Sperre muss an den **Datenort** gebunden sein (d"
+ ],
+ [
+  5,
+  "Verpackung `electron-builder` Portable-Target"
+ ],
+ [
+  7,
+  "Verpackung: `electron-builder`, Portable-Target"
+ ],
+ [
+  7,
+  "ein dummer TV-Player + ein Desktop-Tool"
+ ],
+ [
+  7,
+  "Verpackung `electron-builder`, Portable-Target"
+ ],
+ [
+  8,
+  "**Schrift-Rollen (v1, fest) – alle Dateien werden mitgeliefert (9.10.4):** `headlineElegant` = "
+ ],
+ [
+  9,
+  "Pfad-Autorität & media://-Protokoll"
+ ],
+ [
+  9,
+  "`project-store` ist die eine Pfad-Autorität. […] Jeder Main-Dienst, der eine Mediendatei anfass"
+ ],
+ [
+  10,
+  "Warteschlangen-Leiste nie verstecken"
+ ],
+ [
+  12,
+  "`Ergebnis<T> = { ok: true, wert: T } | { ok: false, fehler: { code: Fehlercode, meldung: string"
+ ],
+ [
+  12,
+  "Fehlercodes sind ein geschlossener, typisierter Satz: die fachlichen je Operation (9.4.9, 9.6.4"
+ ],
+ [
+  13,
+  "`dateiname`: string // ‚<uuid>.<ext_kleingeschrieben>' — OHNE Verzeichnisanteil"
+ ],
+ [
+  13,
+  "`maße`: { breite: number, höhe: number } // DISPLAY-Maße in Pixeln, ganzzahlig (9.4.8)"
+ ],
+ [
+  13,
+  "`dauer`: number | null // Sekunden, 3 Nachkommastellen (Video); null (Bild)"
+ ],
+ [
+  14,
+  "Bild = Referenz, nie Kopie: die Aktion hält nur eine Asset-ID."
+ ],
+ [
+  14,
+  "Akzentfarbe nur aus der Markenpalette (feste Auswahl in v1, kein freier Farbwähler)."
+ ],
+ [
+  15,
+  "zwei Quellen für dieselbe Information unweigerlich auseinanderlaufen"
+ ],
+ [
+  15,
+  "`Vorlage` und `Marke` liegen NICHT im Projekt – sie sind app-weit. Das Projekt hält nur Referen"
+ ],
+ [
+  16,
+  "P1 (Import/Löschen) und P4 (Render/Export) laufen **ausschließlich als Aufträge** über P6."
+ ],
+ [
+  17,
+  "nur gerenderte Segment-PNGs reisen über IPC"
+ ],
+ [
+  17,
+  "**Nur gerenderte Segment-PNGs reisen über IPC.** Importierte Videos und Bilder liegen bereits k"
+ ],
+ [
+  17,
+  "Bei `‚segment'` werden **keine** Aktions-/Vorlagendaten mitgeschickt – die Pixel sind bereits f"
+ ],
+ [
+  17,
+  "**Die Bandhöhe `H` stammt ausschließlich aus der Vorlage** – sie ist **kein** Wert am Listenele"
+ ],
+ [
+  18,
+  "RenderProfile (aktuell fest)"
+ ],
+ [
+  18,
+  "Alle Werte gelten identisch für jedes Segment – sonst scheitert die Uniformitäts-Voraussetzung "
+ ],
+ [
+  19,
+  "Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bereits vorhandene "
+ ],
+ [
+  19,
+  "**Keine** Restzeit-Schätzung – bei `ffmpeg` unzuverlässig."
+ ],
+ [
+  19,
+  "Der Fortschrittskanal trägt **keinen** Endzustand. Erfolg, Fehler und Abbruch kommen **ausschli"
+ ],
+ [
+  19,
+  "**`gesamtdauer`** | Summe der (getrimmten) Elementdauern in Sekunden – **framegerundet** gezähl"
+ ],
+ [
+  21,
+  "Konstanten an EINER Stelle"
+ ],
+ [
+  21,
+  "Aktuelle schemaVersion | 1 | wird von öffneProjekt, schreibeProjekt und der Migration // gelese"
+ ],
+ [
+  21,
+  "Konstanten in `contracts/types` (an *einer* Stelle, nicht verstreut)."
+ ],
+ [
+  22,
+  "Fehlercodes sind ein geschlossener, typisierter Satz: die fachlichen je Operation (9.4.9, 9.6.4"
+ ],
+ [
+  22,
+  "`Ergebnis<T> = { ok: true, wert: T } | { ok: false, fehler: { code: Fehlercode, meldung: string"
+ ],
+ [
+  23,
+  "Fehlerklasse und eigene Felder wie `code` sind verloren – übrig ist Text"
+ ],
+ [
+  23,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  23,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  23,
+  "**Unerwartete Ausnahmen fängt das Gateway** und übersetzt sie in `unbekannter_fehler` (intern p"
+ ],
+ [
+  23,
+  "`import`, `loeschen`, `render` und `export` werden damit **nicht** als direkte Request/Response"
+ ],
+ [
+  24,
+  "Ausschreiben statt andeuten. In **allen** Operations-Signaturen von Abschnitt 9 steht die Hülle"
+ ],
+ [
+  25,
+  "**Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vo"
+ ],
+ [
+  26,
+  "**Sitzungswiederherstellung (FA-15):** beim Start das zuletzt aktive Projekt laden; **fehlt** e"
+ ],
+ [
+  27,
+  "`Ergebnis<void>` […] das gelungene `ok` **ist** die Information."
+ ],
+ [
+  27,
+  "**Instant-Op vs. Speichern getrennt:** Eine Instant-Operation […] validiert und wendet **im Spe"
+ ],
+ [
+  32,
+  "Referenzprüfung und Entfernen im **selben** kritischen Abschnitt"
+ ],
+ [
+  32,
+  "**[D1-Lock]** Referenzen prüfen. Referenziert (ListItem zeigt darauf)? → Fehler `asset_referenz"
+ ],
+ [
+  32,
+  "Das **D1-Schreib-Lock** ist ein **prozessinternes** Lock."
+ ],
+ [
+  33,
+  "Jedes Projekt besitzt einen eigenen Ordner mit `media/`-Unterordner"
+ ],
+ [
+  33,
+  "**FA-22**: Vorbelegung des Render-Zielnamens; **null = noch nie gerendert**"
+ ],
+ [
+  34,
+  "**Ein Backup:** `project.json.bak` = letzte heile Version. Ist `project.json` beim Laden defekt"
+ ],
+ [
+  34,
+  "Das **aktive** Projekt lebt zur Laufzeit **im Speicher**."
+ ],
+ [
+  35,
+  "**Operationen (Instant, über das D1-Lock)**"
+ ],
+ [
+  35,
+  "` anzahlMedien: number // Dateien in media/ – aus dem ORDNER gezählt, nicht aus project.json`"
+ ],
+ [
+  35,
+  "`beschaedigt: boolean // true = weder project.json noch project.json.bak lesbar`"
+ ],
+ [
+  37,
+  "**fehlt** es (extern gelöscht) → sanfter Rückfall auf ‚kein aktives Projekt / Projektliste', **"
+ ],
+ [
+  37,
+  "`output/` # A: gerenderte MP4s DIESES Projekts"
+ ],
+ [
+  38,
+  "Titel ist Pflicht: eine Aktion ohne Titel ist nicht speicherbar"
+ ],
+ [
+  38,
+  "Aktionen sind **referenzierbare** Datensätze – mehrere Listenelemente dürfen auf dieselbe Aktio"
+ ],
+ [
+  38,
+  "kein aktives Projekt geladen"
+ ],
+ [
+  40,
+  "**Rückgabe:** `löscheAktion` meldet **beide** Wirkungen – `entfernteElementIds` … **und** `geae"
+ ],
+ [
+  41,
+  "Die Reihenfolge ist die Array-Reihenfolge von `liste` – es gibt kein separates `position`-Feld."
+ ],
+ [
+  42,
+  "Die Reihenfolge ist die Array-Reihenfolge von `liste` – es gibt **kein** separates `position`-F"
+ ],
+ [
+  42,
+  "**Fix-Optionen je Element:** Medium neu verknüpfen/importieren (media-service), durch ein ander"
+ ],
+ [
+  43,
+  "Reorder/Trim/Dauer werden lokal sofort angezeigt, dann per Instant-Op bestätigt"
+ ],
+ [
+  43,
+  "Die Reihenfolge ist die Array-Reihenfolge von `liste` – es gibt **kein** separates `position`-F"
+ ],
+ [
+  43,
+  "Optimistisch mit Abgleich: Reorder/Trim/Dauer werden **lokal sofort** angezeigt, dann per Insta"
+ ],
+ [
+  44,
+  "Video (FA-14): zwei Griffe (Anfang/Ende) innerhalb der **Quelllänge** des Videos. Kürzen schnei"
+ ],
+ [
+  45,
+  "Konstanten in `contracts/types` (an *einer* Stelle, nicht verstreut):"
+ ],
+ [
+  46,
+  "Nicht selbst entscheiden"
+ ],
+ [
+  47,
+  "Ereignisse (Main → Renderer) tragen ebenfalls keine Hülle"
+ ],
+ [
+  47,
+  "**Sofort-Flush** unabhängig vom Timer, in vier Fällen: (1) **unmittelbar bevor ein `render`- od"
+ ],
+ [
+  47,
+  "*Wer Fall 1 auslöst und wann – ausdrücklich festgelegt:* Der **Main** löst ihn aus, und zwar be"
+ ],
+ [
+  47,
+  "Ereignisse (Main → Renderer) tragen ebenfalls keine Hülle"
+ ],
+ [
+  48,
+  "höhere (unbekannte) Version → Fehler"
+ ],
+ [
+  48,
+  "ältere Version → Migration"
+ ],
+ [
+  48,
+  "`Ergebnis<T> = { ok: true, wert: T } | { ok: false, fehler: { code: Fehlercode, meldung: string"
+ ],
+ [
+  48,
+  "Das **aktive** Projekt lebt zur Laufzeit **im Speicher**."
+ ],
+ [
+  49,
+  "`<uuid>.<ext_kleingeschrieben>` — OHNE Verzeichnisanteil"
+ ],
+ [
+  49,
+  "Der Resolver stellt sicher, dass das Ziel **innerhalb** des `media/`-Ordners des Projekts bleib"
+ ],
+ [
+  49,
+  "`dateiname` = `<uuid>.<ext_kleingeschrieben>`, ohne Verzeichnisanteil. Auflösung immer per `pat"
+ ],
+ [
+  50,
+  "registriert der Main ein eigenes Protokoll `media://<projektId>/<dateiname>`"
+ ],
+ [
+  51,
+  "(Einzel-Instanz, hier nur die Fenster-Seite)"
+ ],
+ [
+  52,
+  "Der Sicherheitsabstand [...] gilt absolut im 1920×1080-Rahmen (96 px horizontal, 54 px vertikal"
+ ],
+ [
+  53,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  53,
+  "**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von de"
+ ],
+ [
+  56,
+  "ab 10 000 Einträgen die ältesten weg"
+ ],
+ [
+  57,
+  "**Bewegungen** der Schlange (eingereiht/gestartet/ entfernt/erneut eingereiht)"
+ ],
+ [
+  58,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  59,
+  "**Render friert seinen Eingang beim Einreihen ein:** die geordnete Liste + Profil des `RenderRe"
+ ],
+ [
+  60,
+  "wie ging der Vorgang aus"
+ ],
+ [
+  60,
+  "hat der Aufruf geklappt"
+ ],
+ [
+  60,
+  "**Zwei Ebenen nicht verwechseln.** … **Aufruf-Ergebnis:** Hat der *Aufruf* funktioniert … **Auf"
+ ],
+ [
+  60,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  60,
+  "**Render friert seinen Eingang beim Einreihen ein:** die geordnete Liste + Profil des `RenderRe"
+ ],
+ [
+  61,
+  "`reiheEin(art, payload) → Ergebnis<{ auftragId }> // kehrt SOFORT zurück; sagt nichts über den "
+ ],
+ [
+  61,
+  "**Zwei Ebenen nicht verwechseln.** … **Aufruf-Ergebnis:** Hat der *Aufruf* funktioniert … **Auf"
+ ],
+ [
+  61,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  61,
+  "`import`, `loeschen`, `render` und `export` werden damit **nicht** als direkte Request/Response"
+ ],
+ [
+  62,
+  "`entferne(auftragId) → Ergebnis<void> // anstehend: aus Schlange nehmen; laeuft+render: Abbruch"
+ ],
+ [
+  63,
+  "`wiederhole(auftragId) → Ergebnis<void> // fehlgeschlagen → anstehend, ans Ende (versuche steig"
+ ],
+ [
+  64,
+  "`holeStand() → Ergebnis<Auftrag[]> // Snapshot für die UI (z. B. beim Öffnen des Panels)"
+ ],
+ [
+  65,
+  "**Ereignisse sind Einbahnstraßen und tragen keinen Endzustand** (für `RenderProgress` bereits f"
+ ],
+ [
+  65,
+  "`QueueGeändert(Auftrag[]) // Main → Renderer: Push bei jeder Zustandsänderung → speist das queu"
+ ],
+ [
+  65,
+  "**Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vo"
+ ],
+ [
+  65,
+  "**Zwei Ebenen nicht verwechseln.** … **Auftrags-Ergebnis:** Wie ging der *Vorgang* aus (`Render"
+ ],
+ [
+  66,
+  "nur wenn die Datei offensichtlich frei ist"
+ ],
+ [
+  68,
+  "Der **Ausgabename** reist dabei **nur** in `Auftrag.ergebnis` […] In `ProtokollEintrag.ausgabe`"
+ ],
+ [
+  68,
+  "**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von de"
+ ],
+ [
+  68,
+  "**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.** `Ren"
+ ],
+ [
+  68,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  68,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  69,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  70,
+  "Der **Ausgabename** reist dabei **nur** in `Auftrag.ergebnis` […] In `ProtokollEintrag.ausgabe`"
+ ],
+ [
+  70,
+  "**`ausgabe.gesamtdauer` darf `null` sein – und ist es beim Export immer.** Ein `render` kennt d"
+ ],
+ [
+  71,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  71,
+  "**Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vo"
+ ],
+ [
+  71,
+  "**Ereignisse sind Einbahnstraßen und tragen keinen Endzustand** (für `RenderProgress` bereits f"
+ ],
+ [
+  71,
+  "`QueueGeändert(Auftrag[]) // Main → Renderer: Push bei jeder Zustandsänderung → speist das queu"
+ ],
+ [
+  71,
+  "**Zwei Ebenen nicht verwechseln.** … **Aufruf-Ergebnis:** Hat der *Aufruf* funktioniert … **Auf"
+ ],
+ [
+  71,
+  "`import`, `loeschen`, `render` und `export` werden damit **nicht** als direkte Request/Response"
+ ],
+ [
+  71,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  71,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  71,
+  "**Unerwartete Ausnahmen fängt das Gateway** und übersetzt sie in `unbekannter_fehler` (intern p"
+ ],
+ [
+  71,
+  "zuletzt benutztes Fenster"
+ ],
+ [
+  72,
+  "**Sofort-Flush** unabhängig vom Timer, in vier Fällen: (1) **unmittelbar bevor ein `render`- od"
+ ],
+ [
+  72,
+  "Fehlercodes sind ein geschlossener, typisierter Satz: die fachlichen je Operation (9.4.9, 9.6.4"
+ ],
+ [
+  73,
+  "**Sofort-Flush** unabhängig vom Timer, in vier Fällen: (1) **unmittelbar bevor ein `render`- od"
+ ],
+ [
+  73,
+  "die Datei bleibt unangetastet, **weil Schritt 1 nie abgeschlossen wurde**"
+ ],
+ [
+  73,
+  "die Änderungen bleiben im Speicher (kein Rollback, kein Arbeitsverlust)"
+ ],
+ [
+  73,
+  "Fehlercodes sind ein geschlossener, typisierter Satz: die fachlichen je Operation (9.4.9, 9.6.4"
+ ],
+ [
+  73,
+  "`bildRef`: string | null // Referenz auf eine Asset-ID (NICHT eingebettet)"
+ ],
+ [
+  74,
+  "Fehlercodes sind ein geschlossener, typisierter Satz: die fachlichen je Operation (9.4.9, 9.6.4"
+ ],
+ [
+  74,
+  "(1) **unmittelbar bevor ein `render`- oder `export`-Auftrag startet**, (2) **bei** Projektwechs"
+ ],
+ [
+  75,
+  "**`geaendertAm` ist der Renderzeitpunkt, nicht das Protokoll.** Die Datei wird als `<name>.mp4."
+ ],
+ [
+  75,
+  "Gelistet werden **ausschließlich fertige `.mp4`-Dateien**; Arbeitsdateien (`.part`, Temporäres)"
+ ],
+ [
+  75,
+  "Fehlercodes sind ein geschlossener, typisierter Satz: die fachlichen je Operation (9.4.9, 9.6.4"
+ ],
+ [
+  76,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  76,
+  "**Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vo"
+ ],
+ [
+  76,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  76,
+  "**Unerwartete Ausnahmen fängt das Gateway** und übersetzt sie in `unbekannter_fehler` (intern p"
+ ],
+ [
+  76,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  77,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  77,
+  "**Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vo"
+ ],
+ [
+  77,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  77,
+  "**Unerwartete Ausnahmen fängt das Gateway** und übersetzt sie in `unbekannter_fehler` (intern p"
+ ],
+ [
+  77,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  77,
+  "bevor die UI Medien zeigt"
+ ],
+ [
+  78,
+  "ENTSCHIEDEN – der Importpfad in `auftrag.ts`"
+ ],
+ [
+  78,
+  "Forward-Referenzen auf Typen aus den jeweiligen Fach-Issues"
+ ],
+ [
+  78,
+  "ist die Nutzlast überhaupt wohlgeformt?"
+ ],
+ [
+  79,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  79,
+  "je Fehlercode festgelegt und typisiert (dokumentiert dort, wo der Code vergeben wird: 9.4.9, 9."
+ ],
+ [
+  82,
+  "ich lege das schon mal im ffmpeg-adapter an"
+ ],
+ [
+  85,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  85,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  85,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**. Ungültige Ein"
+ ],
+ [
+  85,
+  "schon mal auf 1920×1080 bringt"
+ ],
+ [
+  86,
+  "**Windows:** gesperrte Datei → `EBUSY`/`EPERM`. **macOS:** `unlink` gelingt still, obwohl noch "
+ ],
+ [
+  87,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  87,
+  "**Sofort-Flush** unabhängig vom Timer, in vier Fällen: (1) **unmittelbar bevor ein `render`- od"
+ ],
+ [
+  87,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  87,
+  "unverändert durchreichen – **kein** Umschreiben, **kein** Vereinheitlichen"
+ ],
+ [
+  88,
+  "**ohne** Verzeichnisanteil"
+ ],
+ [
+  88,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  89,
+  "der `render-service` bricht **früh** ab statt mitten im Lauf"
+ ],
+ [
+  89,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  89,
+  "vielleicht liegt sie ja im Downloads-Ordner"
+ ],
+ [
+  90,
+  "gehört diese Datei noch zu einem Asset?"
+ ],
+ [
+  90,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  90,
+  "damit es im `queue-panel` sichtbar wird"
+ ],
+ [
+  91,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  91,
+  "nach dem Import nochmal kurz aufräumen"
+ ],
+ [
+  91,
+  "schnelle Variante ohne Schritt 2"
+ ],
+ [
+  92,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  93,
+  "**Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vo"
+ ],
+ [
+  93,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  93,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  93,
+  "**Unerwartete Ausnahmen fängt das Gateway** und übersetzt sie in `unbekannter_fehler` (intern p"
+ ],
+ [
+  93,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  95,
+  "Die Reihenfolge ist die Array-Reihenfolge von `liste` – es gibt **kein** separates `position`-F"
+ ],
+ [
+  96,
+  "den Scrim malen wir fest"
+ ],
+ [
+  96,
+  "Hintergründe gehören doch nach hinten"
+ ],
+ [
+  96,
+  "**Farben und Schriften sind Rollen-Verweise in die `Marke`** […] **keine** Hex-Werte oder Font-"
+ ],
+ [
+  96,
+  "für immer mitgeliefert und unveränderlich"
+ ],
+ [
+  97,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**. Ungültige Ein"
+ ],
+ [
+  97,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  97,
+  "je Fehlercode festgelegt und typisiert (dokumentiert dort, wo der Code vergeben wird: 9.4.9, 9."
+ ],
+ [
+  97,
+  "an den Codes hängt echtes Verhalten"
+ ],
+ [
+  98,
+  "Beim Beenden blockiert die App, bis der Schreibvorgang * abgeschlossen ist"
+ ],
+ [
+  98,
+  "Nutzlast und Verhalten **gleichartig** zu * `project:autoSpeichernStatus` (9.5.4)"
+ ],
+ [
+  99,
+  "nur Arbeitskopien mit vollständigen Zonen"
+ ],
+ [
+  99,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  100,
+  "arrangiert nur die **freien Zonen** […] innerhalb des **festen Markenrahmens** (Logo, Sicherhei"
+ ],
+ [
+  100,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**. Ungültige Ein"
+ ],
+ [
+  100,
+  "automatische Umlayouten"
+ ],
+ [
+  100,
+  "Standard-Zonen zum Loslegen"
+ ],
+ [
+  101,
+  "**Alle IDs sind UUIDs** […] **Keine** fortlaufenden Zähler […] **Keine** aus Namen abgeleiteten"
+ ],
+ [
+  101,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**. Ungültige Ein"
+ ],
+ [
+  102,
+  "vertraut dem Renderer nicht"
+ ],
+ [
+  102,
+  "**Feste Zonen sind Teil der Vorlage**, nicht hartkodiert […] Der Editor darf Zonen mit `rolle:"
+ ],
+ [
+  102,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**. Ungültige Ein"
+ ],
+ [
+  103,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  103,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  103,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  103,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  103,
+  "hat sich der Parent inzwischen geändert"
+ ],
+ [
+  104,
+  "geht nicht, weil der Parent eingebaut ist"
+ ],
+ [
+  104,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  104,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  104,
+  "Parent ist eingebaut → abbrechen"
+ ],
+ [
+  105,
+  "nur wenn `parent ≠ null`"
+ ],
+ [
+  105,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  105,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  105,
+  "hatte mal eine Kopie"
+ ],
+ [
+  106,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  106,
+  "dieses Projekt benutzt die Vorlage nicht"
+ ],
+ [
+  106,
+  "Fehlercodes sind ein geschlossener, typisierter Satz: die fachlichen je Operation (9.4.9, 9.6.4"
+ ],
+ [
+  107,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  107,
+  "atomar (Temp + Rename)"
+ ],
+ [
+  108,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  109,
+  "**Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vo"
+ ],
+ [
+  109,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  109,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  109,
+  "**Unerwartete Ausnahmen fängt das Gateway** und übersetzt sie in `unbekannter_fehler` (intern p"
+ ],
+ [
+  109,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  111,
+  "innerhalb einer Sitzung […] ein bereits gezeichnetes Canvas zur *Anzeige* weiterverwendet werde"
+ ],
+ [
+  112,
+  "`// Hex, 6- oder 8-stellig (8 = mit Alpha)`"
+ ],
+ [
+  116,
+  "die Preis-Pille ist immer rot mit Radius 40"
+ ],
+ [
+  117,
+  "Durchgesetzt wird das **an der Quelle**, wo die Höhe entsteht: der `vorlagen-editor` sperrt ein"
+ ],
+ [
+  117,
+  "kein Bild ausgewählt"
+ ],
+ [
+  118,
+  "**Binärdaten** (Segment- und Band-PNGs) reisen als **Binärpuffer**, nicht als Base64 (9.1, Punk"
+ ],
+ [
+  118,
+  "gleiche Eingabe → gleiches Bild"
+ ],
+ [
+  119,
+  "fester Markenrahmen, nicht abschaltbar"
+ ],
+ [
+  119,
+  "Nicht selbst entscheiden"
+ ],
+ [
+  120,
+  "existiert die Vorlage, und ist ihre `art` `split` oder `einblendung`?"
+ ],
+ [
+  121,
+  "letzten bestätigten Stand"
+ ],
+ [
+  124,
+  "das Asset wird jetzt nirgends mehr benutzt"
+ ],
+ [
+  125,
+  "**derselbe** Bedien-Baustein"
+ ],
+ [
+  128,
+  "keine Akzentfarbe gewählt"
+ ],
+ [
+  128,
+  "**`media://`-Protokoll (Renderer-Lesezugriff).** Für die Vorschau (P5) und Thumbnails (`compose"
+ ],
+ [
+  130,
+  "Beide Grenzen werden auf **dasselbe** 30-fps-Raster gerundet: `startFrame = round(trimStart × 3"
+ ],
+ [
+  130,
+  "„Abschnitts-Dauern unterliegen **derselben Frame-Rundung** wie alles andere (30 fps, 9.2.6) – s"
+ ],
+ [
+  131,
+  "keine Akzentfarbe gewählt"
+ ],
+ [
+  132,
+  "- **Zurückleiten:** Beim Render-Versuch mit kaputten Elementen (oder auf Hinweis direkt nach de"
+ ],
+ [
+  134,
+  "**Aufruf-Ergebnis:** Hat der *Aufruf* funktioniert (z. B. „Auftrag eingereiht\", „Trim gesetzt\")"
+ ],
+ [
+  134,
+  "innerhalb von `projects/<id>/output/`"
+ ],
+ [
+  134,
+  "**`anstehend` → `laeuft`:** […] Bei `render` und `export` erzwingt der Main **unmittelbar vor**"
+ ],
+ [
+  134,
+  "**Kaputte Stellen blockieren den Render und starten die geführte Reparatur (9.7.5):** […] ein R"
+ ],
+ [
+  134,
+  "`reiheEin(art, payload) → Ergebnis<{ auftragId }> // kehrt SOFORT zurück; sagt nichts über den "
+ ],
+ [
+  134,
+  "**Der Ausgabename ist Nutzereingabe und wird validiert (FA-22):** […] Verstoß → `ungueltige_ein"
+ ],
+ [
+  134,
+  "Der Render **friert seinen Eingang beim Einreihen ein** (9.3.5). Beide Werte stammen aus der Ba"
+ ],
+ [
+  135,
+  "keine Akzentfarbe gewählt"
+ ],
+ [
+  135,
+  "`bildRef` zeigt auf ein `fehlt`-Asset"
+ ],
+ [
+  135,
+  "`bildRef` zeigt auf eine Asset-ID, die in `Project.assets` **gar nicht** vorkommt"
+ ],
+ [
+  136,
+  "die Dauer der Aktion"
+ ],
+ [
+  136,
+  "keine gewählt, es gilt der Markenwert"
+ ],
+ [
+  136,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  138,
+  "importiert und danach zuweist"
+ ],
+ [
+  142,
+  "das Bild wird mitgelöscht"
+ ],
+ [
+  142,
+  "löschen ohne Rückfrage"
+ ],
+ [
+  144,
+  "mit gedrückter Umschalttaste doch"
+ ],
+ [
+  144,
+  "Es gibt **kein** automatisches Umlayouten"
+ ],
+ [
+  147,
+  "Titel/Beschreibung/ Preis/CTA"
+ ],
+ [
+  148,
+  "Zone außerhalb der Fläche"
+ ],
+ [
+  149,
+  "Nicht selbst entscheiden"
+ ],
+ [
+  149,
+  "**Zweck des `parent`-Feldes (und warum es genullt wird):** Das Feld `parent` ist **die Merge-Be"
+ ],
+ [
+  150,
+  "keine Akzentfarbe gewählt"
+ ],
+ [
+  150,
+  "kein Bild ausgewählt"
+ ],
+ [
+  151,
+  "`QueueGeändert(Auftrag[]) // Main → Renderer: Push bei jeder Zustandsänderung → speist das queu"
+ ],
+ [
+  152,
+  "**Fix-Optionen je Element**"
+ ],
+ [
+  152,
+  "`video` → `ref`=Asset(video), `dauer`=`null`, `trimStart`/`trimEnde` gesetzt, `einblendung` erl"
+ ],
+ [
+  152,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  152,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  153,
+  "von M2–M7 **iterativ ergänzt**"
+ ],
+ [
+  153,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  153,
+  "**Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vo"
+ ],
+ [
+  153,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  153,
+  "**Unerwartete Ausnahmen fängt das Gateway** und übersetzt sie in `unbekannter_fehler` (intern p"
+ ],
+ [
+  153,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  154,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  155,
+  "bevor überarbeitet **oder gelöscht** wird"
+ ],
+ [
+  155,
+  "**Höchstens eine Arbeitskopie pro Parent.** Wird eine Vorlage geöffnet, für die bereits eine Ar"
+ ],
+ [
+  155,
+  "**Nutzung wird angezeigt,** bevor überarbeitet oder gelöscht wird („wird von 7 Aktionen in 2 Pr"
+ ],
+ [
+  155,
+  "**Ist:** die UI zum Anlegen und Bearbeiten – **Art wählen** (vollflächig / Split-Screen / Einbl"
+ ],
+ [
+  155,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  156,
+  "ENTSCHIEDEN – der Importpfad in `auftrag.ts`"
+ ],
+ [
+  156,
+  "Woher `dateiname` kommt: Die Auswahl speist sich aus `listeAusgaben` (9.5.2); der Renderer lies"
+ ],
+ [
+  157,
+  "**Der Kanal `render:fortschritt` wird gebaut, nicht nur erwähnt.** […] Der `render-service` mel"
+ ],
+ [
+  158,
+  "**3. Fehlercodes sind ein geschlossener, typisierter Satz** […] **Eine rohe Exception-Meldung w"
+ ],
+ [
+  161,
+  "Video-Codec \\| **H.264**, Profil **High**, **Level 4.0**"
+ ],
+ [
+  161,
+  "Bildrate \\| **30 fps, CFR** (konstant) \\| Voraussetzung für die Frame-Rundung (9.2.6)"
+ ],
+ [
+  161,
+  "**GOP** \\| **geschlossen**, ≤ 2 s (60 Frames)"
+ ],
+ [
+  162,
+  "**`-c copy` setzt Uniformität voraus:** Alle `seg_*.mp4` müssen **identische** Parameter tragen"
+ ],
+ [
+  165,
+  "für bessere Qualität"
+ ],
+ [
+  168,
+  "das Band nicht mitten im Abschnitt abbricht"
+ ],
+ [
+  171,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  171,
+  "**Strukturierte Fehlerdaten (`daten`, optional).** […] Regeln: Das Feld ist **optional** – Code"
+ ],
+ [
+  171,
+  "Fachliche Module deklarieren ihre eigene Union in ihrer eigenen Datei"
+ ],
+ [
+  172,
+  "verwirft T1 nach dem Lauf"
+ ],
+ [
+  172,
+  "`<Temp>/reel-XXXX/ # C/T1: flüchtig (PNG, seg_*.mp4, concat.txt) – NUR Zwischenprodukte`"
+ ],
+ [
+  172,
+  "**Genau eine App-Instanz (Voraussetzung für das ganze Lock-Design)** […] **Wichtig für die port"
+ ],
+ [
+  173,
+  "eins nach dem anderen"
+ ],
+ [
+  173,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  173,
+  "**Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.** […] "
+ ],
+ [
+  173,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  174,
+  "Warum das wichtig ist"
+ ],
+ [
+  174,
+  "eins nach dem anderen"
+ ],
+ [
+  174,
+  "**`gesamtdauer`** | Summe der (getrimmten) Elementdauern in Sekunden – **framegerundet** gezähl"
+ ],
+ [
+  175,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**"
+ ],
+ [
+  175,
+  "Der Ausgabe-**Pfad** ist **nicht** Teil der Anfrage – nur der **Name** […] Der Renderer kennt *"
+ ],
+ [
+  175,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  175,
+  "`<Temp>/reel-XXXX/ # C/T1: flüchtig (PNG, seg_*.mp4, concat.txt) – NUR Zwischenprodukte`"
+ ],
+ [
+  176,
+  "welche Bandhoehe ist zulaessig"
+ ],
+ [
+  176,
+  "Das Video wird wie gewohnt auf **1920 × 1080** normalisiert (schwarze Balken nach 9.2.4, **kein"
+ ],
+ [
+  176,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  176,
+  "Warum das wichtig ist"
+ ],
+ [
+  176,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  180,
+  "Fallback für den EXDEV-Fall"
+ ],
+ [
+  180,
+  "„**T1 bleibt** für Segment-PNGs, Zwischenclips `seg_*.mp4` und concat-Liste zuständig (Abschnit"
+ ],
+ [
+  180,
+  "„`ffmpeg` schreibt deshalb **nie** direkt auf den Zielnamen, sondern auf **`projects/<id>/outpu"
+ ],
+ [
+  181,
+  "**Es gibt bewusst *kein* Feld `historieEintrag`.** Der Q3-Protokolleintrag wird **allein von de"
+ ],
+ [
+  182,
+  "das Ziel ist in Ordnung, die **interne** Platte nicht"
+ ],
+ [
+  182,
+  "Verbindliche Invarianten"
+ ],
+ [
+  182,
+  "Bei uns hängt an den Codes **echtes Verhalten**: […] `datei_zu_gross_fat32` erklärt exFAT, `kei"
+ ],
+ [
+  182,
+  "„Bei uns hängt an den Codes **echtes Verhalten**: `asset_referenziert` zeigt die betroffenen Li"
+ ],
+ [
+  184,
+  "nur noch 5 % frei, ich warne mal"
+ ],
+ [
+  185,
+  "vorhanden, aber unlesbar"
+ ],
+ [
+  187,
+  "kein modulübergreifender Import"
+ ],
+ [
+  187,
+  "**Windows:** gesperrte Datei → `EBUSY`/`EPERM`. **macOS:** `unlink` gelingt still, obwohl noch "
+ ],
+ [
+  188,
+  "Kein Projekt geöffnet"
+ ],
+ [
+  188,
+  "welche Leiche gehört zu welcher Datei"
+ ],
+ [
+  188,
+  "weil der Stick eben noch da war"
+ ],
+ [
+  188,
+  "„Bei `render` und `export` erzwingt der Main den **Sofort-Flush** von D1 (9.5.4) – nicht beim E"
+ ],
+ [
+  191,
+  "**10. Die App hat GENAU EIN Fenster – und jedes Ereignis geht an dieses eine Fenster.** […] Der"
+ ],
+ [
+  192,
+  "Lesezugriffe sind sofortig."
+ ],
+ [
+  192,
+  "am Ende jedes Auftrags, der D1 verändert hat (Import, Löschen)"
+ ],
+ [
+  193,
+  "Nur der Main-Prozess berührt ffmpeg und Dateisystem."
+ ],
+ [
+  194,
+  "erst holen, dann abonnieren"
+ ],
+ [
+  194,
+  "Reiterwechsel gerade verboten"
+ ],
+ [
+  195,
+  "**Die Shell rendert selbst keine Inhalte** – sie ordnet an, wechselt und hält die Warteschlange"
+ ],
+ [
+  197,
+  "**Ausgenommen sind Projekte und Vorlagen:** Beide bleiben ohne offenes Projekt **voll benutzbar"
+ ],
+ [
+  198,
+  "**Ohne offenes Projekt sind die Reiter Zusammenstellen/Aktionen leer statt kaputt.** Beim Start"
+ ],
+ [
+  198,
+  "der Vollständigkeit halber"
+ ],
+ [
+  199,
+  "erst holen, dann abonnieren"
+ ],
+ [
+  200,
+  "Ereignisse (Main → Renderer) tragen ebenfalls keine Hülle"
+ ],
+ [
+  201,
+  "kehrt danach zum Reiter **Zusammenstellen** zurück"
+ ],
+ [
+  201,
+  "wodurch beginnt die Führung?"
+ ],
+ [
+  201,
+  "**Aktions-Segmente werden auf Aktions-Ebene repariert:** Ist ein Aktions-Segment kaputt, weil d"
+ ],
+ [
+  201,
+  "1. **Wodurch die Führung beginnt, ist vollständig entschieden – erledigt.** Der Anlass liegt be"
+ ],
+ [
+  203,
+  "**Aktions-Segmente werden auf Aktions-Ebene repariert:** Ist ein Aktions-Segment kaputt, weil d"
+ ],
+ [
+  204,
+  "**ENTSCHIEDEN – was mit den mehreren Pfaden geschieht, ist geklärt und nicht deine Sache.** Die"
+ ],
+ [
+  204,
+  "1. **Der Rückweg von `medium_neu_verknuepfen` ist entschieden UND die Vertragsänderung an #133 "
+ ],
+ [
+  206,
+  "passiert gerade etwas?"
+ ],
+ [
+  208,
+  "erst holen, dann abonnieren"
+ ],
+ [
+  209,
+  "der Main validiert ja ohnehin"
+ ],
+ [
+  209,
+  "`entferne(auftragId) → Ergebnis<void> // anstehend: aus Schlange nehmen; laeuft+render: Abbruch"
+ ],
+ [
+  209,
+  "`entferne(auftragId) → Ergebnis<void> // anstehend: aus Schlange nehmen; laeuft+render: Abbruch"
+ ],
+ [
+  210,
+  "`wiederhole(auftragId) → Ergebnis<void> // fehlgeschlagen → anstehend, ans Ende (versuche steig"
+ ],
+ [
+  211,
+  "wird beim nächsten Öffnen des Projekts nachgeholt"
+ ],
+ [
+  212,
+  "**VERMERK FÜR DEN AUFTRAGGEBER (kein Auftrag an den umsetzenden Agenten).** Unter den zehn `pre"
+ ],
+ [
+  217,
+  "kein zweiter Zeichenpfad"
+ ],
+ [
+  221,
+  "Datei neu verknüpfen"
+ ],
+ [
+  222,
+  "Sie haben keine Projekte"
+ ],
+ [
+  222,
+  "hier geht nichts verloren"
+ ],
+ [
+  222,
+  "Erstell-/ Änderungsdatum"
+ ],
+ [
+  223,
+  "Fehler melden, nicht leer weiterstarten"
+ ],
+ [
+  223,
+  "daneben aber überall in der * Projektverwaltung"
+ ],
+ [
+  223,
+  "`beschaedigt: boolean` // true = weder project.json noch project.json.bak lesbar"
+ ],
+ [
+  224,
+  "beim Öffnen eines Projekts"
+ ],
+ [
+  224,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  224,
+  "Verwirft den Motiv-Bestand. Vor jedem Projektwechsel und nach jedem abgeschlossenen Import aufz"
+ ],
+ [
+  225,
+  "nach dem Beschneiden leer"
+ ],
+ [
+  227,
+  "Bild ohne Maße ist kaputt"
+ ],
+ [
+  227,
+  "Video ohne Dauer ist kaputt"
+ ],
+ [
+  228,
+  "Nutzer bricht ab | `ok: true` // mit `pfade = []` – Abbruch ist kein Fehler"
+ ],
+ [
+  228,
+  "**Aufruf-Ergebnis:** Hat der *Aufruf* funktioniert (z. B. „Auftrag eingereiht\", „Trim gesetzt\")"
+ ],
+ [
+  228,
+  "**Aufruf-Ergebnis:** Hat der *Aufruf* funktioniert (z. B. „Auftrag eingereiht\", „Trim gesetzt\")"
+ ],
+ [
+  228,
+  "Die **Oberfläche** fächert die Mehrfachauswahl auf: Sie reiht für **jeden** zurückgegebenen Pfa"
+ ],
+ [
+  231,
+  "der aufgelöste Pfad liegt innerhalb von `projects/<id>/output/`"
+ ],
+ [
+  231,
+  "**Aufruf-Ergebnis:** Hat der *Aufruf* funktioniert (z. B. „Auftrag eingereiht\", „Trim gesetzt\")"
+ ],
+ [
+  232,
+  "**Eine gewählte** Ausgabedatei"
+ ],
+ [
+  232,
+  "`wähleExportZiel() → Ergebnis<{ pfad }> // Instant; Ordner-/Laufwerks-Dialog, vorbelegt mit let"
+ ],
+ [
+  233,
+  "**VERMERK FÜR DEN AUFTRAGGEBER (kein Auftrag an den umsetzenden Agenten).** Drei Issues führen "
+ ],
+ [
+  234,
+  "nach App-Neustart leer"
+ ],
+ [
+  234,
+  "„**Zwei getrennte Historien:** Projekt-Bearbeitung und Vorlagen-Editor haben **eigene** Stapel "
+ ],
+ [
+  236,
+  "Diese Datei merkt sich **keinen** vorherigen Rahmen."
+ ],
+ [
+  236,
+  "„**Beide** Editoren – Projekt-Bearbeitung und Vorlagen-Editor – bieten **Undo/Redo** für Bearbe"
+ ],
+ [
+  236,
+  "„**Auto-Speichern trifft nur die Arbeitskopie.** Während des Bearbeitens wird entprellt gesiche"
+ ],
+ [
+  238,
+  "Ereignisse (Main → Renderer) tragen ebenfalls keine Hülle"
+ ],
+ [
+  239,
+  "nur schnell, damit nichts Kaputtes durchgeht"
+ ],
+ [
+  239,
+  "was zeige ich, wenn die Höhe unbrauchbar ist?"
+ ],
+ [
+  239,
+  "1. **#176 ist nachzuziehen.** `src/main/render-service/band-geometrie.ts` wurde vor dem Absatz "
+ ],
+ [
+  240,
+  "„**Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `project:setzeBearbeitungsstand`.\" (TK 9.5.2)"
+ ],
+ [
+  240,
+  "„Diese `projektId` wird am Ende der Kette zu einem **Pfadsegment**\" (#76)"
+ ],
+ [
+  242,
+  "app-shell: die sechs Renderer-Oberflächen in die vier Reiter eintragen"
+ ],
+ [
+  242,
+  "1. **Die Zusammensetzung des Reiters „Zusammenstellen\" hat keinen Eigentümer.** #195 übergibt a"
+ ],
+ [
+  243,
+  "vor jeder Instant-Operation"
+ ],
+ [
+  243,
+  "Änderungen innerhalb einer Sekunde zusammenfassen"
+ ],
+ [
+  243,
+  "1. **Die offene Frage aus #235 („Wer ruft `merkeVorAenderung` vor jeder Instant-Operation?\") is"
+ ],
+ [
+  244,
+  "**Ausgenommen sind Projekte und Vorlagen:** Beide bleiben ohne offenes Projekt **voll benutzbar"
+ ],
+ [
+  244,
+  "erst holen, dann abonnieren"
+ ],
+ [
+  244,
+  "**Die Shell rendert selbst keine Inhalte** – sie ordnet an, wechselt und hält die Warteschlange"
+ ],
+ [
+  244,
+  "**Ausgenommen sind Projekte und Vorlagen:** Beide bleiben ohne offenes Projekt **voll benutzbar"
+ ],
+ [
+  244,
+  "„ Zusammenstellen = composer [P3] + preview-player [P5]\" (TK 9.14.1)"
+ ],
+ [
+  244,
+  "„ Aktionen = action-editor [P2] + große Live-Vorschau\" (TK 9.14.1)"
+ ],
+ [
+  244,
+  "„ Vorlagen = vorlagen-editor (Canvas + Zonen-Liste + Inspektor)\" (TK 9.14.1)"
+ ],
+ [
+  244,
+  "„ Projekte = projekt-verwaltung (FA-10, 9.14.3)\" (TK 9.14.1)"
+ ],
+ [
+  244,
+  "1. **ERLEDIGT.** Hier stand, vier von fünf Modul-Wurzeln existierten nicht. Sie liegen inzwisch"
+ ],
+ [
+  245,
+  "nach Editor-Schluss leer"
+ ],
+ [
+  245,
+  "„**Schnappschuss-basiert:** Vor jeder Instant-Operation wird ein Schnappschuss des betroffenen "
+ ],
+ [
+  245,
+  "1. **Zwei der drei offenen Fragen aus #236 sind mit diesem Issue beantwortet.** „Wer ruft `merk"
+ ],
+ [
+  246,
+  "3. **Der `media-service` verlässt sich weiterhin auf sein Netz – zu Recht.** Die Freigabe macht"
+ ],
+ [
+  247,
+  "1. **#35 und #75 sind nachzuziehen:** Sie sollen `ProjektMeta` bzw. `AusgabeDatei` künftig aus "
+ ],
+ [
+  250,
+  "die betroffene Aktion hervorhebt"
+ ],
+ [
+  250,
+  "„**Der praktische Grund wiegt am schwersten:** Alle fünf Wurzeln liegen inzwischen vor – die Vo"
+ ],
+ [
+  250,
+  "**VERMERK FÜR DEN AUFTRAGGEBER (kein Auftrag an den umsetzenden Agenten).** Zwei Punkte:"
+ ],
+ [
+  250,
+  "1. **ERLEDIGT mit TK v3.2: „Aktion löschen\" ist undo-fähig.** Der Auftraggeber hat entschieden,"
+ ],
+ [
+  251,
+  "Nutzung wird angezeigt, bevor überarbeitet wird"
+ ],
+ [
+  251,
+  "„ Vorlagen = vorlagen-editor (Canvas + Zonen-Liste + Inspektor)\" (TK 9.14.1)"
+ ],
+ [
+  251,
+  "„**Zahlen-Inspektor** (`x` / `y` / `breite` / `höhe`): für exakte Werte. Reines Ziehen trifft e"
+ ],
+ [
+  251,
+  "**VERMERK FÜR DEN AUFTRAGGEBER (kein Auftrag an den umsetzenden Agenten).** Drei Punkte:"
+ ],
+ [
+  251,
+  "1. **Die Live-Vorschau des Vorlagen-Editors kann keine echte Aktion zeigen.** TK 9.12.2 verlang"
+ ],
+ [
+  252,
+  "`ok: false` heißt: Es DARF nicht gelöscht werden."
+ ],
+ [
+  252,
+  "`anzahlMedien === 0` sieht kaputt aus"
+ ],
+ [
+  252,
+  "**Der Reiter Projekte bleibt ohne offenes Projekt voll benutzbar.** […]"
+ ],
+ [
+  252,
+  "**Ausgenommen sind Projekte und Vorlagen:** Beide bleiben ohne offenes Projekt **voll benutzbar"
+ ],
+ [
+  252,
+  "**Die Shell rendert selbst keine Inhalte** – sie ordnet an, wechselt und hält die Warteschlange"
+ ],
+ [
+  252,
+  "**Ein Reiterwechsel verwirft nie Arbeit.** […]"
+ ],
+ [
+  252,
+  "in der Reihenfolge, die der Main geliefert hat"
+ ],
+ [
+  252,
+  "„ Projekte = projekt-verwaltung (FA-10, 9.14.3)\" (TK 9.14.1)"
+ ],
+ [
+  253,
+  "**VERMERK FÜR DEN AUFTRAGGEBER (kein Auftrag an den umsetzenden Agenten).** Drei Punkte:"
+ ],
+ [
+  253,
+  "1. **TK 9.7.2 nennt eine Vorlagenart, die es nicht gibt.** Dort steht „**Band-Vorlage** wählen "
+ ],
+ [
+  253,
+  "3. **Ein kaputter Band-Abschnitt ist hier sichtbar, aber nicht reparierbar – und das ist Absich"
+ ],
+ [
+  254,
+  "von 3 Listenelementen"
+ ],
+ [
+  254,
+  "Nutzung wird angezeigt, bevor überarbeitet oder gelöscht wird"
+ ],
+ [
+  254,
+  "**VERMERK FÜR DEN AUFTRAGGEBER (kein Auftrag an den umsetzenden Agenten).** Zwei Punkte:"
+ ],
+ [
+  254,
+  "2. **Die Trefferliste kann Fundstellen heute nur mit UUID benennen.** `VorlagenReferenz` trägt "
+ ],
+ [
+  255,
+  "„**Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `vorlagen:pruefeVorlagenReferenzen`. Ohne Anmeldung "
+ ],
+ [
+  255,
+  "„**Nutzung wird angezeigt,** bevor überarbeitet oder gelöscht wird („wird von 7 Aktionen in 2 P"
+ ],
+ [
+  255,
+  "1. **Bootstrap #3 braucht genau einen weiteren Eintrag.** Der Aufruf `verdrahteVorlagenNachtrag"
+ ],
+ [
+  256,
+  "ausschliesslich bestehende"
+ ],
+ [
+  256,
+  "1. **`medium_neu_verknuepfen` hat seinen Abschluss – entschieden UND #133 nachgezogen: erledigt"
+ ],
+ [
+  257,
+  "1. **In #206 bis #211 sind die Verweise auf „#195\" auf dieses Issue umzuschreiben.** Alle sechs"
+ ],
+ [
+  258,
+  "nur schnell, damit nichts Kaputtes durchgeht"
+ ],
+ [
+  258,
+  "1. **Drei Stellen sind nachzuziehen.** `src/renderer/preview-player/medien-url.ts` (#215), `src"
+ ],
+ [
+  259,
+  "**VERMERK FÜR DEN AUFTRAGGEBER (kein Auftrag an den umsetzenden Agenten).** Ein Punkt:"
+ ],
+ [
+  259,
+  "1. **TK 9.7.2 nennt eine Vorlagenart, die es nicht gibt.** Dort steht „**Band-Vorlage** wählen "
+ ],
+ [
+  260,
+  "1. **Die Grep-Probe in #195 ist einzugrenzen.** Dessen Definition of Done verlangt heute, dass "
+ ],
+ [
+  262,
+  "**Die Shell rendert selbst keine Inhalte** – sie ordnet an, wechselt und hält die Warteschlange"
+ ],
+ [
+  268,
+  "Startablauf (verbindlich – die Reihenfolge ist Teil des Vertrags)"
+ ],
+ [
+  275,
+  "`löscheMarke` | `markeId` → `Ergebnis<void>`; im Fehlerfall Code `marke_referenziert` mit **all"
+ ],
+ [
+  275,
+  "`pruefeMarkenReferenzen` | `markeId` → `Ergebnis<Markennutzung>` – **rein lesend**: ermittelt ü"
+ ],
+ [
+  276,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz:** die fachlichen je Operation (9.4.9, 9"
+ ],
+ [
+  276,
+  "Fachliche Fehlercode-Unionen liegen in `src/main/**` und dürfen vom Renderer nicht importiert w"
+ ],
+ [
+  277,
+  "**Besitzt** `marken.json` (app-weiter Bestand, Abschnitt 6) samt **eigener** Schreib-Serialisie"
+ ],
+ [
+  277,
+  "`schemaVersion` und Migration wie 9.5.5"
+ ],
+ [
+  278,
+  "gültig übernommen im Speicher"
+ ],
+ [
+  278,
+  "**Kanalbenennung** … Ereignisse (Main → Renderer) heißen `<modul>:<ereignis>`, z. B. `queue:gea"
+ ],
+ [
+  278,
+  "Ereignisse (Main → Renderer) tragen ebenfalls keine Hülle"
+ ],
+ [
+  278,
+  "Ereignisse sind Einbahnstraßen und tragen keinen Endzustand."
+ ],
+ [
+  278,
+  "**Die App hat GENAU EIN Fenster** – und jedes Ereignis geht an dieses eine Fenster."
+ ],
+ [
+  279,
+  "Bei `parent ≠ null` sind `farben` und `schriften` **Teilmengen**: Für jede Rolle, die die abgel"
+ ],
+ [
+  279,
+  "feldweise, nicht objektweise"
+ ],
+ [
+  279,
+  "Nicht selbst entscheiden"
+ ],
+ [
+  279,
+  "Saison-Look setzt nur Farben"
+ ],
+ [
+  280,
+  "Marken sind ein app-weiter Bestand und bearbeitbar (`marken-store`, 9.15.1; FA-23/FA-24). […] *"
+ ],
+ [
+  281,
+  "Die Migration legt daraus die eingebaute Marke in `marken.json` an (`eingebaut: true`, `parent:"
+ ],
+ [
+  281,
+  "**Der Main validiert jede eingehende Nutzlast**"
+ ],
+ [
+  281,
+  "ein Projekt ist aktiv"
+ ],
+ [
+  281,
+  "das Feld aus config.json entfernen"
+ ],
+ [
+  282,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  282,
+  "Arbeitskopien (`parent ≠ null`) sind nicht auswählbar. `composer` und `action-editor` bekommen "
+ ],
+ [
+  282,
+  "einen Saison- oder Kampagnen-Look"
+ ],
+ [
+  283,
+  "Nicht selbst entscheiden"
+ ],
+ [
+  283,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  283,
+  "Saison-Look setzt nur Farben"
+ ],
+ [
+  284,
+  "**Ableitung über `parent`** – feldweise Vererbung, **eine** Stufe tief."
+ ],
+ [
+  284,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**. Ungültige Ein"
+ ],
+ [
+  284,
+  "`Marke.logo` ist seit v3.4 `| null` – bei Werbepartnern der Normalfall. Ist es `null`, zeichnet"
+ ],
+ [
+  284,
+  "`Marke.logo` ist seit v3.4 `| null` – bei Werbepartnern der Normalfall. Ist es `null`, zeichnet"
+ ],
+ [
+  284,
+  "keins = weder eigen noch geerbt gesetzt -> Ersatz-Logo greift (9.10.10)"
+ ],
+ [
+  284,
+  "Saison- und Kampagnen-Looks. Dieselbe Fitnessworld24-Marke in einer abweichenden Anmutung"
+ ],
+ [
+  285,
+  "kein eigenes Logo, Ersatz-Logo greift"
+ ],
+ [
+  285,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  285,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  286,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  287,
+  "**Die eingebaute Marke ist nie löschbar** (`eingebaut: true`): Sie ist der Projekt-Standard und"
+ ],
+ [
+  287,
+  "**Eingebaute Marke unlöschbar, aber bearbeitbar** – anders als die eingebauten Vorlagen."
+ ],
+ [
+  287,
+  "Diese sieben Punkte sind **nach** dem ersten Schreiben von M8 entstanden. Wo sie einer älteren "
+ ],
+ [
+  287,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … Eine rohe Exception-Meldung wird nie"
+ ],
+ [
+  287,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  287,
+  "**nicht selbst durch eine dritte, hier erfundene Prüfung**"
+ ],
+ [
+  288,
+  "Die **importierten Dateien** dagegen in einem Ordner **je Marke** (`marken-assets/<marken-id>/`"
+ ],
+ [
+  288,
+  "**Zwei Herkünfte, eine Auflösung.** `gebuendelt` löst auf den Bundle-Pfad auf …, `importiert` a"
+ ],
+ [
+  288,
+  "`marken-assets/` # A/V2: IMPORTIERTE Logos und Schriften (FA-24, 9.15.3)"
+ ],
+ [
+  289,
+  "Import von Logo und Schriftdateien"
+ ],
+ [
+  289,
+  "Import kopiert. Die Quelldatei bleibt unberührt"
+ ],
+ [
+  289,
+  "**Zwei Herkünfte, eine Auflösung.** `gebuendelt` löst auf den Bundle-Pfad auf …, `importiert` a"
+ ],
+ [
+  289,
+  "Der Main validiert jede eingehende Nutzlast – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  290,
+  "**Zwei Herkünfte, eine Auflösung.** `gebuendelt` löst auf den Bundle-Pfad auf (die vier OFL-Sch"
+ ],
+ [
+  290,
+  "Für die Vorschau (P5) und Thumbnails (`composer`, `action-editor`) muss der **Renderer** Medien"
+ ],
+ [
+  290,
+  "Der Renderer sieht **nur relative** Referenzen (`dateiname`), **nie** absolute Pfade. Der Resol"
+ ],
+ [
+  291,
+  "**Fehlt eine importierte Datei, wird gar nicht erst gezeichnet – die Prüfung sitzt im RENDERER,"
+ ],
+ [
+  291,
+  "bricht der Render FRÜH ab, vor dem ersten `ffmpeg`-Aufruf, mit dem Fehlercode `marken_datei_feh"
+ ],
+ [
+  292,
+  "**Kontrast-Warnung (FA-24):** Der Editor berechnet den Kontrast zwischen Akzentfläche und dem d"
+ ],
+ [
+  292,
+  "**Gleiche Eingabe → gleiches Bild.** Keine Zeit-, Zufalls- oder Zustandsabhängigkeit."
+ ],
+ [
+  292,
+  "Ob `aktion.akzentfarbe` je einen 8-stelligen Hex-Wert (mit Alpha) tragen darf, ist nicht spezif"
+ ],
+ [
+  292,
+  "`farben: { <FarbRolle>: string } // Hex, 6- oder 8-stellig (8 = mit Alpha)`"
+ ],
+ [
+  293,
+  "Der **feste Markenrahmen** wird **immer** gezeichnet (Logo, Grundgestaltung) und ist **nicht ab"
+ ],
+ [
+  293,
+  "**Die Akzentfarbe des Ersatz-Logos ist die der MARKE** (`marke.farben.akzent`), nicht die der A"
+ ],
+ [
+  293,
+  "Der **feste Markenrahmen** wird **immer** gezeichnet (Logo, Grundgestaltung) und ist **nicht ab"
+ ],
+ [
+  293,
+  "- **Schrift: die gebündelte Rolle `headlinePlakativ`** (Archivo Black), **nicht** die eigene He"
+ ],
+ [
+  294,
+  "neues Issue = neue Datei"
+ ],
+ [
+  294,
+  "Rotieren im Band Aktionen verschiedener Partner, wechselte sonst die Flächenfarbe im Sekundenrh"
+ ],
+ [
+  294,
+  "**die Prüfung sitzt im RENDERER, vor dem Zeichnen**"
+ ],
+ [
+  294,
+  "Logo-Zone bleibt leer"
+ ],
+ [
+  294,
+  "Es ist dieselbe Linie wie beim Ersatz-Logo (9.10.10): Marken-Identität und Rahmen sind stabil."
+ ],
+ [
+  294,
+  "**Zeichenreihenfolge = Array-Reihenfolge** (später gezeichnete Zone liegt oben). **Kein** impli"
+ ],
+ [
+  295,
+  "gefahrlos wie bei Vorlagen"
+ ],
+ [
+  295,
+  "`listeMarken` … aufgelöst, einschließlich abgeleiteter"
+ ],
+ [
+  295,
+  "Sie zeigt die Rollen aus 9.11.2 mit ihren Werten … und stellt das Ergebnis über `template-canva"
+ ],
+ [
+  295,
+  "Auto-Speichern während des Bearbeitens"
+ ],
+ [
+  296,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  296,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  297,
+  "Für **importierte** Schriften trägt der Nutzer die Nutzungsrechte – die Anwendung brennt sie in"
+ ],
+ [
+  297,
+  "**Zwei Herkünfte, eine Auflösung.** `gebuendelt` löst auf den Bundle-Pfad auf …, `importiert` a"
+ ],
+ [
+  297,
+  "**Import kopiert.** Die Quelldatei bleibt unberührt, die Kopie gehört der Marke … Format-Whitel"
+ ],
+ [
+  298,
+  "**Kein leerer Bereich**, und **kein** fremdes Logo an dieser Stelle"
+ ],
+ [
+  298,
+  "`Marke.logo` ist seit v3.4 `| null` – bei Werbepartnern der Normalfall. Ist es `null`, zeichnet"
+ ],
+ [
+  299,
+  "Bei einer abgeleiteten Marke ist sichtbar, was geerbt und was eigen ist. Ein Wert, den der Nutz"
+ ],
+ [
+  299,
+  "an die Vererbung zurückzugeben"
+ ],
+ [
+  299,
+  "**kein** Aufrufer sieht je eine Teilmenge"
+ ],
+ [
+  299,
+  "außer id, name, parent * und eingebaut"
+ ],
+ [
+  299,
+  "Bei einer abgeleiteten Marke ist sichtbar, was geerbt und was eigen ist. Ein Wert, den der Nutz"
+ ],
+ [
+  299,
+  "Die Vererbung wird an genau EINER Stelle aufgelöst – hier. … kein Aufrufer sieht je eine Teilme"
+ ],
+ [
+  300,
+  "**Ketten sind auf EINE Stufe begrenzt:** Ein Parent darf selbst keinen Parent haben. Sonst müss"
+ ],
+ [
+  300,
+  "Ableitungsketten sind auf eine Stufe begrenzt (9.11.2): `erstelleMarke` mit einer `parentId`, d"
+ ],
+ [
+  301,
+  "warnen, nicht blockieren"
+ ],
+ [
+  301,
+  "6- **oder 8-stellig**"
+ ],
+ [
+  301,
+  "**Der Schwellenwert ist `4,5:1` (v3.10 entschieden)** – WCAG AA für Fließtext, geführt als Kons"
+ ],
+ [
+  301,
+  "`farben: { <FarbRolle>: string } // Hex, 6- oder 8-stellig (8 = mit Alpha)`"
+ ],
+ [
+  301,
+  "muss zusätzlich den `schwellenwert` klären"
+ ],
+ [
+  302,
+  "`pruefeMarkenReferenzen` | `markeId` → `Ergebnis<Markennutzung>` – **rein lesend**: ermittelt ü"
+ ],
+ [
+  303,
+  "[Der Editor] stellt das Ergebnis über `template-canvas` dar – **dieselbe** Zeichenroutine wie ü"
+ ],
+ [
+  303,
+  "kein Auftrag der Queue – eine reine, synchron aufrufbare Renderer-Funktion"
+ ],
+ [
+  303,
+  "[Der `marken-editor`] stellt das Ergebnis über `template-canvas` dar – **dieselbe** Zeichenrout"
+ ],
+ [
+  303,
+  "**das** [eine] gebündelte Marken-Logo"
+ ],
+ [
+  303,
+  "eine Stelle lädt vorher"
+ ],
+ [
+  304,
+  "fertige Funktion ohne Aufrufer"
+ ],
+ [
+  304,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  304,
+  "**Kanalbenennung `<modul>:<operation>`**"
+ ],
+ [
+  304,
+  "**10. Die App hat GENAU EIN Fenster** – und jedes Ereignis geht an dieses eine Fenster. […] Der"
+ ],
+ [
+  304,
+  "**Die Vererbung wird an genau EINER Stelle aufgelöst** – hier [`marken-store`]. `leseMarke` und"
+ ],
+ [
+  305,
+  "Marken sind ein app-weiter Bestand und bearbeitbar (`marken-store`, 9.15.1; FA-23/FA-24)."
+ ],
+ [
+  305,
+  "fünfter Reiter oder Unterbereich des Reiters Vorlagen?"
+ ],
+ [
+  305,
+  "**Der `marken-editor` sitzt in einem eigenen, FÜNFTEN Reiter [Marken]** (v3.6, 9.14.1), neben ["
+ ],
+ [
+  306,
+  "ein konstanter Wert für Dialog **und** Import"
+ ],
+ [
+  306,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  306,
+  "weil das die üblichen Schriftformate sind"
+ ],
+ [
+  306,
+  "weil Logos oft Vektoren sind"
+ ],
+ [
+  307,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  308,
+  "Konstanten in `contracts/types` (an *einer* Stelle, nicht verstreut)."
+ ],
+ [
+  308,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**."
+ ],
+ [
+  309,
+  "Die Trennlinie ist kein Stilfrage, sondern die einzige mögliche Reihenfolge: Wer ein Ereignis a"
+ ],
+ [
+  309,
+  "**Die App hat GENAU EIN Fenster – und jedes Ereignis geht an dieses eine Fenster.** […] Der Sen"
+ ],
+ [
+  309,
+  "Registriert den eigentlichen Anfrage-Handler. Wird NACH app.whenReady(), vor dem Laden des Haup"
+ ],
+ [
+  309,
+  "**Sofort-Flush** unabhängig vom Timer, in vier Fällen: […] (3) **beim Beenden** […]. Beim Beend"
+ ],
+ [
+  310,
+  "Es sind exakt dieselben Werte, mit denen `zeichneSegment` das Band gezeichnet hat"
+ ],
+ [
+  311,
+  "Das ist **keine** zweite Wahrheit, weil die Marke im MVP unveränderlich ist … Zwei Lesevorgänge"
+ ],
+ [
+  311,
+  "Module **außerhalb** dieses Ordners importieren die Sicht **nicht** direkt; sie bekommen die Ak"
+ ],
+ [
+  311,
+  "das Feld aus `config.json` entfernen"
+ ],
+ [
+  311,
+  "**Die Marke kommt immer aus `p.marke`**"
+ ],
+ [
+  311,
+  "Vorschau und Vorschaubilder: dieselbe Marke wie beim Render – nie eine andere"
+ ],
+ [
+  312,
+  "gleiche Eingabe → gleiches Bild"
+ ],
+ [
+  312,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  312,
+  "``` Ergebnis<T> = | { ok: true, wert: T } | { ok: false, fehler: { code: Fehlercode, meldung: s"
+ ],
+ [
+  313,
+  "es gibt **die** Marke"
+ ],
+ [
+  313,
+  "gleiche Eingabe → gleiches Bild"
+ ],
+ [
+  313,
+  "liefert AUSSCHLIESSLICH die Farb-Rolle `flaecheDunkel`"
+ ],
+ [
+  313,
+  "lade halt nach, wenn `null`"
+ ],
+ [
+  314,
+  "Undo/Redo abgeschaltet"
+ ],
+ [
+  314,
+  "welche Undo-Historie gilt in diesem Reiter?"
+ ],
+ [
+  314,
+  "„**Verbot – kein eigener Reiter- oder Routing-Code in dieser Datei.** Diese Datei liefert aussc"
+ ],
+ [
+  315,
+  "**Marken sind ein app-weiter Bestand und bearbeitbar** (`marken-store`, 9.15.1; FA-23/FA-24). *"
+ ],
+ [
+  315,
+  "sie kann sich zur Laufzeit nicht ändern"
+ ],
+ [
+  315,
+  "Es gibt genau eine Marke und genau ein Logo"
+ ],
+ [
+  315,
+  "**Zwei Herkünfte, eine Auflösung.** `gebuendelt` löst auf den Bundle-Pfad auf (die vier OFL-Sch"
+ ],
+ [
+  315,
+  "**Marken sind ein app-weiter Bestand und bearbeitbar** (`marken-store`, 9.15.1; FA-23/FA-24). …"
+ ],
+ [
+  315,
+  "„**Ein einziger Bestand, kein weiterer Cache.** Eine modul-globale Variable für das gemerkte Pr"
+ ],
+ [
+  316,
+  "**Der Main validiert jede eingehende Nutzlast**"
+ ],
+ [
+  316,
+  "**tippt sie nie als Hexzahl in eine Filterkette**"
+ ],
+ [
+  316,
+  "„*Folge ohne die Einfrierung:* Ändert jemand die Marke, während der Auftrag in der Warteschlang"
+ ],
+ [
+  317,
+  "**Kanalbenennung `<modul>:<operation>`** – z. B. `media:importMedium`, `project:setzeTrim`, `vo"
+ ],
+ [
+  317,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  317,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code. Es gibt keine Operation"
+ ],
+ [
+  317,
+  "das Feld aus `config.json` entfernen"
+ ],
+ [
+  318,
+  "`farben: { <FarbRolle>: string }` – „`// Hex, 6- oder 8-stellig (8 = mit Alpha)`\""
+ ],
+ [
+  318,
+  "`// Hex, 6- oder 8-stellig (8 = mit Alpha)`"
+ ],
+ [
+  319,
+  "vorbelegt mit Project.standardMarkeId"
+ ],
+ [
+  319,
+  "**Löschen blockiert bei Referenz**, es kaskadiert **nicht** – wie bei den Vorlagen (9.12.1). Ei"
+ ],
+ [
+  319,
+  "Die Migration legt daraus die eingebaute Marke in `marken.json` an (`eingebaut: true`, `parent:"
+ ],
+ [
+  319,
+  "lade halt nach, wenn `null`"
+ ],
+ [
+  319,
+  "„**Feld ohne Befüller** – die Umkehrung derselben Klasse. Ein neues Vertragsfeld braucht **drei"
+ ],
+ [
+  320,
+  "`markeId: string // GENAU EINE Marke (FA-23, 9.15.1). Pflicht"
+ ],
+ [
+  320,
+  "Beim Anlegen die eingebaute Marke"
+ ],
+ [
+  320,
+  "Konstanten in `contracts/types` (an *einer* Stelle, nicht verstreut)."
+ ],
+ [
+  320,
+  "**Akzentfarbe ist ein freier Farbwert** (FA-24). Bis v3.3 stand hier das Gegenteil: „nur aus de"
+ ],
+ [
+  320,
+  "**Der Schwellenwert ist `4,5:1` (v3.10 entschieden)** – WCAG AA für Fließtext, geführt als Kons"
+ ],
+ [
+  320,
+  "**Konstanten in `contracts/types`** (an *einer* Stelle, nicht verstreut)."
+ ],
+ [
+  320,
+  "der Vollständigkeit halber"
+ ],
+ [
+  321,
+  "WARUM HIER NICHTS AUFGELOEST WIRD"
+ ],
+ [
+  323,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  323,
+  "„Zusammen mit der Lösch-Sperre aus FA-23 (eine als Standardmarke geführte Marke ist nicht lösch"
+ ],
+ [
+  323,
+  "„`setzeStandardMarke` | `projektId`, `markeId` → `Ergebnis<Projekt>` – setzt `Project.standardM"
+ ],
+ [
+  324,
+  "wer aus `hole()?.marken` eine Marke herausfischt, umgeht die Bereitstellung von Schriften und L"
+ ],
+ [
+  324,
+  "**Nicht undo-fähig**"
+ ],
+ [
+  324,
+  "„**Wo die Auswahl sitzt – vom Auftraggeber entschieden (11.08.):** in der **Projekt-Verwaltung*"
+ ],
+ [
+  324,
+  "| `setzeStandardMarke` | `projektId`, `markeId` → `Ergebnis<Projekt>` – setzt `Project.standard"
+ ],
+ [
+  325,
+  "**Die Akzentfarbe einer Aktion**"
+ ],
+ [
+  325,
+  "`kontrastVerhaeltnis(marke.farben.akzent, marke.farben.textAufDunkel)`"
+ ],
+ [
+  325,
+  "keine Geschmacks-Sperre"
+ ],
+ [
+  325,
+  "keine – Marke entscheidet"
+ ],
+ [
+  325,
+  "„„**Akzentfarbe nur aus der Markenpalette** (feste Auswahl in v1, kein freier Farbwähler) – so "
+ ],
+ [
+  326,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  327,
+  "trotzdem schließen und verwerfen"
+ ],
+ [
+  328,
+  "färbt Band-Hintergrund und Split-Restflächen und belegt neue Aktionen vor"
+ ],
+ [
+  328,
+  "Pflicht; vorbelegt mit `Project.standardMarkeId`"
+ ],
+ [
+  328,
+  "**Ordnerpfad `projects/<projekt-id>/`** (TK Abschnitt 6 …) – der Projektordner heißt exakt wie "
+ ],
+ [
+  328,
+  "Jedes Projekt besitzt einen eigenen Ordner mit `media/`-Unterordner"
+ ],
+ [
+  328,
+  "`letzterAusgabeName: string | null` **muss beim Anlegen auf `null` gesetzt werden**"
+ ],
+ [
+  328,
+  "**Der Main validiert jede eingehende Nutzlast** – er vertraut dem Renderer **nicht**. Ungültige"
+ ],
+ [
+  328,
+  "**Fehlercodes sind ein geschlossener, typisierter Satz** … **Eine rohe Exception-Meldung wird n"
+ ],
+ [
+  328,
+  "**Kein stiller Fehlschlag:** Jede Operation antwortet – `ok` oder Code."
+ ],
+ [
+  328,
+  "**Unerwartete Ausnahmen fängt das Gateway** und übersetzt sie in `unbekannter_fehler`"
+ ],
+ [
+  328,
+  "„`erstelleProjekt` | `name`, `standardMarkeId` → `Ergebnis<Projekt>` (neuer Ordner + leeres `pr"
+ ],
+ [
+  329,
+  "Ein beschädigtes Projekt bleibt auch hier ausgenommen: […] also ist der Wechsel dort **deaktivi"
+ ],
+ [
+  329,
+  "Der Projektzugang bleibt der ROHE."
+ ],
+ [
+  329,
+  "einen vollständigen Zugang mit gefüllter Übersicht oder einen benannten Fehler – NIE einen Zuga"
+ ],
+ [
+  329,
+  "Warum das im Gesamtsystem wichtig ist"
+ ],
+ [
+  329,
+  "**je Eintrag der Projektliste**"
+ ],
+ [
+  329,
+  "wer aus `hole()?.marken` eine Marke herausfischt, umgeht die Bereitstellung von Schriften und L"
+ ],
+ [
+  329,
+  "„Vor allem aber ist dies der **Ausweg aus der Lösch-Sperre**: `löscheMarke` blockiert, solange "
+ ],
+ [
+  329,
+  "1. **#324 trägt nach diesem Issue überholte Tatsachenbehauptungen** – „ACHTUNG: `ProjektMeta` t"
+ ],
+ [
+  330,
+  "fertige Funktion ohne Aufrufer"
+ ],
+ [
+  330,
+  "`action-editor`, `vorlagen-editor` und `marken-editor` brauchen **alle drei** eine Live-Vorscha"
+ ],
+ [
+  330,
+  "warnen, nicht blockieren"
+ ],
+ [
+  330,
+  "**Löschen fragt vorher.** Vor `löscheMarke` zeigt der Editor das Ergebnis von `pruefeMarkenRefe"
+ ],
+ [
+  330,
+  "letzte Änderung verwerfen"
+ ]
+]

@@ -445,6 +445,145 @@ def labels_m7(nr, titel, body):
     if nr in M7_BLOCKIEREND: L.append("braucht-entscheidung")
     return L
 
+# ---------------------------------------------------------------- M8 (Marken)
+# Zwei Titel-Praefixe haben KEINE eigene Modul-Marke, und zwar mit Absicht:
+#   [Main-Bootstrap]  -> src/main/index.ts gehoert keinem Modul; #3 (M0) traegt
+#                        dort ebenfalls nur `ebene:main`.
+#   [gemeinsam]       -> src/renderer/gemeinsam/ ist der geteilte Renderer-Bereich;
+#                        das Label dafuer heisst seit M7 `modul:renderer-gemeinsam`
+#                        (dort gebaut: video-handles.ts, M7-53).
+# Wer hier ein neues `modul:`-Label erfindet, spaltet eine bestehende Menge.
+M8_UI = {20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 34, 35, 41, 48, 52, 53, 55, 57}
+# NICHT als UI gezaehlt: 50 (belegt nur ein Feld in App.tsx, zeichnet nichts) und
+# 54 (datei-import.ts oeffnet den Dialog und ruft den Import - reine Logik; die
+# Schaltflaechen dazu zeichnet 48).
+
+# `braucht-entscheidung`: 30 von 49 (61 %). Das ist HOCH - zum Vergleich M6 mit
+# 5 von 37. Der Grund ist die Lage von M8: TK 9.15 beschreibt ein neues Subsystem,
+# das NACHTRAEGLICH in sieben fertige Meilensteine eingesetzt wird; die meisten
+# offenen Fragen sitzen an genau diesen Naehten, nicht im Inneren der Issues.
+# Das Kriterium ist streng angewandt: Ein STOPP-Block enthaelt VERBOTE ("hier
+# keine Pfadaufloesung einbauen") und ECHTE OFFENE FRAGEN. Nur die zweite Art
+# zaehlt, und auch nur, wenn sie die SCHNITTSTELLE oder das VERHALTEN festlegt.
+# Als ERLEDIGT/ENTSCHIEDEN gekennzeichnete Eintraege zaehlen NICHT - sie zitieren
+# den alten Wortlaut nur zur Nachvollziehbarkeit.
+# NICHT enthalten sind deshalb u. a.: 23 (nur zwei Verbote), 31 (Hinweis auf
+# M8-11), 35 (seit 10.08. entschieden), 43 (Melde-Auftrag mit tragbarem
+# Zwischenverhalten), 44 (drei ERLEDIGT), 49/50 (die Abspaltungen vom 11.08. -
+# beide tragen nur Verbote; ihre offenen Fragen blieben bei M8-36 bzw. M8-48).
+M8_BLOCKIEREND = {
+     3,  # Retry/fsync/.bak; Lesen-Aendern-Schreiben ueber Aufrufe hinweg nicht atomar
+     4,  # welche Sofort-Flush-Ausloeser gelten fuer marken.json; Wiederholstrategie
+     5,  # Fehlerverhalten bei Parent-Kette und unvollstaendigem Parent - neuer Code?
+     6,  # Dateiname und Seitenverhaeltnis des gebuendelten Logos; Slogan-Text
+     7,  # Migration reihum beim Start oder traege beim Oeffnen; defektes Projekt
+    10,  # Parent-Existenzpruefung unter Nebenlaeufigkeit wiederholen?
+    11,  # Bedeutung des Rueckgabewerts bei entprelltem Schreiben; wer prueft Hex?
+    12,  # standardMarkeId fehlt als dritte Referenzart; Sofort-Flush vor der Pruefung
+    13,  # Loeschen trotz standardMarkeId-Referenz; Flush vor Referenzpruefung
+    14,  # Symlink-Pruefung und Gross-/Kleinschreibung des Pfadvergleichs
+    15,  # Zieldateiname und Namenskonflikt; Herkunft des Seitenverhaeltnisses
+    16,  # EXPERIMENT corsEnabled fuer FontFace; Geltungsbereich, Statuscodes
+    20,  # Verkleinerungsstufen und Innenabstand des Ersatz-Logos
+    21,  # gilt die Rahmen-Ausnahme auch fuer eine Logo-Zone der Band-Vorlage
+    22,  # Sofort-Flush beim Verlassen des Marken-Reiters? Kein Kanal vorgesehen
+    24,  # importierte Schrift laesst sich nirgends entfernen
+    27,  # Widerspruch zu M8-22: wer laedt die Uebersicht nach dem Ableiten neu
+    28,  # achtstelliger Hex-Wert in marke.farben - drei Wege, keiner gewaehlt
+    29,  # Darstellung des TOCTOU-Falls beim Loeschen (Verhalten, nicht Layout)
+    32,  # niemand abonniert marken:autoSpeichernStatus
+    34,  # was bedeutet slogan.aktiv=false fuer die Zone
+    36,  # was geschieht, wenn der Marken-Flush beim Beenden scheitert
+    39,  # zaehlt eine ins Leere zeigende aktion.markeId als kaputte Stelle
+    40,  # gegen welche Marke zeichnet der vorlagen-editor; Markenwechsel
+    41,  # braucht die Editor-Wurzel zeichnen: ZeichenZugang; wer graut Undo aus
+    42,  # wie wird aus gebuendelter logo.datei eine URL; verunreinigt marken://
+    45,  # Migration von Rollennamen in akzentfarbe; wer warnt bei Aktionsfarbe
+    46,  # wer reicht die Marken-Liste in den action-editor (Ring mit M8-40)
+    47,  # schemaVersion-Erhoehung fuer project.json (der standardMarkeId-Teil
+         # ist mit M8-56 erledigt)
+    48,  # Live-Vorschau nicht baubar; TOCTOU (Dialog-Ausloeser und
+         # Speicherhinweis sind mit M8-54/M8-55 erledigt)
+    51,  # gemeinsame Projekt-Sicht beim geladenen Projekt; geaendertAm;
+         # main-interner Bulk-Aufruf
+    52,  # geoeffnetes Projekt, dessen Standardmarke waehrend bereits
+         # gezeichneter Band-PNGs wechselt
+    53,  # wer bei der AKTIONS-Akzentfarbe warnt (R-08) und gegen welche
+         # Textfarbe; Alt-Daten mit Rollennamen in akzentfarbe
+    54,  # eine importierte Schrift laesst sich nirgends wieder entfernen
+    55,  # beim Beenden ist der Renderer u. U. abgebaut - dann zeigt niemand
+         # Empfehlung und Wiederholen-Knopf (gilt fuer alle drei Speicher)
+    56,  # schemaVersion; Nutzer-Meldung bei Marken-Fehlschlag
+    57,  # aktualisiereProjektliste() nach JEDEM Wechsel = Verzeichnis-Scan
+         # ueber alle Projektordner unter dem D1-Lock, und der Regelfall ist
+         # laut TK 9.14.3, dass mehrere Projekte hintereinander umgestellt
+         # werden. Eine gezielte Auffrischung eines Eintrags gibt es nicht.
+}
+# 50 traegt es NICHT: Es belegt ein Feld in App.tsx und hat nur Verbote im
+# STOPP-Block.
+# ZU 57: Ich hatte es zunaechst ausgenommen, weil es M8-52 nur anschliesst und
+# dessen offene Frage erbt. Der Autor hat widersprochen - es hat eine EIGENE,
+# und zwar eine, die das VERHALTEN unter Last bestimmt. Die geerbte Frage
+# (Band-PNGs bei offenem Projekt) fuehrt es richtigerweise NICHT ein zweites
+# Mal, sondern nur als Verbot.
+
+# Der Datenpfad von marken.json und alles, was ihn anfasst - plus die zwei
+# Operationen, die in project.json SCHREIBEN (51 setzt die Standardmarke, 56 legt
+# ein Projekt an).
+M8_RISIKO_DATEN = {3, 4, 7, 11, 13, 15, 36, 51, 56}
+# Pfadaufloesung, Import-Whitelist und die Schema-Privilegien des Protokolls.
+M8_RISIKO_SICHER = {14, 15, 16, 36, 49}
+# Was am Ende Pixel erzeugt - ein Fehler faellt hier erst am Fernseher auf.
+M8_PIXEL = {17, 19, 20, 21, 39, 40, 42, 43}
+
+def labels_m8(nr, titel, body):
+    L = []
+    if "[contracts]" in titel:
+        L += ["modul:contracts", "ebene:geteilt", "art:typen"]
+    elif "[marken-store]" in titel:
+        L += ["modul:marken-store", "ebene:main", "art:logik"]
+    elif "[marken-editor]" in titel:
+        L += ["modul:marken-editor", "ebene:renderer"]
+    elif "[template-canvas]" in titel:
+        L += ["modul:template-canvas", "ebene:renderer"]
+    elif "[gemeinsam]" in titel:
+        L += ["modul:renderer-gemeinsam", "ebene:renderer"]
+    elif "[app-shell]" in titel:
+        L += ["modul:app-shell", "ebene:renderer"]
+    elif "[composer]" in titel:
+        L += ["modul:composer", "ebene:renderer"]
+    elif "[action-editor]" in titel:
+        L += ["modul:action-editor", "ebene:renderer"]
+    elif "[vorlagen-editor]" in titel:
+        L += ["modul:vorlagen-editor", "ebene:renderer"]
+    elif "[projekt-verwaltung]" in titel:
+        # Nachtrag 11.08.: M8-52 und M8-57 sind erst nach dem ersten Profil
+        # entstanden. Ohne diesen Zweig fielen beide durch die ganze Kette und
+        # bekamen WEDER modul: NOCH ebene: - und damit auch kein art:, weil das
+        # an "ebene:renderer" haengt. Im Trockenlauf sichtbar geworden.
+        L += ["modul:projekt-verwaltung", "ebene:renderer"]
+    elif "[config-store]" in titel:
+        L += ["modul:config-store", "ebene:main", "art:logik"]
+    elif "[project-store]" in titel:
+        L += ["modul:project-store", "ebene:main", "art:logik"]
+    elif "[ipc-gateway]" in titel:
+        L += ["modul:ipc", "ebene:main", "art:logik"]
+    elif "[render-service]" in titel:
+        L += ["modul:render-service", "ebene:main", "art:logik"]
+    elif "[Main-Bootstrap]" in titel:
+        L += ["ebene:main", "art:logik"]
+    if "ebene:renderer" in L and "art:logik" not in L:
+        L.append("art:ui" if nr in M8_UI else "art:logik")
+    if nr in M8_RISIKO_DATEN:  L.append("risiko:datenverlust")
+    if nr in M8_RISIKO_SICHER: L.append("risiko:sicherheit")
+    if nr in M8_PIXEL:         L.append("risiko:pixelgleichheit")
+    if hat_fehlertabelle(body, r"marke_referenziert|marke_eingebaut|marke_nicht_gefunden"
+                               r"|marken_datei_fehlt|ungueltige_eingabe|nicht_gefunden"
+                               r"|speicher_fehler|unbekannter_fehler"):
+        L.append("art:fehlerbehandlung")
+    if nr in M8_BLOCKIEREND: L.append("braucht-entscheidung")
+    return L
+
 def labels_fuer(nr, titel, body):
     L = []
     if "[contracts]" in titel:
@@ -490,7 +629,7 @@ if len(PRAEFIXE) != 1:
 PRAEFIX = PRAEFIXE.pop()
 PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3,
           "M4": labels_m4, "M5": labels_m5, "M6": labels_m6,
-          "M7": labels_m7}.get(PRAEFIX)
+          "M7": labels_m7, "M8": labels_m8}.get(PRAEFIX)
 if PROFIL is None:
     print(f"ABBRUCH: kein Label-Profil fuer Praefix '{PRAEFIX}'."
           f" Bekannt: M1, M2, M3, M4, M5, M6, M7. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
@@ -515,6 +654,28 @@ for f in dateien:
 print(f"{'Issue':7} {'Labels':<95} Titel")
 for e in eintraege:
     print(f"{e['key']:7} {','.join(e['labels']):<95} {e['titel'][:60]}")
+
+# GitHub lehnt Issue-Bodies ueber 65536 ab. Die Fehlermeldung lautet "Body is too
+# long (maximum is 65536 characters)" - GEMESSEN WIRD ABER IN UTF-8-BYTES.
+# EMPIRISCH BELEGT beim M8-Lauf: M8-48 mit 64754 Zeichen / 66337 Bytes wurde
+# ABGELEHNT, M8-57 mit 64048 Zeichen / 65079 Bytes lief DURCH. Haetten Zeichen
+# gezaehlt, waeren beide durchgelaufen.
+# Fuer deutsche Texte ist der Unterschied betraechtlich: Jeder Umlaut, jedes
+# scharfe S und jeder Gedankenstrich zaehlt doppelt oder dreifach - bei M8-48
+# waren es 1583 Bytes mehr als Zeichen, also gut 2 %.
+GRENZE = 65536
+gemessen = [(e["key"], len(io.open(e["body"], encoding="utf-8").read().encode("utf-8")))
+            for e in eintraege]
+zu_gross = [(k, n) for k, n in gemessen if n > GRENZE]
+knapp    = [(k, n) for k, n in gemessen if GRENZE - 1500 < n <= GRENZE]
+print("\nGroessen-Pruefung:", f"alle unter {GRENZE} UTF-8-Bytes" if not zu_gross else
+      "UEBER DER GRENZE -> " + ", ".join(f"{k}: {n} (+{n-GRENZE})" for k, n in zu_gross))
+if knapp:
+    print("   KNAPP (unter 1500 Bytes Reserve, jede weitere Korrektur kippt sie): "
+          + ", ".join(f"{k}: {GRENZE-n}" for k, n in knapp))
+if zu_gross:
+    print("   GitHub wuerde diese Bodies ABLEHNEN. Teilen (M7-Praezedenz), nicht kuerzen -"
+          "\n   die ausgeschriebenen Fremdsignaturen sind der Grund, warum Regel A haelt.")
 
 print("\nLabel-Verteilung:")
 from collections import Counter
@@ -542,6 +703,14 @@ if gh_miles is not None:
 
 if not GO:
     print("\n--- TROCKENLAUF, nichts angelegt. Mit --go ausführen. ---"); sys.exit(0)
+
+# Ein zu grosser Body ist ein sicherer Fehlschlag, kein Risiko - also gar nicht
+# erst loslaufen und die Reihe auf halbem Weg zerreissen.
+if zu_gross:
+    print("\nABBRUCH: "
+          + ", ".join(k for k, _ in zu_gross)
+          + " ueberschreiten die GitHub-Grenze (UTF-8-BYTES, nicht Zeichen)."
+            " Erst teilen oder kuerzen, dann anlegen."); sys.exit(1)
 
 # Ein vorhandenes map.json bedeutet: dieser Meilenstein wurde schon (teilweise)
 # angelegt. Diese Eintraege werden UEBERSPRUNGEN und ihre Nummern uebernommen.

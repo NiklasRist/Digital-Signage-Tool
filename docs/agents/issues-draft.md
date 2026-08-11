@@ -845,8 +845,12 @@ App-Start sichtbar abbrechen lässt – **kein** stiller Fallback auf eine Syste
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
 - „**Playfair Display ist auf Windows/macOS nicht vorinstalliert.** Die Marken-Schriften werden
   daher als **Dateien mit der App gebündelt** und explizit registriert/geladen (`FontFace`), bevor
-  gezeichnet wird. Andernfalls rendert der Canvas still auf eine Fallback-Schrift → Vorschau ≠
-  Endvideo **und** Markenbruch." (TK 9.10.4)
+  gezeichnet wird. **Seit v3.4 gilt dasselbe für importierte Schriften** (FA-24): Sie werden **je
+  Marke** registriert und geladen, **bevor** die erste Zone gezeichnet wird, und der Nachweis unten
+  gilt für sie mit (9.15.3). Fehlt eine importierte Datei, **entsteht gar kein Segment-PNG** – die
+  Prüfung sitzt im **Renderer, vor dem Zeichnen** (9.15.3); ein Rückfall auf die gebündelte Schrift
+  wäre genau der stille Markenbruch, den dieser Abschnitt verhindert. […] Andernfalls rendert der
+  Canvas still auf eine Fallback-Schrift → Vorschau ≠ Endvideo **und** Markenbruch." (TK 9.10.4)
 - „**Schrift-Rollen (v1, fest) – alle Dateien werden mitgeliefert (9.10.4):** `headlineElegant` =
   Playfair Display 700 · `headlinePlakativ` = Archivo Black 900 · `fliesstext`/`fliesstextFett` =
   Arimo 400/700." (TK 9.11.2)
@@ -2193,7 +2197,7 @@ Zufall, keine Kollisionsprüfung nötig).
 Ausgang bei Fehler: entfällt (kann nicht regulär fehlschlagen).
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
-- „**Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, `Auftrag`.
+- „**Alle IDs sind UUIDs** – `Project`, `Asset`, `Aktion`, `Listenelement`, `Vorlage`, **`Marke`** (9.11.2), `Auftrag`.
   **Keine** fortlaufenden Zähler: die kollidieren nach Löschen/Neu-Anlegen und beim Duplizieren von
   Projekten. **Keine** aus Namen abgeleiteten IDs: ein Umbenennen darf niemals Referenzen brechen."
   (TK 9.11.4)
@@ -2883,10 +2887,17 @@ sollte durch #7/#8 ausgeschlossen sein – tritt dieser Fehler auf, ist das ein 
 Verpackungsfehler, nicht auf einen Nutzerfehler).
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
-- „`leseMarke` | – → `Ergebnis<Marke>` (**nur lesend**)" (TK 9.5.6, Operationstabelle) – Signatur
-  und Nur-Lese-Charakter sind damit wörtlich festgelegt.
-- „Marke ist in v1 gebündelt und read-only (`config-store.leseMarke`, 9.5.6); ein Marken-Editor ist
-  kein MVP." (TK 9.5.6, TK 9.11.2) – diese Funktion bietet **keine** Schreiboperation.
+- **ENTFALLEN – diese Operationszeile steht seit TK v3.4 nicht mehr in 9.5.6.** Die Marke gehört
+  nicht mehr dem `config-store`: „**Die Marke liegt seit v3.4 NICHT mehr hier.** Sie ist mit FA-23
+  zu einem app-weiten **Bestand** geworden und gehört dem `marken-store` (9.15.1); `leseMarke` ist
+  dorthin gewandert und trägt jetzt eine `markeId`. `AppKonfig` führt das Feld ausdrücklich
+  **nicht**" (TK 9.5.6). Die heutige Zeile lautet „`leseMarke` | `markeId` → `Ergebnis<Marke>` –
+  **aufgelöst** (Vererbung angewandt, 9.11.2), samt `herkunftJeFeld`" (TK 9.15.1). **Vor dem Bauen
+  klären** – dieses Issue beschreibt eine Funktion, die es im heutigen Vertrag so nicht gibt.
+- **ZURÜCKGENOMMEN – nicht mehr als Vorgabe lesen.** Bis TK v3.3 stand in 9.11.2 „Marke ist in v1
+  gebündelt und read-only (`config-store.leseMarke`, 9.5.6); ein Marken-Editor ist kein MVP."
+  Heute gilt: „**Marken sind ein app-weiter Bestand und bearbeitbar** (`marken-store`, 9.15.1;
+  FA-23/FA-24)" (TK 9.11.2) – der Marken-Editor ist ein Muss.
 
 ## Fehlerpfade (vollständig)
 | Situation | Code | Verhalten |
@@ -3190,7 +3201,8 @@ Ausgang bei Fehler: `ungueltige_eingabe` bei leerem Namen; `speicher_fehler` bei
 Anlegen des Ordners.
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
-- „`erstelleProjekt` | `name` → `Ergebnis<Projekt>` (neuer Ordner + leeres `project.json`)"
+- „`erstelleProjekt` | `name`, `standardMarkeId` → `Ergebnis<Projekt>` (neuer Ordner + leeres
+  `project.json`; die Marken-Kennung **bekommt** die Operation, sie holt sie nicht – s. u.)"
   (TK 9.5.2)
 - „**[D1-Lock]**" – läuft über `mitD1Lock` (M1-20).
 - „Jedes Projekt besitzt einen eigenen Ordner mit `media/`-Unterordner" (TK 6) – `erstelleProjekt`
@@ -5496,8 +5508,11 @@ Schrift { familie, gewicht, datei }
 (TK 9.11.2, wörtlich übernommen)
 - „Vorlagen verweisen **ausschließlich über Rollen** darauf – niemals auf Hex-Werte oder
   Schriftnamen (9.11.1, Punkt 7)." (TK 9.11.2)
-- „**Marke ist in v1 gebündelt und read-only** (`config-store.leseMarke`, 9.5.6); ein
-  Marken-Editor ist kein MVP." (TK 9.11.2)
+- **ZURÜCKGENOMMEN – nicht mehr als Vorgabe lesen.** Bis TK v3.3 stand in 9.11.2 „Marke ist in
+  v1 gebündelt und read-only (`config-store.leseMarke`, 9.5.6); ein Marken-Editor ist kein MVP."
+  Heute gilt: „**Marken sind ein app-weiter Bestand und bearbeitbar** (`marken-store`, 9.15.1;
+  FA-23/FA-24)" (TK 9.11.2). `leseMarke` liegt im `marken-store` und trägt eine `markeId`
+  (TK 9.15.1).
 - „alle Dateien werden mitgeliefert (9.10.4)" (TK 9.11.2, zu den Schrift-Rollen) – die
   Marken-Schriften sind **gebündelt** auszuliefern, da Playfair Display auf Windows und macOS
   fehlt.

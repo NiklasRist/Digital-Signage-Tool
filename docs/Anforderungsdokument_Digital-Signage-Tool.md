@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 02.08.2026
-**Version:** 1.2 (Entwurf)
+**Datum:** 11.08.2026
+**Version:** 1.4 (Entwurf)
 **Status:** In Abstimmung
 
 ---
@@ -84,7 +84,7 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-08 | Ausgabe-Rendering | Aus der Wiedergabeliste wird **je Lauf eine einzige, durchgehende MP4-Datei** in definierter Auflösung und Codierung erzeugt (Verkettung aller Segmente). Dass es **eine** Datei ist, ist wesentlich: nur so läuft die Schleife am Fernseher ohne sichtbaren Übergang (Risiko R-04). | Muss |
 | FA-09 | Export auf USB | Eine gewählte Ausgabedatei kann in einen Zielordner bzw. direkt auf den USB-Speicher exportiert werden – **unter ihrem eigenen Namen**. Auf dem Speicher dürfen mehrere Ausgabedateien nebeneinander liegen. | Muss |
 | FA-10 | Projektverwaltung | Projekte werden in einer Übersicht geführt (Name, Erstell-/Änderungsdatum, Speicherort) und können angelegt, geöffnet, dupliziert und gelöscht werden – um Inhalte effizient zu aktualisieren statt neu anzulegen. Das Sichern selbst erfolgt automatisch (FA-15). | Soll |
-| FA-11 | Einheitliches Grundlayout | Aktions-Segmente verwenden ein einheitliches Grundlayout im Corporate Design von Fitnessworld24 (Logo, Farbwelt, Typografie), abgeleitet aus dem Markenauftritt der Website fitnessworld24.li. | Soll |
+| FA-11 | Einheitliches Grundlayout | Aktions-Segmente verwenden ein einheitliches Grundlayout im Corporate Design der **zugewiesenen Marke** (Logo, Farbwelt, Typografie). **Eingebauter Standard ist Fitnessworld24**, abgeleitet aus dem Markenauftritt der Website fitnessworld24.li; weitere Marken sind möglich (FA-23). | Soll |
 | FA-12 | Gestalterischer Spielraum | Innerhalb des Grundlayouts sind definierte Bereiche frei gestaltbar (z. B. Überschrift, Motiv-/Produktbild, Preis bzw. Call-to-Action, Akzentfarbe), damit jede Werbung individuell und wirkungsvoll gestaltet werden kann. | Soll |
 | FA-13 | Vorlagen erstellen & bearbeiten | Über die eingebauten Vorlagen hinaus können **eigene Vorlagen angelegt und bearbeitet** werden – **bereits im Prototyp**. Dabei wird die **Art** der Vorlage gewählt: vollflächiges Segment, **Split-Screen-Band** oder **Einblendung** (s. 4.5). Eine eigene Vorlage arrangiert nur die **freien Zonen** (Position/Größe/Feldzuordnung) innerhalb des **festen Markenrahmens** (Logo, Sicherheitsabstände), der nicht abschaltbar ist. Datengetrieben – eine eigene Vorlage ist nur ein neuer Datensatz, kein Code-Umbau. | Muss |
 | FA-14 | Video trimmen | Ein Video-Element kann am Anfang und Ende beschnitten werden (Trim-Start/-Ende); nur der gewählte Ausschnitt wird wiedergegeben und gerendert. **Nicht-destruktiv** – die Originaldatei bleibt unverändert; der Trim liegt am Listenelement. Bedienung über denselben Dauer-/Trim-Regler wie FA-06 (s. 4.4). | Soll |
@@ -96,10 +96,12 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-20 | Parallele Anzeige (Split-Screen / Einblendung) — **Hauptbetriebsart** | Werbeinhalte laufen **parallel während eines Videos**: entweder als **Split-Screen** (Video oben verkleinert, Werbeband darunter, nichts verdeckt) oder als **Einblendung** (Video vollflächig, Band überlagernd). Während eines Videos können **mehrere Aktionen nacheinander** im Band rotieren. Die sequenzielle Werbepause (FA-04) bleibt zusätzlich möglich. Details: 4.5. | Muss |
 | FA-21 | Rückgängig / Wiederherstellen | **Beide** Editoren – Projekt-Bearbeitung und Vorlagen-Editor – bieten **Undo/Redo** für Bearbeitungsschritte (Liste, Reihenfolge, Trim, Dauer, Aktionen, Zonen). **Nicht** rückgängig machbar sind abgeschlossene Vorgänge mit Dateiwirkung (Import, Löschen von Medien, Render, Export) – ein gelöschtes Medium muss neu importiert werden. | Muss |
 | FA-22 | Mehrere benannte Ausgabedateien | Ein Projekt kann **mehrere** gerenderte MP4-Dateien vorhalten. Beim Speichern eines Renders vergibt der Nutzer den Dateinamen; vorbelegt ist der **zuletzt verwendete** Name, sodass wiederholtes Rendern die vorige Fassung standardmäßig **ersetzt** und der Ordner nicht zuläuft. Ein abweichender Name legt eine zusätzliche Datei an. Datum und Uhrzeit stehen in der Ausgabe-Liste der Anwendung, **nicht** im Dateinamen. | Muss |
+| FA-23 | Marken-Bestand | Die Anwendung führt **mehrere Marken** in einem **app-weiten, projektunabhängigen** Bestand. Ein Projekt darf mehrere Marken verwenden; eine **Aktion** trägt **genau eine**. Eine Marke kann von einer anderen **abgeleitet** sein und einzelne Werte überschreiben (Saison- oder Kampagnen-Look). Die Fitnessworld24-Marke ist immer vorhanden und **nicht löschbar**. Jedes Projekt führt zusätzlich eine **Standardmarke**, die den Rahmen färbt (Band-Hintergrund, Restflächen; s. 4.8); sie ist in der **Projektverwaltung wechselbar**. Eine Marke lässt sich nur löschen, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als Standardmarke** sie mehr nutzt. | Muss |
+| FA-24 | Marken-Editor | Marken lassen sich in der Anwendung **anlegen, bearbeiten und ableiten**: Farben, Slogan, Sicherheitsabstände sowie **Import** von Logo und Schriftdateien. Bei zu geringem Kontrast zwischen Akzentfläche und darauf liegendem Text **warnt** die Anwendung sichtbar, verhindert die Wahl aber nicht. | Muss |
 
 ### 4.1 Gestaltung der Aktions-Segmente (Corporate Design)
 
-Aktions-Segmente folgen dem Markenauftritt von Fitnessworld24 (24/7-Fitnessstudio, Weißensberg/Lindau am Bodensee). Gestalterische Grundlage ist die Website fitnessworld24.li. Ziel ist eine **Balance aus Wiedererkennbarkeit und Werbewirkung**: ein fester Markenrahmen sorgt für ein einheitliches, professionelles Erscheinungsbild, während klar definierte freie Bereiche jeder Aktion einen eigenen, ansprechenden Auftritt erlauben.
+Aktions-Segmente folgen dem Markenauftritt von Fitnessworld24 (24/7-Fitnessstudio, Weißensberg/Lindau am Bodensee). Gestalterische Grundlage ist die Website fitnessworld24.li. Ziel ist eine **Balance aus Wiedererkennbarkeit und Werbewirkung**: ein fester Markenrahmen sorgt für ein einheitliches, professionelles Erscheinungsbild, während klar definierte freie Bereiche jeder Aktion einen eigenen, ansprechenden Auftritt erlauben **Seit FA-23 gilt diese Zusage je Rahmen, nicht mehr für das ganze Video:** der Rahmen bleibt in der Projekt-Standardmarke, die Inhalte darin dürfen fremde Marken tragen (Abschnitt 4.8).
 
 **Fester Rahmen (einheitlich, FA-11):**
 
@@ -116,6 +118,8 @@ Aktions-Segmente folgen dem Markenauftritt von Fitnessworld24 (24/7-Fitnessstudi
 - Akzentfarbe oder Aktions-Badge zur Hervorhebung.
 
 ### 4.2 Design-Tokens / Style-Guide
+
+> **Diese Tabellen beschreiben die *eingebaute* Marke Fitnessworld24** – seit FA-23 den **Standard**, nicht die einzige Marke. Weitere Marken tragen dieselben Rollen mit eigenen Werten; die Rollen-Namen und ihre Bedeutung sind für **alle** Marken verbindlich (Technisches Konzept 9.11.2).
 
 Aus dem Markenauftritt (Export der Website-Tokens) ergibt sich folgende Gestaltungsbasis. Wix-spezifische Editor-/Systemfarben wurden aussortiert (siehe Hinweis unten).
 
@@ -226,6 +230,63 @@ Projekt B die noch nicht exportierte Datei von Projekt A überschreiben.
 
 ---
 
+### 4.8 Marken: Bestand, Ableitung, Zuweisung (FA-23, FA-24)
+
+Bis v1.2 kannte das System **eine** Marke – die von Fitnessworld24. Mit FA-23 wird daraus ein
+**Bestand**. Zwei Anlässe machen das nötig:
+
+- **Partner- und Fremdwerbung.** Im Studio wird für Dritte geworben (etwa Nahrungsergänzungs-Hersteller).
+  Diese Aktionen tragen die Marke des Partners, nicht die des Studios.
+- **Saison- und Kampagnen-Looks.** Dieselbe Fitnessworld24-Marke in einer abweichenden Anmutung
+  (Sommeraktion, Jahreswechsel) – gleiche Schriften, gleiches Logo, andere Farben.
+
+**Was das an der Zusage aus 4.1 ändert – bitte bewusst lesen.** Der Satz „ein fester Markenrahmen sorgt
+für ein einheitliches, professionelles Erscheinungsbild" gilt weiterhin, aber **je Rahmen**, nicht mehr
+für das ganze Video: Der **Rahmen** (Band-Hintergrund, Restflächen neben einem eingepassten Video)
+bleibt in der **Projekt-Standardmarke** stabil; die **Inhalte** darin dürfen fremde Marken tragen. Ohne
+diese Trennung wechselte bei rotierenden Partner-Aktionen die Flächenfarbe im Sekundenrhythmus – auf
+einem 85-Zoll-Schirm unruhig statt professionell.
+
+**Bestand und Ablage.** Marken liegen **app-weit**, nicht im Projekt – wie die Vorlagen (4.6). Eine
+Marke, die für ein Projekt angelegt wurde, steht damit allen zur Verfügung; ein Partner wird einmal
+erfasst und nicht je Projekt erneut.
+
+**Ableitung.** Eine Marke kann von einer anderen abgeleitet sein und **einzelne** Werte überschreiben.
+Ein Saison-Look setzt also nur die Farben und erbt Schriften, Logo und Abstände. Ändert sich das
+Fitnessworld24-Logo, wirkt das ohne Nacharbeit in allen abgeleiteten Looks. Ohne Ableitung müsste jede
+Variante alles selbst tragen – und beim nächsten Logo-Wechsel würde eine vergessen.
+
+**Zuweisung.** Jede **Aktion** trägt **genau eine** Marke. Elemente ohne Aktion (Video, Bild) tragen
+keine eigene: Über sie zeichnet die Anwendung kein Logo; ihre Restflächen kommen aus der
+Projekt-Standardmarke.
+
+**Die Projekt-Standardmarke ist wechselbar.** Bedient wird das in der **Projektverwaltung** (Reiter
+[Projekte], FA-10), nicht im Marken-Editor: Die Standardmarke ist eine Eigenschaft des **Projekts**,
+während der Editor den app-weiten **Bestand** führt und keine Projekte kennt. Ein neues Projekt startet
+mit der eingebauten Fitnessworld24-Marke.
+
+**Wenn eine Marke kein Logo hat** – bei Partnern der Normalfall –, zeichnet die Anwendung einen
+**Ersatz**: den Markennamen auf farbigem Grund in der Akzentfarbe der Marke. Kein leerer Bereich und
+kein fremdes Logo an dieser Stelle.
+
+**Löschen.** Nur möglich, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als
+Standardmarke** sie nutzt – wie bei den Vorlagen (4.6). Die dritte Bedingung ist keine Förmlichkeit:
+Eine als Standardmarke geführte Marke färbt Rahmen und Restflächen; wäre sie löschbar, zeigte das
+betroffene Projekt beim nächsten Render auf eine Marke, die es nicht mehr gibt – mitten im
+Hauptbetrieb. Die Anwendung nennt vorher, was betroffen ist – **einschließlich der Projekte**, die die
+Marke als Standard führen, damit der Nutzer weiß, wo er sie wechseln muss. Genau dafür ist die
+Standardmarke wechselbar (s. „Zuweisung"): Eine Sperre, deren Grund sich nicht beseitigen lässt, wäre
+eine Sackgasse. Die eingebaute Fitnessworld24-Marke ist
+**nie** löschbar, weil sie der Projekt-Standard und die Basis der abgeleiteten Looks ist; **bearbeitbar
+ist sie aber**, damit eine echte Änderung des Corporate Designs nicht zu einer Kopie daneben führt.
+
+**Eigene Schriften und Logos.** Der Editor importiert beides. Die Dateien werden in den Marken-Bestand
+**kopiert**, die Originale bleiben unberührt (wie beim Medien-Import, FA-01). Fehlt eine importierte
+Datei zur Renderzeit, **bricht der Render ab, bevor er beginnt** – ein stiller Rückfall auf eine andere
+Schrift würde den Markenbruch erst am Fernseher zeigen.
+
+---
+
 ## 5. Nicht-funktionale Anforderungen
 
 | ID | Anforderung | Beschreibung | Priorität |
@@ -298,6 +359,8 @@ Nicht Bestandteil der ersten Version:
 | R-04 | Steuerleisten-Einblendung | Beim Wiederholen kann sich kurz eine Bedienleiste einblenden; durch eine einzige lange MP4 **je Schleife** wird dies minimiert. **Verschärft durch FA-22:** Liegen mehrere Dateien auf dem Speicher, muss am Gerät „Repeat One" (nicht „Repeat All") eingestellt sein – sonst tritt der Effekt bei jedem Dateiwechsel auf (Abschnitt 7). |
 | R-05 | Energie-/Timeout-Verhalten | Energiespar- und Abschalt-Einstellungen müssen korrekt gesetzt sein, damit die Schleife nicht abbricht. |
 | R-06 | Ton | **ENTSCHIEDEN:** Die Ausgabe ist **still**, enthält aber eine **stille AAC-Tonspur** – manche Player/TVs erwarten eine Audiospur und verhalten sich bei rein-Video-MP4 eigenartig. Verbindlich im Technischen Konzept 9.2.4. |
+| R-07 | Fremdschriften und Lizenzen | Die vier mitgelieferten Schriften sind bewusst frei lizenziert (OFL). Für **importierte** Schriften (FA-24) trägt der Nutzer die Nutzungsrechte – die Anwendung brennt sie in ein Video ein, das weitergegeben und öffentlich gezeigt wird. Vor dem Import einer Fremdschrift ist die Lizenz zu prüfen. |
+| R-08 | Unlesbarer Kontrast | Die Akzentfarbe einer Aktion ist ab FA-24 ein **freier** Farbwert (vorher nur Auswahl aus der Palette). Damit sind Kombinationen möglich, die am 85-Zoll-Schirm aus mehreren Metern unlesbar sind. Gegenmaßnahme ist die **Warnung** (FA-24), nicht die Sperre – Partner-Hausfarben sollen nicht an einem Schwellenwert scheitern. Die Restverantwortung bleibt beim Nutzer; maßgeblich ist die Kontrolle am Gerät. |
 
 ---
 
@@ -324,6 +387,7 @@ Die erste Version gilt als erfolgreich, wenn:
 7. Fehlende Medien werden vor dem Rendern erkannt und der Nutzer wird geführt, bis alle kaputten Elemente behoben sind (FA-19).
 8. Werbeinhalte können **parallel** während eines Videos als Band unten angezeigt werden, mit mehreren rotierenden Aktionen (FA-20, Abschnitt 4.5).
 9. Ein Projekt kann mehrere benannte Ausgabedateien vorhalten; erneutes Rendern unter demselben Namen ersetzt die vorige Fassung, ohne sie bei einem Fehlschlag zu beschädigen (FA-22, Abschnitt 4.7).
+10. Eine Aktion kann eine andere als die eingebaute Marke tragen; das gerenderte Video zeigt deren Logo und Farben, während Band-Hintergrund und Restflächen in der Projekt-Standardmarke bleiben; diese Standardmarke lässt sich in der Projektverwaltung wechseln (FA-23, FA-24, Abschnitt 4.8).
 
 ---
 
