@@ -4,12 +4,12 @@
 > Technische Konzept offen lässt oder die aus Entscheidungen des Auftraggebers stammen. Bei M2 hat
 > genau so eine Datei die Zitat-Treue auf 100 % gebracht (vorher sieben Verstöße gegen Regel D).
 >
-> Grundlage: AD **v1.3**, TK **v3.7**. Milestone: `M8 – Marken`.
+> Grundlage: AD **v1.4**, TK **v3.12**. Milestone: `M8 – Marken`.
 >
-> **Diese Datei wurde am 10.08. von TK v3.4 auf v3.7 gehoben.** Vier Fassungen dazwischen haben
-> sieben Festlegungen gebracht, die M8 berühren – sie stehen in Abschnitt 3a. **Eine davon nimmt
-> Punkt 8 der Auftraggeber-Liste zurück.** Wenn du eine ältere Kopie dieser Datei vor dir hast:
-> wegwerfen.
+> **Diese Datei wurde am 10.08. von TK v3.4 auf v3.7 gehoben und am 11.08. auf v3.12.** Die
+> Fassungen dazwischen haben Festlegungen gebracht, die M8 berühren – sie stehen in Abschnitt 3a
+> (v3.5–v3.7) und **3b** (v3.8–v3.12). **Eine davon nimmt Punkt 8 der Auftraggeber-Liste zurück.**
+> Wenn du eine ältere Kopie dieser Datei vor dir hast: wegwerfen.
 
 ---
 
@@ -17,12 +17,13 @@
 
 1. `docs/agents/issue-generation-prompt.md` – **Abschnitt 7 vollständig** (Pflicht-Vorlage + Regeln
    A–E), Abschnitt 5 (globale Invarianten), Abschnitt 8 (ausgefülltes Beispiel).
-2. `docs/Technisches_Konzept_Digital-Signage-Tool.md` (**v3.7**) – für M8 zentral: **9.15** (der ganze
+2. `docs/Technisches_Konzept_Digital-Signage-Tool.md` (**v3.12**) – für M8 zentral: **9.15** (der ganze
    Abschnitt), **9.10.10** (Ersatz-Logo), **9.11.2** (`Marke` samt Vererbungsregel **und dem
    Herkunfts-Stempel `herkunftJeFeld`**), **9.10.9** (Farb-Rollen-Auflösung und deren zwei
    Ausnahmen), **9.12.1** (`vorlagen-store` – das **Muster**, dem der `marken-store` folgt),
-   **9.5.4** (Schreib-Invarianten), **9.1.1** (Ergebnis-Hülle), **9.14.1** (der fünfte Reiter).
-3. `docs/Anforderungsdokument_Digital-Signage-Tool.md` (**v1.3**) – **FA-23**, **FA-24**,
+   **9.5.4** (Schreib-Invarianten), **9.1.1** (Ergebnis-Hülle), **9.14.1** (der fünfte Reiter),
+   **9.5.2** (`setzeStandardMarke`, `erstelleProjekt`, `ProjektMeta`).
+3. `docs/Anforderungsdokument_Digital-Signage-Tool.md` (**v1.4**) – **FA-23**, **FA-24**,
    **Abschnitt 4.8**, **R-07**, **R-08**.
 4. `docs/agents/m8-zuschnitt.md` – dein Issue und seine Nachbarn.
 
@@ -110,6 +111,63 @@ Festlegung widersprechen, **gewinnen sie**.
    Nummer bleibt unbesetzt.* Der einzige Marken-Bezug des `render-service` ist die Restflächen-Farbe,
    und die reist seit v3.7 als **fertiger Hex-Wert** `einblendung.flaecheDunkel` eingefroren im
    Auftrag mit.
+
+## 3b. Was seit TK v3.7 dazugekommen ist (v3.8–v3.12) – ENTSCHIEDEN, nicht mehr fragen
+
+> **Diese sieben Punkte sind der Grund, warum du das TK selbst aufschlagen musst und dich nicht auf
+> Abschnitt 3a verlassen darfst.** Sie stammen aus dem zweiten Prüflauf und aus vier Entscheidungen
+> des Auftraggebers vom 11.08.2026.
+
+1. **Der Sicherheitsabstand hat einen erlaubten Bereich** (v3.8, 9.11.4): Konstante
+   **`SICHERHEITSABSTAND_BEREICH`** = `{ horizontal: { min: 0, max: 480 }, vertikal: { min: 0, max: 270 } }`
+   in `src/shared/contracts/konstanten.ts`. Sie ist die **Schranke** beim Bearbeiten – nicht zu
+   verwechseln mit `SICHERHEITSABSTAND_PX` (`{ horizontal: 96, vertikal: 54 }`), das seit v3.6 nur
+   noch die **Vorbelegung** der eingebauten Marke ist und **nicht** der geltende Wert.
+
+2. **Der Kontrast-Schwellenwert ist `4,5:1`** (v3.10, 9.11.4/9.15.2), als Konstante
+   **`KONTRAST_SCHWELLE`** in derselben Datei. **Die Zahl steht an genau einer Stelle.** Weder die
+   Rechenfunktion noch die Warn-Anzeige importieren sie – sie **nehmen sie entgegen**; gelesen wird
+   sie allein von der Wurzel-Komponente des Editors. *Warum 4,5 und nicht 3:* Die 3:1-Schwelle gilt
+   für **große** Schrift; auf einem 85-Zoll-Schirm aus mehreren Metern ist der ungünstigere Wert der
+   ehrlichere. Und weil die Warnung **nicht sperrt** (FA-24, R-08), kostet eine zu früh erscheinende
+   Warnung nichts, eine ausbleibende dagegen die Lesbarkeit am Gerät.
+
+3. **Farbwerte sind 6- ODER 8-stellig** (9.11.2). Die **eingebaute** Marke belegt zwei Rollen
+   achtstellig: `scrimStart` = `#00000000`, `scrimEnde` = `#000000B3`. **Die Kontrast-Rechnung wirft
+   dabei nicht** – sie nimmt beide Formen entgegen und **ignoriert den Alphakanal**. *Warum das
+   vertretbar ist:* Ein Kontrastverhältnis ist nur zwischen **deckenden** Farben definiert, und die
+   beiden Alpha-Rollen sind Verlaufsfarben, die die Rechnung **nie** erreichen.
+
+4. **Die eingebaute Marke startet mit `logo: null`** (v3.11, 9.15.1). Es gibt **keine gebündelte
+   Logo-Datei**; gezeichnet wird das **Ersatz-Logo** (9.10.10). **Festhalten, weil es nicht
+   offensichtlich ist:** In v1 wird kein Logo gebündelt ausgeliefert, `logo.herkunft` kann also
+   praktisch nur `"importiert"` sein. Der Wert `"gebuendelt"` bleibt am Typ – für **Schriften** ist
+   er der Regelfall (vier OFL-Schriften) –, hat für **Logos** aber **keinen Erzeuger**. Wer dort
+   einen Zweig baut, baut toten Code.
+
+5. **Löschen blockiert bei DREI Bedingungen, nicht zwei** (v3.11, AD v1.4 FA-23, TK 9.15.1).
+   `Markennutzung` führt seither eine dritte Trefferliste **`standardInProjekten`** – Projekte, die
+   die Marke als `Project.standardMarkeId` führen. **Alle drei Listen tragen Namen, nicht nur
+   Anzahlen.** Den Ausweg bietet **`setzeStandardMarke`** (9.5.2), bedient in der
+   **Projektverwaltung**: Ohne ihn wäre die Sperre eine Sackgasse.
+
+6. **`ProjektMeta` trägt `standardMarkeId: string | null`** (v3.12, 9.5.2) – bei `beschaedigt: true`
+   **`null`**, dieselbe Behelfs-Regel wie bei `name`. Und **`erstelleProjekt` bekommt die
+   Marken-Kennung als Parameter**; geholt wird sie vom **Handler**. **Der `project-store` darf den
+   `marken-store` NICHT fragen** – der liest bereits umgekehrt, das wäre ein **Ringschluss zwischen
+   zwei Main-Modulen**. Bindend: **`marken-store` → `project-store`, nie umgekehrt.**
+
+7. **`MarkenReferenz.id` heißt `aktionId`** (v3.12, 9.15.1). **Achtung beim Abschreiben:** Der
+   Nachbartyp `VorlagenReferenz` (9.12.1) heißt weiterhin `id` – **zu Recht**, weil eine Vorlage auch
+   von Listenelementen benutzt wird und der Fundort dort beides sein kann. Wer `VorlagenReferenz`
+   als Vorbild zitiert, zitiert `id`; wer `MarkenReferenz` deklariert, schreibt `aktionId`.
+
+8. **Scheitert der Sofort-Flush von `marken.json` beim BEENDEN, schließt die App NICHT** (v3.11,
+   9.15.1 – **Quelle bleibt 9.5.4**, dort steht der Vertrag, hier nur der zweite Fundort). Vier
+   Schritte: App schließt nicht; Fehler **mit auf die Ursache zugeschnittener Handlungsempfehlung**;
+   Knopf **„Erneut versuchen"**; daneben der benannte Ausweg **„Trotzdem schließen und Änderungen
+   verwerfen"**. **Gebaut ist dieser Ablauf für KEINEN der drei Speicher** – wer darauf stößt,
+   meldet, baut ihn aber nicht nebenbei mit.
 
 ## 4. Festlegungen, die ich beim Zuschnitt getroffen habe
 
