@@ -106,7 +106,7 @@ ausdrücklich vergeben werden, sonst meldet ein Agent und baut nicht.
 
 | Nr. | Issue |
 |---|---|
-| M8-22 | Grundgerüst des Editors + Marken-Liste (eigenständige und abgeleitete unterscheidbar) |
+| M8-22 | Grundgerüst des Editors + Marken-Liste (eigenständige und abgeleitete unterscheidbar) + **neue eigenständige Marke anlegen** (`erstelleEigenstaendigeMarke` → `erstelleMarke` mit `parentId: null`; 11.08. nachgetragen – ohne sie ließe sich der Bestand nur um Ableitungen erweitern, FA-24 verlangt aber „anlegen, bearbeiten und ableiten") |
 | M8-23 | Farb-Rollen bearbeiten – Rollen **fest**, Werte frei |
 | M8-24 | Schrift-Rollen anzeigen und Schrift importieren |
 | M8-25 | Logo importieren und entfernen (Entfernen → Ersatz-Logo greift) |
