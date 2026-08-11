@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 10.08.2026
-**Version:** 1.3 (Entwurf)
+**Datum:** 11.08.2026
+**Version:** 1.4 (Entwurf)
 **Status:** In Abstimmung
 
 ---
@@ -96,7 +96,7 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-20 | Parallele Anzeige (Split-Screen / Einblendung) — **Hauptbetriebsart** | Werbeinhalte laufen **parallel während eines Videos**: entweder als **Split-Screen** (Video oben verkleinert, Werbeband darunter, nichts verdeckt) oder als **Einblendung** (Video vollflächig, Band überlagernd). Während eines Videos können **mehrere Aktionen nacheinander** im Band rotieren. Die sequenzielle Werbepause (FA-04) bleibt zusätzlich möglich. Details: 4.5. | Muss |
 | FA-21 | Rückgängig / Wiederherstellen | **Beide** Editoren – Projekt-Bearbeitung und Vorlagen-Editor – bieten **Undo/Redo** für Bearbeitungsschritte (Liste, Reihenfolge, Trim, Dauer, Aktionen, Zonen). **Nicht** rückgängig machbar sind abgeschlossene Vorgänge mit Dateiwirkung (Import, Löschen von Medien, Render, Export) – ein gelöschtes Medium muss neu importiert werden. | Muss |
 | FA-22 | Mehrere benannte Ausgabedateien | Ein Projekt kann **mehrere** gerenderte MP4-Dateien vorhalten. Beim Speichern eines Renders vergibt der Nutzer den Dateinamen; vorbelegt ist der **zuletzt verwendete** Name, sodass wiederholtes Rendern die vorige Fassung standardmäßig **ersetzt** und der Ordner nicht zuläuft. Ein abweichender Name legt eine zusätzliche Datei an. Datum und Uhrzeit stehen in der Ausgabe-Liste der Anwendung, **nicht** im Dateinamen. | Muss |
-| FA-23 | Marken-Bestand | Die Anwendung führt **mehrere Marken** in einem **app-weiten, projektunabhängigen** Bestand. Ein Projekt darf mehrere Marken verwenden; eine **Aktion** trägt **genau eine**. Eine Marke kann von einer anderen **abgeleitet** sein und einzelne Werte überschreiben (Saison- oder Kampagnen-Look). Die Fitnessworld24-Marke ist immer vorhanden und **nicht löschbar**. Eine Marke lässt sich nur löschen, wenn **keine Aktion** und **keine abgeleitete Marke** sie mehr nutzt. | Muss |
+| FA-23 | Marken-Bestand | Die Anwendung führt **mehrere Marken** in einem **app-weiten, projektunabhängigen** Bestand. Ein Projekt darf mehrere Marken verwenden; eine **Aktion** trägt **genau eine**. Eine Marke kann von einer anderen **abgeleitet** sein und einzelne Werte überschreiben (Saison- oder Kampagnen-Look). Die Fitnessworld24-Marke ist immer vorhanden und **nicht löschbar**. Jedes Projekt führt zusätzlich eine **Standardmarke**, die den Rahmen färbt (Band-Hintergrund, Restflächen; s. 4.8); sie ist in der **Projektverwaltung wechselbar**. Eine Marke lässt sich nur löschen, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als Standardmarke** sie mehr nutzt. | Muss |
 | FA-24 | Marken-Editor | Marken lassen sich in der Anwendung **anlegen, bearbeiten und ableiten**: Farben, Slogan, Sicherheitsabstände sowie **Import** von Logo und Schriftdateien. Bei zu geringem Kontrast zwischen Akzentfläche und darauf liegendem Text **warnt** die Anwendung sichtbar, verhindert die Wahl aber nicht. | Muss |
 
 ### 4.1 Gestaltung der Aktions-Segmente (Corporate Design)
@@ -260,12 +260,23 @@ Variante alles selbst tragen – und beim nächsten Logo-Wechsel würde eine ver
 keine eigene: Über sie zeichnet die Anwendung kein Logo; ihre Restflächen kommen aus der
 Projekt-Standardmarke.
 
+**Die Projekt-Standardmarke ist wechselbar.** Bedient wird das in der **Projektverwaltung** (Reiter
+[Projekte], FA-10), nicht im Marken-Editor: Die Standardmarke ist eine Eigenschaft des **Projekts**,
+während der Editor den app-weiten **Bestand** führt und keine Projekte kennt. Ein neues Projekt startet
+mit der eingebauten Fitnessworld24-Marke.
+
 **Wenn eine Marke kein Logo hat** – bei Partnern der Normalfall –, zeichnet die Anwendung einen
 **Ersatz**: den Markennamen auf farbigem Grund in der Akzentfarbe der Marke. Kein leerer Bereich und
 kein fremdes Logo an dieser Stelle.
 
-**Löschen.** Nur möglich, wenn **keine Aktion** und **keine abgeleitete Marke** sie nutzt – wie bei den
-Vorlagen (4.6). Die Anwendung nennt vorher, was betroffen ist. Die eingebaute Fitnessworld24-Marke ist
+**Löschen.** Nur möglich, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als
+Standardmarke** sie nutzt – wie bei den Vorlagen (4.6). Die dritte Bedingung ist keine Förmlichkeit:
+Eine als Standardmarke geführte Marke färbt Rahmen und Restflächen; wäre sie löschbar, zeigte das
+betroffene Projekt beim nächsten Render auf eine Marke, die es nicht mehr gibt – mitten im
+Hauptbetrieb. Die Anwendung nennt vorher, was betroffen ist – **einschließlich der Projekte**, die die
+Marke als Standard führen, damit der Nutzer weiß, wo er sie wechseln muss. Genau dafür ist die
+Standardmarke wechselbar (s. „Zuweisung"): Eine Sperre, deren Grund sich nicht beseitigen lässt, wäre
+eine Sackgasse. Die eingebaute Fitnessworld24-Marke ist
 **nie** löschbar, weil sie der Projekt-Standard und die Basis der abgeleiteten Looks ist; **bearbeitbar
 ist sie aber**, damit eine echte Änderung des Corporate Designs nicht zu einer Kopie daneben führt.
 
@@ -376,7 +387,7 @@ Die erste Version gilt als erfolgreich, wenn:
 7. Fehlende Medien werden vor dem Rendern erkannt und der Nutzer wird geführt, bis alle kaputten Elemente behoben sind (FA-19).
 8. Werbeinhalte können **parallel** während eines Videos als Band unten angezeigt werden, mit mehreren rotierenden Aktionen (FA-20, Abschnitt 4.5).
 9. Ein Projekt kann mehrere benannte Ausgabedateien vorhalten; erneutes Rendern unter demselben Namen ersetzt die vorige Fassung, ohne sie bei einem Fehlschlag zu beschädigen (FA-22, Abschnitt 4.7).
-10. Eine Aktion kann eine andere als die eingebaute Marke tragen; das gerenderte Video zeigt deren Logo und Farben, während Band-Hintergrund und Restflächen in der Projekt-Standardmarke bleiben (FA-23, FA-24, Abschnitt 4.8).
+10. Eine Aktion kann eine andere als die eingebaute Marke tragen; das gerenderte Video zeigt deren Logo und Farben, während Band-Hintergrund und Restflächen in der Projekt-Standardmarke bleiben; diese Standardmarke lässt sich in der Projektverwaltung wechseln (FA-23, FA-24, Abschnitt 4.8).
 
 ---
 

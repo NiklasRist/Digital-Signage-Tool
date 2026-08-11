@@ -1,17 +1,17 @@
 # Technisches Konzept – Digital-Signage-Tool
 
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
-**Bezug:** Anforderungsdokument v1.3 (das „Was")
+**Bezug:** Anforderungsdokument v1.4 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.10 (HLD vollständig, geprüft)
-**Datum:** 10.08.2026
+**Version:** 3.11 (HLD vollständig, geprüft)
+**Datum:** 11.08.2026
 **Status:** In Planung
 
 ---
 
 ## 1. Zweck und Einordnung
 
-Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.3** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
+Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.4** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
 
 ## 2. Architektur-Überblick
 
@@ -364,7 +364,7 @@ Ergebnis<T> =
   | { ok: false, fehler: { code: Fehlercode, meldung: string, daten?: Fehlerdaten } }
 ```
 
-**Strukturierte Fehlerdaten (`daten`, optional).** Manche Fehler sind erst mit ihren Nutzdaten bedienbar: `asset_referenziert` muss die **betroffenen Listenelemente** nennen (`{ referenzenIds: string[] }`, 9.4.9), `vorlage_referenziert` beide Trefferlisten (9.12.1). Ohne dieses Feld bliebe von der Zusage „der Code trägt echtes Verhalten" nur der Code selbst übrig, und der geführte Reparatur-Modus (FA-19) könnte den Nutzer nirgendwohin führen. Regeln: Das Feld ist **optional** – Codes ohne Zusatzdaten lassen es weg; seine Form ist **je Fehlercode festgelegt und typisiert** (dokumentiert dort, wo der Code vergeben wird: 9.4.9, 9.6.4, 9.12.1); es ist **kein Freitext-Anhang** und **kein Ersatz für `meldung`**. Ein Aufrufer, der `daten` nicht kennt, funktioniert unverändert weiter.
+**Strukturierte Fehlerdaten (`daten`, optional).** Manche Fehler sind erst mit ihren Nutzdaten bedienbar: `asset_referenziert` muss die **betroffenen Listenelemente** nennen (`{ referenzenIds: string[] }`, 9.4.9), `vorlage_referenziert` beide Trefferlisten (9.12.1), `marke_referenziert` alle drei – einschließlich der **Projekte**, die die Marke als Standardmarke führen (`Markennutzung`, 9.15.1). Ohne dieses Feld bliebe von der Zusage „der Code trägt echtes Verhalten" nur der Code selbst übrig, und der geführte Reparatur-Modus (FA-19) könnte den Nutzer nirgendwohin führen. Regeln: Das Feld ist **optional** – Codes ohne Zusatzdaten lassen es weg; seine Form ist **je Fehlercode festgelegt und typisiert** (dokumentiert dort, wo der Code vergeben wird: 9.4.9, 9.6.4, 9.12.1, 9.15.5); es ist **kein Freitext-Anhang** und **kein Ersatz für `meldung`**. Ein Aufrufer, der `daten` nicht kennt, funktioniert unverändert weiter.
 
 *Begründung (bitte nicht „vereinfachen"):* Renderer und Main sind **getrennte Prozesse**; alles dazwischen wird serialisiert. Wirft der Main `new Error(...)` mit einem eigenen Feld `code`, kommt beim Renderer **nicht** dieser Fehler an, sondern eine verpackte Meldung der Art
 
@@ -921,7 +921,7 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 
 | Operation | Eingang → Ausgang |
 |---|---|
-| `erstelleProjekt` | `name` → `Ergebnis<Projekt>` (neuer Ordner + leeres `project.json`) |
+| `erstelleProjekt` | `name`, `standardMarkeId` → `Ergebnis<Projekt>` (neuer Ordner + leeres `project.json`; die Marken-Kennung **bekommt** die Operation, sie holt sie nicht – s. u.) |
 | `öffneProjekt` | `id` → `Ergebnis<Projekt>` (lädt in den Speicher; setzt aktives Projekt via `config-store`) |
 | `listeProjekte` | – → `Ergebnis<ProjektMeta[]>` (id, name, erstelltAm, geaendertAm, ordner, **beschaedigt**) – listet **auch** Projekte mit defekter `project.json`, gekennzeichnet statt weggelassen (s. u.) |
 | `dupliziereProjekt` | `id`, `neuerName` → `Ergebnis<Projekt>` (kopiert `project.json` **und** `media/`) |
@@ -940,6 +940,24 @@ ProjektMeta {
   anzahlAusgaben: number       // fertige .mp4 in output/ – Zählweise wie listeAusgaben (.part zählt nicht)
 }
 ```
+
+**`erstelleProjekt` bekommt die Standardmarke ÜBERGEBEN – der Handler holt sie (v3.11, bindend).**
+`Project.standardMarkeId` ist ein **Pflichtfeld** (9.11.3), und `erstelleProjekt` ist die Stelle, an der
+das initiale `Project` entsteht. Die Kennung kommt aber **nicht** aus dem `project-store`: Er fragt den
+`marken-store` **nicht**, er kennt ihn **nicht**. Zusammengesetzt wird eine Schicht höher, im **Handler**
+des Kanals `project:erstelleProjekt` (Main): Der Handler holt die **eingebaute** Marke über
+`listeMarken()` (9.15.1) – den Eintrag mit `eingebaut: true`, den es genau einmal gibt (9.11.2) – und
+reicht deren `id` an `erstelleProjekt` weiter. **Für den Renderer ändert sich nichts:** Er ruft
+`erstelleProjekt(name)` weiterhin **ohne** Marken-Angabe auf; die Marke ist keine Nutzereingabe.
+
+*Begründung – die Richtung der Abhängigkeit ist bindend:* Der `marken-store` liest **bereits** aus dem
+`project-store`. `pruefeMarkenReferenzen` (9.15.1) geht über `listeProjekte` durch die `project.json`
+**aller** Projekte, um Aktionen und Standardmarken-Verweise zu finden. Fragte `erstelleProjekt` nun
+seinerseits beim `marken-store` nach, entstünde ein **Ringschluss zwischen zwei Main-Modulen** – zwei
+Module, die einander gegenseitig aufrufen, sind weder einzeln prüfbar noch einzeln austauschbar, und die
+erste Ladereihenfolge, die jemand ändert, bricht sie. Es gilt deshalb: **`marken-store` → `project-store`,
+nie umgekehrt.** Der Handler ist der richtige Ort, weil er über beiden liegt und keinem gehört – dieselbe
+Rolle, die er bei `setzeStandardMarke` spielt (s. u.).
 
 **Ein beschädigtes Projekt wird MIT WARNHINWEIS gelistet, nicht weggelassen (bindend).** Ist die `project.json` eines Ordners unlesbar oder ungültig **und** lässt sie sich auch nicht aus `project.json.bak` wiederherstellen (9.5.4), erscheint der Eintrag **trotzdem** in der Liste: mit dem **Ordnernamen** als Behelfs-Bezeichnung und `beschaedigt: true`. Die Oberfläche kennzeichnet ihn sichtbar und lässt ihn **nicht öffnen** – ein `öffneProjekt` auf ihn scheitert unverändert nach der Regel aus 9.5.4 (Fehler melden, **nicht** leer weiterstarten).
 
@@ -982,6 +1000,42 @@ ProjektMeta {
 | `setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s** für Bild/Segment) |
 | `setzeEinblendung` | `elementId`, `einblendung` (`Einblendung` **oder** `null`) → `Ergebnis<Listenelement>` – **nur bei `art: "video"`**; setzt Band-Vorlage und Abschnittsfolge in einem Zug (FA-20, 9.2.8). Die Bandhöhe kommt **ausschließlich** aus der Vorlage und ist kein Wert am Listenelement. Wird das Band leer, ist `einblendung = null`; das Videoelement **bleibt** (9.5.3) |
 | `setzeElementReferenz` | `elementId`, `referenz` → `Ergebnis<Listenelement>` – setzt die Referenz eines bestehenden Elements um, **ohne** seine Position und seine `id` zu verlieren. Der Zielbestand folgt der `art`: `video`/`bild` → Asset in `Project.assets` mit passendem `typ`, `segment` → Aktion in `Project.aktionen`. Bei `video` werden `trimStart`/`trimEnde` auf `null` zurückgesetzt, weil sie sich auf die alte Quelllänge bezogen. Trägt die Fix-Optionen „neu verknüpfen/importieren" und „durch ein anderes ersetzen" des Reparatur-Modus (FA-19, 9.7.5) |
+
+**Projekt-Standardmarke (FA-23):**
+
+| Operation | Eingang → Ausgang |
+|---|---|
+| `setzeStandardMarke` | `projektId`, `markeId` → `Ergebnis<Projekt>` – setzt `Project.standardMarkeId` (9.11.3). Prüft die `markeId` **nicht** gegen den Marken-Bestand; das tut der Handler, s. u. Unbekannte `projektId` → `nicht_gefunden` |
+
+**Warum es diese Operation braucht (bindend).** `Project.standardMarkeId` färbt Band-Hintergrund und
+Split-Restflächen (9.15.4) und belegt neue Aktionen vor. Bis v3.10 entstand der Wert **nur** bei der
+Migration (9.15.1) und wurde danach ausschließlich **gelesen** – es gab **keinen** Weg, ihn zu ändern.
+Zusammen mit der Lösch-Sperre aus FA-23 (eine als Standardmarke geführte Marke ist nicht löschbar, s.
+9.15.1) wäre das eine **Sackgasse** gewesen: Der Nutzer erführe, was ihn blockiert, könnte den Grund aber
+nicht beseitigen.
+
+- **Bedient wird sie in der `projekt-verwaltung`** (Reiter [Projekte], 9.14.3), **nicht** im
+  `marken-editor`. *Begründung:* Die Standardmarke ist eine Eigenschaft des **Projekts**; der
+  `marken-editor` verwaltet den **app-weiten Bestand** (9.15.2) und kennt keine Projekte. Ein Wechsel dort
+  müsste fragen, für welches Projekt er gilt – eine Frage, die der Reiter Projekte längst beantwortet hat.
+- **Sie wirkt auch auf ein NICHT geladenes Projekt.** Das ist der Regelfall: Wer eine Marke freibekommen
+  will, muss sie in **allen** Projekten wechseln, die sie führen (`Markennutzung.standardInProjekten`,
+  9.15.1) – und geladen ist immer höchstens **eines** (9.5.1). Ist `projektId` das geladene Projekt, ändert
+  sich der Wert **im Speicher** und die Auto-Speicherung greift wie bei jeder Instant-Operation (9.5.4);
+  sonst wird die fremde `project.json` **unter dem D1-Lock** gelesen, geändert und atomar zurückgeschrieben.
+  Der Rückgabewert ist in beiden Fällen das vollständige, geänderte `Projekt` – bei einem fremden Projekt
+  dient er nur der Rückmeldung und **ersetzt nicht** die gemeinsame Projekt-Sicht des Renderers (9.7.4).
+- **Die `markeId` prüft der Handler, nicht der Store.** Eine Existenzprüfung im `project-store` hieße
+  `project-store` → `marken-store` und schlösse damit genau den **Ring**, den `erstelleProjekt` (s. o.)
+  vermeidet. Der Handler des Kanals `project:setzeStandardMarke` fragt den `marken-store`
+  (`leseMarke(markeId)`, 9.15.1) und gibt dessen `marke_nicht_gefunden` (9.15.5) unverändert weiter; erst
+  danach ruft er den Store. Der Store validiert wie immer die **Form** der Eingabe (9.1.1 Punkt 6).
+- **Nicht undo-fähig.** `standardMarkeId` gehört **nicht** zum `Bearbeitungsstand` (s. u., 9.13.2) – wie
+  `letzterAusgabeName` und `assets`. Ein Undo im `composer` darf die Standardmarke eines **fremden**
+  Projekts nicht mitziehen, und ein Rückweg wäre auch nicht nötig: Der Wechsel ist eine einzelne,
+  sichtbare Wahl in einer Liste, jederzeit wiederholbar.
+- **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `project:setzeStandardMarke`. Ohne Anmeldung im `ipc-gateway`
+  bliebe sie eine Main-Funktion ohne Aufrufer.
 
 **Rückgängig/Wiederherstellen (FA-21):**
 
@@ -1388,7 +1442,10 @@ löseFarbe(farbRolle, marke, aktion) →
 
 #### 9.10.10 Ersatz-Logo, wenn eine Marke keins hat
 
-`Marke.logo` ist seit v3.4 `| null` – bei Werbepartnern der Normalfall. Ist es `null`, zeichnet
+`Marke.logo` ist seit v3.4 `| null` – bei Werbepartnern der Normalfall. **Seit v3.11 ist es der Normalfall
+beim ersten Start:** Auch die **eingebaute** Marke wird mit `logo: null` angelegt, weil in v1 **kein Logo
+mitgeliefert** wird (9.15.1). Dieser Abschnitt beschreibt damit nicht den Sonderfall, sondern das, was der
+Nutzer als erstes sieht – bis er über den Import ein echtes Logo hinterlegt (9.15.3). Ist es `null`, zeichnet
 `template-canvas` in **jeder** Zone mit `bindung: logo` einen **Ersatz**: den **Markennamen**
 (`marke.name`) auf einer Fläche in der **Akzentfarbe der Marke**. Kein leerer Bereich, und **kein**
 fremdes Logo an dieser Stelle – eine geliehene Marke wäre schlimmer als gar keine.
@@ -1486,7 +1543,7 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 **Gemeinsame Basis der eingebauten Vorlagen**
 
 - Raster 1920×1080; Sicherheitsbereich 96/54 → **Inhaltsbox x 96–1824, y 54–1026** (9.10.5).
-- **Logo 420×120**, **oben links** (Seitenverhältnis des Assets ≈ 3,5 : 1; der dunkle Balken ist im Logo-Asset **enthalten** – es braucht keine eigene Hintergrundzone).
+- **Logo 420×120**, **oben links** (Seitenverhältnis des Assets ≈ 3,5 : 1; der dunkle Balken ist im Logo-Asset **enthalten** – es braucht keine eigene Hintergrundzone). **Beim ersten Start gibt es kein Logo-Asset:** Die eingebaute Marke startet mit `logo: null` (9.15.1), die Zone trägt dann das **Ersatz-Logo** (9.10.10). Die Fläche bleibt dieselbe; die Angaben zum Asset gelten, sobald eines importiert ist.
 - Die Zone **`hintergrund`** (fest, dekorativ, Markenfarbe) wird **als erstes** gezeichnet. Grund: das Bild einer Aktion ist **optional** (FA-02) – ohne diese Zone würde eine Aktion ohne Motiv **schwarz** rendern statt markenkonform.
 
 **Eingebaute Vorlage „Vollbild"** *(Zeichenreihenfolge = Tabellenreihenfolge)*
@@ -1634,7 +1691,7 @@ die übrigen achtzehn Aufrufer (9.15.4) ändert sich nichts; sie lesen den Stemp
 
 **Der Wert gehört der MARKE, nicht der Konstanten (v3.6, entschieden).** `Marke.sicherheit` ist seit v3.4 **bearbeitbar** – FA-24 nennt „Sicherheitsabstände" ausdrücklich. Die 96/54 px in 9.11.4 sind damit nur noch die **Vorbelegung der eingebauten Marke**; wer zeichnet oder prüft, liest den Wert aus der **jeweils zuständigen Marke** (9.15.4). **Folge, die beim Bauen zählt:** Vorlagen sind **app-weit** und kennen die Marke nicht, mit der sie später gezeichnet werden – eine für 54 px gebaute Vorlage ist bei einer Marke mit größerem Abstand **nicht mehr sicher**. Der `vorlagen-editor` zeichnet seine Sicherheitslinie deshalb gegen eine **benannte** Marke (die Projekt-Standardmarke bzw. die eingebaute, wenn kein Projekt offen ist) und **sagt dazu, gegen welche** – eine Linie ohne diese Angabe wäre eine Zusage, die die Vorlage nicht halten kann. **Wichtige Folge für Bänder:** Ein Band sitzt am unteren Rahmenrand – die unteren **54 px des Rahmens liegen damit *innerhalb* des Bandes**. Bei einem 162 px hohen Band sind also nur die oberen **108 px** sicher nutzbar; Inhalt darunter kann am TV abgeschnitten werden. Der `vorlagen-editor` zeigt diese Linie an und warnt (9.12.2).
 
-**Marken sind ein app-weiter Bestand und bearbeitbar** (`marken-store`, 9.15.1; FA-23/FA-24). *Bis v3.3 stand hier: „Marke ist in v1 gebündelt und read-only (`config-store.leseMarke`, 9.5.6); ein Marken-Editor ist kein MVP." Beides ist mit v3.4 überholt – die Marke gehört nicht mehr dem `config-store`, und der Editor ist ein Muss.* **Gebündelt bleiben** die vier OFL-Schriften und das Fitnessworld24-Logo; importierte Dateien tragen die Herkunft `importiert` (9.15.3).
+**Marken sind ein app-weiter Bestand und bearbeitbar** (`marken-store`, 9.15.1; FA-23/FA-24). *Bis v3.3 stand hier: „Marke ist in v1 gebündelt und read-only (`config-store.leseMarke`, 9.5.6); ein Marken-Editor ist kein MVP." Beides ist mit v3.4 überholt – die Marke gehört nicht mehr dem `config-store`, und der Editor ist ein Muss.* **Gebündelt bleiben** die vier OFL-Schriften; ein **Logo wird in v1 nicht mitgeliefert** – auch die eingebaute Marke startet mit `logo: null` (9.15.1). Importierte Dateien tragen die Herkunft `importiert` (9.15.3).
 
 #### 9.11.3 `Project` und `Listenelement`
 
@@ -1650,7 +1707,9 @@ Project {
   liste:         Listenelement[] // geordnete Wiedergabeliste
   letzterAusgabeName: string | null  // FA-22: Vorbelegung des Render-Zielnamens; null = noch nie gerendert
   standardMarkeId:    string         // FA-23: färbt Band-Hintergrund und Split-Restflächen und
-                                     //   belegt neue Aktionen vor. Beim Anlegen die eingebaute Marke
+                                     //   belegt neue Aktionen vor. Pflicht; beim Anlegen die eingebaute
+                                     //   Marke (vom Handler zugeliefert), danach wechselbar über
+                                     //   setzeStandardMarke (9.5.2)
 }
 
 Listenelement {
@@ -1885,6 +1944,19 @@ Vorlage X bearbeiten
 
 **Ist:** die Liste der Projekte (`listeProjekte`, 9.5.2) mit Name, Datum und **Beschädigt-Kennzeichnung**; die Bedienung der fünf Vorgänge über die Operationen des `project-store`; die **Lösch-Bestätigung**, die Name, Medienzahl, Ausgabenzahl und die Unumkehrbarkeit nennt (9.5.2); der Knopf **„Ordner öffnen"** (`öffneProjektordner`, 9.5.2), vor allem beim beschädigten Projekt.
 
+**Dazu seit v3.11 ein weiterer Vorgang: die Projekt-Standardmarke wechseln.** Die Aufzählung der **fünf**
+Vorgänge oben beschreibt den **Lebenszyklus** des Projekts; daneben tritt eine Einstellung **am** Projekt:
+`Project.standardMarkeId` (9.11.3) über **`setzeStandardMarke`** (9.5.2). Angeboten wird sie je Eintrag der
+Projektliste – der Nutzer sieht die aktuelle Marke und wählt eine andere aus dem app-weiten Bestand
+(`listeMarken`, 9.15.1).
+
+*Warum hier und nicht im `marken-editor`:* Die Standardmarke ist eine Eigenschaft des **Projekts**; der
+Marken-Editor führt den app-weiten **Bestand** und kennt keine Projekte (9.15.2). Vor allem aber ist dies der
+**Ausweg aus der Lösch-Sperre**: `löscheMarke` blockiert, solange ein Projekt die Marke als Standard führt
+(9.15.1), und nennt die betroffenen Projekte **namentlich**. Ohne eine Stelle, an der sich der Wechsel
+vollziehen lässt, wäre die Sperre eine Sackgasse – und weil in der Regel **mehrere**, nicht geladene Projekte
+betroffen sind, muss der Wechsel hier möglich sein, ohne jedes davon vorher zu öffnen.
+
 **Ist NICHT:** kein Dateisystem-Zugriff, keine absoluten Pfade (die Pfad-Autorität ist der `project-store`, 9.5.7), keine eigene Reparatur einer defekten `project.json`, kein Verzeichnis-Browser in der App.
 
 **Invarianten (bindend):**
@@ -1893,6 +1965,7 @@ Vorlage X bearbeiten
 - **Kein Löschen ohne die drei Angaben.** Name, Anzahl Medien und Anzahl Ausgabedateien stammen aus `ProjektMeta` (9.5.2) und werden **nicht** in der Oberfläche nachgezählt.
 - **Beim Öffnen eines Projekts wechselt die Shell in den Reiter Zusammenstellen** – der Nutzer landet dort, wo er weiterarbeitet, statt in der Liste stehen zu bleiben.
 - **Der Reiter Projekte bleibt ohne offenes Projekt voll benutzbar.** Er ist die Einstiegsstelle beim Start ohne wiederherstellbares Projekt (9.14.2, 9.5.6) – als einziger Reiter zeigt er dann keinen Hinweis, sondern Inhalt.
+- **Der Marken-Wechsel setzt kein geladenes Projekt voraus.** `setzeStandardMarke` bekommt die `projektId` mitgegeben (9.5.2) und wirkt auch auf ein **nicht geladenes** Projekt. Müsste der Nutzer jedes betroffene Projekt erst öffnen, wäre der Ausweg aus der Lösch-Sperre so mühsam, dass er ihn nicht nutzt – und für ein **beschädigtes** Projekt gäbe es ihn gar nicht. Ein beschädigtes Projekt bleibt auch hier ausgenommen: Seine `project.json` ist nicht lesbar, also ist der Wechsel dort **deaktiviert**, nicht stillschweigend wirkungslos.
 
 ### 9.15 Marken-Verwaltung: `marken-store` [Main] und `marken-editor` [Renderer]
 
@@ -1914,6 +1987,23 @@ verschluckt – über einen **eigenen** Kanal `marken:autoSpeichernStatus`, glei
 ist nicht gesichert" von „dein Projekt ist nicht gesichert" unterscheiden muss – der Bestand ist app-weit
 und hängt nicht am geladenen Projekt.
 
+**Scheitert der Sofort-Flush von `marken.json` beim BEENDEN, schließt die App NICHT (v3.11, bindend).**
+„Dieselben Schreib-Invarianten wie 9.5.4" ließ genau diesen Fall offen; er wird deshalb hier
+ausgeschrieben. Es gilt **dieselbe** Regelung wie für `project.json` (9.5.4) – in derselben Reihenfolge:
+(1) **Die App schließt nicht**, das Beenden wird abgebrochen, die Änderungen bleiben **im Speicher** (kein
+Rollback). (2) Der Fehler wird **mit einer auf die Ursache zugeschnittenen Handlungsempfehlung** gezeigt,
+nicht als roher Fehlertext („Die Platte ist voll…", „Der Speicherort ist nicht erreichbar…"). (3) Ein Knopf
+**„Erneut versuchen"** stößt denselben Schreibversuch neu an; gelingt er, schließt die App wie geplant.
+(4) Daneben der ausdrücklich benannte Ausweg **„Trotzdem schließen und Änderungen verwerfen"** – als
+Verlust benannt, nicht als „Abbrechen" getarnt.
+
+**Quelle ist 9.5.4, nicht dieser Absatz.** Er schreibt die dortige Festlegung nur für `marken.json` aus,
+damit sie nicht geraten werden muss; **eine zweite, eigene Regelung entsteht damit ausdrücklich nicht**.
+*Begründung, warum überhaupt dasselbe Verhalten gilt:* Der Marken-Bestand ist **app-weit** und hat in v1
+**kein Undo** (9.15.2) – eine über Minuten aufgebaute Marke wäre beim stillen Schließen restlos weg, und
+die häufigsten Ursachen (volle Platte, abgezogener Datenträger mit dem Datenort) behebt der Nutzer in
+einer Minute. Genau dafür ist der **Wiederholen-Knopf** der eigentliche Wert.
+
 | Operation | Eingang → Ausgang |
 |---|---|
 | `listeMarken` | – → `Ergebnis<Marke[]>` – **aufgelöst**, einschließlich abgeleiteter, je samt `herkunftJeFeld` |
@@ -1922,8 +2012,42 @@ und hängt nicht am geladenen Projekt.
 | `bearbeiteMarke` | `markeId`, `teilwerte` → `Ergebnis<Marke>` – **Auto-Speichern** während des Bearbeitens |
 | `importiereMarkenDatei` | `markeId`, `art: "logo"\|"schrift"`, `schriftRolle?`, `quellPfad` → `Ergebnis<Marke>` (kopiert nach `marken-assets/<markeId>/`, 9.15.3) |
 | `entferneMarkenDatei` | `markeId`, `art`, `schriftRolle?` → `Ergebnis<Marke>` – zurück auf den geerbten bzw. gebündelten Wert |
-| `löscheMarke` | `markeId` → `Ergebnis<void>`; im Fehlerfall Code `marke_referenziert` mit **beiden** Trefferlisten: betroffene **Aktionen** (je mit Projekt) und betroffene **abgeleitete Marken** |
+| `löscheMarke` | `markeId` → `Ergebnis<void>`; im Fehlerfall Code `marke_referenziert` mit **allen drei** Trefferlisten: betroffene **Aktionen** (je mit Projekt), betroffene **abgeleitete Marken** und die **Projekte**, die die Marke als **Standardmarke** führen |
 | `pruefeMarkenReferenzen` | `markeId` → `Ergebnis<Markennutzung>` – **rein lesend**: ermittelt über **alle** Projekte, wer die Marke nutzt; speist die Warnung **vor** dem Löschen |
+
+**Der Ausgang `Markennutzung` – und warum er DREI Listen führt (bindend).** Wie bei den Vorlagen ist der
+Typ **kein zweiter**: `Markennutzung` ist genau das, was `löscheMarke` im Fehlerfall als `fehler.daten`
+des Codes `marke_referenziert` trägt (9.1.1, 9.15.5) – derselbe Weg, den `asset_referenziert` (9.4.9) und
+`vorlage_referenziert` (9.12.1) nehmen. Zwei Zählungen liefen unweigerlich auseinander, und die harmlosere
+von beiden wäre die falsche.
+
+```
+MarkenReferenz {             // ein Fundort in einem Projekt
+  projektId:   string
+  projektName: string        // für die Meldung „… in 2 Projekten"
+  id:          string        // Aktions-ID des Treffers
+}
+
+Markennutzung {
+  aktionen:            MarkenReferenz[]                  // Treffer über aktion.markeId
+  abgeleiteteMarken:   { id: string, name: string }[]     // Marken mit parent = dieser markeId
+  standardInProjekten: { projektId: string, projektName: string }[]
+                                                          // Treffer über Project.standardMarkeId
+}
+```
+
+**Die dritte Liste ist der Grund, warum diese Fassung entstand (v3.11).** Bis v3.10 kannte die Prüfung nur
+Aktionen und abgeleitete Marken. Eine Marke, die ein Projekt als **Standardmarke** führt
+(`Project.standardMarkeId`, 9.11.3), galt damit als **frei** und war löschbar – der nächste Render dieses
+Projekts liefe in `marke_nicht_gefunden`, und zwar an der Stelle, an der die Marke den **Rahmen** färbt
+(Band-Hintergrund und Split-Restflächen, 9.15.4): mitten in der Hauptbetriebsart. FA-23 nennt seit
+Anforderungsdokument v1.4 deshalb **drei** Bedingungen.
+
+**Namentlich, nicht als Zahl.** Alle drei Listen tragen Namen, nicht nur Anzahlen – bei
+`standardInProjekten` den **Projektnamen**. Ohne ihn stünde der Nutzer vor „geht nicht, 2 Projekte" und
+wüsste nicht, **welche**; die Sperre wäre eine Sackgasse. Den Ausweg baut `setzeStandardMarke` (9.5.2):
+Der Editor kann von hier aus in die `projekt-verwaltung` verweisen, wo sich die Standardmarke wechseln
+lässt.
 
 **Invarianten (bindend):**
 
@@ -1943,15 +2067,32 @@ und hängt nicht am geladenen Projekt.
   Teilmenge heraus, die der Punkt oben verbietet, und wäre nur durch die Disziplin von neunzehn
   Aufrufern davor geschützt, versehentlich statt `leseMarke` benutzt zu werden.
 - **Löschen blockiert bei Referenz**, es kaskadiert **nicht** – wie bei den Vorlagen (9.12.1). Eine
-  Marke steckt in Aktionen **und** möglicherweise in abgeleiteten Looks; eine Kaskade änderte das
-  Aussehen vieler Aktionen auf einen Schlag. Geprüft wird über **alle** Projekte, nicht nur das
-  geladene.
+  Marke steckt in Aktionen, **möglicherweise in abgeleiteten Looks** und **möglicherweise als
+  Standardmarke eines Projekts**; eine Kaskade änderte das Aussehen vieler Aktionen auf einen Schlag.
+  Geprüft wird über **alle** Projekte, nicht nur das geladene, und über **alle drei** Referenzarten
+  (s. `Markennutzung` oben): `aktion.markeId`, `Marke.parent` und `Project.standardMarkeId`. **Wer die
+  dritte vergisst, hält eine benutzte Marke fälschlich für frei** – der Fehler zeigt sich erst beim
+  nächsten Render des betroffenen Projekts, nicht beim Löschen.
 - **Die eingebaute Marke ist nie löschbar** (`eingebaut: true`): Sie ist der Projekt-Standard und die
   Basis der abgeleiteten Looks. **Bearbeitbar ist sie aber** – anders als die eingebauten Vorlagen, die
   eingefroren sind (9.12.1). *Begründung der Abweichung:* Ändert Fitnessworld24 sein Erscheinungsbild,
   soll das ohne Umweg möglich sein und **in allen abgeleiteten Looks wirken**; ein eingefrorenes
   Original hätte eine Kopie daneben erzeugt und das Original veralten lassen. Preis: Es gibt keinen
   garantierten Urzustand, auf den man zurücksetzen kann.
+- **Auch die EINGEBAUTE Marke startet mit `logo: null` (v3.11).** Im Repository liegt **keine gebündelte
+  Logo-Datei** – `tools/assets/logo.png` gehört zur Word-Erzeugung der Planungsdokumente und ist **kein**
+  App-Bestandteil. Die eingebaute Fitnessworld24-Marke wird deshalb **ohne** Logo angelegt; gezeichnet
+  wird das **Ersatz-Logo** (9.10.10) aus Markenname und Akzentfarbe. Ein echtes Logo kommt später über
+  `importiereMarkenDatei` und trägt dann `herkunft: "importiert"` (9.15.3). Folge für den Stempel:
+  `herkunftJeFeld.logo` ist **`"keins"`** (9.11.2).
+  **Folge, die man kennen muss: `logo.herkunft` kann in v1 praktisch nur `"importiert"` sein.** Der Wert
+  `"gebuendelt"` bleibt im Typ – für **Schriften** ist er der Regelfall (die vier OFL-Schriften werden
+  mitgeliefert, 9.10.4) –, hat aber für **Logos** in v1 **keinen Erzeuger**. Wer einen Zweig „gebündeltes
+  Logo" baut, baut toten Code.
+  *Der Nebeneffekt ist eine Verbesserung:* Der Zweig `logo === null` war bisher **strukturell tot**. Hätte
+  die eingebaute Marke ein Logo mitgebracht und jede abgeleitete es geerbt, wäre der Fall nie eingetreten
+  – der ganze in 9.10.10 spezifizierte Ersatz-Logo-Pfad wäre gebaut und **nie ausgeführt** worden. Jetzt
+  ist er der **Normalfall beim ersten Start**.
 - **Eine neu angelegte EIGENSTÄNDIGE Marke bekommt `logo: null` (v3.10).** `erstelleMarke` übernimmt
   die Wertfelder der eingebauten Marke als tiefe Kopie – Farben, Schriften, Abstände, Radien,
   Schatten, Slogan –, **das Logo aber nicht**. *Begründung:* Sonst trüge jede Partner-Marke ab
@@ -1963,7 +2104,7 @@ und hängt nicht am geladenen Projekt.
   deren Marke selbst einen Parent hat, wird mit `ungueltige_eingabe` abgewiesen.
 - **`schemaVersion` und Migration** wie 9.5.5. **Für den Übergang von v3.3 wichtig:** Die bisher in
   `config.json` geführte Marke war ein **namenloses Wertobjekt**. Die Migration legt daraus die
-  eingebaute Marke in `marken.json` an (`eingebaut: true`, `parent: null`, neue `id`), setzt
+  eingebaute Marke in `marken.json` an (`eingebaut: true`, `parent: null`, **`logo: null`**, neue `id`), setzt
   `Project.standardMarkeId` und `Aktion.markeId` aller Projekte darauf und entfernt das Feld aus
   `config.json`.
 - **Nur der Main** berührt das Dateisystem; der Renderer bekommt Marken über IPC und importierte
@@ -2006,8 +2147,11 @@ späteren Segment entspricht (9.10.1).
   früh erscheinende Warnung nichts außer einem Hinweis. **Die Zahl steht an genau einer Stelle** –
   weder `kontrastVerhaeltnis` noch der Editor führen eine eigene.
 - **Löschen fragt vorher.** Vor `löscheMarke` zeigt der Editor das Ergebnis von
-  `pruefeMarkenReferenzen`: welche Aktionen in welchen Projekten und welche abgeleiteten Looks
-  betroffen sind.
+  `pruefeMarkenReferenzen`: welche Aktionen in welchen Projekten, welche abgeleiteten Looks und
+  **welche Projekte die Marke als Standardmarke führen** (alle drei Listen, 9.15.1). Für die dritte
+  Liste verweist er auf den Reiter **Projekte**: Dort – und nur dort – lässt sich die Standardmarke
+  wechseln (`setzeStandardMarke`, 9.5.2, 9.14.3). Ohne diesen Hinweis stünde der Nutzer vor einer
+  Sperre, deren Grund er im Marken-Editor nicht beseitigen kann.
 - **Kein Undo für den Marken-Bestand in v1.** Undo/Redo deckt Projekt-Bearbeitung und Vorlagen-Editor
   ab (9.13); der Marken-Editor käme als dritte Historie hinzu. Stattdessen gilt hier der `.bak`-Schutz
   des Stores. *(Bewusste Grenze – wenn sie störend wird, ist es eine eigene Entscheidung.)*
@@ -2019,8 +2163,11 @@ Bis v3.3 verwiesen `Schrift.datei` und `logo.datei` auf **zur Bauzeit gebündelt
 angelegte Marke hätte dort **keine Datei, auf die sie zeigen könnte**. Deshalb trägt jede Datei-Referenz
 jetzt eine **`herkunft`** (9.11.2).
 
-- **Zwei Herkünfte, eine Auflösung.** `gebuendelt` löst auf den Bundle-Pfad auf (die vier OFL-Schriften,
-  das Fitnessworld24-Logo), `importiert` auf `marken-assets/<markeId>/`. Der Renderer bekommt
+- **Zwei Herkünfte, eine Auflösung.** `gebuendelt` löst auf den Bundle-Pfad auf – in v1 sind das **die
+  vier OFL-Schriften und sonst nichts**: Ein **Logo wird nicht mitgeliefert**, auch die eingebaute Marke
+  startet mit `logo: null` (9.15.1). `"gebuendelt"` bleibt am Typ `Herkunft` (9.11.2), hat für **Logos**
+  in v1 aber **keinen Erzeuger**; ein Logo trägt praktisch immer `"importiert"`. Dieses löst auf
+  `marken-assets/<markeId>/` auf. Der Renderer bekommt
   importierte Dateien über ein **Lese-Protokoll** wie die Projektmedien (`media://`, 9.5.7) und **nie**
   über absolute Pfade. **Genau eine** Stelle löst auf – nicht jede Zonen-Sorte einzeln.
 - **Das Protokoll heißt `marken://<markeId>/<dateiname>` (v3.6, entschieden).** Gleiche Bauart und
@@ -2063,6 +2210,13 @@ jetzt eine **`herkunft`** (9.11.2).
 `#77`, `#112`, `#119`, `#134`, `#139`, `#140`, `#150`, `#154`, `#164`, `#176`, `#177`, `#181`, `#196`,
 `#197`, `#216`, `#218`, `#221`, `#239`, `#262`.
 
+**Zwei Aufrufer sind in dieser Zählung NICHT enthalten**, weil sie erst mit v3.11 entstehen: die beiden
+**Handler** im Main, die dem `project-store` die Marken-Kennung zuliefern – `project:erstelleProjekt`
+(holt über `listeMarken()` die eingebaute Marke) und `project:setzeStandardMarke` (prüft die gewählte
+`markeId` über `leseMarke`). Sie stehen bewusst **im Handler** und nicht im `project-store`: Der
+`marken-store` liest bereits aus dem `project-store` (`pruefeMarkenReferenzen`), die Gegenrichtung wäre
+ein **Ringschluss** (9.5.2).
+
 Woher der Kontext kommt, ist **nicht** frei wählbar:
 
 | Wer zeichnet | Marke |
@@ -2084,7 +2238,7 @@ Identität und Rahmen sind stabil.
 
 | Fehlercode | Ursache |
 |---|---|
-| `marke_referenziert` | Löschen abgelehnt – Aktionen und/oder abgeleitete Marken nutzen sie noch (mit beiden Trefferlisten) |
+| `marke_referenziert` | Löschen abgelehnt – Aktionen, abgeleitete Marken und/oder Projekte, die sie als **Standardmarke** führen, nutzen sie noch. `fehler.daten` trägt die vollständige `Markennutzung` mit **allen drei** Trefferlisten (9.15.1, 9.1.1) |
 | `marke_eingebaut` | Löschen der eingebauten Marke versucht |
 | `marke_nicht_gefunden` | unbekannte `markeId` |
 | `ungueltige_eingabe` | unbekannte Rolle, Ableitungskette länger als eine Stufe, Datei nicht in der Whitelist |
@@ -2098,6 +2252,18 @@ Identität und Rahmen sind stabil.
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.11 (11.08.2026), vom Auftraggeber entschieden – fünf Befunde rund um die Projekt-Standardmarke und das eingebaute Logo:**
+>
+> 1. **Die Projekt-Standardmarke blockiert das Löschen einer Marke – und ist dafür ZUWEISBAR** (9.15.1, 9.5.2, 9.14.3, 9.15.2; Anforderungsdokument FA-23 und 4.8). *Anlass:* FA-23 nannte **zwei** Löschbedingungen (keine Aktion, keine abgeleitete Marke); `Project.standardMarkeId` fehlte in der Aufzählung. Eine so genutzte Marke war damit **löschbar**, und der nächste Render des betroffenen Projekts liefe in `marke_nicht_gefunden` – ausgerechnet dort, wo die Marke den **Rahmen** färbt (9.15.4), also mitten in der Hauptbetriebsart. *Warum die Zuweisbarkeit zwingend dazugehört:* `standardMarkeId` entstand bis v3.10 **nur** bei der Migration und wurde danach ausschließlich **gelesen**. Eine Sperre ohne Änderungsweg wäre eine **Sackgasse** – die Marke ließe sich nie löschen, weil sich der Grund nicht beseitigen ließe. Neue Operation **`setzeStandardMarke(projektId, markeId)`** → `Ergebnis<Projekt>` im `project-store`, bedient in der **`projekt-verwaltung`** (Reiter [Projekte]) und **nicht** im `marken-editor`: Die Standardmarke ist eine Eigenschaft des **Projekts**, der Editor führt den app-weiten **Bestand** und kennt keine Projekte. Mitentschieden: Sie wirkt auch auf ein **nicht geladenes** Projekt (der Regelfall – betroffen sind mehrere, geladen ist höchstens eines), sie ist **nicht undo-fähig** (`standardMarkeId` gehört nicht zum `Bearbeitungsstand`), und sie bekommt einen eigenen Kanal `project:setzeStandardMarke`.
+>
+> 2. **`Markennutzung` bekommt eine DRITTE Trefferliste** – `standardInProjekten` (9.15.1, mitgezogen 9.15.5, 9.1.1, 9.15.2). Der Typ war bis hierher **nirgends ausgeschrieben**: Er stand als Rückgabe von `pruefeMarkenReferenzen` in der Operationstabelle, seine Form kannte niemand – der erste Agent hätte sie erfunden, der zweite eine andere. Jetzt steht er neben `Vorlagennutzung` (9.12.1) als **derselbe** Typ, den `marke_referenziert` als `fehler.daten` trägt; **kein zweiter Typ**, denn zwei Zählungen laufen auseinander und die harmlosere wäre die falsche. Die Treffer kommen **namentlich**, bei der neuen Liste mit dem **Projektnamen**: „geht nicht, 2 Projekte" ohne Angabe **welche** wäre genau die Sackgasse aus Punkt 1.
+>
+> 3. **`erstelleProjekt` bekommt die Marken-Kennung als PARAMETER – der Handler holt sie** (9.5.2, mitgezogen 9.11.3, 9.15.4). *Anlass:* `Project.standardMarkeId` ist ein **Pflichtfeld ohne Befüller** – `erstelleProjekt` baut das initiale `Project` und weiß von keiner Marke. *Warum der naheliegende Ausweg verboten ist:* Der `marken-store` liest **bereits** aus dem `project-store` – `pruefeMarkenReferenzen` geht über `listeProjekte` durch die `project.json` **aller** Projekte. Fragte `erstelleProjekt` seinerseits beim `marken-store` nach, entstünde ein **Ringschluss zwischen zwei Main-Modulen**: weder einzeln prüfbar noch einzeln austauschbar, und die erste geänderte Ladereihenfolge bricht sie. Zusammengesetzt wird deshalb **eine Schicht höher, im Handler** des Kanals `project:erstelleProjekt`; er holt die eingebaute Marke über `listeMarken()` (den Eintrag mit `eingebaut: true`) und reicht die `id` weiter. **Für den Renderer ändert sich nichts** – er ruft weiterhin ohne Marken-Angabe auf. Bindend festgehalten ist die Richtung: **`marken-store` → `project-store`, nie umgekehrt.** Aus demselben Grund prüft auch `setzeStandardMarke` die `markeId` **nicht** selbst – das tut ihr Handler.
+>
+> 4. **Die eingebaute Marke startet mit `logo: null`** (9.15.1, mitgezogen 9.10.10, 9.11.1, 9.11.2, 9.15.3). *Anlass:* Im Repository gibt es **keine gebündelte Logo-Datei** – `tools/assets/logo.png` gehört zur Word-Erzeugung der Planungsdokumente und ist kein App-Bestandteil. Gezeichnet wird das **Ersatz-Logo** (9.10.10) aus Markenname und Akzentfarbe; ein echtes Logo kommt später über den **Import** und trägt dann `herkunft: "importiert"`. **Festgehalten, weil es nicht offensichtlich ist:** In v1 wird **kein Logo gebündelt ausgeliefert**, `logo.herkunft` kann also praktisch nur `"importiert"` sein. Der Wert `"gebuendelt"` bleibt am Typ – für **Schriften** ist er der Regelfall (vier OFL-Schriften) –, hat für **Logos** aber **keinen Erzeuger**; wer dort einen Zweig baut, baut toten Code. *Der Nebeneffekt ist eine Verbesserung:* Der Zweig `logo === null` war bisher **strukturell tot** – hätte die eingebaute Marke ein Logo mitgebracht und jede abgeleitete es geerbt, wäre der Fall nie eingetreten und der ganze in 9.10.10 spezifizierte Pfad gebaut und **nie ausgeführt** worden. Jetzt ist er der **Normalfall beim ersten Start**.
+>
+> 5. **Das Beenden-Verhalten für `marken.json` ist ausgeschrieben** (9.15.1). 9.15.1 sagte zu den Schreib-Invarianten nur, sie seien „dieselben" wie bei `project.json` – für den **Fehlschlag des Sofort-Flushes beim Beenden** war das zu wenig, und ein Issue führte die Frage bis heute als offen. Es gilt **dasselbe** Verhalten wie in 9.5.4, in derselben Reihenfolge: App schließt nicht; Fehler mit ursachenbezogener Handlungsempfehlung; Knopf „Erneut versuchen"; daneben der benannte Ausweg „Trotzdem schließen und Änderungen verwerfen". **Quelle bleibt 9.5.4** – hier steht kein zweiter Vertrag, nur ein zweiter Fundort, damit die beiden nicht auseinanderlaufen können. **An 9.5.4 ist nichts geändert.**
 >
 > **Nachgezogen in v3.10 (11.08.2026), vom Auftraggeber entschieden – aus dem zweiten Prüflauf über M8:**
 >
