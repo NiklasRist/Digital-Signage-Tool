@@ -213,7 +213,14 @@ function sortiere(dateien: AusgabeDatei[]): AusgabeDatei[] {
 function istFertigeAusgabe(dateiname: string): boolean {
   return (
     dateiname.length > AUSGABE_ENDUNG.length &&
-    dateiname.toLowerCase().endsWith(AUSGABE_ENDUNG)
+    // EXAKT klein geschrieben, kein toLowerCase() (geaendert 12.08.2026).
+    // Eine als `datei.MP4` gelistete Datei waere NICHT exportierbar: Der Export loest seine
+    // Quelle ueber loeseAusgabePfad (#49) auf, und das haengt immer ein klein geschriebenes
+    // `.mp4` an - auf macOS zeigt das ins Leere. Auf Windows faellt es nicht auf, weil das
+    // Dateisystem die Schreibweise ignoriert. Eine Datei zu zeigen, die beim Anklicken mit
+    // nicht_gefunden scheitert, ist schlechter, als sie wegzulassen; der Render erzeugt
+    // ohnehin nur klein geschriebene Namen.
+    dateiname.endsWith(AUSGABE_ENDUNG)
   )
 }
 

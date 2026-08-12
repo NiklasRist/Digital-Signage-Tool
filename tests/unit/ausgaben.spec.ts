@@ -106,14 +106,19 @@ describe('listeAusgaben (#75)', () => {
     expect(e.wert.map((d) => d.dateiname)).toEqual(['fertig.mp4'])
   })
 
-  it('zaehlt eine grossgeschriebene Endung mit', async () => {
+  it('laesst eine grossgeschriebene Endung weg', async () => {
+    // Umgekehrt am 12.08.2026: Eine als datei.MP4 gelistete Datei waere nicht
+    // exportierbar - loeseAusgabePfad (#49) haengt immer klein geschriebenes .mp4 an,
+    // und auf macOS zeigt das ins Leere. Lieber nicht zeigen als beim Anklicken
+    // scheitern lassen.
+    //
+    // Nur EINE Datei anlegen: Auf Windows ist das Dateisystem schreibungsblind, ein
+    // zweites legeAn('datei.mp4') traefe dieselbe Datei und behielte den alten Namen.
     await fsp.mkdir(ordner(), { recursive: true })
     await legeAn('datei.MP4')
 
     const e = await listeAusgaben(PROJEKT)
-    expect(e.ok).toBe(true)
-    if (!e.ok) return
-    expect(e.wert.map((d) => d.dateiname)).toEqual(['datei.MP4'])
+    expect(e).toEqual({ ok: true, wert: [] })
   })
 
   it('liefert bei fehlendem Ordner eine leere Liste und legt ihn NICHT an', async () => {
