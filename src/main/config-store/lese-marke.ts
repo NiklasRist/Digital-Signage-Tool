@@ -14,6 +14,7 @@
 // GERUEST-PRUEFSUMME: 1472e46a1bc56eaa
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import { SICHERHEITSABSTAND_PX } from '../../shared/contracts/konstanten'   // #21
 import type { Marke } from '../../shared/contracts/marke'
 
 // WOHER DIE MARKENDATEN KOMMEN - der STOPP-Punkt des Issues, hier beantwortet und
@@ -90,7 +91,10 @@ const MARKE: Marke = friereTief<Marke>({
   // erst, sobald das echte Asset vorliegt: Passt es nicht, wird das Logo sichtbar
   // gestaucht, ohne dass ein Typecheck etwas meldet.
   logo: { datei: 'logo-fitnessworld24.png', seitenverhaeltnis: 3.5 },
-  sicherheit: { horizontal: 96, vertikal: 54 },   // 5 % Innenabstand im 1920x1080-Rahmen
+  // Die Konstante selbst, nicht ihre Zahlen (12.08.2026): Seit #52 lautet der Typ
+  // `typeof SICHERHEITSABSTAND_PX`, ein abweichendes Literal faellt also schon im
+  // Typecheck durch. Der direkte Verweis macht daraus Gleichheit statt Uebereinstimmung.
+  sicherheit: SICHERHEITSABSTAND_PX,
   radien: { pille: 40, karte: 10, klein: 2 },
   schatten: { versatzY: 4, weichzeichnen: 8, farbe: '#0000001A' },
   // PLATZHALTER, ungeklaert: TK 9.11.2 gibt nur die FORM vor, keinen Text; der Satz im

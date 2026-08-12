@@ -66,7 +66,7 @@ import { aendereKonfig, type ConfigFehlercode } from './schreibe-config'   // #3
  * NICHT GEPRUEFT wird, ob es das Projekt gibt - das ist laut Issue Sache des Aufrufers
  * (i. d. R. direkt nach erfolgreichem `oeffneProjekt`, #34).
  */
-export async function setzeAktivesProjekt(projektId: string): Promise<Ergebnis<void, ConfigFehlercode>> {
+export async function setzeAktivesProjekt(projektId: string | null): Promise<Ergebnis<void, ConfigFehlercode>> {
   // Validieren VOR jeder Wirkung. Die Typangabe allein genuegt nicht: Der Wert kommt ueber die
   // IPC-Grenze und ist dort zur Laufzeit alles Moegliche. Ein leerer String waere besonders
   // heimtueckisch - er landete klaglos in config.json und der naechste Start suchte ein Projekt
@@ -74,7 +74,11 @@ export async function setzeAktivesProjekt(projektId: string): Promise<Ergebnis<v
   //
   // `trim` dient allein dem Erkennen von "leer"; gespeichert wird der Wert UNVERAENDERT. Der
   // config-store ist nicht die ID-Autoritaet (#20) und darf eine fremde Kennung nicht umschreiben.
-  if (typeof projektId !== 'string' || projektId.trim() === '') {
+  // `null` ist ein GUELTIGER Zustand, kein Fehler: AppKonfig.aktivesProjektId ist
+  // `string | null` (#265), und nach dem Loeschen des offenen Projekts (#37) muss ihn
+  // jemand herstellen koennen. Bis zum 12.08.2026 gab es dafuer keinen Weg.
+  // Der leere String bleibt ungueltig - wer nichts offen haben will, uebergibt `null`.
+  if (projektId !== null && (typeof projektId !== 'string' || projektId.trim() === '')) {
     return {
       ok: false,
       fehler: {
