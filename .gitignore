@@ -74,4 +74,10 @@ Desktop.ini
 /vorlagen.json.bak
 /protokoll.json
 /warteschlangen-journal.json
+# Ergaenzt 12.08.2026 beim Bau von #51: Die Einzel-Instanz-Sperre legt beide Dateien im
+# DATENORT an - im Entwicklungslauf ist das das Arbeitsverzeichnis, also die Repo-Wurzel.
+# instanz.lock bleibt nach dem Beenden absichtlich liegen (sie loest sich ueber den
+# freigegebenen Handle von selbst auf, nicht ueber Loeschen), waere also dauerhaft sichtbar.
+/instanz.lock
+/instanz.signal
 docs/agents/*/bodies/
