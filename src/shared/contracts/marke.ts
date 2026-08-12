@@ -13,6 +13,8 @@
 // stehen; ihr Nichtmehrstimmen IST das Signal.
 // GERUEST-PRUEFSUMME: 8e919beac5429d9c
 
+import { SICHERHEITSABSTAND_PX } from './konstanten'   // #21
+
 export type FarbRolle =
   | 'akzent' | 'akzentKraeftig' | 'akzentTief'
   | 'flaecheDunkel' | 'flaecheSehrDunkel' | 'flaecheHell' | 'flaecheAkzentZart'
@@ -31,7 +33,12 @@ export interface Marke {
   farben: Record<FarbRolle, string>       // Hex, 6- oder 8-stellig (8 = mit Alpha)
   schriften: Record<SchriftRolle, Schrift>
   logo: { datei: string; seitenverhaeltnis: number }   // Balken ist im Asset enthalten
-  sicherheit: { horizontal: 96; vertikal: 54 }          // absolute px im 1920×1080-Rahmen
+  // VERWEIS statt Wiederholung (12.08.2026): Bis dahin standen 96/54 hier ein zweites Mal als
+  // Literaltyp - und DoD-Punkt 2 von #21 verbietet genau das. Per `typeof` sind es nicht mehr
+  // zwei gleich gehaltene Werte, sondern DERSELBE; ein Auseinanderlaufen ist damit strukturell
+  // unmoeglich. Waeren sie auseinandergelaufen, haette template-canvas mit einem anderen
+  // Sicherheitsabstand GEZEICHNET, als der Rest PRUEFT - ohne dass etwas bricht.
+  sicherheit: typeof SICHERHEITSABSTAND_PX
   radien: { pille: 40; karte: 10; klein: 2 }
   schatten: { versatzY: 4; weichzeichnen: 8; farbe: string }
   slogan: { text: string; aktiv: boolean }
