@@ -21,4 +21,17 @@ export const KANAELE = {
   // Beispiel-Einträge, tatsächliche Liste wächst mit M2-M7:
   // media: { importMedium: 'media:importMedium', ... },
   // auftrag: { reiheEin: 'auftrag:reiheEin', geaendert: 'auftrag:geaendert' },
+
+  // config-store (#77). Die fünf Namen ENTSTEHEN hier und nirgends sonst; die
+  // Verdrahtung (src/main/ipc-gateway/config-store-verdrahtung.ts) und die
+  // Renderer-Seite lesen sie beide von hier. Präfix `config:` nach dem Muster
+  // `<modul>:<operation>`, Modulname `config-store` → `config`.
+  // KEIN Schreibkanal für die Marke: `leseMarke` ist nur lesend (TK 9.5.6).
+  config: {
+    leseKonfig: 'config:leseKonfig',
+    setzeAktivesProjekt: 'config:setzeAktivesProjekt',
+    setzeExportZiel: 'config:setzeExportZiel',
+    leseMarke: 'config:leseMarke',
+    setzeUIVoreinstellung: 'config:setzeUIVoreinstellung',
+  },
 } as const
