@@ -30,6 +30,7 @@ import path from 'node:path'
 import { erzeugeId } from '../../shared/contracts/id'
 import { AKTUELLE_SCHEMA_VERSION } from '../../shared/contracts/konstanten'
 
+import { merkeAktivesProjekt } from './aktives-projekt'          // #192
 import { mitD1Lock } from './d1-lock'
 import { medienOrdner, projektOrdner } from './pfade'
 import { schreibeProjekt } from './schreibe-projekt'
@@ -170,6 +171,12 @@ export async function erstelleProjekt(name: string): Promise<Ergebnis<Project, P
       return { ok: false, fehler: geschrieben.fehler }
     }
 
+    // Das neue Projekt IST ab jetzt das aktive (so verlangt es die Beschreibung dieses
+    // Issues). Der Halter dafuer wurde am 12.08.2026 in #192 nachgetragen; bis dahin gab es
+    // im ganzen Bestand keine Stelle, an der dieser Zustand haette liegen koennen, und der
+    // Punkt blieb offen. Gesetzt wird DIESELBE Referenz, die auch zurueckgegeben wird - eine
+    // Kopie waere die zweite Wahrheit, die #192 ausschliesst.
+    merkeAktivesProjekt(projekt)
     return { ok: true, wert: projekt }
   })
 }

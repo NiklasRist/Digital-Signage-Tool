@@ -30,6 +30,7 @@ import path from 'node:path'
 import { leseKonfig } from '../config-store/lese-konfig'          // #26
 import { aendereKonfig } from '../config-store/schreibe-config'   // #31
 
+import { holeAktivesProjekt, merkeAktivesProjekt } from './aktives-projekt'  // #192
 import { verwirfGeplanteSpeicherung } from './auto-speichern'      // #47
 import { mitD1Lock } from './d1-lock'                             // #32
 import { projektOrdner } from './pfade'                           // #49
@@ -138,6 +139,17 @@ export async function löscheProjekt(id: string): Promise<Ergebnis<void, Project
     // Auch nach einem TEILWEISE gescheiterten Loeschen richtig: Ein Torso soll nicht durch
     // einen nachlaufenden Schreibvorgang wieder zu einem scheinbar heilen Projekt werden.
     verwirfGeplanteSpeicherung(id)
+
+    // Und aus dem Halter nehmen, falls das geloeschte das aktive Projekt war. Ohne das gaebe
+    // holeAktivesProjekt (#192) weiter dasselbe Objekt heraus, und der naechste Sofort-Flush
+    // (Render, Export, Beenden) schriebe es ueber schreibeProjekt neu auf die Platte - derselbe
+    // Weg zurueck wie ueber den Entprellungstimer, nur ueber einen anderen Ausloeser.
+    // Der Vergleich laeuft ueber die ID, nicht ueber die Referenz: Wer ein anderes Projekt
+    // loescht, darf das offene nicht schliessen.
+    const offen = holeAktivesProjekt()
+    if (offen !== null && offen.id === id) {
+      merkeAktivesProjekt(null)
+    }
 
     // Der Rueckfall laeuft AUCH nach einem Fehlschlag. Nach einem abgebrochenen rekursiven
     // Loeschen ist der Ordner ein Torso (media/ halb weg, project.json vielleicht noch da); ein
