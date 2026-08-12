@@ -14,7 +14,7 @@
 // GERUEST-PRUEFSUMME: d487114ace561396
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import { aendereKonfig } from './schreibe-config'                   // #31
+import { aendereKonfig, type ConfigFehlercode } from './schreibe-config'   // #31
 
 // Fremde Aufrufe - vollstaendige Signatur, damit hier nichts geraten wird:
 //   #31: aendereKonfig<T>(
@@ -45,7 +45,7 @@ import { aendereKonfig } from './schreibe-config'                   // #31
  * die zuerst gespeicherte Aenderung waere lautlos weg (Lost Update). `aendereKonfig` klammert
  * Lesen und Schreiben zu einer Einheit.
  */
-export async function setzeExportZiel(pfad: string): Promise<Ergebnis<void>> {
+export async function setzeExportZiel(pfad: string): Promise<Ergebnis<void, ConfigFehlercode>> {
   // VOR jeder Wirkung (DoD). `typeof` ist trotz des Typs noetig: Der Aufrufer sitzt hinter der
   // IPC-Grenze, dort kommt an, was der Renderer schickt - der Typ gilt beim Uebersetzen, nicht
   // zur Laufzeit.
@@ -78,25 +78,9 @@ export async function setzeExportZiel(pfad: string): Promise<Ergebnis<void>> {
   }))
 
   if (!geschrieben.ok) {
-    const code = geschrieben.fehler.code
-    return {
-      ok: false,
-      fehler: {
-        // MELDUNG AN DEN PRUEFER (Widerspruch, NICHT eigenmaechtig behoben): #31 fuehrt seit dem
-        // Nachtrag `Ergebnis<void, ConfigFehlercode>` und meldet einen gescheiterten Schreibvorgang
-        // als `speicher_fehler`. Die Signatur DIESES Issues ist einparametrig
-        // (`Ergebnis<void>`) und traegt damit nur die drei generischen Codes - `speicher_fehler`
-        // ist nicht zuweisbar. Genau das ist der offene Punkt im STOPP-Block ("dann gehoert
-        // `speicher_fehler` in die Fehlerpfad-Tabelle dieses Issues"). Bis er entschieden ist,
-        // reist der Code als Text weiter; ein Aufrufer kann darauf NICHT verzweigen. Wer den
-        // Punkt entscheidet, aendert das Issue, nicht diese Datei.
-        code: code === 'speicher_fehler' ? 'unbekannter_fehler' : code,
-        meldung:
-          code === 'speicher_fehler'
-            ? `Exportziel konnte nicht gespeichert werden (speicher_fehler): ${geschrieben.fehler.meldung}`
-            : geschrieben.fehler.meldung,
-      },
-    }
+    // Der Fehler aus `aendereKonfig` reist UNVERAENDERT weiter - seit dem Nachtrag vom
+    // 12.08.2026 traegt die Signatur `ConfigFehlercode`, `speicher_fehler` ist zuweisbar.
+    return geschrieben
   }
 
   return { ok: true, wert: undefined }

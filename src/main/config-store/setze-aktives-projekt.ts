@@ -25,7 +25,6 @@
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import type { GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import { aendereKonfig, type ConfigFehlercode } from './schreibe-config'   // #31
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
@@ -67,7 +66,7 @@ import { aendereKonfig, type ConfigFehlercode } from './schreibe-config'   // #3
  * NICHT GEPRUEFT wird, ob es das Projekt gibt - das ist laut Issue Sache des Aufrufers
  * (i. d. R. direkt nach erfolgreichem `oeffneProjekt`, #34).
  */
-export async function setzeAktivesProjekt(projektId: string): Promise<Ergebnis<void>> {
+export async function setzeAktivesProjekt(projektId: string): Promise<Ergebnis<void, ConfigFehlercode>> {
   // Validieren VOR jeder Wirkung. Die Typangabe allein genuegt nicht: Der Wert kommt ueber die
   // IPC-Grenze und ist dort zur Laufzeit alles Moegliche. Ein leerer String waere besonders
   // heimtueckisch - er landete klaglos in config.json und der naechste Start suchte ein Projekt
@@ -97,33 +96,7 @@ export async function setzeAktivesProjekt(projektId: string): Promise<Ergebnis<v
   if (ergebnis.ok) {
     return { ok: true, wert: undefined }
   }
-  return {
-    ok: false,
-    fehler: {
-      code: alsGenerisch(ergebnis.fehler.code),
-      meldung:
-        ergebnis.fehler.code === 'speicher_fehler'
-          ? `[speicher_fehler] ${ergebnis.fehler.meldung}`
-          : ergebnis.fehler.meldung,
-    },
-  }
-}
-
-/**
- * NOTBEHELF, KEIN ENTWURF - hier geht Information verloren, und das ist gemeldet.
- *
- * Die verbindliche Signatur lautet `Ergebnis<void>`, also OHNE zweiten Typparameter; ihre
- * Fehlerseite traegt allein die drei generischen Codes. `aendereKonfig` kann aber
- * `speicher_fehler` liefern (volle Platte, Datenort abgezogen), und dieser Code ist dort nicht
- * zuweisbar. Er wird deshalb auf `unbekannter_fehler` abgebildet und steht nur noch im
- * Meldungstext - worauf kein Aufrufer verzweigen kann. Dieselbe Stelle hat #31 bereits getroffen
- * und wurde dort per Nachtrag geloest (`Ergebnis<void, ConfigFehlercode>`); fuer #27 steht der
- * Nachtrag aus. Bis dahin NICHT selbst die Signatur aendern - das ist ein Vertrag, kein Detail.
- *
- * Die Fallunterscheidung ist bewusst am Literal aufgehaengt und nicht als `default`-Zweig
- * geschrieben: Waechst `ConfigFehlercode` um einen zweiten Code, faellt der `false`-Zweig hier im
- * Typecheck durch - der Verlust wird also gemeldet, statt sich still auszuweiten.
- */
-function alsGenerisch(code: ConfigFehlercode | GenerischerFehlercode): GenerischerFehlercode {
-  return code === 'speicher_fehler' ? 'unbekannter_fehler' : code
+  // Der Fehler aus `aendereKonfig` reist UNVERAENDERT weiter - seit dem Nachtrag vom
+  // 12.08.2026 traegt die Signatur `ConfigFehlercode`, `speicher_fehler` ist also zuweisbar.
+  return ergebnis
 }

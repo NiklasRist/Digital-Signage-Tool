@@ -25,7 +25,7 @@
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
-import { aendereKonfig } from './schreibe-config'                    // #31
+import { aendereKonfig, type ConfigFehlercode } from './schreibe-config'   // #31
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #31: aendereKonfig<T>(
@@ -51,7 +51,7 @@ import { aendereKonfig } from './schreibe-config'                    // #31
  * abgelehnter Aufruf darf `config.json` nicht anfassen - auch nicht die `.bak`-Sicherung, die
  * `schreibeConfig` bei jedem Durchlauf neu zoege.
  */
-export async function setzeUIVoreinstellung(schlüssel: string, wert: unknown): Promise<Ergebnis<void>> {
+export async function setzeUIVoreinstellung(schlüssel: string, wert: unknown): Promise<Ergebnis<void, ConfigFehlercode>> {
   // Laufzeit-Pruefung trotz `string` im Vertrag: Der Aufrufer sitzt im Renderer, und ueber die
   // IPC-Grenze kommt an, was der andere Prozess schickt - der Typ ist dort eine Zusage, keine
   // Schranke. Ein leerer Schluessel legte in `uiVoreinstellungen` einen Eintrag "" an, den nie
@@ -117,16 +117,9 @@ export async function setzeUIVoreinstellung(schlüssel: string, wert: unknown): 
   }))
 
   if (!geschrieben.ok) {
-    // MELDUNG AN DAS ISSUE (nicht hier beheben): Die verbindliche Signatur ist `Ergebnis<void>` -
-    // ohne zweiten Typparameter traegt die Huelle nur die drei generischen Codes. `aendereKonfig`
-    // liefert aber `speicher_fehler`, den fachlichen Code des Moduls (#31). Er wird deshalb auf
-    // `unbekannter_fehler` abgebildet und nur noch im Meldungstext genannt - worauf kein Aufrufer
-    // verzweigen kann. Genau diese Luecke hatte #31 selbst, bis das Issue per Nachtrag auf
-    // `Ergebnis<void, ConfigFehlercode>` umgestellt wurde; #30 braucht denselben Nachtrag. Der
-    // STOPP-Block des Issues fragt danach ("dann gehoert `speicher_fehler` in die
-    // Fehlerpfad-Tabelle dieses Issues") und verbietet ausdruecklich, es selbst festzulegen.
-    const code = geschrieben.fehler.code === 'speicher_fehler' ? 'unbekannter_fehler' : geschrieben.fehler.code
-    return fehler(code, `UI-Voreinstellung "${schlüssel}" nicht gespeichert (${geschrieben.fehler.code}): ${geschrieben.fehler.meldung}`)
+    // Der Fehler aus `aendereKonfig` reist UNVERAENDERT weiter - seit dem Nachtrag
+    // vom 12.08.2026 traegt die Signatur `ConfigFehlercode`.
+    return geschrieben
   }
 
   return { ok: true, wert: undefined }

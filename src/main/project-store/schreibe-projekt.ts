@@ -64,8 +64,9 @@ const DATEI = 'project.json'
 const VERGLEICHS_ID = 'vergleich'
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Project } from '../../shared/contracts/project'
-export async function schreibeProjekt(projekt: Project): Promise<Ergebnis<void>> {
+export async function schreibeProjekt(projekt: Project): Promise<Ergebnis<void, ProjectStoreFehlercode>> {
   // ZUM D1-LOCK: Hier steht KEIN mitD1Lock und auch KEINE eigene Promise-Kette wie in
   // schreibeConfig (#31). Der Unterschied zwischen den beiden Schwesterdateien ist gewollt:
   // config.json hat keinen eigenen Sperr-Mechanismus und muss sich deshalb selbst
@@ -127,8 +128,8 @@ export async function schreibeProjekt(projekt: Project): Promise<Ergebnis<void>>
     await fs.mkdir(ordner, { recursive: true })
   } catch (ursache) {
     return fehler(
-      'unbekannter_fehler',
-      `[speicher_fehler] Projektordner ${ordner} nicht nutzbar: ${text(ursache)}`,
+      'speicher_fehler',
+      `Projektordner ${ordner} nicht nutzbar: ${text(ursache)}`,
     )
   }
 
@@ -153,8 +154,8 @@ export async function schreibeProjekt(projekt: Project): Promise<Ergebnis<void>>
     // dauerhaft die .bak offen, kann nicht gespeichert werden. Genau dagegen laeuft die
     // Wiederholung oben. S. Bericht/STOPP - der Punkt gehoert bestaetigt, nicht geerbt.
     return fehler(
-      'unbekannter_fehler',
-      `[speicher_fehler] Sicherung von ${DATEI} fehlgeschlagen: ${text(sicherungsFehler)}`,
+      'speicher_fehler',
+      `Sicherung von ${DATEI} fehlgeschlagen: ${text(sicherungsFehler)}`,
     )
   }
 
@@ -181,8 +182,8 @@ export async function schreibeProjekt(projekt: Project): Promise<Ergebnis<void>>
     // als Bruchstueck liegenbleiben; sie wird beim naechsten Versuch mit 'w' ueberschrieben
     // und von niemandem gelesen (das Laden in #34 kennt nur project.json und .bak).
     return fehler(
-      'unbekannter_fehler',
-      `[speicher_fehler] ${DATEI} konnte nicht geschrieben werden: ${text(ursache)}`,
+      'speicher_fehler',
+      `${DATEI} konnte nicht geschrieben werden: ${text(ursache)}`,
     )
   }
 
@@ -196,8 +197,8 @@ export async function schreibeProjekt(projekt: Project): Promise<Ergebnis<void>>
     // des Nutzers vernichten, um aufgeraeumt auszusehen. Der naechste Schreibvorgang oeffnet
     // sie ohnehin mit 'w' und ueberschreibt sie.
     return fehler(
-      'unbekannter_fehler',
-      `[speicher_fehler] ${DATEI} konnte nicht ersetzt werden: ${text(umbenennFehler)}`,
+      'speicher_fehler',
+      `${DATEI} konnte nicht ersetzt werden: ${text(umbenennFehler)}`,
     )
   }
 
@@ -277,21 +278,15 @@ function text(ursache: unknown): string {
 /**
  * Die Fehlerseite der Huelle.
  *
- * GEMELDET, NICHT BEHOBEN - die Fehlerpfad-Tabelle des Issues nennt fuer alle drei I/O-Faelle
- * `speicher_fehler`, die verbindliche Signatur `Ergebnis<void>` kann diesen Code aber nicht
- * tragen: Ohne zweiten Typparameter laesst die Huelle nur die drei generischen Codes zu
- * (ergebnis.ts). Deshalb steht hier `unbekannter_fehler`, und die fachliche Einordnung reist
- * als Praefix `[speicher_fehler]` im Meldungstext mit - worauf kein Aufrufer verzweigen kann.
- *
- * Genau dieser Widerspruch bestand bei der Schwesterfunktion #31 und wurde dort per
- * ISSUE-NACHTRAG geloest (`Ergebnis<void, ConfigFehlercode>`). Das Gegenstueck fuer D1 gibt es
- * bereits: `ProjectStoreFehlercode = 'speicher_fehler'` in `project-store/assets.ts` (#72).
- * Die Signatur zu aendern ist aber Sache des Issues, nicht dieser Datei.
+ * Seit dem Issue-Nachtrag vom 12.08.2026 traegt die Signatur `ProjectStoreFehlercode` (#72), der
+ * von der Fehlerpfad-Tabelle verlangte `speicher_fehler` ist damit zuweisbar. Zuvor stand hier
+ * `unbekannter_fehler` mit dem echten Code als Textpraefix - worauf kein Aufrufer verzweigen
+ * konnte.
  */
 function fehler(
-  code: 'ungueltige_eingabe' | 'unbekannter_fehler',
+  code: ProjectStoreFehlercode | 'ungueltige_eingabe',
   meldung: string,
-): { ok: false; fehler: { code: 'ungueltige_eingabe' | 'unbekannter_fehler'; meldung: string } } {
+): { ok: false; fehler: { code: ProjectStoreFehlercode | 'ungueltige_eingabe'; meldung: string } } {
   return { ok: false, fehler: { code, meldung } }
 }
 
