@@ -24,11 +24,12 @@
 // Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
-import { readFile, realpath } from "node:fs/promises";
+import { open, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { FORMAT_WHITELIST } from "../../shared/contracts/asset";
 
+import { holeAktivesProjekt } from "./aktives-projekt";   // #192
 import { loeseAssetPfad, medienOrdner } from "./pfade";
 
 // DIE EINZIGE STELLE, AN DER RENDERER-EINGABE ZU EINEM DATEIZUGRIFF WIRD.
@@ -78,6 +79,7 @@ const STATUS = {
   abgewiesen: 403,
   nichtGefunden: 404,
   falscheMethode: 405,
+  bereichUnerfuellbar: 416,
   lesefehler: 500,
 } as const;
 
@@ -110,6 +112,16 @@ export async function behandleMediaAnfrage(request: Request): Promise<Response> 
   const anfrage = zerlegeAdresse(request.url);
   if (anfrage === null) {
     return fehlerAntwort(STATUS.ungueltigeAdresse, "Ungueltige media://-Adresse.");
+  }
+
+  // C1 (entschieden 12.08.2026): NUR das offene Projekt. Der Vergleich steht bewusst VOR
+  // jeder Pfadaufloesung und jedem Dateizugriff - eine abgewiesene Anfrage soll die Platte
+  // nicht einmal beruehren. Vorher bediente der Handler jede projektId, und wer eine fremde
+  // UUID kannte, kam an deren Medien. Enger fassen ging bis heute nicht: Es gab keinen Halter
+  // fuer "welches Projekt ist offen" (#192, seit dem 12.08.2026 gebaut).
+  const offen = holeAktivesProjekt();
+  if (offen === null || offen.id !== anfrage.projektId) {
+    return fehlerAntwort(STATUS.abgewiesen, "Adresse abgewiesen.");
   }
 
   const aufgeloest = loeseAssetPfad(anfrage.projektId, anfrage.dateiname);
@@ -150,18 +162,49 @@ export async function behandleMediaAnfrage(request: Request): Promise<Response> 
     // Gelesen wird der DURCHGERECHNETE Pfad, nicht der aufgeloeste: Er ist frei von
     // Verknuepfungen, also kann das Oeffnen keiner Kette mehr folgen, die zwischen
     // Pruefung und Lesen entstanden waere.
-    const bytes = await readFile(echterPfad);
-    return new Response(bytes, {
-      status: 200,
-      headers: {
-        "content-type": inhaltstyp(anfrage.dateiname),
-        // Ohne diesen Riegel darf Chromium den Inhalt erraten. Eine Datei, die als
-        // Medium ausgeliefert wird, aber wie HTML aussieht, waere in einem
-        // privilegierten Schema (#9 meldet `media` als `secure` an) sonst ein Weg,
-        // fremdes Markup im Renderer auszufuehren.
-        "x-content-type-options": "nosniff",
-      },
-    });
+    const groesse = (await stat(echterPfad)).size;
+    const bereich = leseBereich(request.headers.get("range"), groesse);
+
+    if (bereich === "unerfuellbar") {
+      // RFC 9110: 416 traegt content-range mit der Gesamtgroesse, damit der Player weiss,
+      // worauf er seinen Bereich haette beziehen muessen.
+      return new Response(null, {
+        status: STATUS.bereichUnerfuellbar,
+        headers: { "content-range": `bytes */${groesse}`, "x-content-type-options": "nosniff" },
+      });
+    }
+
+    const kopf: Record<string, string> = {
+      "content-type": inhaltstyp(anfrage.dateiname),
+      // Ohne diesen Riegel darf Chromium den Inhalt erraten. Eine Datei, die als Medium
+      // ausgeliefert wird, aber wie HTML aussieht, waere in einem privilegierten Schema
+      // (#9 meldet `media` als `secure` an) sonst ein Weg, fremdes Markup auszufuehren.
+      "x-content-type-options": "nosniff",
+      // Ohne diesen Kopf fragt <video> gar nicht erst nach Ausschnitten und spult nicht.
+      "accept-ranges": "bytes",
+    };
+
+    const von = bereich === null ? 0 : bereich.von;
+    const bis = bereich === null ? groesse - 1 : bereich.bis;
+    const laenge = groesse === 0 ? 0 : bis - von + 1;
+    if (bereich !== null) {
+      kopf["content-range"] = `bytes ${von}-${bis}/${groesse}`;
+    }
+
+    // NUR den angeforderten Ausschnitt lesen, nicht die ganze Datei. Vorher stand hier
+    // readFile: Bei einem zehnminuetigen Reel lagen damit rund 900 MB im Speicher des
+    // Main-Prozesses, und zwar bei JEDER Vorschau.
+    const griff = await open(echterPfad, "r");
+    try {
+      const puffer = new Uint8Array(laenge);
+      if (laenge > 0) {
+        await griff.read(puffer, 0, laenge, von);
+      }
+      kopf["content-length"] = String(laenge);
+      return new Response(puffer, { status: bereich === null ? 200 : 206, headers: kopf });
+    } finally {
+      await griff.close();
+    }
   } catch {
     // Windows-Sperre (EBUSY/EPERM), Rechteproblem, EISDIR. Der Handler wirft NICHT:
     // Ein abgelehntes Promise aus einem protocol.handle-Rumpf ist eine unbehandelte
@@ -305,6 +348,39 @@ function istErlaubteEndung(wert: string): wert is ErlaubteEndung {
  * zurueckgespiegelter Pfad verriete Ordnernamen, und ein zurueckgespiegelter
  * Anfragewert waere in einer Seite, die ihn anzeigt, der klassische Reflexionsfehler.
  */
+/**
+ * Liest den `Range`-Kopf. `null` = keiner da oder unbrauchbar (dann volle Datei; RFC 9110
+ * verlangt ausdruecklich, einen kaputten Range-Kopf zu IGNORIEREN statt zu scheitern).
+ * `"unerfuellbar"` = syntaktisch gueltig, aber der Anfang liegt jenseits der Datei.
+ *
+ * Bewusst nur die Form `bytes=<a>-<b>` mit offenem Ende. Mehrfachbereiche
+ * (`bytes=0-99,200-299`) verlangten eine multipart-Antwort; kein Player fordert sie fuer Video
+ * an, und ein halb gebauter Mehrfachbereich waere schlechter als keiner. Die Suffix-Form
+ * (`bytes=-500`) ebenfalls nicht - dieselbe Ueberlegung.
+ */
+function leseBereich(
+  roh: string | null,
+  groesse: number,
+): { von: number; bis: number } | null | "unerfuellbar" {
+  if (roh === null) return null;
+  const treffer = /^bytes=(\d+)-(\d*)$/.exec(roh.trim());
+  if (treffer === null) return null;
+
+  const von = Number(treffer[1]);
+  if (!Number.isSafeInteger(von)) return null;
+  if (von >= groesse) return "unerfuellbar";
+
+  const bisRoh = treffer[2];
+  if (bisRoh === undefined || bisRoh === "") {
+    return { von, bis: groesse - 1 };
+  }
+  const bis = Number(bisRoh);
+  if (!Number.isSafeInteger(bis) || bis < von) return null;
+  // Ein Ende jenseits der Datei wird gekappt, nicht abgewiesen - so sieht es RFC 9110 vor,
+  // und Player fordern regelmaessig mehr an, als noch da ist.
+  return { von, bis: Math.min(bis, groesse - 1) };
+}
+
 function fehlerAntwort(status: number, text: string): Response {
   return new Response(text, {
     status,

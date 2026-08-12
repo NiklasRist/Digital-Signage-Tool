@@ -15,7 +15,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 // Unit-Test zu #50 (media://-Handler).
 //
 // Geprueft wird VERHALTEN an der Aussengrenze: Was kommt aus dem Renderer herein, und
-// was faengt der Handler ab, BEVOR er die Platte anfasst. Deshalb sind `readFile` und
+// was faengt der Handler ab, BEVOR er die Platte anfasst. Deshalb sind `open`, `stat` und
 // `realpath` echte Funktionen mit Zaehler (kein Ersatz), und der Medienordner liegt als
 // echter Ordner im Temp-Verzeichnis - Verknuepfungen kann man nicht nachstellen, man
 // muss sie anlegen.
@@ -32,7 +32,7 @@ vi.mock("../../src/main/datenort", () => ({
 
 vi.mock("node:fs/promises", async (echtLaden) => {
   const echt = await echtLaden<typeof import("node:fs/promises")>();
-  return { ...echt, readFile: vi.fn(echt.readFile), realpath: vi.fn(echt.realpath) };
+  return { ...echt, open: vi.fn(echt.open), stat: vi.fn(echt.stat), realpath: vi.fn(echt.realpath) };
 });
 
 vi.mock("../../src/main/project-store/pfade", async (echtLaden) => {
@@ -40,8 +40,11 @@ vi.mock("../../src/main/project-store/pfade", async (echtLaden) => {
   return { ...echt, loeseAssetPfad: vi.fn(echt.loeseAssetPfad) };
 });
 
-const { readFile, realpath } = await import("node:fs/promises");
+const { open, stat, realpath } = await import("node:fs/promises");
 const { loeseAssetPfad } = await import("../../src/main/project-store/pfade");
+const { merkeAktivesProjekt } = await import(
+  "../../src/main/project-store/aktives-projekt"
+);
 const { behandleMediaAnfrage } = await import(
   "../../src/main/project-store/media-protokoll"
 );
@@ -89,6 +92,19 @@ afterAll(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Seit dem 12.08.2026 bedient der Handler NUR das offene Projekt (C1). Ohne diesen
+  // Halter waere jede Anfrage abgewiesen - der Test pruefte dann nichts mehr.
+  merkeAktivesProjekt({
+    id: PROJEKT,
+    name: "Test",
+    erstelltAm: "2026-08-12T08:00:00.000Z",
+    geaendertAm: "2026-08-12T08:00:00.000Z",
+    schemaVersion: 1,
+    assets: [],
+    aktionen: [],
+    liste: [],
+    letzterAusgabeName: null,
+  });
 });
 
 function anfrage(url: string, methode = "GET"): Promise<Response> {
@@ -96,7 +112,8 @@ function anfrage(url: string, methode = "GET"): Promise<Response> {
 }
 
 function erwarteKeinenPlattenzugriff(): void {
-  expect(readFile).not.toHaveBeenCalled();
+  expect(open).not.toHaveBeenCalled();
+  expect(stat).not.toHaveBeenCalled();
   expect(realpath).not.toHaveBeenCalled();
 }
 
@@ -144,7 +161,7 @@ describe("behandleMediaAnfrage", () => {
     const antwort = await anfrage(`media://${PROJEKT}/00000000-0000-4000-8000-000000000000.mp4`);
 
     expect(antwort.status).not.toBe(200);
-    expect(readFile).not.toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
   });
 
   it.skipIf(!verknuepfungDa)(
@@ -154,16 +171,89 @@ describe("behandleMediaAnfrage", () => {
 
       expect(antwort.status).not.toBe(200);
       // Entscheidend ist nicht der Status, sondern dass gar nicht erst gelesen wurde.
-      expect(readFile).not.toHaveBeenCalled();
+      expect(open).not.toHaveBeenCalled();
     },
   );
 
   it("meldet einen Lesefehler als Fehlerstatus, statt zu werfen", async () => {
     const ebusy = Object.assign(new Error("EBUSY"), { code: "EBUSY" });
-    vi.mocked(readFile).mockRejectedValueOnce(ebusy);
+    vi.mocked(open).mockRejectedValueOnce(ebusy);
 
     const antwort = await anfrage(`media://${PROJEKT}/${DATEI}`);
 
     expect(antwort.status).not.toBe(200);
+  });
+
+  // --- C1: nur das offene Projekt (entschieden 12.08.2026) -------------------
+  it("weist ein FREMDES Projekt ab, ohne die Platte anzufassen", async () => {
+    merkeAktivesProjekt(null);
+
+    const antwort = await anfrage(`media://${PROJEKT}/${DATEI}`);
+
+    expect(antwort.status).toBe(403);
+    erwarteKeinenPlattenzugriff();
+  });
+
+  // --- C2: Range (entschieden 12.08.2026) -----------------------------------
+  it("liefert ohne Range die ganze Datei mit accept-ranges", async () => {
+    const antwort = await anfrage(`media://${PROJEKT}/${DATEI}`);
+
+    expect(antwort.status).toBe(200);
+    expect(antwort.headers.get("accept-ranges")).toBe("bytes");
+    expect(antwort.headers.get("content-length")).toBe(String(INHALT.length));
+  });
+
+  it("liefert bei Range nur den Ausschnitt, Byte fuer Byte richtig", async () => {
+    // INHALT ist vier Bytes lang, der Bereich liegt also vollstaendig darin.
+    const antwort = await behandleMediaAnfrage(
+      new Request(`media://${PROJEKT}/${DATEI}`, { headers: { range: "bytes=1-2" } }),
+    );
+
+    expect(antwort.status).toBe(206);
+    expect(antwort.headers.get("content-range")).toBe(`bytes 1-2/${INHALT.length}`);
+    expect(antwort.headers.get("content-length")).toBe("2");
+    const gelesen = new Uint8Array(await antwort.arrayBuffer());
+    expect([...gelesen]).toEqual([...INHALT.subarray(1, 3)]);
+  });
+
+  it("kappt ein Ende jenseits der Datei, statt abzuweisen", async () => {
+    // RFC 9110: Player fordern regelmaessig mehr an, als noch da ist.
+    const antwort = await behandleMediaAnfrage(
+      new Request(`media://${PROJEKT}/${DATEI}`, { headers: { range: "bytes=2-999" } }),
+    );
+
+    expect(antwort.status).toBe(206);
+    expect(antwort.headers.get("content-range")).toBe(
+      `bytes 2-${INHALT.length - 1}/${INHALT.length}`,
+    );
+  });
+
+  it("reicht ein offenes Ende bis zum Dateiende", async () => {
+    const antwort = await behandleMediaAnfrage(
+      new Request(`media://${PROJEKT}/${DATEI}`, { headers: { range: "bytes=3-" } }),
+    );
+
+    expect(antwort.status).toBe(206);
+    expect(antwort.headers.get("content-range")).toBe(
+      `bytes 3-${INHALT.length - 1}/${INHALT.length}`,
+    );
+  });
+
+  it("meldet einen unerfuellbaren Bereich mit 416", async () => {
+    const antwort = await behandleMediaAnfrage(
+      new Request(`media://${PROJEKT}/${DATEI}`, { headers: { range: "bytes=99999-" } }),
+    );
+
+    expect(antwort.status).toBe(416);
+    expect(antwort.headers.get("content-range")).toBe(`bytes */${INHALT.length}`);
+  });
+
+  it("ignoriert einen kaputten Range-Kopf und liefert die ganze Datei", async () => {
+    // RFC 9110 verlangt ausdruecklich Ignorieren statt Scheitern.
+    const antwort = await behandleMediaAnfrage(
+      new Request(`media://${PROJEKT}/${DATEI}`, { headers: { range: "unsinn" } }),
+    );
+
+    expect(antwort.status).toBe(200);
   });
 });
