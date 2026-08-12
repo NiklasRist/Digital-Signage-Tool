@@ -359,8 +359,14 @@ app.on("before-quit", (ereignis) => {
 });
 
 /**
- * Schliesst beim Beenden ab, was noch aussteht (Sofort-Flush, Fall 3 aus TK 9.5.4),
- * und stoesst das Beenden danach genau einmal erneut an.
+ * Schliesst beim Beenden ab, was noch aussteht (Sofort-Flush, Fall 3 aus TK 9.5.4).
+ *
+ * ZWEI ZWEIGE, nicht einer (#3, entschieden am 10.08.2026):
+ *   - beide Flushs gelungen -> Merkflagge setzen, Beenden GENAU EINMAL erneut anstossen
+ *   - mindestens einer gescheitert -> Beenden NICHT erneut anstossen, sondern Dialog mit
+ *     "Erneut versuchen" und dem benannten Ausweg "Trotzdem schliessen und Aenderungen
+ *     verwerfen" (nie vorausgewaehlt). TK 9.5.4: "Scheitert der Sofort-Flush beim BEENDEN,
+ *     schliesst die App NICHT (bindend)." Vom User am 12.08.2026 bestaetigt.
  *
  * Warum das ueberhaupt sein muss: Das Auto-Speichern ist um 3-5 s entprellt (TK
  * 9.5.4). Ohne diesen Ablauf ist der Entprellungstimer genau das Loch, durch das die
@@ -373,16 +379,15 @@ app.on("before-quit", (ereignis) => {
  * Auftraege) - der Bootstrap baut sie NICHT nach.
  */
 async function schliesseAusstehendesAb(): Promise<void> {
-  // LUECKE 1: sofortFlush(projekt) - #47
+  // LUECKE 1: flushBeimBeenden() - #47
   // Signatur (fremder Vertrag, #47):
-  //   export async function sofortFlush(projekt: Project): Promise<Ergebnis<void>>
-  // Schreibt einen noch ausstehenden entprellten Stand von project.json sofort und
-  // bricht den Entprellungstimer ab. OFFEN und nicht hier zu erraten: Woher dieser
-  // Ablauf den `projekt`-Stand nimmt. #47 verlangt vom Aufrufer das AKTUELLE Project
-  // als Argument UND die Ausfuehrung innerhalb von mitD1Lock (#32) - der Bootstrap
-  // haelt weder das eine noch das andere. Ein hier zusammengesuchter oder veralteter
-  // Stand schriebe genau den falschen Inhalt auf die Platte, und zwar als Letztes vor
-  // dem Beenden.
+  //   export async function flushBeimBeenden(): Promise<Ergebnis<void, ProjectStoreFehlercode>>
+  // NICHT sofortFlush(projekt) - das stand hier bis zum 12.08.2026 und war ueberholt.
+  // Die damals notierte offene Frage ("woher nimmt der Bootstrap den projekt-Stand?")
+  // ist seit dem 10.08.2026 beantwortet: Sie war der Anlass, flushBeimBeenden ueberhaupt
+  // einzufuehren. Jene Funktion ist argumentlos, nimmt mitD1Lock (#32) selbst und holt
+  // den aktiven Stand ueber holeAktivesProjekt (#192) INNERHALB des Locks - genau das,
+  // was der Bootstrap nicht leisten kann und auch nicht nachbauen soll.
 
   // LUECKE 2: flushBestand() - #98
   // Signatur (fremder Vertrag, #98):
@@ -394,17 +399,17 @@ async function schliesseAusstehendesAb(): Promise<void> {
   // Prozess beendet wird: "Beim Beenden blockiert die App, bis der Schreibvorgang
   // abgeschlossen ist (kein Schliessen mit ausstehendem Schreiben)." (TK 9.5.4)
 
-  // OFFENER WIDERSPRUCH - hier bewusst NICHT aufgeloest:
-  // Die Definition of Done von #3 verlangt, das Beenden nach den Flushs "genau einmal
-  // erneut" anzustossen. TK 9.5.4 legt inzwischen aber bindend fest:
-  //   "Scheitert der Sofort-Flush beim BEENDEN, schliesst die App NICHT (bindend)."
-  // Dort folgen vier Schritte: Beenden abbrechen, Fehler mit zugeschnittener
-  // Handlungsempfehlung zeigen, Knopf "Erneut versuchen", und als benannter Ausweg
-  // "Trotzdem schliessen und Aenderungen verwerfen". Im Fehlerfall darf das Beenden
-  // also gerade NICHT erneut angestossen werden, und der noetige Dialog liegt im
-  // Renderer, also ausserhalb dieser Datei. Solange #47 und #98 nicht existieren, ist
-  // der Fall nicht eintretbar; die Aufloesung gehoert zu #47/#98 und dem zugehoerigen
-  // Oberflaechen-Issue und ist gemeldet.
+  // FRUEHER STAND HIER EIN "OFFENER WIDERSPRUCH" zwischen der DoD von #3 ("Beenden
+  // danach genau einmal erneut anstossen") und TK 9.5.4 ("schliesst die App NICHT").
+  // ERLEDIGT: #3 wurde am 10.08.2026 auf ZWEI Zweige geschaerft und zitiert TK 9.5.4
+  // woertlich; das "genau einmal erneut anstossen" gilt allein fuer den ERFOLGSFALL.
+  // Es gab also nie zwei sich widersprechende Vertraege - nur diesen Kommentar, der
+  // dem Issue hinterherhinkte und beim Bau von #47 erneut als Widerspruch gemeldet
+  // wurde. Vom User am 12.08.2026 bestaetigt: Die App bleibt offen.
+  //
+  // Der Fehlerzweig ist hier weiterhin NICHT gebaut, aber aus einem anderen Grund: Der
+  // noetige Dialog liegt im Renderer, also ausserhalb dieser Datei. Die Aufloesung
+  // gehoert zum Verdrahtungs-Issue und dem zugehoerigen Oberflaechen-Issue.
 
   beendenAbgeschlossen = true;
   app.quit();
