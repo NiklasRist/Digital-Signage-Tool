@@ -14,6 +14,7 @@
 // GERUEST-PRUEFSUMME: e2b4e33315f9f52b
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 export interface ProjektMeta {
   id: string          // = Ordnername unter projects/
   name: string        // aus project.json; bei beschaedigt: true der ORDNERNAME als Behelf
@@ -24,7 +25,7 @@ export interface ProjektMeta {
   anzahlMedien: number   // Dateien in media/ - aus dem ORDNER gezaehlt, nicht aus project.json
   anzahlAusgaben: number // fertige .mp4 in output/ - Zaehlweise wie listeAusgaben (.part zaehlt nicht)
 }
-export async function listeProjekte(): Promise<Ergebnis<ProjektMeta[]>> {
+export async function listeProjekte(): Promise<Ergebnis<ProjektMeta[], ProjectStoreFehlercode>> {
   throw new Error(
     "Noch nicht umgesetzt - Rumpf gehoert zu Issue #35."
   );

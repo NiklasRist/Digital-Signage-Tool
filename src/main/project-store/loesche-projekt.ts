@@ -26,7 +26,8 @@
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-export async function löscheProjekt(id: string): Promise<Ergebnis<void>> {
+import type { ProjectStoreFehlercode } from './assets'            // #72
+export async function löscheProjekt(id: string): Promise<Ergebnis<void, ProjectStoreFehlercode>> {
   throw new Error(
     "Noch nicht umgesetzt - Rumpf gehoert zu Issue #37."
   );
