@@ -30,6 +30,7 @@ import path from 'node:path'
 import { leseKonfig } from '../config-store/lese-konfig'          // #26
 import { aendereKonfig } from '../config-store/schreibe-config'   // #31
 
+import { verwirfGeplanteSpeicherung } from './auto-speichern'      // #47
 import { mitD1Lock } from './d1-lock'                             // #32
 import { projektOrdner } from './pfade'                           // #49
 
@@ -126,6 +127,17 @@ export async function löscheProjekt(id: string): Promise<Ergebnis<void, Project
     } catch (ursache) {
       loeschFehler = ursache
     }
+
+    // ZUERST die geplante Speicherung verwerfen - noch INNERHALB des Locks und noch bevor
+    // irgendetwas zurueckgemeldet wird. Ohne das legt der ablaufende Entprellungstimer (#47)
+    // Projektordner und project.json ueber schreibeProjekt (#46) NEU an, und das eben
+    // geloeschte Projekt ist wenige Sekunden spaeter zurueck - mit dem Stand von vor dem
+    // Loeschen. Die Funktion verwirft nur, wenn der vorgemerkte Stand zu DIESEM Projekt
+    // gehoert; das Loeschen eines anderen Projekts laesst die ausstehende Arbeit unberuehrt.
+    //
+    // Auch nach einem TEILWEISE gescheiterten Loeschen richtig: Ein Torso soll nicht durch
+    // einen nachlaufenden Schreibvorgang wieder zu einem scheinbar heilen Projekt werden.
+    verwirfGeplanteSpeicherung(id)
 
     // Der Rueckfall laeuft AUCH nach einem Fehlschlag. Nach einem abgebrochenen rekursiven
     // Loeschen ist der Ordner ein Torso (media/ halb weg, project.json vielleicht noch da); ein

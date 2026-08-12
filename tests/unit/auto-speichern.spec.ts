@@ -162,4 +162,27 @@ describe("Auto-Speichern (#47)", () => {
     expect(ergebnis.ok).toBe(true);
     expect(zustand.geschrieben).toEqual([]);
   });
+
+  // --- verwirfGeplanteSpeicherung (#37 -> #47, nachgetragen 12.08.2026) -------
+  it("verwirft den vorgemerkten Stand des geloeschten Projekts", async () => {
+    const { planeAutoSpeicherung, verwirfGeplanteSpeicherung } = await ladeModul();
+
+    planeAutoSpeicherung(PROJEKT);
+    verwirfGeplanteSpeicherung(PROJEKT.id);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    // Ohne den Aufruf haette der Termin schreibeProjekt gerufen und das geloeschte
+    // Projekt neu angelegt.
+    expect(zustand.geschrieben).toEqual([]);
+  });
+
+  it("laesst den Stand eines ANDEREN Projekts unberuehrt", async () => {
+    const { planeAutoSpeicherung, verwirfGeplanteSpeicherung } = await ladeModul();
+
+    planeAutoSpeicherung(PROJEKT);
+    verwirfGeplanteSpeicherung("ein-anderes-projekt");
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(zustand.geschrieben).toHaveLength(1);
+  });
 });

@@ -152,6 +152,27 @@ export function planeAutoSpeicherung(projekt: Project): void {
 // merkt projekt als zu speichernde, aktuelle Version des aktiven Projekts vor; (re-)startet den
 // 3-5s-Entprellungstimer; KEIN Rückgabewert, da reine Terminplanung nicht fehlschlagen kann
 
+export function verwirfGeplanteSpeicherung(projektId: string): void {
+  // NUR den eigenen Stand verwerfen. Blind zu verwerfen waere der schlimmere Fehler: Wer ein
+  // ANDERES als das offene Projekt loescht, verloere sonst die ausstehende Arbeit am offenen.
+  if (vorgemerkt === null || vorgemerkt.id !== projektId) {
+    return
+  }
+  vorgemerkt = null
+  // Der Zaehler wird MITGEZOGEN, nicht stehen gelassen: Laeuft gerade ein Schreibvorgang fuer
+  // dieses Projekt, sieht dessen Abschluss `standZaehler !== standBeimStart` und merkt den Stand
+  // deshalb NICHT wieder vor. Ohne das legte der Fehlerpfad von `sofortFlush` den gerade
+  // verworfenen Stand zurueck - und der naechste Termin schriebe das geloeschte Projekt neu an.
+  standZaehler += 1
+  brichTerminAb()
+  // `fehlerAktiv` bleibt unberuehrt: Ob ein frueherer Schreibfehler noch aussteht, hat mit dem
+  // geloeschten Projekt nichts zu tun, und ein stilles Zuruecksetzen naehme der Oberflaeche den
+  // Hinweis, ohne dass das Problem behoben waere.
+}
+// NACHGETRAGEN 12.08.2026 (#37). Ohne diese Funktion legt der ablaufende Termin nach einem
+// Loeschen Projektordner und project.json ueber schreibeProjekt (#46) NEU an - das geloeschte
+// Projekt ist zurueck. Aufrufer: loescheProjekt, innerhalb des D1-Locks.
+
 export async function sofortFlush(projekt: Project): Promise<Ergebnis<void, ProjectStoreFehlercode>> {
   // Der Timer wird ZUERST abgebrochen, nicht am Ende: Zwischen hier und dem Ende liegt der
   // gesamte Schreibvorgang. Liefe der Termin waehrenddessen ab, stuende ein zweiter Schreibversuch
