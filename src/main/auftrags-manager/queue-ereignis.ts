@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #65.
 // [auftrags-manager] Ereignis queue:geaendert senden
 //
@@ -13,24 +12,104 @@
 // mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
 // stehen; ihr Nichtmehrstimmen IST das Signal.
 // GERUEST-PRUEFSUMME: 66b95cafc28fc09b
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+
+import { holeStand } from './hole-stand'
 
 import type { Auftrag } from '../../shared/contracts/auftrag'
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
+
+// Fremder Aufruf - vollstaendige Signatur, damit hier nichts geraten wird:
+//   #64: holeStand(): Promise<Ergebnis<Auftrag[]>>
+//        Der zusammengefuehrte Stand aus Q1 und Q2: dedupliziert ueber auftragId
+//        (Q1 gewinnt), laufender zuerst, dann anstehende in FIFO-Reihenfolge, dann
+//        die Fehlschlaege nach erstelltAm absteigend. Ohne geoeffnetes Projekt
+//        KEIN Fehler, sondern die (moeglicherweise leere) Liste - Leseoperationen
+//        melden, was da ist (#64, ENTSCHIEDEN am 13.08.2026). Q1 wird dort NICHT
+//        auf das geoeffnete Projekt gefiltert.
+//
+// DIESE DATEI BAUT DIE ZUSAMMENFUEHRUNG NICHT NACH. Panel-Oeffnen (holeStand) und
+// Push muessen denselben Stand zeigen; zwei Umsetzungen derselben Regel driften
+// auseinander, und dann zeigt das Panel beim Oeffnen etwas anderes als beim Push.
+// Deshalb wird hier nicht sortiert, nicht gefiltert und nicht dedupliziert.
+
+/**
+ * Die Hoerer, jeder in einer eigenen Huelle.
+ *
+ * WARUM DIE HUELLE UND KEIN `Set<Hoerer>` - dieselbe Begruendung wie in #47: Ein Set haelt jede
+ * Funktion nur EINMAL. Meldet sich dieselbe Funktion zweimal an (zwei Verdrahtungen, ein
+ * Neuaufbau des Fensters), traegt das Set einen Eintrag, und die erste Abmeldung naehme dem
+ * zweiten Anmelder lautlos seine Meldungen weg. Mit der Huelle ist jede Anmeldung ein eigener
+ * Eintrag, und jede Abmelde-Funktion entfernt genau ihren eigenen.
+ */
+const hoerende = new Set<{ hoerer: (auftraege: Auftrag[]) => void }>()
 
 export async function sendeQueueGeaendert(): Promise<void> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #65."
-  );
+  let stand: Ergebnis<Auftrag[]>
+  try {
+    stand = await holeStand()
+  } catch (ursache) {
+    // `holeStand` (#64) faengt selbst und meldet Fehler in der Huelle; nach seinem Vertrag
+    // wirft es nicht. Der Fang steht trotzdem hier, weil dieses Promise MITTEN in einer
+    // Warteschlangen-Operation abgewartet wird (#59, #61, #62, #63, #70): Eine Abweisung
+    // braeche dort den Ablauf ab - eine gescheiterte BENACHRICHTIGUNG wuerde damit den
+    // Auftrag selbst umbringen. Das ist genau die Umkehrung dessen, wofuer dieses Ereignis
+    // da ist. Verschluckt wird hier deshalb bewusst - s. Vermerk am Dateiende.
+    protokolliere("holeStand (#64) hat entgegen seinem Vertrag geworfen", ursache)
+    return
+  }
+
+  if (!stand.ok) {
+    // KEINE MELDUNG in diesem Fall - und das ist eine Entscheidung, die bestaetigt gehoert
+    // (s. Vermerk am Dateiende).
+    //
+    // Der im Issue benannte Fall "kein Projekt geoeffnet" landet hier NICHT MEHR: #64 hat am
+    // 13.08.2026 entschieden, dass Leseoperationen dafuer keinen Fehler melden, sondern die
+    // (leere) Liste liefern - die geforderte "dieselbe Antwort wie in #64" ist also der
+    // ok-Zweig unten, der ein leeres Array meldet. Uebrig bleibt allein der Auffangzweig von
+    // #64, also ein UNERWARTETER Fehler.
+    //
+    // WARUM DANN NICHTS statt eines leeren Arrays: Ein leeres Array ist eine AUSSAGE - "die
+    // Warteschlange ist leer". Waehrend ein Render laeuft, waere das eine Falschmeldung, die
+    // FA-16 ("erkennbar ist jederzeit, welcher Auftrag laeuft") ins Gegenteil verkehrt, und
+    // das Panel raeumte seine Liste leer. Ohne Meldung bleibt der zuletzt gemeldete Stand
+    // stehen - hoechstens veraltet, nicht falsch - und die naechste Zustandsaenderung meldet
+    // ohnehin erneut. Ein Fehler kann ueber ein Ereignis nicht reisen (TK 9.1.1 Punkte 2
+    // und 5), er wird hier also weder verpackt noch erfunden.
+    protokolliere(`Stand nicht ermittelbar (${stand.fehler.code})`, stand.fehler.meldung)
+    return
+  }
+
+  // Ueber eine MOMENTAUFNAHME der Menge: Ein Hoerer darf sich waehrend der Zustellung an- oder
+  // abmelden, ohne die laufende Schleife zu stoeren. Wer sich waehrend der Runde ANMELDET,
+  // bekommt sie nicht mehr - richtig so, denn `stand` wurde vor seiner Anmeldung ermittelt;
+  // die naechste Meldung erreicht ihn.
+  for (const eintrag of [...hoerende]) {
+    // Die Momentaufnahme allein genuegt nicht: Meldet ein Hoerer waehrend der Runde einen
+    // ANDEREN ab (oder sich selbst, bei mehreren Anmeldungen), stuende dieser noch in der
+    // Kopie. Die Zusage "nach der Abmeldung keine weitere Meldung" gilt aber ab dem Aufruf der
+    // Abmelde-Funktion, nicht ab der naechsten Runde - in #71 haengt an einem Hoerer eine
+    // Fensterreferenz, die beim Schliessen des Fensters abgemeldet wird und danach nicht mehr
+    // angesprochen werden darf.
+    if (!hoerende.has(eintrag)) {
+      continue
+    }
+    try {
+      eintrag.hoerer(stand.wert)
+    } catch (ursache) {
+      // Gefangen (Festlegung 5 des Issues): Ein Hoerer, der wirft, darf weder die uebrigen um
+      // ihre Meldung bringen noch ueber den `await` der Aufrufer die Warteschlange
+      // durcheinanderbringen. Ein Fehler in der ANZEIGE ist kein Fehler des Auftrags.
+      // Verschluckt wird er trotzdem nicht ganz: Ohne die Zeile waere ein dauerhaft kaputter
+      // Empfaenger von aussen nicht von "es gibt nichts Neues" zu unterscheiden.
+      protokolliere("Ein Hoerer hat beim Melden geworfen", ursache)
+    }
+  }
+
+  // ALLE HOERER BEKOMMEN DASSELBE ARRAY, keine Kopie je Hoerer. Eine Kopie waere hier eine
+  // halbe Zusage: #64 gibt ausdruecklich die LEBENDEN Auftrag-Objekte heraus (damit der
+  // Fortschritt eines laufenden Renders im Panel aktuell ist), ein Hoerer, der etwas
+  // veraendern wollte, kaeme also ueber die Elemente ohnehin an Q1 heran. Der einzige Hoerer
+  // laut Plan (#71) reicht die Liste ueber die Prozessgrenze weiter, wo sie kopiert wird.
 }
 // Ermittelt den Stand über holeStand() (#64) und meldet ihn allen registrierten Hörern.
 // Nutzlast ist Auftrag[] – derselbe zusammengeführte, deduplizierte und sortierte Stand.
@@ -39,8 +118,56 @@ export async function sendeQueueGeaendert(): Promise<void> {
 export function aufQueueGeaendert(
   hoerer: (auftraege: Auftrag[]) => void,
 ): () => void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #65."
-  );
+  const eintrag = { hoerer }
+  hoerende.add(eintrag)
+  // Mehrfaches Abmelden ist harmlos: `delete` auf einen bereits entfernten Eintrag tut nichts.
+  return () => {
+    hoerende.delete(eintrag)
+  }
 }
 // registriert einen MAIN-INTERNEN Hörer; Rückgabewert ist die Abmelde-Funktion
+
+/**
+ * Die drei Stellen, an denen diese Datei etwas faengt, hinterlassen eine Spur - in der Form,
+ * die `dispatcher.ts` in diesem Modul bereits verwendet.
+ *
+ * Ein Ereignis hat keinen Fehlerkanal (TK 9.1.1 Punkte 2 und 5), und ausbleiben darf die
+ * Benachrichtigung der uebrigen Hoerer erst recht nicht. Damit bleibt als einzige Alternative
+ * zum stillen Verschlucken diese Zeile: Ohne sie waeren genau die Faelle, in denen jemand
+ * seinen Vertrag bricht, die unauffindbarsten.
+ */
+function protokolliere(stelle: string, ursache: unknown): void {
+  console.error(`[auftrags-manager] queue-ereignis: ${stelle}:`, ursache)
+}
+
+// NICHT HIER, UND GEMELDET:
+//
+// 1. KEIN WEG ZUM RENDERER. Diese Datei kennt weder Fenster noch Kanalnamen; sie meldet
+//    main-intern. Den Uebergang auf den IPC-Kanal baut #71 (ipc-verdrahtung.ts), das sich
+//    hier als Hoerer anmeldet - genau EIN Ort mit Fensterreferenz.
+//
+// 2. KEIN AUSLOESER. `sendeQueueGeaendert` ruft in dieser Datei niemand. Die Ausloeser sind
+//    die Zustandsaenderungen selbst: #59 (Freigabe), #61/#62/#63 (Einreihen, Abbrechen,
+//    Wiederholen) und #70 (Abschluss). Heute ruft sie im ganzen Baum noch KEINE Stelle
+//    (geprueft mit grep ueber src/) - das ist erwartbar, weil diese Rumpfe noch offen sind.
+//
+// 3. KEINE DROSSELUNG - am 13.08.2026 ENTSCHIEDEN, die STOPP-Frage des Issues ist damit
+//    beantwortet. Der Vertrag, den das Issue dafuer heranzieht (TK 9.2.7), regelt die
+//    Drosselung von FORTSCHRITTS-Ereignissen; jedes Issue, das ihn zitiert, meint den Kanal
+//    `render:fortschritt` (#160, #178, #191, #208, #157). Nachgeprueft ueber alle 329 Issues.
+//    `queue:geaendert` ist etwas anderes: Es meldet DISKRETE Lebenslauf-Uebergaenge eines
+//    Auftrags - einreihen, starten, abschliessen, entfernen, wiederholen -, keinen Strom.
+//    Wo nichts stroemt, gibt es nichts zu drosseln.
+//    ACHTUNG, frueherer Vermerk an dieser Stelle war FALSCH: Er verwies die Frage an
+//    #177/#178. Die gehoeren zum Render-Fortschritt und haben mit diesem Kanal nichts zu tun.
+//    Sollte je eine Haeufung auftreten (etwa beim Wiederholen vieler Fehlschlaege auf
+//    einmal), wird sie im ANZEIGENDEN Modul zusammengefasst - genau so sieht es #151 vor
+//    ("Wer drosseln will, tut es beim Sender oder im anzeigenden Modul").
+//    Ein Zeitfilter HIER braeche ausserdem die Zusage, dass ein abgewartetes
+//    `sendeQueueGeaendert` die Hoerer erreicht hat, wenn sein Promise erfuellt ist.
+//
+// 4. KEINE REIHENFOLGE-SICHERUNG UEBER MEHRERE GLEICHZEITIGE AUFRUFE. Wer abwartet, bekommt
+//    die Reihenfolge (der Stand wird ermittelt, dann wird gemeldet, dann erfuellt sich das
+//    Promise). Wer NICHT abwartet, hat sie nicht zugesagt - der Vertrag verlangt vom Aufrufer
+//    ausdruecklich das Abwarten. Eine eigene Warteschlange fuer Meldungen waere ein zweiter
+//    Serialisierer neben dem Torwaechter (#59), und der ist laut TK 9.3 der einzige.
