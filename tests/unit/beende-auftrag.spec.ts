@@ -21,6 +21,7 @@ const welt = vi.hoisted(() => {
     reihenfolge: [] as string[],
     q3: [] as ProtokollEintrag[],
     q3Fehler: false,
+    q2Fehler: false,
     q2: [] as { projektId: string; auftrag: Auftrag }[],
     // Der Test darf bei JEDEM Schritt in den echten Q1 sehen - so wird die
     // Reihenfolge belegt und nicht nur das Vorkommen der Aufrufe.
@@ -43,6 +44,9 @@ const welt = vi.hoisted(() => {
     }),
     merkeFehlschlag: vi.fn(async (projektId: string, auftrag: Auftrag) => {
       merke('q2:merke')
+      if (zustand.q2Fehler) {
+        return { ok: false as const, fehler: { code: 'speicher_fehler', meldung: 'Platte voll' } }
+      }
       const stelle = zustand.q2.findIndex((e) => e.auftrag.auftragId === auftrag.auftragId)
       if (stelle >= 0) {
         zustand.q2[stelle] = { projektId, auftrag }
@@ -53,12 +57,21 @@ const welt = vi.hoisted(() => {
     }),
     streicheAusQ2: vi.fn(async (projektId: string, auftragId: string) => {
       merke('q2:streiche')
+      if (zustand.q2Fehler) {
+        return { ok: false as const, fehler: { code: 'speicher_fehler', meldung: 'Platte voll' } }
+      }
       zustand.q2 = zustand.q2.filter((e) => e.auftrag.auftragId !== auftragId)
       // IDEMPOTENT wie #55: ein fehlender Eintrag ist kein Fehler, sondern der Normalfall.
       return { ok: true as const, wert: undefined }
     }),
     sendeQueueGeaendert: vi.fn(async () => {
       merke('ereignis')
+    }),
+    // Der Parameter steht hier NICHT zur Zierde: Ohne ihn haelt TypeScript die
+    // Aufrufliste des Spions fuer leer (`[]`), und ein Zugriff auf calls[0][0] ist
+    // dann ein Typfehler - der Klartext waere gar nicht pruefbar.
+    meldeQueueStoerung: vi.fn((_meldung: string): void => {
+      merke('stoerung')
     }),
     starteNaechsten: vi.fn(() => {
       merke('starteNaechsten')
@@ -75,6 +88,7 @@ vi.mock('../../src/main/auftrags-manager/q2-wiederholung', () => ({
 }))
 vi.mock('../../src/main/auftrags-manager/queue-ereignis', () => ({
   sendeQueueGeaendert: welt.sendeQueueGeaendert,
+  meldeQueueStoerung: welt.meldeQueueStoerung,
 }))
 vi.mock('../../src/main/auftrags-manager/torwaechter', () => ({
   starteNaechsten: welt.starteNaechsten,
@@ -160,6 +174,7 @@ describe('beendeAuftrag (#70)', () => {
     welt.zustand.reihenfolge = []
     welt.zustand.q3 = []
     welt.zustand.q3Fehler = false
+    welt.zustand.q2Fehler = false
     welt.zustand.q2 = []
     welt.zustand.beobachte = null
     welt.protokoll.mockClear()
@@ -167,6 +182,7 @@ describe('beendeAuftrag (#70)', () => {
     welt.streicheAusQ2.mockClear()
     welt.sendeQueueGeaendert.mockClear()
     welt.starteNaechsten.mockClear()
+    welt.meldeQueueStoerung.mockClear()
   })
 
   it('uebernimmt bei erfolg genau die Nutzdaten des Handlers und leert fehler', async () => {
@@ -442,9 +458,6 @@ describe('beendeAuftrag (#70)', () => {
   })
 
   it('haelt die Schlange am Laufen, wenn das Q3-Schreiben scheitert', async () => {
-    // VORLAEUFIGES VERHALTEN - der STOPP-Block von #70 verbietet, den Umgang mit einem
-    // gescheiterten Q3-/Q2-Schreiben hier zu entscheiden. Dieser Test haelt fest, was
-    // die Datei heute tut; wird die Frage beantwortet, MUSS er sich aendern.
     const { q1, beendeAuftrag } = await frisch()
     const auftrag = laeuft(q1, importAuftrag())
     welt.zustand.q3Fehler = true
@@ -455,6 +468,58 @@ describe('beendeAuftrag (#70)', () => {
 
     expect(q1.findeQ1(auftrag.auftragId)).toBeUndefined()
     expect(welt.starteNaechsten).toHaveBeenCalledTimes(1)
+  })
+
+  it('meldet einen gescheiterten Q3-Eintrag als Stoerung, statt ihn zu verschlucken', async () => {
+    // Am 13.08.2026 entschieden: Der Abschluss laeuft weiter (Test darueber), ABER die
+    // Stoerung wird sichtbar. Ein verlorener Q3-Eintrag ist der Nachweis, dass ein Render
+    // ueberhaupt gelaufen ist - ohne Meldung merkt es niemand.
+    const { q1, beendeAuftrag } = await frisch()
+    const auftrag = laeuft(q1, importAuftrag())
+    welt.zustand.q3Fehler = true
+
+    await beendeAuftrag(auftrag.auftragId, { status: 'erfolg', ergebnis: null })
+
+    expect(welt.meldeQueueStoerung).toHaveBeenCalledTimes(1)
+    const meldung = welt.meldeQueueStoerung.mock.calls[0]?.[0]
+    // Der Klartext muss den Auftrag benennen - eine Meldung ohne Bezug ist im Panel wertlos.
+    expect(meldung).toContain(auftrag.label)
+    expect(meldung).toContain('Protokoll')
+  })
+
+  it('meldet im Regelfall KEINE Stoerung', async () => {
+    // Gegenprobe: Ohne sie liesse sich der Meldeweg auch dann fuer erfuellt halten, wenn er
+    // bei jedem Abschluss feuerte.
+    const { q1, beendeAuftrag } = await frisch()
+    const auftrag = laeuft(q1, importAuftrag())
+
+    await beendeAuftrag(auftrag.auftragId, { status: 'erfolg', ergebnis: null })
+
+    expect(welt.meldeQueueStoerung).not.toHaveBeenCalled()
+  })
+
+  it('unterscheidet in der Q2-Stoerung, WAS dem Nutzer dadurch fehlt', async () => {
+    // Die beiden Ausgaenge haben entgegengesetzte Folgen: Ein nicht vermerkter Fehlschlag
+    // laesst sich nicht wiederholen (FA-17), ein nicht gestrichener Erfolg steht weiter als
+    // Fehlschlag in der Liste. Ein gemeinsamer Text saegte genau diesen Unterschied ab.
+    const a = await frisch()
+    const auftragA = laeuft(a.q1, importAuftrag())
+    welt.zustand.q2Fehler = true
+    await a.beendeAuftrag(auftragA.auftragId, {
+      status: 'fehlgeschlagen',
+      fehler: { code: 'datei_fehler', meldung: 'Quelle weg' },
+    })
+    const beiFehlschlag = welt.meldeQueueStoerung.mock.calls[0]?.[0]
+
+    welt.meldeQueueStoerung.mockClear()
+    const b = await frisch()
+    const auftragB = laeuft(b.q1, importAuftrag())
+    await b.beendeAuftrag(auftragB.auftragId, { status: 'erfolg', ergebnis: null })
+    const beiErfolg = welt.meldeQueueStoerung.mock.calls[0]?.[0]
+
+    expect(beiFehlschlag).toContain('Wiederholen')
+    expect(beiErfolg).toContain('gestrichen')
+    expect(beiFehlschlag).not.toBe(beiErfolg)
   })
 
   it('beruehrt weder Dateisystem noch project-store noch ffmpeg', async () => {

@@ -64,7 +64,7 @@ export async function sendeQueueGeaendert(): Promise<void> {
     // Auftrag selbst umbringen. Das ist genau die Umkehrung dessen, wofuer dieses Ereignis
     // da ist. Verschluckt wird hier deshalb bewusst - s. Vermerk am Dateiende.
     protokolliere("holeStand (#64) hat entgegen seinem Vertrag geworfen", ursache)
-    meldeStoerung("Der Stand der Warteschlange konnte nicht ermittelt werden.")
+    meldeQueueStoerung("Der Stand der Warteschlange konnte nicht ermittelt werden.")
     return
   }
 
@@ -92,7 +92,7 @@ export async function sendeQueueGeaendert(): Promise<void> {
     // Hoerer-Satz. Uebertragen wird KLARTEXT, kein Code: Der Empfaenger zeigt ihn an, er
     // verzweigt nicht darauf.
     protokolliere(`Stand nicht ermittelbar (${stand.fehler.code})`, stand.fehler.meldung)
-    meldeStoerung(`Der Stand der Warteschlange konnte nicht ermittelt werden: ${stand.fehler.meldung}`)
+    meldeQueueStoerung(`Der Stand der Warteschlange konnte nicht ermittelt werden: ${stand.fehler.meldung}`)
     return
   }
 
@@ -144,7 +144,7 @@ export function aufQueueGeaendert(
 }
 // registriert einen MAIN-INTERNEN Hörer; Rückgabewert ist die Abmelde-Funktion
 
-export function aufQueueStandFehler(hoerer: (meldung: string) => void): () => void {
+export function aufQueueStoerung(hoerer: (meldung: string) => void): () => void {
   const eintrag = { hoerer }
   stoerungsHoerende.add(eintrag)
   return () => {
@@ -164,7 +164,7 @@ export function aufQueueStandFehler(hoerer: (meldung: string) => void): () => vo
  * Zweig gerufen, der ohnehin gleich `return`t, und ein zweites `await` mitten im Stoerfall
  * verlaengerte nur die Zeit, in der die aufrufende Warteschlangen-Operation haengt.
  */
-function meldeStoerung(meldung: string): void {
+export function meldeQueueStoerung(meldung: string): void {
   for (const eintrag of [...stoerungsHoerende]) {
     if (!stoerungsHoerende.has(eintrag)) {
       continue
@@ -198,7 +198,7 @@ function protokolliere(stelle: string, ursache: unknown): void {
 // 1. KEIN WEG ZUM RENDERER. Diese Datei kennt weder Fenster noch Kanalnamen; sie meldet
 //    main-intern. Den Uebergang auf den IPC-Kanal baut #71 (ipc-verdrahtung.ts), das sich
 //    hier als Hoerer anmeldet - genau EIN Ort mit Fensterreferenz. Seit dem 13.08.2026 gilt
-//    das fuer BEIDE Ereignisse: #71 meldet sich auch ueber `aufQueueStandFehler` an und gibt
+//    das fuer BEIDE Ereignisse: #71 meldet sich auch ueber `aufQueueStoerung` an und gibt
 //    die Meldung auf `queue:standFehler` weiter (im Issue nachgetragen, ebenso in #205, das
 //    sie im Warteschlangen-Panel anzeigt). NICHT hier einen zweiten Sendeweg nachruesten.
 //

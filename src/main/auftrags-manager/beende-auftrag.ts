@@ -33,7 +33,7 @@ import { erzeugeId } from '../../shared/contracts/id'
 import { entferneAusQ1, findeQ1 } from './q1-warteschlange'
 import { merkeFehlschlag, streicheAusQ2 } from './q2-wiederholung'
 import { haengeProtokollEintragAn } from './q3-protokoll'
-import { sendeQueueGeaendert } from './queue-ereignis'
+import { meldeQueueStoerung, sendeQueueGeaendert } from './queue-ereignis'
 import { starteNaechsten } from './torwaechter'
 import { pruefeUebergang } from './zustandsuebergang'
 
@@ -175,7 +175,10 @@ export async function beendeAuftrag(auftragId: string, ergebnis: HandlerErgebnis
         ? { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung }
         : null,
     ausgabe: baueAusgabe(auftrag),
-  })
+    // Das Label reist NEBEN dem Eintrag mit, nicht darin: ProtokollEintrag (#53) fuehrt
+    // bewusst kein `label` - es ist eine Anzeigehilfe, Q3 ist ein dauerhafter Nachweis.
+    // Gebraucht wird es allein fuer den Klartext einer etwaigen Stoerungsmeldung.
+  }, auftrag.label)
 
   // SCHRITT 4: DANN die Wiederhol-Faehigkeit. Beides sind persistente Speicher und
   // muessen geschrieben sein, bevor der fluechtige Zustand verschwindet.
@@ -199,13 +202,20 @@ export async function beendeAuftrag(auftragId: string, ergebnis: HandlerErgebnis
 /**
  * Q3 anhaengen und den Ausgang nur vermerken.
  *
- * WAS BEI EINEM FEHLSCHLAG GESCHIEHT, IST NICHT HIER ENTSCHIEDEN (STOPP-Block des
- * Issues) - s. Vermerk am Dateiende. Bis zur Entscheidung laeuft der Abschluss weiter:
- * Ein Abbruch mitten im Ablauf liesse den Auftrag in Q1 zurueck und braechte damit die
- * ganze Warteschlange zum Stehen, waehrend der fachliche Vorgang (Datei kopiert, Render
- * geschrieben) laengst fertig ist.
+ * WAS BEI EINEM FEHLSCHLAG GESCHIEHT, IST AM 13.08.2026 ENTSCHIEDEN WORDEN (STOPP-Block
+ * des Issues), und zwar zweiteilig:
+ *
+ * (1) DER ABSCHLUSS LAEUFT WEITER. Ein Abbruch mitten im Ablauf liesse den Auftrag mit
+ *     terminalem Status in Q1 zurueck, und weil `starteNaechsten` dann nie gerufen wuerde,
+ *     laege die Warteschlange fuer den Rest der Sitzung still - waehrend der fachliche
+ *     Vorgang (Datei kopiert, Render geschrieben) laengst fertig ist.
+ *
+ * (2) DIE STOERUNG WIRD ABER SICHTBAR. Vorher landete sie allein im Hauptprozess-Protokoll,
+ *     und der Nutzer erfuhr nichts - obwohl ein verlorener Q3-Eintrag der Nachweis ist,
+ *     DASS ein Render ueberhaupt gelaufen ist. Die Protokollzeile bleibt zusaetzlich
+ *     stehen: Sie traegt die technische Ursache, die dem Nutzer nichts sagt.
  */
-async function schreibeProtokoll(eintrag: ProtokollEintrag): Promise<void> {
+async function schreibeProtokoll(eintrag: ProtokollEintrag, label: string): Promise<void> {
   try {
     const geschrieben = await haengeProtokollEintragAn(eintrag)
     if (!geschrieben.ok) {
@@ -213,9 +223,17 @@ async function schreibeProtokoll(eintrag: ProtokollEintrag): Promise<void> {
         `Q3-Eintrag fuer Auftrag ${eintrag.auftragId} NICHT geschrieben ` +
           `(${geschrieben.fehler.code}): ${geschrieben.fehler.meldung}`,
       )
+      meldeQueueStoerung(
+        `Der Auftrag "${label}" ist abgeschlossen, konnte aber nicht ins ` +
+          `Protokoll geschrieben werden: ${geschrieben.fehler.meldung}`,
+      )
     }
   } catch (ursache) {
     protokolliere(`Q3-Eintrag fuer Auftrag ${eintrag.auftragId} abgebrochen`, ursache)
+    meldeQueueStoerung(
+      `Der Auftrag "${label}" ist abgeschlossen, konnte aber nicht ins Protokoll ` +
+        `geschrieben werden.`,
+    )
   }
 }
 
@@ -247,10 +265,35 @@ async function pflegeQ2(auftrag: Auftrag, ausgang: HandlerErgebnis['status']): P
         `Q2 fuer Auftrag ${auftrag.auftragId} NICHT gepflegt ` +
           `(${gepflegt.fehler.code}): ${gepflegt.fehler.meldung}`,
       )
+      meldeQueueStoerung(q2Stoerung(auftrag, ausgang, gepflegt.fehler.meldung))
     }
   } catch (ursache) {
     protokolliere(`Q2-Pflege fuer Auftrag ${auftrag.auftragId} abgebrochen`, ursache)
+    meldeQueueStoerung(q2Stoerung(auftrag, ausgang, null))
   }
+}
+
+/**
+ * Der Klartext fuer eine gescheiterte Q2-Pflege.
+ *
+ * Die beiden Ausgaenge haben ENTGEGENGESETZTE Folgen fuer den Nutzer, deshalb zwei Texte:
+ * Bei `fehlgeschlagen` ist der Fehlschlag NICHT vermerkt worden - der Auftrag laesst sich
+ * nach einem Neustart nicht wiederholen (FA-17). Bei `erfolg` ist ein ALTER Eintrag NICHT
+ * gestrichen worden - der Auftrag steht weiter als Fehlschlag in der Liste, obwohl er
+ * geglueckt ist. Ein gemeinsamer Text ("Q2 nicht gepflegt") saegte genau den Unterschied ab,
+ * auf den der Nutzer reagieren muesste.
+ */
+function q2Stoerung(
+  auftrag: Auftrag,
+  ausgang: HandlerErgebnis['status'],
+  ursache: string | null,
+): string {
+  const grund = ursache === null ? '' : `: ${ursache}`
+  return ausgang === 'fehlgeschlagen'
+    ? `Der Auftrag "${auftrag.label}" ist fehlgeschlagen, konnte aber nicht zum Wiederholen ` +
+        `vorgemerkt werden${grund}`
+    : `Der Auftrag "${auftrag.label}" ist geglueckt, der fruehere Fehlschlag konnte aber nicht ` +
+        `aus der Wiederholungsliste gestrichen werden${grund}`
 }
 
 /**

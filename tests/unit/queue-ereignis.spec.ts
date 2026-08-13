@@ -267,7 +267,7 @@ describe("queue-ereignis (#65)", () => {
     const staende: Auftrag[][] = [];
     const stoerungen: string[] = [];
     ereignis.aufQueueGeaendert((a) => staende.push(a));
-    ereignis.aufQueueStandFehler((m) => stoerungen.push(m));
+    ereignis.aufQueueStoerung((m) => stoerungen.push(m));
     q2.wirft = true;
 
     await ereignis.sendeQueueGeaendert();
@@ -283,7 +283,7 @@ describe("queue-ereignis (#65)", () => {
     const { q1, ereignis } = await frisch();
     q1.fuegeAnsEndeAn(auftrag("a1", "anstehend"));
     const stoerungen: string[] = [];
-    ereignis.aufQueueStandFehler((m) => stoerungen.push(m));
+    ereignis.aufQueueStoerung((m) => stoerungen.push(m));
 
     await ereignis.sendeQueueGeaendert();
 
@@ -295,7 +295,7 @@ describe("queue-ereignis (#65)", () => {
   it("meldet dem abgemeldeten Stoerungs-Hoerer nicht mehr", async () => {
     const { ereignis } = await frisch();
     const stoerungen: string[] = [];
-    const ab = ereignis.aufQueueStandFehler((m) => stoerungen.push(m));
+    const ab = ereignis.aufQueueStoerung((m) => stoerungen.push(m));
     q2.wirft = true;
 
     ab();
@@ -307,10 +307,10 @@ describe("queue-ereignis (#65)", () => {
   it("laesst einen werfenden Stoerungs-Hoerer die uebrigen nicht mitreissen", async () => {
     const { ereignis } = await frisch();
     const erreicht: string[] = [];
-    ereignis.aufQueueStandFehler(() => {
+    ereignis.aufQueueStoerung(() => {
       throw new Error("kaputter Empfaenger");
     });
-    ereignis.aufQueueStandFehler((m) => erreicht.push(m));
+    ereignis.aufQueueStoerung((m) => erreicht.push(m));
     q2.wirft = true;
 
     // Darf nicht abweisen: Dieses Promise wird MITTEN in einer Warteschlangen-Operation
