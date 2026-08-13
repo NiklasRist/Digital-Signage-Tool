@@ -162,13 +162,16 @@ function text(ursache: unknown): string {
 //    Typparameter), nicht hier - deshalb ist der Notbehelf im Fehlerzweig entfallen.
 //    Wer diese Datei erneut anfasst: NICHT auf `Ergebnis<void>` zurueckdrehen.
 //
-// 2. KEIN AUFRUFER. Diese Funktion wird heute von niemandem gerufen: `oeffneProjekt` (#34)
-//    kennt sie nicht, und der Bootstrap (#3) auch nicht. Solange das so bleibt, ist der
-//    Q2-Stand beim Oeffnen eines Projekts NICHT geladen - der erste `merkeFehlschlag`
-//    laedt ihn dann beilaeufig ueber `sicherGeladen` (#55) nach, und `holeStand` (#64)
-//    zeigte bis dahin eine leere Fehlschlag-Liste, obwohl die Datei voll ist. Wo der
-//    Aufruf hingehoert (Ende von #34, nach dem Setzen des aktiven Projekts), steht in
-//    keinem der beiden Issues; das gehoert ins Issue, nicht in diese Datei.
+// 2. NOCH KEIN AUFRUFER - aber das ist GEPLANT und KEINE Luecke. Nachgeprueft am
+//    13.08.2026 ueber alle 329 Issues: Der Aufrufer ist #94 (M3, ipc-gateway), das den
+//    Oeffnen-Ablauf koordiniert und diese Funktion dort als SCHRITT 2 fuehrt - nach
+//    oeffneProjekt (#34), vor reconcile (#91). In M7 rufen sie ausserdem #224
+//    (Projekt oeffnen) und #196 (Sitzung wiederherstellen); #76 verweist darauf.
+//    Richtig ist also nur: Solange #94 nicht gebaut ist, ist Q2 beim Oeffnen NICHT
+//    geladen, und `holeStand` (#64) zeigte bis zum ersten `merkeFehlschlag` eine leere
+//    Fehlschlag-Liste. Das loest sich mit #94 von selbst.
+//    NICHT hier einen eigenen Aufruf nachruesten - #34 darf den auftrags-manager nicht
+//    kennen, die Reihenfolge gehoert in den Koordinator.
 //
 // 3. KEIN VERGESSEN DES VORIGEN PROJEKTS. Der Projektwechsel ist der STOPP-Punkt des
 //    Issues und ausdruecklich nicht hier zu entscheiden. Beachtenswert dabei: `ladeQ2`
