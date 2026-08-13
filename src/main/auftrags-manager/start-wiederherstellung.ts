@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #67.
 // [auftrags-manager] Beim Öffnen eines Projekts Q2 laden
 //
@@ -24,11 +23,164 @@
 // Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
 // Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+//
+// ERLEDIGT (13.08.2026): Die Abschaltzeile ist mit dem Fuellen des Rumpfes entfernt;
+// der Parameter wird jetzt benutzt. Der Absatz darueber bleibt als Beleg stehen.
+
+import { ladeQ2 } from './q2-wiederholung';
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis';
 
+// Fremder Aufruf - vollstaendige Signatur, damit hier nichts geraten wird:
+//   #55: ladeQ2(projektId: string): Promise<Ergebnis<Q2Datei, QueueFehlercode>>
+//        laedt projects/<id>/queue-retry.json, legt den Stand modul-intern ab und gibt
+//        ihn als Kopie heraus; eine fehlende Datei ergibt dort eine leere, gueltige Q2.
+//   #55: holeQ2Stand(): { projektId, datei } | null   - die Lese-Operation, ueber die
+//        #64 (holeStand) den hier geladenen Stand sieht. Nicht von hier gerufen.
+//
+// DIESE DATEI BILDET KEINEN PFAD. Sie kennt den Ordner `projects/<id>/` nicht und
+// nennt den Dateinamen `queue-retry.json` nirgends - beides gehoert #55 (Invariante
+// "Kein eigener Dateizugriff"). Deshalb steht hier auch kein `node:fs` und kein
+// `node:path`; ein Import davon waere der erste Schritt zu einem zweiten Leser.
+
+/**
+ * Beide Pfadtrenner, unabhaengig von der laufenden Plattform - dieselbe Ueberlegung wie in
+ * `pfade.ts` (#49): Auf macOS ist der Rueckwaerts-Schraegstrich ein gewoehnliches Zeichen und
+ * kaeme durch, waere hier nur `/` gesperrt. Die Projektordner wandern per USB zwischen beiden
+ * Systemen.
+ */
+const PFADTRENNER = ['/', '\\'];
+
 export async function stelleBeiProjektOeffnungHer(projektId: string): Promise<Ergebnis<void>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #67."
-  );
+  if (!istBrauchbareProjektId(projektId)) {
+    // OHNE JEDE WIRKUNG (Fehlertabelle): Der Abbruch steht VOR dem einzigen Aufruf, der
+    // etwas bewegen koennte. Nichts wird geleert, nichts geladen, und ein bereits
+    // gehaltener Q2-Stand bleibt genau der, der er war. Waere die Pruefung erst nach
+    // `ladeQ2` gelaufen, haette eine unbrauchbare ID den Stand des offenen Projekts
+    // ueberschrieben, bevor sie beanstandet wird.
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        // Der beanstandete Wert steht ABSICHTLICH nicht in der Meldung - sie reist ueber
+        // IPC bis in die Oberflaeche (gleiche Ueberlegung wie in #49).
+        meldung: 'Die Projekt-ID ist leer oder als Pfadsegment nicht verwendbar.',
+      },
+    };
+  }
+
+  try {
+    // DER GANZE VORGANG: Q2 laden. Mehr ist beim Oeffnen eines Projekts ausdruecklich
+    // nicht zu tun.
+    //
+    // Q1 WIRD NICHT ANGEFASST - weder gefuellt noch geleert. Nicht gefuellt, weil "die
+    // aktive Queue wird also *nicht* persistiert" (TK 9.3.5) und Wiederholen eine
+    // ausdrueckliche Nutzeraktion ist (FA-17); ein aus Q2 nachgeholter Auftrag wuerde
+    // ohne Zutun des Nutzers losrennen. Nicht geleert, weil in Q1 Auftraege eines
+    // ANDEREN, vorher geoeffneten Projekts liegen koennen - was mit denen beim
+    // Projektwechsel geschieht, ist der offene STOPP-Punkt des Issues und hier nicht zu
+    // entscheiden. Ein `leere Q1` an dieser Stelle waere genau diese Entscheidung,
+    // heimlich getroffen.
+    //
+    // Und deshalb wird hier auch NICHTS GESTARTET: kein `starteNaechsten` (#59), kein
+    // `reiheEin` (#61). Das Oeffnen eines Projekts ist kein Auftrag.
+    //
+    // Die pendingDeletions aus Q2 kommen mit und bleiben liegen: "Sie werden in Q2 nur
+    // verwahrt; nachgeholt werden sie vom Reconcile des media-service" (TK 9.3). Kein
+    // `unlink`, kein `loeschen`-Auftrag - ein solcher scheiterte deterministisch mit
+    // `asset_nicht_gefunden`, weil der D1-Eintrag beim Loeschen zuerst verschwindet.
+    const geladen = await ladeQ2(projektId);
+    if (!geladen.ok) {
+      // UNVERAENDERT DURCHGEREICHT - Code und Meldung stammen aus #55 bzw. #69. Kein
+      // eigener Code, keine eigene Meldung, kein Umverpacken: Eine volle Platte oder eine
+      // beschaedigte Wiederholungsdatei muss am Panel als das ankommen, was sie ist.
+      // Insbesondere wird hier NICHT auf eine leere Q2 zurueckgefallen - das saehe aus wie
+      // "keine Fehlschlaege" und waere ein unsichtbarer Verlust (FA-17).
+      //
+      // ZUR ZWANGSUMDEUTUNG: `ladeQ2` liefert `Ergebnis<Q2Datei, QueueFehlercode>`, der
+      // Fehlercode kann also `speicher_fehler` sein. Der VERBINDLICHE Rueckgabetyp dieser
+      // Funktion ist `Ergebnis<void>`, und dessen Codeseite ist auf die drei generischen
+      // Codes verengt (#12/#22) - `speicher_fehler` passt dort nicht hinein. Das ist ein
+      // Widerspruch INNERHALB des Issues (Signaturblock gegen Fehlertabelle und DoD) und
+      // GEMELDET; er ist hier nicht aufloesbar, ohne die verbindliche Signatur zu aendern.
+      // Aufgeloest wird er zugunsten des VERHALTENS: Der Wert reist unveraendert weiter,
+      // die Umdeutung betrifft allein den Typ. Sie ist eng gehalten (nur dieser Zweig) und
+      // erfindet nichts - zur Laufzeit steht hier genau das Objekt aus #55.
+      return geladen as Ergebnis<void>;
+    }
+
+    // Der geladene Stand wird ABSICHTLICH nicht mitgegeben: Er liegt in Q2 und wird von
+    // dort ueber `holeStand` (#64) sichtbar. Zwei Wege zum selben Stand waeren zwei
+    // Wahrheiten (Signaturblock des Issues).
+    return { ok: true, wert: undefined };
+  } catch (ursache) {
+    // "Niemals `throw` ueber die IPC-Grenze" (TK 9.1.1). #55 faengt seine eigenen
+    // Ausnahmen bereits ab; diese Schranke gilt dem Fall, dass sie es eines Tages nicht
+    // mehr tut. `unbekannter_fehler` ist einer der drei generischen Codes aus #12, hier
+    // entsteht also kein neuer.
+    return {
+      ok: false,
+      fehler: {
+        code: 'unbekannter_fehler',
+        meldung: `Das Laden der Wiederholungsdaten ist abgebrochen: ${text(ursache)}`,
+      },
+    };
+  }
 }
+
+/**
+ * Die Pruefung aus der Fehlertabelle des Issues - genau ihr Wortlaut und keine Zeile mehr:
+ * "leer, kein String, enthaelt Pfadtrenner oder `..`".
+ *
+ * Bewusst NICHT die vollstaendige Segmentpruefung aus #49 (Doppelpunkt, Steuerzeichen,
+ * reservierte Windows-Namen): Die ist dort absichtlich nicht exportiert, damit keine zweite
+ * Stelle entsteht, die "ist dieser Name in Ordnung?" beantwortet - sie hier nachzubauen
+ * waere genau diese zweite Stelle, und sie liefe der ersten beim naechsten Zusatz davon.
+ *
+ * `unknown` als Parametertyp, obwohl die Signatur `string` verspricht: Der Aufrufer sitzt
+ * hinter der IPC-Grenze bzw. liest aus einer Datei, und die Fehlertabelle nennt "kein
+ * String" ausdruecklich als eigenen Fall. Ein `typeof`-Test auf einen als `string`
+ * deklarierten Wert waere sonst toter Code.
+ */
+function istBrauchbareProjektId(wert: unknown): wert is string {
+  if (typeof wert !== 'string' || wert.length === 0) {
+    return false;
+  }
+  if (PFADTRENNER.some((trenner) => wert.includes(trenner))) {
+    return false;
+  }
+  // Als Teilzeichenkette, nicht nur als vollstaendiges Segment: Eine projektId ist eine
+  // UUID (TK 9.11.3), dort kommt `..` nie vor - die strengere Lesart kann nicht irren.
+  return !wert.includes('..');
+}
+
+function text(ursache: unknown): string {
+  return ursache instanceof Error ? ursache.message : String(ursache);
+}
+
+// NICHT HIER, UND GEMELDET:
+//
+// 1. WIDERSPRUCH IM ISSUE (Signaturblock gegen Fehlertabelle/DoD). Der verbindliche
+//    Rueckgabetyp `Ergebnis<void>` kann den durchzureichenden `speicher_fehler` aus #55/#69
+//    typseitig nicht tragen; verlangt ist das Durchreichen trotzdem an zwei Stellen
+//    ("jeder Fehler aus dem Q2-Laden wird unveraendert durchgereicht", DoD-Punkt 4).
+//    Richtig waere `Promise<Ergebnis<void, QueueFehlercode>>` - genau so steht es bei den
+//    uebrigen Nachbarn dieses Speichers (#66 pending-deletions.ts). Geaendert wurde die
+//    Signatur NICHT (sie ist Gesetz); ueberbrueckt ist es durch eine enge, an Ort und
+//    Stelle begruendete Zwangsumdeutung im Fehlerzweig.
+//
+// 2. KEIN AUFRUFER. Diese Funktion wird heute von niemandem gerufen: `oeffneProjekt` (#34)
+//    kennt sie nicht, und der Bootstrap (#3) auch nicht. Solange das so bleibt, ist der
+//    Q2-Stand beim Oeffnen eines Projekts NICHT geladen - der erste `merkeFehlschlag`
+//    laedt ihn dann beilaeufig ueber `sicherGeladen` (#55) nach, und `holeStand` (#64)
+//    zeigte bis dahin eine leere Fehlschlag-Liste, obwohl die Datei voll ist. Wo der
+//    Aufruf hingehoert (Ende von #34, nach dem Setzen des aktiven Projekts), steht in
+//    keinem der beiden Issues; das gehoert ins Issue, nicht in diese Datei.
+//
+// 3. KEIN VERGESSEN DES VORIGEN PROJEKTS. Der Projektwechsel ist der STOPP-Punkt des
+//    Issues und ausdruecklich nicht hier zu entscheiden. Beachtenswert dabei: `ladeQ2`
+//    ERSETZT den gehaltenen Stand (#55 haelt genau EINEN, samt projektId) - der Stand des
+//    vorher geoeffneten Projekts ist nach einem erfolgreichen Aufruf hier also weg,
+//    waehrend dessen Auftraege in Q1 weiterleben koennen. Ein `holeStand` (#64) mischt
+//    dann Q1-Eintraege des alten mit Q2-Eintraegen des neuen Projekts. Das ist Frage 3 des
+//    STOPP-Blocks, und sie ist unbeantwortet - nicht durch diese Datei geloest.
