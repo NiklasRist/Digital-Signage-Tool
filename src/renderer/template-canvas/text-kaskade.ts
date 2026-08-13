@@ -239,6 +239,30 @@ function brichUm(
   let aktuell: string | null = null;
 
   for (const wort of woerter) {
+    // EIN WORT, DAS ALLEIN ZU BREIT IST, WIRD GETEILT - entschieden vom User am 13.08.2026.
+    //
+    // Vorher lief so ein Wort ueber die Zone hinaus, sobald es NICHT in der letzten Zeile
+    // stand: Schritt 3c kuerzt nur die letzte. Gemessen: "Donaudampfschifffahrt kurz" in
+    // einer 30-px-Zone ergab eine erste Zeile von 105 px - die Zusage "nie ein zerstoertes
+    // Layout" hielt also nicht.
+    //
+    // GETEILT WIRD OHNE BINDESTRICH ("Donaudampf" / "schifffahrt"), und das ist die bewusst
+    // gewaehlte Kroete: Eine echte Silbentrennung braeuchte ein Woerterbuch je Sprache. Der
+    // Fall trifft ohnehin nur Woerter, die in ihre Zone gar nicht passen - dort ist ein
+    // harter Umbruch besser als ein Wort, das aus dem Bild laeuft, und besser als ein "...",
+    // das den Rest verschluckt.
+    const teile = teileZuBreitesWort(wort, breite, größe, messeBreite);
+    if (teile.length > 1) {
+      // Alle Teile bis auf den letzten sind vollstaendige Zeilen. Der letzte wird zur
+      // laufenden Zeile, damit ein FOLGENDES Wort noch daneben passen kann.
+      if (aktuell !== null) {
+        zeilen.push(aktuell);
+      }
+      zeilen.push(...teile.slice(0, -1));
+      aktuell = teile[teile.length - 1] ?? "";
+      continue;
+    }
+
     if (aktuell === null) {
       aktuell = wort;
       continue;
@@ -268,6 +292,54 @@ function brichUm(
  * Wert, weil der Fehler aus einer Vorlage stammt und der Leser wissen muss,
  * WELCHE Zahl dort kaputt ist - "ungueltiger Parameter" schickt ihn suchen.
  */
+/**
+ * Zerlegt ein Wort, das allein breiter ist als seine Zone, in passende Stuecke.
+ *
+ * Passt das Wort, kommt es UNVERAENDERT als einziges Stueck zurueck - der Aufrufer prueft
+ * genau daran, ob ueberhaupt geteilt wurde. Das haelt den haeufigen Fall frei von
+ * Sonderbehandlung.
+ *
+ * ZERLEGT WIRD IN CODEPOINTS, nicht in UTF-16-Einheiten (`Array.from` statt `split('')`):
+ * Ein Emoji oder ein Zeichen ausserhalb der Grundebene besteht aus zwei Einheiten, und eine
+ * Teilung zwischen ihnen ergaebe zwei kaputte Halbzeichen. Kombinierende Zeichen (z. B. ein
+ * nachgestellter Akzent) koennen trotzdem abgetrennt werden - das waere nur mit einem
+ * Segmenter zu loesen, den der Renderer nicht deterministisch zur Verfuegung hat.
+ *
+ * MINDESTENS EIN CODEPOINT JE STUECK, auch wenn er allein schon zu breit ist. Ohne diese
+ * Schranke stuende die Schleife still, sobald ein einzelnes Zeichen die Zone sprengt (sehr
+ * schmale Zone, sehr grosse Schrift) - eine haengende Vorschau statt eines haesslichen
+ * Buchstabens.
+ */
+function teileZuBreitesWort(
+  wort: string,
+  breite: number,
+  größe: number,
+  messeBreite: (text: string, größe: number) => number,
+): string[] {
+  if (messeBreite(wort, größe) <= breite) {
+    return [wort];
+  }
+
+  const zeichen = Array.from(wort);
+  const stuecke: string[] = [];
+  let aktuell = "";
+
+  for (const einzelnes of zeichen) {
+    const versuch = aktuell + einzelnes;
+    if (aktuell !== "" && messeBreite(versuch, größe) > breite) {
+      stuecke.push(aktuell);
+      aktuell = einzelnes;
+      continue;
+    }
+    aktuell = versuch;
+  }
+
+  if (aktuell !== "") {
+    stuecke.push(aktuell);
+  }
+  return stuecke;
+}
+
 function pruefeMass(feld: string, wert: number): void {
   if (!Number.isFinite(wert) || wert <= 0) {
     throw new Error(

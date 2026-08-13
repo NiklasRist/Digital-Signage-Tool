@@ -254,3 +254,104 @@ describe("passeTextEin (#113)", () => {
     expect(() => passeTextEin(zone({ text: "", höhe: 0 }), messeBreite)).toThrow();
   });
 });
+
+describe("passeTextEin (#113) - zu breite Woerter werden UMGEBROCHEN", () => {
+  // Entschieden vom User am 13.08.2026. Vorher kuerzte Schritt 3c nur die LETZTE Zeile;
+  // ein allein zu breites Wort weiter oben ragte sichtbar aus der Zone. Der Fall unten ist
+  // genau der gemessene: 30-px-Zone, erste Zeile war 105 px breit.
+  it("laesst ein ueberlanges Wort nicht mehr aus der Zone laufen", () => {
+    const { messeBreite } = messer();
+
+    const ergebnis = passeTextEin(
+      zone({
+        text: "Donaudampfschifffahrt kurz",
+        breite: 30,
+        höhe: 100,
+        größeMax: 10,
+        größeMin: 10,
+        maxZeilen: 2,
+      }),
+      messeBreite,
+    );
+
+    // DIE eigentliche Zusicherung: KEINE Zeile ist breiter als die Zone. Vorher galt das
+    // nur fuer die letzte.
+    for (const zeile of ergebnis.zeilen) {
+      expect(messeBreite(zeile, ergebnis.größe)).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it("verliert beim Teilen kein Zeichen", () => {
+    const { messeBreite } = messer();
+
+    const ergebnis = passeTextEin(
+      zone({
+        text: "Donaudampfschifffahrtsgesellschaftskapitaen",
+        breite: 40,
+        höhe: 400,
+        größeMax: 10,
+        größeMin: 10,
+        maxZeilen: 20,
+      }),
+      messeBreite,
+    );
+
+    // Die Teile ergeben zusammen wieder das Wort - ein Teilen, das Zeichen verschluckt,
+    // waere schlimmer als der Ueberlauf, den es behebt.
+    expect(ergebnis.zeilen.join("")).toBe("Donaudampfschifffahrtsgesellschaftskapitaen");
+    expect(ergebnis.gekürzt).toBe(false);
+  });
+
+  it("zerreisst keine Zeichen ausserhalb der Grundebene", () => {
+    // Ein Emoji besteht aus zwei UTF-16-Einheiten. Wer mit split('') teilt, erzeugt zwei
+    // kaputte Halbzeichen - im Test unsichtbar, am Fernseher ein Kaestchen.
+    const { messeBreite } = messer();
+
+    const ergebnis = passeTextEin(
+      zone({
+        text: "🙂🙂🙂🙂",
+        breite: 10,
+        höhe: 200,
+        größeMax: 10,
+        größeMin: 10,
+        maxZeilen: 8,
+      }),
+      messeBreite,
+    );
+
+    for (const zeile of ergebnis.zeilen) {
+      expect(zeile).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+      expect(zeile).not.toMatch(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
+    }
+    expect(ergebnis.zeilen.join("")).toBe("🙂🙂🙂🙂");
+  });
+
+  it("bleibt nicht stehen, wenn schon EIN Zeichen breiter ist als die Zone", () => {
+    // Die Zusicherung ist hier das TERMINIEREN, nicht das Ergebnis: Ohne die Mindestabnahme
+    // von einem Codepoint je Stueck liefe die Teilungsschleife endlos, weil nie etwas passt -
+    // eine haengende Vorschau statt eines haesslichen Buchstabens.
+    //
+    // Dass am Ende gekuerzt wird, ist richtig und kein Mangel: In eine 1-px-Zone passt
+    // nichts, also ist "..." die einzige ehrliche Antwort.
+    const { messeBreite } = messer();
+
+    const ergebnis = passeTextEin(
+      zone({ text: "WW", breite: 1, höhe: 100, größeMax: 10, größeMin: 10, maxZeilen: 5 }),
+      messeBreite,
+    );
+
+    expect(ergebnis.gekürzt).toBe(true);
+    expect(ergebnis.zeilen.length).toBeGreaterThan(0);
+  });
+
+  it("laesst kurze Woerter unangetastet - nur zu breite werden geteilt", () => {
+    const { messeBreite } = messer();
+
+    const ergebnis = passeTextEin(
+      zone({ text: "Hallo Welt", breite: 200, höhe: 100 }),
+      messeBreite,
+    );
+
+    expect(ergebnis.zeilen).toEqual(["Hallo Welt"]);
+  });
+});
