@@ -291,11 +291,15 @@ export function verdrahteQueueIPC(fenster: BrowserWindow): void {
 
 // NICHT HIER, UND GEMELDET:
 //
-// 1. KEIN AUFRUFER. `verdrahteQueueIPC(fenster)` ruft heute niemand: src/main/index.ts
-//    fuehrt den Aufruf als ersten der DREI Anmeldungen MIT Fenster auf, aber nur als
-//    Kommentar ("LUECKE", Schritt 7). Das Fenster IST dort vorhanden (`const fenster =
-//    erstelleHauptfenster()`), die Melde-Klausel des Issues ist also nicht ausgeloest -
-//    es fehlt allein die Zeile, und die gehoert nach #3/#331, nicht hierher.
+// 1. ERLEDIGT am 13.08.2026 - der Vermerk bleibt als Beleg stehen. Hier stand "KEIN
+//    AUFRUFER": src/main/index.ts fuehrte den Aufruf nur als Kommentar ("LUECKE",
+//    Schritt 7). Mit #269 steht dort jetzt die echte Zeile, als erste der Anmeldungen
+//    MIT Fenster, unmittelbar nach `erstelleHauptfenster()`.
+//    NICHT VERWECHSELN mit der parameterlosen Form: Neun angelegte Issues zitieren
+//    `verdrahteQueueIPC()` ohne Argument und ordnen es VOR das Fenster ein (#61-#64,
+//    #71, #76, #77, #92, #93, #109). Das ist ueberholt und in allen neun als Warnung
+//    nachgetragen - diese Funktion BRAUCHT das Fenster, weil sie die einzige Stelle mit
+//    einer Fensterreferenz ist.
 //
 // 2. DIE HUELLE `meldeAn` UND DIE PRUEFER `istObjekt`/`istGefuellterText`/`abgelehnt` STEHEN
 //    EIN ZWEITES MAL in src/main/ipc-gateway/config-store-verdrahtung.ts (#77), Wort fuer

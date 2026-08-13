@@ -5,10 +5,12 @@
 // ist Teil des Vertrags aus #3, nicht Geschmackssache - die Begruendung steht jeweils
 // am Aufrufpunkt.
 //
-// STAND HEUTE: Gebaut sind die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4).
-// Von den dreizehn Anmeldungen, den beiden Beenden-Funktionen und der
-// Einzel-Instanz-Sperre existiert KEINE EINZIGE - sie entstehen erst in M1 bis M7. Sie
-// stehen deshalb als benannte Luecken (Funktionsname + Issue-Nummer) an ihrem Platz.
+// STAND HEUTE: Gebaut sind die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4)
+// und - seit #269 - die ERSTE der Anmeldungen mit Fenster (verdrahteQueueIPC, #71,
+// Schritt 7 Position 1). Alle uebrigen Anmeldungen, die beiden Beenden-Funktionen und
+// die Einzel-Instanz-Sperre fehlen weiterhin; sie entstehen in den restlichen
+// Verdrahtungs-Issues der Kette (#268, #270 bis #274, #331) und stehen bis dahin als
+// benannte Luecken (Funktionsname + Issue-Nummer) an ihrem Platz.
 // Ausdruecklich KEINE Attrappen: Eine leere Ersatzfunktion wuerde
 // einen Kanal registrieren, der zu funktionieren scheint, und die echte Verdrahtung
 // spaeter an der doppelten Registrierung scheitern lassen - oder, schlimmer, sie tut
@@ -18,6 +20,7 @@ import path from "node:path";
 
 import { app, BrowserWindow, dialog, session } from "electron";
 
+import { verdrahteQueueIPC } from "./auftrags-manager/ipc-verdrahtung";
 import {
   ermittleFfmpegPfad,
   ermittleFfprobePfad,
@@ -288,20 +291,7 @@ void app.whenReady().then(async () => {
 
   // SCHRITT 7: die DREI Anmeldungen MIT Fenster, in genau dieser Reihenfolge. Jede
   // bekommt DASSELBE BrowserWindow als Parameter - keine sucht sich eines selbst
-  // (TK 9.1.1 Punkt 10). Alle drei sind heute LUECKEN.
-  //
-  // 1. verdrahteQueueIPC(fenster)                  - #71, die vier Warteschlangen-
-  //                                                  Kanaele und der Sender von
-  //                                                  `queue:geaendert`
-  // 2. verdrahteExportUndFortschrittIPC(fenster)   - #191, Kanal
-  //                                                  `export:waehleExportZiel` und der
-  //                                                  Sender von `render:fortschritt`
-  // 3. verdrahteSpeicherstatusIPC(fenster)         - #238, die Sender von
-  //                                                  `project:autoSpeichernStatus` und
-  //                                                  `vorlagen:autoSpeichernStatus`,
-  //                                                  src/main/ipc-gateway/speicherstatus-verdrahtung.ts.
-  //                                                  Ohne sie bleibt ein gescheitertes
-  //                                                  Auto-Speichern unsichtbar (NFA-02).
+  // (TK 9.1.1 Punkt 10). Position 1 ist seit #269 verdrahtet, 2 und 3 sind LUECKEN.
   //
   // Warum diese drei NACH dem Fenster stehen und das fuer ihre Aufruf-Kanaele
   // unkritisch ist: Schritt 6 STOESST das Laden nur an; der Renderer-Code laeuft erst,
@@ -310,9 +300,27 @@ void app.whenReady().then(async () => {
   // des Fensters verfallen still - es wird NICHT gepuffert (bindend)." (TK 9.1.1
   // Punkt 10). Deshalb wird hier nichts gepuffert und NICHT auf did-finish-load
   // gewartet.
-  void fenster;
 
+  // 1. verdrahteQueueIPC(fenster) - #71,
+  //    src/main/auftrags-manager/ipc-verdrahtung.ts. Meldet die vier Warteschlangen-
+  //    Kanaele an und ist der Sender der Ereignisse `queue:geaendert` und
+  //    `queue:stoerung`. Sie meldet ihre beiden Hoerer selbst wieder ab, wenn das
+  //    Fenster geschlossen ist - hier ist dafuer nichts nachzuhalten.
+  //
+  // KEIN try/catch darum: Wirft diese Zeile, ist die Warteschlange nicht bedienbar,
+  // und ein aufgefangener Fehler machte daraus eine App, die startet und bei der
+  // jeder Import und jeder Render lautlos ins Leere laeuft. Weder #3 noch #71 sehen
+  // hier eine Behandlung vor; auch die uebrigen Startschritte dieser Datei stehen
+  // ungeschuetzt.
+  verdrahteQueueIPC(fenster);
 
+  // 2. LUECKE: verdrahteExportUndFortschrittIPC(fenster) - #191, Kanal
+  //    `export:waehleExportZiel` und der Sender von `render:fortschritt`
+  //
+  // 3. LUECKE: verdrahteSpeicherstatusIPC(fenster) - #238, die Sender von
+  //    `project:autoSpeichernStatus` und `vorlagen:autoSpeichernStatus`,
+  //    src/main/ipc-gateway/speicherstatus-verdrahtung.ts. Ohne sie bleibt ein
+  //    gescheitertes Auto-Speichern unsichtbar (NFA-02).
 
   // SCHRITT 8: raeumeVerwaisteArbeitsbereiche() - #172
   // LUECKE. Entfernt reel-*-Ordner, die ein frueherer Absturz im Temp-Bereich
