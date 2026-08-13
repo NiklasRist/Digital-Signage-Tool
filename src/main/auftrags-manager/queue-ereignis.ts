@@ -224,6 +224,18 @@ function protokolliere(stelle: string, ursache: unknown): void {
 //
 // 4. KEINE REIHENFOLGE-SICHERUNG UEBER MEHRERE GLEICHZEITIGE AUFRUFE. Wer abwartet, bekommt
 //    die Reihenfolge (der Stand wird ermittelt, dann wird gemeldet, dann erfuellt sich das
-//    Promise). Wer NICHT abwartet, hat sie nicht zugesagt - der Vertrag verlangt vom Aufrufer
-//    ausdruecklich das Abwarten. Eine eigene Warteschlange fuer Meldungen waere ein zweiter
-//    Serialisierer neben dem Torwaechter (#59), und der ist laut TK 9.3 der einzige.
+//    Promise). Wer NICHT abwartet, hat sie nicht zugesagt.
+//
+//    KORRIGIERT am 13.08.2026: Hier stand, "der Vertrag verlangt vom Aufrufer ausdruecklich das
+//    Abwarten". Das war FALSCH und widersprach #59. Der Torwaechter ist SYNCHRON
+//    (`starteNaechsten(): void`) und kann gar nicht abwarten; sein Schritt 8 verbietet es sogar
+//    ausdruecklich, weil ein `await` an dieser Stelle das Zeitfenster oeffnete, in dem ein
+//    zweiter Auftrag startet. Aufgefallen beim Bau von #59, dessen Agent den Widerspruch
+//    gemeldet statt umgangen hat.
+//
+//    WAS DARAUS FOLGT, UND WARUM ES HARMLOS IST: Fallen Start und Abschluss zeitlich zusammen,
+//    koennen zwei Meldungen in vertauschter Reihenfolge ankommen. Beide tragen aber den
+//    VOLLSTAENDIGEN Stand aus `holeStand` (#64), keine Differenz und kein Teilstueck - die
+//    Anzeige waere also hoechstens einen Wimpernschlag alt, nie falsch zusammengesetzt. Eine
+//    eigene Warteschlange fuer Meldungen waere dagegen ein zweiter Serialisierer neben dem
+//    Torwaechter, und der ist laut TK 9.3 der einzige.
