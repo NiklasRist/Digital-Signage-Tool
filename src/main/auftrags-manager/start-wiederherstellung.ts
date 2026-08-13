@@ -30,6 +30,7 @@
 import { ladeQ2 } from './q2-wiederholung';
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis';
+import type { QueueFehlercode } from './schreibe-queue-json'; // #69
 
 // Fremder Aufruf - vollstaendige Signatur, damit hier nichts geraten wird:
 //   #55: ladeQ2(projektId: string): Promise<Ergebnis<Q2Datei, QueueFehlercode>>
@@ -51,7 +52,9 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis';
  */
 const PFADTRENNER = ['/', '\\'];
 
-export async function stelleBeiProjektOeffnungHer(projektId: string): Promise<Ergebnis<void>> {
+export async function stelleBeiProjektOeffnungHer(
+  projektId: string,
+): Promise<Ergebnis<void, QueueFehlercode>> {
   if (!istBrauchbareProjektId(projektId)) {
     // OHNE JEDE WIRKUNG (Fehlertabelle): Der Abbruch steht VOR dem einzigen Aufruf, der
     // etwas bewegen koennte. Nichts wird geleert, nichts geladen, und ein bereits
@@ -96,17 +99,7 @@ export async function stelleBeiProjektOeffnungHer(projektId: string): Promise<Er
       // beschaedigte Wiederholungsdatei muss am Panel als das ankommen, was sie ist.
       // Insbesondere wird hier NICHT auf eine leere Q2 zurueckgefallen - das saehe aus wie
       // "keine Fehlschlaege" und waere ein unsichtbarer Verlust (FA-17).
-      //
-      // ZUR ZWANGSUMDEUTUNG: `ladeQ2` liefert `Ergebnis<Q2Datei, QueueFehlercode>`, der
-      // Fehlercode kann also `speicher_fehler` sein. Der VERBINDLICHE Rueckgabetyp dieser
-      // Funktion ist `Ergebnis<void>`, und dessen Codeseite ist auf die drei generischen
-      // Codes verengt (#12/#22) - `speicher_fehler` passt dort nicht hinein. Das ist ein
-      // Widerspruch INNERHALB des Issues (Signaturblock gegen Fehlertabelle und DoD) und
-      // GEMELDET; er ist hier nicht aufloesbar, ohne die verbindliche Signatur zu aendern.
-      // Aufgeloest wird er zugunsten des VERHALTENS: Der Wert reist unveraendert weiter,
-      // die Umdeutung betrifft allein den Typ. Sie ist eng gehalten (nur dieser Zweig) und
-      // erfindet nichts - zur Laufzeit steht hier genau das Objekt aus #55.
-      return geladen as Ergebnis<void>;
+      return geladen;
     }
 
     // Der geladene Stand wird ABSICHTLICH nicht mitgegeben: Er liegt in Q2 und wird von
@@ -160,14 +153,14 @@ function text(ursache: unknown): string {
 
 // NICHT HIER, UND GEMELDET:
 //
-// 1. WIDERSPRUCH IM ISSUE (Signaturblock gegen Fehlertabelle/DoD). Der verbindliche
-//    Rueckgabetyp `Ergebnis<void>` kann den durchzureichenden `speicher_fehler` aus #55/#69
-//    typseitig nicht tragen; verlangt ist das Durchreichen trotzdem an zwei Stellen
-//    ("jeder Fehler aus dem Q2-Laden wird unveraendert durchgereicht", DoD-Punkt 4).
-//    Richtig waere `Promise<Ergebnis<void, QueueFehlercode>>` - genau so steht es bei den
-//    uebrigen Nachbarn dieses Speichers (#66 pending-deletions.ts). Geaendert wurde die
-//    Signatur NICHT (sie ist Gesetz); ueberbrueckt ist es durch eine enge, an Ort und
-//    Stelle begruendete Zwangsumdeutung im Fehlerzweig.
+// 1. ERLEDIGT am 13.08.2026, hier als Warnung stehen gelassen. Der verbindliche
+//    Rueckgabetyp lautete `Ergebnis<void>` und konnte den durchzureichenden
+//    `speicher_fehler` aus #55/#69 typseitig NICHT tragen, waehrend DoD-Punkt 4 das
+//    Durchreichen ausdruecklich verlangt ("jeder Fehler aus dem Q2-Laden wird
+//    unveraendert durchgereicht"). Der Signaturblock widersprach also der eigenen
+//    Fehlertabelle. Behoben wurde das IM ISSUE (#67 traegt jetzt den zweiten
+//    Typparameter), nicht hier - deshalb ist der Notbehelf im Fehlerzweig entfallen.
+//    Wer diese Datei erneut anfasst: NICHT auf `Ergebnis<void>` zurueckdrehen.
 //
 // 2. KEIN AUFRUFER. Diese Funktion wird heute von niemandem gerufen: `oeffneProjekt` (#34)
 //    kennt sie nicht, und der Bootstrap (#3) auch nicht. Solange das so bleibt, ist der
