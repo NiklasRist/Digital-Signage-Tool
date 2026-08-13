@@ -33,7 +33,7 @@ import { AKTUELLE_SCHEMA_VERSION } from '../../shared/contracts/konstanten'  // 
 import { holeAktivesProjekt } from './aktives-projekt'                       // #192
 import { mitD1Lock } from './d1-lock'                                        // #32
 import { migriereProjekt } from './migriere-projekt'                         // #48
-import { medienOrdner, projektOrdner } from './pfade'                        // #49
+import { PROJEKT_DATEI as DATEI, medienOrdner, projektOrdner } from './pfade'
 import { schreibeProjekt } from './schreibe-projekt'                         // #46
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
@@ -60,7 +60,6 @@ import { schreibeProjekt } from './schreibe-projekt'                         // 
 //   #21:  const AKTUELLE_SCHEMA_VERSION = 1
 
 /** Dateiname im Projektordner - gleichlautend mit #46, #34 und #35. */
-const DATEI = 'project.json'
 
 /**
  * Eine unbedenkliche Projekt-ID, die NUR als Vergleichswert dient (s. `istKopierbareId`).

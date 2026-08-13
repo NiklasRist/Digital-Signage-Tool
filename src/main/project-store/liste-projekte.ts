@@ -17,7 +17,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import { mitD1Lock } from './d1-lock'
-import { ausgabeOrdner, medienOrdner, projektOrdner } from './pfade'
+import { PROJEKT_DATEI as DATEI, PROJEKT_DATEI_SICHERUNG as SICHERUNG, ausgabeOrdner, medienOrdner, projektOrdner, projekteOrdner } from './pfade'
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
@@ -47,19 +47,11 @@ import type { Dirent } from 'node:fs'
 //        // (TK 9.5.7) - hier wird deshalb kein Unterordnername selbst angehaengt.
 
 /** Dateiname im Projektordner - gleichlautend mit dem Schreiber (#46). */
-const DATEI = 'project.json'
 
 /** Die letzte heile Fassung, die #46 vor jedem Schreiben anlegt (TK 9.5.4). */
-const SICHERUNG = `${DATEI}.bak`
 
 /** Die Endung einer fertigen Ausgabedatei - klein geschrieben zum Vergleich. */
 const AUSGABE_ENDUNG = '.mp4'
-
-/**
- * Eine unbedenkliche Projekt-ID, die NUR dazu dient, den `projects/`-Ordner aus der
- * Pfad-Autoritaet abzuleiten (s. `projekteWurzel`). Ihr Ordner wird nie angefasst.
- */
-const VERGLEICHS_ID = 'vergleich'
 
 /**
  * Zeitangabe fuer einen Eintrag, dessen Ordner sich nicht befragen laesst.
@@ -165,7 +157,10 @@ async function scanne(): Promise<Ergebnis<ProjektMeta[], ProjectStoreFehlercode>
  * Aendert sich das Layout in #49, wandert diese Funktion lautlos mit.
  */
 function projekteWurzel(): string {
-  return path.dirname(projektOrdner(VERGLEICHS_ID))
+  // Seit dem 12.08.2026 gibt die Pfad-Autoritaet den Wurzelpfad selbst her (#49).
+  // Vorher stand hier path.dirname(projektOrdner(VERGLEICHS_ID)) - ein Rueckrechnen
+  // ueber einen erfundenen Projektnamen.
+  return projekteOrdner()
 }
 
 /**

@@ -48,6 +48,28 @@ const MEDIEN_UNTERORDNER = "media";
 const AUSGABE_UNTERORDNER = "output";
 const AUSGABE_ENDUNG = ".mp4";
 
+/**
+ * Der Wurzelordner aller Projekte. NACHGETRAGEN 12.08.2026 (#35 gemeldet).
+ *
+ * Ohne ihn leitete `listeProjekte` ihn per `path.dirname(projektOrdner("vergleich"))` ab -
+ * also ueber einen ERFUNDENEN Projektnamen. Das funktioniert und ist trotzdem der falsche
+ * Weg: Wer den Wurzelpfad braucht, soll ihn bekommen, nicht rueckrechnen muessen.
+ */
+export function projekteOrdner(): string {
+  return path.join(path.resolve(ermittleDatenOrt()), PROJEKTE_ORDNER)
+}
+
+/**
+ * Die beiden Dateinamen des Projekt-Stands. NACHGETRAGEN 12.08.2026.
+ *
+ * Sie standen als Literal in VIER Dateien (#34, #35, #36, #46). Sie sind Teil des Layouts,
+ * nicht der einzelnen Operation - dieselbe Ueberlegung, aus der die Ordnernamen hier stehen.
+ * Vier Kopien einer Zeichenkette laufen beim ersten Umbenennen auseinander, und der Fehler
+ * faellt erst auf, wenn eine der vier Stellen ihre Datei nicht mehr findet.
+ */
+export const PROJEKT_DATEI = 'project.json'
+export const PROJEKT_DATEI_SICHERUNG = `${PROJEKT_DATEI}.bak`
+
 export function projektOrdner(projektId: string): string {
   // path.resolve auf den Datenort, dann path.join fuer die Segmente - die Reihenfolge
   // ist Absicht und nicht Geschmack:

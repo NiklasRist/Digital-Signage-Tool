@@ -145,6 +145,20 @@ export async function fuegeAssetHinzu(
     // nichts vor. `sofortFlush` bricht den Entprellungstimer selbst ab; ein ZUSAETZLICHES
     // `planeAutoSpeicherung` waere kein Sicherheitsnetz, sondern ein zweiter Schreibanstoss fuer
     // dieselbe Aenderung.
+    // ZUERST anmelden, DANN sofort schreiben (12.08.2026). Das Anmelden ist hier nicht
+    // ueberfluessig, obwohl gleich darauf sofort geschrieben wird: planeAutoSpeicherung (#47)
+    // ist seit demselben Tag der eine Ort, an dem `geaendertAm` fortgeschrieben wird, und
+    // sofortFlush stempelt NICHT. Ohne diese Zeile schriebe ein Auftrag project.json mit dem
+    // ALTEN Aenderungsdatum - "zuletzt bearbeitet" in listeProjekte (#35) bliebe nach einem
+    // Import bzw. einem Medien-Loeschvorgang stehen, obwohl sich das Projekt geaendert hat.
+    //
+    // Warum nicht in sofortFlush selbst gestempelt wird: Sie wird auch VOR einem Render, vor
+    // einem Export und beim Beenden gerufen - dort hat sich nichts geaendert, und ein Stempel
+    // waere schlicht falsch. Den Unterschied kennt nur der Aufrufer.
+    //
+    // Der von planeAutoSpeicherung gesetzte Entprellungstermin ist unschaedlich: sofortFlush
+    // bricht ihn als ERSTES wieder ab.
+    planeAutoSpeicherung(projekt)
     const geschrieben = await sofortFlush(projekt)
 
     if (!geschrieben.ok) {
@@ -393,6 +407,20 @@ export async function entferneAsset(
     // geloescht werden, waehrend der Eintrag in project.json noch steht - ein Absturz in diesen
     // 3-5 s liesse ein Listenelement auf eine geloeschte Datei zeigen. "D1 zuerst" muss ueber
     // einen Absturz hinweg wahr sein, nicht nur im Arbeitsspeicher (TK 9.4.6, Schritt 1).
+    // ZUERST anmelden, DANN sofort schreiben (12.08.2026). Das Anmelden ist hier nicht
+    // ueberfluessig, obwohl gleich darauf sofort geschrieben wird: planeAutoSpeicherung (#47)
+    // ist seit demselben Tag der eine Ort, an dem `geaendertAm` fortgeschrieben wird, und
+    // sofortFlush stempelt NICHT. Ohne diese Zeile schriebe ein Auftrag project.json mit dem
+    // ALTEN Aenderungsdatum - "zuletzt bearbeitet" in listeProjekte (#35) bliebe nach einem
+    // Import bzw. einem Medien-Loeschvorgang stehen, obwohl sich das Projekt geaendert hat.
+    //
+    // Warum nicht in sofortFlush selbst gestempelt wird: Sie wird auch VOR einem Render, vor
+    // einem Export und beim Beenden gerufen - dort hat sich nichts geaendert, und ein Stempel
+    // waere schlicht falsch. Den Unterschied kennt nur der Aufrufer.
+    //
+    // Der von planeAutoSpeicherung gesetzte Entprellungstermin ist unschaedlich: sofortFlush
+    // bricht ihn als ERSTES wieder ab.
+    planeAutoSpeicherung(projekt)
     const geschrieben = await sofortFlush(projekt)
 
     if (!geschrieben.ok) {

@@ -23,7 +23,7 @@ import { holeAktivesProjekt, merkeAktivesProjekt } from './aktives-projekt'   //
 import { sofortFlush } from './auto-speichern'                                // #47
 import { mitD1Lock } from './d1-lock'                                         // #32
 import { migriereProjekt } from './migriere-projekt'                          // #48
-import { projektOrdner } from './pfade'                                       // #49
+import { PROJEKT_DATEI as DATEI, PROJEKT_DATEI_SICHERUNG as SICHERUNG, projektOrdner } from './pfade'
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #32:  mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
@@ -59,10 +59,8 @@ import type { Project } from '../../shared/contracts/project'
 import type { ProjectStoreFehlercode } from './assets'            // #72
 
 /** Dateiname im Projektordner - gleichlautend mit dem Schreiber (#46) und mit #35. */
-const DATEI = 'project.json'
 
 /** Die letzte heile Fassung, die #46 vor jedem Schreiben anlegt (TK 9.5.4). */
-const SICHERUNG = `${DATEI}.bak`
 
 /**
  * Eine unbedenkliche Projekt-ID, die NUR als Vergleichswert dient (s. `istLesbareId`).

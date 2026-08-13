@@ -18,7 +18,7 @@ import path from 'node:path'
 
 import { AKTUELLE_SCHEMA_VERSION } from '../../shared/contracts/konstanten'
 
-import { projektOrdner } from './pfade'
+import { PROJEKT_DATEI as DATEI, projektOrdner } from './pfade'
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #49: projektOrdner(projektId: string): string
@@ -55,7 +55,6 @@ import { projektOrdner } from './pfade'
 const WARTEZEITEN_MS = [100, 200, 400, 800] as const
 
 /** Dateiname im Projektordner. An EINER Stelle, damit .tmp/.bak nicht auseinanderlaufen. */
-const DATEI = 'project.json'
 
 /**
  * Eine unbedenkliche Projekt-ID, die NUR als Vergleichswert dient (s. `istSchreibbareId`).

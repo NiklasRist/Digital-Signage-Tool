@@ -142,7 +142,12 @@ describe("entferneAsset (#73) - Erfolgsfall", () => {
     expect(projekt.assets.map((a) => a.id)).toEqual(["a-erst", "a-letzt"]);
 
     expect(zustand.geflusht).toEqual([projekt]);
-    expect(zustand.entprellt).toEqual([]);
+    // Seit dem 12.08.2026 wird die Aenderung ZUERST angemeldet und dann sofort geschrieben:
+    // planeAutoSpeicherung (#47) ist der eine Ort, an dem `geaendertAm` fortgeschrieben wird,
+    // und sofortFlush stempelt nicht. Ohne die Anmeldung truege project.json nach einem
+    // Auftrag das alte Aenderungsdatum. Der gesetzte Entprellungstermin ist unschaedlich -
+    // sofortFlush bricht ihn als Erstes ab.
+    expect(zustand.entprellt).toEqual([projekt]);
     expect(zustand.lockAufrufe).toBe(1);
     expect(zustand.flushImLock).toEqual([true]);
   });
