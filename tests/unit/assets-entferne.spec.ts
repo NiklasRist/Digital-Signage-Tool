@@ -287,4 +287,33 @@ describe("entferneAsset (#73) - Fehlerfaelle", () => {
     expect(projekt.assets).toHaveLength(3);
     expect(zustand.geflusht).toEqual([]);
   });
+
+  it("blockiert, wenn nur eine AKTION ueber bildRef auf das Asset zeigt", async () => {
+    // Entschieden am 12.08.2026. Vorher wurde nur die Wiedergabeliste geprueft - ein Bild,
+    // auf das nur eine Aktion zeigte, liess sich loeschen, und die Aktion zeigte danach ins
+    // Leere. Das ist NICHT der Fall aus TK 9.8.5, wo der Eintrag noch existiert.
+    projekt.aktionen = [
+      {
+        id: "akt-1",
+        titel: "Sommeraktion",
+        beschreibung: null,
+        preis: null,
+        bildRef: "a-mitte",
+        cta: null,
+        standardDauer: null,
+        vorlagenId: "vollbild",
+        akzentfarbe: null,
+      },
+    ];
+
+    const ergebnis = await entferneAsset("p1", "a-mitte");
+
+    expect(ergebnis.ok).toBe(false);
+    if (ergebnis.ok) return;
+    expect(ergebnis.fehler.code).toBe("asset_referenziert");
+    expect(ergebnis.fehler.daten).toEqual({ referenzenIds: ["akt-1"] });
+    // Nichts entfernt, nichts geschrieben.
+    expect(projekt.assets.map((a) => a.id)).toEqual(["a-erst", "a-mitte", "a-letzt"]);
+    expect(zustand.geflusht).toEqual([]);
+  });
 });

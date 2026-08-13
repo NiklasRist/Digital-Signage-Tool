@@ -44,7 +44,7 @@ import type { Asset } from '../../shared/contracts/asset'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 // Nur fuer die Referenzpruefung in #73 - der Typ, nicht der Wert; zur Laufzeit bleibt diese Datei
 // ohne weitere Abhaengigkeit.
-import type { Listenelement } from '../../shared/contracts/project'
+import type { Project } from '../../shared/contracts/project'
 
 // Fehlercode-Union des Moduls `project-store` – sie wird HIER deklariert (Begründung unten);
 // #73 und #74 liegen in derselben Datei und verwenden sie, #75 (`ausgaben.ts`) importiert sie
@@ -374,7 +374,7 @@ export async function entferneAsset(
     // Fehlschlag weiter unten (Begruendung dort). `undefined` heisst: Der Eintrag stand vorn.
     const vorgaenger: Asset | undefined = stelle > 0 ? projekt.assets[stelle - 1] : undefined
 
-    const referenzenIds = sammleAssetReferenzen(projekt.liste, assetId)
+    const referenzenIds = sammleAssetReferenzen(projekt, assetId)
     if (referenzenIds.length > 0) {
       // BLOCKIEREN, nicht kaskadieren: "Medium loeschen ... blockiert bei Referenz" (TK 9.5.3).
       // Kein Listenelement wird entfernt, keins auf null gesetzt - nur `loescheAktion` (#40)
@@ -563,9 +563,12 @@ export async function setzeAssetZustand(
  * muss die betroffenen Elemente anspringen koennen, und die `ref` ist bei allen Treffern ohnehin
  * dieselbe (`assetId`) und damit wertlos. Die Listenreihenfolge macht die Meldung reproduzierbar.
  */
-function sammleAssetReferenzen(liste: Listenelement[], assetId: string): string[] {
+function sammleAssetReferenzen(projekt: Project, assetId: string): string[] {
   const gefunden: string[] = []
-  for (const element of liste) {
+
+  // 1. Die Wiedergabeliste. Nur video/bild - bei `segment` ist `ref` eine AKTIONS-ID,
+  //    ein Treffer dort waere ein Zufall der UUID-Belegung.
+  for (const element of projekt.liste) {
     if (element.art !== 'video' && element.art !== 'bild') {
       continue
     }
@@ -573,6 +576,23 @@ function sammleAssetReferenzen(liste: Listenelement[], assetId: string): string[
       gefunden.push(element.id)
     }
   }
+
+  // 2. Die Aktionen-Bibliothek ueber `bildRef` (ENTSCHIEDEN 12.08.2026).
+  //    Bis dahin wurde nur die Liste geprueft. Wurde ein Bild geloescht, auf das NUR eine
+  //    Aktion zeigte, blieb dort ein Verweis ins Leere zurueck - und das ist NICHT der Fall
+  //    aus TK 9.8.5, wo der Eintrag noch existiert und `zustand: 'fehlt'` traegt. Dort weiss
+  //    die Anwendung, dass die Datei fehlt; hier zeigte die Aktion auf eine Kennung, die es
+  //    gar nicht mehr gibt.
+  //    Blockieren statt aufraeumen: Die Anwendung aendert keine Aktion, die der Nutzer nicht
+  //    selbst geaendert hat.
+  for (const aktion of projekt.aktionen) {
+    if (aktion.bildRef === assetId && !gefunden.includes(aktion.id)) {
+      gefunden.push(aktion.id)
+    }
+  }
+
+  // Einblendungen bleiben aussen vor: `abschnitte[].aktionRef` zeigt auf Aktionen, nicht auf
+  // Assets. Wer dort suchte, verglich zwei verschiedene Namensraeume.
   return gefunden
 }
 

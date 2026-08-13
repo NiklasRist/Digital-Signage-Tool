@@ -145,4 +145,22 @@ describe("registriereHandler (#23)", () => {
 
     expect(spion).toHaveBeenCalledWith({ dauer: 10 });
   });
+
+  it("verwandelt eine Antwort ohne Huelle in unbekannter_fehler", async () => {
+    // Ein vergessenes `return` in einer Fachoperation genuegt. Vorher kam das beim
+    // Renderer an, der die Form nicht prueft - der Absturz passierte weit weg von der
+    // Ursache.
+    const rufe = alsRenderer(
+      "test:kaputt",
+      (n: unknown) => ({ ok: true as const, wert: n }),
+      (async () => undefined) as unknown as Parameters<typeof registriereHandler>[2],
+    );
+
+    const antwort = await rufe({});
+
+    expect(antwort).toEqual({
+      ok: false,
+      fehler: { code: "unbekannter_fehler", meldung: expect.any(String) },
+    });
+  });
 });

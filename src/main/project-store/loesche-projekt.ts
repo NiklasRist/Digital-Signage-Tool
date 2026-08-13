@@ -101,7 +101,7 @@ export async function löscheProjekt(id: string): Promise<Ergebnis<void, Project
   // keinen Zieltyp, `ok` weitete sich zu `boolean` - und die unterschiedene Union `Ergebnis`
   // passte nicht mehr. Der Fehler traefe erst die Zuweisung ganz aussen.
   return mitD1Lock(async (): Promise<Ergebnis<void, ProjectStoreFehlercode>> => {
-    const zustand = await pruefeOrdner(ordner)
+    const zustand = await pruefeOrdner(ordner, id)
     if (zustand.zustand !== 'projektordner') {
       return zustand.antwort
     }
@@ -246,9 +246,37 @@ type Ordnerzustand =
  * ausdruecklich mit auf ("listet **auch** Projekte mit defekter `project.json`, gekennzeichnet
  * statt weggelassen", TK 9.5.2), und genau die will der Nutzer loeschen koennen.
  */
-async function pruefeOrdner(ordner: string): Promise<Ordnerzustand> {
+async function pruefeOrdner(ordner: string, id: string): Promise<Ordnerzustand> {
   try {
     const eintrag = await fs.lstat(ordner)
+
+    // DER ORDNERNAME WIRD NACHGERECHNET (ENTSCHIEDEN 12.08.2026).
+    //
+    // Die Pruefung der Kennung weiter oben ist eine ZEICHENKETTEN-Pruefung - das Ziel bestimmt
+    // aber das DATEISYSTEM. Auf Windows und dem macOS-Standarddateisystem ist die Gross- und
+    // Kleinschreibung egal: `loescheProjekt("P1")` besteht jede Pruefung und trifft den Ordner
+    // `p1`. Ein Projekt waere geloescht, nach dem niemand gefragt hat, und die Funktion meldete
+    // Erfolg.
+    //
+    // `readdir` auf den Elternordner liefert die Namen so, wie sie WIRKLICH auf der Platte
+    // stehen. Steht die uebergebene Kennung nicht exakt darunter, wird abgebrochen - `fs.lstat`
+    // allein haette das nicht gemerkt, es folgt derselben schreibungsblinden Aufloesung.
+    //
+    // Heute kann der Fall keinen echten Aufruf treffen (Kennungen sind klein geschriebene
+    // UUIDs). Die Pruefung kostet nichts und schliesst die Flanke, bevor sich das
+    // Kennungsformat je aendert.
+    const namen = await fs.readdir(path.dirname(ordner))
+    if (!namen.includes(id)) {
+      return {
+        zustand: 'unbrauchbar',
+        antwort: fehler(
+          'ungueltige_eingabe',
+          `Unter dieser Kennung liegt kein Ordner mit exakt diesem Namen - moeglicherweise ` +
+            `unterscheidet sich die Gross- und Kleinschreibung. Es wurde nichts geloescht.`,
+        ),
+      }
+    }
+
     if (!eintrag.isDirectory()) {
       return {
         zustand: 'unbrauchbar',

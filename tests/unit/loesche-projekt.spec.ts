@@ -136,4 +136,18 @@ describe("löscheProjekt (#37)", () => {
     expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "nicht_gefunden" } });
     expect(await existiert(projektPfad("p1"))).toBe(true);
   });
+
+  it("loescht NICHT bei abweichender Gross-/Kleinschreibung", async () => {
+    // Entschieden am 12.08.2026. Die Kennungspruefung ist eine Zeichenkettenpruefung, das
+    // Ziel bestimmt aber das Dateisystem: Auf Windows trifft "P1" den Ordner "p1". Ohne die
+    // Nachrechnung waere ein Projekt geloescht worden, nach dem niemand gefragt hat.
+    await legeProjektAn("p1");
+
+    const ergebnis = await löscheProjekt("P1");
+
+    expect(ergebnis.ok).toBe(false);
+    if (ergebnis.ok) return;
+    expect(ergebnis.fehler.code).toBe("ungueltige_eingabe");
+    expect(await existiert(projektPfad("p1"))).toBe(true);
+  });
 });

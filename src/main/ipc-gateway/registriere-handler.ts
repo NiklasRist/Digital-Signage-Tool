@@ -141,7 +141,30 @@ export function registriereHandler<T, F extends string>(
       // nicht gefangen, sondern durchgereicht, und der Ausnahmefang dieses Gateways
       // waere fuer den haeufigsten Fall (asynchron werfende Fachoperation) wirkungslos.
       // Genau diese Fehlerklasse faellt in keinem Typecheck auf.
-      return await ausfuehren(geprueft.wert);
+      const antwort = await ausfuehren(geprueft.wert);
+
+      // DIE FORM DER ANTWORT WIRD GEPRUEFT (ENTSCHIEDEN 12.08.2026).
+      //
+      // Bis dahin wurde sie unveraendert durchgereicht. Gibt eine Fachoperation versehentlich
+      // `undefined` zurueck - ein vergessenes `return` genuegt -, kam das beim Renderer an, und
+      // `rufeAuf` (#24) prueft die Form ausdruecklich NICHT (es castet nur den Typ). Der
+      // Renderer stolperte dann ueber `ergebnis.ok`, also weit entfernt von der Ursache.
+      // Beide Seiten hielten sich dabei korrekt an ihren Vertrag; geprueft hat nur niemand.
+      //
+      // WARUM HIER UND NICHT IM RENDERER: Diese Stelle sieht jede Antwort und liegt noch VOR
+      // der Prozessgrenze - sie kann eine kaputte Antwort in eine ordentliche Fehlerhuelle
+      // verwandeln, statt den Renderer mit Wissen ueber die Antwortform zu belasten, das er
+      // nach TK 9.1.1 gar nicht haben soll.
+      //
+      // Der Code ist DERSELBE wie bei einer geworfenen Ausnahme: Aus Sicht des Aufrufers ist
+      // es dieselbe Lage - die Operation hat sich nicht an ihren Vertrag gehalten. Deshalb
+      // kein neuer Fehlercode, sondern ein vierter Weg zu einem vorhandenen.
+      if (typeof antwort !== "object" || antwort === null || typeof (antwort as { ok?: unknown }).ok !== "boolean") {
+        protokolliere(kanal, "antwortform", antwort);
+        return unbekannterFehler<T, F>(kanal);
+      }
+
+      return antwort;
     } catch (fehler) {
       protokolliere(kanal, "ausfuehren", fehler);
       return unbekannterFehler<T, F>(kanal);
