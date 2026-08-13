@@ -49,7 +49,10 @@ import type { Project } from '../../shared/contracts/project'
 // Fehlercode-Union des Moduls `project-store` – sie wird HIER deklariert (Begründung unten);
 // #73 und #74 liegen in derselben Datei und verwenden sie, #75 (`ausgaben.ts`) importiert sie
 // von hier. Diese Zeile ist Teil dieses Issues.
-export type ProjectStoreFehlercode = 'speicher_fehler'
+export type ProjectStoreFehlercode = 'speicher_fehler' | 'projekt_beschaeftigt'
+// `projekt_beschaeftigt` NACHGETRAGEN 12.08.2026: Das Loeschen eines Projekts (#37) ist eine
+// Instant-Operation und laeuft am Torwaechter vorbei. Ein laufender Render fuer dasselbe Projekt
+// verloere mitten im Lauf seinen Ordner. Vom User entschieden: abweisen statt zerstoeren.
 
 /**
  * Zeichen, die einen `dateiname` zu einem PFAD machen wuerden.

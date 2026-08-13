@@ -200,3 +200,27 @@ export function alleQ1(): Auftrag[] {
   // Bei leerer Schlange kommt hier ein leeres Array heraus, nie null/undefined.
   return [...laufende, ...anstehende, ...terminale].map((e) => e.auftrag);
 }
+
+export function hatAuftraegeFuerProjekt(projektId: string): boolean {
+  // NACHGETRAGEN 12.08.2026. Beim Bau von #54 fehlte diese Funktion im verbindlichen
+  // Signaturblock - sie stand nur im Fliesstext des Issues, und der Bauende hat sie deshalb
+  // zu Recht nicht gebaut, sondern gemeldet (Regel C: verbindlich heisst entschieden).
+  // Inzwischen steht sie im Block; hier nachgezogen, weil der Generator die Datei nach dem
+  // Fuellen nicht mehr anfasst.
+  //
+  // WOFUER: Das Loeschen eines Projekts (#37) ist eine Instant-Operation und laeuft am
+  // Torwaechter vorbei - dessen `loeschen`-Auftragsart meint das Loeschen eines MEDIUMS.
+  // Ein laufender Render fuer dasselbe Projekt verloere mitten im Lauf seinen Ordner und
+  // legte Teile davon per mkdir wieder an. Der Nutzer bekommt stattdessen eine verstaendliche
+  // Meldung.
+  //
+  // TERMINALE EINTRAEGE ZAEHLEN NICHT: 'erfolg', 'fehlgeschlagen' und 'abgebrochen' halten
+  // keinen Ordner mehr. Wuerden sie mitzaehlen, waere ein Projekt nach dem ersten
+  // fehlgeschlagenen Render dauerhaft unloeschbar - Q1 haelt seine Eintraege bis zum
+  // Abschluss der Sitzung.
+  return eintraege.some(
+    (e) =>
+      (e.auftrag.status === 'laeuft' || e.auftrag.status === 'anstehend') &&
+      e.auftrag.payload.projektId === projektId,
+  );
+}

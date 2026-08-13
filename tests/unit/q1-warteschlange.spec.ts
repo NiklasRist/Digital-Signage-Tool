@@ -21,13 +21,17 @@ async function frischesQ1(): Promise<Q1Modul> {
 // Testauftraege als Objektliterale - kein echter Fachdienst noetig. Die Variante
 // 'import' ist die mit der kleinsten Nutzlast; welche Art es ist, spielt fuer Q1
 // keine Rolle, sie ordnet nur.
-function auftrag(id: string, status: AuftragStatus = "anstehend"): Auftrag {
+function auftrag(
+  id: string,
+  status: AuftragStatus = "anstehend",
+  projektId = "p1",
+): Auftrag {
   return {
     auftragId: id,
     art: "import",
     status,
     label: `Import ${id}`,
-    payload: { projektId: "p1", quellPfad: `C:/quelle/${id}.mp4` },
+    payload: { projektId, quellPfad: `C:/quelle/${id}.mp4` },
     fortschritt: null,
     versuche: 0,
     fehler: null,
@@ -193,5 +197,24 @@ describe("Q1-Warteschlange (#54)", () => {
     // noch verschoben (das braeche FIFO fuer einen bereits Wartenden).
     expect(q1.findeQ1("a1")?.auftrag).toBe(a1);
     expect(q1.findeQ1("a1")?.auftrag.label).toBe("Import a1");
+  });
+
+  it("hatAuftraegeFuerProjekt zaehlt laufende und wartende, nicht beendete", async () => {
+    const q = await frischesQ1();
+
+    q.fuegeAnsEndeAn(auftrag("a-1", "anstehend", "p1"));
+    expect(q.hatAuftraegeFuerProjekt("p1")).toBe(true);
+    expect(q.hatAuftraegeFuerProjekt("p2")).toBe(false);
+
+    const eintrag = q.findeQ1("a-1");
+    if (eintrag === undefined) throw new Error("Eintrag fehlt");
+
+    eintrag.auftrag.status = "laeuft";
+    expect(q.hatAuftraegeFuerProjekt("p1")).toBe(true);
+
+    // Beendet haelt keinen Ordner mehr - sonst waere ein Projekt nach dem ersten
+    // fehlgeschlagenen Render dauerhaft unloeschbar.
+    eintrag.auftrag.status = "fehlgeschlagen";
+    expect(q.hatAuftraegeFuerProjekt("p1")).toBe(false);
   });
 });

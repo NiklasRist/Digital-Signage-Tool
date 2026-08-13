@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
 import os from "node:os";
 import path from "node:path";
 
@@ -148,6 +149,42 @@ describe("löscheProjekt (#37)", () => {
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
     expect(ergebnis.fehler.code).toBe("ungueltige_eingabe");
+    expect(await existiert(projektPfad("p1"))).toBe(true);
+  });
+
+  it("weist das Loeschen ab, solange ein Auftrag laeuft", async () => {
+    // Das Loeschen ist eine Instant-Operation und laeuft am Torwaechter vorbei. Ohne diese
+    // Sperre verloere ein laufender Render mitten im Lauf seinen Ordner und legte Teile davon
+    // per mkdir wieder an.
+    const { fuegeAnsEndeAn } = await import(
+      "../../src/main/auftrags-manager/q1-warteschlange"
+    );
+    await legeProjektAn("p1");
+    fuegeAnsEndeAn({
+      auftragId: "r-1",
+      art: "render",
+      status: "laeuft",
+      label: "Render",
+      payload: {
+        renderId: "r-1",
+        projektId: "p1",
+        elemente: [],
+        profil: RENDER_PROFILE,
+        ausgabeName: "sommer",
+      },
+      fortschritt: null,
+      versuche: 1,
+      fehler: null,
+      ergebnis: null,
+      erstelltAm: "2026-08-13T10:00:00.000Z",
+    });
+
+    const ergebnis = await löscheProjekt("p1");
+
+    expect(ergebnis.ok).toBe(false);
+    if (ergebnis.ok) return;
+    expect(ergebnis.fehler.code).toBe("projekt_beschaeftigt");
+    // Nichts angefasst.
     expect(await existiert(projektPfad("p1"))).toBe(true);
   });
 });

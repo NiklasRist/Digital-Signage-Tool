@@ -30,6 +30,7 @@ import path from 'node:path'
 import { leseKonfig } from '../config-store/lese-konfig'          // #26
 import { aendereKonfig } from '../config-store/schreibe-config'   // #31
 
+import { hatAuftraegeFuerProjekt } from '../auftrags-manager/q1-warteschlange'  // #54
 import { holeAktivesProjekt, merkeAktivesProjekt } from './aktives-projekt'  // #192
 import { verwirfGeplanteSpeicherung } from './auto-speichern'      // #47
 import { mitD1Lock } from './d1-lock'                             // #32
@@ -101,6 +102,23 @@ export async function löscheProjekt(id: string): Promise<Ergebnis<void, Project
   // keinen Zieltyp, `ok` weitete sich zu `boolean` - und die unterschiedene Union `Ergebnis`
   // passte nicht mehr. Der Fehler traefe erst die Zuweisung ganz aussen.
   return mitD1Lock(async (): Promise<Ergebnis<void, ProjectStoreFehlercode>> => {
+    // ZUERST: Laeuft oder wartet fuer dieses Projekt ein Auftrag? (nachgetragen 12.08.2026)
+    //
+    // Das Loeschen ist eine INSTANT-Operation und laeuft damit am Torwaechter vorbei - dessen
+    // `loeschen`-Auftragsart meint das Loeschen eines MEDIUMS, nicht eines Projekts. Ohne diese
+    // Abfrage verloere ein laufender Render oder Export mitten im Lauf seinen Ordner und legte
+    // Teile davon per mkdir wieder an: ein zerstoerter Lauf, ein halber Ordner, und eine
+    // Fehlermeldung, die auf etwas ganz anderes zeigt.
+    //
+    // Die Pruefung steht VOR jedem Dateizugriff - ein abgewiesenes Loeschen soll die Platte
+    // nicht einmal beruehren.
+    if (hatAuftraegeFuerProjekt(id)) {
+      return fehler(
+        'projekt_beschaeftigt',
+        `Fuer dieses Projekt laeuft oder wartet gerade ein Auftrag. Es wurde nichts geloescht.`,
+      )
+    }
+
     const zustand = await pruefeOrdner(ordner, id)
     if (zustand.zustand !== 'projektordner') {
       return zustand.antwort
