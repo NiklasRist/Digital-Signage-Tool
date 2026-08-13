@@ -53,4 +53,40 @@ export const KANAELE = {
     leseMarke: 'config:leseMarke',
     setzeUIVoreinstellung: 'config:setzeUIVoreinstellung',
   },
+
+  // media-service (#93). GENAU EIN Kanal, und das ist eine Festlegung, keine Lücke:
+  // `importMedium` und `löscheMedium` bekommen ausdrücklich KEINEN Kanal – sie laufen
+  // über `reiheEin` der Auftragsverwaltung („`import`, `loeschen`, `render` und `export`
+  // werden damit **nicht** als direkte Request/Response-Operationen aufgerufen, sondern
+  // über `reiheEin` eingereiht", TK 9.3.4). Ein direkter Kanal wäre ein zweiter Weg an
+  // der seriellen Ordnung vorbei. `reconcile` (#91) und die `pendingDeletions` sind
+  // main-intern (TK 9.4.7) und tauchen hier ebenfalls nicht auf. Kein Ereignis: Der
+  // Stand der Import-/Löschaufträge kommt über `queue:geaendert`.
+  //
+  // KANAL-STRING UND SCHLÜSSEL TRAGEN BEIDE DEN UMLAUT. Der String folgt der Kanalbenennung
+  // `<modul>:<operation>` mit der Operation, wie sie im Vertrag heißt (TK 9.4.3:
+  // `öffneMedienDialog`); der Vertrag führt umlauthaltige Kanäle selbst als Beispiel
+  // (`vorlagen:löscheVorlage`, TK 9.1.1 Punkt 4).
+  //
+  // KORRIGIERT am 13.08.2026: Hier stand „Der SCHLÜSSEL bleibt ASCII, weil er im Quelltext
+  // beider Prozesse getippt und importiert wird". Das klingt vernünftig und war trotzdem
+  // falsch — es bricht den Vertragstest von #25, s. die Begründung am Eintrag selbst. Der
+  // Bau-Agent von #93 hat den Bruch gemeldet und die Entscheidung richtig NICHT selbst
+  // getroffen: Der Test gehört zu #25 und lag ausserhalb seines Dateibereichs.
+  media: {
+    // SCHLÜSSEL MIT UMLAUT, und das ist eine Entscheidung vom 13.08.2026, keine Nachlässigkeit.
+    //
+    // #93 schreibt den Kanal verbindlich als `media:öffneMedienDialog` vor, setzt in seinem
+    // eigenen Signaturblock aber `oeffneMedienDialog` als Schlüssel — und verletzt damit den
+    // Vertragstest von #25 („kanal === `${modul}:${operation}`") PER KONSTRUKTION. Der
+    // Widerspruch steht also im Issue, nicht im Bau; er fiel beim Bau von #93 sofort auf, weil
+    // der Test rot wurde.
+    //
+    // Aufgelöst zugunsten des Umlauts: Der Kanalname ist im Issue verbindlich, der Schlüssel
+    // nicht. Umlaute in Bezeichnern sind im Projekt ohnehin üblich (`löscheMedium`,
+    // `löscheProjekt`, `öffneProjekt`), und TK 9.1.1 Punkt 4 führt `vorlagen:löscheVorlage` selbst
+    // als Beispiel. Die Gegenrichtung — den Test lockern — wurde verworfen: Er ist die einzige
+    // Stelle, an der ein vertippter Kanalname auffällt, bevor er im Betrieb ins Leere läuft.
+    öffneMedienDialog: 'media:öffneMedienDialog',
+  },
 } as const
