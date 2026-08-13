@@ -56,6 +56,7 @@ import { projektOrdner } from './pfade'                                       //
 
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { Project } from '../../shared/contracts/project'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 
 /** Dateiname im Projektordner - gleichlautend mit dem Schreiber (#46) und mit #35. */
 const DATEI = 'project.json'
@@ -73,7 +74,9 @@ const VERGLEICHS_ID = 'vergleich'
  * Der maschinenlesbare Grund eines Fehlschlags - er reist in `fehler.daten`, NICHT im Code.
  *
  * WARUM DAS UEBERHAUPT NOETIG IST (und der wichtigste Meldepunkt dieser Datei): Die
- * verbindliche Signatur ist `Ergebnis<Project>`, also EINPARAMETRIG - der Fehlercode kann damit
+ * [UEBERHOLT seit dem Nachtrag vom 12.08.2026 - die Signatur ist jetzt zweiparametrig und
+ * traegt den fachlichen Code selbst. Der Absatz bleibt als Beleg stehen.]
+ * verbindliche Signatur war `Ergebnis<Project>`, also EINPARAMETRIG - der Fehlercode konnte damit
  * nur `ungueltige_eingabe | nicht_gefunden | unbekannter_fehler` sein. Die Fehlerpfad-Tabelle
  * desselben Issues verlangt aber `speicher_fehler` ("wenn sowohl project.json als auch .bak
  * unlesbar sind"), und `speicher_fehler` gehoert zu `ProjectStoreFehlercode` (#72), der hier
@@ -91,9 +94,15 @@ const VERGLEICHS_ID = 'vergleich'
  * fuer den Aufrufer nicht von "die Migration ist unvollstaendig" zu unterscheiden - genau das
  * hat #48 als offenen Punkt an diese Datei zurueckgegeben.
  */
-export type OeffneProjektFehlergrund = 'speicher_fehler' | 'schema_zu_neu'
+// Seit dem Nachtrag vom 12.08.2026 traegt die Signatur diesen Code selbst - er ist kein
+// Anhang mehr. `schema_zu_neu` ist bewusst EIGEN: "Diese Datei stammt aus einer neueren
+// Programmfassung" ist fuer den Nutzer etwas anderes als "Speichern fehlgeschlagen" - die
+// eine Lage behebt ein Update, die andere Platz auf der Platte.
+export type OeffneProjektFehlergrund = ProjectStoreFehlercode | 'schema_zu_neu'
 
-export async function öffneProjekt(id: string): Promise<Ergebnis<Project>> {
+export async function öffneProjekt(
+  id: string,
+): Promise<Ergebnis<Project, OeffneProjektFehlergrund>> {
   // VOR dem Lock und vor jeder Wirkung. Ein unbrauchbarer Wert beruehrt D1 nicht; ihn erst
   // hinter der Warteschlange abzuweisen hiesse, einen laufenden Schreibvorgang abzuwarten, nur
   // um nichts zu tun (gleiche Linie wie #33/#37).
@@ -123,7 +132,7 @@ export async function öffneProjekt(id: string): Promise<Ergebnis<Project>> {
   // Die Rueckgabeangabe am Rueckruf ist nicht Zierde: Ohne sie hat `return { ok: true, ... }`
   // keinen Zieltyp, `ok` weitete sich zu `boolean`, und die unterschiedene Union `Ergebnis`
   // waere nicht mehr diskriminierbar.
-  return mitD1Lock(async (): Promise<Ergebnis<Project>> => {
+  return mitD1Lock(async (): Promise<Ergebnis<Project, OeffneProjektFehlergrund>> => {
     // SCHRITT 1: Gibt es den Ordner? Diese Frage steht VOR dem Sofort-Flush, damit ein Tippfehler
     // in der Kennung nicht das offene Projekt anfasst ("keine Wirkung", Fehlerpfad-Tabelle).
     const zustand = await pruefeOrdner(ordner)
@@ -239,7 +248,10 @@ export async function öffneProjekt(id: string): Promise<Ergebnis<Project>> {
  * aeltere Fassung stillschweigend zu laden und alles zu verlieren, was die neuere App-Version
  * seither hinzugefuegt hat. "Fehler (nicht raten)" (TK 9.5.5) meint genau das.
  */
-async function ladeVonPlatte(ordner: string, id: string): Promise<Ergebnis<Project>> {
+async function ladeVonPlatte(
+  ordner: string,
+  id: string,
+): Promise<Ergebnis<Project, OeffneProjektFehlergrund>> {
   const erste = await leseFassung(path.join(ordner, DATEI), id)
   if (erste.art !== 'defekt') {
     return ausLeseversuch(erste, DATEI)
@@ -269,7 +281,10 @@ type Leseversuch =
   | { art: 'defekt'; grund: string }
 
 /** Setzt einen nicht-defekten Leseversuch in die Ergebnis-Huelle um. */
-function ausLeseversuch(versuch: Leseversuch, datei: string): Ergebnis<Project> {
+function ausLeseversuch(
+  versuch: Leseversuch,
+  datei: string,
+): Ergebnis<Project, OeffneProjektFehlergrund> {
   if (versuch.art === 'geladen') {
     return erfolg(versuch.projekt)
   }
@@ -417,7 +432,7 @@ function istLesbareId(id: unknown): id is string {
   return path.dirname(ordner) === path.dirname(vergleich) && path.basename(ordner) === id
 }
 
-function erfolg(projekt: Project): Ergebnis<Project> {
+function erfolg(projekt: Project): Ergebnis<Project, OeffneProjektFehlergrund> {
   return { ok: true, wert: projekt }
 }
 
@@ -429,11 +444,15 @@ function fehler(
   code: GenerischerFehlercode,
   meldung: string,
   grund?: OeffneProjektFehlergrund,
-): Ergebnis<Project> {
+): Ergebnis<Project, OeffneProjektFehlergrund> {
   if (grund === undefined) {
     return { ok: false, fehler: { code, meldung } }
   }
-  return { ok: false, fehler: { code, meldung, daten: { grund } } }
+  // WO DER GRUND DA IST, IST ER DER CODE - nicht mehr ein Anhang daneben.
+  // Bis zum 12.08.2026 war die Signatur einparametrig und konnte `speicher_fehler` nicht
+  // tragen; der Grund reiste deshalb in `fehler.daten` mit. Seit dem Nachtrag traegt sie
+  // ihn, und ein Aufrufer kann endlich darauf verzweigen, statt ihn auszupacken.
+  return { ok: false, fehler: { code: grund, meldung } }
 }
 
 /** Prueft den `code` eines Node-Systemfehlers, ohne ihn auf einen Typ zu zwingen, den er nicht hat. */

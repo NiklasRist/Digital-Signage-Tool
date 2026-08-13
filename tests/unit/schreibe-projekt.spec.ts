@@ -117,4 +117,41 @@ describe("schreibeProjekt (#46)", () => {
     // Nichts angelegt: Der Ausbruch haette neben dem Datenort geschrieben.
     expect(await fs.readdir(zustand.ordner)).toEqual([]);
   });
+
+  // --- Das .bak-Fenster (gefunden beim Bau von #34, geschlossen 12.08.2026) ---
+  it("ueberschreibt eine HEILE .bak nicht mit einer kaputten project.json", async () => {
+    // Der gefaehrliche Ablauf: project.json ist defekt, das Projekt wurde aus der .bak
+    // gerettet. Wuerde jetzt blind gesichert, kopierte die kaputte Fassung ueber die
+    // einzige heile - und ein anschliessend scheiterndes Schreiben (volle Platte, meist
+    // genau die Ursache) liesse gar nichts Brauchbares zurueck.
+    await fs.mkdir(projektOrdner(BASIS.id), { recursive: true });
+    await fs.writeFile(pfad("project.json"), "{kaputt", "utf8");
+    await fs.writeFile(
+      pfad("project.json.bak"),
+      JSON.stringify({ ...BASIS, name: "die heile Fassung" }),
+      "utf8",
+    );
+
+    const ergebnis = await schreibeProjekt({ ...BASIS, name: "der neue Stand" });
+
+    expect(ergebnis.ok).toBe(true);
+    // Die Sicherung ist unberuehrt geblieben ...
+    expect((await lies("project.json.bak")).name).toBe("die heile Fassung");
+    // ... und der neue Stand steht trotzdem.
+    expect((await lies("project.json")).name).toBe("der neue Stand");
+  });
+
+  it("sichert eine lesbare project.json weiterhin", async () => {
+    // Gegenprobe: Die Reparatur darf die Sicherung nicht generell abschalten.
+    await fs.mkdir(projektOrdner(BASIS.id), { recursive: true });
+    await fs.writeFile(
+      pfad("project.json"),
+      JSON.stringify({ ...BASIS, name: "der alte Stand" }),
+      "utf8",
+    );
+
+    await schreibeProjekt({ ...BASIS, name: "der neue Stand" });
+
+    expect((await lies("project.json.bak")).name).toBe("der alte Stand");
+  });
 });

@@ -138,7 +138,10 @@ export async function schreibeProjekt(projekt: Project): Promise<Ergebnis<void, 
   // Verschieben/Unlink der Quelle"). Ein Verschieben liesse project.json fuer die Dauer des
   // Schreibvorgangs verschwinden, und es traefe zusaetzlich die macOS-Falle aus dem
   // STOPP-Block ("unlink gelingt still, obwohl die Datei noch geoeffnet ist").
-  const sicherungsFehler = await mitWiederholung(() => fs.copyFile(ziel, sicherung))
+  // NUR sichern, wenn die vorhandene Datei als Rueckfallebene taugt - s. taugtAlsSicherung().
+  const sicherungsFehler = (await taugtAlsSicherung(ziel))
+    ? await mitWiederholung(() => fs.copyFile(ziel, sicherung))
+    : null
   if (sicherungsFehler !== null && !istCode(sicherungsFehler, 'ENOENT')) {
     // ENOENT = es gibt noch keine project.json (erstes Speichern eines neuen Projekts). Dann
     // ist nichts zu sichern, und das ist KEIN Fehler.
@@ -273,6 +276,35 @@ function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
 
 function text(ursache: unknown): string {
   return ursache instanceof Error ? ursache.message : String(ursache)
+}
+
+/**
+ * Ist die vorhandene Zieldatei als Sicherung ueberhaupt brauchbar?
+ *
+ * WARUM DIESE FRAGE UEBERHAUPT GESTELLT WIRD (gefunden beim Bau von #34 am 12.08.2026):
+ * Die Sicherung laeuft als ERSTER Schritt und kopierte bisher, was immer dort lag. Wurde ein
+ * Projekt gerade AUS der `.bak` gerettet - weil die Hauptdatei defekt war -, dann kopierte der
+ * naechste Schreibvorgang genau diese defekte Datei ueber die einzige heile Fassung. Scheitert
+ * danach das Schreiben, und die haeufigste Ursache dafuer ist eine volle Platte, ist der Stand
+ * ENDGUELTIG weg: Hauptdatei kaputt, Sicherung mit derselben kaputten Fassung ueberschrieben.
+ *
+ * Die Pruefung ist bewusst schwach - nur "laesst sich lesen und als JSON auswerten". Sie
+ * beurteilt NICHT, ob der Inhalt fachlich vollstaendig ist; das entscheidet, wer laedt (#34
+ * ueber die Pflichtfeldpruefung aus #48). Hier geht es allein um die Frage, ob diese Datei als
+ * Rueckfallebene taugt - und eine Datei, die nicht einmal parst, taugt es nicht.
+ *
+ * Ist sie unbrauchbar, wird die Sicherung UEBERSPRUNGEN statt abgebrochen: Die vorhandene
+ * `.bak` bleibt unberuehrt und damit die letzte heile Fassung, und der neue, gute Stand wird
+ * trotzdem geschrieben. Ein Abbruch waere hier das Gegenteil von hilfreich - er verweigerte
+ * das Speichern genau dann, wenn die Hauptdatei ohnehin schon kaputt ist.
+ */
+async function taugtAlsSicherung(pfad: string): Promise<boolean> {
+  try {
+    JSON.parse(await fs.readFile(pfad, 'utf8')) as unknown
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**

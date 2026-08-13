@@ -168,7 +168,8 @@ describe('öffneProjekt (#34)', () => {
 
     expect(e.ok).toBe(false)
     if (e.ok) return
-    expect(e.fehler.daten).toEqual({ grund: 'speicher_fehler' })
+    // Seit dem 12.08.2026 IST der Grund der Code - kein Anhang mehr in `daten`.
+    expect(e.fehler.code).toBe('speicher_fehler')
     // Kein leerer Start: Der Halter bleibt unberuehrt (TK 9.5.4).
     expect(holeAktivesProjekt()).toBeNull()
     expect(zustand.konfigAufrufe).toEqual([])
@@ -195,7 +196,9 @@ describe('öffneProjekt (#34)', () => {
     if (e.ok) return
     // Die Unterscheidung, die #48 an diese Datei zurueckgegeben hat: "zu neu" ist etwas anderes
     // als "Migration fehlt" - und eine aeltere .bak zu laden waere stiller Datenverlust.
-    expect(e.fehler.daten).toEqual({ grund: 'schema_zu_neu' })
+    // Eigener Code, damit die Oberflaeche "zu neu" von "Speichern fehlgeschlagen"
+    // unterscheiden kann - die eine Lage behebt ein Update, die andere Plattenplatz.
+    expect(e.fehler.code).toBe('schema_zu_neu')
     expect(holeAktivesProjekt()).toBeNull()
   })
 
@@ -233,7 +236,8 @@ describe('öffneProjekt (#34)', () => {
 
     expect(e.ok).toBe(false)
     if (e.ok) return
-    expect(e.fehler.daten).toEqual({ grund: 'speicher_fehler' })
+    // Seit dem 12.08.2026 IST der Grund der Code - kein Anhang mehr in `daten`.
+    expect(e.fehler.code).toBe('speicher_fehler')
     // Sonst verloere der Beenden-Flush (#47) die Arbeit am alten Projekt lautlos: Er schreibt
     // nur das AKTIVE Projekt.
     expect(holeAktivesProjekt()?.id).toBe('p1')

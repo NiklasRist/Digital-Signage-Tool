@@ -115,14 +115,19 @@ export function verdrahteConfigStoreIPC(): void {
     // Beide Annotationen stehen ABSICHTLICH da: Sie legen `W` der Huelle fest, bevor der
     // zweite Rueckruf getippt wird - ohne sie muesste TypeScript `W` aus zwei zugleich
     // kontextabhaengigen Funktionen erraten.
-    (nutzlast: unknown): Ergebnis<{ projektId: string }, 'ungueltige_eingabe'> => {
+    (nutzlast: unknown): Ergebnis<{ projektId: string | null }, 'ungueltige_eingabe'> => {
       if (!istObjekt(nutzlast)) return abgelehnt('setzeAktivesProjekt erwartet ein Objekt { projektId }.')
       // Erst in eine Konstante, dann pruefen: An einer Konstanten greift die Verengung
       // durch `istGefuellterText` verlaesslich, an einem Feld eines Record-Typs nicht
       // ueberall.
       const projektId = nutzlast.projektId
-      if (!istGefuellterText(projektId)) {
-        return abgelehnt('setzeAktivesProjekt braucht eine nicht leere projektId.')
+      // `null` MUSS durch (nachgetragen 12.08.2026): Es ist der Zustand "kein Projekt
+      // offen", den #27 seit demselben Tag annimmt und den #37 nach dem Loeschen des
+      // offenen Projekts herstellen muss. Die urspruengliche Pruef-Tabelle verlangte
+      // "nicht leerer String" und machte ihn damit aus dem Renderer unerreichbar.
+      // Der leere String bleibt ungueltig - wer nichts offen haben will, uebergibt null.
+      if (projektId !== null && !istGefuellterText(projektId)) {
+        return abgelehnt('setzeAktivesProjekt braucht eine nicht leere projektId oder null.')
       }
       // NUR das eine erwartete Feld reist weiter. Ein durchgereichtes Fremdfeld landete
       // ueber `aendereKonfig` in `config.json` und bliebe dort fuer immer.
