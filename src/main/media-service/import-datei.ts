@@ -62,8 +62,10 @@
 // das Normalisieren auf das Profil geschieht erst zur Render-Zeit, 9.2.4/9.2.6)"
 // gehoert nicht zum media-service (TK 9.4.1).
 
-import { copyFile, mkdir, open, rename, stat } from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { mkdir, open, rename, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis';
 
@@ -91,6 +93,7 @@ export async function kopiereInsStaging(
   quellPfad: string,
   zielOrdner: string,
   dateiname: string,
+  meldeFortschritt?: (anteil: number) => void,
 ): Promise<Ergebnis<{ partPfad: string }, 'datei_nicht_gefunden' | 'kopier_fehler'>> {
   // FORMPRUEFUNG VOR JEDEM DATEISYSTEMZUGRIFF. Ein falsch geformter Dateiname ist ein
   // Fehler des Aufrufers, kein Problem der Platte - deshalb `ungueltige_eingabe` und
@@ -124,9 +127,14 @@ export async function kopiereInsStaging(
   // VORAB-PRUEFUNG DER QUELLE - und zwar VOR dem Anlegen des Staging-Ordners: Eine
   // nicht vorhandene Quelle darf laut Fehlertabelle nichts hinterlassen ("nichts
   // kopiert, kein Ordner angelegt").
+  // Die Quellgroesse wird ZWEIMAL gebraucht: fuer den Fortschritt und fuer die
+  // Vollstaendigkeitspruefung nach dem Kopieren. Beide stuetzen sich auf DIESELBE
+  // Abfrage - ein zweiter `stat` koennte einen anderen Wert liefern, und dann waere
+  // unklar, gegen welchen von beiden geprueft wurde.
+  let quellGroesse: number;
   try {
     const angaben = await stat(quellPfad);
-    // GEMESSEN auf dieser Maschine (Node 22, Windows 11): `copyFile` auf ein
+    // GEMESSEN auf dieser Maschine (Node 22, Windows 11): das Kopieren auf ein
     // Verzeichnis meldet EPERM, nicht EISDIR. Die von der Fehlertabelle verlangte
     // Meldung "ein Ordner ist keine Mediendatei" liesse sich also allein aus dem
     // Fehlercode nicht zuverlaessig bilden - der `stat`, den es hier ohnehin gibt,
@@ -135,6 +143,7 @@ export async function kopiereInsStaging(
     if (angaben.isDirectory()) {
       return kopierFehler('kopier_fehler', `${quellName} ist ein Ordner und keine Mediendatei.`);
     }
+    quellGroesse = angaben.size;
   } catch (ursache) {
     if (systemCode(ursache) === 'ENOENT') {
       return kopierFehler('datei_nicht_gefunden', `${quellName} wurde nicht gefunden.`);
@@ -158,19 +167,60 @@ export async function kopiereInsStaging(
     );
   }
 
+  let geschrieben = 0;
+  letzteStufe = -1;
   try {
-    // `copyFile` und KEIN selbstgebautes Stream-Paar: Es nutzt auf beiden
-    // Zielplattformen die schnellsten Systemaufrufe (u. a. Copy-on-Write auf APFS)
-    // und hat keinen Fehlerpfad, in dem ein halb geschriebener Stream unbemerkt
-    // "fertig" meldet.
+    // STREAM-KOPIE STATT `copyFile` - am 13.08.2026 vom User entschieden, weil das
+    // Kopieren SICHTBAR sein soll. Hier stand vorher die Begruendung fuer `copyFile`
+    // (schnellste Systemaufrufe, Copy-on-Write auf APFS, kein halb geschriebener
+    // Stream). Der erste Teil ist der bewusst gezahlte Preis; der zweite ist unten
+    // durch den Byte-Vergleich ERSETZT und damit sogar pruefbar geworden -
+    // `copyFile` liefert gar keine Bytezahl.
     //
-    // KEIN COPYFILE_EXCL und keine Vorab-Existenzpruefung des Ziels: Der Zielname
-    // enthaelt eine frisch erzeugte UUID, eine Kollision im `.staging`-Ordner ist
-    // praktisch ausgeschlossen, und eine Existenzpruefung waere eine klassische
-    // TOCTOU-Attrappe. Ein Rest gleichen Namens wird also ueberschrieben - genau das
-    // ist gewollt, denn er kann nur von einem abgestuerzten Lauf desselben Imports
-    // stammen.
-    await copyFile(quellPfad, partPfad);
+    // GEPRUEFT UND VERWORFEN: `copyFile` behalten und den Zuwachs der Zieldatei
+    // messen. Unter Windows meldet sie SOFORT die volle Groesse (gemessen: 400 MiB in
+    // allen elf Proben ueber 1,3 s Kopierdauer, das Dateisystem legt sie vorab an).
+    // Der Balken staende ab der ersten Zehntelsekunde auf 100 % - schlimmer als
+    // keiner, weil er Fertigsein behauptet.
+    //
+    // `pipeline` und KEIN `.pipe()` von Hand: Nur `pipeline` reicht Fehler BEIDER
+    // Seiten durch und raeumt die Stroeme auf. Mit `.pipe()` bliebe ein
+    // Schreibfehler unbemerkt und der Lesestrom offen - unter Windows haelt der dann
+    // ein Handle auf die Quelldatei, das jedes spaetere Loeschen blockiert.
+    //
+    // KEIN 'wx' beim Ziel und keine Vorab-Existenzpruefung: Der Zielname enthaelt
+    // eine frisch erzeugte UUID, eine Kollision im `.staging`-Ordner ist praktisch
+    // ausgeschlossen, und eine Existenzpruefung waere eine TOCTOU-Attrappe. Ein Rest
+    // gleichen Namens wird ueberschrieben - genau das ist gewollt, denn er kann nur
+    // von einem abgestuerzten Lauf desselben Imports stammen.
+    const quelle = createReadStream(quellPfad);
+    quelle.on('data', (block) => {
+      geschrieben += block.length;
+      meldeAnteil(geschrieben, quellGroesse, meldeFortschritt);
+    });
+    await pipeline(quelle, createWriteStream(partPfad));
+
+    // DIE SCHRANKE, die `copyFile` bisher implizit gegeben hat. Ein Stream, der
+    // vorzeitig endet, kann "fertig" melden, ohne dass ein Fehler entsteht - etwa
+    // wenn die Quelle waehrend des Lesens abgeschnitten oder der Stick abgezogen
+    // wird. Ohne diesen Vergleich wanderte ein halbes Video unter gueltigem Namen in
+    // die Bibliothek, und auffallen wuerde es erst als mitten im Lauf abbrechender
+    // Render.
+    if (geschrieben !== quellGroesse) {
+      return kopierFehler(
+        'kopier_fehler',
+        `${quellName} wurde nur unvollstaendig kopiert (${geschrieben} von ${quellGroesse} Bytes).`,
+      );
+    }
+
+    // DIE LEERE DATEI hat kein einziges `data`-Ereignis ausgeloest, also ist oben auch
+    // nie gemeldet worden. Ohne diese Zeile bliebe ein solcher Import stumm - und
+    // stumm sieht fuer den Nutzer aus wie haengend, gerade weil er sonst einen
+    // Fortschritt gewohnt ist. Eine leere Datei ist zulaessig; ob sie als Medium
+    // taugt, entscheidet ffprobe (#82), nicht das Kopieren.
+    if (quellGroesse === 0) {
+      meldeAnteil(0, 0, meldeFortschritt);
+    }
   } catch (ursache) {
     const code = systemCode(ursache);
     // TOCTOU: Die Vorab-Pruefung oben ERSETZT dieses Abfangen nicht, sie ergaenzt es.
@@ -274,6 +324,55 @@ export async function macheEndgueltig(
  * nicht hat. Leerer String = kein verwertbarer Code (etwa bei einer unerwarteten
  * Ausnahme, die gar kein Systemfehler ist).
  */
+/**
+ * Meldet den Fortschritt - GEDROSSELT auf ganze Prozent.
+ *
+ * WARUM ES DIE DROSSELUNG BRAUCHT: Ein Lesestrom feuert je Block, bei 64-KiB-Bloecken
+ * also rund 32 000 Mal fuer eine 2-GB-Datei. Jeder Aufruf reist beim Aufrufer (#85)
+ * weiter Richtung Oberflaeche; ungedrosselt waere das eine Ereignisflut, die mehr
+ * Rechenzeit kostet als das Kopieren selbst.
+ *
+ * WARUM AUF PROZENT UND NICHT AUF ZEIT: Ein Zeitfilter braeuchte eine Uhr, und damit
+ * waere der Test von der Laufzeit der Maschine abhaengig - eine schnelle Platte
+ * meldete einmal, eine langsame zwanzigmal, und beides waere "richtig". Mit der
+ * Prozentstufe steht die Zahl der Aufrufe fest: hoechstens 101, unabhaengig von
+ * Dateigroesse und Geschwindigkeit, und der Test kann sie abzaehlen.
+ *
+ * Die LEERE DATEI meldet einmal `1`: Ohne Sonderfall waere die Division 0/0, und ein
+ * Import ohne jede Rueckmeldung saehe aus wie ein haengender.
+ */
+function meldeAnteil(
+  geschrieben: number,
+  gesamt: number,
+  melde: ((anteil: number) => void) | undefined,
+): void {
+  if (melde === undefined) {
+    return;
+  }
+  if (gesamt <= 0) {
+    melde(1);
+    return;
+  }
+  const stufe = Math.floor((geschrieben / gesamt) * 100);
+  if (stufe === letzteStufe) {
+    return;
+  }
+  letzteStufe = stufe;
+  melde(geschrieben / gesamt);
+}
+
+/**
+ * Die zuletzt gemeldete Prozentstufe.
+ *
+ * MODULWEIT UND NICHT JE AUFRUF - das ist Absicht und kein Versehen: Der ganze
+ * `media-service` laeuft hinter dem Torwaechter (#59), der genau EINEN Auftrag
+ * gleichzeitig zulaesst (TK 9.3). Zwei Kopien nebeneinander gibt es also nicht. Der
+ * Wert wird zu Beginn jedes Kopiervorgangs zurueckgesetzt; ohne das Zuruecksetzen
+ * bliebe die Stufe des vorigen Imports stehen, und der naechste meldete erst wieder,
+ * wenn er sie ueberholt.
+ */
+let letzteStufe = -1;
+
 function systemCode(ursache: unknown): string {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return '';

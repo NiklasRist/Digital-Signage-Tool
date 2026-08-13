@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { Readable, Writable } from "node:stream";
 
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -26,11 +27,28 @@ import type { ImportFehlercode } from "../../src/main/media-service/fehlercodes"
 //    Partitionsgrenze lassen sich nicht herstellen; nachstellbar ist nur, was
 //    `node:fs/promises` dabei meldet.
 const attrappe = vi.hoisted(() => ({
-  copyFile: null as ((quelle: string, ziel: string) => Promise<void>) | null,
+  // Seit dem 13.08.2026 kopiert #84 ueber Stroeme statt ueber copyFile (Fortschritt).
+  // Die Attrappen sitzen deshalb an createReadStream/createWriteStream - dort, wo die
+  // Fehler jetzt wirklich entstehen.
+  leseStrom: null as (() => NodeJS.ReadableStream) | null,
+  schreibStrom: null as ((ziel: string) => NodeJS.WritableStream) | null,
   mkdir: null as ((pfad: string) => Promise<void>) | null,
   open: null as ((pfad: string, modus: string) => Promise<unknown>) | null,
   rename: null as ((von: string, nach: string) => Promise<void>) | null,
 }));
+
+vi.mock("node:fs", async (echtLaden) => {
+  const echt = await echtLaden<typeof import("node:fs")>();
+  return {
+    ...echt,
+    createReadStream: vi.fn((pfad: string) =>
+      attrappe.leseStrom === null ? echt.createReadStream(pfad) : attrappe.leseStrom(),
+    ),
+    createWriteStream: vi.fn((pfad: string) =>
+      attrappe.schreibStrom === null ? echt.createWriteStream(pfad) : attrappe.schreibStrom(pfad),
+    ),
+  };
+});
 
 vi.mock("node:fs/promises", async (echtLaden) => {
   const echt = await echtLaden<typeof import("node:fs/promises")>();
@@ -39,9 +57,6 @@ vi.mock("node:fs/promises", async (echtLaden) => {
     stat: vi.fn((pfad: string) => echt.stat(pfad)),
     mkdir: vi.fn((pfad: string, optionen: { recursive: true }) =>
       attrappe.mkdir === null ? echt.mkdir(pfad, optionen) : attrappe.mkdir(pfad),
-    ),
-    copyFile: vi.fn((quelle: string, ziel: string) =>
-      attrappe.copyFile === null ? echt.copyFile(quelle, ziel) : attrappe.copyFile(quelle, ziel),
     ),
     open: vi.fn((pfad: string, modus: string) =>
       attrappe.open === null ? echt.open(pfad, modus) : attrappe.open(pfad, modus),
@@ -52,7 +67,8 @@ vi.mock("node:fs/promises", async (echtLaden) => {
   };
 });
 
-const { copyFile, mkdir, open, rename, stat } = await import("node:fs/promises");
+const { mkdir, open, rename, stat } = await import("node:fs/promises");
+const { createReadStream, createWriteStream } = await import("node:fs");
 const { kopiereInsStaging, macheEndgueltig, STAGING_ORDNER, PART_ENDUNG } = await import(
   "../../src/main/media-service/import-datei"
 );
@@ -90,13 +106,15 @@ function systemfehler(code: string): Error & { code: string } {
 }
 
 beforeEach(() => {
-  attrappe.copyFile = null;
+  attrappe.leseStrom = null;
+  attrappe.schreibStrom = null;
   attrappe.mkdir = null;
   attrappe.open = null;
   attrappe.rename = null;
   vi.mocked(stat).mockClear();
   vi.mocked(mkdir).mockClear();
-  vi.mocked(copyFile).mockClear();
+  vi.mocked(createReadStream).mockClear();
+  vi.mocked(createWriteStream).mockClear();
   vi.mocked(open).mockClear();
   vi.mocked(rename).mockClear();
 });
@@ -163,7 +181,7 @@ describe("kopiereInsStaging (#84) weist falsche Eingaben ohne Dateisystemzugriff
 
     expect(stat).not.toHaveBeenCalled();
     expect(mkdir).not.toHaveBeenCalled();
-    expect(copyFile).not.toHaveBeenCalled();
+    expect(createReadStream).not.toHaveBeenCalled();
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
     expect(ergebnis.fehler.code).toBe("ungueltige_eingabe");
@@ -175,7 +193,7 @@ describe("kopiereInsStaging (#84) weist falsche Eingaben ohne Dateisystemzugriff
     expect((await kopiereInsStaging("", medien, DATEINAME)).ok).toBe(false);
     expect((await kopiereInsStaging(quelle, "", DATEINAME)).ok).toBe(false);
     expect(mkdir).not.toHaveBeenCalled();
-    expect(copyFile).not.toHaveBeenCalled();
+    expect(createReadStream).not.toHaveBeenCalled();
   });
 });
 
@@ -191,7 +209,7 @@ describe("kopiereInsStaging (#84) Fehlerpfade", () => {
     expect(ergebnis.fehler.code).toBe("datei_nicht_gefunden");
     expect(ergebnis.fehler.meldung).toContain("gibt-es-nicht.mp4");
     expect(existsSync(path.join(medien, STAGING_ORDNER))).toBe(false);
-    expect(copyFile).not.toHaveBeenCalled();
+    expect(createReadStream).not.toHaveBeenCalled();
   });
 
   it("meldet einen Ordner als Quelle mit kopier_fehler und sagt das ausdruecklich", async () => {
@@ -205,14 +223,19 @@ describe("kopiereInsStaging (#84) Fehlerpfade", () => {
     if (ergebnis.ok) return;
     expect(ergebnis.fehler.code).toBe(belegKopierFehler);
     expect(ergebnis.fehler.meldung).toContain("Ordner");
-    expect(copyFile).not.toHaveBeenCalled();
+    expect(createReadStream).not.toHaveBeenCalled();
   });
 
   it("meldet eine zwischen Pruefung und Kopie verschwundene Quelle als datei_nicht_gefunden", async () => {
     const { quelle, medien } = neuerFall();
-    attrappe.copyFile = async () => {
-      throw systemfehler("ENOENT");
-    };
+    // Der Lesestrom ist seit dem 13.08.2026 die Stelle, an der dieser Fehler entsteht:
+    // Zwischen `stat` und dem Oeffnen kann der Nutzer den Stick abgezogen haben.
+    attrappe.leseStrom = () =>
+      new Readable({
+        read() {
+          this.destroy(systemfehler("ENOENT"));
+        },
+      });
 
     const ergebnis = await kopiereInsStaging(quelle, medien, DATEINAME);
 
@@ -223,10 +246,16 @@ describe("kopiereInsStaging (#84) Fehlerpfade", () => {
 
   it("laesst bei ENOSPC die halb geschriebene .part-Datei liegen und meldet Platzmangel", async () => {
     const { quelle, medien, part } = neuerFall();
-    // So sieht ein Abbruch mitten im Kopieren aus: ein Teil der Bytes steht schon da.
-    attrappe.copyFile = async (_quelle, ziel) => {
+    // So sieht ein Abbruch mitten im Kopieren aus: ein Teil der Bytes steht schon auf
+    // der Platte, dann geht der Platz aus. Der Schreibstrom schreibt deshalb ECHT,
+    // bevor er scheitert - sonst waere die Zusicherung auf die Restdatei unten leer.
+    attrappe.schreibStrom = (ziel) => {
       writeFileSync(ziel, INHALT.slice(0, 1234));
-      throw systemfehler("ENOSPC");
+      return new Writable({
+        write(_block, _kodierung, fertig) {
+          fertig(systemfehler("ENOSPC"));
+        },
+      });
     };
 
     const ergebnis = await kopiereInsStaging(quelle, medien, DATEINAME);
@@ -242,9 +271,12 @@ describe("kopiereInsStaging (#84) Fehlerpfade", () => {
 
   it("meldet einen Lesefehler waehrend der Kopie als kopier_fehler", async () => {
     const { quelle, medien } = neuerFall();
-    attrappe.copyFile = async () => {
-      throw systemfehler("EIO");
-    };
+    attrappe.leseStrom = () =>
+      new Readable({
+        read() {
+          this.destroy(systemfehler("EIO"));
+        },
+      });
 
     const ergebnis = await kopiereInsStaging(quelle, medien, DATEINAME);
 
@@ -262,7 +294,7 @@ describe("kopiereInsStaging (#84) Fehlerpfade", () => {
 
     const ergebnis = await kopiereInsStaging(quelle, medien, DATEINAME);
 
-    expect(copyFile).not.toHaveBeenCalled();
+    expect(createReadStream).not.toHaveBeenCalled();
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
     expect(ergebnis.fehler.code).toBe("kopier_fehler");
@@ -270,7 +302,7 @@ describe("kopiereInsStaging (#84) Fehlerpfade", () => {
 
   it("wandelt eine unerwartete Ausnahme in ein Ergebnis, statt zu werfen", async () => {
     const { quelle, medien } = neuerFall();
-    attrappe.copyFile = () => {
+    attrappe.leseStrom = () => {
       throw "kein Systemfehler";
     };
 
@@ -279,6 +311,91 @@ describe("kopiereInsStaging (#84) Fehlerpfade", () => {
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
     expect(ergebnis.fehler.code).toBe("kopier_fehler");
+  });
+
+  // DIE SCHRANKE, die den Wegfall von copyFile ausgleicht (13.08.2026). Ein Strom, der
+  // vorzeitig endet, meldet KEINEN Fehler - er ist einfach zu Ende. Ohne den
+  // Byte-Vergleich wanderte ein halbes Video unter gueltigem Namen in die Bibliothek,
+  // und auffallen wuerde es erst als mitten im Lauf abbrechender Render.
+  it("erkennt eine still abgebrochene Kopie am Byte-Vergleich", async () => {
+    const { quelle, medien } = neuerFall();
+    attrappe.leseStrom = () => Readable.from([Buffer.from(INHALT.slice(0, 4096))]);
+
+    const ergebnis = await kopiereInsStaging(quelle, medien, DATEINAME);
+
+    expect(ergebnis.ok).toBe(false);
+    if (ergebnis.ok) return;
+    expect(ergebnis.fehler.code).toBe(belegKopierFehler);
+    expect(ergebnis.fehler.meldung).toContain("unvollstaendig");
+  });
+});
+
+describe("kopiereInsStaging (#84) meldet Fortschritt", () => {
+  it("meldet aufsteigende Anteile und zuletzt genau 1", async () => {
+    const { quelle, medien } = neuerFall();
+    const anteile: number[] = [];
+
+    const ergebnis = await kopiereInsStaging(quelle, medien, DATEINAME, (a) => anteile.push(a));
+
+    expect(ergebnis.ok).toBe(true);
+    expect(anteile.length).toBeGreaterThan(0);
+    expect(anteile.at(-1)).toBe(1);
+    expect([...anteile].sort((a, b) => a - b)).toEqual(anteile);
+    expect(anteile.every((a) => a > 0 && a <= 1)).toBe(true);
+  });
+
+  it("meldet hoechstens 101 Mal, egal wie viele Bloecke kommen", async () => {
+    const { quelle, medien } = neuerFall();
+    // 5000 Bloecke a 10 Bytes: ungedrosselt waeren das 5000 Meldungen. Die Drosselung
+    // auf ganze Prozent deckelt sie bei 101 - und diese Zahl haengt NICHT an der
+    // Geschwindigkeit der Maschine, anders als bei einem Zeitfilter.
+    attrappe.leseStrom = () =>
+      Readable.from(
+        Array.from({ length: 5000 }, (_wert, i) => Buffer.from(INHALT.slice(i * 10, i * 10 + 10))),
+      );
+    const anteile: number[] = [];
+
+    await kopiereInsStaging(quelle, medien, DATEINAME, (a) => anteile.push(a));
+
+    expect(anteile.length).toBeLessThanOrEqual(101);
+    expect(anteile.length).toBeGreaterThan(50);
+  });
+
+  it("meldet bei einer leeren Datei einmal 1, statt zu schweigen", async () => {
+    const { quelle, medien } = neuerFall();
+    writeFileSync(quelle, "");
+    const anteile: number[] = [];
+
+    const ergebnis = await kopiereInsStaging(quelle, medien, DATEINAME, (a) => anteile.push(a));
+
+    expect(ergebnis.ok).toBe(true);
+    expect(anteile).toEqual([1]);
+  });
+
+  it("faengt beim zweiten Lauf wieder bei vorn an", async () => {
+    // Die Prozentstufe liegt modulweit (nur ein Auftrag laeuft gleichzeitig, TK 9.3).
+    // Ohne Zuruecksetzen bliebe die Stufe des vorigen Imports stehen, und der naechste
+    // meldete erst wieder, wenn er sie ueberholt - bei gleich grossen Dateien also nie.
+    const ersterFall = neuerFall();
+    await kopiereInsStaging(ersterFall.quelle, ersterFall.medien, DATEINAME, () => {});
+
+    const zweiterFall = neuerFall();
+    const anteile: number[] = [];
+    await kopiereInsStaging(zweiterFall.quelle, zweiterFall.medien, DATEINAME, (a) =>
+      anteile.push(a),
+    );
+
+    expect(anteile.length).toBeGreaterThan(0);
+    expect(anteile.at(-1)).toBe(1);
+  });
+
+  it("kopiert unveraendert, wenn kein Rueckruf uebergeben wird", async () => {
+    const { quelle, medien, part } = neuerFall();
+
+    const ergebnis = await kopiereInsStaging(quelle, medien, DATEINAME);
+
+    expect(ergebnis.ok).toBe(true);
+    expect(readFileSync(part, "utf8")).toBe(INHALT);
   });
 });
 
