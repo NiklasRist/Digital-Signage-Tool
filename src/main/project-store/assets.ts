@@ -14,7 +14,7 @@
 // GERUEST-PRUEFSUMME: 16ef9210b65347ca
 
 import { holeAktivesProjekt } from './aktives-projekt'
-import { sofortFlush } from './auto-speichern'
+import { planeAutoSpeicherung, sofortFlush } from './auto-speichern'
 import { mitD1Lock } from './d1-lock'
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
@@ -42,6 +42,9 @@ import { mitD1Lock } from './d1-lock'
 
 import type { Asset } from '../../shared/contracts/asset'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+// Nur fuer die Referenzpruefung in #73 - der Typ, nicht der Wert; zur Laufzeit bleibt diese Datei
+// ohne weitere Abhaengigkeit.
+import type { Listenelement } from '../../shared/contracts/project'
 
 // Fehlercode-Union des Moduls `project-store` – sie wird HIER deklariert (Begründung unten);
 // #73 und #74 liegen in derselben Datei und verwenden sie, #75 (`ausgaben.ts`) importiert sie
@@ -284,19 +287,153 @@ function fehler(
 // Die Signaturen unten stammen WOERTLICH aus den Signaturbloecken von #73 und #74.
 // ================================================================================================
 
-/* eslint-disable @typescript-eslint/no-unused-vars --
-   NUR fuer die zwei folgenden Ruempfe: Ihre Parameter SIND der Vertrag, benutzt werden sie erst,
-   wenn #73 bzw. #74 gebaut wird. WER EINEN DIESER RUMPFE FUELLT, PRUEFT, OB DIESE ABSCHALTUNG
-   DANACH NOCH NOETIG IST - bleibt sie ohne Grund stehen, ist die Regel in diesem Abschnitt
-   dauerhaft blind, und zwar unauffaellig, weil dann nichts mehr rot ist. Die urspruengliche
-   Abschaltzeile der Datei hat #72 zu Recht entfernt; sie galt fuer die ganze Datei. */
+// Die hier zuvor stehende Abschaltzeile fuer @typescript-eslint/no-unused-vars ist ENTFALLEN:
+// Sie deckte genau die beiden leeren Ruempfe unten ab, deren Parameter niemand benutzte. Mit dem
+// Fuellen von #73 und #74 wird jeder Parameter beider Funktionen verwendet; die Abschaltung haette
+// die Regel in diesem Abschnitt nur noch dauerhaft blind gemacht.
+
+/** Der Fehlercode-Vorrat von `entferneAsset` - einmal benannt, damit er nicht dreimal dasteht. */
+type EntferneFehlercode = 'asset_referenziert' | 'asset_nicht_gefunden' | ProjectStoreFehlercode
+
 export async function entferneAsset(
   projektId: string,
   assetId: string,
 ): Promise<Ergebnis<Asset, 'asset_referenziert' | 'asset_nicht_gefunden' | ProjectStoreFehlercode>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #73."
-  );
+  // EIN Lock-Abschnitt fuer ALLES - und das ist hier nicht Stilfrage, sondern der Kern des Issues:
+  // Laeuft die Referenzpruefung in einem Abschnitt und das Entfernen in einem zweiten, kann der
+  // `composer` dazwischen ein Listenelement anlegen, das genau auf dieses Asset zeigt (TOCTOU).
+  // Uebrig blieben ein Element mit `ref` ins Leere und - sobald der `media-service` die Datei
+  // loescht - ein Render, der mittendrin abbricht.
+  //
+  // Auch die Formpruefungen liegen drin, obwohl sie das Lock nicht braeuchten ("kein Lock-Zugriff
+  // noetig", Fehlerpfad-Tabelle). Sie kosten dort nichts, halten die Funktion bei EINEM
+  // Lock-Aufruf je Aufruf - egal welchen Weg sie nimmt - und folgen der Linie von #72 in
+  // derselben Datei.
+  //
+  // Genommen wird das Lock GENAU EINMAL, hier. Der `media-service` darf den Aufruf nicht noch
+  // einmal einwickeln: mitD1Lock (#32) ist nicht reentrant, ein geschachtelter Aufruf wartet auf
+  // sich selbst.
+  return mitD1Lock(async (): Promise<Ergebnis<Asset, EntferneFehlercode>> => {
+    // -----------------------------------------------------------------------
+    // Schritt 1: pruefen. Jeder Verstoss bricht OHNE Wirkung und OHNE Flush ab.
+
+    // `typeof` trotz `string` in der Signatur: "Der Main validiert jede eingehende Nutzlast"
+    // (TK 9.1.1, Punkt 6) - der Typ gilt nur, solange der Aufrufer selbst typgeprueft gebaut ist.
+    if (typeof projektId !== 'string' || projektId.trim() === '') {
+      return fehlerEntferne('ungueltige_eingabe', 'Es wurde keine brauchbare Projekt-ID uebergeben.')
+    }
+    if (typeof assetId !== 'string' || assetId.trim() === '') {
+      return fehlerEntferne('ungueltige_eingabe', 'Es wurde keine brauchbare Medien-ID uebergeben.')
+    }
+
+    // "Nur *ein* Projekt ist gleichzeitig geladen." (TK 9.5.1) - kein geladenes Projekt und ein
+    // FREMDES Projekt sind derselbe fachliche Fall: Der Asset ist in diesem Kontext nicht
+    // auffindbar. Deshalb `asset_nicht_gefunden` und nicht das generische `nicht_gefunden`; die
+    // Fehlerpfad-Tabelle des Issues nennt fuer beide Zeilen genau diesen Code.
+    const projekt = holeAktivesProjekt()
+    if (projekt === null || projekt.id !== projektId) {
+      return fehlerEntferne(
+        'asset_nicht_gefunden',
+        'Das Projekt, aus dem entfernt werden soll, ist nicht das geoeffnete Projekt.',
+      )
+    }
+
+    // Erst der Eintrag, dann die Referenzen - in dieser Reihenfolge, weil eine Referenz auf ein
+    // gar nicht vorhandenes Asset sonst den echten Befund ("gibt es nicht") verdecken wuerde.
+    //
+    // `find` + `indexOf` statt `findIndex` + Index-Zugriff: Bei gesetztem
+    // noUncheckedIndexedAccess (#1) ist `assets[i]` vom Typ `Asset | undefined`, und die einzige
+    // knappe Aufloesung dafuer waere die verbotene Fluchttuer `assets[i]!` (#193). Ueber die
+    // gefundene Objektreferenz gibt es diese Luecke gar nicht erst.
+    const entfernt = projekt.assets.find((vorhanden) => vorhanden.id === assetId)
+    if (entfernt === undefined) {
+      // KEIN stiller Erfolg ("war ja schon weg"): Der `media-service` unterscheidet genau daran,
+      // ob er die Datei ueberhaupt anfassen darf.
+      return fehlerEntferne(
+        'asset_nicht_gefunden',
+        'Zu dieser Medien-ID steht im Projekt kein Eintrag; es wurde nichts entfernt.',
+      )
+    }
+    const stelle = projekt.assets.indexOf(entfernt)
+
+    // Der Nachbar VOR dem Eintrag, als Objektreferenz - er ist die Rueckfahrkarte fuer den
+    // Fehlschlag weiter unten (Begruendung dort). `undefined` heisst: Der Eintrag stand vorn.
+    const vorgaenger: Asset | undefined = stelle > 0 ? projekt.assets[stelle - 1] : undefined
+
+    const referenzenIds = sammleAssetReferenzen(projekt.liste, assetId)
+    if (referenzenIds.length > 0) {
+      // BLOCKIEREN, nicht kaskadieren: "Medium loeschen ... blockiert bei Referenz" (TK 9.5.3).
+      // Kein Listenelement wird entfernt, keins auf null gesetzt - nur `loescheAktion` (#40)
+      // kaskadiert, und zwar chirurgisch.
+      //
+      // Die IDs stehen AUSSCHLIESSLICH in `daten`, nie in der Meldung: `daten` ist "kein Ersatz
+      // fuer `meldung`" (TK 9.1.1), und ein Aufrufer, der IDs aus einem Meldungstext
+      // herausschneidet, bricht bei der ersten Umformulierung.
+      return fehlerEntferne(
+        'asset_referenziert',
+        `Das Medium wird noch von ${referenzenIds.length} Element(en) der Wiedergabeliste ` +
+          `verwendet und kann deshalb nicht geloescht werden.`,
+        { referenzenIds },
+      )
+    }
+
+    // -----------------------------------------------------------------------
+    // Schritt 2: entfernen. Im SELBEN synchronen Durchlauf wie die Pruefung - zwischen der Zeile
+    // darueber und dieser darf KEIN `await` stehen, sonst ist die TOCTOU-Luecke offen.
+    projekt.assets.splice(stelle, 1)
+
+    // -----------------------------------------------------------------------
+    // Schritt 3: sofort schreiben, im SELBEN Lock-Abschnitt, und das Ergebnis ABWARTEN. Dies ist
+    // der EINZIGE `await` dieser Funktion.
+    //
+    // Nicht `planeAutoSpeicherung`: Das Loeschen ist ein AUFTRAG, und "am Ende jedes Auftrags,
+    // der D1 veraendert hat" schreibt der Sofort-Flush (TK 9.5.4, vierter Anlass). Das ist keine
+    // Formalie: Erst der gemeldete Erfolg gibt Schritt 2 des Lösch-Ablaufs frei (fs.unlink im
+    // `media-service`). Wuerde hier nur die entprellte Speicherung angestossen, koennte die Datei
+    // geloescht werden, waehrend der Eintrag in project.json noch steht - ein Absturz in diesen
+    // 3-5 s liesse ein Listenelement auf eine geloeschte Datei zeigen. "D1 zuerst" muss ueber
+    // einen Absturz hinweg wahr sein, nicht nur im Arbeitsspeicher (TK 9.4.6, Schritt 1).
+    const geschrieben = await sofortFlush(projekt)
+
+    if (!geschrieben.ok) {
+      // ZURUECKNEHMEN, und zwar AN DIE URSPRUENGLICHE STELLE. TK 9.4.9 sagt fuer genau diesen
+      // Code "die Datei bleibt unangetastet, weil Schritt 1 nie abgeschlossen wurde" - Schritt 1
+      // gilt also als NICHT geschehen, und ein im Speicher fehlender Eintrag bei unveraenderter
+      // project.json waere das Gegenteil davon (der Nutzer saehe ein Medium verschwinden, das
+      // nach dem naechsten Oeffnen wieder da ist).
+      //
+      // Die POSITION zaehlt, weil `Project.assets` kein Sortierfeld traegt: Die Anzeigereihenfolge
+      // der Medien IST die Array-Reihenfolge. Ein Wieder-Anhaengen ans Ende sortierte die
+      // Medienliste sichtbar um, obwohl gar nichts passiert ist.
+      //
+      // Gesucht wird die Stelle ueber die IDENTITAET des Vorgaengers, nicht ueber den gemerkten
+      // Index: Zwischen `splice` und hier liegt ein `await`, in dem anderer Code laufen kann - ein
+      // fester Index setzte den Eintrag nach einer fremden Aenderung an eine FREMDE Stelle.
+      // Dieselbe Ueberlegung wie beim `lastIndexOf` in `fuegeAssetHinzu` oben, nur in die andere
+      // Richtung.
+      projekt.assets.splice(rueckstelle(projekt.assets, vorgaenger, stelle), 0, entfernt)
+
+      // KEIN eigener Wiederholversuch und KEIN eigenes Ereignis an den Renderer: Beides gehoert
+      // #47 bzw. dem Auftrags-Zustand. Der Code wird auf `speicher_fehler` FESTGESCHRIEBEN und
+      // nicht durchgereicht - `sofortFlush` kann daneben `unbekannter_fehler` liefern, und beides
+      // bedeutet hier dasselbe: Der Stand steht nicht auf der Platte. Die urspruengliche Meldung
+      // bleibt erhalten, damit die Ursache nicht verlorengeht.
+      return fehlerEntferne(
+        'speicher_fehler',
+        `Das Medium konnte nicht aus dem Projekt entfernt werden, weil der Projektstand nicht ` +
+          `gespeichert werden konnte; der Eintrag wurde zurueckgenommen und die Mediendatei bleibt ` +
+          `unangetastet. Grund: ${geschrieben.fehler.meldung}`,
+      )
+    }
+
+    // -----------------------------------------------------------------------
+    // Schritt 4: ERST JETZT Erfolg. Ab hier gilt beides - der Eintrag ist aus Project.assets weg
+    // UND er ist dauerhaft weg. Der zurueckgegebene Datensatz ist die einzige Bruecke des
+    // `media-service` von der assetId zur Datei: Aus seinem `dateiname` bildet er den Pfad fuer
+    // das `fs.unlink` (Schritt 2) und, falls das scheitert, den Vermerk der offenen Loeschung
+    // (Schritt 3). Nach dieser Zeile gibt es den `dateiname` in D1 nicht mehr.
+    return { ok: true, wert: entfernt }
+  })
 }
 // - Referenzpruefung UND Entfernen in EINEM mitD1Lock-Aufruf; nimmt das Lock SELBST
 // - entfernt AUSSCHLIESSLICH den Eintrag aus Project.assets; KEIN fs.unlink
@@ -309,11 +446,151 @@ export async function setzeAssetZustand(
   assetId: string,
   zustand: 'ok' | 'fehlt',
 ): Promise<Ergebnis<void, ProjectStoreFehlercode>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #74."
-  );
+  // VOLLSTAENDIG im Lock, obwohl hier nur ein einzelnes Feld gesetzt wird: Der Reconcile laeuft
+  // ueber ALLE Assets und damit vielfach hintereinander, waehrend nebenan der Ablauf beim
+  // Projektoeffnen weiterarbeitet. Ohne Lock koennte ein Flush genau zwischen Suchen und Setzen
+  // laufen - dann stuende auf der Platte ein Stand, den niemand mehr nachtraegt, weil die
+  // Speicherung ja gerade gelaufen ist.
+  //
+  // Das Lock wird SELBST genommen; der `media-service` darf den Aufruf nicht noch einmal
+  // einwickeln (mitD1Lock ist nicht reentrant, #32).
+  return mitD1Lock(async (): Promise<Ergebnis<void, ProjectStoreFehlercode>> => {
+    if (typeof projektId !== 'string' || projektId.trim() === '') {
+      return fehlerZustand('ungueltige_eingabe', 'Es wurde keine brauchbare Projekt-ID uebergeben.')
+    }
+    if (typeof assetId !== 'string' || assetId.trim() === '') {
+      return fehlerZustand('ungueltige_eingabe', 'Es wurde keine brauchbare Medien-ID uebergeben.')
+    }
+    // Das Feld hat GENAU ZWEI Werte (TK 9.4.4); ein dritter waere erfunden. Geprueft wird er
+    // trotz der Signatur, weil der Aufrufer main-intern ruft und seine Typpruefung hier nicht
+    // mehr gilt (TK 9.1.1, Punkt 6) - ein durchgereichter Fremdwert stuende sonst dauerhaft in
+    // project.json, und jede spaetere Fallunterscheidung ('ok' oder 'fehlt') traefe ihn nicht.
+    if (zustand !== 'ok' && zustand !== 'fehlt') {
+      return fehlerZustand(
+        'ungueltige_eingabe',
+        'Der Zustand muss entweder "ok" oder "fehlt" sein.',
+      )
+    }
+
+    // Anders als bei `entferneAsset` ist der Code hier das GENERISCHE `nicht_gefunden`: Die
+    // Fehlerpfad-Tabelle dieses Issues nennt fuer beide Faelle genau diesen, und einen eigenen
+    // fachlichen Code sieht TK 9.4.9 fuer den Reconcile nicht vor.
+    const projekt = holeAktivesProjekt()
+    if (projekt === null || projekt.id !== projektId) {
+      return fehlerZustand(
+        'nicht_gefunden',
+        'Das Projekt, dessen Medium markiert werden soll, ist nicht das geoeffnete Projekt.',
+      )
+    }
+
+    const asset = projekt.assets.find((vorhanden) => vorhanden.id === assetId)
+    if (asset === undefined) {
+      // KEIN stiller Erfolg: Ein Reconcile, der eine unbekannte ID meldet, hat einen Fehler, der
+      // sichtbar bleiben muss.
+      return fehlerZustand(
+        'nicht_gefunden',
+        'Zu dieser Medien-ID steht im Projekt kein Eintrag; es wurde nichts markiert.',
+      )
+    }
+
+    // UNVERAENDERT IST ERFOLG, ABER KEINE AENDERUNG. Der Reconcile laeuft bei JEDEM Projektstart
+    // ueber ALLE Assets; plante jeder unveraenderte Durchlauf eine Speicherung, schriebe die App
+    // bei jedem Oeffnen project.json neu - und weil `planeAutoSpeicherung` (#47) dabei
+    // `geaendertAm` fortschreibt, waere der Zeitstempel in der Projektuebersicht (#35) nach jedem
+    // Blick ins Projekt neu, obwohl der Nutzer nichts getan hat.
+    if (asset.zustand === zustand) {
+      return { ok: true, wert: undefined }
+    }
+
+    // NUR dieses eine Feld. Auch dann nicht `dauer` oder `maße` leeren, wenn es beim Markieren als
+    // `fehlt` naheliegt: Diese Werte beschreiben die einmal importierte Datei; kommt sie zurueck,
+    // waere das Asset sonst dauerhaft entwertet, obwohl `zustand` wieder 'ok' ist.
+    asset.zustand = zustand
+
+    // ENTPRELLT, nicht sofort: Der Reconcile ist KEIN Auftrag (er laeuft im Ablauf beim
+    // Projektoeffnen, nicht ueber die Auftragsverwaltung) und damit keiner der vier
+    // Sofort-Flush-Anlaesse aus TK 9.5.4. Genau deshalb entsteht fuer zwanzig markierte Assets
+    // EIN Schreibvorgang statt zwanzig. Der Erfolg bedeutet hier "gueltig uebernommen", nicht
+    // "schon auf Platte" (TK 9.5.4, Instant-Op vs. Speichern).
+    planeAutoSpeicherung(projekt)
+
+    return { ok: true, wert: undefined }
+  })
 }
 // - laeuft VOLLSTAENDIG in mitD1Lock; nimmt das Lock SELBST
 // - setzt AUSSCHLIESSLICH das Feld `zustand`; kein anderes Feld wird beruehrt
 // - ruft danach planeAutoSpeicherung (#47) und schreibt selbst NICHTS auf die Platte
-/* eslint-enable @typescript-eslint/no-unused-vars */
+
+/**
+ * Alle Listenelemente, die auf `assetId` zeigen - deren `id`s, in Listenreihenfolge, ohne
+ * Duplikate (#73).
+ *
+ * GEPRUEFT WIRD NUR `art` 'video' und 'bild'. Bei `art: 'segment'` ist `ref` eine AKTIONS-ID
+ * (#15, Kommentar am Feld), und `einblendung.abschnitte[].aktionRef` ebenfalls - beide werden hier
+ * gar nicht erst durchlaufen. Wer stumpf ueber alle Elemente `ref === assetId` prueft, vergleicht
+ * IDs aus zwei Namensraeumen; das geht heute nur deshalb gut, weil beide UUIDs sind, und waere
+ * trotzdem falsch begruendet.
+ *
+ * Gemeldet werden die `id`s der ELEMENTE, nicht deren `ref`: Der Reparatur-Modus (FA-19, TK 9.7.5)
+ * muss die betroffenen Elemente anspringen koennen, und die `ref` ist bei allen Treffern ohnehin
+ * dieselbe (`assetId`) und damit wertlos. Die Listenreihenfolge macht die Meldung reproduzierbar.
+ */
+function sammleAssetReferenzen(liste: Listenelement[], assetId: string): string[] {
+  const gefunden: string[] = []
+  for (const element of liste) {
+    if (element.art !== 'video' && element.art !== 'bild') {
+      continue
+    }
+    if (element.ref === assetId && !gefunden.includes(element.id)) {
+      gefunden.push(element.id)
+    }
+  }
+  return gefunden
+}
+
+/**
+ * Die Stelle, an der ein zurueckgenommenes Entfernen wieder einzusetzen ist (#73).
+ *
+ * Gesucht wird ueber den VORGAENGER als Objektreferenz - der Eintrag gehoert unmittelbar hinter
+ * ihn, egal wohin er inzwischen gewandert ist. `undefined` heisst "stand ganz vorn". Ist der
+ * Vorgaenger selbst nicht mehr da (eine fremde Aenderung waehrend des `await`), bleibt der
+ * urspruengliche Index als beste Naeherung, auf die Laenge begrenzt, damit `splice` nicht ins
+ * Leere schreibt.
+ */
+function rueckstelle(assets: Asset[], vorgaenger: Asset | undefined, urspruenglich: number): number {
+  if (vorgaenger === undefined) {
+    return 0
+  }
+  const stelle = assets.indexOf(vorgaenger)
+  if (stelle !== -1) {
+    return stelle + 1
+  }
+  return Math.min(urspruenglich, assets.length)
+}
+
+/**
+ * Die Fehlerhuelle von `entferneAsset` (#73). `daten` reist NUR bei `asset_referenziert` mit und
+ * wird sonst weggelassen - ein immer mitgeschicktes, leeres Feld boete dem Aufrufer etwas zum
+ * Auswerten an, das nie etwas enthaelt (TK 9.1.1: das Feld ist optional).
+ */
+function fehlerEntferne(
+  code: EntferneFehlercode | 'ungueltige_eingabe',
+  meldung: string,
+  daten?: { referenzenIds: string[] },
+): Ergebnis<Asset, EntferneFehlercode> {
+  if (daten === undefined) {
+    return { ok: false, fehler: { code, meldung } }
+  }
+  return { ok: false, fehler: { code, meldung, daten } }
+}
+
+/**
+ * Die Fehlerhuelle von `setzeAssetZustand` (#74). Ohne `daten`: Diese Funktion vergibt keinen
+ * Code, zu dem das TK Nutzdaten vorsieht.
+ */
+function fehlerZustand(
+  code: ProjectStoreFehlercode | 'ungueltige_eingabe' | 'nicht_gefunden',
+  meldung: string,
+): Ergebnis<void, ProjectStoreFehlercode> {
+  return { ok: false, fehler: { code, meldung } }
+}
