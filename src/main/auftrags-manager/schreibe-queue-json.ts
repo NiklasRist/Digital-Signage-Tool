@@ -321,6 +321,85 @@ export async function schreibeQueueDatei(pfad: string, inhalt: unknown): Promise
 // Schreibvorgaenge auf VERSCHIEDENE Pfade laufen unabhaengig und blockieren einander nicht.
 
 /**
+ * Lesen-Aendern-Schreiben als EINE ununterbrechbare Einheit. NACHGETRAGEN 12.08.2026.
+ *
+ * WARUM ES SIE BRAUCHT: `inReihe` garantiert REIHENFOLGE, nicht UNTEILBARKEIT. Wer
+ * `leseQueueDatei` und danach `schreibeQueueDatei` aufruft, haengt ZWEI Glieder in die Kette -
+ * und dazwischen kann sich ein fremdes drittes schieben. Dessen Aenderung ist danach weg.
+ *
+ * Fuer Q2 (#55) ist das gedeckt, weil dort genau EIN Schreiber festgelegt ist. Fuer Q4 (#57)
+ * nicht: Dort haengen FUENF Stellen in dieselbe app-weite Datei an, und bei zwei gleichzeitigen
+ * Bewegungen ginge eine Journalzeile verloren. #57 hat die Luecke korrekt nicht selbst
+ * geschlossen - ein modul-eigener Mutex ist dort ausdruecklich verboten, und er waere auch der
+ * zweite Sperrmechanismus, den das Konzept durchgehend ausschliesst.
+ *
+ * `aenderung` IST SYNCHRON, und das ist die ganze Zusage: Ohne `await` im Rueckruf kann zwischen
+ * Lesen und Schreiben kein zweiter Aufruf dazwischenkommen, weil JavaScript den Abschnitt nicht
+ * verlaesst. Eine asynchrone Aenderungsfunktion hoebe sie auf. Dieselbe Form wie `aendereKonfig`
+ * (#31) und `aendereBestand` (#98).
+ *
+ * Liefert `aenderung` ein `ok: false`, wird NICHTS geschrieben und der Fehler unveraendert
+ * durchgereicht - der Aufrufer soll seinen eigenen Grund zurueckbekommen, nicht einen von hier.
+ */
+export async function aendereQueueDatei<T, W>(
+  pfad: string,
+  fallback: T,
+  aenderung: (inhalt: T) => Ergebnis<{ inhalt: unknown; wert: W }, QueueFehlercode>,
+): Promise<Ergebnis<W, QueueFehlercode>> {
+  if (typeof pfad !== 'string' || pfad.length === 0) {
+    return fehler('ungueltige_eingabe', 'aendereQueueDatei wurde ohne Pfad aufgerufen.')
+  }
+  if (typeof aenderung !== 'function') {
+    return fehler('ungueltige_eingabe', `aendereQueueDatei fuer ${pfad} braucht eine Aenderungsfunktion.`)
+  }
+
+  try {
+    return await inReihe(schluessel(pfad), async (): Promise<Ergebnis<W, QueueFehlercode>> => {
+      const gelesen = await leseJetzt<T>(pfad, fallback)
+      if (!gelesen.ok) {
+        return gelesen
+      }
+
+      // Ab hier bis zum Schreiben steht KEIN `await` - genau das macht den Zyklus unteilbar.
+      let geaendert: Ergebnis<{ inhalt: unknown; wert: W }, QueueFehlercode>
+      try {
+        geaendert = aenderung(gelesen.wert)
+      } catch (ursache) {
+        return fehler(
+          'unbekannter_fehler',
+          `Aenderungsfunktion fuer ${pfad} hat unerwartet abgebrochen: ${text(ursache)}`,
+        )
+      }
+      if (!geaendert.ok) {
+        return geaendert
+      }
+
+      let roh: string | undefined
+      try {
+        roh = JSON.stringify(geaendert.wert.inhalt, null, 2)
+      } catch (ursache) {
+        return fehler('ungueltige_eingabe', `Inhalt fuer ${pfad} ist nicht serialisierbar: ${text(ursache)}`)
+      }
+      if (roh === undefined) {
+        return fehler(
+          'ungueltige_eingabe',
+          `Inhalt fuer ${pfad} ist nicht serialisierbar (undefined, Funktion oder Symbol).`,
+        )
+      }
+
+      const geschrieben = await schreibeJetzt(pfad, `${roh}
+`)
+      if (!geschrieben.ok) {
+        return geschrieben
+      }
+      return { ok: true, wert: geaendert.wert.wert }
+    })
+  } catch (ursache) {
+    return fehler('unbekannter_fehler', `Aendern von ${pfad} unerwartet abgebrochen: ${text(ursache)}`)
+  }
+}
+
+/**
  * DIE EIGENTLICHE ARBEIT - laeuft fuer diesen Pfad immer allein (s. `inReihe`).
  *
  * Reihenfolge: Sicherung -> vollstaendig schreiben und auf die Platte zwingen -> ersetzen. Erst

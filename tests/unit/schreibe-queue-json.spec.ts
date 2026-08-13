@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  aendereQueueDatei,
   leseQueueDatei,
   schreibeQueueDatei,
 } from "../../src/main/auftrags-manager/schreibe-queue-json";
@@ -212,5 +213,52 @@ describe("schreibeQueueDatei (#69)", () => {
     if (!ergebnis.ok) {
       expect(ergebnis.fehler.code).toBe("ungueltige_eingabe");
     }
+  });
+
+  // --- aendereQueueDatei (nachgetragen 12.08.2026) ---------------------------
+  it("verliert bei zwei gleichzeitigen Aenderungen KEINE davon", async () => {
+    // Der Kern des Nachtrags. Mit leseQueueDatei + schreibeQueueDatei haengen zwei
+    // Glieder in der Kette, und dazwischen passt ein fremdes drittes - dessen
+    // Aenderung ist danach weg. Genau das trifft Q4 (#57) mit seinen fuenf
+    // Schreibern.
+    const ziel = p("q4.json");
+    await fs.writeFile(ziel, JSON.stringify({ eintraege: [] }), "utf8");
+
+    const anhaengen = (was: string) =>
+      aendereQueueDatei<{ eintraege: string[] }, number>(
+        ziel,
+        { eintraege: [] },
+        (inhalt) => ({
+          ok: true,
+          wert: {
+            inhalt: { eintraege: [...inhalt.eintraege, was] },
+            wert: inhalt.eintraege.length + 1,
+          },
+        }),
+      );
+
+    await Promise.all([anhaengen("a"), anhaengen("b")]);
+
+    const gelesen = await leseQueueDatei<{ eintraege: string[] }>(ziel, { eintraege: [] });
+    expect(gelesen.ok).toBe(true);
+    if (!gelesen.ok) return;
+    expect([...gelesen.wert.eintraege].sort()).toEqual(["a", "b"]);
+  });
+
+  it("schreibt NICHTS, wenn die Aenderungsfunktion ablehnt", async () => {
+    const ziel = p("q2.json");
+    await fs.writeFile(ziel, JSON.stringify({ eintraege: ["alt"] }), "utf8");
+
+    const ergebnis = await aendereQueueDatei<{ eintraege: string[] }, void>(
+      ziel,
+      { eintraege: [] },
+      () => ({ ok: false, fehler: { code: "speicher_fehler", meldung: "nein" } }),
+    );
+
+    expect(ergebnis.ok).toBe(false);
+    // Der Grund des Aufrufers reist unveraendert zurueck.
+    if (!ergebnis.ok) expect(ergebnis.fehler.meldung).toBe("nein");
+    const gelesen = await leseQueueDatei<{ eintraege: string[] }>(ziel, { eintraege: [] });
+    if (gelesen.ok) expect(gelesen.wert.eintraege).toEqual(["alt"]);
   });
 });
