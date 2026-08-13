@@ -167,19 +167,26 @@ export function loeseFarbe(marke: Marke, rolle: FarbRolle, aktion: Aktion): stri
   // `typeof === 'string'` statt `!== null`: Aus einem alten oder von Hand bearbeiteten
   // Projekt kann hier auch `undefined` stehen, und das ist derselbe Rueckfall wie `null`.
   if (typeof gewaehlt === 'string' && AKZENT_ROLLEN.includes(rolle)) {
-    // `akzentfarbe` ist ein ROLLEN-Verweis, kein Hex-Wert (Festlegung 9) - deshalb der
-    // Nachschlag. Anschliessend laeuft der Wert durch DIESELBE Formatpruefung und dieselbe
-    // Umrechnung wie ein regulaerer Markenwert; es entstehen keine zwei Formatwege.
-    if (!belegt(marke.farben, gewaehlt)) {
-      throw new Error(
-        `aktion.akzentfarbe "${gewaehlt}" ist keine Farb-Rolle der Marke ` +
-          `(angefragte Rolle: "${rolle}").`,
-      )
-    }
-    return alsCanvasFarbe(
-      marke.farben[gewaehlt],
-      `aktion.akzentfarbe "${gewaehlt}", angefragte Rolle "${rolle}"`,
-    )
+    // `akzentfarbe` IST EIN FREIER HEX-WERT, kein Rollen-Verweis.
+    //
+    // UMGESTELLT am 13.08.2026 (Entscheidung des Users, vorgezogen aus M8-45). Hier stand
+    // ein Nachschlag in `marke.farben` samt Wurf, wenn der Wert keine Rolle ist - so
+    // verlangte es Festlegung 9 des Issues. Diese Festlegung ist seit TK v3.4 ueberholt:
+    // TK 9.8.2 ("FREIER Hex-Wert (FA-24; bis v3.3 nur Auswahl aus der Palette)"), TK 9.10.9,
+    // FA-24 und R-08 sagen alle dasselbe, und die gebaute Vertragsdatei
+    // `shared/contracts/aktion.ts` traegt den Kommentar seit dem 12.08.2026 ebenfalls.
+    //
+    // WARUM DAS AUFFIEL UND WARUM ES KEIN TYPECHECK GEFANGEN HAETTE: Der Typ ist in beiden
+    // Fassungen `string | null` - nur die BEDEUTUNG war entgegengesetzt. Gebaut worden waere
+    // sonst ein Zeichenpfad, der bei der Hausfarbe eines Partners MITTEN IM ZEICHNEN wirft:
+    // im Aktions-Editor, in der Vorschau, in den Thumbnails und beim Segment-PNG des
+    // finalen Renders.
+    //
+    // Der Wert laeuft durch DIESELBE Formatpruefung und Umrechnung wie ein Markenwert -
+    // sechs- und achtstellige Hex-Werte sind beide zulaessig, und es entstehen keine zwei
+    // Formatwege. Ein unbrauchbarer Wert wirft weiterhin, aber wegen seiner FORM, nicht
+    // wegen eines fehlenden Eintrags in der Palette.
+    return alsCanvasFarbe(gewaehlt, `aktion.akzentfarbe (angefragte Rolle "${rolle}")`)
   }
 
   if (!belegt(marke.farben, rolle)) {

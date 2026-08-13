@@ -116,45 +116,60 @@ describe("loeseFarbe – achtstelliges Hex wird zu rgba()", () => {
   });
 });
 
-describe("loeseFarbe – Akzent-Ersetzung (TK 9.10.9)", () => {
-  const mitWahl = aktion("akzentTief");
+describe("loeseFarbe – freie Akzentfarbe (TK 9.10.9, FA-24)", () => {
+  // UMGESTELLT am 13.08.2026 (Entscheidung des Users, vorgezogen aus M8-45). Vorher stand
+  // hier das Gegenteil: `akzentfarbe` galt als ROLLEN-Verweis, ein Hex-Wert wie "#FF4040"
+  // musste WERFEN. Seit TK v3.4 ist die Farbwahl nicht mehr auf die Markenpalette begrenzt.
+  // Die Tests sind umgedreht statt geloescht - sie bewachen jetzt die Gegenrichtung.
+  const mitHex = aktion("#971316");
 
-  it.each(AKZENT_ROLLEN)("%s trägt die gewählte Akzentfarbe", (rolle) => {
-    expect(loeseFarbe(marke(), rolle, mitWahl)).toBe("#971316");
+  it.each(AKZENT_ROLLEN)("%s traegt die frei gewaehlte Farbe", (rolle) => {
+    expect(loeseFarbe(marke(), rolle, mitHex)).toBe("#971316");
   });
 
-  it.each(AKZENT_ROLLEN)("%s trägt ohne Wahl wieder den Markenwert", (rolle) => {
+  it.each(AKZENT_ROLLEN)("%s traegt ohne Wahl wieder den Markenwert", (rolle) => {
     expect(loeseFarbe(marke(), rolle, OHNE_WAHL)).toBe(FARBEN[rolle]);
   });
 
-  it.each(UEBRIGE_ROLLEN)("%s bleibt trotz gewählter Akzentfarbe unberührt", (rolle) => {
+  it.each(UEBRIGE_ROLLEN)("%s bleibt trotz gewaehlter Akzentfarbe unberuehrt", (rolle) => {
     const erwartet = rolle === "scrimStart"
       ? "rgba(0, 0, 0, 0)"
       : rolle === "scrimEnde"
         ? "rgba(0, 0, 0, 0.702)"
         : FARBEN[rolle];
-    expect(loeseFarbe(marke(), rolle, mitWahl)).toBe(erwartet);
+    expect(loeseFarbe(marke(), rolle, mitHex)).toBe(erwartet);
   });
 
-  it("nimmt jede Rolle der Palette als Akzentfarbe an, nicht nur die drei Akzent-Rollen", () => {
-    expect(loeseFarbe(marke(), "akzent", aktion("flaecheHell"))).toBe("#FFFFFF");
+  it("nimmt die Hausfarbe eines Partners an, die in keiner Palette steht", () => {
+    // DER FALL, UM DEN ES GEHT. Vorher warf genau das - mitten im Zeichnen, im Editor wie
+    // im finalen Render.
+    expect(loeseFarbe(marke(), "akzent", aktion("#0057B8"))).toBe("#0057B8");
   });
 
-  it("rechnet eine achtstellige Akzentfarbe genauso um wie einen Markenwert", () => {
-    expect(loeseFarbe(marke(), "akzent", aktion("scrimEnde"))).toBe("rgba(0, 0, 0, 0.702)");
+  it("rechnet eine achtstellige freie Farbe genauso um wie einen Markenwert", () => {
+    // Ein Formatweg, nicht zwei: Der freie Wert laeuft durch dieselbe Umrechnung.
+    expect(loeseFarbe(marke(), "akzent", aktion("#000000B3"))).toBe("rgba(0, 0, 0, 0.702)");
   });
 
-  it.each(["#FF4040", "unsinn", "rot", ""])(
-    "wirft bei akzentfarbe %o statt auf den Markenwert zurückzufallen",
+  it.each(["unsinn", "rot", "", "#12", "#GGGGGG"])(
+    "wirft bei der unbrauchbaren Akzentfarbe %o",
     (wert) => {
-      expect(() => loeseFarbe(marke(), "akzent", aktion(wert))).toThrow(/akzent/);
+      // Geworfen wird weiterhin - aber wegen der FORM, nicht wegen eines fehlenden
+      // Eintrags in der Palette.
+      expect(() => loeseFarbe(marke(), "akzent", aktion(wert))).toThrow();
     },
   );
 
-  it("nennt beim Wurf den Wert und die angefragte Rolle", () => {
-    expect(() => loeseFarbe(marke(), "akzentKraeftig", aktion("#FF4040"))).toThrow(
-      /#FF4040[\s\S]*akzentKraeftig/,
+  it("nennt beim Wurf die angefragte Rolle", () => {
+    expect(() => loeseFarbe(marke(), "akzentKraeftig", aktion("unsinn"))).toThrow(
+      /akzentKraeftig/,
     );
+  });
+
+  it("schlaegt einen Rollennamen NICHT mehr in der Palette nach", () => {
+    // Regressionsschranke gegen ein Zurueckdrehen: "flaecheHell" ist eine gueltige Rolle,
+    // aber kein Hex-Wert - unter der alten Auslegung haette es #FFFFFF ergeben.
+    expect(() => loeseFarbe(marke(), "akzent", aktion("flaecheHell"))).toThrow();
   });
 });
 
