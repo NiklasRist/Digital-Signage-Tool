@@ -49,7 +49,19 @@ import type { Project } from '../../shared/contracts/project'
 // Fehlercode-Union des Moduls `project-store` – sie wird HIER deklariert (Begründung unten);
 // #73 und #74 liegen in derselben Datei und verwenden sie, #75 (`ausgaben.ts`) importiert sie
 // von hier. Diese Zeile ist Teil dieses Issues.
-export type ProjectStoreFehlercode = 'speicher_fehler' | 'projekt_beschaeftigt'
+//
+// `kein_projekt` ist am 13.08.2026 vom User ENTSCHIEDEN und beendet den STOPP-Punkt aus #38
+// ("Fehlercode bei 'kein aktives Projekt geladen'", dort ausdruecklich nicht selbst festzulegen,
+// weil er fuer ALLE project-store-Mutationen einheitlich fallen muss). Die dort angebotenen
+// generischen Codes taugen beide nicht: `nicht_gefunden` ist nicht davon zu unterscheiden, dass
+// ein Asset oder eine Aktion fehlt, und `ungueltige_eingabe` nicht davon, dass ein Argument
+// unbrauchbar ist. Der Reparatur-Modus (FA-19) muss aber genau das auseinanderhalten koennen -
+// "oeffne zuerst ein Projekt" ist eine andere Handlungsanweisung als "dieses Element ist kaputt".
+//
+// GILT NUR FUER MUTATIONEN. Leseoperationen melden keinen Fehler, sondern liefern, was da ist
+// (`holeStand` #64: leere Liste mit `ok: true`) - fuer eine Anzeige ist "nichts vorhanden" die
+// wahre Auskunft, kein Fehlerfall.
+export type ProjectStoreFehlercode = 'speicher_fehler' | 'projekt_beschaeftigt' | 'kein_projekt'
 // `projekt_beschaeftigt` NACHGETRAGEN 12.08.2026: Das Loeschen eines Projekts (#37) ist eine
 // Instant-Operation und laeuft am Torwaechter vorbei. Ein laufender Render fuer dasselbe Projekt
 // verloere mitten im Lauf seinen Ordner. Vom User entschieden: abweisen statt zerstoeren.
@@ -106,10 +118,19 @@ export async function fuegeAssetHinzu(
 
     // Zuordnung. "Nur *ein* Projekt ist gleichzeitig geladen." (TK 9.5.1) - deshalb ist die
     // Frage "gehoert dieser Import zum offenen Projekt?" mit einem Vergleich beantwortet und
-    // braucht kein Nachladen von der Platte. Kein geladenes Projekt und ein FREMDES Projekt sind
-    // fachlich derselbe Fall: Das Ziel des Eintrags ist nicht da.
+    // braucht kein Nachladen von der Platte.
+    //
+    // GETRENNT seit dem 13.08.2026 (Entscheidung des Users, s. `ProjectStoreFehlercode` oben).
+    // Vorher lagen beide Faelle auf `nicht_gefunden` mit der Begruendung, das Ziel sei ohnehin
+    // nicht da. Das stimmt technisch und ist fuer den Aufrufer trotzdem wertlos: "Es ist kein
+    // Projekt offen" verlangt vom Nutzer, eines zu oeffnen, waehrend "du nennst ein anderes als
+    // das offene" ein Programmierfehler des Aufrufers ist, der den Nutzer nichts angeht. Zwei
+    // Handlungsanweisungen, also zwei Codes.
     const projekt = holeAktivesProjekt()
-    if (projekt === null || projekt.id !== projektId) {
+    if (projekt === null) {
+      return fehler('kein_projekt', 'Es ist kein Projekt geoeffnet, in das eingetragen werden koennte.')
+    }
+    if (projekt.id !== projektId) {
       return fehler(
         'nicht_gefunden',
         'Das Projekt, in das eingetragen werden soll, ist nicht das geoeffnete Projekt.',
@@ -343,12 +364,18 @@ export async function entferneAsset(
       return fehlerEntferne('ungueltige_eingabe', 'Es wurde keine brauchbare Medien-ID uebergeben.')
     }
 
-    // "Nur *ein* Projekt ist gleichzeitig geladen." (TK 9.5.1) - kein geladenes Projekt und ein
-    // FREMDES Projekt sind derselbe fachliche Fall: Der Asset ist in diesem Kontext nicht
-    // auffindbar. Deshalb `asset_nicht_gefunden` und nicht das generische `nicht_gefunden`; die
-    // Fehlerpfad-Tabelle des Issues nennt fuer beide Zeilen genau diesen Code.
+    // "Nur *ein* Projekt ist gleichzeitig geladen." (TK 9.5.1). Das FREMDE Projekt bleibt auf
+    // `asset_nicht_gefunden` (die Fehlerpfad-Tabelle des Issues nennt genau diesen Code, und der
+    // Asset ist in diesem Kontext wirklich nicht auffindbar); "gar kein Projekt offen" ist seit
+    // dem 13.08.2026 davon getrennt - s. `ProjectStoreFehlercode` oben.
     const projekt = holeAktivesProjekt()
-    if (projekt === null || projekt.id !== projektId) {
+    if (projekt === null) {
+      return fehlerEntferne(
+        'kein_projekt',
+        'Es ist kein Projekt geoeffnet, aus dem entfernt werden koennte.',
+      )
+    }
+    if (projekt.id !== projektId) {
       return fehlerEntferne(
         'asset_nicht_gefunden',
         'Das Projekt, aus dem entfernt werden soll, ist nicht das geoeffnete Projekt.',
@@ -503,11 +530,18 @@ export async function setzeAssetZustand(
       )
     }
 
-    // Anders als bei `entferneAsset` ist der Code hier das GENERISCHE `nicht_gefunden`: Die
-    // Fehlerpfad-Tabelle dieses Issues nennt fuer beide Faelle genau diesen, und einen eigenen
-    // fachlichen Code sieht TK 9.4.9 fuer den Reconcile nicht vor.
+    // Anders als bei `entferneAsset` ist der Code fuer das FREMDE Projekt hier das GENERISCHE
+    // `nicht_gefunden`: Die Fehlerpfad-Tabelle dieses Issues nennt genau diesen, und einen eigenen
+    // fachlichen Code sieht TK 9.4.9 fuer den Reconcile nicht vor. "Gar kein Projekt offen" ist
+    // seit dem 13.08.2026 davon getrennt - s. `ProjectStoreFehlercode` oben.
     const projekt = holeAktivesProjekt()
-    if (projekt === null || projekt.id !== projektId) {
+    if (projekt === null) {
+      return fehlerZustand(
+        'kein_projekt',
+        'Es ist kein Projekt geoeffnet, dessen Medium markiert werden koennte.',
+      )
+    }
+    if (projekt.id !== projektId) {
       return fehlerZustand(
         'nicht_gefunden',
         'Das Projekt, dessen Medium markiert werden soll, ist nicht das geoeffnete Projekt.',

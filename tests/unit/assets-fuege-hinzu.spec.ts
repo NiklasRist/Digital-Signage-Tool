@@ -229,15 +229,24 @@ describe("fuegeAssetHinzu (#72) - Fehlerfaelle", () => {
     expect(zustand.geflusht).toEqual([]);
   });
 
-  it("meldet nicht_gefunden, wenn ueberhaupt kein Projekt geladen ist", async () => {
+  // Zwei Faelle, zwei Codes - seit dem 13.08.2026 getrennt. Ein gemeinsamer Code waere
+  // nicht falsch, aber unbrauchbar: "oeffne ein Projekt" richtet sich an den Nutzer,
+  // "du nennst das falsche Projekt" an den Aufrufer.
+  it("unterscheidet kein Projekt offen von fremdem Projekt", async () => {
     zustand.aktivesProjekt = null;
-
-    const ergebnis = await fuegeAssetHinzu("p1", neuesAsset());
-
-    expect(ergebnis.ok).toBe(false);
-    if (!ergebnis.ok) {
-      expect(ergebnis.fehler.code).toBe("nicht_gefunden");
+    const ohneProjekt = await fuegeAssetHinzu("p1", neuesAsset());
+    expect(ohneProjekt.ok).toBe(false);
+    if (!ohneProjekt.ok) {
+      expect(ohneProjekt.fehler.code).toBe("kein_projekt");
     }
+
+    zustand.aktivesProjekt = projekt;
+    const fremd = await fuegeAssetHinzu("p2", neuesAsset());
+    expect(fremd.ok).toBe(false);
+    if (!fremd.ok) {
+      expect(fremd.fehler.code).toBe("nicht_gefunden");
+    }
+
     expect(zustand.geflusht).toEqual([]);
   });
 });

@@ -257,17 +257,30 @@ describe("entferneAsset (#73) - Fehlerfaelle", () => {
     expect(projekt.assets[0]).toBe(ersterAsset);
   });
 
-  it("meldet asset_nicht_gefunden bei unbekannter ID, fremdem und fehlendem Projekt", async () => {
+  it("meldet asset_nicht_gefunden bei unbekannter ID und fremdem Projekt", async () => {
     const unbekannt = await entferneAsset("p1", "a-gibtsnicht");
     const fremd = await entferneAsset("p2", "a-mitte");
-    zustand.aktivesProjekt = null;
-    const ohneProjekt = await entferneAsset("p1", "a-mitte");
 
-    for (const ergebnis of [unbekannt, fremd, ohneProjekt]) {
+    for (const ergebnis of [unbekannt, fremd]) {
       expect(ergebnis.ok).toBe(false);
       if (!ergebnis.ok) {
         expect(ergebnis.fehler.code).toBe("asset_nicht_gefunden");
       }
+    }
+    expect(projekt.assets.map((a) => a.id)).toEqual(["a-erst", "a-mitte", "a-letzt"]);
+    expect(zustand.geflusht).toEqual([]);
+  });
+
+  // Seit dem 13.08.2026 ein eigener Code: Ohne offenes Projekt ist nicht der Asset das
+  // Problem, sondern dass es nichts gibt, worin man suchen koennte.
+  it("meldet kein_projekt, wenn ueberhaupt kein Projekt geladen ist", async () => {
+    zustand.aktivesProjekt = null;
+
+    const ergebnis = await entferneAsset("p1", "a-mitte");
+
+    expect(ergebnis.ok).toBe(false);
+    if (!ergebnis.ok) {
+      expect(ergebnis.fehler.code).toBe("kein_projekt");
     }
     expect(projekt.assets.map((a) => a.id)).toEqual(["a-erst", "a-mitte", "a-letzt"]);
     expect(zustand.geflusht).toEqual([]);

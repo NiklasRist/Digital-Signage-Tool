@@ -173,10 +173,16 @@ function text(ursache: unknown): string {
 //    NICHT hier einen eigenen Aufruf nachruesten - #34 darf den auftrags-manager nicht
 //    kennen, die Reihenfolge gehoert in den Koordinator.
 //
-// 3. KEIN VERGESSEN DES VORIGEN PROJEKTS. Der Projektwechsel ist der STOPP-Punkt des
-//    Issues und ausdruecklich nicht hier zu entscheiden. Beachtenswert dabei: `ladeQ2`
-//    ERSETZT den gehaltenen Stand (#55 haelt genau EINEN, samt projektId) - der Stand des
-//    vorher geoeffneten Projekts ist nach einem erfolgreichen Aufruf hier also weg,
-//    waehrend dessen Auftraege in Q1 weiterleben koennen. Ein `holeStand` (#64) mischt
-//    dann Q1-Eintraege des alten mit Q2-Eintraegen des neuen Projekts. Das ist Frage 3 des
-//    STOPP-Blocks, und sie ist unbeantwortet - nicht durch diese Datei geloest.
+// 3. PROJEKTWECHSEL - am 13.08.2026 vom User ENTSCHIEDEN, Frage 3 des STOPP-Blocks ist
+//    damit beantwortet. Die Sachlage bleibt wie beschrieben: `ladeQ2` ERSETZT den
+//    gehaltenen Stand (#55 haelt genau EINEN, samt projektId), waehrend Q1 app-weit ist
+//    und Auftraege des vorigen Projekts weiterfuehren kann. `holeStand` (#64) zeigt also
+//    laufende/anstehende Auftraege ALLER Projekte neben den Fehlschlaegen NUR des zuletzt
+//    geladenen. Das bleibt so und wird NICHT gefiltert: Der Torwaechter ist app-weit und
+//    seriell - ein laufender Render von A blockiert B wirklich, und ein ausgeblendeter
+//    Auftrag liesse die Leiste "nichts laeuft" melden, waehrend B aus unsichtbarem Grund
+//    wartet. Das `queue-panel` (M7) nennt dafuer je Eintrag das Projekt.
+//    NICHT verwechseln mit einem Schreibproblem: Ein Fehlschlag von A kann NICHT in der
+//    queue-retry.json von B landen - alle Q2-Schreibfunktionen nehmen die projektId
+//    entgegen, und `sicherGeladen` (#55) laedt nach, sobald der gehaltene Stand zu einem
+//    anderen Projekt gehoert. Am 13.08.2026 im gebauten Code nachgeprueft.

@@ -143,17 +143,31 @@ describe("setzeAssetZustand (#74) - Fehlerfaelle", () => {
     expect(zustand.entprellt).toEqual([]);
   });
 
-  it("meldet nicht_gefunden bei unbekannter Asset-ID, fremdem und fehlendem Projekt", async () => {
+  it("meldet nicht_gefunden bei unbekannter Asset-ID und fremdem Projekt", async () => {
     const unbekannt = await setzeAssetZustand("p1", "a-gibtsnicht", "fehlt");
     const fremd = await setzeAssetZustand("p2", "a-eins", "fehlt");
-    zustand.aktivesProjekt = null;
-    const ohneProjekt = await setzeAssetZustand("p1", "a-eins", "fehlt");
 
-    for (const ergebnis of [unbekannt, fremd, ohneProjekt]) {
+    for (const ergebnis of [unbekannt, fremd]) {
       expect(ergebnis.ok).toBe(false);
       if (!ergebnis.ok) {
         expect(ergebnis.fehler.code).toBe("nicht_gefunden");
       }
+    }
+    expect(projekt.assets.map((a) => a.zustand)).toEqual(["ok", "ok", "fehlt"]);
+    expect(zustand.entprellt).toEqual([]);
+  });
+
+  // Seit dem 13.08.2026 ein eigener Code. Wichtig gerade hier: Der Reconcile laeuft beim
+  // Projektstart - ein `kein_projekt` bedeutet, dass er zu frueh dran war, und das ist ein
+  // anderer Befund als eine unbekannte Medien-ID.
+  it("meldet kein_projekt, wenn ueberhaupt kein Projekt geladen ist", async () => {
+    zustand.aktivesProjekt = null;
+
+    const ergebnis = await setzeAssetZustand("p1", "a-eins", "fehlt");
+
+    expect(ergebnis.ok).toBe(false);
+    if (!ergebnis.ok) {
+      expect(ergebnis.fehler.code).toBe("kein_projekt");
     }
     expect(projekt.assets.map((a) => a.zustand)).toEqual(["ok", "ok", "fehlt"]);
     expect(zustand.entprellt).toEqual([]);

@@ -80,12 +80,18 @@ export async function holeStand(): Promise<Ergebnis<Auftrag[]>> {
 
     // `holeQ2Stand()` ist null, solange in dieser Sitzung kein Projekt geladen wurde.
     //
-    // VORLAEUFIG BEHANDELT WIE "keine Fehlschlaege" - kein Fehlercode. Das ist die
-    // enthaltsame Variante, KEINE Entscheidung der offenen STOPP-Frage des Issues
-    // ("Verhalten ohne geoeffnetes Projekt", einheitlich mit #38 zu beantworten): Ein
-    // Fehler haette hier einen Code gebraucht, den niemand vergeben hat, und
-    // Fehlercodes werden nicht erfunden (TK 9.1.1 Punkt 3). Faellt die Entscheidung
-    // anders aus, ist sie genau an dieser Stelle nachzuziehen.
+    // BEHANDELT WIE "keine Fehlschlaege" - kein Fehlercode, und das ist seit dem
+    // 13.08.2026 ENTSCHIEDEN (User), nicht mehr blosse Enthaltsamkeit. Die Regel lautet:
+    // Der neue Code `kein_projekt` (ProjectStoreFehlercode) gilt fuer MUTATIONEN;
+    // LESEOPERATIONEN melden keinen Fehler, sondern liefern, was da ist. Fuer eine
+    // Anzeige ist "nichts vorhanden" die wahre Auskunft, kein Fehlerfall - und ein
+    // Fehler an dieser Stelle machte die Warteschlangen-Leiste beim App-Start rot,
+    // bevor der Nutzer ueberhaupt etwas falsch machen konnte. Die STOPP-Frage des
+    // Issues ("Verhalten ohne geoeffnetes Projekt", einheitlich mit #38) ist damit
+    // beantwortet; #38 traegt dieselbe Entscheidung.
+    //
+    // Q1 wird dabei NICHT auf das geoeffnete Projekt gefiltert - s. den Nachtrag im
+    // Issue und den Vermerk am Ende von start-wiederherstellung.ts (#67).
     const q2 = holeQ2Stand()
 
     // `datei.pendingDeletions` bleiben ausdruecklich draussen: Das sind vorgemerkte
