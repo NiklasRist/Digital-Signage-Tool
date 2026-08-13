@@ -43,6 +43,15 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
  */
 const hoerende = new Set<{ hoerer: (auftraege: Auftrag[]) => void }>()
 
+/**
+ * Die Hoerer fuer den Stoerfall, nach demselben Huellen-Muster und aus demselben Grund.
+ *
+ * NACHGETRAGEN am 13.08.2026 (Entscheidung des Users), s. Vermerk am Dateiende: Ein nicht
+ * ermittelbarer Stand wurde vorher VERSCHWIEGEN, und Schweigen ist fuer den Empfaenger von
+ * "nichts hat sich geaendert" nicht zu unterscheiden - die Anzeige fror unbemerkt ein.
+ */
+const stoerungsHoerende = new Set<{ hoerer: (meldung: string) => void }>()
+
 export async function sendeQueueGeaendert(): Promise<void> {
   let stand: Ergebnis<Auftrag[]>
   try {
@@ -55,12 +64,13 @@ export async function sendeQueueGeaendert(): Promise<void> {
     // Auftrag selbst umbringen. Das ist genau die Umkehrung dessen, wofuer dieses Ereignis
     // da ist. Verschluckt wird hier deshalb bewusst - s. Vermerk am Dateiende.
     protokolliere("holeStand (#64) hat entgegen seinem Vertrag geworfen", ursache)
+    meldeStoerung("Der Stand der Warteschlange konnte nicht ermittelt werden.")
     return
   }
 
   if (!stand.ok) {
-    // KEINE MELDUNG in diesem Fall - und das ist eine Entscheidung, die bestaetigt gehoert
-    // (s. Vermerk am Dateiende).
+    // KEIN Array-Ereignis in diesem Fall - aber seit dem 13.08.2026 auch kein Schweigen mehr:
+    // Die Stoerung geht ueber den EIGENEN Meldeweg hinaus (Entscheidung des Users).
     //
     // Der im Issue benannte Fall "kein Projekt geoeffnet" landet hier NICHT MEHR: #64 hat am
     // 13.08.2026 entschieden, dass Leseoperationen dafuer keinen Fehler melden, sondern die
@@ -68,14 +78,21 @@ export async function sendeQueueGeaendert(): Promise<void> {
     // ok-Zweig unten, der ein leeres Array meldet. Uebrig bleibt allein der Auffangzweig von
     // #64, also ein UNERWARTETER Fehler.
     //
-    // WARUM DANN NICHTS statt eines leeren Arrays: Ein leeres Array ist eine AUSSAGE - "die
-    // Warteschlange ist leer". Waehrend ein Render laeuft, waere das eine Falschmeldung, die
-    // FA-16 ("erkennbar ist jederzeit, welcher Auftrag laeuft") ins Gegenteil verkehrt, und
-    // das Panel raeumte seine Liste leer. Ohne Meldung bleibt der zuletzt gemeldete Stand
-    // stehen - hoechstens veraltet, nicht falsch - und die naechste Zustandsaenderung meldet
-    // ohnehin erneut. Ein Fehler kann ueber ein Ereignis nicht reisen (TK 9.1.1 Punkte 2
-    // und 5), er wird hier also weder verpackt noch erfunden.
+    // WARUM KEIN LEERES ARRAY: Ein leeres Array ist eine AUSSAGE - "die Warteschlange ist
+    // leer". Waehrend ein Render laeuft, waere das eine Falschmeldung, die FA-16 ("erkennbar
+    // ist jederzeit, welcher Auftrag laeuft") ins Gegenteil verkehrt, und das Panel raeumte
+    // seine Liste leer. Der zuletzt gemeldete Stand bleibt deshalb stehen - hoechstens
+    // veraltet, nicht falsch.
+    //
+    // WARUM TROTZDEM EINE MELDUNG, und zwar ueber einen ZWEITEN Weg: Bliebe es beim blossen
+    // Stehenlassen, waere der Stoerfall von "es hat sich nichts geaendert" nicht zu
+    // unterscheiden, und die Leiste froere unbemerkt ein. Der Fehler reist dabei NICHT in der
+    // Array-Nutzlast mit (ein Ereignis hat keinen Fehlerkanal, TK 9.1.1 Punkte 2 und 5, und
+    // "nacktes Array, keine Huelle" ist in sechs Issues zitiert) - er bekommt seinen eigenen
+    // Hoerer-Satz. Uebertragen wird KLARTEXT, kein Code: Der Empfaenger zeigt ihn an, er
+    // verzweigt nicht darauf.
     protokolliere(`Stand nicht ermittelbar (${stand.fehler.code})`, stand.fehler.meldung)
+    meldeStoerung(`Der Stand der Warteschlange konnte nicht ermittelt werden: ${stand.fehler.meldung}`)
     return
   }
 
@@ -127,6 +144,42 @@ export function aufQueueGeaendert(
 }
 // registriert einen MAIN-INTERNEN Hörer; Rückgabewert ist die Abmelde-Funktion
 
+export function aufQueueStandFehler(hoerer: (meldung: string) => void): () => void {
+  const eintrag = { hoerer }
+  stoerungsHoerende.add(eintrag)
+  return () => {
+    stoerungsHoerende.delete(eintrag)
+  }
+}
+// registriert einen MAIN-INTERNEN Hörer für den Fall, dass der Stand NICHT ermittelt werden
+// konnte; Rückgabewert ist die Abmelde-Funktion.
+
+/**
+ * Zustellung der Stoerungsmeldung - dieselbe Disziplin wie beim Zustands-Push, und aus
+ * denselben Gruenden: Momentaufnahme der Menge, Pruefung auf zwischenzeitliche Abmeldung vor
+ * JEDEM Aufruf (an einem Hoerer haengt in #71 eine Fensterreferenz), und jeder Hoerer einzeln
+ * abgesichert.
+ *
+ * Der Rueckgabetyp ist bewusst `void` und nicht `Promise<void>`: Diese Funktion wird aus einem
+ * Zweig gerufen, der ohnehin gleich `return`t, und ein zweites `await` mitten im Stoerfall
+ * verlaengerte nur die Zeit, in der die aufrufende Warteschlangen-Operation haengt.
+ */
+function meldeStoerung(meldung: string): void {
+  for (const eintrag of [...stoerungsHoerende]) {
+    if (!stoerungsHoerende.has(eintrag)) {
+      continue
+    }
+    try {
+      eintrag.hoerer(meldung)
+    } catch (ursache) {
+      // Wie beim Zustands-Push: Ein werfender Empfaenger darf die uebrigen nicht mitreissen -
+      // und schon gar nicht darf ein Fehler in der STOERUNGSMELDUNG die Operation umbringen,
+      // die gerade ohnehin in Schwierigkeiten steckt.
+      protokolliere("Ein Stoerungs-Hoerer hat beim Melden geworfen", ursache)
+    }
+  }
+}
+
 /**
  * Die drei Stellen, an denen diese Datei etwas faengt, hinterlassen eine Spur - in der Form,
  * die `dispatcher.ts` in diesem Modul bereits verwendet.
@@ -144,7 +197,10 @@ function protokolliere(stelle: string, ursache: unknown): void {
 //
 // 1. KEIN WEG ZUM RENDERER. Diese Datei kennt weder Fenster noch Kanalnamen; sie meldet
 //    main-intern. Den Uebergang auf den IPC-Kanal baut #71 (ipc-verdrahtung.ts), das sich
-//    hier als Hoerer anmeldet - genau EIN Ort mit Fensterreferenz.
+//    hier als Hoerer anmeldet - genau EIN Ort mit Fensterreferenz. Seit dem 13.08.2026 gilt
+//    das fuer BEIDE Ereignisse: #71 meldet sich auch ueber `aufQueueStandFehler` an und gibt
+//    die Meldung auf `queue:standFehler` weiter (im Issue nachgetragen, ebenso in #205, das
+//    sie im Warteschlangen-Panel anzeigt). NICHT hier einen zweiten Sendeweg nachruesten.
 //
 // 2. KEIN AUSLOESER. `sendeQueueGeaendert` ruft in dieser Datei niemand. Die Ausloeser sind
 //    die Zustandsaenderungen selbst: #59 (Freigabe), #61/#62/#63 (Einreihen, Abbrechen,

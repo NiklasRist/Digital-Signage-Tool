@@ -260,4 +260,63 @@ describe("queue-ereignis (#65)", () => {
     // obwohl l1 laeuft (FA-16). Der zuletzt gemeldete Stand bleibt stehen.
     expect(meldungen).toEqual([]);
   });
+
+  it("meldet die Stoerung ueber den eigenen Weg, statt zu schweigen", async () => {
+    const { q1, ereignis } = await frisch();
+    q1.fuegeAnsEndeAn(auftrag("l1", "laeuft"));
+    const staende: Auftrag[][] = [];
+    const stoerungen: string[] = [];
+    ereignis.aufQueueGeaendert((a) => staende.push(a));
+    ereignis.aufQueueStandFehler((m) => stoerungen.push(m));
+    q2.wirft = true;
+
+    await ereignis.sendeQueueGeaendert();
+
+    // Die eigentliche Zusage: Der Stoerfall ist von "nichts hat sich geaendert"
+    // unterscheidbar. Ohne diesen zweiten Weg waeren beide Faelle ein leeres `staende`.
+    expect(stoerungen).toHaveLength(1);
+    expect(stoerungen[0]).toContain("nicht ermittelt werden");
+    expect(staende).toEqual([]);
+  });
+
+  it("meldet im Regelfall NUR den Stand und keine Stoerung", async () => {
+    const { q1, ereignis } = await frisch();
+    q1.fuegeAnsEndeAn(auftrag("a1", "anstehend"));
+    const stoerungen: string[] = [];
+    ereignis.aufQueueStandFehler((m) => stoerungen.push(m));
+
+    await ereignis.sendeQueueGeaendert();
+
+    // Gegenprobe zum Test darueber: Ohne sie liesse sich der Stoerungsweg auch dann fuer
+    // erfuellt halten, wenn er bei JEDER Meldung feuerte.
+    expect(stoerungen).toEqual([]);
+  });
+
+  it("meldet dem abgemeldeten Stoerungs-Hoerer nicht mehr", async () => {
+    const { ereignis } = await frisch();
+    const stoerungen: string[] = [];
+    const ab = ereignis.aufQueueStandFehler((m) => stoerungen.push(m));
+    q2.wirft = true;
+
+    ab();
+    await ereignis.sendeQueueGeaendert();
+
+    expect(stoerungen).toEqual([]);
+  });
+
+  it("laesst einen werfenden Stoerungs-Hoerer die uebrigen nicht mitreissen", async () => {
+    const { ereignis } = await frisch();
+    const erreicht: string[] = [];
+    ereignis.aufQueueStandFehler(() => {
+      throw new Error("kaputter Empfaenger");
+    });
+    ereignis.aufQueueStandFehler((m) => erreicht.push(m));
+    q2.wirft = true;
+
+    // Darf nicht abweisen: Dieses Promise wird MITTEN in einer Warteschlangen-Operation
+    // abgewartet - eine gescheiterte Meldung wuerde sonst den Auftrag umbringen.
+    await expect(ereignis.sendeQueueGeaendert()).resolves.toBeUndefined();
+
+    expect(erreicht).toHaveLength(1);
+  });
 });
