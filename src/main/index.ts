@@ -5,12 +5,14 @@
 // ist Teil des Vertrags aus #3, nicht Geschmackssache - die Begruendung steht jeweils
 // am Aufrufpunkt.
 //
-// STAND HEUTE: Gebaut sind die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4)
-// und - seit #269 - die ERSTE der Anmeldungen mit Fenster (verdrahteQueueIPC, #71,
-// Schritt 7 Position 1). Alle uebrigen Anmeldungen, die beiden Beenden-Funktionen und
-// die Einzel-Instanz-Sperre fehlen weiterhin; sie entstehen in den restlichen
-// Verdrahtungs-Issues der Kette (#268, #270 bis #274, #331) und stehen bis dahin als
-// benannte Luecken (Funktionsname + Issue-Nummer) an ihrem Platz.
+// STAND HEUTE: Gebaut sind die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4),
+// seit #269 die ERSTE der Anmeldungen mit Fenster (verdrahteQueueIPC, #71, Schritt 7
+// Position 1) und seit #270 die Positionen 5 und 6 der Anmeldungen OHNE Fenster
+// (verdrahteMedienIPC, #93; registriereMedienHandler, #92 - beide Schritt 5). Alle
+// uebrigen Anmeldungen, die beiden Beenden-Funktionen und die Einzel-Instanz-Sperre
+// fehlen weiterhin; sie entstehen in den restlichen Verdrahtungs-Issues der Kette
+// (#268, #271 bis #274, #331) und stehen bis dahin als benannte Luecken
+// (Funktionsname + Issue-Nummer) an ihrem Platz.
 // Ausdruecklich KEINE Attrappen: Eine leere Ersatzfunktion wuerde
 // einen Kanal registrieren, der zu funktionieren scheint, und die echte Verdrahtung
 // spaeter an der doppelten Registrierung scheitern lassen - oder, schlimmer, sie tut
@@ -31,6 +33,8 @@ import {
   registriereMediaProtokollHandlerStub,
   registriereMediaProtokollSchema,
 } from "./media-protokoll";
+import { registriereMedienHandler } from "./media-service/handler-registrierung";
+import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
 
 /**
  * Im Entwicklungslauf setzt scripts/dev.mjs diese Variable auf die URL des
@@ -261,8 +265,12 @@ void app.whenReady().then(async () => {
 
   // SCHRITT 5: die ZEHN Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
   // Sie stehen vor erstelleHauptfenster(), weil keine von ihnen ein Fenster braucht.
-  // Alle zehn sind heute LUECKEN - kein Ersatzaufruf, keine von Hand gebaute
-  // ipcMain.handle-Registrierung, kein eigener Kanalname.
+  // Die Positionen 5 und 6 sind seit #270 verdrahtet; die uebrigen ACHT sind LUECKEN -
+  // kein Ersatzaufruf, keine von Hand gebaute ipcMain.handle-Registrierung, kein
+  // eigener Kanalname.
+  //
+  // Die Nummerierung bleibt unveraendert, auch wo noch Luecken dazwischenstehen: Sie
+  // ist Vertrag aus #3 und wird nicht "aufgeraeumt".
   //
   //  1. verdrahteProjectStoreIPC()            - M1
   //  2. verdrahteProjectStoreNachtragIPC()    - #153 (project:setzeEinblendung,
@@ -276,8 +284,22 @@ void app.whenReady().then(async () => {
   //                                             src/main/ipc-gateway/project-store-nachtrag-2.ts.
   //                                             Unmittelbar nach 2., aus demselben Grund.
   //  4. verdrahteConfigStoreIPC()             - M1
-  //  5. verdrahteMedienIPC()                  - M3
-  //  6. registriereMedienHandler()            - M3
+
+  //  5. verdrahteMedienIPC() - #93, src/main/media-service/ipc-verdrahtung.ts. Meldet
+  //     GENAU EINEN Kanal an (media:öffneMedienDialog, den Datei-Auswahldialog des
+  //     Imports). Kanaele fuer den Import und das Loeschen selbst entstehen dort
+  //     bewusst nicht - die laufen ueber die Warteschlange (TK 9.3.4).
+  verdrahteMedienIPC();
+
+  //  6. registriereMedienHandler() - #92, src/main/media-service/handler-registrierung.ts.
+  //     Traegt beim Auftrags-Dispatcher die Handler fuer art: "import" und
+  //     art: "loeschen" ein. Unmittelbar nach 5.: erst der Dialog, mit dem eine Auswahl
+  //     zustande kommt, dann die Stelle, die den daraus entstehenden Auftrag ausfuehrt.
+  //     Ohne sie wird ein Import eingereiht und findet keinen Handler - derselbe
+  //     Fehlerfall, den 9. und 10. fuer Render und Export beschreiben.
+  registriereMedienHandler();
+
+  // Fortsetzung der Liste - die folgenden vier sind weiterhin LUECKEN:
   //  7. verdrahteVorlagenIPC()                - #109
   //  8. verdrahteVorlagenNachtragIPC()        - #255 (vorlagen:pruefeReferenzen),
   //                                             src/main/ipc-gateway/vorlagen-nachtrag.ts.
