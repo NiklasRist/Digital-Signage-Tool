@@ -199,7 +199,7 @@ function protokolliere(stelle: string, ursache: unknown): void {
 //    main-intern. Den Uebergang auf den IPC-Kanal baut #71 (ipc-verdrahtung.ts), das sich
 //    hier als Hoerer anmeldet - genau EIN Ort mit Fensterreferenz. Seit dem 13.08.2026 gilt
 //    das fuer BEIDE Ereignisse: #71 meldet sich auch ueber `aufQueueStoerung` an und gibt
-//    die Meldung auf `queue:standFehler` weiter (im Issue nachgetragen, ebenso in #205, das
+//    die Meldung auf `queue:stoerung` weiter (im Issue nachgetragen, ebenso in #205, das
 //    sie im Warteschlangen-Panel anzeigt). NICHT hier einen zweiten Sendeweg nachruesten.
 //
 // 2. KEIN AUSLOESER. `sendeQueueGeaendert` ruft in dieser Datei niemand. Die Ausloeser sind

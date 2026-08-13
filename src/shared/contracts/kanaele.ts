@@ -18,17 +18,28 @@
 // Struktur ENTSCHIEDEN: verschachtelt (KANAELE.<modul>.<operation>), nicht flach – liest sich
 // näher am aufrufenden Modul.
 export const KANAELE = {
-  // Beispiel-Einträge, tatsächliche Liste wächst mit M2-M7:
+  // Beispiel-Eintrag, tatsächliche Liste wächst mit M2-M7:
   // media: { importMedium: 'media:importMedium', ... },
+
+  // auftrags-manager (#71). Vier Operations-Kanäle und zwei Ereignisse; das Präfix ist
+  // `queue:`, weil TK 9.1.1 Punkt 4 `queue:geaendert` wörtlich als Beispiel führt.
   //
-  // KORRIGIERT am 13.08.2026: Hier stand als zweites Beispiel
-  // `auftrag: { reiheEin: 'auftrag:reiheEin', ... }`. Das Präfix ist FALSCH und
-  // widerspricht dem Verbindlichen: Der auftrags-manager schreibt auf `queue:`
-  // (#61 nennt `queue:reiheEin`, #71 die vier Kanäle, und TK 9.1.1 Punkt 4 nennt
-  // `queue:geaendert`). Aufgefallen beim Bau von #61. Ein Beispiel mit falschem
-  // Präfix ist gefährlicher als gar keins — es steht genau dort, wo #71 nachschaut.
-  // Richtig wäre:
-  // queue: { reiheEin: 'queue:reiheEin', geaendert: 'queue:geaendert', ... },
+  // ERSETZT am 13.08.2026 den Platzhalter-Kommentar, der hier als zweites Beispiel eine
+  // Gruppe namens `auftrag` mit ebendiesem Präfix zeigte — FALSCH, und zwar genau an der
+  // Stelle, an der #71 nachschaut. Ein Beispiel mit falschem Präfix ist gefährlicher als
+  // gar keins: Es ist die wahrscheinlichste Quelle dafür, dass ein späteres Modul (M3–M7)
+  // den falschen Namensraum abschreibt.
+  //
+  // KEINE weiteren Kanäle in dieser Gruppe: kein Lesezugang zu Q3 (protokoll.json, in v1
+  // nicht vorgesehen) und keiner für pendingDeletions (main-intern, TK 9.4.7).
+  queue: {
+    reiheEin: 'queue:reiheEin',
+    entferne: 'queue:entferne',
+    wiederhole: 'queue:wiederhole',
+    holeStand: 'queue:holeStand',
+    geaendert: 'queue:geaendert', // Ereignis Main → Renderer, Nutzlast Auftrag[], ohne Hülle
+    stoerung: 'queue:stoerung', // Ereignis Main → Renderer, Nutzlast Klartext (#65)
+  },
 
   // config-store (#77). Die fünf Namen ENTSTEHEN hier und nirgends sonst; die
   // Verdrahtung (src/main/ipc-gateway/config-store-verdrahtung.ts) und die
