@@ -212,11 +212,11 @@ export async function löscheMedium(
  * Vereinheitlichen". An `daten: { referenzenIds }` haengt der gefuehrte Reparatur-Modus (FA-19);
  * die IDs gehoeren NICHT in den Meldungstext, den die Oberflaeche sonst parsen muesste.
  *
- * ⚠ ZWEI CODES PASSEN NICHT IN `LoeschFehlercode` - GEMELDET, NICHT UMGEBOGEN (s. Schlussvermerk
- * Punkt 1). Das Issue verlangt fuer genau diesen Fall "fragen, nicht lokal umbiegen"; bis zur
- * Antwort ist die einzige Form, die weder `LoeschFehlercode` (#79, fremde Datei) noch den
- * Rueckgabetyp antastet, dieselbe wie in `reconcile-fehlt.ts` (#89): `unbekannter_fehler` mit dem
- * echten Code IM KLARTEXT der Meldung, damit die Ursache wenigstens lesbar bleibt.
+ * ERLEDIGT am 13.08.2026: Hier stand, ZWEI Codes passten nicht in `LoeschFehlercode`. Fuer
+ * `kein_projekt` stimmt das nicht mehr - #79 traegt ihn seither, und er wird unveraendert
+ * durchgereicht (s. Schlussvermerk Punkt 1). Umgedeutet wird nur noch `projekt_beschaeftigt`,
+ * und der ist aus `entferneAsset` gar nicht erreichbar; der Zweig steht als Schranke fuer den
+ * Tag, an dem #73 seine Codes erweitert.
  */
 function uebernimmStoreFehler(fehler: StoreFehler): HandlerErgebnis<LoeschFehlercode> {
   if (fehler.code === 'projekt_beschaeftigt') {

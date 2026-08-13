@@ -300,6 +300,26 @@ function uebernimm(projektId: string, datei: Q2Datei): Ergebnis<Q2Datei, QueueFe
   return { ok: true, wert: kopie(datei) }
 }
 
+/**
+ * ACHTUNG, FLACHE KOPIE - und das ist eine Falle fuer jeden Aufrufer.
+ *
+ * Die LISTEN sind neu: Wer sortiert, filtert oder etwas anhaengt, veraendert den gehaltenen
+ * Stand nicht. Die `Auftrag`-OBJEKTE darin sind aber DIESELBEN. Wer eines davon irgendwo
+ * einhaengt, wo es veraendert wird, veraendert damit den Q2-Eintrag.
+ *
+ * REAL PASSIERT beim Bau von #63 (wiederhole): Haette es den gefundenen Eintrag direkt an
+ * `fuegeAnsEndeAn` (Q1) gereicht, saetzte der Torwaechter (#59) anschliessend `status` und
+ * `versuche` AM Q2-EINTRAG. Der letzte Fehlerstand waere ueberschrieben, und der naechste
+ * Schreibvorgang legte `status: 'laeuft'` dauerhaft in die `queue-retry.json` - ein Eintrag,
+ * der beim naechsten Start weder als Fehlschlag erkennbar noch wiederholbar waere. Genau der
+ * Verlust, gegen den FA-17 steht. #63 reiht deshalb eine WERTKOPIE ein.
+ *
+ * Warum hier nicht tief kopiert wird: `holeQ2Stand` wird auch von `holeStand` (#64) gerufen,
+ * das den Stand bei JEDER Zustandsaenderung liefert. Eine tiefe Kopie waere dort reine
+ * Verschwendung, und sie naehme dem Panel die lebenden Objekte, ueber die der Fortschritt
+ * eines laufenden Auftrags aktuell bleibt. Die Verantwortung liegt beim Aufrufer - dieser
+ * Vermerk ist der Ort, an dem er davon erfaehrt.
+ */
 function kopie(datei: Q2Datei): Q2Datei {
   return {
     schemaVersion: datei.schemaVersion,

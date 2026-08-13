@@ -290,6 +290,28 @@ describe('holeQ2Stand (#55)', () => {
 
     expect(holeQ2Stand()?.datei.auftraege).toHaveLength(1)
   })
+
+  it('gibt die Auftrags-OBJEKTE dagegen unkopiert heraus - nur die Listen sind neu', async () => {
+    // Die Kehrseite des Tests darueber, und sie ist eine Falle: Wer eines dieser Objekte
+    // irgendwo einhaengt, wo es veraendert wird, veraendert den Q2-Eintrag. Genau darauf
+    // ist #63 beim Bau gestossen - haette es den Eintrag direkt in Q1 gehaengt, saetzte der
+    // Torwaechter status und versuche AM Q2-Eintrag, und der Fehlschlag waere verloren
+    // (FA-17). Der Test steht hier und nicht dort, weil der Vertrag hier entsteht.
+    //
+    // ABSICHTLICH KEINE TIEFKOPIE: holeStand (#64) liefert diesen Stand bei jeder
+    // Zustandsaenderung ans Panel und braucht die LEBENDEN Objekte, damit der Fortschritt
+    // eines laufenden Auftrags aktuell bleibt. Wer das hier auf strukturiertes Klonen
+    // umstellt, macht den Fortschrittsbalken still tot - deshalb dieser Test.
+    const { merkeFehlschlag, holeQ2Stand } = await frisch()
+    const eingereicht = auftrag('a-1', 1, 'alt')
+    await merkeFehlschlag(PROJEKT, eingereicht)
+
+    const erstesMal = holeQ2Stand()?.datei.auftraege[0]
+    const zweitesMal = holeQ2Stand()?.datei.auftraege[0]
+
+    expect(erstesMal).toBe(zweitesMal)
+    expect(erstesMal).toBe(eingereicht)
+  })
   it('vergisst den Stand des geloeschten Projekts', async () => {
     // Ohne vergissQ2Stand legte der naechste merkeFehlschlag die queue-retry.json im
     // geloeschten Ordner wieder an - schreibeQueueDatei macht mkdir -p. Dieselbe
