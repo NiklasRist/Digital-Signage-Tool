@@ -269,3 +269,51 @@ function fehler(
 //    `speicher_fehler`. Die uebrigen Import-Codes aus TK 9.4.9 (`datei_nicht_gefunden`,
 //    `format_nicht_unterstuetzt`, `probe_fehler`, `kopier_fehler`) entstehen in den Schritten 1-3
 //    beim `media-service` und nie hier.
+
+// ================================================================================================
+// VON HAND NACHGETRAGEN am 12.08.2026 - die beiden folgenden Ruempfe hat der Generator NIE erzeugt.
+//
+// Diese Datei wird von DREI Issues beansprucht (#72, #73, #74); geschrieben hat der Generator nur
+// den Rumpf von #72. Aufgefallen ist es erst, als #73 und #74 nach dem Bau von #72 weder als
+// "bereit" noch als "blockiert" auftauchten: Die Bereitschaftsrechnung haelt eine Datei ohne
+// offene Ruempfe fuer fertig - und ohne die Ruempfe SAH sie fertig aus, obwohl zwei Drittel des
+// Vertrags fehlten. Nachliefern kann der Generator sie nicht mehr, weil die Pruefsumme dieser
+// Datei seit dem Fuellen von #72 nicht mehr stimmt.
+//
+// Dieselbe Luecke wie bei `flushBeimBeenden` (#47): Signatur im Issue, kein Rumpf in der Datei.
+// Die Signaturen unten stammen WOERTLICH aus den Signaturbloecken von #73 und #74.
+// ================================================================================================
+
+/* eslint-disable @typescript-eslint/no-unused-vars --
+   NUR fuer die zwei folgenden Ruempfe: Ihre Parameter SIND der Vertrag, benutzt werden sie erst,
+   wenn #73 bzw. #74 gebaut wird. WER EINEN DIESER RUMPFE FUELLT, PRUEFT, OB DIESE ABSCHALTUNG
+   DANACH NOCH NOETIG IST - bleibt sie ohne Grund stehen, ist die Regel in diesem Abschnitt
+   dauerhaft blind, und zwar unauffaellig, weil dann nichts mehr rot ist. Die urspruengliche
+   Abschaltzeile der Datei hat #72 zu Recht entfernt; sie galt fuer die ganze Datei. */
+export async function entferneAsset(
+  projektId: string,
+  assetId: string,
+): Promise<Ergebnis<Asset, 'asset_referenziert' | 'asset_nicht_gefunden' | ProjectStoreFehlercode>> {
+  throw new Error(
+    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #73."
+  );
+}
+// - Referenzpruefung UND Entfernen in EINEM mitD1Lock-Aufruf; nimmt das Lock SELBST
+// - entfernt AUSSCHLIESSLICH den Eintrag aus Project.assets; KEIN fs.unlink
+// - liefert den ENTFERNTEN Asset-Datensatz zurueck (der Aufrufer braucht dessen `dateiname`)
+// - bei `asset_referenziert` traegt der Fehler daten: { referenzenIds: string[] }
+// - ruft im SELBEN Lock-Abschnitt sofortFlush (#47); Erfolg ERST nach gelungenem Flush
+
+export async function setzeAssetZustand(
+  projektId: string,
+  assetId: string,
+  zustand: 'ok' | 'fehlt',
+): Promise<Ergebnis<void, ProjectStoreFehlercode>> {
+  throw new Error(
+    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #74."
+  );
+}
+// - laeuft VOLLSTAENDIG in mitD1Lock; nimmt das Lock SELBST
+// - setzt AUSSCHLIESSLICH das Feld `zustand`; kein anderes Feld wird beruehrt
+// - ruft danach planeAutoSpeicherung (#47) und schreibt selbst NICHTS auf die Platte
+/* eslint-enable @typescript-eslint/no-unused-vars */
