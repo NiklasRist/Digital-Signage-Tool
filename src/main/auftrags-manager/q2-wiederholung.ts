@@ -122,6 +122,22 @@ export async function ladeQ2(projektId: string): Promise<Ergebnis<Q2Datei, Queue
 // fuellt ausserdem den modul-internen Stand, den holeQ2Stand() zurueckgibt
 
 // synchron, nur RAM
+export function vergissQ2Stand(projektId: string): void {
+  // NACHGETRAGEN 12.08.2026. Ohne diese Funktion legt der naechste merkeFehlschlag oder
+  // aenderePendingDeletions die queue-retry.json im GELOESCHTEN Projektordner wieder an -
+  // schreibeQueueDatei macht mkdir -p. Das geloeschte Projekt haette danach wieder einen
+  // Ordner mit einer Datei darin, und listeProjekte (#35) fuehrte es als beschaedigt.
+  //
+  // Dieselbe Fehlerklasse wie A1, wo der Auto-Speicher-Timer project.json neu anlegte - nur
+  // ueber die Warteschlange statt ueber D1.
+  //
+  // NIMMT EINE ID UND VERGISST NICHT BLIND: Wer ein ANDERES Projekt loescht, duerfte den Stand
+  // des offenen nicht mitvernichten. Dieselbe Ueberlegung wie bei verwirfGeplanteSpeicherung.
+  if (stand !== null && stand.projektId === projektId) {
+    stand = null
+  }
+}
+
 export function holeQ2Stand(): { projektId: string; datei: Q2Datei } | null {
   if (stand === null) {
     return null

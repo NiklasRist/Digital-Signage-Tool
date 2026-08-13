@@ -31,6 +31,7 @@ import { leseKonfig } from '../config-store/lese-konfig'          // #26
 import { aendereKonfig } from '../config-store/schreibe-config'   // #31
 
 import { hatAuftraegeFuerProjekt } from '../auftrags-manager/q1-warteschlange'  // #54
+import { vergissQ2Stand } from '../auftrags-manager/q2-wiederholung'          // #55
 import { holeAktivesProjekt, merkeAktivesProjekt } from './aktives-projekt'  // #192
 import { verwirfGeplanteSpeicherung } from './auto-speichern'      // #47
 import { mitD1Lock } from './d1-lock'                             // #32
@@ -157,6 +158,11 @@ export async function löscheProjekt(id: string): Promise<Ergebnis<void, Project
     // Auch nach einem TEILWEISE gescheiterten Loeschen richtig: Ein Torso soll nicht durch
     // einen nachlaufenden Schreibvorgang wieder zu einem scheinbar heilen Projekt werden.
     verwirfGeplanteSpeicherung(id)
+
+    // UND den Q2-Stand vergessen (12.08.2026). Ohne das legt der naechste merkeFehlschlag die
+    // queue-retry.json im geloeschten Ordner wieder an - derselbe Weg zurueck wie ueber den
+    // Auto-Speicher-Timer, nur ueber die Warteschlange. Beide Wege sind damit zu.
+    vergissQ2Stand(id)
 
     // Und aus dem Halter nehmen, falls das geloeschte das aktive Projekt war. Ohne das gaebe
     // holeAktivesProjekt (#192) weiter dasselbe Objekt heraus, und der naechste Sofort-Flush

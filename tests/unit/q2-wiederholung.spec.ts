@@ -290,4 +290,24 @@ describe('holeQ2Stand (#55)', () => {
 
     expect(holeQ2Stand()?.datei.auftraege).toHaveLength(1)
   })
+  it('vergisst den Stand des geloeschten Projekts', async () => {
+    // Ohne vergissQ2Stand legte der naechste merkeFehlschlag die queue-retry.json im
+    // geloeschten Ordner wieder an - schreibeQueueDatei macht mkdir -p. Dieselbe
+    // Fehlerklasse wie A1, nur ueber die Warteschlange statt ueber D1.
+    const { ladeQ2, holeQ2Stand, vergissQ2Stand } = await frisch()
+    await ladeQ2(PROJEKT)
+
+    vergissQ2Stand(PROJEKT)
+
+    expect(holeQ2Stand()).toBeNull()
+  })
+
+  it('laesst den Stand eines ANDEREN Projekts unberuehrt', async () => {
+    const { ladeQ2, holeQ2Stand, vergissQ2Stand } = await frisch()
+    await ladeQ2(PROJEKT)
+
+    vergissQ2Stand('ein-anderes-projekt')
+
+    expect(holeQ2Stand()?.projektId).toBe(PROJEKT)
+  })
 })
