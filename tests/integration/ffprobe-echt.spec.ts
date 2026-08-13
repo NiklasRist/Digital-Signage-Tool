@@ -24,6 +24,7 @@ vi.mock("electron", () => ({ app: { isPackaged: false, getPath: () => "" } }));
 
 const { ermittleFfprobePfad, ermittleFfmpegPfad } = await import("../../src/main/ffmpeg-pfad");
 const { leseRohMetadaten } = await import("../../src/main/media-service/ffprobe");
+const { werteMetadatenAus } = await import("../../src/main/media-service/metadaten");
 
 const arbeitsordner = mkdtempSync(path.join(tmpdir(), "signage-ffprobe-"));
 
@@ -40,6 +41,31 @@ function erzeugeVideo(): string {
     { stdio: "ignore" },
   );
   return ziel;
+}
+
+/**
+ * Ein echtes Video MIT Drehung.
+ *
+ * ZWEI SCHRITTE, UND DAS IST NOETIG - am 13.08.2026 gemessen: `-display_rotation` ist eine
+ * EINGANGS-Option des Demuxers und wirkt nur auf eine DATEI. Auf einen `lavfi`-Eingang
+ * angewandt bleibt sie wirkungslos, und `-metadata:s:v:0 rotate=90` schreibt mit ffmpeg 6.x
+ * ueberhaupt nichts mehr - weder Tag noch Side-Data. Wer sein Testmaterial so erzeugt, prueft
+ * ein UNGEDREHTES Video und haelt den Test fuer gruen.
+ */
+function erzeugeGedrehtesVideo(): string {
+  const flach = path.join(arbeitsordner, "flach.mp4");
+  const gedreht = path.join(arbeitsordner, "gedreht.mp4");
+  execFileSync(
+    ermittleFfmpegPfad(),
+    ["-y", "-f", "lavfi", "-i", "color=c=red:s=320x240:d=1", "-pix_fmt", "yuv420p", flach],
+    { stdio: "ignore" },
+  );
+  execFileSync(
+    ermittleFfmpegPfad(),
+    ["-y", "-display_rotation", "90", "-i", flach, "-c", "copy", gedreht],
+    { stdio: "ignore" },
+  );
+  return gedreht;
 }
 
 /** Lebt der Prozess noch? Signal 0 stellt nur die Frage, es sendet nichts. */
@@ -69,6 +95,36 @@ describe("ffprobe gegen das echte Binary (#82)", () => {
     expect(roh.streams?.[0]?.width).toBe(320);
     expect(roh.streams?.[0]?.height).toBe(240);
     expect(Number(roh.format?.duration)).toBeGreaterThan(0);
+  });
+
+  // DIE WICHTIGSTE SCHRANKE DIESER DATEI.
+  //
+  // `werteMetadatenAus` (#83) liest die Drehung ausschliesslich aus `tags.rotate`. Das ist
+  // richtig fuer das GEBUENDELTE Binary - ffprobe 4.0.2 aus ffprobe-static 3.1.0 setzt den
+  // Tag zuverlaessig (am 13.08.2026 gemessen: `rotate: "270"` neben einer Display-Matrix mit
+  // `rotation: 90`). Neuere Fassungen legen die Drehung nur noch als Side-Data ab; das
+  // mitgelieferte ffmpeg 6.1.1 zeigt genau dieses Verhalten bereits.
+  //
+  // WAS PASSIERTE, WENN JEMAND ffprobe-static ANHEBT: `tags.rotate` faellt weg, die Drehung
+  // wird als 0 gelesen, und JEDES Hochkant-Video kaeme mit vertauschten Achsen durch. Der
+  // Import meldete keinen Fehler - die Masse waeren nur die falschen -, und auffallen wuerde
+  // es erst am Fernseher, als Balken an der falschen Seite. Genau diese Klasse von stillem
+  // Schaden macht dieser Test laut: Er wird ROT, sobald das Binary den Tag nicht mehr liefert.
+  it("liest die Drehung aus tags.rotate - Schranke gegen einen ffprobe-Versionssprung", async () => {
+    const ergebnis = await leseRohMetadaten(erzeugeGedrehtesVideo());
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+
+    // Erst die Quelle, auf die sich #83 stuetzt - hier bricht ein Versionssprung zuerst.
+    const roh = ergebnis.wert as { streams?: { tags?: { rotate?: string } }[] };
+    expect(roh.streams?.[0]?.tags?.rotate).toBe("270");
+
+    // Dann die Wirkung: 270 Grad tauschen die Achsen. Das Video ist 320x240 aufgenommen und
+    // muss als 240x320 ankommen - sonst rechnet der Render mit der falschen Geometrie.
+    const gedeutet = werteMetadatenAus(ergebnis.wert, "video");
+    expect(gedeutet.ok).toBe(true);
+    if (!gedeutet.ok) return;
+    expect(gedeutet.wert.maße).toEqual({ breite: 240, höhe: 320 });
   });
 
   it("meldet eine Datei, die es nicht gibt, als probe_fehler statt zu werfen", async () => {
