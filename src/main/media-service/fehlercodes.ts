@@ -28,5 +28,19 @@ export type LoeschFehlercode =
   | 'datei_fehler'
   | 'speicher_fehler'
 
-/** Fehlercodes des Aufräumlaufs (Reconcile, TK 9.4.7) – s. Begründung unten. */
-export type ReconcileFehlercode = 'speicher_fehler' | 'datei_fehler'
+/**
+ * Fehlercodes des Aufräumlaufs (Reconcile, TK 9.4.7) – s. Begründung unten.
+ *
+ * `kein_projekt` ist am 13.08.2026 nachgetragen worden (Issue-Nachtrag zu #79). Grund: Der
+ * `project-store` hat am selben Tag diesen Code bekommen, und `markiereFehlende` (#89) sagt zu,
+ * den Fehler von `setzeAssetZustand` (#74) UNVERÄNDERT durchzureichen. Ohne den Eintrag fiel er
+ * auf `unbekannter_fehler`, und der echte Code stand nur noch im Meldungstext – worauf kein
+ * Aufrufer verzweigen kann. Der Fall ist beim Reconcile nicht theoretisch: Er läuft beim
+ * Projektstart, also genau dann, wenn noch kein Projekt geladen sein kann.
+ *
+ * NUR dieser eine Code. `projekt_beschaeftigt` und `speicher_fehler` sind aus `setzeAssetZustand`
+ * gar nicht erreichbar (die Funktion stößt nur das entprellte Speichern an, nie einen
+ * Sofort-Flush) – eine Union um unerreichbare Fälle zu erweitern, täuscht Pfade vor, die es nicht
+ * gibt.
+ */
+export type ReconcileFehlercode = 'speicher_fehler' | 'datei_fehler' | 'kein_projekt'
