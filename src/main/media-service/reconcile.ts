@@ -29,10 +29,23 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Asset } from '../../shared/contracts/asset'
 import type { ReconcileFehlercode } from './fehlercodes'
 
+// NACHGEZOGEN am 13.08.2026, von Hand und nicht vom Generator: Der Rueckgabewert traegt
+// jetzt `offen` (Issue-Nachtrag zu #91). Beim Bau von #90 kam heraus, dass dessen zweite
+// Zahl hier sonst STIRBT - `holeLoeschungenNach` liefert `{ erledigt, offen }`, und `offen`
+// sind die Loeschungen, die auch diesmal nicht durchgingen. Ohne die Zahl versucht der Lauf
+// es bei jedem Projektstart erneut, still und fuer immer.
+//
+// Diese Datei ist noch ein Rumpf; die Aenderung kostet daher keinen Code. Wer sie fuellt,
+// reicht beide Zahlen aus #90 UNVERAENDERT durch und rechnet nichts neu.
 export async function reconcile(
   projektId: string,
   assets: Asset[],
-): Promise<Ergebnis<{ entfernt: number; markiert: number; erledigt: number }, ReconcileFehlercode>> {
+): Promise<
+  Ergebnis<
+    { entfernt: number; markiert: number; erledigt: number; offen: number },
+    ReconcileFehlercode
+  >
+> {
   throw new Error(
     "Noch nicht umgesetzt - Rumpf gehoert zu Issue #91."
   );
