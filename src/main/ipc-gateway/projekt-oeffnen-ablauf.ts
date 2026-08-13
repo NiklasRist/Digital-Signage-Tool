@@ -24,6 +24,7 @@
 // keine Pfadbildung, kein Lock, kein IPC-Kanal, kein Fenster. Sie ruft drei Funktionen
 // in einer Reihenfolge auf und reicht deren Fehler unveraendert weiter.
 
+import { meldeQueueStoerung } from '../auftrags-manager/queue-ereignis'
 import { stelleBeiProjektOeffnungHer } from '../auftrags-manager/start-wiederherstellung'
 import { reconcile } from '../media-service/reconcile'
 import { öffneProjekt } from '../project-store/oeffne-projekt'
@@ -55,7 +56,10 @@ import type { ReconcileFehlercode } from '../media-service/fehlercodes'
  * kommen aus den Dateien, in denen sie deklariert sind (#72 bzw. #79), und `ergebnis.ts` wird
  * nicht angefasst.
  */
-type Ausgang = Ergebnis<Project, ProjectStoreFehlercode | ReconcileFehlercode>
+type Ausgang = Ergebnis<
+  Project,
+  ProjectStoreFehlercode | ReconcileFehlercode | 'schema_zu_neu'
+>
 
 /** Die Fehlerseite von Schritt 1 - abgeleitet, nicht abgeschrieben (s. `ausSchritt1`). */
 type Schritt1Fehler = Extract<Awaited<ReturnType<typeof öffneProjekt>>, { ok: false }>['fehler']
@@ -71,7 +75,7 @@ const PFAD_TRENNER = ['/', '\\']
 
 export async function oeffneProjektAblauf(
   projektId: string,
-): Promise<Ergebnis<Project, ProjectStoreFehlercode | ReconcileFehlercode>> {
+): Promise<Ergebnis<Project, ProjectStoreFehlercode | ReconcileFehlercode | 'schema_zu_neu'>> {
   // EIN Fangnetz um den ganzen Ablauf. Diese Funktion haengt am IPC-Kanal
   // `project:öffneProjekt` (die Verdrahtung dazu gehoert #76) - "Kein `throw` nach aussen"
   // (TK 9.1.1, Punkt 2), und "Eine rohe Exception-Meldung wird nie zum Code" (Punkt 3).
@@ -210,34 +214,22 @@ export async function oeffneProjektAblauf(
 // - bei Erfolg kommt GENAU das Project aus Schritt 1 heraus
 
 /**
- * Der Fehler von Schritt 1, so unveraendert wie der Rueckgabetyp es zulaesst.
+ * Der Fehler aus Schritt 1, unveraendert uebernommen.
  *
- * WEITERGEGEBEN WIRD DAS FEHLEROBJEKT MIT ALLEN FELDERN (`...fehler`), nicht eine Abschrift der
- * bekannten - wer es Feld fuer Feld neu zusammensetzt, verliert lautlos jedes Feld, das er nicht
- * kennt. Heute waere das `daten`: "Ein Aufrufer, der `daten` nicht kennt, funktioniert
- * unveraendert weiter." (TK 9.1.1)
+ * ERLEDIGT am 13.08.2026 (Entscheidung des Users): Hier stand eine Abbildung von
+ * `schema_zu_neu` auf `unbekannter_fehler`, weil der verbindliche Rueckgabetyp den Code nicht
+ * tragen konnte. Er kann es jetzt - die Signatur ist um `'schema_zu_neu'` erweitert.
  *
- * DIE EINE AUSNAHME - UND SIE IST GEMELDET, NICHT ERFUNDEN (s. Vermerk 1 am Dateiende):
- * `öffneProjekt` fuehrt seit dem 12.08.2026 `ProjectStoreFehlercode | 'schema_zu_neu'`. Der
- * verbindliche Rueckgabetyp dieses Issues kennt `'schema_zu_neu'` nicht, und beides ist nicht
- * gleichzeitig erfuellbar. Von den drei Auswegen scheiden zwei aus: die verbindliche Signatur
- * hier zu weiten (Vertragsaenderung - gehoert ins Issue) und ein `as`-Cast (vom Issue
- * ausdruecklich verboten, und er machte aus einem Typfehler eine Luege). Bleibt: den Code auf
- * `unbekannter_fehler` fallen zu lassen. Der Verlust ist begrenzt und bewusst hingenommen - die
- * Meldung von #34 reist WOERTLICH mit und sagt dem Nutzer genau, was zu tun ist ("mit einer
- * neueren App-Version erstellt"); verloren geht allein die Moeglichkeit, maschinell darauf zu
- * verzweigen. Einen Aufrufer, der das taete, gibt es heute nicht (#76 ist ungebaut).
+ * WARUM DAS ZAEHLT: "Diese Projektdatei stammt aus einer neueren App-Version" ist eine
+ * Auskunft, auf die die Oberflaeche gezielt reagieren koennen muss - mit einem Hinweis auf ein
+ * Update, nicht mit "unbekannter Fehler". Auf einen Meldungstext kann kein Aufrufer verzweigen.
  *
- * KEINE ABBILDUNG SONST. Jeder andere Code - auch `speicher_fehler`, `nicht_gefunden`,
- * `kein_projekt`, `projekt_beschaeftigt` - kommt genau so heraus, wie er hereinkam.
+ * Die Erweiterung war JETZT billig: #76 ist der einzige Abnehmer und noch ungebaut.
  */
 function ausSchritt1(fehler: Schritt1Fehler): Ausgang {
-  if (fehler.code === 'schema_zu_neu') {
-    return { ok: false, fehler: { ...fehler, code: 'unbekannter_fehler' } }
-  }
-  // `fehler.code` ist hier auf alles ausser 'schema_zu_neu' verengt; die ausgeschriebene
-  // Zuweisung uebernimmt genau diese Verengung, waehrend `...fehler` alle uebrigen Felder haelt.
-  return { ok: false, fehler: { ...fehler, code: fehler.code } }
+  // JEDER Code kommt genau so heraus, wie er hereinkam - `speicher_fehler`, `nicht_gefunden`,
+  // `kein_projekt`, `projekt_beschaeftigt` und `schema_zu_neu`. Keine Abbildung, kein Cast.
+  return { ok: false, fehler }
 }
 
 /**
@@ -268,6 +260,29 @@ function vermerkeAufraeumzahlen(
     `${zahlen.erledigt} vorgemerkte Loeschungen nachgeholt, ${zahlen.offen} weiterhin offen.`
   if (zahlen.offen > 0) {
     console.warn(meldung)
+
+    // SICHTBAR FUER DEN NUTZER, entschieden am 13.08.2026: "Nur zeigen, wenn etwas haengt."
+    //
+    // Die drei anderen Zahlen bleiben eine reine Diagnoseauskunft - wer ein Projekt oeffnet,
+    // will nicht bei jedem Start lesen, wie viele Waisen weggeraeumt wurden. `offen` ist der
+    // Ausnahmefall: Diese Loeschungen wurden schon einmal verlangt, sind schon einmal
+    // gescheitert und werden bei JEDEM weiteren Start still erneut versucht. Ohne Meldung
+    // sieht der Nutzer allein, dass sein Datentraeger nicht leerer wird - und sucht die
+    // Ursache dort, wo sie nicht ist.
+    //
+    // WARUM UEBER DEN STOERUNGSKANAL DER WARTESCHLANGE und nicht ueber einen eigenen Weg:
+    // Vorgemerkte Loeschungen liegen in Q2, dem Wiederholungsspeicher der Warteschlange
+    // (TK v2.4) - sachlich ist das ihr Gegenstand. Der Kanal existiert seit dem 13.08.2026
+    // (#65 `meldeQueueStoerung` -> #71 `queue:stoerung` -> Anzeige in #205) und ist genau
+    // dafuer gebaut: Stoerungen, die der Ablauf bewusst ueberlebt und die sonst niemand
+    // bemerkt. Ein zweiter Meldeweg daneben waere einer zu viel.
+    //
+    // KEIN `await`, kein Abbruch: Das Projekt IST geoeffnet. Eine gescheiterte Anzeige darf
+    // daran nichts aendern.
+    meldeQueueStoerung(
+      `${zahlen.offen} vorgemerkte Loeschung(en) konnten auch diesmal nicht ausgefuehrt werden. ` +
+        `Die Dateien bleiben vorerst liegen und werden beim naechsten Oeffnen erneut versucht.`,
+    )
     return
   }
   console.info(meldung)

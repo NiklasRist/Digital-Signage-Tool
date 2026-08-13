@@ -21,6 +21,14 @@ const zustand = vi.hoisted(() => ({
   reconcile: { ok: true, wert: { entfernt: 0, markiert: 0, erledigt: 0, offen: 0 } } as unknown,
   /** Wirft statt zu antworten - fuer den Zweig "unerwartete Ausnahme". */
   q2Wirft: false,
+  /** Die sichtbaren Stoerungsmeldungen (#65), seit dem 13.08.2026. */
+  stoerungen: [] as string[],
+}))
+
+vi.mock('../../src/main/auftrags-manager/queue-ereignis', () => ({
+  meldeQueueStoerung: (meldung: string) => {
+    zustand.stoerungen.push(meldung)
+  },
 }))
 
 vi.mock('../../src/main/project-store/oeffne-projekt', () => ({
@@ -107,6 +115,7 @@ beforeEach(() => {
   zustand.q2 = { ok: true, wert: undefined }
   zustand.reconcile = { ok: true, wert: { entfernt: 0, markiert: 0, erledigt: 0, offen: 0 } }
   zustand.q2Wirft = false
+  zustand.stoerungen = []
   // Der interne Vermerk geht in die Konsole des Hauptprozesses; im Testlauf wird er
   // abgefangen - teils, damit die Ausgabe lesbar bleibt, teils, weil ein Test ihn prueft.
   vi.spyOn(console, 'info').mockImplementation(() => undefined)
@@ -204,11 +213,12 @@ describe('oeffneProjektAblauf - Schritt 1 scheitert', () => {
     }
   })
 
-  it('laesst schema_zu_neu auf unbekannter_fehler fallen, behaelt aber die Meldung', async () => {
-    // GEMELDETE NAHT (Vermerk 1 der Quelldatei): #34 fuehrt seit dem 12.08.2026 den Code
-    // 'schema_zu_neu', den der verbindliche Rueckgabetyp dieses Issues nicht kennt. Ohne
-    // Signaturaenderung bleibt nur der generische Code - die Meldung muss dann aber woertlich
-    // durchkommen, sonst erfaehrt der Nutzer den Grund nirgends mehr.
+  it('reicht schema_zu_neu unveraendert durch', async () => {
+    // Dieser Test hielt bis zum 13.08.2026 einen VERLUST fest: Der Rueckgabetyp kannte
+    // 'schema_zu_neu' nicht, der Code fiel auf 'unbekannter_fehler' und der Grund stand nur
+    // noch im Meldungstext. Umgedreht statt geloescht - er bewacht jetzt die Zusage, von der
+    // die Oberflaeche lebt: "Diese Datei stammt aus einer neueren App-Version" muss ein CODE
+    // sein, auf den sie verzweigen kann, kein Satz, den sie durchsuchen muesste.
     zustand.oeffnen = {
       ok: false,
       fehler: { code: 'schema_zu_neu', meldung: 'Mit einer neueren App-Version erstellt.' },
@@ -218,7 +228,7 @@ describe('oeffneProjektAblauf - Schritt 1 scheitert', () => {
 
     expect(ergebnis.ok).toBe(false)
     if (!ergebnis.ok) {
-      expect(ergebnis.fehler.code).toBe('unbekannter_fehler')
+      expect(ergebnis.fehler.code).toBe('schema_zu_neu')
       expect(ergebnis.fehler.meldung).toBe('Mit einer neueren App-Version erstellt.')
     }
   })
@@ -312,6 +322,45 @@ describe('oeffneProjektAblauf - die vier Zahlen aus Schritt 3', () => {
 
     expect(console.warn).not.toHaveBeenCalled()
     expect(console.info).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('oeffneProjektAblauf - haengende Loeschungen werden SICHTBAR', () => {
+  // Entschieden am 13.08.2026: "Nur zeigen, wenn etwas haengt." Die drei anderen Zahlen
+  // bleiben Diagnose; `offen` nicht - diese Loeschungen wurden schon einmal verlangt, sind
+  // schon einmal gescheitert und werden bei JEDEM Start still erneut versucht.
+  it('meldet eine Stoerung, sobald offen groesser als null ist', async () => {
+    zustand.reconcile = { ok: true, wert: { entfernt: 0, markiert: 0, erledigt: 1, offen: 2 } }
+
+    await oeffneProjektAblauf('p-1')
+
+    expect(zustand.stoerungen).toHaveLength(1)
+    expect(zustand.stoerungen[0]).toContain('2')
+    // Der Nutzer muss erfahren, dass es von selbst weitergeht - sonst sucht er nach einer
+    // Handlung, die es nicht gibt.
+    expect(zustand.stoerungen[0]).toContain('erneut versucht')
+  })
+
+  it('schweigt im Regelfall - auch wenn aufgeraeumt wurde', async () => {
+    // Gegenprobe: Ohne sie liesse sich der Meldeweg auch dann fuer erfuellt halten, wenn er
+    // bei JEDEM Projektoeffnen feuerte. Genau das war die verworfene Alternative.
+    zustand.reconcile = { ok: true, wert: { entfernt: 3, markiert: 2, erledigt: 1, offen: 0 } }
+
+    await oeffneProjektAblauf('p-1')
+
+    expect(zustand.stoerungen).toEqual([])
+  })
+
+  it('meldet nichts, wenn der Aufraeumlauf selbst gescheitert ist', async () => {
+    // Dann gibt es keine Zahlen - eine Meldung "0 Loeschungen haengen" waere erfunden.
+    zustand.reconcile = {
+      ok: false,
+      fehler: { code: 'datei_fehler', meldung: 'Der Medienordner ist nicht lesbar.' },
+    }
+
+    await oeffneProjektAblauf('p-1')
+
+    expect(zustand.stoerungen).toEqual([])
   })
 })
 
