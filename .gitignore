@@ -80,4 +80,9 @@ Desktop.ini
 # freigegebenen Handle von selbst auf, nicht ueber Loeschen), waere also dauerhaft sichtbar.
 /instanz.lock
 /instanz.signal
+
+# Python-Zwischenspeicher der Werkzeuge unter tools/. Entsteht bei jedem Lauf von
+# geruest.py und stand seither in jedem `git status` - ohne dass er je ins Repo gehoert.
+tools/__pycache__/
+__pycache__/
 docs/agents/*/bodies/
