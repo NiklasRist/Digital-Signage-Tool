@@ -185,4 +185,30 @@ describe("Auto-Speichern (#47)", () => {
 
     expect(zustand.geschrieben).toHaveLength(1);
   });
+
+  // --- geaendertAm (vereinheitlicht 12.08.2026) ------------------------------
+  it("frischt geaendertAm beim Vormerken auf", async () => {
+    const { planeAutoSpeicherung } = await ladeModul();
+    const projekt = { ...PROJEKT, geaendertAm: "2020-01-01T00:00:00.000Z" };
+
+    planeAutoSpeicherung(projekt);
+
+    // Nur "nicht mehr der alte Stand" - kein Vergleich gegen die Uhr des Rechners.
+    expect(projekt.geaendertAm).not.toBe("2020-01-01T00:00:00.000Z");
+  });
+
+  it("stempelt das LEBENDE Objekt, nicht eine Kopie", async () => {
+    const { planeAutoSpeicherung } = await ladeModul();
+    const projekt = { ...PROJEKT, geaendertAm: "2020-01-01T00:00:00.000Z" };
+
+    planeAutoSpeicherung(projekt);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    // Was geschrieben wurde, traegt denselben frischen Stempel - waere hier eine Kopie
+    // gestempelt worden, stuende auf der Platte weiter 2020.
+    expect(zustand.geschrieben).toEqual([projekt]);
+    expect((zustand.geschrieben[0] as { geaendertAm: string }).geaendertAm).toBe(
+      projekt.geaendertAm,
+    );
+  });
 });

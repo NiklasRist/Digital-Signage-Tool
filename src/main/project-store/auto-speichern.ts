@@ -145,6 +145,26 @@ let fehlerAktiv = false
 const hoerende = new Set<{ hoerer: (ereignis: AutoSpeichernEreignis) => void }>()
 
 export function planeAutoSpeicherung(projekt: Project): void {
+  // DER EINE ORT, an dem `geaendertAm` fortgeschrieben wird (12.08.2026).
+  //
+  // Vorher tat es NIEMAND: schreibeProjekt (#46) laesst das Feld ausdruecklich unberuehrt
+  // ("ein hier gesetzter Zeitstempel waere eine zweite, unsichtbare Quelle fuer ein
+  // fachliches Feld"), und ausser erstelleProjekt (#33) schrieb es kein Modul. Folge: In
+  // jeder project.json stand dauerhaft der Erstellzeitpunkt, und listeProjekte (#35)
+  // sortierte "zuletzt bearbeitet" nach einem Wert, der sich nie aendert. Fuenf Agenten
+  // haben das unabhaengig gemeldet.
+  //
+  // WARUM HIER UND NICHT IN JEDER OPERATION: Diese Funktion ist der Engpass, durch den
+  // JEDE Aenderung am Speicherstand laeuft - und nur die. Zwanzig Instant-Operationen
+  // haetten zwanzig Gelegenheiten, ihn zu vergessen; eine vergessene faellt niemandem auf.
+  //
+  // WARUM NICHT IN schreibeProjekt: Dort hiesse der Wert "zuletzt gespeichert", nicht
+  // "zuletzt geaendert" - und flushBeimBeenden schreibt bewusst UNBEDINGT, auch wenn
+  // nichts anliegt. Jedes Beenden stempelte dann ein Projekt, das niemand angefasst hat.
+  //
+  // Nach einem gescheiterten Schreiben ist der Speicherstand neuer als die Platte. Das ist
+  // richtig so (TK 9.5.4: kein Rollback) - das Feld sagt "geaendert", nicht "gesichert".
+  projekt.geaendertAm = new Date().toISOString()
   vorgemerkt = projekt
   standZaehler += 1
   planeTermin(ENTPRELLUNG_MS)
