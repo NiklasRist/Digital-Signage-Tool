@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.4 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.14 (HLD vollständig, geprüft; Fehlercode `kein_projekt` nachgetragen)
+**Version:** 3.15 (HLD vollständig, geprüft; alle im Code geführten Fehlercodes dokumentiert)
 **Datum:** 14.08.2026
 **Status:** In Planung
 
@@ -494,6 +494,15 @@ Bei `fehler` und `abgebrochen` entsteht **keine** neue Ausgabedatei; eine **bere
 | `unbekannter_fehler` | Jede nicht zuordenbare Ausnahme; das Gateway übersetzt sie (9.1.1 Punkt 8) – **kein** Stacktrace in der Oberfläche | Wiederholen; der Versuch steht mit Zeitstempel in Q3 |
 
 **`abgebrochen` ist *kein* Fehlercode.** Ein vom Nutzer abgebrochener Lauf endet über `status: "abgebrochen"` (9.2.7) und trägt **kein** `fehler`-Objekt – sonst gäbe es zwei Wege, denselben Ausgang zu melden, und die Oberfläche zeigte einen Abbruch als Fehler an.
+
+**Modul-lokal im `ffmpeg-adapter`: `ffmpeg_abgebrochen`.** Der Adapter unterscheidet zwei Ausgänge –
+`ffmpeg_fehler` und `ffmpeg_abgebrochen`. Der zweite entsteht, wenn der Lauf über das Abbruchsignal
+beendet wurde. **Er darf die Tabelle oben nie erreichen:** Der `render-service` übersetzt ihn in
+`status: "abgebrochen"` nach dem Absatz darüber. Warum die Unterscheidung trotzdem im Adapter nötig
+ist: Ein unter Windows per `taskkill` beendetes `ffmpeg` meldet `code 1, signal null` – von einem
+echten Encoder-Fehler **nicht** zu unterscheiden. Ohne das mitgeführte Abbruchsignal käme jeder vom
+Nutzer ausgelöste Abbruch als rotes „Render fehlgeschlagen" an. *(Gemessen am 14.08.2026 gegen das
+gebündelte `ffmpeg` 6.1.1; der Beleg liegt als Integrationstest vor.)*
 
 **Die betroffene Element-ID erreicht die Oberfläche über die strukturierten Fehlerdaten.** `RenderResult.fehlerhaftesElementId` ist Modul-intern; beim Abschluss des Auftrags übernimmt die Auftragsverwaltung `fehlercode` → `Auftrag.fehler.code`, `meldung` → `Auftrag.fehler.meldung` und `fehlerhaftesElementId` → **`Auftrag.fehler.daten = { elementId }`** (9.1.1, 9.3.1). Ohne diesen Weg käme die ID **nie** beim Nutzer an – obwohl 9.2.1 die `RenderItem.id` genau damit begründet („eindeutige Fehlerzuordnung") und der Reparatur-Modus (FA-19) die Stelle benennen muss, zu der er führt. Die Form von `daten` ist damit **je Fehlercode festgelegt**: `{ elementId: string }` bei `medium_fehlt` und `ungueltiges_element`, sonst nicht gesetzt.
 
@@ -1114,6 +1123,20 @@ einen eigenen Klartext (Warteschlangen-Leiste, 9.14).
 den `project-store`; er **reicht den Code unverändert durch** und führt ihn deshalb ebenfalls in
 seinen Fehlercode-Tabellen (9.4.9).
 
+**Fehlercode `projekt_beschaeftigt` – das D1-Schreib-Lock ist belegt.** Der dritte Code des
+`project-store` neben `speicher_fehler` und `kein_projekt`. Er sagt, dass gerade eine andere
+Mutation unter dem einen D1-Lock läuft; die eigene Änderung wurde deshalb **nicht** ausgeführt.
+
+*Warum er sichtbar ist und nicht stillschweigend gewartet wird:* Die Instant-Operationen dieses
+Abschnitts sind an eine Bedienhandlung gekoppelt und optimistisch dargestellt (9.7.3). Eine
+unsichtbare Warteschlange davor erzeugte genau den Zustand, den 9.7.3 ausschließt – die Oberfläche
+zeigte die Änderung als vollzogen, während sie noch aussteht. Ein benannter Code lässt den
+`composer` stattdessen zurückrollen und es erneut versuchen.
+
+*Heute selten, aber nicht theoretisch:* Die meisten Wege dorthin sind kurz, und der `media-service`
+kann ihn aus `fuegeAssetHinzu`/`entferneAsset` derzeit gar nicht erreichen – er **deutet ihn
+trotzdem um**, als Schranke für den Tag, an dem eine dieser Operationen ihre Codes erweitert.
+
 #### 9.5.3 Löschsemantik – bewusste Asymmetrie
 
 - **Medium löschen** (`media-service` 9.4.6): **blockiert** bei Referenz (`asset_referenziert`). Die Datei ist die schwere, geteilte Ressource; versehentlicher Verlust wäre teuer.
@@ -1297,6 +1320,22 @@ Bloßes Blockieren genügt nicht; der composer **führt den Nutzer aktiv durch d
 - **Aktions-Segmente werden auf Aktions-Ebene repariert:** Ist ein Aktions-Segment kaputt, weil das **Bild der Aktion** fehlt, liegt der Defekt an der **Aktion**, nicht am einzelnen Listenelement. Die Reparatur leitet dann in den `action-editor` [P2] über (Bild neu verknüpfen/ersetzen/entfernen). Da Aktionen **referenzierbar** sind, behebt **ein** Fix an der Aktion **alle** Stellen, die sie verwenden – Listenelemente **und Band-Abschnitte**. Der Fortschritt „X von N" kann dadurch um mehr als eins sinken.
 - **Kaputter Band-Abschnitt (Fall 3):** Er wird als **eigene** Reparatur-Position geführt und angesteuert. Fix-Optionen: **Bild der Aktion reparieren** (`action-editor`, behebt alle Verwendungen), **Abschnitt durch eine andere Aktion ersetzen**, oder **Abschnitt entfernen**. Beim Entfernen gilt die Regel aus 9.5.3: **wird das Band dadurch leer, entfällt die Einblendung – das Videoelement bleibt.**
 - **Freigabe:** Erst wenn **kein** kaputtes Element mehr existiert, ist der Render wieder frei. So kann ein Lauf nicht an einem übersehenen kaputten Element scheitern.
+
+**Zwei Fehlercodes entstehen im `composer` selbst – vor jedem IPC-Aufruf.** Sie sind modul-lokal und
+erscheinen deshalb in keiner Tabelle des `render-service` (9.2.3):
+
+| Code | Wann | Was der Nutzer sieht |
+|---|---|---|
+| `kaputte_elemente` | Der Render wird ausgelöst, während noch kaputte Stellen bestehen. Der Aufruf geht **gar nicht erst** an den Main | Die Zurückleitung in den Reparatur-Modus nach den Punkten oben – **keine** Fehlermeldung |
+| `png_export_fehler` | Ein Aktions-Segment ließ sich nicht in einen PNG-Puffer schreiben (`template-canvas`, 9.10). Ohne Puffer gibt es nichts zu rendern | Eine Meldung mit dem betroffenen Element; der Render startet nicht |
+
+*Warum die Prüfung vor dem IPC-Aufruf steht und nicht im `render-service`:* Der Auftrag wird beim
+Einreihen **eingefroren** (9.3.5). Ein Auftrag, der schon beim Absenden zum Scheitern verurteilt ist,
+belegte den Torwächter, liefe durch die Warteschlange und käme als Fehlschlag zurück – der Nutzer
+wartete auf ein Ergebnis, das von Anfang an feststand. Beide Codes verhindern genau das. Der
+`render-service` prüft trotzdem **erneut** (`medium_fehlt`, 9.2.3): Zwischen Absenden und Ausführung
+kann eine Datei verschwinden, und die Grenzkontrolle des Main darf sich nicht auf den Renderer
+verlassen.
 
 ---
 
@@ -1806,11 +1845,27 @@ Vorlagen sind **app-weit** (9.11.1.1) und liegen damit **außerhalb** von `proje
 | `erstelleVorlage` | `art`, `höhe?`, `name` → `Ergebnis<Vorlage>` mit `parent = null` (feste Zonen der Art vorbelegt) |
 | `oeffneZurBearbeitung` | `id` → `Ergebnis<Vorlage>` – legt eine **Arbeitskopie** mit `parent = id` an und gibt sie zurück |
 | `speichereArbeitskopie` | `arbeitsId`, `vorlage` → `Ergebnis<Vorlage>` – **Auto-Speichern** während des Bearbeitens |
-| `uebernehmeInParent` | `arbeitsId` → `Ergebnis<Vorlage>` – **mergt** in den Parent, Arbeitskopie verschwindet („überarbeiten") |
+| `uebernehmeInParent` | `arbeitsId` → `Ergebnis<Vorlage>` – **mergt** in den Parent, Arbeitskopie verschwindet („überarbeiten"); im Fehlerfall Code `parent_eingebaut`, s. u. |
 | `alsEigenstaendige` | `arbeitsId`, `name` → `Ergebnis<Vorlage>` – setzt **`parent = null`**, Arbeitskopie wird eine echte Vorlage |
 | `verwerfeArbeitskopie` | `arbeitsId` → `Ergebnis<void>` |
 | `löscheVorlage` | `id` → `Ergebnis<void>`; im Fehlerfall Code `vorlage_referenziert` mit **beiden** Trefferlisten: betroffene **Aktionen** und betroffene **Listenelemente**, je mit Projekt |
 | `pruefeVorlagenReferenzen` | `id` → `Ergebnis<Vorlagennutzung>` – **rein lesend**: ermittelt über **alle** Projekte, welche Aktionen und welche Listenelemente die Vorlage benutzen, und gibt die Treffer **namentlich** zurück (nicht nur Zahlen). Verändert **nichts** |
+
+**Fehlercode `parent_eingebaut` – der Parent der Arbeitskopie ist eine eingebaute Vorlage.**
+Eingebaute Vorlagen sind **eingefroren** (9.11.1.1); `uebernehmeInParent` ändert deshalb **nichts**
+und meldet diesen Code. Der Weg für den Nutzer ist `alsEigenstaendige` – die Arbeitskopie wird eine
+eigene Vorlage, statt die mitgelieferte zu verändern.
+
+*Warum ein eigener Code und nicht `ungueltige_eingabe`:* Die Eingabe ist völlig in Ordnung – der
+Nutzer hat eine gültige Arbeitskopie und einen gültigen Wunsch; **verboten ist das Ziel**. Ein
+generischer Code zwänge die Oberfläche, den Grund aus dem Meldungstext zu erraten, und der einzige
+sinnvolle Hinweis („Speichere sie als neue eigenständige Vorlage") ginge verloren. Der Code steht
+deshalb neben `vorlage_referenziert` in `VorlagenFehlercode`.
+
+*Abgrenzung, damit er nicht wandert:* `parent_eingebaut` entsteht **ausschließlich** bei
+`uebernehmeInParent`. Weder `löscheVorlage` noch `oeffneZurBearbeitung` noch
+`speichereArbeitskopie` vergeben ihn je – das Löschen einer eingebauten Vorlage ist ein anderer Fall
+und wird an anderer Stelle abgewiesen.
 
 **`pruefeVorlagenReferenzen` – die Nutzung wird VOR dem Überarbeiten und VOR dem Löschen angezeigt.** 9.12.2 verlangt die Anzeige seit je („wird von 7 Aktionen in 2 Projekten verwendet"), aber die Operationsliste kannte keine Operation dafür – die Zählung existierte nur **intern** als Sperre beim Löschen und war von der Oberfläche aus **nicht erreichbar**. Diese Operation schließt die Lücke.
 
