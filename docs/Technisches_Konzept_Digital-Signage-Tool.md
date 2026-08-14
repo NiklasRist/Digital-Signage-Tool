@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.4 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.13 (HLD vollständig, geprüft)
-**Datum:** 11.08.2026
+**Version:** 3.14 (HLD vollständig, geprüft; Fehlercode `kein_projekt` nachgetragen)
+**Datum:** 14.08.2026
 **Status:** In Planung
 
 ---
@@ -891,6 +891,7 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 | `probe_fehler` | `ffprobe` liefert keine Metadaten (beschädigte Datei) **oder** Timeout (gekillt) |
 | `kopier_fehler` | Disk-Fehler, Platzmangel |
 | `speicher_fehler` | D1-Schreibfehler |
+| `kein_projekt` | es ist **überhaupt kein Projekt geöffnet** – vom `project-store` durchgereicht (9.5.2) |
 
 **`löscheMedium`:**
 
@@ -900,6 +901,12 @@ Beim Öffnen eines Projekts, **bevor** die UI Medien zeigt (kein Render/keine Vo
 | `asset_referenziert` | ein ListItem zeigt noch darauf; trägt `daten: { referenzenIds: string[] }` (strukturierte Fehlerdaten, 9.1.1) |
 | `datei_fehler` | Datei konnte nicht gelöscht werden (nach Retry) → als `pendingDeletion` vorgemerkt |
 | `speicher_fehler` | D1-Schreibfehler beim Entfernen des Eintrags (Platte voll, Rechte) – die Datei bleibt unangetastet, weil Schritt 1 nie abgeschlossen wurde |
+| `kein_projekt` | es ist **überhaupt kein Projekt geöffnet** – vom `project-store` durchgereicht (9.5.2) |
+
+**Reconcile (9.4.7):** trägt dieselben drei Codes `speicher_fehler`, `datei_fehler` und `kein_projekt`.
+Der letzte ist hier kein Randfall, sondern der Normalfall einer Fehlbedienung: Der Reconcile läuft
+beim **Öffnen** eines Projekts, und wird er ohne geöffnetes Projekt gerufen, ist genau das die
+Aussage.
 
 ---
 
@@ -1091,6 +1098,21 @@ AusgabeDatei {
 - **`geaendertAm` ist der Renderzeitpunkt, nicht das Protokoll.** Die Datei wird als `<name>.mp4.part` **im Ausgabeordner selbst** geschrieben und bekommt erst nach der Verifikation ihren endgültigen Namen (Rename-mit-Ersetzen im selben Ordner, 9.2.6). Das Umbenennen lässt das Änderungsdatum unberührt, also ist es der Zeitpunkt, zu dem der Render seinen letzten Byte geschrieben hat – Sekunden vor der Fertigmeldung. **Q3 ist NICHT die Quelle dieser Liste** – Q3 ist Historie und Nachweis (auch der Fehlschläge), die Ausgabe-Liste zeigt den **Ist-Bestand** des Ordners.
 - **Abweichung von der Abschnittsüberschrift:** Diese Operation liest **nur** den Ausgabeordner; sie fasst `project.json` nicht an und läuft deshalb **ohne** das D1-Schreib-Lock.
 - Gelistet werden **ausschließlich fertige `.mp4`-Dateien**; Arbeitsdateien (`.part`, Temporäres) bleiben unsichtbar. **Das ist bindend, nicht kosmetisch:** Während eines laufenden Renders liegt eine wachsende `<name>.mp4.part` **in genau diesem Ordner** (9.2.6). Würde sie mitgelistet, böte die Oberfläche eine halbfertige Datei zum Export an. Fehlt der Ordner (noch nie gerendert), ist das Ergebnis eine **leere Liste**, **kein** Fehler.
+
+**Fehlercode `kein_projekt` – „es ist überhaupt kein Projekt geöffnet".** Alle Operationen dieses
+Abschnitts, die sich auf das **geöffnete** Projekt beziehen (Aktionen anlegen/bearbeiten/löschen,
+Elemente hinzufügen/entfernen/ordnen, Trim und Dauer setzen, Einblendung und Element-Referenz
+setzen, sämtliche Asset-Operationen), melden `kein_projekt`, wenn keins geladen ist.
+
+*Warum ein eigener Code und nicht `nicht_gefunden`:* „Es ist kein Projekt offen" verlangt vom
+Nutzer, eines zu öffnen; „dieses Element gibt es nicht" verlangt etwas völlig anderes. Der geführte
+Reparatur-Modus (FA-19, 9.7.5) muss beides auseinanderhalten können, und auf einen **Meldungstext**
+darf kein Aufrufer verzweigen. Der Code reist unverändert bis in die Oberfläche und bekommt dort
+einen eigenen Klartext (Warteschlangen-Leiste, 9.14).
+
+*Weitergabe:* Der `media-service` besitzt keine eigenen D1-Schreibvorgänge (9.4.1) und delegiert an
+den `project-store`; er **reicht den Code unverändert durch** und führt ihn deshalb ebenfalls in
+seinen Fehlercode-Tabellen (9.4.9).
 
 #### 9.5.3 Löschsemantik – bewusste Asymmetrie
 
