@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #99.
 // [vorlagen-store] listeVorlagen und listeArbeitskopien implementieren
 //
@@ -24,6 +23,9 @@
 // Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
 // Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+//
+// ERLEDIGT (14.08.2026): Die Abschaltzeile ist mit dem Fuellen der Rumpfe entfernt;
+// alle Importe werden jetzt benutzt. Der Absatz darueber bleibt als Beleg stehen.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Vorlage } from '../../shared/contracts/vorlage'
@@ -39,14 +41,71 @@ import { ladeBestand } from './schreibe-vorlagen'
 
 /** Nur NUTZBARE Vorlagen: parent === null. Arbeitskopien erscheinen hier nicht. */
 export async function listeVorlagen(): Promise<Ergebnis<Vorlage[], VorlagenFehlercode>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #99."
-  );
+  return filtereBestand((vorlage) => vorlage.parent === null)
 }
 
 /** Nur ARBEITSKOPIEN: parent !== null. Fuer „Bearbeitung fortsetzen". */
 export async function listeArbeitskopien(): Promise<Ergebnis<Vorlage[], VorlagenFehlercode>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #99."
-  );
+  return filtereBestand((vorlage) => vorlage.parent !== null)
 }
+
+/**
+ * Der gemeinsame Rumpf beider Listen: Bestand holen, filtern, Huelle zurueckgeben.
+ *
+ * BEWUSST NICHT EXPORTIERT. Der STOPP-Block verbietet eine dritte Listenfunktion nach aussen
+ * ("kein `listeAlle`, kein `findeVorlage(id)`, kein `existiertVorlage`"); modul-intern haelt diese
+ * eine Stelle dagegen sicher, dass die beiden Listen sich nicht auseinanderentwickeln - eine
+ * kuenftige Aenderung an der Fehlerbehandlung kann gar nicht nur eine der beiden treffen.
+ *
+ * ZUR VOLLSTAENDIGKEIT DER ZERLEGUNG: Die beiden Praedikate sind `parent === null` und dessen
+ * exakte Verneinung. Damit gilt "lueckenlos und ueberschneidungsfrei" ohne weiteres Zutun - auch
+ * fuer einen Eintrag, dessen `parent` gar kein `string | null` ist (die Datei ist von Hand
+ * editierbar, #98 prueft den INHALT ausdruecklich nicht). Ein solcher Eintrag landet bei den
+ * Arbeitskopien, also auf der Seite, die NICHT auswaehlbar ist; die Sicherheitsschranke des Issues
+ * ("halbfertige Vorlagen koennen nicht in einen Render geraten") haelt damit auch im kaputten Fall.
+ * Repariert oder ausgeblendet wird hier nichts - das ist #108.
+ */
+async function filtereBestand(
+  behalte: (vorlage: Vorlage) => boolean,
+): Promise<Ergebnis<Vorlage[], VorlagenFehlercode>> {
+  try {
+    const bestand = await ladeBestand()
+    if (!bestand.ok) {
+      // "Ein Lesefehler aus `ladeBestand` wird DURCHGEREICHT, nicht in eine leere Liste verwandelt."
+      // Unveraendert, also mit dem Code UND der Meldung von dort: Ein hier neu formulierter Fehler
+      // verlegte die Ursache (defekte Datei? unbekannte schemaVersion?) hinter einen zweiten Text.
+      return bestand
+    }
+    // `ladeBestand` liefert bereits eine TIEFE Kopie (#98). `filter` legt ein neues Array darueber,
+    // dessen Elemente zu genau dieser Kopie gehoeren - der zwischengespeicherte Bestand ist von
+    // hier aus unerreichbar, auch wenn ein Aufrufer in eine Zone hineinschreibt. Eine zweite Kopie
+    // waere deshalb verdoppelte Arbeit; eine FLACHE Kopie statt der tiefen in #98 waere dagegen ein
+    // stiller Fehler, denn `filter` allein teilt die Objekte mit der Quelle.
+    return { ok: true, wert: bestand.wert.filter(behalte) }
+  } catch (ursache) {
+    // Der Auffangbogen der Fehlerpfad-Tabelle ("unerwartete Ausnahme -> unbekannter_fehler, kein
+    // throw"). Real wird er, wenn `vorlagen.json` von Hand um einen Eintrag ergaenzt wurde, der gar
+    // kein Objekt ist: Der Zugriff auf `parent` wirft dann. Laut wie hier ist das richtig - still
+    // uebergangen waere die Vorlagenliste unvollstaendig, ohne dass es jemandem auffiele.
+    return {
+      ok: false,
+      fehler: {
+        code: 'unbekannter_fehler',
+        meldung: `Vorlagenliste konnte nicht gebildet werden: ${
+          ursache instanceof Error ? ursache.message : String(ursache)
+        }`,
+      },
+    }
+  }
+}
+
+// NICHT HIER, UND ABSICHTLICH:
+//
+// 1. KEIN `fs`. Der einzige Dateizugriff des Moduls ist `ladeBestand` (#98).
+// 2. KEIN eigener Zwischenspeicher. Der Bestand liegt bereits in #98 im Speicher; ein zweiter
+//    hier lieferte nach jeder Aenderung veraltete Listen.
+// 3. KEIN `sort`, keine Gruppierung, kein Anzeige-Name. Die Reihenfolge IST die des Bestands;
+//    weil #98 die eingebauten Vorlagen als Anfangsbestand anlegt und fehlende hinten anhaengt,
+//    stehen sie ohne Zutun am Anfang.
+// 4. KEIN Filter nach `art` und keine `projektId` - Vorlagen sind app-weit (TK 9.11.1.1), und die
+//    Auswahl der passenden Art erledigt die Oberflaeche.
