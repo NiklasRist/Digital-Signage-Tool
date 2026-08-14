@@ -35,10 +35,34 @@ if (!wurzel) {
 //
 // Zustaendig fuer den Renderer-Bootstrap ist spaeter M7-65 (#260); wandert der Aufruf
 // dorthin, muss er dort VOR dem ersten Canvas-Zeichnen stehen, nicht irgendwo.
-void ladeMarkenSchriften().finally(() => {
-  createRoot(wurzel).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
-});
+//
+// KORRIGIERT am 14.08.2026: Hier stand `.finally(...)`. Damit mountete React AUCH nach
+// einem Ladefehler - der stille Fallback auf eine Systemschrift, den #8 ausdruecklich
+// verbietet: "Ladefehler (z. B. Datei fehlt im Bundle) wirft eine Exception, die den
+// App-Start sichtbar abbrechen laesst - KEIN stiller Fallback auf eine Systemschrift."
+// Aufgefallen bei der Mutationsprobe zu #8 (Playfair durch Muell ersetzt): Die App lief
+// weiter, nur das Aussehen war falsch. Genau die Fehlerklasse - kein Absturz, nur
+// falsches Aussehen -, gegen die dieses Issue existiert.
+ladeMarkenSchriften().then(
+  () => {
+    createRoot(wurzel).render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
+  },
+  (grund: unknown) => {
+    // BEWUSST OHNE REACT: Wer hier landet, hat einen Fehler im Buendel selbst. Ein
+    // Fehlerbild ueber die App-Shell zu zeichnen hiesse, auf denselben Bauteilen
+    // aufzusetzen, deren Grundlage gerade fehlt. Reines DOM haelt immer.
+    const text = grund instanceof Error ? grund.message : String(grund);
+    wurzel.textContent =
+      "Die Marken-Schriften konnten nicht geladen werden. " +
+      "Das Programm startet nicht, weil es sonst mit falschen Schriften zeichnen " +
+      "und ein fehlerhaftes Video erzeugen wuerde. Bitte die Installation erneuern. " +
+      `(Technischer Grund: ${text})`;
+    // Zusaetzlich ins Protokoll, damit der Grund auch dann auffindbar ist, wenn das
+    // Fenster schon geschlossen wurde.
+    console.error("Start abgebrochen - Marken-Schriften nicht ladbar:", grund);
+  },
+);
