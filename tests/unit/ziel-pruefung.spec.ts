@@ -63,6 +63,22 @@ const datei = path.join(wurzel, 'keine-mappe.mp4')
 
 beforeEach(() => {
   writeFileSync(datei, 'x')
+
+  // DIE ERKENNUNG WIRD FUER JEDEN TEST GESTELLT - auch fuer die, die sich nicht fuer
+  // sie interessieren. Sonst startet `pruefeExportZiel` einen echten PowerShell-Prozess
+  // (~370 ms im Leerlauf, unter Last bis 24 s), und die Datei riss am 14.08.2026 die
+  // 5-Sekunden-Grenze, sobald mehrere Bau-Agents gleichzeitig liefen. Drei von ihnen
+  // haben sie unabhaengig als Fehlschlag gemeldet und Zeit darauf verwendet zu belegen,
+  // dass es nicht ihre Aenderung war.
+  //
+  // `null` ist dabei kein Behelf, sondern die vertraglich vorgesehene Antwort
+  // "nicht ermittelbar" - der Schritt gilt damit als bestanden (Rueckfallregel), und
+  // genau das ist die richtige Voreinstellung fuer Tests, die etwas anderes pruefen.
+  // Tests, die den FAT32-Zweig brauchen, ueberschreiben sie mit einem eigenen spyOn.
+  //
+  // Gegen das echte Betriebssystem wird in tests/integration/
+  // dateisystem-erkennung-echt.spec.ts geprueft.
+  vi.spyOn(dateisystemErkennung, 'erkenne').mockResolvedValue(null)
 })
 
 afterEach(() => {
@@ -257,63 +273,18 @@ describe('pruefeExportZiel - FAT32-Grenze', () => {
     expect(ergebnis).toEqual({ ok: true, wert: undefined })
   })
 
-  // ERSETZT am 14.08.2026. Hier stand der Test "SO IST DER STAND: ohne beantwortetes
-  // Experiment erkennt niemand FAT32" - er hielt fest, dass die Erkennung fehlt, und
-  // hat genau dadurch angeschlagen, als sie eingebaut wurde. Genau so soll ein Test
-  // ueber einen bewusst offenen Zustand wirken: Er faellt, wenn der Zustand endet.
+  // VERSCHOBEN am 14.08.2026 nach tests/integration/dateisystem-erkennung-echt.spec.ts.
+  // Hier standen drei Tests, die `dateisystemErkennung.erkenne` gegen das ECHTE
+  // Betriebssystem laufen liessen - also einen PowerShell-Prozess starteten. Unter Last
+  // (mehrere Bau-Agents gleichzeitig) rissen sie die 5-Sekunden-Grenze: Ein einzelner
+  // `powershell -NoProfile -Command ...` brauchte auf diesem Rechner bis zu 24 Sekunden.
+  // Isoliert waren sie gruen, im Gesamtlauf wechselnd rot - DREI Agents haben sie
+  // unabhaengig als Fehlschlag gemeldet und Zeit darauf verwendet zu belegen, dass es
+  // nicht ihre Aenderung war. Ein Test, der andere Arbeit als kaputt erscheinen laesst,
+  // ist teurer als der Fehler, den er sucht.
   //
-  // Das Experiment ist beantwortet (Messung an drei echten Wechseldatentraegern,
-  // Nachtrag in #184): `[IO.DriveInfo]::DriveFormat` liefert NTFS/exFAT/FAT32 korrekt.
-  it('erkennt das Dateisystem des echten Ordners, statt aufzugeben', async () => {
-    const ordner = frischerOrdner()
-
-    const erkannt = await dateisystemErkennung.erkenne(ordner)
-
-    if (process.platform === 'win32') {
-      // Der Testordner liegt unter <Temp>, also auf der Systemplatte. Zugesichert wird
-      // hier NICHT "NTFS" - das haengt am Rechner -, sondern dass ueberhaupt eine
-      // Antwort kommt und dass sie nicht faelschlich `fat32` lautet.
-      expect(erkannt).toBe('anderes')
-    } else {
-      // Auf macOS/Linux ist das Verfahren ungemessen; dort ist `null` die richtige,
-      // ehrliche Antwort und keine Luecke.
-      expect(erkannt).toBeNull()
-    }
-  })
-
-  it('ein nicht existierender Pfad laesst die Erkennung aufgeben, statt zu werfen', async () => {
-    // Die Rueckfallregel darf nicht davon abhaengen, dass der Aufrufer faengt: Die
-    // Erkennung selbst gibt `null` zurueck. Auf Windows wirft `DriveInfo` bei einem
-    // ungueltigen Pfad, der Rueckruf meldet den Fehler - beides muss hier ankommen,
-    // ohne dass die Zusage bricht.
-    await expect(dateisystemErkennung.erkenne('')).resolves.toBeNull()
-  })
-
-  it('ein Zielordner mit eingeschleustem Befehl fuehrt diesen NICHT aus', async () => {
-    // Der Pfad geht als UMGEBUNGSVARIABLE in die PowerShell, nicht in den Befehlstext.
-    // Stuende er im Befehl, verliesse ein Anfuehrungszeichen die Zeichenkette und der
-    // Rest liefe als eigener Befehl.
-    //
-    // WARUM DIESER TEST EINE DATEI BENUTZT: Ein blosser Blick auf den Rueckgabewert
-    // kann das nicht zeigen. `DriveInfo` wertet nur die WURZEL des Pfades aus - der
-    // Ordner muss gar nicht existieren -, also liefert der Aufruf so oder so
-    // 'anderes'. Der eingeschleuste Befehl muss deshalb eine SPUR hinterlassen, die
-    // man messen kann: Er soll eine Datei anlegen. Bleibt sie aus, ist er nicht
-    // gelaufen.
-    const ordner = frischerOrdner()
-    const spur = path.join(ordner, 'GEKAPERT.txt')
-    // Die Klammern werden BEWUSST sauber geschlossen: PowerShell parst die gesamte
-    // Zeile, bevor es irgendetwas ausfuehrt. Eine Nutzlast, die einen Syntaxfehler
-    // hinterlaesst, laeuft nie - der Test waere dann gruen, ohne etwas zu zeigen.
-    // (Genau darauf ist die erste Fassung dieses Tests hereingefallen.)
-    const eingeschleust = `C:\\egal'); New-Item -ItemType File -Path '${spur}'; ('`
-
-    const erkannt = await dateisystemErkennung.erkenne(eingeschleust)
-
-    expect(existsSync(spur)).toBe(false)
-    // Und der Aufruf liefert weiterhin eine regulaere Antwort, statt zu werfen.
-    expect(erkannt === 'anderes' || erkannt === null).toBe(true)
-  })
+  // Was hier bleibt, sind die Faelle, die die Erkennung STELLEN (vi.spyOn) - dort geht
+  // es um den Waechter, nicht um die Messung, und die laufen in Millisekunden.
 })
 
 describe('pruefeExportZiel - Wirkungslosigkeit am Ziel', () => {
