@@ -140,14 +140,14 @@ describe("bearbeiteAktion (#39)", () => {
     expect(geplant).toEqual([]);
   });
 
-  it("meldet nicht_gefunden, wenn kein Projekt geoeffnet ist", async () => {
+  it("meldet kein_projekt, wenn kein Projekt geoeffnet ist", async () => {
     merkeAktivesProjekt(null);
 
     const ergebnis = await bearbeiteAktion("a1", { titel: "Neu" });
 
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
-    expect(ergebnis.fehler.code).toBe("nicht_gefunden");
+    expect(ergebnis.fehler.code).toBe("kein_projekt");
     expect(geplant).toEqual([]);
   });
 

@@ -322,14 +322,14 @@ describe("löscheAktion (#40) - Fehlerpfade und Lock", () => {
     expect(zustand.geplant).toEqual([]);
   });
 
-  it("meldet nicht_gefunden, wenn gar kein Projekt geoeffnet ist", async () => {
+  it("meldet kein_projekt, wenn gar kein Projekt geoeffnet ist", async () => {
     const ergebnis = await löscheAktion("akt-1");
 
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
     // `kein_projekt` (ProjectStoreFehlercode) passt in die einparametrige Signatur dieses
     // Issues nicht hinein - s. Kommentar in der Datei und Bericht.
-    expect(ergebnis.fehler.code).toBe("nicht_gefunden");
+    expect(ergebnis.fehler.code).toBe("kein_projekt");
     expect(zustand.geplant).toEqual([]);
   });
 

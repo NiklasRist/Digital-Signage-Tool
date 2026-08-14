@@ -113,12 +113,12 @@ describe("entferneElement (#42)", () => {
     expect(zustand.geplant).toEqual([]);
   });
 
-  it("meldet nicht_gefunden, wenn gar kein Projekt geoeffnet ist", async () => {
+  it("meldet kein_projekt, wenn gar kein Projekt geoeffnet ist", async () => {
     const ergebnis = await entferneElement("e1");
 
     expect(ergebnis.ok).toBe(false);
     if (!ergebnis.ok) {
-      expect(ergebnis.fehler.code).toBe("nicht_gefunden");
+      expect(ergebnis.fehler.code).toBe("kein_projekt");
     }
     expect(zustand.geplant).toEqual([]);
   });

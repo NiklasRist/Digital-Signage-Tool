@@ -42,9 +42,12 @@ import { mitD1Lock } from './d1-lock'                         // #32
 //         // KEIN LOCK, WIRFT NIE.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Listenelement } from '../../shared/contracts/project'
-export async function ordneNeu(reihenfolge: string[]): Promise<Ergebnis<void>> {
-  return mitD1Lock(async (): Promise<Ergebnis<void>> => {
+export async function ordneNeu(
+  reihenfolge: string[],
+): Promise<Ergebnis<void, ProjectStoreFehlercode>> {
+  return mitD1Lock(async (): Promise<Ergebnis<void, ProjectStoreFehlercode>> => {
     // GELESEN WIRD INNERHALB DES LOCKS, und das ist der ganze Grund, warum diese
     // Operation ueberhaupt ein Lock nimmt, obwohl sie selbst nichts auf die Platte
     // schreibt: Zwischen "welche IDs stehen in der Liste?" und "so sieht die Liste
@@ -67,7 +70,7 @@ export async function ordneNeu(reihenfolge: string[]): Promise<Ergebnis<void>> {
       return {
         ok: false,
         fehler: {
-          code: 'nicht_gefunden',
+          code: 'kein_projekt',
           meldung: 'Es ist kein Projekt geoeffnet, dessen Wiedergabeliste umsortiert werden koennte.',
         },
       }
@@ -180,7 +183,7 @@ export async function ordneNeu(reihenfolge: string[]): Promise<Ergebnis<void>> {
  * nicht hier zu entscheiden. Ein Text ist Pflicht (`meldung: string`), also ist
  * das die zurueckhaltendste Fassung, die den Vertrag erfuellt. S. Bericht/STOPP.
  */
-function ungueltig(meldung: string): Ergebnis<void> {
+function ungueltig(meldung: string): Ergebnis<void, ProjectStoreFehlercode> {
   return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung } }
 }
 

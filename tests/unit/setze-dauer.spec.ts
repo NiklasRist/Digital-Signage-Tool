@@ -110,12 +110,12 @@ describe("setzeDauer (#45)", () => {
     expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "nicht_gefunden" } });
   });
 
-  it("meldet nicht_gefunden, wenn gar kein Projekt geoeffnet ist", async () => {
+  it("meldet kein_projekt, wenn gar kein Projekt geoeffnet ist", async () => {
     merkeAktivesProjekt(null);
 
     const ergebnis = await setzeDauer("b1", DAUER_BEREICH.min);
 
-    expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "nicht_gefunden" } });
+    expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "kein_projekt" } });
   });
 
   it("reicht einen Nachkommawert unveraendert durch - hier wird NICHT gerundet", async () => {

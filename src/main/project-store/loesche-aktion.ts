@@ -37,6 +37,7 @@ import { mitD1Lock } from './d1-lock'                           // #32
 //         // Feld deshalb NICHT an.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Bearbeitungsstand } from '../../shared/contracts/project'
 
 /**
@@ -51,7 +52,7 @@ type LoeschAktionErgebnis = Ergebnis<{
   stand: Bearbeitungsstand
   entfernteElementIds: string[]
   geaenderteElementIds: string[]
-}>
+}, ProjectStoreFehlercode>
 
 export async function löscheAktion(id: string): Promise<LoeschAktionErgebnis> {
   // DAS LOCK NIMMT DIESE FUNKTION SELBST. Sie darf NICHT noch einmal in mitD1Lock
@@ -67,17 +68,19 @@ export async function löscheAktion(id: string): Promise<LoeschAktionErgebnis> {
   return mitD1Lock(async (): Promise<LoeschAktionErgebnis> => {
     const projekt = holeAktivesProjekt()
 
-    // KEIN OFFENES PROJEKT -> `nicht_gefunden`, kein eigener Code.
+    // KEIN OFFENES PROJEKT -> eigener Code `kein_projekt`.
     //
-    // Die Signatur ist einparametrig (`Ergebnis<{...}>`), sie traegt also AUSSCHLIESSLICH
-    // die drei generischen Codes (ergebnis.ts). Der seit dem 13.08.2026 entschiedene Code
-    // `kein_projekt` gehoert zu `ProjectStoreFehlercode` (assets.ts, #72) und passt hier
-    // NICHT hinein - ihn zu verwenden hiesse, den zweiten Typparameter nachzutragen, und
-    // das waere eine Aenderung an der verbindlichen Signatur. Fachlich stimmt die Auskunft
-    // trotzdem: Ohne offenes Projekt gibt es keine Aktions-Bibliothek, in der diese `id`
-    // stehen koennte. Dieselbe Wahl wie in #38, #39 und #42. GEMELDET, s. Bericht/STOPP.
+    // NACHGEZOGEN am 14.08.2026 (Entscheidung des Users). Hier stand `nicht_gefunden` mit
+    // der Begruendung, die einparametrige Signatur koenne den Code gar nicht tragen - das
+    // stimmte, war aber der Grund, nicht die Rechtfertigung. Die Signatur traegt jetzt den
+    // zweiten Typparameter.
+    //
+    // WARUM DER UNTERSCHIED ZAEHLT: "Es ist kein Projekt offen" verlangt vom Nutzer, eines
+    // zu oeffnen; "diese Aktion gibt es nicht" verlangt etwas ganz anderes. Der gefuehrte
+    // Reparatur-Modus (FA-19) muss beides auseinanderhalten koennen, und auf einen
+    // Meldungstext kann kein Aufrufer verzweigen.
     if (projekt === null) {
-      return nichtGefunden('Es ist kein Projekt geoeffnet; es wurde nichts geloescht.')
+      return keinProjekt('Es ist kein Projekt geoeffnet; es wurde nichts geloescht.')
     }
 
     // KEINE EIGENE PRUEFUNG DER `id`. Ueber die Prozessgrenze kann ein `unknown` als
@@ -280,6 +283,11 @@ export async function löscheAktion(id: string): Promise<LoeschAktionErgebnis> {
  */
 function nichtGefunden(meldung: string): LoeschAktionErgebnis {
   return { ok: false, fehler: { code: 'nicht_gefunden', meldung } }
+}
+
+/** Kein Projekt geoeffnet - seit dem 14.08.2026 ein eigener Code, s. oben. */
+function keinProjekt(meldung: string): LoeschAktionErgebnis {
+  return { ok: false, fehler: { code: 'kein_projekt', meldung } }
 }
 
 // ---------------------------------------------------------------------------

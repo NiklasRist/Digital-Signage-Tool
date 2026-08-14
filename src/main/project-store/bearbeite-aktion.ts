@@ -38,10 +38,11 @@ import { mitD1Lock } from './d1-lock'                               // #32
 
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 export async function bearbeiteAktion(
   id: string,
   aktionsdaten: Partial<Omit<Aktion, 'id'>>,
-): Promise<Ergebnis<Aktion>> {
+): Promise<Ergebnis<Aktion, ProjectStoreFehlercode>> {
   // DIESE EINE PRUEFUNG LAEUFT VOR DEM LOCK - und nur sie. Sie fragt nicht nach einem
   // FELD, sondern danach, ob der Aufruf ueberhaupt die Form eines Aufrufs hat: Der Wert
   // kommt ueber IPC aus dem Renderer (#75/#76), und ueber die Prozessgrenze reist ein
@@ -78,7 +79,7 @@ export async function bearbeiteAktion(
   // Der Rueckgabetyp des Abschnitts steht ausgeschrieben da, statt sich ableiten zu lassen:
   // Ohne ihn wuerde `ok: false` in einem Objektliteral zu `boolean` verbreitert, und die
   // Ergebnis-Huelle waere nicht mehr diskriminierbar.
-  return mitD1Lock(async (): Promise<Ergebnis<Aktion>> => {
+  return mitD1Lock(async (): Promise<Ergebnis<Aktion, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
     if (projekt === null) {
       // Die Fehlerpfad-Tabelle kennt fuer diesen Fall keine eigene Zeile - sie fragt nur,
@@ -86,7 +87,7 @@ export async function bearbeiteAktion(
       // Aktion kann darin also nicht existieren: `nicht_gefunden`. Dieselbe Wahl wie #38,
       // #45 und #72; ein zweiter Code fuer dieselbe Lage waere die Uneinheitlichkeit, die
       // der STOPP-Block von #38 ausdruecklich verhindern will.
-      return fehler('nicht_gefunden', 'Es ist kein Projekt geoeffnet; es wurde nichts geaendert.')
+      return fehler('kein_projekt', 'Es ist kein Projekt geoeffnet; es wurde nichts geaendert.')
     }
 
     // Gesucht wird im LEBENDEN Stand: #192 gibt "dieselbe Objektreferenz" heraus, "keine
@@ -285,15 +286,15 @@ export async function bearbeiteAktion(
 // Auf jedem Fehlerpfad bleibt Project.aktionen unveraendert.
 
 /** Ein abgelehnter Aufruf - immer ohne jede Wirkung auf D1. */
-function ungueltig(meldung: string): Ergebnis<Aktion> {
+function ungueltig(meldung: string): Ergebnis<Aktion, ProjectStoreFehlercode> {
   return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung } }
 }
 
 /** Die Fehlerseite der Huelle. Beide Codes sind generisch (ergebnis.ts, #12). */
 function fehler(
-  code: 'nicht_gefunden' | 'ungueltige_eingabe',
+  code: 'nicht_gefunden' | 'ungueltige_eingabe' | ProjectStoreFehlercode,
   meldung: string,
-): Ergebnis<Aktion> {
+): Ergebnis<Aktion, ProjectStoreFehlercode> {
   return { ok: false, fehler: { code, meldung } }
 }
 

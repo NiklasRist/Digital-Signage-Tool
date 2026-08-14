@@ -215,10 +215,10 @@ describe("setzeTrim (#44)", () => {
     expect(!ergebnis.ok && ergebnis.fehler.code).toBe("nicht_gefunden");
   });
 
-  it("meldet nicht_gefunden, wenn gar kein Projekt geoeffnet ist", async () => {
+  it("meldet kein_projekt, wenn gar kein Projekt geoeffnet ist", async () => {
     const ergebnis = await setzeTrim("e-video", 1, 5);
 
-    expect(!ergebnis.ok && ergebnis.fehler.code).toBe("nicht_gefunden");
+    expect(!ergebnis.ok && ergebnis.fehler.code).toBe("kein_projekt");
   });
 
   it("weist ab, wenn die Quelllaenge nicht ermittelbar ist (ref zeigt ins Leere)", async () => {

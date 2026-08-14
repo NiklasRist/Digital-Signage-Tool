@@ -47,11 +47,12 @@ import { mitD1Lock } from './d1-lock'                               // #32
 //         // KEIN LOCK, WIRFT NIE.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Listenelement } from '../../shared/contracts/project'
 export async function setzeDauer(
   elementId: string,
   dauer: number,   // Sekunden
-): Promise<Ergebnis<Listenelement>> {
+): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> {
   // FUER AUFRUFER: Das Lock wird hier SELBST genommen - dieselbe Linie wie #33, #34, #37, #72.
   // Diese Funktion darf NICHT noch einmal in mitD1Lock eingewickelt werden; der innere Aufruf
   // wartete auf den aeusseren, der auf ihn wartet (#32, "Deadlock-Gefahr").
@@ -66,7 +67,7 @@ export async function setzeDauer(
   // Die Rueckgabeangabe am Rueckruf ist nicht Zierde: Ohne sie hat `return { ok: true, ... }`
   // keinen Zieltyp, `ok` weitete sich zu `boolean`, und die unterschiedene Union `Ergebnis`
   // waere nicht mehr diskriminierbar.
-  return mitD1Lock(async (): Promise<Ergebnis<Listenelement>> => {
+  return mitD1Lock(async (): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
     if (projekt === null) {
       // Die Fehlerpfad-Tabelle des Issues kennt fuer diesen Fall keine eigene Zeile - sie fragt
@@ -76,7 +77,7 @@ export async function setzeDauer(
       // (Anwendung frisch gestartet, Projekt gerade geloescht), und ein "unbekannter Fehler"
       // liesse die Oberflaeche einen Absturz melden, wo nichts kaputt ist. Die Meldung
       // unterscheidet die beiden Faelle trotzdem, damit eine Fehlersuche sie auseinanderhaelt.
-      return fehler('nicht_gefunden', 'Es ist kein Projekt geoeffnet; es wurde nichts geaendert.')
+      return fehler('kein_projekt', 'Es ist kein Projekt geoeffnet; es wurde nichts geaendert.')
     }
 
     // Reihenfolge der Pruefungen = Reihenfolge der Fehlerpfad-Tabelle: erst Existenz, dann Art,
@@ -181,9 +182,9 @@ function istDarstellbareDauer(dauer: number): boolean {
 
 /** Die Fehlerseite der Huelle. Beide Codes sind generisch (ergebnis.ts, #12). */
 function fehler(
-  code: 'nicht_gefunden' | 'ungueltige_eingabe',
+  code: 'nicht_gefunden' | 'ungueltige_eingabe' | ProjectStoreFehlercode,
   meldung: string,
-): Ergebnis<Listenelement> {
+): Ergebnis<Listenelement, ProjectStoreFehlercode> {
   return { ok: false, fehler: { code, meldung } }
 }
 

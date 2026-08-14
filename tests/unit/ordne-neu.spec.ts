@@ -120,12 +120,12 @@ describe("ordneNeu (#43)", () => {
     expect(ids(projekt)).toEqual(["a", "b", "c"]);
   });
 
-  it("meldet nicht_gefunden, wenn gar kein Projekt geoeffnet ist", async () => {
+  it("meldet kein_projekt, wenn gar kein Projekt geoeffnet ist", async () => {
     const ergebnis = await ordneNeu(["a"]);
 
     expect(ergebnis.ok).toBe(false);
     if (!ergebnis.ok) {
-      expect(ergebnis.fehler.code).toBe("nicht_gefunden");
+      expect(ergebnis.fehler.code).toBe("kein_projekt");
     }
   });
 

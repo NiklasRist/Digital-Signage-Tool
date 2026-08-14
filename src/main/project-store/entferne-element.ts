@@ -30,7 +30,10 @@ import { mitD1Lock } from './d1-lock'                           // #32
 //         // 3-5s-Entprellungstimer; KEIN Rueckgabewert, kann nicht fehlschlagen.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-export async function entferneElement(elementId: string): Promise<Ergebnis<void>> {
+import type { ProjectStoreFehlercode } from './assets'            // #72
+export async function entferneElement(
+  elementId: string,
+): Promise<Ergebnis<void, ProjectStoreFehlercode>> {
   // DAS LOCK NIMMT DIESE FUNKTION SELBST. Sie darf NICHT noch einmal in mitD1Lock
   // eingewickelt werden - der innere Aufruf wartete auf den aeusseren, der auf ihn wartet
   // (#32, "Deadlock-Gefahr").
@@ -45,7 +48,7 @@ export async function entferneElement(elementId: string): Promise<Ergebnis<void>
   // Der Rueckgabetyp des Abschnitts steht ausgeschrieben da, statt sich ableiten zu lassen:
   // Ohne ihn wuerde `ok: false` in einem Objektliteral zu `boolean` verbreitert, und die
   // Ergebnis-Huelle waere nicht mehr diskriminierbar.
-  return mitD1Lock(async (): Promise<Ergebnis<void>> => {
+  return mitD1Lock(async (): Promise<Ergebnis<void, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
 
     // KEIN OFFENES PROJEKT -> `nicht_gefunden`, kein eigener Code.
@@ -58,7 +61,19 @@ export async function entferneElement(elementId: string): Promise<Ergebnis<void>
     // ("keine Wirkung"), und der Aufrufer behandelt beide Faelle gleich (Element weg bzw.
     // nie da). Ein eigener Code waere hier eine Vertragsaenderung. S. Bericht/STOPP.
     if (projekt === null) {
-      return nichtGefunden(elementId)
+      // NACHGEZOGEN am 14.08.2026 (Entscheidung des Users): eigener Code statt
+      // `nicht_gefunden`. Die Begruendung darueber - "die Signatur traegt keinen weiteren
+      // Code" - war der Grund, nicht die Rechtfertigung; die Signatur traegt jetzt den
+      // zweiten Typparameter. "Kein Projekt offen" und "dieses Element gibt es nicht"
+      // verlangen vom Nutzer Verschiedenes, und der Reparatur-Modus (FA-19) muss beides
+      // unterscheiden koennen.
+      return {
+        ok: false,
+        fehler: {
+          code: 'kein_projekt',
+          meldung: 'Es ist kein Projekt geoeffnet; es wurde nichts entfernt.',
+        },
+      }
     }
 
     // KEINE EIGENE PRUEFUNG DER `elementId`. Ueber die Prozessgrenze kann ein `unknown` als
@@ -162,7 +177,7 @@ export async function entferneElement(elementId: string): Promise<Ergebnis<void>
  * der X von N Elemente gemeint war. `String(...)` statt der Einbettung ueber die Vorlage,
  * weil der Wert ueber die Prozessgrenze auch etwas anderes als ein String sein kann.
  */
-function nichtGefunden(elementId: unknown): Ergebnis<void> {
+function nichtGefunden(elementId: unknown): Ergebnis<void, ProjectStoreFehlercode> {
   return {
     ok: false,
     fehler: {

@@ -50,9 +50,10 @@ import { mitD1Lock } from './d1-lock'
 
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 export async function erstelleAktion(
   aktionsdaten: Omit<Aktion, 'id'>,
-): Promise<Ergebnis<Aktion>> {
+): Promise<Ergebnis<Aktion, ProjectStoreFehlercode>> {
   // DIE FORMPRUEFUNG LAEUFT VOR DEM LOCK. Eine abgewiesene Eingabe beruehrt D1 nicht
   // ("keine Wirkung", Fehlerpfad-Tabelle) - sie erst hinter der Warteschlange abzuweisen
   // hiesse, einen laufenden Schreibvorgang abzuwarten, nur um nichts zu tun. Die Pruefung
@@ -123,7 +124,7 @@ export async function erstelleAktion(
   // Der Rueckgabetyp des Abschnitts steht ausgeschrieben da, statt sich ableiten zu lassen:
   // Ohne ihn wuerde `ok: false` in einem Objektliteral zu `boolean` verbreitert, und die
   // Ergebnis-Huelle waere nicht mehr diskriminierbar.
-  return mitD1Lock(async (): Promise<Ergebnis<Aktion>> => {
+  return mitD1Lock(async (): Promise<Ergebnis<Aktion, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
     if (projekt === null) {
       // `nicht_gefunden` - und das ist KEINE eigene Festlegung. Der STOPP-Block dieses
@@ -136,7 +137,7 @@ export async function erstelleAktion(
       return {
         ok: false,
         fehler: {
-          code: 'nicht_gefunden',
+          code: 'kein_projekt',
           meldung: 'Es ist kein Projekt geoeffnet, das die Aktion aufnehmen koennte.',
         },
       }
@@ -241,7 +242,7 @@ export async function erstelleAktion(
 // Auto-Speicherung (#47).
 
 /** Ein abgelehnter Aufruf - immer ohne jede Wirkung auf D1. */
-function ungueltig(meldung: string): Ergebnis<Aktion> {
+function ungueltig(meldung: string): Ergebnis<Aktion, ProjectStoreFehlercode> {
   return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung } }
 }
 

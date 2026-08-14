@@ -43,12 +43,13 @@ import { mitD1Lock } from './d1-lock'
 //         // KEIN LOCK, WIRFT NIE.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Listenelement } from '../../shared/contracts/project'
 export async function setzeTrim(
   elementId: string,
   trimStart: number,   // Sekunden, ROH – keine Frame-Rundung hier, s. Invarianten
   trimEnde: number,    // Sekunden, ROH
-): Promise<Ergebnis<Listenelement>> {
+): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> {
   // Das Lock liegt UM ALLES, nicht nur um die Zuweisung. Der Grund ist die Reihenfolge
   // Lesen -> Pruefen -> Schreiben: Wuerde nur der Schreibschritt gesperrt, koennte
   // zwischen dem Nachschlagen des Assets und dem Setzen der Grenzen ein anderer
@@ -56,7 +57,7 @@ export async function setzeTrim(
   // Element aus der Liste ziehen. Die Pruefung waere dann gegen einen Stand gelaufen,
   // den es beim Schreiben nicht mehr gibt - und genau davor soll diese Funktion
   // schuetzen (s. "Warum das im Gesamtsystem wichtig ist" im Issue).
-  return mitD1Lock(async (): Promise<Ergebnis<Listenelement>> => {
+  return mitD1Lock(async (): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
     if (projekt === null) {
       // NICHT in der Fehlerpfad-Tabelle des Issues, aber unvermeidbar: Ohne geoeffnetes
@@ -64,7 +65,7 @@ export async function setzeTrim(
       // derselbe Sachverhalt wie Zeile 1 der Tabelle ("elementId existiert nicht in
       // Project.liste"), deshalb derselbe Code. S. Bericht.
       return fehler(
-        'nicht_gefunden',
+        'kein_projekt',
         'Es ist kein Projekt geoeffnet; es gibt keine Wiedergabeliste, in der ' +
           `das Element ${elementId} liegen koennte.`,
       )
@@ -204,9 +205,9 @@ export async function setzeTrim(
  * Fehlerpfaden, anders als bei oeffneProjekt (#34).
  */
 function fehler(
-  code: 'nicht_gefunden' | 'ungueltige_eingabe',
+  code: 'nicht_gefunden' | 'ungueltige_eingabe' | ProjectStoreFehlercode,
   meldung: string,
-): Ergebnis<Listenelement> {
+): Ergebnis<Listenelement, ProjectStoreFehlercode> {
   return { ok: false, fehler: { code, meldung } }
 }
 

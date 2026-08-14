@@ -56,8 +56,11 @@ import { mitD1Lock } from './d1-lock'                                           
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Listenelement } from '../../shared/contracts/project'
-export async function fügeElementHinzu(referenz: string): Promise<Ergebnis<Listenelement>> {
+export async function fügeElementHinzu(
+  referenz: string,
+): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> {
   // DAS LOCK NIMMT DIESE FUNKTION SELBST - dieselbe Linie wie #38, #42, #44, #45. Sie darf
   // NICHT noch einmal in mitD1Lock eingewickelt werden; der innere Aufruf wartete auf den
   // aeusseren, der auf ihn wartet (#32, "Deadlock-Gefahr").
@@ -73,7 +76,7 @@ export async function fügeElementHinzu(referenz: string): Promise<Ergebnis<List
   // Der Rueckgabetyp des Abschnitts steht ausgeschrieben da, statt sich ableiten zu lassen:
   // Ohne ihn wuerde `ok: false` in einem Objektliteral zu `boolean` verbreitert, und die
   // Ergebnis-Huelle waere nicht mehr diskriminierbar.
-  return mitD1Lock(async (): Promise<Ergebnis<Listenelement>> => {
+  return mitD1Lock(async (): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
     if (projekt === null) {
       // KEIN OFFENES PROJEKT -> `nicht_gefunden`, kein eigener Code. Die als "(vollstaendig)"
@@ -83,7 +86,7 @@ export async function fügeElementHinzu(referenz: string): Promise<Ergebnis<List
       // #38, #42, #43, #44 und #45 - der Bestand ist hier einheitlich, und ein zweiter Code
       // danebenzustellen waere eine Vertragsaenderung. Gemeldet, s. Bericht/STOPP.
       return fehler(
-        'nicht_gefunden',
+        'kein_projekt',
         'Es ist kein Projekt geoeffnet, in dessen Wiedergabeliste das Element gehoeren koennte.',
       )
     }
@@ -114,7 +117,7 @@ export async function fügeElementHinzu(referenz: string): Promise<Ergebnis<List
     // abzufangen und danach die verbliebene Moeglichkeit zu behaupten: Eine Behauptung
     // (`as`, `!`) waere hier genau die Fluchttuer, die der Bestand verbietet - und sie waere
     // falsch, sobald jemand die Suchreihenfolge oben aendert.
-    let ergebnis: Ergebnis<Listenelement>
+    let ergebnis: Ergebnis<Listenelement, ProjectStoreFehlercode>
     if (asset !== undefined) {
       ergebnis = bauAusAsset(asset)
     } else if (aktion !== undefined) {
@@ -183,7 +186,7 @@ export async function fügeElementHinzu(referenz: string): Promise<Ergebnis<List
  * Video- und Bild-Elemente. Die `art` folgt AUSSCHLIESSLICH `Asset.typ` - nie der
  * Dateiendung, nie dem Namen (genau die Verwechslung beschreibt das Issue als Schaden).
  */
-function bauAusAsset(asset: Asset): Ergebnis<Listenelement> {
+function bauAusAsset(asset: Asset): Ergebnis<Listenelement, ProjectStoreFehlercode> {
   if (asset.typ === 'video') {
     // VOLLE LAENGE ALS VORBELEGUNG: trimStart = 0, trimEnde = Asset.dauer. Das ist die offen
     // benannte Festlegung des Issues (kein TK-Zitat) und die einzige, die nichts wegnimmt:
@@ -266,7 +269,7 @@ function bauAusAsset(asset: Asset): Ergebnis<Listenelement> {
  * Segment-Elemente. Eine Aktion wird immer zu `art: "segment"` - eine andere Zuordnung gibt
  * es nicht (TK 9.11.3).
  */
-function bauAusAktion(aktion: Aktion): Ergebnis<Listenelement> {
+function bauAusAktion(aktion: Aktion): Ergebnis<Listenelement, ProjectStoreFehlercode> {
   return {
     ok: true,
     wert: {
@@ -326,9 +329,9 @@ function startdauer(standardDauer: number | null): number {
 
 /** Die Fehlerseite der Huelle. Beide Codes sind generisch (ergebnis.ts, #12). */
 function fehler(
-  code: 'nicht_gefunden' | 'ungueltige_eingabe',
+  code: 'nicht_gefunden' | 'ungueltige_eingabe' | ProjectStoreFehlercode,
   meldung: string,
-): Ergebnis<Listenelement> {
+): Ergebnis<Listenelement, ProjectStoreFehlercode> {
   return { ok: false, fehler: { code, meldung } }
 }
 

@@ -136,14 +136,14 @@ describe("erstelleAktion (#38)", () => {
     expect(ergebnis.wert).not.toHaveProperty("heimlich");
   });
 
-  it("meldet nicht_gefunden, wenn kein Projekt geoeffnet ist", async () => {
+  it("meldet kein_projekt, wenn kein Projekt geoeffnet ist", async () => {
     merkeAktivesProjekt(null);
 
     const ergebnis = await erstelleAktion(entwurf());
 
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
-    expect(ergebnis.fehler.code).toBe("nicht_gefunden");
+    expect(ergebnis.fehler.code).toBe("kein_projekt");
     expect(geplant).toEqual([]);
   });
 
