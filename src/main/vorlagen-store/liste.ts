@@ -63,7 +63,18 @@ export async function listeArbeitskopien(): Promise<Ergebnis<Vorlage[], Vorlagen
  * editierbar, #98 prueft den INHALT ausdruecklich nicht). Ein solcher Eintrag landet bei den
  * Arbeitskopien, also auf der Seite, die NICHT auswaehlbar ist; die Sicherheitsschranke des Issues
  * ("halbfertige Vorlagen koennen nicht in einen Render geraten") haelt damit auch im kaputten Fall.
- * Repariert oder ausgeblendet wird hier nichts - das ist #108.
+ * Repariert oder ausgeblendet wird hier nichts.
+ *
+ * KORRIGIERT am 14.08.2026: Hier stand "das ist #108". Der Verweis trifft NICHT zu - #108
+ * (`verwaiste-arbeitskopien.ts`) loest beim Loeschen einer Vorlage deren Arbeitskopien
+ * (`parent = null`) und hat fuer kaputte `parent`-Werte ausdruecklich keinen Auftrag; sein
+ * Issue kennt nur die eine Frage "zeigt der Eintrag auf die Vorlage, die gerade geloescht
+ * wird?". Aufgefallen beim Bau von #108 am 14.08.2026.
+ *
+ * DER FALL HAT DAMIT KEINEN ZUSTAENDIGEN. Das ist heute folgenlos - ein solcher Eintrag
+ * entsteht nur durch Bearbeiten der Datei von Hand, und er landet auf der ungefaehrlichen
+ * Seite. Wer ihn eines Tages behandeln will, braucht ein eigenes Issue; ein falscher
+ * Verweis ist schaedlicher als gar keiner, weil er die Luecke als versorgt ausgibt.
  */
 async function filtereBestand(
   behalte: (vorlage: Vorlage) => boolean,
