@@ -135,16 +135,24 @@ describe('loeseExportQuelle (#185) - Aufloesung ueber die Pfad-Autoritaet', () =
     expect(e.ok).toBe(true)
   })
 
-  it('erkennt die Endung ohne Ruecksicht auf Gross-/Kleinschreibung', async () => {
-    // Auf der Platte liegt die kleingeschriebene Fassung - genau die, die
-    // loeseAusgabePfad bildet. Auf Windows und macOS ist das dieselbe Datei wie
-    // FERIEN.MP4; der Test bleibt so auch auf einem case-sensitiven Laufwerk gueltig.
+  it('weist eine gross geschriebene Endung ab, ohne das Dateisystem zu fragen', async () => {
+    // GEAENDERT am 14.08.2026. Hier stand die Gegenprobe: `FERIEN.MP4` wurde
+    // AKZEPTIERT. Die Abnahme von #185 verlangte das mit der Begruendung,
+    // listeAusgaben (#75) fuehre solche Dateien auf - was seit dem 12.08.2026 nicht
+    // mehr stimmt. Aufgeloest zugunsten von #75: loeseAusgabePfad haengt immer ein
+    // klein geschriebenes `.mp4` an, eine als `FERIEN.MP4` gefuehrte Datei waere auf
+    // macOS nicht aufloesbar.
+    //
+    // Die Datei liegt absichtlich da: Der Test zeigt damit, dass die Ablehnung an der
+    // SCHREIBWEISE haengt und nicht daran, dass nichts zu finden waere.
     await legeAn('FERIEN.mp4')
 
     const e = await loeseExportQuelle(PROJEKT, 'FERIEN.MP4')
 
-    expect(zustand.pfadAufrufe).toEqual([[PROJEKT, 'FERIEN']])
-    expect(e.ok).toBe(true)
+    expect(e.ok).toBe(false)
+    if (!e.ok) expect(e.fehler.code).toBe('ungueltige_eingabe')
+    // Kein Griff auf die Pfad-Autoritaet und kein fs-Zugriff: Die Form entscheidet.
+    expect(zustand.pfadAufrufe).toEqual([])
   })
 
   it('reicht ungueltige_eingabe der Pfad-Autoritaet durch und statet nicht', async () => {

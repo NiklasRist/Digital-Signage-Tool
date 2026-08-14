@@ -62,26 +62,28 @@ export async function loeseExportQuelle(
       return scheitert("ungueltige_eingabe", "Es wurde keine Ausgabedatei angegeben.");
     }
 
-    // 2. ENDUNG PRUEFEN, ohne Ruecksicht auf Gross-/Kleinschreibung.
+    // 2. ENDUNG PRUEFEN - EXAKT klein geschrieben, kein toLowerCase().
     //
-    // So verlangt es die Abnahme von #185 ("FERIEN.MP4 wird akzeptiert"). Die dort
-    // gegebene Begruendung ist allerdings ueberholt und wird hier NICHT wiederholt: Das
-    // Issue sagt, listeAusgaben (#75) nehme `.MP4` in die Liste auf - die GEBAUTE
+    // ENTSCHIEDEN am 14.08.2026 vom User. Hier stand zuvor ein toLowerCase(), weil die
+    // Abnahme von #185 "FERIEN.MP4 wird akzeptiert" verlangte. Diese Forderung stuetzte
+    // sich darauf, listeAusgaben (#75) nehme `.MP4` in die Liste auf - die GEBAUTE
     // Fassung (src/main/project-store/ausgaben.ts, istFertigeAusgabe) tut das seit dem
-    // 12.08.2026 ausdruecklich NICHT MEHR ("EXAKT klein geschrieben, kein
-    // toLowerCase()"), und zwar mit genau dem Argument, um das es hier geht. GEMELDET.
+    // 12.08.2026 ausdruecklich NICHT MEHR, und zwar mit genau dem Argument, um das es
+    // hier geht. Der Bau-Agent hat den Widerspruch gemeldet statt die Abnahme
+    // umzuschreiben; aufgeloest wurde er zugunsten von #75, und die DoD von #185 ist
+    // entsprechend geaendert.
     //
-    // Die Grosszuegigkeit bleibt trotzdem richtig, weil sie in die sichere Richtung
-    // irrt: loeseAusgabePfad haengt immer ein KLEIN geschriebenes `.mp4` an. Auf Windows
-    // und macOS - den Zielplattformen - bezeichnen FERIEN.MP4 und FERIEN.mp4 dieselbe
-    // Datei; auf einem case-sensitiven Datentraeger endet die Aufloesung in
-    // `keine_ausgabe`, also in einem sichtbaren, benannten Fehler und nie in einem
-    // stillen Griff auf eine andere Datei.
+    // Die Begruendung, wortgleich mit der von #75: loeseAusgabePfad (#49) haengt immer
+    // ein KLEIN geschriebenes `.mp4` an. Eine als `FERIEN.MP4` gefuehrte Datei ist auf
+    // macOS damit nicht aufloesbar. Auf Windows faellt das nicht auf, weil das
+    // Dateisystem die Schreibweise ignoriert - deshalb muss die Enge hier stehen und
+    // nicht erst am Dateisystem. Der Render erzeugt ohnehin nur klein geschriebene
+    // Namen; ein grosser Buchstabe kann nur von Hand in den Ordner gelangt sein.
     //
     // Die Pruefung faengt zugleich `.part` ab: eine halb geschriebene Datei auf den
     // Stick zu kopieren ergaebe am Fernseher ein Video, das mitten im Abspielen
     // abbricht.
-    if (dateiname.slice(-AUSGABE_ENDUNG.length).toLowerCase() !== AUSGABE_ENDUNG) {
+    if (!dateiname.endsWith(AUSGABE_ENDUNG)) {
       return scheitert(
         "ungueltige_eingabe",
         `Nur Ausgabedateien mit der Endung "${AUSGABE_ENDUNG}" können exportiert werden.`,
