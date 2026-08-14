@@ -20,6 +20,10 @@ import { leseMarke } from '../config-store/lese-marke'                       // 
 import { setzeAktivesProjekt } from '../config-store/setze-aktives-projekt'  // #27
 import { setzeExportZiel } from '../config-store/setze-export-ziel'          // #28
 import { setzeUIVoreinstellung } from '../config-store/setze-ui-voreinstellung' // #30
+// Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort. Bis dahin standen sie hier
+// als Kopie - Wort fuer Wort auch in #71, #76 und #93. Diese Fassung war die
+// massgebliche; sie ist unveraendert umgezogen, nicht umgeschrieben.
+import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from './nutzlast-pruefer' // #332
 import { registriereHandler } from './registriere-handler'                   // #23
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
@@ -59,48 +63,6 @@ function meldeAn<W, T, F extends string>(
   rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
 ): void {
   registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) => rufe(validierteNutzlast as W))
-}
-
-/** Die Fehlerseite der Form-Pruefung. Diese Datei vergibt sonst KEINEN Code. */
-function abgelehnt(meldung: string): Ergebnis<never, 'ungueltige_eingabe'> {
-  return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung } }
-}
-
-/**
- * Traegt die Nutzlast ein Objekt mit benannten Feldern?
- *
- * Arrays werden AUSGESCHLOSSEN, obwohl `typeof [] === 'object'` gilt: Ein Array hat die
- * erwarteten Felder nie, kaeme aber ohne diese Zeile bis zur Feldpruefung durch und
- * scheiterte dort mit einer Meldung ueber ein fehlendes Feld statt ueber die falsche
- * Form. `null` faellt aus demselben Grund hier heraus - ein Feldzugriff darauf wuerfe.
- */
-function istObjekt(nutzlast: unknown): nutzlast is Record<string, unknown> {
-  return typeof nutzlast === 'object' && nutzlast !== null && !Array.isArray(nutzlast)
-}
-
-/**
- * "nicht leerer String" (Pruef-Tabelle des Issues).
- *
- * `trim` dient ALLEIN dem Erkennen von "leer"; der Wert wird unveraendert weitergereicht
- * (Verbot "keine Nutzlast-Reparatur"). Ohne den Trim kaeme ein Schluessel ' ' klaglos in
- * `config.json` an - dieselbe Lesart wie in #27 und #30, damit Gateway und Operation
- * nicht verschieden streng sind.
- */
-function istGefuellterText(wert: unknown): wert is string {
-  return typeof wert === 'string' && wert.trim() !== ''
-}
-
-/**
- * Validierer der beiden LESE-Kanaele: Es gibt nichts zu pruefen.
- *
- * Eine trotzdem uebergebene Nutzlast wird IGNORIERT, nicht abgelehnt (Pruef-Tabelle des
- * Issues). Grund: `leseKonfig`/`leseMarke` nehmen kein Argument, eine mitgeschickte
- * Nutzlast hat also keine Wirkung - und ein Fehler dafuer bruechte den Aufruf ohne Not,
- * wenn die Renderer-Seite ihre Aufrufe spaeter einmal vereinheitlicht und ueberall ein
- * leeres Objekt mitschickt.
- */
-function ohneNutzlast(): Ergebnis<void, 'ungueltige_eingabe'> {
-  return { ok: true, wert: undefined }
 }
 
 export function verdrahteConfigStoreIPC(): void {

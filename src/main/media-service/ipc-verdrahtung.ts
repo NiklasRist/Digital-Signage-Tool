@@ -13,8 +13,15 @@
 // stehen; ihr Nichtmehrstimmen IST das Signal.
 // GERUEST-PRUEFSUMME: 52b29c98bc836207
 
-import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
+// `Ergebnis` wird hier seit #332 nicht mehr als Typ gebraucht - der einzige Verwender
+// war der umgezogene Pruefer. In den Signatur-Vermerken unten steht der Name weiter,
+// dort aber als Text.
+import type { GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'                // #25
+// Der Pruefer liegt seit #332 an EINEM Ort. Bis dahin stand er hier als Kopie - Wort
+// fuer Wort auch in #71, #76 und #77. Der Import ueber die Modulgrenze ist kein neuer
+// Grenzuebertritt: `registriereHandler` kommt aus derselben Richtung.
+import { ohneNutzlast } from '../ipc-gateway/nutzlast-pruefer'          // #332
 import { registriereHandler } from '../ipc-gateway/registriere-handler' // #23
 import { öffneMedienDialog } from './dialog'                            // #81
 
@@ -32,28 +39,13 @@ import { öffneMedienDialog } from './dialog'                            // #81
 //   #81: öffneMedienDialog(): Promise<Ergebnis<{ pfade: string[] }>>
 //        // Auswahl -> pfade = absolute Quellpfade; Abbruch -> ok: true mit pfade = [].
 
-/**
- * Der Validierer des nutzlastfreien Kanals: Es gibt nichts zu pruefen.
- *
- * ER ENTFAELLT TROTZDEM NICHT - der Wrapper (#23) verlangt ihn, und er ist die Stelle,
- * an der festgehalten ist, dass hier nichts erwartet wird. Ein `null` oder ein Cast
- * stuende an derselben Stelle und saehe aus wie ein Versehen.
- *
- * IGNORIEREN, NICHT ABLEHNEN (verbindlich im Issue): Eine trotzdem uebergebene Nutzlast
- * ist kein Fehler. Genau so ist der andere nutzlastfreie Kanal festgelegt
- * (`queue:holeStand`, #71) - zwei verschiedene Regeln fuer zwei nutzlastfreie Kanaele
- * waeren eine Falle fuer jeden, der den Renderer-Aufruf schreibt. Dazu schickt die
- * uebliche Aufrufform `invoke(kanal)` ohnehin `undefined` mit; ein strenges Ablehnen
- * machte den Kanal auf diesem Weg unbenutzbar, ohne dass irgendetwas sicherer wuerde -
- * es gibt keine Nutzlast, die Schaden anrichten koennte.
- *
- * OHNE PARAMETER, nicht mit einem ungenutzten: Was nicht angenommen wird, kann auch
- * nicht versehentlich weitergereicht werden. Zur Laufzeit nimmt die Funktion jedes
- * Argument entgegen und ignoriert es; JavaScript verlangt keine Deklaration dafuer.
- */
-function ohneNutzlast(): Ergebnis<void, 'ungueltige_eingabe'> {
-  return { ok: true, wert: undefined }
-}
+// DER VALIDIERER ENTFAELLT NICHT, obwohl es nichts zu pruefen gibt: Der Wrapper (#23)
+// verlangt ihn, und er ist die Stelle, an der festgehalten ist, dass hier nichts
+// erwartet wird. Ein `null` oder ein Cast stuende an derselben Stelle und saehe aus wie
+// ein Versehen. IGNORIEREN, NICHT ABLEHNEN (verbindlich im Issue) - genau so ist der
+// andere nutzlastfreie Kanal festgelegt (`queue:holeStand`, #71); zwei verschiedene
+// Regeln fuer zwei nutzlastfreie Kanaele waeren eine Falle fuer jeden, der den
+// Renderer-Aufruf schreibt. Seit #332 ist es buchstaeblich derselbe Baustein.
 
 export function verdrahteMedienIPC(): void {
   // Der Name kommt aus der Registry (#25); in dieser Datei steht kein Kanalname als

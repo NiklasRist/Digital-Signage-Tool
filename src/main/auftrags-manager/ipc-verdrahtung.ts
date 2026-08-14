@@ -21,6 +21,10 @@ import type { BrowserWindow } from 'electron'
 import type { AuftragArt } from '../../shared/contracts/auftrag'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'          // #25
+// Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort (Vermerk 2 am Dateiende).
+// Der Import ueber die Modulgrenze ist kein neuer Grenzuebertritt: `registriereHandler`
+// kommt aus derselben Richtung.
+import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from '../ipc-gateway/nutzlast-pruefer' // #332
 import { registriereHandler } from '../ipc-gateway/registriere-handler' // #23
 import { entferne } from './entferne'                             // #62
 import { holeStand } from './hole-stand'                          // #64
@@ -70,23 +74,6 @@ function meldeAn<W, T, F extends string>(
   registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) => rufe(validierteNutzlast as W))
 }
 
-/** Die Fehlerseite der Form-Pruefung. Diese Datei vergibt sonst KEINEN Code. */
-function abgelehnt(meldung: string): Ergebnis<never, 'ungueltige_eingabe'> {
-  return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung } }
-}
-
-/**
- * Traegt die Nutzlast ein Objekt mit benannten Feldern?
- *
- * Arrays werden AUSGESCHLOSSEN, obwohl `typeof [] === 'object'` gilt: Ein Array hat die
- * erwarteten Felder nie, kaeme aber ohne diese Zeile bis zur Feldpruefung durch und
- * scheiterte dort mit einer Meldung ueber ein fehlendes Feld statt ueber die falsche Form.
- * `null` faellt aus demselben Grund hier heraus - ein Feldzugriff darauf wuerfe.
- */
-function istObjekt(wert: unknown): wert is Record<string, unknown> {
-  return typeof wert === 'object' && wert !== null && !Array.isArray(wert)
-}
-
 /**
  * Die vier erlaubten Auftragsarten - als `Record<AuftragArt, true>` und nicht als Array.
  *
@@ -107,31 +94,6 @@ const ARTEN: Record<AuftragArt, true> = { import: true, loeschen: true, render: 
  */
 function istAuftragArt(wert: unknown): wert is AuftragArt {
   return typeof wert === 'string' && Object.hasOwn(ARTEN, wert)
-}
-
-/**
- * "nicht leerer String" (Pruef-Tabelle des Issues).
- *
- * `trim` dient ALLEIN dem Erkennen von "leer"; der Wert wird unveraendert weitergereicht
- * (Verbot "keine Nutzlast-Reparatur"): Eine `auftragId` ist eine UUID (#20), und wer eine
- * mit Leerzeichen schickt, hat einen Fehler in der Oberflaeche - der soll sichtbar werden,
- * nicht stillschweigend geheilt. Getrimmt bekaeme #62/#63 eine ID, die der Renderer nie
- * gesendet hat.
- */
-function istGefuellterText(wert: unknown): wert is string {
-  return typeof wert === 'string' && wert.trim() !== ''
-}
-
-/**
- * Validierer des lesenden Kanals: Es gibt nichts zu pruefen.
- *
- * Eine trotzdem uebergebene Nutzlast wird IGNORIERT, nicht abgelehnt (Pruef-Tabelle des
- * Issues). `holeStand` nimmt kein Argument, eine mitgeschickte Nutzlast hat also keine
- * Wirkung - und ein Fehler dafuer bruechte den Aufruf ohne Not, wenn die Renderer-Seite
- * ihre Aufrufe spaeter vereinheitlicht und ueberall ein leeres Objekt mitschickt.
- */
-function ohneNutzlast(): Ergebnis<void, 'ungueltige_eingabe'> {
-  return { ok: true, wert: undefined }
 }
 
 /**
@@ -301,11 +263,16 @@ export function verdrahteQueueIPC(fenster: BrowserWindow): void {
 //    nachgetragen - diese Funktion BRAUCHT das Fenster, weil sie die einzige Stelle mit
 //    einer Fensterreferenz ist.
 //
-// 2. DIE HUELLE `meldeAn` UND DIE PRUEFER `istObjekt`/`istGefuellterText`/`abgelehnt` STEHEN
-//    EIN ZWEITES MAL in src/main/ipc-gateway/config-store-verdrahtung.ts (#77), Wort fuer
-//    Wort. Sie zusammenzufuehren hiesse, eine fremde Datei zu aendern und einen gemeinsamen
-//    Baustein ohne Issue zu erfinden. Der Ort dafuer waere das ipc-gateway; gemeldet fuer
-//    den naechsten Verdrahtungs-Zuschnitt (M3/M5/M7 bringen weitere Verdrahtungen mit).
+// 2. TEILWEISE ERLEDIGT (#332 am 14.08.2026) - der Vermerk bleibt als Beleg stehen. Hier
+//    stand, dass die HUELLE `meldeAn` UND die PRUEFER `istObjekt`/`istGefuellterText`/
+//    `abgelehnt`/`ohneNutzlast` ein zweites Mal in
+//    src/main/ipc-gateway/config-store-verdrahtung.ts (#77) stehen, Wort fuer Wort, und
+//    dass der Ort fuer eine Zusammenfuehrung das ipc-gateway waere.
+//    DIE VIER PRUEFER SIND UMGEZOGEN: src/main/ipc-gateway/nutzlast-pruefer.ts, importiert
+//    oben. Sie stehen in dieser Datei nicht mehr.
+//    OFFEN BLEIBT `meldeAn`: Die Huelle steht weiterhin dreifach (hier, #76, #77). #332
+//    betrifft ausdruecklich nur die vier Pruefer; sie mitzuziehen waere eine Ausweitung
+//    ueber den Auftrag hinaus. Gemeldet fuer ein eigenes Issue.
 //
 // 3. VERALTETER VERWEIS IN #65. src/main/auftrags-manager/queue-ereignis.ts nennt im
 //    Vermerk am Dateiende noch den frueheren Kanalnamen des Stoerungs-Ereignisses

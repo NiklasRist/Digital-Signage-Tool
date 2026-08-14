@@ -28,6 +28,8 @@ import { löscheProjekt } from '../project-store/loesche-projekt'             //
 import { ordneNeu } from '../project-store/ordne-neu'                        // #43
 import { setzeDauer } from '../project-store/setze-dauer'                    // #45
 import { setzeTrim } from '../project-store/setze-trim'                      // #44
+// Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort (Vermerk 4 am Dateiende).
+import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from './nutzlast-pruefer' // #332
 import { registriereHandler } from './registriere-handler'                   // #23
 
 import type { Aktion } from '../../shared/contracts/aktion'
@@ -99,36 +101,6 @@ function meldeAn<W, T, F extends string>(
   registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) => rufe(validierteNutzlast as W))
 }
 
-/** Die Fehlerseite der Form-Pruefung. Diese Datei vergibt sonst KEINEN Code. */
-function abgelehnt(meldung: string): Ergebnis<never, 'ungueltige_eingabe'> {
-  return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung } }
-}
-
-/**
- * Traegt die Nutzlast ein Objekt mit benannten Feldern?
- *
- * Arrays werden AUSGESCHLOSSEN, obwohl `typeof [] === 'object'` gilt: Ein Array hat die
- * erwarteten Felder nie, kaeme aber ohne diese Zeile bis zur Feldpruefung durch und
- * scheiterte dort mit einer Meldung ueber ein fehlendes Feld statt ueber die falsche Form.
- * `null` faellt aus demselben Grund hier heraus - ein Feldzugriff darauf wuerfe.
- */
-function istObjekt(nutzlast: unknown): nutzlast is Record<string, unknown> {
-  return typeof nutzlast === 'object' && nutzlast !== null && !Array.isArray(nutzlast)
-}
-
-/**
- * "nicht leerer String" (Pruef-Tabelle des Issues).
- *
- * `trim` dient ALLEIN dem Erkennen von "leer"; der Wert wird unveraendert weitergereicht
- * (Verbot "keine Nutzlast-Reparatur"): Getrimmt bekaeme die Operation eine ID, die der
- * Renderer nie gesendet hat, und ein Fehler in der Oberflaeche waere still geheilt statt
- * sichtbar. Dieselbe Lesart wie in #71 und #77, damit die Gateways nicht verschieden
- * streng sind.
- */
-function istGefuellterText(wert: unknown): wert is string {
-  return typeof wert === 'string' && wert.trim() !== ''
-}
-
 /**
  * "endliche Zahl" (Pruef-Tabelle des Issues) - `Number.isFinite` und NICHT `typeof === 'number'`.
  *
@@ -188,18 +160,6 @@ function istProjektIdSegment(wert: unknown): wert is string {
   if (PFADTRENNER.some((trenner) => wert.includes(trenner))) return false
   if (wert.includes('..')) return false
   return UUID_FORM.test(wert)
-}
-
-/**
- * Validierer des einen Kanals ohne Nutzlast: Es gibt nichts zu pruefen.
- *
- * Eine trotzdem uebergebene Nutzlast wird IGNORIERT, nicht abgelehnt (Pruef-Tabelle des
- * Issues). `listeProjekte` nimmt kein Argument, eine mitgeschickte Nutzlast hat also keine
- * Wirkung - und ein Fehler dafuer bruechte den Aufruf ohne Not, wenn die Renderer-Seite ihre
- * Aufrufe spaeter vereinheitlicht und ueberall ein leeres Objekt mitschickt.
- */
-function ohneNutzlast(): Ergebnis<void, 'ungueltige_eingabe'> {
-  return { ok: true, wert: undefined }
 }
 
 export function verdrahteProjectStoreIPC(): void {
@@ -507,10 +467,13 @@ export function verdrahteProjectStoreIPC(): void {
 //    Huelle unveraendert durchgereicht wird - gemeldet, weil ein Zitat-Abgleich (Regel D) das
 //    Issue nachziehen muss und weil die Renderer-Seite (#24, M5/M7) die Codes kennen sollte.
 //
-// 4. DIE HUELLE `meldeAn` UND DIE PRUEFER `istObjekt`/`istGefuellterText`/`abgelehnt`/
-//    `ohneNutzlast` STEHEN JETZT ZUM DRITTEN MAL - Wort fuer Wort auch in
+// 4. TEILWEISE ERLEDIGT (#332 am 14.08.2026) - der Vermerk bleibt als Beleg stehen. Hier
+//    stand, dass die HUELLE `meldeAn` UND die PRUEFER `istObjekt`/`istGefuellterText`/
+//    `abgelehnt`/`ohneNutzlast` zum dritten Mal stehen, Wort fuer Wort auch in
 //    src/main/ipc-gateway/config-store-verdrahtung.ts (#77) und
-//    src/main/auftrags-manager/ipc-verdrahtung.ts (#71). Sie zusammenzufuehren hiesse, fremde
-//    Dateien zu aendern und einen gemeinsamen Baustein ohne Issue zu erfinden. Der Ort dafuer
-//    waere das ipc-gateway; #71 hat dieselbe Doppelung bereits gemeldet, mit dieser Datei ist
-//    sie dreifach.
+//    src/main/auftrags-manager/ipc-verdrahtung.ts (#71).
+//    DIE VIER PRUEFER SIND UMGEZOGEN: ./nutzlast-pruefer.ts, importiert oben. Sie stehen in
+//    dieser Datei nicht mehr.
+//    OFFEN BLEIBT `meldeAn`: Die Huelle steht weiterhin dreifach (hier, #71, #77). #332
+//    betrifft ausdruecklich nur die vier Pruefer; sie mitzuziehen waere eine Ausweitung
+//    ueber den Auftrag hinaus. Gemeldet fuer ein eigenes Issue.
