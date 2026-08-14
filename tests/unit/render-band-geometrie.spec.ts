@@ -347,13 +347,14 @@ describe('Ausnahmen und Profilbezug', () => {
   })
 })
 
-describe('OFFEN - blockiert von #239', () => {
-  // `src/shared/band-geometrie.ts` (#239) hat heute einen werfenden Rumpf. Der von
-  // der Definition of Done verlangte Durchreich-Nachweis MIT DER ECHTEN FUNKTION
-  // ist deshalb nicht ausfuehrbar; er ist hier ausgeschrieben und wird gruen,
-  // sobald #239 gebaut ist. Bis dahin traegt der Testsatz oben die Nachbildung -
-  // gegen von Hand nachgerechnete Zahlen geprueft.
-  it.skip('rechnet mit der ECHTEN geteilten Funktion dieselben Zahlen', async () => {
+describe('Durchreich-Nachweis gegen den echten Rechenkern (#239)', () => {
+  // ENTBLOCKT am 14.08.2026: #239 ist gebaut, der Rumpf wirft nicht mehr. Der von der
+  // Definition of Done verlangte Nachweis MIT DER ECHTEN FUNKTION laeuft jetzt - bis
+  // dahin trug der Testsatz oben eine Nachbildung, geprueft gegen von Hand
+  // nachgerechnete Zahlen. Beide nebeneinander stehen zu lassen ist Absicht: Faellt
+  // die Nachbildung und dieser Test zugleich, liegt es an der Formel; faellt nur
+  // dieser, hat sich der ECHTE Kern von der Vorschrift entfernt.
+  it('rechnet mit der ECHTEN geteilten Funktion dieselben Zahlen', async () => {
     const echt = await vi.importActual<typeof import('../../src/shared/band-geometrie')>(
       '../../src/shared/band-geometrie',
     )
