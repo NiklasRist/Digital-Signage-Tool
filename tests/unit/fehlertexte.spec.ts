@@ -75,11 +75,14 @@ describe("Vollstaendigkeit gegen den Vertrag", () => {
    * IMPORT_TK_9_4_9 gewandert.
    *
    * DIE LISTE BLEIBT STEHEN, obwohl sie leer ist. Sie ist der Ort, an dem die naechste
-   * solche Luecke sichtbar wird, statt still in eine TK-Liste zu rutschen - und die
-   * Messung vom 14.08.2026 hat FUENF weitere Codes gefunden, die im Code stehen und in
-   * keinem Dokument: ffmpeg_abgebrochen, kaputte_elemente, parent_eingebaut,
-   * png_export_fehler, projekt_beschaeftigt. Keiner davon erreicht heute diese Anzeige;
-   * wer das aendert, traegt ihn hier ein und meldet es.
+   * solche Luecke sichtbar wird, statt still in eine TK-Liste zu rutschen.
+   *
+   * STAND 14.08.2026: Es gibt derzeit KEINE Luecke. Die Messung hatte zunaechst fuenf
+   * weitere undokumentierte Codes gefunden (ffmpeg_abgebrochen, kaputte_elemente,
+   * parent_eingebaut, png_export_fehler, projekt_beschaeftigt); mit TK v3.15 sind sie
+   * alle dokumentiert - 23 von 23 Codes stehen im Dokument. Keiner der fuenf erreicht
+   * diese Anzeige (drei sind modul-lokal, zwei entstehen im composer vor dem
+   * IPC-Aufruf), sie gehoeren deshalb nicht in die Tabelle von #211.
    */
   const IM_CODE_ABER_NICHT_IM_TK: string[] = [];
 
