@@ -41,6 +41,46 @@ export const KANAELE = {
     stoerung: 'queue:stoerung', // Ereignis Main → Renderer, Nutzlast Klartext (#65)
   },
 
+  // project-store (#76). Die vierzehn Namen ENTSTEHEN hier und nirgends sonst; die
+  // Verdrahtung (src/main/ipc-gateway/project-store-verdrahtung.ts) und die Renderer-Seite
+  // lesen sie beide von hier. Präfix `project:` nach dem Muster `<modul>:<operation>` –
+  // TK 9.1.1 Punkt 4 führt `project:setzeTrim` wörtlich als Beispiel.
+  //
+  // SCHLÜSSEL UND STRING TRAGEN BEIDE DEN UMLAUT, wo die Operation ihn trägt
+  // (`öffneProjekt`, `löscheProjekt`, `löscheAktion`, `fügeElementHinzu`). Das ist keine
+  // Nachlässigkeit, sondern der Vertragstest von #25: Er verlangt
+  // `kanal === `${modul}:${operation}``, Schlüssel und Endung des Strings müssen also
+  // zeichengleich sein. Dieselbe Auflösung wie bei `media.öffneMedienDialog`; TK 9.1.1
+  // Punkt 4 führt mit `vorlagen:löscheVorlage` selbst einen umlauthaltigen Kanal.
+  //
+  // NUR INSTANT-OPERATIONEN: Kein Kanal für die Pfad-Funktionen (#49 – sie liefern absolute
+  // Pfade, "der Renderer sieht nur relative Referenzen", TK 9.5.7), keiner für das D1-Lock
+  // (#32), `schreibeProjekt` (#46), `planeAutoSpeicherung`/`sofortFlush` (#47), die Migration
+  // (#48) oder die Einzel-Instanz-Sperre (#51), und keiner für die Asset-Operationen – die
+  // gehören dem media-service und laufen als Auftrag (TK 9.1.1 Punkt 2).
+  //
+  // KEIN Ereignis in dieser Gruppe: `project:autoSpeichernStatus` (#47) gehört zu #238 und
+  // wird DORT eingetragen, nicht hier. Zwei weitere Operations-Kanäle meldet #153 an
+  // (`setzeEinblendung`, `setzeElementReferenz`), ein weiterer #240
+  // (`setzeBearbeitungsstand`) – die Gruppe darf also wachsen; diese vierzehn sind die
+  // von #76.
+  project: {
+    erstelleProjekt: 'project:erstelleProjekt',
+    öffneProjekt: 'project:öffneProjekt',
+    listeProjekte: 'project:listeProjekte',
+    dupliziereProjekt: 'project:dupliziereProjekt',
+    löscheProjekt: 'project:löscheProjekt',
+    erstelleAktion: 'project:erstelleAktion',
+    bearbeiteAktion: 'project:bearbeiteAktion',
+    löscheAktion: 'project:löscheAktion',
+    fügeElementHinzu: 'project:fügeElementHinzu',
+    entferneElement: 'project:entferneElement',
+    ordneNeu: 'project:ordneNeu',
+    setzeTrim: 'project:setzeTrim',
+    setzeDauer: 'project:setzeDauer',
+    listeAusgaben: 'project:listeAusgaben',
+  },
+
   // config-store (#77). Die fünf Namen ENTSTEHEN hier und nirgends sonst; die
   // Verdrahtung (src/main/ipc-gateway/config-store-verdrahtung.ts) und die
   // Renderer-Seite lesen sie beide von hier. Präfix `config:` nach dem Muster

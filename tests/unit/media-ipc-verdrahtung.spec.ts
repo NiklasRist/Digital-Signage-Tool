@@ -90,7 +90,17 @@ describe("verdrahteMedienIPC (#93) - Anmeldung", () => {
   it("ergaenzt die Registry nur um die media-Gruppe", () => {
     // Der Kanalname entsteht ausschliesslich in kanaele.ts, und die Gruppen der anderen
     // Module (#71, #77) bleiben unberuehrt - dort arbeiten andere Agents.
-    expect(Object.keys(KANAELE).sort()).toEqual(["config", "media", "queue"]);
+    //
+    // KORRIGIERT am 14.08.2026: Hier stand
+    //   expect(Object.keys(KANAELE).sort()).toEqual(["config", "media", "queue"])
+    // - eine Zusicherung ueber den GESAMTBESTAND der Registry. Sie faellt bei JEDER neuen
+    // Modulgruppe um, ohne dass an #93 etwas falsch waere; #76 hat sie mit `project`
+    // ausgeloest, und #109 (`vorlagen`), #191 (`render`/`export`) sowie M8 haetten es
+    // wiederholt. Was dieser Test zeigen SOLL, steht in seinem eigenen Kommentar: dass #93
+    // fremde Gruppen nicht anfasst. Dafuer genuegt die Anwesenheit der eigenen Gruppe plus
+    // die Einzelpruefungen der fremden darunter - beides bleibt scharf, ohne kuenftige
+    // Module zu Fehlalarmen zu machen.
+    expect(Object.keys(KANAELE)).toContain("media");
     expect(Object.keys(KANAELE.media)).toEqual(["öffneMedienDialog"]);
     expect(Object.keys(KANAELE.queue).sort()).toEqual([
       "entferne",
