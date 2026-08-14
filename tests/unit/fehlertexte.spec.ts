@@ -28,6 +28,7 @@ describe("Vollstaendigkeit gegen den Vertrag", () => {
   // (speicher_fehler, kein_platz, ungueltige_eingabe, unbekannter_fehler) stehen
   // absichtlich mehrfach da - sie werden beim Vereinigen einfach gezaehlt.
   const IMPORT_TK_9_4_9 = [
+    "kein_projekt",
     "datei_nicht_gefunden",
     "format_nicht_unterstuetzt",
     "probe_fehler",
@@ -35,6 +36,7 @@ describe("Vollstaendigkeit gegen den Vertrag", () => {
     "speicher_fehler",
   ];
   const LOESCHEN_TK_9_4_9 = [
+    "kein_projekt",
     "asset_nicht_gefunden",
     "asset_referenziert",
     "datei_fehler",
@@ -61,28 +63,29 @@ describe("Vollstaendigkeit gegen den Vertrag", () => {
   const GENERISCH_TK_9_1_1 = ["ungueltige_eingabe", "nicht_gefunden", "unbekannter_fehler"];
 
   /**
-   * Codes, die im GEBAUTEN Code gefuehrt werden, im Technischen Konzept aber (noch)
-   * NICHT stehen. Diese Liste ist absichtlich von den TK-Listen getrennt - sonst
-   * behauptete der Test, das TK sage etwas, das dort nicht steht.
+   * Codes, die im GEBAUTEN Code gefuehrt werden, im Technischen Konzept aber NICHT
+   * stehen. Absichtlich von den TK-Listen getrennt: Sonst behauptete der Test, das TK
+   * sage etwas, das dort nicht steht.
    *
-   * `kein_projekt`: am 13.08.2026 als Vertragsaenderung eingefuehrt und ueber den
-   * project-store und alle drei media-service-Unionen nachgezogen. GEMESSEN am
-   * 14.08.2026: Der Code steht in 19 Quelldateien unter src/ und in NULL Zeilen unter
-   * docs/ - weder im Technischen Konzept noch im Anforderungsdokument. Er erreicht
-   * `Auftrag.fehler.code` (Import und Loeschen reichen ihn unveraendert durch) und
-   * braucht deshalb einen Anzeigetext; die verbindliche Tabelle in #211 ist am
-   * 14.08.2026 entsprechend ergaenzt worden.
+   * ERLEDIGT am 14.08.2026 - die Liste ist LEER. Hier stand `kein_projekt`: am
+   * 13.08.2026 als Vertragsaenderung eingefuehrt, ueber project-store und alle drei
+   * media-service-Unionen nachgezogen, aber in KEINER Dokumentzeile gefuehrt (gemessen:
+   * 19 Quelldateien gegen 0 Dokumentzeilen). Mit TK v3.14 steht er in 9.4.9 (Import,
+   * Loeschen, Reconcile) und 9.5.2 und ist deshalb in LOESCHEN_TK_9_4_9 bzw.
+   * IMPORT_TK_9_4_9 gewandert.
    *
-   * DIESE LISTE IST EINE SCHULD, KEINE LOESUNG. Sie soll leer werden, sobald das TK
-   * nachgezogen ist (eigener Schritt, eigene Freigabe - Dokumente werden in diesem
-   * Projekt nicht nebenbei geaendert). Wer das TK ergaenzt, verschiebt den Eintrag in
-   * die passende TK-Liste oben und laesst diese hier leer zurueck.
+   * DIE LISTE BLEIBT STEHEN, obwohl sie leer ist. Sie ist der Ort, an dem die naechste
+   * solche Luecke sichtbar wird, statt still in eine TK-Liste zu rutschen - und die
+   * Messung vom 14.08.2026 hat FUENF weitere Codes gefunden, die im Code stehen und in
+   * keinem Dokument: ffmpeg_abgebrochen, kaputte_elemente, parent_eingebaut,
+   * png_export_fehler, projekt_beschaeftigt. Keiner davon erreicht heute diese Anzeige;
+   * wer das aendert, traegt ihn hier ein und meldet es.
    */
-  const IM_CODE_ABER_NICHT_IM_TK = ["kein_projekt"];
+  const IM_CODE_ABER_NICHT_IM_TK: string[] = [];
 
   it("fuehrt die im TK genannte Anzahl je Dienst", () => {
-    expect(IMPORT_TK_9_4_9).toHaveLength(5);
-    expect(LOESCHEN_TK_9_4_9).toHaveLength(4);
+    expect(IMPORT_TK_9_4_9).toHaveLength(6);
+    expect(LOESCHEN_TK_9_4_9).toHaveLength(5);
     expect(RENDER_TK_9_2_3).toHaveLength(7);
     expect(EXPORT_TK_9_6_4).toHaveLength(7);
     expect(GENERISCH_TK_9_1_1).toHaveLength(3);
