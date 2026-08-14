@@ -39,6 +39,7 @@
 // eine Ausnahme liesse den Auftrag auf `laeuft` stehen und braechte die streng
 // serielle Warteschlange fuer den Rest der Sitzung zum Stillstand (TK 9.3.5).
 
+import { execFile } from 'node:child_process'
 import { constants } from 'node:fs'
 import { access, stat, statfs } from 'node:fs/promises'
 
@@ -58,6 +59,23 @@ import type { ExportFehlercode } from './fehlercodes'
  * hier grosszuegig abrundet, verbietet einen funktionierenden Export.
  */
 export const FAT32_MAX_DATEIGROESSE = 4294967295
+
+/**
+ * Zeitgrenze fuer die Dateisystem-Erkennung.
+ *
+ * WARUM HIER EINE ZEITGRENZE STEHT, WO #158 FUER ffmpeg AUSDRUECKLICH KEINE WOLLTE:
+ * Ein Renderlauf darf legitim Minuten dauern (NFA-05) - eine Grenze wuerde dort
+ * gueltige Arbeit abschneiden. Eine Dateisystem-Abfrage dagegen ist in rund 370 ms
+ * fertig (gemessen ueber vier Dateisysteme); braucht sie Sekunden, ist etwas kaputt,
+ * etwa ein Wechseldatentraeger, der nicht mehr antwortet. Und der Abbruch ist hier
+ * FOLGENLOS: Er faellt in die Rueckfallregel, die Pruefung gilt als bestanden, der
+ * Export laeuft weiter. Ohne Grenze haenge dagegen die ganze Oberflaeche an einem
+ * Prozess, der nie zurueckkommt.
+ *
+ * 5 Sekunden sind rund das Dreizehnfache der Messung - weit genug weg, um einen
+ * langsamen Rechner nicht zu treffen, eng genug, um kein Haenger zu sein.
+ */
+const ERKENNUNG_ZEITGRENZE_MS = 5000
 
 /**
  * Was die Dateisystem-Erkennung ueber den Zielort sagen kann.
@@ -116,11 +134,76 @@ export type ErkanntesDateisystem = 'fat32' | 'anderes' | null
  * Warum ein veraenderbares Objekt und keine blosse Funktion: So ist die noch
  * fehlende Messung im Test einsetzbar, und der FAT32-Zweig laesst sich beweisen,
  * statt nur behauptet zu werden.
+ *
+ * ------------------------------------------------------------------------------
+ * NACHTRAG 14.08.2026 - DAS EXPERIMENT IST BEANTWORTET, DAS VERFAHREN STEHT UNTEN.
+ *
+ * Der User hat drei echte Wechseldatentraeger angeschlossen; damit war messbar, was
+ * oben als offen stand. Gemessen aus Node heraus, also INKLUSIVE Prozessstart, je
+ * drei Laeufe:
+ *
+ *   C:\  NTFS  (fest)     -> DriveFormat "NTFS"    378/366/374 ms   statfs().type 0
+ *   D:\  exFAT (Wechsel)  -> DriveFormat "exFAT"   365/383/362 ms   statfs().type 0
+ *   E:\  FAT32 (Wechsel)  -> DriveFormat "FAT32"   382/379/352 ms   statfs().type 0
+ *   F:\  FAT32 (Wechsel)  -> DriveFormat "FAT32"   389/382/363 ms   statfs().type 0
+ *
+ * ERGEBNIS 1: `statfs().type` ist ueber VIER Dateisysteme hinweg konstant 0 (zuvor
+ * zusaetzlich ueber eine SMB-Freigabe). Endgueltig ausgeschieden, s. Punkt 1 oben.
+ * ERGEBNIS 2: `DriveFormat` liefert den Klartext und unterscheidet alle vier Faelle
+ * korrekt, in rund 370 ms. Genau die Frage, die oben als "noch offen" stand.
+ *
+ * WARUM DER PROZESSSTART HIER VERTRETBAR IST: Die Pruefung laeuft EINMAL JE EXPORT,
+ * nicht je Datei und schon gar nicht je Bild. 370 ms gegen einen Kopiervorgang von
+ * mehreren Sekunden bis Minuten - und der Gegenwert ist, dass ein aussichtsloser
+ * Export gar nicht erst beginnt.
+ *
+ * WAS WEITERHIN UNGEMESSEN BLEIBT und deshalb ueber die Rueckfallregel laeuft:
+ * - macOS. Dort gibt es weder `DriveInfo` noch PowerShell; der Weg waere
+ *   `diskutil info -plist <pfad>`. Kein Mac vorhanden. Wir liefern dort `null`
+ *   statt ungepruefte Zeilen - ein Zweig, der nie ausgefuehrt wurde, ist keine
+ *   Zusage, sondern eine Behauptung.
+ * - Ein Stick, der OHNE Laufwerksbuchstaben in einen NTFS-Ordner eingehaengt ist.
+ *   `DriveInfo` meldete dort das TRAGENDE Laufwerk, also "NTFS" statt "FAT32" -
+ *   die Pruefung liefe durch und der Fehler faellt erst beim Kopieren auf. Das ist
+ *   die sichere Richtung (#186 faengt es), aber es ist eine bekannte Luecke.
  */
 export const dateisystemErkennung: {
   erkenne(zielOrdner: string): Promise<ErkanntesDateisystem>
 } = {
-  erkenne: () => Promise.resolve(null),
+  erkenne: async (zielOrdner: string): Promise<ErkanntesDateisystem> => {
+    // Nur Windows. Auf macOS ist das Verfahren ungemessen (s. Nachtrag oben), und
+    // eine ungemessene Erkennung ist schlechter als gar keine: Sie koennte einen
+    // gueltigen Export mit einer erfundenen Begruendung abweisen.
+    if (process.platform !== 'win32') return null
+
+    // DER PFAD GEHT ALS UMGEBUNGSVARIABLE HINEIN, NICHT IN DEN BEFEHLSTEXT.
+    // Ein Zielordner ist eine Nutzereingabe (er kommt aus einem Ordner-Dialog, kann
+    // aber auch aus der Konfiguration stammen). In eine PowerShell-Befehlszeile
+    // eingesetzt, koennte ein Anfuehrungszeichen darin den Befehl verlassen. Ueber
+    // die Umgebung gibt es diese Naht nicht - der Wert wird nie geparst.
+    const ausgabe = await new Promise<string | null>((fertig) => {
+      const kind = execFile(
+        'powershell',
+        ['-NoProfile', '-NonInteractive', '-Command', '[IO.DriveInfo]::new($env:DST_ZIEL).DriveFormat'],
+        { env: { ...process.env, DST_ZIEL: zielOrdner }, timeout: ERKENNUNG_ZEITGRENZE_MS },
+        (fehler, stdout) => fertig(fehler ? null : stdout),
+      )
+      // Ein Kind ohne PID ist gar nicht erst gestartet; dann kommt auch kein Rueckruf.
+      if (kind.pid === undefined) fertig(null)
+    })
+
+    if (ausgabe === null) return null
+    // `DriveFormat` liefert den Klartext des Dateisystems. Gross-/Kleinschreibung ist
+    // nicht zugesichert, deshalb der Vergleich in Kleinbuchstaben.
+    const klartext = ausgabe.trim().toLowerCase()
+    if (klartext === '') return null
+    // NUR fat32 wird benannt. Alles andere ist "anderes" - nicht etwa "kein Problem":
+    // Der Aufrufer prueft ausschliesslich auf 'fat32', und eine feinere Unterscheidung
+    // braeuchte einen Grund. FAT16 ("fat") hat eine noch KLEINERE Grenze (2 GiB), ist
+    // aber auf Sticks dieser Groessenordnung nicht mehr anzutreffen und wurde nicht
+    // gemessen - deshalb wird es hier NICHT stillschweigend mitbehandelt.
+    return klartext === 'fat32' ? 'fat32' : 'anderes'
+  },
 }
 
 /** Baut die Fehlerhuelle. Nie ein Stacktrace, nie eine rohe Exception-Meldung. */

@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -257,16 +257,62 @@ describe('pruefeExportZiel - FAT32-Grenze', () => {
     expect(ergebnis).toEqual({ ok: true, wert: undefined })
   })
 
-  it('SO IST DER STAND: ohne beantwortetes Experiment erkennt niemand FAT32, der Waechter greift also nicht', async () => {
+  // ERSETZT am 14.08.2026. Hier stand der Test "SO IST DER STAND: ohne beantwortetes
+  // Experiment erkennt niemand FAT32" - er hielt fest, dass die Erkennung fehlt, und
+  // hat genau dadurch angeschlagen, als sie eingebaut wurde. Genau so soll ein Test
+  // ueber einen bewusst offenen Zustand wirken: Er faellt, wenn der Zustand endet.
+  //
+  // Das Experiment ist beantwortet (Messung an drei echten Wechseldatentraegern,
+  // Nachtrag in #184): `[IO.DriveInfo]::DriveFormat` liefert NTFS/exFAT/FAT32 korrekt.
+  it('erkennt das Dateisystem des echten Ordners, statt aufzugeben', async () => {
     const ordner = frischerOrdner()
-    freierPlatz(Number.MAX_SAFE_INTEGER)
 
-    // Voreinstellung, kein Spy: Die Erkennung liefert `null` = nicht ermittelbar.
-    await expect(dateisystemErkennung.erkenne(ordner)).resolves.toBeNull()
+    const erkannt = await dateisystemErkennung.erkenne(ordner)
 
-    const ergebnis = await pruefeExportZiel(ordner, FAT32_MAX_DATEIGROESSE + 1)
+    if (process.platform === 'win32') {
+      // Der Testordner liegt unter <Temp>, also auf der Systemplatte. Zugesichert wird
+      // hier NICHT "NTFS" - das haengt am Rechner -, sondern dass ueberhaupt eine
+      // Antwort kommt und dass sie nicht faelschlich `fat32` lautet.
+      expect(erkannt).toBe('anderes')
+    } else {
+      // Auf macOS/Linux ist das Verfahren ungemessen; dort ist `null` die richtige,
+      // ehrliche Antwort und keine Luecke.
+      expect(erkannt).toBeNull()
+    }
+  })
 
-    expect(ergebnis).toEqual({ ok: true, wert: undefined })
+  it('ein nicht existierender Pfad laesst die Erkennung aufgeben, statt zu werfen', async () => {
+    // Die Rueckfallregel darf nicht davon abhaengen, dass der Aufrufer faengt: Die
+    // Erkennung selbst gibt `null` zurueck. Auf Windows wirft `DriveInfo` bei einem
+    // ungueltigen Pfad, der Rueckruf meldet den Fehler - beides muss hier ankommen,
+    // ohne dass die Zusage bricht.
+    await expect(dateisystemErkennung.erkenne('')).resolves.toBeNull()
+  })
+
+  it('ein Zielordner mit eingeschleustem Befehl fuehrt diesen NICHT aus', async () => {
+    // Der Pfad geht als UMGEBUNGSVARIABLE in die PowerShell, nicht in den Befehlstext.
+    // Stuende er im Befehl, verliesse ein Anfuehrungszeichen die Zeichenkette und der
+    // Rest liefe als eigener Befehl.
+    //
+    // WARUM DIESER TEST EINE DATEI BENUTZT: Ein blosser Blick auf den Rueckgabewert
+    // kann das nicht zeigen. `DriveInfo` wertet nur die WURZEL des Pfades aus - der
+    // Ordner muss gar nicht existieren -, also liefert der Aufruf so oder so
+    // 'anderes'. Der eingeschleuste Befehl muss deshalb eine SPUR hinterlassen, die
+    // man messen kann: Er soll eine Datei anlegen. Bleibt sie aus, ist er nicht
+    // gelaufen.
+    const ordner = frischerOrdner()
+    const spur = path.join(ordner, 'GEKAPERT.txt')
+    // Die Klammern werden BEWUSST sauber geschlossen: PowerShell parst die gesamte
+    // Zeile, bevor es irgendetwas ausfuehrt. Eine Nutzlast, die einen Syntaxfehler
+    // hinterlaesst, laeuft nie - der Test waere dann gruen, ohne etwas zu zeigen.
+    // (Genau darauf ist die erste Fassung dieses Tests hereingefallen.)
+    const eingeschleust = `C:\\egal'); New-Item -ItemType File -Path '${spur}'; ('`
+
+    const erkannt = await dateisystemErkennung.erkenne(eingeschleust)
+
+    expect(existsSync(spur)).toBe(false)
+    // Und der Aufruf liefert weiterhin eine regulaere Antwort, statt zu werfen.
+    expect(erkannt === 'anderes' || erkannt === null).toBe(true)
   })
 })
 
