@@ -129,4 +129,42 @@ export const KANAELE = {
     // Stelle, an der ein vertippter Kanalname auffällt, bevor er im Betrieb ins Leere läuft.
     öffneMedienDialog: 'media:öffneMedienDialog',
   },
+
+  // export-service (#191). GENAU EIN Kanal, und das ist eine Festlegung, keine Lücke:
+  // Der EXPORT selbst bekommt KEINEN Kanal – er ist ein Auftrag und läuft über `reiheEin`
+  // („`import`, `loeschen`, `render` und `export` werden damit **nicht** als direkte
+  // Request/Response-Operationen aufgerufen, sondern über `reiheEin` eingereiht",
+  // TK 9.3.4). Ein direkter Kanal wäre ein zweiter Weg an der einzigen Serialisierung
+  // des Systems vorbei. `listeAusgaben` ist ein `project-store`-Kanal und steht oben.
+  //
+  // `wähleExportZiel` dagegen ist eine Instant-Operation („Datei-Dialog öffnen",
+  // TK 9.3.2) und braucht den Kanal: Der Renderer kennt keine absoluten Pfade
+  // (TK 9.5.7), `ExportRequest.zielPfad` wäre ohne ihn nicht füllbar.
+  //
+  // KANAL-STRING UND SCHLÜSSEL TRAGEN BEIDE DEN UMLAUT – dieselbe Auflösung wie bei
+  // `media.öffneMedienDialog`. Der Vertragstest von #25 verlangt
+  // `kanal === `${modul}:${operation}``; eine „bereinigte" Schreibweise wäre die zweite
+  // Schreibweise für dieselbe Sache und bräche die Zuordnung zwischen Kanalname,
+  // Vertrag (TK 9.6.1: `wähleExportZiel`) und Funktion.
+  export: {
+    wähleExportZiel: 'export:wähleExportZiel',
+  },
+
+  // render-service (#191). NUR EIN EREIGNIS, kein einziger Aufrufkanal: `renderReel` und
+  // `cancelRender` laufen über die Warteschlange (`reiheEin` bzw. `entferne`, TK 9.3.4);
+  // ein eigener Kanal wäre dort ein zweiter Weg an der Serialisierung, hier ein zweiter
+  // Abbruchweg.
+  //
+  // `render:fortschritt` steht WÖRTLICH so im TK (9.1.1 Punkt 4 und 9.2.7: „Der Kanal
+  // `render:fortschritt` wird gebaut, nicht nur erwähnt.") und ist zeichengleich
+  // übernommen. Sender ist die Verdrahtung in
+  // src/main/ipc-gateway/export-verdrahtung.ts (#191), die sich dafür über
+  // `aufRenderFortschritt` (#178) anmeldet; der `render-service` selbst kennt weder
+  // Fenster noch Kanalnamen.
+  render: {
+    // Ereignis Main → Renderer, Nutzlast RenderProgress, OHNE Hülle und OHNE Endzustand
+    // (TK 9.1.1 Punkt 5). Erfolg, Fehler und Abbruch kommen ausschliesslich über das
+    // RenderResult (TK 9.2.7).
+    fortschritt: 'render:fortschritt',
+  },
 } as const
