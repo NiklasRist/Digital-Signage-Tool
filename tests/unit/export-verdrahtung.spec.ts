@@ -377,7 +377,11 @@ describe("Kanal-Registry (#25) nach der Ergaenzung durch #191", () => {
       "stoerung",
       "wiederhole",
     ]);
-    expect(Object.keys(KANAELE.project)).toHaveLength(14);
+    // 14 -> 16 am 15.08.2026: #153 traegt `setzeEinblendung` und `setzeElementReferenz` in
+    // den project-Block nach (im Registry-Kommentar seit #76 vorgesehen). Diese Probe soll
+    // zeigen, dass die Verdrahtung des export-service die Registry nicht umbaut - sie darf
+    // nicht daran scheitern, dass ein anderes Issue seine eigenen Kanaele ergaenzt.
+    expect(Object.keys(KANAELE.project)).toHaveLength(16);
     expect(KANAELE.project.listeAusgaben).toBe("project:listeAusgaben");
     expect(Object.keys(KANAELE.config).sort()).toEqual([
       "leseKonfig",

@@ -79,6 +79,18 @@ export const KANAELE = {
     setzeTrim: 'project:setzeTrim',
     setzeDauer: 'project:setzeDauer',
     listeAusgaben: 'project:listeAusgaben',
+
+    // ERGAENZT am 15.08.2026 durch #153 - die beiden nach #76 hinzugekommenen Operationen
+    // `setzeEinblendung` (#120) und `setzeElementReferenz` (#152). Angemeldet werden sie in
+    // einer EIGENEN Datei (src/main/ipc-gateway/project-store-nachtrag.ts), weil #76 seiner
+    // Datei ausdruecklich verbietet, ueber die vierzehn hinauszugehen; der Kommentar oben
+    // sieht das Wachstum dieser Gruppe vor ("die Gruppe darf also wachsen").
+    //
+    // Beides sind Instant-Mutationen des project-store (TK 9.5.2 seit v2.7), gehoeren also
+    // in genau diesen Namensraum. Der Schluessel ist zeichengleich zum Operationsnamen -
+    // der Vertragstest von #25 verlangt `kanal === `${modul}:${operation}``.
+    setzeEinblendung: 'project:setzeEinblendung',
+    setzeElementReferenz: 'project:setzeElementReferenz',
   },
 
   // config-store (#77). Die fünf Namen ENTSTEHEN hier und nirgends sonst; die

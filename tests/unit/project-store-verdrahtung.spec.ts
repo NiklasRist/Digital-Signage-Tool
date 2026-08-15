@@ -98,8 +98,35 @@ beforeEach(() => {
 
 describe("verdrahteProjectStoreIPC (#76)", () => {
   it("meldet genau die vierzehn Kanaele aus KANAELE.project an, jeden genau einmal", () => {
-    const erwartet = Object.values(KANAELE.project);
+    // ANGEPASST am 15.08.2026 durch #153, und zwar genau so, wie #153 es vorsieht: "Der
+    // DoD-Punkt von #76 'KANAELE.project enthaelt genau diese 14 Namen' ist ab diesem Issue
+    // auf sechzehn zu lesen ... der DoD-Punkt ist dort zu praezisieren ('die vierzehn Namen
+    // dieses Issues sind enthalten')". Vorher stand hier `Object.values(KANAELE.project)`;
+    // die Gruppe darf laut Registry-Kommentar wachsen, DIESE Datei aber nicht - der Test
+    // sichert seither die vierzehn NAMENTLICH, statt sie aus der Registry abzuleiten. Damit
+    // beisst er schaerfer als zuvor: Ein fuenfzehnter Kanal in project-store-verdrahtung.ts
+    // faellt jetzt auf, auch wenn er in der Registry steht.
+    const erwartet = [
+      KANAELE.project.erstelleProjekt,
+      KANAELE.project.öffneProjekt,
+      KANAELE.project.listeProjekte,
+      KANAELE.project.dupliziereProjekt,
+      KANAELE.project.löscheProjekt,
+      KANAELE.project.erstelleAktion,
+      KANAELE.project.bearbeiteAktion,
+      KANAELE.project.löscheAktion,
+      KANAELE.project.fügeElementHinzu,
+      KANAELE.project.entferneElement,
+      KANAELE.project.ordneNeu,
+      KANAELE.project.setzeTrim,
+      KANAELE.project.setzeDauer,
+      KANAELE.project.listeAusgaben,
+    ];
     expect(erwartet).toHaveLength(14);
+    // Die zwei Nachtrags-Kanaele (#153) meldet eine ANDERE Datei an - hier duerfen sie nicht
+    // auftauchen; #76 verbietet seiner Datei einen fuenfzehnten Kanal ausdruecklich.
+    expect(angemeldet.has(KANAELE.project.setzeEinblendung)).toBe(false);
+    expect(angemeldet.has(KANAELE.project.setzeElementReferenz)).toBe(false);
     expect([...angemeldet.keys()].sort()).toEqual([...erwartet].sort());
     // Eine zweite Anmeldung desselben Kanals wirft erst im Betrieb (ipcMain.handle) - die
     // Map allein wuerde sie ueberschreiben und den Fehler verdecken.
