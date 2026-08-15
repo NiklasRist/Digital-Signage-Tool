@@ -8,16 +8,20 @@
 // STAND HEUTE (15.08.2026): Verdrahtet ist alles, dessen Funktion inzwischen einen
 // echten Rumpf hat - nachgeschlagen in der jeweils definierenden Datei, nicht im Issue:
 //   - die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4)
-//   - Schritt 5, Positionen 1 (#76), 4 (#77), 5 (#93), 6 (#92) und 10 (#190)
+//   - Schritt 5, Positionen 1 (#76), 2 (#153), 4 (#77), 5 (#93), 6 (#92), 9 (#189)
+//     und 10 (#190)
 //   - Schritt 7, Positionen 1 (#71) und 2 (#191)
 //   - Schritt 8 (#172)
 //   - beide Beenden-Funktionen (#47, #98)
 // LUECKEN sind weiterhin - ihre Funktionen tragen in ihrer Datei noch den werfenden
 // Geruest-Rumpf ("Noch nicht umgesetzt"), ein Aufruf liesse die App beim Start
 // abstuerzen:
-//   - Schritt 2: die Einzel-Instanz-Sperre (#51, dazu ermittleDatenOrt #5)
-//   - Schritt 5, Positionen 2 (#153), 3 (#240), 7 (#109), 8 (#255) und 9 (#189)
+//   - Schritt 5, Positionen 3 (#240), 7 (#109) und 8 (#255)
 //   - Schritt 7, Position 3 (#238)
+// Schritt 2 (Einzel-Instanz, #51) ist ein Sonderfall und steht deshalb nicht in der
+// Liste darueber: erzwingeEinzelInstanz hat inzwischen einen echten Rumpf, liefert
+// aber `StartBefund` statt des in #3 zitierten `boolean` - eine Vertragsabweichung, die
+// erst zu klaeren ist. Die Markierung bei SCHRITT 2 bleibt deshalb unveraendert stehen.
 // Sie entstehen in den restlichen Verdrahtungs-Issues der Kette (#268, #271 bis #274,
 // #331) und stehen bis dahin als benannte Luecken (Funktionsname + Issue-Nummer) an
 // ihrem Platz.
@@ -40,6 +44,7 @@ import {
 } from "./ffmpeg-pfad";
 import { verdrahteConfigStoreIPC } from "./ipc-gateway/config-store-verdrahtung";
 import { verdrahteExportUndFortschrittIPC } from "./ipc-gateway/export-verdrahtung";
+import { verdrahteProjectStoreNachtragIPC } from "./ipc-gateway/project-store-nachtrag";
 import { verdrahteProjectStoreIPC } from "./ipc-gateway/project-store-verdrahtung";
 import {
   registriereMediaProtokollHandlerStub,
@@ -49,6 +54,7 @@ import { registriereMedienHandler } from "./media-service/handler-registrierung"
 import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
 import { flushBeimBeenden } from "./project-store/auto-speichern";
 import { raeumeVerwaisteArbeitsbereiche } from "./render-service/arbeitsbereich";
+import { meldeRenderHandlerAn } from "./render-service/handler-anmeldung";
 import { flushBestand } from "./vorlagen-store/schreibe-vorlagen";
 
 /**
@@ -280,8 +286,8 @@ void app.whenReady().then(async () => {
 
   // SCHRITT 5: die ZEHN Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
   // Sie stehen vor erstelleHauptfenster(), weil keine von ihnen ein Fenster braucht.
-  // Verdrahtet sind die Positionen 1, 4, 5, 6 und 10; die uebrigen FUENF (2, 3, 7, 8
-  // und 9) sind LUECKEN - kein Ersatzaufruf, keine von Hand gebaute
+  // Verdrahtet sind die Positionen 1, 2, 4, 5, 6, 9 und 10; die uebrigen DREI (3, 7
+  // und 8) sind LUECKEN - kein Ersatzaufruf, keine von Hand gebaute
   // ipcMain.handle-Registrierung, kein eigener Kanalname.
   //
   // Die Nummerierung bleibt unveraendert, auch wo noch Luecken dazwischenstehen: Sie
@@ -296,15 +302,14 @@ void app.whenReady().then(async () => {
   //     project-Kanaele an; ohne sie erreicht die Oberflaeche den project-store nicht.
   verdrahteProjectStoreIPC();
 
-  //  2. verdrahteProjectStoreNachtragIPC()    - #153 (project:setzeEinblendung,
-  //                                             project:setzeElementReferenz).
-  //                                             LUECKE - der Rumpf in
-  //                                             src/main/ipc-gateway/project-store-nachtrag.ts
-  //                                             wirft noch "Noch nicht umgesetzt".
-  //                                             Unmittelbar nach 1., weil beide
-  //                                             denselben Kanal-Namensraum `project:`
-  //                                             bedienen und eine doppelte
-  //                                             Registrierung so sofort auffaellt.
+  //  2. verdrahteProjectStoreNachtragIPC() - #153,
+  //     src/main/ipc-gateway/project-store-nachtrag.ts. Meldet die beiden nachgetragenen
+  //     project-Kanaele an (project:setzeEinblendung, project:setzeElementReferenz).
+  //     Unmittelbar nach 1., weil beide denselben Kanal-Namensraum `project:` bedienen
+  //     und eine doppelte Registrierung so sofort auffaellt. Argumentlos - sie braucht
+  //     kein Fenster und haelt keinen Zustand.
+  verdrahteProjectStoreNachtragIPC();
+
   //  3. verdrahteProjectStoreNachtrag2IPC()   - #240 (project:setzeBearbeitungsstand,
   //                                             project:oeffneProjektordner),
   //                                             src/main/ipc-gateway/project-store-nachtrag-2.ts.
@@ -330,14 +335,18 @@ void app.whenReady().then(async () => {
   //     Fehlerfall, den 9. und 10. fuer Render und Export beschreiben.
   registriereMedienHandler();
 
-  // Fortsetzung der Liste - die folgenden drei sind weiterhin LUECKEN:
+  // Fortsetzung der Liste - die folgenden zwei sind weiterhin LUECKEN:
   //  7. verdrahteVorlagenIPC()                - #109,
   //                                             src/main/vorlagen-store/ipc-verdrahtung.ts
   //  8. verdrahteVorlagenNachtragIPC()        - #255 (vorlagen:pruefeReferenzen),
   //                                             src/main/ipc-gateway/vorlagen-nachtrag.ts.
   //                                             Unmittelbar nach 7., Namensraum `vorlagen:`.
-  //  9. meldeRenderHandlerAn()                - #189. Ohne sie wird ein Render-Auftrag
-  //                                             eingereiht und findet keinen Handler.
+
+  //  9. meldeRenderHandlerAn() - #189, src/main/render-service/handler-anmeldung.ts.
+  //     Traegt beim Auftrags-Dispatcher den Handler fuer art: "render" ein (mitsamt
+  //     Abbrecher). Ohne sie wird ein Render-Auftrag eingereiht und findet beim Start
+  //     keinen Handler. Kein IPC-Kanal, deshalb kein Fenster noetig.
+  meldeRenderHandlerAn();
 
   // 10. meldeExportHandlerAn() - #190, src/main/export-service/handler-anmeldung.ts.
   //     Traegt beim Auftrags-Dispatcher den Handler fuer art: "export" ein - dasselbe,
