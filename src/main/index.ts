@@ -5,14 +5,22 @@
 // ist Teil des Vertrags aus #3, nicht Geschmackssache - die Begruendung steht jeweils
 // am Aufrufpunkt.
 //
-// STAND HEUTE: Gebaut sind die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4),
-// seit #269 die ERSTE der Anmeldungen mit Fenster (verdrahteQueueIPC, #71, Schritt 7
-// Position 1) und seit #270 die Positionen 5 und 6 der Anmeldungen OHNE Fenster
-// (verdrahteMedienIPC, #93; registriereMedienHandler, #92 - beide Schritt 5). Alle
-// uebrigen Anmeldungen, die beiden Beenden-Funktionen und die Einzel-Instanz-Sperre
-// fehlen weiterhin; sie entstehen in den restlichen Verdrahtungs-Issues der Kette
-// (#268, #271 bis #274, #331) und stehen bis dahin als benannte Luecken
-// (Funktionsname + Issue-Nummer) an ihrem Platz.
+// STAND HEUTE (15.08.2026): Verdrahtet ist alles, dessen Funktion inzwischen einen
+// echten Rumpf hat - nachgeschlagen in der jeweils definierenden Datei, nicht im Issue:
+//   - die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4)
+//   - Schritt 5, Positionen 1 (#76), 4 (#77), 5 (#93), 6 (#92) und 10 (#190)
+//   - Schritt 7, Positionen 1 (#71) und 2 (#191)
+//   - Schritt 8 (#172)
+//   - beide Beenden-Funktionen (#47, #98)
+// LUECKEN sind weiterhin - ihre Funktionen tragen in ihrer Datei noch den werfenden
+// Geruest-Rumpf ("Noch nicht umgesetzt"), ein Aufruf liesse die App beim Start
+// abstuerzen:
+//   - Schritt 2: die Einzel-Instanz-Sperre (#51, dazu ermittleDatenOrt #5)
+//   - Schritt 5, Positionen 2 (#153), 3 (#240), 7 (#109), 8 (#255) und 9 (#189)
+//   - Schritt 7, Position 3 (#238)
+// Sie entstehen in den restlichen Verdrahtungs-Issues der Kette (#268, #271 bis #274,
+// #331) und stehen bis dahin als benannte Luecken (Funktionsname + Issue-Nummer) an
+// ihrem Platz.
 // Ausdruecklich KEINE Attrappen: Eine leere Ersatzfunktion wuerde
 // einen Kanal registrieren, der zu funktionieren scheint, und die echte Verdrahtung
 // spaeter an der doppelten Registrierung scheitern lassen - oder, schlimmer, sie tut
@@ -23,18 +31,25 @@ import path from "node:path";
 import { app, BrowserWindow, dialog, session } from "electron";
 
 import { verdrahteQueueIPC } from "./auftrags-manager/ipc-verdrahtung";
+import { meldeExportHandlerAn } from "./export-service/handler-anmeldung";
 import {
   ermittleFfmpegPfad,
   ermittleFfprobePfad,
   pruefeFfmpegVerfuegbar,
   pruefeFfprobeVerfuegbar,
 } from "./ffmpeg-pfad";
+import { verdrahteConfigStoreIPC } from "./ipc-gateway/config-store-verdrahtung";
+import { verdrahteExportUndFortschrittIPC } from "./ipc-gateway/export-verdrahtung";
+import { verdrahteProjectStoreIPC } from "./ipc-gateway/project-store-verdrahtung";
 import {
   registriereMediaProtokollHandlerStub,
   registriereMediaProtokollSchema,
 } from "./media-protokoll";
 import { registriereMedienHandler } from "./media-service/handler-registrierung";
 import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
+import { flushBeimBeenden } from "./project-store/auto-speichern";
+import { raeumeVerwaisteArbeitsbereiche } from "./render-service/arbeitsbereich";
+import { flushBestand } from "./vorlagen-store/schreibe-vorlagen";
 
 /**
  * Im Entwicklungslauf setzt scripts/dev.mjs diese Variable auf die URL des
@@ -265,16 +280,27 @@ void app.whenReady().then(async () => {
 
   // SCHRITT 5: die ZEHN Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
   // Sie stehen vor erstelleHauptfenster(), weil keine von ihnen ein Fenster braucht.
-  // Die Positionen 5 und 6 sind seit #270 verdrahtet; die uebrigen ACHT sind LUECKEN -
-  // kein Ersatzaufruf, keine von Hand gebaute ipcMain.handle-Registrierung, kein
-  // eigener Kanalname.
+  // Verdrahtet sind die Positionen 1, 4, 5, 6 und 10; die uebrigen FUENF (2, 3, 7, 8
+  // und 9) sind LUECKEN - kein Ersatzaufruf, keine von Hand gebaute
+  // ipcMain.handle-Registrierung, kein eigener Kanalname.
   //
   // Die Nummerierung bleibt unveraendert, auch wo noch Luecken dazwischenstehen: Sie
   // ist Vertrag aus #3 und wird nicht "aufgeraeumt".
   //
-  //  1. verdrahteProjectStoreIPC()            - M1
+  // KEIN try/catch um diese Aufrufe - aus demselben Grund, der weiter unten bei
+  // verdrahteQueueIPC ausgeschrieben steht: Ein aufgefangener Fehler machte daraus eine
+  // App, die startet und bei der jeder Import und jeder Render lautlos ins Leere laeuft.
+
+  //  1. verdrahteProjectStoreIPC() - #76,
+  //     src/main/ipc-gateway/project-store-verdrahtung.ts. Meldet die vierzehn
+  //     project-Kanaele an; ohne sie erreicht die Oberflaeche den project-store nicht.
+  verdrahteProjectStoreIPC();
+
   //  2. verdrahteProjectStoreNachtragIPC()    - #153 (project:setzeEinblendung,
   //                                             project:setzeElementReferenz).
+  //                                             LUECKE - der Rumpf in
+  //                                             src/main/ipc-gateway/project-store-nachtrag.ts
+  //                                             wirft noch "Noch nicht umgesetzt".
   //                                             Unmittelbar nach 1., weil beide
   //                                             denselben Kanal-Namensraum `project:`
   //                                             bedienen und eine doppelte
@@ -282,8 +308,13 @@ void app.whenReady().then(async () => {
   //  3. verdrahteProjectStoreNachtrag2IPC()   - #240 (project:setzeBearbeitungsstand,
   //                                             project:oeffneProjektordner),
   //                                             src/main/ipc-gateway/project-store-nachtrag-2.ts.
+  //                                             LUECKE, ebenfalls noch Geruest-Rumpf.
   //                                             Unmittelbar nach 2., aus demselben Grund.
-  //  4. verdrahteConfigStoreIPC()             - M1
+
+  //  4. verdrahteConfigStoreIPC() - #77,
+  //     src/main/ipc-gateway/config-store-verdrahtung.ts. Meldet die fuenf
+  //     config-Kanaele an (D3, TK 9.5).
+  verdrahteConfigStoreIPC();
 
   //  5. verdrahteMedienIPC() - #93, src/main/media-service/ipc-verdrahtung.ts. Meldet
   //     GENAU EINEN Kanal an (media:öffneMedienDialog, den Datei-Auswahldialog des
@@ -299,21 +330,28 @@ void app.whenReady().then(async () => {
   //     Fehlerfall, den 9. und 10. fuer Render und Export beschreiben.
   registriereMedienHandler();
 
-  // Fortsetzung der Liste - die folgenden vier sind weiterhin LUECKEN:
-  //  7. verdrahteVorlagenIPC()                - #109
+  // Fortsetzung der Liste - die folgenden drei sind weiterhin LUECKEN:
+  //  7. verdrahteVorlagenIPC()                - #109,
+  //                                             src/main/vorlagen-store/ipc-verdrahtung.ts
   //  8. verdrahteVorlagenNachtragIPC()        - #255 (vorlagen:pruefeReferenzen),
   //                                             src/main/ipc-gateway/vorlagen-nachtrag.ts.
   //                                             Unmittelbar nach 7., Namensraum `vorlagen:`.
   //  9. meldeRenderHandlerAn()                - #189. Ohne sie wird ein Render-Auftrag
   //                                             eingereiht und findet keinen Handler.
-  // 10. meldeExportHandlerAn()                - #190. Dasselbe fuer art: "export".
+
+  // 10. meldeExportHandlerAn() - #190, src/main/export-service/handler-anmeldung.ts.
+  //     Traegt beim Auftrags-Dispatcher den Handler fuer art: "export" ein - dasselbe,
+  //     was 9. fuer art: "render" taete. Bewusst OHNE Abbrecher (TK 9.6.3): ein
+  //     laufender Kopiervorgang auf ein Wechselmedium wird nicht mittendrin
+  //     abgebrochen. Kein IPC-Kanal, deshalb kein Fenster noetig.
+  meldeExportHandlerAn();
 
   // SCHRITT 6: Fenster erzeugen und Inhalt laden.
   const fenster = erstelleHauptfenster();
 
   // SCHRITT 7: die DREI Anmeldungen MIT Fenster, in genau dieser Reihenfolge. Jede
   // bekommt DASSELBE BrowserWindow als Parameter - keine sucht sich eines selbst
-  // (TK 9.1.1 Punkt 10). Position 1 ist seit #269 verdrahtet, 2 und 3 sind LUECKEN.
+  // (TK 9.1.1 Punkt 10). Die Positionen 1 und 2 sind verdrahtet, 3 ist eine LUECKE.
   //
   // Warum diese drei NACH dem Fenster stehen und das fuer ihre Aufruf-Kanaele
   // unkritisch ist: Schritt 6 STOESST das Laden nur an; der Renderer-Code laeuft erst,
@@ -336,19 +374,32 @@ void app.whenReady().then(async () => {
   // ungeschuetzt.
   verdrahteQueueIPC(fenster);
 
-  // 2. LUECKE: verdrahteExportUndFortschrittIPC(fenster) - #191, Kanal
-  //    `export:waehleExportZiel` und der Sender von `render:fortschritt`
-  //
+  // 2. verdrahteExportUndFortschrittIPC(fenster) - #191,
+  //    src/main/ipc-gateway/export-verdrahtung.ts. Meldet den Kanal
+  //    `export:wähleExportZiel` an und ist der Sender des Ereignisses
+  //    `render:fortschritt`. Sie bekommt DASSELBE Fenster wie 1. - sie sucht sich
+  //    keines (TK 9.1.1 Punkt 10). Auch hier KEIN try/catch: ohne sie gibt es keinen
+  //    Fortschritt und kein Exportziel, und beides lautlos zu verlieren ist schlimmer
+  //    als ein Start, der abbricht.
+  verdrahteExportUndFortschrittIPC(fenster);
+
   // 3. LUECKE: verdrahteSpeicherstatusIPC(fenster) - #238, die Sender von
   //    `project:autoSpeichernStatus` und `vorlagen:autoSpeichernStatus`,
   //    src/main/ipc-gateway/speicherstatus-verdrahtung.ts. Ohne sie bleibt ein
   //    gescheitertes Auto-Speichern unsichtbar (NFA-02).
 
-  // SCHRITT 8: raeumeVerwaisteArbeitsbereiche() - #172
-  // LUECKE. Entfernt reel-*-Ordner, die ein frueherer Absturz im Temp-Bereich
-  // hinterlassen hat. Wird NICHT abgewartet (kein await), und ein Fehlschlag bricht
-  // den Start nicht ab: Aufraeumen ist Hygiene, kein Startkriterium - ein gesperrter
-  // Ordner darf die App nicht am Starten hindern.
+  // SCHRITT 8: raeumeVerwaisteArbeitsbereiche() - #172,
+  // src/main/render-service/arbeitsbereich.ts. Entfernt reel-*-Ordner, die ein
+  // frueherer Absturz im Temp-Bereich hinterlassen hat.
+  //
+  // Wird NICHT abgewartet (kein await), und ein Fehlschlag bricht den Start nicht ab:
+  // Aufraeumen ist Hygiene, kein Startkriterium - ein gesperrter Ordner darf die App
+  // nicht am Starten hindern. Deshalb steht hier `void` und kein `await`.
+  //
+  // KEIN .catch() daneben: Die Funktion faengt jeden Fehlschlag selbst ab und liefert
+  // im schlechtesten Fall 0 ("Wirft nie", nachgelesen in ihrer Datei, nicht im Issue).
+  // Ein zweiter Auffangnetz-Aufruf hier gaukelte eine Gefahr vor, die es nicht gibt.
+  void raeumeVerwaisteArbeitsbereiche();
 });
 
 // ---------------------------------------------------------------------------
@@ -409,40 +460,153 @@ app.on("before-quit", (ereignis) => {
  * Auftraege) - der Bootstrap baut sie NICHT nach.
  */
 async function schliesseAusstehendesAb(): Promise<void> {
-  // LUECKE 1: flushBeimBeenden() - #47
-  // Signatur (fremder Vertrag, #47):
-  //   export async function flushBeimBeenden(): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-  // NICHT sofortFlush(projekt) - das stand hier bis zum 12.08.2026 und war ueberholt.
-  // Die damals notierte offene Frage ("woher nimmt der Bootstrap den projekt-Stand?")
-  // ist seit dem 10.08.2026 beantwortet: Sie war der Anlass, flushBeimBeenden ueberhaupt
-  // einzufuehren. Jene Funktion ist argumentlos, nimmt mitD1Lock (#32) selbst und holt
-  // den aktiven Stand ueber holeAktivesProjekt (#192) INNERHALB des Locks - genau das,
-  // was der Bootstrap nicht leisten kann und auch nicht nachbauen soll.
-
-  // LUECKE 2: flushBestand() - #98
-  // Signatur (fremder Vertrag, #98):
-  //   export async function flushBestand(): Promise<Ergebnis<void, VorlagenFehlercode>>
-  // Dasselbe fuer den Vorlagenbestand vorlagen.json; steht dort nichts aus, ist das
-  // ein erfolgreicher Leerlauf, kein Fehler.
-
-  // Beide Aufrufe werden EINZELN ABGEWARTET, bevor das Fenster geschlossen und der
-  // Prozess beendet wird: "Beim Beenden blockiert die App, bis der Schreibvorgang
-  // abgeschlossen ist (kein Schliessen mit ausstehendem Schreiben)." (TK 9.5.4)
-
   // FRUEHER STAND HIER EIN "OFFENER WIDERSPRUCH" zwischen der DoD von #3 ("Beenden
   // danach genau einmal erneut anstossen") und TK 9.5.4 ("schliesst die App NICHT").
   // ERLEDIGT: #3 wurde am 10.08.2026 auf ZWEI Zweige geschaerft und zitiert TK 9.5.4
   // woertlich; das "genau einmal erneut anstossen" gilt allein fuer den ERFOLGSFALL.
-  // Es gab also nie zwei sich widersprechende Vertraege - nur diesen Kommentar, der
-  // dem Issue hinterherhinkte und beim Bau von #47 erneut als Widerspruch gemeldet
-  // wurde. Vom User am 12.08.2026 bestaetigt: Die App bleibt offen.
+  // Es gab also nie zwei sich widersprechende Vertraege - nur ein Kommentar, der dem
+  // Issue hinterherhinkte. Vom User am 12.08.2026 bestaetigt: Die App bleibt offen.
   //
-  // Der Fehlerzweig ist hier weiterhin NICHT gebaut, aber aus einem anderen Grund: Der
-  // noetige Dialog liegt im Renderer, also ausserhalb dieser Datei. Die Aufloesung
-  // gehoert zum Verdrahtungs-Issue und dem zugehoerigen Oberflaechen-Issue.
+  // EBENFALLS UEBERHOLT (15.08.2026): Hier stand, der Fehlerzweig sei nicht baubar,
+  // weil "der noetige Dialog im Renderer liegt". Das war falsch - #3 verlangt ihn
+  // ausdruecklich im Main (dialog.showMessageBoxSync). Er steht jetzt unten.
+  for (;;) {
+    const fehlgeschlagen = await fuehreBeendenFlushsAus();
+
+    if (fehlgeschlagen.length === 0) {
+      // ERFOLGSFALL: Merkflagge setzen und das Beenden GENAU EINMAL erneut anstossen.
+      break;
+    }
+
+    // FEHLERFALL: "Scheitert der Sofort-Flush beim BEENDEN, schliesst die App NICHT
+    // (bindend)." (TK 9.5.4) Also wird hier NICHT erneut angestossen, sondern gefragt.
+    if (!willErneutVersuchen(fehlgeschlagen)) {
+      // "Trotzdem schliessen und Aenderungen verwerfen" - eine ausdrueckliche
+      // Entscheidung des Nutzers, kein stilles Wegwerfen. KEIN Rollback: Die
+      // Aenderungen bleiben bis zum Prozessende im Speicher gueltig (TK 9.5.4).
+      break;
+    }
+    // "Erneut versuchen" - dieselben Flushs noch einmal, in derselben Reihenfolge.
+    // Deshalb eine Schleife und keine einmalige Wiederholung: Wer die Platte aufraeumt
+    // und noch einmal scheitert, bekommt den Dialog wieder, statt die Arbeit zu
+    // verlieren.
+  }
 
   beendenAbgeschlossen = true;
   app.quit();
+}
+
+/**
+ * Fuehrt die beiden Sofort-Flushs aus und liefert je eine Zeile fuer die, die
+ * gescheitert sind (leer = alles geschrieben).
+ *
+ * Beide Aufrufe werden EINZELN ABGEWARTET, bevor das Fenster geschlossen und der
+ * Prozess beendet wird: "Beim Beenden blockiert die App, bis der Schreibvorgang
+ * abgeschlossen ist (kein Schliessen mit ausstehendem Schreiben)." (TK 9.5.4) Kein
+ * Promise.all: Beide schreiben an denselben Datenort, und die Reihenfolge des
+ * Vertrags ist project.json vor vorlagen.json.
+ *
+ * Der ZWEITE Flush laeuft auch dann, wenn der erste gescheitert ist. Sie haengen nicht
+ * voneinander ab; ein Abbruch nach dem ersten Fehlschlag verloere den Vorlagenbestand
+ * zusaetzlich, ohne irgendetwas zu retten.
+ */
+async function fuehreBeendenFlushsAus(): Promise<string[]> {
+  const offen: string[] = [];
+
+  // #47, src/main/project-store/auto-speichern.ts. NICHT sofortFlush(projekt) - jene
+  // Funktion verlangt vom Aufrufer das aktuelle Project UND die Ausfuehrung innerhalb
+  // von mitD1Lock (#32); der Bootstrap hat beides nicht und soll es nicht bekommen.
+  // flushBeimBeenden ist argumentlos, nimmt das Lock selbst und holt den aktiven Stand
+  // ueber holeAktivesProjekt (#192) INNERHALB des Locks. Kein offenes Projekt ist dort
+  // { ok: true }, kein Fehler.
+  const projekt = await flushBeimBeenden();
+  if (!projekt.ok) {
+    offen.push(`project.json (${projekt.fehler.code}): ${projekt.fehler.meldung}`);
+  }
+
+  // #98, src/main/vorlagen-store/schreibe-vorlagen.ts. Dasselbe fuer den
+  // Vorlagenbestand; steht dort nichts aus, ist das ein erfolgreicher Leerlauf.
+  const vorlagen = await flushBestand();
+  if (!vorlagen.ok) {
+    offen.push(`vorlagen.json (${vorlagen.fehler.code}): ${vorlagen.fehler.meldung}`);
+  }
+
+  return offen;
+}
+
+/**
+ * Zeigt den Fehler-Dialog des Beenden-Ablaufs und meldet, ob erneut versucht werden
+ * soll.
+ *
+ * Der Dialog gehoert in den MAIN-Prozess (#3): Beim Beenden ist das Fenster unter
+ * Umstaenden schon nicht mehr ansprechbar, und ein Weg ueber den Renderer haenge an
+ * einem IPC-Kanal, den es dafuer nicht gibt. Diese Datei zeigt bereits so einen Dialog
+ * - den Selbsttest-Fehler aus #6.
+ *
+ * `showMessageBoxSync` und nicht die asynchrone Fassung: Der Aufrufer haelt gerade das
+ * Beenden auf; ein zweiter Schwebezustand daneben bringt nichts.
+ */
+function willErneutVersuchen(fehlgeschlagen: string[]): boolean {
+  const wahl = dialog.showMessageBoxSync({
+    type: "warning",
+    title: "Digital-Signage-Tool: Aenderungen nicht gespeichert",
+    message: "Die letzten Aenderungen konnten nicht gespeichert werden.",
+    detail: [
+      empfehlungZurUrsache(fehlgeschlagen),
+      "",
+      "Im Einzelnen:",
+      ...fehlgeschlagen.map((zeile) => `  - ${zeile}`),
+    ].join("\n"),
+    buttons: [
+      "Erneut versuchen",
+      "Trotzdem schliessen und Aenderungen verwerfen",
+    ],
+    // Der Verwerfen-Knopf ist NIE vorausgewaehlt (#3) und ist auch nicht der
+    // Abbruch-Knopf: Wer den Dialog mit Escape wegdrueckt, verliert nichts, sondern
+    // landet bei "Erneut versuchen".
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  });
+
+  return wahl === 0;
+}
+
+/**
+ * Waehlt die Empfehlung, die zur Ursache passt.
+ *
+ * WORAUF DAS BERUHT: Beide Fehlercode-Unionen kennen fuer diesen Fall nur
+ * `speicher_fehler` (nachgelesen in project-store/assets.ts und
+ * vorlagen-store/fehlercodes.ts) - der Code allein unterscheidet "Platte voll" nicht
+ * von "Datenort weg". Die Unterscheidung kann daher nur aus dem Meldungstext kommen,
+ * in den die schreibenden Stellen die Systemursache hineinreichen. Das ist eine
+ * Heuristik und wird auch so behandelt: Trifft sie nicht, steht der generische Text
+ * da, und die Ursachenzeilen selbst zeigt der Dialog ohnehin ungekuerzt.
+ */
+function empfehlungZurUrsache(fehlgeschlagen: string[]): string {
+  const alles = fehlgeschlagen.join(" ");
+
+  if (alles.includes("ENOSPC")) {
+    return (
+      "Auf dem Datentraeger ist kein Platz mehr. Geben Sie Speicher frei und waehlen " +
+      "Sie dann „Erneut versuchen“."
+    );
+  }
+  if (
+    alles.includes("ENOENT") ||
+    alles.includes("EACCES") ||
+    alles.includes("EPERM")
+  ) {
+    return (
+      "Der Datenort ist nicht erreichbar oder schreibgeschuetzt. Stecken Sie einen " +
+      "entfernten USB-Stick wieder ein bzw. pruefen Sie die Schreibrechte und waehlen " +
+      "Sie dann „Erneut versuchen“."
+    );
+  }
+  return (
+    "Der Grund steht unten. Beheben Sie ihn nach Moeglichkeit und waehlen Sie dann " +
+    "„Erneut versuchen“."
+  );
 }
 
 /**
