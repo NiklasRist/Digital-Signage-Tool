@@ -86,3 +86,6 @@ Desktop.ini
 tools/__pycache__/
 __pycache__/
 docs/agents/*/bodies/
+
+# Zwischenspeicher von tools/bereitschaft.py (geholte Issue-Bodies)
+.zwischenspeicher/
