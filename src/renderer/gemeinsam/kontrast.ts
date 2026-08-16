@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #292.
 // [gemeinsam] Kontrast-Rechnung als geteilte Funktion
 //
@@ -45,10 +44,38 @@
  * Hintergrund vorgemischt: Welcher Hintergrund "durchscheint", wüsste diese Funktion nicht, und
  * eine erfundene Annahme wäre eine unbenannte Näherung.
  */
+function zerlegeHex(farbe: string): [number, number, number] {
+  if (!/^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/.test(farbe)) {
+    throw new Error(
+      `Ungültiger Hex-Farbwert: "${farbe}". Erwartet wird #RRGGBB oder #RRGGBBAA.`,
+    );
+  }
+  const rot = parseInt(farbe.slice(1, 3), 16);
+  const gruen = parseInt(farbe.slice(3, 5), 16);
+  const blau = parseInt(farbe.slice(5, 7), 16);
+  return [rot, gruen, blau];
+}
+
+function kanalLuminanz(wert: number): number {
+  const normalisiert = wert / 255;
+  return normalisiert <= 0.03928
+    ? normalisiert / 12.92
+    : Math.pow((normalisiert + 0.055) / 1.055, 2.4);
+}
+
+function relativeLuminanz(farbe: string): number {
+  const [rot, gruen, blau] = zerlegeHex(farbe);
+  return 0.2126 * kanalLuminanz(rot)
+    + 0.7152 * kanalLuminanz(gruen)
+    + 0.0722 * kanalLuminanz(blau);
+}
+
 export function kontrastVerhaeltnis(farbeA: string, farbeB: string): number {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #292."
-  );
+  const luminanzA = relativeLuminanz(farbeA);
+  const luminanzB = relativeLuminanz(farbeB);
+  const verhaeltnis = (Math.max(luminanzA, luminanzB) + 0.05)
+    / (Math.min(luminanzA, luminanzB) + 0.05);
+  return Math.min(21, Math.max(1, verhaeltnis));
 }
 
 /**
@@ -60,9 +87,9 @@ export function kontrastVerhaeltnis(farbeA: string, farbeB: string): number {
  * unverändert zurückgegeben und NICHT auf sechs Stellen gekürzt.
  */
 export function waehleBesserenKontrast(hintergrund: string, kandidatA: string, kandidatB: string): string {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #292."
-  );
+  const kontrastA = kontrastVerhaeltnis(hintergrund, kandidatA);
+  const kontrastB = kontrastVerhaeltnis(hintergrund, kandidatB);
+  return kontrastB > kontrastA ? kandidatB : kandidatA;
 }
 
 /**
@@ -76,7 +103,10 @@ export function waehleBesserenKontrast(hintergrund: string, kandidatA: string, k
 export function erreichtKontrastSchwelle(
   vordergrund: string, hintergrund: string, schwellenwert: number,
 ): boolean {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #292."
-  );
+  if (!Number.isFinite(schwellenwert) || schwellenwert <= 0) {
+    throw new Error(
+      `Ungültiger Schwellenwert: ${schwellenwert}. Erwartet wird eine endliche Zahl größer 0.`,
+    );
+  }
+  return kontrastVerhaeltnis(vordergrund, hintergrund) >= schwellenwert;
 }
