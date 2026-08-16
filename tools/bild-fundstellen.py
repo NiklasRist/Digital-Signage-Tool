@@ -24,11 +24,26 @@ import subprocess
 # `'video' | 'bild'` OHNE das folgende `| 'segment'` zu verlangen - damit zaehlte sie
 # jede Asset-Union `typ: 'video' | 'bild'` mit und meldete rund doppelt so viele
 # betroffene Issues. Genau der Fehler, vor dem der Dateikopf warnt.
+# ZWEITE KORREKTUR am 15.08.2026 - der Fehler war schwerer als der erste.
+# Hier stand `art\s*[:=!]==?\s*['"]bild['"]`. Nach dem Trennzeichen `[:=!]` steht ein
+# ZWINGENDES `=`. Das Muster traf also `art === 'bild'` und `art !== 'bild'`, aber
+# NIEMALS `art: 'bild'` - die Schreibweise, in der die Elementart in fast allen
+# Signaturbloecken und Tabellen steht. NEUN betroffene Issues fehlten dadurch in der
+# Erhebung, darunter #41: die EINZIGE Stelle im ganzen Baum, die ein Element der Art
+# `bild` ueberhaupt erzeugt - und sie ist gebaut.
+# Gefunden hat es ein Pruef-Agent, nicht dieses Werkzeug. Merke: Ein Suchmuster gehoert
+# an seinen erwarteten Treffern geprueft, bevor man seiner Trefferzahl glaubt.
 ELEMENTART = re.compile(
-    r"""art\s*[:=!]==?\s*['"]bild['"]"""                                  # art === 'bild'
-    r"""|['"]video['"]\s*\|\s*['"]bild['"]\s*\|\s*['"]segment['"]""",     # die DREIER-Union
+    r"""art\s*(?::|===|!==|==)\s*['"]bild['"]"""                          # art: 'bild' / art === 'bild'
+    r"""|['"]video['"]\s*\\?\|\s*['"]bild['"]\s*\\?\|\s*['"]segment['"]"""  # Dreier-Union, auch \| in Tabellen
+    r"""|RenderItemBild""",                                               # die Render-Variante
     re.I,
 )
+
+# SELBSTPRUEFUNG: Ein Muster, das seine eigenen Beispiele nicht trifft, taugt nichts.
+for _probe in ("art: 'bild'", "art === 'bild'", "art !== 'bild'",
+               "'video' | 'bild' | 'segment'", "RenderItemBild"):
+    assert ELEMENTART.search(_probe), "Muster trifft die eigene Probe nicht: %r" % _probe
 # Asset-Typ - bleibt unveraendert, dient nur der Abgrenzung im Bericht.
 ASSETTYP = re.compile(r"""typ\s*[:=!]==?\s*['"]bild['"]|['"]video['"]\s*\|\s*['"]bild['"](?!\s*\|)""", re.I)
 
