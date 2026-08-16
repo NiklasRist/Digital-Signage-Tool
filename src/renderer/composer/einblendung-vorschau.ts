@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #130.
 // [composer] Wirkung der Abschnittsfolge anzeigen
 //
@@ -25,6 +24,8 @@
 // Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
+import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
+
 export type BandVerhalten = 'leer' | 'exakt' | 'wiederholt' | 'abgeschnitten'
 
 export interface BandAblaufplan {
@@ -43,7 +44,97 @@ export function planeBandAblauf(
   trimEndeSek: number,
   abschnitte: ReadonlyArray<{ aktionRef: string; dauer: number }>,
 ): BandAblaufplan {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #130."
-  );
+  const fps = RENDER_PROFILE.fps
+
+  // Reine Anzeige-Rechnung, keine Pruefstelle: nicht endliche Trim-Grenzen
+  // zaehlen als 0 (Fehlerpfad „als 0 behandelt, kein Wurf"). `Number.isFinite`
+  // verwirft auch `NaN` und unendliche Werte.
+  const start = Number.isFinite(trimStartSek) ? trimStartSek : 0
+  const ende = Number.isFinite(trimEndeSek) ? trimEndeSek : 0
+
+  // DIE Frame-Rundung des Renders, Zeichen fuer Zeichen dieselbe Regel (TK 9.2.6):
+  // zwei EINZELNE `Math.round` auf dem Raster des Ausgabe-Profils, danach die
+  // Differenz. Kein Zwischenschritt in Sekunden, genau EIN Runden je Wert. Die
+  // Elementdauer bestimmt allein das Video (TK 9.2.8) - `ende <= start` wird
+  // deshalb auf 0 Frames geklemmt, nicht aufgerundet.
+  const videoFrames = Math.max(
+    0,
+    Math.round(ende * fps) - Math.round(start * fps),
+  )
+
+  // Abschnitts-Dauern unterliegen derselben Frame-Rundung (TK 9.2.8). Eine
+  // negative oder nicht endliche `dauer` zaehlt als 0 Frames (Fehlerpfad) - die
+  // Gueltigkeitspruefung sitzt anderswo (#129, Main), nicht in dieser Anzeige.
+  const abschnittsFrames = abschnitte.map((abschnitt) =>
+    typeof abschnitt.dauer === 'number' &&
+    Number.isFinite(abschnitt.dauer) &&
+    abschnitt.dauer > 0
+      ? Math.round(abschnitt.dauer * fps)
+      : 0,
+  )
+  const folgeFrames = abschnittsFrames.reduce((summe, frames) => summe + frames, 0)
+
+  // Die Abschnitte, die im Render lautlos verschwinden (auf 0 Frames gerundet) -
+  // eigene Liste, damit die Oberflaeche darauf hinweisen kann. Immer vorhanden,
+  // auch wenn sie leer ist.
+  const nullFrameIndizes: number[] = []
+  for (let i = 0; i < abschnittsFrames.length; i++) {
+    if (abschnittsFrames[i] === 0) nullFrameIndizes.push(i)
+  }
+
+  // `folgeFrames === 0` ist ein EIGENER Zweig, keine Division: ohne ihn ergaebe
+  // `videoFrames / 0` `Infinity` und die Anzeige behauptete unendlich viele
+  // Durchlaeufe. Moeglich bei leerer Folge ODER wenn alle Dauern auf 0 runden.
+  if (folgeFrames === 0) {
+    return {
+      verhalten: 'leer' as const,
+      videoFrames,
+      folgeFrames,
+      volleDurchlaeufe: 0,
+      restFrames: 0,
+      angeschnittenerIndex: null,
+      abschnittsFrames,
+      nullFrameIndizes,
+    }
+  }
+
+  // `volleDurchlaeufe` zaehlt nur VOLLSTAENDIGE Durchlaeufe; der angebrochene
+  // letzte steckt in `restFrames` (Entscheidung im Issue).
+  const volleDurchlaeufe = Math.floor(videoFrames / folgeFrames)
+  const restFrames = videoFrames - volleDurchlaeufe * folgeFrames
+
+  const verhalten: BandVerhalten =
+    volleDurchlaeufe >= 1 && restFrames === 0
+      ? 'exakt'
+      : volleDurchlaeufe >= 1
+        ? 'wiederholt'
+        : 'abgeschnitten'
+
+  // Der Abschnitt, der am Videoende nicht zu Ende gezeigt wird: der kleinste
+  // Index i, dessen kumulierte Summe `abschnittsFrames[0..i]` den Rest echt
+  // ueberschreitet. Bei `volleDurchlaeufe === 0` ist `restFrames` gleich
+  // `videoFrames` - beide Lagen der Tabelle fallen also zusammen. Bei `'exakt'`
+  // gibt es keinen.
+  let angeschnittenerIndex: number | null = null
+  if (restFrames > 0 || volleDurchlaeufe === 0) {
+    let kumuliert = 0
+    for (const [i, frames] of abschnittsFrames.entries()) {
+      kumuliert += frames
+      if (kumuliert > restFrames) {
+        angeschnittenerIndex = i
+        break
+      }
+    }
+  }
+
+  return {
+    verhalten,
+    videoFrames,
+    folgeFrames,
+    volleDurchlaeufe,
+    restFrames,
+    angeschnittenerIndex,
+    abschnittsFrames,
+    nullFrameIndizes,
+  }
 }
