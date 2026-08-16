@@ -312,6 +312,46 @@ describe('verifiziereUndPlatziere - die vier Strom-Kriterien aus #170', () => {
   })
 })
 
+// TK 9.2.6 zaehlt die vorhandene Tonspur zu dem, was an der FERTIGEN Datei geprueft wird.
+// Der Test darueber weist sie ueber die LAYOUT-Merkmale von #170 nach (stromAnzahl,
+// stromArten) - also mittelbar. Hier bleibt das Layout ausdruecklich stimmig und NUR der
+// Audioblock fehlt: #170 ueberspringt seine AUDIO_MERKMALE in diesem Fall
+// (`pruefeMerkmale` steigt bei `quelle === null` aus), meldet also nichts. Faellt der Lauf
+// trotzdem durch, traegt diese Datei das Kriterium SELBST - und wer in #170 je die
+// Layout-Merkmale lockert, loescht es nicht lautlos mit.
+describe('verifiziereUndPlatziere - die eigene Tonspur-Pruefung', () => {
+  it('weist eine fehlende Tonspur auch dann ab, wenn das Streamlayout stimmig aussieht', async () => {
+    lege('bytes', 'alt')
+    const ohneTon = profilkonform(120)
+    ohneTon.audio = null
+    // ABSICHTLICH UNVERAENDERT: stromAnzahl 2 und stromArten ['video', 'audio'] - die
+    // Layout-Merkmale von #170 finden hier nichts zu beanstanden.
+    expect(ohneTon.stromAnzahl).toBe(2)
+    expect(ohneTon.stromArten).toEqual(['video', 'audio'])
+    liefere(ohneTon)
+
+    const ergebnis = await lauf()
+
+    expect(ergebnis.ok).toBe(false)
+    if (ergebnis.ok) return
+    expect(ergebnis.fehler.code).toBe('ffmpeg_fehler')
+    expect(ergebnis.fehler.meldung).toContain('KEINE Tonspur')
+    expect(existsSync(partPfad)).toBe(false)
+    expect(readFileSync(zielPfad, 'utf8')).toBe('alt')
+    expect(zustand.renameAufrufe).toHaveLength(0)
+  })
+
+  it('laesst eine vorhandene Tonspur durch - die Pruefung ist keine Dauerablehnung', async () => {
+    lege('bytes', 'alt')
+    liefere(profilkonform(120))
+
+    const ergebnis = await lauf()
+
+    expect(ergebnis.ok).toBe(true)
+    expect(readFileSync(zielPfad, 'utf8')).toBe('bytes')
+  })
+})
+
 describe('verifiziereUndPlatziere - die nicht durchfuehrbare Pruefung', () => {
   it('unterscheidet "nicht auslesbar" in der Meldung von "Kriterium verletzt"', async () => {
     lege('bytes', 'alt')

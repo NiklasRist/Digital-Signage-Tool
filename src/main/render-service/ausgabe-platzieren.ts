@@ -218,6 +218,34 @@ export async function verifiziereUndPlatziere(
       )
     }
 
+    // --------------------------------------------------------------- Schritt 2b
+    // DAS KRITERIUM "TONSPUR VORHANDEN" WIRD HIER EIGENSTAENDIG GETRAGEN.
+    //
+    // TK 9.2.6 zaehlt die vorhandene Tonspur ausdruecklich zu dem, was an der fertigen
+    // Datei geprueft wird (R-06: ein Consumer-TV startet eine tonlose Datei unter
+    // Umstaenden gar nicht erst). `vergleicheStroeme` (#170) faengt den Fall heute zwar
+    // ebenfalls - aber nur MITTELBAR, ueber die Layout-Merkmale `stromAnzahl` und
+    // `stromArten`: `pruefeMerkmale` steigt bei fehlendem Audioblock AUS, BEVOR die
+    // `AUDIO_MERKMALE` ueberhaupt ausgewertet werden (`if (quelle === null) return`).
+    // Wer in #170 je die Layout-Merkmale lockert - etwa um einen zusaetzlichen
+    // Datenstrom zuzulassen -, loeschte damit lautlos ein Abnahmekriterium DIESER
+    // Datei, ohne dass hier irgendetwas rot wuerde. Deshalb steht die Frage hier noch
+    // einmal, und zwar direkt am Befund statt an einer fremden Merkmalsliste.
+    //
+    // KEINE DOPPELUNG DER AUDIO-EIGENSCHAFTEN: Codec, Abtastrate und Kanalzahl bleiben
+    // Sache von #170. Hier steht ausschliesslich die eine Frage, die #170 gar nicht
+    // erreicht - IST ueberhaupt eine Tonspur da?
+    if (eigenschaften.audio === null) {
+      return await scheitere(
+        partPfad,
+        'ffmpeg_fehler',
+        `Die fertige Ausgabedatei hat KEINE Tonspur (gefundene Stroeme: ` +
+          `${stromArtenText(eigenschaften.stromArten)}). Das Ausgabe-Profil verlangt eine ` +
+          `stille Tonspur; ohne sie startet der Fernseher die Datei unter Umstaenden nicht. ` +
+          `Die Datei wurde verworfen, die vorhandene Ausgabedatei bleibt unveraendert.`,
+      )
+    }
+
     // ---------------------------------------------------------------- Schritt 3
     // Das fuenfte Kriterium: die Dauer. Sie ist KEINE Uniformitaets-Eigenschaft -
     // sie haengt am Auftrag - und hat in `vergleicheStroeme` deshalb keinen Platz.
@@ -433,6 +461,16 @@ function abweichungsText(abweichungen: readonly Abweichung[]): string {
   return abweichungen
     .map((a) => `${a.feld}: erwartet ${a.erwartet}, gefunden ${a.gefunden}`)
     .join('; ')
+}
+
+/**
+ * Die gefundenen Stromarten fuer die Meldung.
+ *
+ * Eine leere Liste erscheint als Wort, nicht als leere Klammer: "gefundene Stroeme: "
+ * ohne Fortsetzung saehe nach einem abgeschnittenen Text aus.
+ */
+function stromArtenText(arten: readonly string[]): string {
+  return arten.length === 0 ? 'keine' : arten.join(', ')
 }
 
 /**

@@ -33,6 +33,7 @@ import type { VorlagenFehlercode } from './fehlercodes'
 import { aendereBestand } from './schreibe-vorlagen'
 import { eingebauteVorlagen } from './eingebaute-vorlagen'
 import { erzeugeId } from '../../shared/contracts/id'
+import { berechneBandGeometrie } from '../../shared/band-geometrie'
 
 // Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #98: aendereBestand<T>(
@@ -43,6 +44,10 @@ import { erzeugeId } from '../../shared/contracts/id'
 //          // `aenderung` ist SYNCHRON und bekommt eine tiefe Kopie des Bestands.
 //   #96: eingebauteVorlagen(): Vorlage[]   // frische TIEFE Kopie der drei Mitgelieferten
 //   #20:   erzeugeId(): string               // UUID v4
+//   #239: berechneBandGeometrie(höhe: number): BandGeometrie
+//          // REINE, TOTALE Rechnung im geteilten Bereich - wirft nie, prueft nichts.
+//          // Sie ist die EINZIGE Stelle, an der die Bandgeometrie gerechnet wird; hier
+//          // wird sie fuer die Obergrenzen-Pruefung befragt, nicht nachgebaut.
 //   #97: type VorlagenFehlercode = 'vorlage_referenziert' | 'parent_eingebaut' | 'speicher_fehler'
 //   #95: type VorlagenArt = 'vollflaeche' | 'split' | 'einblendung'
 //          interface Zone { id: string; rolle: 'fest'|'frei'; bindung: Bindung | null
@@ -71,6 +76,10 @@ const NAME_MAX_ZEICHEN = 80
  * Obergrenze der Bandhoehe - ausschliesslich. Das ist die Hoehe der vollen Ausgabeflaeche: Ein Band
  * so hoch wie das Bild liesse keine Videoflaeche uebrig (TK 9.11.1 Punkt 8, Wertebereich > 0
  * und < 1080).
+ *
+ * SIE IST NICHT DIE GANZE SCHRANKE: H = 1078 liegt darunter und ergibt trotzdem eine
+ * Videobreite von 0. Diesen Fall faengt weiter unten die Pruefung ueber
+ * `berechneBandGeometrie` (#239) - dort steht die Begruendung.
  */
 const HOEHE_AUSSCHLIESSLICHE_OBERGRENZE = 1080
 
@@ -247,6 +256,36 @@ function pruefeHoehe(
       'ungueltige_eingabe',
       `Die Bandhoehe muss gerade sein (uebergeben: ${String(höhe)}); ungerade Hoehen brechen die ` +
         `Komposition des Ausgabe-Profils.`,
+    )
+  }
+  // DIE OBERGRENZE 1080 IST ZU WEIT - ES GIBT GENAU EINE ZULAESSIGE HOEHE, DIE KEIN BILD
+  // MEHR UEBRIG LAESST: H = 1078.
+  //
+  // Die Videobreite der Split-Komposition wird auf ein Vielfaches von 4 ABGERUNDET
+  // (TK 9.2.8). Bei H = 1078 bleiben 2 px Videoflaeche, und daraus wird
+  // floor(2 x 16/9 / 4) x 4 = floor(3,55 / 4) x 4 = 0 x 4 = 0 - ein Video der Breite 0
+  // ist nicht darstellbar. Es ist der EINZIGE solche Fall im ganzen Bereich: Schon bei
+  // H = 1076 bleiben 4 px, und daraus wird floor(4 x 16/9 / 4) x 4 = 1 x 4 = 4.
+  //
+  // GERECHNET WIRD NICHT HIER, sondern mit dem geteilten Rechenkern (#239). Eine
+  // abgeschriebene Formel waere eine zweite Wahrheit ueber die Bandgeometrie und liefe
+  // beim ersten Nachjustieren der Rundung auseinander; die Grenze folgt so von selbst
+  // der Rechnung, statt als Zahl daneben zu stehen.
+  //
+  // DIE GRENZE GILT FUER BEIDE BANDARTEN. Bei `einblendung` bleibt das Video
+  // vollflaechig, die Videoflaeche des Split-Falls wird dort also gar nicht gebraucht -
+  // aber die `art` steht nach dem Anlegen fest (TK 9.12.1), und der Wertebereich der
+  // Bandhoehe ist im Vertrag EINER fuer beide (TK 9.11.1 Punkt 8). Zwei Obergrenzen
+  // waeren zwei Regeln fuer eine Zahl; ein Band, das 1078 der 1080 Zeilen verdeckt, ist
+  // ausserdem in keiner der beiden Betriebsarten ein sinnvolles Band.
+  const geometrie = berechneBandGeometrie(höhe)
+  if (geometrie.videoBreite <= 0) {
+    return fehler(
+      'ungueltige_eingabe',
+      `Bei einer Bandhoehe von ${String(höhe)} bleiben nur ` +
+        `${String(geometrie.videoBereichHöhe)} Bildzeilen fuer das Video uebrig; die auf ein ` +
+        `Vielfaches von 4 abgerundete Videobreite ergibt ${String(geometrie.videoBreite)} und ` +
+        `damit kein darstellbares Bild. Bitte eine kleinere Bandhoehe waehlen.`,
     )
   }
   return null

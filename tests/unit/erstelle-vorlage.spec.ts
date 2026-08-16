@@ -226,6 +226,38 @@ describe("erstelleVorlage – Validierung", () => {
     expect(neu.höhe).toBe(162);
   });
 
+  // Die Obergrenze 1080 allein ist zu weit: H = 1078 ist gerade, ganzzahlig und < 1080 -
+  // laesst aber nur 2 Bildzeilen uebrig, und die auf ein Vielfaches von 4 abgerundete
+  // Videobreite ist floor(2 * 16/9 / 4) * 4 = 0. Es ist der EINZIGE solche Wert im ganzen
+  // Bereich.
+  it("weist die Bandhoehe 1078 ab - sie ergaebe eine Videobreite von 0", async () => {
+    await abgewiesen("split", 1078, "X");
+    await abgewiesen("einblendung", 1078, "X");
+  });
+
+  it("weist 1078 mit ungueltige_eingabe ab, nicht erst ueber die fehlende Zonen-Festlegung", async () => {
+    // Der Unterschied traegt die Aussage: Waere 1078 nur zufaellig gescheitert, weil fuer
+    // diese Hoehe keine festen Zonen festgelegt sind, lautete der Code
+    // `unbekannter_fehler` (s. `festeZonen`). `ungueltige_eingabe` belegt, dass die
+    // Geometrie-Schranke ZUERST gegriffen hat.
+    const zuHoch = await erstelleVorlage("split", 1078, "X");
+    expect(zuHoch.ok).toBe(false);
+    if (!zuHoch.ok) expect(zuHoch.fehler.code).toBe("ungueltige_eingabe");
+
+    // Gegenprobe mit einer KRUMMEN Hoehe direkt darunter: 1076 ergibt eine Videobreite von
+    // 4 und passiert die Geometrie-Schranke - es scheitert danach an der offenen
+    // Zonen-Festlegung, also mit dem ANDEREN Code.
+    const knappDrunter = await erstelleVorlage("split", 1076, "X");
+    expect(knappDrunter.ok).toBe(false);
+    if (!knappDrunter.ok) expect(knappDrunter.fehler.code).toBe("unbekannter_fehler");
+
+    // Und dieselbe Gegenprobe fuer eine krumme Hoehe aus der Mitte des Bereichs, die NICHT
+    // durch 18 teilbar ist (534 * 16/9 = 949,33 -> abgerundet 948).
+    const mitte = await erstelleVorlage("split", 546, "X");
+    expect(mitte.ok).toBe(false);
+    if (!mitte.ok) expect(mitte.fehler.code).toBe("unbekannter_fehler");
+  });
+
   it("weist einen leeren und einen zu langen Namen ab", async () => {
     await abgewiesen("vollflaeche", null, "   ");
     await abgewiesen("vollflaeche", null, "");
