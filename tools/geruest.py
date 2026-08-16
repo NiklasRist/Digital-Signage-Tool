@@ -1,5 +1,5 @@
 # Erzeugt aus den "Signatur (verbindlich)"-Bloecken der GitHub-Issues das
-# Funktionsgeruest fuer M1-M7: je Zieldatei die Typen/Interfaces unveraendert und
+# Funktionsgeruest fuer M1-M8: je Zieldatei die Typen/Interfaces unveraendert und
 # je Funktion einen WERFENDEN Rumpf.
 #
 # Warum werfend und nicht leer: Ein leerer Rumpf gibt undefined zurueck und gilt dem
@@ -345,7 +345,7 @@ def main():
 
     daten = json.load(io.open(quelle, encoding='utf-8'))
     m17 = [i for i in daten
-           if (i.get('milestone') or {}).get('title', '').startswith(('M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7'))]
+           if (i.get('milestone') or {}).get('title', '').startswith(('M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8'))]
 
     beansprucht = collections.defaultdict(list)
     geschrieben, ohne_ziel, ohne_block, ruempfe = 0, [], [], 0
