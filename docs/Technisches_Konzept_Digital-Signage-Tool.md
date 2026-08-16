@@ -1,9 +1,9 @@
 # Technisches Konzept – Digital-Signage-Tool
 
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
-**Bezug:** Anforderungsdokument v1.5 (das „Was")
+**Bezug:** Anforderungsdokument v1.6 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.16 (projektweite Standard-Segmentdauer, `schemaVersion` 2; Elementart `bild` gestrichen)
+**Version:** 3.17 (Schreibweg der Standard-Segmentdauer; `schemaVersion` bleibt 1; keine Bestandsdaten-Migration)
 **Datum:** 15.08.2026
 **Status:** In Planung
 
@@ -11,7 +11,7 @@
 
 ## 1. Zweck und Einordnung
 
-Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.5** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
+Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.6** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
 
 ## 2. Architektur-Überblick
 
@@ -1062,32 +1062,54 @@ nicht beseitigen.
 - **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `project:setzeStandardMarke`. Ohne Anmeldung im `ipc-gateway`
   bliebe sie eine Main-Funktion ohne Aufrufer.
 
-**Projekt-Standarddauer (FA-06, v3.16):**
+**Projekt-Standarddauer (FA-06, v3.16; Schreibweg entschieden in v3.17):**
 
-> **OFFEN (v3.16) – der Schreibweg für `Project.standardSegmentdauer` ist noch nicht festgelegt.**
-> Das Feld selbst ist entschieden (9.11.3), seine Wirkung ebenfalls (Auflösungskette 9.8.4, Rückfrage
-> beim Ändern: Anforderungsdokument 4.4). **Nicht** entschieden ist, wie es gesetzt wird – und hier wird
-> nichts erfunden, weil jede dieser Fragen die Schnittstelle festlegt:
->
-> 1. **Name und Signatur der Operation** (naheliegendes Vorbild: `setzeStandardMarke`, s. o.) samt eigenem
->    IPC-Kanal nach 9.1.1 Punkt 4 – ohne Anmeldung im `ipc-gateway` bliebe sie eine Main-Funktion ohne
->    Aufrufer, die Lückenklasse, die dieses Projekt in **jedem** Meilenstein seit M1 getroffen hat.
-> 2. **Wirkt sie auch auf ein nicht geladenes Projekt?** Bei `setzeStandardMarke` ist das ausdrücklich so
->    (der Ausweg aus der Lösch-Sperre verlangt es). Hier spricht das Gegenteil dafür: Die Rückfrage aus
->    Anforderungsdokument 4.4 zeigt eine **Liste der betroffenen Aktionen**, und Aktionen liegen im
->    Projekt – zeigen ließe sie sich nur für das **geladene** (9.5.1).
-> 3. **Wie werden die abgewählten Aktionen festgeschrieben?** Ein Aufruf, der mehrere `Aktion.standardDauer`
->    in einem Zug setzt, oder *n* × `bearbeiteAktion`. Die Frage ist nicht kosmetisch: *n* einzelne Aufrufe
->    sind **nicht** unteilbar – bricht der Vorgang in der Mitte ab, folgt ein Teil der Aktionen dem neuen
->    Standard und der andere nicht, ohne dass jemand es merkt.
-> 4. **Gehört der Wert in den `Bearbeitungsstand` und damit in Undo?** (9.13.2). `letzterAusgabeName`,
->    `assets` und `standardMarkeId` gehören ausdrücklich **nicht** dazu; ob das Festschreiben an *n*
->    Aktionen – das sehr wohl `aktionen` verändert – in einem Schritt rückgängig zu machen sein muss, ist
->    damit offen.
-> 5. **Wo in der Oberfläche sitzt die Einstellung** – `projekt-verwaltung` (9.14.3, wie die Standardmarke)
->    oder `composer` (9.7, wo die Dauern bedient werden).
->
-> Zu entscheiden, **bevor** Issues dazu geschrieben werden.
+| Operation | Eingang → Ausgang |
+|---|---|
+| `setzeStandardSegmentdauer` | `dauer`, `festzuschreibendeAktionen` (Aktions-IDs) → `Ergebnis<Projekt>` – setzt `Project.standardSegmentdauer` des **geladenen** Projekts (9.11.3) **und** schreibt für jede genannte Aktion ihren **bisher wirksamen** Wert als eigene `Aktion.standardDauer` fest, in **einem** Schritt. Validiert `dauer` gegen den Dauer-Bereich (10–45 s, 9.11.4) – dieselbe Konstante wie `setzeDauer`; unbekannte Aktions-ID → `ungueltige_eingabe` |
+
+**Eine Operation, alles oder nichts (bindend).** Der neue Standardwert und die Liste der **abgewählten**
+Aktionen (Anforderungsdokument 4.4) kommen **zusammen** herein. Unter dem einen D1-Schreib-Lock (9.5.4)
+wird der Standard geschrieben, für jede abgewählte Aktion der alte Wert festgeschrieben – ihre
+`standardDauer` wird **explizit gesetzt**, damit sie aufhört, dem Projektstandard zu folgen (9.8.4) – und
+**einmal** gespeichert. Scheitert irgendetwas davon, ist **nichts** geändert.
+
+*Begründung:* Mehrere Einzelaufrufe wären **nicht unteilbar**. Scheitert der fünfte von zwölf, ist der
+Standard bereits geändert und vier Aktionen sind festgeschrieben, acht nicht – ein Zustand, den niemand
+wollte und den **kein Rollback sauber zurücknimmt**: Der Aufrufer müsste die vier Aktionen wieder auf
+`null` setzen und den Standard zurückdrehen, also genau die inversen Operationen bauen, die 9.13.2
+verbietet. Ein einziger Aufruf unter einem Lock hat das Problem nicht.
+
+- **Sie wirkt auf das GELADENE Projekt** – anders als `setzeStandardMarke` (s. o.) nimmt sie **keine**
+  `projektId`. *Begründung:* Die Rückfrage aus Anforderungsdokument 4.4 zeigt vor dem Ändern eine **Liste
+  der betroffenen Aktionen**, und Aktionen liegen **im** Projekt; die Auswahlliste, die diese Operation
+  entgegennimmt, setzt also ein geöffnetes Projekt ohnehin voraus. Geladen ist immer höchstens **eines**
+  (9.5.1). Der Rückgabewert ist das vollständige, geänderte `Projekt` für die gemeinsame Projekt-Sicht
+  des Renderers (9.7.4).
+- **Das Festschreiben nimmt den bisher WIRKSAMEN Wert**, nicht den neuen: Es ist genau der Wert, unter dem
+  die Aktion bisher lief – nach der Auflösungskette (9.8.4) also der bisherige Projektstandard, denn
+  Aktionen mit eigener Dauer erscheinen in der Liste gar nicht erst (Anforderungsdokument 4.4).
+- **Reichweite: Aktionen ja, platzierte Listenelemente nein (bindend, v3.17).** Ein Wechsel des
+  Projektstandards wirkt auf die **Aktionen** – alle mit `standardDauer: null` folgen ab sofort dem neuen
+  Wert. **Bereits platzierte Listenelemente behalten ihre `dauer` unverändert.** *Begründung:* Die
+  Element-Dauer ist beim Platzieren **materialisiert** worden (Auflösungskette 9.8.4 liefert nur den
+  **Startwert**, danach entscheidet der Regler – 9.8.4, Anforderungsdokument 4.4); sie rückwirkend
+  nachzuziehen würde eine vom Nutzer am Regler getroffene Wahl überschreiben, ohne dass er es sieht.
+- **Ein rücknehmbarer Schritt (FA-21).** Das Ändern des Projektstandards ist **ein** Undo-Schritt, nicht
+  *n*+1 – es ist ein Vorgang, der Nutzer hat ihn als einen ausgelöst. Er verändert `aktionen`, also genau
+  das, was der `Bearbeitungsstand` führt (s. u., 9.13.2).
+
+  > **GEMELDET (v3.17) – der heutige `Bearbeitungsstand` gibt das nicht ganz her.** Er trägt **nur**
+  > `aktionen` und `liste`; `Project.standardSegmentdauer` ist **nicht** darin. Ein Undo würde damit die
+  > festgeschriebenen Aktions-Dauern zurücknehmen, den **Projektstandard aber stehen lassen** – ein
+  > Halbzustand. Damit der Schritt als **ein** Schritt rücknehmbar ist, müsste `standardSegmentdauer` ein
+  > **drittes Feld** des `Bearbeitungsstand` werden (und `setzeBearbeitungsstand` es mitschreiben). Das ist
+  > eine Änderung am geteilten Vertrag und wird hier **nicht erfunden**, sondern gemeldet: zu entscheiden,
+  > bevor ein Issue dazu geschrieben wird.
+- **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `project:setzeStandardSegmentdauer`. Ohne Anmeldung im
+  `ipc-gateway` bliebe sie eine Main-Funktion ohne Aufrufer.
+
+> **OFFEN (v3.17) – wo in der Oberfläche die Einstellung sitzt**, ist **nicht** entschieden: `projekt-verwaltung` (9.14.3, wie die Standardmarke) oder `composer` (9.7, wo die Dauern bedient werden). Die Operation und ihr Kanal sind davon **unabhängig**; nur der Bedienort fehlt. Zu entscheiden, bevor ein Oberflächen-Issue dazu geschrieben wird.
 
 **Rückgängig/Wiederherstellen (FA-21):**
 
@@ -1211,15 +1233,13 @@ trotzdem um**, als Schranke für den Tag, an dem eine dieser Operationen ihre Co
 
 Jede `project.json` und `config.json` trägt eine `schemaVersion`. Beim Laden: **höhere** (unbekannte) Version → Fehler (nicht raten); **ältere** Version → definierte Migration auf die aktuelle. So bleiben ältere Projekte nach App-Updates lesbar.
 
-**Aktuell ist `schemaVersion` = 2 (v3.16).** Bis v3.15 stand sie auf **1**; die Zahl steht an **einer** Stelle, in den Konstanten (9.11.4).
+**Aktuell ist `schemaVersion` = 1 (v3.17).** v3.16 hatte sie wegen `Project.standardSegmentdauer` auf **2** gehoben; **das ist mit v3.17 zurückgenommen**. Die Zahl steht an **einer** Stelle, in den Konstanten (9.11.4).
 
-**Migration 1 → 2: `Project.standardSegmentdauer` ergänzen.** Mit v3.16 trägt jedes Projekt eine projektweite Standard-Segmentdauer (9.11.3). Eine `project.json` der Version 1 kennt das Feld nicht. Die Migration setzt es auf die Konstante **Standard-Anzeigedauer (10 s)** und hebt die `schemaVersion` auf `2`; sonst wird **nichts** angefasst.
+**Es gibt KEINE Migration 1 → 2 (bindend, v3.17).** *Begründung (vom Auftraggeber am 15.08.2026 bestätigt):* Es existiert **noch kein einziges Projekt**. Eine Migration 1 → 2 wäre Code für Daten, die es nirgends gibt: **nie ausführbar, nie testbar** – und damit eine Regel, die niemand je nachprüfen könnte. `Project.standardSegmentdauer` gehört deshalb **von Anfang an zu `schemaVersion` 1**; jede `project.json`, die je entsteht, trägt das Feld. Ein Projekt der Version 1 **ohne** das Feld ist kein Bestandsfall, sondern eine kaputte Datei.
 
-*Warum genau 10 s und nicht etwa der häufigste Wert im Bestand:* 10 s war bis v3.15 die **einzige** Vorbelegung – ein Projekt der Version 1 ist unter genau dieser Annahme entstanden. Der Wert ist damit keine Wahl, sondern die Fortschreibung des bisherigen Verhaltens: Nach der Migration verhält sich ein altes Projekt **exakt wie vorher**. Ein aus dem Bestand geratener Wert wäre das Gegenteil – er änderte beim bloßen Öffnen die Vorbelegung eines Projekts, das der Nutzer nicht angefasst hat.
+**Das Feld `schemaVersion` bleibt – und behält seinen Zweck.** Dass es heute keine Migration gibt, macht die Versionsnummer nicht überflüssig: Trifft eine **ältere** App-Fassung später auf eine **neuere** `project.json` (Version höher als die eigene), **verweigert sie das Laden mit einem Fehler, statt zu raten**. Genau das ist die Regel oben, und sie wirkt ohne jede Migration. Umgekehrt bleibt der Weg für **künftige** Erhöhungen offen: Sobald reale Projekte im Umlauf sind, wird eine Feldänderung die Zahl anheben und eine definierte Migration mitbringen – die dann an echten Daten prüfbar ist.
 
-*Was die Migration ausdrücklich NICHT tut:* Sie fasst **keine** `Aktion.standardDauer` an. Ein `null` dort bedeutet ab v3.16 „folgt dem Projektstandard" (9.8.4) – und weil der Projektstandard auf denselben 10 s steht, unter denen die Aktion entstanden ist, ändert sich für sie nichts. Sie schreibt auch **keine** Werte fest: Das Festschreiben ist eine **Nutzerentscheidung** beim Ändern des Standards (Anforderungsdokument 4.4), keine Migrationsaufgabe.
-
-*Zur Elementart `bild` (v3.16, gestrichen – 9.11.3): Hier ist **keine** Migration vorgesehen.* Ob und wie eine `project.json` mit vorhandenen `art: "bild"`-Elementen zu behandeln ist, ist **noch nicht entschieden** – s. den offenen Punkt in 9.11.3.
+*Zur Elementart `bild` (v3.16, gestrichen – 9.11.3): Hier ist **keine** Migration vorgesehen* – aus demselben Grund: Es gibt keine Bestandsdaten, in denen ein `art: "bild"`-Element stehen könnte. Ausgeschrieben in 9.11.3.
 
 #### 9.5.6 `config-store` [D3]
 
@@ -1434,7 +1454,7 @@ Aktion {
   element.dauer  ←  aktion.standardDauer  ??  projekt.standardSegmentdauer  ??  10
   ```
 
-  Gelesen wird das so: Hat die **Aktion** eine eigene Dauer, gilt sie. Ist ihre `standardDauer` **`null`**, folgt die Aktion der **Projekt-Standarddauer** (`Project.standardSegmentdauer`, 9.11.3). Fehlt auch die, greift die Konstante **Standard-Anzeigedauer** (10 s, 9.11.4). Die dritte Stufe ist ein **struktureller** Rückfall, kein Normalfall: `standardSegmentdauer` ist ein Pflichtfeld, und die Migration 1 → 2 (9.5.5) belegt es in jedem bestehenden Projekt. Sie steht trotzdem in der Kette, damit niemand an dieser Stelle eine eigene Zahl erfindet, falls das Feld doch einmal fehlt.
+  Gelesen wird das so: Hat die **Aktion** eine eigene Dauer, gilt sie. Ist ihre `standardDauer` **`null`**, folgt die Aktion der **Projekt-Standarddauer** (`Project.standardSegmentdauer`, 9.11.3). Fehlt auch die, greift die Konstante **Standard-Anzeigedauer** (10 s, 9.11.4). Die dritte Stufe ist ein **struktureller** Rückfall, kein Normalfall: `standardSegmentdauer` ist ein Pflichtfeld und gehört von Anfang an zu `schemaVersion` 1 (9.5.5), ist also in jedem Projekt belegt. Sie steht trotzdem in der Kette, damit niemand an dieser Stelle eine eigene Zahl erfindet, falls das Feld doch einmal fehlt.
 
   **`null` bedeutet ab v3.16 „folgt dem Projektstandard" – es ist kein fehlender Wert.** Bis v3.15 hieß `null` schlicht „keine Vorgabe, nimm 10 s". Das ist der eigentliche Kern der Änderung: Eine Aktion mit `standardDauer: null` **zieht mit**, wenn der Projektstandard sich ändert; eine Aktion mit eigenem Wert bleibt unberührt. „Eine Aktion vom Projektstandard abkoppeln" heißt deshalb technisch: ihren **bisher wirksamen Wert explizit festschreiben** (Anforderungsdokument 4.4).
 - **Der Bereich 10–45 s bleibt fest** (Konstante Dauer-Bereich, 9.11.4). Konfigurierbar ist ausschließlich der **Standardwert** innerhalb dieses Bereichs – sowohl `Aktion.standardDauer` als auch `Project.standardSegmentdauer` werden gegen **dieselbe** Konstante geprüft wie `setzeDauer` (9.5.2). Ein Projektstandard außerhalb des Bereichs würde beim Platzieren sofort ein ungültiges Listenelement erzeugen.
@@ -1837,7 +1857,8 @@ Project {
   standardSegmentdauer: number       // FA-06: projektweite Standarddauer für Aktions-Segmente,
                                      //   je Aktion überschreibbar (Auflösungskette 9.8.4).
                                      //   Pflicht; Wertebereich wie setzeDauer (10–45 s, 9.11.4).
-                                     //   Migration 1 -> 2 setzt 10 (9.5.5)
+                                     //   Teil von schemaVersion 1, keine Migration (9.5.5);
+                                     //   wechselbar über setzeStandardSegmentdauer (9.5.2)
 }
 
 Listenelement {
@@ -1866,7 +1887,11 @@ Listenelement {
 
 **Mitgezogen an diesen Stellen:** `RenderItem` hat nur noch zwei Varianten (9.2.2), Standbild-Regel und Band-Invariante (9.2.6, 9.2.8), `setzeDauer` und `setzeElementReferenz` sowie die Undo-Validierung (9.5.2), Thumbnails und Reparatur-Fall 1 (9.7.4, 9.7.5), Darstellung je Elementtyp (8, 9.9.2), Datenbestand (4) und die Konstantentabelle (9.11.4).
 
-> **OFFEN (v3.16) – Bestandsdaten mit `art: "bild"`.** Wie eine bereits vorhandene `project.json` zu behandeln ist, in deren `liste` Elemente der Art `bild` stehen, ist **nicht entschieden**. Denkbar sind mindestens: beim Laden **abweisen** (der Nutzer verlöre den Zugang zum Projekt), die Elemente in der Migration **stillschweigend entfernen** (Datenverlust ohne Meldung – widerspricht 9.1.1 Punkt 7) oder sie als **kaputte Stellen** in den geführten Reparatur-Modus geben (9.7.5). **Hier wird nichts erfunden**; die Migration 1 → 2 (9.5.5) fasst die Liste deshalb bewusst **nicht** an. Zu entscheiden, bevor ein Issue dazu geschrieben wird.
+**Bestandsdaten mit `art: "bild"`: es gibt keine – und deshalb KEINE Migrationsregel (bindend, v3.17).** v3.16 hatte diese Frage ausdrücklich offen gelassen. Sie ist damit **erledigt**, und zwar ohne Regel: Der Auftraggeber hat am 15.08.2026 bestätigt, dass **noch kein einziges Projekt existiert**. Es kann folglich keine `project.json` geben, in deren `liste` ein Element der Art `bild` steht. Eine Behandlungsregel dafür wäre Code für einen Fall, den es nirgends gibt – nie ausführbar, nie testbar.
+
+*Warum das hier ausdrücklich steht, statt den Punkt ersatzlos zu streichen:* Damit später niemand vergeblich nach einer Regel sucht, die es nie gab, und sie in dem Glauben nachbaut, sie sei vergessen worden. **Es fehlt nichts.**
+
+**Ein eingehendes `"bild"` bleibt trotzdem ein Fehler.** Kommt der Wert doch einmal an – aus einer von Hand bearbeiteten Datei oder einem Schnappschuss –, gilt `ungueltige_eingabe`; das steht in 9.5.2 (Validierung von `setzeBearbeitungsstand`) bereits verbindlich. Die Prüfung ist die Absicherung, nicht die Migration.
 
 **Invarianten:**
 
@@ -1883,13 +1908,13 @@ Listenelement {
 
 | Konstante | Wert | Bezug |
 |---|---|---|
-| Standard-Anzeigedauer | **10 s** | Vorbelegung von `Project.standardSegmentdauer` (9.11.3), Wert der Migration 1 → 2 (9.5.5) und **letzte Stufe** der Auflösungskette (9.8.4). **Nicht mehr** direkt die Vorbelegung eines Listenelements – dazwischen liegt seit v3.16 der Projektstandard |
+| Standard-Anzeigedauer | **10 s** | Vorbelegung von `Project.standardSegmentdauer` beim Anlegen eines Projekts (9.11.3) und **letzte Stufe** der Auflösungskette (9.8.4). **Nicht mehr** direkt die Vorbelegung eines Listenelements – dazwischen liegt seit v3.16 der Projektstandard |
 | Dauer-Bereich | **10–45 s** | Validierung in `setzeDauer` (9.5.2) **und** von `Aktion.standardDauer` sowie `Project.standardSegmentdauer` (9.8.4) – **aus dieser einen Konstante**. Der Bereich ist **fest**; konfigurierbar ist nur der Standardwert darin |
 | Sicherheitsabstand (**Vorbelegung**) | **96 / 54 px** | **Nur der Startwert der eingebauten Marke** – der geltende Wert steht in `Marke.sicherheit` und ist seit v3.4 **bearbeitbar** (FA-24). Wer zeichnet oder prüft, liest ihn aus der **Marke** (9.10.5, 9.11.2), **nie** aus dieser Konstante |
 | Format-Whitelist | MP4 / JPG, PNG, WebP | Dialog **und** Import-Prüfung (9.4.2) |
 | **`KONTRAST_SCHWELLE`** | **4,5 : 1** | Ab hier warnt der `marken-editor` (9.15.2, FA-24). WCAG AA für Fließtext. **Warnung, keine Sperre** – die Restverantwortung bleibt beim Nutzer (R-08). Gelesen von der Kontrast-Rechnung **und** vom Editor – **aus dieser einen Konstante** |
 | Sicherheitsabstand-**Bereich** | **0…480 / 0…270 px** | erlaubte Spanne beim Bearbeiten (9.15.2). Geprüft im **Main** (`bearbeiteMarke`, 9.15.1 – der Vertrag verlangt es, 9.1.1 Punkt 6) **und** im Editor (frühe Rückmeldung am Formular) – **aus dieser einen Konstante**, nie als zweites Zahlenpaar. Obergrenze = ein Viertel der Kante; **0 ist erlaubt** (warnen statt sperren, wie bei der Akzentfarbe – Risiko R-08) |
-| Aktuelle `schemaVersion` | **2** | seit v3.16 (vorher **1**; angehoben wegen `Project.standardSegmentdauer`). Wird von `öffneProjekt`, `schreibeProjekt` und der Migration gelesen (9.5.5) – **eine** Stelle, sonst laufen drei Kopien auseinander |
+| Aktuelle `schemaVersion` | **1** | **v3.16 hatte auf 2 angehoben; v3.17 nimmt das zurück** – es gibt noch keine Projekte, also auch keine Migration, und `Project.standardSegmentdauer` gehört von Anfang an zu Version 1 (9.5.5). Wird von `öffneProjekt` und `schreibeProjekt` gelesen – **eine** Stelle, sonst laufen die Kopien auseinander |
 
 ---
 
@@ -2414,6 +2439,18 @@ Identität und Rahmen sind stabil.
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.17 (15.08.2026), vom Auftraggeber entschieden – die beiden offenen Punkte aus v3.16 sind geschlossen (Anforderungsdokument v1.6):**
+>
+> 1. **`schemaVersion` bleibt bei 1 – die Erhöhung auf 2 ist ZURÜCKGENOMMEN** (9.5.5, Konstantentabelle 9.11.4, `Project` in 9.11.3, Kette 9.8.4). *Anlass:* v3.16 hatte die Zahl wegen des neuen Pflichtfelds `Project.standardSegmentdauer` angehoben und eine Migration 1 → 2 vorgesehen. Der Auftraggeber hat bestätigt, dass es **noch gar keine Projekte gibt** – die Migration wäre **Code für Daten, die es nirgends gibt: nie ausführbar, nie testbar**, und eine Regel, die niemand nachprüfen kann, ist schlimmer als keine. `standardSegmentdauer` gehört deshalb **von Anfang an zu `schemaVersion` 1**. *Was ausdrücklich BLEIBT:* das **Feld** `schemaVersion` samt seinem Zweck – trifft eine ältere App-Fassung später auf eine neuere `project.json`, **verweigert sie das Laden, statt zu raten**. Das wirkt ohne jede Migration, und künftige Erhöhungen bleiben möglich, sobald es echte Daten gibt.
+>
+> 2. **Der Schreibweg der Standard-Segmentdauer ist festgelegt: EINE Operation, alles oder nichts** (9.5.2). Neue Operation **`setzeStandardSegmentdauer(dauer, festzuschreibendeAktionen)`** → `Ergebnis<Projekt>` im `project-store`, eigener Kanal **`project:setzeStandardSegmentdauer`**. Sie bekommt den neuen Standardwert **und** die Liste der abgewählten Aktionen (Anforderungsdokument 4.4), schreibt unter dem **einen** D1-Schreib-Lock den Standard, schreibt für jede abgewählte Aktion den alten Wert fest und speichert **einmal**; scheitert etwas, ist **nichts** geändert. *Warum nicht n Einzelaufrufe:* Sie wären **nicht unteilbar** – scheitert der fünfte von zwölf, ist der Standard schon geändert und vier Aktionen sind festgeschrieben, ein Zustand, den niemand wollte und den **kein Rollback sauber zurücknimmt** (der Rückweg wären genau die von 9.13.2 verbotenen inversen Operationen). Sie wirkt auf das **geladene** Projekt (nur eines ist geladen, 9.5.1) – die Auswahlliste der Aktionen setzt das ohnehin voraus. **Noch offen** bleibt allein der **Bedienort** (`projekt-verwaltung` oder `composer`); Operation und Kanal sind davon unabhängig.
+>
+> 3. **Reichweite der Standarddauer: Aktionen ja, platzierte Listenelemente nein** (9.5.2, mitgezogen Anforderungsdokument 4.4). Ein Wechsel des Projektstandards wirkt auf die **Aktionen** – alle mit `standardDauer: null` folgen dem neuen Wert. **Bereits platzierte Listenelemente behalten ihre `dauer`**: Sie ist beim Platzieren **materialisiert** worden (die Kette 9.8.4 liefert nur den Startwert, danach entscheidet der Regler) und ändert sich **nicht rückwirkend**. Ein Nachziehen würde eine am Regler getroffene Nutzerwahl unsichtbar überschreiben.
+>
+> 4. **Das Ändern des Projektstandards ist EIN rücknehmbarer Schritt (FA-21)** – der Nutzer hat ihn als einen ausgelöst, und er verändert `aktionen`, also genau das, was der `Bearbeitungsstand` führt (9.13.2). **GEMELDET, nicht erfunden:** Der heutige `Bearbeitungsstand` trägt **nur** `aktionen` und `liste`. Ein Undo nähme damit die festgeschriebenen Aktions-Dauern zurück und ließe den **Projektstandard stehen** – ein Halbzustand. Damit der Schritt wirklich als **einer** rücknehmbar ist, müsste `standardSegmentdauer` ein **drittes Feld** des `Bearbeitungsstand` werden; das ist eine Änderung am geteilten Vertrag und steht als Meldung in 9.5.2, nicht als stille Ergänzung.
+>
+> 5. **Bestandsdaten mit `art: "bild"`: es gibt keine – und deshalb KEINE Migrationsregel** (9.11.3, 9.5.5). Der zweite offene Punkt aus v3.16 löst sich aus demselben Befund wie Punkt 1: Ohne ein einziges existierendes Projekt kann es keine `liste` mit `bild`-Elementen geben. *Warum das ausgeschrieben dasteht, statt den Punkt ersatzlos zu streichen:* damit später niemand vergeblich eine Regel sucht und sie in dem Glauben nachbaut, sie sei vergessen worden. **Ein eingehendes `"bild"` bleibt `ungueltige_eingabe`** – das steht in 9.5.2 bereits verbindlich und ist die Absicherung, nicht die Migration.
 >
 > **Nachgezogen in v3.16 (15.08.2026), vom Auftraggeber entschieden – zwei Anforderungsänderungen und eine Start-Regel (Anforderungsdokument v1.5):**
 >

@@ -4,7 +4,7 @@
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
 **Datum:** 15.08.2026
-**Version:** 1.5 (Entwurf – projektweite Standarddauer je Aktion überschreibbar; Bilder sind keine Listenelemente mehr)
+**Version:** 1.6 (Entwurf – Reichweite der Standarddauer geschärft: bereits platzierte Elemente bleiben unberührt)
 **Status:** In Abstimmung
 
 ---
@@ -212,6 +212,13 @@ hört damit auf, dem Projektstandard zu folgen, und bleibt auch bei der nächste
 bloßes „diesmal nicht" gibt es nicht: Es wäre beim nächsten Mal wieder dieselbe Frage, und der Nutzer hätte
 keine Möglichkeit, sie endgültig zu beantworten. Aktionen mit eigener Dauer erscheinen in der Liste gar
 nicht erst – sie sind nicht betroffen.
+
+**Wie weit die Änderung reicht (ab v1.6).** Ein geänderter Projektstandard wirkt auf die **Aktionen** –
+also auf den Startwert, den künftig platzierte Elemente bekommen. **Bereits in der Wiedergabeliste
+liegende Elemente behalten ihre eingestellte Dauer**, auch wenn sie seinerzeit vom Standard stammte. Der
+Grund ist derselbe wie oben: Die Dauer eines platzierten Elements ist eine am Regler getroffene, sichtbare
+Entscheidung; sie im Hintergrund nachzuziehen hieße, dem Nutzer eine Einstellung zu ändern, die er in der
+Liste vor sich sieht. Wer eine platzierte Dauer ändern will, zieht am Regler.
 
 
 ---
