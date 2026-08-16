@@ -4069,8 +4069,11 @@ Ausgang bei Fehler: `nicht_gefunden` (Referenz existiert weder als Asset noch al
 - „`fügeElementHinzu` | `referenz` (Asset- **oder** Aktions-ID) → `Ergebnis<Listenelement>`"
   (TK 9.5.2)
 - Belegung je `art` (TK 9.11.3, Tabelle, wörtlich in M1-03 zitiert).
-- „**`standardDauer` ist nur ein Default:** … Beim Platzieren wird `standardDauer` als Startwert
-  übernommen, danach überschreibbar." (TK 9.8.4)
+- „**`standardDauer` ist nur ein Default:** … Beim Platzieren wird der Startwert übernommen,
+  danach ist er überschreibbar." (TK 9.8.4) – der Startwert entsteht seit TK v3.16 über die Kette
+  `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10` (TK 9.8.4, 9.11.3); ein `null` in
+  `standardDauer` bedeutet seither **folgt dem Projektstandard** und nicht mehr den festen
+  10-Sekunden-Rückfall.
 - „Die Reihenfolge ist die Array-Reihenfolge von `liste` – es gibt kein separates `position`-Feld.
   Zwei Quellen für dieselbe Information würden unweigerlich auseinanderlaufen." (TK 9.11.3) – das
   neue Element wird ans Ende angehängt, kein `position`-Feld gesetzt.
@@ -4481,13 +4484,14 @@ Ausgang bei Fehler: `nicht_gefunden` (Element existiert nicht) oder `ungueltige_
 (Element ist ein Video, oder `dauer` liegt außerhalb des Bereichs).
 
 ## Verbindliche Invarianten (wörtlich – Verletzung = Issue nicht erfüllt)
-- „`setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s**
-  für Bild/Segment)" (TK 9.5.2)
+- „`setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s**;
+  nur bei `art: "segment"` – ein Video-Element hat keine eigene Dauer, es hat einen Trim)"
+  (TK 9.5.2)
 - „`video` | `Asset` (typ `video`) | `null` – die Dauer ergibt sich aus dem Trim | gesetzt | erlaubt"
   (TK 9.11.3, Belegungstabelle) – ein Video-Element hat **kein** setzbares `dauer`-Feld; ein Aufruf
   auf ein solches Element ist ein Fehler dieser Funktion, kein Sonderfall im Datenmodell.
-- „**Bild / Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s**
-  einstellbar (Standard 10 s). Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte
+- „**Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s**
+  einstellbar. Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte
   Maximaldauer; Kürzen und Verlängern laufen über denselben Regler." (Anforderungsdokument 4.4) –
   Video ist hier **ausdrücklich nicht genannt**; für Video regelt stattdessen die vorangehende
   Zeile (FA-14) den Trim innerhalb der Quelllänge (M1-32).
@@ -4909,7 +4913,8 @@ dem Nutzer erklärbarer Code – s. „Nicht selbst entscheiden").
 - „Das **aktive** Projekt lebt zur Laufzeit **im Speicher**." (TK 9.5.1) – das Ergebnis dieser
   Funktion ist genau das Objekt, das anschließend als aktives Projekt im Speicher landet; es muss
   daher der vollständigen `Project`-Form aus TK 9.11.3 entsprechen.
-- „Aktuelle `schemaVersion` | **1** | wird von `öffneProjekt`, `schreibeProjekt` und der Migration
+- „Aktuelle `schemaVersion` | **2** | seit v3.16 (vorher **1**; angehoben wegen
+  `Project.standardSegmentdauer`). Wird von `öffneProjekt`, `schreibeProjekt` und der Migration
   gelesen (9.5.5) – **eine** Stelle, sonst laufen drei Kopien auseinander" (TK 9.11.4) – die
   Konstante `AKTUELLE_SCHEMA_VERSION` liegt zentral in `src/shared/contracts/konstanten.ts` (M1-09)
   und wird von dieser Funktion importiert, nicht lokal neu definiert.

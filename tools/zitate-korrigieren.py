@@ -417,6 +417,122 @@ KORREKTUREN = [
      'der\n  Kommentar „Balken ist im Asset enthalten" (TK 9.11.2, zu `Marke.logo`) beschreibt nur die',
      'der\n  Kommentar „der dunkle Balken ist im Logo-Asset **enthalten** – es braucht keine eigene\n  Hintergrundzone" (TK 9.11.1; der frühere Kommentar „Balken ist im Asset enthalten" steht seit\n  v3.6 nicht mehr in 9.11.2 – `Marke.logo` lautet dort jetzt\n  `{ datei, herkunft, seitenverhaeltnis } | null`) beschreibt nur die',
      'TK v3.6: der Kommentar an Marke.logo lautet jetzt anders; die Aussage steht in 9.11.1.'),
+
+    # ===================== VIERTER DURCHGANG (A1 nach AD v1.5 / TK v3.16) ====
+    # Anlass sind DREI Vertragsaenderungen vom 15.08.2026:
+    #  (a) projektweite Standarddauer - Project.standardSegmentdauer, Kette
+    #      aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10; `null`
+    #      heisst ab v3.16 "folgt dem Projektstandard" statt "nimm 10 s";
+    #      dadurch faellt "(Standard 10 s)" im AD und die schemaVersion steigt
+    #      von 1 auf 2.
+    #  (b) die Elementart `bild` ist gestrichen (TK 9.11.3) - jede Stelle, die
+    #      Bild/Segment gemeinsam nennt oder das Bild eigens behandelt, ist
+    #      damit ueberholt; TWO Stellen (TK 9.9.2 "Bild:" und der Halbsatz
+    #      "Bild direkt als `<img>`" in 9.7.4) sind ERSATZLOS entfallen.
+    #  (c) freie Akzentfarbe (schon v3.4) - der Feldkommentar in 9.8.2.
+
+    # --- Kette (a): TK 9.8.4, Kurzfassung mit Auslassung -------------------
+    # in #41, #123, #227 wortgleich
+    ] + [
+    (nr,
+     '- „**`standardDauer` ist nur ein Default:** … Beim Platzieren wird `standardDauer` als Startwert\n  übernommen, danach überschreibbar." (TK 9.8.4)',
+     '- „**`standardDauer` ist nur ein Default:** … Beim Platzieren wird der Startwert übernommen,\n  danach ist er überschreibbar." (TK 9.8.4) – der Startwert entsteht seit TK v3.16 über die Kette\n  `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10` (TK 9.8.4, 9.11.3); ein `null` in\n  `standardDauer` bedeutet seither **folgt dem Projektstandard** und nicht mehr den festen\n  10-Sekunden-Rückfall.',
+     'TK v3.16: die Standarddauer gehoert dem PROJEKT; 9.8.4 nennt den Startwert ohne Feldnamen.')
+    for nr in (41, 123, 227)] + [
+
+    # --- Kette (a): TK 9.8.4, Langfassung ---------------------------------
+    (136,
+     '- „**`standardDauer` ist nur ein Default:** maßgeblich für den Render ist die\n  **Listenelement-Dauer** (composer, Anforderungsdokument 4.4). Beim Platzieren wird\n  `standardDauer` als Startwert übernommen, danach überschreibbar." (TK 9.8.4)',
+     '- „**`standardDauer` ist nur ein Default:** maßgeblich für den Render ist die\n  **Listenelement-Dauer** (composer, Anforderungsdokument 4.4). Beim Platzieren wird der Startwert\n  übernommen, danach ist er überschreibbar." (TK 9.8.4) – der Startwert entsteht seit TK v3.16 über\n  die Kette `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`; ein `null` in\n  `standardDauer` bedeutet seither **folgt dem Projektstandard** und nicht mehr den festen\n  10-Sekunden-Rückfall.',
+     'TK v3.16: die Standarddauer gehoert dem PROJEKT; 9.8.4 nennt den Startwert ohne Feldnamen.'),
+    (152,
+     'Default:** maßgeblich für den Render ist die **Listenelement-Dauer** (composer,\n   Anforderungsdokument 4.4). Beim Platzieren wird `standardDauer` als Startwert übernommen, danach\n   überschreibbar." (TK 9.8.4)',
+     'Default:** maßgeblich für den Render ist die **Listenelement-Dauer** (composer,\n   Anforderungsdokument 4.4). Beim Platzieren wird der Startwert übernommen, danach ist er\n   überschreibbar." (TK 9.8.4; der Startwert entsteht seit v3.16 über die Kette\n   `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`)',
+     'TK v3.16: die Standarddauer gehoert dem PROJEKT; 9.8.4 nennt den Startwert ohne Feldnamen.'),
+    (250,
+     '- „**`standardDauer` ist nur ein Default:** maßgeblich für den Render ist die\n  **Listenelement-Dauer** (composer, Anforderungsdokument 4.4). Beim Platzieren wird `standardDauer`\n  als Startwert übernommen, danach überschreibbar." (TK 9.8.4)',
+     '- „**`standardDauer` ist nur ein Default:** maßgeblich für den Render ist die\n  **Listenelement-Dauer** (composer, Anforderungsdokument 4.4). Beim Platzieren wird der Startwert\n  übernommen, danach ist er überschreibbar." (TK 9.8.4) – der Startwert entsteht seit TK v3.16 über\n  die Kette `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`; ein `null` in\n  `standardDauer` bedeutet seither **folgt dem Projektstandard** und nicht mehr den festen\n  10-Sekunden-Rückfall.',
+     'TK v3.16: die Standarddauer gehoert dem PROJEKT; 9.8.4 nennt den Startwert ohne Feldnamen.'),
+
+    # --- Kette (a)+(b): TK 9.5.2, setzeDauer ------------------------------
+    ] + [
+    (nr,
+     '„`setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s**\n  für Bild/Segment)" (TK 9.5.2)',
+     '„`setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s**;\n  nur bei `art: "segment"` – ein Video-Element hat keine eigene Dauer, es hat einen Trim)"\n  (TK 9.5.2)',
+     'TK v3.16: die Elementart `bild` ist gestrichen; 9.5.2 nennt nur noch art "segment".')
+    for nr in (45, 125)] + [
+
+    # --- Kette (a)+(b): AD 4.4, lange Fassung -----------------------------
+    ] + [
+    (nr,
+     '„**Bild / Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s**\n  einstellbar (Standard 10 s). Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte\n  Maximaldauer; Kürzen und Verlängern laufen über denselben Regler."',
+     '„**Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s**\n  einstellbar. Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte\n  Maximaldauer; Kürzen und Verlängern laufen über denselben Regler."',
+     'AD v1.5: Elementart Bild gestrichen; der Standardwert ist nicht mehr fest 10 s, sondern projektweit einstellbar (AD 4.4).')
+    for nr in (45, 125)] + [
+
+    # --- Kette (a)+(b): AD 4.4, kurze Fassungen ---------------------------
+    (249,
+     '„**Bild / Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s**\n  einstellbar (Standard 10 s)." (Anforderungsdokument 4.4)',
+     '„**Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s**\n  einstellbar." (Anforderungsdokument 4.4)',
+     'AD v1.5: Elementart Bild gestrichen; der Standardwert ist nicht mehr fest 10 s (AD 4.4).'),
+    (136,
+     'der Bereich steht aber im Anforderungsdokument 4.4: „die effektive Anzeigedauer ist frei im\nBereich **10–45 s** einstellbar (Standard 10 s)".',
+     'der Bereich steht aber im Anforderungsdokument 4.4: „die effektive Anzeigedauer ist frei im\nBereich **10–45 s** einstellbar". Der **Bereich** ist seit AD v1.5 / TK v3.16 weiterhin **fest**;\nkonfigurierbar ist nur der Standardwert darin (TK 9.11.4).',
+     'AD v1.5: der feste Standard von 10 s ist entfallen, der Bereich 10-45 s bleibt.'),
+
+    # --- Kette (a): TK 9.11.4, schemaVersion ------------------------------
+    (48,
+     '„Aktuelle `schemaVersion` | **1** | wird von `öffneProjekt`, `schreibeProjekt` und der Migration\n  gelesen (9.5.5) – **eine** Stelle, sonst laufen drei Kopien auseinander" (TK 9.11.4)',
+     '„Aktuelle `schemaVersion` | **2** | seit v3.16 (vorher **1**; angehoben wegen\n  `Project.standardSegmentdauer`). Wird von `öffneProjekt`, `schreibeProjekt` und der Migration\n  gelesen (9.5.5) – **eine** Stelle, sonst laufen drei Kopien auseinander" (TK 9.11.4)',
+     'TK v3.16: das Pflichtfeld Project.standardSegmentdauer hebt die schemaVersion von 1 auf 2 (Migration 1->2 in 9.5.5).'),
+
+    # --- Kette (b): TK 9.7.4, Thumbnails ohne den Bild-Halbsatz -----------
+    (128,
+     '> „**Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf\n> `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur\n> Vorschau), Bild direkt als `<img>`. Der Main bekommt **keine** Thumbnail-Pflicht (konsistent mit\n> Variante A)." (TK 9.7.4)',
+     '> „**Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf\n> `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur\n> Vorschau). Der Main bekommt **keine** Thumbnail-Pflicht (konsistent mit Variante A)." (TK 9.7.4)\n>\n> **Achtung:** Der Halbsatz zum Bild ist mit der Streichung der Elementart `bild` (TK v3.16,\n> 9.11.3) **ersatzlos entfallen**. Was unten über `art: \'bild\'` steht, ist damit **vor dem Bauen\n> zu klären**.',
+     'TK v3.16: Elementart `bild` gestrichen - 9.7.4 nennt das Bild nicht mehr.'),
+    ] + [
+    (nr,
+     '- „**Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf\n  `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur\n  Vorschau), Bild direkt als `<img>`. Der Main bekommt **keine** Thumbnail-Pflicht (konsistent mit\n  Variante A)." (TK 9.7.4)',
+     '- „**Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf\n  `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur\n  Vorschau). Der Main bekommt **keine** Thumbnail-Pflicht (konsistent mit Variante A)." (TK 9.7.4)\n  – der Halbsatz zum Bild ist mit der Streichung der Elementart `bild` (TK v3.16, 9.11.3)\n  ersatzlos entfallen.',
+     'TK v3.16: Elementart `bild` gestrichen - 9.7.4 nennt das Bild nicht mehr.')
+    for nr in (128, 154, 227)] + [
+
+    # --- Kette (b): TK 9.7.5, Reparatur-Tabelle ---------------------------
+    (131,
+     '> | 1 | Listenelement → **Asset fehlt** (Video/Bild) | Listenelement |',
+     '> | 1 | Listenelement → **Asset fehlt** (Video) | Listenelement |',
+     'TK v3.16: die Elementart `bild` ist gestrichen; Fall 1 kennt nur noch Video.'),
+
+    # --- Kette (b): TK 9.9.2, der Bild-Punkt ist ERSATZLOS entfallen ------
+    (242,
+     '- „**Bild:** `<img>` mit `object-fit: contain` auf Schwarz – **dieselbe** Letterbox/Pillarbox wie das\n  `pad` im Render." (TK 9.9.2)',
+     '- **ENTFALLEN – dieser Punkt steht seit TK v3.16 nicht mehr in 9.9.2.** Mit der Streichung der\n  Elementart `bild` (9.11.3) kennt die Vorschau nur noch **Aktions-Segment** und **Video**; einen\n  Bild-Fall gibt es nicht mehr. **Vor dem Bauen klären**, ob die Bühne weiterhin einen Bild-Zweig\n  bekommen soll.',
+     'TK v3.16: der Punkt "Bild:" ist mit der Elementart `bild` ersatzlos aus 9.9.2 verschwunden - Ersetzen unmoeglich.'),
+    (215,
+     '- „**Bild:** `<img>` mit `object-fit: contain` auf Schwarz – **dieselbe** Letterbox/Pillarbox wie\n  das `pad` im Render." (TK 9.9.2) – **die Kernregel dieses Issues**, wörtlich umzusetzen:\n  `object-fit: contain`, Hintergrund schwarz.',
+     '- **ENTFALLEN – dieser Punkt steht seit TK v3.16 nicht mehr in 9.9.2.** Er war **die Kernregel\n  dieses Issues**. Mit der Streichung der Elementart `bild` (9.11.3) kennt die Vorschau nur noch\n  **Aktions-Segment** und **Video**; für ein Bild-Bauteil gibt es im heutigen Vertrag keine\n  Grundlage mehr. **STOPP – vor dem Bauen klären**, ob dieses Issue noch gebaut wird; ein Ersatz\n  darf hier nicht erfunden werden.',
+     'TK v3.16: der Punkt "Bild:" ist mit der Elementart `bild` ersatzlos aus 9.9.2 verschwunden - Ersetzen unmoeglich, das Issue steht in Frage.'),
+
+    # --- Kette (b): der Halbsatz „Bild direkt als `<img>`" ---------------
+    (227,
+     '4. **Bilder werden direkt als `<img src="media://…">` gezeigt.** *Begründung:* TK 9.7.4 schreibt\n   genau das vor („Bild direkt als `<img>`"), und TK 9.5.7 stellt die URL bereit: „Der Renderer\n   verwendet diese URLs direkt in `<video>`/`<img>`."',
+     '4. **Bilder werden direkt als `<img src="media://…">` gezeigt.** *Begründung:* TK 9.7.4 schrieb\n   das bis v3.15 ausdrücklich vor; mit der Streichung der Elementart `bild` (TK v3.16, 9.11.3) ist\n   der Halbsatz dort **entfallen** – **vor dem Bauen klären**, ob die Bibliothek überhaupt noch\n   Bilder anbietet. TK 9.5.7 stellt die URL unverändert bereit: „Der Renderer\n   verwendet diese URLs direkt in `<video>`/`<img>`."',
+     'TK v3.16: der Halbsatz "Bild direkt als <img>" steht nicht mehr in 9.7.4 (Elementart `bild` gestrichen).'),
+    (258,
+     '- „**Thumbnails renderer-seitig, ohne ffmpeg:**" (TK 9.7.4) mit „Bild direkt als `<img>`."\n  (TK 9.7.4) – der dritte Aufrufer.',
+     '- „**Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf\n  `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur\n  Vorschau)." (TK 9.7.4) – der dritte Aufrufer. Der frühere Halbsatz zum Bild ist mit der\n  Streichung der Elementart `bild` (TK v3.16, 9.11.3) entfallen.',
+     'TK v3.16: der Halbsatz "Bild direkt als <img>" steht nicht mehr in 9.7.4.'),
+    (258,
+     '**9.7.4**\n  (Thumbnails renderer-seitig, Bild direkt als `<img>`)',
+     '**9.7.4**\n  (Thumbnails renderer-seitig, ohne ffmpeg)',
+     'TK v3.16: dieselbe Stelle in der Vertrags-Kopfzeile - das Bild kommt in 9.7.4 nicht mehr vor.'),
+
+    # --- Kette (c): TK 9.8.2, Feldkommentare im Aktion-Datensatz ----------
+    (136,
+     '    standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4)\n    vorlagenId:   string          // gewählte Vorlage (eingebaut oder eigene, FA-13)\n    akzentfarbe:  string | null   // aus der Markenpalette (feste Auswahl, v1); ERSETZT beim Zeichnen\n                                  //   die Akzent-Rollen der Vorlage (9.10.9). null = Markenwert gilt',
+     '    standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4).\n                                  //   null = folgt der Projekt-Standarddauer (Project.standardSegmentdauer)\n    vorlagenId:   string          // gewählte Vorlage (eingebaut oder eigene, FA-13)\n    markeId:      string          // GENAU EINE Marke (FA-23, 9.15.1). Pflicht; vorbelegt mit\n                                  //   Project.standardMarkeId. Bestimmt Logo, Schriften und Farb-Rollen\n    akzentfarbe:  string | null   // FREIER Hex-Wert (FA-24; bis v3.3 nur Auswahl aus der Palette).\n                                  //   ERSETZT beim Zeichnen die Akzent-Rollen der Vorlage (9.10.9).\n                                  //   null = Markenwert gilt',
+     'TK v3.4/v3.16: akzentfarbe ist ein freier Hex-Wert, markeId ist neu, und standardDauer null heisst "folgt dem Projektstandard".'),
 ]
 
 # Die lokalen Quelldateien tragen ab M2 Kuerzel (M7-36) statt klickbarer
@@ -445,6 +561,11 @@ LOKAL = {59: "m2/M2-07", 68: "m2/M2-16", 107: "m4/M4-13", 153: "m5/M5-34",
          197: "m7/M7-04", 211: "m7/M7-18", 218: "m7/M7-25", 221: "m7/M7-28",
          224: "m7/M7-31", 250: "m7/M7-57",
          280: "m8/M8-06",
+         # vierter Durchgang (AD v1.5 / TK v3.16)
+         123: "m5/M5-04", 125: "m5/M5-06", 128: "m5/M5-09", 131: "m5/M5-12",
+         136: "m5/M5-17", 154: "m5/M5-35",
+         215: "m7/M7-22", 227: "m7/M7-34", 242: "m7/M7-49", 249: "m7/M7-56",
+         258: "m7/M7-67",
          # Diese drei Issue-Bodies haben in diesem Arbeitsbaum KEINE lokale
          # Quelldatei mehr, in der die betroffene Stelle vorkommt: #12 und #22
          # sind seit dem Anlegen ueber den Draft hinausgewachsen, #265 stammt
@@ -459,7 +580,9 @@ LOKAL = {59: "m2/M2-07", 68: "m2/M2-16", 107: "m4/M4-13", 153: "m5/M5-34",
 SAMMELDATEI = {32: "issues-draft", 37: "issues-draft", 49: "issues-draft",
                # dritter Durchgang: diese Stellen stehen dort woertlich
                8: "issues-draft", 20: "issues-draft", 29: "issues-draft",
-               33: "issues-draft", 52: "issues-draft"}
+               33: "issues-draft", 52: "issues-draft",
+               # vierter Durchgang: M1-29/M1-33/M1-36
+               41: "issues-draft", 45: "issues-draft", 48: "issues-draft"}
 
 
 def main():
