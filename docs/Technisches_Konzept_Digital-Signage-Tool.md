@@ -1,17 +1,17 @@
 # Technisches Konzept – Digital-Signage-Tool
 
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
-**Bezug:** Anforderungsdokument v1.4 (das „Was")
+**Bezug:** Anforderungsdokument v1.5 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.15 (HLD vollständig, geprüft; alle im Code geführten Fehlercodes dokumentiert)
-**Datum:** 14.08.2026
+**Version:** 3.16 (projektweite Standard-Segmentdauer, `schemaVersion` 2; Elementart `bild` gestrichen)
+**Datum:** 15.08.2026
 **Status:** In Planung
 
 ---
 
 ## 1. Zweck und Einordnung
 
-Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.4** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
+Dieses Dokument beschreibt die technische Umsetzung. Die fachlichen Anforderungen (Funktionen, Regeln, Ausgabe-Profil) stehen im **Anforderungsdokument v1.5** und werden hier nicht wiederholt, sondern referenziert. Es ist ein lebendes Planungsdokument: Datenbestand und Datenfluss sind festgelegt, das High-Level-Design (Module + Schnittstellen) ist in Abschnitt 9 ausgearbeitet (Stand und offene Punkte: siehe Schluss von Abschnitt 9).
 
 ## 2. Architektur-Überblick
 
@@ -45,10 +45,10 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 
 **A — Persistente Fachdaten** (Projektmaterial)
 
-- **Projekt** – ID, Name, Erstell-/Änderungsdatum, geordnete Elementliste. *(FA-15, FA-10)*
+- **Projekt** – ID, Name, Erstell-/Änderungsdatum, geordnete Elementliste, **projektweite Standard-Segmentdauer** (Startwert neuer Aktions-Segmente, 9.8.4). *(FA-15, FA-10, FA-06)*
 - **Aktion/Produkt** – ID, Titel (Pflicht), Beschreibung?, Preis?, Bildreferenz?, CTA?, Anzeigedauer?, Vorlagen-ID, Akzentfarbe? (ersetzt die Akzent-Rollen der Vorlage, 9.10.9). *(FA-02, 4.1)*
 - **Medium (Asset)** – ID, Typ (video|image), Dateiname, Maße, Dauer (Video, via ffprobe), Importdatum. *(FA-01)*
-- **Listenelement** – ID, Art (Video|Bild|Aktions-Segment), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`. Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
+- **Listenelement** – ID, Art (Video|Aktions-Segment – **`bild` ist ab v3.16 gestrichen**, 9.11.3), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`. Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
 - **Vorlage** – datengetriebene Layout-Definition: `art` (vollflächig | Split-Band | Einblendung), `höhe` (bei Bändern), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Vollbild", „Split", „Band-Standard". **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
 - **Ausführungs-Protokoll / Ausgabe-Historie** – ID, Projekt-ID, Datum, Pfad, Dauer (nur bei Render, sonst leer – 9.3), Größe. Geführt von der Auftragsverwaltung als Speicher **Q3** (append-only, dauerhaft), nicht mehr in D3. *(Abschnitt 7, 9.3)*
 
@@ -311,7 +311,6 @@ Das ist die Trennlinie für die spätere Arbeitsteilung: „Vorschau" und „Ren
 Die Vorschau läuft vollständig im Renderer, ohne `ffmpeg`. Eine 16:9-Bühne (1920×1080 herunterskaliert) spielt die Liste der Reihe nach ab:
 
 - **Aktions-Segmente** zeigen exakt dasselbe Canvas-Bild, das auch der finale Render verwendet → pixelgleich.
-- **Bilder** werden gleich eingepasst (`object-fit: contain` auf Schwarz = dieselbe Letterbox/Pillarbox wie das `pad` im Render).
 - **Videos** laufen nativ als `<video>` von Trim-Start bis -Ende.
 - **Medienzugriff** erfolgt ausschließlich über das `media://`-Protokoll (Pfad-Autorität `project-store`, 9.5.7) – der Renderer sieht nie absolute Pfade. Vertrag des Players: 9.9.
 - Transport: Play/Pause, Zeitleiste, Markierung des aktuellen Elements, Gesamtdauer.
@@ -423,15 +422,16 @@ renderReel(request: RenderRequest) → RenderResult      // + Fortschritts-Ereig
 
 Der Ausgabe-**Pfad** ist **nicht** Teil der Anfrage – nur der **Name**: Der Main setzt ihn über die Pfad-Autorität (9.5.7) zu `projects/<projektId>/output/<ausgabeName>.mp4` zusammen. Der Renderer kennt **keine** absoluten Pfade. Der Name ist **Nutzereingabe** und daher zu validieren (9.2.6). Die `renderId` wird **vom Renderer vergeben**, sodass er verspätete Ereignisse eines alten Laufs sicher erkennen kann (9.2.7). Jedes `RenderItem` trägt eine `id` zur eindeutigen **Fehlerzuordnung**; die Reihenfolge ergibt sich aus der Listenposition, nicht aus einem separaten Feld.
 
-#### 9.2.2 `RenderItem` – drei Varianten (diskriminiert über `art`)
+#### 9.2.2 `RenderItem` – zwei Varianten (diskriminiert über `art`)
 
 | `art` | Nutzdaten | Herkunft der Pixel | über IPC? |
 |---|---|---|---|
 | `"video"` | `medienRef` (relativer Pfad in `media/`), `trimStart`, `trimEnde` (Sekunden; **framegenauer** Schnitt s. 9.2.6), optional `einblendung` (**`art`**, **`höhe`** und die Band-Abschnitte als PNG-Puffer + Dauern, s. u. und 9.2.8) | Datei in D2; Band-Pixel vom Renderer | **teilweise** – Video per Pfad, Band-PNGs über IPC |
-| `"bild"` | `medienRef` (relativer Pfad), `dauer` | Datei in D2 | **nein** – Main liest per Pfad |
 | `"segment"` | `png` (Binärpuffer), `dauer` | Renderer via `template-canvas` | **ja** – einziger Pixel-Transport |
 
 Gemeinsam je Item: `id` (Rückverfolgung/Fehlerzuordnung). Bei `"segment"` werden **keine** Aktions-/Vorlagendaten mitgeschickt – die Pixel sind bereits final; das ist der Kern von Variante A.
+
+**Die dritte Variante `"bild"` ist mit v3.16 entfallen.** Sie trug `medienRef` + `dauer` und wurde vom Main per Pfad gelesen. Sie fällt **nicht** eigenständig weg, sondern als Folge: `RenderItem.art` wird aus `Listenelement.art` gebildet, und dort gibt es die Art `bild` nicht mehr (9.11.3). Ein `"bild"`-Item könnte also gar nicht mehr entstehen. Ein Zweig, den kein Aufrufer erreicht, ist im Vertrag kein Reservepolster, sondern eine Einladung: Der Nächste, der ihn liest, hält den Weg „Bild direkt in die Liste" für vorgesehen und baut die Oberfläche dazu. **Nicht betroffen ist `Asset.typ: "video" | "bild"`** (9.4.4) – Bilder werden weiterhin importiert und verwaltet; sie erreichen den Render ausschließlich als **Motiv einer Aktion** (`Aktion.bildRef`, 9.8.2), also innerhalb eines `"segment"`-PNG.
 
 **Die `einblendung` eines `"video"`-Items trägt die Geometrie mit:**
 
@@ -543,7 +543,7 @@ Diese Zusicherungen sind Teil des Vertrags und dürfen von keiner lokalen Entsch
 - **`-c copy` setzt Uniformität voraus:** Alle `seg_*.mp4` müssen **identische** Parameter tragen (Codec, Profil, Auflösung, `fps`, Zeitbasis, Pixelformat, Streamlayout). Deshalb die vorherige Normalisierung; **kein** concat auf Rohdateien.
 - **Einheitliche stille Tonspur:** Jeder Zwischenclip erhält **dieselbe** stille AAC-Spur (9.2.4), damit das Streamlayout über alle Segmente gleich bleibt (Voraussetzung für verlustfreies `-c copy`). Eine Quelle **mit** Ton wird verworfen und durch die stille Spur **ersetzt**; eine Quelle **ohne** Ton bekommt sie hinzugefügt. Entscheidend ist nicht, *ob* Ton da ist, sondern dass **alle Segmente identisch** aufgebaut sind.
 - **Jedes Segment beginnt mit einem Keyframe (IDR), GOP geschlossen:** ohne Keyframe am Segmentanfang bricht der `concat`-Schritt mit `-c copy`. Das ist keine Optimierung, sondern **Bedingung** dafür, dass die verlustfreie Verkettung überhaupt funktioniert.
-- **Standbild → Clip:** `"segment"`- und `"bild"`-Items werden als Standbild über ihre `dauer` bei 30 fps im Profil ausgehalten; harter Schnitt an den Grenzen.
+- **Standbild → Clip:** `"segment"`-Items werden als Standbild über ihre `dauer` bei 30 fps im Profil ausgehalten; harter Schnitt an den Grenzen.
 - **Video-Trim ist framegenau (30 fps):** Bei `"video"`-Items wird der Ausschnitt `[trimStart, trimEnde)` **framegenau** geschnitten – über **decode-basiertes (akkurates) Seeking**, nicht das schnelle Keyframe-Seeking (zulässig, weil ohnehin neu codiert wird; ein keyframe-approximativer Schnitt läge je nach GOP-Länge um bis zu Sekunden daneben). Beide Grenzen werden auf **dasselbe** 30-fps-Raster gerundet: `startFrame = round(trimStart × 30)`, `endFrame = round(trimEnde × 30)`; behalten werden die Frames `[startFrame, endFrame)`. Die effektive Elementdauer ist damit `(endFrame − startFrame) / 30` – **nicht** die rohe Sekundendifferenz. Der Zwischenclip ist **CFR** (konstante Bildrate 30 fps), damit die Frame-Anzahl deterministisch bleibt. Dieselbe Rundungsregel gilt ausnahmslos (kein `floor` an einer, `round` an anderer Stelle) – sonst weicht die Dauer um einen Frame ab.
 - **`gesamtdauer` zählt gerundete Frame-Dauern:** Die im `RenderResult` gemeldete `gesamtdauer` summiert die **gerundeten** Elementdauern (Frame-Anzahl / 30), nicht die rohen Trim-Sekunden – sonst driften die angezeigte Gesamtlänge (5.3, 30-Minuten-Warnung) und die tatsächliche Länge der Ausgabedatei auseinander.
 - **Vorschau-Abgleich:** Die Vorschau (P5, natives `<video>`) kann um bis zu einen Frame anders schneiden (Browser-Seek); **maßgeblich ist die gerenderte Ausgabedatei** (Abschnitt 8). Die hier definierte Render-Regel ist verbindlich und deterministisch.
@@ -626,7 +626,7 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 
 **Invarianten (bindend):**
 
-- Parallele Bänder gibt es **nur bei `"video"`-Items**; `"bild"` und `"segment"` sind bereits vollflächige Standbilder.
+- Parallele Bänder gibt es **nur bei `"video"`-Items**; `"segment"`-Items sind bereits vollflächige Standbilder.
 - **Deckkraft folgt der Vorlagenart:** `split`-Bänder sind **deckend** (echter Split, keine Überdeckung); `einblendung`-Bänder tragen **Alpha** (sie überlagern das Video). `template-canvas` liefert beide in **1920 × H** (9.10.2).
 - **Die Bandhöhe `H` stammt ausschließlich aus der Vorlage** – sie ist **kein** Wert am Listenelement und **nicht** pro Element überschreibbar. So bleibt das Erscheinungsbild an die Vorlage gebunden. Dass `H` (und `art`) im `RenderRequest` **mitreisen** (9.2.2), ist **keine** zweite Quelle: Es ist der beim Einreihen eingefrorene Stand **derselben** Vorlage (9.3.5) – dieselbe Beziehung wie zwischen Aktion und fertigem Segment-PNG.
 - **Die Bandhöhe `H` muss *gerade* sein.** Das Ausgabe-Profil schreibt `yuv420p` vor (9.2.4); dieses Pixelformat tastet die Farbe in **beiden** Richtungen um den Faktor zwei unter und verlangt deshalb **gerade Höhen und gerade Versätze**. Bei ungeradem `H` bricht **jede** der beiden Kompositionsarten: bei `split` ist die Videofläche `1080 − H` ungerade, bei `einblendung` liegt das Overlay bei `y = 1080 − H` auf einer **ungeraden** Zeile. Durchgesetzt wird das **an der Quelle**, wo die Höhe entsteht: der `vorlagen-editor` sperrt eine ungerade Bandhöhe sofort (9.12.2), der `vorlagen-store` weist sie ab (9.12.1) – sonst erführe der Nutzer den Fehler erst beim Render, nachdem er die Vorlage fertig gebaut hat. Der `render-service` prüft sie **zusätzlich** und meldet `ungueltiges_element` (9.2.3), damit ein Auftrag aus einem älteren Bestand nicht mitten im Lauf scheitert. Die eingebaute Band-Vorlage erfüllt die Regel (`höhe: 162`, 9.11.1).
@@ -1022,9 +1022,9 @@ Rolle, die er bei `setzeStandardMarke` spielt (s. u.).
 | `entferneElement` | `elementId` → `Ergebnis<void>` |
 | `ordneNeu` | `reihenfolge` (elementIds) → `Ergebnis<void>` |
 | `setzeTrim` | `elementId`, `trimStart`, `trimEnde` → `Ergebnis<Listenelement>` (validiert `0 ≤ start < ende ≤ Videodauer`) |
-| `setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s** für Bild/Segment) |
+| `setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s**; nur bei `art: "segment"` – ein Video-Element hat keine eigene Dauer, es hat einen Trim) |
 | `setzeEinblendung` | `elementId`, `einblendung` (`Einblendung` **oder** `null`) → `Ergebnis<Listenelement>` – **nur bei `art: "video"`**; setzt Band-Vorlage und Abschnittsfolge in einem Zug (FA-20, 9.2.8). Die Bandhöhe kommt **ausschließlich** aus der Vorlage und ist kein Wert am Listenelement. Wird das Band leer, ist `einblendung = null`; das Videoelement **bleibt** (9.5.3) |
-| `setzeElementReferenz` | `elementId`, `referenz` → `Ergebnis<Listenelement>` – setzt die Referenz eines bestehenden Elements um, **ohne** seine Position und seine `id` zu verlieren. Der Zielbestand folgt der `art`: `video`/`bild` → Asset in `Project.assets` mit passendem `typ`, `segment` → Aktion in `Project.aktionen`. Bei `video` werden `trimStart`/`trimEnde` auf `null` zurückgesetzt, weil sie sich auf die alte Quelllänge bezogen. Trägt die Fix-Optionen „neu verknüpfen/importieren" und „durch ein anderes ersetzen" des Reparatur-Modus (FA-19, 9.7.5) |
+| `setzeElementReferenz` | `elementId`, `referenz` → `Ergebnis<Listenelement>` – setzt die Referenz eines bestehenden Elements um, **ohne** seine Position und seine `id` zu verlieren. Der Zielbestand folgt der `art`: `video` → Asset in `Project.assets` mit `typ: "video"`, `segment` → Aktion in `Project.aktionen`. Bei `video` werden `trimStart`/`trimEnde` auf `null` zurückgesetzt, weil sie sich auf die alte Quelllänge bezogen. Trägt die Fix-Optionen „neu verknüpfen/importieren" und „durch ein anderes ersetzen" des Reparatur-Modus (FA-19, 9.7.5) |
 
 **Projekt-Standardmarke (FA-23):**
 
@@ -1062,6 +1062,33 @@ nicht beseitigen.
 - **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `project:setzeStandardMarke`. Ohne Anmeldung im `ipc-gateway`
   bliebe sie eine Main-Funktion ohne Aufrufer.
 
+**Projekt-Standarddauer (FA-06, v3.16):**
+
+> **OFFEN (v3.16) – der Schreibweg für `Project.standardSegmentdauer` ist noch nicht festgelegt.**
+> Das Feld selbst ist entschieden (9.11.3), seine Wirkung ebenfalls (Auflösungskette 9.8.4, Rückfrage
+> beim Ändern: Anforderungsdokument 4.4). **Nicht** entschieden ist, wie es gesetzt wird – und hier wird
+> nichts erfunden, weil jede dieser Fragen die Schnittstelle festlegt:
+>
+> 1. **Name und Signatur der Operation** (naheliegendes Vorbild: `setzeStandardMarke`, s. o.) samt eigenem
+>    IPC-Kanal nach 9.1.1 Punkt 4 – ohne Anmeldung im `ipc-gateway` bliebe sie eine Main-Funktion ohne
+>    Aufrufer, die Lückenklasse, die dieses Projekt in **jedem** Meilenstein seit M1 getroffen hat.
+> 2. **Wirkt sie auch auf ein nicht geladenes Projekt?** Bei `setzeStandardMarke` ist das ausdrücklich so
+>    (der Ausweg aus der Lösch-Sperre verlangt es). Hier spricht das Gegenteil dafür: Die Rückfrage aus
+>    Anforderungsdokument 4.4 zeigt eine **Liste der betroffenen Aktionen**, und Aktionen liegen im
+>    Projekt – zeigen ließe sie sich nur für das **geladene** (9.5.1).
+> 3. **Wie werden die abgewählten Aktionen festgeschrieben?** Ein Aufruf, der mehrere `Aktion.standardDauer`
+>    in einem Zug setzt, oder *n* × `bearbeiteAktion`. Die Frage ist nicht kosmetisch: *n* einzelne Aufrufe
+>    sind **nicht** unteilbar – bricht der Vorgang in der Mitte ab, folgt ein Teil der Aktionen dem neuen
+>    Standard und der andere nicht, ohne dass jemand es merkt.
+> 4. **Gehört der Wert in den `Bearbeitungsstand` und damit in Undo?** (9.13.2). `letzterAusgabeName`,
+>    `assets` und `standardMarkeId` gehören ausdrücklich **nicht** dazu; ob das Festschreiben an *n*
+>    Aktionen – das sehr wohl `aktionen` verändert – in einem Schritt rückgängig zu machen sein muss, ist
+>    damit offen.
+> 5. **Wo in der Oberfläche sitzt die Einstellung** – `projekt-verwaltung` (9.14.3, wie die Standardmarke)
+>    oder `composer` (9.7, wo die Dauern bedient werden).
+>
+> Zu entscheiden, **bevor** Issues dazu geschrieben werden.
+
 **Rückgängig/Wiederherstellen (FA-21):**
 
 | Operation | Eingang → Ausgang |
@@ -1084,7 +1111,7 @@ Ohne diese Operation wäre FA-21 – ein **Muss** – für genau die Fälle uner
 
 **Ausdrücklich NICHT enthalten: `assets` und `letzterAusgabeName`.** Der `Bearbeitungsstand` trägt **nur** `aktionen` und `liste`. *Begründung:* Beide anderen Felder werden von **Aufträgen** verändert – `assets` vom Import und vom Löschen (9.4.5/9.4.6), `letzterAusgabeName` vom Render (FA-22) –, und Aufträge sind nach 9.13.3 **grundsätzlich nicht undo-fähig**. Zöge ein Undo sie mit, verschwände ein soeben importiertes Medium aus dem Datenbestand, **während seine Datei weiter auf der Platte liegt**: eine Waise, die der Reconcile beim nächsten Start stillschweigend löscht (9.4.7) – Datenverlust durch einen Knopf, der Datenverlust verhindern soll. Die Regel ergänzt 9.13.3 (ein D1-verändernder Auftrag **leert** die Historie) an ihrer Flanke: Jene verhindert einen **veralteten** Schnappschuss, diese begrenzt seinen **Umfang**.
 
-**Volle Validierung – der Schnappschuss ist keine Vertrauensfrage (bindend).** Die Operation prüft den eingehenden Stand **vollständig**, so als käme er von außen (9.1.1 Punkt 6): **jede** Referenz muss auflösbar sein (`art: "video"`/`"bild"` → ein `Asset` in `Project.assets` mit passendem `typ`; `art: "segment"` → eine `Aktion` in `stand.aktionen`; jede `einblendung.abschnitte[].aktionRef` ebenso; jede `bandVorlageId` eine vorhandene Vorlage), **jede** Dauer muss im zulässigen Bereich liegen (10–45 s bei Bild/Segment, Trim `0 ≤ start < ende ≤ Videodauer`), **jede** `art` muss gültig sein, und die `id`s müssen eindeutig sein. Scheitert eine Prüfung, gilt `ungueltige_eingabe` **ohne jede Wirkung** – ein halb eingespielter Schnappschuss wäre schlimmer als ein nicht ausgeführtes Undo. *Warum trotz „der Stand kam ja aus unserem eigenen Speicher":* Zwischen Schnappschuss und Undo kann ein Auftrag `assets` verändert haben; die Historie wird zwar geleert (9.13.3), aber die Prüfung ist die **strukturelle** Absicherung dieser Zusage statt bloßer Disziplin. Ein Undo darf D1 unter **keinen** Umständen in einen Zustand bringen, den der Render später mit `medium_fehlt` quittiert.
+**Volle Validierung – der Schnappschuss ist keine Vertrauensfrage (bindend).** Die Operation prüft den eingehenden Stand **vollständig**, so als käme er von außen (9.1.1 Punkt 6): **jede** Referenz muss auflösbar sein (`art: "video"` → ein `Asset` in `Project.assets` mit `typ: "video"`; `art: "segment"` → eine `Aktion` in `stand.aktionen`; jede `einblendung.abschnitte[].aktionRef` ebenso; jede `bandVorlageId` eine vorhandene Vorlage), **jede** Dauer muss im zulässigen Bereich liegen (10–45 s bei Segmenten, Trim `0 ≤ start < ende ≤ Videodauer`), **jede** `art` muss gültig sein – seit v3.16 also `"video"` oder `"segment"`, ein eingehendes `"bild"` ist `ungueltige_eingabe` –, und die `id`s müssen eindeutig sein. Scheitert eine Prüfung, gilt `ungueltige_eingabe` **ohne jede Wirkung** – ein halb eingespielter Schnappschuss wäre schlimmer als ein nicht ausgeführtes Undo. *Warum trotz „der Stand kam ja aus unserem eigenen Speicher":* Zwischen Schnappschuss und Undo kann ein Auftrag `assets` verändert haben; die Historie wird zwar geleert (9.13.3), aber die Prüfung ist die **strukturelle** Absicherung dieser Zusage statt bloßer Disziplin. Ein Undo darf D1 unter **keinen** Umständen in einen Zustand bringen, den der Render später mit `medium_fehlt` quittiert.
 
 **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `project:setzeBearbeitungsstand`. Undo/Redo läuft im Renderer (`composer`, `action-editor`), die Operation im Main – ohne Anmeldung im `ipc-gateway` bliebe sie eine Main-Funktion ohne Aufrufer. Dasselbe gilt für `öffneProjektordner` (s. o.); **beide** Operationen dieser Fassung brauchen je einen Kanal.
 
@@ -1165,6 +1192,13 @@ trotzdem um**, als Schranke für den Tag, an dem eine dieser Operationen ihre Co
   4. **Daneben ein ausdrücklich benannter Ausweg: „Trotzdem schließen und Änderungen verwerfen."** Er ist als Verlust **benannt**, nicht als „Abbrechen" getarnt.
 
   *Begründung:* Ein **stilles** Schließen widerspräche der zugesagten Verlustfreiheit (FA-15, NFA-02) – der Nutzer hätte die App normal beendet und fände beim nächsten Start einen alten Stand vor, ohne je erfahren zu haben, dass etwas fehlt. Ein **bloßes Blockieren ohne Ausweg** wäre das andere Extrem: ein Programm, das sich nicht mehr schließen lässt, weil eine Datei nicht schreibbar ist. Der eigentliche Wert liegt im **Wiederholen**: Die beiden häufigsten Ursachen – volle Platte, abgezogener USB-Datenträger mit dem Datenort – kann der Nutzer in **einer Minute** beheben, und dann muss er **nichts** verlieren. Genau dafür ist Punkt 4 auch nur der letzte Ausweg und nie die vorausgewählte Antwort.
+- **Ist der Datenort beim START nicht beschreibbar, startet die App nicht durch (bindend, v3.16).** Der vorige Punkt regelt das **Beenden**; für den **Start** fehlte die Regel. Stellt der Main beim Hochfahren fest, dass der Datenort (der App-Ordner mit `projects/`) **nicht beschreibbar** ist, zeigt er einen Dialog über **`dialog.showMessageBoxSync`** – also **vor** dem Fenster, denn zu diesem Zeitpunkt gibt es noch keine Oberfläche, die eine Meldung tragen könnte – mit genau **zwei** Antworten:
+  1. **„Erneut versuchen"** – die Prüfung läuft **wirklich noch einmal**, gegen das Dateisystem. Kein gemerktes Ergebnis, keine bloße Wiederanzeige desselben Dialogs: Der Nutzer soll in der Zwischenzeit den Datenträger einstecken oder Platz schaffen können, und genau das muss der zweite Versuch auch sehen. Gelingt sie, startet die App normal weiter.
+  2. **„Beenden"** – die App fährt herunter, ohne etwas geschrieben zu haben.
+
+  **Der Text ist generisch und nennt die Rohursache** (die Fehlermeldung des Betriebssystems), **noch keine auf die Ursache zugeschnittene Empfehlung.** Das ist der bewusste Unterschied zum Beenden-Fall oben, wo die Empfehlung ausgeschrieben steht: Dort ist der Zusammenhang zwischen `ENOSPC`/`ENOENT` und dem Ratschlag am laufenden Fall gemessen. Für den Start ist er das **nicht** – und ein falsch zugeordneter Ratschlag („Stecken Sie den Datenträger wieder ein", wenn in Wahrheit die Rechte fehlen) schickt den Nutzer in die falsche Richtung, was schlechter ist als gar kein Ratschlag. Sobald die `errno`-Zuordnung gemessen ist, gehören die Empfehlungen auch hierher.
+
+  *Warum es keinen dritten Knopf gibt:* Beim **Beenden** steht Arbeit im Speicher, deshalb braucht es dort den benannten Ausweg „Trotzdem schließen und Änderungen verwerfen". Beim **Start** ist **nichts** ungespeichert – es gibt schlicht nichts zu verlieren. Eine Wand ohne jeden Ausweg wäre hier reine Schikane, ein **stiller Ausweichort** dagegen gefährlich: Die App liefe scheinbar normal, legte ihre Projekte aber an einer zweiten Stelle an, und der Nutzer suchte seine Arbeit später an einem Ort, an dem sie nie war. Zwei Antworten sind damit vollständig.
 - **Atomar:** Schreiben nach Temp-Datei + Rename (gleiche Partition). `project.json` ist **nie** halb geschrieben.
 - **Ein Backup:** `project.json.bak` = letzte heile Version. Ist `project.json` beim Laden defekt → aus `.bak` wiederherstellen; ist auch das defekt → **Fehler melden**, **nicht** leer/verlustbehaftet weiterstarten.
 - **Genau eine App-Instanz (Voraussetzung für das ganze Lock-Design):** Das D1-Schreib-Lock ist ein **prozessinternes** Lock. Zwei gleichzeitig laufende App-Instanzen hätten **zwei unabhängige** Locks auf derselben `project.json` – das Ergebnis wäre ein Lost Update und damit **Datenkorruption**. Deshalb erzwingt die App beim Start eine **Einzel-Instanz-Sperre**; ein zweiter Start **fokussiert das bestehende Fenster** statt eine zweite Instanz zu öffnen.
@@ -1176,6 +1210,16 @@ trotzdem um**, als Schranke für den Tag, an dem eine dieser Operationen ihre Co
 #### 9.5.5 `schemaVersion` & Migration
 
 Jede `project.json` und `config.json` trägt eine `schemaVersion`. Beim Laden: **höhere** (unbekannte) Version → Fehler (nicht raten); **ältere** Version → definierte Migration auf die aktuelle. So bleiben ältere Projekte nach App-Updates lesbar.
+
+**Aktuell ist `schemaVersion` = 2 (v3.16).** Bis v3.15 stand sie auf **1**; die Zahl steht an **einer** Stelle, in den Konstanten (9.11.4).
+
+**Migration 1 → 2: `Project.standardSegmentdauer` ergänzen.** Mit v3.16 trägt jedes Projekt eine projektweite Standard-Segmentdauer (9.11.3). Eine `project.json` der Version 1 kennt das Feld nicht. Die Migration setzt es auf die Konstante **Standard-Anzeigedauer (10 s)** und hebt die `schemaVersion` auf `2`; sonst wird **nichts** angefasst.
+
+*Warum genau 10 s und nicht etwa der häufigste Wert im Bestand:* 10 s war bis v3.15 die **einzige** Vorbelegung – ein Projekt der Version 1 ist unter genau dieser Annahme entstanden. Der Wert ist damit keine Wahl, sondern die Fortschreibung des bisherigen Verhaltens: Nach der Migration verhält sich ein altes Projekt **exakt wie vorher**. Ein aus dem Bestand geratener Wert wäre das Gegenteil – er änderte beim bloßen Öffnen die Vorbelegung eines Projekts, das der Nutzer nicht angefasst hat.
+
+*Was die Migration ausdrücklich NICHT tut:* Sie fasst **keine** `Aktion.standardDauer` an. Ein `null` dort bedeutet ab v3.16 „folgt dem Projektstandard" (9.8.4) – und weil der Projektstandard auf denselben 10 s steht, unter denen die Aktion entstanden ist, ändert sich für sie nichts. Sie schreibt auch **keine** Werte fest: Das Festschreiben ist eine **Nutzerentscheidung** beim Ändern des Standards (Anforderungsdokument 4.4), keine Migrationsaufgabe.
+
+*Zur Elementart `bild` (v3.16, gestrichen – 9.11.3): Hier ist **keine** Migration vorgesehen.* Ob und wie eine `project.json` mit vorhandenen `art: "bild"`-Elementen zu behandeln ist, ist **noch nicht entschieden** – s. den offenen Punkt in 9.11.3.
 
 #### 9.5.6 `config-store` [D3]
 
@@ -1296,7 +1340,7 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 
   *Begründung:* Der Zustand „kein Projekt geladen" ist im Datentyp der Sicht **bereits vorgesehen**; es fehlte allein der **Weg dorthin**. Ohne ihn zeigt die Oberfläche nach dem Löschen des aktiven Projekts weiter dessen Liste, Aktionen und Vorschau – **Geisterdaten**, auf die jeder Klick ins Leere läuft, während der Ordner auf der Platte schon weg ist. **Ausdrücklich verboten ist die naheliegende Notlösung**, statt dessen ein **leeres Projekt mit erfundener Kennung** in die Sicht zu setzen: Das sähe richtig aus, aber jede folgende Instant-Operation liefe in `nicht_gefunden` (9.1.1), und das Auto-Speichern (9.5.4) legte womöglich einen Projektordner an, den **niemand angelegt hat**.
 - **Angezeigte Reihenfolge = gerenderte Reihenfolge** – keine versteckte Sortierung.
-- **Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur Vorschau), Bild direkt als `<img>`. Der Main bekommt **keine** Thumbnail-Pflicht (konsistent mit Variante A).
+- **Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur Vorschau). Der Main bekommt **keine** Thumbnail-Pflicht (konsistent mit Variante A).
 - **Kaputte Stellen blockieren den Render und starten die geführte Reparatur (9.7.5):** zeigt ein Listenelement **oder ein Band-Abschnitt** auf ein `fehlt`-Asset (media-service 9.4.7), wird die Stelle **rot markiert**; ein Render wird nicht gestartet (er würde mit `medium_fehlt` scheitern bzw. einen Platzhalter einbetten), sondern der Nutzer in den Reparatur-Modus geführt.
 - **Render friert die Liste beim Einreihen ein (9.3.5):** die Liste bleibt danach editierbar, aber der bereits eingereihte Render nutzt den Snapshot – der composer stellt das nicht in Frage.
 
@@ -1306,7 +1350,7 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 
 | # | Kaputte Stelle | Repariert wird auf Ebene |
 |---|---|---|
-| 1 | Listenelement → **Asset fehlt** (Video/Bild) | Listenelement |
+| 1 | Listenelement → **Asset fehlt** (Video) | Listenelement |
 | 2 | Listenelement (`segment`) → **Aktion**, deren Bild fehlt | **Aktion** (behebt alle Verwendungen) |
 | 3 | **Band-Abschnitt** eines Videos → **Aktion**, deren Bild fehlt | **Aktion** (behebt alle Verwendungen) |
 
@@ -1358,7 +1402,8 @@ Aktion {
   preis:        string | null
   bildRef:      string | null   // Referenz auf eine Asset-ID (NICHT eingebettet)
   cta:          string | null   // Call-to-Action, z. B. "Gratis Probetraining"
-  standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4)
+  standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4).
+                                //   null = folgt der Projekt-Standarddauer (Project.standardSegmentdauer)
   vorlagenId:   string          // gewählte Vorlage (eingebaut oder eigene, FA-13)
   markeId:      string          // GENAU EINE Marke (FA-23, 9.15.1). Pflicht; vorbelegt mit
                                 //   Project.standardMarkeId. Bestimmt Logo, Schriften und Farb-Rollen
@@ -1382,7 +1427,17 @@ Aktion {
 - **Akzentfarbe ist ein freier Farbwert** (FA-24). Bis v3.3 stand hier das Gegenteil: „nur aus der Markenpalette (feste Auswahl in v1, kein freier Farbwähler) – so bricht keine Aktion aus dem Corporate Design aus". Diese Zusage ist mit FA-24 **bewusst zurückgenommen**, weil Partner-Hausfarben in keiner Palette stehen. Eine Aktion **kann** damit aus dem Corporate Design ausbrechen; die Gegenmaßnahme ist die **Kontrast-Warnung** (9.15.2), nicht die Sperre – ein Schwellenwert würde eine echte Hausfarbe unbrauchbar machen (Risiko R-08).
 - **Die Akzentfarbe ERSETZT die Akzent-Rollen der Vorlage – sie ist kein Zierwert.** Beim Zeichnen liefert jede Zone, die eine der drei Akzent-Rollen `akzent`, `akzentKraeftig` oder `akzentTief` auflöst, den Wert aus `aktion.akzentfarbe` statt des Markenwerts; alle übrigen Rollen bleiben unberührt (vollständige Regel: 9.10.9). **Die Vorlage bestimmt, WO Akzentfarbe hingehört; die Aktion bestimmt, WELCHE.** Für den Editor heißt das zweierlei: Die Farbwahl ist **sofort in der Live-Vorschau sichtbar** (sie geht durch dieselbe Zeichenroutine, 9.8.3), und sie wirkt **nur dort, wo die Vorlage Akzentfarbe vorgesehen hat** – der Editor verspricht also **nicht**, dass jede Vorlage sichtbar auf die Farbwahl reagiert. Wählt eine Aktion **keine** Akzentfarbe, gilt der Markenwert; das ist gültig und kein Fehler.
 - **Fester Markenrahmen immer erzwungen** (Logo, Sicherheitsabstände, FA-11); der Editor gestaltet nur die **freien Zonen** (FA-12).
-- **`standardDauer` ist nur ein Default:** maßgeblich für den Render ist die **Listenelement-Dauer** (composer, Anforderungsdokument 4.4). Beim Platzieren wird `standardDauer` als Startwert übernommen, danach überschreibbar.
+- **`standardDauer` ist nur ein Default:** maßgeblich für den Render ist die **Listenelement-Dauer** (composer, Anforderungsdokument 4.4). Beim Platzieren wird der Startwert übernommen, danach ist er überschreibbar.
+- **Der Startwert entsteht über eine dreistufige Auflösungskette (bindend, v3.16).** Beim Platzieren einer Aktion in die Liste (`fügeElementHinzu`, 9.5.2) gilt:
+
+  ```
+  element.dauer  ←  aktion.standardDauer  ??  projekt.standardSegmentdauer  ??  10
+  ```
+
+  Gelesen wird das so: Hat die **Aktion** eine eigene Dauer, gilt sie. Ist ihre `standardDauer` **`null`**, folgt die Aktion der **Projekt-Standarddauer** (`Project.standardSegmentdauer`, 9.11.3). Fehlt auch die, greift die Konstante **Standard-Anzeigedauer** (10 s, 9.11.4). Die dritte Stufe ist ein **struktureller** Rückfall, kein Normalfall: `standardSegmentdauer` ist ein Pflichtfeld, und die Migration 1 → 2 (9.5.5) belegt es in jedem bestehenden Projekt. Sie steht trotzdem in der Kette, damit niemand an dieser Stelle eine eigene Zahl erfindet, falls das Feld doch einmal fehlt.
+
+  **`null` bedeutet ab v3.16 „folgt dem Projektstandard" – es ist kein fehlender Wert.** Bis v3.15 hieß `null` schlicht „keine Vorgabe, nimm 10 s". Das ist der eigentliche Kern der Änderung: Eine Aktion mit `standardDauer: null` **zieht mit**, wenn der Projektstandard sich ändert; eine Aktion mit eigenem Wert bleibt unberührt. „Eine Aktion vom Projektstandard abkoppeln" heißt deshalb technisch: ihren **bisher wirksamen Wert explizit festschreiben** (Anforderungsdokument 4.4).
+- **Der Bereich 10–45 s bleibt fest** (Konstante Dauer-Bereich, 9.11.4). Konfigurierbar ist ausschließlich der **Standardwert** innerhalb dieses Bereichs – sowohl `Aktion.standardDauer` als auch `Project.standardSegmentdauer` werden gegen **dieselbe** Konstante geprüft wie `setzeDauer` (9.5.2). Ein Projektstandard außerhalb des Bereichs würde beim Platzieren sofort ein ungültiges Listenelement erzeugen.
 
 #### 9.8.5 Kaputt-Handling: fehlendes Aktions-Bild (FA-19)
 
@@ -1404,7 +1459,6 @@ Aktion {
 #### 9.9.2 Darstellung je Elementtyp
 
 - **Aktions-Segment:** exakt dasselbe `template-canvas`-Bild wie der finale Render → **pixelgleich** (Variante A).
-- **Bild:** `<img>` mit `object-fit: contain` auf Schwarz – **dieselbe** Letterbox/Pillarbox wie das `pad` im Render.
 - **Video:** natives `<video>` von `trimStart` bis `trimEnde`.
 - **Medienzugriff ausschließlich über `media://`** (9.5.7) – der `preview-player` sieht **nie** absolute Pfade, sondern lädt `media://<projektId>/<dateiname>` in `<video>`/`<img>`.
 - **Parallele Anzeige (FA-20, 9.2.8) – beide Modi:** Trägt ein Video eine Einblendung, bestimmt die **`art` der Band-Vorlage**, was die Bühne simuliert – **genau wie im Render**. Die Bandhöhe `H` kommt aus der Vorlage; die Geometrie wird **daraus abgeleitet**, nie hartkodiert:
@@ -1780,13 +1834,17 @@ Project {
                                      //   belegt neue Aktionen vor. Pflicht; beim Anlegen die eingebaute
                                      //   Marke (vom Handler zugeliefert), danach wechselbar über
                                      //   setzeStandardMarke (9.5.2)
+  standardSegmentdauer: number       // FA-06: projektweite Standarddauer für Aktions-Segmente,
+                                     //   je Aktion überschreibbar (Auflösungskette 9.8.4).
+                                     //   Pflicht; Wertebereich wie setzeDauer (10–45 s, 9.11.4).
+                                     //   Migration 1 -> 2 setzt 10 (9.5.5)
 }
 
 Listenelement {
   id:          string                                   // UUID
-  art:         "video" | "bild" | "segment"
-  ref:         string                                   // Asset-ID (video|bild) oder Aktions-ID (segment)
-  dauer:       number | null                            // Sekunden – bei bild/segment
+  art:         "video" | "segment"                      // "bild" ist mit v3.16 gestrichen, s. u.
+  ref:         string                                   // Asset-ID (video) oder Aktions-ID (segment)
+  dauer:       number | null                            // Sekunden – nur bei segment
   trimStart:   number | null                            // Sekunden – nur bei video
   trimEnde:    number | null                            // Sekunden – nur bei video
   einblendung: { bandVorlageId, abschnitte: [{ aktionRef, dauer }] } | null   // nur bei video
@@ -1798,8 +1856,17 @@ Listenelement {
 | `art` | `ref` zeigt auf | `dauer` | `trimStart`/`trimEnde` | `einblendung` |
 |---|---|---|---|---|
 | `video` | `Asset` (typ `video`) | `null` – die Dauer ergibt sich aus dem Trim | gesetzt | erlaubt |
-| `bild` | `Asset` (typ `bild`) | gesetzt (10–45 s) | `null` | `null` |
-| `segment` | `Aktion` | gesetzt (10–45 s) | `null` | `null` |
+| `segment` | `Aktion` | gesetzt (10–45 s; Startwert aus der Kette 9.8.4) | `null` | `null` |
+
+**Die Elementart `bild` ist mit v3.16 gestrichen (bindend).** Die Zeile lautete bis v3.15: „`bild` | `Asset` (typ `bild`) | gesetzt (10–45 s) | `null` | `null`". `Listenelement.art` kennt nur noch **zwei** Werte.
+
+*Begründung (vom Auftraggeber entschieden):* Ein fertig gestaltetes Bild von außen direkt in die Wiedergabeliste zu legen, ist **kein Anwendungsfall**. Alle angezeigten Inhalte entstehen über den `action-editor` (9.8) – nur so tragen sie den festen Markenrahmen (FA-11) und sind über Vorlagen gestaltbar (FA-13). Ein Listenelement der Art `bild` wäre der **einzige** Inhalt im ganzen System, der ohne Logo, Sicherheitsabstand und Markenfarbwelt auf den Fernseher käme – und zugleich der einzige, an dem `template-canvas` als einzige Pixelquelle (9.1, Variante A) nicht beteiligt wäre.
+
+**Ausdrücklich NICHT betroffen ist `Asset.typ: "video" | "bild"`** (9.4.4). Bilder werden weiterhin **importiert, verwaltet und gelöscht** (`media-service`, 9.4) und von Aktionen über `Aktion.bildRef` (9.8.2) als **Motiv** benutzt. Weggefallen ist ausschließlich der Weg „Bild → Listenelement". Wer die Streichung auf die Assets ausdehnt, nimmt jeder Aktion ihr Bild.
+
+**Mitgezogen an diesen Stellen:** `RenderItem` hat nur noch zwei Varianten (9.2.2), Standbild-Regel und Band-Invariante (9.2.6, 9.2.8), `setzeDauer` und `setzeElementReferenz` sowie die Undo-Validierung (9.5.2), Thumbnails und Reparatur-Fall 1 (9.7.4, 9.7.5), Darstellung je Elementtyp (8, 9.9.2), Datenbestand (4) und die Konstantentabelle (9.11.4).
+
+> **OFFEN (v3.16) – Bestandsdaten mit `art: "bild"`.** Wie eine bereits vorhandene `project.json` zu behandeln ist, in deren `liste` Elemente der Art `bild` stehen, ist **nicht entschieden**. Denkbar sind mindestens: beim Laden **abweisen** (der Nutzer verlöre den Zugang zum Projekt), die Elemente in der Migration **stillschweigend entfernen** (Datenverlust ohne Meldung – widerspricht 9.1.1 Punkt 7) oder sie als **kaputte Stellen** in den geführten Reparatur-Modus geben (9.7.5). **Hier wird nichts erfunden**; die Migration 1 → 2 (9.5.5) fasst die Liste deshalb bewusst **nicht** an. Zu entscheiden, bevor ein Issue dazu geschrieben wird.
 
 **Invarianten:**
 
@@ -1816,13 +1883,13 @@ Listenelement {
 
 | Konstante | Wert | Bezug |
 |---|---|---|
-| Standard-Anzeigedauer | **10 s** | Vorbelegung für Bild/Segment und `Aktion.standardDauer` |
-| Dauer-Bereich | **10–45 s** | Validierung in `setzeDauer` (9.5.2) |
+| Standard-Anzeigedauer | **10 s** | Vorbelegung von `Project.standardSegmentdauer` (9.11.3), Wert der Migration 1 → 2 (9.5.5) und **letzte Stufe** der Auflösungskette (9.8.4). **Nicht mehr** direkt die Vorbelegung eines Listenelements – dazwischen liegt seit v3.16 der Projektstandard |
+| Dauer-Bereich | **10–45 s** | Validierung in `setzeDauer` (9.5.2) **und** von `Aktion.standardDauer` sowie `Project.standardSegmentdauer` (9.8.4) – **aus dieser einen Konstante**. Der Bereich ist **fest**; konfigurierbar ist nur der Standardwert darin |
 | Sicherheitsabstand (**Vorbelegung**) | **96 / 54 px** | **Nur der Startwert der eingebauten Marke** – der geltende Wert steht in `Marke.sicherheit` und ist seit v3.4 **bearbeitbar** (FA-24). Wer zeichnet oder prüft, liest ihn aus der **Marke** (9.10.5, 9.11.2), **nie** aus dieser Konstante |
 | Format-Whitelist | MP4 / JPG, PNG, WebP | Dialog **und** Import-Prüfung (9.4.2) |
 | **`KONTRAST_SCHWELLE`** | **4,5 : 1** | Ab hier warnt der `marken-editor` (9.15.2, FA-24). WCAG AA für Fließtext. **Warnung, keine Sperre** – die Restverantwortung bleibt beim Nutzer (R-08). Gelesen von der Kontrast-Rechnung **und** vom Editor – **aus dieser einen Konstante** |
 | Sicherheitsabstand-**Bereich** | **0…480 / 0…270 px** | erlaubte Spanne beim Bearbeiten (9.15.2). Geprüft im **Main** (`bearbeiteMarke`, 9.15.1 – der Vertrag verlangt es, 9.1.1 Punkt 6) **und** im Editor (frühe Rückmeldung am Formular) – **aus dieser einen Konstante**, nie als zweites Zahlenpaar. Obergrenze = ein Viertel der Kante; **0 ist erlaubt** (warnen statt sperren, wie bei der Akzentfarbe – Risiko R-08) |
-| Aktuelle `schemaVersion` | **1** | wird von `öffneProjekt`, `schreibeProjekt` und der Migration gelesen (9.5.5) – **eine** Stelle, sonst laufen drei Kopien auseinander |
+| Aktuelle `schemaVersion` | **2** | seit v3.16 (vorher **1**; angehoben wegen `Project.standardSegmentdauer`). Wird von `öffneProjekt`, `schreibeProjekt` und der Migration gelesen (9.5.5) – **eine** Stelle, sonst laufen drei Kopien auseinander |
 
 ---
 
@@ -2347,6 +2414,14 @@ Identität und Rahmen sind stabil.
 > **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
+>
+> **Nachgezogen in v3.16 (15.08.2026), vom Auftraggeber entschieden – zwei Anforderungsänderungen und eine Start-Regel (Anforderungsdokument v1.5):**
+>
+> 1. **Die Standard-Segmentdauer gehört ab jetzt dem PROJEKT und ist je Aktion überschreibbar** (9.8.4, `Project.standardSegmentdauer` in 9.11.3, Konstantentabelle 9.11.4, Anforderungsdokument 4.4). Der Startwert eines platzierten Aktions-Segments entsteht über die Kette `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`. *Anlass:* Bis v3.15 gab es genau **eine** feste Vorbelegung von 10 s; wer ein ganzes Projekt auf längere Einblendungen stellen wollte, musste jede Aktion einzeln nachziehen. **Die eigentliche Vertragsänderung steckt in der Bedeutung von `null`:** `Aktion.standardDauer: null` hieß bis v3.15 „keine Vorgabe, nimm 10 s" und heißt ab v3.16 **„folgt dem Projektstandard"** – eine solche Aktion **zieht mit**, wenn der Standard sich ändert. Wer den alten Sinn weiterträgt, baut eine Aktion, die stumm auf 10 s stehen bleibt. **Der Bereich 10–45 s bleibt unverändert fest**; konfigurierbar ist nur der Standardwert darin, geprüft aus **derselben** Konstante wie `setzeDauer`. *Folge für die Daten:* Das neue Pflichtfeld hebt die **`schemaVersion` von 1 auf 2**; die Migration setzt **10 s** und schreibt sonst nichts fest (9.5.5). **Noch nicht entschieden** ist der Schreibweg (Operation, Kanal, Undo, Ort in der Oberfläche) – als offener Punkt in 9.5.2 benannt statt erfunden.
+>
+> 2. **Die Elementart `bild` ist gestrichen – `Listenelement.art` kennt nur noch `"video" | "segment"`** (9.11.3; mitgezogen in 4, 8, 9.2.2, 9.2.6, 9.2.8, 9.5.2, 9.7.4, 9.7.5, 9.9.2, 9.11.4). *Anlass:* Fertig gestaltete Bilder von außen sind **kein Anwendungsfall**; alle Inhalte entstehen über den `action-editor`. Ein `bild`-Element wäre der einzige Inhalt im System ohne Markenrahmen und der einzige, an dem `template-canvas` als einzige Pixelquelle nicht beteiligt ist. *Was ausdrücklich BLEIBT:* **`Asset.typ: "video" | "bild"`** (9.4.4) – Bilder werden weiter importiert, verwaltet, gelöscht und über `Aktion.bildRef` als Motiv benutzt. Wer die Streichung auf die Assets ausdehnt, nimmt jeder Aktion ihr Bild. *Warum auch die `RenderItem`-Variante fällt (9.2.2):* Sie könnte gar nicht mehr entstehen – ein Zweig ohne Aufrufer im Vertrag liest sich für den Nächsten als vorgesehener Weg und wird nachgebaut. **Offen** bleibt die Behandlung von Bestandsdaten, die noch `art: "bild"` enthalten (9.11.3).
+>
+> 3. **Für den START gilt jetzt eine eigene Regel, wenn der Datenort nicht beschreibbar ist** (9.5.4): Dialog über `dialog.showMessageBoxSync` mit **„Erneut versuchen"** – die Prüfung läuft **echt** noch einmal gegen das Dateisystem – und **„Beenden"**. *Anlass:* 9.5.4 regelte den **Fehlschlag des Flushs beim Beenden** bis in die Knopfreihenfolge, sagte zum **Start** aber nichts. *Warum der Text generisch bleibt (Rohursache statt Empfehlung):* Beim Beenden sind die ursachenbezogenen Ratschläge am Fall gemessen; für den Start ist die `errno`-Zuordnung **nicht** gemessen, und ein falsch zugeordneter Rat schickt den Nutzer in die falsche Richtung. *Warum es keinen dritten Knopf gibt:* Beim Start ist **nichts** ungespeichert – es gibt nichts zu verlieren. Eine Wand ohne Ausweg wäre Schikane, ein **stiller Ausweichort** dagegen gefährlich: Die Projekte lägen an zwei Orten, und der Nutzer suchte sie an dem, an dem sie nie waren.
 >
 > **Nachgezogen in v3.13 (11.08.2026) – alle drei Fundort-Formen tragen jetzt Namen:**
 >

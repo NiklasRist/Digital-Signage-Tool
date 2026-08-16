@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 11.08.2026
-**Version:** 1.4 (Entwurf)
+**Datum:** 15.08.2026
+**Version:** 1.5 (Entwurf – projektweite Standarddauer je Aktion überschreibbar; Bilder sind keine Listenelemente mehr)
 **Status:** In Abstimmung
 
 ---
@@ -79,7 +79,7 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-03 | Inhalte bearbeiten/löschen | Vorhandene Videos und Produkte/Aktionen können bearbeitet und entfernt werden. | Muss |
 | FA-04 | Aktions-Segment erzeugen | Aus einem Produkt/einer Aktion (Text + optional Bild) wird ein anzeigbares Video-/Bildsegment mit definierter Anzeigedauer erzeugt. | Muss |
 | FA-05 | Reihenfolge festlegen | Alle Elemente (Videos + Aktions-Segmente) können zu einer Wiedergabeliste zusammengestellt und in der Reihenfolge angeordnet werden (z. B. per Drag-and-drop). | Muss |
-| FA-06 | Anzeigedauer steuern | Je Element (Bilder, Aktions-Segmente) ist eine individuelle Anzeigedauer einstellbar; die Bedienung erfolgt über einen **einheitlichen Dauer-/Trim-Regler** – Kürzen *und* Verlängern per Griff, s. 4.4. | Soll |
+| FA-06 | Anzeigedauer steuern | Je Aktions-Segment ist eine individuelle Anzeigedauer einstellbar; die Bedienung erfolgt über einen **einheitlichen Dauer-/Trim-Regler** – Kürzen *und* Verlängern per Griff, s. 4.4. Der **Startwert** kommt aus einer **projektweiten Standarddauer**, die je Aktion überschreibbar ist (s. 4.4). | Soll |
 | FA-07 | Vorschau | Die zusammengestellte Sequenz kann vor dem Rendern in der Anwendung vorab betrachtet werden. | Soll |
 | FA-08 | Ausgabe-Rendering | Aus der Wiedergabeliste wird **je Lauf eine einzige, durchgehende MP4-Datei** in definierter Auflösung und Codierung erzeugt (Verkettung aller Segmente). Dass es **eine** Datei ist, ist wesentlich: nur so läuft die Schleife am Fernseher ohne sichtbaren Übergang (Risiko R-04). | Muss |
 | FA-09 | Export auf USB | Eine gewählte Ausgabedatei kann in einen Zielordner bzw. direkt auf den USB-Speicher exportiert werden – **unter ihrem eigenen Namen**. Auf dem Speicher dürfen mehrere Ausgabedateien nebeneinander liegen. | Muss |
@@ -98,6 +98,17 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-22 | Mehrere benannte Ausgabedateien | Ein Projekt kann **mehrere** gerenderte MP4-Dateien vorhalten. Beim Speichern eines Renders vergibt der Nutzer den Dateinamen; vorbelegt ist der **zuletzt verwendete** Name, sodass wiederholtes Rendern die vorige Fassung standardmäßig **ersetzt** und der Ordner nicht zuläuft. Ein abweichender Name legt eine zusätzliche Datei an. Datum und Uhrzeit stehen in der Ausgabe-Liste der Anwendung, **nicht** im Dateinamen. | Muss |
 | FA-23 | Marken-Bestand | Die Anwendung führt **mehrere Marken** in einem **app-weiten, projektunabhängigen** Bestand. Ein Projekt darf mehrere Marken verwenden; eine **Aktion** trägt **genau eine**. Eine Marke kann von einer anderen **abgeleitet** sein und einzelne Werte überschreiben (Saison- oder Kampagnen-Look). Die Fitnessworld24-Marke ist immer vorhanden und **nicht löschbar**. Jedes Projekt führt zusätzlich eine **Standardmarke**, die den Rahmen färbt (Band-Hintergrund, Restflächen; s. 4.8); sie ist in der **Projektverwaltung wechselbar**. Eine Marke lässt sich nur löschen, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als Standardmarke** sie mehr nutzt. | Muss |
 | FA-24 | Marken-Editor | Marken lassen sich in der Anwendung **anlegen, bearbeiten und ableiten**: Farben, Slogan, Sicherheitsabstände sowie **Import** von Logo und Schriftdateien. Bei zu geringem Kontrast zwischen Akzentfläche und darauf liegendem Text **warnt** die Anwendung sichtbar, verhindert die Wahl aber nicht. | Muss |
+
+**Ein Bild ist kein Listenelement (ab v1.5).** Eine Wiedergabeliste besteht aus genau zwei Arten von
+Elementen: **Videos** und **Aktions-Segmente**. Ein fertig gestaltetes Bild von außen direkt in die Liste
+zu legen, ist **kein** Anwendungsfall – alle angezeigten Inhalte entstehen über den Aktions-Editor, damit
+sie den Markenrahmen tragen (FA-11) und über Vorlagen gestaltbar bleiben (FA-12, FA-13). Ein Bild, das
+ohne diesen Weg auf den Schirm käme, wäre der einzige Inhalt im ganzen System ohne Logo,
+Sicherheitsabstand und Markenfarbwelt.
+
+**Nicht betroffen ist der Bild-Import.** Bilder werden weiterhin importiert, verwaltet und gelöscht
+(FA-01, FA-03); sie sind das **Motiv** einer Aktion (FA-02, FA-12). Weggefallen ist ausschließlich der
+Weg „Bild direkt in die Wiedergabeliste".
 
 ### 4.1 Gestaltung der Aktions-Segmente (Corporate Design)
 
@@ -172,9 +183,35 @@ Die interaktive Vorschau (FA-07) ist **kein** Auftrag und läuft unabhängig von
 Dauer (FA-06) und Trim (FA-14) werden für **alle** Elementtypen über **denselben** Bedien-Baustein gesteuert – einen Balken mit Griffen, an denen der Nutzer die effektive Dauer zieht. Kürzen *und* Verlängern fühlen sich überall gleich an („wie Trimmen"); nur die Grenzen unterscheiden sich je nach Elementtyp:
 
 - **Video (FA-14):** zwei Griffe (Anfang/Ende) innerhalb der **Quelllänge** des Videos. Kürzen schneidet Anfang/Ende weg; Verlängern ist **nur bis zur Quelllänge** möglich (mehr Material existiert nicht). Der Schnitt ist **nicht-destruktiv** – die Originaldatei bleibt unverändert.
-- **Bild / Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s** einstellbar (Standard 10 s). Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte Maximaldauer; Kürzen und Verlängern laufen über denselben Regler.
+- **Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s** einstellbar. Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte Maximaldauer; Kürzen und Verlängern laufen über denselben Regler.
 
-Der Regler zeigt die aktuelle effektive Dauer numerisch an. So bleibt die Bedienung über Video, Bild und Aktions-Segment hinweg konsistent, obwohl technisch ein Trim (Ausschnitt) und eine reine Anzeigedauer dahinterstehen.
+Der Regler zeigt die aktuelle effektive Dauer numerisch an. So bleibt die Bedienung über Video und Aktions-Segment hinweg konsistent, obwohl technisch ein Trim (Ausschnitt) und eine reine Anzeigedauer dahinterstehen.
+
+**Woher der Startwert kommt: eine projektweite Standarddauer, je Aktion überschreibbar (ab v1.5).** Bis
+v1.4 gab es genau eine feste Vorbelegung von 10 s. Wer für ein Projekt durchgehend längere Einblendungen
+wollte, musste sie an **jeder** Aktion einzeln nachziehen. Deshalb trägt jetzt das **Projekt** eine
+**Standarddauer**, und die einzelne **Aktion** darf sie überschreiben. Der Wert eines neu platzierten
+Elements ergibt sich in dieser Reihenfolge:
+
+1. die **eigene Dauer der Aktion**, wenn sie eine gesetzt hat;
+2. sonst die **Standarddauer des Projekts**;
+3. sonst **10 s** – der eingebaute Rückfallwert.
+
+Eine Aktion **ohne** eigene Dauer folgt damit dem Projektstandard und zieht bei dessen Änderung mit; eine
+Aktion **mit** eigener Dauer bleibt, wo sie ist. Der einstellbare **Bereich 10–45 s bleibt unverändert
+fest** – konfigurierbar ist nur der **Standardwert** innerhalb dieses Bereichs, nicht der Bereich selbst.
+Die Dauer am einzelnen **Listenelement** bleibt wie bisher maßgeblich für den Render: Die Kette liefert nur
+den **Startwert**, danach entscheidet der Regler.
+
+**Beim Ändern des Projektstandards fragt die Anwendung nach.** Ein geänderter Projektstandard wirkt sonst
+lautlos auf Aktionen, die der Nutzer längst für erledigt hielt. Die Anwendung zeigt deshalb **alle Aktionen
+mit dem Projektstandard als Dauer** – also genau die, die keine eigene tragen – in einer Liste und fragt,
+ob der neue Wert auch für sie gelten soll. Jede Aktion in dieser Liste ist **einzeln abwählbar**. Abwählen
+heißt: Die Aktion behält ihre **bisherige** Dauer, und zwar als **eigenen, festgeschriebenen Wert** – sie
+hört damit auf, dem Projektstandard zu folgen, und bleibt auch bei der nächsten Änderung unberührt. Ein
+bloßes „diesmal nicht" gibt es nicht: Es wäre beim nächsten Mal wieder dieselbe Frage, und der Nutzer hätte
+keine Möglichkeit, sie endgültig zu beantworten. Aktionen mit eigener Dauer erscheinen in der Liste gar
+nicht erst – sie sind nicht betroffen.
 
 
 ---
@@ -256,7 +293,7 @@ Ein Saison-Look setzt also nur die Farben und erbt Schriften, Logo und Abstände
 Fitnessworld24-Logo, wirkt das ohne Nacharbeit in allen abgeleiteten Looks. Ohne Ableitung müsste jede
 Variante alles selbst tragen – und beim nächsten Logo-Wechsel würde eine vergessen.
 
-**Zuweisung.** Jede **Aktion** trägt **genau eine** Marke. Elemente ohne Aktion (Video, Bild) tragen
+**Zuweisung.** Jede **Aktion** trägt **genau eine** Marke. Elemente ohne Aktion – also **Videos** – tragen
 keine eigene: Über sie zeichnet die Anwendung kein Logo; ihre Restflächen kommen aus der
 Projekt-Standardmarke.
 
