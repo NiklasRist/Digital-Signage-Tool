@@ -45,7 +45,23 @@ AUF = "„"   # „
 ZU = '"'        # ASCII, so schreibt das Projekt das Schlusszeichen
 ZU_TYPO = "“"  # " - kommt vereinzelt vor, wird toleriert
 
-MAX_ISSUE = 262
+# NICHT mehr fest verdrahtet (korrigiert 15.08.2026): Hier stand 262 - die hoechste
+# Nummer zu dem Zeitpunkt, als dieses Werkzeug entstand. Inzwischen gibt es 333 Issues.
+# Der Lauf haette M8 (#275-#330) und alle Nachzuegler STILLSCHWEIGEND uebersprungen und
+# trotzdem "geprueft" gemeldet - ein Pruefwerkzeug, das einen Teil seines Gegenstands
+# gar nicht ansieht, ist gefaehrlicher als keines.
+def hoechste_issue_nummer() -> int:
+    ergebnis = subprocess.run(
+        ["gh", "issue", "list", "--state", "all", "--limit", "1000",
+         "--json", "number", "-q", "max_by(.number).number"],
+        capture_output=True, text=True, encoding="utf-8", shell=(os.name == "nt"),
+    )
+    if ergebnis.returncode != 0 or not ergebnis.stdout.strip():
+        raise SystemExit("Hoechste Issue-Nummer nicht ermittelbar: %s" % ergebnis.stderr.strip())
+    return int(ergebnis.stdout.strip())
+
+
+MAX_ISSUE = hoechste_issue_nummer()
 
 
 # ---------------------------------------------------------------- Bodies holen
