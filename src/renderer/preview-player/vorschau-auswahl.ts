@@ -40,7 +40,6 @@ import { baueBandtakt, waehleAbschnitt } from './band-takt'
 export type Vorschaubild =
   | { art: 'leer' }
   | { art: 'platzhalter'; grund: KaputtGrund; titel?: string }
-  | { art: 'bild'; dateiname: string; titel?: string }
   | { art: 'video'; assetId: string; dateiname: string; trimStart: number; trimEnde: number }
   | { art: 'segment'; aktion: Aktion; vorlage: Vorlage }
   | {
@@ -65,7 +64,8 @@ export type Vorschaubild =
 // `element.ref` und NIE der Dateiname. Sie geht unveraendert in `VideoProps.assetId` (#216) und
 // ist dort der SCHLUESSEL des Handle-Registers (#246). Ohne sie meldet sich das `<video>` der
 // Vorschau nirgends an, und das Loeschen scheitert unter Windows am offenen Handle (TK 9.4.6).
-// `art: 'bild'` traegt sie NICHT: TK 9.4.6 nennt ausdruecklich nur den `<video>`-Handle.
+// Nur die videotragenden Varianten fuehren sie: TK 9.4.6 nennt ausdruecklich nur den
+// `<video>`-Handle.
 
 /**
  * Waehlt das Bild fuer GENAU EINEN Frame. REINE Funktion: liest nur ihre Argumente, laedt nichts,

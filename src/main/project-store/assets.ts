@@ -590,7 +590,7 @@ export async function setzeAssetZustand(
  * Alle Listenelemente, die auf `assetId` zeigen - deren `id`s, in Listenreihenfolge, ohne
  * Duplikate (#73).
  *
- * GEPRUEFT WIRD NUR `art` 'video' und 'bild'. Bei `art: 'segment'` ist `ref` eine AKTIONS-ID
+ * GEPRUEFT WIRD NUR `art` 'video'. Bei `art: 'segment'` ist `ref` eine AKTIONS-ID
  * (#15, Kommentar am Feld), und `einblendung.abschnitte[].aktionRef` ebenfalls - beide werden hier
  * gar nicht erst durchlaufen. Wer stumpf ueber alle Elemente `ref === assetId` prueft, vergleicht
  * IDs aus zwei Namensraeumen; das geht heute nur deshalb gut, weil beide UUIDs sind, und waere
@@ -603,10 +603,12 @@ export async function setzeAssetZustand(
 function sammleAssetReferenzen(projekt: Project, assetId: string): string[] {
   const gefunden: string[] = []
 
-  // 1. Die Wiedergabeliste. Nur video/bild - bei `segment` ist `ref` eine AKTIONS-ID,
-  //    ein Treffer dort waere ein Zufall der UUID-Belegung.
+  // 1. Die Wiedergabeliste. Nur video - bei `segment` ist `ref` eine AKTIONS-ID, ein
+  //    Treffer dort waere ein Zufall der UUID-Belegung. Ein Bild-Asset kann seit TK v3.16
+  //    ueberhaupt kein Listenelement mehr sein (TK 9.11.3); es wird nur noch ueber
+  //    `Aktion.bildRef` referenziert - Schritt 2 unten.
   for (const element of projekt.liste) {
-    if (element.art !== 'video' && element.art !== 'bild') {
+    if (element.art !== 'video') {
       continue
     }
     if (element.ref === assetId && !gefunden.includes(element.id)) {

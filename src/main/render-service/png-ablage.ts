@@ -60,9 +60,8 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { RenderFehlercode } from './fehlercodes'
 
 // Fremde Typen - vollstaendig ausgeschrieben, damit hier nichts geraten wird:
-//   #17:     type RenderItem = RenderItemVideo | RenderItemBild | RenderItemSegment
+//   #17:     type RenderItem = RenderItemVideo | RenderItemSegment
 //            RenderItemSegment { id; art: 'segment'; png: Uint8Array; dauer }
-//            RenderItemBild    { id; art: 'bild'; medienRef; dauer }
 //            RenderItemVideo   { id; art: 'video'; medienRef; trimStart; trimEnde;
 //                                einblendung: { art; höhe; bandVorlageId;
 //                                  abschnitte: Array<{ png: Uint8Array; dauer }> } | null }

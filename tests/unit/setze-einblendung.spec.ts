@@ -49,11 +49,11 @@ function video(einblendung: Einblendung | null = null): Listenelement {
   };
 }
 
-function standbild(art: "bild" | "segment"): Listenelement {
+function standbild(): Listenelement {
   return {
-    id: `e-${art}`,
-    art,
-    ref: art === "segment" ? "ak-1" : "a-bild",
+    id: "e-segment",
+    art: "segment",
+    ref: "ak-1",
     dauer: 10,
     trimStart: null,
     trimEnde: null,
@@ -200,19 +200,8 @@ describe("setzeEinblendung (#120)", () => {
     expect(element.einblendung).toBeNull();
   });
 
-  it("weist ein bild-Element ab", async () => {
-    const element = standbild("bild");
-    merkeAktivesProjekt(projektMit([element]));
-
-    const ergebnis = await setzeEinblendung("e-bild", band("ak-1"));
-
-    expect(!ergebnis.ok && ergebnis.fehler.code).toBe("ungueltige_eingabe");
-    expect(element.einblendung).toBeNull();
-    expect(angemeldet).toHaveLength(0);
-  });
-
   it("weist ein segment-Element ab", async () => {
-    const element = standbild("segment");
+    const element = standbild();
     merkeAktivesProjekt(projektMit([element]));
 
     const ergebnis = await setzeEinblendung("e-segment", band("ak-1"));

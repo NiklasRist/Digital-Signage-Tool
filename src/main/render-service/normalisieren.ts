@@ -144,7 +144,7 @@ import type { Bandart } from './band-geometrie'                                 
 
 /** Die in T1 abgelegten PNGs GENAU DIESES Elements (aus PngAblage, #175). */
 export interface ElementPngs {
-  /** Pfad des Segment-PNG; `null` bei `video` und `bild`. */
+  /** Pfad des Segment-PNG; `null` bei `video`. */
   segment: string | null
   /** Pfade der Band-Abschnitte in Abschnittsreihenfolge; leeres Array ohne Einblendung. */
   band: readonly string[]
@@ -259,12 +259,14 @@ export async function pruefeMedienVorhanden(
     for (const [index, element] of elemente.entries()) {
       const art = feld(element, 'art')
 
-      // "nur `art: 'video'` und `art: 'bild'` haben ein Medium; `art: 'segment'`
-      // traegt seine Pixel im Auftrag mit und wird uebersprungen". Ein UNBEKANNTER
-      // `art`-Wert wird hier ebenfalls uebersprungen: Er hat kein Medium, und sein
-      // Urteil faellt die Weiche in `normalisiereElement` (`ungueltige_eingabe`).
-      // Zwei Stellen, die dasselbe verwerfen, sind zwei Wahrheiten.
-      if (art !== 'video' && art !== 'bild') continue
+      // Nur `art: 'video'` hat ein Medium; `art: 'segment'` traegt seine Pixel im
+      // Auftrag mit und wird uebersprungen. (Bis TK v3.15 gehoerte `art: 'bild'`
+      // ebenfalls hierher - die Elementart ist mit v3.16 gestrichen, TK 9.11.3.) Ein
+      // UNBEKANNTER `art`-Wert wird hier ebenfalls uebersprungen: Er hat kein Medium,
+      // und sein Urteil faellt die Weiche in `normalisiereElement`
+      // (`ungueltige_eingabe`). Zwei Stellen, die dasselbe verwerfen, sind zwei
+      // Wahrheiten.
+      if (art !== 'video') continue
 
       const bezug = bilde(element, index)
       const geprueft = await loeseUndPruefeMedium(projektId, feld(element, 'medienRef'), bezug)
@@ -331,8 +333,6 @@ export async function normalisiereElement(
     switch (art) {
       case 'segment':
         return await ausSegment(element, pngs, zielPfad, bezug, kontext)
-      case 'bild':
-        return await ausBild(element, zielPfad, bezug, kontext)
       case 'video':
         return await ausVideo(element, index, pngs, zielPfad, bezug, kontext)
       default:
@@ -341,7 +341,7 @@ export async function normalisiereElement(
         return fehler(
           'ungueltige_eingabe',
           `${bezug.text}: Unbekannte Elementart ${JSON.stringify(art)}. ` +
-            'Zulaessig sind ausschliesslich "video", "bild" und "segment".',
+            'Zulaessig sind ausschliesslich "video" und "segment".',
         )
     }
   } catch (ursache) {
@@ -350,7 +350,7 @@ export async function normalisiereElement(
 }
 
 // ===========================================================================
-// Die fuenf Faelle der Weiche
+// Die vier Faelle der Weiche
 // ===========================================================================
 
 /** Fall 1: `art === 'segment'` - die Pixel liegen als PNG in T1 (#175). */
@@ -373,25 +373,14 @@ async function ausSegment(
   return await ausStandbild(element, segmentPfad, zielPfad, bezug, kontext)
 }
 
-/** Fall 2: `art === 'bild'` - dieselbe Kette, die Pixel kommen aus D2. */
-async function ausBild(
-  element: RenderItem,
-  zielPfad: string,
-  bezug: Elementbezug,
-  kontext: NormalisierKontext,
-): Promise<Ergebnis<string, RenderFehlercode>> {
-  const quelle = await loeseUndPruefeMedium(kontext.projektId, feld(element, 'medienRef'), bezug)
-  if (!quelle.ok) return quelle
-  return await ausStandbild(element, quelle.wert, zielPfad, bezug, kontext)
-}
-
 /**
- * Der gemeinsame Rumpf der Faelle 1 und 2.
+ * Der Standbild-Rumpf von Fall 1.
  *
- * "Standbild -> Clip: `"segment"`- und `"bild"`-Items werden als Standbild ueber ihre
- * `dauer` bei 30 fps im Profil ausgehalten; harter Schnitt an den Grenzen." (TK 9.2.6)
- * Beide tragen KEIN Band: "Parallele Baender gibt es nur bei `"video"`-Items."
- * (TK 9.2.8) - deshalb immer die Vollbild-Kette mit schwarzem Hintergrund.
+ * "Standbild -> Clip: `"segment"`-Items werden als Standbild ueber ihre `dauer` bei
+ * 30 fps im Profil ausgehalten; harter Schnitt an den Grenzen." (TK 9.2.6, sinngemaess
+ * nach der Streichung der Elementart `bild`, TK 9.11.3) Ein Segment traegt KEIN Band:
+ * "Parallele Baender gibt es nur bei `"video"`-Items." (TK 9.2.8) - deshalb immer die
+ * Vollbild-Kette mit schwarzem Hintergrund.
  */
 async function ausStandbild(
   element: RenderItem,
@@ -423,7 +412,7 @@ async function ausStandbild(
 }
 
 /**
- * Faelle 3, 4 und 5: `art === 'video'`.
+ * Faelle 2, 3 und 4: `art === 'video'`.
  *
  * VERBINDLICHE REIHENFOLGE (Issue #177): `trimFrames` (#174) ->
  * `bestimmeBandgeometrie` (#176, nur mit Band) -> `baueBandspur` (#168, nur mit Band)

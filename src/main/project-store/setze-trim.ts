@@ -81,13 +81,13 @@ export async function setzeTrim(
     }
 
     if (element.art !== 'video') {
-      // Nur Video-Elemente tragen trimStart/trimEnde; bei bild und segment zaehlt `dauer`
+      // Nur Video-Elemente tragen trimStart/trimEnde; beim Segment zaehlt `dauer`
       // (TK 9.11.3, Belegungstabelle). Ein Trim auf ein Standbild waere sinnlos, und die
       // Werte muessten dort null bleiben.
       return fehler(
         'ungueltige_eingabe',
         `Das Element ${elementId} ist ein ${element.art}-Element; ein Trim ist nur bei ` +
-          'Video-Elementen moeglich. Bei Bild und Segment steuert die Dauer die Spielzeit.',
+          'Video-Elementen moeglich. Beim Aktions-Segment steuert die Dauer die Spielzeit.',
       )
     }
 

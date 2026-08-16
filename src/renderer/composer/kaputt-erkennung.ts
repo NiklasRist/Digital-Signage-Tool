@@ -121,7 +121,7 @@ export function findeKaputteStellen(projekt: Project): KaputteStelle[] {
         })
       }
     } else {
-      // Fall 1: Listenelement -> Asset fehlt (Video/Bild). Repariert wird auf
+      // Fall 1: Listenelement -> Asset fehlt (Video). Repariert wird auf
       // Listenelement-Ebene.
       const grund = pruefeAsset(element.ref, assets)
       if (grund !== null) {
@@ -141,7 +141,7 @@ export function findeKaputteStellen(projekt: Project): KaputteStelle[] {
     // den finalen Render (TK 9.10.7).
     //
     // Zwei Bedingungen, beide bewusst: Parallele Baender gibt es "nur bei
-    // `\"video\"`-Items" (TK 9.2.8); eine `einblendung` an einem `bild`- oder
+    // `\"video\"`-Items" (TK 9.2.8); eine `einblendung` an einem
     // `segment`-Element wird IGNORIERT und nicht gemeldet - das ist ein Fehler
     // des schreibenden Moduls, keine kaputte Stelle im Sinne von FA-19.
     //

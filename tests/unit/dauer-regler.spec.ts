@@ -111,10 +111,10 @@ function videoElement(): Listenelement {
   }
 }
 
-function standbild(art: 'bild' | 'segment'): Listenelement {
+function standbild(): Listenelement {
   return {
-    id: `el-${art}`,
-    art,
+    id: 'el-segment',
+    art: 'segment',
     ref: 'ref-1',
     dauer: BILD_DAUER,
     trimStart: null,
@@ -180,18 +180,16 @@ describe('baueReglerModell', () => {
     })
   })
 
-  it('gibt Bild und Segment einen Griff, Anfang 0 und den Bereich aus DAUER_BEREICH', () => {
-    for (const art of ['bild', 'segment'] as const) {
-      const ergebnis = baueReglerModell(standbild(art), null)
-      expect(ergebnis.ok).toBe(true)
-      if (!ergebnis.ok) return
+  it('gibt dem Segment einen Griff, Anfang 0 und den Bereich aus DAUER_BEREICH', () => {
+    const ergebnis = baueReglerModell(standbild(), null)
+    expect(ergebnis.ok).toBe(true)
+    if (!ergebnis.ok) return
 
-      expect(ergebnis.wert.griffe).toBe(1)
-      expect(ergebnis.wert.anfang).toBe(0)
-      expect(ergebnis.wert.ende).toBe(BILD_DAUER)
-      expect(ergebnis.wert.untergrenze).toBe(DAUER_BEREICH.min)
-      expect(ergebnis.wert.obergrenze).toBe(DAUER_BEREICH.max)
-    }
+    expect(ergebnis.wert.griffe).toBe(1)
+    expect(ergebnis.wert.anfang).toBe(0)
+    expect(ergebnis.wert.ende).toBe(BILD_DAUER)
+    expect(ergebnis.wert.untergrenze).toBe(DAUER_BEREICH.min)
+    expect(ergebnis.wert.obergrenze).toBe(DAUER_BEREICH.max)
   })
 
   it('rechnet effektiveDauer ROH - nicht auf das Frame-Raster', () => {
@@ -208,11 +206,10 @@ describe('baueReglerModell', () => {
     expect(video.ok && video.wert.effektiveDauer).toBe(roh)
     expect(video.ok && video.wert.effektiveDauer).not.toBe(frameGerundet)
 
-    // Und in allen drei Fällen gilt effektiveDauer === ende − anfang.
+    // Und in beiden Fällen gilt effektiveDauer === ende − anfang.
     for (const modell of [
       baueReglerModell(videoElement(), videoAsset(90)),
-      baueReglerModell(standbild('bild'), null),
-      baueReglerModell(standbild('segment'), null),
+      baueReglerModell(standbild(), null),
     ]) {
       expect(modell.ok).toBe(true)
       if (!modell.ok) return
@@ -234,14 +231,14 @@ describe('baueReglerModell', () => {
     }
   })
 
-  it('liefert fuer bild/segment ohne dauer ungueltige_eingabe', () => {
-    const ohneDauer = { ...standbild('bild'), dauer: null }
+  it('liefert fuer ein Segment ohne dauer ungueltige_eingabe', () => {
+    const ohneDauer = { ...standbild(), dauer: null }
     const ergebnis = baueReglerModell(ohneDauer, null)
     expect(ergebnis.ok ? null : ergebnis.fehler.code).toBe('ungueltige_eingabe')
   })
 
   it('wirft bei einer unbekannten art nicht, sondern meldet ungueltige_eingabe', () => {
-    const fremd = { ...standbild('bild'), art: 'ton' } as unknown as Listenelement
+    const fremd = { ...standbild(), art: 'ton' } as unknown as Listenelement
     const ergebnis = baueReglerModell(fremd, null)
     expect(ergebnis.ok ? null : ergebnis.fehler.code).toBe('ungueltige_eingabe')
 
@@ -273,7 +270,7 @@ describe('begrenze', () => {
   })
 
   it('haelt bei einem Griff den Anfang auf 0 und klemmt nur die Laenge', () => {
-    const ergebnis = baueReglerModell(standbild('bild'), null)
+    const ergebnis = baueReglerModell(standbild(), null)
     if (!ergebnis.ok) throw new Error('Vorbedingung des Tests nicht erfuellt')
     const modell = ergebnis.wert
 
@@ -322,23 +319,21 @@ describe('uebernehmeGrenzen', () => {
     expect(doppel.optimistischGerufen).toBe(1)
   })
 
-  it('ruft fuer bild und segment ausschliesslich setzeDauer mit ende − anfang', async () => {
-    for (const art of ['bild', 'segment'] as const) {
-      doppel.aufrufe = []
-      const element = standbild(art)
-      doppel.projekt = projektMit(element)
-      doppel.antwort = { ok: true, wert: { ...element, dauer: 31.87 } }
+  it('ruft fuer ein Segment ausschliesslich setzeDauer mit ende − anfang', async () => {
+    doppel.aufrufe = []
+    const element = standbild()
+    doppel.projekt = projektMit(element)
+    doppel.antwort = { ok: true, wert: { ...element, dauer: 31.87 } }
 
-      await uebernehmeGrenzen(element, 0, 31.87)
+    await uebernehmeGrenzen(element, 0, 31.87)
 
-      expect(doppel.aufrufe).toEqual([
-        {
-          kanal: KANAELE.project.setzeDauer,
-          nutzlast: { elementId: `el-${art}`, dauer: 31.87 },
-        },
-      ])
-      expect(doppel.aufrufe.some((a) => a.kanal === KANAELE.project.setzeTrim)).toBe(false)
-    }
+    expect(doppel.aufrufe).toEqual([
+      {
+        kanal: KANAELE.project.setzeDauer,
+        nutzlast: { elementId: 'el-segment', dauer: 31.87 },
+      },
+    ])
+    expect(doppel.aufrufe.some((a) => a.kanal === KANAELE.project.setzeTrim)).toBe(false)
   })
 
   it('traegt nach ok:true EXAKT das zurueckgegebene Element in die Sicht', async () => {
@@ -379,7 +374,7 @@ describe('uebernehmeGrenzen', () => {
   })
 
   it('reicht einen fachlichen Fehlercode des Main unveraendert durch', async () => {
-    const element = standbild('bild')
+    const element = standbild()
     doppel.projekt = projektMit(element)
     doppel.antwort = { ok: false, fehler: { code: 'kein_projekt', meldung: 'zu' } }
 
@@ -415,20 +410,18 @@ describe('uebernehmeGrenzen', () => {
     expect(doppel.projekt?.liste[0]).toEqual(element)
   })
 
-  it('weist bei bild/segment einen anfang ungleich 0 ohne IPC-Aufruf ab', async () => {
-    for (const art of ['bild', 'segment'] as const) {
-      const element = standbild(art)
-      doppel.projekt = projektMit(element)
-      const ergebnis = await uebernehmeGrenzen(element, 2.83, 31.87)
-      expect(ergebnis.ok ? null : ergebnis.fehler.code).toBe('ungueltige_eingabe')
-    }
+  it('weist bei einem Segment einen anfang ungleich 0 ohne IPC-Aufruf ab', async () => {
+    const element = standbild()
+    doppel.projekt = projektMit(element)
+    const ergebnis = await uebernehmeGrenzen(element, 2.83, 31.87)
+    expect(ergebnis.ok ? null : ergebnis.fehler.code).toBe('ungueltige_eingabe')
     expect(doppel.aufrufe).toEqual([])
   })
 
   it('weist eine unbekannte art und ein leeres Element ohne IPC-Aufruf ab', async () => {
     doppel.projekt = projektMit(videoElement())
 
-    const fremd = { ...standbild('bild'), art: 'ton' } as unknown as Listenelement
+    const fremd = { ...standbild(), art: 'ton' } as unknown as Listenelement
     const a = await uebernehmeGrenzen(fremd, 0, 31.87)
     expect(a.ok ? null : a.fehler.code).toBe('ungueltige_eingabe')
 

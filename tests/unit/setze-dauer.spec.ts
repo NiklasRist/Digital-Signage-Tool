@@ -45,7 +45,7 @@ beforeEach(() => {
     schemaVersion: 1,
     assets: [],
     aktionen: [],
-    liste: [element("b1", "bild"), element("s1", "segment"), element("v1", "video")],
+    liste: [element("s0", "segment"), element("s1", "segment"), element("v1", "video")],
     letzterAusgabeName: null,
   };
   merkeAktivesProjekt(projekt);
@@ -54,7 +54,7 @@ beforeEach(() => {
 
 describe("setzeDauer (#45)", () => {
   it("uebernimmt die Untergrenze des Bereichs und merkt den lebenden Stand vor", async () => {
-    const ergebnis = await setzeDauer("b1", DAUER_BEREICH.min);
+    const ergebnis = await setzeDauer("s0", DAUER_BEREICH.min);
 
     expect(ergebnis.ok).toBe(true);
     expect(projekt.liste[0]?.dauer).toBe(DAUER_BEREICH.min);
@@ -71,7 +71,7 @@ describe("setzeDauer (#45)", () => {
   });
 
   it("weist einen Wert knapp unterhalb der Untergrenze ab, ohne etwas zu aendern", async () => {
-    const ergebnis = await setzeDauer("b1", DAUER_BEREICH.min - 0.001);
+    const ergebnis = await setzeDauer("s0", DAUER_BEREICH.min - 0.001);
 
     expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "ungueltige_eingabe" } });
     expect(projekt.liste[0]?.dauer).toBe(STANDARD_ANZEIGEDAUER_SEKUNDEN);
@@ -79,7 +79,7 @@ describe("setzeDauer (#45)", () => {
   });
 
   it("weist einen Wert knapp oberhalb der Obergrenze ab, ohne etwas zu aendern", async () => {
-    const ergebnis = await setzeDauer("b1", DAUER_BEREICH.max + 0.001);
+    const ergebnis = await setzeDauer("s0", DAUER_BEREICH.max + 0.001);
 
     expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "ungueltige_eingabe" } });
     expect(projekt.liste[0]?.dauer).toBe(STANDARD_ANZEIGEDAUER_SEKUNDEN);
@@ -89,7 +89,7 @@ describe("setzeDauer (#45)", () => {
     // Der eigentliche Grund fuer diesen Fall: `NaN < min` und `NaN > max` sind BEIDE falsch.
     // Ohne die vorgeschaltete Endlichkeitspruefung stuende NaN im Modell und in der JSON-Datei
     // als `null` - ein Standbild ohne Dauer.
-    const ergebnis = await setzeDauer("b1", Number.NaN);
+    const ergebnis = await setzeDauer("s0", Number.NaN);
 
     expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "ungueltige_eingabe" } });
     expect(projekt.liste[0]?.dauer).toBe(STANDARD_ANZEIGEDAUER_SEKUNDEN);
@@ -113,7 +113,7 @@ describe("setzeDauer (#45)", () => {
   it("meldet kein_projekt, wenn gar kein Projekt geoeffnet ist", async () => {
     merkeAktivesProjekt(null);
 
-    const ergebnis = await setzeDauer("b1", DAUER_BEREICH.min);
+    const ergebnis = await setzeDauer("s0", DAUER_BEREICH.min);
 
     expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "kein_projekt" } });
   });
@@ -123,7 +123,7 @@ describe("setzeDauer (#45)", () => {
     // Rumpf). Faellt die Entscheidung anders aus, MUSS dieser Test rot werden.
     const krumm = DAUER_BEREICH.min + 0.3456;
 
-    const ergebnis = await setzeDauer("b1", krumm);
+    const ergebnis = await setzeDauer("s0", krumm);
 
     expect(ergebnis.ok).toBe(true);
     expect(projekt.liste[0]?.dauer).toBe(krumm);

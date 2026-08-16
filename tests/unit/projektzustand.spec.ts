@@ -33,8 +33,8 @@ async function frisch(): Promise<Modul> {
 function element(id: string): Listenelement {
   return {
     id,
-    art: "bild",
-    ref: `asset-${id}`,
+    art: "segment",
+    ref: `aktion-${id}`,
     dauer: 10,
     trimStart: null,
     trimEnde: null,

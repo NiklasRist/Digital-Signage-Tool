@@ -4,7 +4,7 @@
 // `RENDER_PROFILE.fps` gebildet, nicht aus der Umsetzung abgeschrieben und nicht mit
 // einer 30 im Testcode:
 //   frameDauer(video)   = round(trimEnde * fps) - round(trimStart * fps)   EINZELN
-//   frameDauer(bild)    = round(dauer * fps)
+//   frameDauer(segment) = round(dauer * fps)
 //   gesamtlaenge        = Summe der Frames, Sekunden = Summe / fps
 //
 // DIE FALLE, gegen die dieser Testsatz gebaut ist: Testwerte, die auf dem Frame-Raster
@@ -32,9 +32,6 @@ const fps = RENDER_PROFILE.fps
 
 function video(trimStart: number | null, trimEnde: number | null, id = 'v1'): Listenelement {
   return { id, art: 'video', ref: 'asset-v', dauer: null, trimStart, trimEnde, einblendung: null }
-}
-function bild(dauer: number | null, id = 'b1'): Listenelement {
-  return { id, art: 'bild', ref: 'asset-b', dauer, trimStart: null, trimEnde: null, einblendung: null }
 }
 function segment(dauer: number | null, id = 's1'): Listenelement {
   return { id, art: 'segment', ref: 'aktion-s', dauer, trimStart: null, trimEnde: null, einblendung: null }
@@ -88,30 +85,29 @@ describe('frameDauer - video', () => {
   })
 })
 
-describe('frameDauer - bild und segment', () => {
-  it('rundet die Dauer eines Bildes und eines Segments gleich', () => {
+describe('frameDauer - segment', () => {
+  it('rundet die Dauer eines Segments', () => {
     // 10.5 * fps = 315 - hier absichtlich der Wert aus der DoD.
     const erwartet = Math.round(10.5 * fps)
     expect(erwartet).toBe(315)
-    expect(wert(frameDauer(bild(10.5)))).toBe(erwartet)
     expect(wert(frameDauer(segment(10.5)))).toBe(erwartet)
   })
 
   it('rundet auch krumme Dauern, bei denen die Rundung etwas zu tun hat', () => {
     // 4.71 * fps = 141,3 -> 141 Frames (abwaerts).
-    expect(wert(frameDauer(bild(4.71)))).toBe(Math.round(4.71 * fps))
-    expect(wert(frameDauer(bild(4.71)))).toBe(141)
+    expect(wert(frameDauer(segment(4.71)))).toBe(Math.round(4.71 * fps))
+    expect(wert(frameDauer(segment(4.71)))).toBe(141)
     // 4.72 * fps = 141,6 -> 142 Frames (aufwaerts) - dasselbe Element, ein Frame mehr.
     expect(wert(frameDauer(segment(4.72)))).toBe(142)
     // Kein `floor`: 4.72 abgeschnitten waere 141.
     expect(Math.floor(4.72 * fps)).toBe(141)
   })
 
-  it('liest bei bild/segment NIE die Trim-Felder', () => {
+  it('liest beim segment NIE die Trim-Felder', () => {
     const mitTrimMuell: Listenelement = {
-      id: 'b-trim',
-      art: 'bild',
-      ref: 'asset-b',
+      id: 's-trim',
+      art: 'segment',
+      ref: 'aktion-s',
       dauer: 4.71,
       trimStart: 999,
       trimEnde: 12345,
@@ -146,7 +142,7 @@ describe('das Werbeband zaehlt nie mit', () => {
 
 describe('berechneGesamtlaenge', () => {
   it('ist die Summe der Einzelwerte aus frameDauer (gemischte Liste)', () => {
-    const liste = [video(1.02, 3.04, 'v'), bild(4.71, 'b'), segment(10.5, 's')]
+    const liste = [video(1.02, 3.04, 'v'), segment(4.71, 'b'), segment(10.5, 's')]
     const einzeln = liste.map((e) => wert(frameDauer(e)))
     expect(einzeln).toEqual([60, 141, 315])
 
@@ -165,7 +161,7 @@ describe('berechneGesamtlaenge', () => {
     expect((31 / fps) * fps === 31).toBe(false)
 
     for (let n = 1; n <= 400; n++) {
-      const gesamt = wert(berechneGesamtlaenge([bild(n * 0.271)]))
+      const gesamt = wert(berechneGesamtlaenge([segment(n * 0.271)]))
       expect(Math.round(gesamt.sekunden * fps)).toBe(gesamt.frames)
       expect(gesamt.sekunden).toBe(gesamt.frames / fps)
     }
@@ -181,7 +177,7 @@ describe('berechneGesamtlaenge', () => {
     const summeJeElement = 31 / fps + 31 / fps + 31 / fps
     expect(summeJeElement).not.toBe(93 / fps)
 
-    const gesamt = wert(berechneGesamtlaenge([bild(1.02, 'a'), bild(1.02, 'b'), bild(1.02, 'c')]))
+    const gesamt = wert(berechneGesamtlaenge([segment(1.02, 'a'), segment(1.02, 'b'), segment(1.02, 'c')]))
     expect(gesamt.frames).toBe(93)
     expect(gesamt.sekunden).toBe(93 / fps)
     expect(gesamt.sekunden).not.toBe(summeJeElement)
@@ -204,13 +200,13 @@ describe('die 30-Minuten-Warnung', () => {
     const schwelleFrames = WARNSCHWELLE_SEKUNDEN * fps
     expect(schwelleFrames).toBe(54000)
 
-    const genau = wert(berechneGesamtlaenge([bild(WARNSCHWELLE_SEKUNDEN)]))
+    const genau = wert(berechneGesamtlaenge([segment(WARNSCHWELLE_SEKUNDEN)]))
     expect(genau.frames).toBe(schwelleFrames)
     expect(genau.sekunden).toBe(WARNSCHWELLE_SEKUNDEN)
     expect(genau.warnung).toBe(false)
 
     const einFrameMehr = wert(
-      berechneGesamtlaenge([bild(WARNSCHWELLE_SEKUNDEN), bild(1 / fps, 'b2')]),
+      berechneGesamtlaenge([segment(WARNSCHWELLE_SEKUNDEN), segment(1 / fps, 'b2')]),
     )
     expect(einFrameMehr.frames).toBe(schwelleFrames + 1)
     expect(einFrameMehr.sekunden).toBeGreaterThan(WARNSCHWELLE_SEKUNDEN)
@@ -218,14 +214,14 @@ describe('die 30-Minuten-Warnung', () => {
 
     // Ein Frame WENIGER warnt ebenfalls nicht (Grenze in beide Richtungen).
     const einFrameWeniger = wert(
-      berechneGesamtlaenge([bild(WARNSCHWELLE_SEKUNDEN - 1 / fps)]),
+      berechneGesamtlaenge([segment(WARNSCHWELLE_SEKUNDEN - 1 / fps)]),
     )
     expect(einFrameWeniger.frames).toBe(schwelleFrames - 1)
     expect(einFrameWeniger.warnung).toBe(false)
   })
 
   it('blockiert nichts - die Rechnung gelingt auch weit ueber der Schwelle', () => {
-    const gesamt = wert(berechneGesamtlaenge([bild(WARNSCHWELLE_SEKUNDEN * 3)]))
+    const gesamt = wert(berechneGesamtlaenge([segment(WARNSCHWELLE_SEKUNDEN * 3)]))
     expect(gesamt.warnung).toBe(true)
     expect(gesamt.frames).toBe(WARNSCHWELLE_SEKUNDEN * 3 * fps)
   })
@@ -239,14 +235,13 @@ describe('Fehlerpfade - jeder liefert ungueltige_eingabe und nennt die id', () =
     ['video mit unendlicher Grenze', video(1.02, Number.POSITIVE_INFINITY, 'id-d')],
     ['video mit trimEnde gleich trimStart', video(4.71, 4.71, 'id-e')],
     ['video mit trimEnde vor trimStart', video(10.49, 2.51, 'id-f')],
-    ['bild ohne dauer', bild(null, 'id-g')],
     ['segment ohne dauer', segment(null, 'id-h')],
-    ['bild mit dauer 0', bild(0, 'id-i')],
-    ['bild mit negativer dauer', bild(-4.71, 'id-j')],
+    ['segment mit dauer 0', segment(0, 'id-i')],
+    ['segment mit negativer dauer', segment(-4.71, 'id-j')],
     ['segment mit unendlicher dauer', segment(Number.POSITIVE_INFINITY, 'id-k')],
     // 0.01 * fps = 0,3 -> 0 Frames. Ein Element ohne einen einzigen Frame kann im
     // Render nicht entstehen.
-    ['bild, dessen dauer auf 0 Frames rundet', bild(0.01, 'id-l')],
+    ['segment, dessen dauer auf 0 Frames rundet', segment(0.01, 'id-l')],
     // 1.0 -> 30 Frames, 1.01 -> 30,3 -> 30 Frames: die Sekunden gehen auseinander,
     // das Frame-Raster nicht.
     ['video, dessen Ausschnitt kuerzer als ein Frame ist', video(1.0, 1.01, 'id-m')],
@@ -263,7 +258,7 @@ describe('Fehlerpfade - jeder liefert ungueltige_eingabe und nennt die id', () =
       expect(f.meldung).toContain(element.id)
 
       // Derselbe Fall bringt auch die GESAMTE Rechnung zu Fall - kein Teilergebnis.
-      const gesamt = fehler(berechneGesamtlaenge([bild(4.71, 'gut-1'), element, bild(4.71, 'gut-2')]))
+      const gesamt = fehler(berechneGesamtlaenge([segment(4.71, 'gut-1'), element, segment(4.71, 'gut-2')]))
       expect(gesamt.code).toBe('ungueltige_eingabe')
       expect(gesamt.meldung).toContain(element.id)
     })
@@ -293,13 +288,13 @@ describe('Fehlerpfade - jeder liefert ungueltige_eingabe und nennt die id', () =
   })
 
   it('wirft nicht, wenn ein Element gar kein Objekt ist', () => {
-    const loch = [bild(4.71, 'gut'), null] as unknown as Listenelement[]
+    const loch = [segment(4.71, 'gut'), null] as unknown as Listenelement[]
     const f = fehler(berechneGesamtlaenge(loch))
     expect(f.code).toBe('ungueltige_eingabe')
   })
 
   it('gibt fuer ein Video ohne Trim-Werte KEINE ungefaehre Laenge zurueck', () => {
-    const ergebnis = berechneGesamtlaenge([bild(10.5, 'gut'), video(null, null, 'kaputt')])
+    const ergebnis = berechneGesamtlaenge([segment(10.5, 'gut'), video(null, null, 'kaputt')])
     expect(ergebnis.ok).toBe(false)
     expect(JSON.stringify(ergebnis)).not.toContain('315')
   })
@@ -307,7 +302,7 @@ describe('Fehlerpfade - jeder liefert ungueltige_eingabe und nennt die id', () =
   it('zaehlt ein kaputtes Element (fehlendes Asset) normal mit', () => {
     // „kaputt" heisst: `ref` zeigt ins Leere. Fuer die Rechnung ist das kein Fall -
     // sie sieht nur Dauern. Der Reparatur-Modus (#131 ff.) behandelt das.
-    const kaputt = bild(4.71, 'ref-weg')
+    const kaputt = segment(4.71, 'ref-weg')
     kaputt.ref = 'gibt-es-nicht'
     expect(wert(berechneGesamtlaenge([kaputt])).frames).toBe(141)
   })
@@ -360,9 +355,14 @@ describe('dieselbe Zahl wie der render-service (#174)', () => {
       expect(hier).toBe(dort)
 
       const dauer = i * 0.271
-      expect(wert(frameDauer(bild(dauer)))).toBe(
+      expect(wert(frameDauer(segment(dauer)))).toBe(
         wert(
-          frameDauerRender({ id: 'b', art: 'bild', medienRef: 'media/a.png', dauer } as unknown as RenderItem),
+          frameDauerRender({
+            id: 's',
+            art: 'segment',
+            png: new Uint8Array([1]),
+            dauer,
+          } as unknown as RenderItem),
         ),
       )
     }

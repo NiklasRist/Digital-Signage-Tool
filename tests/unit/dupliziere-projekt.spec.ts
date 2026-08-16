@@ -147,11 +147,11 @@ describe("dupliziereProjekt (#36)", () => {
     const offen = quellProjekt();
     offen.liste.push({
       id: "44444444-4444-4444-8444-444444444444",
-      art: "bild",
+      art: "video",
       ref: "22222222-2222-4222-8222-222222222222",
-      dauer: 10,
-      trimStart: null,
-      trimEnde: null,
+      dauer: null,
+      trimStart: 0,
+      trimEnde: 12.5,
       einblendung: null,
     });
     merkeAktivesProjekt(offen);

@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.6 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.17 (Schreibweg der Standard-Segmentdauer; `schemaVersion` bleibt 1; keine Bestandsdaten-Migration)
-**Datum:** 15.08.2026
+**Version:** 3.18 (`Bearbeitungsstand` bekommt `standardSegmentdauer` als drittes Feld – Undo/Redo nimmt das Ändern des Projektstandards als **einen** Schritt zurück)
+**Datum:** 16.08.2026
 **Status:** In Planung
 
 ---
@@ -1008,11 +1008,11 @@ Rolle, die er bei `setzeStandardMarke` spielt (s. u.).
 |---|---|
 | `erstelleAktion` | `aktionsdaten` → `Ergebnis<Aktion>` |
 | `bearbeiteAktion` | `id`, `aktionsdaten` → `Ergebnis<Aktion>` |
-| `löscheAktion` | `id` → `Ergebnis<{ stand: Bearbeitungsstand, entfernteElementIds: string[], geaenderteElementIds: string[] }>` – **Kaskade**: entfernte Listenelemente **und** Videos mit gekürztem Band, s. 9.5.3. `stand` ist der **vollständige neue Stand** nach der Kaskade (Aktions-Bibliothek **und** Wiedergabeliste), die beiden Kennungslisten beschreiben, **was sich geändert hat** |
+| `löscheAktion` | `id` → `Ergebnis<{ stand: Bearbeitungsstand, entfernteElementIds: string[], geaenderteElementIds: string[] }>` – **Kaskade**: entfernte Listenelemente **und** Videos mit gekürztem Band, s. 9.5.3. `stand` ist der **vollständige neue Stand** nach der Kaskade (Aktions-Bibliothek, Wiedergabeliste **und** – seit v3.18 unverändert mitgeführt – die Standarddauer), die beiden Kennungslisten beschreiben, **was sich geändert hat** |
 
 **`löscheAktion` liefert den neuen Stand, nicht nur die Kennungen (bindend).** Der Rückgabewert trägt **beides**: den vollständigen `stand` (Typ `Bearbeitungsstand`, s. u. bei `setzeBearbeitungsstand`) **und** die bisherigen Listen `entfernteElementIds`/`geaenderteElementIds`. Beide werden gebraucht, aber für Verschiedenes: Der **Stand** aktualisiert die Sicht, die **Kennungen** erklären dem Nutzer die Wirkung („aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt", 9.5.3) und benennen die Stellen, die die Oberfläche hervorheben kann.
 
-*Begründung:* 9.13.1 führt „Aktionen: anlegen, bearbeiten, **löschen**" unter „Umfasst", ist also **undo-fähig**; 9.13.2 verlangt dafür einen Schnappschuss, und der entsteht beim **Übergang der Sicht von einem Stand auf den nächsten**. Aus bloßen Kennungen lässt sich der neue Stand nicht bilden – der einzige Weg dorthin wäre ein **Neuladen** des Projekts, und das setzt die Sicht an der Schnappschuss-Stelle **vorbei**: Undo wäre gebaut und für genau den Fall wirkungslos, für den es am dringendsten gebraucht wird. Mit dem Stand läuft das Löschen über **denselben** Weg wie jede andere Änderung, der Schnappschuss entsteht von selbst, und Rückgängig braucht **keinen** Sonderfall. **Ausdrücklich verworfen** wurde ein zweiter Eingang in die Rückgängig-Verwaltung allein für diesen Fall: Eine Ausnahme von der Regel „Schnappschüsse entstehen an genau **einer** Stelle" ist genau die Art Sonderfall, die in diesem Projekt bisher die teuersten Fehler verursacht hat. *Warum `Bearbeitungsstand` und nicht `Projekt`:* Es ist derselbe Ausschnitt, den der Schnappschuss ohnehin führt (`aktionen` + `liste`, 9.5.2/9.13.2) – ein zweiter, weiterer Typ an dieser Stelle brächte `assets` und `letzterAusgabeName` mit, die `löscheAktion` gar nicht anfasst und die nach 9.13.2 **nicht** in den Schnappschuss gehören.
+*Begründung:* 9.13.1 führt „Aktionen: anlegen, bearbeiten, **löschen**" unter „Umfasst", ist also **undo-fähig**; 9.13.2 verlangt dafür einen Schnappschuss, und der entsteht beim **Übergang der Sicht von einem Stand auf den nächsten**. Aus bloßen Kennungen lässt sich der neue Stand nicht bilden – der einzige Weg dorthin wäre ein **Neuladen** des Projekts, und das setzt die Sicht an der Schnappschuss-Stelle **vorbei**: Undo wäre gebaut und für genau den Fall wirkungslos, für den es am dringendsten gebraucht wird. Mit dem Stand läuft das Löschen über **denselben** Weg wie jede andere Änderung, der Schnappschuss entsteht von selbst, und Rückgängig braucht **keinen** Sonderfall. **Ausdrücklich verworfen** wurde ein zweiter Eingang in die Rückgängig-Verwaltung allein für diesen Fall: Eine Ausnahme von der Regel „Schnappschüsse entstehen an genau **einer** Stelle" ist genau die Art Sonderfall, die in diesem Projekt bisher die teuersten Fehler verursacht hat. *Warum `Bearbeitungsstand` und nicht `Projekt`:* Es ist derselbe Ausschnitt, den der Schnappschuss ohnehin führt (`aktionen` + `liste` + seit v3.18 `standardSegmentdauer`, 9.5.2/9.13.2) – ein zweiter, weiterer Typ an dieser Stelle brächte `assets` und `letzterAusgabeName` mit, die `löscheAktion` gar nicht anfasst und die nach 9.13.2 **nicht** in den Schnappschuss gehören.
 
 **Liste:**
 
@@ -1095,17 +1095,15 @@ verbietet. Ein einziger Aufruf unter einem Lock hat das Problem nicht.
   Element-Dauer ist beim Platzieren **materialisiert** worden (Auflösungskette 9.8.4 liefert nur den
   **Startwert**, danach entscheidet der Regler – 9.8.4, Anforderungsdokument 4.4); sie rückwirkend
   nachzuziehen würde eine vom Nutzer am Regler getroffene Wahl überschreiben, ohne dass er es sieht.
-- **Ein rücknehmbarer Schritt (FA-21).** Das Ändern des Projektstandards ist **ein** Undo-Schritt, nicht
-  *n*+1 – es ist ein Vorgang, der Nutzer hat ihn als einen ausgelöst. Er verändert `aktionen`, also genau
-  das, was der `Bearbeitungsstand` führt (s. u., 9.13.2).
-
-  > **GEMELDET (v3.17) – der heutige `Bearbeitungsstand` gibt das nicht ganz her.** Er trägt **nur**
-  > `aktionen` und `liste`; `Project.standardSegmentdauer` ist **nicht** darin. Ein Undo würde damit die
-  > festgeschriebenen Aktions-Dauern zurücknehmen, den **Projektstandard aber stehen lassen** – ein
-  > Halbzustand. Damit der Schritt als **ein** Schritt rücknehmbar ist, müsste `standardSegmentdauer` ein
-  > **drittes Feld** des `Bearbeitungsstand` werden (und `setzeBearbeitungsstand` es mitschreiben). Das ist
-  > eine Änderung am geteilten Vertrag und wird hier **nicht erfunden**, sondern gemeldet: zu entscheiden,
-  > bevor ein Issue dazu geschrieben wird.
+- **Ein rücknehmbarer Schritt (FA-21) – und SCHNAPPSCHUSSPFLICHTIG (bindend, v3.18).** Das Ändern des
+  Projektstandards ist **ein** Undo-Schritt, nicht *n*+1 – es ist ein Vorgang, der Nutzer hat ihn als einen
+  ausgelöst. Er verändert `aktionen` **und** `Project.standardSegmentdauer`, also genau das, was der
+  `Bearbeitungsstand` seit v3.18 führt (s. u., 9.13.2: **drittes Feld** `standardSegmentdauer`). Vor dem
+  Aufruf entsteht deshalb – wie vor jeder Instant-Operation – ein Schnappschuss über die Undo-Hülle um die
+  gemeinsame Projekt-Sicht (9.13.2); ein Undo stellt **beide** Seiten gemeinsam wieder her, ein Redo setzt
+  beide wieder. **Ein Halbzustand darf nicht entstehen:** Nähme das Undo nur die festgeschriebenen
+  Aktions-Dauern zurück und ließe den Projektstandard stehen, wäre die Anwendung halb zurückgedreht – und
+  der Nutzer sähe nicht, welche Hälfte.
 - **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `project:setzeStandardSegmentdauer`. Ohne Anmeldung im
   `ipc-gateway` bliebe sie eine Main-Funktion ohne Aufrufer.
 
@@ -1115,14 +1113,23 @@ verbietet. Ein einziger Aufruf unter einem Lock hat das Problem nicht.
 
 | Operation | Eingang → Ausgang |
 |---|---|
-| `setzeBearbeitungsstand` | `stand` (`Bearbeitungsstand`) → `Ergebnis<Projekt>` – ersetzt `aktionen` **und** `liste` des geladenen Projekts **als Ganzes** durch den Schnappschuss, unter dem D1-Lock und **voll validiert**. Der einzige Rückschreib-Weg für Undo/Redo (9.13.2) |
+| `setzeBearbeitungsstand` | `stand` (`Bearbeitungsstand`) → `Ergebnis<Projekt>` – ersetzt `aktionen`, `liste` **und** `standardSegmentdauer` des geladenen Projekts **als Ganzes** durch den Schnappschuss, unter dem D1-Lock und **voll validiert**. Der einzige Rückschreib-Weg für Undo/Redo (9.13.2) |
 
 ```
 Bearbeitungsstand {
-  aktionen: Aktion[]          // die vollständige Aktionen-Bibliothek des Projekts
-  liste:    Listenelement[]   // die vollständige Wiedergabeliste, Reihenfolge = Array-Reihenfolge (9.11.3)
+  aktionen: Aktion[]              // die vollständige Aktionen-Bibliothek des Projekts
+  liste:    Listenelement[]       // die vollständige Wiedergabeliste, Reihenfolge = Array-Reihenfolge (9.11.3)
+  standardSegmentdauer: number    // die projektweite Standarddauer (9.11.3), seit v3.18 im Schnappschuss
 }
 ```
+
+**Das dritte Feld `standardSegmentdauer` (bindend, v3.18).** Es wird **mitgeschrieben** wie die beiden
+anderen und **gegen denselben Dauer-Bereich** geprüft wie `setzeDauer` (10–45 s, 9.11.4); ein Wert außerhalb
+ist `ungueltige_eingabe` und die Operation bleibt **ohne jede Wirkung**. *Begründung:*
+`setzeStandardSegmentdauer` (s. o.) ändert **zwei Dinge in einem atomaren Zug** – den Projektstandard und die
+Dauer jeder abgewählten Aktion. Wer sie zusammen ausführt, muss sie zusammen zurücknehmen können; ohne das
+dritte Feld nähme ein Undo die Aktions-Dauern zurück und ließe den Standard stehen. Begründung in voller
+Länge: 9.13.2.
 
 **Warum es diese Operation braucht (bindend).** 9.13.2 legt Undo **schnappschuss-basiert** fest – ausdrücklich **nicht** über inverse Operationen. Die übrigen Operationen dieser Liste sind aber **feingranular**, und für zwei Fälle aus 9.13.1 („Umfasst") gibt es damit **überhaupt keinen** Rückweg:
 
@@ -1131,7 +1138,7 @@ Bearbeitungsstand {
 
 Ohne diese Operation wäre FA-21 – ein **Muss** – für genau die Fälle unerfüllbar, in denen Undo am dringendsten gebraucht wird (versehentliches Löschen). Ein Agent, der die Lücke lokal schließt, baut zwangsläufig die verbotenen inversen Operationen nach.
 
-**Ausdrücklich NICHT enthalten: `assets` und `letzterAusgabeName`.** Der `Bearbeitungsstand` trägt **nur** `aktionen` und `liste`. *Begründung:* Beide anderen Felder werden von **Aufträgen** verändert – `assets` vom Import und vom Löschen (9.4.5/9.4.6), `letzterAusgabeName` vom Render (FA-22) –, und Aufträge sind nach 9.13.3 **grundsätzlich nicht undo-fähig**. Zöge ein Undo sie mit, verschwände ein soeben importiertes Medium aus dem Datenbestand, **während seine Datei weiter auf der Platte liegt**: eine Waise, die der Reconcile beim nächsten Start stillschweigend löscht (9.4.7) – Datenverlust durch einen Knopf, der Datenverlust verhindern soll. Die Regel ergänzt 9.13.3 (ein D1-verändernder Auftrag **leert** die Historie) an ihrer Flanke: Jene verhindert einen **veralteten** Schnappschuss, diese begrenzt seinen **Umfang**.
+**Ausdrücklich NICHT enthalten: `assets` und `letzterAusgabeName`.** Der `Bearbeitungsstand` trägt **nur** `aktionen`, `liste` und `standardSegmentdauer`. *Begründung:* Beide anderen Felder werden von **Aufträgen** verändert – `assets` vom Import und vom Löschen (9.4.5/9.4.6), `letzterAusgabeName` vom Render (FA-22) –, und Aufträge sind nach 9.13.3 **grundsätzlich nicht undo-fähig**. Zöge ein Undo sie mit, verschwände ein soeben importiertes Medium aus dem Datenbestand, **während seine Datei weiter auf der Platte liegt**: eine Waise, die der Reconcile beim nächsten Start stillschweigend löscht (9.4.7) – Datenverlust durch einen Knopf, der Datenverlust verhindern soll. Die Regel ergänzt 9.13.3 (ein D1-verändernder Auftrag **leert** die Historie) an ihrer Flanke: Jene verhindert einen **veralteten** Schnappschuss, diese begrenzt seinen **Umfang**.
 
 **Volle Validierung – der Schnappschuss ist keine Vertrauensfrage (bindend).** Die Operation prüft den eingehenden Stand **vollständig**, so als käme er von außen (9.1.1 Punkt 6): **jede** Referenz muss auflösbar sein (`art: "video"` → ein `Asset` in `Project.assets` mit `typ: "video"`; `art: "segment"` → eine `Aktion` in `stand.aktionen`; jede `einblendung.abschnitte[].aktionRef` ebenso; jede `bandVorlageId` eine vorhandene Vorlage), **jede** Dauer muss im zulässigen Bereich liegen (10–45 s bei Segmenten, Trim `0 ≤ start < ende ≤ Videodauer`), **jede** `art` muss gültig sein – seit v3.16 also `"video"` oder `"segment"`, ein eingehendes `"bild"` ist `ungueltige_eingabe` –, und die `id`s müssen eindeutig sein. Scheitert eine Prüfung, gilt `ungueltige_eingabe` **ohne jede Wirkung** – ein halb eingespielter Schnappschuss wäre schlimmer als ein nicht ausgeführtes Undo. *Warum trotz „der Stand kam ja aus unserem eigenen Speicher":* Zwischen Schnappschuss und Undo kann ein Auftrag `assets` verändert haben; die Historie wird zwar geleert (9.13.3), aber die Prüfung ist die **strukturelle** Absicherung dieser Zusage statt bloßer Disziplin. Ein Undo darf D1 unter **keinen** Umständen in einen Zustand bringen, den der Render später mit `medium_fehlt` quittiert.
 
@@ -2065,11 +2072,45 @@ Vorlage X bearbeiten
 #### 9.13.2 Mechanismus
 
 - **Schnappschuss-basiert:** Vor jeder Instant-Operation wird ein Schnappschuss des betroffenen Datensatzes gehalten; Undo stellt ihn wieder her. **Nicht** über „inverse Operationen" – eine falsch implementierte Umkehrung ist eine stille Fehlerquelle, ein Schnappschuss ist trivial korrekt.
-- **Der Rückschreib-Weg der Projekt-Bearbeitung ist `setzeBearbeitungsstand` (9.5.2) – und zwar der einzige.** Der Schnappschuss umfasst `aktionen` **und** `liste`, und er wird **als Ganzes** zurückgeschrieben, unter dem D1-Lock und voll validiert. **Verboten** ist der Versuch, ein Undo aus den feingranularen Operationen (`fügeElementHinzu`, `ordneNeu`, `setzeTrim` …) zusammenzusetzen: Genau das wären die oben ausgeschlossenen inversen Operationen, und für `entferneElement` und `löscheAktion` ist es nachweislich unmöglich – `fügeElementHinzu` vergibt eine **neue** `id` und hängt ans Ende, und die Lösch-Kaskade aus 9.5.3 (Listenelemente **und** Band-Abschnitte) hat gar keine Umkehrung. `assets` und `letzterAusgabeName` gehören **nicht** in den Schnappschuss (Begründung in 9.5.2).
+- **Der Rückschreib-Weg der Projekt-Bearbeitung ist `setzeBearbeitungsstand` (9.5.2) – und zwar der einzige.** Der Schnappschuss umfasst `aktionen`, `liste` **und** `standardSegmentdauer` (v3.18, s. u.), und er wird **als Ganzes** zurückgeschrieben, unter dem D1-Lock und voll validiert. **Verboten** ist der Versuch, ein Undo aus den feingranularen Operationen (`fügeElementHinzu`, `ordneNeu`, `setzeTrim` …) zusammenzusetzen: Genau das wären die oben ausgeschlossenen inversen Operationen, und für `entferneElement` und `löscheAktion` ist es nachweislich unmöglich – `fügeElementHinzu` vergibt eine **neue** `id` und hängt ans Ende, und die Lösch-Kaskade aus 9.5.3 (Listenelemente **und** Band-Abschnitte) hat gar keine Umkehrung. `assets` und `letzterAusgabeName` gehören **nicht** in den Schnappschuss (Begründung in 9.5.2).
 - **Zwei getrennte Historien:** Projekt-Bearbeitung und Vorlagen-Editor haben **eigene** Stapel (sie bearbeiten verschiedene Datensätze) und werden nie vermischt.
 - **Begrenzte Tiefe** (Größenordnung 50 Schritte), damit der Speicherbedarf gedeckelt bleibt.
 - **Nur Laufzeit** (Kategorie D): die Historie wird **nicht** persistiert und ist nach Projektwechsel, Editor-Schluss oder App-Neustart leer.
 - **Undo/Redo läuft über denselben Pfad wie eine normale Änderung** – es ruft `setzeBearbeitungsstand` (9.5.2) auf wie jede andere Instant-Operation, aktualisiert damit den Speicher und löst das gewohnte Auto-Speichern (9.5.4) aus. **Kein** Sonderweg, der Platte und Speicher auseinanderlaufen ließe: Ein Undo, das nur die Anzeige zurücksetzt, ohne dass das entprellte Speichern anspringt, wäre nach dem nächsten Start wieder verschwunden.
+
+**Der Schnappschuss trägt DREI Felder – `standardSegmentdauer` gehört dazu (bindend, v3.18).** Der
+`Bearbeitungsstand` (9.5.2) führt neben `aktionen` und `liste` auch **`standardSegmentdauer`**, also den
+projektweiten Standardwert aus `Project` (9.11.3).
+
+- **Beim Aufnehmen** wird der Wert wie die beiden anderen Felder in den Schnappschuss kopiert – bei **jeder**
+  Instant-Operation, nicht nur bei `setzeStandardSegmentdauer`. Ein Schnappschuss, der das Feld nur manchmal
+  trüge, wäre ein Sonderfall an genau der Stelle, an der dieses Kapitel Sonderfälle ausschließt.
+- **Beim Undo** wird er zusammen mit `aktionen` und `liste` durch **einen** Aufruf von
+  `setzeBearbeitungsstand` zurückgeschrieben – ein Schritt, ein Lock, ein Auto-Speichern.
+- **Beim Redo** gilt dasselbe in die andere Richtung: Der vorwärts liegende Stand wird **vollständig**
+  gesetzt, einschließlich der Standarddauer. Redo ist hier kein zweiter Mechanismus, sondern derselbe
+  Schnappschuss-Weg mit dem anderen Nachbarn im Stapel.
+- **Kein Sonderweg zum `config-store`.** Undo/Redo schreibt die Standarddauer **ausschließlich** über
+  `setzeBearbeitungsstand`; ein zweiter Aufruf von `setzeStandardSegmentdauer` (9.5.2) wäre genau die
+  verbotene inverse Operation und könnte zwischen den beiden Hälften scheitern.
+
+*Begründung (vom Auftraggeber am 16.08.2026 entschieden):* `setzeStandardSegmentdauer` (9.5.2) ändert
+**zwei Dinge in einem atomaren Zug** – den Projektstandard **und** die Dauer jeder abgewählten Aktion. Der
+Schnappschuss trug bisher nur `aktionen` und `liste`; ein Undo hätte die Aktions-Dauern zurückgestellt und
+den Standard stehen lassen – **halb zurück, und der Nutzer sieht nicht, welche Hälfte**. Der
+`Bearbeitungsstand` ist ein **Undo-Hilfsmittel, kein Datenmodell**: Dass darin ein Wert mitreist, der sonst
+nicht zum Schnappschuss-Ausschnitt gehört, ist genau die Stelle, an der die Zusammengehörigkeit entsteht –
+der Auftraggeber hat entschieden, dass die beiden Änderungen **eine** Operation sind, und wer sie zusammen
+ausführt, muss sie zusammen zurücknehmen können.
+
+**Ausdrücklich verworfen wurden zwei Auswege:** (1) **„Undo endet an der Projektgrenze"** – der
+Projektstandard bliebe außen vor. Das nimmt die eben erst festgelegte **Atomarität** wieder zurück und
+liefert genau den Halbzustand, gegen den die Regel existiert. (2) **den Geltungsbereich des Wertes
+verschieben**, um ihn dem Schnappschuss-Ausschnitt anzupassen – also eine app-weite Einstellung zur
+je-Projekt-Einstellung zu machen oder umgekehrt. Das drehte eine durch Anforderungsdokument und
+Technisches Konzept durchgezogene Festlegung um, und zwar allein, um Undo einfacher zu machen: eine
+Änderung, die weit über Undo hinausreicht. Der Geltungsbereich bleibt, wie er in 9.11.3 und
+Anforderungsdokument 4.4 steht; angepasst wird das **Hilfsmittel**.
 
 #### 9.13.3 Invariante gegen Datenverlust (wichtig)
 
@@ -2440,6 +2481,10 @@ Identität und Rahmen sind stabil.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
+> **Nachgezogen in v3.18 (16.08.2026), vom Auftraggeber entschieden – die Meldung aus v3.17 ist geschlossen (Anforderungsdokument unverändert v1.6):**
+>
+> 1. **Der `Bearbeitungsstand` bekommt `standardSegmentdauer` als DRITTES FELD** (9.13.2, `setzeBearbeitungsstand` und `setzeStandardSegmentdauer` in 9.5.2, mitgezogen `löscheAktion` in 9.5.2/9.5.3). Undo **und** Redo stellen `aktionen`, `liste` und den Projektstandard **gemeinsam** her, über **einen** Aufruf von `setzeBearbeitungsstand`; der Wert wird gegen denselben Dauer-Bereich geprüft wie `setzeDauer` (10–45 s, 9.11.4). *Anlass:* `setzeStandardSegmentdauer` (v3.17) ändert **zwei Dinge in einem atomaren Zug**; der Schnappschuss trug nur `aktionen` und `liste`. Ein Undo hätte die festgeschriebenen Aktions-Dauern zurückgenommen und den Standard stehen lassen – **halb zurück, und der Nutzer sieht nicht, welche Hälfte**. *Warum das kein Bruch der Schnappschuss-Regel ist:* Der `Bearbeitungsstand` ist ein **Undo-Hilfsmittel, kein Datenmodell**. Dass darin ein Wert außerhalb des bisherigen Ausschnitts mitreist, ist genau die Stelle, an der die Zusammengehörigkeit entsteht – wer zwei Änderungen als **eine** Operation ausführt, muss sie als eine zurücknehmen können. **Ausdrücklich verworfen:** „Undo endet an der Projektgrenze" (nimmt die Atomarität zurück) und das Verschieben des **Geltungsbereichs** des Wertes, um ihn dem Schnappschuss anzupassen (drehte eine durch AD und TK durchgezogene Festlegung um, allein um Undo einfacher zu machen). *Folge:* `setzeStandardSegmentdauer` ist **schnappschusspflichtig** – der Schnappschuss entsteht wie bei jeder Instant-Operation in der Undo-Hülle um die gemeinsame Projekt-Sicht (9.13.2), **kein** zweiter Eingang.
+>
 > **Nachgezogen in v3.17 (15.08.2026), vom Auftraggeber entschieden – die beiden offenen Punkte aus v3.16 sind geschlossen (Anforderungsdokument v1.6):**
 >
 > 1. **`schemaVersion` bleibt bei 1 – die Erhöhung auf 2 ist ZURÜCKGENOMMEN** (9.5.5, Konstantentabelle 9.11.4, `Project` in 9.11.3, Kette 9.8.4). *Anlass:* v3.16 hatte die Zahl wegen des neuen Pflichtfelds `Project.standardSegmentdauer` angehoben und eine Migration 1 → 2 vorgesehen. Der Auftraggeber hat bestätigt, dass es **noch gar keine Projekte gibt** – die Migration wäre **Code für Daten, die es nirgends gibt: nie ausführbar, nie testbar**, und eine Regel, die niemand nachprüfen kann, ist schlimmer als keine. `standardSegmentdauer` gehört deshalb **von Anfang an zu `schemaVersion` 1**. *Was ausdrücklich BLEIBT:* das **Feld** `schemaVersion` samt seinem Zweck – trifft eine ältere App-Fassung später auf eine neuere `project.json`, **verweigert sie das Laden, statt zu raten**. Das wirkt ohne jede Migration, und künftige Erhöhungen bleiben möglich, sobald es echte Daten gibt.
@@ -2448,7 +2493,7 @@ Identität und Rahmen sind stabil.
 >
 > 3. **Reichweite der Standarddauer: Aktionen ja, platzierte Listenelemente nein** (9.5.2, mitgezogen Anforderungsdokument 4.4). Ein Wechsel des Projektstandards wirkt auf die **Aktionen** – alle mit `standardDauer: null` folgen dem neuen Wert. **Bereits platzierte Listenelemente behalten ihre `dauer`**: Sie ist beim Platzieren **materialisiert** worden (die Kette 9.8.4 liefert nur den Startwert, danach entscheidet der Regler) und ändert sich **nicht rückwirkend**. Ein Nachziehen würde eine am Regler getroffene Nutzerwahl unsichtbar überschreiben.
 >
-> 4. **Das Ändern des Projektstandards ist EIN rücknehmbarer Schritt (FA-21)** – der Nutzer hat ihn als einen ausgelöst, und er verändert `aktionen`, also genau das, was der `Bearbeitungsstand` führt (9.13.2). **GEMELDET, nicht erfunden:** Der heutige `Bearbeitungsstand` trägt **nur** `aktionen` und `liste`. Ein Undo nähme damit die festgeschriebenen Aktions-Dauern zurück und ließe den **Projektstandard stehen** – ein Halbzustand. Damit der Schritt wirklich als **einer** rücknehmbar ist, müsste `standardSegmentdauer` ein **drittes Feld** des `Bearbeitungsstand` werden; das ist eine Änderung am geteilten Vertrag und steht als Meldung in 9.5.2, nicht als stille Ergänzung.
+> 4. **Das Ändern des Projektstandards ist EIN rücknehmbarer Schritt (FA-21)** – der Nutzer hat ihn als einen ausgelöst, und er verändert `aktionen`, also genau das, was der `Bearbeitungsstand` führt (9.13.2). **GEMELDET, nicht erfunden:** Der heutige `Bearbeitungsstand` trägt **nur** `aktionen` und `liste`. Ein Undo nähme damit die festgeschriebenen Aktions-Dauern zurück und ließe den **Projektstandard stehen** – ein Halbzustand. Damit der Schritt wirklich als **einer** rücknehmbar ist, müsste `standardSegmentdauer` ein **drittes Feld** des `Bearbeitungsstand` werden; das ist eine Änderung am geteilten Vertrag und stand als Meldung in 9.5.2, nicht als stille Ergänzung. **Erledigt mit v3.18** (s. o.): Das dritte Feld ist entschieden und in 9.13.2/9.5.2 ausgeschrieben; die Meldung in 9.5.2 ist gestrichen.
 >
 > 5. **Bestandsdaten mit `art: "bild"`: es gibt keine – und deshalb KEINE Migrationsregel** (9.11.3, 9.5.5). Der zweite offene Punkt aus v3.16 löst sich aus demselben Befund wie Punkt 1: Ohne ein einziges existierendes Projekt kann es keine `liste` mit `bild`-Elementen geben. *Warum das ausgeschrieben dasteht, statt den Punkt ersatzlos zu streichen:* damit später niemand vergeblich eine Regel sucht und sie in dem Glauben nachbaut, sie sei vergessen worden. **Ein eingehendes `"bild"` bleibt `ungueltige_eingabe`** – das steht in 9.5.2 bereits verbindlich und ist die Absicherung, nicht die Migration.
 >

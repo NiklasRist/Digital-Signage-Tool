@@ -69,7 +69,8 @@ export async function setzeEinblendung(
 
     if (element.art !== 'video') {
       // "Parallele Baender gibt es NUR bei video-Items; bild und segment sind bereits
-      // vollflaechige Standbilder." (TK 9.2.8, im Issue woertlich zitiert.)
+      // vollflaechige Standbilder." (TK 9.2.8, im Issue woertlich zitiert. Die Elementart
+      // `bild` ist seit TK v3.16 gestrichen, TK 9.11.3 - bleibt: nur video.)
       return fehler(
         'ungueltige_eingabe',
         `Ein Werbeband gibt es nur bei Video-Elementen; dieses Element ist ein ${element.art}-Element.`,
@@ -222,7 +223,7 @@ function pruefe(
     }
 
     // Nur `> 0`, KEIN Bereich. Die Spanne 10-45 s (DAUER_BEREICH, #21) gilt laut TK 9.5.2 und
-    // 9.11.4 fuer LISTENELEMENTE vom Typ Bild/Segment; ein Band-Abschnitt ist etwas anderes -
+    // 9.11.4 fuer LISTENELEMENTE vom Typ Segment; ein Band-Abschnitt ist etwas anderes -
     // er rotiert WAEHREND eines Videos, und eine Rotation im Sekundenbereich kann gewollt sein.
     // Das TK legt fuer Abschnitts-Dauern keinen Bereich fest, und der STOPP-Block des Issues
     // verbietet, das hier zu entscheiden. Offen und gemeldet.

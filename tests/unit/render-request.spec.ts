@@ -43,7 +43,6 @@ type T4 = Behaupte<Gleich<keyof RenderItemSegment, "id" | "art" | "png" | "dauer
 // uebrig laesst.
 function pixelGroesse(element: RenderItem): number {
   if (element.art === "segment") return element.png.byteLength;
-  if (element.art === "bild") return element.dauer;
   return element.trimEnde - element.trimStart;
 }
 

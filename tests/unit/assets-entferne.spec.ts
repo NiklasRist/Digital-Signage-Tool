@@ -203,8 +203,8 @@ describe("entferneAsset (#73) - Fehlerfaelle", () => {
   it("blockiert bei Referenzen und nennt die Element-IDs nur in daten", async () => {
     projekt.liste = [
       neuesElement("le-eins", "video", "a-mitte"),
-      neuesElement("le-fremd", "bild", "a-erst"),
-      neuesElement("le-zwei", "bild", "a-mitte"),
+      neuesElement("le-fremd", "video", "a-erst"),
+      neuesElement("le-zwei", "video", "a-mitte"),
       // Doppelte Element-ID (Datenfehler im Projekt): darf die Meldung nicht doppelt fuellen.
       neuesElement("le-eins", "video", "a-mitte"),
     ];

@@ -24,7 +24,7 @@ import { mitD1Lock } from "../../src/main/project-store/d1-lock";
 import { entferneElement } from "../../src/main/project-store/entferne-element";
 
 function element(id: string, ref: string): Listenelement {
-  return { id, art: "bild", ref, dauer: 10, trimStart: null, trimEnde: null, einblendung: null };
+  return { id, art: "segment", ref, dauer: 10, trimStart: null, trimEnde: null, einblendung: null };
 }
 
 const ASSET: Asset = {
@@ -83,9 +83,10 @@ describe("entferneElement (#42)", () => {
   });
 
   it("laesst Asset und Aktion in der Bibliothek stehen, auch wenn das Medium fehlt", async () => {
-    // Genau der Fall aus dem Reparatur-Modus (TK 9.7.5): Das Element zeigt auf ein
-    // Asset mit zustand "fehlt" - entfernt wird trotzdem, und zwar NUR die Zeile.
-    const p = projekt([element("e1", "a-fehlt")]);
+    // Genau der Fall aus dem Reparatur-Modus (TK 9.7.5): Das Element zeigt auf eine
+    // Aktion, deren Motiv-Asset zustand "fehlt" traegt - entfernt wird trotzdem, und
+    // zwar NUR die Zeile.
+    const p = projekt([element("e1", "akt-1")]);
     merkeAktivesProjekt(p);
 
     const ergebnis = await entferneElement("e1");

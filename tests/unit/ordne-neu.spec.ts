@@ -24,8 +24,8 @@ const { mitD1Lock } = await import("../../src/main/project-store/d1-lock");
 function element(id: string): Listenelement {
   return {
     id,
-    art: "bild",
-    ref: `asset-${id}`,
+    art: "segment",
+    ref: `aktion-${id}`,
     dauer: 10,
     trimStart: null,
     trimEnde: null,

@@ -173,18 +173,19 @@ export async function fügeElementHinzu(
     return { ok: true, wert: element }
   })
 }
-// referenz ist entweder eine Asset-ID (video|bild) oder eine Aktions-ID (segment)
+// referenz ist entweder eine Asset-ID (video) oder eine Aktions-ID (segment)
 
 // ---------------------------------------------------------------------------
 // Die beiden Bauwege. Getrennt, weil sich hier der Fehler aus der Einleitung des Issues
 // einnistet: Wer `art` und Feldbelegung an zwei Stellen entscheidet, bekommt irgendwann ein
-// Video mit `dauer` oder ein Bild mit `trimEnde` - und beides faellt erst am fertigen Video
-// auf. Jede der beiden Funktionen belegt ALLE sieben Felder von `Listenelement`.
+// Video mit `dauer` oder ein Segment mit `trimEnde` - und beides faellt erst am fertigen
+// Video auf. Jede der beiden Funktionen belegt ALLE sieben Felder von `Listenelement`.
 // ---------------------------------------------------------------------------
 
 /**
- * Video- und Bild-Elemente. Die `art` folgt AUSSCHLIESSLICH `Asset.typ` - nie der
- * Dateiendung, nie dem Namen (genau die Verwechslung beschreibt das Issue als Schaden).
+ * Video-Elemente. Die `art` folgt AUSSCHLIESSLICH `Asset.typ` - nie der Dateiendung, nie
+ * dem Namen (genau die Verwechslung beschreibt das Issue als Schaden). Ein Bild-Asset ergibt
+ * seit TK v3.16 gar kein Listenelement mehr (TK 9.11.3).
  */
 function bauAusAsset(asset: Asset): Ergebnis<Listenelement, ProjectStoreFehlercode> {
   if (asset.typ === 'video') {
@@ -235,27 +236,27 @@ function bauAusAsset(asset: Asset): Ergebnis<Listenelement, ProjectStoreFehlerco
   }
 
   if (asset.typ === 'bild') {
-    return {
-      ok: true,
-      wert: {
-        id: erzeugeId(),
-        art: 'bild',
-        ref: asset.id,
-        // DIE KONSTANTE, NICHT DIE ZAHL 10. "Konstanten in contracts/types (an *einer*
-        // Stelle, nicht verstreut)" (TK 9.11.4) - eine abgeschriebene 10 waere die zweite
-        // Quelle, die beim ersten Aendern der Vorbelegung auseinanderlaeuft. Ein Bild hat
-        // keine Eigenlaenge, also gibt es nichts anderes, woraus die Dauer folgen koennte.
-        dauer: STANDARD_ANZEIGEDAUER_SEKUNDEN,
-        trimStart: null,
-        trimEnde: null,
-        einblendung: null,
-      },
-    }
+    // EIN BILD WIRD KEIN LISTENELEMENT MEHR. Die Elementart `bild` ist mit TK v3.16
+    // gestrichen (TK 9.11.3): "Ein fertig gestaltetes Bild von aussen direkt in die
+    // Wiedergabeliste zu legen, ist kein Anwendungsfall." Der Weg eines Bildes auf den
+    // Fernseher fuehrt ueber den action-editor - als Motiv einer Aktion (`Aktion.bildRef`),
+    // damit es Logo, Sicherheitsabstand und Markenfarbwelt traegt. `Asset.typ === 'bild'`
+    // bleibt davon unberuehrt; das Medium wird weiter importiert und verwaltet.
+    //
+    // `ungueltige_eingabe`, NICHT `nicht_gefunden`: Das Medium IST gefunden, es taugt nur
+    // nicht als Listenelement - dieselbe Abwaegung wie beim Video ohne Laufzeit oben. Ein
+    // Aufrufer, der `nicht_gefunden` bekaeme, duerfte schliessen, das Bild sei verschwunden,
+    // und es aus seiner Bibliothek nehmen.
+    return fehler(
+      'ungueltige_eingabe',
+      `Das Medium ${asset.id} ist ein Bild; Bilder kommen nicht als eigenes Listenelement in ` +
+        'die Wiedergabeliste, sondern als Motiv einer Aktion.',
+    )
   }
 
   // UNBEKANNTE ART. Nach dem Typ (#13) unerreichbar, nach der Laufzeit nicht: `Asset.typ`
   // kommt aus einer geladenen project.json. Der Zweig existiert, damit ein unbekannter Wert
-  // NICHT stillschweigend als Bild durchgeht - genau die Verwechslung, gegen die dieses
+  // NICHT stillschweigend als Video durchgeht - genau die Verwechslung, gegen die dieses
   // Issue geschrieben ist ("landet das Element mit der falschen Feldbelegung in der Liste").
   // Lieber ein sichtbarer Fehler als ein Standbild, das ein Video sein sollte.
   return fehler(
@@ -338,12 +339,12 @@ function fehler(
 // ---------------------------------------------------------------------------
 // NICHT HIER, UND GEMELDET:
 //
-// 1. ZWEI FEHLERPFADE UEBER DIE TABELLE HINAUS. Die Fehlerpfad-Tabelle des Issues ist als
+// 1. DREI FEHLERPFADE UEBER DIE TABELLE HINAUS. Die Fehlerpfad-Tabelle des Issues ist als
 //    "(vollstaendig)" ueberschrieben und kennt nur `nicht_gefunden`. Diese Datei gibt
-//    zusaetzlich `ungueltige_eingabe` bei einem Video-Asset ohne brauchbare `dauer` und bei
-//    einem Asset mit unbekanntem `typ`. Beide Codes traegt die Signatur (sie sind generisch),
-//    ein Notbehelf ist es also nicht - aber es ist eine Erweiterung des Vertrags, und sie
-//    gehoert bestaetigt. Die Gegenprobe waere schlechter: Ein Element, das die bindende
+//    zusaetzlich `ungueltige_eingabe` bei einem Video-Asset ohne brauchbare `dauer`, bei einem
+//    Bild-Asset (TK 9.11.3, s. o.) und bei einem Asset mit unbekanntem `typ`. Alle Codes
+//    traegt die Signatur (sie sind generisch), ein Notbehelf ist es also nicht - aber es ist
+//    eine Erweiterung des Vertrags, und sie gehoert bestaetigt. Die Gegenprobe waere schlechter: Ein Element, das die bindende
 //    Belegungstabelle (TK 9.11.3) verletzt, faellt erst im Render auf.
 //
 // 2. KEINE AUSWERTUNG VON `Asset.zustand`. Ein Medium mit zustand "fehlt" wird ganz normal

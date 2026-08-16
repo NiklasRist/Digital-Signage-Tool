@@ -44,7 +44,7 @@
 // **nicht-destruktiv** – die Originaldatei bleibt unverändert."
 // (Anforderungsdokument 4.4)
 //
-// Fuer Bild und Aktions-Segment (FA-06) nennt derselbe Abschnitt einen frei
+// Fuer das Aktions-Segment (FA-06) nennt derselbe Abschnitt einen frei
 // einstellbaren Dauerbereich mit einem Standardwert und haelt fest: „Da es keine
 // Quelllänge gibt, ist die Obergrenze die konfigurierte Maximaldauer; Kürzen und
 // Verlängern laufen über denselben Regler." (Anforderungsdokument 4.4)
@@ -95,13 +95,13 @@ import { rufeAuf } from '../ipc-client/rufe-auf'
 import { gleicheElementAb, holeSicht } from './projektzustand'
 import { fuehreOptimistischAus } from './optimistisch'
 
-/** Das eine Modell hinter dem einen Regler – für Video, Bild und Aktions-Segment gleich geformt. */
+/** Das eine Modell hinter dem einen Regler – für Video und Aktions-Segment gleich geformt. */
 export interface ReglerModell {
   elementId: string
-  griffe: 1 | 2            // Video: 2 (Anfang/Ende); Bild/Segment: 1 (nur die Länge)
+  griffe: 1 | 2            // Video: 2 (Anfang/Ende); Segment: 1 (nur die Länge)
   untergrenze: number      // Sekunden – kleinstmöglicher Wert für `anfang`
   obergrenze: number       // Sekunden – größtmöglicher Wert für `ende`
-  anfang: number           // Sekunden – bei Bild/Segment immer 0
+  anfang: number           // Sekunden – bei Segment immer 0
   ende: number             // Sekunden
   effektiveDauer: number   // Sekunden = ende − anfang (roh, s. „ENTSCHIEDEN" 3)
 }
@@ -216,7 +216,7 @@ export function baueReglerModell(
     return baueModell(elementId, 2, untergrenze, obergrenze, rohAnfang, rohEnde)
   }
 
-  if (art === 'bild' || art === 'segment') {
+  if (art === 'segment') {
     // EIN Griff: „Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte
     // Maximaldauer" (Anforderungsdokument 4.4). Der Bereich begrenzt hier die
     // LAENGE, nicht eine Position in einer Quelle - deshalb bleibt `anfang` 0 und
@@ -225,7 +225,7 @@ export function baueReglerModell(
     if (typeof dauer !== 'number' || !Number.isFinite(dauer)) {
       return fehler(
         'ungueltige_eingabe',
-        `Die Dauer des "${art}"-Elements ${elementId} muss eine endliche Zahl sein, ` +
+        `Die Dauer des "segment"-Elements ${elementId} muss eine endliche Zahl sein, ` +
           `vorgefunden: ${String(dauer)}.`,
       )
     }
@@ -236,7 +236,7 @@ export function baueReglerModell(
   return fehler(
     'ungueltige_eingabe',
     `Das Listenelement ${elementId} hat die unbekannte Art ${JSON.stringify(art)}. ` +
-      'Zulaessig sind ausschliesslich "video", "bild" und "segment".',
+      'Zulaessig sind ausschliesslich "video" und "segment".',
   )
 }
 
@@ -296,7 +296,7 @@ function baueModell(
  * ZWEI GRIFFE (Video): Beide Werte sind POSITIONEN in der Quelle; beide werden in
  * [untergrenze, obergrenze] geklemmt, also in [0, Quelllaenge].
  *
- * EIN GRIFF (Bild/Segment): Es gibt keine Quelle, in der man sich positionieren
+ * EIN GRIFF (Segment): Es gibt keine Quelle, in der man sich positionieren
  * koennte - der Bereich begrenzt die LAENGE. `anfang` ist deshalb fest 0 (und wird
  * NICHT in den Bereich geklemmt; das machte aus einem Anfang bei 0 die Untergrenze
  * des Dauerbereichs und verschoebe die Laenge um genau diesen Betrag), und
@@ -376,11 +376,11 @@ export async function uebernehmeGrenzen(
   const elementId = lesId(roh)
   const art = roh.art
 
-  if (art !== 'video' && art !== 'bild' && art !== 'segment') {
+  if (art !== 'video' && art !== 'segment') {
     return fehler(
       'ungueltige_eingabe',
       `Das Listenelement ${elementId} hat die unbekannte Art ${JSON.stringify(art)}. ` +
-        'Zulaessig sind ausschliesslich "video", "bild" und "segment".',
+        'Zulaessig sind ausschliesslich "video" und "segment".',
     )
   }
 
@@ -417,7 +417,7 @@ export async function uebernehmeGrenzen(
   }
 
   if (art !== 'video' && anfang !== 0) {
-    // „Bei Bild und Segment ist `anfang` immer 0." Der Regler hat dort nur einen
+    // „Bei Segment ist `anfang` immer 0." Der Regler hat dort nur einen
     // Griff; ein Aufruf mit einem anderen Anfang ist ein Programmierfehler des
     // Aufrufers. Er wird ABGEWIESEN und nicht auf 0 zurechtgebogen: Zurechtbiegen
     // liesse eine Oberflaeche, die den Regler falsch bedient, dauerhaft
@@ -425,7 +425,7 @@ export async function uebernehmeGrenzen(
     // gezogene.
     return fehler(
       'ungueltige_eingabe',
-      `Ein "${art}"-Element hat nur einen Griff; der Anfang muss 0 sein, vorgefunden: ` +
+      `Ein "segment"-Element hat nur einen Griff; der Anfang muss 0 sein, vorgefunden: ` +
         `${String(anfang)}.`,
     )
   }
@@ -453,8 +453,8 @@ export async function uebernehmeGrenzen(
   // er aendert sich nicht mit.
   //
   // Angefasst werden ausschliesslich die Felder, die zur Art gehoeren
-  // (TK 9.11.3): beim Video die beiden Trim-Grenzen, bei Bild und Segment `dauer`.
-  // Ein Video bekommt hier NIE eine `dauer` gesetzt und ein Bild NIE einen Trim -
+  // (TK 9.11.3): beim Video die beiden Trim-Grenzen, beim Segment `dauer`.
+  // Ein Video bekommt hier NIE eine `dauer` gesetzt und ein Segment NIE einen Trim -
   // beides waere eine Belegung, die die Tabelle ausschliesst.
   const neu: Listenelement =
     art === 'video'
@@ -464,7 +464,7 @@ export async function uebernehmeGrenzen(
   // Der Kanal kommt aus der Registry, nie als Textliteral: „`setzeTrim` |
   // `elementId`, `trimStart`, `trimEnde` → `Ergebnis<Listenelement>` (validiert
   // `0 ≤ start < ende ≤ Videodauer`)" (TK 9.5.2); `setzeDauer` nimmt dort
-  // `elementId` und `dauer` und prueft den Dauerbereich fuer Bild und Segment.
+  // `elementId` und `dauer` und prueft den Dauerbereich fuer das Segment.
   // Die Nutzlastformen stehen in #76.
   //
   // DIE VERZWEIGUNG SITZT HIER UND NUR HIER. Bei einem Video wird NIE `setzeDauer`

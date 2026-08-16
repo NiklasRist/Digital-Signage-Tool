@@ -51,11 +51,11 @@ function video(): Listenelement {
   };
 }
 
-function bild(): Listenelement {
+function segment(): Listenelement {
   return {
-    id: "e-bild",
-    art: "bild",
-    ref: "a-bild",
+    id: "e-segment",
+    art: "segment",
+    ref: "akt-1",
     dauer: 10,
     trimStart: null,
     trimEnde: null,
@@ -197,10 +197,10 @@ describe("setzeTrim (#44)", () => {
   });
 
   it("weist ein Element ab, das kein Video ist", async () => {
-    const element = bild();
+    const element = segment();
     zustand.aktivesProjekt = projektMit([element]);
 
-    const ergebnis = await setzeTrim("e-bild", 1, 5);
+    const ergebnis = await setzeTrim("e-segment", 1, 5);
 
     expect(!ergebnis.ok && ergebnis.fehler.code).toBe("ungueltige_eingabe");
     expect(element.trimStart).toBeNull();

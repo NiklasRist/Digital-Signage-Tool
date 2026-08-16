@@ -20,7 +20,6 @@ import { berechneBandGeometrie } from '../../src/shared/band-geometrie'
 import { DAUER_BEREICH } from '../../src/shared/contracts/konstanten'
 import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 import type {
-  RenderItemBild,
   RenderItemSegment,
   RenderItemVideo,
   RenderRequest,
@@ -116,10 +115,6 @@ function mitBand(
   })
 }
 
-function bild(ueber: Partial<RenderItemBild> = {}): RenderItemBild {
-  return { id: 'b1', art: 'bild', medienRef: 'a.png', dauer: 10, ...ueber }
-}
-
 function segment(ueber: Partial<RenderItemSegment> = {}): RenderItemSegment {
   return {
     id: 's1',
@@ -134,7 +129,7 @@ function anfrage(ueber: Partial<RenderRequest> = {}): RenderRequest {
   return {
     renderId: 'r1',
     projektId: PROJEKT,
-    elemente: [mitBand(), bild(), segment()],
+    elemente: [mitBand(), segment({ id: 's0' }), segment()],
     profil: structuredClone(RENDER_PROFILE),
     ausgabeName: 'Sommeraktion',
     ...ueber,
@@ -172,7 +167,7 @@ beforeEach(() => {
 })
 
 describe('pruefeRenderRequest - der stimmige Auftrag', () => {
-  it('nimmt video (mit Band aus zwei Abschnitten), bild und segment an', () => {
+  it('nimmt video (mit Band aus zwei Abschnitten) und segment an', () => {
     expect(pruefeRenderRequest(anfrage())).toEqual({ ok: true, wert: undefined })
   })
 
@@ -184,7 +179,7 @@ describe('pruefeRenderRequest - der stimmige Auftrag', () => {
 
     // Und auch auf dem Fehlerweg wird nichts zurechtgebogen: keine Dauer geklemmt,
     // kein fehlendes Feld ergaenzt.
-    const kaputt = anfrage({ elemente: [bild({ dauer: 99 })] })
+    const kaputt = anfrage({ elemente: [segment({ dauer: 99 })] })
     const kaputtKopie = structuredClone(kaputt)
     expect(pruefeRenderRequest(kaputt).ok).toBe(false)
     expect(kaputt).toEqual(kaputtKopie)
@@ -225,7 +220,7 @@ describe('Stufe 1 - Maengel der ANFRAGE (ungueltige_eingabe, ohne daten)', () =>
 
   it('Zeile 6: ein Element hat keine oder eine leere id - die Meldung nennt den Index', () => {
     const meldung = anfrageFehler(
-      pruefeRenderRequest(anfrage({ elemente: [bild(), { ...bild(), id: '' }] })),
+      pruefeRenderRequest(anfrage({ elemente: [segment(), { ...segment(), id: '' }] })),
     )
     expect(meldung).toContain('Position 1')
 
@@ -239,7 +234,9 @@ describe('Stufe 1 - Maengel der ANFRAGE (ungueltige_eingabe, ohne daten)', () =>
 
   it('Zeile 7: zwei Elemente tragen dieselbe id - die Meldung nennt die ID', () => {
     const meldung = anfrageFehler(
-      pruefeRenderRequest(anfrage({ elemente: [bild({ id: 'gleich' }), segment({ id: 'gleich' })] })),
+      pruefeRenderRequest(
+        anfrage({ elemente: [segment({ id: 'gleich' }), segment({ id: 'gleich' })] }),
+      ),
     )
     expect(meldung).toContain('gleich')
   })
@@ -253,6 +250,25 @@ describe('Stufe 1 - Maengel der ANFRAGE (ungueltige_eingabe, ohne daten)', () =>
       ),
     )
     expect(meldung).toContain('ton')
+  })
+
+  it('Zeile 8: ein eingehendes "bild" ist eine unbekannte art, keine Sonderbehandlung', () => {
+    // Die Elementart `bild` ist mit TK v3.16 gestrichen (TK 9.11.3). Kommt der Wert
+    // trotzdem an - aus einer von Hand bearbeiteten Datei oder einem Schnappschuss -,
+    // gilt `ungueltige_eingabe`. Die Pruefung ist die Absicherung, nicht die Migration.
+    const meldung = anfrageFehler(
+      pruefeRenderRequest(
+        anfrage({
+          elemente: [
+            { id: 'b-alt', art: 'bild', medienRef: 'a.png', dauer: 10 },
+          ] as unknown as RenderRequest['elemente'],
+        }),
+      ),
+    )
+    // Die Meldung stammt aus STUFE 1 (sie nennt die Element-Kennung) - nicht erst aus
+    // frameDauer (#174), das dieselbe Art zwar auch verwirft, aber ohne Elementbezug.
+    expect(meldung).toContain('bild')
+    expect(meldung).toContain('b-alt')
   })
 
   it('Zeile 9: das Profil fehlt', () => {
@@ -308,7 +324,7 @@ describe('Stufe 1 - Maengel der ANFRAGE (ungueltige_eingabe, ohne daten)', () =>
     const boesartig = {
       renderId: 'r1',
       projektId: PROJEKT,
-      elemente: [bild()],
+      elemente: [segment()],
       ausgabeName: 'Sommeraktion',
       get profil(): unknown {
         throw new Error('kaputter Getter')
@@ -323,26 +339,22 @@ describe('Stufe 1 - Maengel der ANFRAGE (ungueltige_eingabe, ohne daten)', () =>
     // Diese Anfrage ist an BEIDEN Stufen kaputt (leerer Ausgabename UND ein Element
     // mit unzulaessiger Dauer). Gemeldet werden muss die Stufe 1.
     const f = fehler(
-      pruefeRenderRequest(anfrage({ ausgabeName: '', elemente: [bild({ dauer: 99 })] })),
+      pruefeRenderRequest(anfrage({ ausgabeName: '', elemente: [segment({ dauer: 99 })] })),
     )
     expect(f.code).toBe('ungueltige_eingabe')
   })
 })
 
 describe('Stufe 2 - Maengel eines ELEMENTS (ungueltiges_element, mit daten)', () => {
-  it('Zeile 11: medienRef bei video und bild fehlt, ist leer oder kein String', () => {
+  it('Zeile 11: medienRef bei video fehlt, ist leer oder kein String', () => {
+    // Seit TK v3.16 ist `video` die EINZIGE Art mit `medienRef` - die Elementart `bild`
+    // ist gestrichen (TK 9.11.3), ein `segment` traegt seine Pixel im Auftrag mit.
     for (const kaputt of [undefined, '', 7]) {
       elementFehler(
         pruefeRenderRequest(
           anfrage({ elemente: [video({ id: 'v-x', medienRef: kaputt as unknown as string })] }),
         ),
         'v-x',
-      )
-      elementFehler(
-        pruefeRenderRequest(
-          anfrage({ elemente: [bild({ id: 'b-x', medienRef: kaputt as unknown as string })] }),
-        ),
-        'b-x',
       )
     }
   })
@@ -364,28 +376,27 @@ describe('Stufe 2 - Maengel eines ELEMENTS (ungueltiges_element, mit daten)', ()
     expect(DAUER_BEREICH).toEqual({ min: 10, max: 45 })
 
     for (const dauer of [DAUER_BEREICH.min, DAUER_BEREICH.max, 27.5]) {
-      expect(pruefeRenderRequest(anfrage({ elemente: [bild({ dauer })] })).ok).toBe(true)
       expect(pruefeRenderRequest(anfrage({ elemente: [segment({ dauer })] })).ok).toBe(true)
     }
     for (const dauer of [9.99, 45.01, 0.5, 3600]) {
       const meldung = elementFehler(
-        pruefeRenderRequest(anfrage({ elemente: [bild({ id: 'b-x', dauer })] })),
-        'b-x',
+        pruefeRenderRequest(anfrage({ elemente: [segment({ id: 's-x', dauer })] })),
+        's-x',
       )
       // Die Meldung nennt BEIDE Grenzen.
       expect(meldung).toContain('10')
       expect(meldung).toContain('45')
-      elementFehler(
-        pruefeRenderRequest(anfrage({ elemente: [segment({ id: 's-x', dauer })] })),
-        's-x',
-      )
     }
   })
 
   it('Zeile 13 (Gegenprobe): die Grenze ist einschliesslich, nicht knapp daneben', () => {
     // Ein Frame unter der Grenze ist bereits zu wenig - hier gibt es keine Toleranz.
-    expect(pruefeRenderRequest(anfrage({ elemente: [bild({ dauer: 10 - 1 / 30 })] })).ok).toBe(false)
-    expect(pruefeRenderRequest(anfrage({ elemente: [bild({ dauer: 45 + 1 / 30 })] })).ok).toBe(false)
+    expect(pruefeRenderRequest(anfrage({ elemente: [segment({ dauer: 10 - 1 / 30 })] })).ok).toBe(
+      false,
+    )
+    expect(pruefeRenderRequest(anfrage({ elemente: [segment({ dauer: 45 + 1 / 30 })] })).ok).toBe(
+      false,
+    )
   })
 
   it('Zeile 14: das PNG eines segment fehlt, ist kein Uint8Array oder ist leer', () => {

@@ -23,7 +23,12 @@ export interface RenderRequest {
                                     // vorbelegt mit Project.letzterAusgabeName; gleicher Name ersetzt, neuer Name legt an
 }
 
-export type RenderItem = RenderItemVideo | RenderItemBild | RenderItemSegment
+// Zwei Varianten, nicht drei: Die frühere Variante `RenderItemBild` ist mit TK v3.16 entfallen
+// (TK 9.2.2). Sie fällt nicht eigenständig weg, sondern als Folge - `RenderItem.art` wird aus
+// `Listenelement.art` gebildet, und dort gibt es die Art `bild` nicht mehr (TK 9.11.3). Ein
+// solches Item könnte also gar nicht mehr entstehen; ein Zweig ohne Aufrufer liest sich für den
+// Nächsten als vorgesehener Weg und wird nachgebaut.
+export type RenderItem = RenderItemVideo | RenderItemSegment
 
 export interface RenderItemVideo {
   id: string
@@ -40,13 +45,6 @@ export interface RenderItemVideo {
     // verlustfrei und ist der kleinste gemeinsame Nenner zwischen Renderer und Main.
     // Feldname MIT Umlaut ("höhe") wie im Vertrag und wie in Vorlage (#95) – nicht "hoehe".
   } | null
-}
-
-export interface RenderItemBild {
-  id: string
-  art: 'bild'
-  medienRef: string
-  dauer: number
 }
 
 export interface RenderItemSegment {

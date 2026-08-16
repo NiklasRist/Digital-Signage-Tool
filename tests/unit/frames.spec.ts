@@ -29,7 +29,6 @@ import {
 import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 import type {
   RenderItem,
-  RenderItemBild,
   RenderItemSegment,
   RenderItemVideo,
 } from '../../src/shared/contracts/render-request'
@@ -38,9 +37,6 @@ const fps = RENDER_PROFILE.fps
 
 function video(trimStart: number, trimEnde: number, id = 'v1'): RenderItemVideo {
   return { id, art: 'video', medienRef: 'media/a.mp4', trimStart, trimEnde, einblendung: null }
-}
-function bild(dauer: number, id = 'b1'): RenderItemBild {
-  return { id, art: 'bild', medienRef: 'media/a.png', dauer }
 }
 function segment(dauer: number, id = 's1'): RenderItemSegment {
   return { id, art: 'segment', png: new Uint8Array([1, 2, 3]), dauer }
@@ -249,17 +245,16 @@ describe('frameDauer - je art die richtige Quelle', () => {
     expect(wert(frameDauer(mit))).toBe(wert(frameDauer(ohne)))
   })
 
-  it('nimmt bei bild und segment die Dauer', () => {
-    expect(wert(frameDauer(bild(10)))).toBe(300)
+  it('nimmt beim segment die Dauer', () => {
     expect(wert(frameDauer(segment(10)))).toBe(300)
-    expect(wert(frameDauer(bild(7.5)))).toBe(225)
+    expect(wert(frameDauer(segment(7.5)))).toBe(225)
     // 12.345 * 30 = 370.35 -> 370
     expect(wert(frameDauer(segment(12.345)))).toBe(370)
   })
 
   it('kommt mit sehr kurzen und sehr langen Dauern zurecht', () => {
     // 0.017 * 30 = 0.51 -> 1 Frame, die kuerzeste zulaessige Dauer.
-    expect(wert(frameDauer(bild(0.017)))).toBe(1)
+    expect(wert(frameDauer(segment(0.017)))).toBe(1)
     // Eine Stunde.
     expect(wert(frameDauer(segment(3600)))).toBe(108_000)
   })
@@ -268,17 +263,17 @@ describe('frameDauer - je art die richtige Quelle', () => {
     // 0.016 * 30 = 0.48 -> 0. Ein Standbild ohne Frames erzeugt eine leere
     // Eingabedatei, an der `-c copy` NICHT abbricht (ENTSCHIEDEN 7).
     expect(zuFrames(0.016)).toBe(0)
-    const f = fehler(frameDauer(bild(0.016, 'b-kurz')))
+    const f = fehler(frameDauer(segment(0.016, 's-kurz')))
     expect(f.code).toBe('ungueltiges_element')
-    expect(f.daten).toEqual({ elementId: 'b-kurz' })
+    expect(f.daten).toEqual({ elementId: 's-kurz' })
     expect(f.meldung).toContain(String(zuSekunden(1)))
   })
 
   it('weist Dauer 0, negative und unbrauchbare Dauern ab - mit elementId', () => {
     for (const d of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
-      const f = fehler(frameDauer(bild(d, 'b-x')))
+      const f = fehler(frameDauer(segment(d, 'seg-x')))
       expect(f.code).toBe('ungueltiges_element')
-      expect(f.daten).toEqual({ elementId: 'b-x' })
+      expect(f.daten).toEqual({ elementId: 'seg-x' })
     }
     const keineZahl = { id: 's-x', art: 'segment', png: new Uint8Array(), dauer: '10' }
     const f = fehler(frameDauer(keineZahl as unknown as RenderItem))
@@ -334,8 +329,8 @@ describe('gesamtFrames / gesamtdauer', () => {
   })
 
   it('summiert eine gemischte Liste aus nachgerechneten Einzelwerten', () => {
-    // video [2.51, 10.49] = 240, bild 7.5 s = 225, segment 10 s = 300 -> 765 Frames
-    const liste: RenderItem[] = [video(2.51, 10.49), bild(7.5), segment(10)]
+    // video [2.51, 10.49] = 240, segment 7.5 s = 225, segment 10 s = 300 -> 765 Frames
+    const liste: RenderItem[] = [video(2.51, 10.49), segment(7.5, 's0'), segment(10)]
     expect(wert(gesamtFrames(liste))).toBe(765)
     expect(wert(gesamtdauer(liste))).toBe(25.5)
   })
@@ -343,10 +338,10 @@ describe('gesamtFrames / gesamtdauer', () => {
   it('ist auf das letzte Bit genau zuSekunden(gesamtFrames)', () => {
     const liste: RenderItem[] = [
       video(2.51, 10.49),
-      bild(7.5),
+      segment(7.5, 's0'),
       segment(12.345),
       video(0.017, 33.333, 'v2'),
-      bild(0.017, 'b2'),
+      segment(0.017, 's2'),
     ]
     const frames = wert(gesamtFrames(liste))
     expect(Object.is(wert(gesamtdauer(liste)), zuSekunden(frames))).toBe(true)
@@ -356,7 +351,7 @@ describe('gesamtFrames / gesamtdauer', () => {
     const liste: RenderItem[] = []
     for (let k = 0; k < 60; k++) {
       liste.push(video(k * 0.137, k * 0.137 + 3.339, `v${String(k)}`))
-      liste.push(bild(0.7 + k * 0.011, `b${String(k)}`))
+      liste.push(segment(0.7 + k * 0.011, `t${String(k)}`))
       liste.push(segment(10.03 + k * 0.017, `s${String(k)}`))
     }
     let einzeln = 0
@@ -402,7 +397,7 @@ describe('gesamtFrames / gesamtdauer', () => {
 
   it('bricht beim ERSTEN unstimmigen Element ab und meldet dessen id', () => {
     const liste: RenderItem[] = [
-      bild(10, 'gut-1'),
+      segment(10, 'gut-1'),
       segment(0.016, 'kaputt-1'),
       segment(0.016, 'kaputt-2'),
     ]
@@ -421,7 +416,7 @@ describe('gesamtFrames / gesamtdauer', () => {
   })
 
   it('wirft nie - ein Loch im Array wird zum Fehlercode, nicht zur Ausnahme', () => {
-    const mitLoch = [bild(10, 'gut'), undefined] as unknown as RenderItem[]
+    const mitLoch = [segment(10, 'gut'), undefined] as unknown as RenderItem[]
     expect(() => gesamtFrames(mitLoch)).not.toThrow()
     expect(fehler(gesamtFrames(mitLoch)).code).toBe('ungueltige_eingabe')
   })

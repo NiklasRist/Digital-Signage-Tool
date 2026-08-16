@@ -70,18 +70,6 @@ function videoElement(): Listenelement {
   };
 }
 
-function bildElement(): Listenelement {
-  return {
-    id: "e-bild",
-    art: "bild",
-    ref: "a-bild-alt",
-    dauer: 17,
-    trimStart: null,
-    trimEnde: null,
-    einblendung: null,
-  };
-}
-
 function segmentElement(): Listenelement {
   return {
     id: "e-segment",
@@ -119,7 +107,7 @@ let projekt: Project;
 
 beforeEach(() => {
   angemeldet.length = 0;
-  projekt = projektMit([videoElement(), bildElement(), segmentElement()]);
+  projekt = projektMit([videoElement(), segmentElement()]);
   merkeAktivesProjekt(projekt);
 });
 
@@ -145,18 +133,6 @@ describe("setzeElementReferenz - Erfolgsfaelle je art", () => {
     expect(projekt.liste[0]!.einblendung?.abschnitte).toHaveLength(2);
   });
 
-  it("haengt ein Bild-Element um und laesst dauer, Trim und einblendung wie sie sind", async () => {
-    const ergebnis = await setzeElementReferenz("e-bild", "a-bild-neu");
-
-    expect(ergebnis.ok).toBe(true);
-    if (!ergebnis.ok) return;
-    expect(ergebnis.wert.ref).toBe("a-bild-neu");
-    expect(ergebnis.wert.dauer).toBe(17);
-    expect(ergebnis.wert.trimStart).toBeNull();
-    expect(ergebnis.wert.trimEnde).toBeNull();
-    expect(ergebnis.wert.einblendung).toBeNull();
-  });
-
   it("haengt ein Segment-Element auf eine andere Aktion um, ohne deren standardDauer zu uebernehmen", async () => {
     // ak-2 hat standardDauer 45, das Element steht auf 23. Ein Referenzwechsel ist KEIN
     // Platzieren (TK 9.8.4) - wuerde er die Dauer mitziehen, aenderte eine Reparatur die
@@ -174,11 +150,10 @@ describe("setzeElementReferenz - Erfolgsfaelle je art", () => {
 
   it("laesst art und Position in der Liste bei jedem Erfolg unveraendert", async () => {
     await setzeElementReferenz("e-video", "a-video-neu");
-    await setzeElementReferenz("e-bild", "a-bild-neu");
     await setzeElementReferenz("e-segment", "ak-2");
 
-    expect(projekt.liste.map((eintrag) => eintrag.id)).toEqual(["e-video", "e-bild", "e-segment"]);
-    expect(projekt.liste.map((eintrag) => eintrag.art)).toEqual(["video", "bild", "segment"]);
+    expect(projekt.liste.map((eintrag) => eintrag.id)).toEqual(["e-video", "e-segment"]);
+    expect(projekt.liste.map((eintrag) => eintrag.art)).toEqual(["video", "segment"]);
   });
 
   it("setzt bei gleicher Referenz den Trim eines Video-Elements trotzdem zurueck", async () => {
@@ -199,18 +174,11 @@ describe("setzeElementReferenz - der Zielbestand folgt allein der art", () => {
     expect(projekt.liste[0]!.ref).toBe("a-video-alt");
   });
 
-  it("weist eine gueltige Aktions-ID unter einem Bild-Element mit nicht_gefunden ab", async () => {
-    const ergebnis = await setzeElementReferenz("e-bild", "ak-2");
-
-    expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "nicht_gefunden" } });
-    expect(projekt.liste[1]!.ref).toBe("a-bild-alt");
-  });
-
   it("weist eine gueltige Asset-ID unter einem Segment-Element mit nicht_gefunden ab", async () => {
     const ergebnis = await setzeElementReferenz("e-segment", "a-bild-neu");
 
     expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "nicht_gefunden" } });
-    expect(projekt.liste[2]!.ref).toBe("ak-1");
+    expect(projekt.liste[1]!.ref).toBe("ak-1");
   });
 });
 
@@ -222,14 +190,6 @@ describe("setzeElementReferenz - Fehlerpfade wirken nicht", () => {
     expect(projekt.liste[0]!.ref).toBe("a-video-alt");
     expect(projekt.liste[0]!.trimStart).toBe(1.5);
     expect(projekt.liste[0]!.trimEnde).toBe(9.25);
-  });
-
-  it("weist ein Video-Asset unter einem Bild-Element ab", async () => {
-    const ergebnis = await setzeElementReferenz("e-bild", "a-video-neu");
-
-    expect(ergebnis).toMatchObject({ ok: false, fehler: { code: "ungueltige_eingabe" } });
-    expect(projekt.liste[1]!.ref).toBe("a-bild-alt");
-    expect(projekt.liste[1]!.dauer).toBe(17);
   });
 
   it("meldet eine unbekannte elementId als nicht_gefunden", async () => {
@@ -313,7 +273,7 @@ describe("setzeElementReferenz - Nachbarbestaende bleiben unberuehrt", () => {
 
     await setzeElementReferenz("e-segment", "ak-2");
 
-    expect(projekt.liste[2]!.ref).toBe("ak-2");
-    expect(projekt.liste[3]!.ref).toBe("ak-1");
+    expect(projekt.liste[1]!.ref).toBe("ak-2");
+    expect(projekt.liste[2]!.ref).toBe("ak-1");
   });
 });

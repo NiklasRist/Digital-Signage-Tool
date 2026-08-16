@@ -562,6 +562,173 @@ KORREKTUREN = [
      'TK v3.16: die Elementart `bild` ist gestrichen (9.11.3); 9.2.8 stellt den `"video"`-Items '
      'nur noch die `"segment"`-Items gegenueber.')
     for nr in (120, 129, 131, 164, 165, 176, 177, 218, 219, 220, 239, 242, 253)] + [
+
+    # ===================== SECHSTER DURCHGANG (TK v3.18, 16.08.2026) =========
+    # Der `Bearbeitungsstand` traegt seit TK v3.18 ein DRITTES Feld
+    # `standardSegmentdauer` (9.13.2, 9.5.2). Anlass: `setzeStandardSegmentdauer`
+    # (v3.17) aendert Projektstandard UND Aktions-Dauern in einem atomaren Zug;
+    # mit zwei Feldern haette ein Undo nur die eine Haelfte zurueckgenommen.
+
+    # --- der Typ selbst, zeichengleich in allen Signaturbloecken ------------
+    ] + [
+    (nr,
+     'export interface Bearbeitungsstand {\n'
+     '  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts\n'
+     '  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,\n'
+     '                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)\n'
+     '}',
+     'export interface Bearbeitungsstand {\n'
+     '  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts\n'
+     '  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,\n'
+     '                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)\n'
+     '  standardSegmentdauer: number  // die projektweite Standarddauer (TK 9.11.3);\n'
+     '                              //   DRITTES Feld seit TK v3.18 (9.13.2)\n'
+     '}',
+     'TK v3.18: der Bearbeitungsstand traegt standardSegmentdauer als drittes Feld.')
+    for nr in (142, 234, 235, 237, 240, 243, 250)] + [
+
+    # --- #15 : definierende Quelle (Block mit eigenem Vorspann) ------------
+    (15,
+     '// Ausschnitt aus Project: genau die zwei Felder, die Undo/Redo fuehrt (TK 9.5.2).\n'
+     '// KEINE eigene Datei - dieselben Felder, dieselben Elementtypen wie oben.\n'
+     'export interface Bearbeitungsstand {\n'
+     '  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts\n'
+     '  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,\n'
+     '                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)\n'
+     '}',
+     '// Ausschnitt aus Project: genau die drei Felder, die Undo/Redo fuehrt (TK 9.5.2, v3.18).\n'
+     '// KEINE eigene Datei - dieselben Felder, dieselben Elementtypen wie oben.\n'
+     'export interface Bearbeitungsstand {\n'
+     '  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts\n'
+     '  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,\n'
+     '                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)\n'
+     '  standardSegmentdauer: number  // die projektweite Standarddauer (TK 9.11.3);\n'
+     '                              //   DRITTES Feld seit TK v3.18 (9.13.2)\n'
+     '}',
+     'TK v3.18: der Bearbeitungsstand traegt standardSegmentdauer als drittes Feld.'),
+    (15,
+     'anderes als ein **Ausschnitt aus `Project`** – dieselben zwei Felder (`aktionen`, `liste`), dieselben\nElementtypen. Eine eigene Datei für zwei Felder, die aus der Nachbardatei stammen, wäre eine',
+     'anderes als ein **Ausschnitt aus `Project`** – dieselben drei Felder (`aktionen`, `liste`,\n`standardSegmentdauer`, TK v3.18), dieselben\nElementtypen. Eine eigene Datei für drei Felder, die aus der Nachbardatei stammen, wäre eine',
+     'TK v3.18: es sind drei Felder, nicht zwei.'),
+    (15,
+     'verhindern soll." (TK 9.5.2) – **deshalb** hat `Bearbeitungsstand` genau zwei Felder und nicht\n  drei oder vier.',
+     'verhindern soll." (TK 9.5.2) – **deshalb** hat `Bearbeitungsstand` genau diese drei Felder und\n  nicht vier oder fünf.',
+     'TK v3.18: drei Felder (aktionen, liste, standardSegmentdauer).'),
+    (15,
+     '- [ ] `Bearbeitungsstand` existiert in **dieser** Datei mit **genau** den zwei Feldern\n      `aktionen: Aktion[]` und `liste: Listenelement[]` – kein `assets`, kein\n      `letzterAusgabeName`, kein `id`, kein weiteres Feld',
+     '- [ ] `Bearbeitungsstand` existiert in **dieser** Datei mit **genau** den drei Feldern\n      `aktionen: Aktion[]`, `liste: Listenelement[]` und `standardSegmentdauer: number`\n      (TK 9.13.2, v3.18) – kein `assets`, kein `letzterAusgabeName`, kein `id`, kein weiteres Feld',
+     'TK v3.18: die DoD verlangte zwei Felder, der Vertrag nennt drei.'),
+
+    # --- #40 : Block mit Quellenvermerk (lokal steht dort M1-03) -----------
+    (40,
+     '// #15 – src/shared/contracts/project.ts   (DEFINIERENDE QUELLE)\n'
+     'export interface Bearbeitungsstand {\n'
+     '  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts\n'
+     '  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,\n'
+     '                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)\n'
+     '}',
+     '// #15 – src/shared/contracts/project.ts   (DEFINIERENDE QUELLE)\n'
+     'export interface Bearbeitungsstand {\n'
+     '  aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts\n'
+     '  liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,\n'
+     '                              // Reihenfolge = Array-Reihenfolge (TK 9.11.3)\n'
+     '  standardSegmentdauer: number  // die projektweite Standarddauer (TK 9.11.3);\n'
+     '                              //   DRITTES Feld seit TK v3.18 (9.13.2)\n'
+     '}',
+     'TK v3.18: der Bearbeitungsstand traegt standardSegmentdauer als drittes Feld.'),
+    (40,
+     '- [ ] Die Rückgabe trägt `stand` mit **genau** den Schlüsseln `aktionen` und `liste`\n      (`\'assets\' in stand === false`, `\'letzterAusgabeName\' in stand === false`,\n      `\'id\' in stand === false`) – benannter Test',
+     '- [ ] Die Rückgabe trägt `stand` mit **genau** den Schlüsseln `aktionen`, `liste` und\n      `standardSegmentdauer` (TK v3.18) – (`\'assets\' in stand === false`,\n      `\'letzterAusgabeName\' in stand === false`, `\'id\' in stand === false`) – benannter Test',
+     'TK v3.18: der Schnappschuss traegt drei Schluessel.'),
+
+    # --- das TK-Zitat aus 9.5.2 („derselbe Ausschnitt") --------------------
+    ] + [
+    (nr,
+     'derselbe Ausschnitt, den der\n  Schnappschuss ohnehin führt (`aktionen` + `liste`, 9.5.2/9.13.2)"'
+     if nr == 40 else
+     'derselbe Ausschnitt, den der Schnappschuss ohnehin führt (`aktionen` + `liste`, 9.5.2/9.13.2)"',
+     'derselbe Ausschnitt, den der\n  Schnappschuss ohnehin führt (`aktionen` + `liste` + seit v3.18 `standardSegmentdauer`,\n  9.5.2/9.13.2)"'
+     if nr == 40 else
+     'derselbe Ausschnitt, den der Schnappschuss ohnehin führt (`aktionen` + `liste` + seit v3.18\n`standardSegmentdauer`, 9.5.2/9.13.2)"',
+     'TK v3.18: die Aufzaehlung in 9.5.2 nennt das dritte Feld mit.')
+    for nr in (15, 40)] + [
+
+    # --- das TK-Zitat aus 9.5.2 („Ausdruecklich NICHT enthalten") ----------
+    ] + [
+    (nr,
+     'trägt **nur** `aktionen` und `liste`. *Begründung:* Beide anderen Felder werden von **Aufträgen**',
+     'trägt **nur** `aktionen`, `liste` und `standardSegmentdauer`. *Begründung:* Beide anderen Felder werden von **Aufträgen**',
+     'TK v3.18: der Satz nennt seit v3.18 drei Felder.')
+    for nr in (15, 237)] + [
+
+    # --- #142 : der Stand nach der Kaskade --------------------------------
+    (142,
+     'neue Bearbeitungsstand (`aktionen` + `liste`) nach der Kaskade',
+     'neue Bearbeitungsstand (`aktionen` + `liste` + `standardSegmentdauer`, TK v3.18) nach der Kaskade',
+     'TK v3.18: der Bearbeitungsstand traegt drei Felder.'),
+
+    # --- #234 : Begruendung, warum die projektId nicht im Stand steckt -----
+    (234,
+     '`Bearbeitungsstand` (#15) hat bewusst nur `aktionen` und `liste`, und die Operation',
+     '`Bearbeitungsstand` (#15) hat bewusst nur `aktionen`, `liste` und `standardSegmentdauer`\n   (TK v3.18) – **keine** `projektId` –, und die Operation',
+     'TK v3.18: drei Felder; die Aussage "keine projektId" bleibt.'),
+    (234,
+     '**leerer** Schnappschuss (`{ aktionen: [], liste: [] }`) ist ausdrücklich gültig',
+     '**leerer** Schnappschuss (`{ aktionen: [], liste: [], standardSegmentdauer: <Wert> }`) ist ausdrücklich gültig',
+     'TK v3.18: auch der leere Schnappschuss traegt das dritte Feld.'),
+
+    # --- #235 : Aufbau und Pruefung des Schnappschusses --------------------
+    (235,
+     '2. `projektHistorie().ablegen({ projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste: projekt.liste } })`.',
+     '2. `projektHistorie().ablegen({ projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste: projekt.liste, standardSegmentdauer: projekt.standardSegmentdauer } })`.\n   Das dritte Feld ist seit TK v3.18 Pflicht (9.13.2) – es wird bei **jeder** Instant-Operation\n   mitgeschrieben, nicht nur beim Ändern des Projektstandards.',
+     'TK v3.18: der Schnappschuss traegt standardSegmentdauer mit.'),
+    (235,
+     '4. `const aktuell: ProjektStand = { projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste: projekt.liste } }`.',
+     '4. `const aktuell: ProjektStand = { projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste: projekt.liste, standardSegmentdauer: projekt.standardSegmentdauer } }`.',
+     'TK v3.18: der Schnappschuss traegt standardSegmentdauer mit.'),
+    (235,
+     '- [ ] Der übergebene `stand` enthält **genau** die Felder `aktionen` und `liste` – **kein**\n      `assets`, **kein** `letzterAusgabeName`, **kein** `id` (Test prüft die Schlüsselmenge)',
+     '- [ ] Der übergebene `stand` enthält **genau** die Felder `aktionen`, `liste` und\n      `standardSegmentdauer` (TK v3.18) – **kein** `assets`, **kein** `letzterAusgabeName`,\n      **kein** `id` (Test prüft die Schlüsselmenge)',
+     'TK v3.18: die Schluesselmenge umfasst drei Felder.'),
+
+    # --- #237 : die beiden woertlichen TK-Zitate --------------------------
+    (237,
+     '> „| `setzeBearbeitungsstand` | `stand` (`Bearbeitungsstand`) → `Ergebnis<Projekt>` – ersetzt\n> `aktionen` **und** `liste` des geladenen Projekts **als Ganzes** durch den Schnappschuss, unter\n> dem D1-Lock und **voll validiert**. Der einzige Rückschreib-Weg für Undo/Redo (9.13.2) |"',
+     '> „| `setzeBearbeitungsstand` | `stand` (`Bearbeitungsstand`) → `Ergebnis<Projekt>` – ersetzt\n> `aktionen`, `liste` **und** `standardSegmentdauer` des geladenen Projekts **als Ganzes** durch\n> den Schnappschuss, unter dem D1-Lock und **voll validiert**. Der einzige Rückschreib-Weg für\n> Undo/Redo (9.13.2) |"',
+     'TK v3.18: die Operationszeile in 9.5.2 nennt das dritte Feld.'),
+    (237,
+     '  der einzige.** Der Schnappschuss umfasst `aktionen` **und** `liste`, und er wird **als Ganzes**\n  zurückgeschrieben, unter dem D1-Lock und voll validiert." (TK 9.13.2)',
+     '  der einzige.** Der Schnappschuss umfasst `aktionen`, `liste` **und** `standardSegmentdauer`\n  (v3.18, s. u.), und er wird **als Ganzes** zurückgeschrieben, unter dem D1-Lock und voll\n  validiert." (TK 9.13.2)',
+     'TK v3.18: 9.13.2 zaehlt drei Felder auf.'),
+
+    # --- #243 : Schnappschuss-Huelle um die gemeinsame Projekt-Sicht -------
+    (243,
+     ' * Flache Referenzgleichheit beider Arrays: gleiche Laenge und Element fuer Element `===`.',
+     ' * Flache Referenzgleichheit beider Arrays (gleiche Laenge, Element fuer Element `===`)\n * UND `standardSegmentdauer` mit `===` (TK v3.18, drittes Feld des Bearbeitungsstands).',
+     'TK v3.18: standGleich muss auch das dritte Feld vergleichen.'),
+    (243,
+     '2. `const jetzt: ProjektStand = { projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste: projekt.liste } }`\n3. `const eingehend: ProjektStand =`\n   - bei `setzeListe`: `{ projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste } }`\n   - bei `setzeProjekt`: `{ projektId: neu.id, stand: { aktionen: neu.aktionen, liste: neu.liste } }`',
+     '2. `const jetzt: ProjektStand = { projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste: projekt.liste, standardSegmentdauer: projekt.standardSegmentdauer } }`\n3. `const eingehend: ProjektStand =`\n   - bei `setzeListe`: `{ projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste, standardSegmentdauer: projekt.standardSegmentdauer } }`\n   - bei `setzeProjekt`: `{ projektId: neu.id, stand: { aktionen: neu.aktionen, liste: neu.liste, standardSegmentdauer: neu.standardSegmentdauer } }`\n\n   Das dritte Feld ist seit TK v3.18 Pflicht (9.13.2). Es ist der Grund, warum ein Wechsel der\n   Projekt-Standarddauer (`setzeStandardSegmentdauer`, TK 9.5.2) als **eine** Änderung erkannt und\n   als **eine** zurückgenommen wird.',
+     'TK v3.18: der Schnappschuss traegt standardSegmentdauer mit.'),
+    (243,
+     '`true`, wenn **beide** Arrays flach gleich sind: gleiche Länge **und** jedes Element `===`. Zwei\n`===`-gleiche Arrays sind trivial gleich. **Kein** Feldvergleich innerhalb eines `Listenelement`\noder einer `Aktion`.',
+     '`true`, wenn **beide** Arrays flach gleich sind – gleiche Länge **und** jedes Element `===` –\n**und** `a.standardSegmentdauer === b.standardSegmentdauer` (TK v3.18, drittes Feld). Zwei\n`===`-gleiche Arrays sind trivial gleich. **Kein** Feldvergleich innerhalb eines `Listenelement`\noder einer `Aktion`. *Warum die Zahl mitverglichen wird:* Ohne sie gälte ein reiner Wechsel der\nProjekt-Standarddauer als „ohne Wirkung" und bekäme **keinen** Schnappschuss – der Schritt wäre\nnicht rücknehmbar.',
+     'TK v3.18: standGleich vergleicht auch standardSegmentdauer.'),
+    (243,
+     '//   { projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste: projekt.liste } }\n// OHNE Kopie, OHNE `assets`, OHNE `letzterAusgabeName`.',
+     '//   { projektId: projekt.id, stand: { aktionen: projekt.aktionen, liste: projekt.liste,\n//                                       standardSegmentdauer: projekt.standardSegmentdauer } }\n// OHNE Kopie, OHNE `assets`, OHNE `letzterAusgabeName`.',
+     'TK v3.18: der Schnappschuss traegt standardSegmentdauer mit.'),
+    (243,
+     '- [ ] `standGleich` liefert `true` für zwei `===`-gleiche Arrays, `true` für flache Kopien\n      (`[...liste]`) mit denselben Elementobjekten, `false` bei unterschiedlicher Länge und `false`,\n      wenn ein Element durch ein inhaltsgleiches, aber **neues** Objekt ersetzt wurde (vier Tests)',
+     '- [ ] `standGleich` liefert `true` für zwei `===`-gleiche Arrays, `true` für flache Kopien\n      (`[...liste]`) mit denselben Elementobjekten, `false` bei unterschiedlicher Länge, `false`,\n      wenn ein Element durch ein inhaltsgleiches, aber **neues** Objekt ersetzt wurde, und `false`,\n      wenn allein `standardSegmentdauer` abweicht (fünf Tests, TK v3.18)',
+     'TK v3.18: das dritte Feld braucht einen eigenen Test.'),
+
+    # --- #320 : Kurzform in der Aenderungsliste ---------------------------
+    (320,
+     'export interface Bearbeitungsstand { /* aktionen, liste – genau zwei Felder */ }',
+     'export interface Bearbeitungsstand { /* aktionen, liste, standardSegmentdauer – drei Felder, TK v3.18 */ }',
+     'TK v3.18: der Bearbeitungsstand traegt drei Felder.'),
+] + [
 ]
 
 # Die lokalen Quelldateien tragen ab M2 Kuerzel (M7-36) statt klickbarer

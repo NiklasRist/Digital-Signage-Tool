@@ -277,13 +277,12 @@ describe('pruefeVorlagenReferenzen', () => {
     expect(zweites.ok === false && zweites.fehler.code).toBe('speicher_fehler')
   })
 
-  it('erzeugt keinen Treffer fuer einblendung: null, bild/segment, ref und aktionRef', async () => {
+  it('erzeugt keinen Treffer fuer einblendung: null, segment, ref und aktionRef', async () => {
     await legeProjektAn(
       'p1',
       projekt('Namensraeume', {
         liste: [
           video('l1', null),
-          { id: 'l2', art: 'bild', ref: VORLAGE, dauer: 10, einblendung: null },
           { id: 'l3', art: 'segment', ref: VORLAGE, dauer: 10, einblendung: null },
           {
             id: 'l4',

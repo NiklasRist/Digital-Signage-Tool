@@ -53,10 +53,6 @@ function segment(id: string, png: Uint8Array): RenderItem {
   return { id, art: "segment", png, dauer: 10 };
 }
 
-function bild(id: string): RenderItem {
-  return { id, art: "bild", medienRef: "media/plakat.jpg", dauer: 10 };
-}
-
 function video(id: string, abschnitte: Uint8Array[] | null): RenderItem {
   return {
     id,
@@ -91,12 +87,11 @@ afterAll(() => {
 });
 
 describe("legePngsAb (#175) legt genau die Pixel tragenden Elemente ab", () => {
-  it("schreibt fuer [segment, video, bild, video-mit-2-Abschnitten] genau drei Dateien", async () => {
+  it("schreibt fuer [segment, video, video-mit-2-Abschnitten] genau drei Dateien", async () => {
     const elemente = [
       segment("a", pngBytes(0x11)),
       video("b", null),
-      bild("c"),
-      video("d", [pngBytes(0x22), pngBytes(0x33)]),
+      video("c", [pngBytes(0x22), pngBytes(0x33)]),
     ];
 
     const ergebnis = await legePngsAb(bereich, elemente);
@@ -104,26 +99,24 @@ describe("legePngsAb (#175) legt genau die Pixel tragenden Elemente ab", () => {
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
 
-    // Index-parallel zur Liste - beide Felder haben VIER Eintraege, obwohl nur zwei
+    // Index-parallel zur Liste - beide Felder haben DREI Eintraege, obwohl nur zwei
     // Elemente Pixel tragen. Ohne das muesste jeder Aufrufer selbst umrechnen.
     expect(ergebnis.wert.segmentPngs).toEqual([
       path.join(bereich, "segment-0000.png"),
-      null,
       null,
       null,
     ]);
     expect(ergebnis.wert.bandPngs).toEqual([
       [],
       [],
-      [],
-      [path.join(bereich, "band-0003-0000.png"), path.join(bereich, "band-0003-0001.png")],
+      [path.join(bereich, "band-0002-0000.png"), path.join(bereich, "band-0002-0001.png")],
     ]);
 
     // Und der Beweis auf der Platte: drei Dateien, flach, kein Unterordner.
     const eintraege = readdirSync(bereich, { withFileTypes: true });
     expect(eintraege.map((e) => e.name).sort()).toEqual([
-      "band-0003-0000.png",
-      "band-0003-0001.png",
+      "band-0002-0000.png",
+      "band-0002-0001.png",
       "segment-0000.png",
     ]);
     expect(eintraege.every((e) => e.isFile())).toBe(true);

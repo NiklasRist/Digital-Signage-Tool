@@ -49,7 +49,6 @@ export async function setzeElementReferenz(
   elementId: string,
   referenz: string,   // Ziel-ID; WELCHER Bestand gemeint ist, entscheidet die art des Elements:
                       //   art: 'video'   -> Asset-ID aus Project.assets, Asset.typ === 'video'
-                      //   art: 'bild'    -> Asset-ID aus Project.assets, Asset.typ === 'bild'
                       //   art: 'segment' -> AKTIONS-ID aus Project.aktionen
 ): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> {
   // ABWEICHUNG ZUM SIGNATUR-ZITAT, offen benannt und im Bericht gemeldet: Das Issue schreibt
@@ -101,7 +100,7 @@ export async function setzeElementReferenz(
     // DIE ART ENTSCHEIDET DEN ZIELBESTAND - und nur sie (ENTSCHIEDEN 1).
     //
     // Es wird NIE im jeweils anderen Bestand nachgeschlagen: Eine gueltige Aktions-ID unter
-    // einem video- oder bild-Element ist `nicht_gefunden`, keine Fundstelle; eine gueltige
+    // einem video-Element ist `nicht_gefunden`, keine Fundstelle; eine gueltige
     // Asset-ID unter einem segment-Element ebenso. Wuerde diese Operation den falschen Raum
     // durchsuchen, entstuende ein Element, dessen `ref` ins Leere zeigt - findeKaputteStellen
     // (#131) meldete danach eine kaputte Stelle, die die REPARATUR SELBST erzeugt hat.
@@ -188,7 +187,7 @@ export async function setzeElementReferenz(
       // (gleiche Linie wie #44/#45/#120).
     }
 
-    // Bei art 'bild' und 'segment' wird AUSSER `ref` NICHTS geschrieben (ENTSCHIEDEN 2/5):
+    // Bei art 'segment' wird AUSSER `ref` NICHTS geschrieben (ENTSCHIEDEN 2/5):
     // trimStart/trimEnde/einblendung sind dort laut TK 9.11.3 ohnehin null - ein "Zuruecksetzen"
     // waere ein Schreibvorgang ohne Wirkung, der beim Lesen den falschen Eindruck erweckt, es
     // gaebe dort einen Trim. Und `dauer` bleibt stehen: Die Anzeigedauer ist eine freie

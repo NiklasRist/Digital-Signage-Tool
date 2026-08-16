@@ -120,7 +120,7 @@ export async function setzeDauer(
     element.dauer = dauer
 
     // `trimStart`, `trimEnde` und `einblendung` werden NICHT angefasst. Das Issue sagt, sie
-    // "bleiben null" - bleiben, nicht "werden gesetzt". Fuer ein bild/segment-Element sind sie
+    // "bleiben null" - bleiben, nicht "werden gesetzt". Fuer ein segment-Element sind sie
     // nach der Belegungstabelle (TK 9.11.3) ohnehin null; stuende dort etwas, waere das ein
     // Defekt der Stelle, die es geschrieben hat, und ihn hier still wegzuraeumen loeschte den
     // einzigen Beleg dafuer. Diese Funktion setzt die Dauer, sie repariert keine Fremdfelder.

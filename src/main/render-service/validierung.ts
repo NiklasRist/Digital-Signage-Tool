@@ -451,19 +451,8 @@ function pruefeElement(element: RenderItem, elementId: string): Ergebnis<void, R
     return pruefeEinblendung(elementId, einblendung)
   }
 
-  if (art === 'bild') {
-    const medienRef = lies(roh, 'medienRef')
-    if (!istNichtLeereZeichenkette(medienRef)) {
-      return elementFehler(
-        elementId,
-        `Der Medienverweis eines "bild"-Elements fehlt oder ist leer, vorgefunden: ${beschreibe(medienRef)}.`,
-      )
-    }
-    return pruefeDauerBereich(elementId, lies(roh, 'dauer'))
-  }
-
-  // `segment`: Die `art` ist in Stufe 1 bereits auf die drei zulaessigen Werte
-  // eingegrenzt worden, ein vierter Zweig kann hier nicht ankommen.
+  // `segment`: Die `art` ist in Stufe 1 bereits auf die zwei zulaessigen Werte
+  // eingegrenzt worden, ein dritter Zweig kann hier nicht ankommen.
   const png = lies(roh, 'png')
   if (!(png instanceof Uint8Array) || png.byteLength === 0) {
     // „Bei `"segment"` werden keine Aktions-/Vorlagendaten mitgeschickt - die Pixel
@@ -557,10 +546,13 @@ export function pruefeRenderRequest(request: RenderRequest): Ergebnis<void, Rend
       kennungen.add(id)
 
       const art = lies(element, 'art')
-      if (art !== 'video' && art !== 'bild' && art !== 'segment') {
+      // Zwei zulaessige Arten, nicht drei: `art: 'bild'` ist mit TK v3.16 gestrichen
+      // (TK 9.11.3, TK 9.2.2). Ein eingehendes "bild" ist damit genau das, was TK 9.11.3
+      // dafuer vorsieht - ein Fehler der Anfrage, keine Sonderbehandlung.
+      if (art !== 'video' && art !== 'segment') {
         return anfrageFehler(
           `Das Element "${id}" hat die unbekannte Art ${beschreibe(art)}. ` +
-            'Zulaessig sind ausschliesslich "video", "bild" und "segment".',
+            'Zulaessig sind ausschliesslich "video" und "segment".',
         )
       }
     }

@@ -279,17 +279,14 @@ describe('nicht kaputt - was NICHT gezählt werden darf', () => {
     expect(findeKaputteStellen(p)).toEqual([])
   })
 
-  it('einblendung an einem bild- oder segment-Element wird ignoriert, nicht gemeldet', () => {
+  it('einblendung an einem segment-Element wird ignoriert, nicht gemeldet', () => {
     // „Parallele Bänder gibt es nur bei `\"video\"`-Items" (TK 9.2.8) - ein
     // solcher Datensatz ist ein Fehler des schreibenden Moduls, keine kaputte
     // Stelle im Sinne des Reparatur-Modus.
     const p = projekt({
-      assets: [asset('b-heil', 'ok', 'bild'), asset('b-weg', 'fehlt', 'bild')],
+      assets: [asset('b-weg', 'fehlt', 'bild')],
       aktionen: [aktion('a-kaputt', 'b-weg'), aktion('a-heil', null)],
-      liste: [
-        element('e1', 'bild', 'b-heil', band('a-kaputt')),
-        element('e2', 'segment', 'a-heil', band('a-kaputt')),
-      ],
+      liste: [element('e1', 'segment', 'a-heil', band('a-kaputt'))],
     })
 
     expect(findeKaputteStellen(p)).toEqual([])
@@ -321,10 +318,10 @@ describe('nicht kaputt - was NICHT gezählt werden darf', () => {
 })
 
 describe('die drei Gründe (Fehlerpfad-Tabelle des Issues)', () => {
-  it('video/bild mit unbekannter Asset-ID -> asset_unbekannt', () => {
+  it('video mit unbekannter Asset-ID -> asset_unbekannt', () => {
     const p = projekt({
       assets: [],
-      liste: [element('e1', 'video', 'gibt-es-nicht'), element('e2', 'bild', 'auch-nicht')],
+      liste: [element('e1', 'video', 'gibt-es-nicht'), element('e2', 'video', 'auch-nicht')],
     })
 
     expect(findeKaputteStellen(p)).toEqual([
@@ -396,7 +393,7 @@ describe('die drei Gründe (Fehlerpfad-Tabelle des Issues)', () => {
     const p = projekt({
       liste: [
         element('e1', 'video', 'v1'),
-        element('e2', 'bild', 'b1'),
+        element('e2', 'video', 'v2'),
         element('e3', 'segment', 'a1'),
       ],
     })

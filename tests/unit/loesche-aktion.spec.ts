@@ -129,20 +129,20 @@ describe("löscheAktion (#40) - Fall 1: Segment-Listenelemente", () => {
     expect(p.liste.map((e) => e.id)).toEqual(["e2", "e4"]);
   });
 
-  it("fasst ein Bild-Element nicht an, dessen ref zufaellig der Aktions-Kennung gleicht", async () => {
+  it("fasst ein Video-Element nicht an, dessen ref zufaellig der Aktions-Kennung gleicht", async () => {
     // Kann bei UUIDs nicht vorkommen - genau deshalb steht die Art-Pruefung im Code und
     // nicht die Belegung dafuer gerade. `ref` traegt je nach `art` zwei verschiedene
     // Namensraeume (TK 9.11.3).
-    const bildElement: Listenelement = {
-      id: "e-bild",
-      art: "bild",
+    const videoElement: Listenelement = {
+      id: "e-video",
+      art: "video",
       ref: "akt-weg",
-      dauer: 10,
-      trimStart: null,
-      trimEnde: null,
+      dauer: null,
+      trimStart: 0,
+      trimEnde: 10,
       einblendung: null,
     };
-    const p = projekt([aktion("akt-weg")], [bildElement]);
+    const p = projekt([aktion("akt-weg")], [videoElement]);
     merkeAktivesProjekt(p);
 
     const ergebnis = await löscheAktion("akt-weg");
@@ -150,7 +150,7 @@ describe("löscheAktion (#40) - Fall 1: Segment-Listenelemente", () => {
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
     expect(ergebnis.wert.entfernteElementIds).toEqual([]);
-    expect(p.liste.map((e) => e.id)).toEqual(["e-bild"]);
+    expect(p.liste.map((e) => e.id)).toEqual(["e-video"]);
   });
 });
 

@@ -37,7 +37,10 @@ export interface BlockierendeStelle {
   elementId: string
   /** 1-basierte Position in `Project.liste` – so, wie der Nutzer die Liste zählt. */
   position: number
-  art: 'video' | 'bild'
+  // Nur `'video'`: Seit TK v3.16 kann allein ein Video-Listenelement ein Medium blockieren
+  // (die Elementart `bild` ist gestrichen, TK 9.11.3). Ein Bild-Asset erreicht die Liste nur
+  // noch ueber `Aktion.bildRef` - und das blockiert nicht, es steht in `betroffeneAktionen`.
+  art: 'video'
   /** Der Anzeigename: `Asset.originalname` des referenzierten Mediums. */
   bezeichnung: string
 }

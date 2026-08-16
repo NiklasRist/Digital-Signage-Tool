@@ -29,9 +29,14 @@ export interface Project {
 
 export interface Listenelement {
   id: string
-  art: 'video' | 'bild' | 'segment'
-  ref: string                                    // Asset-ID (video|bild) oder Aktions-ID (segment)
-  dauer: number | null                           // Sekunden – bild/segment
+  // Die Elementart `bild` ist mit TK v3.16 GESTRICHEN (TK 9.11.3): Ein fertig gestaltetes
+  // Bild von aussen direkt in die Wiedergabeliste zu legen, ist kein Anwendungsfall - alle
+  // Inhalte entstehen ueber den action-editor und tragen so den Markenrahmen. NICHT betroffen
+  // ist `Asset.typ: 'video' | 'bild'` (#13): Bilder werden weiter importiert und verwaltet und
+  // erreichen den Render als Motiv einer Aktion (`Aktion.bildRef`).
+  art: 'video' | 'segment'
+  ref: string                                    // Asset-ID (video) oder Aktions-ID (segment)
+  dauer: number | null                           // Sekunden – nur segment
   trimStart: number | null                       // Sekunden – nur video
   trimEnde: number | null                        // Sekunden – nur video
   einblendung: Einblendung | null                // nur video

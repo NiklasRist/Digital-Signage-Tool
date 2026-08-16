@@ -71,7 +71,7 @@ function projekt(liste: Listenelement[] = []): Project {
 }
 
 function element(id: string): Listenelement {
-  return { id, art: "bild", ref: "a-bild", dauer: 10, trimStart: null, trimEnde: null, einblendung: null };
+  return { id, art: "segment", ref: "akt-vorgabe", dauer: 10, trimStart: null, trimEnde: null, einblendung: null };
 }
 
 beforeEach(() => {
@@ -100,22 +100,20 @@ describe("fuegeElementHinzu (#41)", () => {
     });
   });
 
-  it("legt aus einem Bild-Asset ein bild-Element mit der Standard-Anzeigedauer an", async () => {
+  it("weist ein Bild-Asset ab, statt daraus ein Listenelement zu bauen", async () => {
+    // Die Elementart "bild" ist mit TK v3.16 gestrichen (TK 9.11.3): Ein Bild kommt
+    // ausschliesslich als Motiv einer Aktion in die Liste. Das Medium IST gefunden -
+    // deshalb ungueltige_eingabe und nicht nicht_gefunden.
     const p = projekt();
     merkeAktivesProjekt(p);
 
     const ergebnis = await fügeElementHinzu("a-bild");
 
-    expect(ergebnis.ok).toBe(true);
-    if (!ergebnis.ok) return;
-    expect(ergebnis.wert).toMatchObject({
-      art: "bild",
-      ref: "a-bild",
-      dauer: STANDARD_ANZEIGEDAUER_SEKUNDEN,
-      trimStart: null,
-      trimEnde: null,
-      einblendung: null,
-    });
+    expect(ergebnis.ok).toBe(false);
+    if (ergebnis.ok) return;
+    expect(ergebnis.fehler.code).toBe("ungueltige_eingabe");
+    expect(p.liste).toEqual([]);
+    expect(zustand.geplant).toEqual([]);
   });
 
   it("uebernimmt Aktion.standardDauer als Startwert des segment-Elements", async () => {
@@ -145,8 +143,8 @@ describe("fuegeElementHinzu (#41)", () => {
     const p = projekt([element("e-alt")]);
     merkeAktivesProjekt(p);
 
-    await fügeElementHinzu("a-bild");
-    await fügeElementHinzu("a-bild");
+    await fügeElementHinzu("a-video");
+    await fügeElementHinzu("a-video");
 
     expect(p.liste.map((e) => e.id)[0]).toBe("e-alt");
     expect(p.liste).toHaveLength(3);
@@ -196,7 +194,7 @@ describe("fuegeElementHinzu (#41)", () => {
   });
 
   it("meldet kein_projekt, wenn gar kein Projekt geoeffnet ist", async () => {
-    const ergebnis = await fügeElementHinzu("a-bild");
+    const ergebnis = await fügeElementHinzu("a-video");
 
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
@@ -208,7 +206,7 @@ describe("fuegeElementHinzu (#41)", () => {
     const p = projekt();
     merkeAktivesProjekt(p);
 
-    const ergebnis = await fügeElementHinzu("a-bild");
+    const ergebnis = await fügeElementHinzu("a-video");
 
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
@@ -225,7 +223,7 @@ describe("fuegeElementHinzu (#41)", () => {
     let freigeben = (): void => {};
     const halter = mitD1Lock(() => new Promise<void>((aufloesen) => { freigeben = aufloesen; }));
 
-    const laeuft = fügeElementHinzu("a-bild");
+    const laeuft = fügeElementHinzu("a-video");
     await Promise.resolve();
     await Promise.resolve();
     // Ohne Lock stuende das Element hier schon in der Liste.

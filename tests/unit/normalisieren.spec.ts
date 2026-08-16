@@ -143,12 +143,11 @@ function kontext(ueberschreibung: Partial<NormalisierKontext> = {}): Normalisier
 }
 
 const SEGMENT: RenderItem = { id: "e-seg", art: "segment", dauer: 4 } as RenderItem;
-const BILD: RenderItem = {
-  id: "e-bild",
-  art: "bild",
-  medienRef: "bild.png",
-  dauer: 2,
-} as RenderItem;
+/** Ein video-Element mit frei gewaehltem Medienverweis - fuer die Medien-Fehlerpfade. */
+function videoMit(id: string, medienRef: string): RenderItem {
+  return { id, art: "video", medienRef, trimStart: 0, trimEnde: 2, einblendung: null } as RenderItem;
+}
+
 const VIDEO_OHNE_BAND: RenderItem = {
   id: "e-vid",
   art: "video",
@@ -248,19 +247,20 @@ describe("Grep-Proben der Definition of Done", () => {
 
 // ===========================================================================
 describe("pruefeMedienVorhanden (#177)", () => {
-  it("prueft video und bild, ueberspringt segment", async () => {
-    const ergebnis = await pruefeMedienVorhanden([SEGMENT, BILD, VIDEO_OHNE_BAND], "p-1");
+  it("prueft video, ueberspringt segment", async () => {
+    // Seit TK v3.16 hat NUR noch `video` ein Medium - die Elementart `bild` ist
+    // gestrichen (TK 9.11.3), ein `segment` traegt seine Pixel im Auftrag mit.
+    const ergebnis = await pruefeMedienVorhanden([SEGMENT, VIDEO_OHNE_BAND], "p-1");
     expect(ergebnis.ok).toBe(true);
-    expect(attrappe.loeseAssetPfad).toHaveBeenCalledTimes(2);
-    expect(attrappe.loeseAssetPfad).toHaveBeenCalledWith("p-1", "bild.png");
+    expect(attrappe.loeseAssetPfad).toHaveBeenCalledTimes(1);
     expect(attrappe.loeseAssetPfad).toHaveBeenCalledWith("p-1", "video.mp4");
   });
 
   it("meldet den ERSTEN fehlenden mit medium_fehlt und daten = { elementId }", async () => {
-    const fehlt = { id: "e-weg", art: "bild", medienRef: "weg.png", dauer: 2 } as RenderItem;
-    const zweiterFehler = { id: "e-weg2", art: "bild", medienRef: "weg2.png", dauer: 2 } as RenderItem;
+    const fehlt = videoMit("e-weg", "weg.png");
+    const zweiterFehler = videoMit("e-weg2", "weg2.png");
 
-    const ergebnis = await pruefeMedienVorhanden([BILD, fehlt, zweiterFehler], "p-1");
+    const ergebnis = await pruefeMedienVorhanden([VIDEO_OHNE_BAND, fehlt, zweiterFehler], "p-1");
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
     expect(ergebnis.fehler.code).toBe("medium_fehlt");
@@ -271,7 +271,7 @@ describe("pruefeMedienVorhanden (#177)", () => {
   });
 
   it("reicht ungueltige_eingabe der Pfad-Autoritaet durch - OHNE daten, id in der Meldung", async () => {
-    const boese = { id: "e-boese", art: "bild", medienRef: "../../config", dauer: 2 } as RenderItem;
+    const boese = videoMit("e-boese", "../../config");
     const ergebnis = await pruefeMedienVorhanden([boese], "p-1");
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
@@ -309,16 +309,6 @@ describe("Die fuenf Faelle der Weiche", () => {
     expect(attrappe.baueSplitFilter).not.toHaveBeenCalled();
     expect(attrappe.baueEinblendungFilter).not.toHaveBeenCalled();
     expect(attrappe.fuehreFfmpegAus).toHaveBeenCalledTimes(1);
-  });
-
-  it("Fall 2 - bild: derselbe Weg, der Pfad kommt aus loeseAssetPfad", async () => {
-    const ergebnis = await normalisiereElement(BILD, 1, KEINE_PNGS, kontext());
-
-    expect(ergebnis).toEqual({ ok: true, wert: path.join(T1, "seg_0001.mp4") });
-    expect(attrappe.baueStandbildArgumente.mock.calls[0]?.[0]).toMatchObject({
-      bildPfad: path.join(MEDIEN, "bild.png"),
-      frames: 60,
-    });
   });
 
   it("Fall 3 - video ohne Band: Vollbild, bandSpurPfad null, keine Bandspur", async () => {
@@ -630,7 +620,7 @@ describe("Fehlerpfade - daten NUR bei medium_fehlt und ungueltiges_element", () 
   });
 
   it("Medium zwischenzeitlich verschwunden: medium_fehlt MIT daten", async () => {
-    const weg = { id: "e-weg", art: "bild", medienRef: "weg.png", dauer: 2 } as RenderItem;
+    const weg = videoMit("e-weg", "weg.png");
     const ergebnis = await normalisiereElement(weg, 0, KEINE_PNGS, kontext());
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
@@ -639,7 +629,7 @@ describe("Fehlerpfade - daten NUR bei medium_fehlt und ungueltiges_element", () 
   });
 
   it("Traversal: ungueltige_eingabe OHNE daten, id in der Meldung", async () => {
-    const boese = { id: "e-boese", art: "bild", medienRef: "../../x", dauer: 2 } as RenderItem;
+    const boese = videoMit("e-boese", "../../x");
     const ergebnis = await normalisiereElement(boese, 0, KEINE_PNGS, kontext());
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;

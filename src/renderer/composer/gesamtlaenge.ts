@@ -216,17 +216,18 @@ export function frameDauer(element: Listenelement): Ergebnis<number> {
     return { ok: true, wert: endFrame - startFrame }
   }
 
-  if (art === 'bild' || art === 'segment') {
-    // „**Standbild → Clip:** `"segment"`- und `"bild"`-Items werden als Standbild
-    // über ihre `dauer` bei 30 fps im Profil ausgehalten; harter Schnitt an den
-    // Grenzen." (TK 9.2.6) - ohne Zu- oder Abschlag fuer Uebergaenge, es gibt
-    // keine. `trimStart`/`trimEnde` werden hier NIE gelesen (TK 9.11.3).
+  if (art === 'segment') {
+    // „**Standbild → Clip:** `"segment"`-Items werden als Standbild über ihre
+    // `dauer` bei 30 fps im Profil ausgehalten; harter Schnitt an den Grenzen."
+    // (TK 9.2.6, sinngemaess nach der Streichung der Elementart `bild`, TK 9.11.3)
+    // - ohne Zu- oder Abschlag fuer Uebergaenge, es gibt keine.
+    // `trimStart`/`trimEnde` werden hier NIE gelesen (TK 9.11.3).
     const dauer = roh.dauer
 
     if (typeof dauer !== 'number' || !Number.isFinite(dauer) || dauer <= 0) {
       return ungueltigesElement(
         id,
-        `Die Dauer eines "${art}"-Elements muss eine endliche Zahl groesser als 0 sein, ` +
+        'Die Dauer eines "segment"-Elements muss eine endliche Zahl groesser als 0 sein, ' +
           `vorgefunden: ${String(dauer)}.`,
       )
     }
@@ -246,7 +247,7 @@ export function frameDauer(element: Listenelement): Ergebnis<number> {
   return ungueltigesElement(
     id,
     `Unbekannte Elementart ${JSON.stringify(art)}. ` +
-      'Zulaessig sind ausschliesslich "video", "bild" und "segment".',
+      'Zulaessig sind ausschliesslich "video" und "segment".',
   )
 }
 

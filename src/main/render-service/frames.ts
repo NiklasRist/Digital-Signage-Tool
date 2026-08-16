@@ -244,14 +244,15 @@ export function trimFrames(
 }
 
 /**
- * Frame-Dauer genau eines Elements: bei `video` aus dem Trim, bei `bild`/`segment` aus `dauer`.
+ * Frame-Dauer genau eines Elements: bei `video` aus dem Trim, bei `segment` aus `dauer`.
  *
  * Bei `video` werden AUSSCHLIESSLICH `trimStart` und `trimEnde` gelesen - ein
  * `video`-Item hat kein Feld `dauer`, und ein untergeschobenes wird nicht
- * beachtet. Bei `bild`/`segment` ausschliesslich `dauer`: „**Standbild → Clip:**
- * `"segment"`- und `"bild"`-Items werden als Standbild ueber ihre `dauer` bei
- * 30 fps im Profil ausgehalten; harter Schnitt an den Grenzen." (TK 9.2.6) - ohne
- * Zu- oder Abschlag fuer Uebergaenge, es gibt keine.
+ * beachtet. Bei `segment` ausschliesslich `dauer`: „**Standbild → Clip:**
+ * `"segment"`-Items werden als Standbild ueber ihre `dauer` bei 30 fps im Profil
+ * ausgehalten; harter Schnitt an den Grenzen." (TK 9.2.6, sinngemaess nach der
+ * Streichung der Elementart `bild`, TK 9.11.3) - ohne Zu- oder Abschlag fuer
+ * Uebergaenge, es gibt keine.
  *
  * `einblendung` wird NICHT angefasst. Ein Element mit Band ergibt dieselbe Zahl
  * wie dasselbe Element ohne.
@@ -289,13 +290,13 @@ export function frameDauer(element: RenderItem): Ergebnis<number, RenderFehlerco
       return { ok: true, wert: grenzen.wert.frames }
     }
 
-    if (art === 'bild' || art === 'segment') {
+    if (art === 'segment') {
       const daten: ElementFehlerdaten = { elementId: elementId(element) }
       const dauer = roh.dauer
 
       if (typeof dauer !== 'number' || !Number.isFinite(dauer) || dauer <= 0) {
         return ungueltigesElement(
-          `Die Dauer eines "${art}"-Elements muss eine endliche Zahl groesser als 0 sein, ` +
+          'Die Dauer eines "segment"-Elements muss eine endliche Zahl groesser als 0 sein, ' +
             `vorgefunden: ${String(dauer)}.`,
           daten,
         )
@@ -323,7 +324,7 @@ export function frameDauer(element: RenderItem): Ergebnis<number, RenderFehlerco
     // Regelweg.
     return ungueltigeEingabe(
       `Unbekannte Elementart ${JSON.stringify(art)}. ` +
-        'Zulaessig sind ausschliesslich "video", "bild" und "segment".',
+        'Zulaessig sind ausschliesslich "video" und "segment".',
     )
   } catch (ursache) {
     return {
