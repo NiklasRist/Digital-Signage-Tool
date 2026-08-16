@@ -11,7 +11,7 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (15.08.2026) – gilt vor ALLEN älteren Angaben weiter unten
+## STAND HEUTE (16.08.2026) – gilt vor ALLEN älteren Angaben weiter unten
 
 Dieses Dokument ist gewachsen. Wo eine ältere Zeile diesem Abschnitt widerspricht, **gilt dieser
 Abschnitt**. Die Historie bleibt stehen, weil die Begründungen darin wertvoll sind – sie ist
@@ -27,9 +27,10 @@ Vergangenheit, nicht Anweisung.
 | M3 Medien | 18 / 20 | | M8 Marken | 3 / 57 |
 | M4 Pixel | 11 / 26 | | | |
 
-Rund **170 von 331 Issues gebaut**, **2845 Tests** grün (plus 48 Integrationstests), Branch `main`,
-Arbeitsbaum sauber. In M0/M3 sind die fehlenden Nummern faktisch fertig – das Messwerkzeug kann sie
-nur nicht ablesen (s. u.).
+Rund **171 von 331 Issues gebaut**, **2845 Tests** grün (plus 48 Integrationstests), Branch `main`,
+Arbeitsbaum sauber. In M0 (#8, Ordner) ist die fehlende Nummer faktisch fertig – das Messwerkzeug kann
+sie nur nicht ablesen (s. u.). In M3 sind #332 (Nutzlast-Prüfer, `nutzlast-pruefer.ts` gebaut, ohne
+Rumpf) und #333 (Doppelnamen, Bauzustand nicht an einer Datei ablesbar) die fehlenden zwei.
 
 **Die Logik-Kette ist durchgängig verdrahtet:** Projekt-Operationen, Medien, Warteschlange, Render
 und Export sind vom Renderer aus erreichbar. Was fehlt, ist überwiegend **Oberfläche** (M7) und die
@@ -46,24 +47,29 @@ Die wichtigste: Das Werkzeug misst, ob eine Funktion **gebaut** ist, **nicht ob 
 „Fertige Funktion ohne Aufrufer" ist die häufigste Lücke des Projekts und in **jedem** Meilenstein
 seit M1 aufgetreten. Für „hat das einen Aufrufer?" gibt es keinen Ersatz für einen `grep`.
 
-### ⚠ ZWEI ANFORDERUNGSÄNDERUNGEN sind entschieden, aber NOCH NICHT dokumentiert
+### ✓ ZWEI ANFORDERUNGSÄNDERUNGEN sind entschieden UND dokumentiert
 
-Beide sind am 15.08.2026 vom User entschieden worden und stehen **noch nicht** in AD/TK. **Bau
-nichts, was sie berührt, bevor die Dokumente nachgezogen sind** – sonst widerspricht der Code dem
-TK, und das nächste Issue zitiert weiter die alte Regel.
+Beide sind am 15.08.2026 vom User entschieden und am 16.08.2026 in **AD v1.6 / TK v3.18** eingearbeitet
+worden; die Rückwärts-Zitat-Korrektur über die angelegten Issues ist ebenfalls erledigt (Commits vom
+16.08.2026). Es läuft nur noch der **Code-Umbau**.
 
 1. **Projektweite Standarddauer, je Aktion überschreibbar.** Kette:
    `element.dauer ← aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`.
-   `Project` bekommt ein Feld → **schemaVersion + Migration**. Beim Ändern fragt die Oberfläche, ob
-   der neue Standard auch für bestehende Aktionen gilt; betroffen sind alle mit
-   `standardDauer: null`, einzeln **abwählbar** (Abwählen = alten Wert festschreiben).
+   `Project` bekommt ein Feld (9.11.3) → in AD/TK ist entschieden: **keine** Migration, weil es noch
+   kein einziges Projekt gibt (`Project.standardSegmentdauer` gehört von Anfang an zu `schemaVersion`
+   1, TK v3.17). Beim Ändern fragt die Oberfläche, ob der neue Standard auch für bestehende Aktionen
+   gilt; betroffen sind alle mit `standardDauer: null`, einzeln **abwählbar**. **Code-Stand (geprüft
+   16.08.): noch nicht gebaut** – `Project.standardSegmentdauer` und `setzeStandardSegmentdauer`
+   fehlen in `src/shared/contracts/project.ts` und im `project-store`.
 2. **Die Elementart `bild` wird gestrichen.** `Listenelement.art` behält nur `'video' | 'segment'`.
-   Alle Inhalte entstehen über den Aktions-Editor; fertig gestaltete Bilder von außen sind kein
-   Anwendungsfall. **Nicht betroffen:** `Asset.typ: 'video' | 'bild'` bleibt – Bilder werden weiter
-   importiert und über `Aktion.bildRef` benutzt. Gemessen: 12 Quelldateien, 16 Testdateien, AD und
-   TK an mehreren Stellen, dazu eine Teilmenge der 66 Issues, die `'bild'` nennen.
+   **Code-Stand (geprüft 16.08.): bereits umgesetzt** – `src/shared/contracts/project.ts` führt
+   `art: 'video' | 'segment'` (Kommentar verweist auf TK v3.16 / 9.11.3), ebenso `RenderItem.art`
+   in `render-request.ts`; der Test-Refactor von `'bild'` auf `'segment'` ist committet. **Nicht
+   betroffen:** `Asset.typ: 'video' | 'bild'` bleibt – Bilder werden weiter importiert und über
+   `Aktion.bildRef` benutzt.
 
-**Reihenfolge:** Dokumente → Issues → Code. Drei getrennte Schritte mit je eigener Freigabe.
+**Offen ist allein die projektweite Standarddauer** (Punkt 1). Ob ein Folge-Issue dafür baubar ist,
+sagt `python tools/bereitschaft.py`.
 
 ### Werkzeuge, die du benutzen sollst statt sie neu zu bauen
 
@@ -73,6 +79,7 @@ TK, und das nächste Issue zitiert weiter die alte Regel.
 | `tools/zitate-pruefen.py` | Rückwärts-Regel: Zitat-Abgleich über **alle** Issues nach einer Vertragsänderung |
 | `tools/zitate-korrigieren.py` | setzt veraltete Zitate – in Issue **und** lokaler Quelldatei; jede Ersetzung muss genau einmal passen, sonst Abbruch |
 | `tools/geruest.py` | erzeugt Rümpfe aus den Signaturblöcken; fasst bearbeitete Dateien **nie** an |
+| `tools/bild-fundstellen.py` | einmalige Erhebung für die `bild`-Streichung (unterscheidet `Listenelement.art` von `Asset.typ`) |
 | `tools/generate-docx.js` | Word aus Markdown, Markenlayout |
 
 ### Arbeitsweise beim Bauen – teuer gelernt
@@ -97,25 +104,33 @@ TK, und das nächste Issue zitiert weiter die alte Regel.
 - **Widerspricht ein Issue dem gebauten Code, gewinnt der gebaute Code** – und der Widerspruch wird
   gemeldet, nicht stillschweigend aufgelöst.
 
-### Offene Entscheidungen und Befunde (Stand 15.08.2026)
+### Offene Entscheidungen und Befunde (Stand 16.08.2026)
 
 - **Datenort beim Start nicht beschreibbar** (#51/#3): entschieden ist ein Dialog im Main mit
   „Erneut versuchen"/„Beenden" und generischem Text. Ursachenbezogene Texte erst, wenn die
   errno-Zuordnung an echten Sticks **gemessen** ist. `erzwingeEinzelInstanz` liefert `StartBefund`
   mit drei Zuständen, #3 zitiert `boolean` – Vertragsabweichung, TK-Zeile fehlt.
-- **`RenderProgress` doppelt definiert** (`render-progress.ts` und `render-result.ts`), Verbraucher
-  gespalten. Driftet eine Seite, bricht die Fortschrittskette **lautlos**. Entschieden: auf eine
-  Re-Export-Zeile zurückführen.
-- **#180:** „Tonspur vorhanden" hängt an den Layout-Merkmalen in #170, nicht an einer Audio-Prüfung.
-  Entschieden: eigene Prüfung ergänzen.
-- **H = 1078** ergibt `videoBreite = 0`. Entschieden: Obergrenze im `vorlagen-store` schärfen.
 - **`marken_datei_fehlt`** (vierter Reparatur-Weg, TK 2340) ist von `KaputteStelle` nicht abbildbar –
   eigenes Issue, gebaut mit M8.
-- **`meldeAn`** liegt vierfach kopiert (#333).
+- **`meldeAn` und `istGefuellterText` doppeln Namen** – die Folge-Issues **#332** (Nutzlast-Prüfer
+  an einen Ort) und **#333** (Doppelnamen auflösen) sind angelegt.
 - **Beim User:** der TV-Test (vier Fragen, hinterlegt in #184, #186, #188, #230, #231). Die
   wichtigste ist ungetestet und nirgends dokumentiert: **Läuft die Wiedergabe nach einem Stromausfall
   von selbst wieder an?** Laut Handbuch unterstützt der UE85AU7170 FAT, exFAT und NTFS – die
   4-GiB-Grenze ist damit **keine** harte Produkteigenschaft.
+
+### Behobene Befunde (16.08.2026, Commit `7f6e776`; Beleg unten)
+
+- **`RenderProgress` doppelt definiert** – `render-result.ts` trägt jetzt nur noch den Re-Export,
+  `render-progress.ts` (#157) ist die einzige Wahrheit.
+- **#180 „Tonspur vorhanden"** – `ausgabe-platzieren.ts` prüft die Tonspur selbst (Schritt 2b),
+  unabhängig von den Layout-Merkmalen (#170).
+- **H = 1078** (`videoBreite = 0`) – zulässig ist jetzt **H ≤ 1076**; die Schranke fragt den
+  geteilten Rechenkern `berechneBandGeometrie` (#239).
+
+Commit `7f6e776` nennt die Gegenproben; alle drei haben gebissen und wurden mit Prüfsumme
+zurückgenommen. Damit sind die im „STAND vom 10.08." offenen Punkte **RenderProgress / Tonspur /
+Bandhöhe** erledigt.
 
 ---
 
@@ -132,7 +147,8 @@ sind – aber sie ist Vergangenheit, nicht Anweisung.
   bekommt einen eigenen Branch von `main`, je Issue einer. Die Anweisung „NICHT nach main mergen"
   weiter unten ist damit überholt.
 - **Dokumente: Technisches Konzept v3.13, Anforderungsdokument v1.4.** Ältere Versionsangaben in
-  diesem Dokument (v2.x, v3.3, v1.2) sind Historie.
+  diesem Dokument (v2.x, v3.3, v1.2) sind Historie. [Stand 16.08.2026: heute gelten v3.18 / v1.6,
+  s. „STAND HEUTE".]
 - **Meilensteine M0 bis M8.** M8 (Marken) ist am 10.08.2026 mit 56 Issues dazugekommen – mehrere
   Marken, app-weit gespeichert, mit Editor. AD/TK sind dafür bereits nachgezogen.
 - **Das Funktionsgerüst steht.** 231 Dateien mit 463 werfenden Rümpfen, erzeugt aus den
@@ -165,8 +181,8 @@ sind – aber sie ist Vergangenheit, nicht Anweisung.
   ungeeignet: kein Autostart beim Booten, Firmware-/Zertifikatsprobleme).
 
 ## Die zwei Dokumente (liegen bei)
-- Anforderungsdokument v1.4 = das „WAS" (Funktionen, Regeln, Ausgabe-Profil, Akzeptanz).
-- Technisches Konzept v3.13 = das „WIE" (Architektur, Datenbestand, DFD, HLD Abschnitt 9).
+- Anforderungsdokument v1.6 = das „WAS" (Funktionen, Regeln, Ausgabe-Profil, Akzeptanz).
+- Technisches Konzept v3.18 = das „WIE" (Architektur, Datenbestand, DFD, HLD Abschnitt 9).
   Bitte beide unbedingt lesen, bevor du etwas vorschlägst.
 - WORKFLOW: Markdown ist Quelle der Wahrheit; beide .docx werden daraus generiert mit
   `node tools/generate-docx.js <in.md> <out.docx> [--dfd tools/assets/dfd.png]`. Nach jeder

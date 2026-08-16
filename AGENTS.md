@@ -32,9 +32,10 @@ aufzulösen.
 python tools/bereitschaft.py     # welche Issues sind JETZT baubar
 ```
 
-**Zwei Anforderungsänderungen sind entschieden, stehen aber noch NICHT in den Dokumenten.** Sie
-betreffen die Standarddauer und die Elementart `bild`. Details im Abschnitt „STAND HEUTE" von
-`CLAUDE.md`. **Bau nichts, was sie berührt**, bevor die Dokumente nachgezogen sind.
+**Zwei Anforderungsänderungen sind entschieden und dokumentiert** (AD v1.6, TK v3.18): die
+**projektweite Standarddauer** (je Aktion überschreibbar) und die **Streichung der Elementart
+`bild`**. Details im Abschnitt „STAND HEUTE" von `CLAUDE.md`. Der Code-Umbau läuft; wogenau
+wann ein Folge-Issue baubar ist, sagt `python tools/bereitschaft.py`.
 
 **Regeln, die dieses Projekt teuer gelernt hat** – ausführlich in `CLAUDE.md`:
 

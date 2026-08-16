@@ -6,7 +6,7 @@
 > Projekt beschädigen. Deshalb: jede lokale Entscheidung muss zu den hier festgelegten globalen
 > Invarianten passen. Im Zweifel lieber strikter an den Vertrag halten als „clever" abweichen.
 >
-> **Stand:** 10.08.2026 · Anforderungsdokument **v1.3** · Technisches Konzept **v3.7** · Phase: BAU (M0 läuft auf `bau/m0-01-grundgeruest`). Meilensteine M0–M7 sind als Issues angelegt; **M8 (Marken) ist geschrieben, aber NOCH NICHT angelegt** – seine Volltexte liegen in `docs/agents/m8/`.
+> **Stand:** 16.08.2026 · Anforderungsdokument **v1.6** · Technisches Konzept **v3.18** · Phase: BAU auf `main`. Meilensteine M0–M8 sind vollständig als Issues angelegt (M8 seit dem 10.08.2026); die Volltexte aller Meilensteine liegen in `docs/agents/m*/`. Die zwei am 15.08. entschiedenen Anforderungsänderungen (projektweite Standarddauer, Streichung der Elementart `bild`) sind seit dem 16.08. in AD/TK dokumentiert – Details und Code-Stand siehe „STAND HEUTE" in `CLAUDE.md`.
 
 ---
 
