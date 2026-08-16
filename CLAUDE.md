@@ -11,7 +11,115 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (10.08.2026) – gilt vor allen älteren Angaben weiter unten
+## STAND HEUTE (15.08.2026) – gilt vor ALLEN älteren Angaben weiter unten
+
+Dieses Dokument ist gewachsen. Wo eine ältere Zeile diesem Abschnitt widerspricht, **gilt dieser
+Abschnitt**. Die Historie bleibt stehen, weil die Begründungen darin wertvoll sind – sie ist
+Vergangenheit, nicht Anweisung.
+
+### Wo das Projekt steht
+
+| Meilenstein | gebaut | | Meilenstein | gebaut |
+|---|---|---|---|---|
+| M0 Grundgerüst | 14 / 15 | | M5 Inhalte | 15 / 37 |
+| M1 Fundament | **49 / 49** ✓ | | M6 Render & Export | **36 / 37** |
+| M2 Torwächter | **20 / 20** ✓ | | M7 Oberfläche | 5 / 70 |
+| M3 Medien | 18 / 20 | | M8 Marken | 3 / 57 |
+| M4 Pixel | 11 / 26 | | | |
+
+Rund **170 von 331 Issues gebaut**, **2845 Tests** grün (plus 48 Integrationstests), Branch `main`,
+Arbeitsbaum sauber. In M0/M3 sind die fehlenden Nummern faktisch fertig – das Messwerkzeug kann sie
+nur nicht ablesen (s. u.).
+
+**Die Logik-Kette ist durchgängig verdrahtet:** Projekt-Operationen, Medien, Warteschlange, Render
+und Export sind vom Renderer aus erreichbar. Was fehlt, ist überwiegend **Oberfläche** (M7) und die
+Marken (M8).
+
+### Wie du herausfindest, was zu tun ist
+
+```
+python tools/bereitschaft.py
+```
+
+Sagt je Meilenstein: gebaut / baubereit / **UNKLAR**. Der Dateikopf nennt drei Grenzen – lies sie.
+Die wichtigste: Das Werkzeug misst, ob eine Funktion **gebaut** ist, **nicht ob sie gerufen wird**.
+„Fertige Funktion ohne Aufrufer" ist die häufigste Lücke des Projekts und in **jedem** Meilenstein
+seit M1 aufgetreten. Für „hat das einen Aufrufer?" gibt es keinen Ersatz für einen `grep`.
+
+### ⚠ ZWEI ANFORDERUNGSÄNDERUNGEN sind entschieden, aber NOCH NICHT dokumentiert
+
+Beide sind am 15.08.2026 vom User entschieden worden und stehen **noch nicht** in AD/TK. **Bau
+nichts, was sie berührt, bevor die Dokumente nachgezogen sind** – sonst widerspricht der Code dem
+TK, und das nächste Issue zitiert weiter die alte Regel.
+
+1. **Projektweite Standarddauer, je Aktion überschreibbar.** Kette:
+   `element.dauer ← aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`.
+   `Project` bekommt ein Feld → **schemaVersion + Migration**. Beim Ändern fragt die Oberfläche, ob
+   der neue Standard auch für bestehende Aktionen gilt; betroffen sind alle mit
+   `standardDauer: null`, einzeln **abwählbar** (Abwählen = alten Wert festschreiben).
+2. **Die Elementart `bild` wird gestrichen.** `Listenelement.art` behält nur `'video' | 'segment'`.
+   Alle Inhalte entstehen über den Aktions-Editor; fertig gestaltete Bilder von außen sind kein
+   Anwendungsfall. **Nicht betroffen:** `Asset.typ: 'video' | 'bild'` bleibt – Bilder werden weiter
+   importiert und über `Aktion.bildRef` benutzt. Gemessen: 12 Quelldateien, 16 Testdateien, AD und
+   TK an mehreren Stellen, dazu eine Teilmenge der 66 Issues, die `'bild'` nennen.
+
+**Reihenfolge:** Dokumente → Issues → Code. Drei getrennte Schritte mit je eigener Freigabe.
+
+### Werkzeuge, die du benutzen sollst statt sie neu zu bauen
+
+| Werkzeug | wofür |
+|---|---|
+| `tools/bereitschaft.py` | was ist baubereit |
+| `tools/zitate-pruefen.py` | Rückwärts-Regel: Zitat-Abgleich über **alle** Issues nach einer Vertragsänderung |
+| `tools/zitate-korrigieren.py` | setzt veraltete Zitate – in Issue **und** lokaler Quelldatei; jede Ersetzung muss genau einmal passen, sonst Abbruch |
+| `tools/geruest.py` | erzeugt Rümpfe aus den Signaturblöcken; fasst bearbeitete Dateien **nie** an |
+| `tools/generate-docx.js` | Word aus Markdown, Markenlayout |
+
+### Arbeitsweise beim Bauen – teuer gelernt
+
+- **Gegenproben sind Pflicht, und ihre RÜCKNAHME muss belegt sein.** Am 14.08. sind zwei Agents
+  mitten in einer Gegenprobe gestorben und haben eine absichtliche Verfälschung liegengelassen.
+  Seither: nach jeder Mutation Prüfsumme oder `diff` gegen eine Sicherung.
+- **Belege, dass die Mutation überhaupt gegriffen hat.** Achtmal in einer Sitzung meldete eine
+  Gegenprobe „alles grün", weil sie einen Kommentar statt Code traf, ein Zeilenende-Muster nicht
+  zündete oder das Prüfskript seinen eigenen Absturz als Erfolg las. *Eine Probe ohne Beleg, dass
+  sie die Datei verändert hat, ist keine Probe.*
+- **Ein Testwert, der zufällig glatt aufgeht, belegt nichts.** `dauer: 0.7` ist exakt 21 Frames und
+  übersteht jede 30-fps-Rundung; von 539 zulässigen Bandhöhen gehen nur **59** glatt auf, und die
+  eingebaute 162 ist eine davon. Wähle krumme Werte.
+- **Grep-Proben unterscheiden nicht zwischen Code und Prosa.** Mehrfach verbot eine DoD eine
+  Zeichenkette, die der verbindliche Signaturblock desselben Issues vorschreibt. Wer filtert:
+  `\r\n` **zuerst** normalisieren (`core.autocrlf=true`) und mit einer Gegenprobe belegen, dass der
+  Filter wirklich etwas entfernt.
+- **Tests, die echte Prozesse starten, gehören nach `tests/integration/`** (Zeitgrenze dort global
+  120 s). In `tests/unit/` reißen sie unter Last die 5-Sekunden-Grenze und lassen fremde Arbeit
+  kaputt aussehen.
+- **Widerspricht ein Issue dem gebauten Code, gewinnt der gebaute Code** – und der Widerspruch wird
+  gemeldet, nicht stillschweigend aufgelöst.
+
+### Offene Entscheidungen und Befunde (Stand 15.08.2026)
+
+- **Datenort beim Start nicht beschreibbar** (#51/#3): entschieden ist ein Dialog im Main mit
+  „Erneut versuchen"/„Beenden" und generischem Text. Ursachenbezogene Texte erst, wenn die
+  errno-Zuordnung an echten Sticks **gemessen** ist. `erzwingeEinzelInstanz` liefert `StartBefund`
+  mit drei Zuständen, #3 zitiert `boolean` – Vertragsabweichung, TK-Zeile fehlt.
+- **`RenderProgress` doppelt definiert** (`render-progress.ts` und `render-result.ts`), Verbraucher
+  gespalten. Driftet eine Seite, bricht die Fortschrittskette **lautlos**. Entschieden: auf eine
+  Re-Export-Zeile zurückführen.
+- **#180:** „Tonspur vorhanden" hängt an den Layout-Merkmalen in #170, nicht an einer Audio-Prüfung.
+  Entschieden: eigene Prüfung ergänzen.
+- **H = 1078** ergibt `videoBreite = 0`. Entschieden: Obergrenze im `vorlagen-store` schärfen.
+- **`marken_datei_fehlt`** (vierter Reparatur-Weg, TK 2340) ist von `KaputteStelle` nicht abbildbar –
+  eigenes Issue, gebaut mit M8.
+- **`meldeAn`** liegt vierfach kopiert (#333).
+- **Beim User:** der TV-Test (vier Fragen, hinterlegt in #184, #186, #188, #230, #231). Die
+  wichtigste ist ungetestet und nirgends dokumentiert: **Läuft die Wiedergabe nach einem Stromausfall
+  von selbst wieder an?** Laut Handbuch unterstützt der UE85AU7170 FAT, exFAT und NTFS – die
+  4-GiB-Grenze ist damit **keine** harte Produkteigenschaft.
+
+---
+
+## STAND vom 10.08.2026 (überholt durch den Abschnitt darüber, bleibt als Beleg)
 Dieses Dokument ist gewachsen und enthält viel Historie. Wo eine ältere Zeile diesem Abschnitt
 widerspricht, gilt dieser Abschnitt. Die Historie bleibt stehen, weil die Begründungen darin wertvoll
 sind – aber sie ist Vergangenheit, nicht Anweisung.
