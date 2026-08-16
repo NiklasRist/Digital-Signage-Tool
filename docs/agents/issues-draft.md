@@ -4454,7 +4454,7 @@ abgewiesen, weil ihre Dauer sich ausschließlich aus dem Trim ergibt.
 
 ## Warum das im Gesamtsystem wichtig ist
 `dauer` bestimmt, wie lange ein Standbild (Bild oder Aktions-Segment) im finalen Render „ausgehalten"
-wird (TK 9.2.6: „`"segment"`- und `"bild"`-Items werden als Standbild über ihre `dauer` bei 30 fps
+wird (TK 9.2.6: „`"segment"`-Items werden als Standbild über ihre `dauer` bei 30 fps
 im Profil ausgehalten"). Würde diese Funktion den Bereich **10–45 s** nicht durchsetzen oder ihn als
 Zahlenliteral statt aus der projektweiten Konstante prüfen, könnte ein UI-Bug im `composer` einen
 beliebigen Wert (z. B. `0` oder `600`) bis in den Render durchreichen – im einen Fall ein

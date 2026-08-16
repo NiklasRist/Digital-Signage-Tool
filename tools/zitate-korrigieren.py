@@ -533,6 +533,35 @@ KORREKTUREN = [
      '    standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4)\n    vorlagenId:   string          // gewählte Vorlage (eingebaut oder eigene, FA-13)\n    akzentfarbe:  string | null   // aus der Markenpalette (feste Auswahl, v1); ERSETZT beim Zeichnen\n                                  //   die Akzent-Rollen der Vorlage (9.10.9). null = Markenwert gilt',
      '    standardDauer:number | null   // Default-Anzeigedauer; nur Vorgabe (s. 9.8.4).\n                                  //   null = folgt der Projekt-Standarddauer (Project.standardSegmentdauer)\n    vorlagenId:   string          // gewählte Vorlage (eingebaut oder eigene, FA-13)\n    markeId:      string          // GENAU EINE Marke (FA-23, 9.15.1). Pflicht; vorbelegt mit\n                                  //   Project.standardMarkeId. Bestimmt Logo, Schriften und Farb-Rollen\n    akzentfarbe:  string | null   // FREIER Hex-Wert (FA-24; bis v3.3 nur Auswahl aus der Palette).\n                                  //   ERSETZT beim Zeichnen die Akzent-Rollen der Vorlage (9.10.9).\n                                  //   null = Markenwert gilt',
      'TK v3.4/v3.16: akzentfarbe ist ein freier Hex-Wert, markeId ist neu, und standardDauer null heisst "folgt dem Projektstandard".'),
+
+    # ===================== FUENFTER DURCHGANG (Nachtrag zu TK v3.16) ========
+    # Mit der Streichung der Elementart `bild` (TK v3.16, 9.11.3) wurden ZWEI
+    # Saetze im TK umformuliert, die der vierte Durchgang nicht erfasst hat.
+    # Beide zaehlen Bild und Segment gemeinsam auf; heute steht dort nur noch
+    # `"segment"`. Woertlich zitiert bleiben sie sonst als verbindlicher
+    # Vertragstext stehen und behaupten eine Elementart, die es nicht mehr gibt.
+
+    # --- Zitat A: TK 9.2.6, Invariante „Standbild -> Clip" -----------------
+    # heute: „`"segment"`-Items werden als Standbild ueber ihre `dauer` bei
+    #         30 fps im Profil ausgehalten; harter Schnitt an den Grenzen."
+    ] + [
+    (nr,
+     '`"segment"`- und `"bild"`-Items werden',
+     '`"segment"`-Items werden',
+     'TK v3.16: die Elementart `bild` ist gestrichen (9.11.3); 9.2.6 nennt in der Invariante '
+     '"Standbild -> Clip" nur noch `"segment"`-Items.')
+    for nr in (45, 127, 166, 174, 177, 213, 220)] + [
+
+    # --- Zitat B: TK 9.2.8, Invariante „Parallele Baender" ------------------
+    # heute: „Parallele Baender gibt es **nur bei `"video"`-Items**;
+    #         `"segment"`-Items sind bereits vollflaechige Standbilder."
+    ] + [
+    (nr,
+     '`"bild"` und `"segment"` sind bereits',
+     '`"segment"`-Items sind bereits',
+     'TK v3.16: die Elementart `bild` ist gestrichen (9.11.3); 9.2.8 stellt den `"video"`-Items '
+     'nur noch die `"segment"`-Items gegenueber.')
+    for nr in (120, 129, 131, 164, 165, 176, 177, 218, 219, 220, 239, 242, 253)] + [
 ]
 
 # Die lokalen Quelldateien tragen ab M2 Kuerzel (M7-36) statt klickbarer
@@ -566,6 +595,11 @@ LOKAL = {59: "m2/M2-07", 68: "m2/M2-16", 107: "m4/M4-13", 153: "m5/M5-34",
          136: "m5/M5-17", 154: "m5/M5-35",
          215: "m7/M7-22", 227: "m7/M7-34", 242: "m7/M7-49", 249: "m7/M7-56",
          258: "m7/M7-67",
+         # fuenfter Durchgang (Nachtrag zu TK v3.16, Elementart `bild`)
+         120: "m5/M5-01", 127: "m5/M5-08", 129: "m5/M5-10",
+         165: "m6/M6-10", 166: "m6/M6-11", 174: "m6/M6-19", 176: "m6/M6-21",
+         213: "m7/M7-20", 219: "m7/M7-26", 220: "m7/M7-27", 239: "m7/M7-46",
+         253: "m7/M7-61",
          # Diese drei Issue-Bodies haben in diesem Arbeitsbaum KEINE lokale
          # Quelldatei mehr, in der die betroffene Stelle vorkommt: #12 und #22
          # sind seit dem Anlegen ueber den Draft hinausgewachsen, #265 stammt
