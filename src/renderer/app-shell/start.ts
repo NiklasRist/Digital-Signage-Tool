@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #196.
 // [app-shell] Start-Ablauf: die Sitzung wiederherstellen
 //
@@ -15,18 +14,12 @@
 // GERUEST-PRUEFSUMME: 2c42008e2a614483
 //
 // ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// [ERLEDIGT: Die Zeile ist mit dem Fuellen des Rumpfes entfernt - alle Parameter
+//  und Importe werden benutzt.]
 
 import type { Project } from '../../shared/contracts/project'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { AppKonfig } from '../../shared/contracts/app-konfig'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import {
@@ -59,9 +52,91 @@ export type StartErgebnis =
  * Wirft NIE. Jeder Fehler wird zu `kein-projekt` mit benanntem Hinweis.
  */
 export async function starteSitzung(): Promise<StartErgebnis> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #196."
-  );
+  // Schritt 1 - Konfiguration lesen. Ohne sie gibt es keinen zu öffnenden Kandidaten.
+  let konfig: AppKonfig
+  try {
+    const gelesen: Ergebnis<AppKonfig> = await rufeAuf<AppKonfig>(KANAELE.config.leseKonfig)
+    if (!gelesen.ok) {
+      wechsleReiter(START_REITER_OHNE_PROJEKT)
+      return {
+        art: 'kein-projekt',
+        reiter: 'projekte',
+        hinweis: {
+          art: 'konfig_unlesbar',
+          code: gelesen.fehler.code,
+          meldung: gelesen.fehler.meldung,
+        },
+      }
+    }
+    konfig = gelesen.wert
+  } catch (ursache) {
+    wechsleReiter(START_REITER_OHNE_PROJEKT)
+    return {
+      art: 'kein-projekt',
+      reiter: 'projekte',
+      hinweis: {
+        art: 'konfig_unlesbar',
+        code: 'unbekannter_fehler',
+        meldung: grundText(ursache),
+      },
+    }
+  }
+
+  // Schritt 2 - Erststart: kein aktives Projekt vermerkt. Das ist KEIN Fehlerfall.
+  if (konfig.aktivesProjektId === null) {
+    wechsleReiter(START_REITER_OHNE_PROJEKT)
+    return {
+      art: 'kein-projekt',
+      reiter: 'projekte',
+      hinweis: { art: 'kein_aktives_projekt' },
+    }
+  }
+
+  // Schritt 3 - Das aktive Projekt öffnen (lädt Projekt, Wiederholungsspeicher und räumt
+  // auf, #94). Erst danach darf die Oberfläche Medien zeigen - deshalb abgewartet.
+  let projekt: Project
+  try {
+    const geoeffnet: Ergebnis<Project> = await rufeAuf<Project>(
+      KANAELE.project.öffneProjekt,
+      { id: konfig.aktivesProjektId },
+    )
+    if (!geoeffnet.ok) {
+      wechsleReiter(START_REITER_OHNE_PROJEKT)
+      return {
+        art: 'kein-projekt',
+        reiter: 'projekte',
+        hinweis: {
+          art: 'projekt_unlesbar',
+          projektId: konfig.aktivesProjektId,
+          // Der Code wird UNVERAENDERT durchgereicht - nicht umgeschrieben.
+          code: geoeffnet.fehler.code,
+          meldung: geoeffnet.fehler.meldung,
+        },
+      }
+    }
+    projekt = geoeffnet.wert
+  } catch (ursache) {
+    wechsleReiter(START_REITER_OHNE_PROJEKT)
+    return {
+      art: 'kein-projekt',
+      reiter: 'projekte',
+      hinweis: {
+        art: 'projekt_unlesbar',
+        projektId: konfig.aktivesProjektId,
+        code: 'unbekannter_fehler',
+        meldung: grundText(ursache),
+      },
+    }
+  }
+
+  // Schritt 4 - Reiter bestimmen. Ein gemerktes 'projekte' wird übergangen (TK 9.14.3):
+  // die Projektliste ist die Einstiegsstelle OHNE geladenes Projekt.
+  const gemerkt = konfig.uiVoreinstellungen[UI_SCHLUESSEL_REITER]
+  const reiter = istGueltigerReiter(gemerkt) && gemerkt !== 'projekte'
+    ? gemerkt
+    : REITER_NACH_PROJEKT_OEFFNEN
+  wechsleReiter(reiter)
+  return { art: 'projekt-geladen', projekt, reiter }
 }
 
 /**
@@ -70,9 +145,20 @@ export async function starteSitzung(): Promise<StartErgebnis> {
  * DIESE Datei ist die EINZIGE Stelle der Shell, die eine UI-Voreinstellung schreibt.
  */
 export function merkeAktivenReiter(): () => void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #196."
-  );
+  return aufReiterGeaendert((aktiv) => {
+    void rufeAuf<void>(KANAELE.config.setzeUIVoreinstellung, {
+      schlüssel: UI_SCHLUESSEL_REITER,
+      wert: aktiv,
+    })
+      .then((ergebnis) => {
+        if (!ergebnis.ok) {
+          console.warn(`[app-shell] Reiter merken fehlgeschlagen: ${ergebnis.fehler.code}`)
+        }
+      })
+      .catch((ursache) => {
+        console.warn('[app-shell] Reiter merken fehlgeschlagen:', grundText(ursache))
+      })
+  })
 }
 
 /**
@@ -81,9 +167,19 @@ export function merkeAktivenReiter(): () => void {
  * (eingeklappt) – s. ENTSCHIEDEN 7.
  */
 export async function leseQueueAufgeklappt(): Promise<boolean> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #196."
-  );
+  let konfig: AppKonfig
+  try {
+    const gelesen: Ergebnis<AppKonfig> = await rufeAuf<AppKonfig>(KANAELE.config.leseKonfig)
+    if (!gelesen.ok) {
+      // ok:false → eingeklappt, ohne Hinweis und ohne Wurf (Fehlerpfad-Tabelle).
+      return false
+    }
+    konfig = gelesen.wert
+  } catch {
+    return false
+  }
+  // NUR exakt `true` klappt auf; fehlend, 'true', 1 und null lauten `false` (ENTSCHIEDEN 6/7).
+  return konfig.uiVoreinstellungen[UI_SCHLUESSEL_QUEUE_AUFGEKLAPPT] === true
 }
 
 /**
@@ -92,7 +188,21 @@ export async function leseQueueAufgeklappt(): Promise<boolean> {
  * trotzdem ausgewertet und intern vermerkt (kein unbehandeltes Promise).
  */
 export function merkeQueueAufgeklappt(aufgeklappt: boolean): void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #196."
-  );
+  void rufeAuf<void>(KANAELE.config.setzeUIVoreinstellung, {
+    schlüssel: UI_SCHLUESSEL_QUEUE_AUFGEKLAPPT,
+    wert: aufgeklappt,
+  })
+    .then((ergebnis) => {
+      if (!ergebnis.ok) {
+        console.warn(`[app-shell] Klappzustand merken fehlgeschlagen: ${ergebnis.fehler.code}`)
+      }
+    })
+    .catch((ursache) => {
+      console.warn('[app-shell] Klappzustand merken fehlgeschlagen:', grundText(ursache))
+    })
+}
+
+/** Lesbarer Grund einer geworfenen Ausnahme - ohne Annahme darüber, was geworfen wurde. */
+function grundText(ursache: unknown): string {
+  return ursache instanceof Error ? ursache.message : String(ursache)
 }
