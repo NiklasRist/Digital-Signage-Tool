@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #301.
 // [marken-editor] Kontrast-Warnung zwischen Akzentfläche und Text (FA-24)
 //
@@ -58,10 +57,6 @@ export function ermittleKontrastHinweis(marke: Marke, schwellenwert: number): Ko
       schwellenwert,
     ),
   }
-} {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #301."
-  );
 }
 
 export interface KontrastWarnungProps {
@@ -76,7 +71,25 @@ export interface KontrastWarnungProps {
  * Speichern-Knopf und KEINE zweite Bestätigung – „warnen, nicht blockieren" (FA-24).
  */
 export function KontrastWarnung(props: KontrastWarnungProps): JSX.Element | null {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #301."
-  );
+  const hinweis = ermittleKontrastHinweis(props.marke, props.schwellenwert)
+  if (hinweis.ausreichend) {
+    return null
+  }
+  // Der Hinweis zeigt nur an und blockiert nichts (FA-24): kein Dialog, kein
+  // deaktivierter Knopf, kein Overlay. Die Platzierung im Editor-Layout ist die
+  // Sache der Wurzel #330; dieses Element ist ein eigenstaendiger Hinweisblock.
+  const text = `Zu wenig Kontrast: Die Akzentflaeche erreicht gegenueber ihrem Text nur ${hinweis.verhaeltnis.toFixed(2)}:1 - empfohlen sind mindestens ${props.schwellenwert.toFixed(2)}:1 (WCAG AA). Die Auswahl bleibt moeglich; die Lesbarkeit pruefen Sie bitte am Geraet.`
+  return (
+    <div
+      role="status"
+      style={{
+        padding: "8px 12px",
+        backgroundColor: "#FFF3CD",
+        border: "1px solid #FFC107",
+        color: "#664D03",
+      }}
+    >
+      {text}
+    </div>
+  )
 }
