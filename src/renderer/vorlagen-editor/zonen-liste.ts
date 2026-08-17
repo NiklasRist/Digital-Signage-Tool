@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #146.
 // [vorlagen-editor] Die Zonen-Liste als Zeichenreihenfolge führen
 //
@@ -38,9 +37,12 @@ export interface ZonenListenEintrag {
 
 /** Baut die Liste. Reine Abbildung 1:1 auf vorlage.zonen – ohne jede Sortierung. */
 export function baueZonenListe(vorlage: Vorlage): ZonenListenEintrag[] {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #146."
-  );
+  return vorlage.zonen.map((zone, index) => ({
+    zone,
+    index,
+    ebene: index + 1,
+    beweglich: zone.rolle === 'frei',
+  }))
 }
 
 /**
@@ -52,7 +54,65 @@ export function ordneZonenNeu(
   vonIndex: number,
   nachIndex: number,
 ): Ergebnis<Zone[]> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #146."
-  );
+  const indexGueltig = (index: number) =>
+    Number.isInteger(index) && index >= 0 && index < zonen.length
+
+  if (!indexGueltig(vonIndex) || !indexGueltig(nachIndex)) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: `Die Indizes müssen ganze Zahlen im Bereich 0 bis ${zonen.length - 1} sein.`,
+      },
+    }
+  }
+
+  if (vonIndex === nachIndex) {
+    return { ok: true, wert: [...zonen] }
+  }
+
+  const verschobeneZone = zonen[vonIndex]
+  if (verschobeneZone === undefined) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: `Keine Zone an Position ${vonIndex}.`,
+      },
+    }
+  }
+
+  if (verschobeneZone.rolle === 'fest') {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung:
+          'Feste Zonen gehören zum Markenrahmen und behalten ihren Platz in der Zeichenreihenfolge.',
+      },
+    }
+  }
+
+  const folge = [...zonen]
+  folge.splice(vonIndex, 1)
+  folge.splice(nachIndex, 0, verschobeneZone)
+
+  const festIds = (liste: readonly Zone[]) =>
+    liste.filter((zone) => zone.rolle === 'fest').map((zone) => zone.id)
+  const vorher = festIds(zonen)
+  const nachher = festIds(folge)
+  const festeReihenfolgeGleich =
+    vorher.length === nachher.length && vorher.every((id, i) => id === nachher[i])
+
+  if (!festeReihenfolgeGleich) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: 'Das Umsortieren verändert die relative Reihenfolge der festen Zonen.',
+      },
+    }
+  }
+
+  return { ok: true, wert: folge }
 }
