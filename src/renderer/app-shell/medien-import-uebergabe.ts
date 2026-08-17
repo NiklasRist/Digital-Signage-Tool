@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #204.
 // [app-shell] Übergabe-Ziel Medien-Import
 //
@@ -15,15 +14,8 @@
 // GERUEST-PRUEFSUMME: 86c09b3cfc85a840
 //
 // ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// [ERLEDIGT: Die Zeile ist mit dem Fuellen des Rumpfes entfernt - alle Parameter
+//  und Importe werden benutzt.]
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { FORMAT_WHITELIST } from '../../shared/contracts/asset'
@@ -53,15 +45,107 @@ export async function starteMedienImport(
   projektId: string,
   nurTyp: 'video' | 'bild' | null,
 ): Promise<Ergebnis<ImportUebergabeErgebnis, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #204."
-  );
+  // Schritt 1 - projektId pruefen, OHNE den Dialog zu oeffnen (import hat kein Ziel).
+  if (typeof projektId !== 'string' || projektId.length === 0) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: 'projektId fehlt - ein Import braucht ein geoeffnetes Projekt.',
+      },
+    }
+  }
+
+  // Schritt 2 - Dialog oeffnen, ohne Nutzlast. Schlaegt der AUFRUF fehl, ist das
+  // ein Fehler des Gesamtaufrufs: nichts eingereiht, Code unveraendert.
+  let pfade: string[]
+  try {
+    const dialog = await rufeAuf<{ pfade: string[] }>(
+      KANAELE.media.öffneMedienDialog,
+    )
+    if (!dialog.ok) {
+      return dialog
+    }
+    pfade = dialog.wert.pfade
+  } catch {
+    return {
+      ok: false,
+      fehler: {
+        code: 'unbekannter_fehler',
+        meldung: 'Der Medien-Dialog konnte nicht geoeffnet werden.',
+      },
+    }
+  }
+
+  // Abbrechen oder nichts gewaehlt ist KEIN Fehler (#81 liefert pfade: []).
+  if (pfade.length === 0) {
+    return {
+      ok: true,
+      wert: { auftragIds: [], uebersprungen: [], abgelehnt: [], abgebrochen: true },
+    }
+  }
+
+  const wert: ImportUebergabeErgebnis = {
+    auftragIds: [],
+    uebersprungen: [],
+    abgelehnt: [],
+    abgebrochen: false,
+  }
+
+  // Schritte 3+4 - je Pfad EIN eigener Auftrag, nacheinander ('ok: true' heisst
+  // nur: eingereiht). Es wird weder sortiert noch dedupliziert noch auf Existenz
+  // geprueft - #81 hat die Mehrfachauswahl unveraendert durchgereicht, und die
+  // Whitelist-Pruefung ist Sache des media-service im Main.
+  for (const pfad of pfade) {
+    if (nurTyp !== null && typAusPfad(pfad) !== nurTyp) {
+      wert.uebersprungen.push(pfad)
+      continue
+    }
+
+    try {
+      const einreihen = await rufeAuf<{ auftragId: string }>(
+        KANAELE.queue.reiheEin,
+        { art: 'import', payload: { projektId, quellPfad: pfad } },
+      )
+      if (einreihen.ok) {
+        wert.auftragIds.push(einreihen.wert.auftragId)
+      } else {
+        wert.abgelehnt.push({
+          pfad,
+          code: einreihen.fehler.code,
+          meldung: einreihen.fehler.meldung,
+        })
+      }
+    } catch {
+      wert.abgelehnt.push({
+        pfad,
+        code: 'unbekannter_fehler',
+        meldung: 'Der Import-Auftrag konnte nicht eingereiht werden.',
+      })
+    }
+  }
+
+  // Schritt 5 - auch mit abgelehnten Pfaden bleibt das Gesamtergebnis ok: true;
+  // was nicht eingereiht wurde, steht benennbar in `uebersprungen`/`abgelehnt`.
+  return { ok: true, wert }
 }
 
 /** Ordnet einen Dateipfad anhand seiner Endung einem Medientyp zu – rein, ohne Dateisystem.
  *  Vergleich kleingeschrieben, Endung ohne führenden Punkt. null = keine bekannte Endung. */
 export function typAusPfad(pfad: string): 'video' | 'bild' | null {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #204."
-  );
+  // Verzeichnisanteil an BEIDEN Trennzeichen abschneiden (Windows \ und macOS /).
+  const basis = pfad.split(/[\\/]/).pop() ?? ''
+  const punkt = basis.lastIndexOf('.')
+  // Kein Punkt oder führender Punkt ('.gitignore') = keine Endung.
+  if (punkt <= 0) {
+    return null
+  }
+  const endung = basis.slice(punkt + 1).toLowerCase()
+  if ((FORMAT_WHITELIST.video as readonly string[]).includes(endung)) {
+    return 'video'
+  }
+  if ((FORMAT_WHITELIST.bild as readonly string[]).includes(endung)) {
+    return 'bild'
+  }
+  return null
 }
