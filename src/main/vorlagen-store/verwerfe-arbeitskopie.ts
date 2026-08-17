@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #105.
 // [vorlagen-store] verwerfeArbeitskopie – Bearbeitungsstand fallenlassen
 //
@@ -25,15 +24,64 @@
 // Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
-import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { VorlagenFehlercode } from './fehlercodes'
+import { aendereBestand } from './schreibe-vorlagen'
 
 export async function verwerfeArbeitskopie(
   arbeitsId: string,
 ): Promise<Ergebnis<void, VorlagenFehlercode>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #105."
-  );
+  // SCHRITT 1: formal pruefen, BEVOR irgendetwas gelesen wird (TK 9.1.1 Punkt 6). "Der Main
+  // validiert jede eingehende Nutzlast – er vertraut dem Renderer nicht." Ungueltige Eingabe ->
+  // ungueltige_eingabe OHNE jede Wirkung auf die Daten; aendereBestand wird gar nicht gerufen.
+  if (typeof arbeitsId !== 'string' || arbeitsId.length === 0) {
+    return fehler(
+      'ungueltige_eingabe',
+      'Es wurde keine Arbeitskopien-ID angegeben (leer oder kein Text).',
+    )
+  }
+
+  // SCHRITTE 2 bis 5: die ganze Operation laeuft in EINER aendereBestand(…, 'sofort')-Einheit.
+  // Die Aenderungsfunktion ist SYNCHRON und darf kein `await` enthalten - genau das macht
+  // Lesen-Aendern-Schreiben zu einer ununterbrechbaren Einheit (#98). Meldet sie ok:false,
+  // schreibt #98 nichts und reicht den Fehler unveraendert durch. 'sofort', nicht 'entprellt':
+  // Das Verwerfen ist eine bewusste, unumkehrbare Nutzerhandlung - ein entprellter Stand kaeme
+  // nach einem Absturz zurueck und stuende wieder unter "Bearbeitung fortsetzen".
+  return aendereBestand<void>((bestand) => {
+    const eintrag = bestand.find((vorlage) => vorlage.id === arbeitsId)
+    if (eintrag === undefined) {
+      return fehler('nicht_gefunden', `Es gibt keine Vorlage mit der ID "${arbeitsId}".`)
+    }
+    if (eintrag.parent === null) {
+      // DIE zentrale Sicherung dieser Datei: Eine nutzbare Vorlage (parent === null) wird hier
+      // NICHT entfernt - das ist ausschliesslich #107 nach der Referenzpruefung ueber alle
+      // Projekte. Ein Eintrag mit parent === null kann referenziert sein; Arbeitskopien nicht.
+      return fehler(
+        'ungueltige_eingabe',
+        `Die Vorlage "${arbeitsId}" ist keine Arbeitskopie und kann hier nicht entfernt werden.`,
+      )
+    }
+    // "alles zurueck, X unveraendert": Gefiltert wird nach id !== arbeitsId - GENAU dieser eine
+    // Eintrag, kein Aufraeumen anderer Kopien (das ist #108) und nichts am Parent.
+    return {
+      ok: true,
+      wert: {
+        bestand: bestand.filter((vorlage) => vorlage.id !== arbeitsId),
+        wert: undefined,
+      },
+    }
+  }, 'sofort')
+}
+
+/**
+ * Die Fehlerseite der Huelle - bewusst OHNE Nutztyp, damit sie fuer `Ergebnis<void, …>` passt
+ * (TK 9.1.1). `daten` setzt diese Funktion NIE.
+ */
+function fehler(
+  code: VorlagenFehlercode | GenerischerFehlercode,
+  meldung: string,
+): { ok: false; fehler: { code: VorlagenFehlercode | GenerischerFehlercode; meldung: string } } {
+  return { ok: false, fehler: { code, meldung } }
 }
 // - entfernt GENAU den einen Eintrag mit id === arbeitsId, und nur wenn dessen parent ≠ null ist
 // - fasst den Parent NICHT an und liest ihn nicht einmal
