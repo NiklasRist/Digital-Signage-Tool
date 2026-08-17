@@ -1,8 +1,8 @@
 // Verhaltenstests zum Main-Bootstrap src/main/index.ts, soweit die bisher verdrahteten
 // Glieder der Kette ihn betreffen: die Anmeldungen MIT Fenster aus M2 (#269, #71) und M6
-// (#191), die Anmeldungen OHNE Fenster aus M1 (#76, #77), M3 (#270), M5 (#153) und M6
-// (#189, #190), das Aufraeumen aus M6 (#172) sowie der Beenden-Ablauf mit den beiden
-// Flushs (#47, #98).
+// (#191), die Anmeldungen OHNE Fenster aus M1 (#76, #77), M3 (#270), M4 (#271), M5 (#153)
+// und M6 (#189, #190), das Aufraeumen aus M6 (#172) sowie der Beenden-Ablauf mit den
+// beiden Flushs (#47, #98).
 //
 // Electron wird gestellt (der echte Start braeuchte einen Fensterserver), ebenso die
 // beiden Binary-Pruefungen (#6, sonst wuerden echte Prozesse gestartet) und die
@@ -51,6 +51,9 @@ const h = vi.hoisted(() => {
     }),
     meldeExportHandlerAn: vi.fn(() => {
       protokoll.push("meldeExportHandlerAn");
+    }),
+    verdrahteVorlagenIPC: vi.fn(() => {
+      protokoll.push("verdrahteVorlagenIPC");
     }),
     verdrahteQueueIPC: vi.fn((uebergebenesFenster: object) => {
       protokoll.push("verdrahteQueueIPC");
@@ -192,6 +195,10 @@ vi.mock("../../src/main/vorlagen-store/schreibe-vorlagen", () => ({
   flushBestand: h.flushBestand,
 }));
 
+vi.mock("../../src/main/vorlagen-store/ipc-verdrahtung", () => ({
+  verdrahteVorlagenIPC: h.verdrahteVorlagenIPC,
+}));
+
 /**
  * Laedt den Bootstrap neu und wartet, bis der an app.whenReady() haengende Ablauf
  * durch ist.
@@ -247,8 +254,8 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
     await starteBootstrap();
 
     // Die vollstaendige Kette der heute verdrahteten Stellen: Schritt 5 (Positionen 1,
-    // 2, 4, 5, 6, 9, 10) VOR dem Fenster, Schritt 7 (Positionen 1, 2) danach, Schritt 8
-    // zum Schluss. Die Luecken (5.3, 5.7, 5.8, 7.3) stehen bewusst nicht drin - ihre
+    // 2, 4, 5, 6, 7, 9, 10) VOR dem Fenster, Schritt 7 (Positionen 1, 2) danach, Schritt 8
+    // zum Schluss. Die Luecken (5.3, 5.8, 7.3) stehen bewusst nicht drin - ihre
     // Funktionen tragen noch den werfenden Geruest-Rumpf.
     expect(h.protokoll).toEqual([
       "verdrahteProjectStoreIPC",
@@ -256,6 +263,7 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       "verdrahteConfigStoreIPC",
       "verdrahteMedienIPC",
       "registriereMedienHandler",
+      "verdrahteVorlagenIPC",
       "meldeRenderHandlerAn",
       "meldeExportHandlerAn",
       "erstelleHauptfenster",
@@ -276,6 +284,7 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       h.verdrahteConfigStoreIPC,
       h.verdrahteMedienIPC,
       h.registriereMedienHandler,
+      h.verdrahteVorlagenIPC,
       h.meldeRenderHandlerAn,
       h.meldeExportHandlerAn,
       h.verdrahteQueueIPC,
@@ -301,8 +310,8 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
   });
 });
 
-describe("Main-Bootstrap - Schritt 5: die Anmeldungen OHNE Fenster (#76, #153, #77, #93, #92, #189, #190)", () => {
-  it("ruft alle sieben ohne Argument", async () => {
+describe("Main-Bootstrap - Schritt 5: die Anmeldungen OHNE Fenster (#76, #153, #77, #93, #92, #109, #189, #190)", () => {
+  it("ruft alle acht ohne Argument", async () => {
     await starteBootstrap();
 
     // Keine von ihnen braucht ein Fenster - genau deshalb stehen sie in Schritt 5. Ein
@@ -313,6 +322,7 @@ describe("Main-Bootstrap - Schritt 5: die Anmeldungen OHNE Fenster (#76, #153, #
     expect(h.verdrahteConfigStoreIPC).toHaveBeenCalledWith();
     expect(h.verdrahteMedienIPC).toHaveBeenCalledWith();
     expect(h.registriereMedienHandler).toHaveBeenCalledWith();
+    expect(h.verdrahteVorlagenIPC).toHaveBeenCalledWith();
     expect(h.meldeRenderHandlerAn).toHaveBeenCalledWith();
     expect(h.meldeExportHandlerAn).toHaveBeenCalledWith();
   });
@@ -340,6 +350,21 @@ describe("Main-Bootstrap - Schritt 5: die Anmeldungen OHNE Fenster (#76, #153, #
     expect(h.protokoll.indexOf("meldeExportHandlerAn")).toBeLessThan(
       h.protokoll.indexOf("erstelleHauptfenster"),
     );
+  });
+
+  it("meldet den vorlagen-store an Position 7, unmittelbar nach 6 und vor 8 (#271)", async () => {
+    await starteBootstrap();
+
+    // Position 7 ist Vertrag aus #3 (die Nummerierung bleibt auch mit Luecken). Position
+    // 8 (#255) ist noch eine Luecke; gemessen wird der unmittelbare Nachbar links (6,
+    // registriereMedienHandler) und dass 7 vor den uebrigen und vor dem Fenster liegt.
+    const sechs = h.protokoll.indexOf("registriereMedienHandler");
+    const sieben = h.protokoll.indexOf("verdrahteVorlagenIPC");
+    expect(sechs).not.toBe(-1);
+    expect(sieben).not.toBe(-1);
+    expect(sieben).toBe(sechs + 1);
+    expect(sieben).toBeLessThan(h.protokoll.indexOf("meldeRenderHandlerAn"));
+    expect(sieben).toBeLessThan(h.protokoll.indexOf("erstelleHauptfenster"));
   });
 
   it("meldet den project-store vor dem config-store und beides vor dem Fenster", async () => {

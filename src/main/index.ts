@@ -5,18 +5,18 @@
 // ist Teil des Vertrags aus #3, nicht Geschmackssache - die Begruendung steht jeweils
 // am Aufrufpunkt.
 //
-// STAND HEUTE (15.08.2026): Verdrahtet ist alles, dessen Funktion inzwischen einen
+// STAND HEUTE (17.08.2026): Verdrahtet ist alles, dessen Funktion inzwischen einen
 // echten Rumpf hat - nachgeschlagen in der jeweils definierenden Datei, nicht im Issue:
 //   - die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4)
-//   - Schritt 5, Positionen 1 (#76), 2 (#153), 4 (#77), 5 (#93), 6 (#92), 9 (#189)
-//     und 10 (#190)
+//   - Schritt 5, Positionen 1 (#76), 2 (#153), 4 (#77), 5 (#93), 6 (#92), 7 (#109),
+//     9 (#189) und 10 (#190)
 //   - Schritt 7, Positionen 1 (#71) und 2 (#191)
 //   - Schritt 8 (#172)
 //   - beide Beenden-Funktionen (#47, #98)
 // LUECKEN sind weiterhin - ihre Funktionen tragen in ihrer Datei noch den werfenden
 // Geruest-Rumpf ("Noch nicht umgesetzt"), ein Aufruf liesse die App beim Start
 // abstuerzen:
-//   - Schritt 5, Positionen 3 (#240), 7 (#109) und 8 (#255)
+//   - Schritt 5, Positionen 3 (#240) und 8 (#255)
 //   - Schritt 7, Position 3 (#238)
 // Schritt 2 (Einzel-Instanz, #51) ist ein Sonderfall und steht deshalb nicht in der
 // Liste darueber: erzwingeEinzelInstanz hat inzwischen einen echten Rumpf, liefert
@@ -56,6 +56,7 @@ import { flushBeimBeenden } from "./project-store/auto-speichern";
 import { raeumeVerwaisteArbeitsbereiche } from "./render-service/arbeitsbereich";
 import { meldeRenderHandlerAn } from "./render-service/handler-anmeldung";
 import { flushBestand } from "./vorlagen-store/schreibe-vorlagen";
+import { verdrahteVorlagenIPC } from "./vorlagen-store/ipc-verdrahtung";
 
 /**
  * Im Entwicklungslauf setzt scripts/dev.mjs diese Variable auf die URL des
@@ -335,11 +336,14 @@ void app.whenReady().then(async () => {
   //     Fehlerfall, den 9. und 10. fuer Render und Export beschreiben.
   registriereMedienHandler();
 
-  // Fortsetzung der Liste - die folgenden zwei sind weiterhin LUECKEN:
-  //  7. verdrahteVorlagenIPC()                - #109,
-  //                                             src/main/vorlagen-store/ipc-verdrahtung.ts
+  //  7. verdrahteVorlagenIPC() - #109, src/main/vorlagen-store/ipc-verdrahtung.ts.
+  //     Meldet die neun vorlagen-Kanaele an (TK 9.12.1). Ohne sie erreicht der
+  //     vorlagen-editor die Vorlagen-Bibliothek nicht. Argumentlos, kein Fenster.
+  verdrahteVorlagenIPC();
+
   //  8. verdrahteVorlagenNachtragIPC()        - #255 (vorlagen:pruefeReferenzen),
   //                                             src/main/ipc-gateway/vorlagen-nachtrag.ts.
+  //                                             LUECKE, ebenfalls noch Geruest-Rumpf.
   //                                             Unmittelbar nach 7., Namensraum `vorlagen:`.
 
   //  9. meldeRenderHandlerAn() - #189, src/main/render-service/handler-anmeldung.ts.
