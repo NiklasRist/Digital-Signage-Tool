@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #228.
 // [composer] Medien importieren – der Weg aus der Medien-Bibliothek heraus
 //
@@ -15,15 +14,8 @@
 // GERUEST-PRUEFSUMME: 9b025e5f63be519a
 //
 // ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// [ERLEDIGT: Die Zeile ist mit dem Fuellen des Rumpfes entfernt - alle Parameter
+//  und Importe werden benutzt.]
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ImportUebergabeErgebnis } from '../app-shell/medien-import-uebergabe'
@@ -53,17 +45,38 @@ export interface ImportBericht {
 
 /** Baut den Bericht. Nennt Übersprungenes mit DATEINAMEN und Abgelehntes mit Code (ENTSCHIEDEN 2). */
 export function baueImportBericht(ergebnis: ImportUebergabeErgebnis): ImportBericht {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #228."
-  );
+  const eingereiht = ergebnis.auftragIds.length
+  const abgebrochen = ergebnis.abgebrochen
+  const brauchtAufmerksamkeit =
+    ergebnis.uebersprungen.length > 0 || ergebnis.abgelehnt.length > 0
+
+  let text = ''
+  if (!abgebrochen) {
+    const teile: string[] = [
+      `${eingereiht} ${eingereiht === 1 ? 'Medium' : 'Medien'} eingereiht`,
+    ]
+    if (ergebnis.uebersprungen.length > 0) {
+      teile.push(
+        `übersprungen: ${ergebnis.uebersprungen.map(dateinameAusPfad).join(', ')}`,
+      )
+    }
+    if (ergebnis.abgelehnt.length > 0) {
+      teile.push(
+        `abgelehnt: ${ergebnis.abgelehnt
+          .map((a) => `${dateinameAusPfad(a.pfad)} (${a.code})`)
+          .join(', ')}`,
+      )
+    }
+    text = teile.join('; ')
+  }
+
+  return { eingereiht, abgebrochen, text, brauchtAufmerksamkeit }
 }
 
 /** Der Dateiname eines Pfades, ohne Verzeichnisanteil – für die Anzeige.
  *  Behandelt `/` UND `\`, damit Windows- und macOS-Pfade gleich behandelt werden. */
 export function dateinameAusPfad(pfad: string): string {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #228."
-  );
+  return pfad.split(/[\\/]/).pop() ?? ''
 }
 
 /**
@@ -74,7 +87,34 @@ export async function importiereMedien(
   projektId: string,
   starte: MedienImportStarter,
 ): Promise<Ergebnis<ImportBericht, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #228."
-  );
+  // Schritt 1 - projektId pruefen, OHNE den Starter zu rufen (Import hat kein Ziel).
+  if (typeof projektId !== 'string' || projektId.length === 0) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: 'projektId fehlt - ein Import braucht ein geoeffnetes Projekt.',
+      },
+    }
+  }
+
+  // Schritt 2 - der Uebergabe-Weg aus #204, IMMER mit nurTyp: null (Bibliothek fuehrt
+  // beide Typen). Kein Warten auf den Ausgang - der laeuft ueber #199 zurueck.
+  try {
+    const ergebnis = await starte(projektId, null)
+    if (!ergebnis.ok) {
+      // Schritt 3 - Code UNVERAENDERT zurueck, kein Bericht, kein zweiter Versuch.
+      return ergebnis
+    }
+    // Schritt 4 - Erfolg: das Ergebnis von #204 in Klartext uebersetzt.
+    return { ok: true, wert: baueImportBericht(ergebnis.wert) }
+  } catch {
+    return {
+      ok: false,
+      fehler: {
+        code: 'unbekannter_fehler',
+        meldung: 'Der Medien-Import konnte nicht angestossen werden.',
+      },
+    }
+  }
 }
