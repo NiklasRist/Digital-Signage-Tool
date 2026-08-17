@@ -1,5 +1,11 @@
 # Bau-Welle: die baubereiten Issues (Stand 17.08.2026)
 
+> **ERLEDIGT – Welle abgeschlossen.** Alle 14 Issues wurden am 17.08.2026 gebaut, verifiziert
+> und je einzeln committet (Batch 1: `1f4af69`–`e27f856`; Batch 2: `322e969`–`5466c4a`; dazu
+> zwei typecheck-Fixes `3013a12`/`1a98104`). Nur noch als Referenz: Die Abschnitte unten
+> beschreiben den Plan vor der Ausführung. Die erste bereite Gruppe der nächsten Welle zeigt
+> `python3 tools/bereitschaft.py` – Stand jetzt (17.08.): M4 bereit `#109`, M5–M8 0 bereit.
+
 > **Für eine neue Sitzung, die Issues BAUEN will.** Diese Datei sagt, welche Issues JETZT baubar
 > sind, was je Issue zu tun ist und welche Fallen die Welle kennt. Sie ist **das** Einsteigedoku für
 > einen Bau-Agenten. Die Vorgänger-Welle (16.08.) steht in `docs/agents/bau-welle-bereit-16-08.md` –
