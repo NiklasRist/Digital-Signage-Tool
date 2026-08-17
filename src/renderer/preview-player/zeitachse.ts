@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #213.
 // [preview-player] Die frame-gerundete Zeitachse und die Gesamtdauer der Vorschau
 //
@@ -57,35 +56,62 @@ export interface Zeitachse {
  * gescheiterten Elements wird UNVERÄNDERT durchgereicht (Code und Meldung).
  */
 export function baueZeitachse(liste: readonly Listenelement[]): Ergebnis<Zeitachse, string> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #213."
-  );
+  const abschnitte: Achsenabschnitt[] = []
+  let startFrame = 0
+  let index = 0
+
+  // Die Frames jedes Elements kommen AUSSCHLIESSLICH aus `frameDauer` (TK 9.2.6,
+  // ENTSCHIEDEN 2). Kein Feld des Listenelements wird hier gelesen ausser `id`.
+  for (const element of liste) {
+    const einzeln = frameDauer(element)
+    // Abbruch beim ersten Fehlschlag: der Fehler wird UNVERAENDERT durchgereicht,
+    // keine Teil-Achse, kein Ueberspringen, kein Ersatzwert.
+    if (!einzeln.ok) return einzeln
+    const frames = einzeln.wert
+    abschnitte.push({
+      elementId: element.id,
+      index,
+      startFrame,
+      endeFrame: startFrame + frames,
+      frames,
+    })
+    startFrame += frames
+    index += 1
+  }
+
+  return {
+    ok: true,
+    wert: {
+      abschnitte,
+      gesamtFrames: startFrame,
+      // Eine Division am Schluss auf der fertigen Frame-Summe - dadurch ist
+      // `gesamtSekunden` immer ein exaktes Vielfaches von 1/fps.
+      gesamtSekunden: startFrame / RENDER_PROFILE.fps,
+    },
+  }
 }
 
 /** Der Abschnitt, in dem `frame` liegt; null ausserhalb von [0, gesamtFrames). */
 export function findeAbschnitt(achse: Zeitachse, frame: number): Achsenabschnitt | null {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #213."
-  );
+  for (const abschnitt of achse.abschnitte) {
+    // Halboffen [startFrame, endeFrame): der Anfang gehoert dazu, das Ende nicht.
+    // Bei `NaN` sind beide Vergleiche falsch - das liefert von selbst `null`.
+    if (abschnitt.startFrame <= frame && frame < abschnitt.endeFrame) return abschnitt
+  }
+  return null
 }
 
 /** Position INNERHALB des Abschnitts: frame − abschnitt.startFrame. Klemmt nicht. */
 export function lokalerFrame(abschnitt: Achsenabschnitt, frame: number): number {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #213."
-  );
+  return frame - abschnitt.startFrame
 }
 
 /** frame / RENDER_PROFILE.fps. */
 export function frameZuSekunden(frame: number): number {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #213."
-  );
+  return frame / RENDER_PROFILE.fps
 }
 
-/** Math.round(sekunden × RENDER_PROFILE.fps) – die EINZIGE Rundung dieser Datei, s. ENTSCHIEDEN 3. */
+/** Rundet Sekunden × RENDER_PROFILE.fps – die EINZIGE Rundung dieser Datei, s. ENTSCHIEDEN 3. */
 export function sekundenZuFrame(sekunden: number): number {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #213."
-  );
+  return Math.round(sekunden * RENDER_PROFILE.fps)
 }
