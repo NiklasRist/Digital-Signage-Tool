@@ -1,30 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// GENERIERT aus dem Signaturblock von Issue #245.
-// [app-shell] Schnappschüsse im Vorlagen-Editor auslösen
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: e02bccb67d8fa5ed
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
-
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { EditorSitzung } from '../vorlagen-editor/arbeitskopie'   // NUR der Typ (import type)
@@ -49,9 +22,25 @@ export function entscheideVorlagenAufzeichnung(
   jetzt: EditorSitzung | null,
   eingehend: EditorSitzung,
 ): Vorlagenaufzeichnung {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #245."
-  );
+  // Genau diese Reihenfolge, erster Treffer gewinnt (Vertrag, s. „Der Ablauf").
+  //
+  // 1. Keine offene Sitzung: es gibt nichts zu sichern - auch dann nicht, wenn `eingehend`
+  //    irgendeine Arbeitskopie traegt.
+  if (jetzt === null) {
+    return 'sitzungsbeginn'
+  }
+  // 2. Eine ANDERE arbeitsId zieht ein: Die Kennung entscheidet, nicht der Inhalt - zwei
+  //    Arbeitskopien koennen theoretisch dieselbe Referenz tragen (in Tests trivial).
+  if (eingehend.arbeitsId !== jetzt.arbeitsId) {
+    return 'sitzungswechsel'
+  }
+  // 3. DIESELBE Arbeitskopie-Referenz: nichts geschehen, nichts ablegen. Kein tiefer
+  //    Vergleich (ENTSCHIEDEN 8) - der Editor liefert bei jeder Aenderung einen neuen Wert.
+  if (eingehend.arbeitskopie === jetzt.arbeitskopie) {
+    return 'ohne_wirkung'
+  }
+  // 4. Alles andere ist eine echte Bearbeitung derselben Arbeitskopie.
+  return 'ablegen'
 }
 
 /**
@@ -81,11 +70,119 @@ export interface Sitzungshalter {
   aufSitzungGeaendert: (hoerer: (sitzung: EditorSitzung | null) => void) => () => void
 }
 
+// Der EINE Halter des Fensters als Modul-Zustand (ENTSCHIEDEN 1): Er ueberlebt damit den
+// Reiterwechsel (TK 9.14.2) und liegt ausserhalb jeder Komponente. Die Hörerliste wird nie
+// in eine uebernommene Sitzung geschrieben und gehoert nicht zu einem Browser-Fenster.
+let aktuellerHalter: Sitzungshalter | null = null
+
 /** Der EINE Sitzungshalter des Fensters. Liefert bei jedem Aufruf DIESELBE Instanz. */
 export function sitzungshalter(): Sitzungshalter {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #245."
-  );
+  if (aktuellerHalter === null) {
+    aktuellerHalter = bauerHalter()
+  }
+  return aktuellerHalter
+}
+
+/** NUR für Tests: ersetzt den Sitzungshalter durch einen frischen, leeren. */
+export function setzeSitzungshalterZurueck(): void {
+  aktuellerHalter = null
+}
+
+/** Baut einen frischen, leeren Halter. Nicht exportiert - die Instanz wird gemerkt. */
+function bauerHalter(): Sitzungshalter {
+  let sitzung: EditorSitzung | null = null
+  let hoerer: ((sitzung: EditorSitzung | null) => void)[] = []
+
+  function benachrichtige(neuerStand: EditorSitzung | null): void {
+    // Kopie der Hörerliste in Anmeldereihenfolge (ENTSCHIEDEN 10): Ein Hörer, der sich in
+    // seinem eigenen Rückruf abmeldet, bricht die laufende Runde nicht ab; ein werfender
+    // Hörer reißt niemanden mit.
+    const kopie = [...hoerer]
+    for (const anmelden of kopie) {
+      try {
+        anmelden(neuerStand)
+      } catch {
+        // Ein werfender Hörer wird gefangen - die Ausnahme verlässt diese Datei nicht.
+      }
+    }
+  }
+
+  function holeSitzung(): EditorSitzung | null {
+    return sitzung
+  }
+
+  function uebernimmSpeicherstand(neue: EditorSitzung): void {
+    // Der stumme Weg: Nachhall von sichereStand bzw. Ergebnis eines Rueckgaengig. NIE ein
+    // Schnappschuss, NIE ein Leeren (Gestalt 1 aus der R2-Pruefung).
+    sitzung = neue
+    benachrichtige(neue)
+  }
+
+  /**
+   * Der Zugang für den Schnappschuss-Auslöser (ENTSCHIEDEN 8): Diese Datei baut den
+   * Schnappschuss nicht selbst, sie ruft `merkeVorlageVorAenderung` (#236), die nur
+   * `holeSitzung()` liest und `sitzung.arbeitskopie` ablegt. `setzeSitzung` und
+   * `sichereStand` werden dabei nie gerufen; sie stehen nur, weil der Typ sie verlangt.
+   */
+  function zugangAufJetzigenStand(): VorlagenUndoZugang {
+    return {
+      holeSitzung,
+      setzeSitzung: uebernimmSpeicherstand,
+      sichereStand: () =>
+        Promise.resolve({
+          ok: false as const,
+          fehler: {
+            code: 'unbekannter_fehler' as const,
+            meldung: 'Der Sitzungshalter hat keinen Speicherweg - nur #236 besitzt einen.',
+          },
+        }),
+    }
+  }
+
+  function uebernimmAenderung(neue: EditorSitzung): void {
+    // 1+2. Entscheiden, BEVOR irgendetwas uebernommen wird.
+    const entscheidung = entscheideVorlagenAufzeichnung(sitzung, neue)
+    if (entscheidung === 'ablegen') {
+      // 3. Der Schnappschuss VOR der Uebernahme: merkeVorlageVorAenderung liest die
+      //    Sitzung ueber holeSitzung() - jetzt steht dort noch der ALTE Stand.
+      merkeVorlageVorAenderung(zugangAufJetzigenStand())
+    } else if (entscheidung === 'sitzungswechsel') {
+      // 4. ENTSCHIEDEN 4: ein Wechsel leert die Historie - als Ausloeser, nicht als Pruefung.
+      leereVorlagenHistorie()
+    }
+    // 5. Uebernehmen und benachrichtigen.
+    sitzung = neue
+    benachrichtige(neue)
+  }
+
+  function beendeSitzung(): void {
+    // 1+2. Sitzung auf null, Historie leeren (ENTSCHIEDEN 5), 3. Hörer mit null.
+    sitzung = null
+    leereVorlagenHistorie()
+    benachrichtige(null)
+  }
+
+  function aufSitzungGeaendert(hoererIn: (sitzung: EditorSitzung | null) => void): () => void {
+    // Beim Anmelden wird NICHT gerufen (DoD).
+    hoerer.push(hoererIn)
+    let aktiv = true
+    return () => {
+      // Idempotent: der zweite und jeder weitere Aufruf ist wirkungslos (ENTSCHIEDEN 10).
+      if (!aktiv) {
+        return
+      }
+      aktiv = false
+      hoerer = hoerer.filter((h) => h !== hoererIn)
+    }
+  }
+
+  return {
+    holeSitzung,
+    uebernimmAenderung,
+    uebernimmSpeicherstand,
+    beendeSitzung,
+    aufSitzungGeaendert,
+  }
 }
 
 /**
@@ -99,14 +196,9 @@ export function baueVorlagenUndoZugang(
     stand: Vorlage,
   ) => Promise<Ergebnis<EditorSitzung, string>>,
 ): VorlagenUndoZugang {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #245."
-  );
-}
-
-/** NUR für Tests: ersetzt den Sitzungshalter durch einen frischen, leeren. */
-export function setzeSitzungshalterZurueck(): void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #245."
-  );
+  return {
+    holeSitzung: halter.holeSitzung,
+    setzeSitzung: halter.uebernimmSpeicherstand,
+    sichereStand,
+  }
 }
