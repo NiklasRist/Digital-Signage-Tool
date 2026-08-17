@@ -61,6 +61,13 @@ function neu(ergebnis: { ok: boolean; wert?: Vorlage }): Zone {
   return zonen![zonen!.length - 1]!
 }
 
+/** Besteht auf einem Erfolgsergebnis und liefert die ganze Vorlage - analog zu `neu`. */
+function stand(ergebnis: { ok: boolean; wert?: Vorlage }): Vorlage {
+  expect(ergebnis.ok).toBe(true)
+  expect(ergebnis.wert).toBeDefined()
+  return ergebnis.wert!
+}
+
 function pruefeRahmenInFlaeche(rahmen: Rahmen, breite: number, höhe: number) {
   expect(rahmen.x).toBeGreaterThanOrEqual(0)
   expect(rahmen.y).toBeGreaterThanOrEqual(0)
@@ -88,7 +95,7 @@ describe('fuegeZoneHinzu (#147) – Sorten auf vollflaeche', () => {
       maxZeilen: 2,
     })
     expect(z.text && z.text.größeMin).toBeGreaterThan(0)
-    expect(z.text && z.text.größeMin).toBeLessThanOrEqual(z.text.größeMax)
+    expect(z.text && z.text.größeMin).toBeLessThanOrEqual(z.text?.größeMax ?? 0)
     expect(z.text && Number.isInteger(z.text.maxZeilen)).toBe(true)
     expect(z.text && z.text.maxZeilen).toBeGreaterThanOrEqual(1)
     expect('bild' in z).toBe(false)
@@ -159,10 +166,10 @@ describe('fuegeZoneHinzu (#147) – id-Vergabe', () => {
   it('vergibt beim zweiten titel titel-2 (DoD b)', () => {
     const erste = fuegeZoneHinzu(vorlage('vollflaeche', null), { sorte: 'text', bindung: 'titel' })
     expect(erste.ok).toBe(true)
-    const zweite = fuegeZoneHinzu(erste.wert!, { sorte: 'text', bindung: 'titel' })
+    const zweite = fuegeZoneHinzu(stand(erste), { sorte: 'text', bindung: 'titel' })
 
     expect(zweite.ok).toBe(true)
-    const zonen = zweite.wert!.zonen
+    const zonen = stand(zweite).zonen
     expect(zonen.map((z) => z.id)).toEqual(['titel', 'titel-2'])
   })
 
@@ -171,7 +178,7 @@ describe('fuegeZoneHinzu (#147) – id-Vergabe', () => {
     for (const erwartet of ['titel', 'titel-2', 'titel-3']) {
       const ergebnis = fuegeZoneHinzu(vorlageJetzt, { sorte: 'text', bindung: 'titel' })
       expect(ergebnis.ok).toBe(true)
-      vorlageJetzt = ergebnis.wert!
+      vorlageJetzt = stand(ergebnis)
       expect(vorlageJetzt.zonen[vorlageJetzt.zonen.length - 1]!.id).toBe(erwartet)
     }
   })
@@ -179,10 +186,10 @@ describe('fuegeZoneHinzu (#147) – id-Vergabe', () => {
   it('deko zweimal ergibt deko und deko-2', () => {
     const erste = fuegeZoneHinzu(vorlage('vollflaeche', null), { sorte: 'deko' })
     expect(erste.ok).toBe(true)
-    const zweite = fuegeZoneHinzu(erste.wert!, { sorte: 'deko' })
+    const zweite = fuegeZoneHinzu(stand(erste), { sorte: 'deko' })
 
     expect(zweite.ok).toBe(true)
-    expect(zweite.wert!.zonen.map((z) => z.id)).toEqual(['deko', 'deko-2'])
+    expect(stand(zweite).zonen.map((z) => z.id)).toEqual(['deko', 'deko-2'])
   })
 
   it('weicht einer bereits belegten Bildbindung mit -2 aus', () => {
@@ -230,14 +237,15 @@ describe('fuegeZoneHinzu (#147) – Rahmen liegt in der Flaeche', () => {
     const ergebnis = fuegeZoneHinzu(eingang, { sorte: 'text', bindung: 'titel' })
 
     expect(ergebnis.ok).toBe(true)
-    expect(ergebnis.wert).not.toBe(eingang)
-    expect(ergebnis.wert!.zonen).not.toBe(eingang.zonen)
+    const neuerStand = stand(ergebnis)
+    expect(neuerStand).not.toBe(eingang)
+    expect(neuerStand.zonen).not.toBe(eingang.zonen)
     expect(eingang.zonen).toEqual(vorher)
     expect(eingang.zonen.map((z) => z.id)).toEqual(['hintergrund', 'motiv'])
-    expect(ergebnis.wert!.zonen.map((z) => z.id)).toEqual(['hintergrund', 'motiv', 'titel'])
+    expect(neuerStand.zonen.map((z) => z.id)).toEqual(['hintergrund', 'motiv', 'titel'])
     // Die BESTEHENDEN Zonen-Objekte bleiben identisch - nur angehaengt, nichts kopiert.
-    expect(ergebnis.wert!.zonen[0]).toBe(vorher[0])
-    expect(ergebnis.wert!.zonen[1]).toBe(vorher[1])
+    expect(neuerStand.zonen[0]).toBe(vorher[0])
+    expect(neuerStand.zonen[1]).toBe(vorher[1])
   })
 })
 
@@ -261,7 +269,7 @@ describe('fuegeZoneHinzu (#147) – dekorative Zone mit statischem Text (DoD d)'
       größeMin: 56,
       maxZeilen: 2,
     })
-    expect(z.text && z.text.größeMin).toBeLessThanOrEqual(z.text.größeMax)
+    expect(z.text && z.text.größeMin).toBeLessThanOrEqual(z.text?.größeMax ?? 0)
   })
 
   it('nutzt auf dem Band denselben text-Block wie eine Textzone (64/44/1)', () => {
