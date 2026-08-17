@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #233.
 // [app-shell] Der Schnappschuss-Stapel für Rückgängig und Wiederherstellen
 //
@@ -71,7 +70,66 @@ export interface UndoStapel<T> {
  * diese Datei hält KEINEN Modul-Zustand (s. ENTSCHIEDEN 1).
  */
 export function erzeugeUndoStapel<T>(tiefe?: number): UndoStapel<T> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #233."
-  );
+  // ENTSCHIEDEN 7: Werte < 1 oder keine ganze Zahl (auch NaN) fallen still
+  // auf UNDO_TIEFE zurueck - diese Datei hat keinen Fehlerausgang.
+  const maximaleTiefe =
+    typeof tiefe === 'number' && Number.isInteger(tiefe) && tiefe >= 1
+      ? tiefe
+      : UNDO_TIEFE
+
+  // `zurueck` ist der Rueckgaengig-Zweig (ablegen stapelt VOR der Aenderung),
+  // `vor` der Wiederherstellen-Zweig (leicht von vollzieheZurueck, ENTSCHIEDEN 2/8).
+  const zurueck: T[] = []
+  const vor: T[] = []
+
+  return {
+    ablegen(stand: T): void {
+      zurueck.push(stand)
+      // ENTSCHIEDEN 3: Liegt der Stapel ueber der Tiefe, faellt der AELTESTE
+      // Stand vorne heraus - nie der juengste, den der Nutzer als naechstes
+      // zuruecknehmen will.
+      if (zurueck.length > maximaleTiefe) {
+        zurueck.shift()
+      }
+      // ENTSCHIEDEN 2: Eine neue Aenderung verlaesst den alten Vorwaerts-Zweig.
+      vor.length = 0
+    },
+    kannZurueck(): boolean {
+      return zurueck.length > 0
+    },
+    kannVor(): boolean {
+      return vor.length > 0
+    },
+    vorschauZurueck(): T | null {
+      // Nur anschauen, nie veraendern (Fehlerpfad: leerer Zweig -> null).
+      return zurueck.length === 0 ? null : (zurueck[zurueck.length - 1] as T)
+    },
+    vorschauVor(): T | null {
+      return vor.length === 0 ? null : (vor[vor.length - 1] as T)
+    },
+    vollzieheZurueck(aktuell: T): void {
+      // ENTSCHIEDEN 8: Bei leerem Zweig NICHTS tun - kein Wurf, und `aktuell`
+      // wandert gerade NICHT in den Vorwaerts-Zweig.
+      if (zurueck.length === 0) {
+        return
+      }
+      zurueck.pop()
+      vor.push(aktuell)
+    },
+    vollzieheVor(aktuell: T): void {
+      // Fehlerpfad: leerer Wiederherstellen-Zweig ist wirkungslos, kein Wurf.
+      if (vor.length === 0) {
+        return
+      }
+      vor.pop()
+      zurueck.push(aktuell)
+    },
+    leere(): void {
+      zurueck.length = 0
+      vor.length = 0
+    },
+    stand(): StapelStand {
+      return { zurueck: zurueck.length, vor: vor.length }
+    },
+  }
 }
