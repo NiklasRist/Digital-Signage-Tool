@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #214.
 // [preview-player] Transport – Abspielen, Pause, Springen und die Markierung des aktuellen Elements
 //
@@ -50,37 +49,38 @@ export interface TransportStand {
 
 /** Der Anfangsstand: pausiert, bei Frame 0. */
 export function baueTransport(): TransportStand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #214."
-  );
+  return { laeuft: false, frame: 0, restMs: 0 }
 }
 
 /** Startet die Uhr. Steht sie am Ende, beginnt sie wieder bei 0 (s. ENTSCHIEDEN 3). */
 export function spieleAb(stand: TransportStand, achse: Zeitachse): TransportStand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #214."
-  );
+  // Die leere Achse zuerst: frame === gesamtFrames === 0 wuerde sonst ENTSCHIEDEN 3
+  // ausloesen und laeuft: true liefern, obwohl es nichts abzuspielen gibt.
+  if (achse.gesamtFrames === 0) return { laeuft: false, frame: 0, restMs: 0 }
+  if (stand.frame >= achse.gesamtFrames) return { laeuft: true, frame: 0, restMs: 0 }
+  return { laeuft: true, frame: stand.frame, restMs: stand.restMs }
 }
 
 /** Haelt die Uhr an und BEHAELT die Position – das ist das „merkt sich die Stelle". */
 export function pausiere(stand: TransportStand): TransportStand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #214."
-  );
+  return { laeuft: false, frame: stand.frame, restMs: stand.restMs }
 }
 
 /** Springt an eine Frame-Position; klemmt auf [0, gesamtFrames]. `laeuft` bleibt unveraendert. */
 export function springeZuFrame(stand: TransportStand, achse: Zeitachse, frame: number): TransportStand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #214."
-  );
+  const ziel = Number.isNaN(frame) ? 0 : Math.round(frame)
+  const geklemmt = Math.min(Math.max(ziel, 0), achse.gesamtFrames)
+  return { laeuft: stand.laeuft, frame: geklemmt, restMs: 0 }
 }
 
 /** Springt an den Anfang des Elements mit diesem Listen-Index; klemmt auf gueltige Indizes. */
 export function springeZuElement(stand: TransportStand, achse: Zeitachse, index: number): TransportStand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #214."
-  );
+  if (achse.abschnitte.length === 0) return { laeuft: stand.laeuft, frame: 0, restMs: 0 }
+  const ziel = Number.isNaN(index) ? 0 : Math.round(index)
+  const geklemmt = Math.min(Math.max(ziel, 0), achse.abschnitte.length - 1)
+  const abschnitt = achse.abschnitte[geklemmt]
+  if (!abschnitt) return { laeuft: stand.laeuft, frame: 0, restMs: 0 }
+  return { laeuft: stand.laeuft, frame: abschnitt.startFrame, restMs: 0 }
 }
 
 /**
@@ -88,14 +88,23 @@ export function springeZuElement(stand: TransportStand, achse: Zeitachse, index:
  * Erreicht sie das Ende, bleibt sie bei gesamtFrames stehen und `laeuft` wird false.
  */
 export function tick(stand: TransportStand, achse: Zeitachse, vergangeneMs: number): TransportStand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #214."
-  );
+  const msProFrame = 1000 / RENDER_PROFILE.fps
+  // "Unbrauchbar" heisst: laeuft false, oder vergangeneMs <= 0, NaN, Infinity.
+  // `Number.isFinite` fängt NaN und beide Unendlichkeiten, `vergangeneMs <= 0` den Rest.
+  if (!stand.laeuft || !Number.isFinite(vergangeneMs) || vergangeneMs <= 0) return stand
+
+  const gesamt = stand.restMs + vergangeneMs
+  const ganzeFrames = Math.floor(gesamt / msProFrame)
+  const neuerFrame = stand.frame + ganzeFrames
+  const neuerRest = gesamt - ganzeFrames * msProFrame
+  if (neuerFrame >= achse.gesamtFrames) {
+    return { laeuft: false, frame: achse.gesamtFrames, restMs: 0 }
+  }
+  return { laeuft: true, frame: neuerFrame, restMs: neuerRest }
 }
 
 /** Listen-Index des gerade laufenden Elements; null am Ende und bei leerer Achse. ABGELEITET. */
 export function markierterIndex(stand: TransportStand, achse: Zeitachse): number | null {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #214."
-  );
+  const abschnitt = findeAbschnitt(achse, stand.frame)
+  return abschnitt ? abschnitt.index : null
 }
