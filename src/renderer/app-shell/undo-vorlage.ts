@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #236.
 // [app-shell] Rückgängig und Wiederherstellen im Vorlagen-Editor anwenden
 //
@@ -13,17 +12,6 @@
 // mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
 // stehen; ihr Nichtmehrstimmen IST das Signal.
 // GERUEST-PRUEFSUMME: d9b156bb9b807e69
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
@@ -58,39 +46,167 @@ export type UndoWirkungVorlage =
  * Ohne offene Sitzung geschieht nichts.
  */
 export function merkeVorlageVorAenderung(zugang: VorlagenUndoZugang): void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #236."
-  );
+  // 1. Ohne offene Sitzung geschieht NICHTS - kein Fehler, keine Meldung. Ein Editor, der
+  //    die Sitzung nicht haelt (#245), darf diesen Aufruf bedenkenlos tun.
+  const sitzung = zugang.holeSitzung()
+  if (sitzung === null) {
+    return
+  }
+
+  // 2. Der Schnappschuss ist die Vorlage selbst, OHNE Kopie (ENTSCHIEDEN 6): Der alte Wert
+  //    wird nie verändert - jedes Speichern ersetzt die Sitzung durch eine neue (#143).
+  vorlagenHistorie().ablegen(sitzung.arbeitskopie)
 }
 
 /** Ob ein Rückgängig gerade angeboten werden darf (Stand vorhanden UND zur offenen Arbeitskopie). */
 export function kannVorlageRueckgaengig(zugang: VorlagenUndoZugang): boolean {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #236."
-  );
+  const sitzung = zugang.holeSitzung()
+  if (sitzung === null) {
+    return false
+  }
+  const ziel = vorlagenHistorie().vorschauZurueck()
+  return ziel !== null && ziel.id === sitzung.arbeitsId
 }
 
 /** Gegenstück für das Wiederherstellen. */
 export function kannVorlageWiederherstellen(zugang: VorlagenUndoZugang): boolean {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #236."
-  );
+  const sitzung = zugang.holeSitzung()
+  if (sitzung === null) {
+    return false
+  }
+  const ziel = vorlagenHistorie().vorschauVor()
+  return ziel !== null && ziel.id === sitzung.arbeitsId
 }
 
 /** Schreibt den vorherigen Schnappschuss über den Speicherweg des Editors zurück. */
 export async function macheVorlageRueckgaengig(
   zugang: VorlagenUndoZugang,
 ): Promise<Ergebnis<UndoWirkungVorlage, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #236."
-  );
+  // 1. Keine Sitzung: sofort abbrechen, der Stapel bleibt unangetastet (Fehlerpfad).
+  const sitzung = zugang.holeSitzung()
+  if (sitzung === null) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'nicht_gefunden',
+        meldung: 'Es ist keine Editor-Sitzung geoeffnet, ein Rueckgaengig ist nicht moeglich.',
+      },
+    }
+  }
+
+  // 2. Nichts zu tun: KEIN Fehler, kein Speichern, Stapel unveraendert.
+  const ziel = vorlagenHistorie().vorschauZurueck()
+  if (ziel === null) {
+    return { ok: true, wert: { art: 'nichts_zu_tun' } }
+  }
+
+  // 3. Kennungspruefung (ENTSCHIEDEN 3): Ein Schnappschuss der VORIGEN Arbeitskopie waere
+  //    hier nicht nur falsch, er wuerde an sichereStand scheitern - der Nutzer bekäme einen
+  //    Store-Fehler ohne erkennbaren Zusammenhang. Geleert wird die GANZE Historie, weil sie
+  //    in keinem Eintrag zu dieser Arbeitskopie passt. Es wird nicht gespeichert.
+  if (ziel.id !== sitzung.arbeitsId) {
+    leereVorlagenHistorie()
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung:
+          `Der Schnappschuss gehoert zur Arbeitskopie "${ziel.id}", geoeffnet ist ` +
+          `"${sitzung.arbeitsId}". Die Historie wurde geleert.`,
+      },
+    }
+  }
+
+  // 4+5. Der Stand vor dem Rueckgaengig ist die JETZIGE Arbeitskopie; das Ziel ist der
+  //      Schnappschuss. GENAU EIN Aufruf, mit der VOLLSTAENDIGEN Vorlage.
+  const aktuell: Vorlage = sitzung.arbeitskopie
+  let antwort: Ergebnis<EditorSitzung, string>
+  try {
+    antwort = await zugang.sichereStand(sitzung, ziel)
+  } catch (ursache) {
+    // Fehlerpfad: ein Wurf wird gefangen, kein throw nach außen; Stapel unveraendert.
+    return unbekannterFehler(ursache)
+  }
+
+  // 6. Fehlschlag: Code UNVERAENDERT zurueck, Stapel und Sitzung bleiben exakt wie vorher.
+  if (!antwort.ok) {
+    return antwort
+  }
+
+  // 7. Erfolg - in DIESER Reihenfolge (ENTSCHIEDEN 5): erst den Stapel vollziehen, dann die
+  //    Sitzung erschieben. Ein werfendes setzeSitzung faengt dieser catch; der Stapel ist
+  //    dann bereits vollzogen und bleibt es (die Arbeit ist im Store gespeichert).
+  try {
+    vorlagenHistorie().vollzieheZurueck(aktuell)
+    zugang.setzeSitzung(antwort.wert)
+  } catch (ursache) {
+    return unbekannterFehler(ursache)
+  }
+  return { ok: true, wert: { art: 'angewendet', sitzung: antwort.wert } }
 }
 
 /** Schreibt den zuvor zurückgenommenen Schnappschuss wieder vor. */
 export async function stelleVorlageWiederHer(
   zugang: VorlagenUndoZugang,
 ): Promise<Ergebnis<UndoWirkungVorlage, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #236."
-  );
+  // Spiegelbild von macheVorlageRueckgaengig, mit vorschauVor()/vollzieheVor().
+  const sitzung = zugang.holeSitzung()
+  if (sitzung === null) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'nicht_gefunden',
+        meldung: 'Es ist keine Editor-Sitzung geoeffnet, ein Wiederherstellen ist nicht moeglich.',
+      },
+    }
+  }
+
+  const ziel = vorlagenHistorie().vorschauVor()
+  if (ziel === null) {
+    return { ok: true, wert: { art: 'nichts_zu_tun' } }
+  }
+
+  if (ziel.id !== sitzung.arbeitsId) {
+    leereVorlagenHistorie()
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung:
+          `Der Schnappschuss gehoert zur Arbeitskopie "${ziel.id}", geoeffnet ist ` +
+          `"${sitzung.arbeitsId}". Die Historie wurde geleert.`,
+      },
+    }
+  }
+
+  const aktuell: Vorlage = sitzung.arbeitskopie
+  let antwort: Ergebnis<EditorSitzung, string>
+  try {
+    antwort = await zugang.sichereStand(sitzung, ziel)
+  } catch (ursache) {
+    return unbekannterFehler(ursache)
+  }
+
+  if (!antwort.ok) {
+    return antwort
+  }
+
+  try {
+    vorlagenHistorie().vollzieheVor(aktuell)
+    zugang.setzeSitzung(antwort.wert)
+  } catch (ursache) {
+    return unbekannterFehler(ursache)
+  }
+  return { ok: true, wert: { art: 'angewendet', sitzung: antwort.wert } }
+}
+
+/** Fehlerpfad: ein Wurf aus sichereStand oder setzeSitzung wird NICHT weitergereicht. */
+function unbekannterFehler(ursache: unknown): Ergebnis<never, string> {
+  return {
+    ok: false,
+    fehler: {
+      code: 'unbekannter_fehler',
+      meldung: ursache instanceof Error ? ursache.message : String(ursache),
+    },
+  }
 }
