@@ -179,4 +179,27 @@ export const KANAELE = {
     // RenderResult (TK 9.2.7).
     fortschritt: 'render:fortschritt',
   },
+
+  // vorlagen-store (#109). Die neun Namen ENTSTEHEN hier und nirgends sonst; die
+  // Verdrahtung (src/main/vorlagen-store/ipc-verdrahtung.ts) und die Renderer-Seite
+  // lesen sie beide von hier. Präfix `vorlagen:` nach dem Muster `<modul>:<operation>` –
+  // TK 9.1.1 Punkt 4 führt `vorlagen:löscheVorlage` selbst wörtlich als Beispiel.
+  //
+  // KEIN Ereignis in dieser Gruppe: Der vorlagen-store hat in v1 keinen Push an den
+  // Renderer (kein `vorlagen:geaendert`); die Oberfläche kennt den Stand aus den
+  // Rückgabewerten der Operationen. Der zehnte Aufruf-Kanal `vorlagen:pruefeVorlagenReferenzen`
+  // (TK 9.12.1 seit v3.0) wird von einem EIGENEN Verdrahtungs-Issue angemeldet (#255) und
+  // steht deshalb NICHT hier – die Gruppe darf wie `project` wachsen, diese neun sind die
+  // von #109.
+  vorlagen: {
+    listeVorlagen: 'vorlagen:listeVorlagen',
+    listeArbeitskopien: 'vorlagen:listeArbeitskopien',
+    erstelleVorlage: 'vorlagen:erstelleVorlage',
+    oeffneZurBearbeitung: 'vorlagen:oeffneZurBearbeitung',
+    speichereArbeitskopie: 'vorlagen:speichereArbeitskopie',
+    uebernehmeInParent: 'vorlagen:uebernehmeInParent',
+    alsEigenstaendige: 'vorlagen:alsEigenstaendige',
+    verwerfeArbeitskopie: 'vorlagen:verwerfeArbeitskopie',
+    löscheVorlage: 'vorlagen:löscheVorlage',
+  },
 } as const
