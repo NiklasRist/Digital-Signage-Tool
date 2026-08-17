@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #220.
 // [preview-player] Das Zeitverhalten des Werbebandes – wechseln, wiederholen, am Videoende abschneiden
 //
@@ -55,9 +54,29 @@ export interface Bandtakt {
  * Eine Einblendung OHNE Abschnitte ergibt einen leeren Takt mit rundeFrames = 0.
  */
 export function baueBandtakt(einblendung: Einblendung): Bandtakt {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #220."
-  );
+  const abschnitte: Bandabschnitt[] = []
+  let start = 0
+
+  for (let index = 0; index < einblendung.abschnitte.length; index += 1) {
+    const abschnitt = einblendung.abschnitte[index]
+    if (abschnitt === undefined) {
+      continue
+    }
+    // Die Frames kommen AUSSCHLIESSLICH aus `sekundenZuFrame` (#213) - ENTSCHIEDEN 1.
+    // Nicht endlich (NaN/Infinity) oder negativ ergibt 0 Frames, ENTSCHIEDEN 3.
+    let frames = sekundenZuFrame(abschnitt.dauer)
+    if (!Number.isFinite(frames) || frames < 0) frames = 0
+    abschnitte.push({
+      aktionRef: abschnitt.aktionRef,
+      index,
+      startFrame: start,
+      endeFrame: start + frames,
+      frames,
+    })
+    start += frames
+  }
+
+  return { abschnitte, rundeFrames: start }
 }
 
 /**
@@ -71,7 +90,15 @@ export function waehleAbschnitt(
   lokalerFrame: number,
   elementFrames: number,
 ): Bandabschnitt | null {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #220."
-  );
+  if (takt.rundeFrames <= 0) return null
+  if (!Number.isFinite(lokalerFrame) || lokalerFrame < 0) return null
+  if (lokalerFrame >= elementFrames) return null
+
+  // Wiederholung per Rest der Division, ENTSCHIEDEN 4 - keine ausgerollte Liste.
+  const pos = lokalerFrame % takt.rundeFrames
+  for (const abschnitt of takt.abschnitte) {
+    // Halboffen [startFrame, endeFrame): der Anfang gehoert dazu, das Ende nicht.
+    if (abschnitt.startFrame <= pos && pos < abschnitt.endeFrame) return abschnitt
+  }
+  return null
 }
