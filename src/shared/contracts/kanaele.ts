@@ -201,5 +201,14 @@ export const KANAELE = {
     alsEigenstaendige: 'vorlagen:alsEigenstaendige',
     verwerfeArbeitskopie: 'vorlagen:verwerfeArbeitskopie',
     löscheVorlage: 'vorlagen:löscheVorlage',
+
+    // ERGAENZT durch #255 – der zehnte Aufruf-Kanal dieses Blocks (TK 9.12.1 seit v3.0).
+    // `pruefeVorlagenReferenzen` (#106) ist die einzige rein lesende Vorlagen-Operation, die
+    // alle `project.json` durchsucht; angemeldet wird sie in einer EIGENEN Datei
+    // (src/main/ipc-gateway/vorlagen-nachtrag.ts), weil #109 seiner Datei ausdruecklich
+    // verbietet, ueber die neun hinauszugehen. Schlüssel und String sind beide ASCII und
+    // zeichengleich zum Operationsnamen – der Vertragstest von #25 verlangt
+    // `kanal === `${modul}:${operation}``.
+    pruefeVorlagenReferenzen: 'vorlagen:pruefeVorlagenReferenzen',
   },
 } as const

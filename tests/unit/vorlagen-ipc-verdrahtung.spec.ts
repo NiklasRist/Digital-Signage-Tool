@@ -132,14 +132,16 @@ describe('verdrahteVorlagenIPC (#109) – die Anmeldung', () => {
     expect(anmeldungen).toHaveLength(9)
   })
 
-  it('KANAELE.vorlagen: neun Namen mit Praefix vorlagen:, Umlaut im String', () => {
+  it('KANAELE.vorlagen: die zehn Namen aus #109 und #255, alle mit Praefix vorlagen:, Umlaut im String', () => {
     const namen = Object.values(KANAELE.vorlagen)
-    expect(namen).toHaveLength(9)
+    expect(namen).toHaveLength(10)
     for (const name of namen) {
       expect(name.startsWith('vorlagen:')).toBe(true)
     }
     // Nutzerentscheidung 17.08.2026: Umlaut-Schluessel (gebauter Code), s. Kopfkommentar.
     expect(KANAELE.vorlagen.löscheVorlage).toBe('vorlagen:löscheVorlage')
+    // Der zehnte Kanal kam mit #255 dazu (src/main/ipc-gateway/vorlagen-nachtrag.ts).
+    expect(KANAELE.vorlagen.pruefeVorlagenReferenzen).toBe('vorlagen:pruefeVorlagenReferenzen')
   })
 
   it('laesst die vorhandenen Blaetter der Registry unberuehrt', () => {
@@ -157,8 +159,8 @@ describe('verdrahteVorlagenIPC (#109) – die Anmeldung', () => {
     expect(KANAELE.media.öffneMedienDialog).toBe('media:öffneMedienDialog')
     expect(KANAELE.export.wähleExportZiel).toBe('export:wähleExportZiel')
     expect(KANAELE.render.fortschritt).toBe('render:fortschritt')
-    // Der zehnte vorlagen-Kanal fehlt hier BEWUSST (eigenes Issue #255).
-    expect('pruefeVorlagenReferenzen' in KANAELE.vorlagen).toBe(false)
+    // Der zehnte vorlagen-Kanal steht seit #255 im Block (eigenes Verdrahtungs-Issue).
+    expect(KANAELE.vorlagen.pruefeVorlagenReferenzen).toBe('vorlagen:pruefeVorlagenReferenzen')
   })
 })
 
