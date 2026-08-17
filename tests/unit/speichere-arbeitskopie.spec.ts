@@ -99,7 +99,7 @@ function festeZone(id: string, höhe = 200, y = 54) {
   return {
     id,
     rolle: 'fest' as const,
-    bindung: null as const,
+    bindung: null,
     rahmen: { x: 96, y, breite: 800, höhe },
     ausrichtung: { horizontal: 'links' as const, vertikal: 'oben' as const },
     wennLeer: 'leer' as const,
