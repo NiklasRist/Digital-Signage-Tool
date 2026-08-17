@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #149.
 // [vorlagen-editor] Speichern: überarbeiten, als neue Vorlage, verwerfen
 //
@@ -48,9 +47,49 @@ export async function ueberarbeiteVorlage(
   stand: Vorlage,
   sichtNeuLaden: SichtNeuLaden,
 ): Promise<Ergebnis<Vorlage, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #149."
-  );
+  // 1. eingebauter Parent: sofort abbrechen, OHNE jeden IPC-Aufruf. Derselbe Code, den
+  //    der Store vergeben wuerde; der Ersatztext ist die importierte Konstante aus #143.
+  if (!sitzung.ueberarbeitenErlaubt) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'parent_eingebaut',
+        meldung: sitzung.ueberarbeitenGrund ?? GRUND_PARENT_EINGEBAUT,
+      },
+    }
+  }
+
+  const sperre = blockierendeSperre(sitzung, stand)
+  if (sperre !== null) {
+    return sperre
+  }
+
+  // 3. sichereStand VOR dem Merge (Verbot – die Reihenfolge nicht umstellen):
+  //    uebernehmeInParent liest die Arbeitskopie aus dem Store-Bestand, nicht vom Bildschirm.
+  const gesichert = await sichereStand(sitzung, stand)
+  if (!gesichert.ok) {
+    // Fehlschlag verhindert den Merge; Code unveraendert durchreichen.
+    return gesichert
+  }
+
+  // 4. Der Merge - nur auf dem gesicherten Stand.
+  try {
+    const ergebnis = await rufeAuf<Vorlage, string>(KANAELE.vorlagen.uebernehmeInParent, {
+      arbeitsId: sitzung.arbeitsId,
+    })
+    // 5. Neuladen NUR bei Erfolg und NACH dem Kanalaufruf; dessen Ergebnis bleibt unberuehrt,
+    //    auch wenn das Neuladen scheitert (ein Wurf wird gefangen, nicht weitergereicht).
+    return ladeSichtUndReicheDurch(ergebnis, sichtNeuLaden)
+  } catch (ursache) {
+    // `rufeAuf` wirft, wenn die Preload-Bruecke fehlt (#24) - kein throw ueber die Grenze.
+    return {
+      ok: false,
+      fehler: {
+        code: 'unbekannter_fehler',
+        meldung: ursache instanceof Error ? ursache.message : String(ursache),
+      },
+    }
+  }
 }
 
 /**
@@ -63,9 +102,46 @@ export async function alsNeueVorlage(
   neuerName: string,
   sichtNeuLaden: SichtNeuLaden,
 ): Promise<Ergebnis<Vorlage, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #149."
-  );
+  // 1. Name pruefen: nach trim() nicht leer und hoechstens 80 Zeichen. Uebergeben wird der
+  //    GETRIMMTE Name. Kein ueberarbeitenErlaubt-Test - dieser Weg steht eingebaut offen.
+  const getrimmt = neuerName.trim()
+  if (getrimmt === '' || getrimmt.length > 80) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: 'Der Name der neuen Vorlage darf nicht leer sein und hoechstens 80 Zeichen umfassen.',
+      },
+    }
+  }
+
+  const sperre = blockierendeSperre(sitzung, stand)
+  if (sperre !== null) {
+    return sperre
+  }
+
+  // 3. sichereStand VOR alsEigenstaendige: die Zonen kommen aus dem Store-Bestand.
+  const gesichert = await sichereStand(sitzung, stand)
+  if (!gesichert.ok) {
+    return gesichert
+  }
+
+  // 4. Die Verselbststaendigung am gespeicherten Eintrag, mit dem getrimmten Namen.
+  try {
+    const ergebnis = await rufeAuf<Vorlage, string>(KANAELE.vorlagen.alsEigenstaendige, {
+      arbeitsId: sitzung.arbeitsId,
+      name: getrimmt,
+    })
+    return ladeSichtUndReicheDurch(ergebnis, sichtNeuLaden)
+  } catch (ursache) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'unbekannter_fehler',
+        meldung: ursache instanceof Error ? ursache.message : String(ursache),
+      },
+    }
+  }
 }
 
 /** „Verwerfen" – der Bearbeitungsstand wird fallengelassen, der Parent bleibt unverändert. */
@@ -73,7 +149,62 @@ export async function verwerfeBearbeitung(
   sitzung: EditorSitzung,
   sichtNeuLaden: SichtNeuLaden,
 ): Promise<Ergebnis<void, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #149."
-  );
+  // 1. KEIN sichereStand, KEINE Pruefung - der Stand ist egal, auch eine kaputte Arbeit
+  //    soll verworfen werden koennen.
+  try {
+    const ergebnis = await rufeAuf<void, string>(KANAELE.vorlagen.verwerfeArbeitskopie, {
+      arbeitsId: sitzung.arbeitsId,
+    })
+    // 3. Auch das Verwerfen aendert den Bestand - die Uebersicht wird neu geladen.
+    return ladeSichtUndReicheDurch(ergebnis, sichtNeuLaden)
+  } catch (ursache) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'unbekannter_fehler',
+        meldung: ursache instanceof Error ? ursache.message : String(ursache),
+      },
+    }
+  }
+}
+
+/**
+ * Die Sperren-Pruefung der beiden Speicherwege: mindestens ein Befund mit schwere 'sperre'
+ * blockiert JEDEN der beiden Wege (TK 9.12.2), Warnungen blockieren nie. Die Befunde reisen
+ * in `daten`, damit die Oberflaeche die betroffenen Zonen benennen kann.
+ */
+function blockierendeSperre(sitzung: EditorSitzung, stand: Vorlage): Ergebnis<Vorlage, string> | null {
+  const befunde = pruefeVorlage(stand, sitzung.festeZonenSoll)
+  if (istSpeicherbar(befunde)) {
+    return null
+  }
+  const anzahlSperren = befunde.filter((befund: Befund) => befund.schwere === 'sperre').length
+  return {
+    ok: false,
+    fehler: {
+      code: 'ungueltige_eingabe',
+      meldung: `${anzahlSperren} Sperre(n) blockieren das Speichern.`,
+      daten: { befunde },
+    },
+  }
+}
+
+/**
+ * Nach dem Kanalaufruf: die Sicht NEU laden, aber nur bei Erfolg, und der Rueckgabewert der
+ * Speicherfunktion bleibt davon unberuehrt. Ein gescheitertes Neuladen macht aus einem
+ * geglueckten Speichern KEINEN Fehler (TK 9.7.3) - ein Wurf wird gefangen, nicht weitergereicht.
+ */
+async function ladeSichtUndReicheDurch<T>(
+  ergebnis: Ergebnis<T, string>,
+  sichtNeuLaden: SichtNeuLaden,
+): Promise<Ergebnis<T, string>> {
+  if (!ergebnis.ok) {
+    return ergebnis
+  }
+  try {
+    await sichtNeuLaden()
+  } catch {
+    // Gespeichert ist gespeichert; die Sicht ist veraltet, aber das Speichern bleibt Erfolg.
+  }
+  return ergebnis
 }
