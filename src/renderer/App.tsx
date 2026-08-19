@@ -1,8 +1,9 @@
-import { useState, type JSX } from "react";
+import type { JSX } from 'react';
 
-import { REITER, type ReiterId } from "./shell/reiter";
-import { ReiterInhalt } from "./shell/ReiterInhalt";
-import { WarteschlangenLeiste } from "./shell/WarteschlangenLeiste";
+import { Rahmen, type ReiterInhalt } from './app-shell/rahmen';
+import type { ReiterId } from './app-shell/reiter';
+import { ReiterInhalt as PlatzhalterInhalt } from './shell/ReiterInhalt';
+import { WarteschlangenLeiste } from './shell/WarteschlangenLeiste';
 
 // Das Shell-Skelett (#10) - Anordnung, sonst nichts.
 //
@@ -13,43 +14,32 @@ import { WarteschlangenLeiste } from "./shell/WarteschlangenLeiste";
 //   │  queue-panel als schmale Leiste                      │
 //   └──────────────────────────────────────────────────────┘
 //
+// Seit #195 haengt diese Datei den Rahmen (#195) ein. Sie haelt selbst keinen
+// Reiter-Zustand mehr (der lebt in #194, gelesen ueber holeReiter()/aufReiterGeaendert)
+// und keinen zweiten Reiter-Zustand: Die Reiterknöpfe rufen wechsleReiter (#194).
+// Die leeren Platzhalter aus #10 werden als `inhalte`-Eintraege uebergeben, solange
+// die echten Module noch nicht eingehängt sind (#198, #222 bis #226). Die
+// Platzhalter-Dateien unter src/renderer/shell/ aus #10 werden NICHT geloescht -
+// das Aufraeumen von M0-Resten ist nicht Aufgabe von #195.
+//
 // KEIN IPC, kein ipc-client-Import, keine Fachlogik. Das ist keine Bequemlichkeit,
 // sondern die Invariante "Die Shell rendert selbst keine Inhalte - sie ordnet an,
 // wechselt und haelt die Warteschlangen-Leiste" (TK 9.14.2).
-//
-// Auch die spaeteren Regeln zum Reiterwechsel sind hier NICHT vorweggenommen: dass
-// ohne offenes Projekt in "Projekte" gestartet wird, dass der Reparatur-Modus den
-// Reiter wechselt und dass Undo/Redo je Reiter getrennte Stapel fuehrt (alle
-// TK 9.14.2) - das sind M7-Themen auf denselben Dateien.
+
+// Die leeren Platzhalter-Inhalte der vier Reiter (#10). Jede Funktion entspricht
+// einer ReiterId; der `sichtbar`-Parameter des Rahmens wird hier bewusst ignoriert.
+const PLATZHALTER: Record<ReiterId, ReiterInhalt> = {
+  zusammenstellen: () => <PlatzhalterInhalt aktiv="zusammenstellen" />,
+  aktionen: () => <PlatzhalterInhalt aktiv="aktionen" />,
+  vorlagen: () => <PlatzhalterInhalt aktiv="vorlagen" />,
+  projekte: () => <PlatzhalterInhalt aktiv="projekte" />,
+};
 
 export function App(): JSX.Element {
-  // Startreiter ist "zusammenstellen". Die spaetere Regel aus TK 9.14.2 ("beim Start
-  // ohne wiederherstellbares Projekt landet der Nutzer im Reiter Projekte") braucht
-  // die Kenntnis, ob ein Projekt offen ist - die gibt es hier nicht und sie wird auch
-  // nicht erfunden.
-  const [aktiv, setzeAktiv] = useState<ReiterId>("zusammenstellen");
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <nav role="tablist" style={{ flex: "0 0 auto", display: "flex", gap: 4 }}>
-        {REITER.map((reiter) => (
-          <button
-            key={reiter.id}
-            type="button"
-            role="tab"
-            aria-selected={reiter.id === aktiv}
-            data-testid={`reiter-${reiter.id}`}
-            onClick={() => setzeAktiv(reiter.id)}
-          >
-            {reiter.beschriftung}
-          </button>
-        ))}
-      </nav>
-
-      <ReiterInhalt aktiv={aktiv} />
-
-      {/* Ausserhalb des Reiter-Wechsels: in JEDEM Reiter sichtbar (TK 9.14.2). */}
-      <WarteschlangenLeiste />
-    </div>
+    <Rahmen
+      inhalte={PLATZHALTER}
+      warteschlangenLeiste={WarteschlangenLeiste}
+    />
   );
 }
