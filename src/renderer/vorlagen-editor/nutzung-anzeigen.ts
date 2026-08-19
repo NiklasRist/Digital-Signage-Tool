@@ -1,41 +1,13 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// GENERIERT aus dem Signaturblock von Issue #254.
-// [vorlagen-editor] Die Nutzung einer Vorlage anzeigen
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: f94d2e5af43b8f9a
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
-
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Vorlagennutzung, VorlagenReferenz } from '../../shared/contracts/vorlage'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 
 /** Beide Listen leer. NUR als Vergleichswert – NIE als Ersatz fuer ein fehlendes Ergebnis. */
-export const LEERE_NUTZUNG: Vorlagennutzung = (() => {
-  throw new Error(
-    "Noch nicht umgesetzt - Wert gehoert zu Issue #254."
-  );
-})();
+export const LEERE_NUTZUNG: Vorlagennutzung = Object.freeze({
+  aktionen: [],
+  listenelemente: [],
+})
 
 /**
  * Holt die Nutzung ueber `vorlagen:pruefeVorlagenReferenzen` (TK 9.12.1).
@@ -51,9 +23,34 @@ export const LEERE_NUTZUNG: Vorlagennutzung = (() => {
 export async function holeNutzung(
   vorlagenId: string,
 ): Promise<Ergebnis<Vorlagennutzung, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #254."
-  );
+  // 1. Leere oder nicht-Zeichenkette: ungueltige_eingabe OHNE IPC-Aufruf (Fehlerpfad).
+  if (typeof vorlagenId !== 'string' || vorlagenId === '') {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: 'Die vorlagenId darf nicht leer sein.',
+      },
+    }
+  }
+
+  try {
+    // 2. Genau ein Aufruf, Nutzlast { vorlagenId: id } (verbindlich, s. #255). Das Ergebnis
+    //    des Main wird UNVERAENDERT durchgereicht - kein Auspacken, kein Code-Ersatz.
+    return await rufeAuf<Vorlagennutzung, string>(
+      KANAELE.vorlagen.pruefeVorlagenReferenzen,
+      { vorlagenId },
+    )
+  } catch (ursache) {
+    // `rufeAuf` wirft, wenn die Preload-Bruecke fehlt (#24) - kein throw ueber die Grenze.
+    return {
+      ok: false,
+      fehler: {
+        code: 'unbekannter_fehler',
+        meldung: ursache instanceof Error ? ursache.message : String(ursache),
+      },
+    }
+  }
 }
 
 /**
@@ -62,9 +59,45 @@ export async function holeNutzung(
  * NIE ein Wurf und NIE eine erfundene leere Nutzung (s. ENTSCHIEDEN 4).
  */
 export function leseVorlagennutzung(daten: unknown): Vorlagennutzung | null {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #254."
-  );
+  // ENTSCHIEDEN 4: Diese Funktion erfindet nichts. Passt die Form nicht, ist das Ergebnis
+  // null - NIE LEERE_NUTZUNG (die bedeutet: nachgesehen und nichts gefunden). Einzelne
+  // unvollstaendige Eintraege werden UEBERSPRUNGEN; ist danach keiner mehr uebrig, ist das
+  // Ergebnis null.
+  if (typeof daten !== 'object' || daten === null) {
+    return null
+  }
+  const roh = daten as Record<string, unknown>
+  const aktionenRoh = roh['aktionen']
+  const listenRoh = roh['listenelemente']
+  if (!Array.isArray(aktionenRoh) || !Array.isArray(listenRoh)) {
+    return null
+  }
+
+  const aktionen = aktionenRoh.filter((e): e is VorlagenReferenz => istReferenz(e))
+  const listenelemente = listenRoh.filter((e): e is VorlagenReferenz => istReferenz(e))
+
+  // Es wurden Eintraege verworfen und danach ist keiner mehr uebrig: nicht gelesen, nicht
+  // "frei" - genau das, was der vorlage_referenziert-Fehler gerade bestritten hat.
+  if (aktionen.length === 0 && listenelemente.length === 0) {
+    if (aktionenRoh.length === 0 && listenRoh.length === 0) {
+      return LEERE_NUTZUNG
+    }
+    return null
+  }
+  return { aktionen, listenelemente }
+}
+
+/** Ob ein Eintrag die Form einer `VorlagenReferenz` traegt (alle drei Felder Zeichenketten). */
+function istReferenz(e: unknown): e is VorlagenReferenz {
+  if (typeof e !== 'object' || e === null) {
+    return false
+  }
+  const r = e as Record<string, unknown>
+  return (
+    typeof r['projektId'] === 'string' &&
+    typeof r['projektName'] === 'string' &&
+    typeof r['id'] === 'string'
+  )
 }
 
 /** Alle Treffer EINES Projekts, zusammengefasst fuer die aufklappbare Liste. */
@@ -90,16 +123,101 @@ export interface NutzungsAnzeige {
   gruppen: readonly NutzungsGruppe[]
 }
 export function baueNutzungsAnzeige(nutzung: Vorlagennutzung): NutzungsAnzeige {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #254."
-  );
+  // Rein abgeleitet, ohne Zustand. Die Eingabe wird NUR gelesen, nie verändert.
+  const anzahlAktionen = nutzung.aktionen.length
+  const anzahlListenelemente = nutzung.listenelemente.length
+  const anzahlProjekte = zaehleProjekte(nutzung)
+  const frei = anzahlAktionen === 0 && anzahlListenelemente === 0
+  return {
+    frei,
+    anzahlAktionen,
+    anzahlListenelemente,
+    anzahlProjekte,
+    text: baueText(frei, anzahlAktionen, anzahlListenelemente, anzahlProjekte),
+    gruppen: gruppiere(nutzung),
+  }
+}
+
+/**
+ * Der eine Satz (ENTSCHIEDEN 7): nennt beide Referenzarten NUR, wenn beide vorkommen.
+ * Bei einer Band-Vorlage duerfte nie "von 0 Aktionen" stehen - das hiesse "frei".
+ */
+function baueText(
+  frei: boolean,
+  aktionen: number,
+  listenelemente: number,
+  projekte: number,
+): string {
+  if (frei) {
+    return 'wird nirgends verwendet'
+  }
+  if (aktionen > 0 && listenelemente > 0) {
+    return `wird von ${aktionen} Aktionen und ${listenelemente} Listenelementen in ${projekte} Projekten verwendet`
+  }
+  if (aktionen > 0) {
+    return `wird von ${aktionen} Aktionen in ${projekte} Projekten verwendet`
+  }
+  return `wird von ${listenelemente} Listenelementen in ${projekte} Projekten verwendet`
+}
+
+/**
+ * Gruppiert die Treffer nach Projekt (ENTSCHIEDEN 9): Reihenfolge des ersten Auftretens,
+ * je Projekt genau eine Gruppe; innerhalb einer Gruppe bleibt die Listen-Reihenfolge
+ * erhalten. Keine Sortierung, kein Zusammenwerfen der beiden Trefferarten.
+ */
+function gruppiere(nutzung: Vorlagennutzung): NutzungsGruppe[] {
+  // Intern muessen die Listen befuellt werden; die exportierte Form ist `readonly`.
+  interface GruppeIntern {
+    projektId: string
+    projektName: string
+    aktionen: VorlagenReferenz[]
+    listenelemente: VorlagenReferenz[]
+  }
+  const gruppen: NutzungsGruppe[] = []
+  const index = new Map<string, GruppeIntern>()
+
+  function aufnehmen(treffer: VorlagenReferenz): void {
+    let gruppe = index.get(treffer.projektId)
+    if (gruppe === undefined) {
+      gruppe = {
+        projektId: treffer.projektId,
+        projektName: treffer.projektName, // des ERSTEN Treffers dieses Projekts
+        aktionen: [],
+        listenelemente: [],
+      }
+      gruppen.push(gruppe)
+      index.set(treffer.projektId, gruppe)
+    }
+  }
+
+  for (const a of nutzung.aktionen) {
+    aufnehmen(a)
+    const gruppe = index.get(a.projektId)
+    if (gruppe !== undefined) {
+      gruppe.aktionen.push(a)
+    }
+  }
+  for (const l of nutzung.listenelemente) {
+    aufnehmen(l)
+    const gruppe = index.get(l.projektId)
+    if (gruppe !== undefined) {
+      gruppe.listenelemente.push(l)
+    }
+  }
+  return gruppen
 }
 
 /** Verschiedene Projekte ueber BEIDE Listen. Rein; wirft nie. */
 export function zaehleProjekte(nutzung: Vorlagennutzung): number {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #254."
-  );
+  // ENTSCHIEDEN 8: ein Projekt in beiden Listen zaehlt EINMAL.
+  const projekte = new Set<string>()
+  for (const a of nutzung.aktionen) {
+    projekte.add(a.projektId)
+  }
+  for (const l of nutzung.listenelemente) {
+    projekte.add(l.projektId)
+  }
+  return projekte.size
 }
 
 /** Der gehaltene Stand. `'unbekannt'` heisst NICHT `frei` (s. oben). */
@@ -114,27 +232,30 @@ export interface Nutzungsstand {
 }
 
 /** Unbekannt, ohne Vorlage, ohne Nutzung, ohne Fehler. */
-export const LEERER_NUTZUNGSSTAND: Nutzungsstand = (() => {
-  throw new Error(
-    "Noch nicht umgesetzt - Wert gehoert zu Issue #254."
-  );
-})();
+export const LEERER_NUTZUNGSSTAND: Nutzungsstand = {
+  zustand: 'unbekannt',
+  vorlagenId: null,
+  nutzung: null,
+  fehler: null,
+}
 
 /** Jede dieser Funktionen liefert einen NEUEN Stand; der uebergebene bleibt unveraendert.
  *  Alle sind total: sie werfen nie. */
 export function beginneLaden(stand: Nutzungsstand, vorlagenId: string): Nutzungsstand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #254."
-  );
+  // Ein alter Wert steht nie neben einem neuen Ladevorgang: nutzung UND fehler auf null.
+  return { zustand: 'laedt', vorlagenId, nutzung: null, fehler: null }
 }
 export function uebernimmNutzung(
   stand: Nutzungsstand,
   vorlagenId: string,
   nutzung: Vorlagennutzung,
 ): Nutzungsstand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #254."
-  );
+  // ENTSCHIEDEN 6: Eine Antwort fuer eine ANDERE Vorlage als die laufende wird verworfen -
+  // der Stand bleibt unveraendert zurueckgegeben (toBe-gleich).
+  if (stand.vorlagenId !== vorlagenId) {
+    return stand
+  }
+  return { zustand: 'geladen', vorlagenId, nutzung, fehler: null }
 }
 export function uebernimmFehler(
   stand: Nutzungsstand,
@@ -142,9 +263,10 @@ export function uebernimmFehler(
   code: string,
   meldung: string,
 ): Nutzungsstand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #254."
-  );
+  if (stand.vorlagenId !== vorlagenId) {
+    return stand
+  }
+  return { zustand: 'fehler', vorlagenId, nutzung: null, fehler: { code, meldung } }
 }
 
 /**
@@ -152,7 +274,5 @@ export function uebernimmFehler(
  * anderen Vorlage darf NIE als Auskunft ueber diese durchgehen (s. ENTSCHIEDEN 5).
  */
 export function giltFuer(stand: Nutzungsstand, vorlagenId: string): boolean {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #254."
-  );
+  return stand.zustand === 'geladen' && stand.vorlagenId === vorlagenId
 }
