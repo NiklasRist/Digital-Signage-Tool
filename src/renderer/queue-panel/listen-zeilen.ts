@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #207.
 // [queue-panel] Die aufgeklappte Liste
 //
@@ -13,17 +12,6 @@
 // mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
 // stehen; ihr Nichtmehrstimmen IST das Signal.
 // GERUEST-PRUEFSUMME: 93a2d28adf5f78cd
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import type { Auftrag, AuftragArt, AuftragStatus } from '../../shared/contracts/auftrag'
 import type { AuftragsSicht } from './auftrags-sicht'
@@ -52,9 +40,70 @@ export type ListenInhalt =
   | { zustand: 'leer' }
   | { zustand: 'zeilen'; zeilen: AuftragsZeile[] }
 
-/** Rein. Baut aus der Sicht die Zeilen – in der gelieferten Reihenfolge, ohne zu sortieren. */
+/**
+ * Der Klartext je Status (ENTSCHIEDEN, verbindlich). Ein unbekannter Wert bleibt der
+ * Rohwert unveraendert – die Zeile wird trotzdem gebaut, nichts wird geworfen.
+ */
+const ZUSTANDSTEXT: Partial<Record<AuftragStatus, string>> = {
+  laeuft: 'läuft',
+  anstehend: 'wartet',
+  fehlgeschlagen: 'fehlgeschlagen',
+  erfolg: 'fertig',
+  abgebrochen: 'abgebrochen',
+}
+
+/**
+ * Klemmt den Fortschritt auf 0–100. `null` bleibt `null` – es ist „unbestimmt"
+ * (TK 9.3.1), kein Ersatzwert 0. Fehlerpfad der DoD: Werte ausserhalb werden geklemmt.
+ */
+function klemmeFortschritt(fortschritt: number | null): number | null {
+  if (fortschritt === null) {
+    return null
+  }
+  if (fortschritt < 0) {
+    return 0
+  }
+  if (fortschritt > 100) {
+    return 100
+  }
+  return fortschritt
+}
+
+/**
+ * Rein. Baut aus der Sicht die Zeilen – in der gelieferten Reihenfolge, ohne zu
+ * sortieren, ohne zu filtern, ohne zu kappen (TK 9.3.5 „Determinismus durch sichtbare
+ * Reihenfolge"; die Sortier-Fehlschlaege der DoD). `erfolg` und `abgebrochen` werden
+ * NICHT weggelassen: Was der Stand enthaelt, entscheidet #64; ein zweiter Filter hier
+ * waere eine zweite Regel fuer denselben Bestand.
+ */
 export function baueListenInhalt(sicht: AuftragsSicht): ListenInhalt {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #207."
-  );
+  if (sicht.zustand === 'unbekannt') {
+    // Invariante 1 des Meilensteins: `unbekannt` bekommt eine EIGENE Darstellung und
+    // wird NIE auf `leer` abgebildet - es heisst „noch nicht geholt", nicht „alles gut".
+    return { zustand: 'unbekannt' }
+  }
+  if (sicht.zustand === 'fehler') {
+    // Der Fehlercode wird UNVERAENDERT durchgereicht - die Uebersetzung macht #211.
+    return { zustand: 'fehler', code: sicht.code, meldung: sicht.meldung }
+  }
+  if (sicht.auftraege.length === 0) {
+    // `leer` gibt es NUR bei `geladen` mit leerem Array (ENTSCHIEDEN des Issues).
+    return { zustand: 'leer' }
+  }
+
+  return {
+    zustand: 'zeilen',
+    zeilen: sicht.auftraege.map((auftrag) => ({
+      auftragId: auftrag.auftragId,
+      art: auftrag.art,
+      status: auftrag.status,
+      label: auftrag.label,
+      zustandText: ZUSTANDSTEXT[auftrag.status] ?? auftrag.status,
+      fortschritt: klemmeFortschritt(auftrag.fortschritt),
+      // Rohe Fehlerdaten, byte-gleich uebernommen - nichts gebaut, nichts entfernt.
+      fehler: auftrag.fehler,
+      versuche: auftrag.versuche,
+      auftrag,
+    })),
+  }
 }
