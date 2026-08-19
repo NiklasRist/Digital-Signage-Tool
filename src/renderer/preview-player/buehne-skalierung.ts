@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #212.
 // [preview-player] Die Bühne – ein festes 1920×1080-Raster, das nur zur Darstellung skaliert wird
 //
@@ -13,17 +12,6 @@
 // mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
 // stehen; ihr Nichtmehrstimmen IST das Signal.
 // GERUEST-PRUEFSUMME: 41b597743144ae0b
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 
@@ -41,12 +29,34 @@ export interface Buehnenmaße {
   versatzY: number
 }
 
+const NULLMAßE: Buehnenmaße = { skalierung: 0, breite: 0, höhe: 0, versatzX: 0, versatzY: 0 }
+
 /**
  * Total: wirft nie. Bei einem unbrauchbaren äußeren Kasten (0, negativ, NaN, Infinity) sind ALLE
  * fünf Felder 0 – das ist der „noch nicht gemessen"-Fall und kein Fehler.
  */
 export function berechneBuehnenmaße(aussenBreite: number, aussenHöhe: number): Buehnenmaße {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #212."
-  );
+  // ENTSCHIEDEN 3: Der Nullfall ist ausdrücklich modelliert. Unbrauchbare Werte sind
+  // „noch nicht gemessen", kein Fehler - nichts wird geworfen, kein Ersatzwert.
+  if (!Number.isFinite(aussenBreite) || !Number.isFinite(aussenHöhe)) {
+    return NULLMAßE
+  }
+  if (aussenBreite <= 0 || aussenHöhe <= 0) {
+    return NULLMAßE
+  }
+
+  // ENTSCHIEDEN 1: Es wird NICHT gerundet. Der Browser stellt Bruchteile korrekt dar;
+  // ein Math.round hier wuerde die Zentrierung verschieben und falsches Vertrauen wecken.
+  // ENTSCHIEDEN 2: Keine Obergrenze - ein Kasten grosser als das Raster vergroessert.
+  const skalierung = Math.min(aussenBreite / RENDER_PROFILE.breite, aussenHöhe / RENDER_PROFILE.hoehe)
+  const breite = RENDER_PROFILE.breite * skalierung
+  const höhe = RENDER_PROFILE.hoehe * skalierung
+
+  return {
+    skalierung,
+    breite,
+    höhe,
+    versatzX: (aussenBreite - breite) / 2,
+    versatzY: (aussenHöhe - höhe) / 2,
+  }
 }
