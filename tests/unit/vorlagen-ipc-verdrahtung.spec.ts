@@ -132,9 +132,9 @@ describe('verdrahteVorlagenIPC (#109) – die Anmeldung', () => {
     expect(anmeldungen).toHaveLength(9)
   })
 
-  it('KANAELE.vorlagen: die zehn Namen aus #109 und #255, alle mit Praefix vorlagen:, Umlaut im String', () => {
+  it('KANAELE.vorlagen: die elf Namen aus #109, #255 und #238, alle mit Praefix vorlagen:, Umlaut im String', () => {
     const namen = Object.values(KANAELE.vorlagen)
-    expect(namen).toHaveLength(10)
+    expect(namen).toHaveLength(11)
     for (const name of namen) {
       expect(name.startsWith('vorlagen:')).toBe(true)
     }
@@ -142,6 +142,9 @@ describe('verdrahteVorlagenIPC (#109) – die Anmeldung', () => {
     expect(KANAELE.vorlagen.löscheVorlage).toBe('vorlagen:löscheVorlage')
     // Der zehnte Kanal kam mit #255 dazu (src/main/ipc-gateway/vorlagen-nachtrag.ts).
     expect(KANAELE.vorlagen.pruefeVorlagenReferenzen).toBe('vorlagen:pruefeVorlagenReferenzen')
+    // Der elfte mit #238 (speicherstatus-verdrahtung.ts) - das erste ERREIGNIS dieses
+    // Blocks, deshalb kein Aufruf-Kanal: er steht nicht in einer eigenen Verdrahtungsdatei.
+    expect(KANAELE.vorlagen.autoSpeichernStatus).toBe('vorlagen:autoSpeichernStatus')
   })
 
   it('laesst die vorhandenen Blaetter der Registry unberuehrt', () => {

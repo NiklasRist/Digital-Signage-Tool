@@ -241,7 +241,8 @@ describe("Quelltext-Proben zu #153", () => {
 
 describe("Kanal-Registry nach #153", () => {
   it("ergaenzt den project-Block um genau zwei Namen und laesst die uebrigen Bloecke unberuehrt", () => {
-    expect(Object.keys(KANAELE.project)).toHaveLength(16);
+    // 16 -> 17 am 20.08.2026: #238 traegt das ERREIGNIS `autoSpeichernStatus` nach.
+    expect(Object.keys(KANAELE.project)).toHaveLength(17);
     expect(KANAELE.project.setzeEinblendung).toBe("project:setzeEinblendung");
     expect(KANAELE.project.setzeElementReferenz).toBe("project:setzeElementReferenz");
     // Die vierzehn aus #76 unveraendert.

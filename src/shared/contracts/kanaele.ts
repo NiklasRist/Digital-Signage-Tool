@@ -91,6 +91,7 @@ export const KANAELE = {
     // der Vertragstest von #25 verlangt `kanal === `${modul}:${operation}``.
     setzeEinblendung: 'project:setzeEinblendung',
     setzeElementReferenz: 'project:setzeElementReferenz',
+    autoSpeichernStatus: 'project:autoSpeichernStatus',
   },
 
   // config-store (#77). Die fünf Namen ENTSTEHEN hier und nirgends sonst; die
@@ -210,5 +211,6 @@ export const KANAELE = {
     // zeichengleich zum Operationsnamen – der Vertragstest von #25 verlangt
     // `kanal === `${modul}:${operation}``.
     pruefeVorlagenReferenzen: 'vorlagen:pruefeVorlagenReferenzen',
+    autoSpeichernStatus: 'vorlagen:autoSpeichernStatus',
   },
 } as const
