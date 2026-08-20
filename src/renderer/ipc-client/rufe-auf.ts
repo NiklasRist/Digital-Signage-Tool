@@ -53,6 +53,8 @@ export async function rufeAuf<T, F extends string = GenerischerFehlercode>(
   kanal: string,
   nutzlast?: unknown,
 ): Promise<Ergebnis<T, F>> {
+  // SAFETY: window ist per Preload-Skript um die api ergaenzt; der Cast benennt diese
+  // Form, und der null-Check darunter prueft die Anwesenheit zur Laufzeit.
   const bruecke = (window as Window & { api?: PreloadBruecke }).api;
 
   // Das Fehlen der Bruecke ist ein Verdrahtungsfehler in #3/#4, kein Fachfehler des
@@ -85,6 +87,8 @@ export async function rufeAuf<T, F extends string = GenerischerFehlercode>(
   // Gegenseite. Sie traegt genau so weit, wie Kanalname und `T`/`F` am Aufrufer zur
   // registrierten Operation passen - dafuer sorgen die Kanal-Registry (#25) und die
   // Operations-Signaturen aus TK Abschnitt 9, nicht dieser Cast.
+  // SAFETY: die Bruecke ist ein roher Kanal; der Cast benennt den Vertrag der Huelle,
+  // den die registrierte Operation auf der Gegenseite garantiert (Registry #25).
   return (await bruecke.invoke(kanal, nutzlast)) as Ergebnis<T, F>;
 }
 // delegiert an window.api.invoke(kanal, nutzlast) und castet NUR den Typ (keine Laufzeit-

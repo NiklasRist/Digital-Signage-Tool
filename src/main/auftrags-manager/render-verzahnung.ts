@@ -82,6 +82,8 @@ function istRenderFehlercode(wert: string): wert is RenderFehlercode {
   // Die Verbreiterung auf `readonly string[]` ist noetig, weil `includes` auf dem
   // `as const`-Tupel nur seine eigenen sieben Literale als Argument akzeptiert - genau die
   // Werte also, die hier gerade NICHT feststehen. Gecastet wird die LISTE, nie der Code.
+  // SAFETY: gecastet wird nur die Listen-Form fuer includes; der eingehende wert bleibt
+  // die zu pruefende Zeichenkette, RENDER_FEHLERCODES ist der konstante Pruefbestand.
   return (RENDER_FEHLERCODES as readonly string[]).includes(wert);
 }
 

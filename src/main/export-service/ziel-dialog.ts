@@ -71,7 +71,7 @@
 // `export:wähleExportZiel` wird in #191 (`ipc-gateway/export-verdrahtung.ts`)
 // angemeldet. Sonst registrierte ihn spaeter ein zweites Issue ein zweites Mal.
 
-import { dialog } from 'electron'
+import { dialog, type OpenDialogOptions } from 'electron'
 
 import { leseKonfig } from '../config-store/lese-konfig'
 
@@ -84,19 +84,13 @@ export async function wähleExportZiel(): Promise<Ergebnis<{ pfad: string | null
   const vorbelegung = await ermittleVorbelegung()
 
   try {
-    // Die Optionen stehen ABSICHTLICH als Literal im Aufruf und nicht in einer eigenen
-    // Konstanten: So typisiert TypeScript `properties` kontextuell gegen Electrons
-    // `OpenDialogOptions`. Aus einer separaten Konstanten wuerde `string[]`, und ein
-    // Tippfehler in einem der Eigenschaftsnamen fiele erst am laufenden Dialog auf.
-    const antwort = await dialog.showOpenDialog({
+    // Die Optionen stehen ABSICHTLICH als explizit typisierte Variable und nicht als
+    // Teil des Aufrufs: So typisiert TypeScript `properties` gegen Electrons
+    // `OpenDialogOptions` (kontextuelle Typisierung wuerde hier eine eigene Variable
+    // verlieren, die Annotation stellt sie wieder her), und ein Tippfehler in einem
+    // der Eigenschaftsnamen fiele erst am laufenden Dialog auf.
+    const optionen: OpenDialogOptions = {
       title: 'Zielordner für den Export wählen',
-
-      // Der bedingte Spread statt `defaultPath: vorbelegung ?? undefined`: Fehlt die
-      // Vorbelegung, darf der Schluessel GAR NICHT gesetzt sein. Electron behandelt
-      // beides heute gleich, aber "kein Startordner raten" ist eine Zusage des Issues -
-      // und ein gesetzter Schluessel mit undefiniertem Wert ist der Anfang jeder
-      // spaeteren Verwechslung ("wir setzen ihn doch").
-      ...(vorbelegung === null ? {} : { defaultPath: vorbelegung }),
 
       // GENAU diese zwei. `openDirectory` ist Pflicht - gewaehlt wird ein ORDNER, nicht
       // eine Datei; ohne die Angabe liefert der Dialog Dateipfade, und der Export
@@ -110,7 +104,19 @@ export async function wähleExportZiel(): Promise<Ergebnis<{ pfad: string | null
 
       // KEINE `filters`: Filter gelten fuer Dateien, nicht fuer Ordner. Sie waeren im
       // Ordner-Dialog wirkungslos und suggerierten eine Auswahl, die es nicht gibt.
-    })
+    }
+
+    // Der Schluessel wird nur bei vorhandener Vorbelegung gesetzt, in einem zweiten
+    // Schritt statt eines bedingten Spreads (anti-slop/no-conditional-empty-object-spread):
+    // Fehlt die Vorbelegung, darf der Schluessel GAR NICHT gesetzt sein. Electron
+    // behandelt beides heute gleich, aber "kein Startordner raten" ist eine Zusage des
+    // Issues - und ein gesetzter Schluessel mit undefiniertem Wert ist der Anfang jeder
+    // spaeteren Verwechslung ("wir setzen ihn doch").
+    if (vorbelegung !== null) {
+      optionen.defaultPath = vorbelegung
+    }
+
+    const antwort = await dialog.showOpenDialog(optionen)
 
     // Abbruch und leere Auswahl haben denselben Ausgang - bewusst KEIN Sonderfall.
     // `canceled: false` mit leerem `filePaths` ist auf keiner Plattform zugesichert,

@@ -35,6 +35,8 @@ function istCode(ursache: unknown, code: string): boolean {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return false
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der Vergleich darunter prueft es zur Laufzeit.
   return (ursache as { code?: unknown }).code === code
 }
 

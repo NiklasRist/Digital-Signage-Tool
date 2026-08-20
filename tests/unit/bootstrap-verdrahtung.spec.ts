@@ -17,6 +17,7 @@ const h = vi.hoisted(() => {
 
   type FlushErgebnis = { ok: true; wert: undefined } | { ok: false; fehler: { code: string; meldung: string } };
   const gelungen: FlushErgebnis = { ok: true, wert: undefined };
+  type FensterDoppel = { [schluessel: string]: unknown };
 
   return {
     protokoll,
@@ -55,12 +56,12 @@ const h = vi.hoisted(() => {
     verdrahteVorlagenIPC: vi.fn(() => {
       protokoll.push("verdrahteVorlagenIPC");
     }),
-    verdrahteQueueIPC: vi.fn((uebergebenesFenster: object) => {
+    verdrahteQueueIPC: vi.fn((uebergebenesFenster: FensterDoppel) => {
       protokoll.push("verdrahteQueueIPC");
       // Festhalten, WAS uebergeben wurde - nicht nur, DASS gerufen wurde.
       void uebergebenesFenster;
     }),
-    verdrahteExportUndFortschrittIPC: vi.fn((uebergebenesFenster: object) => {
+    verdrahteExportUndFortschrittIPC: vi.fn((uebergebenesFenster: FensterDoppel) => {
       protokoll.push("verdrahteExportUndFortschrittIPC");
       void uebergebenesFenster;
     }),

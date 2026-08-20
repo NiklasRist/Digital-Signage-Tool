@@ -15,7 +15,6 @@ import {
   entscheideVorlagenAufzeichnung,
   setzeSitzungshalterZurueck,
   sitzungshalter,
-  type Sitzungshalter,
 } from "../../src/renderer/app-shell/undo-aufzeichnung-vorlage";
 
 const attrappen = vi.hoisted(() => ({

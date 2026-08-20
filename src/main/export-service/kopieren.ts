@@ -266,6 +266,8 @@ async function kopierFehler(
     );
   }
 
+  // SAFETY: gecastet wird nur die Listen-Form fuer includes; code ist die zu pruefende
+  // Zeichenkette, ZIEL_VERSCHWUNDEN der konstante Pruefbestand dieser Datei.
   if ((ZIEL_VERSCHWUNDEN as readonly string[]).includes(code)) {
     return fehler(
       'ziel_nicht_verfügbar',
@@ -404,6 +406,8 @@ function systemCode(ursache: unknown): string {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return '';
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code;
   return typeof code === 'string' ? code : '';
 }

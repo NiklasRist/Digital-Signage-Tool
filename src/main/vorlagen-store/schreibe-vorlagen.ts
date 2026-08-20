@@ -547,6 +547,8 @@ function werteAus(roh: unknown): Auswertung {
   if (typeof roh !== 'object' || roh === null || Array.isArray(roh)) {
     return { art: 'unbrauchbar', grund: 'Inhalt ist kein JSON-Objekt' }
   }
+  // SAFETY: die Zeile davor hat roh als nicht-null Objekt belegt; der Cast macht die
+  // Felder als unknown sichtbar, jeder Wert wird nachfolgend einzeln geprueft.
   const datei = roh as { schemaVersion?: unknown; vorlagen?: unknown }
   const version = datei.schemaVersion
   if (typeof version === 'number' && version !== VORLAGEN_SCHEMA_VERSION) {
@@ -560,6 +562,9 @@ function werteAus(roh: unknown): Auswertung {
   }
   // Der einzige Zwang in dieser Datei: JSON.parse liefert `any`, der Vertrag verspricht Vorlage[].
   // Wer den Inhalt behauptet, prueft ihn bei sich (#100 bis #108).
+  // SAFETY: die Vorlagen-Form wird NICHT hier geprueft, sondern von den
+  // Arbeitskopien-Verbrauchern (#100 bis #108) - der Cast reicht die ungepruefte
+  // Liste weiter, damit diese Grenze eine zweite Wahrheit vermeidet.
   return { art: 'bestand', vorlagen: datei.vorlagen as Vorlage[] }
 }
 
@@ -590,6 +595,8 @@ async function leseDatei(pfad: string): Promise<Leseergebnis> {
     return { zustand: 'beschaedigt', grund: text(ursache) }
   }
   try {
+    // SAFETY: JSON.parse liefert `any`; der Cast auf `unknown` entzieht dem geparsten
+    // Wert den Typ-Vorteil, damit die Verbraucher ihn wie jeden fremden Eingang pruefen.
     return { zustand: 'gelesen', wert: JSON.parse(roh) as unknown }
   } catch (ursache) {
     return { zustand: 'beschaedigt', grund: `kein gueltiges JSON (${text(ursache)})` }
@@ -601,6 +608,8 @@ function idVon(eintrag: unknown): string | null {
   if (typeof eintrag !== 'object' || eintrag === null) {
     return null
   }
+  // SAFETY: die Zeile davor hat eintrag als nicht-null Objekt belegt; der Cast macht
+  // das Feld sichtbar, und der typeof-Check darunter prueft die id zur Laufzeit.
   const id = (eintrag as { id?: unknown }).id
   return typeof id === 'string' ? id : null
 }
@@ -795,6 +804,8 @@ async function schreibeJetzt(vorlagen: Vorlage[]): Promise<Ergebnis<void, Vorlag
  */
 async function taugtAlsSicherung(pfad: string): Promise<boolean> {
   try {
+    // SAFETY: JSON.parse liefert `any`; der Cast auf unknown macht das Ergebnis zum
+    // ungeprueften Wert - gewollt, denn hier zaehlt nur das "parsebar ja/nein".
     JSON.parse(await fs.readFile(pfad, 'utf8')) as unknown
     return true
   } catch {
@@ -905,6 +916,8 @@ function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return false
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code
   return typeof code === 'string' && codes.includes(code)
 }

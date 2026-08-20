@@ -218,7 +218,10 @@ describe('baueRenderFortschrittAuf (#208)', () => {
 
     expect(setzeFortschritt).toHaveBeenCalledTimes(1)
     expect(setzeFortschritt).toHaveBeenCalledWith({ zustand: 'gemeldet', ereignis: e })
-    expect((setzeFortschritt.mock.calls[0]?.[0] as { ereignis: RenderProgress }).ereignis).toBe(e)
+    const nutzlast = setzeFortschritt.mock.calls[0]?.[0] as
+      | { ereignis: RenderProgress }
+      | undefined
+    expect(nutzlast?.ereignis).toBe(e)
     abbauen()
   })
 

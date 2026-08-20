@@ -274,6 +274,8 @@ function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return false
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code
   return typeof code === 'string' && codes.includes(code)
 }

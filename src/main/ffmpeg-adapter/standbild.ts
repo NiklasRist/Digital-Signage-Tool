@@ -343,7 +343,10 @@ function pruefeEingang(
   auftrag: StandbildAuftrag,
   profil: RenderProfile,
 ): Ergebnis<GepruefterEingang> {
-  const rohesProfil = profil as unknown as { fps?: unknown; container?: unknown } | null | undefined
+  // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als unknown
+  // sichtbar; die Form wird unmittelbar darunter geprueft (alsGanzzahlUeberNull,
+  // typeof-Check auf container, Ergebnis-Huelle statt Wurf).
+  const rohesProfil = profil as { fps?: unknown; container?: unknown } | null | undefined
   if (rohesProfil === null || rohesProfil === undefined) {
     return ungueltig('Es wurde kein Ausgabe-Profil uebergeben.')
   }
@@ -364,7 +367,9 @@ function pruefeEingang(
     )
   }
 
-  const roherAuftrag = auftrag as unknown as Partial<StandbildAuftrag> | null | undefined
+  // SAFETY: der Cast erweitert nur um null/undefined; die Pruefung der Form folgt
+  // unmittelbar darunter (null/undefined-Check, Ergebnis-Huelle statt Wurf).
+  const roherAuftrag = auftrag as Partial<StandbildAuftrag> | null | undefined
   if (roherAuftrag === null || roherAuftrag === undefined) {
     return ungueltig('Es wurde kein Standbild-Auftrag uebergeben.')
   }
@@ -374,7 +379,12 @@ function pruefeEingang(
   const zielFehler = pruefePfad('zielPfad', roherAuftrag.zielPfad)
   if (zielFehler !== null) return ungueltig(zielFehler)
 
+  // SAFETY: pruefePfad hat beide Pfade unmittelbar zuvor als nicht leere
+  // Zeichenketten bestaetigt (sonst fruehe Rueckgabe ungueltig); der Cast
+  // benennt diese belegte Form.
   const bildPfad = roherAuftrag.bildPfad as string
+  // SAFETY: pruefePfad hat auch zielPfad zuvor als nicht leere Zeichenkette
+  // bestaetigt (sonst fruehe Rueckgabe ungueltig); der Cast benennt diese Form.
   const zielPfad = roherAuftrag.zielPfad as string
 
   // Rein TEXTLICHER Vergleich: Diese Datei loest keine Pfade auf und normalisiert

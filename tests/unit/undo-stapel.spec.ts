@@ -12,7 +12,6 @@ import { describe, expect, it } from "vitest";
 import {
   UNDO_TIEFE,
   erzeugeUndoStapel,
-  type UndoStapel,
 } from "../../src/renderer/app-shell/undo-stapel";
 
 const QUELLE = readFileSync(

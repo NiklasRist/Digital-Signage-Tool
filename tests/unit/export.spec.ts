@@ -106,7 +106,6 @@ vi.mock("node:fs/promises", () => ({
   }),
 }));
 
-const { holeAktivesProjekt } = await import("../../src/main/project-store/aktives-projekt");
 const { sofortFlush } = await import("../../src/main/project-store/auto-speichern");
 const { mitD1Lock } = await import("../../src/main/project-store/d1-lock");
 const { loeseExportQuelle } = await import("../../src/main/export-service/quelle");

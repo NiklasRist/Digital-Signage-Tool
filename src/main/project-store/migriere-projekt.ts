@@ -165,8 +165,8 @@ export function migriereProjekt(
   // BEWUSST FLACH: geprueft werden Vorhandensein und grobe Art der neun Felder aus TK 9.11.3,
   // NICHT der Inhalt der Arrays. Eine tiefe Validierung waere eine zweite, konkurrierende
   // Definition der Projektform neben `contracts/project.ts`.
-  const fehlend = fehlendeProjektFelder(aktuell)
-  if (fehlend.length > 0) {
+  if (!istProjektForm(aktuell)) {
+    const fehlend = fehlendeProjektFelder(aktuell)
     return fehler(
       'unbekannter_fehler',
       `Nach der Migration fehlen oder passen nicht: ${fehlend.join(', ')}; ` +
@@ -174,9 +174,8 @@ export function migriereProjekt(
     )
   }
 
-  // Die Umdeutung ist an genau dieser einen Stelle vertretbar, weil die Pruefung unmittelbar
-  // davor steht: Die Form ist zur Laufzeit belegt, nicht behauptet.
-  return { ok: true, wert: aktuell as unknown as Project }
+  // Die Form ist zur Laufzeit belegt, nicht behauptet: `istProjektForm` IST die Pruefung.
+  return { ok: true, wert: aktuell }
 }
 // wendet, beginnend bei rohdaten.schemaVersion, Schritte aus `kette` an, bis das Ergebnis die
 // aktuelle schemaVersion erreicht (Kettenprinzip: 1→2, 2→3, … – nie ein Sprung in einem Schritt).
@@ -209,6 +208,13 @@ function fehlendeProjektFelder(objekt: Record<string, unknown>): string[] {
     }
   }
   return fehlend
+}
+
+function istProjektForm(objekt: unknown): objekt is Project {
+  if (typeof objekt !== 'object' || objekt === null || Array.isArray(objekt)) return false
+  // SAFETY: die Zeile davor hat objekt als nicht-null, nicht-Array Objekt belegt; der
+  // Cast macht die Index-Form sichtbar, und fehlendeProjektFelder prueft die Felder.
+  return fehlendeProjektFelder(objekt as Record<string, unknown>).length === 0
 }
 
 function istText(wert: unknown): boolean {

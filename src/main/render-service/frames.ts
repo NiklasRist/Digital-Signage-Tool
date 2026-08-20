@@ -164,6 +164,8 @@ function ungueltigeEingabe(meldung: string): Ergebnis<never, RenderFehlercode> {
  * Angabe, die den Typ `ElementFehlerdaten` einhaelt.
  */
 function elementId(element: RenderItem): string {
+  // SAFETY: das Element reist ueber die IPC-Grenze; der Cast macht die id als unknown
+  // sichtbar, und der typeof-Check darunter prueft sie (oder String() fängt ab).
   const roh: unknown = (element as { id?: unknown }).id
   return typeof roh === 'string' ? roh : String(roh)
 }
@@ -262,7 +264,9 @@ export function frameDauer(element: RenderItem): Ergebnis<number, RenderFehlerco
   // Ein exotischer Eingang (ein werfender Getter, ein Proxy) darf die
   // IPC-Grenze nicht als Ausnahme erreichen: „Niemals `throw`" (TK 9.1.1).
   try {
-    const roh = element as unknown as
+    // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als
+    // unknown sichtbar; die Form wird unmittelbar darunter geprueft, nie geglaubt.
+    const roh = element as
       | { art?: unknown; trimStart?: unknown; trimEnde?: unknown; dauer?: unknown }
       | null
       | undefined
@@ -278,6 +282,8 @@ export function frameDauer(element: RenderItem): Ergebnis<number, RenderFehlerco
     if (art === 'video') {
       // NUR die beiden Trim-Grenzen. `dauer` gibt es bei `video` nicht, und die
       // Abschnitts-Dauern der Einblendung gehen in keine Summe dieser Datei ein.
+      // SAFETY: trimFrames prueft die Grenzen als Zahlen (Ergebnis-Huelle); der Cast
+      // benennt die erwartete Form, die Pruefung selbst folgt in der gerufenen Funktion.
       const grenzen = trimFrames(roh.trimStart as number, roh.trimEnde as number)
       if (!grenzen.ok) {
         // Code und Meldung bleiben, wie `trimFrames` sie vergeben hat; ergaenzt
@@ -361,6 +367,8 @@ export function gesamtFrames(elemente: readonly RenderItem[]): Ergebnis<number, 
   // Ueber `unknown` gefuehrt, damit die Pruefung den deklarierten Typ nicht
   // verengt - `Array.isArray` sagt `x is any[]` zu, und der Nein-Zweig eines
   // `readonly RenderItem[]` liefe sonst auf `never` hinaus.
+  // SAFETY: der Cast entzieht dem Parameter den Typ-Vorteil, damit Array.isArray
+  // wirklich prueft statt den deklarierten Typ zu verengen.
   if (!Array.isArray(elemente as unknown)) {
     // Kein Elementbezug moeglich -> Mangel der Anfrage (TK 9.2.3), s.
     // `ungueltigeEingabe`.

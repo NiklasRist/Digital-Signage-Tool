@@ -311,7 +311,10 @@ function pruefeEingang(
   auftrag: VideoAusschnittAuftrag,
   profil: RenderProfile,
 ): Ergebnis<GepruefterEingang> {
-  const rohesProfil = profil as unknown as
+  // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als unknown
+  // sichtbar; die Form wird unmittelbar darunter geprueft (alsGanzzahlUeberNull,
+  // typeof-Check auf container, Ergebnis-Huelle statt Wurf).
+  const rohesProfil = profil as
     | { fps?: unknown; container?: unknown }
     | null
     | undefined
@@ -330,7 +333,9 @@ function pruefeEingang(
     )
   }
 
-  const roherAuftrag = auftrag as unknown as Partial<VideoAusschnittAuftrag> | null | undefined
+  // SAFETY: der Cast erweitert nur um null/undefined; die Pruefung der Form folgt
+  // unmittelbar darunter (null/undefined-Check, Ergebnis-Huelle statt Wurf).
+  const roherAuftrag = auftrag as Partial<VideoAusschnittAuftrag> | null | undefined
   if (roherAuftrag === null || roherAuftrag === undefined) {
     return ungueltig('Es wurde kein Video-Ausschnitt-Auftrag uebergeben.')
   }
@@ -352,7 +357,12 @@ function pruefeEingang(
   }
   const bandSpurPfad: string | null = typeof bandRoh === 'string' ? bandRoh : null
 
+  // SAFETY: pruefePfad hat beide Pfade unmittelbar zuvor als nicht leere
+  // Zeichenketten bestaetigt (sonst fruehe Rueckgabe ungueltig); der Cast
+  // benennt diese belegte Form.
   const quellPfad = roherAuftrag.quellPfad as string
+  // SAFETY: pruefePfad hat auch zielPfad zuvor als nicht leere Zeichenkette
+  // bestaetigt (sonst fruehe Rueckgabe ungueltig); der Cast benennt diese Form.
   const zielPfad = roherAuftrag.zielPfad as string
 
   // Rein TEXTLICHER Vergleich: Diese Datei loest keine Pfade auf und normalisiert

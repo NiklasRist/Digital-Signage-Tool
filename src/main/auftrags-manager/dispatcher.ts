@@ -134,11 +134,17 @@ function unbekannterFehler(meldung: string): HandlerErgebnis<string> {
 function istHandlerErgebnis(wert: unknown): wert is HandlerErgebnis<string> {
   if (typeof wert !== 'object' || wert === null) return false;
 
+  // SAFETY: die Zeile davor hat wert als nicht-null Objekt belegt; der Cast macht das
+  // Feld sichtbar, und die Vergleiche darunter pruefen es zur Laufzeit.
   const status = (wert as { status?: unknown }).status;
   if (status === 'erfolg' || status === 'abgebrochen') return true;
   if (status !== 'fehlgeschlagen') return false;
 
+  // SAFETY: dieselbe Belegung wie oben (wert ist nicht-null Objekt); die Pruefung der
+  // fehler-Form folgt unmittelbar darunter.
   const fehler = (wert as { fehler?: unknown }).fehler;
+  // SAFETY: fehler ist als Objekt belegt (typeof + null-Check); die Feldtypen werden
+  // hier zur Laufzeit als Zeichenketten geprueft - code und meldung einzeln.
   return (
     typeof fehler === 'object' &&
     fehler !== null &&
@@ -187,8 +193,10 @@ export function registriereAuftragsHandler<A extends AuftragArt>(
   // `unknown`, weil TypeScript `HandlerFuer<A>` bei generischem `A` nicht als verwandt
   // mit der aufgeweiteten Form ansieht. KEIN Fehlercode wird dabei angefasst - hier
   // wird eine Funktionsform gecastet, nie ein `code`.
+  // SAFETY: der Cast passt nur die Funktionsform an (HandlerFuer<A> zu Registrierung);
+  // die Registrierung ist vorher vollstaendig gebaut, kein code wird veraendert.
   registrierungen.set(art, {
-    handler: handler as unknown as Registrierung['handler'],
+    handler: handler as Registrierung['handler'],
     brichAb,
   });
 }

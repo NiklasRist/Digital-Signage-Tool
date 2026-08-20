@@ -398,6 +398,9 @@ function pruefeQ2Form(wert: unknown, projektId: string): Ergebnis<Q2Datei, Queue
     )
   }
 
+  // SAFETY: die Zeile davor hat wert als nicht-null, nicht-Array Objekt belegt; der Cast
+  // macht die drei Felder als unknown sichtbar, und ihre Form wird darunter geprueft
+  // (Version exakt, auftraege/pendingDeletions als Array).
   const roh = wert as { schemaVersion?: unknown; auftraege?: unknown; pendingDeletions?: unknown }
 
   // DIE VERSION ZUERST: Eine Datei mit unbekannter Version darf gar nicht erst nach bekannten
@@ -422,6 +425,9 @@ function pruefeQ2Form(wert: unknown, projektId: string): Ergebnis<Q2Datei, Queue
     )
   }
 
+  // SAFETY: die Array-Form beider Felder ist davor geprueft (Array.isArray, sonst
+  // fruehe Rueckgabe fehler); die innere Form prueft die Union aus #16 - sie wird
+  // hier bewusst nicht ein zweites Mal beschrieben (Kommentar oben).
   return {
     ok: true,
     wert: {
@@ -450,6 +456,8 @@ function istAuftragMitId(wert: unknown): wert is Auftrag {
   if (typeof wert !== 'object' || wert === null) {
     return false
   }
+  // SAFETY: die Zeile davor hat wert als nicht-null Objekt belegt; der Cast macht das
+  // Feld sichtbar, und istGefuellterText prueft es zur Laufzeit.
   return istGefuellterText((wert as { auftragId?: unknown }).auftragId)
 }
 
@@ -458,6 +466,8 @@ function istPendingDeletion(wert: unknown): wert is PendingDeletion {
   if (typeof wert !== 'object' || wert === null) {
     return false
   }
+  // SAFETY: die Zeile davor hat wert als nicht-null Objekt belegt; der Cast macht die
+  // Felder sichtbar, und istGefuellterText prueft sie darunter zur Laufzeit.
   const roh = wert as { dateiname?: unknown; vermerktAm?: unknown }
   return istGefuellterText(roh.dateiname) && istGefuellterText(roh.vermerktAm)
 }

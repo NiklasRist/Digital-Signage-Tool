@@ -96,7 +96,9 @@ const ENTPRELLUNG_MS = 250
  * Deklaration vorbeigelesen wird, statt es hinter einer aufgehuebschten Zusicherung zu
  * verstecken. Der Wert wird unmittelbar darunter auf `undefined` geprueft.
  */
-const KONSTANTEN = fs.constants as unknown as Record<string, number | undefined>
+// SAFETY: der Cast macht die Konstanten-Tabelle als Index-Form lesbar; O_EXLOCK wird
+  // unmittelbar darunter auf undefined geprueft, O_NONBLOCK faellt per ?? auf 0 zurueck.
+const KONSTANTEN = fs.constants as Record<string, number | undefined>
 const O_EXLOCK = KONSTANTEN['O_EXLOCK']
 const O_NONBLOCK = KONSTANTEN['O_NONBLOCK'] ?? 0
 
@@ -346,6 +348,8 @@ function belegeUeberDateiSperre(lockPfad: string): StartBefund {
     fs.openSync(lockPfad, fs.constants.O_CREAT | fs.constants.O_RDWR | O_EXLOCK | O_NONBLOCK)
     return 'frei'
   } catch (fehler) {
+    // SAFETY: das Original von fs.openSync wirft nur ErrnoException (V8/Node-Vertrag);
+    // der Cast benennt diesen Typ, und die Vergleiche darunter pruefen den code.
     const code = (fehler as NodeJS.ErrnoException).code
     if (code === 'EAGAIN' || code === 'EWOULDBLOCK') {
       return 'belegt'

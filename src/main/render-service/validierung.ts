@@ -120,7 +120,9 @@ function massFehler(meldung: string): Ergebnis<never, RenderFehlercode> {
 /** Ein Feld eines fremden Objekts lesen, ohne dem Typ zu glauben – und ohne zu werfen. */
 function lies(objekt: unknown, schluessel: string): unknown {
   return typeof objekt === 'object' && objekt !== null
-    ? (objekt as Record<string, unknown>)[schluessel]
+    ? // SAFETY: der ternare Zweig hat objekt als nicht-null Objekt belegt; der Cast
+      // macht die Index-Form sichtbar, die Werte selbst bleiben ungeprueft.
+      (objekt as Record<string, unknown>)[schluessel]
     : undefined
 }
 
@@ -337,6 +339,8 @@ function pruefeEinblendung(
   // zulaessig" - hier steht kein eigener Test auf `höhe < 1080` und keine eigene
   // Geradzahligkeits-Pruefung. Die Umwandlung ist bewusst: Zur Laufzeit sind beide
   // Werte unbekannt, und genau das prueft die gerufene Funktion.
+  // SAFETY: der Cast benennt die erwartete Form; bestimmeBandgeometrie ist die
+  // Pruefung dieser Invariante (Ergebnis-Huelle, ok/fehler unmittelbar darunter).
   const geometrie = bestimmeBandgeometrie({ art, höhe } as { art: Bandart; höhe: number })
   if (!geometrie.ok) {
     // Code UND Meldung von #176 bleiben, wie sie sind; ergaenzt wird allein der
@@ -346,6 +350,8 @@ function pruefeEinblendung(
 
   // Ab hier steht fest: `höhe` ist eine ganze, gerade Zahl zwischen 0 und der Bildhoehe.
   const bandBreite = RENDER_PROFILE.breite
+  // SAFETY: geometrie.ok ist belegt - bestimmeBandgeometrie hat die hoehe geprueft;
+  // der Cast benennt die damit belegte Zahlenform.
   const bandHoehe = höhe as number
 
   const abschnitte = lies(einblendung, 'abschnitte')
@@ -572,6 +578,8 @@ export function pruefeRenderRequest(request: RenderRequest): Ergebnis<void, Rend
     // Der `ausgabeName` wird ungeprueft weitergereicht: `loeseAusgabePfad` stellt
     // selbst fest, ob ueberhaupt eine Zeichenkette vorliegt. Eine eigene Vorpruefung
     // waere bereits der Anfang der zweiten Wahrheit.
+    // SAFETY: loeseAusgabePfad prueft die Zeichenkette selbst (Ergebnis-Huelle); der
+    // Cast benennt die erwartete Form, damit hier keine zweite Wahrheit entsteht.
     const pfad = loeseAusgabePfad(projektId, lies(roh, 'ausgabeName') as string)
     if (!pfad.ok) {
       // Die Meldung von #49 wird uebernommen, damit der Nutzer erfaehrt, WAS am Namen
@@ -587,6 +595,8 @@ export function pruefeRenderRequest(request: RenderRequest): Ergebnis<void, Rend
     // ------------------------------------------------------------------
     for (const element of elemente) {
       const id = lies(element, 'id')
+      // SAFETY: element stammt aus der geparsten RenderRequest; pruefeElement (im
+      // naechsten Schritt) ist die Validierung der Element-Form (Ergebnis-Huelle).
       const ergebnis = pruefeElement(
         element as RenderItem,
         typeof id === 'string' ? id : String(id),

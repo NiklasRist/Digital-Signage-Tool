@@ -168,6 +168,9 @@ function pruefe(
     return fehlerhaft('Die Einblendung muss ein Objekt sein oder null (Band entfernen).')
   }
 
+  // SAFETY: die Zeile davor hat einblendung als nicht-null, nicht-Array Objekt belegt
+  // (null ist der gueltige Entfernen-Fall, der davor geprueft wird); die Felder werden
+  // darunter einzeln geprueft - hier ist es eine FORMPRUEFUNG, keine Fachlichkeit.
   const roh = einblendung as { bandVorlageId?: unknown; abschnitte?: unknown }
 
   const bandVorlageId = roh.bandVorlageId
@@ -206,6 +209,8 @@ function pruefe(
       return fehlerhaft('Jeder Abschnitt des Bandes muss ein Objekt mit Aktion und Dauer sein.')
     }
 
+    // SAFETY: die Zeile davor hat abschnitt als nicht-null, nicht-Array Objekt belegt;
+    // die Felder werden darunter einzeln geprueft (typeof-Checks, Ergebnis-Huelle).
     const { aktionRef, dauer } = abschnitt as { aktionRef?: unknown; dauer?: unknown }
 
     if (typeof aktionRef !== 'string' || aktionRef.trim() === '') {
@@ -227,6 +232,8 @@ function pruefe(
     // er rotiert WAEHREND eines Videos, und eine Rotation im Sekundenbereich kann gewollt sein.
     // Das TK legt fuer Abschnitts-Dauern keinen Bereich fest, und der STOPP-Block des Issues
     // verbietet, das hier zu entscheiden. Offen und gemeldet.
+    // SAFETY: die Objektform des Abschnitts ist davor belegt; der Cast benennt das
+    // erwartete Zahlenfeld, das der Vergleich > 0 zur Laufzeit prueft.
     if ((dauer as number) <= 0) {
       return fehlerhaft('Die Dauer eines Band-Abschnitts muss groesser als null Sekunden sein.')
     }
@@ -253,6 +260,8 @@ function pruefe(
     // Reihenfolge der Abschnitte IST die Array-Reihenfolge (TK 9.11.3, sinngemaess fuer
     // `abschnitte`); `push` erhaelt sie unveraendert, und es entsteht kein Sortier- oder
     // Indexfeld am Abschnitt.
+    // SAFETY: die Objektform des Abschnitts und die Dauer > 0 sind davor geprueft
+    // (sonst fruehe Rueckgabe fehlerhaft); der Cast benennt diese belegte Zahlenform.
     gebaut.abschnitte.push({ aktionRef, dauer: dauer as number })
   }
 

@@ -15,7 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AppKonfig } from '../../src/shared/contracts/app-konfig'
 import { KANAELE } from '../../src/shared/contracts/kanaele'
-import type { Listenelement, Project } from '../../src/shared/contracts/project'
+import type { Project } from '../../src/shared/contracts/project'
 import * as reiterModul from '../../src/renderer/app-shell/reiter'
 import {
   UI_SCHLUESSEL_QUEUE_AUFGEKLAPPT,
@@ -40,18 +40,6 @@ function konfig(ueberschreibungen: Partial<AppKonfig> = {}): AppKonfig {
     letztesExportZiel: null,
     uiVoreinstellungen: {},
     ...ueberschreibungen,
-  }
-}
-
-function element(id: string): Listenelement {
-  return {
-    id,
-    art: 'segment',
-    ref: `aktion-${id}`,
-    dauer: 10,
-    trimStart: null,
-    trimEnde: null,
-    einblendung: null,
   }
 }
 

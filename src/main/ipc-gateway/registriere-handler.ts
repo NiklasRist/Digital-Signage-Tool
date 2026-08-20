@@ -159,6 +159,8 @@ export function registriereHandler<T, F extends string>(
       // Der Code ist DERSELBE wie bei einer geworfenen Ausnahme: Aus Sicht des Aufrufers ist
       // es dieselbe Lage - die Operation hat sich nicht an ihren Vertrag gehalten. Deshalb
       // kein neuer Fehlercode, sondern ein vierter Weg zu einem vorhandenen.
+      // SAFETY: die Bedingung prueft antwort als Objekt und ok als boolean zur Laufzeit;
+      // der Cast benennt genau das Feld, das gleich geprueft wird.
       if (typeof antwort !== "object" || antwort === null || typeof (antwort as { ok?: unknown }).ok !== "boolean") {
         protokolliere(kanal, "antwortform", antwort);
         return unbekannterFehler<T, F>(kanal);

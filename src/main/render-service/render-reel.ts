@@ -469,18 +469,24 @@ function ausConcatFehler(
 /** `{ elementId }` steht laut TK 9.2.3 bei `medium_fehlt` und `ungueltiges_element`. */
 function elementIdAus(daten: unknown): string | null {
   if (typeof daten !== 'object' || daten === null || !('elementId' in daten)) return null
+  // SAFETY: die Zeile davor hat elementId in daten belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const wert = (daten as { elementId?: unknown }).elementId
   return typeof wert === 'string' && wert !== '' ? wert : null
 }
 
 function systemFehlercodeAus(daten: unknown): string | null {
   if (typeof daten !== 'object' || daten === null || !('systemFehlercode' in daten)) return null
+  // SAFETY: die Zeile davor hat systemFehlercode in daten belegt; der Cast macht das
+  // Feld sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const wert = (daten as { systemFehlercode?: unknown }).systemFehlercode
   return typeof wert === 'string' && wert !== '' ? wert : null
 }
 
 function systemCode(ursache: unknown): string {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) return ''
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code
   return typeof code === 'string' ? code : ''
 }
@@ -488,6 +494,8 @@ function systemCode(ursache: unknown): string {
 /** Defensives Lesen einer Zeichenkette aus einem Wert, der ueber IPC kam. */
 function lies(quelle: unknown, feld: string): string {
   if (typeof quelle !== 'object' || quelle === null || !(feld in quelle)) return ''
+  // SAFETY: die Zeile davor hat feld in quelle belegt; der Cast macht die Index-Form
+  // sichtbar, und der typeof-Check darunter prueft den Wert zur Laufzeit.
   const wert = (quelle as Record<string, unknown>)[feld]
   return typeof wert === 'string' ? wert : ''
 }

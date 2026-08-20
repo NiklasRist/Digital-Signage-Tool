@@ -152,11 +152,13 @@ export async function haengeProtokollEintragAn(eintrag: ProtokollEintrag): Promi
  * hier zur Laufzeit geprueft: Ein fehlendes Feld faellt sonst erst Jahre spaeter beim Auswerten
  * der Historie auf, und dann ist der Eintrag nicht mehr zu retten.
  */
-function pruefeEintrag(eintrag: ProtokollEintrag): string | null {
+function pruefeEintrag(eintrag: unknown): string | null {
   if (typeof eintrag !== 'object' || eintrag === null || Array.isArray(eintrag)) {
     return 'haengeProtokollEintragAn wurde ohne Eintrag aufgerufen.'
   }
-  const roh = eintrag as unknown as Record<string, unknown>
+  // SAFETY: die Zeile davor hat eintrag als nicht-null, nicht-Array Objekt belegt; der
+  // Cast macht die Index-Form sichtbar, die Felder werden darunter einzeln geprueft.
+  const roh = eintrag as Record<string, unknown>
 
   for (const feld of PFLICHT_TEXTE) {
     const wert = roh[feld]
@@ -212,6 +214,8 @@ function pruefeDatei(inhalt: unknown): Ergebnis<unknown[], QueueFehlercode> {
         `damit die vorhandene Historie unangetastet bleibt.`,
     )
   }
+  // SAFETY: die Zeile davor hat inhalt als nicht-null, nicht-Array Objekt belegt; der
+  // Cast macht die Index-Form sichtbar, die Felder werden darunter einzeln geprueft.
   const datei = inhalt as Record<string, unknown>
 
   const version = datei['schemaVersion']
@@ -238,6 +242,9 @@ function pruefeDatei(inhalt: unknown): Ergebnis<unknown[], QueueFehlercode> {
     )
   }
 
+  // SAFETY: eintraege ist als Array belegt (Array.isArray, sonst fruehe Rueckgabe
+  // fehler); die Eintraege selbst reisen als unknown[] weiter, jeder wird beim
+  // Anhaengen durch pruefeEintrag einzeln geprueft.
   return { ok: true, wert: eintraege as unknown[] }
 }
 

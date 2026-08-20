@@ -58,6 +58,8 @@ export function verdrahteVorlagenNachtragIPC(): void {
     },
     // #106 heisst den Parameter `vorlagenId` (MELDE-KLAUSEL: der Aufruf folgt der Datei,
     // nicht der Operationstabelle in TK 9.12.1, die ihn `id` nennt).
+    // SAFETY: die Validierungsfunktion (pruefe) hat die Form der Nutzlast unmittelbar
+    // zuvor belegt; der Cast benennt diese belegte Form fuer den Feldzugriff.
     (validierteNutzlast) =>
       pruefeVorlagenReferenzen((validierteNutzlast as { vorlagenId: string }).vorlagenId),
   )

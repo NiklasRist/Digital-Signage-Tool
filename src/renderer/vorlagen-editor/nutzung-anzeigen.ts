@@ -92,6 +92,8 @@ export function leseVorlagennutzung(daten: unknown): Vorlagennutzung | null {
   if (typeof daten !== 'object' || daten === null) {
     return null
   }
+  // SAFETY: die Zeile davor hat daten als nicht-null Objekt belegt; der Cast macht
+  // die Index-Form sichtbar, und die Felder werden darunter einzeln geprueft.
   const roh = daten as Record<string, unknown>
   const aktionenRoh = roh['aktionen']
   const listenRoh = roh['listenelemente']
@@ -118,6 +120,8 @@ function istReferenz(e: unknown): e is VorlagenReferenz {
   if (typeof e !== 'object' || e === null) {
     return false
   }
+  // SAFETY: die Zeile davor hat e als nicht-null Objekt belegt; der Cast macht die
+  // Index-Form sichtbar, und die drei Felder werden darunter als Zeichenketten geprueft.
   const r = e as Record<string, unknown>
   return (
     typeof r['projektId'] === 'string' &&

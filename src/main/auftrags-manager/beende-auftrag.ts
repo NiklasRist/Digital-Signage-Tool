@@ -376,6 +376,8 @@ function baueAusgabe(auftrag: Auftrag): ProtokollEintrag['ausgabe'] {
   if (typeof nutzdaten !== 'object' || nutzdaten === null) {
     return null
   }
+  // SAFETY: die Zeile davor hat nutzdaten als nicht-null Objekt belegt; der Cast macht
+  // die Felder als unknown sichtbar, und ihre Form wird darunter einzeln geprueft.
   const roh = nutzdaten as {
     pfad?: unknown
     zielPfad?: unknown

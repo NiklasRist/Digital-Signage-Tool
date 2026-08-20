@@ -218,6 +218,8 @@ function leseDauer(
  */
 function alsObjekt(wert: unknown): Record<string, unknown> | null {
   if (typeof wert !== 'object' || wert === null || Array.isArray(wert)) return null
+  // SAFETY: die Bedingung hat wert als nicht-null, nicht-Array Objekt belegt; der Cast
+  // benennt genau diese belegte Index-Form.
   return wert as Record<string, unknown>
 }
 

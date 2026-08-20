@@ -206,6 +206,8 @@ async function leseJetzt<T>(pfad: string, fallback: T): Promise<Ergebnis<T, Queu
     // Der einzige Zwang in dieser Datei: JSON.parse liefert `any`, der Vertrag verspricht `T`.
     // Geprueft wird der Inhalt NICHT - "Keine Kenntnis ueber den Inhalt aufbauen" (STOPP-Block);
     // wer T behauptet, prueft es bei sich (#55/#56/#57).
+    // SAFETY: JSON.parse lieferte any; der Cast benennt den Vertrag T, den die
+    // Aufrufer (#55/#56/#57) bei sich selbst pruefen - hier wird kein Inhalt gedeutet.
     return { ok: true, wert: haupt.wert as T }
   }
 
@@ -216,6 +218,8 @@ async function leseJetzt<T>(pfad: string, fallback: T): Promise<Ergebnis<T, Queu
     // WICHTIG: Die defekte <pfad> wird dabei NICHT ueberschrieben, nicht geloescht und nicht
     // durch das Backup ersetzt - das Zurueckschreiben geschieht erst beim naechsten regulaeren
     // schreibeQueueDatei des Aufrufers. Diese Funktion repariert nichts von selbst.
+    // SAFETY: dieselbe Vertrags-Umschreibung wie oben: JSON.parse lieferte any, wer T
+    // behauptet (die Aufrufer #55/#56/#57), prueft es bei sich.
     return { ok: true, wert: sicherung.wert as T }
   }
 
@@ -259,6 +263,8 @@ async function leseDatei(pfad: string): Promise<Leseergebnis> {
   }
 
   try {
+    // SAFETY: JSON.parse liefert any; der Cast macht das Ergebnis zum ungeprueften
+    // unknown - jede Deutung uebernimmt der Aufrufer (#55/#56/#57), nicht diese Datei.
     return { zustand: 'gelesen', wert: JSON.parse(roh) as unknown }
   } catch (ursache) {
     return { zustand: 'beschaedigt', grund: `kein gueltiges JSON (${text(ursache)})` }
@@ -525,6 +531,8 @@ async function schreibeJetzt(ziel: string, inhalt: string): Promise<Ergebnis<voi
  */
 async function taugtAlsSicherung(pfad: string): Promise<boolean> {
   try {
+    // SAFETY: JSON.parse liefert `any`; der Cast auf unknown macht das Ergebnis zum
+    // ungeprueften Wert - gewollt, denn hier zaehlt nur das "parsebar ja/nein".
     JSON.parse(await fs.readFile(pfad, 'utf8')) as unknown
     return true
   } catch {
@@ -566,6 +574,8 @@ function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return false
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code
   return typeof code === 'string' && codes.includes(code)
 }

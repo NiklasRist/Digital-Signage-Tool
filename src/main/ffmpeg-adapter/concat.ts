@@ -394,6 +394,8 @@ function ungueltig(meldung: string): { ok: false; fehler: FehlerHuelle } {
  */
 function systemFehlercodeVon(fehler: unknown): string | null {
   if (typeof fehler !== 'object' || fehler === null) return null
+  // SAFETY: die Zeile davor hat fehler als nicht-null Objekt belegt; der Cast macht
+  // das Feld sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (fehler as { code?: unknown }).code
   return typeof code === 'string' ? code : null
 }

@@ -155,6 +155,8 @@ export async function entferneDatei(pfad: string): Promise<Ergebnis<void, 'datei
       }
 
       letzterCode = code;
+      // SAFETY: gecastet wird nur die Listen-Form fuer includes; code ist die zu
+      // pruefende Zeichenkette, WIEDERHOLBAR der konstante Pruefbestand dieser Datei.
       if (!(WIEDERHOLBAR as readonly string[]).includes(code)) {
         // Sofort, ohne Wartezeit. Der Code des Betriebssystems steht in der
         // `meldung`, NIE im `code` - dort steht immer `datei_fehler`.
@@ -186,6 +188,8 @@ function systemCode(ursache: unknown): string {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return '';
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code;
   return typeof code === 'string' ? code : '';
 }

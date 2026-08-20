@@ -361,6 +361,8 @@ async function ausSegment(
   bezug: Elementbezug,
   kontext: NormalisierKontext,
 ): Promise<Ergebnis<string, RenderFehlercode>> {
+  // SAFETY: pngs reist ueber die IPC-Grenze und kann null sein; der Cast erweitert den
+  // Typ, und der unmittelbar folgende typeof-Check prueft diese Invariante zur Laufzeit.
   const segmentPfad = (pngs as ElementPngs | null | undefined)?.segment
   if (typeof segmentPfad !== 'string' || segmentPfad === '') {
     return fehler(
@@ -434,6 +436,8 @@ async function ausVideo(
 ): Promise<Ergebnis<string, RenderFehlercode>> {
   // 1. Trim. Zwei EINZELNE Rundungen auf dasselbe 30-fps-Raster macht #174; hier
   //    wird keine zweite Rundungsregel erfunden.
+  // SAFETY: trimStart/trimEnde wurden in der Validierung (pruefeRenderRequest) als
+  // endliche Zahlen geprueft; feld() liefert unknown, der Cast benennt diese belegte Form.
   const grenzen = trimFrames(feld(element, 'trimStart') as number, feld(element, 'trimEnde') as number)
   if (!grenzen.ok) return uebernimm(grenzen.fehler, bezug)
   const { startFrame, endFrame, frames } = grenzen.wert
@@ -460,9 +464,13 @@ async function ausVideo(
   // 3. Geometrie - fuer BEIDE Bandarten. Sie ist zugleich der Torwaechter ueber die
   //    Bandhoehe (ganzzahlig, gerade, 0 < H < 1080); die reine Rechnung liegt im
   //    geteilten Bereich und prueft nichts.
+  // SAFETY: bestimmeBandgeometrie prueft art/höhe als Torwaechter; der Cast reicht
+  // die Form weiter, die Pruefung selbst folgt unmittelbar darunter (Ergebnis-Huelle).
   const geo = bestimmeBandgeometrie(einblendung as { art: Bandart; höhe: number })
   if (!geo.ok) return uebernimm(geo.fehler, bezug)
 
+  // SAFETY: geo.ok ist belegt, also hat bestimmeBandgeometrie art/höhe geprueft; der
+  // Cast benennt die damit belegte Form des Einblendungs-Objekts.
   const hoeheBand = feld(einblendung, 'höhe') as number
   const bandart = feld(einblendung, 'art')
 
@@ -572,6 +580,8 @@ function sammleBandAbschnitte(
     )
   }
 
+  // SAFETY: pngs reist ueber die IPC-Grenze und kann null sein; der Cast erweitert den
+  // Typ, und der unmittelbar folgende Array.isArray-Check prueft die Invariante.
   const bandPngs = (pngs as ElementPngs | null | undefined)?.band
   if (!Array.isArray(bandPngs) || bandPngs.length < abschnitte.length) {
     return fehler(
@@ -595,6 +605,8 @@ function sammleBandAbschnitte(
     // `zuFrames` prueft nicht und traegt keine Huelle (#174, ENTSCHIEDEN 4). Eine
     // unbrauchbare Dauer ergibt `NaN` - und wird von #168 als `ungueltige_eingabe`
     // abgewiesen. Eine zweite Pruefung hier waere eine zweite Wahrheit.
+    // SAFETY: eine unbrauchbare dauer wird bewusst NICHT hier abgewiesen, sondern
+    // ergibt NaN und faellt bei #168; der Cast benennt die erwartete Zahlenform.
     gesammelt.push({ pngPfad, frames: zuFrames(feld(abschnitt, 'dauer') as number) })
   }
 
@@ -721,6 +733,8 @@ async function starteBandspur(
  * Auftrag, dessen Zusage danach fuer immer offen bliebe.
  */
 function sollDauerSekunden(frames: number, profil: RenderProfile): number {
+  // SAFETY: Das Profil reist durch den Main; fps kann fremd sein. Der Cast erweitert
+  // nur um null/undefined, und der typeof-Check unten prueft die Zahl zur Laufzeit.
   const fps: unknown = (profil as { fps?: unknown } | null | undefined)?.fps
   return typeof fps === 'number' ? frames / fps : Number.NaN
 }
@@ -893,6 +907,8 @@ function aufStellen(index: number): string {
  */
 function feld(objekt: unknown, name: string): unknown {
   if (objekt === null || objekt === undefined || typeof objekt !== 'object') return undefined
+  // SAFETY: die Zeile davor hat objekt als nicht-null Objekt belegt; der Cast macht
+  // die fuer den Feldzugriff noetige Index-Form sichtbar, ohne den Werten zu glauben.
   return (objekt as Record<string, unknown>)[name]
 }
 

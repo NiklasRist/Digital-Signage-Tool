@@ -270,6 +270,8 @@ async function leseDatei(pfad: string): Promise<Metadaten | null> {
     return null
   }
 
+  // SAFETY: die Zeile davor hat inhalt als nicht-null Objekt belegt; die Felder werden
+  // darunter einzeln geprueft (typeof-Checks auf Zeichenkette, sonst null).
   const felder = inhalt as { name?: unknown; erstelltAm?: unknown; geaendertAm?: unknown }
   if (typeof felder.name !== 'string' || felder.name.trim().length === 0) {
     return null
@@ -397,6 +399,8 @@ function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return false
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code
   return typeof code === 'string' && codes.includes(code)
 }

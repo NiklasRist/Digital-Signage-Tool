@@ -979,6 +979,8 @@ function textVon(ursache: unknown): string {
 
 /** Ein Wert als Objekt - oder null, wenn er keins ist. Arrays zaehlen nicht. */
 function alsObjekt(wert: unknown): Record<string, unknown> | null {
+  // SAFETY: die Bedingung des ternaren Zweigs hat wert als nicht-null, nicht-Array
+  // Objekt belegt; der Cast benennt genau diese belegte Form.
   return typeof wert === 'object' && wert !== null && !Array.isArray(wert)
     ? (wert as Record<string, unknown>)
     : null

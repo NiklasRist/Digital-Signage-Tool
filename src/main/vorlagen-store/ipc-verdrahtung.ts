@@ -57,7 +57,11 @@ function meldeAn<W, T, F extends string>(
   pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
   rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
 ): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) => rufe(validierteNutzlast as W))
+  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
+    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert und in die Huelle
+    // gelegt; der Cast benennt diese belegte Form, damit rufe den geprueften Typ sieht.
+    rufe(validierteNutzlast as W),
+  )
 }
 
 /** "endliche Zahl" - `Number.isFinite` und NICHT `typeof === 'number'` (gleiche Regel wie #76). */
@@ -70,6 +74,8 @@ const ARTEN: readonly VorlagenArt[] = ['vollflaeche', 'split', 'einblendung']
 
 /** Geprueft wird die FORM, nicht die Fachlichkeit: ist `art` genau einer der drei Werte? */
 function istArt(wert: unknown): wert is VorlagenArt {
+  // SAFETY: ARTEN enthaelt nur gueltige Werte; der Cast macht das Einschliessen als
+  // Vergleich zur Laufzeit moeglich - includes prueft den Wert echt.
   return ARTEN.includes(wert as VorlagenArt)
 }
 
@@ -151,6 +157,8 @@ export function verdrahteVorlagenIPC(): void {
       }
       // NUR die Form ist hier geprueft; der Typwechsel ist die eine Cast-Stelle dieser
       // Datei, gedeckt durch #102, das die Fachlichkeit prueft.
+      // SAFETY: istObjekt hat die Objektform belegt; die Fachlichkeit prueft #102
+      // (Ergebnis-Huelle statt Wurf) - die Kette entkommt dem Typ, nicht der Pruefung.
       return { ok: true, wert: { arbeitsId, vorlage: vorlage as unknown as Vorlage } }
     },
     ({ arbeitsId, vorlage }) => speichereArbeitskopie(arbeitsId, vorlage),

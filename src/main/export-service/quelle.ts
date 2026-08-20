@@ -206,6 +206,8 @@ function fehlt(dateiname: string): Ergebnis<ExportQuelle, ExportFehlercode> {
 /** Der Betriebssystem-Code eines fs-Fehlers (`ENOENT`, `EACCES`, ...), wenn es einen gibt. */
 function systemcode(ursache: unknown): string | null {
   if (typeof ursache === "object" && ursache !== null && "code" in ursache) {
+    // SAFETY: die Bedingung hat code in ursache belegt; der Cast macht das Feld
+    // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
     const code: unknown = (ursache as { code: unknown }).code;
     if (typeof code === "string") {
       return code;

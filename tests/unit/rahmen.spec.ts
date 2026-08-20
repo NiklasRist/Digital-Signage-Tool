@@ -154,7 +154,7 @@ describe('Besuchte Reiter bleiben montiert (DoD, ENTSCHIEDEN 2)', () => {
     const inhalte = vollstaendigeInhalte({
       vorlagen: inhaltMitAufbau(aufbauVorlagen),
     })
-    const { behaelter, fertig } = rendere(eigenschaften({ inhalte }))
+    const { fertig } = rendere(eigenschaften({ inhalte }))
 
     expect(aufbauVorlagen).toHaveBeenCalledTimes(0)
 

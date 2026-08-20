@@ -1,0 +1,6 @@
+{
+  "//": "Vendored Oxlint-Plugin (anti-slop). tools/package.json zwingt tools/ auf CommonJS (#7), aber dieses Plugin importiert @oxlint/plugins und braucht ESM - deshalb ein eigenes, lokales package.json mit type: module. Das aendert nichts an tools/package.json oder den Doku-Skripten.",
+  "name": "anti-slop-oxlint-plugin",
+  "private": true,
+  "type": "module"
+}

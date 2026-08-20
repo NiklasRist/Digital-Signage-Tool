@@ -109,7 +109,9 @@ export function bestimmeBandgeometrie(
   try {
     // Die Nutzlast kommt aus dem Renderer. Der statische Typ ist ueber die
     // IPC-Grenze hinweg nur eine Zusage - hier wird sie geprueft, nicht geglaubt.
-    const roh = einblendung as unknown as
+    // SAFETY: der Cast erweitert nur um null/undefined; die Pruefung der Form folgt
+    // unmittelbar darunter (typeof- und Feld-Checks, Ergebnis-Huelle statt Wurf).
+    const roh = einblendung as
       | { art?: unknown; höhe?: unknown }
       | null
       | undefined

@@ -141,9 +141,13 @@ export function typAusPfad(pfad: string): 'video' | 'bild' | null {
     return null
   }
   const endung = basis.slice(punkt + 1).toLowerCase()
+  // SAFETY: gecastet wird nur die Listen-Form fuer includes; endung ist die zu
+  // pruefende Zeichenkette, FORMAT_WHITELIST der konstante Pruefbestand dieser Datei.
   if ((FORMAT_WHITELIST.video as readonly string[]).includes(endung)) {
     return 'video'
   }
+  // SAFETY: dieselbe Listen-Form fuer includes; endung bleibt die zu pruefende
+  // Zeichenkette, FORMAT_WHITELIST.bild der konstante Pruefbestand dieser Datei.
   if ((FORMAT_WHITELIST.bild as readonly string[]).includes(endung)) {
     return 'bild'
   }

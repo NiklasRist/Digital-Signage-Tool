@@ -338,6 +338,8 @@ async function leseFassung(pfad: string, id: string): Promise<Leseversuch> {
   if (typeof inhalt !== 'object' || inhalt === null || Array.isArray(inhalt)) {
     return { art: 'defekt', grund: 'der Inhalt ist kein JSON-Objekt' }
   }
+  // SAFETY: die Zeile davor hat inhalt als nicht-null, nicht-Array Objekt belegt; der
+  // Cast macht die Index-Form sichtbar, und die Felder werden darunter einzeln geprueft.
   const rohdaten = inhalt as Record<string, unknown>
 
   // DIE VERSIONSFRAGE WIRD HIER ENTSCHIEDEN, VOR DEM AUFRUF VON #48 - und das ist Absicht.
@@ -458,6 +460,8 @@ function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return false
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code
   return typeof code === 'string' && codes.includes(code)
 }

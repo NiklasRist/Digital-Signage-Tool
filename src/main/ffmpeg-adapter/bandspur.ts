@@ -354,7 +354,9 @@ function pruefeEingang(
   // Beide Werte reisen als Teil des Auftrags durch den Main; ein `undefined` an dieser
   // Stelle waere sonst eine Ausnahme in einem Auftrag, dessen Zusage danach fuer immer
   // offen bliebe. Deshalb wird geprueft statt geglaubt (TK 9.1.1: niemals `throw`).
-  const rohesProfil = profil as unknown as
+  // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als unknown
+  // sichtbar; die Form wird unmittelbar darunter geprueft (alsMass, Ergebnis-Huelle).
+  const rohesProfil = profil as
     | { hoehe?: unknown; fps?: unknown }
     | null
     | undefined
@@ -367,7 +369,9 @@ function pruefeEingang(
   const fps = alsMass('profil.fps', rohesProfil.fps)
   if (!fps.ok) return fps
 
-  const roherAuftrag = auftrag as unknown as Partial<BandspurAuftrag> | null | undefined
+  // SAFETY: der Cast erweitert nur um null/undefined; die Pruefung der Form folgt
+  // unmittelbar darunter (null/undefined-Check, Ergebnis-Huelle statt Wurf).
+  const roherAuftrag = auftrag as Partial<BandspurAuftrag> | null | undefined
   if (roherAuftrag === null || roherAuftrag === undefined) {
     return ungueltig('Es wurde kein Bandspur-Auftrag uebergeben.')
   }
@@ -382,6 +386,8 @@ function pruefeEingang(
   // Der Index steht in JEDER Meldung. Bei zwoelf Abschnitten ist "ein Pfad ist leer"
   // sonst nicht behebbar.
   for (const [i, abschnitt] of abschnitte.entries()) {
+    // SAFETY: der Cast erweitert nur um null/undefined; die Pruefung der Form folgt
+    // unmittelbar darunter (null/undefined-Check, Ergebnis-Huelle statt Wurf).
     const roherAbschnitt = abschnitt as BandAbschnitt | null | undefined
     if (roherAbschnitt === null || roherAbschnitt === undefined) {
       return ungueltig(`abschnitte[${String(i)}] fehlt.`)
@@ -441,6 +447,8 @@ function pruefeEingang(
   // 9.5.7). Der realistische Fall - der `render-service` bildet alle drei Pfade aus
   // demselben Arbeitsbereich - wird davon erfasst.
   for (const [i, abschnitt] of abschnitte.entries()) {
+    // SAFETY: abschnitte wurde als BandAbschnitt[] validiert (fps.ok und die
+    // Abschnitts-Prüfungen stehen davor); der Cast benennt diese belegte Form.
     const pngPfad = (abschnitt as BandAbschnitt).pngPfad
     if (pngPfad === sequenzPfad) {
       return ungueltig(
@@ -454,6 +462,8 @@ function pruefeEingang(
     }
   }
 
+  // SAFETY: die abschnitte sind validiert und fps ist als Zahl belegt (fps.ok steht
+  // darueber); der Cast benennt die damit gepruefte Form der Rueckgabe.
   return { ok: true, wert: { abschnitte: abschnitte as readonly BandAbschnitt[], fps: fps.wert } }
 }
 

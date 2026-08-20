@@ -264,6 +264,8 @@ function pruefeDatei(inhalt: unknown): Befund {
   if (typeof inhalt !== 'object' || inhalt === null || Array.isArray(inhalt)) {
     return { art: 'unbrauchbar', grund: 'Inhalt ist kein Objekt.' }
   }
+  // SAFETY: die Zeile davor hat inhalt als nicht-null, nicht-Array Objekt belegt; der
+  // Cast benennt die erwartete Form, und die Felder werden darunter einzeln geprueft.
   const datei = inhalt as Partial<Q4Datei>
   if (!Array.isArray(datei.eintraege)) {
     return { art: 'unbrauchbar', grund: 'Feld "eintraege" fehlt oder ist keine Liste.' }

@@ -112,6 +112,8 @@ function ungueltigesElement(id: string, meldung: string): Ergebnis<never> {
  * `String(...)` liefert dann „undefined": eine wahrheitsgemaesse Angabe.
  */
 function elementId(element: Listenelement): string {
+  // SAFETY: das Element kommt aus der Projektdatei; der Cast macht die id als unknown
+  // sichtbar, und der typeof-Check darunter prueft sie (oder String() fängt ab).
   const roh: unknown = (element as { id?: unknown }).id
   return typeof roh === 'string' ? roh : String(roh)
 }
@@ -122,7 +124,9 @@ export function frameDauer(element: Listenelement): Ergebnis<number> {
   // Fehlerpfade des Issues verlangen aber ausdruecklich einen Zweig fuer „`art`
   // ist keiner der drei Werte". Ein Projekt aus einer aelteren Fassung oder einer
   // von Hand bearbeiteten JSON-Datei kann alles Moegliche tragen.
-  const roh = element as unknown as
+  // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als unknown
+  // sichtbar; die Form wird unmittelbar darunter geprueft (Ergebnis-Huelle statt Wurf).
+  const roh = element as
     | { art?: unknown; dauer?: unknown; trimStart?: unknown; trimEnde?: unknown }
     | null
     | undefined
@@ -253,6 +257,8 @@ export function frameDauer(element: Listenelement): Ergebnis<number> {
 
 /** Summe über die ganze Liste. Eine leere Liste ergibt 0 Frames und ist KEIN Fehler. */
 export function berechneGesamtlaenge(liste: Listenelement[]): Ergebnis<Gesamtlaenge> {
+  // SAFETY: der Cast entzieht dem Parameter den Typ-Vorteil, damit Array.isArray
+  // wirklich prueft statt den deklarierten Typ zu verengen.
   if (!Array.isArray(liste as unknown)) {
     return {
       ok: false,

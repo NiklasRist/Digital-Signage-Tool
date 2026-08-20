@@ -153,7 +153,9 @@ export function baueReglerModell(
   element: Listenelement,
   asset: Asset | null,
 ): Ergebnis<ReglerModell> {
-  const roh = element as unknown as RohesElement
+  // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als unknown
+  // sichtbar; die Form wird unmittelbar darunter geprueft (Ergebnis-Huelle statt Wurf).
+  const roh = element as RohesElement
 
   // ZUERST, VOR JEDEM FELDZUGRIFF: Ohne diese Schranke wirft schon das Auslesen der
   // `id` bei `null`/`undefined` eine TypeError - und werfen darf diese Funktion
@@ -364,7 +366,9 @@ export async function uebernehmeGrenzen(
   anfang: number,
   ende: number,
 ): Promise<Ergebnis<Listenelement>> {
-  const roh = element as unknown as RohesElement
+  // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als unknown
+  // sichtbar; die Form wird unmittelbar darunter geprueft (Ergebnis-Huelle statt Wurf).
+  const roh = element as RohesElement
 
   if (roh === null || roh === undefined || typeof roh !== 'object') {
     return fehler(

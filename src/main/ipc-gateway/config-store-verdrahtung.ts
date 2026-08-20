@@ -62,7 +62,11 @@ function meldeAn<W, T, F extends string>(
   pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
   rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
 ): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) => rufe(validierteNutzlast as W))
+  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
+    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert und in die Huelle
+    // gelegt; der Cast benennt diese belegte Form, damit rufe den geprueften Typ sieht.
+    rufe(validierteNutzlast as W),
+  )
 }
 
 export function verdrahteConfigStoreIPC(): void {

@@ -102,9 +102,13 @@ export function erzeugeUndoStapel<T>(tiefe?: number): UndoStapel<T> {
     },
     vorschauZurueck(): T | null {
       // Nur anschauen, nie veraendern (Fehlerpfad: leerer Zweig -> null).
+      // SAFETY: der ternare Zweig hat zurueck.length > 0 belegt; der Cast benennt
+      // diese belegte Elementform - der Wert wird nicht veraendert, nur gelesen.
       return zurueck.length === 0 ? null : (zurueck[zurueck.length - 1] as T)
     },
     vorschauVor(): T | null {
+      // SAFETY: der ternare Zweig hat vor.length > 0 belegt; der Cast benennt diese
+      // belegte Elementform - der Wert wird nicht veraendert, nur gelesen.
       return vor.length === 0 ? null : (vor[vor.length - 1] as T)
     },
     vollzieheZurueck(aktuell: T): void {

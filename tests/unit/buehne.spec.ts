@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { createElement, type ReactElement } from "react";
+import { createElement } from "react";
 
 import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
 import type { Buehnenmaße } from "../../src/renderer/preview-player/buehne-skalierung";

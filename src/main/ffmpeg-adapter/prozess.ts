@@ -301,6 +301,8 @@ function startFehlerMeldung(ursache: unknown, binaerPfad: string): string {
 /** Der `code` eines Systemfehlers - oder null, wenn der geworfene Wert keinen traegt. */
 function systemCodeVon(ursache: unknown): string | null {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) return null
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code: unknown }).code
   return typeof code === 'string' ? code : null
 }

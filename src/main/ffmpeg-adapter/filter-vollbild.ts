@@ -107,7 +107,10 @@ export function baueVollbildFilter(
   // Deshalb wird der Eingang geprueft statt geglaubt: `profil` reist als Teil des
   // Auftrags durch den Main, und ein `undefined` an dieser Stelle waere sonst eine
   // Ausnahme in einem Auftrag, dessen Zusage danach fuer immer offen bliebe.
-  const roh = profil as unknown as
+  // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als unknown
+  // sichtbar; die Form wird unmittelbar darunter geprueft (alsGanzzahlUeberNull,
+  // Ergebnis-Huelle statt Wurf).
+  const roh = profil as
     | { breite?: unknown; hoehe?: unknown; fps?: unknown }
     | null
     | undefined

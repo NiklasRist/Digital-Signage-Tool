@@ -44,6 +44,8 @@ export function abonniere<T>(
   kanal: string,
   hoerer: (nutzlast: T) => void,
 ): () => void {
+  // SAFETY: window ist per Preload-Skript um die api ergaenzt (bruecke.…); der Cast
+  // benennt diese Form, und der null-Check darunter prueft die Anwesenheit zur Laufzeit.
   const bruecke = (window as Window & { api?: Partial<PreloadBruecke> }).api;
 
   // Fehlende Bruecke: DIESELBE ANTWORT WIE IN #24, nicht eine hier neu gewaehlte.
@@ -98,6 +100,9 @@ export function abonniere<T>(
       // Vergleichen mit einem vorherigen Stand. Wer drosseln will, tut es beim
       // Sender oder im anzeigenden Modul; fuer das Warteschlangen-Ereignis (#65) ist
       // am 13.08.2026 ausdruecklich entschieden worden, dass NICHT gedrosselt wird.
+      // SAFETY: die Bruecke ist ein Geraenufang (raw); der Cast benennt den vom
+      // Sender vertraglich zugesagten Typ T, den der Hoerer erwartet - geprueft wird
+      // am Sender (#25-Registry), nicht hier (Kommentar oben).
       hoerer(daten as T);
     } catch (ursache) {
       // Festlegung 4 des Issues, und main-seitig dieselbe Regel (#65): Ein Hoerer,

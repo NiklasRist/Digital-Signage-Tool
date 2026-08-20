@@ -352,7 +352,12 @@ function tiefGleich(a: unknown, b: unknown): boolean {
     )
   }
   if (typeof a === 'object' && typeof b === 'object') {
+    // SAFETY: die Bedingung hat a und b als nicht-null Objekte belegt (der null-Fall
+    // ist vorher abgefangen); der Cast benennt diese belegte Index-Form fuer den
+    // rekursiven Vergleich der Felder.
     const objA = a as Record<string, unknown>
+    // SAFETY: dieselbe Belegung wie fuer objA - b ist als nicht-null Objekt belegt;
+    // der Cast benennt die Index-Form fuer den rekursiven Vergleich der Felder.
     const objB = b as Record<string, unknown>
     const schluesselA = Object.keys(objA)
     const schluesselB = Object.keys(objB)

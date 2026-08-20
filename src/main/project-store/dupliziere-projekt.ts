@@ -268,6 +268,9 @@ async function leseQuelle(
     // faellt hier auf, mit derselben Meldung wie beim Speichern, statt erst nach dem Anlegen
     // von Ordner und Medien.
     try {
+      // SAFETY: JSON.parse liefert `any`; offen ist ein vollstaendig gebautes Project,
+      // und die Serialisierung scheitert im try/catch als fehler - der Cast benennt
+      // die bereits vollstaendige Form (Ergebnis-Huelle statt Wurf).
       return { ok: true, wert: JSON.parse(JSON.stringify(offen)) as Project }
     } catch (ursache) {
       return fehler(
@@ -315,6 +318,8 @@ async function leseVonPlatte(pfad: string): Promise<Ergebnis<Project, ProjectSto
   if (typeof inhalt !== 'object' || inhalt === null || Array.isArray(inhalt)) {
     return fehler('speicher_fehler', `${DATEI} enthaelt kein JSON-Objekt.`)
   }
+  // SAFETY: die Zeile davor hat inhalt als nicht-null, nicht-Array Objekt belegt; der
+  // Cast macht die Index-Form sichtbar, und die Felder werden darunter einzeln geprueft.
   const rohdaten = inhalt as Record<string, unknown>
 
   const version: unknown = rohdaten.schemaVersion
@@ -484,6 +489,8 @@ function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return false
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code
   return typeof code === 'string' && codes.includes(code)
 }

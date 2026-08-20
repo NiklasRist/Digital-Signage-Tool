@@ -205,6 +205,8 @@ export async function ersetzeAtomar(
         return { ok: true, wert: undefined };
       } catch (ursache) {
         const code = systemCode(ursache);
+        // SAFETY: gecastet wird nur die Listen-Form fuer includes; code ist die zu
+        // pruefende Zeichenkette, WIEDERHOLBAR der konstante Pruefbestand dieser Datei.
         if (!(WIEDERHOLBAR as readonly string[]).includes(code)) {
           // Alles ausser EBUSY/EPERM: SOFORT, ohne jede Wartezeit. Die vorhandene
           // Zieldatei ist dabei unveraendert - `rename` ist entweder ganz gelungen
@@ -286,6 +288,8 @@ async function renameFehler(
   // ENODEV/ENXIO bedeuten das verschwundene Geraet bereits eindeutig - hier wird
   // nicht noch nachgesehen, ob der Ordner erreichbar ist. Gleiche Auflegung wie in
   // #186.
+  // SAFETY: gecastet wird nur die Listen-Form fuer includes; code ist die zu pruefende
+  // Zeichenkette, ZIEL_VERSCHWUNDEN der konstante Pruefbestand dieser Datei.
   if ((ZIEL_VERSCHWUNDEN as readonly string[]).includes(code)) {
     return zielWeg(ordner, zielName, code);
   }
@@ -378,6 +382,8 @@ function systemCode(ursache: unknown): string {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return '';
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code;
   return typeof code === 'string' ? code : '';
 }

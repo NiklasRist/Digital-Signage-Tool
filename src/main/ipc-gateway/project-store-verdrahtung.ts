@@ -98,7 +98,11 @@ function meldeAn<W, T, F extends string>(
   pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
   rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
 ): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) => rufe(validierteNutzlast as W))
+  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
+    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert und in die Huelle
+    // gelegt; der Cast benennt diese belegte Form, damit rufe den geprueften Typ sieht.
+    rufe(validierteNutzlast as W),
+  )
 }
 
 /**
@@ -276,6 +280,8 @@ export function verdrahteProjectStoreIPC(): void {
     // `ungueltige_eingabe` abweist (nachgelesen in erstelle-aktion.ts, Formpruefung vor dem
     // Lock). Der Typechecker verliert hier also eine Zusage, die einen Schritt weiter zur
     // Laufzeit erneut eingeloest wird.
+    // SAFETY: #38 prueft die Felder in erstelleAktion selbst (Ergebnis-Huelle); der Cast
+    // benennt die erwartete Form, die dort erneut eingeloest wird.
     ({ aktionsdaten }) => erstelleAktion(aktionsdaten as Omit<Aktion, 'id'>),
   )
 
@@ -295,6 +301,8 @@ export function verdrahteProjectStoreIPC(): void {
       }
       return { ok: true, wert: { id, aktionsdaten } }
     },
+    // SAFETY: die Validierungsfunktion hat die Objektform von aktionsdaten unmittelbar
+    // zuvor belegt; #38 prueft die Felder (Ergebnis-Huelle) einen Schritt weiter.
     ({ id, aktionsdaten }) => bearbeiteAktion(id, aktionsdaten as Partial<Omit<Aktion, 'id'>>),
   )
 

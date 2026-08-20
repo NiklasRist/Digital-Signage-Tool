@@ -147,7 +147,7 @@ describe("Projektlisteansicht (liste-ansicht.tsx)", () => {
 
   it("uebergibt eine beschaedigte Zeile an zeichneBeschaedigteZeile (#223) und zeigt keinen Oeffnen-Knopf", () => {
     const besch = meta({ id: "p2", name: "Kaputt", beschaedigt: true });
-    const zeichner = vi.fn((p: ProjektMeta) => createElement("span", { "data-testid": "beschaedigt" }, "defekt"));
+    const zeichner = vi.fn((_p: ProjektMeta) => createElement("span", { "data-testid": "beschaedigt" }, "defekt"));
     act(() => {
       root.render(
         createElement(

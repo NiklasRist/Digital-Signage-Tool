@@ -64,7 +64,11 @@ function meldeAn<W, T, F extends string>(
   pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
   rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
 ): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) => rufe(validierteNutzlast as W))
+  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
+    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert und in die Huelle
+    // gelegt; der Cast benennt diese belegte Form, damit rufe den geprueften Typ sieht.
+    rufe(validierteNutzlast as W),
+  )
 }
 
 export function verdrahteProjectStoreNachtragIPC(): void {
@@ -124,6 +128,8 @@ export function verdrahteProjectStoreNachtragIPC(): void {
       // Die Behauptung `as Einblendung | null` ist NICHT geprueft und soll es hier auch
       // nicht sein: Geprueft ist "Objekt oder null", und die feldweise Pruefung liegt in
       // #120. Sie steht an genau dieser einen Stelle, damit sie nachlesbar bleibt.
+      // SAFETY: istObjekt/istNull hat die Objekt-oder-null-Form belegt; die feldweise
+      // Fachpruefung uebernimmt #120 (Ergebnis-Huelle statt Wurf).
       //
       // NUR die zwei erwarteten Felder reisen weiter; ein Fremdfeld landete ueber die
       // Operation in project.json und bliebe dort. Das Band selbst wird dabei als DIESELBE

@@ -313,6 +313,8 @@ export async function exportiereAusgabe(
     if (typeof nutzlast !== 'object' || nutzlast === null) {
       return fehlgeschlagen('ungueltige_eingabe', 'Der Export-Auftrag hat keine Nutzlast.')
     }
+    // SAFETY: die Zeile davor hat nutzlast als nicht-null Objekt belegt; der Cast macht
+    // die drei Felder als unknown sichtbar, und ihre Form wird darunter einzeln geprueft.
     const { projektId, dateiname, zielPfad } = nutzlast as {
       projektId?: unknown
       dateiname?: unknown

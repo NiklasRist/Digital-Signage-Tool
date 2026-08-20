@@ -129,6 +129,8 @@ export async function leseMarke(): Promise<Ergebnis<Marke>> {
  */
 function friereTief<T>(wert: T): T {
   if (typeof wert === 'object' && wert !== null) {
+    // SAFETY: die Bedingung hat wert als nicht-null Objekt belegt; der Cast macht die
+    // Index-Form sichtbar, und die Werte werden darunter einzeln weitergefroren.
     for (const feld of Object.values(wert as Record<string, unknown>)) {
       friereTief(feld)
     }

@@ -122,7 +122,12 @@ function alsAppKonfig(wert: unknown): AppKonfig | null {
   if (typeof wert !== 'object' || wert === null || Array.isArray(wert)) {
     return null
   }
+  // SAFETY: die Zeile davor hat wert als nicht-null, nicht-Array Objekt belegt; der Cast
+  // macht die Index-Form sichtbar, und jedes Feld wird darunter einzeln geprueft.
   const roh = wert as Record<string, unknown>
+  // SAFETY: die Objektform von roh ist davor belegt; die uiVoreinstellungen werden im
+  // ternaren Zweig als nicht-null, nicht-Array Objekt geprueft, bevor sie gecastet
+  // werden - der Cast benennt diese belegte Index-Form.
   return {
     aktivesProjektId: typeof roh['aktivesProjektId'] === 'string' ? roh['aktivesProjektId'] : null,
     letztesExportZiel: typeof roh['letztesExportZiel'] === 'string' ? roh['letztesExportZiel'] : null,
@@ -140,6 +145,8 @@ function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
   if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
     return false
   }
+  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
+  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
   const code = (ursache as { code?: unknown }).code
   return typeof code === 'string' && codes.includes(code)
 }
