@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #215.
 // [preview-player] Ein Bild-Element darstellen – contain auf Schwarz, Quelle über media://
 //
@@ -13,17 +12,8 @@
 // mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
 // stehen; ihr Nichtmehrstimmen IST das Signal.
 // GERUEST-PRUEFSUMME: 85bdcf14a2a40334
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+
+import { medienUrl as sharedMedienUrl } from '../../shared/medien-url';
 
 /**
  * Baut die Lese-URL einer Projektdatei: `media://<projektId>/<dateiname>`.
@@ -31,7 +21,5 @@
  * Total: wirft nie, prueft nichts, kennt keine Fehlercodes.
  */
 export function medienUrl(projektId: string, dateiname: string): string {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #215."
-  );
+  return sharedMedienUrl(projektId, dateiname);
 }

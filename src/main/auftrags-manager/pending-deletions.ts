@@ -208,9 +208,9 @@ function pruefeEingaben(
   return null
 }
 
-function istGefuellterText(wert: unknown): wert is string {
-  return typeof wert === 'string' && wert.length > 0
-}
+import { istGefuellterText } from "../ipc-gateway/nutzlast-pruefer"
+
+// function istGefuellterText removed – imported from common location
 
 function text(ursache: unknown): string {
   return ursache instanceof Error ? ursache.message : String(ursache)

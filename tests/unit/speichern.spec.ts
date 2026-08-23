@@ -154,8 +154,8 @@ describe("ueberarbeiteVorlage", () => {
     const s = sitzung();
     const sichtNeuLaden = vi.fn().mockResolvedValue(undefined);
     await ueberarbeiteVorlage(s, s.arbeitskopie, sichtNeuLaden);
-    const sicherStandRuf = attrappen.sichereStand.mock.invocationCallOrder[0];
-    const kanalRuf = attrappen.rufeAuf.mock.invocationCallOrder[0];
+    const sicherStandRuf = attrappen.sichereStand.mock.invocationCallOrder[0]!;
+    const kanalRuf = attrappen.rufeAuf.mock.invocationCallOrder[0]!;
     expect(sicherStandRuf).toBeLessThan(kanalRuf);
   });
 
@@ -182,8 +182,8 @@ describe("ueberarbeiteVorlage", () => {
     const sichtNeuLaden = vi.fn().mockResolvedValue(undefined);
     await ueberarbeiteVorlage(s, s.arbeitskopie, sichtNeuLaden);
     expect(sichtNeuLaden).toHaveBeenCalledTimes(1);
-    expect(attrappen.rufeAuf.mock.invocationCallOrder[0]).toBeLessThan(
-      sichtNeuLaden.mock.invocationCallOrder[0],
+    expect(attrappen.rufeAuf.mock.invocationCallOrder[0]!).toBeLessThan(
+      sichtNeuLaden.mock.invocationCallOrder[0]!,
     );
   });
 
@@ -370,8 +370,8 @@ describe("alsNeueVorlage", () => {
     attrappen.rufeAuf.mockResolvedValue({ ok: true, wert: vorlage("ak-1", null) });
     const s = sitzung();
     await alsNeueVorlage(s, s.arbeitskopie, "Neu", vi.fn());
-    expect(attrappen.sichereStand.mock.invocationCallOrder[0]).toBeLessThan(
-      attrappen.rufeAuf.mock.invocationCallOrder[0],
+    expect(attrappen.sichereStand.mock.invocationCallOrder[0]!).toBeLessThan(
+      attrappen.rufeAuf.mock.invocationCallOrder[0]!,
     );
   });
 
@@ -382,8 +382,8 @@ describe("alsNeueVorlage", () => {
     const sichtNeuLaden = vi.fn().mockResolvedValue(undefined);
     await alsNeueVorlage(s, s.arbeitskopie, "Neu", sichtNeuLaden);
     expect(sichtNeuLaden).toHaveBeenCalledTimes(1);
-    expect(attrappen.rufeAuf.mock.invocationCallOrder[0]).toBeLessThan(
-      sichtNeuLaden.mock.invocationCallOrder[0],
+    expect(attrappen.rufeAuf.mock.invocationCallOrder[0]!).toBeLessThan(
+      sichtNeuLaden.mock.invocationCallOrder[0]!,
     );
   });
 });

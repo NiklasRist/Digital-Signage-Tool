@@ -122,7 +122,7 @@ describe("uebernimmAenderung", () => {
     halter.uebernimmAenderung(neu);
 
     expect(zurZeitDesAufrufs).toBe(alt);
-    expect(zurZeitDesAufrufs?.arbeitskopie).toBe(alt.arbeitskopie);
+    expect((zurZeitDesAufrufs as EditorSitzung | null)?.arbeitskopie).toBe(alt.arbeitskopie);
   });
 
   it("Der abgelegte Schnappschuss ist toBe-gleich zu sitzung.arbeitskopie - es wird nicht kopiert", () => {

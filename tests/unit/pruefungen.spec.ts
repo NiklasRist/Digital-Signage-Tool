@@ -327,11 +327,11 @@ describe("sicherheitsabstand (Warnung)", () => {
       feste({ id: "hintergrund", rolle: "fest", bindung: null, rahmen: { x: 0, y: 0, breite: 1920, höhe: 162 }, ausrichtung: { horizontal: "links", vertikal: "oben" }, wennLeer: "leer", deko: { füllungFarbRolle: DUNKEL } }),
       { id: "titel", rolle: "frei", bindung: "titel", rahmen: { x: 96, y: 100, breite: 900, höhe: 40 }, ausrichtung: { horizontal: "links", vertikal: "mitte" }, wennLeer: "leer", text: text(PLAKATIV, TEXT_DUNKEL, 48, 32, 1) },
     ]);
-    const befunde = pruefeVorlage(vorlage, [vorlage.zonen[0]]);
+    const befunde = pruefeVorlage(vorlage, [vorlage.zonen[0]!]);
     const warnung = befunde.filter((b) => b.code === "sicherheitsabstand");
     expect(warnung).toHaveLength(1);
-    expect(warnung[0].schwere).toBe("warnung");
-    expect(warnung[0].zonenId).toBe("titel");
+    expect(warnung[0]!.schwere).toBe("warnung");
+    expect(warnung[0]!.zonenId).toBe("titel");
     expect(istSpeicherbar(befunde)).toBe(true);
   });
 
@@ -399,8 +399,8 @@ describe("Geradzahligkeit der Bandhoehe (Sperre)", () => {
     const vorlage: Vorlage = { id: "b", name: "B", art: "split", höhe: 161, parent: null, eingebaut: false, zonen: innen() };
     const befunde = pruefeVorlage(vorlage, []);
     expect(befunde).toHaveLength(1);
-    expect(befunde[0].code).toBe("bandhoehe_ungueltig");
-    expect(befunde[0].zonenId).toBeNull();
+    expect(befunde[0]!.code).toBe("bandhoehe_ungueltig");
+    expect(befunde[0]!.zonenId).toBeNull();
     expect(vorlage.höhe).toBe(161);
   });
 
@@ -479,7 +479,7 @@ describe("feste_zone_veraendert (Sperre)", () => {
         { ...feste({ id: "logo", rolle: "fest", bindung: "logo", rahmen: { x: 96, y: 54, breite: 420, höhe: 120 }, ausrichtung: { horizontal: "links", vertikal: "mitte" }, wennLeer: "leer", bild: bild("contain") }), rahmen: { x: 100, y: 54, breite: 420, höhe: 120 } },
       ],
     };
-    const soll = [{ id: "logo", rolle: "fest", bindung: "logo", rahmen: { x: 96, y: 54, breite: 420, höhe: 120 }, ausrichtung: { horizontal: "links", vertikal: "mitte" }, wennLeer: "leer", bild: bild("contain") }];
+    const soll: Zone[] = [{ id: "logo", rolle: "fest", bindung: "logo", rahmen: { x: 96, y: 54, breite: 420, höhe: 120 }, ausrichtung: { horizontal: "links", vertikal: "mitte" }, wennLeer: "leer", bild: bild("contain") }];
     const befunde = pruefeVorlage(vorlage, soll);
     expect(befunde).toHaveLength(1);
     expect(befunde[0]).toMatchObject({ code: "feste_zone_veraendert", schwere: "sperre", zonenId: "logo" });
@@ -495,7 +495,7 @@ describe("feste_zone_veraendert (Sperre)", () => {
       eingebaut: false,
       zonen: [],
     };
-    const soll = [{ id: "logo", rolle: "fest", bindung: "logo", rahmen: { x: 96, y: 54, breite: 420, höhe: 120 }, ausrichtung: { horizontal: "links", vertikal: "mitte" }, wennLeer: "leer", bild: bild("contain") }];
+    const soll: Zone[] = [{ id: "logo", rolle: "fest", bindung: "logo", rahmen: { x: 96, y: 54, breite: 420, höhe: 120 }, ausrichtung: { horizontal: "links", vertikal: "mitte" }, wennLeer: "leer", bild: bild("contain") }];
     const befunde = pruefeVorlage(vorlage, soll);
     expect(befunde).toHaveLength(1);
     expect(befunde[0]).toMatchObject({ code: "feste_zone_veraendert", schwere: "sperre", zonenId: "logo" });
@@ -516,7 +516,7 @@ describe("feste_zone_veraendert (Sperre)", () => {
     const befunde = pruefeVorlage(vorlage, [a, b]);
     const sperren = befunde.filter((f) => f.code === "feste_zone_veraendert");
     expect(sperren.length).toBeGreaterThan(0);
-    expect(sperren[0].schwere).toBe("sperre");
+    expect(sperren[0]!.schwere).toBe("sperre");
   });
 });
 

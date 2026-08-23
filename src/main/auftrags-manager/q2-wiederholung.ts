@@ -438,9 +438,9 @@ function pruefeQ2Form(wert: unknown, projektId: string): Ergebnis<Q2Datei, Queue
   }
 }
 
-function istGefuellterText(wert: unknown): wert is string {
-  return typeof wert === 'string' && wert.length > 0
-}
+import { istGefuellterText } from "../ipc-gateway/nutzlast-pruefer"
+
+// function istGefuellterText removed – imported from common location
 
 /**
  * "auftrag fehlt auftragId oder ist kein gueltiger Auftrag" - hier gelesen als: ein Objekt mit

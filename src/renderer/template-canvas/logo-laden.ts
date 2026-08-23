@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #119.
 // [template-canvas] Das gebündelte Marken-Logo laden und bereitstellen
 //
@@ -29,10 +28,34 @@ import type { Marke } from '../../shared/contracts/marke'
 import type { Motiv } from './bild-laden'
 
 export async function bereiteLogoVor(marke: Marke): Promise<void> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #119."
-  );
+  // Programmierfehler: leere Datei
+  if (typeof marke !== 'object' || marke === null || !marke.logo || typeof marke.logo.datei !== 'string' || marke.logo.datei.trim() === '') {
+    throw new Error('marke.logo.datei muss eine nicht leere Zeichenkette sein.')
+  }
+
+  // Idempotenz: merke das EINE Promise
+  if (logoPromise === undefined) {
+    logoPromise = (async () => {
+      const bild = new Image()
+      bild.src = `assets/${marke.logo.datei}`
+
+      try {
+        await bild.decode()
+        logoBestand = {
+          zustand: 'geladen',
+          bild,
+          breite: bild.naturalWidth,
+          höhe: bild.naturalHeight,
+        }
+      } catch {
+        logoBestand = { zustand: 'fehlt' }
+      }
+    })()
+  }
+
+  await logoPromise
 }
+
 // Lädt marke.logo.datei aus dem Bundle des Renderers, dekodiert es mit await img.decode() und legt
 // das Ergebnis im Modul-Bestand ab. Idempotent: merkt sich das EINE Promise und gibt es bei jedem
 // weiteren Aufruf unverändert zurück; ein abgelehntes Promise wird NICHT gemerkt.
@@ -40,9 +63,10 @@ export async function bereiteLogoVor(marke: Marke): Promise<void> {
 // Bestand. Geworfen wird nur bei einem leeren marke.logo.datei (Programmierfehler).
 
 export function holeLogo(): Motiv {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #119."
-  );
+  return logoBestand ?? { zustand: 'fehlt' }
 }
 // SYNCHRON, ohne Parameter. Liest ausschließlich den Bestand – lädt nichts, wartet auf nichts,
 // erzeugt kein Image. Vor der ersten erfolgreichen Vorbereitung: { zustand: 'fehlt' }.
+
+let logoPromise: Promise<void> | undefined
+let logoBestand: Motiv | undefined

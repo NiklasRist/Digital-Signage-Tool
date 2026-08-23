@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #155.
 // [vorlagen-editor] Vorlagen-Übersicht
 //
@@ -26,7 +25,7 @@
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import type { Vorlage, VorlagenArt, Vorlagennutzung } from '../../shared/contracts/vorlage'
+import type { Vorlage, VorlagenArt } from '../../shared/contracts/vorlage'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { starteBearbeitung, type EditorSitzung } from './arbeitskopie'
@@ -34,6 +33,12 @@ import {
   holeNutzung, LEERER_NUTZUNGSSTAND, beginneLaden, uebernimmNutzung, uebernimmFehler, giltFuer,
   type Nutzungsstand,
 } from './nutzung-anzeigen'
+
+// Zustandsverwaltung
+let aktuelleUebersicht: VorlagenUebersicht | null = null
+let loeschNutzungsstand: Nutzungsstand = LEERER_NUTZUNGSSTAND
+const uebersichtHoerer: Array<(u: VorlagenUebersicht) => void> = []
+const loeschNutzungHoerer: Array<(stand: Nutzungsstand) => void> = []
 
 /** Eine nutzbare Vorlage mit allem, was die Übersicht über sie anzeigt. */
 export interface UebersichtsEintrag {
@@ -50,31 +55,71 @@ export interface VorlagenUebersicht {
 }
 
 /** Die Kombinationen aus `art` und `höhe`, die der Main heute anlegen kann (s. STOPP). */
-export const ANLEGBARE_ARTEN: ReadonlyArray<{ art: VorlagenArt; höhe: number | null }> = (() => {
-  throw new Error(
-    "Noch nicht umgesetzt - Wert gehoert zu Issue #155."
-  );
-})();
+export const ANLEGBARE_ARTEN: ReadonlyArray<{ art: VorlagenArt; höhe: number | null }> = [
+  { art: 'vollflaeche', höhe: null },
+  { art: 'split', höhe: 162 },
+] as const;
 
 /** Lädt beide Listen und macht sie zur gemeinsamen Vorlagen-Sicht. */
 export async function ladeUebersicht(): Promise<Ergebnis<VorlagenUebersicht, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  const ergebnis1 = await rufeAuf<Vorlage[]>(
+    KANAELE.vorlagen.listeVorlagen,
+  )
+  if ('fehler' in ergebnis1) {
+    return ergebnis1
+  }
+  const nutzbareVorlagen = ergebnis1.wert
+
+  const ergebnis2 = await rufeAuf<Vorlage[]>(
+    KANAELE.vorlagen.listeArbeitskopien,
+  )
+  if ('fehler' in ergebnis2) {
+    return ergebnis2
+  }
+  const arbeitskopien = ergebnis2.wert
+
+  // Nutzbare Einträge zusammenbauen
+  const nutzbare: UebersichtsEintrag[] = nutzbareVorlagen.map((v) => ({
+    vorlage: v,
+    eingebaut: v.eingebaut,
+    arbeitskopieId: arbeitskopien.find((ak) => ak.parent === v.id)?.id ?? null,
+    loeschbar: !v.eingebaut,
+  }))
+
+  // Verwaiste Arbeitskopien finden (parent zeigt auf keine nutzbare Vorlage)
+  const nutzbareIds = new Set(nutzbareVorlagen.map((v) => v.id))
+  const verwaisteArbeitskopien: Vorlage[] = arbeitskopien.filter(
+    (ak) => ak.parent !== null && !nutzbareIds.has(ak.parent),
+  )
+
+  aktuelleUebersicht = { nutzbare, verwaisteArbeitskopien }
+
+  // Alle Hörer benachrichtigen
+  const uebersicht = aktuelleUebersicht
+  if (uebersicht) {
+    uebersichtHoerer.forEach((hoerer) => hoerer(uebersicht))
+  }
+
+  return { ok: true, wert: aktuelleUebersicht }
 }
 
 /** Momentaufnahme der Sicht; null, solange nie geladen wurde. Wird NIE verändert. */
 export function holeUebersicht(): VorlagenUebersicht | null {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  return aktuelleUebersicht
 }
 
 /** Abonnement für Änderungen der Sicht; Rückgabewert ist die Abmelde-Funktion. */
 export function aufUebersichtGeaendert(hoerer: (u: VorlagenUebersicht) => void): () => void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  if (!aktuelleUebersicht) {
+    aktuelleUebersicht = { nutzbare: [], verwaisteArbeitskopien: [] }
+  }
+  uebersichtHoerer.push(hoerer)
+  return () => {
+    const index = uebersichtHoerer.indexOf(hoerer)
+    if (index !== -1) {
+      uebersichtHoerer.splice(index, 1)
+    }
+  }
 }
 
 /** „Neu anlegen": erstellt die Vorlage und öffnet sie sofort zur Bearbeitung. */
@@ -83,27 +128,50 @@ export async function legeVorlageAn(
   höhe: number | null,
   name: string,
 ): Promise<Ergebnis<EditorSitzung, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  // Prüfung ob (art, höhe) in ANLEGBARE_ARTEN steht
+  const istAnlegbar = ANLEGBARE_ARTEN.some((a) => a.art === art && a.höhe === höhe)
+  if (!istAnlegbar) {
+    return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: `Nicht anlegbare Kombination: art=${art}, höhe=${höhe}` } }
+  }
+
+  // Prüfung name nicht leer nach trim()
+  const getrimmterName = name.trim()
+  if (getrimmterName === '') {
+    return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: 'Name darf nicht leer sein' } }
+  }
+
+  const ergebnis = await rufeAuf<Vorlage>(
+    KANAELE.vorlagen.erstelleVorlage,
+    { art, höhe, name: getrimmterName },
+  )
+  if ('fehler' in ergebnis) {
+    return ergebnis
+  }
+
+  // Startet sofort die Bearbeitung mit der neuen Vorlage
+  return starteBearbeitung(ergebnis.wert.id)
 }
 
 /** „Bearbeiten": öffnet eine NUTZBARE Vorlage (parent === null). */
 export async function bearbeiteVorlage(
   vorlagenId: string,
 ): Promise<Ergebnis<EditorSitzung, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  if (vorlagenId === '') {
+    return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: 'Vorlagen-ID darf nicht leer sein' } }
+  }
+
+  return starteBearbeitung(vorlagenId)
 }
 
 /** „Fortsetzen": setzt die Bearbeitung über den PARENT der Arbeitskopie fort. */
 export async function setzeBearbeitungFort(
   arbeitskopie: Vorlage,
 ): Promise<Ergebnis<EditorSitzung, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  if (arbeitskopie.parent === null) {
+    return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: 'Ist keine Arbeitskopie (parent === null)' } }
+  }
+
+  return starteBearbeitung(arbeitskopie.parent)
 }
 
 /**
@@ -113,23 +181,41 @@ export async function setzeBearbeitungFort(
  * Total: wirft nie; ein Fehler landet als `zustand: 'fehler'` im Stand (s. ENTSCHIEDEN 8).
  */
 export async function starteLoeschbestaetigung(vorlagenId: string): Promise<void> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  // Prüfung: Stand bereits geladen für dieselbe Vorlage?
+  if (giltFuer(loeschNutzungsstand, vorlagenId) && loeschNutzungsstand.zustand === 'geladen') {
+    return
+  }
+
+  // Neuen Stand initialisieren und Hörer benachrichtigen
+  loeschNutzungsstand = beginneLaden(loeschNutzungsstand, vorlagenId)
+  loeschNutzungHoerer.forEach((hoerer) => hoerer(loeschNutzungsstand))
+
+  // Nutzung holen
+  const ergebnis = await holeNutzung(vorlagenId)
+
+  if (ergebnis.ok === true) {
+    loeschNutzungsstand = uebernimmNutzung(loeschNutzungsstand, vorlagenId, ergebnis.wert)
+  } else {
+    loeschNutzungsstand = uebernimmFehler(loeschNutzungsstand, vorlagenId, ergebnis.fehler.code, ergebnis.fehler.meldung)
+  }
+
+  loeschNutzungHoerer.forEach((hoerer) => hoerer(loeschNutzungsstand))
 }
 
 /** Momentaufnahme des Loesch-Nutzungsstandes. Der zurueckgegebene Wert wird NIE veraendert. */
 export function holeLoeschNutzung(): Nutzungsstand {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  return loeschNutzungsstand
 }
 
 /** Abonnement fuer Aenderungen des Loesch-Nutzungsstandes; Rueckgabe ist die Abmelde-Funktion. */
 export function aufLoeschNutzungGeaendert(hoerer: (stand: Nutzungsstand) => void): () => void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  loeschNutzungHoerer.push(hoerer)
+  return () => {
+    const index = loeschNutzungHoerer.indexOf(hoerer)
+    if (index !== -1) {
+      loeschNutzungHoerer.splice(index, 1)
+    }
+  }
 }
 
 /**
@@ -137,9 +223,8 @@ export function aufLoeschNutzungGeaendert(hoerer: (stand: Nutzungsstand) => void
  * `LEERER_NUTZUNGSSTAND` zurueck. Ohne laufende Bestaetigung wirkungslos; wirft nie.
  */
 export function beendeLoeschbestaetigung(): void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  loeschNutzungsstand = LEERER_NUTZUNGSSTAND
+  loeschNutzungHoerer.forEach((hoerer) => hoerer(loeschNutzungsstand))
 }
 
 /**
@@ -151,7 +236,15 @@ export function beendeLoeschbestaetigung(): void {
 export async function entferneVorlage(
   vorlagenId: string,
 ): Promise<Ergebnis<void, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #155."
-  );
+  // Es gibt keine Vorprüfung auf die Arbeitskopie hier, weil die Sperre im vorlagen-store sitzt
+  const ergebnis = await rufeAuf<void>(
+    KANAELE.vorlagen.löscheVorlage,
+    { id: vorlagenId },
+  )
+
+  if ('fehler' in ergebnis) {
+    return ergebnis
+  }
+
+  return { ok: true, wert: undefined }
 }

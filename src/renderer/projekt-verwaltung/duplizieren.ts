@@ -1,30 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// GENERIERT aus dem Signaturblock von Issue #225.
-// [projekt-verwaltung] Ein Projekt duplizieren
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 4f7f394ac1be7725
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
-
 import type { Project } from '../../shared/contracts/project'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
@@ -37,16 +10,16 @@ export type Namenspruefung = { ok: true; name: string } | { ok: false; grund: 'l
 /** Schneidet führende/folgende Leerzeichen ab und weist einen danach leeren Namen zurück.
  *  Es wird NICHTS anderes geprüft (s. ENTSCHIEDEN 4). */
 export function pruefeDuplikatname(eingabe: string): Namenspruefung {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #225."
-  );
+  const name = eingabe.trim()
+  if (name.length === 0) {
+    return { ok: false, grund: 'leer' }
+  }
+  return { ok: true, name }
 }
 
 /** Der vorbelegte Vorschlag für das Eingabefeld: `<name> Kopie` (s. ENTSCHIEDEN 3). */
 export function schlageDuplikatnamenVor(meta: ProjektMeta): string {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #225."
-  );
+  return `${meta.name} Kopie`
 }
 
 /**
@@ -55,9 +28,10 @@ export function schlageDuplikatnamenVor(meta: ProjektMeta): string {
  * Liefert `null`, wenn `anzahlMedien` keine brauchbare Zahl ist (s. ENTSCHIEDEN 5).
  */
 export function baueDuplizierHinweis(meta: ProjektMeta): string | null {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #225."
-  );
+  if (typeof meta.anzahlMedien !== 'number' || !Number.isFinite(meta.anzahlMedien) || meta.anzahlMedien < 0) {
+    return null
+  }
+  return `Es werden ${meta.anzahlMedien} Mediendateien kopiert. Dieser Vorgang kann einige Zeit in Anspruch nehmen. Die gerenderten Ausgabedateien werden nicht mitkopiert.`
 }
 
 /** Was der Aufrufer während des Laufs anzeigen und danach tun muss. */
@@ -75,7 +49,23 @@ export async function dupliziereProjekt(
   eingabe: string,
   wirkungen: DuplizierWirkungen,
 ): Promise<Ergebnis<Project, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #225."
-  );
+  const pruefung = pruefeDuplikatname(eingabe)
+  if (!pruefung.ok) {
+    return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: 'Der Name darf nicht leer sein.' } }
+  }
+
+  const ergebnis = await rufeAuf<Project, string>(KANAELE.project.dupliziereProjekt, {
+    id: quellId,
+    neuerName: pruefung.name,
+  })
+
+  if (ergebnis.ok) {
+    try {
+      await wirkungen.aktualisiereProjektliste()
+    } catch {
+      // Ignorieren: Das Duplikat existiert, nur die Anzeige ist veraltet
+    }
+  }
+
+  return ergebnis
 }

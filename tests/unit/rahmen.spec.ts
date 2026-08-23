@@ -22,6 +22,7 @@ import {
   type RahmenEigenschaften,
   type ReiterInhalt,
 } from '../../src/renderer/app-shell/rahmen'
+import type { ReiterId } from '../../src/renderer/app-shell/reiter'
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.
 // Vitest mit jsdom erkennt es nicht automatisch - also hier setzen.

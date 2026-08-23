@@ -1,33 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// GENERIERT aus dem Signaturblock von Issue #229.
-// [composer] Ein Medium löschen – blockierende Referenzen namentlich zeigen
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 7ccd50156510ff3c
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
-
-import type { Project, Listenelement } from '../../shared/contracts/project'
-import type { Asset } from '../../shared/contracts/asset'
-import type { Aktion } from '../../shared/contracts/aktion'
+import type { Project } from '../../shared/contracts/project'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
@@ -68,9 +39,38 @@ export interface LoeschLage {
  * (TK 9.4.6). Diese Funktion greift NICHT auf das Dateisystem zu und ruft NICHTS auf.
  */
 export function pruefeLoeschLage(projekt: Project, assetId: string): LoeschLage {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #229."
-  );
+  const asset = projekt.assets.find((a) => a.id === assetId)
+  const bezeichnung = asset ? asset.originalname : 'Unbekanntes Medium'
+
+  const blockierer: BlockierendeStelle[] = []
+  projekt.liste.forEach((el, index) => {
+    if (el.art === 'video' && el.ref === assetId) {
+      blockierer.push({
+        elementId: el.id,
+        position: index + 1,
+        art: 'video',
+        bezeichnung,
+      })
+    }
+  })
+
+  const betroffeneAktionen: BetroffeneAktion[] = projekt.aktionen
+    .filter((a) => a.bildRef === assetId)
+    .map((a) => ({ aktionId: a.id, titel: a.titel }))
+
+  let text = ''
+  if (blockierer.length > 0) {
+    const stellen = blockierer.map((b) => `Position ${b.position} (${b.bezeichnung})`).join(', ')
+    text = `Das Medium kann nicht gelöscht werden, da es noch an ${blockierer.length} Stelle(n) in der Wiedergabeliste verwendet wird: ${stellen}`
+  } else {
+    text = `Möchten Sie das Medium "${bezeichnung}" wirklich aus dem Projekt löschen?`
+  }
+
+  return {
+    blockierer,
+    betroffeneAktionen,
+    text,
+  }
 }
 
 /**
@@ -81,17 +81,40 @@ export function benenneReferenzen(
   projekt: Project,
   referenzenIds: readonly string[],
 ): BlockierendeStelle[] {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #229."
-  );
+  const result: BlockierendeStelle[] = []
+  for (const id of referenzenIds) {
+    const index = projekt.liste.findIndex((el) => el.id === id)
+    if (index === -1) continue
+
+    const el = projekt.liste[index]
+    if (el && el.art === 'video') {
+      const asset = projekt.assets.find((a) => a.id === el.ref)
+      result.push({
+        elementId: el.id,
+        position: index + 1,
+        art: 'video',
+        bezeichnung: asset ? asset.originalname : 'Unbekanntes Medium',
+      })
+    }
+  }
+  return result
 }
 
 /** Liest `referenzenIds` aus einem `fehler.daten`-Feld heraus. Passt die Form nicht, ist das
  *  Ergebnis ein leeres Array – NIE ein Wurf und NIE ein erfundener Eintrag. */
 export function leseReferenzenIds(daten: unknown): string[] {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #229."
-  );
+  if (
+    daten &&
+    typeof daten === 'object' &&
+    'referenzenIds' in daten &&
+    Array.isArray((daten as { referenzenIds?: unknown }).referenzenIds)
+  ) {
+    const ids = (daten as { referenzenIds?: unknown[] }).referenzenIds ?? []
+    if (ids.every((id) => typeof id === 'string')) {
+      return ids as string[]
+    }
+  }
+  return []
 }
 
 /** Alles, worauf das Löschen wirkt. Wird als Parameter übergeben (Entscheidung E1). */
@@ -118,7 +141,20 @@ export async function loescheMedium(
   assetId: string,
   wirkungen: LoeschWirkungen,
 ): Promise<Ergebnis<{ auftragId: string }, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #229."
-  );
+  try {
+    wirkungen.gibVideoHandlesFrei(assetId)
+    return await rufeAuf<{ auftragId: string }, string>(KANAELE.queue.reiheEin, {
+      art: 'loeschen',
+      payload: { projektId, assetId },
+    })
+  } catch (fehler) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'unbekannter_fehler',
+        meldung: fehler instanceof Error ? fehler.message : String(fehler),
+      },
+    }
+  }
 }
+

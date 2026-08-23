@@ -185,7 +185,7 @@ describe("macheVorlageRueckgaengig", () => {
     // Rueckgaengig: der urspruengliche Stand wird ueber sichereStand zur neuen Sitzung.
     const ergebnis = await macheVorlageRueckgaengig(u.zugang);
     expect(ergebnis).toEqual({ ok: true, wert: { art: "angewendet", sitzung: expect.anything() } });
-    if (ergebnis.ok) {
+    if (ergebnis.ok && ergebnis.wert.art === "angewendet") {
       expect(ergebnis.wert.sitzung.arbeitskopie).toBe(urspruenglich);
     }
 
@@ -193,7 +193,7 @@ describe("macheVorlageRueckgaengig", () => {
     u.holeSitzung.mockReturnValue(sitzung({ arbeitskopie: urspruenglich }));
     const wieder = await stelleVorlageWiederHer(u.zugang);
     expect(wieder.ok).toBe(true);
-    if (wieder.ok) {
+    if (wieder.ok && wieder.wert.art === "angewendet") {
       expect(wieder.wert.sitzung.arbeitskopie).toBe(geaendert);
     }
   });

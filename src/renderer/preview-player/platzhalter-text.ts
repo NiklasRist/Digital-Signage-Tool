@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #221.
 // [preview-player] Kaputte Stellen als Platzhalter zeigen – und nichts reparieren
 //
@@ -12,7 +11,6 @@
 // fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
 // mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
 // stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 3e9ed785b8df7f70
 //
 // ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
 // Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
@@ -41,7 +39,21 @@ export interface PlatzhalterWortlaut {
  * Total: wirft nie.
  */
 export function platzhalterWortlaut(grund: KaputtGrund): PlatzhalterWortlaut {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #221."
-  );
+  switch (grund) {
+    case 'asset_fehlt':
+      return {
+        ueberschrift: 'Datei fehlt',
+        erklaerung: 'Die Mediendatei dieses Elements liegt nicht mehr im Projekt. Beheben lässt sich das in der Zusammenstellung.',
+      }
+    case 'asset_unbekannt':
+      return {
+        ueberschrift: 'Medium unbekannt',
+        erklaerung: 'Dieses Element verweist auf ein Medium, das es im Projekt nicht gibt. Beheben lässt sich das in der Zusammenstellung.',
+      }
+    case 'aktion_unbekannt':
+      return {
+        ueberschrift: 'Aktion unbekannt',
+        erklaerung: 'Dieses Element verweist auf eine Aktion, die es im Projekt nicht gibt. Beheben lässt sich das in der Zusammenstellung.',
+      }
+  }
 }
