@@ -9,7 +9,7 @@
 // echten Rumpf hat - nachgeschlagen in der jeweils definierenden Datei, nicht im Issue:
 //   - die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4)
 //   - Schritt 5, Positionen 1 (#76), 2 (#153), 4 (#77), 5 (#93), 6 (#92), 7 (#109),
-//     9 (#189) und 10 (#190)
+//     9 (#189), 10 (#190) und 11 (#334)
 //   - Schritt 7, Positionen 1 (#71) und 2 (#191)
 //   - Schritt 8 (#172)
 //   - beide Beenden-Funktionen (#47, #98)
@@ -45,6 +45,7 @@ import {
 import { verdrahteConfigStoreIPC } from "./ipc-gateway/config-store-verdrahtung";
 import { verdrahteExportUndFortschrittIPC } from "./ipc-gateway/export-verdrahtung";
 import { verdrahteProjectStoreNachtragIPC } from "./ipc-gateway/project-store-nachtrag";
+import { verdrahteProjectStoreNachtrag4IPC } from "./ipc-gateway/project-store-nachtrag-4";
 import { verdrahteProjectStoreIPC } from "./ipc-gateway/project-store-verdrahtung";
 import {
   registriereMediaProtokollHandlerStub,
@@ -242,14 +243,17 @@ registriereMediaProtokollSchema();
 
 // SCHRITT 2: erzwingeEinzelInstanz(datenOrt, beiZweitemStart) - #51,
 //            src/main/project-store/einzel-instanz.ts
-// LUECKE. Signatur (fremder Vertrag, #51):
+// LUECKE. Signatur (fremder Vertrag, #51; StartBefund entschieden v3.20):
+//   export type StartBefund = 'frei' | 'belegt' | 'datenort_nicht_beschreibbar'
 //   export function erzwingeEinzelInstanz(
 //     datenOrt: string,
 //     beiZweitemStart: () => void,
-//   ): boolean
+//   ): StartBefund
 // Muss VOR dem Erzeugen des Fensters laufen, damit ein Zweitstart gar nicht erst
-// anmeldet. Rueckgabe false = eine andere Instanz haelt die Sperre fuer DIESEN
-// Datenort: dann sofort app.quit() und KEIN Fenster erzeugen. `beiZweitemStart` ist
+// anmeldet. Rueckgabe 'belegt' = eine andere Instanz haelt die Sperre fuer DIESEN
+// Datenort: dann sofort app.quit() und KEIN Fenster erzeugen. Rueckgabe
+// 'datenort_nicht_beschreibbar' = der Main zeigt den Startdialog "Erneut versuchen"
+// / "Beenden" mit generischem Text (TK 9.5.4, v3.20). `beiZweitemStart` ist
 // der Rueckruf, der das bestehende Fenster fokussiert - er wird von HIER uebergeben,
 // weil diese Datei das Fenster besitzt. `datenOrt` kommt aus ermittleDatenOrt() (#5),
 // das es ebenfalls noch nicht gibt; eine zweite, eigene Berechnung des Datenorts ist
@@ -285,9 +289,9 @@ void app.whenReady().then(async () => {
 
   setzeCspHeader();
 
-  // SCHRITT 5: die ZEHN Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
+  // SCHRITT 5: die ELF Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
   // Sie stehen vor erstelleHauptfenster(), weil keine von ihnen ein Fenster braucht.
-  // Verdrahtet sind die Positionen 1, 2, 4, 5, 6, 9 und 10; die uebrigen DREI (3, 7
+  // Verdrahtet sind die Positionen 1, 2, 4, 5, 6, 9, 10 und 11; die uebrigen DREI (3, 7
   // und 8) sind LUECKEN - kein Ersatzaufruf, keine von Hand gebaute
   // ipcMain.handle-Registrierung, kein eigener Kanalname.
   //
@@ -358,6 +362,12 @@ void app.whenReady().then(async () => {
   //     laufender Kopiervorgang auf ein Wechselmedium wird nicht mittendrin
   //     abgebrochen. Kein IPC-Kanal, deshalb kein Fenster noetig.
   meldeExportHandlerAn();
+
+  // 11. verdrahteProjectStoreNachtrag4IPC() - #334,
+  //     src/main/ipc-gateway/project-store-nachtrag-4.ts. Meldet GENAU EINEN Kanal an
+  //     (project:setzeStandardSegmentdauer). Derselbe Namensraum `project:` wie die
+  //     Positionen 1 bis 3 - doppelte Registrierung faellt sofort auf.
+  verdrahteProjectStoreNachtrag4IPC();
 
   // SCHRITT 6: Fenster erzeugen und Inhalt laden.
   const fenster = erstelleHauptfenster();
