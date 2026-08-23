@@ -86,11 +86,16 @@ const ENTPRELLUNG_MS = 250
 /**
  * Die Datei-Konstanten als nachschlagbare Tabelle.
  *
- * Warum nicht direkt `fs.constants.O_EXLOCK`: Diese Konstante gibt es nur auf
- * BSD/macOS. @types/node deklariert sie deshalb gar nicht - der direkte Zugriff waere
- * ein Typfehler -, und zur Laufzeit ist sie auf Linux `undefined`, wo `flags |
- * undefined` still mit 0 weiterrechnet: Die Sperre waere wirkungslos, ohne dass
- * irgendwo etwas auffaellt. Ueber die Tabelle ist das Fehlen ein pruefbarer Wert.
+ * GEMESSEN (23.08.2026, macOS): `fs.constants.O_EXLOCK` ist AUCH UNTER macOS
+ * `undefined` - Node/libuv deklariert die BSD-Konstante nicht, entgegen der frueheren
+ * Annahme "gibt es nur auf BSD/macOS". Der direkte Zugriff liefert also ueberall
+ * `undefined`, und ohne Ausgleich faellt der macOS-Zweig in den Linux-Ausweg "frei":
+ * Die Sperre war dort WIRKUNGSLOS (zwei Tests roten, schlimmer: zwei echte Instanzen
+ * waeren durchgegangen). Der Wert 0x20 stammt aus dem SDK-Header
+ * <sys/fcntl.h> (`#define O_EXLOCK 0x00000020`) und ist NACHGE MESSEN: erster Open
+ * mit O_CREAT|O_RDWR|O_EXLOCK|O_NONBLOCK gelingt, zweiter scheitert mit EAGAIN,
+ * eine verwaiste Sperrdatei blockiert nicht. Auf Linux bleibt es bei `undefined`
+ * und damit beim gemeldeten "frei" - kein Auslieferungsziel.
  *
  * Die Umleitung ueber `unknown` ist Absicht: Sie sagt aus, dass hier bewusst an der
  * Deklaration vorbeigelesen wird, statt es hinter einer aufgehuebschten Zusicherung zu
@@ -99,7 +104,8 @@ const ENTPRELLUNG_MS = 250
 // SAFETY: der Cast macht die Konstanten-Tabelle als Index-Form lesbar; O_EXLOCK wird
   // unmittelbar darunter auf undefined geprueft, O_NONBLOCK faellt per ?? auf 0 zurueck.
 const KONSTANTEN = fs.constants as Record<string, number | undefined>
-const O_EXLOCK = KONSTANTEN['O_EXLOCK']
+const O_EXLOCK =
+  KONSTANTEN['O_EXLOCK'] ?? (process.platform === 'darwin' ? 0x0020 : undefined)
 const O_NONBLOCK = KONSTANTEN['O_NONBLOCK'] ?? 0
 
 /**

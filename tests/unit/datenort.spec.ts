@@ -54,9 +54,17 @@ describe("ermittleDatenOrt", () => {
   });
 
   it("faellt gepackt ohne PORTABLE_EXECUTABLE_DIR auf den Ordner der EXE zurueck", () => {
-    app.isPackaged = true;
-    app.getPath = () => "D:\\Programme\\Signage\\App.exe";
-    expect(ermittleDatenOrt()).toBe("D:\\Programme\\Signage");
+    // Windows-Fall (path.dirname der EXE) - ohne Festnageln der Plattform laeuft der
+    // Test auf macOS in den .app-Bundle-Zweig und rechnet "/" heraus (Befund 23.08.).
+    const echt = process.platform;
+    Object.defineProperty(process, "platform", { value: "win32" });
+    try {
+      app.isPackaged = true;
+      app.getPath = () => "D:\\Programme\\Signage\\App.exe";
+      expect(ermittleDatenOrt()).toBe("D:\\Programme\\Signage");
+    } finally {
+      Object.defineProperty(process, "platform", { value: echt });
+    }
   });
 
   it("nimmt auf macOS den Ordner, der das .app-Bundle enthaelt", () => {

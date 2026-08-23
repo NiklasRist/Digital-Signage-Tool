@@ -76,7 +76,10 @@ export function ermittleDatenOrt(): string {
     // Testfall unter Windows "C:\Volumes\Stick" statt "/Volumes/Stick" heraus.
     return path.posix.resolve(path.posix.dirname(exe), "..", "..", "..");
   }
-  return path.dirname(exe);
+  // Dieselbe Regel fuer Win32: `path.dirname` wuerde unter macOS/Linux aus einem
+  // Backslash-Pfad nur "." herausrechnen (Befund 23.08.2026). Mit `path.win32` bleibt
+  // der Zweig plattformunabhaengig und im Unit-Test pruefbar.
+  return path.win32.dirname(exe);
 }
 
 // NICHT HIER, UND VON KEINEM ISSUE ABGEDECKT - gemeldet:
