@@ -75,6 +75,7 @@ function projektMit(...elemente: Listenelement[]): Project {
     aktionen: [],
     liste: elemente,
     letzterAusgabeName: null,
+    standardMarkeId: "marke-test",
     // Pflichtfeld seit TK v3.18 (#334)
     standardSegmentdauer: 10,
   }

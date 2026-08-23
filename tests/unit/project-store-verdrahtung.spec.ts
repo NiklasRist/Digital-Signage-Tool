@@ -168,8 +168,13 @@ describe("verdrahteProjectStoreIPC (#76)", () => {
     await rufe(KANAELE.project.setzeDauer, { elementId: "e1", dauer: 12 });
     await rufe(KANAELE.project.listeAusgaben, { projektId: UUID });
 
-    // Getrimmt wird NICHT, nur geprueft - Fremdfelder reisen nicht mit.
-    expect(ops.erstelleProjekt).toHaveBeenCalledWith(" Sommer ");
+    // Getrimmt wird NICHT, nur geprueft - Fremdfelder reisen nicht mit. Die Marken-Kennung
+    // (#320/#328) holt der Handler selbst (leseMarke, #29) und reicht sie als ZWEITES
+    // Argument weiter; ihre ID ist eine UUID und wird hier nur auf die Form geprueft.
+    expect(ops.erstelleProjekt).toHaveBeenCalledWith(
+      " Sommer ",
+      expect.stringMatching(/^[0-9a-f-]{36}$/),
+    );
     expect(ops.dupliziereProjekt).toHaveBeenCalledWith("p1", "Kopie");
     expect(ops.löscheProjekt).toHaveBeenCalledWith("p1");
     expect(ops.löscheAktion).toHaveBeenCalledWith("a1");

@@ -96,6 +96,7 @@ function aktion(id: string): Aktion {
     cta: null,
     standardDauer: null,
     vorlagenId: 'vollbild',
+    markeId: "marke-test",
     akzentfarbe: null,
   }
 }

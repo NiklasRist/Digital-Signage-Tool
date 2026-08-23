@@ -33,11 +33,14 @@ export async function bereiteLogoVor(marke: Marke): Promise<void> {
     throw new Error('marke.logo.datei muss eine nicht leere Zeichenkette sein.')
   }
 
-  // Idempotenz: merke das EINE Promise
+  // Idempotenz: merke das EINE Promise. Das Logo ist in eine Konstante gezogen, weil die
+  // Vertragsaenderung (#320) `Marke.logo` nullbar macht und die Schliessung unten die
+  // Verengung aus der Pruefung oben nicht mehr sieht.
+  const logo = marke.logo
   if (logoPromise === undefined) {
     logoPromise = (async () => {
       const bild = new Image()
-      bild.src = `assets/${marke.logo.datei}`
+      bild.src = `assets/${logo.datei}`
 
       try {
         await bild.decode()

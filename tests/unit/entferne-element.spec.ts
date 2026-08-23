@@ -47,6 +47,7 @@ const AKTION: Aktion = {
   cta: null,
   standardDauer: null,
   vorlagenId: "vollbild",
+  markeId: "marke-test",
   akzentfarbe: null,
 };
 
@@ -61,6 +62,7 @@ function projekt(liste: Listenelement[]): Project {
     aktionen: [AKTION],
     liste,
     letzterAusgabeName: null,
+    standardMarkeId: "marke-test",
     // Pflichtfeld seit TK v3.18 (#334)
     standardSegmentdauer: 10,
   };

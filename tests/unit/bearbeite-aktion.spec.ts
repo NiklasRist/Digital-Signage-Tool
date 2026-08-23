@@ -31,6 +31,7 @@ function bestand(): Aktion {
     cta: "Jetzt anmelden",
     standardDauer: 15,
     vorlagenId: "vollbild",
+    markeId: "marke-test",
     akzentfarbe: "#FF4040",
   };
 }
@@ -46,6 +47,7 @@ function projekt(aktionen: Aktion[]): Project {
     aktionen,
     liste: [],
     letzterAusgabeName: null,
+    standardMarkeId: "marke-test",
     // Pflichtfeld seit TK v3.18 (#334)
     standardSegmentdauer: 10,
   };

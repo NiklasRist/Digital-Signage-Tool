@@ -32,6 +32,7 @@ function projekt(): Project {
     aktionen: [],
     liste: [],
     letzterAusgabeName: null,
+    standardMarkeId: "marke-test",
     // Pflichtfeld seit TK v3.18 (#334)
     standardSegmentdauer: 10,
   };
@@ -47,6 +48,7 @@ function entwurf(aenderungen: Partial<Omit<Aktion, "id">> = {}): Omit<Aktion, "i
     cta: null,
     standardDauer: 15,
     vorlagenId: "vollbild",
+    markeId: "marke-test",
     akzentfarbe: null,
     ...aenderungen,
   };
