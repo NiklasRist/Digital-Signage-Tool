@@ -57,6 +57,7 @@ function aktion(id: string, bildRef: string | null): Aktion {
     cta: null,
     standardDauer: null,
     vorlagenId: 'vollbild',
+    markeId: "marke-test",
     akzentfarbe: null,
   }
 }
@@ -88,6 +89,7 @@ function projekt(teile: Partial<Pick<Project, 'assets' | 'aktionen' | 'liste'>>)
     aktionen: teile.aktionen ?? [],
     liste: teile.liste ?? [],
     letzterAusgabeName: null,
+    standardMarkeId: "marke-test",
     // Pflichtfeld seit TK v3.18 (#334)
     standardSegmentdauer: 10,
   }

@@ -31,6 +31,7 @@ function aktion(id: string, standardDauer: number | null): Aktion {
     cta: null,
     standardDauer,
     vorlagenId: "v1",
+    markeId: "marke-test",
     akzentfarbe: null,
   };
 }
@@ -46,7 +47,8 @@ function projektMit(aktionen: Aktion[], standardSegmentdauer: number): Project {
     aktionen,
     liste: [],
     letzterAusgabeName: null,
-    standardSegmentdauer,
+    standardMarkeId: "marke-test",
+standardSegmentdauer,
   };
 }
 

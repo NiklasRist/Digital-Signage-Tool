@@ -68,18 +68,50 @@ const FARBEN: Record<FarbRolle, string> = {
 };
 
 const marke = (farben: Record<FarbRolle, string> = FARBEN): Marke => ({
+  id: "marke-test",
+  name: "Testmarke",
+  parent: null,
+  eingebaut: false,
   farben,
   schriften: {
-    headlineElegant: { familie: "Playfair Display", gewicht: 700, datei: "PlayfairDisplay-Bold.woff2" },
-    headlinePlakativ: { familie: "Archivo Black", gewicht: 900, datei: "ArchivoBlack-Regular.woff2" },
-    fliesstext: { familie: "Arimo", gewicht: 400, datei: "Arimo-Regular.woff2" },
-    fliesstextFett: { familie: "Arimo", gewicht: 700, datei: "Arimo-Bold.woff2" },
+    headlineElegant: { familie: "Playfair Display", gewicht: 700, datei: "PlayfairDisplay-Bold.woff2", herkunft: "gebuendelt" },
+    headlinePlakativ: { familie: "Archivo Black", gewicht: 900, datei: "ArchivoBlack-Regular.woff2", herkunft: "gebuendelt" },
+    fliesstext: { familie: "Arimo", gewicht: 400, datei: "Arimo-Regular.woff2", herkunft: "gebuendelt" },
+    fliesstextFett: { familie: "Arimo", gewicht: 700, datei: "Arimo-Bold.woff2", herkunft: "gebuendelt" },
   },
-  logo: { datei: "logo.png", seitenverhaeltnis: 3.5 },
+  logo: { datei: "logo.png", herkunft: "gebuendelt", seitenverhaeltnis: 3.5 },
   sicherheit: SICHERHEITSABSTAND_PX,
   radien: { pille: 40, karte: 10, klein: 2 },
   schatten: { versatzY: 4, weichzeichnen: 8, farbe: "#00000040" },
   slogan: { text: "", aktiv: false },
+  herkunftJeFeld: {
+    farben: {
+      akzent: "eigen",
+      akzentKraeftig: "eigen",
+      akzentTief: "eigen",
+      flaecheDunkel: "eigen",
+      flaecheSehrDunkel: "eigen",
+      flaecheHell: "eigen",
+      flaecheAkzentZart: "eigen",
+      textAufDunkel: "eigen",
+      textAufHell: "eigen",
+      textSekundaer: "eigen",
+      linie: "eigen",
+      scrimStart: "eigen",
+      scrimEnde: "eigen",
+    },
+    schriften: {
+      headlineElegant: "eigen",
+      headlinePlakativ: "eigen",
+      fliesstext: "eigen",
+      fliesstextFett: "eigen",
+    },
+    logo: "eigen",
+    sicherheit: "eigen",
+    radien: "eigen",
+    schatten: "eigen",
+    slogan: "eigen",
+  },
 });
 
 // Beide Text-Rollen hell: beide Kontraste gegen #FF4040 liegen unter 4,5 (3,47) –

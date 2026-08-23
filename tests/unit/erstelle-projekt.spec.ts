@@ -56,7 +56,7 @@ afterEach(async () => {
 
 describe("erstelleProjekt (#33)", () => {
   it("legt project.json und media/ an und liefert ein leeres Projekt", async () => {
-    const ergebnis = await erstelleProjekt("Studio Nord");
+    const ergebnis = await erstelleProjekt("Studio Nord", "marke-test");
 
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
@@ -78,7 +78,7 @@ describe("erstelleProjekt (#33)", () => {
   });
 
   it("weist einen leeren Namen ab und legt nichts an", async () => {
-    const ergebnis = await erstelleProjekt("   ");
+    const ergebnis = await erstelleProjekt("   ", "marke-test");
 
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
@@ -87,7 +87,7 @@ describe("erstelleProjekt (#33)", () => {
   });
 
   it("speichert den Anzeigenamen ohne Randleerzeichen", async () => {
-    const ergebnis = await erstelleProjekt("  Studio Nord  ");
+    const ergebnis = await erstelleProjekt("  Studio Nord  ", "marke-test");
 
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
@@ -95,8 +95,8 @@ describe("erstelleProjekt (#33)", () => {
   });
 
   it("gibt jedem Aufruf einen eigenen Ordner", async () => {
-    const eins = await erstelleProjekt("Studio Nord");
-    const zwei = await erstelleProjekt("Studio Nord");
+    const eins = await erstelleProjekt("Studio Nord", "marke-test");
+    const zwei = await erstelleProjekt("Studio Nord", "marke-test");
 
     expect(eins.ok && zwei.ok).toBe(true);
     expect((await fs.readdir(projekteOrdner())).length).toBe(2);
@@ -105,7 +105,7 @@ describe("erstelleProjekt (#33)", () => {
   it("laesst keinen halben Projektordner zurueck, wenn project.json nicht geschrieben werden kann", async () => {
     zustand.schreibFehler = true;
 
-    const ergebnis = await erstelleProjekt("Studio Nord");
+    const ergebnis = await erstelleProjekt("Studio Nord", "marke-test");
 
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
@@ -118,7 +118,7 @@ describe("erstelleProjekt (#33)", () => {
     let freigeben: () => void = () => undefined;
     const gehalten = mitD1Lock(() => new Promise<void>((auf) => (freigeben = auf)));
 
-    const lauf = erstelleProjekt("Studio Nord");
+    const lauf = erstelleProjekt("Studio Nord", "marke-test");
     await new Promise((weiter) => setTimeout(weiter, 20));
     // Solange ein fremder Abschnitt das Lock haelt, darf nichts auf der Platte passieren.
     expect(await fs.readdir(zustand.ordner)).toEqual([]);

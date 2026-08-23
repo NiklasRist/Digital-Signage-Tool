@@ -39,6 +39,7 @@ describe('medium-loeschen (Renderer)', () => {
         cta: null,
         standardDauer: null,
         vorlagenId: '',
+        markeId: "marke-test",
         akzentfarbe: null,
       },
     ],
@@ -63,6 +64,7 @@ describe('medium-loeschen (Renderer)', () => {
       },
     ],
     letzterAusgabeName: null,
+    standardMarkeId: "marke-test",
     // Pflichtfeld seit TK v3.18 (#334)
     standardSegmentdauer: 10,
   }

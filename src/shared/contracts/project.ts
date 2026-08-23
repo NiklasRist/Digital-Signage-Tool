@@ -32,6 +32,8 @@ export interface Project {
   //        wechselbar über setzeStandardSegmentdauer (#334)
   standardSegmentdauer: number
   letzterAusgabeName: string | null   // FA-22: Vorbelegung des Render-Zielnamens; null = noch nie gerendert
+  standardMarkeId: string        // NEU – FA-23: färbt Band-Hintergrund und Split-Restflächen und
+                                 //   belegt neue Aktionen vor. Beim Anlegen die eingebaute Marke
 }
 
 export interface Listenelement {
