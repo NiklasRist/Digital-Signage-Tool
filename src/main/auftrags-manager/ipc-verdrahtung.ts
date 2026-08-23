@@ -22,10 +22,10 @@ import type { AuftragArt } from '../../shared/contracts/auftrag'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'          // #25
 // Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort (Vermerk 2 am Dateiende).
-// Der Import ueber die Modulgrenze ist kein neuer Grenzuebertritt: `registriereHandler`
-// kommt aus derselben Richtung.
+// Der Import ueber die Modulgrenze ist kein neuer Grenzuebertritt: `meldeAn` (#333) und
+// `registriereHandler` kommen aus derselben Richtung.
+import { meldeAn } from '../ipc-gateway/melde-an' // #333
 import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from '../ipc-gateway/nutzlast-pruefer' // #332
-import { registriereHandler } from '../ipc-gateway/registriere-handler' // #23
 import { entferne } from './entferne'                             // #62
 import { holeStand } from './hole-stand'                          // #64
 import { aufQueueGeaendert, aufQueueStoerung } from './queue-ereignis' // #65
@@ -53,30 +53,9 @@ import { wiederhole } from './wiederhole'                         // #63
 //        // beide MAIN-INTERN; der Rueckgabewert ist die Abmelde-Funktion.
 
 /**
- * Die eine Stelle, an der aus `unknown` etwas Getipptes wird.
- *
- * `registriereHandler` (#23) reicht der Fachoperation genau das herein, was der Validierer
- * als `wert` zurueckgegeben hat - seine Signatur schreibt aber `validierteNutzlast: unknown`,
- * der Typ geht auf dem Weg also verloren. Ohne diese Huelle stuende in jedem der vier
- * Kanaele ein eigenes `as`; verstreute Behauptungen kann niemand mehr gegen ihren
- * Validierer halten, und die erste, die zum falschen gehoert, faellt erst zur Laufzeit auf.
- *
- * Hier steht die Behauptung EINMAL, und `pruefe` und `rufe` sind ueber `W` aneinander
- * gebunden. Gleiche Bauform wie in `ipc-gateway/config-store-verdrahtung.ts` (#77) - dort
- * ist sie modulprivat, und ein gemeinsamer Baustein daraus zu machen hiesse, eine fremde
- * Datei zu aendern (Regel E). Gemeldet ist die Doppelung am Dateiende.
+ * Die Anmelde-Huelle ist seit #333 nach `../ipc-gateway/melde-an.ts` umgezogen (dort der
+ * volle Kommentarapparat). Sie steht hier nicht mehr.
  */
-function meldeAn<W, T, F extends string>(
-  kanal: string,
-  pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
-  rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
-): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
-    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert und in die Huelle
-    // gelegt; der Cast benennt diese belegte Form, damit rufe den geprueften Typ sieht.
-    rufe(validierteNutzlast as W),
-  )
-}
 
 /**
  * Die vier erlaubten Auftragsarten - als `Record<AuftragArt, true>` und nicht als Array.
@@ -269,16 +248,16 @@ export function verdrahteQueueIPC(fenster: BrowserWindow): void {
 //    nachgetragen - diese Funktion BRAUCHT das Fenster, weil sie die einzige Stelle mit
 //    einer Fensterreferenz ist.
 //
-// 2. TEILWEISE ERLEDIGT (#332 am 14.08.2026) - der Vermerk bleibt als Beleg stehen. Hier
-//    stand, dass die HUELLE `meldeAn` UND die PRUEFER `istObjekt`/`istGefuellterText`/
-//    `abgelehnt`/`ohneNutzlast` ein zweites Mal in
+// 2. ERLEDIGT (#332 am 14.08.2026, `meldeAn` durch #333 am 23.08.2026) - der Vermerk
+//    bleibt als Beleg stehen. Hier stand, dass die HUELLE `meldeAn` UND die PRUEFER
+//    `istObjekt`/`istGefuellterText`/`abgelehnt`/`ohneNutzlast` ein zweites Mal in
 //    src/main/ipc-gateway/config-store-verdrahtung.ts (#77) stehen, Wort fuer Wort, und
 //    dass der Ort fuer eine Zusammenfuehrung das ipc-gateway waere.
 //    DIE VIER PRUEFER SIND UMGEZOGEN: src/main/ipc-gateway/nutzlast-pruefer.ts, importiert
-//    oben. Sie stehen in dieser Datei nicht mehr.
-//    OFFEN BLEIBT `meldeAn`: Die Huelle steht weiterhin dreifach (hier, #76, #77). #332
-//    betrifft ausdruecklich nur die vier Pruefer; sie mitzuziehen waere eine Ausweitung
-//    ueber den Auftrag hinaus. Gemeldet fuer ein eigenes Issue.
+//    oben.
+//    DIE HUELLE IST UMGEZOGEN: src/main/ipc-gateway/melde-an.ts, importiert oben. Sie
+//    steht in keiner der drei Verdrahtungsdateien mehr; ihr Kommentarapparat liegt EINMAL
+//    in melde-an.ts.
 //
 // 3. VERALTETER VERWEIS IN #65. src/main/auftrags-manager/queue-ereignis.ts nennt im
 //    Vermerk am Dateiende noch den frueheren Kanalnamen des Stoerungs-Ereignisses

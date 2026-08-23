@@ -23,8 +23,8 @@ import { setzeUIVoreinstellung } from '../config-store/setze-ui-voreinstellung' 
 // Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort. Bis dahin standen sie hier
 // als Kopie - Wort fuer Wort auch in #71, #76 und #93. Diese Fassung war die
 // massgebliche; sie ist unveraendert umgezogen, nicht umgeschrieben.
+import { meldeAn } from './melde-an'                                         // #333
 import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from './nutzlast-pruefer' // #332
-import { registriereHandler } from './registriere-handler'                   // #23
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #23: registriereHandler<T, F extends string>(
@@ -41,33 +41,6 @@ import { registriereHandler } from './registriere-handler'                   // 
 //   #28: setzeExportZiel(pfad: string): Promise<Ergebnis<void, ConfigFehlercode>>
 //   #29: leseMarke(): Promise<Ergebnis<Marke>>
 //   #30: setzeUIVoreinstellung(schlüssel: string, wert: unknown): Promise<Ergebnis<void, ConfigFehlercode>>
-
-/**
- * Die eine Stelle, an der aus `unknown` etwas Getipptes wird.
- *
- * WARUM ES SIE GIBT: `registriereHandler` (#23) reicht der Fachoperation genau das
- * herein, was der Validierer als `wert` zurueckgegeben hat - aber seine Signatur
- * schreibt `validierteNutzlast: unknown`, der Typ geht auf dem Weg also verloren. Ohne
- * diese Huelle stuende in JEDEM der fuenf Kanaele ein eigenes `as`; fuenf verstreute
- * Behauptungen kann niemand mehr gegen ihren Validierer halten, und die erste, die zum
- * falschen Validierer gehoert, faellt erst zur Laufzeit auf.
- *
- * Hier steht die Behauptung EINMAL, und `pruefe` und `rufe` sind ueber `W` aneinander
- * gebunden: Ein Validierer, der etwas anderes liefert als die Operation erwartet,
- * uebersetzt nicht. Die Behauptung selbst ist durch #23 gedeckt - der Wrapper reicht
- * `geprueft.wert` durch, nichts anderes.
- */
-function meldeAn<W, T, F extends string>(
-  kanal: string,
-  pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
-  rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
-): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
-    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert und in die Huelle
-    // gelegt; der Cast benennt diese belegte Form, damit rufe den geprueften Typ sieht.
-    rufe(validierteNutzlast as W),
-  )
-}
 
 export function verdrahteConfigStoreIPC(): void {
   // Alle fuenf Namen kommen aus der Registry (#25); in dieser Datei steht kein einziger

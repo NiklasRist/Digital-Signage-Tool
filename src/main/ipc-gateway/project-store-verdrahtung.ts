@@ -28,9 +28,9 @@ import { löscheProjekt } from '../project-store/loesche-projekt'             //
 import { ordneNeu } from '../project-store/ordne-neu'                        // #43
 import { setzeDauer } from '../project-store/setze-dauer'                    // #45
 import { setzeTrim } from '../project-store/setze-trim'                      // #44
+import { meldeAn } from './melde-an'                                         // #333
 // Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort (Vermerk 4 am Dateiende).
 import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from './nutzlast-pruefer' // #332
-import { registriereHandler } from './registriere-handler'                   // #23
 
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
@@ -77,33 +77,9 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 //          : Promise<Ergebnis<AusgabeDatei[], ProjectStoreFehlercode>>
 
 /**
- * Die eine Stelle, an der aus `unknown` etwas Getipptes wird.
- *
- * `registriereHandler` (#23) reicht der Fachoperation genau das herein, was der Validierer
- * als `wert` zurueckgegeben hat - seine Signatur schreibt aber `validierteNutzlast: unknown`,
- * der Typ geht auf dem Weg also verloren. Ohne diese Huelle stuende in JEDEM der vierzehn
- * Kanaele ein eigenes `as`; vierzehn verstreute Behauptungen kann niemand mehr gegen ihren
- * Validierer halten, und die erste, die zum falschen gehoert, faellt erst zur Laufzeit auf.
- *
- * Hier steht die Behauptung EINMAL, und `pruefe` und `rufe` sind ueber `W` aneinander
- * gebunden: Ein Validierer, der etwas anderes liefert als die Operation erwartet, uebersetzt
- * nicht. Gedeckt ist sie durch #23 - der Wrapper reicht `geprueft.wert` durch, nichts anderes.
- *
- * Gleiche Bauform wie in `config-store-verdrahtung.ts` (#77) und
- * `auftrags-manager/ipc-verdrahtung.ts` (#71). Sie zusammenzufuehren hiesse, eine fremde
- * Datei zu aendern; gemeldet ist die Doppelung am Dateiende.
+ * Die Anmelde-Huelle ist seit #333 nach `./melde-an.ts` umgezogen (dort der volle
+ * Kommentarapparat). Sie steht hier nicht mehr.
  */
-function meldeAn<W, T, F extends string>(
-  kanal: string,
-  pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
-  rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
-): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
-    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert und in die Huelle
-    // gelegt; der Cast benennt diese belegte Form, damit rufe den geprueften Typ sieht.
-    rufe(validierteNutzlast as W),
-  )
-}
 
 /**
  * "endliche Zahl" (Pruef-Tabelle des Issues) - `Number.isFinite` und NICHT `typeof === 'number'`.
@@ -475,13 +451,11 @@ export function verdrahteProjectStoreIPC(): void {
 //    Huelle unveraendert durchgereicht wird - gemeldet, weil ein Zitat-Abgleich (Regel D) das
 //    Issue nachziehen muss und weil die Renderer-Seite (#24, M5/M7) die Codes kennen sollte.
 //
-// 4. TEILWEISE ERLEDIGT (#332 am 14.08.2026) - der Vermerk bleibt als Beleg stehen. Hier
-//    stand, dass die HUELLE `meldeAn` UND die PRUEFER `istObjekt`/`istGefuellterText`/
-//    `abgelehnt`/`ohneNutzlast` zum dritten Mal stehen, Wort fuer Wort auch in
-//    src/main/ipc-gateway/config-store-verdrahtung.ts (#77) und
+// 4. ERLEDIGT (#332 am 14.08.2026, `meldeAn` durch #333 am 23.08.2026) - der Vermerk
+//    bleibt als Beleg stehen. Hier stand, dass die HUELLE `meldeAn` UND die PRUEFER
+//    `istObjekt`/`istGefuellterText`/`abgelehnt`/`ohneNutzlast` zum dritten Mal stehen,
+//    Wort fuer Wort auch in src/main/ipc-gateway/config-store-verdrahtung.ts (#77) und
 //    src/main/auftrags-manager/ipc-verdrahtung.ts (#71).
-//    DIE VIER PRUEFER SIND UMGEZOGEN: ./nutzlast-pruefer.ts, importiert oben. Sie stehen in
-//    dieser Datei nicht mehr.
-//    OFFEN BLEIBT `meldeAn`: Die Huelle steht weiterhin dreifach (hier, #71, #77). #332
-//    betrifft ausdruecklich nur die vier Pruefer; sie mitzuziehen waere eine Ausweitung
-//    ueber den Auftrag hinaus. Gemeldet fuer ein eigenes Issue.
+//    DIE VIER PRUEFER SIND UMGEZOGEN: ./nutzlast-pruefer.ts, importiert oben.
+//    DIE HUELLE IST UMGEZOGEN: ./melde-an.ts, importiert oben. Beide stehen in dieser
+//    Datei nicht mehr; der Kommentarapparat der Huelle liegt EINMAL in melde-an.ts.

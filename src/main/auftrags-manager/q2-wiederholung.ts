@@ -29,6 +29,15 @@
 
 import path from 'node:path'
 
+// VERSCHAERFUNG (#333, Entscheidung Nachtrag 23.08.2026 - Variante a): Diese Datei hatte
+// eine eigene Fassung `istGefuellterText` (`length > 0`, OHNE trim). Der gemeinsame Pruefer
+// aus #332 prueft `trim() !== ''` und weist damit Werte ab, die NUR aus Leerzeichen bestehen.
+// Fuer bereits geschriebene Q2-Dateien heisst das: Ein Eintrag mit einem Leerzeichen-Wert in
+// `projektId`, `dateiname`, `auftragId` oder `vermerktAm` wird kuenftig ABGEWIESEN, wo er
+// vorher still durchgelassen wurde. Kein Migrationsschritt - die Abweisung ist das
+// gewuenschte Verhalten einer Grenzpruefung gegen beschaedigtes JSON.
+import { istGefuellterText } from '../ipc-gateway/nutzlast-pruefer'
+
 import { projektOrdner } from '../project-store/pfade'
 
 import { QUEUE_SCHEMA_VERSION, leseQueueDatei, schreibeQueueDatei } from './schreibe-queue-json'
@@ -437,10 +446,6 @@ function pruefeQ2Form(wert: unknown, projektId: string): Ergebnis<Q2Datei, Queue
     },
   }
 }
-
-import { istGefuellterText } from "../ipc-gateway/nutzlast-pruefer"
-
-// function istGefuellterText removed – imported from common location
 
 /**
  * "auftrag fehlt auftragId oder ist kein gueltiger Auftrag" - hier gelesen als: ein Objekt mit

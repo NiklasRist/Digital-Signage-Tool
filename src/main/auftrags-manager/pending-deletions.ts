@@ -29,6 +29,15 @@
 
 import { aenderePendingDeletions, holeQ2Stand, ladeQ2 } from './q2-wiederholung'
 
+// VERSCHAERFUNG (#333, Entscheidung Nachtrag 23.08.2026 - Variante a): Diese Datei hatte
+// eine eigene Fassung `istGefuellterText` (`length > 0`, OHNE trim). Der gemeinsame Pruefer
+// aus #332 prueft `trim() !== ''` und weist damit Werte ab, die NUR aus Leerzeichen bestehen.
+// Fuer bereits geschriebene pendingDeletions-/Q2-Dateien heisst das: Ein Eintrag mit einem
+// Leerzeichen-Wert in `projektId`, `dateiname` oder `vermerktAm` wird kuenftig ABGEWIESEN,
+// wo er vorher still durchgelassen wurde. Kein Migrationsschritt - die Abweisung ist das
+// gewuenschte Verhalten einer Grenzpruefung gegen beschaedigtes JSON.
+import { istGefuellterText } from '../ipc-gateway/nutzlast-pruefer'
+
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { PendingDeletion } from './q2-wiederholung'      // Typ und Dateiform aus #55
 import type { QueueFehlercode } from './schreibe-queue-json'  // = 'speicher_fehler' (#69)
@@ -207,10 +216,6 @@ function pruefeEingaben(
   }
   return null
 }
-
-import { istGefuellterText } from "../ipc-gateway/nutzlast-pruefer"
-
-// function istGefuellterText removed – imported from common location
 
 function text(ursache: unknown): string {
   return ursache instanceof Error ? ursache.message : String(ursache)
