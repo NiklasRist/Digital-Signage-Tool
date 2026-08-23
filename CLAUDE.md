@@ -11,26 +11,55 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (16.08.2026) – gilt vor ALLEN älteren Angaben weiter unten
+## STAND HEUTE (23.08.2026) – gilt vor ALLEN älteren Angaben weiter unten
 
 Dieses Dokument ist gewachsen. Wo eine ältere Zeile diesem Abschnitt widerspricht, **gilt dieser
 Abschnitt**. Die Historie bleibt stehen, weil die Begründungen darin wertvoll sind – sie ist
 Vergangenheit, nicht Anweisung.
 
+### Session 23.08.2026 in Kürze (vor der Tabelle das Wichtigste)
+
+- **M6 ist KOMPLETT: 37/37.** #184/#186/#188 geschlossen. Die macOS-FAT32-Erkennung ist GEMESSEN
+  (per hdiutil-Images: `statfs().type` unterscheidet FAT32/exFAT nicht; `diskutil info -plist` am
+  per `st_dev` aufgelösten Mountpoint liefert Klartext in ~90 ms) und in `ziel-pruefung.ts`
+  eingebaut. REST: Gegenprobe an einem ECHTEN Stick beim nächsten Anlass.
+- **M8 ist vollständig GEKLÄRT** – alle 21 UNKLAREN haben entschiedene Nachträge in den Issues
+  (u. a.: vorlagen-editor zeichnet gegen eine wählbare Marke mit Default „eingebaute Marke";
+  Alt-RollenNamen in `akzentfarbe` setzt #281 auf `null`; Standardmarken-Wechsel → Neubereitstellung;
+  Kontrast-Warnung im Farbwähler gegen beide Textfarben; Beenden-Hinweis bleibt informativ).
+- **Gemessener Befund mit Folgeentscheidung:** `marken://` taintet das Canvas in JEDER
+  Registrierungs-Konfiguration (SecurityError bei toBlob/toDataURL). Entscheidung: importierte
+  Marken-Dateien im Zeichenpfad als BYTES laden und als Blob-URL einbinden; `marken://` bleibt
+  Speicherort-Vertrag (#290), aber KEIN direktes `<img src>` im Zeichenpfad (#315, Nachtrag II).
+- **NEUE ISSUES:** #336 (Beenden-Dialog bei gescheitertem Flush, alle drei Speicher, läuft NACH
+  #309), #337 (verbliebene meldeAn-Kopien), #338 (`findeKaputteStellen` um Marken erweitern),
+  #339 (`flaecheDunkel`-Hex-Prüfpunkt in #173).
+- **#333 gebaut UND committed** (`0a78b43`): trim gilt jetzt überall; `meldeAn` liegt in
+  `src/main/ipc-gateway/melde-an.ts`. **#8 gebaut UND committed** (`7aae05d`): Full-Latin-Schriften
+  (Glyphennachweis ł ć ş ő ž µ), 10-s-Timeout mit sichtbarem Abbruch. Playfair trägt einen
+  U+00B5→uni03BC-Cmap-Patch (OFL-Derivat, RFN-Frage offen im Issue).
+- **VORBEFUND, unbehandelt:** 3 Testfehler in `tests/unit/datenort.spec.ts` /
+  `einzel-instanz.spec.ts`, per Stash-Gegenprobe auf dem sauberen Baum belegt. Wer als Nächstes
+  baut: zuerst klären, ob sie die eigene Arbeit berühren.
+- **Bodies von #184/#186/#188 waren ZERSTÖRT** (Nachtrag hatte den Body ERSETZT statt angehängt)
+  – aus den lokalen Quelldateien wiederhergestellt, deckungsgleich (`fd7aebd`). Regel-Reminder:
+  Nachträge ANHÄNGEN, nie `--body-file` ohne den alten Stand.
+
 ### Wo das Projekt steht
 
 | Meilenstein | gebaut | | Meilenstein | gebaut |
 |---|---|---|---|---|
-| M0 Grundgerüst | 14 / 15 | | M5 Inhalte | 15 / 37 |
-| M1 Fundament | **49 / 49** ✓ | | M6 Render & Export | **36 / 37** |
-| M2 Torwächter | **20 / 20** ✓ | | M7 Oberfläche | 5 / 70 |
-| M3 Medien | 18 / 20 | | M8 Marken | 3 / 57 |
-| M4 Pixel | 11 / 26 | | | |
+| M0 Grundgerüst | 14 / 15 | | M5 Inhalte | 28 / 37 |
+| M1 Fundament | **49 / 49** ✓ | | M6 Render & Export | **37 / 37** ✓ |
+| M2 Torwächter | **20 / 20** ✓ | | M7 Oberfläche | 24 / 71 |
+| M3 Medien | 18 / 21 | | M8 Marken | 8 / 60 |
+| M4 Pixel | 20 / 26 | | | |
 
-Rund **171 von 331 Issues gebaut**, **2845 Tests** grün (plus 48 Integrationstests), Branch `main`,
-Arbeitsbaum sauber. In M0 (#8, Ordner) ist die fehlende Nummer faktisch fertig – das Messwerkzeug kann
-sie nur nicht ablesen (s. u.). In M3 sind #332 (Nutzlast-Prüfer, `nutzlast-pruefer.ts` gebaut, ohne
-Rumpf) und #333 (Doppelnamen, Bauzustand nicht an einer Datei ablesbar) die fehlenden zwei.
+Rund **219 von 339 Issues** (davon 300 offen, aber M6 komplett und M8 vollständig geklärt),
+**4130 Tests** grün (plus Integrationstests; DREI Vorbefund-Fehler, s. Session-Kürze oben), Branch
+`main`, Arbeitsbaum sauber. In M0 (#8, Ordner) ist die fehlende Nummer faktisch fertig – das
+Messwerkzeug kann sie nur nicht ablesen. In M3 zählen #333 (gebaut, Commit `0a78b43`) und #337
+(neu) zu den offenen Nummern.
 
 **Die Logik-Kette ist durchgängig verdrahtet:** Projekt-Operationen, Medien, Warteschlange, Render
 und Export sind vom Renderer aus erreichbar. Was fehlt, ist überwiegend **Oberfläche** (M7) und die
