@@ -42,6 +42,8 @@
 import { execFile } from 'node:child_process'
 import { constants } from 'node:fs'
 import { access, stat, statfs } from 'node:fs/promises'
+import { dirname } from 'node:path'
+import { realpath } from 'node:fs/promises'
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ExportFehlercode } from './fehlercodes'
@@ -158,23 +160,123 @@ export type ErkanntesDateisystem = 'fat32' | 'anderes' | null
  * Export gar nicht erst beginnt.
  *
  * WAS WEITERHIN UNGEMESSEN BLEIBT und deshalb ueber die Rueckfallregel laeuft:
- * - macOS. Dort gibt es weder `DriveInfo` noch PowerShell; der Weg waere
- *   `diskutil info -plist <pfad>`. Kein Mac vorhanden. Wir liefern dort `null`
- *   statt ungepruefte Zeilen - ein Zweig, der nie ausgefuehrt wurde, ist keine
- *   Zusage, sondern eine Behauptung.
  * - Ein Stick, der OHNE Laufwerksbuchstaben in einen NTFS-Ordner eingehaengt ist.
  *   `DriveInfo` meldete dort das TRAGENDE Laufwerk, also "NTFS" statt "FAT32" -
  *   die Pruefung liefe durch und der Fehler faellt erst beim Kopieren auf. Das ist
  *   die sichere Richtung (#186 faengt es), aber es ist eine bekannte Luecke.
+ *
+ * ------------------------------------------------------------------------------
+ * NACHTRAG 23.08.2026 - DER macOS-WEG IST GEMESSEN UND STEHT EBENFALLS UNTEN.
+ *
+ * Gemessen auf dem Entwicklungsrechner (macOS, arm64). Weil kein echter Stick
+ * angeschlossen war, wurden FAT32- und exFAT-Datentraeger per `hdiutil create -fs
+ * "MS-DOS FAT32"` bzw. `-fs ExFAT` erzeugt und eingehaengt - dieselben
+ * Kernel-Treiber (msdos/exfat) wie bei einem echten Stick:
+ *
+ *   APFS  (interne Platte)  -> statfs().type 26 (0x1a)
+ *   FAT32  (Image STICKA)   -> statfs().type 24 (0x18)
+ *   exFAT  (Image STICKB)   -> statfs().type 24 (0x18)
+ *
+ * ERGEBNIS 1: `statfs().type` ist auf macOS NICHT konstant 0 (anders als auf
+ * Windows), unterscheidet ABER FAT32 und exFAT NICHT voneinander - beide melden
+ * 24. Damit scheidet statfs allein aus.
+ * ERGEBNIS 2: `/usr/sbin/diskutil info -plist <mountpoint>` liefert sauber
+ * `FilesystemType` = "msdos" (FAT32) bzw. "exfat", in ~90 ms, ohne erhoehte
+ * Rechte. Genau der Klartext, der gebraucht wird.
+ * EINSCHRAENKUNG: `diskutil` nimmt nur einen MOUNTPOINT, keinen beliebigen
+ * Unterordner ("Could not find disk" bei /Volumes/STICKA/unterordner). Der
+ * Mountpoint wird deshalb vorab ueber `st_dev` aufwaerts im Baum ermittelt.
+ * REST-RISIKO, DOKUMENTIERT: Gemessen an Images, nicht an Hardware-Sticks. Beim
+ * naechsten echten Stick sind dieselben drei Werte als Gegenprobe nachzumessen.
  */
 export const dateisystemErkennung: {
   erkenne(zielOrdner: string): Promise<ErkanntesDateisystem>
 } = {
   erkenne: async (zielOrdner: string): Promise<ErkanntesDateisystem> => {
-    // Nur Windows. Auf macOS ist das Verfahren ungemessen (s. Nachtrag oben), und
-    // eine ungemessene Erkennung ist schlechter als gar keine: Sie koennte einen
-    // gueltigen Export mit einer erfundenen Begruendung abweisen.
-    if (process.platform !== 'win32') return null
+    if (process.platform === 'win32') {
+      return erkenneWindows(zielOrdner)
+    }
+    if (process.platform === 'darwin') {
+      return erkenneMacos(zielOrdner)
+    }
+    // Andere Plattformen (Linux): ungemessen - Rueckfallregel.
+    return null
+  },
+}
+
+/**
+ * Ermittelt zum Ordner den Mountpoint, indem der Baum aufwaerts gegangen wird,
+ * bis sich `st_dev` aendert. `diskutil` nimmt nur einen Mountpoint an, keinen
+ * beliebigen Unterordner (gemessen 23.08.2026: "Could not find disk").
+ * Scheitert irgendetwas, kommt null heraus - die Rueckfallregel greift ohnehin.
+ */
+async function mountpunktVon(pfad: string): Promise<string | null> {
+  try {
+    const zielDev = (await stat(pfad)).dev
+    let aktuell: string
+    try {
+      aktuell = await realpath(pfad)
+    } catch {
+      aktuell = pfad
+    }
+    for (;;) {
+      const darueber = dirname(aktuell)
+      if (darueber === aktuell) return aktuell // Wurzel erreicht: SIE ist der Mountpoint
+      let dev: number
+      try {
+        dev = (await stat(darueber)).dev
+      } catch {
+        return null
+      }
+      if (dev !== zielDev) return aktuell
+      aktuell = darueber
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Der macOS-Weg, gemessen am 23.08.2026 (s. Kommentar ueber
+ * {@link dateisystemErkennung}): `diskutil info -plist <mountpoint>`, aus dem
+ * Ergebnis das Feld `FilesystemType`. "msdos" deckt die ganze FAT-Familie ab
+ * (FAT12/16/32) - fuer alle gilt dieselbe Kleine-Dateien-Schranke, also werden
+ * sie gemeinsam als 'fat32' behandelt. Alles andere ist 'anderes'; jeder
+ * Fehlschlag (diskutil fehlt, Zeitgrenze, unverstaendliche Ausgabe) liefert
+ * null und faellt damit in die Rueckfallregel.
+ *
+ * DER PFAD GEHT ALS ARGUMENT IN EIN ARRAY HINEIN, NIE ALS ZUSAMMENGEBAUTE
+ * KOMMANDOZEILE (Projektregel): `execFile` parst nichts nach.
+ */
+async function erkenneMacos(zielOrdner: string): Promise<ErkanntesDateisystem> {
+  const mountpunkt = await mountpunktVon(zielOrdner)
+  if (mountpunkt === null) return null
+
+  const ausgabe = await new Promise<string | null>((fertig) => {
+    const kind = execFile(
+      '/usr/sbin/diskutil',
+      ['info', '-plist', mountpunkt],
+      { timeout: ERKENNUNG_ZEITGRENZE_MS },
+      (fehler, stdout) => fertig(fehler ? null : stdout),
+    )
+    if (kind.pid === undefined) fertig(null)
+  })
+
+  if (ausgabe === null) return null
+  // Aus dem XML-plist nur das eine Feld herauslesen - ein plist-Parser wuerde
+  // hier nichts hergeben, was dieser Regex nicht auch sieht.
+  const feld = /<key>FilesystemType<\/key>\s*<string>([^<]+)<\/string>/.exec(ausgabe)
+  const typ = feld?.[1]
+  if (typ === undefined) return null
+  return typ.toLowerCase() === 'msdos' ? 'fat32' : 'anderes'
+}
+
+/**
+ * Der Windows-Weg, gemessen am 14.08.2026 mit drei echten Wechseldatentraegern
+ * (s. Kommentar ueber {@link dateisystemErkennung}): `[IO.DriveInfo]::new(
+ * $env:DST_ZIEL).DriveFormat` liefert den Klartext des Dateisystems.
+ */
+async function erkenneWindows(zielOrdner: string): Promise<ErkanntesDateisystem> {
 
     // DER PFAD GEHT ALS UMGEBUNGSVARIABLE HINEIN, NICHT IN DEN BEFEHLSTEXT.
     // Ein Zielordner ist eine Nutzereingabe (er kommt aus einem Ordner-Dialog, kann
@@ -203,10 +305,9 @@ export const dateisystemErkennung: {
     // aber auf Sticks dieser Groessenordnung nicht mehr anzutreffen und wurde nicht
     // gemessen - deshalb wird es hier NICHT stillschweigend mitbehandelt.
     return klartext === 'fat32' ? 'fat32' : 'anderes'
-  },
 }
 
-/** Baut die Fehlerhuelle. Nie ein Stacktrace, nie eine rohe Exception-Meldung. */
+/** Baut die Fehlerhülle. Nie ein Stacktrace, nie eine rohe Exception-Meldung. */
 function zielFehler(
   code: ExportFehlercode | 'ungueltige_eingabe' | 'unbekannter_fehler',
   meldung: string,
@@ -290,7 +391,7 @@ export async function pruefeExportZiel(
       return zielFehler(
         'datei_zu_gross_fat32',
         `Die Datei ist ${lesbar(benoetigteBytes)} gross. Der Zielordner "${zielOrdner}" liegt auf einem ` +
-          'FAT32-Dateisystem, das keine Datei ueber 4 GiB aufnehmen kann. Der Speicher muss dafuer in exFAT ' +
+          'FAT-Dateisystem, das keine Datei ueber 4 GiB aufnehmen kann. Der Speicher muss dafuer in exFAT ' +
           'formatiert sein (Achtung: Formatieren loescht den gesamten Inhalt des Speichers).',
       )
     }
