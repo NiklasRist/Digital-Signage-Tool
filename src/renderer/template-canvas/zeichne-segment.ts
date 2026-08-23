@@ -32,6 +32,12 @@ import type { Marke } from '../../shared/contracts/marke'
 
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 
+// Seit #294 in dieser Datei: der vierte Parameter (rahmenMarke, TK 9.15.4), der
+// Dispatch auf das Ersatz-Logo (#293) und die Schrift-Pruefung der importierten
+// Schriften vor dem Zeichnen (#291).
+import { sindMarkenSchriftenBereit } from './marken-schriften'
+import { zeichneErsatzLogo } from './ersatz-logo'
+
 import { zeichneDekoZone } from './zone-deko'
 import { zeichneTextZone } from './zone-text'
 import { zeichneBildZone } from './zone-bild'
@@ -46,14 +52,47 @@ export interface SegmentBild {
   höhe: number
 }
 
-export function zeichneSegment(aktion: Aktion, vorlage: Vorlage, marke: Marke): SegmentBild {
+export function zeichneSegment(
+  aktion: Aktion,
+  vorlage: Vorlage,
+  marke: Marke,
+  rahmenMarke: Marke,
+): SegmentBild {
+  if (marke === null || marke === undefined || rahmenMarke === null || rahmenMarke === undefined) {
+    throw new Error('zeichneSegment: marke oder rahmenMarke fehlt (Programmierfehler).')
+  }
+
   // 0. Zuallererst: Sind die Schriften da? Vor jedem Canvas, vor jedem Strich.
-    if (!sindSchriftenBereit()) {
-      throw new Error(
-        'zeichneSegment: Die gebündelten Marken-Schriften sind nicht bereit ' +
-          '(stelleSchriftenBereit vor dem Aufruf, #110/#117).',
-      )
-    }
+  //    (1) die vier gebuendelten Schriften (#110) - unveraendert;
+  //    (2) die importierten Schriften der Inhalts-Marke (#291);
+  //    (3) die importierten Schriften der Rahmen-Marke (#291) - NUR wenn sie in diesem
+  //        Aufruf ueberhaupt benutzt werden kann: art einblendung UND rahmenMarke !==
+  //        marke (Identitaetsvergleich, liest keine Eigenschaft) UND eine Zone mit
+  //        id 'hintergrund' vorhanden. Jede Pruefung wirft bei false - synchron, kein
+  //        Nachladen (das Bereitstellen gehoert #312), kein Rueckfall auf eine
+  //        gebuendelte Schrift: es entsteht dann gar kein Segment-PNG (TK 9.15.3).
+  if (!sindSchriftenBereit()) {
+    throw new Error(
+      'zeichneSegment: Die gebündelten Marken-Schriften sind nicht bereit ' +
+        '(stelleSchriftenBereit vor dem Aufruf, #110/#117).',
+    )
+  }
+  if (!sindMarkenSchriftenBereit(marke)) {
+    throw new Error(
+      `zeichneSegment: Die importierten Schriften der Marke "${marke.id}" sind nicht bereit.`,
+    )
+  }
+  const hintergrundVorhanden =
+    vorlage.art === 'einblendung' &&
+    vorlage.zonen.some((z) => z.id === 'hintergrund')
+  const rahmenMarkeBenutzt =
+    vorlage.art === 'einblendung' && rahmenMarke !== marke && hintergrundVorhanden
+  if (rahmenMarkeBenutzt && !sindMarkenSchriftenBereit(rahmenMarke)) {
+    throw new Error(
+      `zeichneSegment: Die importierten Schriften der Rahmen-Marke "${rahmenMarke.id}" ` +
+        'sind nicht bereit.',
+    )
+  }
 
   // 1. Die Fläche bestimmen (TK 9.10.2) - Endlichkeit und Wertebereich, bewusst OHNE
   //    Paritätsprüfung (ENTSCHIEDEN-Block im Kopf dieser Datei).
@@ -96,6 +135,13 @@ export function zeichneSegment(aktion: Aktion, vorlage: Vorlage, marke: Marke): 
 
   // 4. Ueber die Zonen laufen - Array-Reihenfolge, kein Sortieren/Filtern/Ueberspringen.
   for (const zone of vorlage.zonen) {
+    // #294 - DIE EINE Unterscheidungszeile: Nur die Hintergrund-Zone einer
+    // Einblendungsvorlage wird mit der Projekt-Standardmarke gezeichnet (TK 9.15.4:
+    // "Rahmen stabil, Inhalt wechselt"). Fuer jede andere Zone ist markeDieserZone
+    // dieselbe Objektreferenz wie marke.
+    const markeDieserZone: Marke =
+      vorlage.art === 'einblendung' && zone.id === 'hintergrund' ? rahmenMarke : marke
+
     // a. Den gebundenen Wert bestimmen - ausschliesslich nach dieser Tabelle. Logo und
     //    Slogan kommen aus der MARKE (fester Markenrahmen, FA-11). Der Wert von `logo`
     //    dient nur der Leer-Pruefung; das Motiv kommt ueber holeLogo(), nie ueber
@@ -118,7 +164,11 @@ export function zeichneSegment(aktion: Aktion, vorlage: Vorlage, marke: Marke): 
         wert = aktion.bildRef
         break
       case 'logo':
-        wert = marke.logo?.datei ?? null
+        // Seit #294/#320 zweistufig: logo !== null -> datei als Leer-Pruefungswert;
+        // logo === null -> der MARKENNAME ist der Wert des Ersatz-Logos (#293) und
+        // damit nie leer (#52-Pflichtfeld). Ohne diese Stufe waere der Zugriff auf
+        // .datei ein Laufzeitfehler bzw. die Zone wuerde unsichtbar uebersprungen.
+        wert = markeDieserZone.logo !== null ? markeDieserZone.logo.datei : markeDieserZone.name
         break
       case 'slogan':
         wert = marke.slogan.aktiv ? marke.slogan.text : null
@@ -138,8 +188,9 @@ export function zeichneSegment(aktion: Aktion, vorlage: Vorlage, marke: Marke): 
       continue
     }
 
-    // d. Dekoration - immer, auch ohne zone.deko und auch bei leer + 'leer'.
-    zeichneDekoZone(ctx, zone, marke, aktion)
+    // d. Dekoration - immer, auch ohne zone.deko und auch bei leer + 'leer'; bei der
+    //    Hintergrund-Zone mit der Rahmen-Marke (M4-22 kennt den Unterschied nicht).
+    zeichneDekoZone(ctx, zone, markeDieserZone, aktion)
 
     // e. Ohne Bindung (oder leer) ist die Zone hier fertig.
     if (zone.bindung === null || leer || wert === undefined) {
@@ -147,16 +198,17 @@ export function zeichneSegment(aktion: Aktion, vorlage: Vorlage, marke: Marke): 
     }
 
     // f. Den Inhalt zeichnen - die Art entscheidet die Bindung.
+    // f. Der Dispatch nach Bindung - seit #294 in dieser Reihenfolge geprueft. Das
+    //    Ersatz-Logo gilt fuer "Marke HAT kein Logo", nicht fuer "Datei fehlt": Liefert
+    //    holeLogo { zustand: 'fehlt' }, bleibt es beim Platzhalter von zeichneBildZone.
     if (zone.bindung === 'bild') {
-      zeichneBildZone(ctx, zone, holeMotiv(aktion.bildRef as string), marke, aktion)
+      zeichneBildZone(ctx, zone, holeMotiv(aktion.bildRef as string), markeDieserZone, aktion)
+    } else if (zone.bindung === 'logo' && markeDieserZone.logo === null) {
+      zeichneErsatzLogo(ctx, zone, markeDieserZone, aktion)
     } else if (zone.bindung === 'logo') {
-      // GEMELDETER WIDERSPRUCH (#117 vs. gebauter Code): Der Issue-Text von #117 nennt
-      // holeLogo() OHNE Argument - seit dem Edit an #119/#315 ist es holeLogo(markeId).
-      // Die Umstellung des Arguments gehoert laut #294 ausdruecklich in DIESE Datei;
-      // der gebaute Code gewinnt.
-      zeichneBildZone(ctx, zone, holeLogo(marke.id), marke, aktion)
+      zeichneBildZone(ctx, zone, holeLogo(markeDieserZone.id), markeDieserZone, aktion)
     } else {
-      zeichneTextZone(ctx, zone, String(wert), marke, aktion)
+      zeichneTextZone(ctx, zone, String(wert), markeDieserZone, aktion)
     }
   }
 
