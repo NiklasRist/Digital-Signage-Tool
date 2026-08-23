@@ -28,7 +28,10 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import { erzeugeId } from '../../shared/contracts/id'
-import { AKTUELLE_SCHEMA_VERSION } from '../../shared/contracts/konstanten'
+import {
+  AKTUELLE_SCHEMA_VERSION,
+  STANDARD_ANZEIGEDAUER_SEKUNDEN,
+} from '../../shared/contracts/konstanten'
 
 import { merkeAktivesProjekt } from './aktives-projekt'          // #192
 import { mitD1Lock } from './d1-lock'
@@ -118,6 +121,11 @@ export async function erstelleProjekt(name: string): Promise<Ergebnis<Project, P
       // "null = noch nie gerendert" (TK 9.11.3, FA-22). Das Feld MUSS gesetzt sein:
       // Fehlt es, liest der erste Render seine Vorbelegung aus `undefined`.
       letzterAusgabeName: null,
+      // Pflichtfeld seit TK v3.18 (#334): Ein neues Projekt startet auf der
+      // projektweiten Vorbelegung (TK 9.11.4) - dieselbe Konstante wie sonstwo, kein
+      // Zahlenliteral. KEINE Migration noetig: Das Feld gehoert von Anfang an dazu
+      // (schemaVersion 1, TK 9.5.5).
+      standardSegmentdauer: STANDARD_ANZEIGEDAUER_SEKUNDEN,
     }
 
     const ordner = projektOrdner(projekt.id)

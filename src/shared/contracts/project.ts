@@ -24,6 +24,13 @@ export interface Project {
   assets: Asset[]
   aktionen: Aktion[]
   liste: Listenelement[]         // Reihenfolge = Array-Reihenfolge, KEIN position-Feld
+  // ERGAENZT durch #334 (Nachtrag 23.08.2026 zu #15, TK v3.16-v3.18):
+  // FA-06: projektweite Standarddauer für Aktions-Segmente,
+  //        je Aktion überschreibbar (Auflösungskette 9.8.4).
+  //        Pflicht; Wertebereich wie setzeDauer (10–45 s, 9.11.4).
+  //        Teil von schemaVersion 1, KEINE Migration (9.5.5);
+  //        wechselbar über setzeStandardSegmentdauer (#334)
+  standardSegmentdauer: number
   letzterAusgabeName: string | null   // FA-22: Vorbelegung des Render-Zielnamens; null = noch nie gerendert
 }
 
@@ -47,10 +54,12 @@ export interface Einblendung {
   abschnitte: Array<{ aktionRef: string; dauer: number }>
 }
 
-// Ausschnitt aus Project: genau die zwei Felder, die Undo/Redo fuehrt (TK 9.5.2).
-// KEINE eigene Datei - dieselben Felder, dieselben Elementtypen wie oben.
+// Ausschnitt aus Project: genau die drei Felder, die Undo/Redo fuehrt (TK 9.5.2; das dritte
+// Feld kam mit TK v3.18 / #334 dazu). KEINE eigene Datei - dieselben Felder, dieselben
+// Elementtypen wie oben.
 export interface Bearbeitungsstand {
   aktionen: Aktion[]          // die vollstaendige Aktionen-Bibliothek des Projekts
   liste:    Listenelement[]   // die vollstaendige Wiedergabeliste,
                               // Reihenfolge = Array-Reihenfolge (TK 9.11.3)
+  standardSegmentdauer: number    // die projektweite Standarddauer (9.11.3), seit v3.18 im Schnappschuss
 }

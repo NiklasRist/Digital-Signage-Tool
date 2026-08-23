@@ -263,7 +263,14 @@ export async function löscheAktion(id: string): Promise<LoeschAktionErgebnis> {
     return {
       ok: true,
       wert: {
-        stand: { aktionen: projekt.aktionen, liste: projekt.liste },
+        stand: {
+          aktionen: projekt.aktionen,
+          liste: projekt.liste,
+          // Drittes Feld seit TK v3.18 (#334): Der Standard gehoert in den
+          // Schnappschuss, damit ein Undo ihn zusammen mit den Aktions-Dauern
+          // zuruecknehmen kann (TK 9.13.2).
+          standardSegmentdauer: projekt.standardSegmentdauer,
+        },
         entfernteElementIds,
         geaenderteElementIds,
       },

@@ -92,6 +92,11 @@ export const KANAELE = {
     setzeEinblendung: 'project:setzeEinblendung',
     setzeElementReferenz: 'project:setzeElementReferenz',
     autoSpeichernStatus: 'project:autoSpeichernStatus',
+
+    // ERGAENZT durch #334 – die projektweite Standarddauer wird aenderbar (TK 9.5.2 seit
+    // v3.18). Instant-Operation, gehoert in diesen Namensraum; Schluessel und String sind
+    // zeichengleich zum Operationsnamen (Vertragstest von #25).
+    setzeStandardSegmentdauer: 'project:setzeStandardSegmentdauer',
   },
 
   // config-store (#77). Die fünf Namen ENTSTEHEN hier und nirgends sonst; die
