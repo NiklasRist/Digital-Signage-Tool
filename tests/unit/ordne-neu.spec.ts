@@ -44,6 +44,8 @@ function projektMit(...ids: string[]): Project {
     aktionen: [],
     liste: ids.map(element),
     letzterAusgabeName: null,
+    // Pflichtfeld seit TK v3.18 (#334)
+    standardSegmentdauer: 10,
   };
 }
 

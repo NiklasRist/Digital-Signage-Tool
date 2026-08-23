@@ -1,8 +1,9 @@
 // Vertragstest zu #15 - Typen `Project`, `Listenelement`, `Einblendung`,
 // `Bearbeitungsstand`.
 //
-// Der wichtigste Punkt ist DoD 4: `Bearbeitungsstand` hat GENAU zwei Felder. Er ist
-// der Ausschnitt, den Undo/Redo fuehrt (TK 9.5.2). Traegt er versehentlich mehr -
+// Der wichtigste Punkt ist DoD 4: `Bearbeitungsstand` hat GENAU drei Felder (seit
+// TK v3.18 mit `standardSegmentdauer`, #334). Er ist der Ausschnitt, den Undo/Redo
+// fuehrt (TK 9.5.2). Traegt er versehentlich mehr -
 // etwa `assets` oder `letzterAusgabeName` -, dann macht ein Undo Dinge rueckgaengig,
 // die niemand rueckgaengig machen wollte: Ein Widerruf einer Listenaenderung naehme
 // den zwischenzeitlich importierten Film gleich mit aus dem Projekt.
@@ -20,8 +21,10 @@ import type {
 } from "../../src/shared/contracts/project";
 import type { Behaupte, Gleich } from "../typ-gleich";
 
-// --- DoD 4: genau zwei Felder ------------------------------------------------
-type T1 = Behaupte<Gleich<keyof Bearbeitungsstand, "aktionen" | "liste">>;
+// --- DoD 4: genau drei Felder (das dritte kam mit TK v3.18 / #334 dazu) -------
+type T1 = Behaupte<
+  Gleich<keyof Bearbeitungsstand, "aktionen" | "liste" | "standardSegmentdauer">
+>;
 
 // --- DoD 2: die Liste ist ein schlichtes Array -------------------------------
 type T2 = Behaupte<Gleich<Project["liste"], Listenelement[]>>;
@@ -36,7 +39,7 @@ type T4 = Behaupte<Gleich<Extract<keyof Project, "position" | "reihenfolge">, ne
 type T5 = Behaupte<Gleich<Bearbeitungsstand["aktionen"], Project["aktionen"]>>;
 type T6 = Behaupte<Gleich<Bearbeitungsstand["liste"], Project["liste"]>>;
 
-const stand: Bearbeitungsstand = { aktionen: [], liste: [] };
+const stand: Bearbeitungsstand = { aktionen: [], liste: [], standardSegmentdauer: 10 };
 
 // @ts-expect-error `assets` gehoert NICHT in den Bearbeitungsstand (TK 9.5.2).
 const zuViel: Bearbeitungsstand = { aktionen: [], liste: [], assets: [] };
@@ -61,8 +64,12 @@ void zuViel;
 void einblendung;
 
 describe("Project / Bearbeitungsstand (#15)", () => {
-  it("fuehrt im Bearbeitungsstand genau die zwei Undo-Felder", () => {
-    expect(Object.keys(stand).sort()).toEqual(["aktionen", "liste"]);
+  it("fuehrt im Bearbeitungsstand genau die drei Undo-Felder (seit v3.18 mit dem Standard)", () => {
+    expect(Object.keys(stand).sort()).toEqual([
+      "aktionen",
+      "liste",
+      "standardSegmentdauer",
+    ]);
   });
 
   it("traegt die Reihenfolge allein ueber die Array-Position", () => {

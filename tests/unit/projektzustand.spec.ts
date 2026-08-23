@@ -53,6 +53,8 @@ function projekt(id: string, listenIds: string[] = []): Project {
     aktionen: [],
     liste: listenIds.map(element),
     letzterAusgabeName: null,
+    // Pflichtfeld seit TK v3.18 (#334)
+    standardSegmentdauer: 10,
   };
 }
 

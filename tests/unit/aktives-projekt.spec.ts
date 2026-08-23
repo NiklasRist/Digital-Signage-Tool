@@ -16,6 +16,8 @@ const PROJEKT: Project = {
   aktionen: [],
   liste: [],
   letzterAusgabeName: null,
+    // Pflichtfeld seit TK v3.18 (#334)
+    standardSegmentdauer: 10,
 };
 
 describe("Halter des aktiven Projekts (#192)", () => {

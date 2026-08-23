@@ -83,6 +83,8 @@ function projekt(teile: Partial<Pick<Project, 'assets' | 'aktionen' | 'liste'>>)
     aktionen: teile.aktionen ?? [],
     liste: teile.liste ?? [],
     letzterAusgabeName: null,
+    // Pflichtfeld seit TK v3.18 (#334)
+    standardSegmentdauer: 10,
   }
 }
 

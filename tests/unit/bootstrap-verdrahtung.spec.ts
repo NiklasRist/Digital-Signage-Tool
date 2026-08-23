@@ -38,6 +38,9 @@ const h = vi.hoisted(() => {
     verdrahteProjectStoreNachtragIPC: vi.fn(() => {
       protokoll.push("verdrahteProjectStoreNachtragIPC");
     }),
+    verdrahteProjectStoreNachtrag4IPC: vi.fn(() => {
+      protokoll.push("verdrahteProjectStoreNachtrag4IPC");
+    }),
     meldeRenderHandlerAn: vi.fn(() => {
       protokoll.push("meldeRenderHandlerAn");
     }),
@@ -160,6 +163,10 @@ vi.mock("../../src/main/ipc-gateway/project-store-nachtrag", () => ({
   verdrahteProjectStoreNachtragIPC: h.verdrahteProjectStoreNachtragIPC,
 }));
 
+vi.mock("../../src/main/ipc-gateway/project-store-nachtrag-4", () => ({
+  verdrahteProjectStoreNachtrag4IPC: h.verdrahteProjectStoreNachtrag4IPC,
+}));
+
 vi.mock("../../src/main/render-service/handler-anmeldung", () => ({
   meldeRenderHandlerAn: h.meldeRenderHandlerAn,
 }));
@@ -255,7 +262,7 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
     await starteBootstrap();
 
     // Die vollstaendige Kette der heute verdrahteten Stellen: Schritt 5 (Positionen 1,
-    // 2, 4, 5, 6, 7, 9, 10) VOR dem Fenster, Schritt 7 (Positionen 1, 2) danach, Schritt 8
+    // 2, 4, 5, 6, 7, 9, 10, 11) VOR dem Fenster, Schritt 7 (Positionen 1, 2) danach, Schritt 8
     // zum Schluss. Die Luecken (5.3, 5.8, 7.3) stehen bewusst nicht drin - ihre
     // Funktionen tragen noch den werfenden Geruest-Rumpf.
     expect(h.protokoll).toEqual([
@@ -267,6 +274,7 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       "verdrahteVorlagenIPC",
       "meldeRenderHandlerAn",
       "meldeExportHandlerAn",
+      "verdrahteProjectStoreNachtrag4IPC",
       "erstelleHauptfenster",
       "verdrahteQueueIPC",
       "verdrahteExportUndFortschrittIPC",
@@ -288,6 +296,7 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       h.verdrahteVorlagenIPC,
       h.meldeRenderHandlerAn,
       h.meldeExportHandlerAn,
+      h.verdrahteProjectStoreNachtrag4IPC,
       h.verdrahteQueueIPC,
       h.verdrahteExportUndFortschrittIPC,
       h.raeumeVerwaisteArbeitsbereiche,

@@ -21,7 +21,7 @@ import {
 // Test den naechsten verunreinigt - dafuer IST die Funktion laut Issue da (NUR fuer Tests).
 
 function stand(projektId: string): ProjektStand {
-  return { projektId, stand: { aktionen: [], liste: [] } }
+  return { projektId, stand: { aktionen: [], liste: [], standardSegmentdauer: 10 } }
 }
 
 function vorlage(id: string): Vorlage {

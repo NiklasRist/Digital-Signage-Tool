@@ -82,6 +82,7 @@ function quellProjekt(): Project {
       },
     ],
     letzterAusgabeName: "Sommer",
+    standardSegmentdauer: 10, // Pflichtfeld seit TK v3.18 (#334)
   };
 }
 

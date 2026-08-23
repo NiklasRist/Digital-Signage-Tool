@@ -46,6 +46,8 @@ const PROJEKT: Project = {
   aktionen: [],
   liste: [],
   letzterAusgabeName: null,
+    // Pflichtfeld seit TK v3.18 (#334)
+    standardSegmentdauer: 10,
 };
 
 // Das Modul haelt seinen Zustand modulweit (Termin, vorgemerkter Stand, Fehlerlage).

@@ -100,6 +100,8 @@ function projektMit(liste: Listenelement[]): Project {
     aktionen: [aktion("ak-1", 10), aktion("ak-2", 45)],
     liste,
     letzterAusgabeName: null,
+    // Pflichtfeld seit TK v3.18 (#334)
+    standardSegmentdauer: 10,
   };
 }
 

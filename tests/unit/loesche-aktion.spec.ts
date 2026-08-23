@@ -96,6 +96,8 @@ function projekt(aktionen: Aktion[], liste: Listenelement[]): Project {
     aktionen,
     liste,
     letzterAusgabeName: null,
+    // Pflichtfeld seit TK v3.18 (#334)
+    standardSegmentdauer: 10,
   };
 }
 
@@ -262,7 +264,7 @@ describe("löscheAktion (#40) - was stehenbleiben MUSS", () => {
 });
 
 describe("löscheAktion (#40) - der zurueckgegebene stand", () => {
-  it("traegt GENAU die Schluessel aktionen und liste", async () => {
+  it("traegt GENAU die Schluessel aktionen, liste und standardSegmentdauer (drittes Feld seit #334)", async () => {
     const p = projekt([aktion("akt-weg")], [segment("e1", "akt-weg")]);
     merkeAktivesProjekt(p);
 
@@ -271,7 +273,12 @@ describe("löscheAktion (#40) - der zurueckgegebene stand", () => {
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
     const stand = ergebnis.wert.stand;
-    expect(Object.keys(stand).sort()).toEqual(["aktionen", "liste"]);
+    expect(Object.keys(stand).sort()).toEqual([
+      "aktionen",
+      "liste",
+      "standardSegmentdauer",
+    ]);
+    expect(stand.standardSegmentdauer).toBe(10);
     expect("assets" in stand).toBe(false);
     expect("letzterAusgabeName" in stand).toBe(false);
     expect("id" in stand).toBe(false);

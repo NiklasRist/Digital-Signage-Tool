@@ -100,6 +100,8 @@ function projekt(liste: Listenelement[]): Project {
     aktionen: [],
     liste,
     letzterAusgabeName: null,
+    // Pflichtfeld seit TK v3.18 (#334)
+    standardSegmentdauer: 10,
   }
 }
 

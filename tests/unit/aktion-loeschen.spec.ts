@@ -81,6 +81,8 @@ function stand(): Bearbeitungsstand {
   return {
     aktionen: [],
     liste: [],
+    // Drittes Feld seit TK v3.18 (#334)
+    standardSegmentdauer: 10,
   }
 }
 

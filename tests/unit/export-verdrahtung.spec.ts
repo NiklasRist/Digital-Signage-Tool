@@ -382,7 +382,8 @@ describe("Kanal-Registry (#25) nach der Ergaenzung durch #191", () => {
     // zeigen, dass die Verdrahtung des export-service die Registry nicht umbaut - sie darf
     // nicht daran scheitern, dass ein anderes Issue seine eigenen Kanaele ergaenzt.
     // 16 -> 17 am 20.08.2026: #238 traegt das ERREIGNIS `autoSpeichernStatus` nach.
-    expect(Object.keys(KANAELE.project)).toHaveLength(17);
+    // 17 -> 18 am 23.08.2026: #334 traegt den Kanal `setzeStandardSegmentdauer` nach.
+    expect(Object.keys(KANAELE.project)).toHaveLength(18);
     expect(KANAELE.project.listeAusgaben).toBe("project:listeAusgaben");
     expect(Object.keys(KANAELE.config).sort()).toEqual([
       "leseKonfig",
