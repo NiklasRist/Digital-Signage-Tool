@@ -115,10 +115,13 @@ ebenso Vertrag. Ob ein Folge-Issue baubar ist, sagt `python tools/bereitschaft.p
   eigenes Issue, gebaut mit M8.
 - **`meldeAn` und `istGefuellterText` doppeln Namen** – die Folge-Issues **#332** (Nutzlast-Prüfer
   an einen Ort) und **#333** (Doppelnamen auflösen) sind angelegt.
-- **Beim User:** der TV-Test (vier Fragen, hinterlegt in #184, #186, #188, #230, #231). Die
-  wichtigste ist ungetestet und nirgends dokumentiert: **Läuft die Wiedergabe nach einem Stromausfall
-  von selbst wieder an?** Laut Handbuch unterstützt der UE85AU7170 FAT, exFAT und NTFS – die
-  4-GiB-Grenze ist damit **keine** harte Produkteigenschaft.
+- **Beim User:** der TV-Test (hinterlegt in #184, #186, #188, #230, #231; Nachträge vom 23.08.).
+  **Recherchiert und belegt (23.08.):** Der UE85AU7170 unterstützt am USB FAT, exFAT und NTFS
+  (Samsung offiziell; baugleiche TU7000-Klasse) – die 4-GiB-Grenze ist **keine** Produkteigenschaft,
+  sie gilt nur für FAT32-Sticks. #184 bleibt unverändert richtig gebaut; Empfehlung ans Personal:
+  Stick als exFAT formatieren. **Weiter offen (nur physisch testbar):** Läuft die USB-Wiedergabe
+  nach einem Stromausfall von selbst wieder an? Ist „Repeat One" zuverlässig? Firmware-Version
+  steht nur am TV (Einstellungen → Support → „Über dieses TV").
 
 ### Behobene Befunde (16.08.2026, Commit `7f6e776`; Beleg unten)
 
