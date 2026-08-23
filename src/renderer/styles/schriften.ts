@@ -48,18 +48,17 @@ const SCHRIFTEN: ReadonlyArray<{ familie: string; gewicht: string; quelle: URL }
   { familie: "Arimo", gewicht: "700", quelle: DATEIEN.arimoFett },
 ];
 
-/**
- * Laedt alle vier Marken-Schriften und meldet erst zurueck, wenn sie benutzbar sind.
- *
- * KEIN Timeout - bewusst und nach Ruecksprache offen gelassen: Ein Timeout muesste
- * beantworten, was danach geschieht, und beide Antworten sind schlecht. Weiterzeichnen
- * hiesse, mit Ersatzschrift in die MP4 zu rendern - genau der Fehler, gegen den diese
- * Funktion existiert. Abbrechen hiesse, die App wegen eines Ladevorgangs unbenutzbar
- * zu machen, der aus dem eigenen Buendel kommt und keine Netzverbindung braucht.
- * Solange die Dateien mitgeliefert sind, gibt es kein Warten auf etwas Fremdes.
- */
+// ENTSCHIEDEN (Nachtrag #8 vom 23.08.2026): Zeitgrenze 10 Sekunden mit sichtbarem
+// Abbruch. WARUM GERADE 10 s: Ein Ladepfad aus dem eigenen Bundle ist lokal und
+// dauert im Normalfall Millisekunden; das Zehnfache einer grosszuegigen lokalen
+// Bundle-Ladung bleibt eng genug, um kein ewiges Haengen zuzulassen, und weit
+// genug oben, um langsame Datentraeger nicht faelschlich abzustrafen. Was danach
+// geschieht, ist ebenfalls entschieden: Die Funktion wirft, main.tsx bricht den
+// Start sichtbar ab (Klartextmeldung ohne React). Kein stiller Fallback.
+const LADEN_ZEITGRENZE_MS = 10_000;
+
 export async function ladeMarkenSchriften(): Promise<void> {
-  await Promise.all(
+  const laden = Promise.all(
     SCHRIFTEN.map(async ({ familie, gewicht, quelle }) => {
       const face = new FontFace(familie, `url(${quelle.href}) format("woff2")`, {
         weight: gewicht,
@@ -72,4 +71,21 @@ export async function ladeMarkenSchriften(): Promise<void> {
       document.fonts.add(face);
     }),
   );
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      laden,
+      new Promise<never>((_, ablehnen) => {
+        // clearTimeout im finally: Der Timer haelt das Promise nicht unerreichbar
+        // am Leben und feuert nach einem Erfolg ins Leere.
+        timer = setTimeout(
+          () => ablehnen(new Error(`Laden der Marken-Schriften ueberschritt ${LADEN_ZEITGRENZE_MS} ms.`)),
+          LADEN_ZEITGRENZE_MS,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }

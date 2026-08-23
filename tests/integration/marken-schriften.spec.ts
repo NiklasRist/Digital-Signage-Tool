@@ -72,18 +72,34 @@ const SCHRIFTEN = [
  */
 const BREITE_AUSSAGEKRAEFTIG = new Set(["Playfair Display", "Archivo Black"]);
 
+// Latin Extended-A plus Mikrozeichen: Der Befund aus Nachtrag 14.08. zu #8 - die
+// frueheren Latin-Subsets enthielten sie nicht, "l" und Gefaehrten fielen still
+// auf eine Ersatzschrift zurueck. Die Full-Latin-Dateien muessen alle abdecken.
+const LATEIN_ZEICHEN = ["l", "\u0142", "\u0107", "\u015F", "\u0151", "\u017E", "\u00B5"] as const;
+
 interface Messpunkt {
   familie: string;
   gewicht: string;
   breite: number;
   /** Breite derselben Zeichenfolge bei gleichem Gewicht mit einer erfundenen Familie. */
   ersatzbreite: number;
+  /** Breiten der einzelnen Latin-Extended-Zeichen mit der Marken-Familie. */
+  lateinBreiten: number[];
+  /** Dieselben Zeichen mit der erfundenen Familie (System-Ersatzschrift). */
+  lateinErsatzbreiten: number[];
   check: boolean;
+}
+
+interface Isoliert {
+  familie: string;
+  gewicht: string;
+  breiten: number[];
 }
 
 interface Sondenergebnis {
   vorher: Messpunkt[];
   nachher: Messpunkt[];
+  lateinIsoliert: Isoliert[];
   facesVorher: number;
   faces: { familie: string; gewicht: string; status: string }[];
   fehler: string | null;
@@ -131,12 +147,18 @@ beforeAll(() => {
   const hauptSkript = join(temp, "haupt.cjs");
   writeFileSync(hauptSkript, electronHauptSkript(), "utf8");
 
+  // Der Binary-Pfad ist plattformabhaengig: Unter macOS liegt die Anwendung im
+  // App-Bundle, unter Windows/Linux heisst sie schlicht electron(.exe).
   const elektron = join(
     WURZEL,
     "node_modules",
     "electron",
     "dist",
-    process.platform === "win32" ? "electron.exe" : "electron",
+    process.platform === "darwin"
+      ? "Electron.app/Contents/MacOS/Electron"
+      : process.platform === "win32"
+        ? "electron.exe"
+        : "electron",
   );
   const ausgabe = execFileSync(elektron, [hauptSkript, sondenSeite], {
     cwd: WURZEL,
@@ -167,6 +189,7 @@ function sondenHtml(chunk: string): string {
 <div id="wurzel"></div>
 <script type="module">
 const TEXT = "Fitnessworld24 Kursplan ABCDEFG abcdefg 0123456789";
+const LATEIN_ZEICHEN = ${JSON.stringify(LATEIN_ZEICHEN)};
 const SCHRIFTEN = ${JSON.stringify(SCHRIFTEN)};
 // Eine Familie, die es garantiert nirgends gibt: So sieht der Rueckfall auf die
 // Ersatzschrift aus. Gemessen wird sie bei JEDEM Gewicht einzeln - eine fette
@@ -176,17 +199,22 @@ const ERFUNDEN = "Gibt-Es-Garantiert-Nicht-QXZ";
 const ctx = document.createElement("canvas").getContext("2d");
 const wert = (f, g) => g + " 100px \\"" + f + "\\"";
 const messe = (f, g) => { ctx.font = wert(f, g); return ctx.measureText(TEXT).width; };
+const messeZeichen = (f, g, z) => { ctx.font = wert(f, g); return ctx.measureText(z).width; };
 const aufnahme = () => SCHRIFTEN.map((s) => ({
   familie: s.familie,
   gewicht: s.gewicht,
   breite: messe(s.familie, s.gewicht),
   ersatzbreite: messe(ERFUNDEN, s.gewicht),
+  lateinBreiten: LATEIN_ZEICHEN.map((z) => messeZeichen(s.familie, s.gewicht, z)),
+  lateinErsatzbreiten: LATEIN_ZEICHEN.map((z) => messeZeichen(ERFUNDEN, s.gewicht, z)),
   check: document.fonts.check(wert(s.familie, s.gewicht)),
 }));
 
 const ergebnis = {
   vorher: aufnahme(),
   nachher: [],
+  /** Latin-Zeichen, je Familie ISOLIERT gemessen (alle anderen Faces entfernt). */
+  lateinIsoliert: [],
   facesVorher: document.fonts.size,
   faces: [],
   fehler: null,
@@ -209,6 +237,26 @@ try {
   }
   if (!genug()) ergebnis.wartenAbgelaufen = true;
   ergebnis.nachher = aufnahme();
+  // Isolierte Latein-Messung: Fehlt einer Familie ein Glyph, greift die
+  // Rueckfallkette des Browsers - und DIE ist NICHT dieselbe wie bei der erfundenen
+  // Familie (beim Bauen gemessen: eine registrierte, aber unvollstaendige Familie
+  // faellt anders zurueck als eine voellig unbekannte). Nur wenn alle ANDEREN
+  // Faces aus document.fonts entfernt sind, endet der Rueckfall garantiert in
+  // derselben System-Ersatzschrift wie "ERFUNDEN" - erst dann ist Gleichheit der
+  // Breiten der eindeutige Beweis fuer ein fehlendes Glyph. Danach wird alles
+  // zurueckregistriert.
+  for (const s of SCHRIFTEN) {
+    const andere = [...document.fonts].filter(
+      (f) => !(f.family.replace(/^"|"$/g, "") === s.familie && f.weight === s.gewicht),
+    );
+    for (const f of andere) document.fonts.delete(f);
+    ergebnis.lateinIsoliert.push({
+      familie: s.familie,
+      gewicht: s.gewicht,
+      breiten: LATEIN_ZEICHEN.map((z) => messeZeichen(s.familie, s.gewicht, z)),
+    });
+    for (const f of andere) document.fonts.add(f);
+  }
   document.fonts.forEach((f) => {
     // family kommt mit Anfuehrungszeichen zurueck, wenn der Name Leerzeichen enthaelt.
     ergebnis.faces.push({
@@ -353,5 +401,47 @@ describe("Marken-Schriften (#8)", () => {
     expect(regular).toBeDefined();
     expect(fett).toBeDefined();
     expect(fett!.breite).toBeGreaterThan(regular!.breite);
+  });
+
+  it("zeichnet Latin-Extended-Zeichen nach dem Laden aus der Marke, nicht aus einer Ersatzschrift", () => {
+    // Nachtrag #8 vom 14.08., Punkt 4: Die alten Latin-Subsets enthielten kein
+    // Latin Extended-A - Zeichen wie das l fielen still zurueck. Die Full-Latin-
+    // Dateien muessen ALLE kritischen Zeichen abdecken.
+    //
+    // Geprueft wird ISOLIERT (alle anderen Faces aus document.fonts entfernt,
+    // siehe Sonde): Nur so endet der Rueckfall bei einem fehlenden Glyph
+    // garantiert in derselben System-Ersatzschrift wie die erfundene Familie,
+    // und Breitengleichheit ist der eindeutige Beweis fuer "Glyph fehlt".
+    // document.fonts.check() ist als Pruefmittel untauglich (siehe Kopf).
+    //
+    // GRENZE, beim Bauen gemessen: Fuer ARIMO ist die Breitenprobe PRINZIPBEDINGT
+    // unbrauchbar - Arimo ist metrisch an Arial angelehnt, und die System-
+    // Ersatzschrift setzt das Mikrozeichen ZUFALLSGLEICH breit (57.6171875 px bei
+    // 100px, gemessen). Gleichheit beweist hier also NICHT das fehlende Glyph.
+    // Fuer Arimo tragen der Face-Zustand und der Offline-cmap-Nachweis (fontTools:
+    // alle sechs Zeichen in der Datei, siehe Commit-Beschreibung) die Aussage;
+    // die scharfe Zeichenprobe gilt fuer Playfair Display und Archivo Black,
+    // deren Metrik sich von jeder plausiblen Ersatzschrift unterscheidet.
+    for (const m of ergebnis.nachher) {
+      const face = ergebnis.faces.find((f) => f.familie === m.familie && m.gewicht === f.gewicht);
+      expect(face?.status, `${m.familie} ${m.gewicht}: Face nicht loaded`).toBe("loaded");
+      if (m.familie === "Arimo") continue;
+      const iso = ergebnis.lateinIsoliert.find(
+        (i) => i.familie === m.familie && i.gewicht === m.gewicht,
+      );
+      expect(iso, `keine isolierte Messung fuer ${m.familie} ${m.gewicht}`).toBeDefined();
+      const messungen = iso!.breiten;
+      expect(messungen).toHaveLength(LATEIN_ZEICHEN.length);
+      for (const [i, breite] of messungen.entries()) {
+        const ersatz = m.lateinErsatzbreiten[i]!;
+        const zeichen = LATEIN_ZEICHEN[i]!;
+        expect(
+          Math.abs(breite - ersatz),
+          `${m.familie} ${m.gewicht}, Zeichen "${zeichen}": isolierte Breite ` +
+            `${breite} entspricht der Ersatzschrift (${ersatz}) ` +
+            `- das Glyph fehlt in der gebuendelten Datei.`,
+        ).toBeGreaterThan(0.5);
+      }
+    }
   });
 });
