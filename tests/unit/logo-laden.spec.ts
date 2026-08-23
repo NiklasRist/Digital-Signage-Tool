@@ -203,7 +203,7 @@ describe('logo-laden (#315)', () => {
 
     it("unbekannter herkunft-Wert führt zu 'fehlt', null Images, keinem Wurf", async () => {
       const id = krummeId(5)
-      const fremd = { ...markeMitLogo(id, 'importiert'), logo: { datei: 'x.png', herkunft: 'fremd', seitenverhaeltnis: 1 } } as Marke
+      const fremd = { ...markeMitLogo(id, 'importiert'), logo: { datei: 'x.png', herkunft: 'fremd', seitenverhaeltnis: 1 } } as unknown as Marke
       await expect(bereiteLogoVor(fremd)).resolves.toBeUndefined()
       expect(BildDoppel.erzeugt).toBe(0)
       expect(holeLogo(id)).toEqual({ zustand: 'fehlt' })
