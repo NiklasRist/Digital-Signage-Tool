@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.6 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.18 (`Bearbeitungsstand` bekommt `standardSegmentdauer` als drittes Feld – Undo/Redo nimmt das Ändern des Projektstandards als **einen** Schritt zurück)
+**Version:** 3.19 (Bedienort der Standarddauer entschieden: `projekt-verwaltung` – 9.5.2; sonst unverändert gegenüber v3.18)
 **Datum:** 16.08.2026
 **Status:** In Planung
 
@@ -1107,7 +1107,13 @@ verbietet. Ein einziger Aufruf unter einem Lock hat das Problem nicht.
 - **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `project:setzeStandardSegmentdauer`. Ohne Anmeldung im
   `ipc-gateway` bliebe sie eine Main-Funktion ohne Aufrufer.
 
-> **OFFEN (v3.17) – wo in der Oberfläche die Einstellung sitzt**, ist **nicht** entschieden: `projekt-verwaltung` (9.14.3, wie die Standardmarke) oder `composer` (9.7, wo die Dauern bedient werden). Die Operation und ihr Kanal sind davon **unabhängig**; nur der Bedienort fehlt. Zu entscheiden, bevor ein Oberflächen-Issue dazu geschrieben wird.
+> **ENTSCHIEDEN (v3.19, 23.08.2026) – der Bedienort ist `projekt-verwaltung`.** Die Einstellung
+> sitzt in der Projektverwaltung (9.14.3, wie die Standardmarke), **nicht** im `composer`: Der
+> Dialog fragt eine **projektweite** Einstellung ab (mit Reichweite über die Aktionen hinaus) –
+> das gehört zu den Projekteinstellungen; der Composer bleibt dem Zusammenstellen vorbehalten.
+> Die Operation und ihr Kanal sind davon unabhängig; sie stehen seit v3.17 fest. Das zugehörige
+> Oberflächen-Issue liegt in M7 (`modul:projekt-verwaltung`); die Operation selbst trägt das
+> Nachtrags-Issue #334.
 
 **Rückgängig/Wiederherstellen (FA-21):**
 
@@ -2482,6 +2488,8 @@ Identität und Rahmen sind stabil.
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
 > **Nachgezogen in v3.18 (16.08.2026), vom Auftraggeber entschieden – die Meldung aus v3.17 ist geschlossen (Anforderungsdokument unverändert v1.6):**
+
+> **Entschieden in v3.19 (23.08.2026), vom Auftraggeber entschieden (Anforderungsdokument unverändert v1.6):** Der **Bedienort der Standarddauer** ist `projekt-verwaltung` (9.5.2, oben ausgeschrieben). Der Bau läuft über das Nachtrags-Issue **#334** (`setzeStandardSegmentdauer` samt Vertrags-Erweiterung in #15 und Vorbelegung in #33).
 >
 > 1. **Der `Bearbeitungsstand` bekommt `standardSegmentdauer` als DRITTES FELD** (9.13.2, `setzeBearbeitungsstand` und `setzeStandardSegmentdauer` in 9.5.2, mitgezogen `löscheAktion` in 9.5.2/9.5.3). Undo **und** Redo stellen `aktionen`, `liste` und den Projektstandard **gemeinsam** her, über **einen** Aufruf von `setzeBearbeitungsstand`; der Wert wird gegen denselben Dauer-Bereich geprüft wie `setzeDauer` (10–45 s, 9.11.4). *Anlass:* `setzeStandardSegmentdauer` (v3.17) ändert **zwei Dinge in einem atomaren Zug**; der Schnappschuss trug nur `aktionen` und `liste`. Ein Undo hätte die festgeschriebenen Aktions-Dauern zurückgenommen und den Standard stehen lassen – **halb zurück, und der Nutzer sieht nicht, welche Hälfte**. *Warum das kein Bruch der Schnappschuss-Regel ist:* Der `Bearbeitungsstand` ist ein **Undo-Hilfsmittel, kein Datenmodell**. Dass darin ein Wert außerhalb des bisherigen Ausschnitts mitreist, ist genau die Stelle, an der die Zusammengehörigkeit entsteht – wer zwei Änderungen als **eine** Operation ausführt, muss sie als eine zurücknehmen können. **Ausdrücklich verworfen:** „Undo endet an der Projektgrenze" (nimmt die Atomarität zurück) und das Verschieben des **Geltungsbereichs** des Wertes, um ihn dem Schnappschuss anzupassen (drehte eine durch AD und TK durchgezogene Festlegung um, allein um Undo einfacher zu machen). *Folge:* `setzeStandardSegmentdauer` ist **schnappschusspflichtig** – der Schnappschuss entsteht wie bei jeder Instant-Operation in der Undo-Hülle um die gemeinsame Projekt-Sicht (9.13.2), **kein** zweiter Eingang.
 >
@@ -2489,7 +2497,7 @@ Identität und Rahmen sind stabil.
 >
 > 1. **`schemaVersion` bleibt bei 1 – die Erhöhung auf 2 ist ZURÜCKGENOMMEN** (9.5.5, Konstantentabelle 9.11.4, `Project` in 9.11.3, Kette 9.8.4). *Anlass:* v3.16 hatte die Zahl wegen des neuen Pflichtfelds `Project.standardSegmentdauer` angehoben und eine Migration 1 → 2 vorgesehen. Der Auftraggeber hat bestätigt, dass es **noch gar keine Projekte gibt** – die Migration wäre **Code für Daten, die es nirgends gibt: nie ausführbar, nie testbar**, und eine Regel, die niemand nachprüfen kann, ist schlimmer als keine. `standardSegmentdauer` gehört deshalb **von Anfang an zu `schemaVersion` 1**. *Was ausdrücklich BLEIBT:* das **Feld** `schemaVersion` samt seinem Zweck – trifft eine ältere App-Fassung später auf eine neuere `project.json`, **verweigert sie das Laden, statt zu raten**. Das wirkt ohne jede Migration, und künftige Erhöhungen bleiben möglich, sobald es echte Daten gibt.
 >
-> 2. **Der Schreibweg der Standard-Segmentdauer ist festgelegt: EINE Operation, alles oder nichts** (9.5.2). Neue Operation **`setzeStandardSegmentdauer(dauer, festzuschreibendeAktionen)`** → `Ergebnis<Projekt>` im `project-store`, eigener Kanal **`project:setzeStandardSegmentdauer`**. Sie bekommt den neuen Standardwert **und** die Liste der abgewählten Aktionen (Anforderungsdokument 4.4), schreibt unter dem **einen** D1-Schreib-Lock den Standard, schreibt für jede abgewählte Aktion den alten Wert fest und speichert **einmal**; scheitert etwas, ist **nichts** geändert. *Warum nicht n Einzelaufrufe:* Sie wären **nicht unteilbar** – scheitert der fünfte von zwölf, ist der Standard schon geändert und vier Aktionen sind festgeschrieben, ein Zustand, den niemand wollte und den **kein Rollback sauber zurücknimmt** (der Rückweg wären genau die von 9.13.2 verbotenen inversen Operationen). Sie wirkt auf das **geladene** Projekt (nur eines ist geladen, 9.5.1) – die Auswahlliste der Aktionen setzt das ohnehin voraus. **Noch offen** bleibt allein der **Bedienort** (`projekt-verwaltung` oder `composer`); Operation und Kanal sind davon unabhängig.
+> 2. **Der Schreibweg der Standard-Segmentdauer ist festgelegt: EINE Operation, alles oder nichts** (9.5.2). Neue Operation **`setzeStandardSegmentdauer(dauer, festzuschreibendeAktionen)`** → `Ergebnis<Projekt>` im `project-store`, eigener Kanal **`project:setzeStandardSegmentdauer`**. Sie bekommt den neuen Standardwert **und** die Liste der abgewählten Aktionen (Anforderungsdokument 4.4), schreibt unter dem **einen** D1-Schreib-Lock den Standard, schreibt für jede abgewählte Aktion den alten Wert fest und speichert **einmal**; scheitert etwas, ist **nichts** geändert. *Warum nicht n Einzelaufrufe:* Sie wären **nicht unteilbar** – scheitert der fünfte von zwölf, ist der Standard schon geändert und vier Aktionen sind festgeschrieben, ein Zustand, den niemand wollte und den **kein Rollback sauber zurücknimmt** (der Rückweg wären genau die von 9.13.2 verbotenen inversen Operationen). Sie wirkt auf das **geladene** Projekt (nur eines ist geladen, 9.5.1) – die Auswahlliste der Aktionen setzt das ohnehin voraus. Der **Bedienort** ist mit v3.19 (23.08.2026) entschieden: **`projekt-verwaltung`** (s. 9.5.2 oben); Operation und Kanal sind davon unabhängig.
 >
 > 3. **Reichweite der Standarddauer: Aktionen ja, platzierte Listenelemente nein** (9.5.2, mitgezogen Anforderungsdokument 4.4). Ein Wechsel des Projektstandards wirkt auf die **Aktionen** – alle mit `standardDauer: null` folgen dem neuen Wert. **Bereits platzierte Listenelemente behalten ihre `dauer`**: Sie ist beim Platzieren **materialisiert** worden (die Kette 9.8.4 liefert nur den Startwert, danach entscheidet der Regler) und ändert sich **nicht rückwirkend**. Ein Nachziehen würde eine am Regler getroffene Nutzerwahl unsichtbar überschreiben.
 >

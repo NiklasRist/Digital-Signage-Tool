@@ -1600,6 +1600,12 @@ Entfällt (Typdefinition; die Belegungs-Validierung je `art` ist Sache der `proj
 ## Nicht selbst entscheiden – STOPP und fragen
 - (keine offenen Punkte – `Listenelement` bleibt bewusst flach, s. Invarianten)
 
+**Nachtrag 23.08.2026 – DIE PROJEKTWEITE STANDARDDAUER IST DAZUGEKOMMEN (TK v3.18; identisch mit dem
+Nachtrag auf GitHub #15):** `Project` bekommt das Pflichtfeld `standardSegmentdauer: number`
+(TK 9.11.3, Teil von schemaVersion 1, KEINE Migration), der `Bearbeitungsstand` das **dritte** Feld
+`standardSegmentdauer: number` (TK 9.13.2). Die DoD-Zeile „genau den zwei Feldern" ist damit
+überholt – drei Felder, weiterhin ohne `assets`/`letzterAusgabeName`. Gebaut von **#334**.
+
 ## Definition of Done
 - [ ] `Project`/`Listenelement`/`Einblendung` exakt wie oben
 - [ ] `liste` ist `Listenelement[]`, kein zusätzliches Sortier-/Positionsfeld irgendwo im Projekt
@@ -3228,7 +3234,8 @@ Entfällt. (Die vormals offene Frage nach Ordnername UUID-vs-lesbar ist bereits 
 - [ ] `erstelleProjekt` legt `projects/<projektId>/project.json` und `projects/<projektId>/media/`
       an
 - [ ] Das neue Projekt ist danach über `öffneProjekt` (M1-22) mit identischem Inhalt ladbar
-- [ ] `letzterAusgabeName` ist im neu angelegten `Project` `null`
+- [ ] `letzterAusgabeName` ist im neu angelegten `Project` `null` *(Nachtrag 23.08., identisch mit
+      GitHub #33: und `standardSegmentdauer` ist 10, aus der Konstante `STANDARD_ANZEIGEDAUER_SEKUNDEN`)*
 - [ ] Läuft innerhalb von `mitD1Lock`
 - [ ] Keine Datei außerhalb von `src/main/project-store/erstelle-projekt.ts` (+ zugehörige Testdatei) geändert
 
