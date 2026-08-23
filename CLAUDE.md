@@ -68,8 +68,8 @@ worden; die Rückwärts-Zitat-Korrektur über die angelegten Issues ist ebenfall
    betroffen:** `Asset.typ: 'video' | 'bild'` bleibt – Bilder werden weiter importiert und über
    `Aktion.bildRef` benutzt.
 
-**Offen ist allein die projektweite Standarddauer** (Punkt 1). Ob ein Folge-Issue dafür baubar ist,
-sagt `python tools/bereitschaft.py`.
+**Die projektweite Standarddauer ist gebaut (#334, TK v3.19/v3.20)**; `StartBefund` ist mit TK v3.20
+ebenso Vertrag. Ob ein Folge-Issue baubar ist, sagt `python tools/bereitschaft.py`.
 
 ### Werkzeuge, die du benutzen sollst statt sie neu zu bauen
 
@@ -109,7 +109,8 @@ sagt `python tools/bereitschaft.py`.
 - **Datenort beim Start nicht beschreibbar** (#51/#3): entschieden ist ein Dialog im Main mit
   „Erneut versuchen"/„Beenden" und generischem Text. Ursachenbezogene Texte erst, wenn die
   errno-Zuordnung an echten Sticks **gemessen** ist. `erzwingeEinzelInstanz` liefert `StartBefund`
-  mit drei Zuständen, #3 zitiert `boolean` – Vertragsabweichung, TK-Zeile fehlt.
+  mit drei Zuständen – seit TK v3.20 (23.08.2026) Vertrag; #3 trägt einen Nachtrag, der
+  `index.ts`-Kommentar ist berichtigt. Die Abweichung ist damit GESCHLOSSEN.
 - **`marken_datei_fehlt`** (vierter Reparatur-Weg, TK 2340) ist von `KaputteStelle` nicht abbildbar –
   eigenes Issue, gebaut mit M8.
 - **`meldeAn` und `istGefuellterText` doppeln Namen** – die Folge-Issues **#332** (Nutzlast-Prüfer
