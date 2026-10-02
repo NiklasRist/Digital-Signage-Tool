@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
+ 
 // GENERIERT aus dem Signaturblock von Issue #150.
 // [vorlagen-editor] Live-Vorschau mit einer echten Aktion und testweise geleerten Feldern
 //
@@ -38,20 +39,31 @@ import { stelleSchriftenBereit } from '../template-canvas/schriften'
 export type VorschauFeld = 'titel' | 'beschreibung' | 'preis' | 'cta' | 'bild'
 
 /** Ersatz, wenn die Aktions-Bibliothek des Projekts leer ist. Wird NIE gespeichert. */
-export const BEISPIEL_AKTION: Aktion = (() => {
-  throw new Error(
-    "Noch nicht umgesetzt - Wert gehoert zu Issue #150."
-  );
-})();
+export const BEISPIEL_AKTION: Aktion = {
+  id: 'vorschau-beispiel-aktion',
+  titel: 'Beispiel-Aktion',
+  beschreibung: 'Diese Aktion dient nur der Live-Vorschau und wird nie gespeichert.',
+  preis: '9,99 €',
+  bildRef: null,
+  cta: 'Gratis Probetraining',
+  standardDauer: null,
+  vorlagenId: 'vollbild',
+  akzentfarbe: null,
+}
 
 /** Die gewählte Aktion, sonst die erste der Bibliothek, sonst BEISPIEL_AKTION. */
 export function waehleVorschauAktion(
   aktionen: readonly Aktion[],
   gewaehlteId: string | null,
 ): Aktion {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #150."
-  );
+  const gewaehlt =
+    gewaehlteId !== null
+      ? aktionen.find((aktion) => aktion.id === gewaehlteId)
+      : undefined
+  if (gewaehlt !== undefined) return gewaehlt
+  const erste = aktionen[0]
+  if (erste !== undefined) return erste
+  return BEISPIEL_AKTION
 }
 
 /** Kopie der Aktion mit den genannten Feldern geleert. Verändert die Vorlage NICHT. */
@@ -59,9 +71,14 @@ export function leereFelderFuerVorschau(
   aktion: Aktion,
   geleert: ReadonlySet<VorschauFeld>,
 ): Aktion {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #150."
-  );
+  return {
+    ...aktion,
+    titel: geleert.has('titel') ? '' : aktion.titel,
+    beschreibung: geleert.has('beschreibung') ? null : aktion.beschreibung,
+    preis: geleert.has('preis') ? null : aktion.preis,
+    cta: geleert.has('cta') ? null : aktion.cta,
+    bildRef: geleert.has('bild') ? null : aktion.bildRef,
+  }
 }
 
 /**
@@ -76,9 +93,23 @@ export async function bereiteVorschauVor(
   assets: readonly Asset[],
   marke: Marke,
 ): Promise<void> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #150."
-  );
+  // Schriften und Logo laden auch ohne Projekt – sie hängen an der Marke.
+  await stelleSchriftenBereit()
+  await bereiteLogoVor(marke)
+
+  if (projektId === null) return
+
+  const eintraege: Array<{ schluessel: string; dateiname: string }> = []
+  for (const aktion of aktionen) {
+    if (aktion.bildRef === null) continue
+    const asset = assets.find((kandidat) => kandidat.id === aktion.bildRef)
+    if (asset === undefined) continue
+    if (asset.zustand === 'fehlt') continue
+    eintraege.push({ schluessel: aktion.bildRef, dateiname: asset.dateiname })
+  }
+  if (eintraege.length === 0) return
+
+  await bereiteMotiveVor(projektId, eintraege)
 }
 
 /** Der EINZIGE Zeichenaufruf des vorlagen-editor. Leert die Felder und ruft zeichneSegment. */
@@ -88,7 +119,5 @@ export function zeichneVorschau(
   marke: Marke,
   geleert: ReadonlySet<VorschauFeld>,
 ): SegmentBild {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #150."
-  );
+  return zeichneSegment(leereFelderFuerVorschau(aktion, geleert), vorlage, marke)
 }

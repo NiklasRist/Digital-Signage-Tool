@@ -1,29 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #199.
 // [app-shell] Der einzige Auswerter der Warteschlangen-Ereignisse
 //
 // Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
 // aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 73ec33f40e41ea1d
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// dabei sein Issue.
 
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { Asset } from '../../shared/contracts/asset'
@@ -47,41 +27,100 @@ export interface NachlaufWirkungen {
   /** Optional: die Ausgabe-Liste neu laden (#230). Fehlt sie, geschieht nichts. */
   aktualisiereAusgabenListe?: () => void
   /** Optional: meldet der Reparatur-Führung die Kennung eines ERFOLGREICH importierten Assets
-   *  (#256 `schliesseMedienImportAb`, über #262). NUR bei art 'import' und status 'erfolg'.
-   *  Fehlt sie, geschieht nichts. Diese Datei weiß NICHT, ob eine Reparatur läuft – das
-   *  entscheidet der Empfänger (s. ENTSCHIEDEN 11). */
+   *  (#256 `schliesseMedienImportAb`, über #262). NUR bei art 'import' und status 'erfolg'. */
   meldeImportErgebnis?: (assetId: string) => void
-  /** Meldeweg für Fehler, die beim Nachlauf selbst auftreten (z. B. Vorbereiten schlägt fehl).
-   *  Diese Datei zeigt NICHTS selbst an. Wo die Meldung LANDET, ist entschieden: in der
-   *  anwendungsweiten `meldungsFlaeche` des Rahmens (#195), gehalten von #262 (`App.tsx`). */
+  /** Meldeweg für Fehler, die beim Nachlauf selbst auftreten. LANDET in der anwendungsweiten
+   *  meldungsFlaeche des Rahmens (#195), gehalten von #262 (App.tsx). */
   meldeFehler: (code: string, meldung: string) => void
 }
 
+/** Die drei terminalen Zustände (TK 9.3.3). */
+export const TERMINALE_ZUSTAENDE = ['erfolg', 'fehlgeschlagen', 'abgebrochen'] as const
+
+/** Die beiden Auftragsarten, die D1 verändern (TK 9.13.3). */
+export const D1_AENDERNDE_ARTEN = ['import', 'loeschen'] as const
+
 /**
  * Startet den Nachlauf: abonniert die Warteschlange und wertet TERMINALE Übergänge aus.
- * `abonniereQueue` bildet der Aufrufer aus `abonniere` (#151) – diese Datei kennt keinen
- * Kanalnamen und importiert die Kanal-Registry nicht.
- * Rückgabewert ist die Abmelde-Funktion; sie beendet das Abo und vergisst die gemerkten Kennungen.
  */
 export function starteAuftragsNachlauf(
   abonniereQueue: (hoerer: (auftraege: Auftrag[]) => void) => () => void,
   wirkungen: NachlaufWirkungen,
 ): () => void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #199."
-  );
+  // Die gemerkten Kennungen: Jede Kennung wird GENAU EINMAL ausgewertet. Das Ereignis
+  // traegt die GANZE Liste, nicht einen Übergang - ohne Merker lief der selbe Erfolg je
+  // Push mehrfach hinein und erzeugte Asset-Dubletten.
+  const ausgewertet = new Set<string>()
+
+  const merkAuftrag = async (auftrag: Auftrag): Promise<void> => {
+    if (!(TERMINALE_ZUSTAENDE as readonly string[]).includes(auftrag.status)) return
+    if (ausgewertet.has(auftrag.auftragId)) return
+    ausgewertet.add(auftrag.auftragId)
+
+    if (!(D1_AENDERNDE_ARTEN as readonly string[]).includes(auftrag.art)) return
+
+    // kein Erfolg: KEIN Rollback (Fehlerklasse-Regel, TK 9.7.3) - Meldung, weiter arbeiten.
+    if (auftrag.status === 'fehlgeschlagen' || auftrag.status === 'abgebrochen') {
+      if (auftrag.status === 'fehlgeschlagen' && auftrag.fehler !== null) {
+        wirkungen.meldeFehler(auftrag.fehler.code, auftrag.fehler.meldung)
+      }
+      return
+    }
+
+    const rohErgebnis: unknown = auftrag.ergebnis
+    if (rohErgebnis === null || rohErgebnis === undefined) {
+      wirkungen.meldeFehler('unbekannter_fehler', `Der Auftrag ${auftrag.auftragId} meldet Erfolg ohne Ergebnis.`)
+      return
+    }
+
+    const projekt = wirkungen.holeProjekt()
+    if (projekt === null) {
+      wirkungen.meldeFehler('kein_projekt', `Der Auftrag ${auftrag.auftragId} ist fertig, aber es ist kein Projekt geladen.`)
+      return
+    }
+
+    // Rückgabewert je Art (9.3.1): import → Asset; loeschen → { assetId }.
+    let merged: Project
+    if (auftrag.art === 'import') {
+      const asset = rohErgebnis as Asset
+      if (typeof asset?.id !== 'string') {
+        wirkungen.meldeFehler('unbekannter_fehler', 'Ein Import meldet Erfolg ohne Asset-Kennung.')
+        return
+      }
+      // Dubletten-Wächter: Das Ereignis kann denselben Erfolg nach einem Abgleich noch
+      // einmal tragen; die Kennung im Bestand entscheidet, nicht der Merker allein.
+      if (projekt.assets.some((vorhanden) => vorhanden.id === asset.id)) {
+        return
+      }
+      merged = { ...projekt, assets: [...projekt.assets, asset] }
+    } else {
+      const kennung = (rohErgebnis as { assetId?: unknown }).assetId
+      if (typeof kennung !== 'string') {
+        wirkungen.meldeFehler('unbekannter_fehler', 'Eine Löschung meldet Erfolg ohne assetId.')
+        return
+      }
+      merged = { ...projekt, assets: projekt.assets.filter((asset) => asset.id !== kennung) }
+    }
+
+    // ZUERST die Sicht weiterschalten, DANN die Motive neu vorbereiten: #154 liest
+    // aktionen/assets des ÜBERGEBENEN Projekts - die Sicht muss den MERGED Stand tragen.
+    wirkungen.setzeProjekt(merged)
+    wirkungen.verwirfMotivBestand()
+    const vorbereitet = await wirkungen.bereiteZeichnenVor(merged)
+    if (!vorbereitet.ok) {
+      wirkungen.meldeFehler(vorbereitet.fehler.code, vorbereitet.fehler.meldung)
+    }
+
+    if (auftrag.art === 'import') {
+      wirkungen.meldeImportErgebnis?.((rohErgebnis as Asset).id)
+    }
+    // Eine gelöschte Ausgabe-Liste nicht nachziehen (aktualisiereAusgabenListe?: optional
+    // bleibt optional - die Löschwirkung auf output/ ist ein eigene Lauf der Queue).
+  }
+
+  return abonniereQueue((auftraege) => {
+    for (const auftrag of auftraege) {
+      void merkAuftrag(auftrag as unknown as Auftrag)
+    }
+  })
 }
-
-/** Die drei terminalen Zustände (TK 9.3.3). Exportiert, damit Tests sie nicht nachbauen müssen. */
-export const TERMINALE_ZUSTAENDE: readonly ['erfolg', 'fehlgeschlagen', 'abgebrochen'] = (() => {
-  throw new Error(
-    "Noch nicht umgesetzt - Wert gehoert zu Issue #199."
-  );
-})();
-
-/** Die beiden Auftragsarten, die D1 verändern (TK 9.13.3). */
-export const D1_AENDERNDE_ARTEN: readonly ['import', 'loeschen'] = (() => {
-  throw new Error(
-    "Noch nicht umgesetzt - Wert gehoert zu Issue #199."
-  );
-})();

@@ -80,6 +80,11 @@ Desktop.ini
 # freigegebenen Handle von selbst auf, nicht ueber Loeschen), waere also dauerhaft sichtbar.
 /instanz.lock
 /instanz.signal
+/instanz.lock
+# Ergaenzt 02.10.2026: die .bak-Leichen der Dev-Starts (Dev-Datenort = Repo-Wurzel).
+/config.json.bak
+/protokoll.json.bak
+/warteschlangen-journal.json.bak
 
 # Python-Zwischenspeicher der Werkzeuge unter tools/. Entsteht bei jedem Lauf von
 # geruest.py und stand seither in jedem `git status` - ohne dass er je ins Repo gehoert.

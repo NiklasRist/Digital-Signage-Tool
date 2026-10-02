@@ -93,6 +93,13 @@ export const KANAELE = {
     setzeElementReferenz: 'project:setzeElementReferenz',
     autoSpeichernStatus: 'project:autoSpeichernStatus',
 
+    // ERGAENZT durch #240 (TK v3.1, nachgezogen 02.10.2026) - die beiden Operationen der
+    // Nachtrag-2-Verdrahtung (Merge-Übernahme aus der Bauvorgabe): `setzeBearbeitungsstand`
+    // ist der einzige Rückschreib-Weg des Undo/Redo (TK 9.13.2); `öffneProjektordner`
+    // öffnet den ORDNER im Systemexplorer (TK 9.5.2, Instant, kein D1-Lock).
+    setzeBearbeitungsstand: 'project:setzeBearbeitungsstand',
+    öffneProjektordner: 'project:öffneProjektordner',
+
     // ERGAENZT durch #334 – die projektweite Standarddauer wird aenderbar (TK 9.5.2 seit
     // v3.18). Instant-Operation, gehoert in diesen Namensraum; Schluessel und String sind
     // zeichengleich zum Operationsnamen (Vertragstest von #25).

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #197.
 // [app-shell] Die gemeinsamen Sichten einmal aufbauen und durchreichen
 //
@@ -86,14 +85,74 @@ export interface Sichten {
  * benannten Fehler – NIE eine halb gefüllte Struktur.
  */
 export async function baueSichten(): Promise<Ergebnis<Sichten, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #197."
-  );
+  // Die Marke zuerst: Sie gehört zur Zeichenvorbereitung und zum Zeichnen selbst.
+  // Fehlt sie, gibt es keine nutzbare Kette - abbrechen, bevor etwas Halbes entsteht.
+  const markeErgebnis = await rufeAuf<Marke>(KANAELE.config.leseMarke)
+  if (!markeErgebnis.ok) {
+    return { ok: false, fehler: { code: markeErgebnis.fehler.code, meldung: markeErgebnis.fehler.meldung } }
+  }
+
+  // Die Projekt-Sicht ist ein WERT-Modul (#121): Die Setz-Funktionen reisen als
+  // PARAMETER durchgereicht - die Hülle dafür ist der ProjektZugang selbst.
+  const projektZugang: ProjektZugang = {
+    lade: ladeProjekt,
+    hole: holeSicht,
+    setzeProjekt,
+    setzeListe,
+    gleicheElementAb,
+    leere: leereProjektSicht,
+    aufGeaendert: aufSichtGeaendert,
+  }
+
+  // Die Vorlagen-Sicht (#155): einmal laden; das Erstladen gehört zum Aufbau der
+  // Sichten, danach liefert sie der Abo-Weg. Fehlt die Übersicht, sind Band-Vorlagen
+  // im composer wie im vorlagen-editor nicht bedienbar - abbrechen.
+  const uebersicht = await ladeUebersicht()
+  if (!uebersicht.ok) {
+    return { ok: false, fehler: uebersicht.fehler }
+  }
+
+  const vorlagenZugang: VorlagenZugang = {
+    lade: ladeUebersicht,
+    hole: holeUebersicht,
+    aufGeaendert: aufUebersichtGeaendert,
+  }
+
+  // Der Halter des letzten Zeichnen-Standes lebt HIER (deshalb sagt der
+  // Interface-Kommentar "ergänzt um den Halter"): Bereite merkt den Stand, Hole
+  // reicht ihn durch, Verwerfen setzt ihn auf null und ruft die Verwerf-Regel
+  // der Motiv-Ansicht (#154).
+  zeichenStand = null
+  const zeichenZugang: ZeichenZugang = {
+    bereiteVor: async (projekt: Project) => {
+      const ergebnis = await bereiteZeichnenVor(projekt)
+      zeichenStand = ergebnis.ok ? ergebnis.wert : null
+      return ergebnis
+    },
+    hole: () => zeichenStand,
+    verwirfMotivBestand: () => {
+      verwirfMotivBestand()
+      zeichenStand = null
+    },
+  }
+
+  const sichten: Sichten = {
+    projekt: projektZugang,
+    vorlagen: vorlagenZugang,
+    zeichnen: zeichenZugang,
+    marke: markeErgebnis.wert,
+  }
+
+  zuletztGebaut = sichten
+
+  return { ok: true, wert: sichten }
 }
+
+/** Der zuletzt gebaute Stand; null, solange baueSichten noch nichts erfolgreich lief. */
+let zuletztGebaut: Sichten | null = null
+let zeichenStand: Zeichenvoraussetzungen | null = null
 
 /** Die zuletzt gebauten Sichten; null, solange baueSichten nicht erfolgreich war. */
 export function holeSichten(): Sichten | null {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #197."
-  );
+  return zuletztGebaut
 }

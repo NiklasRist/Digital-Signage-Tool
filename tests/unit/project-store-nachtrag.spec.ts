@@ -243,7 +243,7 @@ describe("Kanal-Registry nach #153", () => {
   it("ergaenzt den project-Block um genau zwei Namen und laesst die uebrigen Bloecke unberuehrt", () => {
     // 16 -> 17 am 20.08.2026: #238 traegt das ERREIGNIS `autoSpeichernStatus` nach.
     // 17 -> 18 am 23.08.2026: #334 traegt den Kanal `setzeStandardSegmentdauer` nach.
-    expect(Object.keys(KANAELE.project)).toHaveLength(18);
+    expect(Object.keys(KANAELE.project)).toHaveLength(20);
     expect(KANAELE.project.setzeEinblendung).toBe("project:setzeEinblendung");
     expect(KANAELE.project.setzeElementReferenz).toBe("project:setzeElementReferenz");
     // Die vierzehn aus #76 unveraendert.

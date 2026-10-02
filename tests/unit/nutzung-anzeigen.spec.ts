@@ -344,7 +344,9 @@ describe("giltFuer", () => {
 });
 
 describe("DoD-Grep-Proben (Quelltext)", () => {
-  const CODE = readFileSync("src/renderer/vorlagen-editor/nutzung-anzeigen.ts", "utf8");
+  // CRLF-hart: Auf Windows-Checkouts endet jede Zeile mit '\r'; derart lässt sich der
+  // Zeilen-Vergleich nicht promising. Der Strip '\r' FIRST.
+  const CODE = readFileSync("src/renderer/vorlagen-editor/nutzung-anzeigen.ts", "utf8").replace(/\r\n/g, "\n");
   const IMPORTE = CODE.split("\n").filter((z) => z.trim().startsWith("import "));
 
   it("enthaelt kein JSX, kein react, kein abonniere, kein setInterval/setTimeout, kein Literal 'vorlagen:', kein entferneVorlage/bearbeiteVorlage/ueberarbeiteVorlage, kein window, kein Project und keinen Import aus src/main oder fremden Renderer-Modulen", () => {

@@ -273,6 +273,12 @@ describe('Grenzen der Datei', () => {
     new URL('../../src/main/project-store/liste-projekte.ts', import.meta.url),
     'utf8',
   )
+    // CRLF-hardened: Auf Windows-Checkouts (core.autocrlf=true) endet jede Zeile mit
+    // '\r'; das '\r' ist kein Zeichen der QUELLE, sondern des Dateitransfers. Ohne
+    // Normalisierung matcht '/\/\/.*$' nicht mehr (.* matcht '\r' nicht) und der
+    // Test meldet Verboste, die der Kernel gar nicht steht – platform-spezifischer
+    // Fehlalarm. Der Strip '\r' ZUERST.
+    .replace(/\r\n/g, '\n')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n')
     .map((zeile) => zeile.replace(/\/\/.*$/, ''))

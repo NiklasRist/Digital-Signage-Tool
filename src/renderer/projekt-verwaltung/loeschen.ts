@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 // GENERIERT aus dem Signaturblock von Issue #226.
 // [projekt-verwaltung] Ein Projekt löschen – die Bestätigung nennt vorher, was verschwindet
 //
@@ -44,16 +44,34 @@ export type LoeschBestaetigung =
  * Ausgabedateien und die Unumkehrbarkeit (TK 9.5.2). Er zählt NICHTS nach.
  */
 export function baueLoeschBestaetigung(meta: ProjektMeta): LoeschBestaetigung {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #226."
-  );
+  if (
+    typeof meta.name !== 'string' ||
+    typeof meta.anzahlMedien !== 'number' ||
+    !Number.isFinite(meta.anzahlMedien) ||
+    typeof meta.anzahlAusgaben !== 'number' ||
+    !Number.isFinite(meta.anzahlAusgaben)
+  ) {
+    return {
+      ok: false,
+      grund: 'zahlen_fehlen',
+      text:
+        'Die Zahlen zu Medien und Ausgaben sind nicht bereit; ohne sie darf nicht gelöscht werden.',
+    }
+  }
+  const medien = meta.anzahlMedien === 1 ? '1 Medium' : `${meta.anzahlMedien} Medien`
+  const ausgaben =
+    meta.anzahlAusgaben === 1 ? '1 gerenderte Ausgabedatei' : `${meta.anzahlAusgaben} gerenderte Ausgabedateien`
+  return {
+    ok: true,
+    text:
+      `Projekt ${meta.name} löschen? Der Ordner enthält ${medien} und ${ausgaben}. ` +
+      'Das lässt sich nicht rückgängig machen.',
+  }
 }
 
 /** true, wenn `meta` das aktuell in der gemeinsamen Sicht geladene Projekt ist. */
 export function istAktivesProjekt(meta: ProjektMeta, geladenes: Project | null): boolean {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #226."
-  );
+  return geladenes !== null && meta.id === geladenes.id
 }
 
 /**
@@ -85,7 +103,21 @@ export async function loescheProjekt(
   meta: ProjektMeta,
   wirkungen: LoeschWirkungen,
 ): Promise<Ergebnis<void, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #226."
-  );
+  const ergebnis = await rufeAuf<void>(KANAELE.project.löscheProjekt, { id: meta.id })
+  if (!ergebnis.ok) {
+    return { ok: false, fehler: ergebnis.fehler }
+  }
+
+  const geladenes = wirkungen.holeProjekt()
+  if (geladenes !== null && geladenes.id === meta.id) {
+    // Der Rückfall auf "kein Projekt geladen" – ohne Ersatzprojekt, ohne erfundene
+    // Kennung (TK 9.7.4). Und die daneben hängenden Bausteine: Motive weg, Undo weg.
+    wirkungen.verwirfMotivBestand()
+    wirkungen.leereProjektHistorie()
+    wirkungen.leereProjektSicht()
+  }
+
+  // Die Liste FRISCH: der Eintrag ist sonst weiterhin sichtbar.
+  await wirkungen.aktualisiereProjektliste()
+  return { ok: true, wert: undefined }
 }

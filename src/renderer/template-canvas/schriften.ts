@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 // GENERIERT aus dem Signaturblock von Issue #110.
 // [template-canvas] Marken-Schriften bereitstellen und den Canvas-Schriftwert bilden
 //
@@ -26,20 +26,33 @@
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import type { Schrift } from '../../shared/contracts/marke'
+import { ladeMarkenSchriften } from '../styles/schriften'
+
+/** Das EINE gecachte Erfolgspromise; null, solange noch nie erfolgreich aufgelöst. */
+let bereit: Promise<void> | null = null
 
 export async function stelleSchriftenBereit(): Promise<void> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #110."
-  );
+  if (bereit !== null) return bereit
+  const lauft = ladeMarkenSchriften()
+  bereit = lauft
+
+  try {
+    await lauft
+  } catch (grund) {
+    // Ein abgelehntes Promise wird NICHT gemerkt (Kontrakt oben) - der nächste Aufruf
+    // versucht es erneut; der hier laufende sieht den Fehler trotzdem.
+    bereit = null
+    throw grund
+  }
 }
 // Idempotent: merkt sich das EINE Promise von ladeMarkenSchriften() (#8) in einem Modul-Zustand und
 // gibt es bei jedem weiteren Aufruf unverändert zurück. Lädt nie ein zweites Mal. Ein abgelehntes
 // Promise wird NICHT gemerkt – der nächste Aufruf versucht es erneut.
 
 export function sindSchriftenBereit(): boolean {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #110."
-  );
+  // Der Gecache ist seit jeher ERFOLG-kaufend: Das Merkfeld entsteht erst beim Aufruf und
+  // wird bei Fehlschlag wieder geräumt.
+  return bereit !== null
 }
 // Synchron. true erst, nachdem stelleSchriftenBereit() erfolgreich aufgelöst hat; sonst false.
 // Existiert, weil zeichneSegment (#117) synchron ist und deshalb nicht awaiten darf.
@@ -47,10 +60,9 @@ export function sindSchriftenBereit(): boolean {
 // liefert. Diese Datei selbst weigert sich nie – sie gibt nur Auskunft.
 
 export function schriftKurzform(schrift: Schrift, größePx: number): string {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #110."
-  );
+  return `${schrift.gewicht} ${größePx}px "${schrift.familie}"`
 }
+
 // Liefert den Wert für CanvasRenderingContext2D.font, exakt in dieser Form und Reihenfolge:
 //   `${schrift.gewicht} ${größePx}px "${schrift.familie}"`
 // Der Familienname steht IMMER in doppelten Anführungszeichen. Keine weiteren Bestandteile

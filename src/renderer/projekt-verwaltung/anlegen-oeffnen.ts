@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 // GENERIERT aus dem Signaturblock von Issue #224.
 // [projekt-verwaltung] Projekt anlegen und Projekt öffnen
 //
@@ -57,12 +57,12 @@ export interface ProjektWechselWirkungen {
 /** Frühe Rückmeldung auf den eingegebenen Namen. KEIN Ersatz für die Prüfung im Main. */
 export type Namenspruefung = { ok: true; name: string } | { ok: false; grund: 'leer' }
 
-/** Schneidet führende/folgende Leerzeichen ab und weist einen danach leeren Namen zurück.
- *  Es wird NICHTS anderes geprüft (s. ENTSCHIEDEN 5). */
+/** Schneidet führende/folgende Leerzeichen ab und weist einen danach leeren Namen zurück. */
 export function pruefeProjektname(eingabe: string): Namenspruefung {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #224."
-  );
+  if (!(typeof eingabe === 'string')) return { ok: false, grund: 'leer' }
+  const name = eingabe.trim()
+  if (name === '') return { ok: false, grund: 'leer' }
+  return { ok: true, name }
 }
 
 /**
@@ -73,9 +73,21 @@ export async function legeProjektAn(
   eingabe: string,
   wirkungen: ProjektWechselWirkungen,
 ): Promise<Ergebnis<Project, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #224."
-  );
+  const pruefung = pruefeProjektname(eingabe)
+  if (!pruefung.ok) {
+    return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: 'Der Projektname darf nicht leer sein.' } }
+  }
+
+  const angelegt = await rufeAuf<Project>(KANAELE.project.erstelleProjekt, { name: pruefung.name })
+  if (!angelegt.ok) {
+    return { ok: false, fehler: { code: angelegt.fehler.code, meldung: angelegt.fehler.meldung } }
+  }
+
+  // Das Anlegen liefert das noch unbenetzte Projekt; GEFÜHLt wird erst durch das Öffnen
+  // (Reconcile + Zeichenvorbereitung). Deshalb kommt hier das Öffnen mit der Kennung,
+  // NICHT der zurückgegebene Wert in die Sicht.
+  await wirkungen.aktualisiereProjektliste()
+  return oeffneProjekt(angelegt.wert.id, wirkungen)
 }
 
 /**
@@ -86,7 +98,29 @@ export async function oeffneProjekt(
   projektId: string,
   wirkungen: ProjektWechselWirkungen,
 ): Promise<Ergebnis<Project, string>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #224."
-  );
+  // 1. Bestehende Motive weg BEVOR ein neues Projekt geladen wird: Der Bestand hängt an
+  //    der media://-Auffindung, die mit dem Projekt birst.
+  wirkungen.verwirfMotivBestand()
+
+  // 2. UNDO-HISTORIE leeren (TK 9.13.2, "ein Projektwechsel leert die Historie").
+  wirkungen.leereProjektHistorie()
+
+  // 3. Projekt laden in die gemeinsame Sicht; eingepflegt durch #197/ProjektZugang.
+  const geladen = await wirkungen.ladeProjekt(projektId)
+  if (!geladen.ok) {
+    return { ok: false, fehler: { code: geladen.fehler.code, meldung: geladen.fehler.meldung } }
+  }
+
+  // 4. Zeichenvoraussetzungen für DIESES Projekt: Nach erfolgreichem Laden, BEVOR ein
+  //    Thumbnail/Vorschau/Render entsteht. Fehlende Vorbereitung ist KEIN Oeffnen-Fehler
+  //    - die Anzeige; gemeldet über meldeFehler.
+  const vorbereitet = await wirkungen.bereiteZeichnenVor(geladen.wert)
+  if (!vorbereitet.ok) {
+    wirkungen.meldeFehler(vorbereitet.fehler.code, vorbereitet.fehler.meldung)
+  }
+
+  // 5. In den Reiter Zusammenstellen wechseln (TK 9.14.3: nach dem Öffnen).
+  wirkungen.wechsleZuZusammenstellen()
+
+  return { ok: true, wert: geladen.wert }
 }
