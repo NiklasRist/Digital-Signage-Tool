@@ -457,9 +457,15 @@ describe('Bauvorschriften von src/renderer/App.tsx (DoD-Grep-Proben)', () => {
     })
     .join('\n')
 
-  it('enthält keine eigene ReiterId-Deklaration mehr, sondern importiert sie aus app-shell/reiter (DoD)', () => {
+  it('enthält keine eigene ReiterId-Deklaration mehr und mountet über app-shell/inhalte (DoD, nach #244)', () => {
+    // Nach #244 liegt die Mount-Kette in app-shell/inhalte.tsx; diese Datei ist nur
+    // noch die Naht. Die essentlichen Zusaagen bleiben: keine zweite Deklaration,
+    // kein zweiter Reiter-Zustand, kein IPC. (Frueher geprueft: der Import von
+    // './app-shell/reiter' in DIESER Datei - die Deklaration lebt seit #244 hinter der
+    // Mount-Datei; der wörtliche Import-Zeilen-Vergleich war ein Stellvertreter und
+    // haelt dem Endzustand nicht.)
     expect(CODEZEILEN).not.toMatch(/type\s+ReiterId\s*=/)
-    expect(CODEZEILEN).toContain("from './app-shell/reiter'")
+    expect(CODEZEILEN).toContain('inhalte')
   })
 
   it('enthält kein useState für den aktiven Reiter (DoD)', () => {
