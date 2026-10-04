@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #139.
 // [action-editor] Akzentfarbe wählen – feste Auswahl aus der Markenpalette
 //
@@ -14,48 +13,77 @@
 // stehen; ihr Nichtmehrstimmen IST das Signal.
 // GERUEST-PRUEFSUMME: 240bfcb0dc1f5df0
 //
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// UMGESTELLT durch Issue #318 (FA-24, TK v3.4): Die Akzentfarbe ist ein FREIER
+// Hex-Wert, kein Rollenname. Die alte Fassung (akzentAuswahl, istAkzentRolle,
+// AKZENT_STANDARD = 'akzent') ist ERSATZLOS gestrichen - kein Alias, kein
+// @deprecated-Wrapper, keine auskommentierte Zeile "fuer spaeter".
+//   - GESPEICHERT wird der WERT der gewaehlten Palette-Rolle, nie ihr Name: Ein
+//     Rollenname kaeme im Zeichenpfad als unbrauchbare Farbe an und wuerde dort
+//     werfen (loeseFarbe #112 nimmt den Wert, wie er in der Aktion steht).
+//   - Aktion.akzentfarbe bekommt NIE einen Rollennamen - die Umkehrung des alten
+//     Verbots gilt ab hier in dieser Richtung.
+//   - Keine Warn-Rechnung aus dem gemeinsamen Modul in dieser Datei (die Warnung
+//     ist #325/#292 zugeordnet); kein Farb-Literal - die Hex-Werte kommen zur
+//     Laufzeit aus marke.farben.
+//   - Kein zweiter Schreibweg: akzentfarbe wird AUSSCHLIESSLICH ueber
+//     speichereAktion (#136) gesetzt.
 
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { FarbRolle, Marke } from '../../shared/contracts/marke'
 
-/** Die in v1 anwählbaren Akzent-Rollen, in Anzeigereihenfolge. Feste Liste, kein Farbwähler. */
-export const AKZENT_ROLLEN = ['akzent', 'akzentKraeftig', 'akzentTief'] as const
+import { speichereAktion } from './aktion-bearbeiten'
+
+/**
+ * Die drei Akzent-Rollen, die eine gesetzte `akzentfarbe` beim Zeichnen ERSETZT (TK 9.10.9).
+ * Hier NUR Vorschlagsquelle fuer das Farbfeld - NICHT mehr die Menge der speicherbaren Werte.
+ *
+ * Die Liste bleibt Teilmenge von `FarbRolle`: Ein Tippfehler in einem der drei Namen
+ * wuerde sonst `marke.farben[rolle] === undefined` liefern und einen leeren Vorschlag
+ * ohne Fehlermeldung erzeugen.
+ */
+export const AKZENT_ROLLEN = ['akzent', 'akzentKraeftig', 'akzentTief'] as const satisfies readonly FarbRolle[]
 export type AkzentRolle = (typeof AKZENT_ROLLEN)[number]
 
-/** Die Auswahl für die Oberfläche: Rollenname + der Hex-Wert aus der Marke für das Farbfeld. */
-export function akzentAuswahl(marke: Marke): Array<{ rolle: AkzentRolle; hex: string }> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #139."
-  );
+/**
+ * Die Vorschlaege der Markenpalette: `rolle` beschriftet den Knopf, `hex` ist der Wert,
+ * der beim Anklicken GESPEICHERT wird. Ersetzt `akzentAuswahl` (entschieden in #318, 3).
+ */
+export function akzentVorschlaege(marke: Marke): Array<{ rolle: AkzentRolle; hex: string }> {
+  return AKZENT_ROLLEN.map((rolle) => ({ rolle, hex: marke.farben[rolle] }))
 }
 
-/** Ist dieser gespeicherte Wert eine der anwählbaren Rollen? */
-export function istAkzentRolle(wert: string): wert is AkzentRolle {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #139."
-  );
+/**
+ * Ist `wert` ein speicherbarer Akzentfarbwert? Genau `#` + SECHS Hex-Ziffern,
+ * Gross-/Kleinschreibung gleichgueltig. Achtstellige Werte (#RRGGBBAA) sind hier
+ * NICHT speicherbar - #292 (#301) ist die melde Bare Frage dazu, nicht hier
+ * entschieden; abgelehnt wird also still im Formular, nicht still im Datenbestand.
+ */
+export function istAkzentfarbe(wert: string): boolean {
+  return /^#[0-9a-fA-F]{6}$/.test(wert)
 }
 
-/** Die Vorbelegung für eine neue Aktion. */
-export const AKZENT_STANDARD: AkzentRolle = 'akzent'
+/** Vorbelegung einer NEUEN Aktion: keine eigene Akzentfarbe, es gilt der Markenwert (TK 9.10.9). */
+export const AKZENT_STANDARD: string | null = null
 
-/** Setzt akzentfarbe auf eine Rolle. Schreibt über #136. */
+/**
+ * Setzt `akzentfarbe` auf einen freien Hex-Wert oder auf `null`. Schreibt ueber #136.
+ *
+ * `null` wird GESSENDET, nicht ausgelassen und nicht ersetzt: "keine eigene Farbe,
+ * der Markenwert gilt" ist ein zugesagter Zustand, kein Leerstand.
+ */
 export async function setzeAkzentfarbe(
   aktionId: string,
-  rolle: AkzentRolle,
+  farbe: string | null,
 ): Promise<Ergebnis<Aktion>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #139."
-  );
+  if (farbe !== null && !istAkzentfarbe(farbe)) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: `akzentfarbe: "${farbe}" ist kein gültiger Hex-Wert (#RRGGBB). Der Wert wurde nicht gespeichert.`,
+      },
+    }
+  }
+  return speichereAktion(aktionId, { akzentfarbe: farbe })
 }
