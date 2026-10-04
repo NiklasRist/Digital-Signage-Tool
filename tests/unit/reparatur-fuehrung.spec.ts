@@ -679,7 +679,7 @@ describe('Modulgrenze - reine Zustandsführung, kein Zustand im Modul', () => {
   const QUELLE = readFileSync(
     new URL('../../src/renderer/composer/reparatur-fuehrung.ts', import.meta.url),
     'utf8',
-  )
+  ).replace(/\r\n/g, '\n')
   // Die Kommentare nennen „IPC", „Reiter" und „app-shell" in der Begründung.
   // Geprüft werden deshalb nur echte Code-Zeilen, sonst schlüge die Regel an
   // ihrer eigenen Erklärung an.

@@ -584,7 +584,7 @@ describe('Modulgrenze - Renderer-Datei ohne Node und ohne IPC', () => {
   const QUELLE = readFileSync(
     new URL('../../src/renderer/composer/kaputt-erkennung.ts', import.meta.url),
     'utf8',
-  )
+  ).replace(/\r\n/g, '\n')
   // Die Kommentare dieser Datei nennen „Dateisystem", „IPC" und „ipc-client" in
   // der Begründung. Geprüft werden deshalb nur echte Code-Zeilen, sonst schlüge
   // die Regel an ihrer eigenen Erklärung an.
