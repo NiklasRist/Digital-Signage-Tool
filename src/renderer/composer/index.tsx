@@ -41,6 +41,9 @@ import { ordneNeuOptimistisch } from './liste-reorder'
 import { entferneElementAusListe } from './element-entfernen'
 import { baueReglerModell, begrenze, uebernehmeGrenzen, type ReglerModell } from './dauer-regler'
 import { berechneGesamtlaenge, formatiereLaenge, frameDauer } from './gesamtlaenge'
+import { importiereMedien, type ImportBericht } from './medien-import'
+import { AssetGalerie } from './asset-galerie'
+
 
 /**
  * Was diese Wurzel aus ANDEREN Renderer-Modulen braucht und nicht importieren darf
@@ -101,6 +104,9 @@ export function ComposerInterna({
   const [sicht, setzeSicht] = useState<Projektsicht>(() => projekt.hole())
   const [modell, setzeModell] = useState<ReglerModell | null>(null)
   const [grenzen, setzeGrenzen] = useState<{ anfang: number; ende: number } | null>(null)
+  // Der Bericht des Imports (#228): ohne ihn "passiert" der Import für den Nutzer
+  // NICHTS - eingereiht wird zwar im Main, aber sichtbar war das nie (Befund 04.10.).
+  const [importBericht, setzeImportBericht] = useState<ImportBericht | null>(null)
 
   useEffect(() => projekt.aufGeaendert(setzeSicht), [projekt])
 
@@ -164,12 +170,33 @@ export function ComposerInterna({
           data-testid="composer-medien-import"
           onClick={() => {
             if (inhalt === null) return
-            void verdrahtung.starteMedienImport(inhalt.id, null)
+            void importiereMedien(inhalt.id, verdrahtung.starteMedienImport).then((antwort) => {
+              if (antwort.ok) setzeImportBericht(antwort.wert)
+              else
+                setzeImportBericht({
+                  eingereiht: 0,
+                  abgebrochen: false,
+                  text: antwort.fehler.meldung,
+                  brauchtAufmerksamkeit: antwort.fehler.code !== 'unbekannter_fehler',
+                })
+            })
           }}
         >
           Medien importieren
         </button>
       </div>
+
+      {importBericht !== null && (
+        <div
+          data-testid="composer-import-bericht"
+          style={{
+            color: importBericht.brauchtAufmerksamkeit ? TAKTFARBE : undefined,
+            fontSize: 12,
+          }}
+        >
+          {importBericht.text}
+        </div>
+      )}
 
       {sicht.ladefehler !== null && (
         <div data-testid="composer-ladefehler" style={{ color: FEHLERFARBE, fontSize: 12 }}>
@@ -209,6 +236,10 @@ export function ComposerInterna({
               />
             </div>
           )}
+
+          <div data-testid="composer-galerie" style={{ flex: '1 1 auto', minHeight: 120, borderTop: '1px solid #444' }}>
+            {inhalt === null ? <AssetGalerie projekt={null} /> : <AssetGalerie projekt={inhalt} />}
+          </div>
         </>
       )}
     </div>
