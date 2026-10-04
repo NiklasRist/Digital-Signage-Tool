@@ -99,8 +99,25 @@ const ENTPRELLUNG_MS = 250
 // SAFETY: der Cast macht die Konstanten-Tabelle als Index-Form lesbar; O_EXLOCK wird
   // unmittelbar darunter auf undefined geprueft, O_NONBLOCK faellt per ?? auf 0 zurueck.
 const KONSTANTEN = fs.constants as Record<string, number | undefined>
-const O_EXLOCK = KONSTANTEN['O_EXLOCK']
+const O_EXLOCK_MASCHINE = KONSTANTEN['O_EXLOCK']
 const O_NONBLOCK = KONSTANTEN['O_NONBLOCK'] ?? 0
+
+// GEMESSEN (macOS, 04.10.2026): fs.constants exportiert O_EXLOCK auch auf macOS
+// nicht (undefined) - nicht nur auf Linux. Der Mac kennt das Flag aber (System-
+// Header fcntl.h: O_EXLOCK = 32 = 0x20), und openSync mit ihm sperrt wie erhofft:
+// zweiter Griff mit O_CREAT|O_RDWR|O_EXLOCK|O_NONBLOCK -> EAGAIN (Probe im
+// Issue #51 nachgetragen). Node hoehlt die BSD-Flag-Konstanten also nur in seiner
+// Tabelle, nicht auf dem Dateisystem. Deshalb wird der Wert an dieser EINEN Stelle
+// aus der System-Konvention nachgetragen, dort wo fs.constants ihn verschluckt.
+// Linux ist und bleibt "frei ohne Sperre": Dort ist O_EXLOCK auch am System
+// nicht vorhanden; die Pruefung unten bleibt gueltig.
+const O_EXLOCK_AUF_MACOS = 0x20
+
+// Nur auf macOS nachschlagen. Auf Linux waere der Wert 0x20 eine ERFUNDENE Zahl
+// (dort heisst das Flag-32 etwas anderes als Exklusivsperre) - die Plattformfrage
+// wird deshalb nicht ueber process.platform, sondern ueber das Maschinen-Flag
+// entschieden: Ist es da, ist die Plattform BSD-artig genug.
+const O_EXLOCK = O_EXLOCK_MASCHINE ?? (process.platform === 'darwin' ? O_EXLOCK_AUF_MACOS : undefined)
 
 /**
  * Der einmal ermittelte Befund.

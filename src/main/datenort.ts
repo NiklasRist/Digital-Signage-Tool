@@ -67,16 +67,28 @@ export function ermittleDatenOrt(): string {
   // Auf macOS liegt die ausfuehrbare Datei drei Ebenen tief im Bundle
   // (<Name>.app/Contents/MacOS/<Name>). "Neben der App" heisst deshalb: vier Ebenen
   // hoch, also der Ordner, der das .app-Bundle enthaelt.
+  //
+  // BEFUND vom 04.10.2026 (Vorbefund-Testfehler, jetzt behoben): Die Zweigwahl stand
+  // auf `process.platform === "darwin"` - sie richtete sich nach dem HOST, nicht nach
+  // dem Pfad. Auf einem macOS-Entwicklungsrechner nahm ein Windows-Pfad den
+  // Posix-Zweig: `path.dirname` kennt dort keine Backslashes, "D:\Programme\...\App.exe"
+  // wurde zu "." und das Ergebnis lag bei "/Users" (gemessen). Die Wahl ueber die
+  // Plattform des Hosts war also der Fehler selbst. Sie steht jetzt auf der FORM des
+  // Pfads: Ein macOS-Pfad faengt mit "/" an, ein Windows-Pfad auf ein Laufwerk. Der
+  // macOS-Fall bleibt funktional unveraendert (gepackt laufen echte exe-Pfade je
+  // Plattform ihrer Form nach richtig); nur der Windows-Fallback rechnet jetzt immer
+  // mit win32-Regeln.
   const exe = app.getPath("exe");
-  if (process.platform === "darwin") {
-    // `path.posix` statt `path`: `node:path` rechnet nach den Regeln des LAUFENDEN
-    // Systems. Auf macOS ist das ohnehin POSIX - zur Laufzeit aendert die Angabe also
-    // nichts. Sie macht diesen Zweig aber von der Wirtsplattform unabhaengig und damit
-    // ueberhaupt erst pruefbar: Mit dem plattformabhaengigen `path` rechnete derselbe
-    // Testfall unter Windows "C:\Volumes\Stick" statt "/Volumes/Stick" heraus.
+  if (exe.startsWith("/")) {
+    // `path.posix` statt `path`: dieselbe Begruendung wie im Testfall dokumentiert -
+    // der Zweig soll unabhaengig vom WIRT rechnen.
     return path.posix.resolve(path.posix.dirname(exe), "..", "..", "..");
   }
-  return path.dirname(exe);
+  // Windows: `path` rechnet nach den Regeln des LAUFENDEN Systems - und das kann hier
+  // der Mac oder Linux sein, wo Backslashes KEINE Trennzeichen sind. Ohne die
+  // Win32-Regeln fuer diesen Windows-Pfad-Fallback lieferte path.dirname auf einem
+  // macOS-Testlauf "." statt "D:\Programme\Signage" (gemessen, s. BEFUND oben).
+  return path.win32.dirname(exe);
 }
 
 // NICHT HIER, UND VON KEINEM ISSUE ABGEDECKT - gemeldet:
