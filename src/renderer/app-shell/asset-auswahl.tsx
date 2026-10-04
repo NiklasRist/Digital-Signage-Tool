@@ -17,7 +17,7 @@
 //   - Kein Nachrechnen des Reparatur-Fortschritts: hier wird nur gemeldet
 //     (aufAbgeschlossen / aufAbgebrochen / aufFehler), der Aufrufer leitet weiter.
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { JSX } from 'react'
 
 import type { Asset } from '../../shared/contracts/asset'
@@ -55,6 +55,10 @@ export function AssetAuswahl(eigenschaften: AssetAuswahlEigenschaften): JSX.Elem
 
   const [ausgewaehlt, setAusgewaehlt] = useState<Asset | null>(null)
   const [gesperrt, setGesperrt] = useState(false)
+  // Der SYNCHRONE Teil der Sperre (kommentiert in aktions-auswahl.tsx): Der
+  // disabled-Knopf greift erst beim Re-Render; der Ref schliesst die Fensterlücke
+  // zwischen zwei Klicks vor der Antwort.
+  const laeuft = useRef(false)
 
   const element = projekt.liste.find((e) => e.id === elementId)
 
@@ -86,9 +90,10 @@ export function AssetAuswahl(eigenschaften: AssetAuswahlEigenschaften): JSX.Elem
   const wahl = waehlbareAssets(projekt.assets, typ)
 
   async function uebernehmen(): Promise<void> {
-    if (gesperrt || ausgewaehlt === null) {
+    if (laeuft.current || ausgewaehlt === null) {
       return
     }
+    laeuft.current = true
     // Genau EIN Aufruf; bis zur Antwort ist die Auswahl gesperrt. Ein zweiter
     // Klick wuerde einen zweiten Schreibvorgang auf dasselbe Element ausloesen.
     setGesperrt(true)
@@ -99,11 +104,13 @@ export function AssetAuswahl(eigenschaften: AssetAuswahlEigenschaften): JSX.Elem
       } else {
         // Unveraenderter Code; die Auswahl bleibt offen - der Nutzer kann es
         // erneut oder mit einem anderen Medium versuchen.
+        laeuft.current = false
         setGesperrt(false)
         aufFehler(antwort.fehler.code, antwort.fehler.meldung)
       }
     } catch (ausnahme) {
       // Der Wurf verlaesst die Datei nicht.
+      laeuft.current = false
       setGesperrt(false)
       aufFehler(
         'unbekannter_fehler',
