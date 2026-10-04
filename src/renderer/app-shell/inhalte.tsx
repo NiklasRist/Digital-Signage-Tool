@@ -135,6 +135,22 @@ export function inhalte(): JSX.Element {
           },
         leereProjektHistorie: () => {},
         aktualisiereAusgabenListe: undefined,
+        // Befund 04.10.2026: Ohne diese Wirkung blieb nach dem Import "eingereiht"
+        // der letzte sichtbare Text - dass der Auftrag FERTIG ist, zeigte keine
+        // Stelle an (die Warteschlangen-Leiste ist als Stumm-Zeile gebaut, ihr
+        // Ausbau ist eigenes M7-Issue). Der Import meldet hier seinen Abschluss;
+        // der neue Asset selbst kommt über setzeProjekt in die Galerie.
+        meldeImportErgebnis: (assetId) => {
+          const projekt = holeSichten()?.projekt.hole().projekt ?? null
+          const asset = projekt?.assets.find((eintrag) => eintrag.id === assetId)
+          setzeAnwendungsmeldung(
+            asset === undefined
+              ? `Import abgeschlossen (${assetId.slice(0, 8)}).`
+              : `Import abgeschlossen: ${asset.originalname}`,
+          )
+          // Die Meldung ist eine Bestaetigung, kein Fehler: nach 5 s verblasst sie.
+          window.setTimeout(() => setzeAnwendungsmeldung(null), 5000)
+        },
         meldeFehler: (code, meldung) => setzeAnwendungsmeldung(`${meldung} (${code})`),
       },
     )
