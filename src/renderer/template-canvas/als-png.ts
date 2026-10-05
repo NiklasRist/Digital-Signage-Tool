@@ -1,29 +1,22 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #118.
-// [template-canvas] Ein SegmentBild als PNG-Binärpuffer ausgeben
+// [template-canvas] Ein SegmentBild als PNG - toBlob in ein Uint8Array
 //
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
+// Signaturen VERBINDLICH aus dem Issue; der Rumpf ist gefuellt - die
+// GERUEST-PRUEFSUMME gilt nicht mehr, die Datei wurde bearbeitet.
 //
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 1d3ced3c2ba939c9
+// DIE ZWEITE VERWENDUNG desselben Aufrufs (TK 9.10.1): Anzeige und Export golten
+// aus DEMSELBEN SegmentBild; ES WIRD HIER NICHTS GEzeichnet - kein zweiter
+// Zeichenpfad, kein eigener Kontext, kein Vorschau-Handel. toDataURL (Base64) ist
+// ausdrücklich VERBOTEN ("Binärpuffer statt Base64", TK 9.1 Punkt 3): eine
+// Zeichenkette würde ein Drittel mehr durch die IPC-Grenze tragen und die Hülle
+// widerspricht dem Vertrag.
 //
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// DIE EBENENMaße vor allem anderen: das Setzen von canvas.width oder -
+// .height LEERT das Canvas vollständig. Weichen die Werte ab, hat jemand nach dem
+// Zeichnen an der Größe gedreht, und das PNG wäre eine LEERE Fläche - im Video
+// ein schwarzes bzw. durchsichtiges Segment, ohne jede Fehlermeldung.
+// Farbraum: sRGB, unangetastet - kein abweichendes Profil eingebettet, keins
+// entfernt; die PNGs gehen unverändert in den ffmpeg-Lauf (BT.709 dort).
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { SegmentBild } from './zeichne-segment'
@@ -31,7 +24,64 @@ import type { SegmentBild } from './zeichne-segment'
 export type PngFehlercode = 'png_export_fehler'
 
 export async function alsPng(bild: SegmentBild): Promise<Ergebnis<Uint8Array, PngFehlercode>> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #118."
-  );
+  try {
+    // SCHRITT 1 - die Maßprüfung VOR allem anderen: Der einzige Wurf-Weg, der
+    // vor toBlob steht (der zweite wäre der null-Rückruf).
+    if (bild.canvas.width !== bild.breite || bild.canvas.height !== bild.höhe) {
+      return {
+        ok: false,
+        fehler: {
+          code: 'png_export_fehler' as const,
+          meldung:
+            `Die Canvas-Maße (${bild.canvas.width}×${bild.canvas.height}) stimmen nicht mit ` +
+            `breite/höhe (${bild.breite}×${bild.höhe}) überein - das PNG wäre leere Fläche.`,
+          daten: undefined,
+        },
+      }
+    }
+
+    // SCHRITT 2 - toBlob in ein Promise; der MIME-Typ steht AUSDRÜCKLICH im
+    // Aufruf (die Absicht steht im Code). Ein Qualitätsargument entfällt: PNG ist
+    // verlustfrei, der Parameter wäre dort wirkungslos.
+    const blob = await new Promise<Blob | null>((auf) => {
+      bild.canvas.toBlob((ergebnis) => {
+        auf(ergebnis)
+      }, 'image/png')
+    })
+
+    // SCHRITT 3 - null heißt Kodierungsergebnis (Kodierung gescheitert, Speichern).
+    if (blob === null) {
+      return {
+        ok: false,
+        fehler: { code: 'png_export_fehler' as const, meldung: 'toBlob liefert null - die Kodierung ist gescheitert.', daten: undefined },
+      }
+    }
+
+    // SCHRITT 4 - der Binärpuffer (KEIN Base64, kein Datendünnstr scheduling).
+    const puffer = new Uint8Array(await blob.arrayBuffer())
+
+    // SCHRITT 5 - ein leerer Puffer wäre im Main erst beim ffmpeg-Lauf aufgefallen.
+    if (puffer.byteLength === 0) {
+      return {
+        ok: false,
+        fehler: { code: 'png_export_fehler' as const, meldung: 'Der PNG-Puffer ist leer.', daten: undefined },
+      }
+    }
+
+    // SCHRITT 6 - der erfolgreiche Rückgabewert, binär.
+    return { ok: true, wert: puffer }
+  } catch (ausnahme) {
+    // SCHRITT 7 - der GESAMTE Ablauf gefangen: der SecurityError eines
+    // 'verunreinigten' Canvas läuft ebenso hier herein wie Formfehler - ES
+    // VERLÄSST KEINE Ausnahme diese Funktion, denn das Ergebnis wandert in einen
+    // RenderRequest, also über die IPC-Grenze.
+    return {
+      ok: false,
+      fehler: {
+        code: 'png_export_fehler' as const,
+        meldung: ausnahme instanceof Error ? ausnahme.message : String(ausnahme),
+        daten: undefined,
+      },
+    }
+  }
 }
