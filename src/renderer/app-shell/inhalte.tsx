@@ -19,6 +19,8 @@ import { starteMedienImport } from './medien-import-uebergabe'
 import { wechsleReiter } from './reiter'
 import { ProjektVerwaltungWurzel } from '../projekt-verwaltung'
 import { VorlagenEditorWurzel } from '../vorlagen-editor'
+import { ActionEditorWurzel } from '../action-editor'
+import { umhuelleFuerBearbeitung } from './undo-aufzeichnung'
 import { sitzungshalter } from './undo-aufzeichnung-vorlage'
 import { WarteschlangenLeiste } from '../shell/WarteschlangenLeiste'
 
@@ -63,9 +65,14 @@ export function baueWurzeln(umgebung: Sichten): Record<ReiterId, ReiterInhalt> {
     // Ausgewogen: Der einzige echte Mount des ersten M7-Mount-Laufs.
     zusammenstellen: (eigenschaften2) => <ComposerWurzel {...eigenschaften} sichtbar={eigenschaften2.sichtbar} />,
     aktionen: (eigenschaften2) => (
-      <div data-testid="inhalte-aktionen" style={{ display: eigenschaften2.sichtbar ? undefined : 'none' }}>
-        (Reiter aktionen - M7)
-      </div>
+      <ActionEditorWurzel
+        sichtbar={eigenschaften2.sichtbar}
+        projekt={umhuelleFuerBearbeitung(umgebung.projekt)}
+        zeichnen={umgebung.zeichnen}
+        vorlagen={umgebung.vorlagen}
+        marke={umgebung.marke}
+        hervorgehobeneAktionId={null}
+      />
     ),
     vorlagen: (eigenschaften2) => (
       <VorlagenEditorWurzel
