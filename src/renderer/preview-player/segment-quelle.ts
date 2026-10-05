@@ -1,34 +1,26 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// GENERIERT aus dem Signaturblock von Issue #217.
-// [preview-player] Ein Aktions-Segment darstellen – exakt dasselbe Canvas wie der finale Render
+// Issue #217 (M7-24) - segment-quelle.ts: die REINE Auswahl von Aktion und
+// Vorlage fuer ein Segment der Vorschau. Kein JSX, kein react, kein Laden,
+// kein Zeichnen, kein Wurf - und ohne Browser pruefbar.
 //
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
+// PRUEFREIHENFOLGE (ENTSCHIEDEN 2): Aktion, dann Vorlage, dann Schriften.
+// Die ersten beiden sind DAUERHAFTE Datendefekte (eine Referenz zeigt ins
+// Leere), der dritte ist ein VORUEBERGEHENDER Zustand beim Programmstart.
+// Wer den voruebergehenden zuerst meldet, verdeckt in den ersten Sekunden
+// jeden echten Datendefekt und macht ihn schwerer auffindbar.
 //
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 54b89c769f947cb6
+// AUFLÖSUNG, NICHT NACHRECHNEN (Invariante 4 des Meilensteins): Die Vorlage
+// wird ueber `aktion.vorlagenId` im Vorlagen-Bestand gesucht, nicht geraten.
+// `schriftenBereit` wird HEREINGEREICHT, damit diese Funktion ohne Browser
+// pruefbar bleibt; die Auskunft selbst gewinnt sie hier NICHT.
 //
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// ENTSCHIEDEN 3: Diese Datei urteilt NICHT ueber „kaputt". Ein Segment mit
+// fehlendem Aktions-Bild ist hier VOLLKOMMEN normal; der Platzhalter sitzt
+// an der Bildzone in template-canvas (TK 9.10.7), nicht hier.
 
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 
-/** Was zum Zeichnen dieses Segments verfuegbar ist – und woran es sonst fehlt. */
+/** Was zum Zeichnen dieses Segments verfuegbar ist - und woran es sonst fehlt. */
 export type Segmentquelle =
   | { zustand: 'bereit'; aktion: Aktion; vorlage: Vorlage }
   | { zustand: 'aktion_unbekannt'; aktionId: string }
@@ -47,7 +39,23 @@ export function findeSegmentquelle(
   vorlagen: readonly Vorlage[],
   schriftenBereit: boolean,
 ): Segmentquelle {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #217."
-  );
+  // Schritt 1: die Aktion. Nicht gefunden schlaegt JEDE spaetere Pruefung -
+  // auch wenn die Schriften noch fehlen (ENTSCHIEDEN 2).
+  const aktion = aktionen.find((kandidat) => kandidat.id === aktionId)
+  if (aktion === undefined) {
+    return { zustand: 'aktion_unbekannt', aktionId }
+  }
+
+  // Schritt 2: die Vorlage der Aktion. Dieselbe Ordnung.
+  const vorlage = vorlagen.find((kandidat) => kandidat.id === aktion.vorlagenId)
+  if (vorlage === undefined) {
+    return { zustand: 'vorlage_unbekannt', vorlagenId: aktion.vorlagenId }
+  }
+
+  // Schritt 3: der UEBERGANGS-Zustand der Schriften - voruebergehend, zuletzt geprueft.
+  if (!schriftenBereit) {
+    return { zustand: 'schriften_fehlen' }
+  }
+
+  return { zustand: 'bereit', aktion, vorlage }
 }
