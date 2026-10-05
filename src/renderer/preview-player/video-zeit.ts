@@ -1,43 +1,22 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// GENERIERT aus dem Signaturblock von Issue #216.
-// [preview-player] Ein Video-Element darstellen – nativ, von trimStart bis trimEnde, ohne Ton
+// Issue #216 - video-zeit.ts: die REINE Zeitrechnung des Video-Elements.
 //
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: c884be4e714421c0
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// DIE EINBAHNSTRASSE (TK 9.9.3): Die Vorschau-Uhr (#214) steuert das Video,
+// das Video steuert N I E die Uhr. Diese Datei liefert die zwei SOLL-Werte,
+// aus denen video.tsx das Medienelement dirigiert - und sie uebersetzt
+// Frames NUR ueber frameZuSekunden (#213),UEBER keine eigene Division.
+// Ein eigener `/ 30` waere eine zweite Bildrate neben dem Ausgabe-Profil.
 
 import { frameZuSekunden } from './zeitachse'
 
 /**
- * Ab welcher Abweichung die Wiedergabeposition neu gesetzt wird. 0,25 s ≈ 7,5 Frames bei 30 fps.
- * Begruendung s. ENTSCHIEDEN 2 – NICHT aendern, ohne zu fragen.
+ * Ab welcher Abweichung die Wiedergabeposition neu gesetzt wird. 0,25 s = ca. 7,5 Frames
+ * bei 30 fps. Begrueendung ENTSCHEIDEN 2 - NICHT aendern, ohne zu fragen.
  */
 export const SPRUNG_TOLERANZ_SEKUNDEN = 0.25
 
 /** Die Position in der QUELLDATEI: trimStart + die lokale Position des Elements. */
 export function quellZeit(trimStart: number, lokalerFrame: number): number {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #216."
-  );
+  return trimStart + frameZuSekunden(lokalerFrame)
 }
 
 /**
@@ -46,7 +25,10 @@ export function quellZeit(trimStart: number, lokalerFrame: number): number {
  * Total: wirft nie.
  */
 export function brauchtSprung(istZeit: number, sollZeit: number): boolean {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #216."
-  );
+  // Ein Vergleich mit NaN ist immer falsch - deshalb bewusst gegen
+  // `Number.isFinite` entscheiden, NICHT gegen die Differenz: `(NaN - 5) < tol`
+  // lieferte stillschweigend false, und das Video waere lautlos stehen geblieben.
+  if (!Number.isFinite(istZeit) || !Number.isFinite(sollZeit)) return true
+  const abweichung = istZeit >= sollZeit ? istZeit - sollZeit : sollZeit - istZeit
+  return abweichung > SPRUNG_TOLERANZ_SEKUNDEN
 }
