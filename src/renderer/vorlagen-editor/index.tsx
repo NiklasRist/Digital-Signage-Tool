@@ -33,7 +33,7 @@ import type { Vorlage, Zone } from '../../shared/contracts/vorlage'
 import type { VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
 import type { Sitzungshalter } from '../app-shell/undo-aufzeichnung-vorlage'
 
-import { GRUND_PARENT_EINGEBAUT, sichereStand } from './arbeitskopie'
+import { GRUND_PARENT_EINGEBAUT, sichereStand, type EditorSitzung } from './arbeitskopie'
 import {
   bemasseZone,
   flaecheDerVorlage,
@@ -48,6 +48,7 @@ import { fuegeZoneHinzu, type ZonenWunsch } from './zone-hinzufuegen'
 import { istSpeicherbar, pruefeVorlage, type Befund } from './pruefungen'
 import { alsNeueVorlage, ueberarbeiteVorlage, verwerfeBearbeitung } from './speichern'
 import {
+  BEISPIEL_AKTION,
   bereiteVorschauVor,
   zeichneVorschau,
   type VorschauFeld,
@@ -166,7 +167,10 @@ function VorlagenUebersicht({ p }: { p: VorlagenEditorWurzelProps }): JSX.Elemen
               type="button"
               data-testid={`vorlage-fortsetzen-${eintrag.vorlage.id}`}
               onClick={() => {
-                void setzeBearbeitungFort(eintrag.arbeitskopieId as unknown as string).then((antwort) => {
+                // setzeBearbeitungFort liest nur arbeitskopie.parent (#155); der Pointer
+            // geschichtlich ist nicht eine zweite Wahrheit über den Datensatz, nur
+            // die ID mAht: die Wurzel hat den vollen Arbeitskopie-Datensatz nicht.
+            void setzeBearbeitungFort({ id: eintrag.arbeitskopieId, parent: eintrag.vorlage.id } as unknown as import('../../shared/contracts/vorlage').Vorlage).then((antwort) => {
                   if (antwort.ok) p.sitzung.uebernimmSpeicherstand(antwort.wert)
                   else console.warn('[vorlagen-editor] setzeBearbeitungFort lehnt ab:', antwort.fehler.code)
                 })
@@ -196,7 +200,7 @@ function VorlagenUebersicht({ p }: { p: VorlagenEditorWurzelProps }): JSX.Elemen
         <div data-testid="dialog-vorlage-loeschen" style={{ border: '1px solid #444', padding: 6 }}>
           <NutzungAnzeige
             stand={loeschStand}
-            anzeige={loeschStand.zustand === 'geladen' ? baueNutzungsAnzeige(loeschStand.nutzung) : null}
+            anzeige={loeschStand.zustand === 'geladen' && loeschStand.nutzung !== null ? baueNutzungsAnzeige(loeschStand.nutzung) : null}
             aufgeklappt={false}
             aufUmschalten={() => undefined}
             aufErneutLaden={() => {
@@ -369,7 +373,7 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
 
   // ---- der verbindliche Ablauf einer Zonen-Änderung (ENTSCHIEDEN 4 / 17) ----
   async function uebernehme(neueArbeitskopie: Vorlage): Promise<void> {
-    const neu = mitArbeitskopie(sitzung, neueArbeitskopie)
+    const neu = mitArbeitskopie(sitzung as EditorSitzung, neueArbeitskopie)
     // 1) Schnappschuss + Übernahme
     p.sitzung.uebernimmAenderung(neu)
     // 2) Auto-Speichern (entprellt im Main; hier keine zweite Entprellung)
@@ -408,7 +412,7 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
     if (!geste.laeuft) {
       return
     }
-    const gesichert = gest.stand as Vorlage | null
+    const gesichert = geste.stand as Vorlage | null
     setzeGeste(beendeGeste(geste))
     if (gesichert !== null) {
       void uebernehme(gesichert)
@@ -475,7 +479,7 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
       </div>
       <NutzungAnzeige
         stand={nutzungsStand}
-        anzeige={nutzungsStand.zustand === 'geladen' ? baueNutzungsAnzeige(nutzungsStand.nutzung) : null}
+        anzeige={nutzungsStand.zustand === 'geladen' && nutzungsStand.nutzung !== null ? baueNutzungsAnzeige(nutzungsStand.nutzung) : null}
         aufgeklappt={aufgeklappt}
         aufUmschalten={() => setzeAufgeklappt(!aufgeklappt)}
         aufErneutLaden={() => {
@@ -564,12 +568,12 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
           {/* Die Live-Vorschau: EIN Zeichenaufruf je Stand; erst nach Vorbereitung. */}
           <div data-testid="vorschau-flaeche" style={{ minHeight: 180, border: '1px solid #444', overflow: 'hidden' }}>
             {vorbereitet === false ? null : (
-              <VorschauCanvas aktion={BEISPIEL_AKTION} vorlage={sichtbarerStand(sitzung, geste)} marke={p.marke} geleert={geleert} />
-            )}
-            {geleert.size > 0 && vorschauFehler !== null && (
-              <div data-testid="vorschau-fehler" style={{ color: '#d9a441' }}>
-                Vorschau kann {vorschauFehler} nicht zeigen.
-              </div>
+              <VorschauCanvas
+                aktion={BEISPIEL_AKTION}
+                vorlage={sichtbarerStand(sitzung, geste) as Vorlage}
+                marke={p.marke}
+                geleert={geleert}
+              />
             )}
           </div>
           <div data-testid="vorschau-schalter">
@@ -592,14 +596,14 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
               <li key={zeile.zone.id} data-testid={`zonen-liste-${zeile.index}`}>
                 Ebene {zeile.ebene}: {zeile.zone.id}
                 {zeile.beweglich ? '' : ' (fest)'}
-                {zeile.beweglich && gest.laeuft === false && (
+                {zeile.beweglich && geste.laeuft === false && (
                   <span>
                     {' '}
                     <button
                       type="button"
                       onClick={() => {
                         const nach = Math.max(0, zeile.index - 1)
-                        const neu = ordneZonenNeu(vorlage.zonen, zwiligenIndexNeu(zeile.index), nach)
+                        const neu = ordneZonenNeu(vorlage.zonen, zeile.index, nach)
                         if (neu.ok) {
                           void uebernehme(mitZonen(vorlage, neu.wert))
                         }
@@ -651,7 +655,7 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
             <InspektorFelder
               zone={vorlage.zonen.find((z) => z.id === gewaehlt) ?? null}
               flaeche={flaeche}
-              fest={vorlage.zones?.length === -1}
+              fest={false}
               onWert={(feld, text) => {
                 const bezogene = vorlage.zonen.find((z) => z.id === gewaehlt)
                 if (bezogene === undefined) {
@@ -691,7 +695,6 @@ function VorschauCanvas({
 }): JSX.Element {
   const [bild, setzeBild] = useState<{ breite: number; höhe: number; adresse: string } | null>(null)
   const [fehler, setzeFehler] = useState<string | null>(null)
-  useRef(0)
 
   useEffect(() => {
     if (vorlage === null) {
@@ -748,7 +751,7 @@ function InspektorFelder({
   if (zone === null) {
     return <div data-testid="inspektor-leer" />
   }
-  const felder: readonly Array<{ feld: 'x' | 'y' | 'breite' | 'höhe' | 'x' | 'y'; beschriftung: string }> = [
+  const felder: readonly { feld: 'x' | 'y' | 'breite' | 'höhe'; beschriftung: string }[] = [
     { feld: 'x', beschriftung: 'x' },
     { feld: 'y', beschriftung: 'y' },
     { feld: 'breite', beschriftung: 'Breite' },

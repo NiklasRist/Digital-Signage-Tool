@@ -18,6 +18,8 @@ import { ComposerWurzel, type ComposerVerdrahtung, type ComposerWurzelProps } fr
 import { starteMedienImport } from './medien-import-uebergabe'
 import { wechsleReiter } from './reiter'
 import { ProjektVerwaltungWurzel } from '../projekt-verwaltung'
+import { VorlagenEditorWurzel } from '../vorlagen-editor'
+import { sitzungshalter } from './undo-aufzeichnung-vorlage'
 import { WarteschlangenLeiste } from '../shell/WarteschlangenLeiste'
 
 /**
@@ -66,9 +68,13 @@ export function baueWurzeln(umgebung: Sichten): Record<ReiterId, ReiterInhalt> {
       </div>
     ),
     vorlagen: (eigenschaften2) => (
-      <div data-testid="inhalte-vorlagen" style={{ display: eigenschaften2.sichtbar ? undefined : 'none' }}>
-        (Reiter vorlagen - M7)
-      </div>
+      <VorlagenEditorWurzel
+        sichtbar={eigenschaften2.sichtbar}
+        vorlagen={umgebung.vorlagen}
+        zeichnen={umgebung.zeichnen}
+        marke={umgebung.marke}
+        sitzung={sitzungshalter()}
+      />
     ),
     projekte: (eigenschaften2) => (
       <ProjektVerwaltungWurzel
