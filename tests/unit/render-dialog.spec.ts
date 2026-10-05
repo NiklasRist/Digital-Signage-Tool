@@ -51,6 +51,7 @@ function projekt(letzterAusgabeName: string | null): Project {
     aktionen: [],
     liste: [],
     letzterAusgabeName,
+    standardMarkeId: 'm1',
     standardSegmentdauer: 10,
   }
 }
@@ -63,6 +64,11 @@ const marke = (): Marke => ({
   radien: null as never,
   schatten: null as never,
   slogan: null as never,
+  id: 'm1',
+  name: 'Probe',
+  parent: null,
+  eingebaut: false,
+  herkunftJeFeld: null as never,
 })
 
 describe.each`

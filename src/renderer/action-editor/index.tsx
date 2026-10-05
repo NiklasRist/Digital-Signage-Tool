@@ -201,8 +201,17 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
             setzeLage(beginneNeu())
             // Die Vorbelegung des ANLEGE-FORMULARS (#136): erste Vorlage als Basis
             // ist Sache des Users ÜBER die Wahl; die Akzentfarbe bleibt null.
+            // markeId (#320/TK 9.8.2): vorbelegt mit Project.standardMarkeId -
+            // #319 (Markenwahl im Formular) macht sie später waehlbar.
+            const standDerSicht = p.projekt.hole().projekt
             const ersteVorlage = waehlbare?.[0]?.id ?? 'vollbild'
-            setzeFormular(leererEntwurf(ersteVorlage, null))
+            setzeFormular(
+              leererEntwurf(
+                ersteVorlage,
+                standDerSicht?.standardMarkeId ?? '',
+                null,
+              ),
+            )
           }}
         >
           Neue Aktion

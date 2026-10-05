@@ -189,16 +189,21 @@ const FARBEN: Record<FarbRolle, string> = {
 const marke = (): Marke => ({
   farben: FARBEN,
   schriften: {
-    headlineElegant: { familie: 'Playfair Display', gewicht: 700, datei: 'P.woff2' },
-    headlinePlakativ: { familie: 'Archivo Black', gewicht: 900, datei: 'A.woff2' },
-    fliesstext: { familie: 'Arimo', gewicht: 400, datei: 'R.woff2' },
-    fliesstextFett: { familie: 'Arimo', gewicht: 700, datei: 'B.woff2' },
+    headlineElegant: { familie: 'Playfair Display', gewicht: 700, datei: 'P.woff2', herkunft: 'gebuendelt' },
+    headlinePlakativ: { familie: 'Archivo Black', gewicht: 900, datei: 'A.woff2', herkunft: 'gebuendelt' },
+    fliesstext: { familie: 'Arimo', gewicht: 400, datei: 'R.woff2', herkunft: 'gebuendelt' },
+    fliesstextFett: { familie: 'Arimo', gewicht: 700, datei: 'B.woff2', herkunft: 'gebuendelt' },
   },
-  logo: { datei: 'logo.png', seitenverhaeltnis: 3.5 },
+  logo: { datei: 'logo.png', seitenverhaeltnis: 3.5, herkunft: 'gebuendelt' },
   sicherheit: SICHERHEITSABSTAND_PX,
   radien: { pille: 40, karte: 10, klein: 2 },
   schatten: { versatzY: 4, weichzeichnen: 8, farbe: '#00000040' },
   slogan: { text: '', aktiv: false },
+  id: 'm1',
+  name: 'Probe',
+  parent: null,
+  eingebaut: false,
+  herkunftJeFeld: null as never,
 })
 
 const OHNE_WAHL = aktion(null)
@@ -214,6 +219,7 @@ function aktion(akzentfarbe: string | null): Aktion {
     cta: null,
     standardDauer: null,
     vorlagenId: 'vollbild',
+    markeId: 'm1',
     akzentfarbe,
   }
 }

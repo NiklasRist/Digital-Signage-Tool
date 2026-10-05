@@ -97,7 +97,9 @@ async function segmentThumbnail(
   if (vorlage === undefined) return { quelle: 'fehlt' }
 
   const { zeichneSegment } = await import('../template-canvas/zeichne-segment')
-  const segment = zeichneSegment(aktion, vorlage, marke)
+  // Vierter Parameter (rahmenMarke, TK v3.18 / M8-21): fuer nichts-einblendung-hintergrund
+  // ist rahmenMarke === marke - DERSSELBE Wert, dieselbe Referenz.
+  const segment = zeichneSegment(aktion, vorlage, marke, marke)
   return { quelle: 'canvas', canvas: segment.canvas, breite: segment.breite, höhe: segment.höhe }
 }
 

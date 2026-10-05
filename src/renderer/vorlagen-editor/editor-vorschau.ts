@@ -38,7 +38,9 @@ import { stelleSchriftenBereit } from '../template-canvas/schriften'
 /** Die Aktions-Felder, die sich für die Vorschau leeren lassen. */
 export type VorschauFeld = 'titel' | 'beschreibung' | 'preis' | 'cta' | 'bild'
 
-/** Ersatz, wenn die Aktions-Bibliothek des Projekts leer ist. Wird NIE gespeichert. */
+/** Ersatz, wenn die Aktions-Bibliothek des Projekts leer ist. Wird NIE gespeichert.
+ *  `markeId`: fester Bezeichner im Stil von BEISPIEL.id - nur Vorschau-Passagier,
+ *  nie gespeichert (die Pflicht `Aktion.markeId` kommt ueber #320/TK 9.11.3). */
 export const BEISPIEL_AKTION: Aktion = {
   id: 'vorschau-beispiel-aktion',
   titel: 'Beispiel-Aktion',
@@ -48,6 +50,7 @@ export const BEISPIEL_AKTION: Aktion = {
   cta: 'Gratis Probetraining',
   standardDauer: null,
   vorlagenId: 'vollbild',
+  markeId: 'beispiel-marke',
   akzentfarbe: null,
 }
 
@@ -119,5 +122,6 @@ export function zeichneVorschau(
   marke: Marke,
   geleert: ReadonlySet<VorschauFeld>,
 ): SegmentBild {
-  return zeichneSegment(leereFelderFuerVorschau(aktion, geleert), vorlage, marke)
+  // rahmenMarke === marke (TK v3.18 / M8-21) - dieselbe Referenz.
+  return zeichneSegment(leereFelderFuerVorschau(aktion, geleert), vorlage, marke, marke)
 }

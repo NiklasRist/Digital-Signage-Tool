@@ -109,7 +109,8 @@ export async function loeseRenderAus(
         }
       }
       // Der Wurf von zeichneSegment wird NICHT gefangen (E-7 des Issues).
-      const bild = zeichneSegment(aktion, zeichenvorlage, marke)
+      // rahmenMarke === marke (TK v3.18 / M8-21).
+      const bild = zeichneSegment(aktion, zeichenvorlage, marke, marke)
       const png = await alsPng(bild)
       if (!png.ok) {
         // Ein halb bestücktes elemente-Array MUSS NICHT in die Queue.
@@ -172,7 +173,8 @@ export async function loeseRenderAus(
             fehler: { code: 'png_export_fehler' as const, meldung: `Band-Abschnitt von "${element.id}" zeigt auf eine unbekannte Aktion.`, daten: undefined },
           }
         }
-        const bandPng = await alsPng(zeichneSegment(absAktion, bandVorlage, marke))
+        // rahmenMarke === marke (TK v3.18 / M8-21).
+        const bandPng = await alsPng(zeichneSegment(absAktion, bandVorlage, marke, marke))
         if (!bandPng.ok) {
           return { ok: false, fehler: { code: 'png_export_fehler', meldung: bandPng.fehler.meldung, daten: undefined } }
         }

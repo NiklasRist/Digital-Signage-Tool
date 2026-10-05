@@ -85,6 +85,7 @@ function aktion(id: string): Aktion {
     cta: null,
     standardDauer: null,
     vorlagenId: 'vollbild',
+    markeId: 'm1',
     akzentfarbe: null,
   }
 }
@@ -113,6 +114,7 @@ function projekt(id: string, aktionen: Aktion[], liste: Listenelement[]): Projec
     aktionen,
     liste,
     standardSegmentdauer: 10,
+    standardMarkeId: 'm1',
     letzterAusgabeName: null,
   }
 }

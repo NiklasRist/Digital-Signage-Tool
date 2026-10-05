@@ -42,7 +42,7 @@ const element: Listenelement = {
 function aktion(id: string, titel: string): Aktion {
   return {
     id, titel, beschreibung: null, preis: null, bildRef: null, cta: null,
-    standardDauer: null, vorlagenId: 'v', akzentfarbe: null,
+    standardDauer: null, markeId: "m1", vorlagenId: 'v', akzentfarbe: null,
   }
 }
 

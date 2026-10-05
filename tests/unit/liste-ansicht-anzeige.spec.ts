@@ -117,7 +117,7 @@ function asset(id: string, original: string): Asset {
 }
 
 function aktion(id: string, titel: string): Aktion {
-  return { id, titel, beschreibung: null, preis: null, bildRef: null, cta: null, standardDauer: null, vorlagenId: 'vollbild', akzentfarbe: null }
+  return { id, titel, beschreibung: null, preis: null, bildRef: null, cta: null, standardDauer: null, markeId: 'm1', vorlagenId: 'vollbild', akzentfarbe: null }
 }
 
 function element(id: string, art: Listenelement['art'], ref: string, ueber: Partial<Listenelement> = {}): Listenelement {
@@ -128,12 +128,12 @@ function projekt(liste: Listenelement[]): Project {
   return {
     id: 'p-1', name: 'Probe', erstelltAm: '2026-08-01T09:00:00Z', geaendertAm: '2026-08-01T09:00:00Z',
     schemaVersion: 1, assets: [asset('a-1', 'Aufwaermen.mp4')], aktionen: [aktion('x-1', 'Sommeraktion'), aktion('x-2', 'Winterpause')],
-    liste, standardSegmentdauer: 10, letzterAusgabeName: null,
+    liste, standardSegmentdauer: 10, standardMarkeId: "m1", letzterAusgabeName: null,
   }
 }
 
 const VORAUSSETZUNGEN: Zeichenvoraussetzungen = {
-  marke: { farben: {} as never, schriften: null as never, logo: null as never, sicherheit: null as never, radien: null as never, schatten: null as never, slogan: null as never },
+  marke: { farben: {} as never, schriften: null as never, logo: null as never, sicherheit: null as never, radien: null as never, schatten: null as never, slogan: null as never, id: 'm1' as never, name: 'Probe' as never, parent: null as never, eingebaut: false as never, herkunftJeFeld: null as never },
   vorlagen: [],
 }
 

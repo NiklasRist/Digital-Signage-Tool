@@ -42,22 +42,28 @@ const AKTION = (): Aktion => ({
   cta: null,
   standardDauer: null,
   vorlagenId: 'vollbild',
+  markeId: 'm1',
   akzentfarbe: null,
 })
 
 const marke = (): Marke => ({
   farben: {} as Record<string, string>,
   schriften: {
-    headlineElegant: { familie: 'P', gewicht: 700, datei: 'P.woff2' },
-    headlinePlakativ: { familie: 'A', gewicht: 900, datei: 'A.woff2' },
-    fliesstext: { familie: 'R', gewicht: 400, datei: 'R.woff2' },
-    fliesstextFett: { familie: 'B', gewicht: 700, datei: 'B.woff2' },
+    headlineElegant: { familie: 'P', gewicht: 700, datei: 'P.woff2', herkunft: 'gebuendelt' },
+    headlinePlakativ: { familie: 'A', gewicht: 900, datei: 'A.woff2', herkunft: 'gebuendelt' },
+    fliesstext: { familie: 'R', gewicht: 400, datei: 'R.woff2', herkunft: 'gebuendelt' },
+    fliesstextFett: { familie: 'B', gewicht: 700, datei: 'B.woff2', herkunft: 'gebuendelt' },
   },
-  logo: { datei: 'logo.png', seitenverhaeltnis: 3.5 },
+  logo: { datei: 'logo.png', seitenverhaeltnis: 3.5, herkunft: 'gebuendelt' },
   sicherheit: { horizontal: 96, vertikal: 54 },
   radien: { pille: 40, karte: 10, klein: 2 },
   schatten: { versatzY: 4, weichzeichnen: 8, farbe: '#00000040' },
   slogan: { text: 'x', aktiv: false },
+  id: 'm1',
+  name: 'Probe',
+  parent: null,
+  eingebaut: false,
+  herkunftJeFeld: null as never,
 })
 
 beforeEach(() => {
@@ -88,6 +94,7 @@ describe("zeichneVorschau (#140)", () => {
     const vorlage = { id: 'vollbild' } as never
     const bild = zeichneVorschau(AKTION(), vorlage, marke())
     expect(bild).toBe(ENTWURFSBILD)
-    expect(vi.mocked(zeichneSegment)).toHaveBeenCalledWith(AKTION(), vorlage, marke())
+    // #294 (TK v3.18): rahmenMarke === marke - dieselbe Referenz.
+    expect(vi.mocked(zeichneSegment)).toHaveBeenCalledWith(AKTION(), vorlage, marke(), marke())
   })
 })

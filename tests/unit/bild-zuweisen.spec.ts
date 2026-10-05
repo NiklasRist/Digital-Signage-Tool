@@ -95,6 +95,7 @@ const AKTION_OK = {
     cta: null,
     standardDauer: null,
     vorlagenId: 'vollbild',
+    markeId: 'm1',
     akzentfarbe: null,
   } as Aktion,
 }

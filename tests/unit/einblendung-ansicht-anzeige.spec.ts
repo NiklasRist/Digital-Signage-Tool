@@ -139,7 +139,7 @@ describe('Quelldatei-Verbote (Grep, nur auf DIESE Datei)', () => {
 function aktion(id: string, titel: string): Aktion {
   return {
     id, titel, beschreibung: null, preis: null, bildRef: null, cta: null,
-    standardDauer: null, vorlagenId: 'vollbild', akzentfarbe: null,
+    standardDauer: null, markeId: "m1", vorlagenId: 'vollbild', akzentfarbe: null,
   }
 }
 

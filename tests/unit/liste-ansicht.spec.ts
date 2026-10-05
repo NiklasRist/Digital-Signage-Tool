@@ -97,7 +97,7 @@ function asset(id: string, original: string): Asset {
 function aktion(id: string, titel: string): Aktion {
   return {
     id, titel, beschreibung: null, preis: null, bildRef: null, cta: null,
-    standardDauer: null, vorlagenId: 'vollbild', akzentfarbe: null,
+    standardDauer: null, markeId: "m1", vorlagenId: 'vollbild', akzentfarbe: null,
   }
 }
 
@@ -125,6 +125,7 @@ function projekt(liste: Listenelement[], assets: Asset[] = [], aktionen: Aktion[
     aktionen,
     liste,
     standardSegmentdauer: 10,
+    standardMarkeId: 'm1',
     letzterAusgabeName: null,
   }
 }

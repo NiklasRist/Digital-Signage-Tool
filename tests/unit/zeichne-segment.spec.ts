@@ -117,9 +117,9 @@ function aktion(overrides: Partial<Aktion> = {}): Aktion {
     cta: 'Jetzt melden',
     standardDauer: null,
     vorlagenId: 'vollbild',
+    markeId: 'm1',
     akzentfarbe: null,
     elemente: [],
-    markeId: 'm1',
     ...overrides,
   } as unknown as Aktion
 }

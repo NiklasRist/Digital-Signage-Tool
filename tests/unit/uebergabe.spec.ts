@@ -68,6 +68,7 @@ function projekt(): Project {
     aktionen: [],
     liste: [],
     standardSegmentdauer: 10,
+    standardMarkeId: 'm1',
     letzterAusgabeName: null,
   }
 }

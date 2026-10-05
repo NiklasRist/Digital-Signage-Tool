@@ -70,7 +70,9 @@ export async function bereiteVorschauVor(
 
 /** Die Vorschau: EIN Aufruf von zeichneSegment, sonst nichts. Synchron. */
 export function zeichneVorschau(aktion: Aktion, vorlage: Vorlage, marke: Marke): SegmentBild {
-  return zeichneSegment(aktion, vorlage, marke)
+  // rahmenMarke === marke (TK v3.18 / M8-21): bis auf den Hintergrund einer
+  // EinblendungRunWith gilt dieselbe Marke.
+  return zeichneSegment(aktion, vorlage, marke, marke)
 }
 
 /** Hängt das Canvas in ein Anzeigeelement und skaliert es AUSSCHLIESSLICH per CSS.

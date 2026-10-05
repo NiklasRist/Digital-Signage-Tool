@@ -38,6 +38,7 @@ function aktion(id: string, bildRef: string | null): Aktion {
     cta: null,
     standardDauer: null,
     vorlagenId: 'vollbild',
+    markeId: 'm1',
     akzentfarbe: null,
   }
 }

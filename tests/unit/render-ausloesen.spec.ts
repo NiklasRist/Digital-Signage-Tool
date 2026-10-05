@@ -68,6 +68,11 @@ const marke = (): Marke => ({
   radien: null as never,
   schatten: null as never,
   slogan: null as never,
+  id: 'm1',
+  name: 'Probe',
+  parent: null,
+  eingebaut: false,
+  herkunftJeFeld: null as never,
 })
 
 function projekt(liste: Project['liste'], aktionen: Project['aktionen'] = [], assets: Project['assets'] = []): Project {
@@ -81,6 +86,7 @@ function projekt(liste: Project['liste'], aktionen: Project['aktionen'] = [], as
     aktionen,
     liste,
     letzterAusgabeName: null,
+    standardMarkeId: 'm1',
     standardSegmentdauer: 10,
   }
 }
@@ -102,6 +108,7 @@ const AKTION_OK = {
   cta: null,
   standardDauer: null,
   vorlagenId: 'vollbild',
+  markeId: 'm1',
   akzentfarbe: null,
 }
 

@@ -65,7 +65,7 @@ describe('uebergabe.tsx – Verbote (Grep, nur auf DIESE Datei)', () => {
 function projekt(): Project {
   return {
     id: 'p-1', name: 'Probe', erstelltAm: '2026-08-01T09:00:00Z', geaendertAm: '2026-08-01T09:00:00Z',
-    schemaVersion: 1, assets: [], aktionen: [], liste: [], standardSegmentdauer: 10, letzterAusgabeName: null,
+    schemaVersion: 1, assets: [], aktionen: [], liste: [], standardSegmentdauer: 10, standardMarkeId: "m1", letzterAusgabeName: null,
   }
 }
 

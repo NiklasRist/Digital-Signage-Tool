@@ -67,6 +67,7 @@ function projekt(assets: Asset[], elemente: Listenelement[]): Project {
     aktionen: [],
     liste: elemente,
     letzterAusgabeName: null,
+    standardMarkeId: 'm1',
     standardSegmentdauer: 10,
   }
 }
