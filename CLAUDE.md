@@ -11,6 +11,72 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
+## STAND HEUTE (05.10.2026, spaet) – gilt vor ALLEN älteren Angaben weiter unten
+
+### Session 05.10. (späte Fortsetzung) in Kürze
+
+- **SCHWERER BEFUND, BEHOBEN:** Vierzehn geschlossene M8/M4-Issues behaupteten „gemerged nach
+  main", die Merges lagen NUR auf Branches (`bau/m4-*`, `bau/m8-*`). Die komplette Kette ist jetzt
+  nach `main` gemergt (`f6992de`) – `m4-20` trug dabei bereits die ganze `m8-06`-Linie. Konflikt-
+  Auflösungen BELEGT: `datenort.ts`/`einzel-instanz.ts` -> MAIN (spaetere Korrektur, Vorbefund
+  gruen); `schriften.ts`/`zeichne-segment.ts`/`logo-laden.ts` -> M8-KETTE (Obermenge, 4. Parameter
+  `rahmenMarke` nach #294/TK v3.18); `zone-*` -> MAIN (Branch == Basis). Die fuenf Aufrufer von
+  `zeichneSegment` zeichnen jetzt mit `marke, marke`; `leererEntwurf` ist dreistellig
+  (`vorlagenId, markeId, akzentfarbe`, Form laut #319). **Nahtreste-Commit `c58d749`:** Diese Aufrufer-Aenderungen lagen teils UNCOMMITTET; sie sind
+  jetzt drin. Wer weiterbaut, findet sie auf `main`.
+- **GEBAUT HEUTE:** #253 (Band-Bearbeitung, `834633d`), #259 (composer-montage, `434c29a`),
+  #217 (preview-player Segment, `da36f86`), #243 (Undo-Aufzeichnung, `c541092`), #319
+  (Aktion.markeId, `bdea7b4`), #303 (Marken-Editor Vorschau, `f3eee4e`), #216 (preview-player
+  Video, `c7a900b`). **#215 ENTFALLEN** (geschlossen; `medienUrl` lebt über #258 – Nachtrag im
+  Issue). **#231** war bereits gebaut (`ef191f9`), das Messwerkzeug zählte sie UNKLAR –
+  `bereitschaft.py` ist nachgezogen (`1918f2d`).
+- **USER-ENTSCHEIDUNG #319:** Der Main-Vorbelegungs-Konflikt ging an den #319-Kontrakt:
+  `erstelleAktion` lehnt fehlendes/leeres `markeId` ab; die Vorbelegung mit
+  `Project.standardMarkeId` lebt im RENDERER (`leererEntwurf`). Die M8-Kette hatte im Main
+  `?? projekt.standardMarkeId` gebaut - ENTFALLEN, Nachtrag im Issue #319.
+- **USER-ENTSCHEIDUNG #132:** Die geführte Reparatur endet NICHT von selbst; „N von N behoben"
+  + Schliessen-Knopf (Nachtrag im Issue #132 und lokal `docs/agents/m5/M5-13.md`, `d1606ad`).
+- **VORBEFUND (23.08.) GELÖST:** Die 3 Testfehler existieren nicht mehr (gemessen, 4632 grün
+  auf dem Stand davor). Niemandes Arbeit war berührt.
+
+### Wo das Projekt steht
+
+| Meilenstein | gebaut | | Meilenstein | gebaut |
+|---|---|---|---|---|
+| M0 Grundgerüst | 15 / 15 | | M5 Inhalte | 37 / 37 |
+| M1 Fundament | 50 / 50 | | M6 Render & Export | 37 / 37 |
+| M2 Torwächter | 20 / 20 | | M7 Oberfläche | **65 / 71** |
+| M3 Medien | 21 / 21 | | M8 Marken | **25 / 60** |
+| M4 Pixel | 26 / 26 | | | |
+
+**4848 Tests gruen** (234→244 Dateien), Branch `main`, Arbeitsbaum sauber. Die Session hat von 219 auf **226** gebaute Issues gebracht (plus Merge der Kette).
+
+### Offene Punkte für die nächste Session (in dieser Reihenfolge prüfen)
+
+1. **M7-Rest:** #218/#219 (Split-/Einblendungs-Simulation – beide nutzen `Video` mit `rahmen`
+   und `hintergrund`), #242 (Vorschau zusammensetzen), #244 (inhalte-zugaenge: hier MUSS
+   `umhuelleFuerBearbeitung`/`ohneAufzeichnung` gerufen werden – der Aufrufer von #243!), #260/#261
+   (Bootstrap-Verdrahtung), #262.
+2. **M8-Kette:** 35 offen; `bereitschaft.py` zeigt **0 baubereit**, weil `#277` (schreibe-marken)
+   und `#280` (anfangsbestand) in einem Zirkel stehen (#277 braucht `eingebauteMarke`, #280 braucht
+   den Typ `MarkenEintrag` aus #277). **Werkzeug-Limit oder echter Zirkel – von Hand klären**;
+   vermutlich baut man #280 zuerst und #277 importiert den Typ (oder der Typ wandert in #276).
+3. **Meldungen aus #319 (offen):** a) Muss `setzeMarke` `stelleMarkeBereit` (#312) rufen?
+   b) Zählt eine unbekannte `aktion.markeId` als kaputte Stelle (#131)?
+4. **Werkzeug-Limits (bekannt):** `bereitschaft.py` zählt geschlossene Issues mit (#215 bleibt
+   sichtbar); `gh issue list --state all` heißt die Ursache.
+5. **Beim User (unverändert):** TV-Test (FAT32/exFAT-Befund steht in #184/#186/#188), macOS-
+   Artefakt (#7).
+
+### Regeln, die HEUTE wieder gegolten haben (wörtlich geblieben)
+
+- Gegenproben mit Beleg: der Bulk-Fixture-Lauf hat in `marke.spec.ts` eine absichtlich
+  **falsche** Fixture „repariert" – mit Beleg zurückgenommen. Eine Probe ohne Beleg ist keine.
+- Signaturen aus der definierenden Quelle: die MELDE-KLAUSEN von #217/#303 haben gezündet
+  (vier-Argument-`zeichneSegment`); gemeldet im Issue-Nachtrag, nie eigenmächtig angepasst.
+
+---
+
 ## STAND HEUTE (23.08.2026) – gilt vor ALLEN älteren Angaben weiter unten
 
 Dieses Dokument ist gewachsen. Wo eine ältere Zeile diesem Abschnitt widerspricht, **gilt dieser
