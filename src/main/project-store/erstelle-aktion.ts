@@ -188,6 +188,11 @@ export async function erstelleAktion(
       standardDauer: dauerOderNull(aktionsdaten.standardDauer),
       vorlagenId,
 
+      // NEU mit #320 (TK 9.8.2): Pflichtfeld. Ueber IPC kann es als `undefined` ankommen
+      // (der Setzweg liegt bei #319) - dann greift die verbindliche Vorbelegung aus dem
+      // Projekt ("vorbelegt mit Project.standardMarkeId").
+      markeId: aktionsdaten.markeId ?? projekt.standardMarkeId,
+
       // `null` = "keine eigene Farbe, es gilt der Markenwert" (#14). Der Wert selbst wird
       // NICHT geprueft - und zwar bewusst NICHT, weil ueber seine Form gerade Uneinigkeit
       // herrscht: #14 nennt ihn "Rollen-Verweis in die Markenpalette, kein Hex", TK 9.8.4
@@ -275,12 +280,10 @@ function dauerOderNull(wert: number | null | undefined): number | null {
 
 // NICHT HIER, UND GEMELDET:
 //
-// 1. KEINE MARKEN-KENNUNG. TK 9.8.2 fuehrt in `Aktion` ein Pflichtfeld `markeId: string`
-//    ("GENAU EINE Marke (FA-23, 9.15.1). Pflicht; vorbelegt mit Project.standardMarkeId").
-//    Der gebaute Typ (#14) hat es NICHT, `Project` (#15) hat auch kein `standardMarkeId`,
-//    aus dem es vorzubelegen waere. Der Widerspruch ist hier nicht aufloesbar - er waere
-//    eine Vertragsaenderung an zwei geteilten Typen. Dieselbe Meldung steht bereits in #33.
-//    Kommt das Feld, bricht das Objektliteral oben und zeigt genau die Stelle.
+// 1. ERLEDIGT (#320 am 23.08.2026) - der Vermerk bleibt als Beleg stehen. Hier stand,
+//    dass `Aktion.markeId` fehlt. Das Feld ist da (TK 9.8.2); fehlt es in der Eingabe,
+//    wird es mit `Project.standardMarkeId` vorbelegt (s. oben). Der eigentliche SETZWEG
+//    im Editor bleibt bei #319.
 //
 // 2. KEINE PRUEFUNG AUF DOPPELTE TITEL. Aktionen sind "referenzierbare Datensaetze" (TK 5,
 //    Punkt 2) und werden ueber ihre ID angesprochen, nie ueber den Titel; zwei Aktionen

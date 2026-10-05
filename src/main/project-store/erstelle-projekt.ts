@@ -59,7 +59,10 @@ import { schreibeProjekt } from './schreibe-projekt'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Project } from '../../shared/contracts/project'
-export async function erstelleProjekt(name: string): Promise<Ergebnis<Project, ProjectStoreFehlercode>> {
+export async function erstelleProjekt(
+  name: string,
+  standardMarkeId: string,
+): Promise<Ergebnis<Project, ProjectStoreFehlercode>> {
   // Die Namenspruefung laeuft VOR dem Lock. Ein leerer Name beruehrt D1 nicht ("keine
   // Wirkung", Fehlerpfad-Tabelle) - ihn erst hinter der Warteschlange abzuweisen hiesse,
   // einen laufenden Schreibvorgang abzuwarten, nur um nichts zu tun.
@@ -73,6 +76,20 @@ export async function erstelleProjekt(name: string): Promise<Ergebnis<Project, P
       fehler: {
         code: 'ungueltige_eingabe',
         meldung: 'Ein Projekt braucht einen nicht leeren Namen.',
+      },
+    }
+  }
+
+  // NEU mit #320 (TK 9.11.3): `standardMarkeId` ist Pflichtfeld, und der Befueller ist
+  // der Handler - "erstelleProjekt bekommt die Marken-Kennung als PARAMETER - der Handler
+  // holt sie" (TK 9.5.2, #328). Diese Datei holt sie NICHT selbst: Der marken-store darf
+  // den project-store sehen, nie umgekehrt.
+  if (typeof standardMarkeId !== 'string' || standardMarkeId.trim().length === 0) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: 'Ein Projekt braucht eine nicht leere standardMarkeId.',
       },
     }
   }
@@ -126,6 +143,9 @@ export async function erstelleProjekt(name: string): Promise<Ergebnis<Project, P
       // Zahlenliteral. KEINE Migration noetig: Das Feld gehoert von Anfang an dazu
       // (schemaVersion 1, TK 9.5.5).
       standardSegmentdauer: STANDARD_ANZEIGEDAUER_SEKUNDEN,
+      // NEU mit #320 (FA-23, TK 9.11.3): "Beim Anlegen die eingebaute Marke" - die
+      // Kennung kommt als Parameter vom Handler, nicht aus einem Nachschlagen hier.
+      standardMarkeId,
     }
 
     const ordner = projektOrdner(projekt.id)
@@ -228,10 +248,10 @@ function text(ursache: unknown): string {
 //    soll. Ebenso wenig wird setzeAktivesProjekt (#27, config-store) gerufen: Das
 //    schreibt config.json und ist laut #34 Sache von oeffneProjekt.
 //
-// 2. KEINE MARKEN-KENNUNG. Das woertliche TK-Zitat im Issue nennt zwei Eingaenge
-//    ("name, standardMarkeId"), die verbindliche Signatur nur `name`, und der Typ
-//    `Project` (#15) hat kein Marken-Feld. Der Widerspruch ist NICHT hier aufloesbar
-//    (das waere eine Vertragsaenderung) und wird gemeldet - M8 (Marken) haengt daran.
+// 2. ERLEDIGT (#320 am 23.08.2026) - der Vermerk bleibt als Beleg stehen. Hier stand,
+//    dass `Project.standardMarkeId` fehlt. Das Feld ist da (TK 9.11.3) und wird als
+//    PARAMETER befuellt (TK 9.5.2/#328: der Handler holt die eingebaute Marke und reicht
+//    deren id weiter); der eigentliche Abruf ueber `listeMarken()` liegt bei #328.
 //
 // 3. KEINE PRUEFUNG AUF DOPPELTE PROJEKTNAMEN. Zwei Projekte duerfen gleich heissen; sie
 //    unterscheiden sich ueber die ID, und weder Issue noch TK verlangen Eindeutigkeit.

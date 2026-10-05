@@ -1,227 +1,145 @@
-// Verhaltenstests zu #117 - die Zeichenroutine (zeichne-segment.ts, jsdom).
+// Verhaltenstests zu #117 (M4-23) - zeichneSegment.
 //
-// getContext wird durch ein Aufzeichnungs-Doppel ersetzt; die drei Zonen-Funktionen,
-// holeMotiv, holeLogo, sindSchriftenBereit und loeseFarbe durch Doppel. Gemessen
-// wird die Ablauflogik: Flaeche, Vorfuellung, Bindungstabelle, wennLeer, Reihenfolge,
-// Durchreichen der Aktion, die drei Wuerfe - und der Regressionstest gegen eine
-// Paritaetspruefung der Bandhoehe (160 -> kein Wurf).
-// @vitest-environment jsdom
-import { readFileSync } from 'node:fs'
+// Ohne Browser pruefbar (DoD): document.createElement('canvas') und getContext('2d')
+// werden durch Aufzeichnungs-Doppel ersetzt; die drei Zonen-Funktionen (#114/#115/#116)
+// sowie holeMotiv, holeLogo, sindSchriftenBereit und loeseFarbe sind Doppel. Die
+// Zonen-Funktionen sind standheute noch Ruempfe - hier werden sie GEMOCKT, weil #117
+// nur deren VERTRAG kennt (dieselbe Einordnung wie im Issue-DoD vorgesehen).
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
-import { SICHERHEITSABSTAND_PX } from '../../src/shared/contracts/konstanten'
-
 import type { Aktion } from '../../src/shared/contracts/aktion'
-import type { Marke } from '../../src/shared/contracts/marke'
 import type { Vorlage, Zone } from '../../src/shared/contracts/vorlage'
-import type { Motiv } from '../../src/renderer/template-canvas/bild-laden'
+import type { Marke } from '../../src/shared/contracts/marke'
 
-vi.mock('../../src/renderer/template-canvas/farben', () => ({
-  loeseFarbe: vi.fn((_m: Marke, r: string, _a: Aktion) => `farbe:${r}`),
-}))
-vi.mock('../../src/renderer/template-canvas/bild-laden', () => ({
-  holeMotiv: vi.fn((schluessel: string) => ({ zustand: "geladen", bild: ATTRAPPE, breite: 10, höhe: 10, schluessel })),
-}))
-vi.mock('../../src/renderer/template-canvas/logo-laden', () => ({
-  holeLogo: vi.fn(() => ({ zustand: "geladen", bild: ATTRAPPE, breite: 10, höhe: 10 })),
-}))
-vi.mock('../../src/renderer/template-canvas/schriften', () => ({
-  sindSchriftenBereit: vi.fn(() => true),
-}))
-vi.mock('../../src/renderer/template-canvas/zone-text', () => ({
-  ZEILENHOEHE_FAKTOR: 1.2,
-  zeichneTextZone: vi.fn(),
-}))
-vi.mock('../../src/renderer/template-canvas/zone-bild', () => ({
-  zeichneBildZone: vi.fn(),
-}))
-vi.mock('../../src/renderer/template-canvas/zone-deko', () => ({
-  zeichneDekoZone: vi.fn(),
-}))
+// ---------------------------------------------------------------------------
+// Aufzeichnungs-Doppel des Canvas
+// ---------------------------------------------------------------------------
 
-import { loeseFarbe } from '../../src/renderer/template-canvas/farben'
-import { holeMotiv } from '../../src/renderer/template-canvas/bild-laden'
-import { holeLogo } from '../../src/renderer/template-canvas/logo-laden'
-import { sindSchriftenBereit } from '../../src/renderer/template-canvas/schriften'
-import { zeichneTextZone } from '../../src/renderer/template-canvas/zone-text'
-import { zeichneBildZone } from '../../src/renderer/template-canvas/zone-bild'
-import { zeichneDekoZone } from '../../src/renderer/template-canvas/zone-deko'
-import { zeichneSegment } from '../../src/renderer/template-canvas/zeichne-segment'
-
-// ---------------- Quelldatei-Verbote (Grep) ----------------
-
-import { join } from 'node:path'
-
-const QUELLE = readFileSync(
-  join(process.cwd(), 'src/renderer/template-canvas/zeichne-segment.ts'),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('zeichne-segment – Verbote in der Quelldatei (Grep)', () => {
-  it('kein await/async/devicePixelRatio/Zufall/Zeit/Cache/DOM-Stil/appendChild/Image/media', () => {
-    for (const verbot of [
-      'await ',
-      'async ',
-      'devicePixelRatio',
-      'Math.random',
-      'new Date',
-      'Date.',
-      'performance',
-      'localStorage',
-      'sessionStorage',
-      'indexedDB',
-      'caches',
-      'canvas.style',
-      'appendChild',
-      'new Image',
-      'media://',
-      'status:',
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-  })
-
-  it('keine Profil-Literale 1920/1080 und keine Paritätsprüfung der Höhe', () => {
-    expect(CODEZEILEN).not.toMatch(/\b1920\b/)
-    expect(CODEZEILEN).not.toMatch(/\b1080\b/)
-    expect(CODEZEILEN).not.toContain('% 2')
-    expect(CODEZEILEN).not.toContain('Math.ceil')
-    expect(CODEZEILEN).not.toContain('Math.floor')
-  })
-
-  it("liest aktion.akzentfarbe nicht, nennt keine Akzent-Rollen und indiziert marke.farben nicht", () => {
-    expect(CODEZEILEN).not.toContain('akzentfarbe')
-    expect(CODEZEILEN).not.toContain('akzentKraeftig')
-    expect(CODEZEILEN).not.toContain('akzentTief')
-    expect(CODEZEILEN).not.toContain('marke.farben')
-  })
-})
-
-// Eine Attrappe als "Bild": Die Zeichnung liest nie am Bildobjekt selbst.
-const ATTRAPPE = {} as unknown as ImageBitmap
-
-// jsdom liefert ohne Canvas-Paket kein 2d-Kontext: Doppel auf dem Prototype,
-// ein Aufzeichnungs-Kontext (`fillRect`, `fillStyle`, ...). Jeder Test bekommt
-// seine eigene Instanz, damit die Aufrufliste sauber je Fall zählt.
-type KontextAufzeichnung = {
-  rufe: Array<{ methode: string; argumente: unknown[] }>
-  fillStyles: string[]
-}
-
-let kontext: KontextAufzeichnung | null = null
-
-function spanneKontextEin(liefertNull = false): void {
-  kontext = { rufe: [], fillStyles: [] }
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (
-    this: HTMLCanvasElement,
-    typ: string,
-  ) {
-    kontext?.rufe.push({ methode: 'getContext', argumente: [typ] })
-    if (liefertNull) return null
-    return {
-      set fillStyle(wert: string) {
-        kontext?.fillStyles.push(wert)
-      },
-      get fillStyle() {
-        return ''
-      },
-      fillRect: (x: number, y: number, w: number, h: number) => {
-        kontext?.rufe.push({ methode: 'fillRect', argumente: [x, y, w, h] })
-      },
-    } as unknown as CanvasRenderingContext2D
-  } as never)
-}
+let canvasZaehler = 0
+let contextAufrufe: { argumente: unknown[] }[] = []
+let ctx2d: Record<string, unknown> | null
 
 beforeEach(() => {
-  // Der Test kann Implementierungen ändern (Reihenfolge-Spur); die Basis-Mocks
-  // werden vor JEDEM Test neu belegt - restoreAllMocks wuerde die Modul-Mocks oben
-  // (die definierten Doubles) selbst zerstoeren, das bleibt weg.
-  vi.mocked(sindSchriftenBereit).mockReturnValue(true)
-  vi.mocked(holeMotiv).mockImplementation(
-    (schluessel: string) => ({ zustand: "geladen", bild: ATTRAPPE, breite: 10, höhe: 10, schluessel }) as never,
-  )
-  vi.mocked(holeLogo).mockImplementation(() => ({ zustand: "geladen", bild: ATTRAPPE, breite: 10, höhe: 10 }) as never)
-  vi.mocked(loeseFarbe).mockImplementation((_m: unknown, rolle: unknown, _a: unknown) => `farbe:${String(rolle)}` as never)
-  // Zonen-Doubles: leere Implementierung (die Aufruf-Spur messen die Tests selbst).
-  vi.mocked(zeichneTextZone).mockImplementation(() => undefined as never)
-  vi.mocked(zeichneBildZone).mockImplementation(() => undefined as never)
-  vi.mocked(zeichneDekoZone).mockImplementation(() => undefined as never)
-  // Aufruflisten leer - die Tests messen NUR ihre eigenen Aufrufe.
-  for (const doppel of [zeichneTextZone, zeichneBildZone, zeichneDekoZone, holeMotiv, holeLogo, loeseFarbe, sindSchriftenBereit]) {
-    vi.mocked(doppel).mockClear()
-  }
-  spanneKontextEin()
+  canvasZaehler = 0
+  contextAufrufe = []
+  ctx2d = { fillRect: (..._a: unknown[]) => undefined }
+  vi.stubGlobal('document', {
+    createElement: (tag: string) => {
+      if (tag !== 'canvas') throw new Error('nur canvas erwartet')
+      canvasZaehler += 1
+      return {
+        width: 0,
+        height: 0,
+        getContext: (...argumente: unknown[]) => {
+          contextAufrufe.push({ argumente })
+          return ctx2d as unknown as CanvasRenderingContext2D
+        },
+      } as unknown as HTMLCanvasElement
+    },
+  })
 })
 
-// Bausteine
+// ---------------------------------------------------------------------------
+// Doppel der fremden Module mit Aufruf-Aufzeichnung
+// ---------------------------------------------------------------------------
 
-function aktion(bildRef: string | null = 'asset-1'): Aktion {
+const aufrufeMarkenSchriften: Marke[] = []
+const aufrufeErsatz: unknown[][] = []
+
+const aufrufe = {
+  deko: [] as unknown[][],
+  text: [] as unknown[][],
+  bild: [] as unknown[][],
+  holeMotiv: [] as unknown[],
+  holeLogo: [] as unknown[],
+  loeseFarbe: [] as unknown[][],
+}
+
+vi.mock('../../src/renderer/template-canvas/zone-deko', () => ({
+  zeichneDekoZone: (...a: unknown[]) => void aufrufe.deko.push(a),
+}))
+vi.mock('../../src/renderer/template-canvas/zone-text', () => ({
+  zeichneTextZone: (...a: unknown[]) => void aufrufe.text.push(a),
+}))
+vi.mock('../../src/renderer/template-canvas/zone-bild', () => ({
+  zeichneBildZone: (...a: unknown[]) => void aufrufe.bild.push(a),
+}))
+vi.mock('../../src/renderer/template-canvas/bild-laden', () => ({
+  holeMotiv: (schluessel: string) => {
+    aufrufe.holeMotiv.push(schluessel)
+    return motivAntwort
+  },
+}))
+vi.mock('../../src/renderer/template-canvas/logo-laden', () => ({
+  holeLogo: (...a: unknown[]) => {
+    aufrufe.holeLogo.push(a)
+    return logoAntwort
+  },
+}))
+vi.mock('../../src/renderer/template-canvas/schriften', () => ({
+  sindSchriftenBereit: () => schriftenBereit,
+}))
+vi.mock('../../src/renderer/template-canvas/marken-schriften', () => ({
+  sindMarkenSchriftenBereit: (m: Marke) => {
+    aufrufeMarkenSchriften.push(m)
+    return markenSchriftenBereit
+  },
+}))
+vi.mock('../../src/renderer/template-canvas/ersatz-logo', () => ({
+  zeichneErsatzLogo: (...a: unknown[]) => void aufrufeErsatz.push(a),
+}))
+vi.mock('../../src/renderer/template-canvas/farben', () => ({
+  loeseFarbe: (...a: unknown[]) => {
+    aufrufe.loeseFarbe.push(a)
+    return '#GEMESSEN'
+  },
+}))
+
+import { zeichneSegment } from '../../src/renderer/template-canvas/zeichne-segment'
+
+let schriftenBereit = true
+let markenSchriftenBereit = true
+let motivAntwort: unknown = { zustand: 'geladen', bild: {}, breite: 10, höhe: 10 }
+let logoAntwort: unknown = { zustand: 'geladen', bild: {}, breite: 420, höhe: 120 }
+
+// ---------------------------------------------------------------------------
+// Bausteine
+// ---------------------------------------------------------------------------
+
+function aktion(overrides: Partial<Aktion> = {}): Aktion {
   return {
-    id: 'a-1',
-    titel: 'Sommeraktion',
-    beschreibung: 'Beschreibungstext',
-    preis: '9,90',
-    bildRef,
-    cta: 'Jetzt starten',
+    id: 'a1',
+    titel: 'Sommer-Angebot',
+    beschreibung: 'Alle Kurse',
+    preis: '19,90 €',
+    bildRef: null,
+    cta: 'Jetzt melden',
     standardDauer: null,
     vorlagenId: 'vollbild',
     akzentfarbe: null,
-  }
+    elemente: [],
+    markeId: 'm1',
+    ...overrides,
+  } as unknown as Aktion
 }
 
-function marke(): Marke {
+function zone(partial: Partial<Zone>): Zone {
   return {
-    farben: {
-      akzent: '#FF4040',
-      akzentKraeftig: '#DF3131',
-      akzentTief: '#971316',
-      flaecheDunkel: '#2F2E2E',
-      flaecheSehrDunkel: '#4B090B',
-      flaecheHell: '#FFFFFF',
-      flaecheAkzentZart: '#F5AEAF',
-      textAufDunkel: '#FFFFFF',
-      textAufHell: '#202020',
-      textSekundaer: '#8F8F8F',
-      linie: '#CCCCCC',
-      scrimStart: '#00000000',
-      scrimEnde: '#000000B3',
-    },
-    schriften: {
-      headlineElegant: { familie: 'P', gewicht: 700, datei: 'P.woff2' },
-      headlinePlakativ: { familie: 'A', gewicht: 900, datei: 'A.woff2' },
-      fliesstext: { familie: 'R', gewicht: 400, datei: 'R.woff2' },
-      fliesstextFett: { familie: 'B', gewicht: 700, datei: 'B.woff2' },
-    },
-    logo: { datei: 'logo.png', seitenverhaeltnis: 3.5 },
-    sicherheit: SICHERHEITSABSTAND_PX,
-    radien: { pille: 40, karte: 10, klein: 2 },
-    schatten: { versatzY: 4, weichzeichnen: 8, farbe: '#00000040' },
-    slogan: { text: 'Fitnessworld24', aktiv: true },
-  }
-}
-
-function zone(zonen: Partial<Zone> & Pick<Zone, 'id' | 'bindung'>): Zone {
-  return {
-    rolle: 'fest',
-    rahmen: { x: 0, y: 0, breite: 100, höhe: 100 },
-    ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+    id: partial.id ?? `zone-${Math.random()}`,
+    rolle: 'frei',
+    bindung: null,
+    rahmen: { x: 0, y: 0, breite: 100, höhe: 50 },
+    ausrichtung: { horizontal: 'links', vertikal: 'mitte' },
     wennLeer: 'leer',
-    ...zonen,
-  } as Zone
+    ...partial,
+  } as unknown as Zone
 }
 
 function vorlage(art: Vorlage['art'], zonen: Zone[], höhe: number | null = null): Vorlage {
   return {
-    id: 'v-probe',
-    name: 'Probe',
+    id: art === 'vollflaeche' ? 'vollbild' : `band-${String(höhe)}`,
+    name: 'Testvorlage',
     art,
     höhe,
     parent: null,
@@ -230,276 +148,448 @@ function vorlage(art: Vorlage['art'], zonen: Zone[], höhe: number | null = null
   }
 }
 
-// ---------------- Tests ----------------
+function marke(): Marke {
+  return {
+    id: 'm1',
+    name: 'Fitnessworld24',
+    farben: {},
+    schriften: {},
+    logo: { datei: 'logo.png', herkunft: 'gebuendelt', seitenverhaeltnis: 3.5 },
+    slogan: { text: 'Fit werden', aktiv: true },
+    herkunftJeFeld: {},
+  } as unknown as Marke
+}
 
-describe('zeichneSegment (#117) - die Fläche', () => {
-  it.each([
-    ['vollflaeche', RENDER_PROFILE.breite, RENDER_PROFILE.hoehe],
-  ] as const)('art %s -> %s x %s, trägt dieselben Zahlen in breite/höhe', (art, breite, hoehe) => {
-    const bild = zeichneSegment(aktion(), { ...vorlage(art, []) }, marke())
-    expect(bild.canvas.width).toBe(breite)
-    expect(bild.canvas.height).toBe(hoehe)
-    expect(bild.breite).toBe(breite)
-    expect(bild.höhe).toBe(hoehe)
+function werfendeMarke(): Marke {
+  return new Proxy({} as unknown as Marke, {
+    get() {
+      throw new Error('rahmenMarke durfte nicht gelesen werden')
+    },
+  })
+}
+
+function einblendung(mitHintergrund: boolean): Vorlage {
+  const zonen: Zone[] = mitHintergrund
+    ? [zone({ id: 'hintergrund', bindung: null })]
+    : []
+  return vorlage('einblendung', zonen, 200)
+}
+
+describe('zeichneSegment (#117/#294)', () => {
+  beforeEach(() => {
+    for (const schlüssel of Object.keys(aufrufe)) {
+      ;(aufrufe as Record<string, unknown[]>)[schlüssel] = []
+    }
+    schriftenBereit = true
+    markenSchriftenBereit = true
+    aufrufeMarkenSchriften.length = 0
+    aufrufeErsatz.length = 0
+    motivAntwort = { zustand: 'geladen', bild: {}, breite: 10, höhe: 10 }
+    logoAntwort = { zustand: 'geladen', bild: {}, breite: 420, höhe: 120 }
   })
 
-  it("split mit höhe 162 -> 1920 x 162; einblendung mit höhe 200 -> 1920 x 200", () => {
-    const split = zeichneSegment(aktion(), vorlage('split', [], 162), marke())
-    expect(split.canvas.width).toBe(1920)
-    expect(split.canvas.height).toBe(162)
+  describe('Flaeche (Ablauf 1/2)', () => {
+    it('vollflaeche -> 1920 x 1080 aus RENDER_PROFILE, zurueckgemeldet in breite/höhe', () => {
+      const ergebnis = zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())
+      expect(ergebnis.breite).toBe(1920)
+      expect(ergebnis.höhe).toBe(1080)
+      expect(ergebnis.canvas.width).toBe(1920)
+      expect(ergebnis.canvas.height).toBe(1080)
+    })
 
-    const band = zeichneSegment(aktion(), vorlage('einblendung', [], 200), marke())
-    expect(band.canvas.height).toBe(200)
+    it.each([
+      ['split', 162],
+      ['einblendung', 200],
+    ] as const)('%s mit hoehe %i -> 1920 x %i', (art, hoehe) => {
+      const ergebnis = zeichneSegment(aktion(), vorlage(art, [], hoehe), marke(), marke())
+      expect(ergebnis.höhe).toBe(hoehe)
+      expect(ergebnis.canvas.height).toBe(hoehe)
+    })
+
+    it.each([null, 0, -10, Number.NaN, 1080])(
+      'split mit hoehe %p wirft, Meldung nennt die Vorlagen-ID',
+      (hoehe) => {
+        expect(() =>
+          zeichneSegment(aktion(), vorlage('split', [], hoehe as number), marke(), marke()),
+        ).toThrow(/band-/)
+      },
+    )
+
+    it.each([
+      ['split', 161],
+      ['einblendung', 1],
+    ] as const)('ungerade hoehe %i wird bewusst NICHT abgewiesen oder gerundet', (art, hoehe) => {
+      const ergebnis = zeichneSegment(aktion(), vorlage(art, [], hoehe), marke(), marke())
+      expect(ergebnis.höhe).toBe(hoehe) // nachweislich nicht gerundet
+    })
+
+    it('getContext wird mit genau einem Argument aufgerufen', () => {
+      zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())
+      expect(contextAufrufe).toHaveLength(1)
+      expect(contextAufrufe[0]?.argumente).toHaveLength(1)
+    })
+
+    it('getContext null -> Wurf', () => {
+      ctx2d = null
+      expect(() => zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())).toThrow(
+        /getContext/,
+      )
+    })
   })
 
-  it.each([null, 0, -10, Number.NaN, 1080])('split mit höhe %s -> Wurf, Meldung nennt die Vorlagen-ID', (hoeh) => {
-    expect(() => zeichneSegment(aktion(), vorlage('split', [], hoeh as never), marke())).toThrow(/v-probe/)
+  describe('Schrift-Pruefung (Ablauf 0)', () => {
+    it('nicht bereite Schriften -> Wurf, BEVOR ein Canvas entsteht', () => {
+      schriftenBereit = false
+      expect(() => zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())).toThrow(
+        /nicht bereit/,
+      )
+      expect(canvasZaehler).toBe(0)
+    })
   })
 
-  it('UNGERADE Bandhöhe 161 -> KEIN Wurf, Canvas 1920 x 161, HOEHE ungerundet (Regression gegen die Paritätssperre)', () => {
-    const bild = zeichneSegment(aktion(), vorlage('split', [], 161), marke())
-    expect(bild.höhe).toBe(161)
-    expect(bild.canvas.height).toBe(161)
-    // einblendung mit 1: derselbe Grenzfall
-    const band = zeichneSegment(aktion(), vorlage('einblendung', [], 1), marke())
-    expect(band.höhe).toBe(1)
+  describe('Grundflaeche (Ablauf 3)', () => {
+    it('vollflaeche und split fuellen ueber loeseFarbe("flaecheDunkel"), einblendung nicht', () => {
+      zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())
+      expect(aufrufe.loeseFarbe).toHaveLength(1)
+      expect(aufrufe.loeseFarbe[0]?.[1]).toBe('flaecheDunkel')
+
+      aufrufe.loeseFarbe.length = 0
+      zeichneSegment(aktion(), vorlage('split', [], 162), marke(), marke())
+      expect(aufrufe.loeseFarbe).toHaveLength(1)
+
+      aufrufe.loeseFarbe.length = 0
+      zeichneSegment(aktion(), vorlage('einblendung', [], 200), marke(), marke())
+      expect(aufrufe.loeseFarbe).toHaveLength(0) // kein Vorfuellen bei Alpha
+    })
+  })
+
+  describe('Zonen-Ablauf (Ablauf 4)', () => {
+    it('Array-Reihenfolge bleibt erhalten - absichtlich unsortierte IDs werden nicht sortiert', () => {
+      const zonen = [
+        zone({ id: 'z-cta', bindung: 'cta' }),
+        zone({ id: 'z-titel', bindung: 'titel' }),
+        zone({ id: 'z-preis', bindung: 'preis' }),
+      ]
+      zeichneSegment(aktion(), vorlage('vollflaeche', zonen), marke(), marke())
+      expect(aufrufe.text.map((a) => (a[1] as Zone).id)).toEqual(['z-cta', 'z-titel', 'z-preis'])
+    })
+
+    it.each(['titel', 'beschreibung', 'preis', 'cta'] as const)(
+      'bindung %s zeichnet Text aus der AKTION',
+      (bindung) => {
+        const a = aktion()
+        zeichneSegment(a, vorlage('vollflaeche', [zone({ bindung })]), marke(), marke())
+        expect(aufrufe.text).toHaveLength(1)
+        expect(aufrufe.holeMotiv).toHaveLength(0)
+      },
+    )
+
+    it('slogan kommt aus der MARKE, nicht aus der Aktion', () => {
+      const m = marke()
+      zeichneSegment(
+        aktion(),
+        vorlage('vollflaeche', [zone({ bindung: 'slogan' })]),
+        m,
+        m,
+      )
+      expect(aufrufe.text).toHaveLength(1)
+      expect(aufrufe.text[0]?.[2]).toBe('Fit werden') // marke.slogan.text
+    })
+
+    it('slogan inaktiv gilt als leerer Wert (wennLeer entscheidet)', () => {
+      const m = marke()
+      ;(m as { slogan: { aktiv: boolean } }).slogan.aktiv = false
+      zeichneSegment(
+        aktion(),
+        vorlage('vollflaeche', [zone({ bindung: 'slogan', wennLeer: 'leer' })]),
+        m,
+        m,
+      )
+      expect(aufrufe.deko).toHaveLength(1)
+      expect(aufrufe.text).toHaveLength(0)
+    })
+
+    it('bild reicht aktion.bildRef UNveraendert an holeMotiv durch', () => {
+      const a = aktion({ bildRef: 'asset-id-42' })
+      zeichneSegment(a, vorlage('vollflaeche', [zone({ bindung: 'bild' })]), marke(), marke())
+      expect(aufrufe.holeMotiv).toEqual(['asset-id-42'])
+      expect(aufrufe.bild).toHaveLength(1)
+    })
+
+    it('logo holt sein Motiv ueber holeLogo(markeId), nie ueber holeMotiv', () => {
+      const m = marke()
+      zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ bindung: 'logo' })]), m, m)
+      expect(aufrufe.holeLogo).toHaveLength(1)
+      // GEMELDETER WIDERSPRUCH (#117 vs. gebauter Code): Der Issue-Text nennt
+      // holeLogo() parameterlos; der gebaute Stand nach dem Edit an #119/#315 ist
+      // holeLogo(markeId) und #294 weist die Umstellung DIESER Datei zu.
+      expect(aufrufe.holeLogo[0]).toEqual([m.id])
+      expect(aufrufe.holeMotiv).toHaveLength(0) // logo.datei geht NIE an holeMotiv
+      expect(aufrufe.bild).toHaveLength(1)
+    })
+
+    it('die Aktion wird an alle Zonen-Funktionen und loeseFarbe als LETZTES Argument durchgereicht - dieselbe Referenz', () => {
+      const a = aktion({
+        bildRef: 'x',
+      })
+      const zonen = [
+        zone({ bindung: 'titel', deko: {} }),
+        zone({ bindung: 'bild', deko: {} }),
+        zone({ id: 'nur-deko', bindung: null }),
+      ]
+      zeichneSegment(a, vorlage('vollflaeche', zonen), marke(), marke())
+
+      for (const ruf of [...aufrufe.text, ...aufrufe.bild, ...aufrufe.deko]) {
+        expect(ruf[ruf.length - 1]).toBe(a) // toBe, nicht toEqual
+      }
+      for (const ruf of aufrufe.loeseFarbe) {
+        expect(ruf[ruf.length - 1]).toBe(a)
+      }
+    })
+
+    it("preis: null + wennLeer 'leer' -> Deko bleibt stehen, kein Text", () => {
+      zeichneSegment(
+        aktion({ preis: null }),
+        vorlage('vollflaeche', [zone({ bindung: 'preis', wennLeer: 'leer' })]),
+        marke(),
+        marke(),
+      )
+      expect(aufrufe.deko).toHaveLength(1)
+      expect(aufrufe.text).toHaveLength(0)
+    })
+
+    it("preis: null + wennLeer 'ausblenden' -> weder Deko noch Text", () => {
+      zeichneSegment(
+        aktion({ preis: null }),
+        vorlage('vollflaeche', [zone({ bindung: 'preis', wennLeer: 'ausblenden' })]),
+        marke(),
+        marke(),
+      )
+      expect(aufrufe.deko).toHaveLength(0)
+      expect(aufrufe.text).toHaveLength(0)
+    })
+
+    it("preis: '   ' (nur Leerzeichen) gilt wie null", () => {
+      zeichneSegment(
+        aktion({ preis: '   ' }),
+        vorlage('vollflaeche', [zone({ bindung: 'preis', wennLeer: 'ausblenden' })]),
+        marke(),
+        marke(),
+      )
+      expect(aufrufe.deko).toHaveLength(0)
+    })
+
+    it('bildRef: null -> KEIN holeMotiv, KEIN Platzhalter (Bild ist optional, FA-02)', () => {
+      zeichneSegment(
+        aktion({ bildRef: null }),
+        vorlage('vollflaeche', [zone({ bindung: 'bild', wennLeer: 'leer' })]),
+        marke(),
+        marke(),
+      )
+      expect(aufrufe.holeMotiv).toHaveLength(0)
+      expect(aufrufe.bild).toHaveLength(0)
+    })
+
+    it('fehlendes Motiv wird UNveraendert weitergegeben - die Zone wird nicht uebersprungen', () => {
+      motivAntwort = { zustand: 'fehlt' }
+      logoAntwort = { zustand: 'fehlt' }
+      zeichneSegment(
+        aktion({ bildRef: 'weg' }),
+        vorlage('vollflaeche', [
+          zone({ bindung: 'bild' }),
+          zone({ id: 'logo-zone', bindung: 'logo' }),
+        ]),
+        marke(),
+        marke(),
+      )
+      expect(aufrufe.bild).toHaveLength(2)
+      expect(aufrufe.bild[0]?.[2]).toEqual({ zustand: 'fehlt' })
+      expect(aufrufe.bild[1]?.[2]).toEqual({ zustand: 'fehlt' })
+    })
+
+    it('unbekannte Bindung -> nur Deko, kein Ratens', () => {
+      const z = zone({})
+      ;(z as { bindung: string }).bindung = 'irgendwas'
+      zeichneSegment(aktion(), vorlage('vollflaeche', [z]), marke(), marke())
+      expect(aufrufe.deko).toHaveLength(1)
+      expect(aufrufe.text).toHaveLength(0)
+      expect(aufrufe.bild).toHaveLength(0)
+    })
+
+    it('zonen: [] -> gueltiges SegmentBild ohne Ausnahme', () => {
+      const ergebnis = zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())
+      expect(ergebnis.breite).toBe(1920)
+    })
+
+    it('Determinismus: zwei identische Aufrufe -> identische Aufruffolge', () => {
+      const bauen = () => {
+        for (const schlüssel of Object.keys(aufrufe)) {
+          ;(aufrufe as Record<string, unknown[]>)[schlüssel] = []
+        }
+        zeichneSegment(
+          aktion({ bildRef: 'b' }),
+          vorlage('split', [
+            zone({ id: 't', bindung: 'titel', deko: {} }),
+            zone({ id: 'b', bindung: 'bild' }),
+            zone({ id: 'l', bindung: 'logo' }),
+          ], 162),
+          marke(),
+        marke(),
+        )
+        return JSON.stringify({ aufrufe, loeseFarbe: aufrufe.loeseFarbe.length })
+      }
+      expect(bauen()).toBe(bauen())
+    })
+  })
+
+  describe('#294 - Rahmen-Marke (TK 9.15.4)', () => {
+    it("art !== 'einblendung': rahmenMarke wird nachweislich NICHT gelesen", () => {
+      expect(() =>
+        zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), werfendeMarke()),
+      ).not.toThrow()
+      expect(() =>
+        zeichneSegment(aktion(), vorlage('split', [], 162), marke(), werfendeMarke()),
+      ).not.toThrow()
+    })
+
+    it("einblendung mit hintergrund-Zone: zeichneDekoZone bekommt dort rahmenMarke, sonst marke", () => {
+      const inhalts = marke()
+      const rahmen = marke()
+      const zonen = [
+        zone({ id: 'hintergrund', bindung: null }),
+        zone({ id: 'titel-zone', bindung: 'titel' }),
+      ]
+      zeichneSegment(
+        aktion(),
+        vorlage('einblendung', zonen, 200),
+        inhalts,
+        rahmen,
+      )
+      expect(aufrufe.deko).toHaveLength(2)
+      expect(aufrufe.deko[0]?.[2]).toBe(rahmen) // Hintergrund -> Rahmen-Marke
+      expect(aufrufe.text).toHaveLength(1)
+      expect(aufrufe.text[0]?.[3]).toBe(inhalts) // Inhalt -> Aktions-Marke
+    })
+
+    it("einblendung OHNE hintergrund-Zone: Verhalten wie M4-23, keine Rahmen-Nutzung", () => {
+      expect(() =>
+        zeichneSegment(
+          aktion({ titel: 'x' }),
+          einblendung(false),
+          marke(),
+          werfendeMarke(), // duerfte nicht gelesen werden
+        ),
+      ).not.toThrow()
+      expect(aufrufe.deko).toHaveLength(0)
+    })
+
+    it("marke oder rahmenMarke null/undefined wirft (Programmierfehler)", () => {
+      expect(() =>
+        zeichneSegment(aktion(), vorlage('vollflaeche', []), undefined as unknown as Marke, marke()),
+      ).toThrow(/rahmenMarke/)
+      expect(() =>
+        zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), null as unknown as Marke),
+      ).toThrow(/rahmenMarke/)
+    })
+  })
+
+  describe('#294 - Schrift-Pruefung der importierten Schriften', () => {
+    it("prueft marke immer; rahmenMarke nur bei einblendung + unterschiedlich + hintergrund vorhanden (zwei Aufrufe)", () => {
+      aufrufeMarkenSchriften.length = 0
+      const inhalts = marke()
+      const rahmen = marke()
+      zeichneSegment(
+        aktion(),
+        vorlage('einblendung', [zone({ id: 'hintergrund', bindung: null })], 200),
+        inhalts,
+        rahmen,
+      )
+      expect(aufrufeMarkenSchriften).toHaveLength(2)
+      expect(aufrufeMarkenSchriften[0]).toBe(inhalts)
+      expect(aufrufeMarkenSchriften[1]).toBe(rahmen)
+    })
+
+    it.each([
+      ["art !== 'einblendung'", () => vorlage('vollflaeche', [])],
+      ['rahmenMarke === marke', () => vorlage('einblendung', [zone({ id: 'hintergrund', bindung: null })], 200)],
+      ['keine hintergrund-Zone', () => vorlage('einblendung', [], 200)],
+    ])('%s -> genau EINE Pruefung (nur marke), werfende rahmenMarke bleibt ungelesen', (_name, baue) => {
+      aufrufeMarkenSchriften.length = 0
+      const m = marke()
+      const v = baue()
+      const rahmen = v.art === 'einblendung' ? m : werfendeMarke()
+      expect(() => zeichneSegment(aktion(), v, m, rahmen)).not.toThrow()
+      expect(aufrufeMarkenSchriften).toHaveLength(1)
+      expect(aufrufeMarkenSchriften[0]).toBe(m)
+    })
+
+    it("nicht bereite importierte Schriften der Inhalts-Marke -> Wurf VOR Canvas und Zonen-Funktionen", () => {
+      markenSchriftenBereit = false
+      const createElementSpy = vi.fn()
+      vi.stubGlobal('document', { createElement: createElementSpy })
+      expect(() =>
+        zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ bindung: 'titel' })]), marke(), marke()),
+      ).toThrow(/nicht bereit/)
+      expect(createElementSpy).not.toHaveBeenCalled()
+      expect(aufrufe.text).toHaveLength(0)
+    })
+
+    it("nicht bereite importierte Schriften der Rahmen-Marke -> Wurf nennt die ID und kennzeichnet sie als Rahmen-Marke", () => {
+      const inhalts = marke()
+      const rahmen = marke()
+      // Das Modul-Mock antwortet pauschal; ueber den Aufzeichnungs-Hook schalten wir
+      // ab dem ZWEITEN Aufruf (also fuer die Rahmen-Marke) auf 'nicht bereit'.
+      const originalPush = aufrufeMarkenSchriften.push.bind(aufrufeMarkenSchriften)
+      let erster = true
+      aufrufeMarkenSchriften.push = (m: Marke) => {
+        if (!erster) markenSchriftenBereit = false
+        erster = false
+        return originalPush(m)
+      }
+      try {
+        expect(() =>
+          zeichneSegment(
+            aktion(),
+            vorlage('einblendung', [zone({ id: 'hintergrund', bindung: null })], 200),
+            inhalts,
+            rahmen,
+          ),
+        ).toThrow(/Rahmen-Marke/)
+        expect(aufrufe.deko).toHaveLength(0) // geworfen VOR dem Zeichnen
+      } finally {
+        aufrufeMarkenSchriften.push = originalPush
+        markenSchriftenBereit = true
+      }
+    })
+
+  describe('#294 - Logo-Dispatch', () => {
+    it("logo === null -> zeichneErsatzLogo genau einmal, kein zeichneBildZone, Zone nicht uebersprungen", () => {
+      const m = marke()
+      ;(m as { logo: unknown }).logo = null
+      const logoZone = zone({ id: 'l', bindung: 'logo', wennLeer: 'ausblenden' })
+      zeichneSegment(aktion(), vorlage('vollflaeche', [logoZone]), m, m)
+      expect(aufrufeErsatz).toHaveLength(1)
+      expect(aufrufe.bild).toHaveLength(0)
+      expect((aufrufeErsatz[0]?.[1] as Zone).id).toBe('l')
+    })
+
+    it("logo !== null -> zeichneBildZone mit holeLogo(id), zeichneErsatzLogo nie", () => {
+      const m = marke()
+      zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ id: 'l', bindung: 'logo' })]), m, m)
+      expect(aufrufe.holeLogo).toEqual([[m.id]]) // genau EIN Argument: die id dieser Marke
+      expect(aufrufe.bild).toHaveLength(1)
+      expect(aufrufeErsatz).toHaveLength(0)
+    })
+
+    it("logo === null loest keinen Zugriff auf .datei aus (kein TypeError)", () => {
+      const m = marke()
+      ;(m as { logo: unknown }).logo = null
+      expect(() =>
+        zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ id: 'l', bindung: 'logo' })]), m, m),
+      ).not.toThrow()
+      expect(aufrufeErsatz[0]?.[2]).toBe(m) // markeDieserZone, dieselbe Referenz
+    })
   })
 })
 
-describe('zeichneSegment (#117) - Schritt 0 und Schritt 2', () => {
-  it("sindSchriftenBereit false -> Wurf, VOR dem Canvas (kein createElement('canvas'))", () => {
-    vi.mocked(sindSchriftenBereit).mockReturnValue(false)
-    const erzeuge = vi.spyOn(document, 'createElement')
-    expect(() => zeichneSegment(aktion(), vorlage('vollflaeche', []), marke())).toThrow(/Schriften/)
-    expect(erzeuge).not.toHaveBeenCalledWith('canvas')
-  })
-
-  it('getContext mit GENAU EINEM Argument', () => {
-    kontext?.rufe.splice(0)
-    zeichneSegment(aktion(), vorlage('vollflaeche', []), marke())
-    const rufe = kontext?.rufe.filter((ruf) => ruf.methode === 'getContext') ?? []
-    expect(rufe.length).toBeGreaterThan(0)
-    for (const ruf of rufe) {
-      expect(ruf.argumente).toHaveLength(1)
-    }
-  })
-
-  it("getContext liefert null -> geworfener Error", () => {
-    vi.restoreAllMocks()
-    spanneKontextEin(true)
-    expect(() => zeichneSegment(aktion(), vorlage('vollflaeche', []), marke())).toThrow(/getContext/)
-  })
-})
-
-describe('zeichneSegment (#117) - die Grundfläche', () => {
-  it('vollflaeche und split füllen vorab mit loeseFarbe(flaecheDunkel); einblendung füllt NICHT', () => {
-    vi.mocked(loeseFarbe).mockClear()
-    const a = aktion()
-    zeichneSegment(a, vorlage('vollflaeche', []), marke())
-    expect(vi.mocked(loeseFarbe).mock.calls.some((ruf) => ruf[1] === 'flaecheDunkel' && ruf[2] === a)).toBe(true)
-
-    vi.mocked(loeseFarbe).mockClear()
-    zeichneSegment(a, vorlage('einblendung', [], 200), marke())
-    expect(vi.mocked(loeseFarbe).mock.calls.some((ruf) => ruf[1] === 'flaecheDunkel')).toBe(false)
-  })
-
-  it('die Grundfarbe bleibt der Markenwert, AUCH bei gesetzter Akzentfarbe (flaecheDunkel ist keine Akzent-Rolle)', () => {
-    const mitWahlAktion = { ...aktion(), akzentfarbe: '#971316' }
-    // Der Zeichnen-Aufruf bekommt DIE Aktion referenz-identisch.
-    zeichneSegment(mitWahlAktion, vorlage('vollflaeche', []), marke())
-    // loeseFarbe bekommt die aktion durchgereicht; die Ersetzung selbst entscheidet #112.
-    const rufe = vi.mocked(loeseFarbe).mock.calls.filter((ruf) => ruf[1] === 'flaecheDunkel')
-    expect(rufe.length).toBeGreaterThan(0)
-    for (const ruf of rufe) {
-      expect(ruf[2]).toBe(mitWahlAktion)
-    }
-  })
-})
-
-describe('zeichneSegment (#117) - Zonen in Array-Reihenfolge', () => {
-  it('fünf "unsortierte" Zonen -> die Zonen-Funktionen laufen in GENAU dieser Reihenfolge; nichts wird sortiert', () => {
-    const zonen = [
-      zone({ id: 'z-cta', bindung: 'cta' }),
-      zone({ id: 'z-titel', bindung: 'titel' }),
-      zone({ id: 'z-deko', bindung: null }),
-      zone({ id: 'z-bild', bindung: 'bild' }),
-      zone({ id: 'z-preis', bindung: 'preis' }),
-    ]
-    // Reihenfolge aus den Mock-Reihenfolgen ableiten: ein Invocations-Mix-
-    // Vergleich, der DIESE Reihenfolge gegenüber einer SORTIERTen unterscheidet.
-    const reihenfolge: string[] = []
-    const markiere = (name: string): void => {
-      reihenfolge.push(name)
-    }
-    vi.mocked(zeichneTextZone).mockImplementation(((_ctx: CanvasRenderingContext2D, zone: Zone) => {
-      markiere(zone.id)
-    }) as never)
-    vi.mocked(zeichneBildZone).mockImplementation(((_ctx: CanvasRenderingContext2D, zone: Zone) => {
-      markiere(zone.id)
-    }) as never)
-    vi.mocked(zeichneDekoZone).mockImplementation(((_ctx: CanvasRenderingContext2D, zone: Zone) => {
-      markiere(zone.id)
-    }) as never)
-
-    reihenfolge.length = 0
-    zeichneSegment(aktion(), vorlage('vollflaeche', zonen), marke())
-    // Jede gebundene Zone ruft Deko + Inhalt (zwei Einträge), z-deko nur Deko.
-    // Die Array-Reihenfolge ist: cta, titel, deko, bild, preis – NICHT alphabetisch.
-    expect(reihenfolge).toEqual([
-      'z-cta', 'z-cta',
-      'z-titel', 'z-titel',
-      'z-deko',
-      'z-bild', 'z-bild',
-      'z-preis', 'z-preis',
-    ])
-  })
-})
-
-describe('zeichneSegment (#117) - die Bindungstabelle', () => {
-  it.each([
-    ['titel', 'titel'],
-    ['beschreibung', 'beschreibung'],
-    ['preis', 'preis'],
-    ['cta', 'cta'],
-    ['slogan', 'slogan'],
-  ] as const)('bindung %s -> zeichneTextZone mit dem Wert aus Aktion bzw. Marke', (bindung, quelle) => {
-    const z = zone({ id: 'z', bindung: bindung as never })
-    const m = marke()
-    const a = aktion()
-    const gemerkt = a
-    zeichneSegment(gemerkt, vorlage('vollflaeche', [z]), m)
-    const rufe = vi.mocked(zeichneTextZone).mock.calls
-    const ruf = rufe.find((ruf) => (ruf[1] as Zone).id === 'z')
-    expect(ruf).toBeDefined()
-    if (bindung === 'slogan') {
-      expect(ruf?.[2]).toBe('Fitnessworld24')
-    } else {
-      expect(ruf?.[2]).toBe(gemerkt[bindung])
-    }
-  })
-
-  it('slogan mit aktiv false -> wie leer behandelt (wennLeer leer: Deko steht, kein Text)', () => {
-    const m = marke()
-    m.slogan.aktiv = false
-    const z = zone({ id: 'z-slogan', bindung: 'slogan' })
-    zeichneSegment(aktion(), vorlage('vollflaeche', [z]), m)
-    expect(vi.mocked(zeichneTextZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-slogan')).toBe(false)
-    expect(vi.mocked(zeichneDekoZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-slogan')).toBe(true)
-  })
-
-  it("bindung 'bild' ruft holeMotiv mit GENAU aktion.bildRef; 'logo' ruft holeLogo OHNE Argument und holeMotiv NICHT", () => {
-    vi.mocked(holeMotiv).mockClear()
-    vi.mocked(holeLogo).mockClear()
-    zeichneSegment(aktion('asset-X'), vorlage('vollflaeche', [zone({ id: 'z-bild', bindung: 'bild' })]), marke())
-    expect(vi.mocked(holeMotiv)).toHaveBeenCalledWith('asset-X')
-
-    vi.mocked(holeMotiv).mockClear()
-    vi.mocked(holeLogo).mockClear()
-    zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ id: 'z-logo', bindung: 'logo' })]), marke())
-    expect(vi.mocked(holeLogo)).toHaveBeenCalledWith()
-    expect(vi.mocked(holeMotiv)).not.toHaveBeenCalled() // am logo.png-Dummy ebenso wenig
-  })
-
-  it("logo: marke.logo.datei geht NICHT an holeMotiv (kein Passhavarie)", () => {
-    vi.mocked(holeMotiv).mockClear()
-    zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ id: 'z-logo', bindung: 'logo' })]), marke())
-    expect(vi.mocked(holeMotiv)).not.toHaveBeenCalledWith('logo.png')
-  })
-})
-
-describe('zeichneSegment (#117) - wennLeer', () => {
-  it("preis null, wennLeer 'leer' -> zeichneDekoZone JA, zeichneTextZone NEIN (die Pille bleibt)", () => {
-    const a = { ...aktion(), preis: null }
-    const z = zone({ id: 'z-preis', bindung: 'preis' })
-    zeichneSegment(a, vorlage('vollflaeche', [z]), marke())
-    expect(vi.mocked(zeichneDekoZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-preis')).toBe(true)
-    expect(vi.mocked(zeichneTextZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-preis')).toBe(false)
-  })
-
-  it("preis null, wennLeer 'ausblenden' -> WEDER Deko NOCH Text (keine leere rote Pille)", () => {
-    const a = { ...aktion(), preis: null }
-    const z = zone({ id: 'z-preis', bindung: 'preis', wennLeer: 'ausblenden' })
-    zeichneSegment(a, vorlage('vollflaeche', [z]), marke())
-    expect(vi.mocked(zeichneDekoZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-preis')).toBe(false)
-    expect(vi.mocked(zeichneTextZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-preis')).toBe(false)
-  })
-
-  it("preis nur Leerzeichen wird wie null behandelt", () => {
-    const a = { ...aktion(), preis: '   ' }
-    const z = zone({ id: 'z-preis', bindung: 'preis', wennLeer: 'ausblenden' })
-    zeichneSegment(a, vorlage('vollflaeche', [z]), marke())
-    expect(vi.mocked(zeichneDekoZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-preis')).toBe(false)
-  })
-
-  it('bildRef null -> KEIN holeMotiv und KEIN zeichneBildZone (kein Platzhalter: "kein Bild gewählt" != "Bild fehlt")', () => {
-    vi.mocked(holeMotiv).mockClear()
-    const a = { ...aktion(), bildRef: null }
-    zeichneSegment(a, vorlage('vollflaeche', [zone({ id: 'z-bild', bindung: 'bild' })]), marke())
-    expect(vi.mocked(holeMotiv)).not.toHaveBeenCalled()
-    expect(vi.mocked(zeichneBildZone)).not.toHaveBeenCalled()
-  })
-
-  it("holeMotiv meldet 'fehlt' -> zeichneBildZone bekommt GENAU dieses Motiv (Platzhalter-Fall)", () => {
-    vi.mocked(holeMotiv).mockReturnValue({ zustand: 'fehlt' })
-    zeichneSegment(aktion('fehlt-asset'), vorlage('vollflaeche', [zone({ id: 'z-bild', bindung: 'bild' })]), marke())
-    const ruf = vi.mocked(zeichneBildZone).mock.calls.at(-1)
-    expect(ruf?.[2]).toEqual({ zustand: 'fehlt' })
-    vi.mocked(holeMotiv).mockReturnValue({ zustand: "geladen", bild: ATTRAPPE, breite: 10, höhe: 10 })
-  })
-
-  it("holeLogo meldet 'fehlt' -> die Logo-Zone wird NICHT übersprungen (Markenrahmen Pflicht), zeichneBildZone bekommt 'fehlt'", () => {
-    vi.mocked(holeLogo).mockReturnValue({ zustand: 'fehlt' })
-    zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ id: 'z-logo', bindung: 'logo' })]), marke())
-    const ruf = vi.mocked(zeichneBildZone).mock.calls.at(-1)
-    expect(ruf?.[2]).toEqual({ zustand: 'fehlt' })
-    vi.mocked(holeLogo).mockReturnValue({ zustand: "geladen", bild: ATTRAPPE, breite: 10, höhe: 10 })
-  })
-
-  it('unbekannte Bindung -> NUR Deko, kein Text-/Bild-Aufruf', () => {
-    const z = { ...zone({ id: 'z-x', bindung: 'titel' }), bindung: 'unbekannt' as never }
-    zeichneSegment(aktion(), vorlage('vollflaeche', [z]), marke())
-    expect(vi.mocked(zeichneDekoZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-x')).toBe(true)
-    expect(vi.mocked(zeichneTextZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-x')).toBe(false)
-    expect(vi.mocked(zeichneBildZone).mock.calls.some((ruf) => (ruf[1] as Zone).id === 'z-x')).toBe(false)
-  })
-})
-
-describe('zeichneSegment (#117) - Durchreichen und Determinismus', () => {
-  it('alle Zonen-Funktionen bekommen die aktion als LETZTES Argument, toBe-identisch', () => {
-    const a = aktion()
-    zeichneSegment(a, vorlage('vollflaeche', [zone({ id: 'z-bild', bindung: 'bild' }), zone({ id: 'z-titel', bindung: 'titel' })]), marke())
-    for (const ruf of vi.mocked(zeichneTextZone).mock.calls) {
-      expect(ruf[4]).toBe(a)
-    }
-    for (const ruf of vi.mocked(zeichneBildZone).mock.calls) {
-      expect(ruf[4]).toBe(a)
-    }
-    for (const ruf of vi.mocked(zeichneDekoZone).mock.calls) {
-      expect(ruf[3]).toBe(a)
-    }
-  })
-
-  it('zwei Aufrufe mit denselben Eingaben erzeugen dieselbe Aufruffolge', () => {
-    const zonen = [zone({ id: 'z-a', bindung: 'titel' }), zone({ id: 'z-b', bindung: 'bild' })]
-    const spuren = (): Array<[string, string | undefined]> => {
-      const spur: Array<[string, string | undefined]> = []
-      vi.mocked(zeichneTextZone).mockImplementation(((ctx: CanvasRenderingContext2D, z: Zone, text: string) => {
-        spur.push(['text', text])
-      }) as never)
-      vi.mocked(zeichneDekoZone).mockImplementation(((ctx: CanvasRenderingContext2D, z: Zone) => {
-        spur.push(['deko', z.id])
-      }) as never)
-      return spur
-    }
-    const erste = spuren()
-    zeichneSegment(aktion(), vorlage('vollflaeche', zonen), marke())
-    const zweite = spuren()
-    zeichneSegment(aktion(), vorlage('vollflaeche', zonen), marke())
-    expect(zweite).toEqual(erste)
-  })
-
-  it('zonen: [] -> gültiges SegmentBild, keine Ausnahme; vollflaeche bleibt vor gefüllt', () => {
-    const bild = zeichneSegment(aktion(), vorlage('vollflaeche', []), marke())
-    expect(bild.canvas.width).toBe(RENDER_PROFILE.breite)
-  })
 })

@@ -1,63 +1,50 @@
-// GENERIERT aus dem Signaturblock von Issue #117.
 // [template-canvas] Die Zeichenroutine: aus Aktion, Vorlage und Marke ein Segmentbild
+// (#117, M4-23).
 //
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf: gefuellt (Issue #117); die
-// GERUEST-PRUEFSUMME gilt deswegen nicht mehr - ihr Nichtmehrstimmen IST das
-// Signal, die Datei wurde bearbeitet.
+// DIE EINZIGE PIXELQUELLE DES SYSTEMS (TK 9.10.1): ein synchroner Aufruf, ein Canvas in
+// der nativen Flaeche der Vorlagenart - dasselbe Bild fuer Live-Vorschau, Thumbnail,
+// preview-player und (ueber alsPng, #118) den finalen Render.
 //
-// ============================================== ====
-// DIE EINZIGE PIXELQUELLE DES SYSTEMS. Vier Verbraucher (Live-Vorschau des
-// action-editor, Thumbnails, preview-player, Segment-PNG des Renders) haengen an
-// DIESEM einen Aufruf; die zugesagte Pixelgleichheit bleibt strukturell garantiert,
-// solange dieser Aufruf der einzige Zeichenpfad bleibt (TK 9.10.1).
-//
-// REGELN (alle verbindlich, aus dem Issue):
-//  - SYNCHRON: kein async/await/Promise, nichts wird geladen - Schriften sind
-//    bereit (#110), Motive dekodiert (#111), das Logo bereit (#119); das Warten
-//    geschiht VOR diesem Aufruf (Ablaufschritt 0).
-//  - Determinismus: kein devicePixelRatio, kein Math.random/Date/performance,
-//    kein Cache, nativ Backing; die Anzeige skaliert per CSS (Aufrufer).
-//  - EIN Canvas, genau einmal gezeichnet; keine Thumbnail-Variante, kein zweiter
-//    Durchlauf fuer den Export (TK 9.10.3, Punkt 6).
-//  - Flaeche aus RENDER_PROFILE (#18): vollflaeche -> breite x hoehe des Profils;
-//    split/einblendung -> RENDER_PROFILE.breite x vorlage.hoehe mit
-//    Endlichkeit + Bereich, aber OHNE Paritaetspruefung (entschieden):
-//    Eine ungerade Bandhoehe wird gezeichnet - ein Wurf hier wuerde die Live-
-//    Vorschau des Vorlagen-Editors bei jedem zweiten Tastendruck abschalten.
-//    Die Sperre sitzt in #148 (Editor) und #100/#102/#103 (Store), ergaenzend im
-//    render-service; diese Datei ist die Pixelquelle, nicht die Validierung.
-//  - Grundflaeche vorfuellen: vollflaeche/split -> loeseFarbe('flaecheDunkel'),
-//    damit eine eigene Vorlage ohne hintergrund-Zone beim Kodieren nicht SCHWARZ
-//    wird; einblendung -> NICHT vorfuellen (das Band liegt MIT Alpha ueber dem
-//    Video, der Alphakanal traget die Uebergabe).
-//  - Zonen in Array-Reihenfolge, KEIN Umordnen, kein Umlayout. wennLeer:
-//    'ausblenden' -> die GANZE Zone entfaellt (inkl. Deko); 'leer' -> nur der
-//    Inhalt faellt aus, die Deko bleibt (die Preis-Pille bleibt ohne Text stehen).
-//  - Bindungstabelle aus 9.11.1; logo/slogan kommen aus der MARKE (FA-11, der
-//    feste Markenrahmen), nicht aus der Aktion. Die BILDKELLEN sind GETRENNT:
-//    holeMotiv bekommt NUR die Projekt-Asset-ID (aktion.bildRef); holeLogo wird
-//    OHNE Argument gerufen. marke.logo.datei dient NUR der Leer-Pruefung - ueber
-//    holeMotiv faende es sich nie im Bestand, statt des Logos stuende der
-//    Platzhalter in jedem Segment.
-//  - Die Akzent-Ersetzung sitzt in #112 und NIRGENDS sonst (TK 9.10.9): Diese
-//    Datei liest aktion.akzentfarbe NICHT; die Aktion reist (dieselbe Referenz)
-//    an alle drei Zonen-Funktionen UND an loeseFarbe - auch bei flaecheDunkel,
-//    wo sie sicher keine Akzent-Rolle betrifft; eine "Abkuerzung" an einem
-//    einzigen Aufruf waere der zweite Aufloesungsweg.
+// Verbindliche Festlegungen dieses Baus:
+// - SYNCHRON: keiner der drei asynchronen Mechanismen (Funktionsschluesselwort,
+//   Wartebefehl, Promise), kein Laden, kein document.fonts.ready.
+//   Alles Asynchrone ist VORHER erledigt (#110/#111/#119); hier wird nur geprueft und
+//   gezeichnet. Zeichnen mit Fallback-Schrift ist ein Vertragsbruch (TK 9.10.3 Punkt 3)
+//   -> Ablauf-Punkt 0 wirft, bevor ein Canvas entsteht.
+// - Keine Geraete-Pixel-Abfrage, keine Anzeige-Stile am Canvas, kein Anhaengen ins
+//   Dokument, kein Cache, kein Umlayouten, keine zweite verkleinerte Variante (kein
+//   zweiter Zeichenpfad).
+// - Die beiden Profil-Zahlen werden NICHT hingeschrieben; sie kommen aus
+//   RENDER_PROFILE (#18). Das
+//   Feld dort heisst `hoehe` OHNE Umlaut, im SegmentBild `höhe` MIT - beide Namen sind
+//   anderswo festgeschrieben und werden nicht angleicht.
+// - Die AKZENT-ERSETZUNG (TK 9.10.9) sitzt AUSSCHLIESSLICH in loeseFarbe (#112): Diese
+//   Datei liest das Akzent-Feld der Aktion NICHT und reicht die Aktion an ALLE Zonenfunktionen
+//   und an loeseFarbe durch - dieselbe Objektreferenz, keine Kopie, keine Ausnahme.
+// - KEINE Paritaetspruefung der Bandhoehe (ENTSCHIEDEN, TK v3.0/v3.9): Eine ungerade
+//   Hoehe ist zeichenbar; gesperrt wird sie im Editor (#148), im Store
+//   (#100/#102/#103) und im render-service (9.2.3) - nicht hier, sonst braeche die
+//   Live-Vorschau des Editors bei jeder Höheneingabe.
 
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
 
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
-import { loeseFarbe } from './farben'
+
+// Seit #294 in dieser Datei: der vierte Parameter (rahmenMarke, TK 9.15.4), der
+// Dispatch auf das Ersatz-Logo (#293) und die Schrift-Pruefung der importierten
+// Schriften vor dem Zeichnen (#291).
+import { sindMarkenSchriftenBereit } from './marken-schriften'
+import { zeichneErsatzLogo } from './ersatz-logo'
+
+import { zeichneDekoZone } from './zone-deko'
+import { zeichneTextZone } from './zone-text'
+import { zeichneBildZone } from './zone-bild'
 import { holeMotiv } from './bild-laden'
 import { holeLogo } from './logo-laden'
 import { sindSchriftenBereit } from './schriften'
-import { zeichneTextZone } from './zone-text'
-import { zeichneBildZone } from './zone-bild'
-import { zeichneDekoZone } from './zone-deko'
+import { loeseFarbe } from './farben'
 
 export interface SegmentBild {
   canvas: HTMLCanvasElement
@@ -65,129 +52,166 @@ export interface SegmentBild {
   höhe: number
 }
 
-export function zeichneSegment(aktion: Aktion, vorlage: Vorlage, marke: Marke): SegmentBild {
-  // SCHRITT 0 - Schriften bereit? Ein Segment mit Fallback-Schrift sieht gueltig
-  // aus und misst andere Textbreiten: der laute Drift, den TK 9.10.3 Punkt 3
-  // verhindert. VOR dem Canvas - es entsteht hier sonst eins auf Vertrauensbasis.
+export function zeichneSegment(
+  aktion: Aktion,
+  vorlage: Vorlage,
+  marke: Marke,
+  rahmenMarke: Marke,
+): SegmentBild {
+  if (marke === null || marke === undefined || rahmenMarke === null || rahmenMarke === undefined) {
+    throw new Error('zeichneSegment: marke oder rahmenMarke fehlt (Programmierfehler).')
+  }
+
+  // 0. Zuallererst: Sind die Schriften da? Vor jedem Canvas, vor jedem Strich.
+  //    (1) die vier gebuendelten Schriften (#110) - unveraendert;
+  //    (2) die importierten Schriften der Inhalts-Marke (#291);
+  //    (3) die importierten Schriften der Rahmen-Marke (#291) - NUR wenn sie in diesem
+  //        Aufruf ueberhaupt benutzt werden kann: art einblendung UND rahmenMarke !==
+  //        marke (Identitaetsvergleich, liest keine Eigenschaft) UND eine Zone mit
+  //        id 'hintergrund' vorhanden. Jede Pruefung wirft bei false - synchron, kein
+  //        Nachladen (das Bereitstellen gehoert #312), kein Rueckfall auf eine
+  //        gebuendelte Schrift: es entsteht dann gar kein Segment-PNG (TK 9.15.3).
   if (!sindSchriftenBereit()) {
-    throw new Error('Die gebündelten Marken-Schriften sind nicht bereit (stelleSchriftenBereit ist vor dem Aufruf zu rufen).')
+    throw new Error(
+      'zeichneSegment: Die gebündelten Marken-Schriften sind nicht bereit ' +
+        '(stelleSchriftenBereit vor dem Aufruf, #110/#117).',
+    )
+  }
+  if (!sindMarkenSchriftenBereit(marke)) {
+    throw new Error(
+      `zeichneSegment: Die importierten Schriften der Marke "${marke.id}" sind nicht bereit.`,
+    )
+  }
+  const hintergrundVorhanden =
+    vorlage.art === 'einblendung' &&
+    vorlage.zonen.some((z) => z.id === 'hintergrund')
+  const rahmenMarkeBenutzt =
+    vorlage.art === 'einblendung' && rahmenMarke !== marke && hintergrundVorhanden
+  if (rahmenMarkeBenutzt && !sindMarkenSchriftenBereit(rahmenMarke)) {
+    throw new Error(
+      `zeichneSegment: Die importierten Schriften der Rahmen-Marke "${rahmenMarke.id}" ` +
+        'sind nicht bereit.',
+    )
   }
 
-  // SCHRITT 1 - die Flaeche der Vorlagenart (Endlichkeit + Bereich; KEINE
-  // Paritaetspruefung, s. oben).
-  let hoehe: number
-  if (vorlage.art === 'vollflaeche') {
-    hoehe = RENDER_PROFILE.hoehe
-  } else {
-    const band = vorlage.höhe
-    if (
-      typeof band !== 'number' ||
-      !Number.isFinite(band) ||
-      band <= 0 ||
-      band >= RENDER_PROFILE.hoehe
-    ) {
-      throw new Error(
-        `Vorlage "${vorlage.id}" (art ${vorlage.art}) trägt eine unbrauchbare Bandhöhe ` +
-          `${String(band)} - endliche Zahl größer 0 und kleiner ${RENDER_PROFILE.hoehe} erwartet.`,
-      )
-    }
-    hoehe = band
+  // 1. Die Fläche bestimmen (TK 9.10.2) - Endlichkeit und Wertebereich, bewusst OHNE
+  //    Paritätsprüfung (ENTSCHIEDEN-Block im Kopf dieser Datei).
+  const bandHoehe = vorlage.höhe
+  if (
+    (vorlage.art === 'split' || vorlage.art === 'einblendung') &&
+    (typeof bandHoehe !== 'number' ||
+      !Number.isFinite(bandHoehe) ||
+      bandHoehe <= 0 ||
+      bandHoehe >= RENDER_PROFILE.hoehe)
+  ) {
+    throw new Error(
+      `zeichneSegment: Defekte Vorlage "${vorlage.id}" - Bandhoehe ${String(vorlage.höhe)} ` +
+        'ist unbrauchbar (erwartet endliche Zahl > 0 und < ' +
+        String(RENDER_PROFILE.hoehe) + ').',
+    )
   }
+
   const breite = RENDER_PROFILE.breite
+  const hoehe =
+    vorlage.art === 'vollflaeche' ? RENDER_PROFILE.hoehe : (bandHoehe as number)
 
-  // SCHRITT 2 - das Canvas: native Backing-Größe, NICHT ins Dokument gehaengt;
-  // getContext mit GENAU EINEM Argument (ein Options-Objekt wuerde den Alphakanal
-  // der einblendung abwandern lassen).
+  // 2. Das Canvas erzeugen - natives Backing, nichts Anzeige-bezogenes.
   const canvas = document.createElement('canvas')
   canvas.width = breite
   canvas.height = hoehe
   const ctx = canvas.getContext('2d')
   if (ctx === null) {
-    throw new Error('canvas.getContext("2d") liefert null - ohne Kontext gibt es kein Bild.')
+    throw new Error('zeichneSegment: getContext("2d") liefert null - kein Bild moeglich.')
   }
 
-  // SCHRITT 3 - die Grundflaeche. Die Farbe geht NUR ueber loeseFarbe (#112), mit
-  // der Aktion als drittem Argument (auch hier: keine Abkuerzung). Kein try/catch:
-  // flaecheDunkel ist im Marke-Typ zugesichert; wirft er trotzdem, ist die Marke
-  // kaputt - derselbe Zustand, wie täusche ein fehlender Kontext, wuerde werfen.
-  if (vorlage.art === 'vollflaeche' || vorlage.art === 'split') {
+  // 3. Die Grundflaeche setzen (TK 9.10.2): vollflaeche/split deckend in flaecheDunkel,
+  //    einblendung durchsichtig. Farbe ausschliesslich ueber loeseFarbe (#112) - die
+  //    Aktion wird mitgegeben, obwohl flaecheDunkel keine Akzent-Rolle ist: eine
+  //    "Abkuerzung" an dieser Stelle waere der zweite Aufloesungsweg.
+  if (vorlage.art !== 'einblendung') {
     ctx.fillStyle = loeseFarbe(marke, 'flaecheDunkel', aktion)
     ctx.fillRect(0, 0, breite, hoehe)
   }
 
-  // SCHRITT 4 - Zonen in Array-Reihenfolge; kein Umordnen, kein Umlayout.
+  // 4. Ueber die Zonen laufen - Array-Reihenfolge, kein Sortieren/Filtern/Ueberspringen.
   for (const zone of vorlage.zonen) {
-    // (e) ohne Bindung: nur die Dekoration - zeichneDekoZone zeichnet ggf. den
-    // statischen Text selbst und faellt ohne deko sofort zurueck.
-    if (zone.bindung === null) {
-      zeichneDekoZone(ctx, zone, marke, aktion)
-      continue
-    }
+    // #294 - DIE EINE Unterscheidungszeile: Nur die Hintergrund-Zone einer
+    // Einblendungsvorlage wird mit der Projekt-Standardmarke gezeichnet (TK 9.15.4:
+    // "Rahmen stabil, Inhalt wechselt"). Fuer jede andere Zone ist markeDieserZone
+    // dieselbe Objektreferenz wie marke.
+    const markeDieserZone: Marke =
+      vorlage.art === 'einblendung' && zone.id === 'hintergrund' ? rahmenMarke : marke
 
-    // Unbekannte Bindung: wie keine behandeln (nur Deko) - NICHT raten.
-    // (a+b) der gebundene Wert und die Leer-Pruefung immer nach der Tabelle.
-    let wert: string | null
-    let art: 'text' | 'bild' | 'logo'
+    // a. Den gebundenen Wert bestimmen - ausschliesslich nach dieser Tabelle. Logo und
+    //    Slogan kommen aus der MARKE (fester Markenrahmen, FA-11). Der Wert von `logo`
+    //    dient nur der Leer-Pruefung; das Motiv kommt ueber holeLogo(), nie ueber
+    //    holeMotiv (zwei getrennte Bildquellen, #111/#119).
+    let wert: string | null | undefined
     switch (zone.bindung) {
       case 'titel':
         wert = aktion.titel
-        art = 'text'
         break
       case 'beschreibung':
         wert = aktion.beschreibung
-        art = 'text'
         break
       case 'preis':
         wert = aktion.preis
-        art = 'text'
         break
       case 'cta':
         wert = aktion.cta
-        art = 'text'
-        break
-      case 'slogan':
-        wert = marke.slogan.aktiv ? marke.slogan.text : null
-        art = 'text'
         break
       case 'bild':
         wert = aktion.bildRef
-        art = 'bild'
         break
       case 'logo':
-        // Nur fuer die Leer-Pruefung herangezogen; das eigentliche Logo entstammt
-        // dem Bundle (holeLogo), nicht dem Projektbestand.
-        wert = marke.logo.datei
-        art = 'logo'
+        // Seit #294/#320 zweistufig: logo !== null -> datei als Leer-Pruefungswert;
+        // logo === null -> der MARKENNAME ist der Wert des Ersatz-Logos (#293) und
+        // damit nie leer (#52-Pflichtfeld). Ohne diese Stufe waere der Zugriff auf
+        // .datei ein Laufzeitfehler bzw. die Zone wuerde unsichtbar uebersprungen.
+        wert = markeDieserZone.logo !== null ? markeDieserZone.logo.datei : markeDieserZone.name
+        break
+      case 'slogan':
+        wert = marke.slogan.aktiv ? marke.slogan.text : null
         break
       default:
-        zeichneDekoZone(ctx, zone, marke, aktion)
-        continue
+        // Unbekannte Bindung: wie bindung null behandeln (nur Dekoration), nicht raten.
+        wert = undefined
     }
 
-    const leer = wert === null || wert === undefined || String(wert).trim().length === 0
+    // b. Leer-Pruefung: nur Zonen MIT Bindung.
+    const leer =
+      zone.bindung !== null &&
+      (wert === null || wert === undefined || String(wert).trim() === '')
 
-    // (c+d) ausblenden zieht die GANZE Zone (inkl. Deko); leer laesst die Flaeche.
+    // c. Leer und 'ausblenden': die GANZE Zone ueberspringen, Deko inklusive.
     if (leer && zone.wennLeer === 'ausblenden') {
       continue
     }
-    zeichneDekoZone(ctx, zone, marke, aktion)
-    if (leer) {
+
+    // d. Dekoration - immer, auch ohne zone.deko und auch bei leer + 'leer'; bei der
+    //    Hintergrund-Zone mit der Rahmen-Marke (M4-22 kennt den Unterschied nicht).
+    zeichneDekoZone(ctx, zone, markeDieserZone, aktion)
+
+    // e. Ohne Bindung (oder leer) ist die Zone hier fertig.
+    if (zone.bindung === null || leer || wert === undefined) {
       continue
     }
 
-    // (f) die Art entscheidet die BINDUNG, nicht die vorhandenen Zonen-Parameter.
-    if (art === 'bild') {
-      // bildRef ist hier sicher ein String (die Leer-Pruefung ist gelaufen);
-      // der Schluessel geht UNVERAENDERT - exact die ASSET-ID.
-      zeichneBildZone(ctx, zone, holeMotiv(String(wert)), marke, aktion)
-    } else if (art === 'logo') {
-      zeichneBildZone(ctx, zone, holeLogo(), marke, aktion)
+    // f. Den Inhalt zeichnen - die Art entscheidet die Bindung.
+    // f. Der Dispatch nach Bindung - seit #294 in dieser Reihenfolge geprueft. Das
+    //    Ersatz-Logo gilt fuer "Marke HAT kein Logo", nicht fuer "Datei fehlt": Liefert
+    //    holeLogo { zustand: 'fehlt' }, bleibt es beim Platzhalter von zeichneBildZone.
+    if (zone.bindung === 'bild') {
+      zeichneBildZone(ctx, zone, holeMotiv(aktion.bildRef as string), markeDieserZone, aktion)
+    } else if (zone.bindung === 'logo' && markeDieserZone.logo === null) {
+      zeichneErsatzLogo(ctx, zone, markeDieserZone, aktion)
+    } else if (zone.bindung === 'logo') {
+      zeichneBildZone(ctx, zone, holeLogo(markeDieserZone.id), markeDieserZone, aktion)
     } else {
-      zeichneTextZone(ctx, zone, String(wert), marke, aktion)
+      zeichneTextZone(ctx, zone, String(wert), markeDieserZone, aktion)
     }
   }
 
-  // SCHRITT 5 - { canvas, breite, hoehe }; dieselben Zahlen wie am Canvas, damit
-  // der Aufrufer die native Flaeche ohne DOM-Nachsehen kennt.
+  // 5. Ein Canvas plus seine native Flaeche - keine Bytes (die entstehen in alsPng, #118).
   return { canvas, breite, höhe: hoehe }
 }

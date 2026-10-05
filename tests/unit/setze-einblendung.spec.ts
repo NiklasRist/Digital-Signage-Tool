@@ -33,6 +33,7 @@ function aktion(id: string): Aktion {
     cta: null,
     standardDauer: null,
     vorlagenId: "split",
+    markeId: "marke-test",
     akzentfarbe: null,
   };
 }
@@ -72,6 +73,7 @@ function projektMit(liste: Listenelement[], aktionen: Aktion[] = [aktion("ak-1")
     aktionen,
     liste,
     letzterAusgabeName: null,
+    standardMarkeId: "marke-test",
     // Pflichtfeld seit TK v3.18 (#334)
     standardSegmentdauer: 10,
   };

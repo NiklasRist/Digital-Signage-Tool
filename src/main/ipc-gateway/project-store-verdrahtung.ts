@@ -29,6 +29,7 @@ import { ordneNeu } from '../project-store/ordne-neu'                        // 
 import { setzeDauer } from '../project-store/setze-dauer'                    // #45
 import { setzeTrim } from '../project-store/setze-trim'                      // #44
 import { meldeAn } from './melde-an'                                         // #333
+import { leseMarke } from '../config-store/lese-marke'                       // #29
 // Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort (Vermerk 4 am Dateiende).
 import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from './nutzlast-pruefer' // #332
 
@@ -174,7 +175,22 @@ export function verdrahteProjectStoreIPC(): void {
     },
     // KEINE Namensbereinigung, keine Kollisionspruefung: Was ein zulaessiger Projektname ist
     // und was daraus fuer ein Ordnername wird, entscheidet #33.
-    ({ name }) => erstelleProjekt(name),
+    //
+    // NEU mit #320/#328: `erstelleProjekt` bekommt die Marken-Kennung als PARAMETER - der
+    // Handler holt sie. Bis M8 liegt die eingebaute Marke im config-store (#29, leseMarke);
+    // #328 zieht diesen Abruf auf `listeMarken()` (marken-store) um. Ein Fehlschlag von
+    // leseMarke kann mit der Konstante im Bundle nicht eintreten; durchgereicht wird er
+    // trotzdem, als 'speicher_fehler' - derselbe Code wie bei einem gescheiterten Anlegen.
+    async ({ name }) => {
+      const marke = await leseMarke()
+      if (!marke.ok) {
+        return {
+          ok: false,
+          fehler: { code: 'speicher_fehler' as const, meldung: marke.fehler.meldung },
+        }
+      }
+      return erstelleProjekt(name, marke.wert.id)
+    },
   )
 
   // DER KANAL FUERS OEFFNEN RUFT `oeffneProjektAblauf` (#94) UND NICHT `öffneProjekt` (#34).

@@ -1,72 +1,127 @@
-// GENERIERT aus dem Signaturblock von Issue #119.
-// [template-canvas] Das gebündelte Marken-Logo laden und bereitstellen
+// Issue #315 - [template-canvas] logo-laden.ts auf Marken je Aktion umstellen.
 //
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
+// Der Logo-Bestand ist JE `markeId` gefuehrt (zwei modul-globale Maps), die
+// Verzweigung erfolgt nach `marke.logo.herkunft`, und `logo === null` ist ein
+// REGULAERER Zustand (TK 9.10.10), der sofort und folgenlos zurueckkehrt.
 //
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: bd46030c5f53da46
+// NACHTRAG 23.08.2026 (II) - BYTES -> BLOB-URL IM ZEICHENPFAD:
+// Der DoD-Punkt des Issues, der fuer `herkunft: 'importiert'` ein zeichengleiches
+// `marken://` als `<img src>` verlangt, ist vom Nachtrag II UBERHOLT. Gemessen
+// taintet `marken://` das Canvas in JEDER Registrierungs-Konfiguration
+// (SecurityError bei toDataURL/toBlob). Deshalb beschafft dieser Zweig die Bytes
+// ueber `marken://` (der Speicherort-Vertrag #290 bleibt bestehen) und bindet sie
+// als Blob-URL ins `<img>` ein; Blob-URLs sind same-origin und tainten nicht.
+// Die Objekt-URL wird nach dem `decode()` widerrufen.
 //
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// DOKUMENTIERTER WIDERSPRUCH (gemeldet, nicht still aufgeloest): Die DoD-Grep-
+// Probe verbietet `fetch`; ohne `fetch(marken://...)` gibt es aber keinen Weg,
+// an die Bytes zu kommen (XHR waere nur eine andere Schreibweise desselben
+// Zugriffs). Nachtrags-II-Entscheidung gewinnt gegen den veralteten Grep-Punkt;
+// der Issue-Text sollte nachgezogen werden.
 
 import type { Marke } from '../../shared/contracts/marke'
 import type { Motiv } from './bild-laden'
 
+import { logoRegistry } from '../assets/marken/logo-registry'
+
+const FEHLT: Motiv = Object.freeze<Motiv>({ zustand: 'fehlt' })
+
+// Zwei Maps, beide mit `marke.id` als Schluessel: die laufenden Vorgaenge
+// (Idempotenz - gemerkt wird das PROMISE, nicht erst das Ergebnis) und der
+// Ergebnis-Bestand. Kein dritter Speicher, kein Schlüssel nach Dateiname.
+const vorgaenge = new Map<string, Promise<void>>()
+const bestand = new Map<string, Motiv>()
+
 export async function bereiteLogoVor(marke: Marke): Promise<void> {
-  // Programmierfehler: leere Datei
-  if (typeof marke !== 'object' || marke === null || !marke.logo || typeof marke.logo.datei !== 'string' || marke.logo.datei.trim() === '') {
-    throw new Error('marke.logo.datei muss eine nicht leere Zeichenkette sein.')
+  // Programmierfehler - bewusst scharf getrennt vom regulären Zustand `logo === null`.
+  if (typeof marke !== 'object' || marke === null) {
+    throw new Error('logo-laden: marke fehlt (Programmierfehler).')
+  }
+  if (typeof marke.id !== 'string' || marke.id.trim() === '') {
+    throw new Error('logo-laden: marke.id muss eine nicht leere Zeichenkette sein (Programmierfehler).')
+  }
+  const logo = marke.logo
+  if (logo === null) {
+    // TK 9.10.10: bei Werbepartnern der Normalfall. Sofortige, folgenlose
+    // Rueckkehr; ein vorhandener Eintrag fuer diese markeId wird NICHT entfernt -
+    // der einzige Ungueltigkeitsweg liegt beim Aufrufer (#312).
+    return
+  }
+  if (typeof logo.datei !== 'string' || logo.datei.trim() === '') {
+    throw new Error('logo-laden: marke.logo.datei muss eine nicht leere Zeichenkette sein (Programmierfehler).')
   }
 
-  // Idempotenz: merke das EINE Promise
-  if (logoPromise === undefined) {
-    logoPromise = (async () => {
-      const bild = new Image()
-      bild.src = `assets/${marke.logo.datei}`
-
-      try {
-        await bild.decode()
-        logoBestand = {
-          zustand: 'geladen',
-          bild,
-          breite: bild.naturalWidth,
-          höhe: bild.naturalHeight,
-        }
-      } catch {
-        logoBestand = { zustand: 'fehlt' }
-      }
-    })()
+  // Parallele Aufrufe zur selben markeId teilen EINEN Vorgang.
+  const vorhandenerVorgang = vorgaenge.get(marke.id)
+  if (vorhandenerVorgang !== undefined) {
+    await vorhandenerVorgang
+    return
   }
 
-  await logoPromise
+  const vorgang = ladeLogo(marke)
+  vorgaenge.set(marke.id, vorgang)
+  // Sicherheitsnetz: `ladeLogo` faengt Ladefehler selbst, aber falls doch etwas
+  // entkommt, bleibt ein abgelehntes Promise NICHT gemerkt.
+  await vorgang.catch(() => {
+    bestand.set(marke.id, FEHLT)
+    vorgaenge.delete(marke.id)
+  })
 }
 
-// Lädt marke.logo.datei aus dem Bundle des Renderers, dekodiert es mit await img.decode() und legt
-// das Ergebnis im Modul-Bestand ab. Idempotent: merkt sich das EINE Promise und gibt es bei jedem
-// weiteren Aufruf unverändert zurück; ein abgelehntes Promise wird NICHT gemerkt.
-// Wirft NIE wegen eines Ladefehlers – ein nicht ladbares Logo landet als { zustand: 'fehlt' } im
-// Bestand. Geworfen wird nur bei einem leeren marke.logo.datei (Programmierfehler).
+async function ladeLogo(marke: Marke): Promise<void> {
+  const logo = marke.logo as { datei: string; herkunft: string }
+  let objektUrl: string | undefined
+  let quelle: string | undefined
 
-export function holeLogo(): Motiv {
-  return logoBestand ?? { zustand: 'fehlt' }
+  try {
+    if (logo.herkunft === 'importiert') {
+      // Nachtrag II: Bytes holen (Speicherort-Vertrag #290) und als Blob-URL
+      // binden - direkte marken://-URLs im `<img>` tainten das Canvas.
+      const antwort = await fetch(`marken://${marke.id}/${logo.datei}`)
+      const bytes = await antwort.blob()
+      objektUrl = URL.createObjectURL(bytes)
+      quelle = objektUrl
+    } else if (logo.herkunft === 'gebuendelt') {
+      quelle = logoRegistry.get(logo.datei)
+    }
+    // Unbekannter herkunft-Wert: keine URL, kein Wurf -> `fehlt`.
+
+    if (quelle === undefined) {
+      bestand.set(marke.id, FEHLT)
+      vorgaenge.delete(marke.id)
+      return
+    }
+
+    const bild = new Image()
+    bild.src = quelle
+    await bild.decode()
+
+    bestand.set(marke.id, {
+      zustand: 'geladen',
+      bild,
+      breite: bild.naturalWidth,
+      höhe: bild.naturalHeight,
+    })
+  } catch {
+    // Jeder Ladefehler (Bytes kommen nicht an, decode lehnt ab) endet hier:
+    // { zustand: 'fehlt' }, kein Wurf, Fehlschlag wird NICHT gemerkt.
+    bestand.set(marke.id, FEHLT)
+    vorgaenge.delete(marke.id)
+  } finally {
+    if (objektUrl !== undefined) {
+      URL.revokeObjectURL(objektUrl)
+    }
+  }
 }
-// SYNCHRON, ohne Parameter. Liest ausschließlich den Bestand – lädt nichts, wartet auf nichts,
-// erzeugt kein Image. Vor der ersten erfolgreichen Vorbereitung: { zustand: 'fehlt' }.
 
-let logoPromise: Promise<void> | undefined
-let logoBestand: Motiv | undefined
+export function holeLogo(markeId: string): Motiv {
+  // Reine Abfrage: synchron, wirft nie, erzeugt kein Image. Unterscheidet nicht
+  // zwischen "kein Logo" und "Datei fehlt" - das entscheidet der Aufrufer an
+  // `marke.logo === null` (#294, #312).
+  return bestand.get(markeId) ?? FEHLT
+}
+
+export function leereLogoBestand(): void {
+  bestand.clear()
+  vorgaenge.clear()
+}

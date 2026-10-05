@@ -15,7 +15,44 @@
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { SICHERHEITSABSTAND_PX } from '../../shared/contracts/konstanten'   // #21
-import type { Marke } from '../../shared/contracts/marke'
+import { erzeugeId } from '../../shared/contracts/id'                       // #20
+import type { FarbRolle, MarkenHerkunftJeFeld, Marke } from '../../shared/contracts/marke'
+
+// Die Herkunfts-Staempfel der EINGEBAUTEN Marke (#320): Sie hat keinen Parent und nichts
+// ist geerbt - durchgehend 'eigen'; das Logo traegt hier 'eigen' (nicht 'keins'), weil es
+// gebuendelt mitkommt (TK 9.11.2/9.15.3).
+function eigenJeFarbRolle(): Record<FarbRolle, 'eigen' | 'geerbt'> {
+  return {
+    akzent: 'eigen',
+    akzentKraeftig: 'eigen',
+    akzentTief: 'eigen',
+    flaecheDunkel: 'eigen',
+    flaecheSehrDunkel: 'eigen',
+    flaecheHell: 'eigen',
+    flaecheAkzentZart: 'eigen',
+    textAufDunkel: 'eigen',
+    textAufHell: 'eigen',
+    textSekundaer: 'eigen',
+    linie: 'eigen',
+    scrimStart: 'eigen',
+    scrimEnde: 'eigen',
+  }
+}
+
+const HERKUNFT_JE_FELD: MarkenHerkunftJeFeld = friereTief<MarkenHerkunftJeFeld>({
+  farben: eigenJeFarbRolle(),
+  schriften: {
+    headlineElegant: 'eigen',
+    headlinePlakativ: 'eigen',
+    fliesstext: 'eigen',
+    fliesstextFett: 'eigen',
+  },
+  logo: 'eigen',
+  sicherheit: 'eigen',
+  radien: 'eigen',
+  schatten: 'eigen',
+  slogan: 'eigen',
+})
 
 // WOHER DIE MARKENDATEN KOMMEN - der STOPP-Punkt des Issues, hier beantwortet und
 // zu bestaetigen (s. Bericht):
@@ -55,6 +92,13 @@ import type { Marke } from '../../shared/contracts/marke'
  * MUESSEN vor der ersten echten Ausgabe geklaert werden.
  */
 const MARKE: Marke = friereTief<Marke>({
+  // NEU mit #320 (TK 9.11.2): Die eingebauten vier Felder, die es vorher nicht gab.
+  // `id` ueber erzeugeId() (#20) - dieselbe Stelle wie ueberall, keine fest eincodierte
+  // Kennung; der Wert wird je Prozessstart EINMAL gezogen und ist danach eingefroren.
+  id: erzeugeId(),
+  name: 'Fitnessworld24',         // "true NUR bei Fitnessworld24" (TK 9.15.1)
+  parent: null,                   // eigenstaendig - die Basis aller abgeleiteten Looks
+  eingebaut: true,
   farben: {
     akzent: '#FF4040',              // Primaerfarbe - Badges, Preis, CTA
     akzentKraeftig: '#DF3131',
@@ -74,10 +118,11 @@ const MARKE: Marke = friereTief<Marke>({
   // tatsaechlich (src/renderer/assets/fonts/, angelegt mit #2/#8) - der Test haelt das
   // fest, damit ein Umbenennen nicht lautlos ins Leere zeigt.
   schriften: {
-    headlineElegant: { familie: 'Playfair Display', gewicht: 700, datei: 'PlayfairDisplay-Bold.woff2' },
-    headlinePlakativ: { familie: 'Archivo Black', gewicht: 900, datei: 'ArchivoBlack-Regular.woff2' },
-    fliesstext: { familie: 'Arimo', gewicht: 400, datei: 'Arimo-Regular.woff2' },
-    fliesstextFett: { familie: 'Arimo', gewicht: 700, datei: 'Arimo-Bold.woff2' },
+    // `herkunft: 'gebuendelt'` (NEU, v3.4): Die vier Dateien liegen im Renderer-Bundle.
+    headlineElegant: { familie: 'Playfair Display', gewicht: 700, datei: 'PlayfairDisplay-Bold.woff2', herkunft: 'gebuendelt' },
+    headlinePlakativ: { familie: 'Archivo Black', gewicht: 900, datei: 'ArchivoBlack-Regular.woff2', herkunft: 'gebuendelt' },
+    fliesstext: { familie: 'Arimo', gewicht: 400, datei: 'Arimo-Regular.woff2', herkunft: 'gebuendelt' },
+    fliesstextFett: { familie: 'Arimo', gewicht: 700, datei: 'Arimo-Bold.woff2', herkunft: 'gebuendelt' },
   },
   // PLATZHALTER, ungeklaert: Es gibt im Repository KEINE gebuendelte Logo-Datei.
   // `tools/assets/logo.png` gehoert der Word-Erzeugung der Planungsdokumente und ist
@@ -90,7 +135,7 @@ const MARKE: Marke = friereTief<Marke>({
   // (420x120 px -> 3,5, TK 9.11.1 "Seitenverhaeltnis des Assets ~ 3,5 : 1"), gilt aber
   // erst, sobald das echte Asset vorliegt: Passt es nicht, wird das Logo sichtbar
   // gestaucht, ohne dass ein Typecheck etwas meldet.
-  logo: { datei: 'logo-fitnessworld24.png', seitenverhaeltnis: 3.5 },
+  logo: { datei: 'logo-fitnessworld24.png', herkunft: 'gebuendelt', seitenverhaeltnis: 3.5 },
   // Die Konstante selbst, nicht ihre Zahlen (12.08.2026): Seit #52 lautet der Typ
   // `typeof SICHERHEITSABSTAND_PX`, ein abweichendes Literal faellt also schon im
   // Typecheck durch. Der direkte Verweis macht daraus Gleichheit statt Uebereinstimmung.
@@ -103,6 +148,8 @@ const MARKE: Marke = friereTief<Marke>({
   // niemand einen verbindlichen Text hinterlegt hat. Ein geratener Text stuende sonst
   // auf dem Fernseher im Studio.
   slogan: { text: '', aktiv: false },
+  // NEU mit #320 (v3.5): der Herkunfts-Stempel - oben definiert, hier angehaengt.
+  herkunftJeFeld: HERKUNFT_JE_FELD,
 })
 
 export async function leseMarke(): Promise<Ergebnis<Marke>> {

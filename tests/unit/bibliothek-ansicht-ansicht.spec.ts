@@ -53,6 +53,7 @@ function aktion(ueber: Partial<Aktion> & { id: string }): Aktion {
     cta: null,
     standardDauer: null,
     vorlagenId: "v1",
+    markeId: "marke-test",
     akzentfarbe: null,
     ...ueber,
   };
@@ -68,6 +69,7 @@ function projekt(ueber: Partial<Project> & { id: string }): Project {
     aktionen: [],
     liste: [],
     letzterAusgabeName: null,
+    standardMarkeId: "marke-test",
     // Pflichtfeld seit TK v3.18 (#334)
     standardSegmentdauer: 10,
     ...ueber,

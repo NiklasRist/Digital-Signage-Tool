@@ -35,6 +35,7 @@ function aktion(id: string, bildRef: string | null): Aktion {
     cta: null,
     standardDauer: null,
     vorlagenId: 'vorlage-vollbild',
+    markeId: "marke-test",
     akzentfarbe: null,
   }
 }

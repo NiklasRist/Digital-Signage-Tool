@@ -74,6 +74,7 @@ function projektMit(liste: Listenelement[], assets: Asset[] = [VIDEO_ASSET]): Pr
     aktionen: [],
     liste,
     letzterAusgabeName: null,
+    standardMarkeId: "marke-test",
     // Pflichtfeld seit TK v3.18 (#334)
     standardSegmentdauer: 10,
   };
