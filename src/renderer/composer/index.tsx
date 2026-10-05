@@ -31,18 +31,29 @@ import type { Marke } from '../../shared/contracts/marke'
 import type { Listenelement, Project } from '../../shared/contracts/project'
 import type { ProjektZugang, VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
 import type { ReparaturStand } from './reparatur-fuehrung'
+import type { ListenZeileModell } from './liste-ansicht'
 import type { Uebergabe } from './reparatur-optionen'
 import type { MedienImportStarter } from './medien-import'
 import { aufSichtGeaendert, holeSicht, type Projektsicht } from './projektzustand'
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ordneNeuOptimistisch } from './liste-reorder'
+// NACHTRAG #248 (Variante A, 05.10.): Die ad-hoc-Wiedergabeliste dieser Wurzel
+// (DndContext/Zeile/Regler unten) ist hier durch die Issue-richtige
+// `Wiedergabeliste` aus liste-ansicht.tsx (#248) ERSETZT - dokumentierte Ausnahme
+// vom Nicht-ndern-Verbot des Composer-Issues, im Nachtrag auf #248 begrndet.
+// Die Bedienung kommt aus #249 (element-zeile.tsx); die Einblendungs-Ansicht
+// (M7-61) ist NOCH NICHT angebunden: `aufEinblendungBearbeiten` zeigt bis dahin
+// einen Platzhalter-Hinweis statt einer falschen Oberflche (Befund gemeldet).
 import { entferneElementAusListe } from './element-entfernen'
-import { baueReglerModell, begrenze, uebernehmeGrenzen, type ReglerModell } from './dauer-regler'
-import { berechneGesamtlaenge, formatiereLaenge, frameDauer } from './gesamtlaenge'
+import { berechneGesamtlaenge, frameDauer } from './gesamtlaenge'
 import { importiereMedien, type ImportBericht } from './medien-import'
 import { AssetGalerie } from './asset-galerie'
+// Mit Endung: der Pfad ohne Endung lst gegen die reine .ts-Naht auf, nicht gegen die .tsx (dieselbe Auflsung, die composer/index gegen index.tsx geschaltet hat).
+import { Wiedergabeliste } from './liste-ansicht.tsx'
+import { findeKaputteStellen } from './kaputt-erkennung'
+import { ElementBedienung } from './element-zeile.tsx'
+import { uebernehmeGrenzen } from './dauer-regler'
 
 
 /**
@@ -88,7 +99,14 @@ export function ComposerWurzel(p: ComposerWurzelProps): JSX.Element {
     // Abbau verboten (TK 9.14.2): unsichtbar, aber gemountet - der Hoerer bleibt.
     return <div data-testid="composer-inaktiv" style={{ display: 'none' }} />
   }
-  return <ComposerInterna projekt={p.projekt} verdrahtung={p.verdrahtung} />
+  return (
+    <ComposerInterna
+      projekt={p.projekt}
+      verdrahtung={p.verdrahtung}
+      zeichnen={p.zeichnen}
+      vorlagen={p.vorlagen}
+    />
+  )
 }
 
 const FEHLERFARBE = '#e5634d'
@@ -97,13 +115,20 @@ const TAKTFARBE = '#d9a441'
 export function ComposerInterna({
   projekt,
   verdrahtung,
+  zeichnen,
+  vorlagen,
 }: {
   projekt: ProjektZugang
   verdrahtung: ComposerVerdrahtung
+  /** Zeichenvoraussetzungen fr die Thumbnails (#154). null = kein Thumbnail. */
+  zeichnen: ZeichenZugang
+  /** Vorlagen fr den Band-Namen in #249 (ENTSCHIEDEN 8). */
+  vorlagen: VorlagenZugang
 }): JSX.Element {
   const [sicht, setzeSicht] = useState<Projektsicht>(() => projekt.hole())
-  const [modell, setzeModell] = useState<ReglerModell | null>(null)
-  const [grenzen, setzeGrenzen] = useState<{ anfang: number; ende: number } | null>(null)
+  // Die Band-/Fehlermeldungen von #249: Bandbearbeitung (M7-61) ist nicht
+  // angebunden - der Hinweis ist ein Platzhalter, KEINE falsche Oberflche.
+  const [bandHinweis, setzeBandHinweis] = useState<string | null>(null)
   // Der Bericht des Imports (#228): ohne ihn "passiert" der Import für den Nutzer
   // NICHTS - eingereiht wird zwar im Main, aber sichtbar war das nie (Befund 04.10.).
   const [importBericht, setzeImportBericht] = useState<ImportBericht | null>(null)
@@ -114,38 +139,34 @@ export function ComposerInterna({
   const liste = inhalt?.liste ?? []
 
   useEffect(() => {
-    setzeModell(null)
-    setzeGrenzen(null)
+    setzeBandHinweis(null)
   }, [inhalt?.id])
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
-
-  const bewegt = (ereignis: DragEndEvent): void => {
-    const aktiv = ereignis.active.id
-    const ueber = ereignis.over?.id
-    if (typeof aktiv === 'string' && typeof ueber === 'string') {
-      void ordneNeuOptimistisch(aktiv, ueber)
+  // ENTSCHIEDEN 8 (#249): Das Asset kommt aufgelst - hier in der Wurzel, nicht in
+  // der Zeile. ENTSCHIEDEN 6a: kaputteBandAbschnitte UNVERNDERT aus dem Modell.
+  const zeichneBedienung = (modell: ListenZeileModell): JSX.Element => {
+    const element = inhalt?.liste.find((eintrag) => eintrag.id === modell.elementId)
+    if (element === undefined) {
+      return <span data-testid="composer-zeile-abgebaut" />
     }
-  }
-
-  const lese = (element: Listenelement): void => {
-    const asset = inhalt?.assets.find((eintrag) => eintrag.id === element.ref) ?? null
-    const ergebnis = baueReglerModell(element, asset)
-    if (ergebnis.ok) {
-      setzeModell(ergebnis.wert)
-      setzeGrenzen({ anfang: ergebnis.wert.anfang, ende: ergebnis.wert.ende })
-    } else {
-      setzeModell(null)
-      setzeGrenzen(null)
-    }
-  }
-
-  const uebernehme = async (): Promise<void> => {
-    if (modell === null || grenzen === null || inhalt === null) return
-    const element = inhalt.liste.find((eintrag) => eintrag.id === modell.elementId)
-    if (element === undefined) return
-    const geklemmt = begrenze(modell, grenzen.anfang, grenzen.ende)
-    await uebernehmeGrenzen(element, geklemmt.anfang, geklemmt.ende)
+    return (
+      <ElementBedienung
+        element={element}
+        asset={
+          element.art === 'video'
+            ? inhalt?.assets.find((eintrag) => eintrag.id === element.ref) ?? null
+            : null
+        }
+        vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+        kaputteBandAbschnitte={modell.kaputteBandAbschnitte}
+        aufEinblendungBearbeiten={(elementId) =>
+          setzeBandHinweis(
+            `Bandbearbeitung fr ${elementId}: die Einblendungs-Ansicht (M7-61) ist hier noch nicht angebunden.`,
+          )
+        }
+        aufFehler={(code, meldung) => setzeBandHinweis(`${code}: ${meldung}`)}
+      />
+    )
   }
 
   const gesamt = berechneGesamtlaenge([...liste])
@@ -156,14 +177,7 @@ export function ComposerInterna({
       style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: 8, gap: 8 }}
     >
       <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <span style={{ fontSize: 13 }}>
-          {gesamt.ok
-            ? `Gesamt: ${formatiereLaenge(gesamt.wert.sekunden)}`
-            : 'Gesamtdauer unbestimmbar'}
-          {gesamt.ok && gesamt.wert.warnung && (
-            <span style={{ color: TAKTFARBE, marginLeft: 8 }}>(über 30 Minuten)</span>
-          )}
-        </span>
+        {/* Die Gesamtlnge zeichnet Wiedergabeliste (#248) selbst ber baueLaengenAnzeige. */}
         <span style={{ flex: 1 }} />
         <button
           type="button"
@@ -210,30 +224,23 @@ export function ComposerInterna({
         </div>
       ) : (
         <>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={bewegt}>
-            <SortableContext items={liste.map((eintrag) => eintrag.id)} strategy={horizontalListSortingStrategy}>
-              <ul data-testid="composer-liste" style={{ listStyle: 'none', margin: 0, padding: 0, fontSize: 12 }}>
-                {liste.map((element, index) => (
-                  <Zeile key={element.id} element={element} index={index} auswaehlen={() => lese(element)} />
-                ))}
-              </ul>
-            </SortableContext>
-          </DndContext>
+          <Wiedergabeliste
+            projekt={inhalt}
+            stellen={findeKaputteStellen(inhalt)}
+            reparatur={verdrahtung.reparatur}
+            voraussetzungen={zeichnen.hole()}
+            zeichneBedienung={zeichneBedienung}
+            aufZeileGewaehlt={(elementId) => {
+              // ENTSCHIEDEN 8 (#248): Diese Ansicht hlt KEINE Auswahl - hier ist
+              // die Wurzel der Aufrufer. Band-Hinweis zurcksetzen gehrt dazu.
+              setzeBandHinweis(null)
+              void elementId
+            }}
+          />
 
-          {liste.length === 0 && (
-            <div data-testid="composer-leer" style={{ color: '#8f8f8f', fontSize: 12 }}>
-              Leere Wiedergabeliste
-            </div>
-          )}
-
-          {modell !== null && (
-            <div data-testid="composer-regler" style={{ borderTop: '1px solid #444', paddingTop: 8 }}>
-              <Regler
-                modell={modell}
-                wert={grenzen}
-                setzeWert={setzeGrenzen}
-                uebernehmen={() => void uebernehme()}
-              />
+          {bandHinweis !== null && (
+            <div data-testid="composer-band-hinweis" style={{ color: TAKTFARBE, fontSize: 12 }}>
+              {bandHinweis}
             </div>
           )}
 
@@ -277,52 +284,3 @@ function Zeile({
     </li>
   )
 }
-
-function Regler({
-  modell,
-  wert,
-  setzeWert,
-  uebernehmen,
-}: {
-  modell: ReglerModell
-  wert: { anfang: number; ende: number } | null
-  setzeWert: (wert: { anfang: number; ende: number } | null) => void
-  uebernehmen: () => void
-}): JSX.Element {
-  if (wert === null) return <div />
-  return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12 }}>
-      <span>Anfang</span>
-      <input
-        type="number"
-        step="0.001"
-        min={modell.untergrenze}
-        max={modell.obergrenze}
-        value={Number(wert.anfang.toFixed(3))}
-        data-testid="regler-anfang"
-        onChange={(ereignis) => setzeWert({ anfang: Number(ereignis.target.value), ende: wert.ende })}
-      />
-      <span>Ende</span>
-      <input
-        type="number"
-        step="0.001"
-        min={modell.untergrenze}
-        max={modell.obergrenze}
-        value={Number(wert.ende.toFixed(3))}
-        data-testid="regler-ende"
-        onChange={(ereignis) => setzeWert({ anfang: wert.anfang, ende: Number(ereignis.target.value) })}
-      />
-      <button type="button" data-testid="regler-uebernehmen" onClick={uebernehmen}>
-        Übernehmen
-      </button>
-      <button
-        type="button"
-        data-testid="regler-loeschen"
-        onClick={() => void entferneElementAusListe(modell.elementId)}
-      >
-        Element entfernen
-      </button>
-    </div>
-  )
-}
-

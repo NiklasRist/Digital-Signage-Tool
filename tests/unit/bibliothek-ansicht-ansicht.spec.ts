@@ -18,8 +18,8 @@ import type { BibliothekEigenschaften } from "../../src/renderer/composer/biblio
 // Der Import mit `.tsx`-Endung ist zur Laufzeit gueltig (esbuild/vite). Das
 // Test-tsconfig verbietet die Endung aber ohne `allowImportingTsExtensions`
 // (TS5097) - deshalb der ts-expect-error wie im Projekt ueblich.
-// @ts-expect-error - bibliothek-ansicht.tsx statt des `.ts`-Zwillings (siehe oben)
 import { Bibliotheksansicht } from "../../src/renderer/composer/bibliothek-ansicht.tsx";
+
 
 const attrappen = vi.hoisted(() => ({
   fuegeElementHinzu: vi.fn(),

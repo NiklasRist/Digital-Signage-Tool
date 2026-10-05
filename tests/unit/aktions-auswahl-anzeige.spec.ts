@@ -13,8 +13,8 @@ import type { Aktion } from '../../src/shared/contracts/aktion'
 import type { Asset } from '../../src/shared/contracts/asset'
 import type { Ergebnis } from '../../src/shared/contracts/ergebnis'
 import type { FixWirkung } from '../../src/renderer/composer/reparatur-optionen'
-// @ts-expect-error - aktions-auswahl.tsx statt des `.ts`-Zwillings
 import { AktionsAuswahl } from '../../src/renderer/app-shell/aktions-auswahl.tsx'
+
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true

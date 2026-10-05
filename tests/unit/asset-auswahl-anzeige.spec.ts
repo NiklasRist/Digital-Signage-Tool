@@ -15,8 +15,8 @@ import type { FixWirkung } from '../../src/renderer/composer/reparatur-optionen'
 // Der Import mit `.tsx`-Endung ist zur Laufzeit gueltig (esbuild/vite). Das
 // Test-tsconfig verbietet die Endung aber ohne `allowImportingTsExtensions`
 // (TS5097) - deshalb der ts-expect-error wie im Projekt ueblich.
-// @ts-expect-error - asset-auswahl.tsx statt des `.ts`-Zwillings
 import { AssetAuswahl } from '../../src/renderer/app-shell/asset-auswahl.tsx'
+
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true

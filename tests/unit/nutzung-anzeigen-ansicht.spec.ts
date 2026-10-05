@@ -20,8 +20,8 @@ import * as nutzungModul from "../../src/renderer/vorlagen-editor/nutzung-anzeig
 // verbietet die Endung aber ohne `allowImportingTsExtensions` (TS5097). Da diese
 // Konfiguration ausserhalb des Aenderungsbereichs liegt, wird der reale Fehler hier
 // wie im Projekt ueblich per ts-expect-error gewusst quittiert.
-// @ts-expect-error - nutzung-anzeigen.tsx statt des `.ts`-Zwillings (siehe oben)
 import { NutzungAnzeige, type NutzungAnzeigeEigenschaften } from "../../src/renderer/vorlagen-editor/nutzung-anzeigen.tsx";
+
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.
 // Vitest mit jsdom erkennt es nicht automatisch - also hier setzen.

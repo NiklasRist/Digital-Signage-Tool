@@ -52,8 +52,8 @@ vi.mock('../../src/renderer/composer/element-entfernen', async (importOriginal) 
   }
 })
 
-// @ts-expect-error - Tester laden die .tsx-Datei direkt (Muster wie leiste-zeile.spec.ts)
 import { ElementBedienung } from '../../src/renderer/composer/element-zeile.tsx'
+
 
 // React 19: act(...)-Umgebung (Muster wie leiste-zeile.spec.ts).
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;

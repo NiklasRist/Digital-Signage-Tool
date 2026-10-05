@@ -8,8 +8,8 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { createElement, type ReactElement } from 'react'
 
-// @ts-expect-error - render-dialog.tsx statt des `.ts`-Zwillings
 import { RenderDialogAnzeige } from '../../src/renderer/composer/render-dialog.tsx'
+
 import type { NamensBefund, Ueberschreiblage } from '../../src/renderer/composer/render-dialog'
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.

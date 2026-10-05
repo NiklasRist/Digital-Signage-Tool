@@ -19,6 +19,10 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    // #248 (05.10.): gleiches Argument wie in tsconfig.renderer.json - die .tsx-Anzeige
+    // wird mit Endung importiert, weil die Endung dem Wurzelmodul den Vorfahrt vor der
+    // reine .ts-Fachlichkeit verstetigt. noEmit oben (geerbt) wird damit gültig.
+    "allowImportingTsExtensions": true,
     // DOM ist noetig, weil "include" auch src/renderer/ erfasst (React, document).
     // Das ist der Preis dafuer, den ganzen Baum zu sehen - und der Grund, warum diese
     // Konfiguration die Prozess-Trennung NICHT bewacht.

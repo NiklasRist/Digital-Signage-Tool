@@ -31,7 +31,14 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": [],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    // #248 (05.10.): Reine .ts-Fachlichkeit und ihre .tsx-Anzeige teilen sich EINEN
+    // Basispfad (liste-ansicht.ts / liste-ansicht.tsx). Ein Import ohne Endung lst
+    // gegen die .TS auf und schaltet die Anzeige LEBENLOS (fertige Komponente ohne
+    // Aufrufer). Mit Endung lst der nahelige Pfad; noEmit oben macht
+    // allowImportingTsExtensions gltig. dieselbe Klassenentscheidung wie der
+    // #110-Tausch von composer/index.ts gegen index.tsx.
+    "allowImportingTsExtensions": true
   },
   "include": ["src/renderer/**/*", "src/shared/**/*"]
 }

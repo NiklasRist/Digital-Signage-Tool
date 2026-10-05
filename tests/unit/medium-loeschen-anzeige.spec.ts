@@ -13,8 +13,8 @@ import type { Project, Listenelement } from "../../src/shared/contracts/project"
 import type { Asset } from "../../src/shared/contracts/asset";
 import type { Aktion } from "../../src/shared/contracts/aktion";
 import type { Ergebnis } from '../../src/shared/contracts/ergebnis'
-// @ts-expect-error - medium-loeschen.tsx statt des `.ts`-Zwillings
 import { MediumLoeschen } from '../../src/renderer/composer/medium-loeschen.tsx'
+
 
 // React 19: act(...)
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true

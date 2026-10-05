@@ -17,8 +17,8 @@ import type { Ausgabenstand } from "../../src/renderer/composer/ausgabe-liste";
 // Der Import mit `.tsx`-Endung ist zur Laufzeit gueltig (esbuild/vite). Das
 // Test-tsconfig verbietet die Endung aber ohne `allowImportingTsExtensions`
 // (TS5097) - deshalb der ts-expect-error wie im Projekt ueblich.
-// @ts-expect-error - ausgabe-liste.tsx statt des `.ts`-Zwillings (siehe oben)
 import { AusgabeListenansicht } from "../../src/renderer/composer/ausgabe-liste.tsx";
+
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 

@@ -19,8 +19,8 @@ import * as zusammenfassungModul from "../../src/renderer/queue-panel/leiste-zus
 // Der Import mit `.tsx`-Endung ist zur Laufzeit gueltig (esbuild/vite). Das
 // Test-tsconfig verbietet die Endung aber ohne `allowImportingTsExtensions`
 // (TS5097) - deshalb der ts-expect-error wie im Projekt ueblich.
-// @ts-expect-error - leiste-zeile.tsx statt des `.ts`-Zwillings (siehe oben)
 import { LeisteZeile } from "../../src/renderer/queue-panel/leiste-zeile.tsx";
+
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.
 // Vitest mit jsdom erkennt es nicht automatisch - also hier setzen.

@@ -9,8 +9,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { createElement, type ReactElement } from 'react'
 
 import type { SpeicherEreignis, Speicherlage } from '../../src/renderer/app-shell/speicherstatus-lage'
-// @ts-expect-error - speicherstatus.tsx statt des `.ts`-Zwillings
 import { SpeicherHinweis, holeSpeicherlage } from '../../src/renderer/app-shell/speicherstatus.tsx'
+
 
 // React 19: act(...)
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
