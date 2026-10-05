@@ -17,30 +17,7 @@ import { KANAELE } from '../../shared/contracts/kanaele'
 import { ComposerWurzel, type ComposerVerdrahtung, type ComposerWurzelProps } from '../composer/index'
 import { starteMedienImport } from './medien-import-uebergabe'
 import { wechsleReiter } from './reiter'
-import {
-  aufProjektlisteGeaendert,
-  holeProjektliste,
-  
-} from '../projekt-verwaltung/liste'
-import { type Projektliste, ladeProjektliste } from '../projekt-verwaltung/liste'
-import {
-
-
-  istOeffnenErlaubt,
-  oeffneProjektordner,
-} from '../projekt-verwaltung/beschaedigt'
-import {
-
-  dupliziereProjekt,
-  schlageDuplikatnamenVor,
-} from '../projekt-verwaltung/duplizieren'
-import {
-  baueLoeschBestaetigung,
-
-  loescheProjekt,
-  type LoeschWirkungen,
-} from '../projekt-verwaltung/loeschen'
-import { legeProjektAn, oeffneProjekt, type ProjektWechselWirkungen } from '../projekt-verwaltung/anlegen-oeffnen'
+import { ProjektVerwaltungWurzel } from '../projekt-verwaltung'
 import { WarteschlangenLeiste } from '../shell/WarteschlangenLeiste'
 
 /**
@@ -94,7 +71,13 @@ export function baueWurzeln(umgebung: Sichten): Record<ReiterId, ReiterInhalt> {
       </div>
     ),
     projekte: (eigenschaften2) => (
-      <ProjekteAnzeige sichtbar={eigenschaften2.sichtbar} umgebung={umgebung} />
+      <ProjektVerwaltungWurzel
+        sichtbar={eigenschaften2.sichtbar}
+        projekt={umgebung.projekt}
+        zeichnen={umgebung.zeichnen}
+        leereProjektHistorie={() => {}}
+        wechsleZuZusammenstellen={() => wechsleReiter('zusammenstellen')}
+      />
     ),
   }
 }
@@ -185,177 +168,3 @@ export function inhalte(): JSX.Element {
    
   return <Rahmen {...eigenschaften} />
 }
-
-/** Der FA-10-Reiter: Liste anlegen/öffnen/duplizieren/löschen, Rednerschild der Beschrift. */
-export function ProjekteAnzeige({
-  sichtbar,
-  umgebung,
-}: {
-  sichtbar: boolean
-  umgebung: Sichten
-}): JSX.Element {
-  if (!sichtbar) return <div data-testid="inhalte-projekte-inaktiv" style={{ display: 'none' }} />
-
-  return <ProjekteInterna umgebung={umgebung} />
-}
-
-type RohMeta = { beschaedigt: boolean; id: string; name: string; anzahlMedien: number; anzahlAusgaben: number }
-
-export function ProjekteInterna({
-  umgebung,
-}: {
-  umgebung: Sichten
-}): JSX.Element {
-  const [stand, setzeStand] = useState<Projektliste>(() => holeProjektliste())
-  const [hinweis, setzeHinweis] = useState<string | null>(null)
-  const [fehlerText, setzeFehlerText] = useState<string | null>(null)
-
-  useEffect(() => aufProjektlisteGeaendert(setzeStand), [])
-
-  useEffect(() => {
-    void ladeProjektliste()
-  }, [])
-
-  const zeilen = stand.eintraege
-
-  const wirkungen: LoeschWirkungen = {
-    holeProjekt: () => umgebung.projekt.hole().projekt,
-    verwirfMotivBestand: () => umgebung.zeichnen.verwirfMotivBestand(),
-    leereProjektHistorie: () => {},
-    leereProjektSicht: () => umgebung.projekt.leere(),
-    aktualisiereProjektliste: async () => await ladeProjektliste(),
-    meldeFehler: (code, meldung) => setzeFehlerText(`${code}: ${meldung}`),
-  }
-
-  const wechselWirkungen: ProjektWechselWirkungen = {
-    ladeProjekt: umgebung.projekt.lade,
-    verwirfMotivBestand: () => umgebung.zeichnen.verwirfMotivBestand(),
-    bereiteZeichnenVor: umgebung.zeichnen.bereiteVor,
-    leereProjektHistorie: () => {},
-    wechsleZuZusammenstellen: () => wechsleReiter('zusammenstellen'),
-    aktualisiereProjektliste: async () => await ladeProjektliste(),
-    meldeFehler: (code, meldung) => setzeFehlerText(`${code}: ${meldung}`),
-  }
-
-  return (
-    <div
-      data-testid="inhalte-projekte"
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: 8, gap: 8 }}
-    >
-      <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          type="text"
-          placeholder="Projektname"
-          data-testid="projekte-name"
-          value={hinweis ?? ''}
-          onChange={(ereignis) => setzeHinweis(ereignis.target.value)}
-          style={{ width: 220, fontSize: 12 }}
-        />
-        <button
-          type="button"
-          data-testid="projekte-anlegen"
-          disabled={hinweis === null || hinweis.trim() === ''}
-          onClick={() => {
-            void (async () => {
-              const ergebnis = await legeProjektAn(hinweis ?? '', wechselWirkungen)
-              if (!ergebnis.ok) setzeFehlerText(ergebnis.fehler.meldung)
-              else setzeHinweis('')
-            })()
-          }}
-        >
-          Neu anlegen
-        </button>
-        <span style={{ color: '#8f8f8f', fontSize: 11 }}>
-          (Der Name darf nicht leer sein – die Ablehnung kommt aus dem Main.)
-        </span>
-      </div>
-
-      {fehlerText !== null && (
-        <div data-testid="projekte-fehler" style={{ color: '#e5634d', fontSize: 12 }}>
-          {fehlerText}
-        </div>
-      )}
-
-      <ul data-testid="projekte-liste" style={{ listStyle: 'none', margin: 0, padding: 0, fontSize: 12, overflow: 'auto' }}>
-        {zeilen.map((meta: RohMeta) => (
-          <li
-            key={meta.id}
-            data-testid={`projekte-zeile-${meta.id}`}
-            style={{ padding: '2px 0', color: meta.beschaedigt ? '#e5634d' : undefined }}
-          >
-            {meta.name}
-            {meta.beschaedigt && ' (BESCHÄDIGT · Öffnen deaktiviert)'}{' '}
-            {istOeffnenErlaubt(meta as never) && (
-              <button
-                type="button"
-                data-testid={`projekte-oeffnen-${meta.id}`}
-                onClick={() => {
-                  void (async () => {
-                    const ergebnis = await oeffneProjekt(meta.id, wechselWirkungen)
-                    if (!ergebnis.ok) setzeFehlerText(ergebnis.fehler.meldung)
-                  })()
-                }}
-              >
-                Öffnen
-              </button>
-            )}
-            {!meta.beschaedigt && (
-              <>
-                <button
-                  type="button"
-                  data-testid={`projekte-duplizieren-${meta.id}`}
-                  onClick={() => {
-                    void (async () => {
-                      const ergebnis = await dupliziereProjekt(
-                        meta.id,
-                        schlageDuplikatnamenVor(meta as never),
-                        { aktualisiereProjektliste: async () => await ladeProjektliste() },
-                      )
-                      if (!ergebnis.ok) setzeFehlerText(ergebnis.fehler.meldung)
-                    })()
-                  }}
-                >
-                  Duplizieren
-                </button>
-                <button
-                  type="button"
-                  data-testid={`projekte-loeschen-${meta.id}`}
-                  onClick={() => {
-                    void (async () => {
-                      const bestätigt = window.confirm(baueLoeschBestaetigung(meta as never).ok
-                        ? (baueLoeschBestaetigung(meta as never) as { ok: true; text: string }).text
-                        : '')
-                      if (!bestätigt) return
-                      const ergebnis = await loescheProjekt(meta as never, wirkungen)
-                      if (!ergebnis.ok) setzeFehlerText(ergebnis.fehler.meldung)
-                    })()
-                  }}
-                >
-                  Löschen
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              data-testid={`projekte-ordner-${meta.id}`}
-              onClick={() => {
-                void (async () => {
-                  const ergebnis = await oeffneProjektordner(meta.id)
-                  if (!ergebnis.ok) setzeFehlerText(ergebnis.fehler.meldung)
-                })()
-              }}
-            >
-              Ordner öffnen
-            </button>
-          </li>
-        ))}
-        {zeilen.length === 0 && (
-          <li style={{ color: '#8f8f8f' }}>
-            Noch keine Projekte – oben einen Namen eingeben und „Neu anlegen" klicken.
-          </li>
-        )}
-      </ul>
-    </div>
-  )
-}
-
