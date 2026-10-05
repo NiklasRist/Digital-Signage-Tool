@@ -86,7 +86,6 @@ import {
   uebernimmNutzung,
   type Nutzungsstand,
 } from './nutzung-anzeigen'
-// @ts-expect-error - nutzung-anzeigen.tsx statt der .ts-Regeldatei
 import { NutzungAnzeige } from './nutzung-anzeigen.tsx'
 
 /** ZEICHENGLEICH aus #244 übernommen. */

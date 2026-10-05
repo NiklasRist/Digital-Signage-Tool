@@ -23,7 +23,6 @@ import {
 import { Projektlisteansicht } from './liste-ansicht'
 // Der Anzeiger wohnt im tsx-Nachbarn der .ts-Regel-Datei; ohne Endung wollte die
 // tsconfig die .ts-Datei haben (TS5097-Zeile wie im Projekt ueblich).
-// @ts-expect-error - beschaedigt.tsx statt der .ts-Regeldatei
 import { BeschaedigteZeile } from './beschaedigt.tsx'
 import { istOeffnenErlaubt, oeffneProjektordner } from './beschaedigt'
 import { legeProjektAn, oeffneProjekt, pruefeProjektname } from './anlegen-oeffnen'
@@ -33,7 +32,6 @@ import {
   istAktivesProjekt,
   loescheProjekt,
 } from './loeschen'
-// @ts-expect-error - loeschen.tsx statt der .ts-Regeldatei
 import { LoeschBestaetigungsAnzeige } from './loeschen.tsx'
 import {
   baueDuplizierWirkungen,
