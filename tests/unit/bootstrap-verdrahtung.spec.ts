@@ -38,6 +38,15 @@ const h = vi.hoisted(() => {
     verdrahteProjectStoreNachtragIPC: vi.fn(() => {
       protokoll.push("verdrahteProjectStoreNachtragIPC");
     }),
+    verdrahteProjectStoreNachtrag2IPC: vi.fn((): void => {
+      protokoll.push("verdrahteProjectStoreNachtrag2IPC");
+    }),
+    verdrahteVorlagenNachtragIPC: vi.fn((): void => {
+      protokoll.push("verdrahteVorlagenNachtragIPC");
+    }),
+    verdrahteSpeicherstatusIPC: vi.fn((_: object): void => {
+      protokoll.push("verdrahteSpeicherstatusIPC");
+    }),
     verdrahteProjectStoreNachtrag4IPC: vi.fn(() => {
       protokoll.push("verdrahteProjectStoreNachtrag4IPC");
     }),
@@ -163,6 +172,18 @@ vi.mock("../../src/main/ipc-gateway/project-store-nachtrag", () => ({
   verdrahteProjectStoreNachtragIPC: h.verdrahteProjectStoreNachtragIPC,
 }));
 
+vi.mock("../../src/main/ipc-gateway/project-store-nachtrag-2", () => ({
+  verdrahteProjectStoreNachtrag2IPC: h.verdrahteProjectStoreNachtrag2IPC,
+}));
+
+vi.mock("../../src/main/ipc-gateway/vorlagen-nachtrag", () => ({
+  verdrahteVorlagenNachtragIPC: h.verdrahteVorlagenNachtragIPC,
+}));
+
+vi.mock("../../src/main/ipc-gateway/speicherstatus-verdrahtung", () => ({
+  verdrahteSpeicherstatusIPC: h.verdrahteSpeicherstatusIPC,
+}));
+
 vi.mock("../../src/main/ipc-gateway/project-store-nachtrag-4", () => ({
   verdrahteProjectStoreNachtrag4IPC: h.verdrahteProjectStoreNachtrag4IPC,
 }));
@@ -261,23 +282,26 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
   it("laeuft in genau der Reihenfolge, die #3 festlegt", async () => {
     await starteBootstrap();
 
-    // Die vollstaendige Kette der heute verdrahteten Stellen: Schritt 5 (Positionen 1,
-    // 2, 4, 5, 6, 7, 9, 10, 11) VOR dem Fenster, Schritt 7 (Positionen 1, 2) danach, Schritt 8
-    // zum Schluss. Die Luecken (5.3, 5.8, 7.3) stehen bewusst nicht drin - ihre
-    // Funktionen tragen noch den werfenden Geruest-Rumpf.
+    // Die vollstaendige Kette der heute verdrahteten Stellen: Schritt 5 (Positionen 1
+    // bis 11 mit #274 geschlossen) VOR dem Fenster, Schritt 7 (Positionen 1 bis 3,
+    // mit #274) danach, Schritt 8 zum Schluss. Die M8-Anmeldungen (#309/#323) stehen
+    // noch aus; die Lueckenlosigkeit stellt #331 fest.
     expect(h.protokoll).toEqual([
       "verdrahteProjectStoreIPC",
       "verdrahteProjectStoreNachtragIPC",
+      "verdrahteProjectStoreNachtrag2IPC",
       "verdrahteConfigStoreIPC",
       "verdrahteMedienIPC",
       "registriereMedienHandler",
       "verdrahteVorlagenIPC",
+      "verdrahteVorlagenNachtragIPC",
       "meldeRenderHandlerAn",
       "meldeExportHandlerAn",
       "verdrahteProjectStoreNachtrag4IPC",
       "erstelleHauptfenster",
       "verdrahteQueueIPC",
       "verdrahteExportUndFortschrittIPC",
+      "verdrahteSpeicherstatusIPC",
       "raeumeVerwaisteArbeitsbereiche",
     ]);
   });
@@ -290,10 +314,12 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
     for (const anmeldung of [
       h.verdrahteProjectStoreIPC,
       h.verdrahteProjectStoreNachtragIPC,
+      h.verdrahteProjectStoreNachtrag2IPC,
       h.verdrahteConfigStoreIPC,
       h.verdrahteMedienIPC,
       h.registriereMedienHandler,
       h.verdrahteVorlagenIPC,
+      h.verdrahteVorlagenNachtragIPC,
       h.meldeRenderHandlerAn,
       h.meldeExportHandlerAn,
       h.verdrahteProjectStoreNachtrag4IPC,

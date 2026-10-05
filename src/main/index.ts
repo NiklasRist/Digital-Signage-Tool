@@ -5,26 +5,21 @@
 // ist Teil des Vertrags aus #3, nicht Geschmackssache - die Begruendung steht jeweils
 // am Aufrufpunkt.
 //
-// STAND HEUTE (17.08.2026): Verdrahtet ist alles, dessen Funktion inzwischen einen
+// STAND HEUTE (05.10.2026, nach #274): Verdrahtet ist alles, dessen Funktion einen
 // echten Rumpf hat - nachgeschlagen in der jeweils definierenden Datei, nicht im Issue:
 //   - die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4)
-//   - Schritt 5, Positionen 1 (#76), 2 (#153), 4 (#77), 5 (#93), 6 (#92), 7 (#109),
-//     9 (#189), 10 (#190) und 11 (#334)
-//   - Schritt 7, Positionen 1 (#71) und 2 (#191)
+//   - Schritt 5, die Positionen 1 (#76), 2 (#153), 3 (#240, mit #274), 4 (#77),
+//     5 (#93), 6 (#92), 7 (#109), 8 (#255, mit #274), 9 (#189), 10 (#190) und 11 (#334);
+//     die zwoelfte Anmeldung (M8) kommt mit #309 hinten dazu
+//   - Schritt 7, Positionen 1 (#71), 2 (#191) und 3 (#238, mit #274)
 //   - Schritt 8 (#172)
 //   - beide Beenden-Funktionen (#47, #98)
-// LUECKEN sind weiterhin - ihre Funktionen tragen in ihrer Datei noch den werfenden
-// Geruest-Rumpf ("Noch nicht umgesetzt"), ein Aufruf liesse die App beim Start
-// abstuerzen:
-//   - Schritt 5, Positionen 3 (#240) und 8 (#255)
-//   - Schritt 7, Position 3 (#238)
-// Schritt 2 (Einzel-Instanz, #51) ist ein Sonderfall und steht deshalb nicht in der
-// Liste darueber: erzwingeEinzelInstanz hat inzwischen einen echten Rumpf, liefert
-// aber `StartBefund` statt des in #3 zitierten `boolean` - eine Vertragsabweichung, die
-// erst zu klaeren ist. Die Markierung bei SCHRITT 2 bleibt deshalb unveraendert stehen.
-// Sie entstehen in den restlichen Verdrahtungs-Issues der Kette (#268, #271 bis #274,
-// #331) und stehen bis dahin als benannte Luecken (Funktionsname + Issue-Nummer) an
-// ihrem Platz.
+// AUSSERHALB dieser Liste steht Schritt 2 (Einzel-Instanz, #51) als Sonderfall
+// unveraendert: erzwingeEinzelInstanz liefert `StartBefund` statt des in #3 zitierten
+// `boolean` - eine Vertragsabweichung, die erst zu klaeren ist. Die Markierung bei
+// SCHRITT 2 bleibt deshalb stehen.
+// Die M8-Eintraege (#309, Nachzug #323) stehen noch aus; die Lueckenlosigkeit von
+// src/main/index.ts stellt #331 fest, nicht dieses Issue.
 // Ausdruecklich KEINE Attrappen: Eine leere Ersatzfunktion wuerde
 // einen Kanal registrieren, der zu funktionieren scheint, und die echte Verdrahtung
 // spaeter an der doppelten Registrierung scheitern lassen - oder, schlimmer, sie tut
@@ -45,8 +40,10 @@ import {
 import { verdrahteConfigStoreIPC } from "./ipc-gateway/config-store-verdrahtung";
 import { verdrahteExportUndFortschrittIPC } from "./ipc-gateway/export-verdrahtung";
 import { verdrahteProjectStoreNachtragIPC } from "./ipc-gateway/project-store-nachtrag";
+import { verdrahteProjectStoreNachtrag2IPC } from "./ipc-gateway/project-store-nachtrag-2";
 import { verdrahteProjectStoreNachtrag4IPC } from "./ipc-gateway/project-store-nachtrag-4";
 import { verdrahteProjectStoreIPC } from "./ipc-gateway/project-store-verdrahtung";
+import { verdrahteSpeicherstatusIPC } from "./ipc-gateway/speicherstatus-verdrahtung";
 import {
   registriereMediaProtokollHandlerStub,
   registriereMediaProtokollSchema,
@@ -58,6 +55,7 @@ import { raeumeVerwaisteArbeitsbereiche } from "./render-service/arbeitsbereich"
 import { meldeRenderHandlerAn } from "./render-service/handler-anmeldung";
 import { flushBestand } from "./vorlagen-store/schreibe-vorlagen";
 import { verdrahteVorlagenIPC } from "./vorlagen-store/ipc-verdrahtung";
+import { verdrahteVorlagenNachtragIPC } from "./ipc-gateway/vorlagen-nachtrag";
 
 /**
  * Im Entwicklungslauf setzt scripts/dev.mjs diese Variable auf die URL des
@@ -315,11 +313,13 @@ void app.whenReady().then(async () => {
   //     kein Fenster und haelt keinen Zustand.
   verdrahteProjectStoreNachtragIPC();
 
-  //  3. verdrahteProjectStoreNachtrag2IPC()   - #240 (project:setzeBearbeitungsstand,
-  //                                             project:oeffneProjektordner),
-  //                                             src/main/ipc-gateway/project-store-nachtrag-2.ts.
-  //                                             LUECKE, ebenfalls noch Geruest-Rumpf.
-  //                                             Unmittelbar nach 2., aus demselben Grund.
+  //  3. verdrahteProjectStoreNachtrag2IPC() - #240 (project:setzeBearbeitungsstand,
+  //     project:oeffneProjektordner), src/main/ipc-gateway/project-store-nachtrag-2.ts.
+  //     Meldet die beiden nachgetragenen project-Kanaele an (mit #274 verdrahtet).
+  //     Unmittelbar nach 2., aus demselben Grund: derselbe Namensraum `project:` -
+  //     eine doppelte Registrierung faellt so sofort auf. Argumentlos, kein Fenster.
+  verdrahteProjectStoreNachtrag2IPC();
+
 
   //  4. verdrahteConfigStoreIPC() - #77,
   //     src/main/ipc-gateway/config-store-verdrahtung.ts. Meldet die fuenf
@@ -345,10 +345,11 @@ void app.whenReady().then(async () => {
   //     vorlagen-editor die Vorlagen-Bibliothek nicht. Argumentlos, kein Fenster.
   verdrahteVorlagenIPC();
 
-  //  8. verdrahteVorlagenNachtragIPC()        - #255 (vorlagen:pruefeReferenzen),
-  //                                             src/main/ipc-gateway/vorlagen-nachtrag.ts.
-  //                                             LUECKE, ebenfalls noch Geruest-Rumpf.
-  //                                             Unmittelbar nach 7., Namensraum `vorlagen:`.
+  //  8. verdrahteVorlagenNachtragIPC() - #255 (vorlagen:pruefeReferenzen),
+  //     src/main/ipc-gateway/vorlagen-nachtrag.ts. Meldet den Kanal an (mit #274
+  //     verdrahtet). Unmittelbar nach 7., Namensraum `vorlagen:`; argumentlos, kein Fenster.
+  verdrahteVorlagenNachtragIPC();
+
 
   //  9. meldeRenderHandlerAn() - #189, src/main/render-service/handler-anmeldung.ts.
   //     Traegt beim Auftrags-Dispatcher den Handler fuer art: "render" ein (mitsamt
@@ -406,10 +407,14 @@ void app.whenReady().then(async () => {
   //    als ein Start, der abbricht.
   verdrahteExportUndFortschrittIPC(fenster);
 
-  // 3. LUECKE: verdrahteSpeicherstatusIPC(fenster) - #238, die Sender von
-  //    `project:autoSpeichernStatus` und `vorlagen:autoSpeichernStatus`,
-  //    src/main/ipc-gateway/speicherstatus-verdrahtung.ts. Ohne sie bleibt ein
-  //    gescheitertes Auto-Speichern unsichtbar (NFA-02).
+  // 3. verdrahteSpeicherstatusIPC(fenster) - #238, die SENDER der beiden
+  //    Auto-Speichern-Ereignisse `project:autoSpeichernStatus` und
+  //    `vorlagen:autoSpeichernStatus`, src/main/ipc-gateway/speicherstatus-verdrahtung.ts.
+  //    Mit #274 verdrahtet. Ohne sie bleibt ein gescheitertes Auto-Speichern
+  //    unsichtbar (NFA-02, TK 9.5.4 / 9.12.1). Sie bekommt DASSELBE Fenster wie
+  //    1. und 2. (TK 9.1.1 Punkt 10). Kein try/catch: lautlos zu
+  //    verlieren ist schlimmer als ein Start, der abbricht - wie in den Positionen darüber.
+  verdrahteSpeicherstatusIPC(fenster);
 
   // SCHRITT 8: raeumeVerwaisteArbeitsbereiche() - #172,
   // src/main/render-service/arbeitsbereich.ts. Entfernt reel-*-Ordner, die ein
