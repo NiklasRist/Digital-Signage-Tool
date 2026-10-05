@@ -1,35 +1,37 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // GENERIERT aus dem Signaturblock von Issue #140.
-// [action-editor] Live-Vorschau der Aktion über die einzige Pixelquelle
+// [action-editor] Live-Vorschau der Aktion - bereitstellen, zeichnen, einhaengen
 //
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
+// Signaturen VERBINDLICH aus dem Issue; Rumpf gefuellt (GERUEST-PRUEFSUMME
+// gilt nicht mehr, die Datei wurde bearbeitet).
 //
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: aa915b2179ac1c79
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// ZWEI eigentliche Aufgaben in einer Datei:
+//  - bereiteVorschauVor: Schriften (#110), Logo (#119) und ALLE Motive der
+//    Bibliothek (#111) vorbereiten. Nicht nur die offene Aktion: holeMotiv ist
+//    ein SYNCHRONER Nachschlag; ein nicht vorbereitetes Motiv liefert
+//    { zustand: 'fehlt' } und wird als Platzhalter gezeichnet - ununterschiedlich
+//    von einem echten Defekt (TK 9.8.5). Die Bibliothek ist klein genug,
+//    dass das einmalig geschehen kann.
+//  - zeichneVorschau: ein Weiterreichen, keine zweite Zeichenroutine: Sie ruft
+//    zeichneSegment (#117) und gibt dessen Ergebnis UNVERAENDERT zurück - kein
+//    eigener ctx-Aufruf, kein Übermalen, kein Zuschneiden, kein "nur für die
+//    Vorschau"-Zusatz. Sie existiert NUR, damit der Editor eine benannte Stelle
+//    hat, an der die Vorbereitungspflicht mit dem Zeichnen zusammenhängt.
+//  - haengeVorschauEin: der EINZIGE Ort, der die Anzeigegröße bestimmt -
+//    style.width/maxWidth/aspectRatio; die Skalierung überlässt dem Browser
+//    ("Skalierung geschieht NUR zur Darstellung", CSS). canvas.width/height
+//    bleiben NATIV (TK 9.10.3 Punkt 2).
 
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
 import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { SegmentBild } from '../template-canvas/zeichne-segment'
+
+import { stelleSchriftenBereit } from '../template-canvas/schriften'
+import { bereiteLogoVor } from '../template-canvas/logo-laden'
+import { bereiteMotiveVor } from '../template-canvas/bild-laden'
+import { findeBildAsset } from './bibliothek'
+import { zeichneSegment } from '../template-canvas/zeichne-segment'
 
 /** Einmalige Vorbereitung, BEVOR gezeichnet wird: Schriften, Logo und alle Motive der
  *  Aktions-Bibliothek. Danach ist zeichneVorschau synchron aufrufbar.
@@ -43,22 +45,51 @@ export async function bereiteVorschauVor(
   assets: Asset[],
   marke: Marke,
 ): Promise<void> {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #140."
-  );
+  // 1. Schriften: idempotent in #110 (dort sitzt der Merker).
+  await stelleSchriftenBereit()
+  // 2. Logo: idempotent in #119, wirft nie wegen eines Ladefehlers.
+  await bereiteLogoVor(marke)
+  // 3. Die Motive der BIBLIOTHEK: je Aktion mit bildRef das aufgelöste Asset
+  //    (findeBildAsset #135 - null bei 'fehlt' oder unbekannter Kennung);
+  //    über bereiteMotiveVor (#111) landet jedes ladbares Motiv unter seinem
+  //    ASSET-Schlüssel im Bestand. Nicht-ladbare werden dort als { zustand: 'fehlt' }
+  //    abgelegt - der PlatzhalterFall, nicht die Panne.
+  const eintraege: Array<{ schluessel: string; dateiname: string }> = []
+  for (const aktion of aktionen) {
+    if (aktion.bildRef === null) {
+      continue
+    }
+    const asset = findeBildAsset(aktion.bildRef, assets)
+    if (asset === null) {
+      continue
+    }
+    eintraege.push({ schluessel: aktion.bildRef, dateiname: asset.dateiname })
+  }
+  await bereiteMotiveVor(projektId, eintraege)
 }
 
 /** Die Vorschau: EIN Aufruf von zeichneSegment, sonst nichts. Synchron. */
 export function zeichneVorschau(aktion: Aktion, vorlage: Vorlage, marke: Marke): SegmentBild {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #140."
-  );
+  return zeichneSegment(aktion, vorlage, marke)
 }
 
 /** Hängt das Canvas in ein Anzeigeelement und skaliert es AUSSCHLIESSLICH per CSS.
  *  Verändert canvas.width/canvas.height NIEMALS. */
 export function haengeVorschauEin(ziel: HTMLElement, bild: SegmentBild): void {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #140."
-  );
+  einhaengen(ziel, bild)
+}
+
+function einhaengen(ziel: HTMLElement, bild: SegmentBild): void {
+  // Nicht verändern: width/height am Canvas bleiben die Nativ-Backing-Größen.
+  // Skaliert wird NUR an der Anzeige (CSS), mit dem Seitenverhältnis als
+  // Verhältnis-Schiene (aspectRatio), damit die zweitrangige Skalierung den
+  // eingebauten Seitenverhältnis (1920 x 1080 oder Band) NICHT 
+  bild.canvas.style.width = '100%'
+  bild.canvas.style.maxWidth = '100%'
+  bild.canvas.style.height = 'auto'
+  bild.canvas.style.aspectRatio = `${bild.breite} / ${bild.höhe}`
+  // ins Element einhaengen - kein zweiter Zeichnen-Aufruf.
+  if (bild.canvas.parentElement !== ziel) {
+    ziel.replaceChildren(bild.canvas)
+  }
 }
