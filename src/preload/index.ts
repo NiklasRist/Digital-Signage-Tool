@@ -16,7 +16,7 @@
 // (FA-17) und der FAT32-Hinweis degradierten alle zu "irgendwas ist schiefgelaufen".
 // Der Schaden entstuende an dieser einen Stelle und waere ueberall zu sehen.
 
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from "electron";
 
 /**
  * Ruft eine Main-Operation auf und liefert deren Antwort UNVERAENDERT zurueck.
@@ -59,7 +59,21 @@ function on(ereignis: string, handler: (daten: unknown) => void): () => void {
   };
 }
 
+/**
+ * Liefert den Pfad eines Datei-Objekts aus einem Drag-and-drop (#335, NA-02).
+ *
+ * Hintergrund: Electron kennt `file.path` nicht mehr - der verbindliche Weg ist
+ * `webUtils.getPathForFile`, und der muss im PRELOAD laufen (der Renderer sieht
+ * `electron` nicht, siehe tsconfig.renderer: "types": []). Es ist KEIN Kanal und
+ * KEINE Main-Operation: Das File-Objekt wird ausgewertet, es reist nichts zur
+ * Gegenseite. Der Pfad geht UNVERAENDERT zurueck; eine Pfadpruefung bleibt beim
+ * media-service im Main.
+ */
+function pfadFuerDatei(datei: File): string {
+  return webUtils.getPathForFile(datei);
+}
+
 // `exposeInMainWorld` ist der einzige Weg nach draussen. Mit contextIsolation (#3)
 // liegt das Ergebnis in einer eigenen Welt: Der Renderer sieht `window.api`, aber
 // weder `require` noch `ipcRenderer` noch das Modulsystem dieses Skripts.
-contextBridge.exposeInMainWorld("api", { invoke, on });
+contextBridge.exposeInMainWorld("api", { invoke, on, pfadFuerDatei });

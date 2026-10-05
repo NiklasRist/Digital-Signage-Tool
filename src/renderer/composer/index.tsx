@@ -47,9 +47,12 @@ import { CSS } from '@dnd-kit/utilities'
 // einen Platzhalter-Hinweis statt einer falschen Oberflche (Befund gemeldet).
 import { entferneElementAusListe } from './element-entfernen'
 import { berechneGesamtlaenge, frameDauer } from './gesamtlaenge'
-import { importiereMedien, type ImportBericht } from './medien-import'
+import { importiereMedien, baueImportBericht, type ImportBericht } from './medien-import'
 import { AssetGalerie } from './asset-galerie'
-// Mit Endung: der Pfad ohne Endung lst gegen die reine .ts-Naht auf, nicht gegen die .tsx (dieselbe Auflsung, die composer/index gegen index.tsx geschaltet hat).
+import { greifeDropAuf, reiheDropEin, type PfadHoler } from './medien-bibliothek'
+import { pfadFuerDatei } from '../ipc-client/pfad-fuer-datei'
+// Mit Endung: der Pfad ohne Endung löst gegen die reine .ts-Naht auf, nicht gegen
+// die .tsx (dieselbe Auflösung, die composer/index gegen index.tsx geschaltet hat).
 import { Wiedergabeliste } from './liste-ansicht.tsx'
 import { findeKaputteStellen } from './kaputt-erkennung'
 import { ElementBedienung } from './element-zeile.tsx'
@@ -132,6 +135,12 @@ export function ComposerInterna({
   // Der Bericht des Imports (#228): ohne ihn "passiert" der Import für den Nutzer
   // NICHTS - eingereiht wird zwar im Main, aber sichtbar war das nie (Befund 04.10.).
   const [importBericht, setzeImportBericht] = useState<ImportBericht | null>(null)
+  // #335 (NA-02, Variante A): KEIN zweiter Kanal - der Drop laeuft ueber denselben
+  // queue:reiheEin-Weg wie der Dialog (#228), der Main bleibt unangetastet. Die
+  // Pfade kommen ueber die Preload-Bruecke (webUtils, ipc-client/pfad-fuer-datei);
+  // die Whitelist wird hier VORGEFILTERT (DoD: kein Auftrag fuer nicht
+  // unterstuetzte Typen), die finale Pruefung bleibt im Main.
+  const [dropFehler, setzeDropFehler] = useState<string | null>(null)
 
   useEffect(() => projekt.aufGeaendert(setzeSicht), [projekt])
 
@@ -200,6 +209,12 @@ export function ComposerInterna({
         </button>
       </div>
 
+      {dropFehler !== null && (
+        <div data-testid="composer-drop-fehler" style={{ color: FEHLERFARBE, fontSize: 12 }}>
+          {dropFehler}
+        </div>
+      )}
+
       {importBericht !== null && (
         <div
           data-testid="composer-import-bericht"
@@ -244,7 +259,45 @@ export function ComposerInterna({
             </div>
           )}
 
-          <div data-testid="composer-galerie" style={{ flex: '1 1 auto', minHeight: 120, borderTop: '1px solid #444' }}>
+          <div
+            data-testid="composer-galerie"
+            style={{ flex: '1 1 auto', minHeight: 120, borderTop: '1px solid #444' }}
+            // #335: Die Drop-Zone der Medien-Bibliothek. preventDefault unterdrückt
+            // das Öffnen der Datei im Fenster; ohne Bearbeitung ist das ZIEHEN hier
+            // überhaupt erst ein Drop auf DIESEN Bereich.
+            onDragOver={(ereignis) => {
+              ereignis.preventDefault()
+            }}
+            onDrop={(ereignis) => {
+              ereignis.preventDefault()
+              if (inhalt === null) {
+                setzeDropFehler(
+                  'Es ist kein Projekt geladen – ein Import braucht ein geöffnetes Projekt.',
+                )
+                return
+              }
+              const dateien = Array.from(ereignis.dataTransfer.files)
+              const aufbereitung: ReturnType<typeof greifeDropAuf> = greifeDropAuf(
+                dateien,
+                pfadFuerDatei,
+              )
+              void reiheDropEin(inhalt.id, aufbereitung.einreihbar).then((einreihErgebnis) => {
+                // Abgewiesene Formate stehen unter demselben Code wie im Main
+                // (format_nicht_unterstuetzt) - EIN Berichtsweg, kein zweiter.
+                setzeImportBericht(
+                  baueImportBericht({
+                    ...einreihErgebnis,
+                    uebersprungen: [...einreihErgebnis.uebersprungen],
+                    abgelehnt: [
+                      ...einreihErgebnis.abgelehnt,
+                      ...aufbereitung.abgelehnt,
+                    ],
+                  }),
+                )
+                setzeDropFehler(null)
+              })
+            }}
+          >
             {inhalt === null ? <AssetGalerie projekt={null} /> : <AssetGalerie projekt={inhalt} />}
           </div>
         </>
