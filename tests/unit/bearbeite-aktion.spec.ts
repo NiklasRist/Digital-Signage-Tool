@@ -199,3 +199,34 @@ describe("bearbeiteAktion (#39)", () => {
     expect(aktion.titel).toBe("Winteraktion");
   });
 });
+
+describe("bearbeiteAktion (#319) - markeId", () => {
+  it("ein nicht mitgeschicktes markeId bleibt UNVERAENDERT", async () => {
+    const ergebnis = await bearbeiteAktion("a1", { titel: "X" });
+    expect(ergebnis.ok).toBe(true);
+    if (ergebnis.ok) {
+      expect(ergebnis.wert.markeId).toBe("marke-test");
+    }
+  });
+
+  it("ein mitgeschicktes, LEERES markeId wird mit ungueltige_eingabe abgewiesen und die Aktion bleibt", async () => {
+    const ergebnis = await bearbeiteAktion("a1", { markeId: "" });
+    expect(ergebnis.ok).toBe(false);
+    if (!ergebnis.ok) {
+      expect(ergebnis.fehler.code).toBe("ungueltige_eingabe");
+      expect(ergebnis.fehler.meldung).toContain("markeId");
+    }
+    const danach = offen.aktionen.find((a) => a.id === "a1");
+    expect(danach?.markeId).toBe("marke-test");
+  });
+
+  it("ein gueltiges markeId aendert NUR dieses Feld", async () => {
+    const ergebnis = await bearbeiteAktion("a1", { markeId: "m2" });
+    expect(ergebnis.ok).toBe(true);
+    if (ergebnis.ok) {
+      expect(ergebnis.wert.markeId).toBe("m2");
+      expect(ergebnis.wert.titel).toBe("Sommeraktion");
+      expect(ergebnis.wert.akzentfarbe).toBe("#FF4040");
+    }
+  });
+});

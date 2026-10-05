@@ -251,7 +251,7 @@ describe('die Schranken (ENTSCHIEDEN 4/5)', () => {
     const dieVorlage = baueVorlage()
     const dieMarke = baueMarke()
     const { wurzel, fertig } = rendere({ aktion: dieAktion, vorlage: dieVorlage, marke: dieMarke })
-    const altesCanvas = doppel.bild as { canvas: HTMLCanvasElement; breite: number; höhe: number }
+    const altesCanvas = doppel.bild as unknown as { canvas: HTMLCanvasElement; breite: number; höhe: number }
     expect(document.body.querySelectorAll('canvas')).toHaveLength(1)
     // Neuer Aufruf: doppel.bild muss NEU erzeugt werden - dazu zurucksetzen.
     doppel.bild = null
@@ -259,7 +259,7 @@ describe('die Schranken (ENTSCHIEDEN 4/5)', () => {
     act(() => {
       wurzel.render(createElement(Segment, { aktion: neue, vorlage: dieVorlage, marke: dieMarke }) as ReactElement)
     })
-    const neuesBild = doppel.bild as { canvas: HTMLCanvasElement; breite: number; höhe: number }
+    const neuesBild = doppel.bild as unknown as { canvas: HTMLCanvasElement; breite: number; höhe: number }
     expect(neuesBild.canvas).not.toBe(altesCanvas.canvas)
     expect(document.body.querySelectorAll('canvas')).toHaveLength(1)
     expect(document.body.querySelector('canvas')).toBe(neuesBild.canvas)

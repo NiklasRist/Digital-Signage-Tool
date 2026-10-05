@@ -46,8 +46,11 @@ describe('aktion-bearbeiten – Verbote in der Quelldatei (Grep)', () => {
     expect(CODEZEILEN).not.toContain('keine_rolle')
   })
 
-  it('enthaelt den Bezeichner markeId nicht (Naht zu #319)', () => {
-    expect(CODEZEILEN).not.toContain('markeId')
+  it('NACHZUG M8 (#320/#319-Signatur): der Bezeichner markeId TRAEGT im Entwurf', () => {
+    // Vorher (bis #136/#318, Stand auf main ohne M8-Kette): Negative-Grep
+    // 'markeId' duerfte nicht auftreten (Naht zu #319). Mit #319-Form liefert
+    // leererEntwurf(vorlagenId, markeId, akzentfarbe) den verbindlichen Stand.
+    expect(CODEZEILEN).toContain('markeId')
   })
 })
 
@@ -70,6 +73,7 @@ import {
   legeAktionAn,
   pruefeEntwurf,
   speichereAktion,
+  type AktionsEntwurf,
 } from '../../src/renderer/action-editor/aktion-bearbeiten'
 
 // ---------------- Bausteine ----------------
@@ -84,6 +88,7 @@ function vollerEntwurf(): Aktion {
     cta: null,
     standardDauer: 10,
     vorlagenId: 'vollbild',
+    markeId: 'm1',
     akzentfarbe: '#FF4040',
   }
 }
@@ -151,7 +156,7 @@ describe('pruefeEntwurf – nur vorhandene Felder', () => {
 
 describe('leererEntwurf', () => {
   it('setzt titel leer, optionale Felder null und standardDauer auf die Konstante', () => {
-    const entwurf = leererEntwurf('vollbild', '#FF4040')
+    const entwurf = leererEntwurf('vollbild', 'm1', '#FF4040')
     expect(entwurf).toEqual({
       titel: '',
       beschreibung: null,
@@ -160,12 +165,13 @@ describe('leererEntwurf', () => {
       cta: null,
       standardDauer: STANDARD_ANZEIGEDAUER_SEKUNDEN,
       vorlagenId: 'vollbild',
+      markeId: 'm1',
       akzentfarbe: '#FF4040',
     })
   })
 
   it('nimmt akzentfarbe null unverändert (Parameter ist string | null)', () => {
-    expect(leererEntwurf('v1', null).akzentfarbe).toBeNull()
+    expect(leererEntwurf('v1', 'm1', null).akzentfarbe).toBeNull()
   })
 })
 
@@ -297,5 +303,49 @@ describe('speichereAktion', () => {
     const antwort = await speichereAktion('', { cta: 'Kommt' })
     expect(antwort.ok).toBe(false)
     expect(doppel.aufrufe).toHaveLength(0)
+  })
+})
+
+describe('pruefeEntwurf (#319) - markeId', () => {
+  it('ein vorhandenes, leeres markeId ist ein Befund; fehlendes ist keiner', () => {
+    expect(pruefeEntwurf({ markeId: '' })).toEqual([{ feld: 'markeId', grund: 'leer' }])
+    expect(pruefeEntwurf({ markeId: '   ' })).toEqual([{ feld: 'markeId', grund: 'leer' }])
+    // unveraendert aus #136: das fehlende Feld erzeugt KEINEN Befund.
+    expect(pruefeEntwurf({})).toEqual([])
+  })
+
+  it('die Akzentfarb-Zeilen sind unveraendert (Naht zu #318)', () => {
+    expect(CODEZEILEN).toContain('kein_hex')
+    expect(CODEZEILEN).not.toContain('keine_rolle')
+    expect(CODEZEILEN).not.toContain('istAkzentRolle')
+  })
+})
+
+describe('legeAktionAn (#319) - vier Pflichtfelder', () => {
+  it('ein Entwurf, in dem markeId ganz fehlt, wird NICHT gesendet', async () => {
+    doppel.aufrufe = []
+    doppel.antwort = { ok: true, wert: AKTION_OK }
+    const fehlen = { ...vollerEntwurf() } as unknown as Record<string, unknown>
+    delete fehlen.markeId
+    const antwort = await legeAktionAn(fehlen as unknown as AktionsEntwurf)
+    expect(antwort.ok).toBe(false)
+    if (!antwort.ok) {
+      expect(antwort.fehler.code).toBe('ungueltige_eingabe')
+      expect(antwort.fehler.meldung).toContain('markeId')
+    }
+    expect(doppel.aufrufe).toHaveLength(0)
+  })
+})
+
+describe('speichereAktion (#319) - die Nutzlast eines Marken-Wechsels', () => {
+  it('speichereAktion(id, { markeId: m2 }) sendet GENAU { id, aktionsdaten: { markeId } }', async () => {
+    doppel.aufrufe = []
+    doppel.antwort = { ok: true, wert: AKTION_OK }
+    await speichereAktion('a1', { markeId: 'm2' })
+    expect(doppel.aufrufe).toHaveLength(1)
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as { id: string; aktionsdaten: Record<string, unknown> }
+    expect(nutzlast.id).toBe('a1')
+    expect(Object.keys(nutzlast.aktionsdaten)).toEqual(['markeId'])
+    expect(nutzlast.aktionsdaten.markeId).toBe('m2')
   })
 })

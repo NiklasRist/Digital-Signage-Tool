@@ -166,6 +166,22 @@ export async function bearbeiteAktion(
     // kein neuer (`ungueltige_eingabe`, schon in der Tabelle), und der action-editor kennt
     // den Befund bereits als Feldmeldung (`{ feld: 'vorlagenId', grund: 'leer' }`, #136), er
     // ist auf die Abweisung also vorbereitet. Entschieden und GEMELDET, s. Bericht/STOPP.
+    // NEU mit #319 (TK 9.8.2/FA-23): ein MITGESCHICKTES `markeId` unterliegt derselben
+    // FORM-Pruefung wie `vorlagenId` - mitgeschickt und nicht-leerer String, sonst
+    // `ungueltige_eingabe` ohne jede Wirkung. NICHT mitgeschickt: der bestehende
+    // Wert bleibt unverändert. Es wird NICHT im Marken-Bestand nachgeschlagen
+    // (ENTSCHIEDEN 5) - dieselbe Architekturfrage wie bei `vorlagenId`, und sie
+    // wird fuer beide Felder gleich beantwortet, oder gar nicht.
+    let neueMarkeId: string | null = null
+    if (aktionsdaten.markeId !== undefined) {
+      const roh = aktionsdaten.markeId
+      if (typeof roh !== 'string' || roh.trim().length === 0) {
+        return fehler('ungueltige_eingabe', 'Eine Aktion braucht eine Marke (markeId; FA-23).')
+      }
+      // UNVERAENDERT uebernommen, nicht getrimmt - dieselbe Begruendung wie bei
+      // `vorlagenId`: Kennung, nicht Anzeigetext.
+      neueMarkeId = roh
+    }
     let neueVorlagenId: string | null = null
     if (aktionsdaten.vorlagenId !== undefined) {
       const roh = aktionsdaten.vorlagenId
@@ -212,6 +228,9 @@ export async function bearbeiteAktion(
     }
     if (neueVorlagenId !== null) {
       aktion.vorlagenId = neueVorlagenId
+    }
+    if (neueMarkeId !== null) {
+      aktion.markeId = neueMarkeId
     }
     if (aktionsdaten.beschreibung !== undefined) {
       aktion.beschreibung = aktionsdaten.beschreibung

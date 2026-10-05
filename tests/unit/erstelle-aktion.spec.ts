@@ -166,3 +166,41 @@ describe("erstelleAktion (#38)", () => {
     expect(offen.aktionen.length).toBe(1);
   });
 });
+
+describe("erstelleAktion (#319) - markeId als Pflicht", () => {
+  it("leert markeId wird mit ungueltige_eingabe abgewiesen, ohne Project.aktionen zu veraendern", async () => {
+    const vorher = offen.aktionen.map((a) => a.id);
+    const antwort = await erstelleAktion(entwurf({ markeId: "" }));
+    expect(antwort.ok).toBe(false);
+    if (!antwort.ok) {
+      expect(antwort.fehler.code).toBe("ungueltige_eingabe");
+      expect(antwort.fehler.meldung).toContain("markeId");
+    }
+    expect(offen.aktionen.map((a) => a.id)).toEqual(vorher);
+  });
+
+  it("nur Leerzeichen zaeht als leer", async () => {
+    const antwort = await erstelleAktion(entwurf({ markeId: "   " }));
+    expect(antwort.ok).toBe(false);
+  });
+
+  it("fehlt das Feld ganz (undefined), greift dieselbe Abweisung - KEIN Nachtragen aus standardMarkeId", async () => {
+    const daten = entwurf() as unknown as Record<string, unknown>;
+    delete daten.markeId;
+    const antwort = await erstelleAktion(daten as never);
+    expect(antwort.ok).toBe(false);
+    if (!antwort.ok) {
+      expect(antwort.fehler.meldung).toContain("markeId");
+    }
+  });
+
+  it("eine Kennung, die zu keiner Marke gehoert, wird angenommen (ENTSCHIEDEN 5, keine Existenzpruefung)", async () => {
+    const antwort = await erstelleAktion(entwurf({ markeId: "existiert-nicht" }));
+    expect(antwort.ok).toBe(true);
+    if (antwort.ok) {
+      expect(antwort.wert.markeId).toBe("existiert-nicht");
+    }
+    const drin = offen.aktionen.filter((a) => a.markeId === "existiert-nicht");
+    expect(drin.length).toBeGreaterThan(0);
+  });
+});

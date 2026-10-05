@@ -97,6 +97,16 @@ export async function erstelleAktion(
   if (typeof vorlagenId !== 'string' || vorlagenId.trim().length === 0) {
     return ungueltig('Eine Aktion braucht eine Vorlage (vorlagenId).')
   }
+  // NEU mit #319 (TK 9.8.2/FA-23): `markeId` ist Pflicht. Geprueft wird die FORM:
+  // nicht leer und nicht nur Leerzeichen. KEINE Vorbelegung hier - die Vorbelegung
+  // mit Project.standardMarkeId geschieht im RENDERER (leererEntwurf, #319
+  // ENTSCHIEDEN 3); jeder zweiter Befueller fuer denselben Weg waere die
+  // Abweichung, die #319 sperrt. Und ein LEERES Feld waere die teure Folge: Die
+  // Loesch-Sperre (TK 9.15.1) findet nichts und somit eine benutzte Marke frei.
+  const markeId = aktionsdaten.markeId
+  if (typeof markeId !== 'string' || markeId.trim().length === 0) {
+    return ungueltig('Eine Aktion braucht eine Marke (markeId; FA-23).')
+  }
 
   // GEPRUEFT WIRD NUR "gesetzt und ein nicht leerer String", NICHT ob es die Vorlage gibt.
   // Der STOPP-Block des Issues legt genau diese Vermutung nahe und verlangt ihre
@@ -188,10 +198,13 @@ export async function erstelleAktion(
       standardDauer: dauerOderNull(aktionsdaten.standardDauer),
       vorlagenId,
 
-      // NEU mit #320 (TK 9.8.2): Pflichtfeld. Ueber IPC kann es als `undefined` ankommen
-      // (der Setzweg liegt bei #319) - dann greift die verbindliche Vorbelegung aus dem
-      // Projekt ("vorbelegt mit Project.standardMarkeId").
-      markeId: aktionsdaten.markeId ?? projekt.standardMarkeId,
+      // NEU mit #320 (TK 9.8.2): Pflichtfeld. Ueber IPC kann es als `undefined` ankommen -
+      // die Pflichtpruefung oben hat es dann schon abgewiesen, TS kennt es daher nur als
+      // String. Die Kennung reist
+      // UNVERAENDERT (Gueltest nur der Formtest, nicht eine Anpassung). Die fruehere
+      // Main-Vorbelegung aus `Project.standardMarkeId` (aus der M8-Kette) ist mit #319
+      // ENTFALLEN und im Issue als Abweichung GEMELDET (Nachtrag folgt).
+      markeId,
 
       // `null` = "keine eigene Farbe, es gilt der Markenwert" (#14). Der Wert selbst wird
       // NICHT geprueft - und zwar bewusst NICHT, weil ueber seine Form gerade Uneinigkeit

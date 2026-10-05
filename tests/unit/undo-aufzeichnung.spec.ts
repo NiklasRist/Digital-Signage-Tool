@@ -8,7 +8,8 @@ import type { Project, Listenelement, Bearbeitungsstand } from '../../src/shared
 import type { Aktion } from '../../src/shared/contracts/aktion'
 import type { Asset } from '../../src/shared/contracts/asset'
 import type { Ergebnis } from '../../src/shared/contracts/ergebnis'
-import type { ProjektZugang, Projektsicht } from '../../src/renderer/app-shell/sichten'
+import type { ProjektZugang } from '../../src/renderer/app-shell/sichten'
+import type { Projektsicht } from '../../src/renderer/composer/projektzustand'
 import type { ProjektStand } from '../../src/renderer/app-shell/undo-historien'
 
 const doppel = vi.hoisted(() => ({

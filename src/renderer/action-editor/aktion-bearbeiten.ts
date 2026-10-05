@@ -51,6 +51,7 @@ export type AktionsEntwurf = Omit<Aktion, 'id'>
 export type EntwurfBefund =
   | { feld: 'titel'; grund: 'leer' }
   | { feld: 'vorlagenId'; grund: 'leer' }
+  | { feld: 'markeId'; grund: 'leer' }   // NEU mit #319 (FA-23)
   | { feld: 'standardDauer'; grund: 'ausserhalb_bereich' }
   | { feld: 'akzentfarbe'; grund: 'kein_hex' }
 
@@ -71,6 +72,16 @@ export function pruefeEntwurf(entwurf: Partial<AktionsEntwurf>): EntwurfBefund[]
     const vorlagenId = entwurf.vorlagenId
     if (typeof vorlagenId !== 'string' || vorlagenId.trim().length === 0) {
       befunde.push({ feld: 'vorlagenId', grund: 'leer' })
+    }
+  }
+
+  // NEU mit #319 (FA-23): ein VORHANDENES, leeres markeId ist ein Befund. Ein
+  // FEHLENDES ist weiterhin keiner - die Vollstaendigkeit prueft allein
+  // legeAktionAn (unveraendert aus #136).
+  if ('markeId' in entwurf) {
+    const markeId = entwurf.markeId
+    if (typeof markeId !== 'string' || markeId.trim().length === 0) {
+      befunde.push({ feld: 'markeId', grund: 'leer' })
     }
   }
 
@@ -101,8 +112,14 @@ function leseAkzentfarbeAlsText(entwurf: Partial<AktionsEntwurf>): string {
   return typeof farbe === 'string' ? farbe : ''
 }
 
-/** Ein leerer Entwurf mit den Vorbelegungen für „Neue Aktion". */
-export function leererEntwurf(vorlagenId: string, akzentfarbe: string | null): AktionsEntwurf {
+/** Ein leerer Entwurf mit den Vorbelegungen für „Neue Aktion". Die Dritte Argumentform
+ *  `leererEntwurf(vorlagenId, markeId, akzentfarbe)` ist bereits im Nachzug des
+ *  #319-Kontexts (#320): `markeId` wird mit `Project.standardMarkeId` vorbelegt. */
+export function leererEntwurf(
+  vorlagenId: string,
+  markeId: string,
+  akzentfarbe: string | null,
+): AktionsEntwurf {
   return {
     titel: '',
     beschreibung: null,
@@ -111,6 +128,7 @@ export function leererEntwurf(vorlagenId: string, akzentfarbe: string | null): A
     cta: null,
     standardDauer: STANDARD_ANZEIGEDAUER_SEKUNDEN,
     vorlagenId,
+    markeId,
     akzentfarbe,
   }
 }
@@ -120,8 +138,10 @@ export function leererEntwurf(vorlagenId: string, akzentfarbe: string | null): A
 export async function legeAktionAn(entwurf: AktionsEntwurf): Promise<Ergebnis<Aktion>> {
   // SCHRITT 1 - Vollstaendigkeit: Bei einer neuen Aktion gibt es kein "bleibt
   // unverändert". Der Typ sagt vollstaendig, die Laufzeit sagt vielleicht nicht -
-  // Formulareingaben ueberleben jede Typannahme nicht.
-  for (const pflichtfeld of ['titel', 'vorlagenId', 'akzentfarbe'] as const) {
+  // Formulareingaben ueberleben jede Typannahme nicht. Mit #319 vier Pflichtfelder:
+  // titel, vorlagenId, markeId, akzentfarbe. `akzentfarbe: null` ist vorhanden und
+  // gilt unveraendert aus #318.
+  for (const pflichtfeld of ['titel', 'vorlagenId', 'markeId', 'akzentfarbe'] as const) {
     if (entwurf[pflichtfeld] === undefined) {
       return {
         ok: false,
