@@ -230,12 +230,11 @@ describe("Marke als identifizierbarer Datensatz (#320, TK 9.11.2)", () => {
     expect(zeilen.join("\n")).not.toMatch(/\bconst\s|\bfunction\s|\bclass\s/);
   });
 
-  it("fuehrt die Nutzungs-Typen von #275 und MarkenEintrag von #277 NICHT selbst", () => {
+  // ANPASSUNG 06.10.2026 (Issue #275): Die vier Nutzungs-Typen von #275 gehoeren
+  // ausdruecklich in DIESE Datei (Verbot 'keine dritte Datei', DoD von #275) - nur der
+  // MarkenEintrag von #277 und die Speicherform 'Partial' bleiben ausgeschlossen.
+  it("fuehrt MarkenEintrag von #277 NICHT selbst - die Nutzungs-Typen von #275 gehoeren HIEHER", () => {
     for (const verboten of [
-      "Markennutzung",
-      "MarkenReferenz",
-      "AbgeleiteteMarkenReferenz",
-      "StandardmarkenReferenz",
       "MarkenEintrag",
       "Partial",
     ]) {
