@@ -1,31 +1,18 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// GENERIERT aus dem Signaturblock von Issue #218.
-// [preview-player] Split-Simulation – Video oben, Werbeband darunter, Geometrie aus der geteilten Rechnung
+// Issue #218 - split-stile.ts: die reine Uebersetzung der Bandgeometrie in Rechtecke.
 //
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
+// Diese Datei RECHNET NICHTS: Alle Zahlen kommen aus berechneBandGeometrie (#239,
+// DIE EINZIGE Quelle der Geometrie, TK 9.9.2: „mit derselben Funktion"). Die
+// einzigen eigenen Ausdruecke sind Felduebernahmen und GENAU EINE Subtraktion -
+// die Rueckgewinnung der Bandhoehe aus bandY (ENTSCHIEDEN 2), weil BandGeometrie
+// die Hoehe nicht als eigenes Feld fuehrt. Ein `1080 - bandHoehe` waere eine
+// zweite Wahrheit und wuerde bei einer Aenderung der geteilten Rechnung stehenbleiben.
 //
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: b6aa167a9657c627
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// Die Parameter und Importe dieser Datei SIND der Vertrag; der Rumpf wirft aber
-// nur, benutzt sie also nicht (@typescript-eslint/no-unused-vars). Die Zeile
-// gehoert zum Geruest, nicht zum fertigen Code. Wer den Rumpf fuellt und sie
-// stehen laesst, macht die Regel in DIESER Datei dauerhaft blind - unauffaellig,
-// weil dann nichts mehr rot ist.
-//
-// Gesetzt hat sie kein Mensch, sondern tools/geruest.py: Es fragt nach dem
-// Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
-// versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
+// Keine Pruefung, kein Fehlercode, keine Ergebnis-Huelle: „der preview-player
+// pruift nichts und meldet keine Fehlercodes" (TK 9.9.2). Das Urteil ueber eine
+// unbrauchbare Hoehe faellt der render-service (ungueltiges_element).
 
 import { berechneBandGeometrie, type BandGeometrie } from '../../shared/band-geometrie'
+import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 
 /** Ein Rechteck in ABSOLUTEN Pixeln des 1920×1080-Rasters der Buehne (#212). */
 export interface Rechteck {
@@ -55,7 +42,28 @@ export interface SplitStile {
  * Total: wirft nie, traegt KEINE Ergebnis-Huelle und KEINEN Fehlercode.
  */
 export function baueSplitStile(bandHöhe: number): SplitStile {
-  throw new Error(
-    "Noch nicht umgesetzt - Rumpf gehoert zu Issue #218."
-  );
+  const geometrie: BandGeometrie = berechneBandGeometrie(bandHöhe)
+  return {
+    videoRahmen: {
+      x: geometrie.videoVersatzX,
+      y: geometrie.videoVersatzY,
+      breite: geometrie.videoBreite,
+      höhe: geometrie.videoHöhe,
+    },
+    videoBereich: {
+      x: 0,
+      y: 0,
+      breite: geometrie.videoBereichBreite,
+      höhe: geometrie.videoBereichHöhe,
+    },
+    band: {
+      x: 0,
+      y: geometrie.bandY,
+      breite: geometrie.videoBereichBreite,
+      // ENTSCHIEDEN 2: die Bandhoehe wird aus dem ERGEBNIS der geteilten Rechnung
+      // zurueckgewonnen, nicht aus dem Parameter neu hergeleitet.
+      höhe: RENDER_PROFILE.hoehe - geometrie.bandY,
+    },
+    restflaecheBreite: geometrie.videoVersatzX,
+  }
 }
