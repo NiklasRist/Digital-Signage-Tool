@@ -8,8 +8,8 @@
 // ENTSCHIEDEN 1: Die fuenf Modul-Wurzeln kommen als PARAMETER, nicht per Import
 // (E1 des Meilensteins; als Pflichtfelder eines Typs bleibt kein fehlendes
 // Glied unentdeckt - es kompiliert nicht). Deshalb stehen hier nur Typen, keine
-// Wert-Importe aus fremden Modulen - die echten Wurzeln liegen in
-// inhalte-vorlauf.tsx (Uebergangs-Naht bis #260/#262, im Issue-Nachtrag benannt).
+// Wert-Importe aus fremden Modulen - die echten Wurzeln werden von App.tsx
+// (#262) als Werte importiert und hereingegeben (Naht-Nachtrag erledigt).
 //
 // ENTSCHIEDEN 2: Zusammenstellen ordnet ZWEI Module nebeneinander an - das ist
 // Anordnung, kein Rendern eigener Inhalte (die Zusage aus TK 9.14.2 bleibt
@@ -287,10 +287,4 @@ export function baueReiterInhalte(
   }
 }
 
-// ----------------------------------------------------------------------------
-// Die Mount-Naht: Bis die app-shell-Verdrahtung (#260/#262) angetreten ist,
-// haengt App.tsx dieses Baegoring ein; alle Gelenk-Teile liegen in
-// inhalte-vorlauf.tsx (Uebergangs-Datei, dort dokumentiert).
-// ----------------------------------------------------------------------------
-export { inhalte } from './inhalte-vorlauf'
 export { verteileZugaenge, type Reiterzugaenge } from './inhalte-zugaenge'
