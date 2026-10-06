@@ -1,183 +1,296 @@
-// GENERIERT aus dem Signaturblock von Issue #244.
-// [app-shell] Die Bausteine der vier Reiter anordnen und verdrahten
+// Issue #244 - inhalte.tsx: die Belegung der vier Reiter und die Verteilung der
+// Zugaenge. TK 9.14.1 Quelle der Wahrheit:
+//   Zusammenstellen = composer [P3] + preview-player [P5]
+//   Aktionen        = action-editor [P2] (+ grosse Live-Vorschau HINTER der Wurzel)
+//   Vorlagen        = vorlagen-editor
+//   Projekte        = projekt-verwaltung (TK 9.14.3)
 //
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue.
+// ENTSCHIEDEN 1: Die fuenf Modul-Wurzeln kommen als PARAMETER, nicht per Import
+// (E1 des Meilensteins; als Pflichtfelder eines Typs bleibt kein fehlendes
+// Glied unentdeckt - es kompiliert nicht). Deshalb stehen hier nur Typen, keine
+// Wert-Importe aus fremden Modulen - die echten Wurzeln liegen in
+// inhalte-vorlauf.tsx (Uebergangs-Naht bis #260/#262, im Issue-Nachtrag benannt).
+//
+// ENTSCHIEDEN 2: Zusammenstellen ordnet ZWEI Module nebeneinander an - das ist
+// Anordnung, kein Rendern eigener Inhalte (die Zusage aus TK 9.14.2 bleibt
+// unangetastet). Bedienentscheidung (23.08., User): Liste LINKS (schmal),
+// Vorschau RECHTS (gross). Die grosse Live-Vorschau des Reiters Aktionen
+// entsteht im action-editor (template-canvas) und sitzt hinter dessen Wurzel -
+// hier stehen je Reiter GENAU die Wurzeln aus TK 9.14.1.
+//
+// ENTSCHIEDEN 3/5/6: composer und action-editor bekommen den UMHUELLTEN Zugang
+// (#243), projekt-verwaltung den ROHEN, die preview-player-Wurzel bekommt
+// WERTE (projekt, voraussetzungen), gelesen ueber projektRoh/zeichnen, und der
+// vorlagen-editor bekommt KEINEN Projektzugang (Vorlagen sind app-weit,
+// TK 9.14.2).
+//
+// ENTSCHIEDEN 7: Erst hole(), dann aufGeaendert(); die Abmelde-Funktion wird
+// beim Abbau gerufen. ENTSCHIEDEN 8: sichtbar wird UNVERAENDERT
+// durchgereicht; es wird NICHTS abgebaut (#195 haelt besuchte Reiter
+// montiert). ENTSCHIEDEN 9: keine Warteschlangen-Leiste, kein Speicherhinweis
+// und keine Meldungsflaeche hier (alle drei sind Schlitze des Rahmens #195).
+// ENTSCHIEDEN 10: kein Reiterwechsel in dieser Datei - aufProjekteWechseln
+// und wechsleZuZusammenstellen kommen aus der Reiterumgebung. ENTSCHIEDEN 11:
+// wechsleZuZusammenstellen heisst GENAU so wie in ProjektVerwaltungWurzelProps
+// (#252) und wird unbenannt durchgereicht. ENTSCHIEDEN 12: leereProjektHistorie
+// kommt aus #234 (dasselbe Modul, IMPORTIERT - nicht durchgereicht); hier
+// wird sie NIE gerufen, sie wird nur gelegt.
 
-import { useEffect, useState, type JSX } from 'react'
-
-import { Rahmen } from './rahmen'
+import { useEffect, useState, type CSSProperties, type JSX } from 'react'
+import type { Project } from '../../shared/contracts/project'
+import type { Marke } from '../../shared/contracts/marke'
+import type { Zeichenvoraussetzungen } from '../composer/zeichen-vorbereitung'
+import type { ComposerVerdrahtung } from '../composer/index'
 import type { ReiterId } from './reiter'
-import type { ReiterInhalt, RahmenEigenschaften } from './rahmen'
-import { baueSichten, holeSichten, type Sichten } from './sichten'
-import { starteAuftragsNachlauf } from './auftrags-nachlauf'
-import { abonniere } from '../ipc-client/ereignisse'
-import { KANAELE } from '../../shared/contracts/kanaele'
-import { ComposerWurzel, type ComposerVerdrahtung, type ComposerWurzelProps } from '../composer/index'
-import { starteMedienImport } from './medien-import-uebergabe'
-import { wechsleReiter } from './reiter'
-import { ProjektVerwaltungWurzel } from '../projekt-verwaltung'
-import { VorlagenEditorWurzel } from '../vorlagen-editor'
-import { ActionEditorWurzel } from '../action-editor'
-import { umhuelleFuerBearbeitung } from './undo-aufzeichnung'
-import { sitzungshalter } from './undo-aufzeichnung-vorlage'
-import { WarteschlangenLeiste } from '../shell/WarteschlangenLeiste'
+import type { ReiterInhalt } from './rahmen'
+import type { ProjektZugang, VorlagenZugang, ZeichenZugang } from './sichten'
+import type { Reiterzugaenge } from './inhalte-zugaenge'
+import type { Sitzungshalter } from './undo-aufzeichnung-vorlage'
+import { Leerzustand } from './leerzustand'
+import { zeigtLeerzustand } from './leerzustand-regel'
+import { leereProjektHistorie } from './undo-historien'
+
+// ----------------------------------------------------------------------------
+// DIE FUENF PROP-TYPEN - zeichengleich zu den definierenden Quellen.
+// ----------------------------------------------------------------------------
+
+/** Eigenschaften der Wurzel-Komponente des `composer` (Reiter Zusammenstellen, linke Haelfte).
+ *  ZEICHENGLEICH zu `ComposerWurzelProps` in #261 (`src/renderer/composer/index.tsx`). */
+export interface ComposerWurzelProps {
+  sichtbar: boolean
+  /** UMHUELLTER Projektzugang (#243). */
+  projekt: ProjektZugang
+  zeichnen: ZeichenZugang
+  vorlagen: VorlagenZugang
+  marke: Marke
+  /** ZUSAETZLICH gegenueber der ersten Fassung dieses Issues – ohne dieses Buendel ist der Reiter
+   *  unvollstaendig: kein Medien-Import (FA-03) und kein Anschluss an die Reparatur-Fuehrung
+   *  (FA-19). Wird UNVERAENDERT aus `umgebung.composerVerdrahtung` durchgereicht. */
+  verdrahtung: ComposerVerdrahtung
+}
+
+/** Eigenschaften der Wurzel-Komponente des `action-editor` (Reiter Aktionen). */
+export interface ActionEditorWurzelProps {
+  sichtbar: boolean
+  /** UMHUELLTER Projektzugang (#243). */
+  projekt: ProjektZugang
+  zeichnen: ZeichenZugang
+  vorlagen: VorlagenZugang
+  marke: Marke
+  /** Die hervorzuhebende Aktion aus der Reparatur-Fuehrung (#201); null = keine. */
+  hervorgehobeneAktionId: string | null
+}
+
+/** Eigenschaften der Wurzel-Komponente des `vorlagen-editor` (Reiter Vorlagen). */
+export interface VorlagenEditorWurzelProps {
+  sichtbar: boolean
+  vorlagen: VorlagenZugang
+  zeichnen: ZeichenZugang
+  marke: Marke
+  /** Der Sitzungshalter der Shell (#245) – er haelt die Arbeitskopie ueber den Reiterwechsel
+   *  hinweg und loest die Undo-Schnappschuesse aus. KEIN Projektzugang (ENTSCHIEDEN 6). */
+  sitzung: Sitzungshalter
+}
+
+/** Eigenschaften der Wurzel-Komponente der `projekt-verwaltung` (Reiter Projekte).
+ *  ZEICHENGLEICH zu `ProjektVerwaltungWurzelProps` in #252
+ *  (`src/renderer/projekt-verwaltung/index.tsx`). */
+export interface ProjektVerwaltungWurzelProps {
+  sichtbar: boolean
+  /** ROHER Projektzugang (#243) – ein Projektwechsel ist kein Bearbeitungsschritt. */
+  projekt: ProjektZugang
+  /** ZUSAETZLICH gegenueber der ersten Fassung dieses Issues – ohne diese drei ist der
+   *  Projektwechsel unvollstaendig: `ProjektWechselWirkungen` (#224) und `LoeschWirkungen`
+   *  (#226) sind ueber `ProjektZugang` allein NICHT bildbar. */
+  zeichnen: ZeichenZugang
+  leereProjektHistorie: () => void
+  wechsleZuZusammenstellen: () => void
+}
+
+/** Eigenschaften der Vorschau – ZEICHENGLEICH aus #242 uebernommen. */
+export interface VorschauWurzelProps {
+  projekt: Project | null
+  voraussetzungen: Zeichenvoraussetzungen | null
+  sichtbar: boolean
+}
 
 /**
- * Die EINE Stelle, die ZUSEHEND die Bausteine zusammensetzt. ReiterBAU-Platzhalter der
- * übrigen drei Reiter bleiben hier ausdrücklich SEE (M7-Thema):
- *   zusammenstellen -> composer [P3] (M7 #261)
- *   aktionen        -> action-editor [P2] + Live-Vorschau (M5/M7)
- *   vorlagen        -> vorlagen-editor (M7)
- *   projekte        -> projekt-verwaltung (M7, TK 9.14.3)
+ * Die vier Modul-Wurzeln. Sie werden als PARAMETER uebergeben, NICHT importiert (ENTSCHIEDEN 1).
+ * Das Pflichtfeld je Wurzel erzwingt, dass keine vergessen werden kann.
  */
-export type KomponentenZusammensetzer = () => Record<ReiterId, ReiterInhalt>
-
-export function erzeugeVerdrahtung(): ComposerVerdrahtung {
-  return {
-    // Der Medien-Dialog samt Import-Obersetze (#204). Reparatur bleibt im ersten Mountbe
-    // ungebraucht: null = nie gestartet (der'=> #201-Halter krank Anbindung im M7).
-    starteMedienImport,
-    reparatur: null,
-    meldeReparaturStand: (stand) => {
-      console.warn('[inhalte] meldeReparaturStand: #201 (Halter) ist noch nicht angebunden.', stand)
-    },
-    meldeUebergabe: (uebergabe) => {
-      console.warn('[inhalte] meldeUebergabe: #201 (Halter) ist noch nicht angebunden.', uebergabe)
-    },
-  }
+export interface ModulWurzeln {
+  composer: (eigenschaften: ComposerWurzelProps) => JSX.Element
+  vorschau: (eigenschaften: VorschauWurzelProps) => JSX.Element
+  actionEditor: (eigenschaften: ActionEditorWurzelProps) => JSX.Element
+  vorlagenEditor: (eigenschaften: VorlagenEditorWurzelProps) => JSX.Element
+  projektVerwaltung: (eigenschaften: ProjektVerwaltungWurzelProps) => JSX.Element
 }
 
-/** Die Umgebungs-Hülle um ComposerWurzel (verbindlich, siehe composer/index.tsx #261). */
-export function baueWurzeln(umgebung: Sichten): Record<ReiterId, ReiterInhalt> {
-  const verdrahtung = erzeugeVerdrahtung()
-  const eigenschaften: ComposerWurzelProps = {
-    sichtbar: true,
-    projekt: umgebung.projekt,
-    zeichnen: umgebung.zeichnen,
-    vorlagen: umgebung.vorlagen,
-    marke: umgebung.marke,
-    verdrahtung,
-  }
-
-  return {
-    // Ausgewogen: Der einzige echte Mount des ersten M7-Mount-Laufs.
-    zusammenstellen: (eigenschaften2) => <ComposerWurzel {...eigenschaften} sichtbar={eigenschaften2.sichtbar} />,
-    aktionen: (eigenschaften2) => (
-      <ActionEditorWurzel
-        sichtbar={eigenschaften2.sichtbar}
-        projekt={umhuelleFuerBearbeitung(umgebung.projekt)}
-        zeichnen={umgebung.zeichnen}
-        vorlagen={umgebung.vorlagen}
-        marke={umgebung.marke}
-        hervorgehobeneAktionId={null}
-      />
-    ),
-    vorlagen: (eigenschaften2) => (
-      <VorlagenEditorWurzel
-        sichtbar={eigenschaften2.sichtbar}
-        vorlagen={umgebung.vorlagen}
-        zeichnen={umgebung.zeichnen}
-        marke={umgebung.marke}
-        sitzung={sitzungshalter()}
-      />
-    ),
-    projekte: (eigenschaften2) => (
-      <ProjektVerwaltungWurzel
-        sichtbar={eigenschaften2.sichtbar}
-        projekt={umgebung.projekt}
-        zeichnen={umgebung.zeichnen}
-        leereProjektHistorie={() => {}}
-        wechsleZuZusammenstellen={() => wechsleReiter('zusammenstellen')}
-      />
-    ),
-  }
+/** Was diese Datei ausser den Zugaengen braucht und selbst NICHT ermittelt. */
+export interface Reiterumgebung {
+  /** Der Weg zum Reiter Projekte fuer den Leerzustand (#198). Der Aufrufer bildet ihn aus
+   *  `wechsleReiter('projekte')` (#194) – diese Datei wechselt selbst KEINEN Reiter. */
+  aufProjekteWechseln: () => void
+  /** Der Weg zum Reiter Zusammenstellen fuer die `projekt-verwaltung` (TK 9.14.3). Wird
+   *  UNVERAENDERT in `ProjektVerwaltungWurzelProps` gelegt (ENTSCHIEDEN 11); diese Datei
+   *  ruft ihn NIE selbst. */
+  wechsleZuZusammenstellen: () => void
+  /** Das Verdrahtungs-Buendel des `composer` (#261). Wird UNVERAENDERT gereicht; diese
+   *  Datei ruft keines seiner Felder (kein Lesen, keine Ergaenzung). */
+  composerVerdrahtung: ComposerVerdrahtung
+  /** Die hervorzuhebende Aktion (#201). Wird UNVERAENDERT durchgereicht, auch als null. */
+  hervorgehobeneAktionId: string | null
+  /** Der Sitzungshalter des Vorlagen-Editors (#245). Wird UNVERAENDERT durchgereicht;
+   *  keine seiner Funktionen wird hier gerufen. */
+  vorlagenSitzung: Sitzungshalter
 }
 
-/** Die MOUNT-FUNKTION der App: holt einmal die Sichten und rendert dann den Rahmen. */
-export function inhalte(): JSX.Element {
-  const [sichten, setzeSichten] = useState<Sichten | null>(() => holeSichten())
-  const [fehler, setzeFehler] = useState<string | null>(null)
-  // Die anwendungsweite Meldungsfläche (#195/#199): Nachlauf- und Start-Ausnahmen
-  // leben HIER, nicht in den Reiterinhalten.
-  const [anwendungsmeldung, setzeAnwendungsmeldung] = useState<string | null>(null)
+// ----------------------------------------------------------------------------
+// Die Anordnung des Reiters Zusammenstellen (ENTSCHIEDEN 2, Bedienentscheidung
+// 23.08.): Liste LINKS (schmal), Vorschau RECHTS (gross). Nur Ordnung - keine
+// Fachlogik, keine Beschriftung, keine verschiebbare Trennlinie.
+// ----------------------------------------------------------------------------
+const REIHE: CSSProperties = {
+  display: 'flex',
+  gap: 8,
+  height: '100%',
+  minHeight: 0,
+  padding: 8,
+  boxSizing: 'border-box',
+}
+const LISTE: CSSProperties = { width: 320, minWidth: 260, flexShrink: 0, minHeight: 0 }
+const BUEHNE: CSSProperties = { flex: 1, minWidth: 0, minHeight: 0, position: 'relative' }
 
-  useEffect(() => {
-    void (async () => {
-      const ergebnis = await baueSichten()
-      if (ergebnis.ok) setzeSichten(ergebnis.wert)
-      else setzeFehler(ergebnis.fehler.meldung)
-    })()
-  }, [])
+/**
+ * Belegt die vier Reiter. Der Rückgabewert ist genau das, was #195 als `inhalte` erwartet.
+ * Kein `Ergebnis<T>`, kein `async`, kein `throw`.
+ */
+export function baueReiterInhalte(
+  zugaenge: Reiterzugaenge,
+  wurzeln: ModulWurzeln,
+  umgebung: Reiterumgebung,
+): Record<ReiterId, ReiterInhalt> {
+  // ENTSCHIEDEN 7: Beim Aufbau erst hole() (Initialisierung der Ansicht),
+  // DANN aufGeaendert(); die Rueckgabe des Abonnements ist die Aufraeum-Funktion
+  // des Effekts. Gelesen wird UEBERDEN ROHEN Zugang (ENTSCHIEDEN 4).
+  function ProjektStandReiter(pruefEigenschaften: {
+    sichtbar: boolean
+    reiter: ReiterId
+    kindOffen: (sichtbar: boolean, projekt: Project) => JSX.Element
+  }): JSX.Element {
+    const { sichtbar, reiter, kindOffen } = pruefEigenschaften
+    const [sicht, setzeSicht] = useState(() => zugaenge.projektRoh.hole())
+    useEffect(() => {
+      const abmelden = zugaenge.projektRoh.aufGeaendert(setzeSicht)
+      return () => {
+        abmelden()
+      }
+      // Das Abonnement bleibt fuer die Lebensdauer der Komponente dieselbe Quelle.
+    }, [])
+    // ENTSCHIEDEN 8: sichtbar wird unveraendert durchgereicht - der Reiterinhalt
+    // wird bei sichtbar: false NICHT abgebaut, das Modul entscheidet selbst.
+    if (sicht.projekt !== null) {
+      return kindOffen(sichtbar, sicht.projekt)
+    }
+    // Der Leerzustand ohne offenes Projekt - nur fuer zusammenstellen/aktionen
+    // (zeigtLeerzustand ist die EINZIGE Quelle der Regel, #198).
+    if (zeigtLeerzustand(reiter, false)) {
+      return (
+        <Leerzustand
+          reiter={reiter as 'zusammenstellen' | 'aktionen'}
+          aufProjekteWechseln={umgebung.aufProjekteWechseln}
+        />
+      )
+    }
+    // Fuer 'vorlagen'/'projekte' tritt dieser Fall fachlich nie auf - diese
+    // beiden Reiter haengen ihre Wurzeln direkt ein, ohne Projektstand.
+    return null as unknown as JSX.Element
+  }
 
-  // Der Nachlauf (#199): EIN Abonnement auf `queue:geaendert` (über `abonniere`, #151).
-  // Er lebt ANWENDUNGSWEIT, nicht je Reiter - deshalb hier, neben dem Erstaufbau.
-  // Die Wirkungen lesen die Sichten IMMER über `holeSichten()` zur Laufzeit: Die
-  // Sichten werden asynchron gebaut, und ein Echo-Effekt-Läufer darf keinen veralteten
-  // Stand einfrieren. Bevor sie existieren, gibt es kein offenes Projekt - der Nachlauf
-  // meldet das sichtbar (kein_projekt), nichts geht still verloren.
-  useEffect(() => {
-    const abmelden = starteAuftragsNachlauf(
-      (hoerer) => abonniere(KANAELE.queue.geaendert, hoerer),
-      {
-        holeProjekt: () => holeSichten()?.projekt.hole().projekt ?? null,
-        setzeProjekt: (projekt) => holeSichten()?.projekt.setzeProjekt(projekt),
-        verwirfMotivBestand: () => holeSichten()?.zeichnen.verwirfMotivBestand(),
-        bereiteZeichnenVor: async (projekt) =>
-          holeSichten()?.zeichnen.bereiteVor(projekt) ?? {
-            ok: false,
-            fehler: { code: 'kein_projekt', meldung: 'Die Sichten sind noch nicht gebaut.' },
-          },
-        leereProjektHistorie: () => {},
-        aktualisiereAusgabenListe: undefined,
-        // Befund 04.10.2026: Ohne diese Wirkung blieb nach dem Import "eingereiht"
-        // der letzte sichtbare Text - dass der Auftrag FERTIG ist, zeigte keine
-        // Stelle an (die Warteschlangen-Leiste ist als Stumm-Zeile gebaut, ihr
-        // Ausbau ist eigenes M7-Issue). Der Import meldet hier seinen Abschluss;
-        // der neue Asset selbst kommt über setzeProjekt in die Galerie.
-        meldeImportErgebnis: (assetId) => {
-          const projekt = holeSichten()?.projekt.hole().projekt ?? null
-          const asset = projekt?.assets.find((eintrag) => eintrag.id === assetId)
-          setzeAnwendungsmeldung(
-            asset === undefined
-              ? `Import abgeschlossen (${assetId.slice(0, 8)}).`
-              : `Import abgeschlossen: ${asset.originalname}`,
-          )
-          // Die Meldung ist eine Bestaetigung, kein Fehler: nach 5 s verblasst sie.
-          window.setTimeout(() => setzeAnwendungsmeldung(null), 5000)
-        },
-        meldeFehler: (code, meldung) => setzeAnwendungsmeldung(`${meldung} (${code})`),
-      },
-    )
-    return () => abmelden()
-  }, [])
-
-  if (sichten === null || fehler !== null) {
-    return (
-      <div data-testid="app-ladehinweis" style={{ padding: 24, fontSize: 13 }}>
-        {fehler === null ? 'Anwendung startet …' : `Start fehlgeschlagen: ${fehler}`}
+  // Der Offene-Teil des Reiters Zusammenstellen: GENAU zwei Module, Liste
+  // links, Vorschau rechts (ENTSCHIEDEN 2). Die Vorschau bekommt WERTE
+  // (ENTSCHIEDEN 5): projekt aus dem ROHEN Stand, voraussetzungen via
+  // zeichnen.hole().
+  const vereinigteOffenZusammenstellen = (sichtbar: boolean, projekt: Project) => (
+    <div style={REIHE}>
+      <div style={LISTE}>
+        {wurzeln.composer({
+          sichtbar,
+          projekt: zugaenge.projektBearbeitung,
+          zeichnen: zugaenge.zeichnen,
+          vorlagen: zugaenge.vorlagen,
+          marke: zugaenge.marke,
+          verdrahtung: umgebung.composerVerdrahtung,
+        })}
       </div>
-    )
-  }
+      <div style={BUEHNE}>
+        {wurzeln.vorschau({
+          projekt,
+          voraussetzungen: zugaenge.zeichnen.hole(),
+          sichtbar,
+        })}
+      </div>
+    </div>
+  )
 
-  const eigenschaften: RahmenEigenschaften = {
-    inhalte: baueWurzeln(sichten),
-    warteschlangenLeiste: () => <WarteschlangenLeiste />,
-    meldungsFlaeche: () =>
-      anwendungsmeldung === null ? <></> : (
-        <div
-          data-testid="meldungs-flaeche"
-          style={{ padding: '4px 8px', fontSize: 12, color: '#d9a441', borderBottom: '1px solid #444' }}
-        >
-          {anwendungsmeldung}
-        </div>
-      ),
-  }
+  // Der Offene-Teil des Reiters Aktionen: GENAU eine Wurzel, der UMHUELLTE
+  // Zugang; die hervorzuhebende Aktion wird nur DURCHGEREICHT (Verbot: kein
+  // zweiter Weg dorthin).
+  const aktionenOffen = (sichtbar: boolean) =>
+    wurzeln.actionEditor({
+      sichtbar,
+      projekt: zugaenge.projektBearbeitung,
+      zeichnen: zugaenge.zeichnen,
+      vorlagen: zugaenge.vorlagen,
+      marke: zugaenge.marke,
+      hervorgehobeneAktionId: umgebung.hervorgehobeneAktionId,
+    })
 
-  // DER RAMEN (aus #195) rendert die Reiterleiste; die Startregeln (#196) sitzen
-  // ganz genau hier – M7 ergänzt den Aufruf der starteSitzung-Kette (#245) NICHT
-  // verhookt. Nur der Rahmen.
-   
-  return <Rahmen {...eigenschaften} />
+  const reiterAktionen = (reiterEigenschaften: { sichtbar: boolean }) => (
+    <ProjektStandReiter
+      reiter="aktionen"
+      sichtbar={reiterEigenschaften.sichtbar}
+      kindOffen={aktionenOffen}
+    />
+  )
+
+  return {
+    zusammenstellen: (reiterEigenschaften) => (
+      <ProjektStandReiter
+        reiter="zusammenstellen"
+        sichtbar={reiterEigenschaften.sichtbar}
+        kindOffen={vereinigteOffenZusammenstellen}
+      />
+    ),
+    aktionen: (reiterEigenschaften) => reiterAktionen(reiterEigenschaften),
+    // ENTSCHIEDEN 6: KEIN Projektzugang; der Sitzungshalter wird unveraendert
+    // durchgereicht (ENTSCHIEDEN 12-Grundlage: Vorlagen sind app-weit).
+    vorlagen: (reiterEigenschaften) =>
+      wurzeln.vorlagenEditor({
+        sichtbar: reiterEigenschaften.sichtbar,
+        vorlagen: zugaenge.vorlagen,
+        zeichnen: zugaenge.zeichnen,
+        marke: zugaenge.marke,
+        sitzung: umgebung.vorlagenSitzung,
+      }),
+    // Zusaetzlich zu #243 (entschieden): der ROHE Zugan (kein Projektwechsel
+    // ist ein Bearbeitungsschritt). leereProjektHistorie wird nur GELEGT
+    // (ENTSCHIEDEN 12) und hier nie gerufen.
+    projekte: (reiterEigenschaften) =>
+      wurzeln.projektVerwaltung({
+        sichtbar: reiterEigenschaften.sichtbar,
+        projekt: zugaenge.projektRoh,
+        zeichnen: zugaenge.zeichnen,
+        leereProjektHistorie,
+        wechsleZuZusammenstellen: umgebung.wechsleZuZusammenstellen,
+      }),
+  }
 }
+
+// ----------------------------------------------------------------------------
+// Die Mount-Naht: Bis die app-shell-Verdrahtung (#260/#262) angetreten ist,
+// haengt App.tsx dieses Baegoring ein; alle Gelenk-Teile liegen in
+// inhalte-vorlauf.tsx (Uebergangs-Datei, dort dokumentiert).
+// ----------------------------------------------------------------------------
+export { inhalte } from './inhalte-vorlauf'
+export { verteileZugaenge, type Reiterzugaenge } from './inhalte-zugaenge'
