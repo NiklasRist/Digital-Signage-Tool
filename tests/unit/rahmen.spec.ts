@@ -468,13 +468,12 @@ describe('Bauvorschriften von src/renderer/App.tsx (DoD-Grep-Proben)', () => {
     expect(CODEZEILEN).toContain('inhalte')
   })
 
-  it('enthält kein useState für den aktiven Reiter (DoD)', () => {
-    expect(CODEZEILEN).not.toContain('useState')
+  it('enthält kein useState für den aktiven Reiter (DoD - nach #260 VERMERK 1 eingegrenzt: die Bootstrap-/Melde-Lagen sind kein Reiter-Zustand)', () => {
+    expect(CODEZEILEN).not.toMatch(/useState[^\n]*ReiterId/)
   })
 
-  it('enthält keinen IPC-Aufruf (DoD)', () => {
-    for (const verboten of ['rufeAuf', 'abonniere', 'KANAELE', 'window.api']) {
-      expect(CODEZEILEN).not.toContain(verboten)
-    }
+  it('enthält keinen Aufruf Richtung Main (DoD - nach #260 VERMERK 1: abonniere/KANAELE sind ab #262 vorgeschrieben)', () => {
+    expect(CODEZEILEN).not.toContain('rufeAuf')
+    expect(CODEZEILEN).not.toContain('window.api')
   })
 })
