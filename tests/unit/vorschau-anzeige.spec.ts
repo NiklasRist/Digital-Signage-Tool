@@ -1,0 +1,340 @@
+// Tests zu #242 - vorschau.tsx (die Anzeige, jsdom).
+//
+// Die sechs Darstellungs-Bausteine und die Buehne werden durch Spione mit
+// sichtbaren Stellvertretern ersetzt; die reine Auswahl (#242 будет) läuft ECHT,
+// nur gezählt (waehleVorschaubild). Der Bildtakt wird über
+// vi.stubGlobal gesteuert. Geprueft: ENTSCHIEDEN 2 (nichts ohne Voraussetzungen),
+// ENTSCHIEDEN 7 (genau ein Taktgeber, Pause beim Verschwinden, kein Autofortsetz-
+// en, Delta 0 nach Wiederaufnahme), ENTSCHIEDEN 9 (neutrale Zeile), ENTSCHIEDEN 10.
+// @vitest-environment jsdom
+import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, createElement, type ReactNode } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+
+import type { Project, Listenelement } from '../../src/shared/contracts/project'
+import type { Aktion } from '../../src/shared/contracts/aktion'
+import type { Vorlage } from '../../src/shared/contracts/vorlage'
+import type { Marke } from '../../src/shared/contracts/marke'
+import type { Zeichenvoraussetzungen } from '../../src/renderer/composer/zeichen-vorbereitung'
+
+const doppel = vi.hoisted(() => ({
+  videoAufrufe: [] as Array<Record<string, unknown>>,
+  segmentAufrufe: [] as Array<Record<string, unknown>>,
+  splitAufrufe: [] as Array<Record<string, unknown>>,
+  einblendungAufrufe: [] as Array<Record<string, unknown>>,
+  platzhalterAufrufe: [] as Array<Record<string, unknown>>,
+  auswahlAufrufe: [] as Array<unknown>,
+}))
+
+vi.mock('../../src/renderer/preview-player/buehne', () => ({
+  Buehne: (props: { children?: ReactNode }) =>
+    createElement('div', { 'data-testid': 'stellvertreter-buehne' }, props.children),
+}))
+
+vi.mock('../../src/renderer/preview-player/video', () => ({
+  Video: (props: Record<string, unknown>) => {
+    doppel.videoAufrufe.push(props)
+    return createElement('div', { 'data-testid': 'stellvertreter-video' })
+  },
+}))
+
+vi.mock('../../src/renderer/preview-player/segment', () => ({
+  Segment: (props: Record<string, unknown>) => {
+    doppel.segmentAufrufe.push(props)
+    return createElement('div', { 'data-testid': 'stellvertreter-segment' })
+  },
+}))
+
+vi.mock('../../src/renderer/preview-player/split', () => ({
+  Split: (props: Record<string, unknown>) => {
+    doppel.splitAufrufe.push(props)
+    return createElement('div', { 'data-testid': 'stellvertreter-split' })
+  },
+}))
+
+vi.mock('../../src/renderer/preview-player/einblendung', () => ({
+  Einblendung: (props: Record<string, unknown>) => {
+    doppel.einblendungAufrufe.push(props)
+    return createElement('div', { 'data-testid': 'stellvertreter-einblendung' })
+  },
+}))
+
+vi.mock('../../src/renderer/preview-player/platzhalter', () => ({
+  Platzhalter: (props: Record<string, unknown>) => {
+    doppel.platzhalterAufrufe.push(props)
+    return createElement('div', { 'data-testid': 'stellvertreter-platzhalter' })
+  },
+}))
+
+// Die reine Auswahl läuft ECHT; nur die Aufrufe werden GEZAEHLT.
+vi.mock('../../src/renderer/preview-player/vorschau-auswahl', async (importOriginal) => {
+  const echt = await importOriginal<
+    typeof import('../../src/renderer/preview-player/vorschau-auswahl')
+  >()
+  return {
+    ...echt,
+    waehleVorschaubild: (...argumente: unknown[]) => {
+      doppel.auswahlAufrufe.push(argumente)
+      return (echt.waehleVorschaubild as (...a: unknown[]) => unknown)(...argumente)
+    },
+  }
+})
+
+// React 19: act(...)-Umgebung (Muster wie video-anzeige.spec.ts).
+;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+
+const { Vorschau } = await import('../../src/renderer/preview-player/vorschau.tsx')
+type VorschauProps = import('../../src/renderer/preview-player/vorschau.tsx').VorschauProps
+
+const QUELLE = readFileSync(
+  join(process.cwd(), 'src/renderer/preview-player/vorschau.tsx'),
+  'utf8',
+)
+
+const codeOhneKommentare = (quelle: string): string =>
+  quelle
+    .split('\n')
+    .filter((z) => {
+      const t = z.trim()
+      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
+    })
+    .join('\n')
+
+describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare)', () => {
+  it('genau ein requestAnimationFrame; kein zweiter Taktgeber; die Lauf-Regel liegt in taktSollLaufen', () => {
+    const code = codeOhneKommentare(QUELLE)
+    expect(code.match(/requestAnimationFrame/g) ?? []).toHaveLength(1)
+    for (const verbot of [
+      'setInterval', 'setTimeout', 'timeupdate',
+      'rufeAuf', 'abonniere', 'KANAELE', 'window.api', 'media://',
+      'Math.round', 'app-shell/', 'template-canvas/', 'src/main/',
+      'padStart', 'toFixed',
+    ]) {
+      expect(code).not.toContain(verbot)
+    }
+    // Die Lauf-Regel liegt AUSSCHLIESSLICH in taktSollLaufen: Keine eigene
+    // Verknuepfung von laeuft und sichtbar im JSX-Code - die Probe sucht das
+    // Muster nicht wörtlich, sondern in JEDER Schreibweise.
+    const eigeneRegel = code.match(/laeuft[^\n]*&&|&&[^\n]*sichtbar/)
+    expect(eigeneRegel).toBeNull()
+  })
+
+  it('die Gesamtdauer kommt aus formatiereLaenge (#127); keine eigene Formatierung', () => {
+    expect(QUELLE).toContain("../composer/gesamtlaenge'")
+    expect(codeOhneKommentare(QUELLE)).toMatch(/formatiereLaenge/)
+  })
+})
+
+// ---------------- Bausteine ----------------
+
+function baueElement(teil: Partial<Listenelement> = {}): Listenelement {
+  return {
+    id: 'e-1', art: 'video', ref: 'asset-1', dauer: null,
+    trimStart: 0, trimEnde: 2, einblendung: null,
+    ...teil,
+  }
+}
+
+function baueProjekt(): Project {
+  return {
+    id: 'p-1', name: 'Probe', erstelltAm: '2026-10-06T00:00:00Z', geaendertAm: '2026-10-06T00:00:00Z',
+    schemaVersion: 1,
+    assets: [
+      { id: 'asset-1', typ: 'video', dateiname: 'medien-1.mp4', originalname: 'Sommer.mp4',
+        maße: { breite: 1920, höhe: 1080 }, dauer: 60, importdatum: '2026-10-06T00:00:00Z', zustand: 'ok' },
+    ],
+    aktionen: [
+      { id: 'a-1', titel: 'Sommeraktion', beschreibung: null, preis: null, bildRef: null,
+        cta: null, standardDauer: null, vorlagenId: 'v-1', markeId: 'm1', akzentfarbe: null },
+    ],
+    liste: [baueElement()],
+    letzterAusgabeName: null, standardSegmentdauer: 10, standardMarkeId: 'm1',
+  }
+}
+
+function baueMarke(): Marke {
+  return {
+    id: 'm1', name: 'Probe', parent: null, eingebaut: true,
+    farben: null as never, schriften: null as never, logo: null as never,
+    sicherheit: { horizontal: 96, vertikal: 54 }, radien: null as never,
+    schatten: null as never, slogan: null as never, herkunftJeFeld: null as never,
+  }
+}
+
+function baueVorlage(): Vorlage {
+  return {
+    id: 'v-1', name: 'Vollbild', art: 'vollflaeche', höhe: null,
+    parent: null, eingebaut: true, zonen: [],
+  }
+}
+
+function baueVoraussetzungen(): Zeichenvoraussetzungen {
+  return { marke: baueMarke(), vorlagen: [baueVorlage()] }
+}
+
+function eigenschaften(teil: Partial<VorschauProps> = {}): VorschauProps {
+  return { projekt: baueProjekt(), voraussetzungen: baueVoraussetzungen(), sichtbar: true, ...teil }
+}
+
+function rendere(props: VorschauProps): { behaelter: HTMLDivElement; wurzel: Root; fertig: () => void } {
+  const ziel = document.createElement('div')
+  document.body.appendChild(ziel)
+  const wurzel: Root = createRoot(ziel)
+  act(() => {
+    wurzel.render(createElement(Vorschau, props))
+  })
+  return { behaelter: ziel, wurzel, fertig: () => act(() => wurzel.unmount()) }
+}
+
+// Der Bildtakt: KUENSTLICHER Taktgeber,Frames werden von Hand geliefert.
+let frameRuf: ((jetzt: number) => void) | null = null
+let rafAufrufe = 0
+let cancelAufrufe = 0
+
+beforeEach(() => {
+  doppel.auswahlAufrufe = []
+  doppel.videoAufrufe = []
+  doppel.segmentAufrufe = []
+  doppel.splitAufrufe = []
+  doppel.einblendungAufrufe = []
+  doppel.platzhalterAufrufe = []
+  frameRuf = null
+  rafAufrufe = 0
+  cancelAufrufe = 0
+  vi.stubGlobal('requestAnimationFrame', (rueckruf: (jetzt: number) => void) => {
+    rafAufrufe += 1
+    frameRuf = rueckruf
+    return rafAufrufe
+  })
+  vi.stubGlobal('cancelAnimationFrame', () => {
+    cancelAufrufe += 1
+    frameRuf = null
+  })
+})
+
+afterEach(() => {
+  document.body.innerHTML = ''
+  vi.unstubAllGlobals()
+})
+
+const druecke = (behaelter: HTMLDivElement, pruefKennung: string) => {
+  const keinKnopf = behaelter.querySelector(`[data-testid="${pruefKennung}"]`) as HTMLButtonElement | null
+  expect(keinKnopf).not.toBeNull()
+  act(() => {
+    (keinKnopf as HTMLButtonElement).dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+}
+
+// ---------------- ENTSCHIEDEN 2/10: die Leerfaelle ----------------
+
+describe('Die Leerfaelle (ENTSCHIEDEN 2/10)', () => {
+  it('projekt === null: kein waehleVorschaubild, kein Baustein', () => {
+    const { fertig } = rendere(eigenschaften({ projekt: null }))
+    expect(doppel.auswahlAufrufe).toHaveLength(0)
+    expect(doppel.videoAufrufe).toHaveLength(0)
+    expect(doppel.segmentAufrufe).toHaveLength(0)
+    expect(doppel.splitAufrufe).toHaveLength(0)
+    expect(doppel.einblendungAufrufe).toHaveLength(0)
+    expect(doppel.platzhalterAufrufe).toHaveLength(0)
+    fertig()
+  })
+
+  it('voraussetzungen === null: ebenfalls NICHTS gezeichnet', () => {
+    const { fertig } = rendere(eigenschaften({ voraussetzungen: null }))
+    expect(doppel.auswahlAufrufe).toHaveLength(0)
+    expect(doppel.videoAufrufe).toHaveLength(0)
+    fertig()
+  })
+})
+
+// ---------------- ENTSCHIEDEN 7: der Takt ----------------
+
+describe('Der Bildtakt (ENTSCHIEDEN 7)', () => {
+  it('laeuft + sichtbar: requestAnimationFrame laeuft und treibt die Uhr (frame waechst); art video wird gewaehlt', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    druecke(behaelter, 'vorschau-play-pause') // Vorschau starten
+    expect(rafAufrufe).toBeGreaterThan(0)
+    act(() => { frameRuf?.(400) }) // ERSTER Takt: Delta 0 (Zeitstempel beginnt bei null)
+    const frameErster = (behaelter.querySelector('[data-testid="vorschau-zeitleiste"]') as HTMLInputElement).value
+    expect(frameErster).toBe('0')
+    act(() => { frameRuf?.(800) }) // zweite Takt: Delta 400 -> 12 Frames
+    const frame = (behaelter.querySelector('[data-testid="vorschau-zeitleiste"]') as HTMLInputElement).value
+    expect(frame).toBe('12')
+    fertig()
+  })
+
+  it('sichtheit false -> cancelAnimationFrame, pausiere gerufen, frame bleibt', () => {
+    const { behaelter, wurzel, fertig } = rendere(eigenschaften())
+    druecke(behaelter, 'vorschau-play-pause')
+    act(() => { frameRuf?.(400) })
+    const frameVorher = (behaelter.querySelector('[data-testid="vorschau-zeitleiste"]') as HTMLInputElement).value
+    act(() => {
+      wurzel.render(createElement(Vorschau, eigenschaften({ sichtbar: false })))
+    })
+    expect(cancelAufrufe).toBeGreaterThan(0)
+    const frameNachher = (behaelter.querySelector('[data-testid="vorschau-zeitleiste"]') as HTMLInputElement).value
+    expect(frameNachher).toBe(frameVorher)
+    fertig()
+  })
+
+  it('kein Autofortsetzen; der ERSTE Takt nach dem Fortsetzen liefert Delta 0 (die Pause springt nicht)', () => {
+    const { behaelter, wurzel, fertig } = rendere(eigenschaften())
+    druecke(behaelter, 'vorschau-play-pause')
+    act(() => { frameRuf?.(400) }) // Delta 0 (erster Takt)
+    act(() => { frameRuf?.(800) }) // frame 0 -> 12 (400 ms = 12 Frames bei 30 fps)
+    const rafVorher = rafAufrufe
+    act(() => {
+      wurzel.render(createElement(Vorschau, eigenschaften({ sichtbar: false })))
+    })
+    act(() => {
+      wurzel.render(createElement(Vorschau, eigenschaften()))
+    })
+    // wieder sichtbar, aber NICHT laufend - kein NEUER Takt, kein Fortsetzen:
+    expect(rafAufrufe).toBe(rafVorher)
+    // Play druecken -> Takt startet; ERSTER Takt: Delta 0 -> frame bleibt 12:
+    druecke(behaelter, 'vorschau-play-pause')
+    act(() => { frameRuf?.(1400) })
+    const frame = (behaelter.querySelector('[data-testid="vorschau-zeitleiste"]') as HTMLInputElement).value
+    expect(frame).toBe('12') // kein Sprung um die Pausenzeit (sonst waere es 42 mit delta 1000)
+    fertig()
+  })
+})
+
+function drueckeVorher(behaelter: HTMLDivElement): void {
+  const zeitleiste = behaelter.querySelector('[data-testid="vorschau-zeitleiste"]') as HTMLInputElement
+  expect(zeitleiste.value).toBe('12') // 400 ms = 12 Frames
+}
+// ---------------- ENTSCHIEDEN 8/9 ----------------
+
+describe('Die Zustandszeilen', () => {
+  it('scheitert die Achse (video ohne zeiten), steht eine neutrale Zeile und KEINE Buehne', () => {
+    const projekt = baueProjekt()
+    projekt.liste = [baueElement({ trimStart: null, trimEnde: null })]
+    const { behaelter, fertig } = rendere(eigenschaften({ projekt }))
+    expect(behaelter.querySelector('[data-testid="vorschau-zeitachse-fehler"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="stellvertreter-buehne"]')).toBeNull()
+    // kein Fehlercode im Text:
+    const zeile = behaelter.querySelector('[data-testid="vorschau-zeitachse-fehler"]') as HTMLElement
+    expect(zeile.textContent).not.toContain('ungueltige_eingabe')
+    fertig()
+  })
+})
+
+// ---------------- die AuswahlDurchreichung ----------------
+
+describe('Die Durchreichung der Auswahl', () => {
+  it('waehleVorschaubild bekommt schriftenBereit = (voraussetzungen !== null); Video bekommt assetId UNVERAENDERT', () => {
+    const { fertig } = rendere(eigenschaften())
+    expect(doppel.auswahlAufrufe.length).toBeGreaterThanOrEqual(1)
+    const argumente = doppel.auswahlAufrufe[0] as unknown[]
+    expect(argumente[5]).toBe(true)
+    expect(doppel.videoAufrufe.length).toBeGreaterThanOrEqual(1)
+    const aufruf = doppel.videoAufrufe[0] as Record<string, unknown>
+    expect(aufruf.assetId).toBe('asset-1')
+    expect(aufruf.dateiname).toBe('medien-1.mp4')
+    fertig()
+  })
+})
