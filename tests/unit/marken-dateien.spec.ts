@@ -44,10 +44,13 @@ const PNG_1x1 = Buffer.from(
   "base64",
 );
 
-const QUELLE_ORDNER = path.join(zustand.ordner, "quelle");
 async function legeQuelleAn(name: string, inhalt: Buffer): Promise<string> {
-  await fs.mkdir(QUELLE_ORDNER, { recursive: true });
-  const pfad = path.join(QUELLE_ORDNER, name);
+  // Der Ordner ENTSTEHT je Aufruf (nicht bei Datei-Import): Die Datei-Konstante
+  // wurde einmal bei der AUSWERTUNG gebildet - je Test also REST in einem Ordner
+  // der einem fremden Lauf gehoerte.
+  const quelleOrdner = path.join(zustand.ordner, "quelle");
+  await fs.mkdir(quelleOrdner, { recursive: true });
+  const pfad = path.join(quelleOrdner, name);
   await fs.writeFile(pfad, inhalt);
   return pfad;
 }
