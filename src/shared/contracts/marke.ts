@@ -59,3 +59,39 @@ export interface MarkenHerkunftJeFeld {
   schatten: 'eigen' | 'geerbt'
   slogan: 'eigen' | 'geerbt'
 }
+
+// ---------------------------------------------------------------------------
+// Referenz-Nutzungstypen zur Loesch-Sperre (#275, TK 9.15.1 / 9.15.2).
+// Die Form folgt Vorlagennutzung/VorlagenReferenz (TK 9.12.1); abweichend
+// nur dort, wo die Referenzart abweicht: Referenzart 2 ohne Projekt-Bezug,
+// Referenzart 3 ohne Aktions-Bezug.
+// ---------------------------------------------------------------------------
+
+/** Ein Fundort in einem Projekt (Referenzart 1: Aktionen tragen die Marke). */
+export interface MarkenReferenz {
+  projektId: string
+  projektName: string
+  aktionId: string
+}
+
+/** Ein Fundort im Marken-Bestand selbst (Referenzart 2: abgeleitete Marke). KEIN Projekt-Bezug –
+ *  Marken sind app-weit; eine abgeleitete Marke gehoert keinem Projekt. */
+export interface AbgeleiteteMarkenReferenz {
+  markeId: string
+  markeName: string
+}
+
+/** Ein Fundort im Projekt-Kopf (Referenzart 3: das Projekt fuehrt die Marke als STANDARDMARKE).
+ *  KEIN Aktions-Bezug – hier faerbt die Marke den Rahmen (Band-Hintergrund, Split-Restflaechen,
+ *  TK 9.15.4), nicht ein einzelnes Segment. */
+export interface StandardmarkenReferenz {
+  projektId: string
+  projektName: string
+}
+
+/** Das vollstaendige Pruefergebnis: alle drei Trefferlisten, getrennt nach Referenzart. */
+export interface Markennutzung {
+  aktionen: MarkenReferenz[]
+  abgeleiteteMarken: AbgeleiteteMarkenReferenz[]
+  standardInProjekten: StandardmarkenReferenz[]
+}
