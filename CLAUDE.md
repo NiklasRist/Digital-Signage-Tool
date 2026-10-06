@@ -11,6 +11,106 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
+## STAND HEUTE (06.10.2026, frueh) – gilt vor ALLEN älteren Angaben weiter unten
+
+### Session 06.10. in Kürze
+
+- **GEBUILT, auf `main` gelandet (4961 Tests gruen, Typecheck/Lint 0):**
+  #218 Split-Simulation (`b81e550`), #219 Einblendungs-Simulation (`b997c1c`),
+  #242 Vorschau zusammensetzen (`614186d`), #244 Reiter-Inhalte und
+  Zugangsverteilung (`cec0066`, nach Merge), #260 Renderer-Bootstrap
+  (`bootstrap.ts`, 18 Tests, `42d689b`). Alle fünf geschlossen, jeder mit
+  Issue-Nachtrag und Gegenproben mit Pruefsumme.
+- **IN ARBEIT: #262 (App.tsx).** Code ist gebaut (Commit `feb5c8c` auf Branch
+  `bau/m7-262`); das Issue bleibt OFFEN, weil die jsdom-DoD-Tests fehlen
+  (Doppel auf Wurzeln/IPC/Halter). Eine begonnene Testdatei habe ich bewusst
+  geloescht, weil sie unvollstaendig war; belegt im Issue. Naechste Session:
+  Tests nachschreiben -> Issue schliessen -> `bau/m7-262` mergen.
+- **Verfahrensfehler (zweimal, jeweils im Issue transparent benannt):** Commit
+  direkt auf `main` statt auf Issue-Branch (#242 `614186d`, #260 `42d689b`).
+  Regel fuer Agents: Branch ZUERST anlegen (`git checkout -b bau/m<n>-<nr>`),
+  nicht danach.
+- **Befund `alt/sicherung-arbeitsstand` (`42badd4`, 27.08., "M7 71/71", nie
+  gemergt):** dieselbe Fehlerklasse wie der `f6992de`-Befund vom 05.10. Der
+  gefuellte `split-stile.ts` daraus wurde geprueft und uebernommen;
+  `split.tsx`, `einblendung.tsx`, `vorschau*` und die Zugangs-Datei des
+  Branches wich von den Signaturen ab (`rahmenMarke`/`abschnittMarke`,
+  `holeBereiteMarke` statt Parameter) und wurde NEU nach Issue-Signatur
+  gebaut (MELDE-KLAUSE in den Nachtraegen beantwortet). Offen: den Branch
+  abschliessend gegen `main` werten und als verarbeitet markieren/loeschen.
+- **Uebergangs-Naht `inhalte-vorlauf.tsx`** (neu, #244): traegt die Ausschluesse
+  von #244 (Wert-Importe der fuenf Wurzel-Module, Sichten-Start, IPC-Nachlauf,
+  Mount-Seam `inhalte()`); die Vorschau (#242) ist damit EINGEHENGT. Rueckbau,
+  sobald #262 gemergt ist: Datei loeschen und den Re-Export in `inhalte.tsx`
+  entfernen; App.tsx benutzt dann die Kette `starteRenderer` (#260) + #244.
+  Bis dahin haelt `App.tsx` seinen importierten Weg.
+- **#215** ist entfallen, wird aber von `tools/bereitschaft.py` weiter als
+  baubereit angezeigt (Werkzeug-Limit: es zaehlt geschlossene Issues).
+
+### Wo das Projekt steht
+
+| Meilenstein | gebaut | | Meilenstein | gebaut |
+|---|---|---|---|---|
+| M0 Grundgeruest | 15 / 15 | | M5 Inhalte | 37 / 37 |
+| M1 Fundament | 50 / 50 | | M6 Render & Export | 37 / 37 |
+| M2 Torwaechter | 20 / 20 | | M7 Oberflaeche | **69 / 71** |
+| M3 Medien | 21 / 21 | | M8 Marken | 25 / 60 |
+| M4 Pixel | 26 / 26 | | | |
+
+4961 Tests gruen (259 Dateien), Branch `main`, Arbeitsbaum sauber;
+`bau/m7-262` (`feb5c8c`) offen zum Merge. Offen in M7: #262 (Code gebaut,
+Tests fehlen) und #215 (entfallen, nur Messwerkzeug-fehler sichtbar).
+
+### Offene Punkte fuer die naechste Session (in dieser Reihenfolge)
+
+1. **#262 fertig:** jsdom-DoD-Tests schreiben - genau einmal `starteRenderer`
+   (und Abbau einmal), Rahmen Null-Mal bei `laeuft`/`gescheitert`, Melde- und
+   Ersetzungs-Nachweis (`meldungsFlaeche`, `Schliessen`), Umgebung-Verdrahtung
+   ToBe (Umgebung/Dreier-Kette `meldeFehler`), `UebergabeOverlay` als
+   Geschwister mit allen sieben Eigenschaften (ToBe), Import-Rueckweg (Aufruf
+   von `meldeImportErgebnis('a9')` -> `schliesseMedienImportAb` mit derselben
+   Umgebung). Dann Issue schliessen und `bau/m7-262` mergen.
+2. **Rueckbau der Naht:** `inhalte-vorlauf.tsx` loeschen und den Re-Export
+   `export { inhalte } from './inhalte-vorlauf'` aus `inhalte.tsx` entfernen;
+   gleichzeitig `alt/sicherung-arbeitsstand` dokumentieren und als verarbeitet
+   markieren. Falsche Reihenfolge: App.tsx bleibt an `inhalte()` haengen.
+3. **M8-Kette:** 35 offen; `bereitschaft.py` meldet 0 baubereit - Zirkel #277
+   (`schreibe-marken`, braucht `eingebauteMarke`) / #280 (`anfangsbestand`,
+   braucht den Typ `MarkenEintrag`). VON HAND loesen: vermutlich #280 zuerst;
+   #277 importiert den Typ (oder der Typ wandert in #276).
+4. **Offene Meldungen aus #319:** a) Muss `setzeMarke` `stelleMarkeBereit`
+   (#312) rufen? b) Zaehlt eine unbekannte `aktion.markeId` als kaputte Stelle
+   (#131)?
+5. **Werkzeug-Limits:** `bereitschaft.py` zaehlt geschlossene Issues mit
+   (#215 bleibt sichtbar); Ursache: `gh issue list --state all`.
+6. **Beim User:** TV-Test (FAT32/exFAT-Befund in #184/#186/#188),
+   macOS-Artefakt (#7).
+
+### Regeln, die HEUTE gegolten haben
+
+- **Gegenproben mit Beleg:** #218 (`Math.round` in der Quelle) und #219
+  (`hintergrund` an Video) haben gebissen; Ruecknahme mit Pruefsumme
+  (`b1ddb55d`, `a080d1d7`). #242: die wortliche Grep-Probe `&& sichtbar` griff
+  ZUERST nicht (die Mutante `stand.laeuft && props.sichtbar` enthaelt den
+  Wortlaut nicht); Probe verschraerft (Muster ueber JEDE Schreibweise), danach
+  gebissen (`0ed2ad21`). Lektion: Eine wortgetreue Grep-Probe NUR nach dem
+  geplanten Fehlverhalten-denkbarsten Ausdruck testen.
+- **Signaturen aus der definierenden Quelle:** Die MELDE-KLAUSEN von
+  #218/#219/#242 haben gezuendet: Der Branch-Stand `42badd4` wich mehrfach ab,
+  und das Issue-Body-Zitat zu `Listenelement` (mit `bild`) war seit TK v3.16
+  ueberholt. Die gebauten Signaturen gewonnen, die definierte Quelle entscheidet
+  immer. Nachtraege ANGEHAENGT (nie einen Body ersetzt).
+- **NEUE GEFAHR FUER AGENTS (jetzt als Regel):** Lange Datei-Writes (ueber
+  ca. 150 Zeilen) verwursten wiederholt Kommentarfasern (falsche/fremdsprachige
+  Zeichen, verbastelte Woerter). Pruefung nach JEDEM Write: ein Sprach-Scan
+  (Codepoints > U+2100 pruefen) plus `npm run typecheck`. Wer lang schreibt:
+  in HAELFTEN schreiben (write-Kopf + Anhaenge ueber `cat >>`-Heredoc mit
+  'EOF'), pro Schritt pruefen.
+- **Arbeitsweise:** Ein Thema pro Schritt. Branch ZUERST. Verfahrensfehler im
+  Issue-Comment transparent benennen (#242/#260/#262, alle drei benannt).
+
+---
+
 ## STAND HEUTE (05.10.2026, spaet) – gilt vor ALLEN älteren Angaben weiter unten
 
 ### Session 05.10. (späte Fortsetzung) in Kürze
