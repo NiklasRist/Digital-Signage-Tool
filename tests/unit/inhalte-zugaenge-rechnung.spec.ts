@@ -1,0 +1,136 @@
+// Tests zu #244 - inhalte-zugaenge.ts (die reine Verteilung, ohne Browser).
+//
+// Was hier Entscheidend passt: GENAU EIN Umhüller und GENAU EIN Ent-Hüller,
+// die Frage „welcher Zugang gilt hier?“ wird an GENAU EINER Stelle beantwortet
+// (ENTSCHIEDEN 3). Ersetzt wird #243 durch Doppel - reine Signartests.
+import { readFileSync } from 'node:fs'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { Marke } from '../../src/shared/contracts/marke'
+
+const doppel = vi.hoisted(() => ({
+  umhuelleAufrufe: 0,
+  ohneAufrufe: 0,
+  umhuellte: null as unknown,
+}))
+
+vi.mock('../../src/renderer/app-shell/undo-aufzeichnung', () => ({
+  umhuelleFuerBearbeitung: (zugang: unknown) => {
+    doppel.umhuelleAufrufe += 1
+    return doppel.umhuellte ?? { umhuellt: true, roh: zugang }
+  },
+  ohneAufzeichnung: (zugang: unknown) => {
+    doppel.ohneAufrufe += 1
+    // wie der echte Vertrag: ein roher Zugang wird UNVERAENDert selbst geliefert
+    return zugang
+  },
+}))
+
+import {
+  verteileZugaenge,
+  type Reiterzugaenge,
+} from '../../src/renderer/app-shell/inhalte-zugaenge'
+import type { ProjektZugang, VorlagenZugang, ZeichenZugang, Sichten } from '../../src/renderer/app-shell/sichten'
+
+function baueSichten(): Sichten {
+  const zugang: ProjektZugang = {
+    lade: (async () => {
+      throw new Error('nicht relevant')
+    }),
+    hole: () => ({ projekt: null, ladefehler: null }),
+    setzeProjekt: () => {},
+    setzeListe: () => {},
+    gleicheElementAb: () => {},
+    leere: () => {},
+    aufGeaendert: () => () => {},
+  }
+  const vorlagen: VorlagenZugang = {
+    lade: (async () => {
+      throw new Error('nicht relevant')
+    }),
+    hole: () => null,
+    aufGeaendert: () => () => {},
+  }
+  const zeichnen: ZeichenZugang = {
+    bereiteVor: (async () => {
+      throw new Error('nicht relevant')
+    }),
+    hole: () => null,
+    verwirfMotivBestand: () => {},
+  }
+  const marke: Marke = {
+    id: 'm1', name: 'Probe', parent: null, eingebaut: true,
+    farben: null as never, schriften: null as never, logo: null as never,
+    sicherheit: { horizontal: 96, vertikal: 54 }, radien: null as never,
+    schatten: null as never, slogan: null as never, herkunftJeFeld: null as never,
+  }
+  return { projekt: zugang, vorlagen, zeichnen, marke }
+}
+
+beforeEach(() => {
+  doppel.umhuelleAufrufe = 0
+  doppel.ohneAufrufe = 0
+  doppel.umhuellte = null
+})
+
+describe('verteileZugaenge (ENTSCHIEDEN 3 - die kritische Aussagestelle)', () => {
+  it('projektRoh ist UNVERAENDERT sichten.projekt (ohneAufzeichnung liefert rohen Zugang selbst)', () => {
+    const sichten = baueSichten()
+    const verteilt = verteileZugaenge(sichten)
+    expect(verteilt.projektRoh).toBe(sichten.projekt)
+  })
+
+  it('projektBearbeitung ist NICHT sichten.projekt und GENAU das Ergebnis des Umhüller-Doppels', () => {
+    const sichten = baueSichten()
+    const umhuellt = { umhuellt: true } as unknown as ProjektZugang
+    doppel.umhuellte = umhuellt
+    const verteilt: Reiterzugaenge = verteileZugaenge(sichten)
+    expect(verteilt.projektBearbeitung).not.toBe(sichten.projekt)
+    expect(verteilt.projektBearbeitung).toBe(umhuellt)
+  })
+
+  it('ruft umhuelleFuerBearbeitung GENAU einmal und ohneAufzeichnung GENAU einmal (Spione)', () => {
+    const sichten = baueSichten()
+    verteileZugaenge(sichten)
+    expect(doppel.umhuelleAufrufe).toBe(1)
+    expect(doppel.ohneAufrufe).toBe(1)
+  })
+
+  it('vorlagen, zeichnen und marke sind UNVERAENDERT (drei benannte Pruefungen)', () => {
+    const sichten = baueSichten()
+    const verteilt = verteileZugaenge(sichten)
+    expect(verteilt.vorlagen).toBe(sichten.vorlagen)
+    expect(verteilt.zeichnen).toBe(sichten.zeichnen)
+    expect(verteilt.marke).toBe(sichten.marke)
+  })
+
+  it('die Eingabe wird NICHT veraendert (Object.freeze, Lauf ohne Wurf)', () => {
+    const sichten = baueSichten()
+    Object.freeze(sichten)
+    expect(() => verteileZugaenge(sichten)).not.toThrow()
+  })
+})
+
+describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare)', () => {
+  const quelle = readFileSync(
+    new URL('../../src/renderer/app-shell/inhalte-zugaenge.ts', import.meta.url),
+    'utf8',
+  )
+  const code = quelle
+    .split('\n')
+    .filter((z) => {
+      const t = z.trim()
+      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
+    })
+    .join('\n')
+
+  it('kein JSX, kein react, kein Rueckkanal, kein window', () => {
+    expect(code).not.toContain('react')
+    expect(code).not.toContain('<')
+    expect(code).not.toContain('rufeAuf')
+    expect(code).not.toContain('abonniere')
+    expect(code).not.toContain('KANAELE')
+    expect(code).not.toContain('window.')
+  })
+})
