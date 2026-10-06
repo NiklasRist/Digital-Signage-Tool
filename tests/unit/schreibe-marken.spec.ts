@@ -20,8 +20,14 @@ vi.mock("../../src/main/datenort", () => ({
   ermittleDatenOrt: () => zustand.ordner,
 }));
 
-const { ladeBestand, aendereBestand, flushBestand, aufSchreibversuch, MARKEN_SCHEMA_VERSION } =
-  await import("../../src/main/marken-store/schreibe-marken");
+// Der Rest des Modulzustands (bestand im Speicher, Kette, Timer) ueberlebt sonst je
+// Testdefinition mit; deshalb wird das Modul in beforeEach FRISCH importiert.
+type markenModell = typeof import("../../src/main/marken-store/schreibe-marken");
+let ladeBestand: markenModell["ladeBestand"];
+let aendereBestand: markenModell["aendereBestand"];
+let flushBestand: markenModell["flushBestand"];
+let aufSchreibversuch: markenModell["aufSchreibversuch"];
+let MARKEN_SCHEMA_VERSION: number;
 
 type MarkenEintrag = {
   id: string;
@@ -69,6 +75,16 @@ const GERETTET = JSON.stringify({
       schriften: {},
     },
   ],
+});
+
+beforeEach(async () => {
+  vi.resetModules();
+  const modul = await import("../../src/main/marken-store/schreibe-marken");
+  ladeBestand = modul.ladeBestand;
+  aendereBestand = modul.aendereBestand;
+  flushBestand = modul.flushBestand;
+  aufSchreibversuch = modul.aufSchreibversuch;
+  MARKEN_SCHEMA_VERSION = modul.MARKEN_SCHEMA_VERSION;
 });
 
 beforeEach(() => {
@@ -167,7 +183,7 @@ describe("aendereBestand (#277)", () => {
   });
 
   it("uebernimmt die Aenderung in den Speicher und schreibt bei 'sofort'", async () => {
-    const erg = await aendereBestand((bestand) => {
+    const erg = await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand.push({ id: "n1", name: "Neu", parent: null, eingebaut: false, farben: {}, schriften: {} });
       return { ok: true, wert: { bestand, wert: "fertig" } };
     }, "sofort");
@@ -180,7 +196,7 @@ describe("aendereBestand (#277)", () => {
 
   it("haengt zwei ohne dazwischenliegendes await gestartete Anhaenge beide in den Bestand", async () => {
     function fuegeZu(id: string) {
-      return aendereBestand((bestand) => {
+      return aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
         bestand.push({ id, name: id, parent: null, eingebaut: false, farben: {}, schriften: {} });
         return { ok: true, wert: { bestand, wert: id } };
       }, "sofort");
@@ -211,7 +227,7 @@ describe("aendereBestand (#277)", () => {
     await ladeBestand();
     const vorher = await fs.readFile(path.join(zustand.ordner, "marken.json"), "utf8");
 
-    const erg = await aendereBestand((bestand) => {
+    const erg = await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand[0] = { ...bestand[0]!, name: "Umbenannt" };
       return { ok: true, wert: { bestand, wert: 1 } };
     }, "entprellt");
@@ -230,7 +246,7 @@ describe("aendereBestand (#277)", () => {
 
   it("sichert die vorherige Fassung nach .bak und traegt die neue in marken.json", async () => {
     await ladeBestand();
-    await aendereBestand((bestand) => {
+    await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand[0] = { ...bestand[0]!, name: "Zweiter Stand" };
       return { ok: true, wert: { bestand, wert: 1 } };
     }, "sofort");
@@ -247,7 +263,7 @@ describe("aendereBestand (#277)", () => {
     await ladeBestand();
     const bakVorher = await fs.readFile(path.join(zustand.ordner, "marken.json.bak"), "utf8");
 
-    await aendereBestand((bestand) => {
+    await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand.push({ id: "n", name: "Neu", parent: null, eingebaut: false, farben: {}, schriften: {} });
       return { ok: true, wert: { bestand, wert: 1 } };
     }, "sofort");
@@ -273,18 +289,21 @@ describe("flushBestand und Hoerer (#277)", () => {
 
   it("benachrichtigt nach abgeschlossenem Schreibversuch GENAU EINMAL je Hoerer", async () => {
     const meldungen: Array<{ erfolgreich: boolean } | unknown> = [];
-    const ab = aufSchreibversuch((e) => {
+    const ab = aufSchreibversuch((e: { erfolgreich: boolean }) => {
       meldungen.push(e);
     });
 
-    await aendereBestand((bestand) => {
+    // Der BESTAND ist noch nie geladen: das Anlegen der fehlenden marken.json ist selbst
+    // ein abgeschlossener Schreibversuch (Höer #1), dann folgt der Sofort-Schreib (#2).
+    // Beide gelingen; je Versuch genau EINE Meldung.
+    await ladeBestand();
+    await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand[0] = { ...bestand[0]!, name: "X" };
       return { ok: true, wert: { bestand, wert: 1 } };
     }, "sofort");
 
-    expect(meldungen).toHaveLength(1);
-    const meldung = meldungen[0] as { erfolgreich: boolean };
-    expect(meldung.erfolgreich).toBe(true);
+    expect(meldungen).toHaveLength(2);
+    expect(meldungen.every((m) => (m as { erfolgreich: boolean }).erfolgreich === true)).toBe(true);
     ab();
   });
 
@@ -296,7 +315,7 @@ describe("flushBestand und Hoerer (#277)", () => {
     ab();
 
     await flushBestand();
-    await aendereBestand((bestand) => {
+    await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand[0] = { ...bestand[0]!, name: "X" };
       return { ok: true, wert: { bestand, wert: 1 } };
     }, "sofort");
@@ -307,7 +326,7 @@ describe("flushBestand und Hoerer (#277)", () => {
   it("bei einem entprellten Schreibversuch mit Fehlschlag bleibt der Bestand im Speicher (kein Rollback)", async () => {
     await ladeBestand();
     // Der Bestand im Speicher wird geaendert, der Schreib lscheitert (Ordner weg).
-    const erg = await aendereBestand((bestand) => {
+    const erg = await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand[0] = { ...bestand[0]!, name: "Bleibt" };
       return { ok: true, wert: { bestand, wert: 1 } };
     }, "sofort");
@@ -319,12 +338,12 @@ describe("flushBestand und Hoerer (#277)", () => {
   it(" eine entprellte Aenderung laeuft nach dem Erneut-Sofort-Schreiben ohne laufenden Timer", async () => {
     await ladeBestand();
     // erste entprellte Aenderung stellt den Timer
-    await aendereBestand((bestand) => {
+    await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand[0] = { ...bestand[0]!, name: "Eins" };
       return { ok: true, wert: { bestand, wert: 1 } };
     }, "entprellt");
     // zweite Aenderung 'sofort' schreibt BEIDE Aenderungen und haelt den Timer an
-    const erg = await aendereBestand((bestand) => {
+    const erg = await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand[0] = { ...bestand[0]!, name: "Zwei" };
       return { ok: true, wert: { bestand, wert: 2 } };
     }, "sofort");
@@ -334,19 +353,22 @@ describe("flushBestand und Hoerer (#277)", () => {
     expect(inhalt[0]?.name).toBe("Zwei");
   });
 
-  it("das gelieferte Bestand ist eine lg Tiefe Kopie (Mutation erreicht den Speicher nicht)", async () => {
+  it("der gelieferte Bestand ist eine TIEFE Kopie (Mutation erreicht den Speicher nicht)", async () => {
     const erg = await ladeBestand();
     expect(erg.ok).toBe(true);
     if (!erg.ok) return;
-    const anfangsname = erg.wert[0]?.name;
-    erg.wert.shift(); // versuchter Aufbrauch der Kopie
+    const anfangsname: string | undefined = erg.wert[0]?.name;
+    erg.wert.shift(); // Versuch der Manipulation an der KOPIE
+    erg.wert.push({ id: "gestohlen", name: "Gestohlen", parent: null, eingebaut: false, farben: {}, schriften: {} });
 
-    await aendereBestand((bestand) => {
-      bestand[0] = { ...bestand[0]!, name: "Vom Speicher" };
-      return { ok: true, wert: { bestand, wert: 1 } };
-    }, "sofort");
-    const inhalt = (await lies("marken.json"))["marken"] as MarkenEintrag[];
-    expect(anfangsname).toBe(inhalt[0]?.name);
+    // Der Speicherstand ist unberuehrt: ein zweiter Aufruf liefert denselben Stand
+    // mit EINEM Element und demselben Namen.
+    const neu = await ladeBestand();
+    expect(neu.ok).toBe(true);
+    if (!neu.ok) return;
+    expect(neu.wert).toHaveLength(1);
+    expect(neu.wert[0]?.name).toBe(anfangsname);
+    expect(neu.wert.some((e) => e.id === "gestohlen")).toBe(false);
   });
 
   it("die Datei traegt die Schema-Version 1 des Moduls", async () => {
