@@ -20,7 +20,6 @@ import { bearbeiteAktion } from '../project-store/bearbeite-aktion'          // 
 import { dupliziereProjekt } from '../project-store/dupliziere-projekt'      // #36
 import { entferneElement } from '../project-store/entferne-element'          // #42
 import { erstelleAktion } from '../project-store/erstelle-aktion'            // #38
-import { erstelleProjekt } from '../project-store/erstelle-projekt'          // #33
 import { fügeElementHinzu } from '../project-store/fuege-element-hinzu'      // #41
 import { listeProjekte } from '../project-store/liste-projekte'              // #35
 import { löscheAktion } from '../project-store/loesche-aktion'               // #40
@@ -29,7 +28,7 @@ import { ordneNeu } from '../project-store/ordne-neu'                        // 
 import { setzeDauer } from '../project-store/setze-dauer'                    // #45
 import { setzeTrim } from '../project-store/setze-trim'                      // #44
 import { meldeAn } from './melde-an'                                         // #333
-import { leseMarke } from '../config-store/lese-marke'                       // #29
+import { erstelleProjektAblauf } from './projekt-anlegen-ablauf'             // #328
 // Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort (Vermerk 4 am Dateiende).
 import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from './nutzlast-pruefer' // #332
 
@@ -177,20 +176,8 @@ export function verdrahteProjectStoreIPC(): void {
     // und was daraus fuer ein Ordnername wird, entscheidet #33.
     //
     // NEU mit #320/#328: `erstelleProjekt` bekommt die Marken-Kennung als PARAMETER - der
-    // Handler holt sie. Bis M8 liegt die eingebaute Marke im config-store (#29, leseMarke);
-    // #328 zieht diesen Abruf auf `listeMarken()` (marken-store) um. Ein Fehlschlag von
-    // leseMarke kann mit der Konstante im Bundle nicht eintreten; durchgereicht wird er
-    // trotzdem, als 'speicher_fehler' - derselbe Code wie bei einem gescheiterten Anlegen.
-    async ({ name }) => {
-      const marke = await leseMarke()
-      if (!marke.ok) {
-        return {
-          ok: false,
-          fehler: { code: 'speicher_fehler' as const, meldung: marke.fehler.meldung },
-        }
-      }
-      return erstelleProjekt(name, marke.wert.id)
-    },
+    // Ablauf holt sie (ueber listeMarken(), marken-store; der Ring ist ausgeschlossen).
+    async ({ name }) => erstelleProjektAblauf(name),
   )
 
   // DER KANAL FUERS OEFFNEN RUFT `oeffneProjektAblauf` (#94) UND NICHT `öffneProjekt` (#34).

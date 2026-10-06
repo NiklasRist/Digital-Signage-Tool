@@ -24,7 +24,7 @@ vi.mock("electron", () => ({
 }));
 
 const ops = vi.hoisted(() => ({
-  erstelleProjekt: vi.fn(),
+  erstelleProjektAblauf: vi.fn(),
   oeffneProjektAblauf: vi.fn(),
   öffneProjekt: vi.fn(),
   listeProjekte: vi.fn(),
@@ -45,8 +45,8 @@ vi.mock("../../src/main/ipc-gateway/projekt-oeffnen-ablauf", () => ({
   oeffneProjektAblauf: ops.oeffneProjektAblauf,
 }));
 vi.mock("../../src/main/project-store/oeffne-projekt", () => ({ öffneProjekt: ops.öffneProjekt }));
-vi.mock("../../src/main/project-store/erstelle-projekt", () => ({
-  erstelleProjekt: ops.erstelleProjekt,
+vi.mock("../../src/main/ipc-gateway/projekt-anlegen-ablauf", () => ({
+  erstelleProjektAblauf: ops.erstelleProjektAblauf,
 }));
 vi.mock("../../src/main/project-store/liste-projekte", () => ({ listeProjekte: ops.listeProjekte }));
 vi.mock("../../src/main/project-store/dupliziere-projekt", () => ({
@@ -169,12 +169,8 @@ describe("verdrahteProjectStoreIPC (#76)", () => {
     await rufe(KANAELE.project.listeAusgaben, { projektId: UUID });
 
     // Getrimmt wird NICHT, nur geprueft - Fremdfelder reisen nicht mit. Die Marken-Kennung
-    // (#320/#328) holt der Handler selbst (leseMarke, #29) und reicht sie als ZWEITES
-    // Argument weiter; ihre ID ist eine UUID und wird hier nur auf die Form geprueft.
-    expect(ops.erstelleProjekt).toHaveBeenCalledWith(
-      " Sommer ",
-      expect.stringMatching(/^[0-9a-f-]{36}$/),
-    );
+    // (#328) holt der ABLAUF selbst (listeMarken, marken-store) - der Kanal ruft genau ihn.
+    expect(ops.erstelleProjektAblauf).toHaveBeenCalledWith(" Sommer ");
     expect(ops.dupliziereProjekt).toHaveBeenCalledWith("p1", "Kopie");
     expect(ops.löscheProjekt).toHaveBeenCalledWith("p1");
     expect(ops.löscheAktion).toHaveBeenCalledWith("a1");
@@ -209,7 +205,7 @@ describe("verdrahteProjectStoreIPC (#76)", () => {
     // `listeProjekte` fehlt hier mit Absicht: Es kennt keine ungueltige Nutzlast (eigener
     // Test darunter).
     const faelle: [string, ReturnType<typeof vi.fn>, unknown][] = [
-      [KANAELE.project.erstelleProjekt, ops.erstelleProjekt, { name: "  " }],
+      [KANAELE.project.erstelleProjekt, ops.erstelleProjektAblauf, { name: "  " }],
       [KANAELE.project.öffneProjekt, ops.oeffneProjektAblauf, null],
       [KANAELE.project.dupliziereProjekt, ops.dupliziereProjekt, { id: "p1" }],
       [KANAELE.project.löscheProjekt, ops.löscheProjekt, { id: 42 }],
@@ -295,7 +291,7 @@ describe("verdrahteProjectStoreIPC (#76)", () => {
   });
 
   it("fuegt einem Fehler ohne daten keines hinzu", async () => {
-    ops.erstelleProjekt.mockResolvedValue({
+    ops.erstelleProjektAblauf.mockResolvedValue({
       ok: false,
       fehler: { code: "speicher_fehler", meldung: "Platte voll" },
     });
@@ -304,6 +300,6 @@ describe("verdrahteProjectStoreIPC (#76)", () => {
       fehler: Record<string, unknown>;
     };
 
-    expect("daten" in ergebnis.fehler).toBe(false);
+    expect("daten" in ergebnis.fehler).toBe(false);   // unveraendert hell
   });
 });
