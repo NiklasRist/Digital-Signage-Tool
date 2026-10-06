@@ -113,8 +113,8 @@ export function App(): JSX.Element {
   const abbauRef = useRef<(() => void) | null>(null)
 
   // DER Meldeweg - DIESE eine Funktion, stabil (ToBe ueber alle drei Stellen).
-  const meldeFehler = useCallback((code: string, hmldung: string) => {
-    setzeMeldung({ code, meldung: hmldung })
+  const meldeFehler = useCallback((code: string, meldungText: string) => {
+    setzeMeldung({ code, meldung: meldungText })
   }, [])
 
   // GENAU EIN Reparatur-Abo; beim Abbau abgemeldet.
@@ -283,6 +283,6 @@ function startHinweisZeile(hinweis: StartHinweisInfo): string {
     case 'projekt_unlesbar':
       return `Das Projekt ${hinweis.projektId} war unlesbar (${hinweis.code}): ${hinweis.meldung}`
     default:
-      return `Configure unlesbar (${hinweis.code}): ${hinweis['meldung']}`
+      return `Konfiguration unlesbar (${hinweis['code']}): ${hinweis['meldung']}`
   }
 }
