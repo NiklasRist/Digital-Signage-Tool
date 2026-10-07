@@ -11,10 +11,16 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (07.10.2026, vorm.) – gilt vor ALLEM weiter unten
+## STAND HEUTE (07.10.2026, nachm.) – gilt vor ALLEM weiter unten
 
-**Der volle Stand dieser Session steht in [`docs/agents/uebergabe-2026-10-07-session.md`](docs/agents/uebergabe-2026-10-07-session.md)
+**Der volle Stand dieser Bau-Serie (alle M8-Issues gebaut bis auf #327, die an #311/#313/#314/#322 hängen) steht in [`docs/agents/uebergabe-2026-10-07-session-2.md`](docs/agents/uebergabe-2026-10-07-session-2.md)
 – LIES DIESE DATEI ZUERST, bevor du die veralte Tabelle hier unten liest.** Kurz:
+
+- **M8: 59/60, 1 baubereit (#327)** (gemessen `python3 tools/bereitschaft.py`); 5362 Tests grün, 294 Dateien, Typecheck/Lint 0, Branch `main`.
+- **Gebaut und gemergt seit der Vorsession:** #297, #298, #299, #300, #302, #323, #324, #326, #330, #336, #331. #309 war bereits geschlossen. Diff belegt: Reparatur-Commit `dcefc40` (Lint-Fehler + Faser in marken-bereitstellung.ts).
+- **AM ARBEITSBAUM:** Sauber (nur die drei bekannten Vorbefund-Artefakte untracked). Neue Übergabe: `docs/agents/uebergabe-2026-10-07-session-2.md`.
+- **Nächste Kette:** #311 - #313 - #314 - #322 - #327, und #399 (die vier benannten Edits aus #324).
+- **Regeln der Serie:** Registry `project` = 21 Einträge, Verdrahtung = 13/4/17 (gebauter Code statt Issue-Text); `bootstrap-verdrahtung.spec.ts` ist die Vertragsquelle der Reihenfolge. Lint-Befund auf `main` widerspricht der vorm. Übergabe ("Lint 0"): siehe #312-Nachtrag.
 
 - **M8: 44/60, 6 baubereit** (gemessen `python3 tools/bereitschaft.py`); 5235 Tests grün, 283 Dateien,
   Typecheck/Lint 0, Branch `main`.
@@ -207,7 +213,7 @@ Vergangenheit, nicht Anweisung.
   eingebaut. REST: Gegenprobe an einem ECHTEN Stick beim nächsten Anlass.
 - **M8 ist vollständig GEKLÄRT** – alle 21 UNKLAREN haben entschiedene Nachträge in den Issues
   (u. a.: vorlagen-editor zeichnet gegen eine wählbare Marke mit Default „eingebaute Marke";
-  Alt-RollenNamen in `akzentfarbe` setzt #281 auf `null`; Standardmarken-Wechsel → Neubereitstellung;
+  Alt-RollenNamen in `akzentfarbe` setzt #281 auf `null`; Standardmarken-Wechsel - Neubereitstellung;
   Kontrast-Warnung im Farbwähler gegen beide Textfarben; Beenden-Hinweis bleibt informativ).
 - **Gemessener Befund mit Folgeentscheidung:** `marken://` taintet das Canvas in JEDER
   Registrierungs-Konfiguration (SecurityError bei toBlob/toDataURL). Entscheidung: importierte
@@ -266,7 +272,7 @@ worden; die Rückwärts-Zitat-Korrektur über die angelegten Issues ist ebenfall
 
 1. **Projektweite Standarddauer, je Aktion überschreibbar.** Kette:
    `element.dauer ← aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`.
-   `Project` bekommt ein Feld (9.11.3) → in AD/TK ist entschieden: **keine** Migration, weil es noch
+   `Project` bekommt ein Feld (9.11.3) - in AD/TK ist entschieden: **keine** Migration, weil es noch
    kein einziges Projekt gibt (`Project.standardSegmentdauer` gehört von Anfang an zu `schemaVersion`
    1, TK v3.17). Beim Ändern fragt die Oberfläche, ob der neue Standard auch für bestehende Aktionen
    gilt; betroffen sind alle mit `standardDauer: null`, einzeln **abwählbar**. **Code-Stand (geprüft
@@ -332,7 +338,7 @@ ebenso Vertrag. Ob ein Folge-Issue baubar ist, sagt `python tools/bereitschaft.p
   sie gilt nur für FAT32-Sticks. #184 bleibt unverändert richtig gebaut; Empfehlung ans Personal:
   Stick als exFAT formatieren. **Weiter offen (nur physisch testbar):** Läuft die USB-Wiedergabe
   nach einem Stromausfall von selbst wieder an? Ist „Repeat One" zuverlässig? Firmware-Version
-  steht nur am TV (Einstellungen → Support → „Über dieses TV").
+  steht nur am TV (Einstellungen - Support - „Über dieses TV").
 
 ### Behobene Befunde (16.08.2026, Commit `7f6e776`; Beleg unten)
 
@@ -370,8 +376,8 @@ sind – aber sie ist Vergangenheit, nicht Anweisung.
   „Signatur (verbindlich)"-Blöcken der Issues durch `tools/geruest.py`. Ein Agent füllt **nur den
   Rumpf**; Signaturen ändert man im Issue, nicht in der Datei. Der Generator vergleicht beim
   erneuten Lauf Byte für Byte und fasst eine bearbeitete Datei **nie** an.
-- **Der Bootstrap wird über eine Kette verdrahtet:** #268 → #269 → #270 → #271 → #272 → #273 →
-  #274 → #331, je ein Glied als letztes Issue seines Meilensteins. Erst #331 stellt fest, dass
+- **Der Bootstrap wird über eine Kette verdrahtet:** #268 - #269 - #270 - #271 - #272 - #273 -
+  #274 - #331, je ein Glied als letztes Issue seines Meilensteins. Erst #331 stellt fest, dass
   `src/main/index.ts` lückenlos ist.
 - Planungsziel: scharfe Modulgrenzen + Schnittstellen. Ich baue das Grundgerüst selbst und lasse
   die Funktionen von Agents füllen – die brauchen vollen Projektkontext und ihren Platz im Ganzen.
@@ -406,9 +412,9 @@ sind – aber sie ist Vergangenheit, nicht Anweisung.
 
 ## Wichtigste Festlegungen (schon entschieden)
 - Ausgabe-Profil: MP4, H.264 High, 1920×1080, 30 fps, ~10–12 Mbit/s, stumm. Dateiname FREI (FA-22).
-  Abweichende Seitenverhältnisse → schwarze Balken (Letterbox/Pillarbox, kein Beschnitt).
+  Abweichende Seitenverhältnisse - schwarze Balken (Letterbox/Pillarbox, kein Beschnitt).
   Videos sind trimmbar; Standard-Segmentdauer 10 s (einstellbar 10–45 s); harter Schnitt.
-- Tech-Stack: Electron + TypeScript + React + Vite; dnd-kit; HTML5-Canvas → PNG für Aktions-Segmente;
+- Tech-Stack: Electron + TypeScript + React + Vite; dnd-kit; HTML5-Canvas - PNG für Aktions-Segmente;
   gebündeltes ffmpeg (ffmpeg-static + fluent-ffmpeg); Datenhaltung JSON je Projekt (lowdb),
   SQLite optional; Verpackung electron-builder Portable (Win 10/11 + macOS 13+, kein Installer, ohne Admin).
 - Render-Pipeline (bereits prototypisch mit echtem ffmpeg getestet): jedes Element auf identisches
@@ -425,13 +431,13 @@ sind – aber sie ist Vergangenheit, nicht Anweisung.
   P4 Finaler Render + Export, P5 Vorschau.
 - Speicher: D1 Projekt-Store, D2 Medienordner, D3 App-Konfig, T1 flüchtiger Render-Arbeitsbereich.
 - ZWEI Render-Arten mit gleichem Eingang (Liste + Medien): P5 Vorschau (UI-Simulation, OHNE ffmpeg,
-  → Bildschirm) und P4 finaler Render (ffmpeg → benannte Ausgabe-MP4 → USB).
+  - Bildschirm) und P4 finaler Render (ffmpeg - benannte Ausgabe-MP4 - USB).
 - Vorschau = UI-Simulation: Aktions-Segmente nutzen exakt dasselbe Canvas-Bild wie der finale Render
   (pixelgleich), Videos laufen nativ; finale Kontrolle bleibt die gerenderte Ausgabedatei.
 
 ## HLD-Modulschnitt (von mir bestätigt)
 - Renderer: ipc-client, app-shell, composer [P3], action-editor [P2],
-  template-canvas (geteilt: Segment → PNG), preview-player [P5].
+  template-canvas (geteilt: Segment - PNG), preview-player [P5].
 - Main: ipc-gateway, media-service [P1], project-store [D1], config-store [D3],
   render-service [P4], export-service, ffmpeg-adapter (enthält den getesteten buildReel-Kern).
 - Geteilt: contracts/types (Project, Action, Asset, ListItem, Template, Brand, RenderRequest …).
@@ -453,7 +459,7 @@ sind – aber sie ist Vergangenheit, nicht Anweisung.
 
 ## Nächste Schritte (in dieser Reihenfolge)
 1. ERLEDIGT: IPC-Granularität entschieden (Variante A).
-2. HLD finalisieren: je Modul ein scharfer Schnittstellen-Vertrag (Eingang → Ausgang, fachlich, ohne
+2. HLD finalisieren: je Modul ein scharfer Schnittstellen-Vertrag (Eingang - Ausgang, fachlich, ohne
    Implementierung), dann ins TK Abschnitt 9 – Word + Markdown.
    - ERLEDIGT: render-service [P4] (9.2), auftrags-queue (9.3), media-service [P1] (9.4).
    - ERLEDIGT: FA-13 (eigene Vorlagen, Kann), FA-14 (Trim, Soll), FA-15 (Auto-Speichern & Sitzung, Soll)
@@ -472,11 +478,11 @@ sind – aber sie ist Vergangenheit, nicht Anweisung.
    - ERLEDIGT: FA-19 (geführte Reparatur, Soll) im Anforderungsdokument v0.6, Akzeptanzkriterium 7.
    - ERLEDIGT: action-editor [P2] (9.8) – Aktionen anlegen/bearbeiten, Live-Vorschau via template-canvas
      (einzige Pixelquelle), Bild=Referenz, Akzentfarbe aus Markenpalette (fest v1), standardDauer nur Default,
-     Kaputt-Handling 9.8.5 (fehlt-Bild → Fix auf Aktions-Ebene behebt alle referenzierenden Elemente).
+     Kaputt-Handling 9.8.5 (fehlt-Bild - Fix auf Aktions-Ebene behebt alle referenzierenden Elemente).
    - ERLEDIGT: preview-player [P5] (9.9) – UI-Simulation ohne ffmpeg, Medienzugriff über media:// (9.5.7).
    - ERLEDIGT: project-store ist Pfad-Autorität + trägt media://-Protokoll (9.5.7); Detail durchgängig in 2,
      8, 9.1, 9.2.5, 9.4.1, 9.5, Modul-Liste ergänzt (Renderer-Medienzugriff nur lesend via media://).
-   - ERLEDIGT: template-canvas (9.10) – EINZIGE Pixelquelle: eine Zeichenroutine → Canvas 1920×1080,
+   - ERLEDIGT: template-canvas (9.10) – EINZIGE Pixelquelle: eine Zeichenroutine - Canvas 1920×1080,
      Anzeige (CSS-skaliert) und PNG-Export aus DEMSELBEN Aufruf (kein zweiter Zeichenpfad); Determinismus
      (devicePixelRatio ignorieren, Schriften+Bild vor dem Zeichnen geladen, kein Zufall/Cache); Marken-
      Schriften GEBÜNDELT (Playfair Display fehlt auf Win/macOS); Sicherheitsabstand 5 % (96/54 px);
@@ -488,10 +494,10 @@ sind – aber sie ist Vergangenheit, nicht Anweisung.
    - ERLEDIGT: eingebaute Vorlagen konkret (9.11.1) – Logo 420×120 oben links, Zone `hintergrund` zuerst
      (Aktion ohne Bild rendert nicht schwarz), „Vollbild" mit `scrim` für Textlesbarkeit, „Split" mit
      `contain` (kein Produkt-Beschnitt). Vorlagen sind APP-WEIT (vorlagen.json); Löschen nur wenn KEIN
-     Projekt sie nutzt → Referenzprüfung über ALLE Projekte; eingebaute unlöschbar + eingefroren.
+     Projekt sie nutzt - Referenzprüfung über ALLE Projekte; eingebaute unlöschbar + eingefroren.
    - ERLEDIGT: Marke (9.11.2, Rollen + gebündelte OFL-Schriften Playfair/Archivo Black/Arimo);
      RenderProfile geschärft (9.2.4: yuv420p, High/L4.0, BT.709, SAR 1:1, gedeckeltes VBR, geschlossene GOP +
-     Keyframe je Segment, stille AAC-Spur → R-06 entschieden, +faststart); Einzel-Instanz (9.5.4, an den
+     Keyframe je Segment, stille AAC-Spur - R-06 entschieden, +faststart); Einzel-Instanz (9.5.4, an den
      DATENORT gebunden wegen portabler EXE); Project/Listenelement + ID-Schema UUID + Konstanten (9.11.3/9.11.4,
      Reihenfolge = Array-Reihenfolge, KEIN position-Feld); Undo/Redo (9.13).
    - HLD VOLLSTÄNDIG: Anforderungsdokument v1.1, TK v2.2. FA-Nummern lückenlos 01–21, R-06 entschieden.
@@ -877,5 +883,5 @@ sind – aber sie ist Vergangenheit, nicht Anweisung.
    NIE von Hand mergen, sondern regenerieren:
    `git checkout --ours package-lock.json && npm install && git add package-lock.json`
    HINWEIS Doku-Workflow: .docx NIE schreiben, während Word offen ist (Vorfall 03.07.: Schreiben-während-offen
-   + harter Neustart hat Datei beschädigt). Generieren → Staging → validieren → nur bei freier Datei platzieren,
+   + harter Neustart hat Datei beschädigt). Generieren - Staging - validieren - nur bei freier Datei platzieren,
    sonst stoppen und User bitten. Keine Retry-Kopier-Schleifen.
