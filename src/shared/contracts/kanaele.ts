@@ -225,4 +225,37 @@ export const KANAELE = {
     pruefeVorlagenReferenzen: 'vorlagen:pruefeVorlagenReferenzen',
     autoSpeichernStatus: 'vorlagen:autoSpeichernStatus',
   },
+
+  // marken-store (#304). Die zehn Namen ENTSTEHEN hier und nirgends sonst; die Verdrahtung
+  // (src/main/ipc-gateway/marken-verdrahtung.ts und marken-speicherstatus-verdrahtung.ts)
+  // und die Renderer-Seite lesen sie beide von hier. Präfix `marken:` nach dem Muster
+  // `<modul>:<operation>` – TK 9.1.1 Punkt 4.
+  //
+  // ALLE NINE Instant-Operationen plus das EINE Ereignis, kein weiterer: kein Kanal für #288
+  // (Pfad-Auflösung, liefert absolute Pfade, TK 9.5.7), #277 (atomares Schreiben), #279
+  // (Vererbung), #280 (Seeding) und #281 (Migration) – alle laufen main-intern ohne Aufruf
+  // aus dem Renderer.
+  //
+  // DER SCHLÜSSEL UND DER KANALNAME TRAGEN BEIDE DEN UMLAUT – ENTSCHEIDUNG DES AUFTRAGGEBERS
+  // vom 07.10.2026. Die Issues #304/#306 verlangten urspruenglich: "Der SCHLUESSEL ist ASCII,
+  // der KANALNAME trigt den Umlaut" (#306, mit Verweis auf #297/#298/#309). Das widersprach
+  // PER KONSTRUKTION dem gebauten Vertragstest von #25 (tests/unit/kanaele.spec.ts:
+  // `kanal === `${modul}:${operation}``, zeichengleich) - exakt derselbe Bruch wie bei
+  // `media.oeffneMedienDialog` am 13.08.2026. Aufgeloest wie dort zugunsten des Umlauts
+  // (Schluessel UND String); die ASCII-Fassung in den Issues wird nachgezogen (Nachtrag #304).
+  //
+  // ALLE marken-store-Operationen sind Instant (kein Auftrag der Queue, BRIEFING
+  // Abschnitt 5); die Hülle trägt nur der Instant-Aufruf (TK 9.1.1 Punkt 2).
+  marken: {
+    listeMarken:             'marken:listeMarken',
+    leseMarke:               'marken:leseMarke',
+    erstelleMarke:           'marken:erstelleMarke',
+    bearbeiteMarke:          'marken:bearbeiteMarke',
+    pruefeMarkenReferenzen:  'marken:pruefeMarkenReferenzen',
+    loescheMarke:            'marken:loescheMarke',
+    importiereMarkenDatei:   'marken:importiereMarkenDatei',
+    entferneMarkenDatei:     'marken:entferneMarkenDatei',
+    öffneMarkenDateiDialog: 'marken:öffneMarkenDateiDialog', // #306 (Schlüssel mit Umlaut, Entscheidung 07.10.)
+    autoSpeichernStatus:     'marken:autoSpeichernStatus', // Ereignis Main → Renderer, ohne Hülle
+  },
 } as const

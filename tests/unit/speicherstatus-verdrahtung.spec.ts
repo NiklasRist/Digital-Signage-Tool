@@ -314,7 +314,7 @@ describe("Kanal-Registry (#25) nach der Ergaenzung durch #238", () => {
     const quelle = readFileSync("src/shared/contracts/kanaele.ts", "utf8");
     // Die zwei neuen Eintraege sind die EINZIGEN Auto-Speichern-Kanaele.
     const treffer = quelle.match(/autoSpeichernStatus:/g) ?? [];
-    expect(treffer).toHaveLength(2);
+    expect(treffer).toHaveLength(3); // Drittens #304: marken:autoSpeichernStatus
     expect(quelle).toContain("autoSpeichernStatus: 'project:autoSpeichernStatus',");
     expect(quelle).toContain("autoSpeichernStatus: 'vorlagen:autoSpeichernStatus',");
   });
