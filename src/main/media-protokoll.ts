@@ -16,17 +16,18 @@
 // `path.join` und keinen Zugriff auf ein Projektverzeichnis.
 
 import { protocol } from "electron";
+import type { CustomScheme } from "electron";
 
 /** Das Schema, unter dem der Renderer Medien laedt. */
 const SCHEMA = "media";
 
 /**
- * Meldet `media` als privilegiertes Schema an.
- *
- * MUSS vor `app.whenReady()` laufen (#3, Schritt 1). Electron wertet diese Liste beim
- * Hochfahren der Netzwerk-Schicht EINMAL aus; eine spaetere Anmeldung wird schlicht
- * nicht mehr beruecksichtigt, und zwar ohne Fehlermeldung - die URLs verhielten sich
- * dann im Renderer unzuverlaessig, ohne dass irgendwo etwas protokolliert wuerde.
+ * Die Schema-Beschreibung als DATEN, nicht als Aufruf. Der Bootstrap (#309, src/main/index.ts)
+ * sammelt sie zusammen mit MARKEN_SCHEMA (#290) und ruft
+ * protocol.registerSchemesAsPrivileged GENAU EINMAL auf - Electron laesst nur einen Aufruf zu,
+ * und er muss VOR app.whenReady() stehen (#3, Schritt 1). Eine spaetere oder zweite Anmeldung
+ * wird schlicht nicht mehr beruecksichtigt, und zwar ohne Fehlermeldung - die URLs verhielten
+ * sich dann im Renderer unzuverlaessig, ohne dass irgendwo etwas protokolliert wuerde.
  *
  * Zu den vier Privilegien:
  * - `standard`: laesst `media://projektId/dateiname` nach den ueblichen URL-Regeln
@@ -41,19 +42,15 @@ const SCHEMA = "media";
  * - `supportFetchAPI`: erlaubt `fetch()` auf solche URLs. Das template-canvas laedt
  *   Motive vor dem Zeichnen (TK 9.10.3).
  */
-export function registriereMediaProtokollSchema(): void {
-  protocol.registerSchemesAsPrivileged([
-    {
-      scheme: SCHEMA,
-      privileges: {
-        secure: true,
-        supportFetchAPI: true,
-        stream: true,
-        standard: true,
-      },
-    },
-  ]);
-}
+export const MEDIA_SCHEMA: CustomScheme = {
+  scheme: SCHEMA,
+  privileges: {
+    secure: true,
+    supportFetchAPI: true,
+    stream: true,
+    standard: true,
+  },
+};
 
 /**
  * Meldet den Protokoll-Handler an - vorerst als STUB.
