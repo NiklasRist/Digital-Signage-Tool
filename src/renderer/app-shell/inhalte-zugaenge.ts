@@ -22,8 +22,7 @@
 // GENAU EINmal; #243 ist idempotent und `ohneAufzeichnung` liefert einen rohen
 // Zugang unverändert selbst - projektRoh ist also ToBe-gleich sichten.projekt.
 
-import type { Marke } from '../../shared/contracts/marke'
-import type { Sichten, ProjektZugang, VorlagenZugang, ZeichenZugang } from './sichten'
+import type { Sichten, ProjektZugang, VorlagenZugang, ZeichenZugang, MarkenZugang } from './sichten'
 import { umhuelleFuerBearbeitung, ohneAufzeichnung } from './undo-aufzeichnung'
 
 /**
@@ -38,7 +37,8 @@ export interface Reiterzugaenge {
   projektRoh: ProjektZugang
   vorlagen: VorlagenZugang
   zeichnen: ZeichenZugang
-  marke: Marke
+  /** ERSETZT `marke: Marke`. Reine Weiterreichung von `sichten.marken` – dieselbe Objektreferenz. */
+  marken: MarkenZugang
 }
 
 /**
@@ -56,6 +56,6 @@ export function verteileZugaenge(sichten: Sichten): Reiterzugaenge {
     // unverändert durchgereicht - es wird nichts kopiert, nichts ergänzt:
     vorlagen: sichten.vorlagen,
     zeichnen: sichten.zeichnen,
-    marke: sichten.marke,
+    marken: sichten.marken,
   }
 }

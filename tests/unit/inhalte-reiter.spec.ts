@@ -14,7 +14,6 @@ import { createRoot, type Root } from 'react-dom/client'
 import { createElement, type ReactElement } from 'react'
 
 import type { Project } from '../../src/shared/contracts/project'
-import type { Marke } from '../../src/shared/contracts/marke'
 import type { VorlagenZugang, ZeichenZugang, ProjektZugang, Sichten } from '../../src/renderer/app-shell/sichten'
 import type { Projektsicht } from '../../src/renderer/composer/projektzustand'
 
@@ -107,13 +106,7 @@ function baueSichten(): Sichten {
     hole: () => doppel.voraussetzungen as never,
     verwirfMotivBestand: () => {},
   }
-  const marke: Marke = {
-    id: 'm1', name: 'Probe', parent: null, eingebaut: true,
-    farben: null as never, schriften: null as never, logo: null as never,
-    sicherheit: { horizontal: 96, vertikal: 54 }, radien: null as never,
-    schatten: null as never, slogan: null as never, herkunftJeFeld: null as never,
-  }
-  return { projekt: zugang, vorlagen, zeichnen, marke }
+  return { projekt: zugang, vorlagen, zeichnen, marken: { lade: () => defaultErgebnis() as never, hole: () => null, aufGeaendert: () => () => {} } }
 }
 
 function defaultErgebnis(): never {
