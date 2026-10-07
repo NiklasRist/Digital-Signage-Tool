@@ -267,7 +267,7 @@ protocol.registerSchemesAsPrivileged([MEDIA_SCHEMA, MARKEN_SCHEMA]);
 
 // SCHRITT 2: erzwingeEinzelInstanz(datenOrt, beiZweitemStart) - #51,
 //            src/main/project-store/einzel-instanz.ts
-// (#331, die LUECKE durch den echten Aufruf ersetzt - das Abschlussglied der Kette):
+// (#331, Abschlussglied der Kette):
 const startBefund = erzwingeEinzelInstanz(ermittleDatenOrt(), () => {
   // `beiZweitemStart` - HIER uebergeben, weil diese Datei das Fenster besitzt (#51):
   if (hauptfenster !== null && !hauptfenster.isDestroyed()) hauptfenster.focus();
@@ -335,9 +335,8 @@ void app.whenReady().then(async () => {
 
   // SCHRITT 5: die DREIZEHN Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
   // Sie stehen vor erstelleHauptfenster(), weil keine von ihnen ein Fenster braucht.
-  // Verdrahtet sind ALLE Positionen 1 bis 13 (die Stand-Meldung mit LUECKEN ist seit
-  // dem Nachzug #274 ueberholt); kein Ersatzaufruf, keine von Hand gebaute
-  // ipcMain.handle-Registrierung, kein eigener Kanalname.
+  // Alle Positionen 1 bis 13 sind verdrahtet; kein Ersatzaufruf, keine von Hand
+  // gebaute ipcMain.handle-Registrierung, kein eigener Kanalname.
   //
   // Die Nummerierung bleibt unveraendert, auch wo noch Luecken dazwischenstehen: Sie
   // ist Vertrag aus #3 und wird nicht "aufgeraeumt".
