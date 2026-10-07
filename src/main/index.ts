@@ -5,21 +5,22 @@
 // ist Teil des Vertrags aus #3, nicht Geschmackssache - die Begruendung steht jeweils
 // am Aufrufpunkt.
 //
-// STAND HEUTE (05.10.2026, nach #274): Verdrahtet ist alles, dessen Funktion einen
+// STAND HEUTE (07.10.2026, nach #309): Verdrahtet ist alles, dessen Funktion einen
 // echten Rumpf hat - nachgeschlagen in der jeweils definierenden Datei, nicht im Issue:
-//   - die beiden Protokoll-Registrierungen (#9, Schritt 1 und 4)
+//   - der EINE Protokoll-Registrierungs-Aufruf mit [MEDIA_SCHEMA (#9/#321), MARKEN_SCHEMA (#290)],
+//     Schritt 1; plus die beiden Protokoll-Handler (#9, #290, Schritt 4 und 4b)
 //   - Schritt 5, die Positionen 1 (#76), 2 (#153), 3 (#240, mit #274), 4 (#77),
-//     5 (#93), 6 (#92), 7 (#109), 8 (#255, mit #274), 9 (#189), 10 (#190) und 11 (#334);
-//     die zwoelfte Anmeldung (M8) kommt mit #309 hinten dazu
-//   - Schritt 7, Positionen 1 (#71), 2 (#191) und 3 (#238, mit #274)
+//     5 (#93), 6 (#92), 7 (#109), 8 (#255, mit #274), 9 (#189), 10 (#190), 11 (#334)
+//     und 12 (#304); die dreizehnte Anmeldung (Nachzug #323) kommt hinten dazu
+//   - Schritt 7, Positionen 1 (#71), 2 (#191), 3 (#238, mit #274) und 4 (#304)
 //   - Schritt 8 (#172)
-//   - beide Beenden-Funktionen (#47, #98)
+//   - alle drei Beenden-Flushs (#47, #98, #277)
 // AUSSERHALB dieser Liste steht Schritt 2 (Einzel-Instanz, #51) als Sonderfall
 // unveraendert: erzwingeEinzelInstanz liefert `StartBefund` statt des in #3 zitierten
 // `boolean` - eine Vertragsabweichung, die erst zu klaeren ist. Die Markierung bei
 // SCHRITT 2 bleibt deshalb stehen.
-// Die M8-Eintraege (#309, Nachzug #323) stehen noch aus; die Lueckenlosigkeit von
-// src/main/index.ts stellt #331 fest, nicht dieses Issue.
+// Die M8-Eintraege aus #309 stehen seit heute drin; der Nachzug #323 (dreizehnte
+// Anmeldung) kommt spaeter. Die Lueckenlosigkeit von src/main/index.ts stellt #331 fest.
 // Ausdruecklich KEINE Attrappen: Eine leere Ersatzfunktion wuerde
 // einen Kanal registrieren, der zu funktionieren scheint, und die echte Verdrahtung
 // spaeter an der doppelten Registrierung scheitern lassen - oder, schlimmer, sie tut
@@ -27,7 +28,7 @@
 
 import path from "node:path";
 
-import { app, BrowserWindow, dialog, session } from "electron";
+import { app, BrowserWindow, dialog, protocol, session } from "electron";
 
 import { verdrahteQueueIPC } from "./auftrags-manager/ipc-verdrahtung";
 import { meldeExportHandlerAn } from "./export-service/handler-anmeldung";
@@ -44,12 +45,16 @@ import { verdrahteProjectStoreNachtrag2IPC } from "./ipc-gateway/project-store-n
 import { verdrahteProjectStoreNachtrag4IPC } from "./ipc-gateway/project-store-nachtrag-4";
 import { verdrahteProjectStoreIPC } from "./ipc-gateway/project-store-verdrahtung";
 import { verdrahteSpeicherstatusIPC } from "./ipc-gateway/speicherstatus-verdrahtung";
+import { verdrahteMarkenSpeicherstatusIPC } from "./ipc-gateway/marken-speicherstatus-verdrahtung"; // #304
+import { verdrahteMarkenIPC } from "./ipc-gateway/marken-verdrahtung"; // #304
 import {
+  MEDIA_SCHEMA,
   registriereMediaProtokollHandlerStub,
-  registriereMediaProtokollSchema,
 } from "./media-protokoll";
 import { registriereMedienHandler } from "./media-service/handler-registrierung";
 import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
+import { MARKEN_SCHEMA, registriereMarkenProtokollHandler } from "./marken-store/marken-protokoll"; // #290
+import { flushBestand as flushMarkenBestand } from "./marken-store/schreibe-marken"; // #277, ALIAS-PFLICHT
 import { flushBeimBeenden } from "./project-store/auto-speichern";
 import { raeumeVerwaisteArbeitsbereiche } from "./render-service/arbeitsbereich";
 import { meldeRenderHandlerAn } from "./render-service/handler-anmeldung";
@@ -237,7 +242,18 @@ async function pruefeBinariesOderBrichAb(): Promise<boolean> {
 // SCHRITT 1: Muss VOR app.whenReady() laufen. Ein privilegiertes Custom-Schema, das
 // zu spaet angemeldet wird, greift im Renderer nicht zuverlaessig - und zwar ohne
 // Fehlermeldung.
-registriereMediaProtokollSchema();
+//
+// Der EINMAL-ZWANG (Electron 43.2.0, electron.d.ts): "This method can only be used
+// before the ready event of the app module gets emitted and can be called only once."
+// Zwei Registrier-Funktionen waeren zwei Aufrufe - und haetten BEIDE Ausgaenge still
+// gemacht. Deshalb liefern die besitzenden Module ihre Schema-Beschreibung als DATEN
+// (MEDIA_SCHEMA #9/#321, MARKEN_SCHEMA #290) und DIESE Stelle ruft GENAU EINMAL mit
+// dem Array auf. MEDIA_SCHEMA zuerst: media ist das aeltere Protokoll und stand schon
+// da; jedes kuenftige Protokoll reiht sich hinten ein.
+//
+// Die Konstanten werden UNVERAENDERT durchgereicht - kein Feld ergaenzt, keins
+// ueberschrieben (corsEnabled bleibt bewusst ungesetzt, Experiment in #290).
+protocol.registerSchemesAsPrivileged([MEDIA_SCHEMA, MARKEN_SCHEMA]);
 
 // SCHRITT 2: erzwingeEinzelInstanz(datenOrt, beiZweitemStart) - #51,
 //            src/main/project-store/einzel-instanz.ts
@@ -285,11 +301,17 @@ void app.whenReady().then(async () => {
   // M1-Issue "project-store: media://-Handler" (Pfad-Autoritaet, TK 9.5.7).
   registriereMediaProtokollHandlerStub();
 
+  // SCHRITT 4b: der EIGENE marken://-Handler (#290) - unmittelbar nach dem media-Stub,
+  // dieselbe Reihenfolge-Regel ("NACH app.whenReady(), vor dem Laden des Hauptfensters",
+  // Signatur-Kommentar #290). Synchron, kein await, kein try/catch (wie alle
+  // Anmeldungen hier).
+  registriereMarkenProtokollHandler();
+
   setzeCspHeader();
 
-  // SCHRITT 5: die ELF Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
+  // SCHRITT 5: die ZWOELF Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
   // Sie stehen vor erstelleHauptfenster(), weil keine von ihnen ein Fenster braucht.
-  // Verdrahtet sind die Positionen 1, 2, 4, 5, 6, 9, 10 und 11; die uebrigen DREI (3, 7
+  // Verdrahtet sind die Positionen 1, 2, 4, 5, 6, 9, 10, 11 und 12; die uebrigen DREI (3, 7
   // und 8) sind LUECKEN - kein Ersatzaufruf, keine von Hand gebaute
   // ipcMain.handle-Registrierung, kein eigener Kanalname.
   //
@@ -370,12 +392,19 @@ void app.whenReady().then(async () => {
   //     Positionen 1 bis 3 - doppelte Registrierung faellt sofort auf.
   verdrahteProjectStoreNachtrag4IPC();
 
+  // 12. verdrahteMarkenIPC() - #304, src/main/ipc-gateway/marken-verdrahtung.ts.
+  //     Meldet die NEUN marken-Instant-Kanaele an. `marken:` ist ein neuer Kanal-
+  //     Namensraum ohne Vorgaenger - deshalb ans ENDE hinter meldeExportHandlerAn()
+  //     bzw. Position 11 (#334) statt in der Mitte; die Positionen 1 bis 11 bleiben
+  //     unveraendert. Argumentlos - kein Fenster, kein Zustand.
+  verdrahteMarkenIPC();
+
   // SCHRITT 6: Fenster erzeugen und Inhalt laden.
   const fenster = erstelleHauptfenster();
 
-  // SCHRITT 7: die DREI Anmeldungen MIT Fenster, in genau dieser Reihenfolge. Jede
+  // SCHRITT 7: die VIER Anmeldungen MIT Fenster, in genau dieser Reihenfolge. Jede
   // bekommt DASSELBE BrowserWindow als Parameter - keine sucht sich eines selbst
-  // (TK 9.1.1 Punkt 10). Die Positionen 1 und 2 sind verdrahtet, 3 ist eine LUECKE.
+  // (TK 9.1.1 Punkt 10). Alle vier Positionen sind verdrahtet.
   //
   // Warum diese drei NACH dem Fenster stehen und das fuer ihre Aufruf-Kanaele
   // unkritisch ist: Schritt 6 STOESST das Laden nur an; der Renderer-Code laeuft erst,
@@ -415,6 +444,16 @@ void app.whenReady().then(async () => {
   //    1. und 2. (TK 9.1.1 Punkt 10). Kein try/catch: lautlos zu
   //    verlieren ist schlimmer als ein Start, der abbricht - wie in den Positionen darüber.
   verdrahteSpeicherstatusIPC(fenster);
+
+  // 4. verdrahteMarkenSpeicherstatusIPC(fenster) - #304,
+  //    src/main/ipc-gateway/marken-speicherstatus-verdrahtung.ts. Der Sender des
+  //    Ereignisses `marken:autoSpeichernStatus` (#278). UNMITTELBAR nach 3.: beide
+  //    behandeln Auto-Speichern-Ereignisse - direkt nacheinander stehend faellt eine
+  //    vergessen dritte Zeile sofort auf. Sie braucht EIN BrowserWindow und bekommt
+  //    DASSELBE wie 1. bis 3. (TK 9.1.1 Punkt 10). Ohne sie bleibt ein gescheitertes
+  //    Speichern der marken.json vollstaendig unsichtbar (NFA-02, TK 9.15.1). Kein
+  //    try/catch: lautlos zu verlieren ist schlimmer als ein Start, der abbricht.
+  verdrahteMarkenSpeicherstatusIPC(fenster);
 
   // SCHRITT 8: raeumeVerwaisteArbeitsbereiche() - #172,
   // src/main/render-service/arbeitsbereich.ts. Entfernt reel-*-Ordner, die ein
@@ -470,12 +509,13 @@ app.on("before-quit", (ereignis) => {
 /**
  * Schliesst beim Beenden ab, was noch aussteht (Sofort-Flush, Fall 3 aus TK 9.5.4).
  *
- * ZWEI ZWEIGE, nicht einer (#3, entschieden am 10.08.2026):
- *   - beide Flushs gelungen -> Merkflagge setzen, Beenden GENAU EINMAL erneut anstossen
- *   - mindestens einer gescheitert -> Beenden NICHT erneut anstossen, sondern Dialog mit
- *     "Erneut versuchen" und dem benannten Ausweg "Trotzdem schliessen und Aenderungen
- *     verwerfen" (nie vorausgewaehlt). TK 9.5.4: "Scheitert der Sofort-Flush beim BEENDEN,
- *     schliesst die App NICHT (bindend)." Vom User am 12.08.2026 bestaetigt.
+  * ZWEI ZWEIGE, nicht einer (#3, entschieden am 10.08.2026):
+  *   - alle drei Flushs gelungen -> Merkflagge setzen, Beenden GENAU EINMAL erneut anstossen
+  *   - mindestens einer gescheitert -> Beenden NICHT erneut anstossen, sondern Dialog mit
+  *     "Erneut versuchen" und dem benannten Ausweg "Trotzdem schliessen und Aenderungen
+  *     verwerfen" (nie vorausgewaehlt). TK 9.5.4: "Scheitert der Sofort-Flush beim BEENDEN,
+  *     schliesst die App NICHT (bindend)." Vom User am 12.08.2026 bestaetigt. Fuer
+  *     marken.json gilt dieselbe Regelung (TK 9.15.1, v3.11).
  *
  * Warum das ueberhaupt sein muss: Das Auto-Speichern ist um 3-5 s entprellt (TK
  * 9.5.4). Ohne diesen Ablauf ist der Entprellungstimer genau das Loch, durch das die
@@ -525,18 +565,19 @@ async function schliesseAusstehendesAb(): Promise<void> {
 }
 
 /**
- * Fuehrt die beiden Sofort-Flushs aus und liefert je eine Zeile fuer die, die
+ * Fuehrt die drei Sofort-Flushs aus und liefert je eine Zeile fuer die, die
  * gescheitert sind (leer = alles geschrieben).
  *
- * Beide Aufrufe werden EINZELN ABGEWARTET, bevor das Fenster geschlossen und der
+ * Alle drei Aufrufe werden EINZELN ABGEWARTET, bevor das Fenster geschlossen und der
  * Prozess beendet wird: "Beim Beenden blockiert die App, bis der Schreibvorgang
  * abgeschlossen ist (kein Schliessen mit ausstehendem Schreiben)." (TK 9.5.4) Kein
- * Promise.all: Beide schreiben an denselben Datenort, und die Reihenfolge des
- * Vertrags ist project.json vor vorlagen.json.
+ * Promise.all: Es liefe schneller, mache aus drei Fehlschlaegen aber einen einzigen
+ * abgelehnten Promise und verdecke, WELCHER Bestand nicht gesichert werden konnte -
+ * ausgerechnet bei der Meldung, die dem Nutzer sagen soll, was er verliert.
  *
- * Der ZWEITE Flush laeuft auch dann, wenn der erste gescheitert ist. Sie haengen nicht
- * voneinander ab; ein Abbruch nach dem ersten Fehlschlag verloere den Vorlagenbestand
- * zusaetzlich, ohne irgendetwas zu retten.
+ * Der ZWEITE und der DRITTE Flush laufen auch dann, wenn einer davor gescheitert ist.
+ * Die Bestaenge haengen nicht voneinander ab; ein Abbruch nach dem ersten Fehlschlag
+ * verloere den Vorlagen- bzw. den Markenbestand zusaetzlich, ohne irgendetwas zu retten.
  */
 async function fuehreBeendenFlushsAus(): Promise<string[]> {
   const offen: string[] = [];
@@ -557,6 +598,20 @@ async function fuehreBeendenFlushsAus(): Promise<string[]> {
   const vorlagen = await flushBestand();
   if (!vorlagen.ok) {
     offen.push(`vorlagen.json (${vorlagen.fehler.code}): ${vorlagen.fehler.meldung}`);
+  }
+
+  // #277, src/main/marken-store/schreibe-marken.ts. Dasselbe fuer den app-weiten
+  // Markenbestand marken.json; steht dort nichts aus, ist das ein erfolgreicher
+  // Leerlauf, kein Fehler - deshalb KEINE vorgeschaltete Pruefung ("gibt es ueberhaupt
+  // Marken?"), das waere Fachlogik im Bootstrap. Und deshalb UNTER ALIAS importiert:
+  // flushBestand heisst auch die Vorlagen-Funktion (#98), und beide laufen in DEMSELBEN
+  // Rumpf - ohne Alias gaebe es einen Namenskollision oder, schlimmer, einen Import,
+  // der still den FALSCHEN Bestand sichert. Rueckgabe wird hier nicht ausgewertet und
+  // nicht umgeformt (verdrahteMarkenSpeicherstatusIPC (#304) laeuft ungefaehrdet
+  // daneben; die Ereignis-Schicht ist Sache des marken-store).
+  const marken = await flushMarkenBestand();
+  if (!marken.ok) {
+    offen.push(`marken.json (${marken.fehler.code}): ${marken.fehler.meldung}`);
   }
 
   return offen;

@@ -26,7 +26,7 @@ const h = vi.hoisted(() => {
     // Antworten der beiden Flushs, je Aufruf abgearbeitet; laeuft die Liste leer,
     // gelingt der Flush. So laesst sich "erst Fehlschlag, dann Erfolg" fuer die
     // Wiederholung stellen, ohne die Reihenfolge zu erraten.
-    flushAntworten: { projekt: [] as FlushErgebnis[], vorlagen: [] as FlushErgebnis[] },
+    flushAntworten: { projekt: [] as FlushErgebnis[], vorlagen: [] as FlushErgebnis[], marken: [] as FlushErgebnis[] },
     gelungen,
     hoerer: {} as Record<string, ((ereignis: { preventDefault: () => void }) => void) | undefined>,
     dialogAntwort: 0,
@@ -49,6 +49,12 @@ const h = vi.hoisted(() => {
     }),
     verdrahteProjectStoreNachtrag4IPC: vi.fn(() => {
       protokoll.push("verdrahteProjectStoreNachtrag4IPC");
+    }),
+    verdrahteMarkenIPC: vi.fn(() => {
+      protokoll.push("verdrahteMarkenIPC");
+    }),
+    verdrahteMarkenSpeicherstatusIPC: vi.fn((_: object): void => {
+      protokoll.push("verdrahteMarkenSpeicherstatusIPC");
     }),
     meldeRenderHandlerAn: vi.fn(() => {
       protokoll.push("meldeRenderHandlerAn");
@@ -100,6 +106,14 @@ const h = vi.hoisted(() => {
       protokoll.push("flushBestand");
       return h.flushAntworten.vorlagen.shift() ?? h.gelungen;
     }),
+    flushMarkenBestand: vi.fn(async (): Promise<FlushErgebnis> => {
+      await new Promise((weiter) => setTimeout(weiter, 0));
+      protokoll.push("flushMarkenBestand");
+      return h.flushAntworten.marken.shift() ?? h.gelungen;
+    }),
+    // Die Aufnahmen: registerSchemesAsPrivileged (#309) wird GENAU EINMAL gerufen;
+    // hier steht je Aufruf das uebergebene Array.
+    schemataAnmeldungen: [] as unknown[][],
 
     zeigeFehler: vi.fn(),
     beende: vi.fn(),
@@ -132,6 +146,11 @@ vi.mock("electron", () => {
       quit: h.quit,
       exit: h.beende,
     },
+    protocol: {
+      registerSchemesAsPrivileged: vi.fn((schemata: unknown[]) => {
+        h.schemataAnmeldungen.push(schemata);
+      }),
+    },
     BrowserWindow: FensterDoppel,
     dialog: {
       showErrorBox: h.zeigeFehler,
@@ -153,8 +172,27 @@ vi.mock("../../src/main/ffmpeg-pfad", () => ({
 }));
 
 vi.mock("../../src/main/media-protokoll", () => ({
-  registriereMediaProtokollSchema: vi.fn(),
+  // MEDIA_SCHEMA ist seit #321 DATEN; der Bootstrap (#309) durchreicht das Objekt
+  // unverändert. Der Inhalt selbst prueft media-protokoll-schema.spec.ts (#321).
+  MEDIA_SCHEMA: { scheme: "media", privileges: { secure: true, supportFetchAPI: true, stream: true, standard: true } },
   registriereMediaProtokollHandlerStub: vi.fn(),
+}));
+
+vi.mock("../../src/main/marken-store/marken-protokoll", () => ({
+  MARKEN_SCHEMA: { scheme: "marken" },
+  registriereMarkenProtokollHandler: vi.fn(),
+}));
+
+vi.mock("../../src/main/ipc-gateway/marken-verdrahtung", () => ({
+  verdrahteMarkenIPC: h.verdrahteMarkenIPC,
+}));
+
+vi.mock("../../src/main/ipc-gateway/marken-speicherstatus-verdrahtung", () => ({
+  verdrahteMarkenSpeicherstatusIPC: h.verdrahteMarkenSpeicherstatusIPC,
+}));
+
+vi.mock("../../src/main/marken-store/schreibe-marken", () => ({
+  flushBestand: h.flushMarkenBestand,
 }));
 
 vi.mock("../../src/main/auftrags-manager/ipc-verdrahtung", () => ({
@@ -257,8 +295,12 @@ async function loeseBeendenAus(): Promise<boolean> {
       aufgehalten = true;
     },
   });
-  // Zwei Zeitgeber-Durchlaeufe: Der zweite Flush haengt selbst an einem setTimeout,
-  // der Dialog-Zweig kann eine weitere Runde brauchen.
+  // Sechs Zeitgeber-Durchlaeufe: Der zweite und dritte Flush haengen je an einem
+  // setTimeout, die Wiederholungsrunde ("Erneut versuchen") an weiteren - drei reichte
+  // mit einem Timer-Flush, seit #309 sind es zwei (Vorlagen + Marken).
+  await new Promise((weiter) => setTimeout(weiter, 0));
+  await new Promise((weiter) => setTimeout(weiter, 0));
+  await new Promise((weiter) => setTimeout(weiter, 0));
   await new Promise((weiter) => setTimeout(weiter, 0));
   await new Promise((weiter) => setTimeout(weiter, 0));
   await new Promise((weiter) => setTimeout(weiter, 0));
@@ -273,6 +315,8 @@ beforeEach(() => {
   h.binaries.ffprobe = true;
   h.flushAntworten.projekt.length = 0;
   h.flushAntworten.vorlagen.length = 0;
+  h.flushAntworten.marken.length = 0;
+  h.schemataAnmeldungen.length = 0;
   h.hoerer = {};
   h.dialogAntwort = 0;
   h.dialogAufrufe.length = 0;
@@ -283,9 +327,9 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
     await starteBootstrap();
 
     // Die vollstaendige Kette der heute verdrahteten Stellen: Schritt 5 (Positionen 1
-    // bis 11 mit #274 geschlossen) VOR dem Fenster, Schritt 7 (Positionen 1 bis 3,
-    // mit #274) danach, Schritt 8 zum Schluss. Die M8-Anmeldungen (#309/#323) stehen
-    // noch aus; die Lueckenlosigkeit stellt #331 fest.
+    // bis 12 mit #274/#304 geschlossen) VOR dem Fenster, Schritt 7 (Positionen 1 bis 4,
+    // mit #274/#304) danach, Schritt 8 zum Schluss. Der Nachzug #323 steht noch aus;
+    // die Lueckenlosigkeit stellt #331 fest.
     expect(h.protokoll).toEqual([
       "verdrahteProjectStoreIPC",
       "verdrahteProjectStoreNachtragIPC",
@@ -298,10 +342,12 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       "meldeRenderHandlerAn",
       "meldeExportHandlerAn",
       "verdrahteProjectStoreNachtrag4IPC",
+      "verdrahteMarkenIPC",
       "erstelleHauptfenster",
       "verdrahteQueueIPC",
       "verdrahteExportUndFortschrittIPC",
       "verdrahteSpeicherstatusIPC",
+      "verdrahteMarkenSpeicherstatusIPC",
       "raeumeVerwaisteArbeitsbereiche",
     ]);
   });
@@ -323,8 +369,10 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       h.meldeRenderHandlerAn,
       h.meldeExportHandlerAn,
       h.verdrahteProjectStoreNachtrag4IPC,
+      h.verdrahteMarkenIPC,
       h.verdrahteQueueIPC,
       h.verdrahteExportUndFortschrittIPC,
+      h.verdrahteMarkenSpeicherstatusIPC,
       h.raeumeVerwaisteArbeitsbereiche,
     ]) {
       expect(anmeldung).toHaveBeenCalledTimes(1);
@@ -361,6 +409,7 @@ describe("Main-Bootstrap - Schritt 5: die Anmeldungen OHNE Fenster (#76, #153, #
     expect(h.verdrahteVorlagenIPC).toHaveBeenCalledWith();
     expect(h.meldeRenderHandlerAn).toHaveBeenCalledWith();
     expect(h.meldeExportHandlerAn).toHaveBeenCalledWith();
+    expect(h.verdrahteMarkenIPC).toHaveBeenCalledWith();
   });
 
   it("meldet den project-Nachtrag UNMITTELBAR nach dem project-store", async () => {
@@ -425,6 +474,7 @@ describe("Main-Bootstrap - Schritt 7: die Anmeldungen MIT Fenster (#71, #191)", 
     expect(h.fenster).toHaveLength(1);
     expect(h.verdrahteQueueIPC).toHaveBeenCalledWith(h.fenster[0]);
     expect(h.verdrahteExportUndFortschrittIPC).toHaveBeenCalledWith(h.fenster[0]);
+    expect(h.verdrahteMarkenSpeicherstatusIPC).toHaveBeenCalledWith(h.fenster[0]);
   });
 
   it("verdrahtet beide erst NACH der Fenstererzeugung", async () => {
@@ -458,19 +508,19 @@ describe("Main-Bootstrap - Schritt 8: raeumeVerwaisteArbeitsbereiche (#172)", ()
   });
 });
 
-describe("Main-Bootstrap - Beenden-Ablauf (#47, #98)", () => {
-  it("haelt das erste Beenden auf und stoesst es nach BEIDEN Flushs genau einmal erneut an", async () => {
+describe("Main-Bootstrap - Beenden-Ablauf (#47, #98, #277)", () => {
+  it("haelt das erste Beenden auf und stoesst es nach ALLEN DREI Flushs genau einmal erneut an", async () => {
     await starteBootstrap();
     h.protokoll.length = 0;
 
     const aufgehalten = await loeseBeendenAus();
 
     expect(aufgehalten).toBe(true);
-    // Die Reihenfolge misst zugleich, dass beide EINZELN abgewartet werden: Beide
+    // Die Reihenfolge misst zugleich, dass alle drei EINZELN abgewartet werden: Die
     // Flushs melden sich erst nach einem Mikrotask bzw. einem Zeitgeber-Durchlauf, das
     // Beenden steht dahinter. "Beim Beenden blockiert die App, bis der Schreibvorgang
     // abgeschlossen ist" (TK 9.5.4).
-    expect(h.protokoll).toEqual(["flushBeimBeenden", "flushBestand", "quit"]);
+    expect(h.protokoll).toEqual(["flushBeimBeenden", "flushBestand", "flushMarkenBestand", "quit"]);
     expect(h.quit).toHaveBeenCalledTimes(1);
   });
 
@@ -509,9 +559,11 @@ describe("Main-Bootstrap - Beenden-Ablauf (#47, #98)", () => {
     expect(h.protokoll).toEqual([
       "flushBeimBeenden",
       "flushBestand",
+      "flushMarkenBestand",
       "dialog",
       "flushBeimBeenden",
       "flushBestand",
+      "flushMarkenBestand",
       "quit",
     ]);
   });
@@ -539,25 +591,79 @@ describe("Main-Bootstrap - Beenden-Ablauf (#47, #98)", () => {
     // Die Ursache steht im Dialog, nicht nur im Protokoll.
     expect(optionen.detail).toContain("EACCES");
     // Und erst jetzt, auf ausdrueckliche Ansage, wird beendet.
-    expect(h.protokoll).toEqual(["flushBeimBeenden", "flushBestand", "dialog", "quit"]);
+    expect(h.protokoll).toEqual([
+      "flushBeimBeenden",
+      "flushBestand",
+      "flushMarkenBestand",
+      "dialog",
+      "quit",
+    ]);
   });
 
-  it("fuehrt den zweiten Flush auch dann aus, wenn der erste scheitert", async () => {
-    // Beide haengen nicht voneinander ab; ein Abbruch nach dem ersten Fehlschlag
-    // verloere den Vorlagenbestand zusaetzlich, ohne etwas zu retten.
-    h.flushAntworten.projekt.push({
-      ok: false,
-      fehler: { code: "speicher_fehler", meldung: "Datenort nicht nutzbar" },
-    });
-    h.dialogAntwort = 1;
+  it("fuehrt den zweiten und dritten Flush auch dann aus, wenn der erste scheitert",
+    // Alle drei haengen nicht voneinander ab; ein Abbruch nach dem ersten Fehlschlag
+    // verloere den Vorlagen- bzw. den Markenbestand zusaetzlich, ohne etwas zu retten.
+    async () => {
+      h.flushAntworten.projekt.push({
+        ok: false,
+        fehler: { code: "speicher_fehler", meldung: "Datenort nicht nutzbar" },
+      });
+      h.dialogAntwort = 1;
 
+      await starteBootstrap();
+      h.protokoll.length = 0;
+
+      await loeseBeendenAus();
+
+      expect(h.flushBestand).toHaveBeenCalledTimes(1);
+      expect(h.flushMarkenBestand).toHaveBeenCalledTimes(1);
+      expect(h.dialogAufrufe[0]!.detail).toContain("project.json");
+      expect(h.dialogAufrufe[0]!.detail).not.toContain("vorlagen.json");
+    });
+});
+
+describe("Main-Bootstrap - #309: der EINE Schema-Registrier-Aufruf (Schritt 1)", () => {
+  it("ruft registerSchemesAsPrivileged GENAU EINMAL mit [MEDIA_SCHEMA, MARKEN_SCHEMA]", async () => {
+    await starteBootstrap();
+
+    // Electron erlaeutert in 43.2.0 wörtlich: "... can be called only once." Ein
+    // zweiter Aufruf haette BEIDE Protokolle still gemacht - nicht nur marken://.
+    expect(h.schemataAnmeldungen).toHaveLength(1);
+    const schemata = h.schemataAnmeldungen[0] as unknown[];
+    expect(schemata).toHaveLength(2);
+    // UNVERAENDERT durchgereicht: Referenzvergleich gegen DIESELBEN Objekte, kein
+    // neu zusammengesetztes Objekt und kein ergaenztes Feld.
+    const [{ MEDIA_SCHEMA }, { MARKEN_SCHEMA }] = [
+      await import("../../src/main/media-protokoll"),
+      await import("../../src/main/marken-store/marken-protokoll"),
+    ];
+    expect(schemata[0]).toBe(MEDIA_SCHEMA);
+    expect(schemata[1]).toBe(MARKEN_SCHEMA);
+  });
+});
+
+describe("Main-Bootstrap - #309: der Marken-Flush im Beenden-Ablauf (#277)", () => {
+  it("beendet die App erst NACH dem abwartenden Marken-Flush", async () => {
+    // Gemessen, nicht behauptet: flushMarkenBestand haengt an einem echten Zeitgeber
+    // (siehe Mock oben), quit steht ALSO im Protokoll dahinter - genau der Fall, gegen
+    // den der Eintrag existiert: Ohne ihn beendete sich das Programm waehrend des
+    // Schreibvorgangs ("Sofort-Flush ... beim Beenden", TK 9.5.4 Fall 3).
     await starteBootstrap();
     h.protokoll.length = 0;
 
     await loeseBeendenAus();
 
+    expect(h.protokoll.indexOf("flushMarkenBestand")).toBeLessThan(h.protokoll.indexOf("quit"));
+    expect(h.quit).toHaveBeenCalledTimes(1);
+  });
+
+  it("importiert den Marken-Flush unter ALIAS - kein Falscher-Bestand-Import moeglich", async () => {
+    await starteBootstrap();
+    h.protokoll.length = 0;
+    await loeseBeendenAus();
+
+    // flushBestand heisst auch die Vorlagen-Funktion (#98); beide laufen im selben Rumpf.
+    expect(h.flushMarkenBestand).toHaveBeenCalledTimes(1);
     expect(h.flushBestand).toHaveBeenCalledTimes(1);
-    expect(h.dialogAufrufe[0]!.detail).toContain("project.json");
-    expect(h.dialogAufrufe[0]!.detail).not.toContain("vorlagen.json");
   });
 });
