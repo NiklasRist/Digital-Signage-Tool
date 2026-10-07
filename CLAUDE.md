@@ -11,6 +11,26 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
+## STAND HEUTE (07.10.2026, vorm.) – gilt vor ALLEM weiter unten
+
+**Der volle Stand dieser Session steht in [`docs/agents/uebergabe-2026-10-07-session.md`](docs/agents/uebergabe-2026-10-07-session.md)
+– LIES DIESE DATEI ZUERST, bevor du die veralte Tabelle hier unten liest.** Kurz:
+
+- **M8: 44/60, 6 baubereit** (gemessen `python3 tools/bereitschaft.py`); 5235 Tests grün, 283 Dateien,
+  Typecheck/Lint 0, Branch `main`.
+- **Diese Session geschlossen:** #304 (marken-Kanäle), #321+#309 (MEDIA_SCHEMA + Bootstrap),
+  #312 (marken-bereitstellung), #319a-Nachzug (setzeMarke stellt bereit), #295 (marken-uebersicht),
+  #305 (marken-zugang), #296/#307/#308 (Farben/Slogan/Sicherheitsabstand).
+- **AM ARBEITSBAUM UNCOMMITTET (Zweig `bau/m8-297-298`):** die zwei Quelldateien für #297/#298
+  stehen; die zugehörige Testdatei ist NUR Gerüst (kein `it`-Block) – die Suite schlägt sie
+  deshalb fehl, NUR wenn sie untracked liegt; `main` ist grün. Erste Aktion der Fortsetzung:
+  Testblöcke für #297/#298 schreiben, je ein Commit, Nachträge, close, merge. Danach #299/#300.
+- **Regeln der Session:** Umlaut-Entscheidung (Schlüssel UND Kanalname tragen den Umlaut,
+  aufgelöst mit dem User), Ghost-Spione (`resetAllMocks`, nicht `clearAllMocks`), Zahlwörter
+  12/4/16 statt 11/4/15 (#309-Nachtrag), die flaky `ENOTEMPTY`-Beobachtung liegt bei #289.
+
+---
+
 ## STAND HEUTE (06.10.2026, spaet) – gilt vor ALLEN älteren Angaben weiter unten
 
 ### Session 06.10. (Fortsetzung) in Kürze
