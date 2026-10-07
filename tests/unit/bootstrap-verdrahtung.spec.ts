@@ -50,6 +50,9 @@ const h = vi.hoisted(() => {
     verdrahteProjectStoreNachtrag4IPC: vi.fn(() => {
       protokoll.push("verdrahteProjectStoreNachtrag4IPC");
     }),
+    verdrahteProjectStoreNachtrag3IPC: vi.fn(() => {
+      protokoll.push("verdrahteProjectStoreNachtrag3IPC");
+    }),
     verdrahteMarkenIPC: vi.fn(() => {
       protokoll.push("verdrahteMarkenIPC");
     }),
@@ -226,6 +229,10 @@ vi.mock("../../src/main/ipc-gateway/project-store-nachtrag-4", () => ({
   verdrahteProjectStoreNachtrag4IPC: h.verdrahteProjectStoreNachtrag4IPC,
 }));
 
+vi.mock("../../src/main/ipc-gateway/project-store-nachtrag-3", () => ({
+  verdrahteProjectStoreNachtrag3IPC: h.verdrahteProjectStoreNachtrag3IPC,
+}));
+
 vi.mock("../../src/main/render-service/handler-anmeldung", () => ({
   meldeRenderHandlerAn: h.meldeRenderHandlerAn,
 }));
@@ -327,9 +334,9 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
     await starteBootstrap();
 
     // Die vollstaendige Kette der heute verdrahteten Stellen: Schritt 5 (Positionen 1
-    // bis 12 mit #274/#304 geschlossen) VOR dem Fenster, Schritt 7 (Positionen 1 bis 4,
-    // mit #274/#304) danach, Schritt 8 zum Schluss. Der Nachzug #323 steht noch aus;
-    // die Lueckenlosigkeit stellt #331 fest.
+    // bis 13 mit #274/#304/#323 geschlossen) VOR dem Fenster, Schritt 7 (Positionen 1
+    // bis 4, mit #274/#304) danach, Schritt 8 zum Schluss; die Lueckenlosigkeit
+    // stellt #331 fest (hinter #323, s. dessen index.ts-Verdrahtung).
     expect(h.protokoll).toEqual([
       "verdrahteProjectStoreIPC",
       "verdrahteProjectStoreNachtragIPC",
@@ -343,6 +350,7 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       "meldeExportHandlerAn",
       "verdrahteProjectStoreNachtrag4IPC",
       "verdrahteMarkenIPC",
+      "verdrahteProjectStoreNachtrag3IPC",
       "erstelleHauptfenster",
       "verdrahteQueueIPC",
       "verdrahteExportUndFortschrittIPC",
@@ -370,6 +378,7 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       h.meldeExportHandlerAn,
       h.verdrahteProjectStoreNachtrag4IPC,
       h.verdrahteMarkenIPC,
+      h.verdrahteProjectStoreNachtrag3IPC,
       h.verdrahteQueueIPC,
       h.verdrahteExportUndFortschrittIPC,
       h.verdrahteMarkenSpeicherstatusIPC,
