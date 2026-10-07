@@ -7,8 +7,6 @@ import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Marke } from '../../src/shared/contracts/marke'
-
 const doppel = vi.hoisted(() => ({
   umhuelleAufrufe: 0,
   ohneAufrufe: 0,
@@ -31,7 +29,7 @@ import {
   verteileZugaenge,
   type Reiterzugaenge,
 } from '../../src/renderer/app-shell/inhalte-zugaenge'
-import type { ProjektZugang, VorlagenZugang, ZeichenZugang, Sichten } from '../../src/renderer/app-shell/sichten'
+import type { ProjektZugang, VorlagenZugang, ZeichenZugang, Sichten, MarkenZugang } from '../../src/renderer/app-shell/sichten'
 
 function baueSichten(): Sichten {
   const zugang: ProjektZugang = {
@@ -59,13 +57,14 @@ function baueSichten(): Sichten {
     hole: () => null,
     verwirfMotivBestand: () => {},
   }
-  const marke: Marke = {
-    id: 'm1', name: 'Probe', parent: null, eingebaut: true,
-    farben: null as never, schriften: null as never, logo: null as never,
-    sicherheit: { horizontal: 96, vertikal: 54 }, radien: null as never,
-    schatten: null as never, slogan: null as never, herkunftJeFeld: null as never,
+  const marken: MarkenZugang = {
+    lade: (async () => {
+      throw new Error('nicht relevant')
+    }),
+    hole: () => null,
+    aufGeaendert: () => () => {},
   }
-  return { projekt: zugang, vorlagen, zeichnen, marke }
+  return { projekt: zugang, vorlagen, zeichnen, marken }
 }
 
 beforeEach(() => {
@@ -97,12 +96,12 @@ describe('verteileZugaenge (ENTSCHIEDEN 3 - die kritische Aussagestelle)', () =>
     expect(doppel.ohneAufrufe).toBe(1)
   })
 
-  it('vorlagen, zeichnen und marke sind UNVERAENDERT (drei benannte Pruefungen)', () => {
+  it('vorlagen, zeichnen und marken sind UNVERAENDERT (drei benannte Pruefungen)', () => {
     const sichten = baueSichten()
     const verteilt = verteileZugaenge(sichten)
     expect(verteilt.vorlagen).toBe(sichten.vorlagen)
     expect(verteilt.zeichnen).toBe(sichten.zeichnen)
-    expect(verteilt.marke).toBe(sichten.marke)
+    expect(verteilt.marken).toBe(sichten.marken)
   })
 
   it('die Eingabe wird NICHT veraendert (Object.freeze, Lauf ohne Wurf)', () => {

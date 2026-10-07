@@ -25,10 +25,8 @@
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import type { Project, Listenelement } from '../../shared/contracts/project'
-import type { Marke } from '../../shared/contracts/marke'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import { KANAELE } from '../../shared/contracts/kanaele'
-import { rufeAuf } from '../ipc-client/rufe-auf'
+import { type MarkenZugang, baueMarkenZugang } from './marken-zugang'
 import {
   type Projektsicht,
   ladeProjekt, holeSicht, setzeProjekt, setzeListe, gleicheElementAb, aufSichtGeaendert,
@@ -76,20 +74,27 @@ export interface Sichten {
   projekt: ProjektZugang
   vorlagen: VorlagenZugang
   zeichnen: ZeichenZugang
-  /** Die Markenpalette – app-weit, read-only, einmal je Fenster gelesen. */
-  marke: Marke
+  /** Zugang zum app-weiten Marken-Bestand (#305). ERSETZT das frühere Feld `marke: Marke`. */
+  marken: MarkenZugang
 }
+
+/** Re-Export, damit `inhalte-zugaenge.ts` weiterhin GENAU EINE Bezugsquelle für die
+ *  Zugangs-Typen hat (#197, ENTSCHIEDEN 1). */
+export type { MarkenZugang }
 
 /**
  * Baut die gemeinsamen Sichten EINMAL auf. Liefert entweder vollständige Sichten oder einen
  * benannten Fehler – NIE eine halb gefüllte Struktur.
  */
 export async function baueSichten(): Promise<Ergebnis<Sichten, string>> {
-  // Die Marke zuerst: Sie gehört zur Zeichenvorbereitung und zum Zeichnen selbst.
-  // Fehlt sie, gibt es keine nutzbare Kette - abbrechen, bevor etwas Halbes entsteht.
-  const markeErgebnis = await rufeAuf<Marke>(KANAELE.config.leseMarke)
-  if (!markeErgebnis.ok) {
-    return { ok: false, fehler: { code: markeErgebnis.fehler.code, meldung: markeErgebnis.fehler.meldung } }
+  // Schritt 1 - der Marken-Bestand (#305), an derselben Position wie früher die
+  // eine Marke (#197): Er gehört zur Zeichenvorbereitung und zum Editor-Aufbau.
+  // Fehlt er, gibt es keine nutzbare Kette - abbrechen, bevor etwas Halbes entsteht.
+  // Der Aufruf von `config:leseMarke` ist gestrichen, nicht umgebogen (TK 9.5.6:
+  // `leseMarke` ist aus der Operationstabelle entfallen).
+  const markenZugangErgebnis = await baueMarkenZugang()
+  if (!markenZugangErgebnis.ok) {
+    return { ok: false, fehler: { code: markenZugangErgebnis.fehler.code, meldung: markenZugangErgebnis.fehler.meldung } }
   }
 
   // Die Projekt-Sicht ist ein WERT-Modul (#121): Die Setz-Funktionen reisen als
@@ -140,7 +145,7 @@ export async function baueSichten(): Promise<Ergebnis<Sichten, string>> {
     projekt: projektZugang,
     vorlagen: vorlagenZugang,
     zeichnen: zeichenZugang,
-    marke: markeErgebnis.wert,
+    marken: markenZugangErgebnis.wert,
   }
 
   zuletztGebaut = sichten

@@ -360,7 +360,7 @@ function frischeDoppel(): void {
       hole: vi.fn(() => null),
       verwirfMotivBestand: vi.fn(),
     },
-    marke: {} as object,
+    marken: {} as object,
   }
   d.sitzungshalterDoppel = { doppel: 'sitzung' }
 }
@@ -369,14 +369,14 @@ function frischeDoppel(): void {
 function stelleBereitOhneProjekt(
   hinweis: Record<string, unknown> = { art: 'kein_aktives_projekt' },
 ): void {
-  d.baueSichtenAntwort = { ok: true, wert: { projekt: {}, vorlagen: {}, zeichnen: {}, marke: {} } }
+  d.baueSichtenAntwort = { ok: true, wert: { projekt: {}, vorlagen: {}, zeichnen: {}, marken: {} } }
   d.starteSitzungAntwort = { art: 'kein-projekt', reiter: 'projekte', hinweis }
   d.bereiteVorAntwort = { ok: true, wert: {} }
 }
 
 /** Bereit MIT wiederhergestelltem Projekt (Schritt 3 ruft bereiteVor). */
 function stelleBereitMitProjekt(): void {
-  d.baueSichtenAntwort = { ok: true, wert: { projekt: {}, vorlagen: {}, zeichnen: {}, marke: {} } }
+  d.baueSichtenAntwort = { ok: true, wert: { projekt: {}, vorlagen: {}, zeichnen: {}, marken: {} } }
   d.starteSitzungAntwort = { art: 'projekt-geladen', projekt: d.projektImZugang, reiter: 'zusammenstellen' }
   d.bereiteVorAntwort = { ok: true, wert: {} }
 }

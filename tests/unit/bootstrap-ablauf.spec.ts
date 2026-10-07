@@ -15,8 +15,7 @@ import {
 } from '../../src/renderer/app-shell/bootstrap'
 import type { Ergebnis } from '../../src/shared/contracts/ergebnis'
 import type { Project } from '../../src/shared/contracts/project'
-import type { Marke } from '../../src/shared/contracts/marke'
-import type { Sichten, ProjektZugang, VorlagenZugang, ZeichenZugang } from '../../src/renderer/app-shell/sichten'
+import type { Sichten, ProjektZugang, VorlagenZugang, ZeichenZugang, MarkenZugang } from '../../src/renderer/app-shell/sichten'
 import type { StartErgebnis, StartHinweis } from '../../src/renderer/app-shell/start'
 import type { NachlaufWirkungen } from '../../src/renderer/app-shell/auftrags-nachlauf'
 
@@ -31,12 +30,11 @@ function baueProjekt(): Project {
   }
 }
 
-function baueMarke(): Marke {
+function baueMarkenZugangAttrappe(): MarkenZugang {
   return {
-    id: 'm1', name: 'Probe', parent: null, eingebaut: true,
-    farben: null as never, schriften: null as never, logo: null as never,
-    sicherheit: { horizontal: 96, vertikal: 54 }, radien: null as never,
-    schatten: null as never, slogan: null as never, herkunftJeFeld: null as never,
+    lade: async () => defaultErgebnis(),
+    hole: () => null,
+    aufGeaendert: () => () => {},
   }
 }
 
@@ -143,7 +141,7 @@ function baueAutomat(): Automat {
       automat.log.push('zeichnen/verwirfMotivBestand')
     },
   }
-  automat.sichten = { projekt: automat.zugangRoh, vorlagen: automat.vorlagen, zeichnen: automat.zeichnen, marke: baueMarke() }
+  automat.sichten = { projekt: automat.zugangRoh, vorlagen: automat.vorlagen, zeichnen: automat.zeichnen, marken: baueMarkenZugangAttrappe() }
   automat.sichtenAntwort = { ok: true, wert: automat.sichten }
   return automat
 }
@@ -166,7 +164,7 @@ function baueSchritte(automat: Automat,lageTafel: BootstrapLage[] = automat.lage
         projektRoh: automat.zugangRoh,
         vorlagen: automat.vorlagen,
         zeichnen: automat.zeichnen,
-        marke: baueMarke(),
+        marken: baueMarkenZugangAttrappe(),
       }
     },
     starteSitzung: async () => {
@@ -409,7 +407,7 @@ describe('Alle acht Wirkungen sind verdrahtet (Kernnachweis 2)', () => {
       projektRoh: automat.zugangRoh,
       vorlagen: automat.vorlagen,
       zeichnen: automat.zeichnen,
-      marke: baueMarke(),
+      marken: baueMarkenZugangAttrappe(),
     }
     return { automat, zugaenge, leere, ausgaben, fehl, einImport }
   }
