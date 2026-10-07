@@ -13,10 +13,23 @@ const doppel = vi.hoisted(() => ({
   antwort: null as unknown,
 }))
 
+const bereitschaft = vi.hoisted(() => ({
+  rufeBereit: [] as string[][],
+  scheitert: false as boolean,
+}))
+
 vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
   rufeAuf: async (kanal: string, nutzlast?: unknown) => {
     doppel.aufrufe.push({ kanal, nutzlast })
     return doppel.antwort
+  },
+}))
+
+vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
+  stelleMarkeBereit: async (markeId: string) => {
+    bereitschaft.rufeBereit.push([markeId])
+    if (bereitschaft.scheitert) return { ok: false as const, fehler: { code: 'marken_datei_fehlt', meldung: 'x' } }
+    return { ok: true as const, wert: {} }
   },
 }))
 
@@ -50,6 +63,8 @@ const BESTAND = [
 beforeEach(() => {
   doppel.aufrufe = []
   doppel.antwort = { ok: true, wert: { id: 'a1' } as Aktion }
+  bereitschaft.rufeBereit = []
+  bereitschaft.scheitert = false
 })
 
 describe('markenAuswahl (ENTSCHIEDEN 2: keine Sortierung, keine Filterung)', () => {
@@ -102,5 +117,36 @@ describe('setzeMarke (der einzige Weg ueber speichereAktion, #136)', () => {
     const antwort = await setzeMarke('a1', '')
     expect(doppel.aufrufe).toHaveLength(0)
     expect(antwort.ok).toBe(false)
+  })
+})
+
+describe('setzeMarke - der Nachzug aus #319 (a): bereitstellen nach dem Speichern', () => {
+  it('ruft nach erfolgreichem Speichern GENAU EINMAL stelleMarkeBereit(markeId); der Rueckgabewert bleibt der des Speichers', async () => {
+    const speicherAntwort = { ok: true as const, wert: { id: 'a1' } as Aktion }
+    doppel.antwort = speicherAntwort
+
+    const antwort = await setzeMarke('a1', 'm2')
+
+    expect(antwort).toBe(speicherAntwort)
+    expect(bereitschaft.rufeBereit).toEqual([['m2']])
+  })
+
+  it('scheitert das Speichern, wird NICHT bereitgestellt', async () => {
+    doppel.antwort = { ok: false as const, fehler: { code: 'nicht_gefunden', meldung: 'x' } }
+
+    await setzeMarke('a1', 'm2')
+
+    expect(bereitschaft.rufeBereit).toEqual([])
+  })
+
+  it('scheitert die BEREITSTELLUNG, bleibt die Speicher-Antwort unangetastet geliefert', async () => {
+    const speicherAntwort = { ok: true as const, wert: { id: 'a1' } as Aktion }
+    doppel.antwort = speicherAntwort
+    bereitschaft.scheitert = true
+
+    const antwort = await setzeMarke('a1', 'm2')
+
+    expect(antwort).toBe(speicherAntwort)
+    expect(bereitschaft.rufeBereit).toEqual([['m2']])
   })
 })
