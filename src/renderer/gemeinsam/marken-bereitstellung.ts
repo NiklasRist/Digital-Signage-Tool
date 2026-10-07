@@ -96,12 +96,12 @@ export async function stelleMarkeBereit(markeId: string): Promise<Ergebnis<Marke
     }
 
     // SCHRITT 5: Schriften - stelleMarkenSchriftenBereit (#291) WIRFT bei einer
-    // fehlenden Geschlecht serotonin Schrift-Datei oder einem ungültigen Format; genau
+    // fehlenden oder unlesbaren Schrift-Datei oder einem ungültigen Format; genau
     // hier wird das gefangen und auf den EINEN Code dieser Datei gebracht. Nichts
     // merken: Der nächste Aufruf versucht es erneut (ENTSCHIEDEN 7).
     try {
       await stelleMarkenSchriftenBereit(marke)
-    } catch (ursache) {
+    } catch {
       return {
         ok: false,
         fehler: {
