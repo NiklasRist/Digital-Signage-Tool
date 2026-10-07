@@ -116,6 +116,10 @@ export const KANAELE = {
   // Renderer-Seite lesen sie beide von hier. Präfix `config:` nach dem Muster
   // `<modul>:<operation>`, Modulname `config-store` → `config`.
   // KEIN Schreibkanal für die Marke: `leseMarke` ist nur lesend (TK 9.5.6).
+  beenden: {
+    status:       'beenden:status',       // Ereignis Main -> Renderer (#336)
+    entscheidung: 'beenden:entscheidung', // Instant-Kanal Renderer -> Main (#336)
+  },
   config: {
     leseKonfig: 'config:leseKonfig',
     setzeAktivesProjekt: 'config:setzeAktivesProjekt',

@@ -29,8 +29,9 @@ const h = vi.hoisted(() => {
     flushAntworten: { projekt: [] as FlushErgebnis[], vorlagen: [] as FlushErgebnis[], marken: [] as FlushErgebnis[] },
     gelungen,
     hoerer: {} as Record<string, ((ereignis: { preventDefault: () => void }) => void) | undefined>,
-    dialogAntwort: 0,
-    dialogAufrufe: [] as { buttons: string[]; defaultId?: number; cancelId?: number; detail?: string }[],
+    ententscheidungHoerer: null as unknown as (ereignis: unknown, nutzlast: { entscheidung: 'wiederholen' | 'verwerfen' }) => void,
+    dialogAntwort: 0 as 0 | 1,
+    webContentsSende: [] as unknown[],
 
     verdrahteProjectStoreIPC: vi.fn(() => {
       protokoll.push("verdrahteProjectStoreIPC");
@@ -128,7 +129,10 @@ const h = vi.hoisted(() => {
 
 vi.mock("electron", () => {
   class FensterDoppel {
-    webContents = { send: vi.fn() };
+    webContents = { send: vi.fn((kanal: string, nutzlast: unknown) => {
+      h.protokoll.push('send');
+      h.webContentsSende.push({ kanal, nutzlast });
+    }) };
     loadURL = vi.fn();
     loadFile = vi.fn();
     once = vi.fn();
@@ -149,6 +153,13 @@ vi.mock("electron", () => {
       quit: h.quit,
       exit: h.beende,
     },
+    ipcMain: {
+      // #336: der Rueckkanal beenden:entscheidung - der Test ist die Renderer-Seite.
+      handleOnce: vi.fn((_kanal: string, hoerer: (ereignis: unknown, nutzlast: { entscheidung: string }) => void) => {
+        h.protokoll.push("regBeendenEntscheidung");
+        h.ententscheidungHoerer = hoerer;
+      }),
+    },
     protocol: {
       registerSchemesAsPrivileged: vi.fn((schemata: unknown[]) => {
         h.schemataAnmeldungen.push(schemata);
@@ -157,11 +168,6 @@ vi.mock("electron", () => {
     BrowserWindow: FensterDoppel,
     dialog: {
       showErrorBox: h.zeigeFehler,
-      showMessageBoxSync: vi.fn((optionen: { buttons: string[] }) => {
-        h.protokoll.push("dialog");
-        h.dialogAufrufe.push(optionen);
-        return h.dialogAntwort;
-      }),
     },
     session: { defaultSession: { webRequest: { onHeadersReceived: vi.fn() } } },
   };
@@ -302,12 +308,19 @@ async function loeseBeendenAus(): Promise<boolean> {
       aufgehalten = true;
     },
   });
-  // Sechs Zeitgeber-Durchlaeufe: Der zweite und dritte Flush haengen je an einem
-  // setTimeout, die Wiederholungsrunde ("Erneut versuchen") an weiteren - drei reichte
-  // mit einem Timer-Flush, seit #309 sind es zwei (Vorlagen + Marken).
+  // Der zweite und dritte Flush haengen je an einem Zeitgeber-Durchlauf; der neue
+  // Ablauf (#336) haengt zusaetzlich am RUECKKANAL beenden:entscheidung.
   await new Promise((weiter) => setTimeout(weiter, 0));
   await new Promise((weiter) => setTimeout(weiter, 0));
   await new Promise((weiter) => setTimeout(weiter, 0));
+  // Der Renderer antwortet entsprechend h.dialogAntwort (0 = wiederholen, 1 = verwerfen).
+  if (h.ententscheidungHoerer !== null) {
+    h.protokoll.push("entscheidung");
+    h.ententscheidungHoerer(
+      {},
+      { entscheidung: h.dialogAntwort === 0 ? 'wiederholen' : 'verwerfen' },
+    );
+  }
   await new Promise((weiter) => setTimeout(weiter, 0));
   await new Promise((weiter) => setTimeout(weiter, 0));
   await new Promise((weiter) => setTimeout(weiter, 0));
@@ -326,7 +339,8 @@ beforeEach(() => {
   h.schemataAnmeldungen.length = 0;
   h.hoerer = {};
   h.dialogAntwort = 0;
-  h.dialogAufrufe.length = 0;
+  h.ententscheidungHoerer = null as unknown as typeof h.ententscheidungHoerer;
+  h.webContentsSende.length = 0;
 });
 
 describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () => {
@@ -546,15 +560,11 @@ describe("Main-Bootstrap - Beenden-Ablauf (#47, #98, #277)", () => {
     expect(h.protokoll).toEqual([]);
   });
 
-  it("zeigt bei einem Fehlschlag den Dialog und beendet NICHT von sich aus", async () => {
-    // "Scheitert der Sofort-Flush beim BEENDEN, schliesst die App NICHT (bindend)."
-    // (TK 9.5.4)
+  it("schickt den Renderer-Dialog (beenden:status) und fuehrt nach 'wiederholen' die Flushs erneut aus", async () => {
     h.flushAntworten.projekt.push({
       ok: false,
       fehler: { code: "speicher_fehler", meldung: "ENOSPC: no space left on device" },
     });
-    // Der Dialog bleibt unbeantwortet stehen? Nein - er ist synchron. Hier wird
-    // "Erneut versuchen" gewaehlt, und der zweite Versuch gelingt.
     h.dialogAntwort = 0;
 
     await starteBootstrap();
@@ -562,27 +572,37 @@ describe("Main-Bootstrap - Beenden-Ablauf (#47, #98, #277)", () => {
 
     await loeseBeendenAus();
 
-    // Der Dialog kam NACH den beiden Flushs und VOR dem Beenden, und die Flushs liefen
-    // danach ein zweites Mal - "Erneut versuchen fuehrt den Flush tatsaechlich erneut
-    // aus" (DoD #3), nicht nur eine Meldung.
+    // Der STORE-eigene Query: das Ereignis kam NACH den Flushs und VOR der Entscheidung.
     expect(h.protokoll).toEqual([
       "flushBeimBeenden",
       "flushBestand",
       "flushMarkenBestand",
-      "dialog",
+      "send",
+      "regBeendenEntscheidung",
+      "entscheidung",
+      // "Erneut versuchen" wiederholt NUR die GESCHEITERTEN (DoD #336) - project je allein.
       "flushBeimBeenden",
-      "flushBestand",
-      "flushMarkenBestand",
       "quit",
     ]);
+    // DoD #336: das Ereignis traegt GENAU den betroffenen Speicher, Code UND Meldung.
+    const [weitergabe] = h.webContentsSende as unknown as [
+      { kanal: string; nutzlast: { berichte: unknown[]; empfehlung: string } },
+    ];
+    expect(weitergabe.kanal).toBe("beenden:status");
+    expect(weitergabe.nutzlast.berichte).toHaveLength(1);
+    expect(weitergabe.nutzlast.berichte[0]).toMatchObject({
+      speicher: "project",
+      code: "speicher_fehler",
+      meldung: "ENOSPC: no space left on device",
+    });
+    expect(weitergabe.nutzlast.empfehlung).toContain("Platte");
   });
 
-  it("bietet den Verwerfen-Knopf an, waehlt ihn aber nie vor", async () => {
+  it("offert 'verwerfen' an der apekt-entry - als benannter Verlust, nie vorausgewaehlt", async () => {
     h.flushAntworten.vorlagen.push({
       ok: false,
       fehler: { code: "speicher_fehler", meldung: "EACCES: permission denied" },
     });
-    // Diesmal die zweite Schaltflaeche: trotzdem schliessen.
     h.dialogAntwort = 1;
 
     await starteBootstrap();
@@ -590,23 +610,21 @@ describe("Main-Bootstrap - Beenden-Ablauf (#47, #98, #277)", () => {
 
     await loeseBeendenAus();
 
-    expect(h.dialogAufrufe).toHaveLength(1);
-    const optionen = h.dialogAufrufe[0]!;
-    expect(optionen.buttons[0]).toBe("Erneut versuchen");
-    expect(optionen.buttons[1]).toContain("verwerfen");
-    // Weder Vorauswahl noch Escape-Ziel darf auf dem Verlust-Knopf liegen.
-    expect(optionen.defaultId).toBe(0);
-    expect(optionen.cancelId).toBe(0);
-    // Die Ursache steht im Dialog, nicht nur im Protokoll.
-    expect(optionen.detail).toContain("EACCES");
-    // Und erst jetzt, auf ausdrueckliche Ansage, wird beendet.
+    // verwerfen: EINE Flush-Runde, direkt quit - klauselendig (TK 9.5.4 Punkt 4).
     expect(h.protokoll).toEqual([
       "flushBeimBeenden",
       "flushBestand",
       "flushMarkenBestand",
-      "dialog",
+      "send",
+      "regBeendenEntscheidung",
+      "entscheidung",
       "quit",
     ]);
+    const [weitergabe] = h.webContentsSende as unknown as [
+      { kanal: string; nutzlast: { berichte: unknown[] } },
+    ];
+    expect(weitergabe.nutzlast.berichte).toHaveLength(1);
+    expect(weitergabe.nutzlast.berichte[0]).toMatchObject({ speicher: "vorlagen" });
   });
 
   it("fuehrt den zweiten und dritten Flush auch dann aus, wenn der erste scheitert",
@@ -626,8 +644,13 @@ describe("Main-Bootstrap - Beenden-Ablauf (#47, #98, #277)", () => {
 
       expect(h.flushBestand).toHaveBeenCalledTimes(1);
       expect(h.flushMarkenBestand).toHaveBeenCalledTimes(1);
-      expect(h.dialogAufrufe[0]!.detail).toContain("project.json");
-      expect(h.dialogAufrufe[0]!.detail).not.toContain("vorlagen.json");
+      const [weitergabe] = h.webContentsSende as unknown as [
+        { nutzlast: { berichte: unknown[] } },
+      ];
+      const betroffene = (weitergabe.nutzlast.berichte as { speicher: string }[]).map(
+        (bericht) => bericht.speicher,
+      );
+      expect(betroffene).toEqual(["project"]);
     });
 });
 
