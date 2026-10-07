@@ -58,6 +58,8 @@ import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
 import { MARKEN_SCHEMA, registriereMarkenProtokollHandler } from "./marken-store/marken-protokoll"; // #290
 import { flushBestand as flushMarkenBestand } from "./marken-store/schreibe-marken"; // #277, ALIAS-PFLICHT
 import { pruefeBeendenUndFlush } from "./beenden-ablauf"; // #336
+import { erzwingeEinzelInstanz } from "./project-store/einzel-instanz"; // #51, SCHRITT 2
+import { ermittleDatenOrt } from "./datenort"; // #5, Pfad-Autoritaet
 import { flushBeimBeenden } from "./project-store/auto-speichern";
 import { raeumeVerwaisteArbeitsbereiche } from "./render-service/arbeitsbereich";
 import { meldeRenderHandlerAn } from "./render-service/handler-anmeldung";
@@ -265,21 +267,35 @@ protocol.registerSchemesAsPrivileged([MEDIA_SCHEMA, MARKEN_SCHEMA]);
 
 // SCHRITT 2: erzwingeEinzelInstanz(datenOrt, beiZweitemStart) - #51,
 //            src/main/project-store/einzel-instanz.ts
-// LUECKE. Signatur (fremder Vertrag, #51; StartBefund entschieden v3.20):
-//   export type StartBefund = 'frei' | 'belegt' | 'datenort_nicht_beschreibbar'
-//   export function erzwingeEinzelInstanz(
-//     datenOrt: string,
-//     beiZweitemStart: () => void,
-//   ): StartBefund
-// Muss VOR dem Erzeugen des Fensters laufen, damit ein Zweitstart gar nicht erst
-// anmeldet. Rueckgabe 'belegt' = eine andere Instanz haelt die Sperre fuer DIESEN
-// Datenort: dann sofort app.quit() und KEIN Fenster erzeugen. Rueckgabe
-// 'datenort_nicht_beschreibbar' = der Main zeigt den Startdialog "Erneut versuchen"
-// / "Beenden" mit generischem Text (TK 9.5.4, v3.20). `beiZweitemStart` ist
-// der Rueckruf, der das bestehende Fenster fokussiert - er wird von HIER uebergeben,
-// weil diese Datei das Fenster besitzt. `datenOrt` kommt aus ermittleDatenOrt() (#5),
-// das es ebenfalls noch nicht gibt; eine zweite, eigene Berechnung des Datenorts ist
-// ausdruecklich verboten.
+// (#331, die LUECKE durch den echten Aufruf ersetzt - das Abschlussglied der Kette):
+const startBefund = erzwingeEinzelInstanz(ermittleDatenOrt(), () => {
+  // `beiZweitemStart` - HIER uebergeben, weil diese Datei das Fenster besitzt (#51):
+  if (hauptfenster !== null && !hauptfenster.isDestroyed()) hauptfenster.focus();
+});
+if (startBefund === 'belegt') {
+  // Eine andere Instanz haelt die Sperre: sofort beenden, KEIN Fenster erzeugen (#51).
+  app.quit();
+} else if (startBefund === 'datenort_nicht_beschreibbar') {
+  // TK 9.5.4 (v3.20): generischer Startdialog "Erneut versuchen" / "Beenden".
+  for (;;) {
+    const wahl = dialog.showMessageBoxSync({
+      type: "warning",
+      title: "Digital-Signage-Tool: Start nicht moeglich",
+      message: "Der Datenort ist nicht beschreibbar. Waehle einen anderen Speicherort.",
+      buttons: ["Erneut versuchen", "Beenden"],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    });
+    if (wahl !== 0) break;
+    const neuerVersuch = erzwingeEinzelInstanz(ermittleDatenOrt(), () => {
+      // Dieselbe Aufgabe wie oben: das bestehende Fenster fokussieren.
+      if (hauptfenster !== null && !hauptfenster.isDestroyed()) hauptfenster.focus();
+    });
+    if (neuerVersuch !== 'datenort_nicht_beschreibbar') break;
+  }
+}
+// 'frei': diese Instanz haelt die Sperre - der Start laeuft gewoehnlich weiter.
 // Warum hier keine eigene Sperre gebaut wird: Zwei Instanzen haetten zwei unabhaengige
 // Schreib-Locks auf derselben project.json - Lost Update und damit Datenkorruption
 // (TK 9.5.4). Eine hier improvisierte zweite Sperre waere schlimmer als keine.

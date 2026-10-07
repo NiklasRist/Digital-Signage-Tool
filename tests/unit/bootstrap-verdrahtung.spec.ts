@@ -187,6 +187,12 @@ vi.mock("../../src/main/media-protokoll", () => ({
   registriereMediaProtokollHandlerStub: vi.fn(),
 }));
 
+vi.mock("../../src/main/project-store/einzel-instanz", () => ({
+  erzwingeEinzelInstanz: vi.fn(() => "frei" as const),
+}));
+vi.mock("../../src/main/datenort", () => ({
+  ermittleDatenOrt: vi.fn(() => "/tmp/datenort-test"),
+}));
 vi.mock("../../src/main/marken-store/marken-protokoll", () => ({
   MARKEN_SCHEMA: { scheme: "marken" },
   registriereMarkenProtokollHandler: vi.fn(),
