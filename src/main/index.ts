@@ -57,6 +57,7 @@ import { registriereMedienHandler } from "./media-service/handler-registrierung"
 import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
 import { MARKEN_SCHEMA, registriereMarkenProtokollHandler } from "./marken-store/marken-protokoll"; // #290
 import { flushBestand as flushMarkenBestand } from "./marken-store/schreibe-marken"; // #277, ALIAS-PFLICHT
+import { pruefeBeendenUndFlush } from "./beenden-ablauf"; // #336
 import { flushBeimBeenden } from "./project-store/auto-speichern";
 import { raeumeVerwaisteArbeitsbereiche } from "./render-service/arbeitsbereich";
 import { meldeRenderHandlerAn } from "./render-service/handler-anmeldung";
@@ -166,6 +167,10 @@ function setzeCspHeader(): void {
  * Pfad-Autoritaet (TK 9.5.7) umgehen - die Invarianten, auf denen Datenkonsistenz und
  * Reparatur-Modus aufbauen, waeren dann nur noch Konvention statt Garantie.
  */
+// Die eine Modulebene-Fensterreferenz fuer den Beenden-Ablauf (#336):
+// `pruefeBeendenUndFlush(fenster)` braucht dieselbe Referenz wie Schritt 7.
+let hauptfenster: BrowserWindow | null = null;
+
 function erstelleHauptfenster(): BrowserWindow {
   const fenster = new BrowserWindow({
     width: 1440,
@@ -192,6 +197,7 @@ function erstelleHauptfenster(): BrowserWindow {
     void fenster.loadFile(path.join(__dirname, "../renderer/index.html"));
   }
 
+  hauptfenster = fenster;
   return fenster;
 }
 
@@ -514,8 +520,21 @@ let beendenAbgeschlossen = false;
 app.on("before-quit", (ereignis) => {
   if (beendenAbgeschlossen) return;
   ereignis.preventDefault();
-  void schliesseAusstehendesAb();
+  void fuehreBeendenAblaufAus();
 });
+
+// #336: Der dialog des Beenden-Falls wird im RENDERER gezeigt (beenden:status
+// EREIGNIS + beenden:entscheidung RUECKKANAL); die Main-Fassung (showMessageBoxSync)
+// ist durch EINEN Renderer-Dialog ersetzt. Der Flush selbst blieb unveraendert.
+async function fuehreBeendenAblaufAus(): Promise<void> {
+  if (hauptfenster === null || hauptfenster.isDestroyed()) {
+    return;
+  }
+  const erlaubt = await pruefeBeendenUndFlush(hauptfenster);
+  if (!erlaubt) return;
+  beendenAbgeschlossen = true;
+  app.quit();
+}
 
 /**
  * Schliesst beim Beenden ab, was noch aussteht (Sofort-Flush, Fall 3 aus TK 9.5.4).
@@ -538,6 +557,10 @@ app.on("before-quit", (ereignis) => {
  * Auftrags-Handler beim Start eines Auftrags, oeffneProjekt, die D1-aendernden
  * Auftraege) - der Bootstrap baut sie NICHT nach.
  */
+/* #336: ERSETZT durch beenden-ablauf.ts (pruefeBeendenUndFlush). Die alte Funktion bleibt
+ * als Dokumentation stehen - ihr Inhalt wurde byte-genau NICHT veraendert (DoD).
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function schliesseAusstehendesAb(): Promise<void> {
   // FRUEHER STAND HIER EIN "OFFENER WIDERSPRUCH" zwischen der DoD von #3 ("Beenden
   // danach genau einmal erneut anstossen") und TK 9.5.4 ("schliesst die App NICHT").
