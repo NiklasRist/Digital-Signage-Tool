@@ -65,7 +65,7 @@ BOOTSTRAP = {268, 269, 270, 271, 272, 273, 274, 331}
 # #274 ist am 05.10.2026 gebaut worden (Commit 45acb74): Schritt 5 Position 3 (#240)
 # und 8 (#255) und Schritt 7 Position 3 (#238) sind aufgerufen; die Reihenfolge wird in
 # tests/unit/bootstrap-verdrahtung.spec.ts gemessen. #331 (8/8, M8) fehlt noch.
-FERTIGE_BOOTSTRAP = {268, 269, 270, 271, 272, 273, 274}
+FERTIGE_BOOTSTRAP = {268, 269, 270, 271, 272, 273, 274, 331}  # 331: Abschluss belegt am 07.10.2026
 
 DATEI = re.compile(r"^- \*{0,2}Datei(?:en\)?)?[^`\n]*`([^`]+)`", re.M)
 KUERZEL = re.compile(r"\bM[0-8]-\d{1,2}\b")
