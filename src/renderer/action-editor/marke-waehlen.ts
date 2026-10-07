@@ -28,6 +28,7 @@ import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Marke } from '../../shared/contracts/marke'
 import { speichereAktion } from './aktion-bearbeiten'
+import { stelleMarkeBereit } from '../gemeinsam/marken-bereitstellung' // #312, Nachzug aus #319 (a)
 
 /** Ein Eintrag der Marken-Auswahl. Mehr Felder gibt es nicht (ENTSCHIEDEN 8). */
 export interface MarkenEintrag {
@@ -51,7 +52,17 @@ export function istBekannteMarke(markeId: string, marken: readonly Marke[]): boo
 }
 
 /** Weist einer Aktion eine andere Marke zu. Schreibt ueber `speichereAktion` (#136);
- *  die Nutzlast enthaelt GENAU das Feld `markeId` und kein weiteres. */
+ *  die Nutzlast enthaelt GENAU das Feld `markeId` und kein weiteres.
+ *
+ *  Nachzug aus #319 (a), entschieden (Variante A): Nach einem ERFOLGREICHEN Speichern
+ *  ruft dieser Weg `stelleMarkeBereit(markeId)` (#312) - `bereiteZeichnenVor` (#313)
+ *  laeuft nur nach Importen und bei Projektwechsel, nicht nach einer Zuweisung; ohne
+ *  diesen Aufruf bliebe die Live-Vorschau lautlos leer (`holeBereiteMarke === null`,
+ *  und "lade halt nach" im Zeichenpfad bleibt verboten, TK 9.10.3). Der Ruf wird
+ *  abgewartet, aber die Rueckgabe wird NICHT zum Rueckgabewert: Das Zuweisen ist gelungen,
+ *  sobald der Datensatz steht; ein Bereitstellungsfehler (etwa marken_datei_fehlt,
+ *  Reparatur-Modus FA-19) ist eine SEPARATE Frage, die einen eigenen
+ *  Weg hat. Gescheitertes Speichern laesst den Ruf aus - nichts wurde geaendert. */
 export async function setzeMarke(aktionId: string, markeId: string): Promise<Ergebnis<Aktion>> {
   // Die FORM-Vorabpruefung vor dem Senden (nicht-leerer Text). Eine leere
   // Kennung senden wir nicht - der Main wuesse damit nichts anzufangen, und
@@ -68,5 +79,12 @@ export async function setzeMarke(aktionId: string, markeId: string): Promise<Erg
       },
     }
   }
-  return speichereAktion(aktionId, { markeId })
+  const gespeichert = await speichereAktion(aktionId, { markeId })
+  if (gespeichert.ok) {
+    // Das Ergebnis wird bewusst NICHT Teil des Rueckgabewerts (Begruendung im
+    // Doc-Kommentar oben); abgewartet wird, weil der Aufrufer nach dem Rueckkehren
+    // synchron zeichnen darf und die Marke bis dahin bereitstehen soll.
+    await stelleMarkeBereit(markeId)
+  }
+  return gespeichert
 }
