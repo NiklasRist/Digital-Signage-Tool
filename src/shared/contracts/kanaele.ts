@@ -104,6 +104,11 @@ export const KANAELE = {
     // v3.18). Instant-Operation, gehoert in diesen Namensraum; Schluessel und String sind
     // zeichengleich zum Operationsnamen (Vertragstest von #25).
     setzeStandardSegmentdauer: 'project:setzeStandardSegmentdauer',
+
+    // ERGAENZT durch #323 - Project.standardMarkeId bekommt ihren Aenderungsweg (TK 9.5.2).
+    // Identisch zum Muster oben: Instant-Kanal in diesem Namensraum, Schluessel ohne
+    // Umlaut (wie setzeTrim, setzeDauer, setzeEinblendung im selben Block).
+    setzeStandardMarke: 'project:setzeStandardMarke',
   },
 
   // config-store (#77). Die fünf Namen ENTSTEHEN hier und nirgends sonst; die

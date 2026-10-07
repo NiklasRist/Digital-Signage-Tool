@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// GENERIERT aus dem Signaturblock von Issue #326.
+// GENERIERT aus dem Signaturblock von Issue #326, dort GEFUELLT: 07.10.2026 (Nachbesserung:
+// die eslint-Abschaltzeile war beim ersten Fuelllauf unentfernt geblieben - hier entfernt).
 // [marken-editor] Dateidialog auslösen und den gewählten Pfad importieren
 //
 // Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht

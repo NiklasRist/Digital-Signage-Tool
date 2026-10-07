@@ -11,7 +11,8 @@
 //     Schritt 1; plus die beiden Protokoll-Handler (#9, #290, Schritt 4 und 4b)
 //   - Schritt 5, die Positionen 1 (#76), 2 (#153), 3 (#240, mit #274), 4 (#77),
 //     5 (#93), 6 (#92), 7 (#109), 8 (#255, mit #274), 9 (#189), 10 (#190), 11 (#334)
-//     und 12 (#304); die dreizehnte Anmeldung (Nachzug #323) kommt hinten dazu
+//     und 12 (#304) sowie die dreizehnte Anmeldung 13 (#323, Nachzug 07.10.) -
+//     REGISTRIERUNGEN INSGESAMT: SIEBZEHN (dreizehn ohne Fenster + vier mit Fenster)
 //   - Schritt 7, Positionen 1 (#71), 2 (#191), 3 (#238, mit #274) und 4 (#304)
 //   - Schritt 8 (#172)
 //   - alle drei Beenden-Flushs (#47, #98, #277)
@@ -42,6 +43,7 @@ import { verdrahteConfigStoreIPC } from "./ipc-gateway/config-store-verdrahtung"
 import { verdrahteExportUndFortschrittIPC } from "./ipc-gateway/export-verdrahtung";
 import { verdrahteProjectStoreNachtragIPC } from "./ipc-gateway/project-store-nachtrag";
 import { verdrahteProjectStoreNachtrag2IPC } from "./ipc-gateway/project-store-nachtrag-2";
+import { verdrahteProjectStoreNachtrag3IPC } from "./ipc-gateway/project-store-nachtrag-3"; // #323
 import { verdrahteProjectStoreNachtrag4IPC } from "./ipc-gateway/project-store-nachtrag-4";
 import { verdrahteProjectStoreIPC } from "./ipc-gateway/project-store-verdrahtung";
 import { verdrahteSpeicherstatusIPC } from "./ipc-gateway/speicherstatus-verdrahtung";
@@ -309,10 +311,10 @@ void app.whenReady().then(async () => {
 
   setzeCspHeader();
 
-  // SCHRITT 5: die ZWOELF Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
+  // SCHRITT 5: die DREIZEHN Anmeldungen OHNE Fenster, in genau dieser Reihenfolge.
   // Sie stehen vor erstelleHauptfenster(), weil keine von ihnen ein Fenster braucht.
-  // Verdrahtet sind die Positionen 1, 2, 4, 5, 6, 9, 10, 11 und 12; die uebrigen DREI (3, 7
-  // und 8) sind LUECKEN - kein Ersatzaufruf, keine von Hand gebaute
+  // Verdrahtet sind ALLE Positionen 1 bis 13 (die Stand-Meldung mit LUECKEN ist seit
+  // dem Nachzug #274 ueberholt); kein Ersatzaufruf, keine von Hand gebaute
   // ipcMain.handle-Registrierung, kein eigener Kanalname.
   //
   // Die Nummerierung bleibt unveraendert, auch wo noch Luecken dazwischenstehen: Sie
@@ -398,6 +400,15 @@ void app.whenReady().then(async () => {
   //     bzw. Position 11 (#334) statt in der Mitte; die Positionen 1 bis 11 bleiben
   //     unveraendert. Argumentlos - kein Fenster, kein Zustand.
   verdrahteMarkenIPC();
+
+  // 13. verdrahteProjectStoreNachtrag3IPC() - #323,
+  //     src/main/ipc-gateway/project-store-nachtrag-3.ts (gebautes, 07.10.). Meldet
+  //     GENAU EINEN Kanal an (project:setzeStandardMarke). Derselbe Namensraum
+  //     `project:` wie die Positionen 1 bis 3; das Issue gewuenschte die Position
+  //     direkt nach Nachtrag2, das GEBaute Muster (#334, #304) haengt neue Eintraege
+  //     aber HINTEN an, damit die Positionen 1 bis 12 unveraendert bleiben
+  //     (Vertrag #3). Argumentlos - kein Fenster, kein Zustand.
+  verdrahteProjectStoreNachtrag3IPC();
 
   // SCHRITT 6: Fenster erzeugen und Inhalt laden.
   const fenster = erstelleHauptfenster();
