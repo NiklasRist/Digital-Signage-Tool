@@ -11,7 +11,8 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { createElement, type ReactElement } from 'react'
+import { createElement, useState, type ReactElement } from 'react'
+import type { JSX } from 'react'
 
 import type { Project } from '../../src/shared/contracts/project'
 import type { VorlagenZugang, ZeichenZugang, ProjektZugang, Sichten } from '../../src/renderer/app-shell/sichten'
@@ -72,8 +73,7 @@ function baueWurzeln() {
     vorschau: (eigenschaften: Record<string, unknown>) => {
       doppel.vorschauProps.push(eigenschaften)
       return createElement('div', { 'data-testid': 'attrappe-vorschau' })
-    },
-    actionEditor: (eigenschaften: Record<string, unknown>) => {
+    },    actionEditor: (eigenschaften: Record<string, unknown>) => {
       doppel.actionEditorProps.push(eigenschaften)
       return createElement('div', { 'data-testid': 'attrappe-aktionen' })
     },
@@ -467,5 +467,49 @@ describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare): inhalte.tsx', (
     // ausser reinen import type aus den Modulpfaden (Anordnung verlangt die TYPEN):
     const wertImporte = (code.match(/import \{[^}]*\} from '\.\.(composer|action-editor|vorlagen-editor|preview-player|projekt-verwaltung)/g) ?? [])
     expect(wertImporte).toHaveLength(0)
+  })
+})
+
+// ---------------- BUGFIX (Naht-Hooks, 08.10.) ----------------
+// Beleg des Vorbefunds: `kindOffen` wurde inline gerufen - die Hooks einer echten
+// Wurzel (mit useState) landeten in der Fiber von ProjektStandReiter; beim
+// Umschalten kein-Projekt -> Projekt (was das Anlegen macht) warf React
+// "Rendered more hooks..." und die ganze Oberflaeche war weiß.
+// Die Attrappe-Wurzel hier traegt einen ECHTEN useState - genau die Klasse,
+// der echte composer/action-editor. Der Test greift die Umschaltung ab:
+// kein Wurf, die Wurzel wird gerufen, die Instanz bleibt gemountet.
+describe('Die Naht-Hooks (BUGFIX)', () => {
+  it('Umschaltung kein Projekt -> Projekt mit einem Wurzel-Hook (useState): kein Wurf, Wurzel gerufen', () => {
+    leerzustandDoppel.aufrufe = 0
+    doppel.sicht = { projekt: null, ladefehler: null }
+    doppel.composerProps = []
+    const mitHook = (eigenschaften: Record<string, unknown>): JSX.Element => {
+      const [, veraltet] = useState([true, () => undefined] as const)
+      void veraltet
+      doppel.composerProps.push(eigenschaften)
+      return createElement('div', { 'data-testid': 'attrappe-mit-hook' })
+    }
+    const inhalteFn = baueReiterInhalte(
+      verteileZugaenge(baueSichten()),
+      { ...baueWurzeln(), composer: mitHook } as never,
+      baueUmgebung() as never,
+    )
+    const ziel = document.createElement('div')
+    document.body.appendChild(ziel)
+    const wurzel: Root = createRoot(ziel)
+    const inhalt = inhalteFn['zusammenstellen']
+    expect(() => {
+      act(() => {
+        wurzel.render(createElement(inhalt, { sichtbar: true }) as ReactElement)
+      })
+    }).not.toThrow()
+    // Die Umschaltung ohne Projekt -> Projekt (der Moment, der weiß warf):
+    doppel.sicht = { projekt: BAUE_PROJEKT(), ladefehler: null }
+    act(() => {
+      doppel.hoerer?.(doppel.sicht)
+    })
+    expect(doppel.composerProps.length).toBeGreaterThanOrEqual(1)
+    wurzel.unmount()
+    document.body.innerHTML = ''
   })
 })
