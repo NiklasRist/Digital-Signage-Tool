@@ -63,6 +63,7 @@ import { ActionEditorWurzel } from './action-editor'
 import { VorlagenEditorWurzel } from './vorlagen-editor'
 import { ProjektVerwaltungWurzel } from './projekt-verwaltung'
 import { Vorschau } from './preview-player/vorschau'
+import { MarkenEditorWurzel } from './marken-editor'
 import {
   reparaturhalter,
   nimmUebergabeEntgegen,
@@ -93,6 +94,7 @@ const WURZELN: ModulWurzeln = {
   vorschau: Vorschau,
   actionEditor: ActionEditorWurzel,
   vorlagenEditor: VorlagenEditorWurzel,
+  markenEditor: MarkenEditorWurzel,
   projektVerwaltung: ProjektVerwaltungWurzel,
 }
 
