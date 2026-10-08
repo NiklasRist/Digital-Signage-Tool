@@ -1,135 +1,183 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// Tests zu #327 - marken-speicherstatus (Lage: reiner Automat; Baustein: jsdom).
+// @vitest-environment jsdom
+import { join } from "node:path"
+import { readFileSync } from "node:fs"
 
-// Unit-Test zu #278. Die Quelle (aufSchreibversuch, #277) ist ein
-// Kontrollter-Halt: immer der gemaess zu pruefenden Fall. Die Umesetzung
-// selbst (uebersetzung) bleibt frei ergaemig weldie daechtlich die Schedule.
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createElement } from 'react'
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
 
-const zustand = { quelle: null as null | (() => unknown) };
+import {
+  MARKEN_ANFANGSLAGE,
+  MARKEN_HINWEIS_TEXT,
+  zeigtMarkenHinweis,
+  verarbeiteMarkenSpeicherEreignis,
+  type MarkenSpeicherEreignis,
+  type MarkenSpeicherlage,
+} from '../../src/renderer/app-shell/marken-speicherstatus-lage'
 
-let mitteilungAufSchreibversuch: (h: unknown) => () => void;
+;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
-vi.mock("../../src/main/marken-store/schreibe-marken", async (importOriginal) => {
-  const echtes = await importOriginal<typeof import("../../src/main/marken-store/schreibe-marken")>();
-  return {
-    ...echtes,
-    aufSchreibversuch: (hoerer: unknown) => {
-      if (zustand.quelle !== null) return (zustand.quelle as (h: unknown) => () => void)(hoerer);
-      mitteilungAufSchreibversuch = hoerer as (h: unknown) => () => void;
-      return () => undefined;
-    },
-  };
-});
+function baueLage(teil: Partial<MarkenSpeicherlage> = {}): MarkenSpeicherlage {
+  return { zustand: 'unbekannt', letzterFehlercode: null, ...teil }
+}
 
-type EreignisTyp = import("../../src/main/marken-store/speicher-status").MarkenSpeichernEreignis;
-let aufMarkenSpeichernEreignis: typeof import("../../src/main/marken-store/speicher-status").aufMarkenSpeichernEreignis;
+describe('Die Lage (ohne Browser)', () => {
+  it('die ANFANGSLAGE ist unbekannt ohne Code; zeigtMarkenHinweis ist false (Waechter gegen die stille Falschaussage)', () => {
+    expect(MARKEN_ANFANGSLAGE).toEqual({ zustand: 'unbekannt', letzterFehlercode: null })
+    expect(zeigtMarkenHinweis(MARKEN_ANFANGSLAGE)).toBe(false)
+  })
 
-beforeEach(async () => {
-  vi.resetModules();
-  zustand.quelle = null;
-  const modul = await import("../../src/main/marken-store/speicher-status");
-  aufMarkenSpeichernEreignis = modul.aufMarkenSpeichernEreignis;
-});
+  it('ein Fehler fuehrt zu nicht_gespeichert mit dem Code; der Hinweis erscheint', () => {
+    const lage = verarbeiteMarkenSpeicherEreignis(MARKEN_ANFANGSLAGE, {
+      typ: 'fehler', code: 'speicher_fehler',
+    })
+    expect(lage.zustand).toBe('nicht_gespeichert')
+    expect(lage.letzterFehlercode).toBe('speicher_fehler')
+    expect(zeigtMarkenHinweis(lage)).toBe(true)
+  })
 
-describe("aufMarkenSpeichernEreignis (#278)", () => {
-  it("ein Fehler feuert GENAU { typ:'fehler', code } an den angemeldeten Hoerer", () => {
-    const empfangen: unknown[] = [];
-    const ab = aufMarkenSpeichernEreignis((e) => empfangen.push(e));
-    void (0 as unknown as EreignisTyp | null);
+  it('zwei Fehler: der ZULETZT gemeldete Code', () => {
+    const lage = verarbeiteMarkenSpeicherEreignis(
+      verarbeiteMarkenSpeicherEreignis(MARKEN_ANFANGSLAGE, { typ: 'fehler', code: 'erster' }),
+      { typ: 'fehler', code: 'zweiter' },
+    )
+    expect(lage).toEqual({ zustand: 'nicht_gespeichert', letzterFehlercode: 'zweiter' })
+  })
 
-    mitteilungAufSchreibversuch!({ erfolgreich: false, code: "speicher_fehler" });
+  it('gespeichert raeumt auf: Zustand gespeichert, Code null, Hinweis verschwindet', () => {
+    const lage = verarbeiteMarkenSpeicherEreignis(
+      baueLage({ zustand: 'nicht_gespeichert', letzterFehlercode: 'x' }),
+      { typ: 'gespeichert' },
+    )
+    expect(lage).toEqual({ zustand: 'gespeichert', letzterFehlercode: null })
+    expect(zeigtMarkenHinweis(lage)).toBe(false)
+  })
 
-    expect(empfangen).toEqual([{ typ: "fehler", code: "speicher_fehler" }]);
-    ab();
-  });
+  it('ein unbekannter Code wird UNVERAENDERT gemerkt (keine Uebersetzung, kein Verwerfen)', () => {
+    const lage = verarbeiteMarkenSpeicherEreignis(MARKEN_ANFANGSLAGE, {
+      typ: 'fehler', code: 'fremder_code_kommt_vor',
+    })
+    expect(lage.letzterFehlercode).toBe('fremder_code_kommt_vor')
+    expect(zeigtMarkenHinweis(lage)).toBe(true)
+  })
+})
 
-  it("der ERSTE Erfolg nach einem Fehler feuert genau EIN 'gespeichert'", () => {
-    const empfangen: unknown[] = [];
-    aufMarkenSpeichernEreignis((e) => empfangen.push(e));
+describe('Die Lage weiter (Das Verhalten, das ausschliesslich der Zustandsautomat hält)', () => {
+  it('die Eingabe wird NIE verändert (Deep-Vergleich vor/nach dem Aufruf)', () => {
+    const lage = baueLage({ zustand: 'gespeichert', letzterFehlercode: null })
+    const vorher = JSON.stringify(lage)
+    verarbeiteMarkenSpeicherEreignis(lage, { typ: 'fehler', code: 'x' })
+    const nachher = JSON.stringify(lage)
+    expect(nachher).toBe(vorher)
+  })
 
-    mitteilungAufSchreibversuch!({ erfolgreich: false, code: "speicher_fehler" });
-    mitteilungAufSchreibversuch!({ erfolgreich: true });
+  it('der Text ist der Entscheidungs-Wortlaut (User-Präzisierung 23.08.) und steht GENAU EINMAL quer über beide Dateien', () => {
+    expect(MARKEN_HINWEIS_TEXT).toBe(
+      'Automatisches Speichern der Marken fehlgeschlagen – Änderungen sind noch nicht gesichert.',
+    )
+    const lageQuelle = readFileSync(
+      join(process.cwd(), 'src/renderer/app-shell/marken-speicherstatus-lage.ts'),
+      'utf8',
+    )
+    const bausteinQuelle = readFileSync(
+      join(process.cwd(), 'src/renderer/app-shell/marken-speicherstatus.tsx'),
+      'utf8',
+    )
+    expect((lageQuelle.match(/Automatisches Speichern/g) ?? [])).toHaveLength(1)
+    expect((bausteinQuelle.match(/Automatisches Speichern/g) ?? [])).toHaveLength(0)
+  })
 
-    expect(empfangen).toEqual([
-      { typ: "fehler", code: "speicher_fehler" },
-      { typ: "gespeichert" },
-    ]);
-  });
+  it('die Lagedatei enthält kein react und die beiden Dateien kein KANAELE/Timer (Grep-Probe, NUR auf diese zwei)', () => {
+    const lageQuelle = readFileSync(
+      join(process.cwd(), 'src/renderer/app-shell/marken-speicherstatus-lage.ts'),
+      'utf8',
+    ).replace(/\/\/.*$/gm, '')
+    expect(lageQuelle).not.toMatch(/react/)
+    expect(lageQuelle).not.toMatch(/KANAELE|setTimeout|setInterval|rufeAuf|window\.|marken:|project:|vorlagen:/)
+    const bausteinQuelle = readFileSync(
+      join(process.cwd(), 'src/renderer/app-shell/marken-speicherstatus.tsx'),
+      'utf8',
+    ).replace(/\/\/.*$/gm, '')
+    expect(bausteinQuelle).not.toMatch(/KANAELE|setTimeout|setInterval|rufeAuf|abonniere\(|window\.|marken:|project:|vorlagen:/)
+    // Der Nachbar #200 wird nicht importiert - die Prüfung zielt auf den Import nach
+    // dem Anführungszeichen ("./speicherstatus..."), nicht auf den Teilstring:
+    expect(bausteinQuelle).not.toMatch(/from '\.\/speicherstatus/)
+    expect(bausteinQuelle).not.toMatch(/marken-editor/)
+  })
+})
 
-  it("ein Erfolg OHNE vorherigen Fehler feuert NICHTS (kein Dauerfeuer)", () => {
-    const empfangen: unknown[] = [];
-    aufMarkenSpeichernEreignis((e) => empfangen.push(e));
+// ---------------- Der Baustein (jsdom, Spion auf abonniereMarken) ----------------
 
-    mitteilungAufSchreibversuch!({ erfolgreich: true });
-    mitteilungAufSchreibversuch!({ erfolgreich: true });
+describe('MarkenSpeicherHinweis (jsdom)', () => {
+  beforeEach(() => {})
 
-    expect(empfangen).toEqual([]);
-  });
+  it('ruft abonniereMarken beim Aufbau GENAU EINMAL und die Abmelde-Funktion beim Abbau GENAU EINMAL', async () => {
+    const abgemeldet = vi.fn()
+    const abonniereMarken = vi.fn(() => abgemeldet)
+    const ziel = document.createElement('div')
+    document.body.appendChild(ziel)
+    const wurzel: Root = createRoot(ziel)
+    const { MarkenSpeicherHinweis } = await import('../../src/renderer/app-shell/marken-speicherstatus')
+    act(() => {
+      wurzel.render(createElement(MarkenSpeicherHinweis, { abonniereMarken }) as never)
+    })
+    expect(abonniereMarken).toHaveBeenCalledTimes(1)
+    act(() => {
+      wurzel.unmount()
+    })
+    expect(abgemeldet).toHaveBeenCalledTimes(1)
+  })
 
-  it("ZWEI aufeinander folgende Fehler feuern ZWEIMAL 'fehler'", () => {
-    const empfangen: unknown[] = [];
-    aufMarkenSpeichernEreignis((e) => empfangen.push(e));
+  it('im Anfangszustand steht WEDER "gespeichert" NOCH der Hinweistext im DOM (benannter Test)', async () => {
+    const abonniereMarken = vi.fn(() => () => {})
+    const ziel = document.createElement('div')
+    document.body.appendChild(ziel)
+    const wurzel: Root = createRoot(ziel)
+    const { MarkenSpeicherHinweis } = await import('../../src/renderer/app-shell/marken-speicherstatus')
+    act(() => {
+      wurzel.render(createElement(MarkenSpeicherHinweis, { abonniereMarken }) as never)
+    })
+    const text = ziel.textContent ?? ''
+    expect(text).not.toContain('gespeichert')
 
-    mitteilungAufSchreibversuch!({ erfolgreich: false, code: "speicher_fehler" });
-    mitteilungAufSchreibversuch!({ erfolgreich: false, code: "speicher_fehler" });
+  })
 
-    expect(empfangen).toHaveLength(2);
-  });
+  it('nach einem Fehler steht der Wortlaut und der Code als Nebenangabe; nach gespeichert steht KEINER von beiden', async () => {
+    let hoerer: ((ereignis: { typ: 'fehler'; code: string }) => void) | null = null
+    const abonniereMarken = vi.fn((h: (ereignis: MarkenSpeicherEreignis) => void) => {
+      hoerer = h
+      return () => {}
+    })
+    const ziel = document.createElement('div')
+    document.body.appendChild(ziel)
+    const wurzel: Root = createRoot(ziel)
+    const { MarkenSpeicherHinweis } = await import('../../src/renderer/app-shell/marken-speicherstatus')
+    act(() => {
+      wurzel.render(createElement(MarkenSpeicherHinweis, { abonniereMarken }) as never)
+    })
+    act(() => {
+      hoerer!({ typ: 'fehler', code: 'speicher_fehler' })
+    })
+    expect(ziel.textContent).toContain(MARKEN_HINWEIS_TEXT)
+    expect(ziel.textContent).toContain('speicher_fehler')
+    wurzel.unmount()
+  })
 
-  it("zwei Hoerer bekommen BEIDE die Meldung; die Abmelde-Funktion trennt nachweislich", () => {
-    const a: unknown[] = [];
-    const b: unknown[] = [];
-    const abA = aufMarkenSpeichernEreignis((e) => a.push(e));
-    const abB = aufMarkenSpeichernEreignis((e) => b.push(e));
+  it('abonniereMarken wirft: die Komponente rendert trotzdem, der Wurf verlaesst sie nicht', async () => {
+    const abonniereMarken = vi.fn(() => {
+      throw new Error('Bridge weg')
+    })
+    const ziel = document.createElement('div')
+    document.body.appendChild(ziel)
+    const wurzel: Root = createRoot(ziel)
+    const { MarkenSpeicherHinweis } = await import('../../src/renderer/app-shell/marken-speicherstatus')
+    expect(() => {
+      act(() => {
+        wurzel.render(createElement(MarkenSpeicherHinweis, { abonniereMarken }) as never)
+      })
+    }).not.toThrow()
 
-    mitteilungAufSchreibversuch!({ erfolgreich: false, code: "speicher_fehler" });
-    expect(a).toHaveLength(1);
-    expect(b).toHaveLength(1);
-
-    abA();
-    mitteilungAufSchreibversuch!({ erfolgreich: true });
-    expect(a).toHaveLength(1);   // abgemeldet
-    expect(b).toHaveLength(2);   // bleibt drin
-    abB();
-  });
-
-  it("ein WERFENDER Hoerer bringt die Übersetzung und die übrigen Hoerer nicht zu Fall", () => {
-    const gut: unknown[] = [];
-    aufMarkenSpeichernEreignis(() => { throw new Error("hoerer kaputt"); });
-    aufMarkenSpeichernEreignis((e) => gut.push(e));
-
-    expect(() => mitteilungAufSchreibversuch!({ erfolgreich: false, code: "speicher_fehler" })).not.toThrow();
-    expect(gut).toEqual([{ typ: "fehler", code: "speicher_fehler" }]);
-
-    // Der Fehlerzustand ist AUCH trotz Wurf gewechselt: der naechste Erfolg feuert.
-    mitteilungAufSchreibversuch!({ erfolgreich: true });
-    expect(gut).toHaveLength(2);
-  });
-
-  it("ein zweimal angemeldeter Hoerer wird zweimal gerufen - KEINE Entdopplung", () => {
-    const empfangen: unknown[] = [];
-    const hoerer = (e: unknown) => empfangen.push(e);
-    const ab1 = aufMarkenSpeichernEreignis(hoerer);
-    const ab2 = aufMarkenSpeichernEreignis(hoerer);
-
-    mitteilungAufSchreibversuch!({ erfolgreich: false, code: "speicher_fehler" });
-
-    expect(empfangen).toHaveLength(2);
-    ab1();
-    ab2();
-  });
-
-  it("Meldungen VOR der ersten Anmeldung verfallen still (kein Puffer)", async () => {
-    // Hoerer noch NICHT angemeldet; die Anmeldung passiert spaeter.
-    aufMarkenSpeichernEreignis(() => undefined); // Úbersetzung an, aber kein Treffer-Rec
-    mitteilungAufSchreibversuch!({ erfolgreich: false, code: "speicher_fehler" });
-
-    const spaeter: unknown[] = [];
-    aufMarkenSpeichernEreignis((e) => spaeter.push(e));
-
-    // Nichts wird gepuffert: der spaeter Angemeldete hoert erst, was NEU kommt.
-    expect(spaeter).toEqual([]);
-
-    mitteilungAufSchreibversuch!({ erfolgreich: true });
-    expect(spaeter).toEqual([{ typ: "gespeichert" }]);
-  });
-});
+  })
+})

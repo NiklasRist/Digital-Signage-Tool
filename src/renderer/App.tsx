@@ -54,6 +54,8 @@ import { starteAuftragsNachlauf } from './app-shell/auftrags-nachlauf'
 import { abonniere } from './ipc-client/ereignisse'
 import { KANAELE } from '../shared/contracts/kanaele'
 import { SpeicherHinweis } from './app-shell/speicherstatus'
+import { MarkenSpeicherHinweis } from './app-shell/marken-speicherstatus'
+import type { MarkenSpeicherEreignis } from './app-shell/marken-speicherstatus-lage'
 import { WarteschlangenLeiste } from './shell/WarteschlangenLeiste'
 import { leereProjektHistorie } from './app-shell/undo-historien'
 import { aktualisiereAusgaben } from './composer/ausgabe-liste'
@@ -238,10 +240,18 @@ export function App(): JSX.Element {
     inhalte: baueReiterInhalte(zugaenge, WURZELN, reiterumgebung),
     warteschlangenLeiste: () => <WarteschlangenLeiste />,
     speicherHinweis: () => (
-      <SpeicherHinweis
-        abonniereProjekt={(hoerer) => abonniere(KANAELE.project.autoSpeichernStatus, hoerer)}
-        abonniereVorlagen={(hoerer) => abonniere(KANAELE.vorlagen.autoSpeichernStatus, hoerer)}
-      />
+      <>
+        {/* unverändert aus #262, Schritt 5 – Zeichen für Zeichen */}
+        <SpeicherHinweis
+          abonniereProjekt={(hoerer) => abonniere(KANAELE.project.autoSpeichernStatus, hoerer)}
+          abonniereVorlagen={(hoerer) => abonniere(KANAELE.vorlagen.autoSpeichernStatus, hoerer)}
+        />
+        {/* #327: der dritte Speicher, derselbe Schlitz – Geschwister, kein zweiter Schlitz */}
+        <MarkenSpeicherHinweis
+          abonniereMarken={(hoerer: (ereignis: MarkenSpeicherEreignis) => void) =>
+            abonniere(KANAELE.marken.autoSpeichernStatus, hoerer)}
+        />
+      </>
     ),
     meldungsFlaeche: () =>
       meldung === null && lage.startHinweis === null ? (
