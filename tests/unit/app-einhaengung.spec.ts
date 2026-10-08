@@ -89,6 +89,7 @@ const d = vi.hoisted(() => {
     rahmenRufe: [] as Array<Record<string, unknown>>,
     overlayRufe: [] as Array<Record<string, unknown>>,
     speicherRufe: [] as Array<Record<string, unknown>>,
+    markenSpeicherRufe: [] as Array<Record<string, unknown>>,
     leisteRufe: [] as unknown[],
     abonniereKanaele: [] as unknown[],
     nachlaufAbonnierende: [] as unknown[],
@@ -223,6 +224,16 @@ vi.mock('../../src/renderer/app-shell/speicherstatus', () => ({
   ),
   holeSpeicherlage: vi.fn(),
   aufSpeicherlage: vi.fn(),
+}))
+
+vi.mock('../../src/renderer/app-shell/marken-speicherstatus', () => ({
+  MarkenSpeicherHinweis: vi.fn(
+    (eigenschaften: Record<string, unknown>): JSX.Element => {
+      d.markenSpeicherRufe.push(eigenschaften)
+      return createElement('div', { 'data-testid': 'marken-speicherhinweis-marke' })
+    },
+  ),
+  holeMarkenSpeicherlage: vi.fn(),
 }))
 
 vi.mock('../../src/renderer/app-shell/reiter', () => ({
@@ -460,6 +471,7 @@ beforeEach(() => {
   d.abonniereKanaele.length = 0
   d.nachlaufAbonnierende.length = 0
   d.wirkungen.length = 0
+  d.markenSpeicherRufe.length = 0
   frischeDoppel()
 })
 
@@ -601,6 +613,32 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       ;(hinweisEigenschaften.abonniereVorlagen as (h: unknown) => () => void)(vi.fn())
     })
     expect(d.abonniereKanaele.at(-1)).toBe(KANAELE.vorlagen.autoSpeichernStatus)
+  })
+
+  it('Der Schlitz speicherHinweis rendert BEIDE Bauteile innerhalb desselben Knotens; das Abo Markenspeicherstatus wird mit GENAU DEM Kanal gebildet (#327)', async () => {
+    stelleBereitOhneProjekt()
+  const { behaelter, wurzel } = rendere()
+  await act(async () => {
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+
+  expect(d.markenSpeicherRufe.length).toBeGreaterThanOrEqual(1)
+    const markenEigenschaften = d.markenSpeicherRufe.at(-1) as Record<string, unknown>
+    expect(markenEigenschaften.abonniereMarken).toBeDefined()
+    act(() => {
+      ;(markenEigenschaften.abonniereMarken as (h: unknown) => () => void)(vi.fn())
+    })
+    expect(d.abonniereKanaele.at(-1)).toBe(KANAELE.marken.autoSpeichernStatus)
+    // Bestandstest aus #262 uebernommen: SpeicherHinweis laeuft WEITERHIN unberuehrt
+    expect(d.speicherRufe.length).toBeGreaterThanOrEqual(1)
+    const hinweisEigenschaften = d.speicherRufe.at(-1) as Record<string, unknown>
+    act(() => {
+      ;(hinweisEigenschaften.abonniereProjekt as (h: unknown) => () => void)(vi.fn())
+    })
+    expect(d.abonniereKanaele.at(-1)).toBe(KANAELE.project.autoSpeichernStatus)
+    // Der Kanalname steht NUR in der Registry (#304): App.tsx hat KEIN Zeichenketten-Literal:
+    expect(quelleVonApp().match(/marken:autoSpeichernStatus/g) ?? []).toHaveLength(0)
   })
 
   it("Der Melde-Nachweis, benannter Test 'eine Meldung wird gezeigt': Code und Meldung landen in der meldungsFlaeche, NICHT im speicherHinweis", async () => {
