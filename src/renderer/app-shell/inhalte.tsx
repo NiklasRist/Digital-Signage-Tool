@@ -184,6 +184,27 @@ const LISTE: CSSProperties = { width: 320, minWidth: 260, flexShrink: 0, minHeig
 const BUEHNE: CSSProperties = { flex: 1, minWidth: 0, minHeight: 0, position: 'relative' }
 
 /**
+ * BUGFIX (Die Naht-Hooks, 08.10.): die STABLE Komponente, die den inline-Aufruf
+ * `kindOffen(...)` von #244 als echtes Element aufnimmt. Die Hooks der gerufenen
+ * Wurzel gehoeren DAMIT ihrer eigenen Faser; ein Mount zwischen "kein Projekt"
+ * und "Projekt" veraendert die Hook-Zahl NICHT innerhalb einer Instanz, sondern
+ * mountet eine Neue. Der Browserbegeisterte Beleg: der Test "Die Naht-Hooks
+ * (BUGFIX)" in inhalte-reiter.spec.ts - ohne diesen Fix wirft er EXAKT den
+ * Weiß-Screen-Fehler ("Rendered more hooks").
+ */
+function ProjektKindWurzel({
+  sichtbar,
+  projekt,
+  kindOffen,
+}: {
+  sichtbar: boolean
+  projekt: Project
+  kindOffen: (sichtbar: boolean, projekt: Project) => JSX.Element
+}): JSX.Element {
+  return kindOffen(sichtbar, projekt)
+}
+
+/**
  * Belegt die vier Reiter. Der Rückgabewert ist genau das, was #195 als `inhalte` erwartet.
  * Kein `Ergebnis<T>`, kein `async`, kein `throw`.
  */
@@ -211,8 +232,17 @@ export function baueReiterInhalte(
     }, [])
     // ENTSCHIEDEN 8: sichtbar wird unveraendert durchgereicht - der Reiterinhalt
     // wird bei sichtbar: false NICHT abgebaut, das Modul entscheidet selbst.
+    // BUGFIX (Naht-Hooks, 08.10.): der inline-Aufruf `kindOffen(...)` rechnte die
+    // Hooks der Wurzel DER Instanz ProjektStandReiter zu; wechselte dieselbe
+    // Instanz von "kein Projekt" zu "Projekt" (das NORMALFALL beim Anlegen),
+    // tauchten Hook-Plätze ZUSAETZLICH auf und React warf "Rendered more hooks" -
+    // die ganze Oberfläche wurde weiß. Als echtes ELEMENT mountet die Wurzel
+    // FRISCH und zählt ihre Hooks selbst (eine Hook-Zähleränderung ist bei
+    // einem Mount unbedenklich). Die kindOffen-Signatur bleibt UNVERAENDERT.
     if (sicht.projekt !== null) {
-      return kindOffen(sichtbar, sicht.projekt)
+      return (
+        <ProjektKindWurzel sichtbar={sichtbar} projekt={sicht.projekt} kindOffen={kindOffen} />
+      )
     }
     // Der Leerzustand ohne offenes Projekt - nur fuer zusammenstellen/aktionen
     // (zeigtLeerzustand ist die EINZIGE Quelle der Regel, #198).
