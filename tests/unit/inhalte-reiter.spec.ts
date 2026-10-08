@@ -186,7 +186,7 @@ const BAUE_PROJEKT = (): Project => ({
 })
 
 function rendereReiter(
-  reiter: 'zusammenstellen' | 'aktionen' | 'vorlagen' | 'projekte',
+  reiter: 'zusammenstellen' | 'aktionen' | 'vorlagen' | 'marken' | 'projekte',
   sichtbar = true,
 ) {
   const ziel = document.createElement('div')

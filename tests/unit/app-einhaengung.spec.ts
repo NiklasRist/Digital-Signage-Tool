@@ -198,6 +198,11 @@ vi.mock('../../src/renderer/projekt-verwaltung', () => ({
     createElement('div', { 'data-testid': 'wurzel-projekte-marke' })),
 }))
 
+vi.mock('../../src/renderer/marken-editor', () => ({
+  MarkenEditorWurzel: vi.fn(() =>
+    createElement('div', { 'data-testid': 'wurzel-marken-marke' })),
+}))
+
 vi.mock('../../src/renderer/preview-player/vorschau', () => ({
   Vorschau: vi.fn(() => createElement('div', { 'data-testid': 'wurzel-vorschau-marke' })),
 }))
@@ -320,6 +325,7 @@ import * as optionenModul from '../../src/renderer/composer/reparatur-optionen'
 import * as actionEditorModul from '../../src/renderer/action-editor'
 import * as vorlagenEditorModul from '../../src/renderer/vorlagen-editor'
 import * as projektVerwaltungModul from '../../src/renderer/projekt-verwaltung'
+import * as markenEditorModul from '../../src/renderer/marken-editor'
 import * as vorschauModul from '../../src/renderer/preview-player/vorschau'
 import * as speicherModul from '../../src/renderer/app-shell/speicherstatus'
 import * as reiterModul from '../../src/renderer/app-shell/reiter'
@@ -721,7 +727,7 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(behaelter.querySelector('[data-testid="meldungs-flaeche"]')).toBeNull()
   })
 
-  it('baueReiterInhalte wird mit den Zugaengen aus der Lage, den FUENF Modul-Wurzeln und GENAU FUENF belegten Umgebung-Feldern gerufen', async () => {
+  it('baueReiterInhalte wird mit den Zugaengen aus der Lage, den SECHS Modul-Wurzeln (#322) und GENAU FUENF belegten Umgebung-Feldern gerufen', async () => {
     stelleBereitOhneProjekt()
     rendere()
     await act(async () => {
@@ -740,7 +746,16 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(wurzeln.vorschau).toBe(vorschauModul.Vorschau)
     expect(wurzeln.actionEditor).toBe(actionEditorModul.ActionEditorWurzel)
     expect(wurzeln.vorlagenEditor).toBe(vorlagenEditorModul.VorlagenEditorWurzel)
+    expect(wurzeln.markenEditor).toBe(markenEditorModul.MarkenEditorWurzel)
     expect(wurzeln.projektVerwaltung).toBe(projektVerwaltungModul.ProjektVerwaltungWurzel)
+    expect(Object.keys(wurzeln).sort()).toEqual([
+      'actionEditor',
+      'composer',
+      'markenEditor',
+      'projektVerwaltung',
+      'vorlagenEditor',
+      'vorschau',
+    ])
     expect(Object.keys(umgebung).sort()).toEqual([
       'aufProjekteWechseln',
       'composerVerdrahtung',

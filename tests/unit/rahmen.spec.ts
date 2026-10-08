@@ -234,6 +234,7 @@ describe('Besuchte Reiter bleiben montiert (DoD, ENTSCHIEDEN 2)', () => {
       zusammenstellen: undefined,
       aktionen: undefined,
       vorlagen: undefined,
+      marken: undefined,
       projekte: undefined,
     }
     function merkerInhalt(key: ReiterId): ReiterInhalt {
