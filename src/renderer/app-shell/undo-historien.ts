@@ -50,6 +50,11 @@ export function bereichFuerReiter(reiter: ReiterId): Historienbereich | null {
       return 'projekt-bearbeitung'
     case 'vorlagen':
       return 'vorlagen-editor'
+    case 'marken':
+      // Zusaetzliche Spalte aus #314 (TK 9.14.2): „Der Reiter Marken hat in v1 KEINE
+      // Historie" - die Undo/Redo-Bedienelemente sind dort ABGESCHALTET, nicht an
+      // den Stapel eines anderen Reiters gebunden. Kein dritter Bereich.
+      return null
     default:
       // 'projekte' und jeder unbekannte Wert: kein Rueckgaengig (TK 9.13.1 - Vorgaenge mit
       // Dateiwirkung sind nicht undo-faehig). Kein Wurf, kein Ersatzbereich.

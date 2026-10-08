@@ -57,6 +57,10 @@ describe('bereichFuerReiter (#234) – die Zuordnung', () => {
     expect(bereichFuerReiter('projekte')).toBeNull()
   })
 
+  it("liefert NULL fuer 'marken' - TK 9.14.2: der Reiter Marken hat in v1 KEINE Historie, die Undo/Redo-Bedienelemente sind abgeschaltet (#314, benannter Test)", () => {
+    expect(bereichFuerReiter('marken')).toBeNull()
+  })
+
   it('liefert null fuer einen unbekannten Wert und wirft nicht', () => {
     const fremd = 'unbekannt' as 'zusammenstellen'
     expect(bereichFuerReiter(fremd)).toBeNull()
@@ -189,5 +193,14 @@ describe('undo-historien.ts (#234) – Grep-Proben der DoD', () => {
     const reiterImport = quelle.match(/import[^;]*from\s+'\.\/reiter'/)
     expect(reiterImport).not.toBeNull()
     expect(reiterImport![0]).toContain('import type')
+  })
+
+  it('kennet KEINE Marken-Historie (#314): der einzige Code-Treffer auf bezeichnermarken liegt in bereichFuerReiter; kein dritter Bereich', () => {
+    // Nur die CASE-Zeile der Zuordnung nennt 'marken' - keine Historie-Fabrik,
+    // kein leereMarkeHistorie, kein dritter Historienbereich:
+    const treffer = code.match(/marken/g) ?? []
+    expect(treffer).toHaveLength(1)
+    expect(code).not.toMatch(/markenHistorie|leereMarkenHistorie/)
+    expect(code).toMatch(/Historienbereich = 'projekt-bearbeitung' \| 'vorlagen-editor'/)
   })
 })

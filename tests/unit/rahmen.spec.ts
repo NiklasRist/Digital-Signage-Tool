@@ -51,6 +51,7 @@ function vollstaendigeInhalte(
     zusammenstellen: einfacherInhalt('inhalt-zusammenstellen'),
     aktionen: einfacherInhalt('inhalt-aktionen'),
     vorlagen: einfacherInhalt('inhalt-vorlagen'),
+    marken: einfacherInhalt('inhalt-marken'),
     projekte: einfacherInhalt('inhalt-projekte'),
   }
   return { ...inhalte, ...ueberschreibungen }
@@ -109,12 +110,12 @@ afterEach(() => {
 })
 
 describe('Reiterleiste (DoD)', () => {
-  it('zeigt vier Knöpfe in REITER_REIHENFOLGE-Reihenfolge; ein Klick ruft wechsleReiter mit der passenden ReiterId (DoD)', () => {
+  it('zeigt fünf Knöpfe in REITER_REIHENFOLGE-Reihenfolge; ein Klick ruft wechsleReiter mit der passenden ReiterId (#314 ersetzt die vier-Knöpfe-Zeile)', () => {
     const spion = vi.spyOn(reiterModul, 'wechsleReiter')
     const { behaelter, fertig } = rendere(eigenschaften())
 
     const knöpfe = behaelter.querySelectorAll('button[role="tab"]')
-    expect(knöpfe).toHaveLength(4)
+    expect(knöpfe).toHaveLength(5)
     expect(Array.from(knöpfe).map((k) => k.getAttribute('data-testid'))).toEqual(
       REITER_REIHENFOLGE.map((reiter) => `reiter-${reiter}`),
     )
@@ -122,26 +123,27 @@ describe('Reiterleiste (DoD)', () => {
       'Zusammenstellen',
       'Aktionen',
       'Vorlagen',
+      'Marken',
       'Projekte',
     ])
 
-    const vorlagenKnopf = behaelter.querySelector(
-      '[data-testid="reiter-vorlagen"]',
+    const markenKnopf = behaelter.querySelector(
+      '[data-testid="reiter-marken"]',
     ) as HTMLButtonElement
     act(() => {
-      vorlagenKnopf.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      markenKnopf.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
     expect(spion).toHaveBeenCalledTimes(1)
-    expect(spion).toHaveBeenCalledWith('vorlagen')
+    expect(spion).toHaveBeenCalledWith('marken')
 
     fertig()
   })
 
-  it('zeigt immer alle vier Knöpfe, nie ausgegraut (ENTSCHIEDEN 6)', () => {
+  it('zeigt immer alle fünf Knöpfe, nie ausgegraut (ENTSCHIEDEN 6)', () => {
     const { behaelter, fertig } = rendere(eigenschaften())
     const knöpfe = behaelter.querySelectorAll('button[role="tab"]')
-    expect(knöpfe).toHaveLength(4)
+    expect(knöpfe).toHaveLength(5)
     for (const knopf of knöpfe) {
       expect(knopf.hasAttribute('disabled')).toBe(false)
     }
@@ -169,6 +171,34 @@ describe('Besuchte Reiter bleiben montiert (DoD, ENTSCHIEDEN 2)', () => {
     })
     // Beim Zurückwechseln wird vorlagen NICHT neu aufgebaut – nur versteckt.
     expect(aufbauVorlagen).toHaveBeenCalledTimes(1)
+
+    fertig()
+  })
+
+  it('baut den Inhalt von zusammenstellen nach marken und zurück GENAU EINMAL auf (#314: die Montage-Zusage gilt für den fünften Reiter)', () => {
+    const aufbau = vi.fn()
+    const inhalte = vollstaendigeInhalte({
+      zusammenstellen: inhaltMitAufbau(aufbau),
+    })
+    const { fertig } = rendere(eigenschaften({ inhalte }))
+
+    // Start: 'projekte' (setzeReiterZustandZurueck). Wechsel nach marken baut den
+    // zusammenstellen-Inhalt noch NICHT:
+    act(() => {
+      reiterModul.wechsleReiter('marken')
+    })
+    expect(aufbau).toHaveBeenCalledTimes(0)
+
+    act(() => {
+      reiterModul.wechsleReiter('zusammenstellen')
+    })
+    expect(aufbau).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      reiterModul.wechsleReiter('marken')
+    })
+    // Der ZUSAMMENSTELLEN-Inhalt bleibt montiert (versteckt), wird NICHT neu aufgebaut:
+    expect(aufbau).toHaveBeenCalledTimes(1)
 
     fertig()
   })
@@ -216,6 +246,7 @@ describe('Besuchte Reiter bleiben montiert (DoD, ENTSCHIEDEN 2)', () => {
       zusammenstellen: merkerInhalt('zusammenstellen'),
       aktionen: merkerInhalt('aktionen'),
       vorlagen: merkerInhalt('vorlagen'),
+      marken: merkerInhalt('marken'),
       projekte: merkerInhalt('projekte'),
     }
     const { fertig } = rendere(eigenschaften({ inhalte }))
@@ -361,7 +392,7 @@ describe('Speicher-Hinweis (DoD)', () => {
     const nav = behaelter.querySelector('[role="tablist"]')
     // Die Reiterleiste trägt ausschließlich die vier Reiterbeschriftungen.
     expect(nav?.textContent?.trim()).toBe(
-      'ZusammenstellenAktionenVorlagenProjekte',
+      'ZusammenstellenAktionenVorlagenMarkenProjekte',
     )
 
     fertig()

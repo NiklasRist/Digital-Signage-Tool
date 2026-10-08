@@ -22,6 +22,7 @@ const doppel = vi.hoisted(() => ({
   vorschauProps: [] as Array<Record<string, unknown>>,
   actionEditorProps: [] as Array<Record<string, unknown>>,
   vorlagenEditorProps: [] as Array<Record<string, unknown>>,
+  markenEditorProps: [] as Array<Record<string, unknown>>,
   projektVerwaltungProps: [] as Array<Record<string, unknown>>,
   leereAufrufe: 0,
   leereFunktion: null as unknown as () => void,
@@ -36,6 +37,18 @@ const doppel = vi.hoisted(() => ({
 vi.mock('../../src/renderer/app-shell/undo-aufzeichnung', () => ({
   umhuelleFuerBearbeitung: (zugang: unknown) => ({ umhuellt: true, roh: zugang }),
   ohneAufzeichnung: (zugang: unknown) => zugang,
+}))
+
+const leerzustandDoppel = vi.hoisted(() => ({ aufrufe: 0 }))
+
+vi.mock('../../src/renderer/app-shell/leerzustand-regel', () => ({
+  // Die ECHTE Regel wörtlich kopiert (#198-Vertrag), weil die Spion-Zählung der
+  // Regel IHR Scheme nicht beruehrt: nur die Messung braucht hier einen Spinne.
+  zeigtLeerzustand: (reiter: string, projektOffen: boolean) => {
+    leerzustandDoppel.aufrufe += 1
+    return !projektOffen && (reiter === 'zusammenstellen' || reiter === 'aktionen')
+  },
+  REITER_MIT_LEERZUSTAND: ['zusammenstellen', 'aktionen'],
 }))
 
 vi.mock('../../src/renderer/app-shell/undo-historien', () => ({
@@ -67,6 +80,10 @@ function baueWurzeln() {
     vorlagenEditor: (eigenschaften: Record<string, unknown>) => {
       doppel.vorlagenEditorProps.push(eigenschaften)
       return createElement('div', { 'data-testid': 'attrappe-vorlagen' })
+    },
+    markenEditor: (eigenschaften: Record<string, unknown>) => {
+      doppel.markenEditorProps.push(eigenschaften)
+      return createElement('div', { 'data-testid': 'attrappe-marken' })
     },
     projektVerwaltung: (eigenschaften: Record<string, unknown>) => {
       doppel.projektVerwaltungProps.push(eigenschaften)
@@ -143,6 +160,7 @@ beforeEach(() => {
   doppel.vorschauProps = []
   doppel.actionEditorProps = []
   doppel.vorlagenEditorProps = []
+  doppel.markenEditorProps = []
   doppel.projektVerwaltungProps = []
   doppel.leereAufrufe = 0
   doppel.abmeldungen = 0
@@ -151,6 +169,7 @@ beforeEach(() => {
   doppel.sicht = { projekt: null, ladefehler: null }
   doppel.hoerer = null
   doppel.voraussetzungen = { marke: null, vorlagen: [] }
+  leerzustandDoppel.aufrufe = 0
 })
 
 afterEach(() => {
@@ -359,11 +378,64 @@ describe('Der Projektstand (ENTSCHIEDEN 7/8)', () => {
     expect(doppel.abmeldungen).toBe(1)
   })
 
-  it('genau vier Schluessel', () => {
+  it('genau fuenf Schluessel (#314 ersetzt die vier-Schluessel-Zeile; Reihenfolge wie in der Skizze TK 9.14.1)', () => {
     const sichten = baueSichten()
     const walks = baueReiterInhalte(verteileZugaenge(sichten), baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], baueUmgebung() as unknown as Parameters<typeof baueReiterInhalte>[2])
-    expect(Object.keys(walks).sort()).toEqual(['aktionen', 'projekte', 'vorlagen', 'zusammenstellen'])
+    expect(Object.keys(walks)).toEqual(['zusammenstellen', 'aktionen', 'vorlagen', 'marken', 'projekte'])
     void sichten
+  })
+
+  describe("Der Reiter 'marken' (#314, TK 9.14.2)", () => {
+    it('ruft GENAU die markenEditor-Wurzel; sichtbar UNVERAENDERT, marken ToBe-gleich', () => {
+      const { zugaenge, fertig } = rendereReiter('marken')
+      expect(doppel.markenEditorProps).toHaveLength(1)
+      const eigenschaften = doppel.markenEditorProps[0]!
+      expect(eigenschaften.sichtbar).toBe(true)
+      expect(eigenschaften.marken).toBe(zugaenge.marken)
+      // Keine andere Wurzel wurde gerufen (6 Spione):
+      expect(doppel.composerProps).toHaveLength(0)
+      expect(doppel.vorschauProps).toHaveLength(0)
+      expect(doppel.actionEditorProps).toHaveLength(0)
+      expect(doppel.vorlagenEditorProps).toHaveLength(0)
+      expect(doppel.projektVerwaltungProps).toHaveLength(0)
+      fertig()
+    })
+
+    it('ruft ohne offenes Projekt TROTZDEM die Wurzel und rendert keinen Leerzustand (TK 9.14.2)', () => {
+      doppel.sicht = { projekt: null, ladefehler: null }
+      const { zugaenge, fertig } = rendereReiter('marken')
+      expect(doppel.markenEditorProps.length).toBeGreaterThanOrEqual(1)
+      expect(doppel.markenEditorProps[0]!.marken).toBe(zugaenge.marken)
+      fertig()
+      // showsLeerzustand(#198) wurde fuer den Reiter marken GAR NICHT gerufen:
+      expect(leerzustandDoppel.aufrufe).toBe(0)
+    })
+
+    it('liest NICHTS: projektRoh.hole und aufGeaendert null Mal; die drei Funktionen von marken null Mal (fuenf Spione)', () => {
+      doppel.sicht = { projekt: null, ladefehler: null }
+      const sichten = baueSichten()
+      const zugaenge = verteileZugaenge(sichten)
+      const walks = baueReiterInhalte(zugaenge, baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], baueUmgebung() as unknown as Parameters<typeof baueReiterInhalte>[2])
+      const inhalt = walks['marken']
+      const ziel = document.createElement('div')
+      document.body.appendChild(ziel)
+      // Die fuenf Spione:
+      const markenZugang = zugaenge.marken as unknown as { lade: ReturnType<typeof vi.fn>; hole: ReturnType<typeof vi.fn>; aufGeaendert: ReturnType<typeof vi.fn> }
+      const wurzel: Root = createRoot(ziel)
+      act(() => {
+        wurzel.render(createElement(inhalt, { sichtbar: true }) as ReactElement)
+      })
+      wurzel.unmount()
+      // projektRoh.hole: der Merker doppels zaehlt jeden Aufruf (baueSichten zählt in doppel.holeAufrufe):
+      expect(doppel.holeAufrufe).toBe(0)
+      // aufGeaendert: das Abo-Doppel merkt abmeldungen nur beim ANMELDEN via effect;
+      // der marken-Reiter rendert ohne Projektstand, also kein Abo: doppel.abmeldungen == 0 hier.
+      expect(doppel.abmeldungen).toBe(0)
+      expect(markenZugang.lade.mock.calls).toHaveLength(0)
+      expect(markenZugang.hole.mock.calls).toHaveLength(0)
+      expect(markenZugang.aufGeaendert.mock.calls).toHaveLength(0)
+      document.body.innerHTML = ''
+    })
   })
 })
 

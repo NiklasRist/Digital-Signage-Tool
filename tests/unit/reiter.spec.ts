@@ -51,11 +51,12 @@ describe("Konstanten und Anfangswert (DoD)", () => {
     expect(REITER_NACH_PROJEKT_OEFFNEN).toBe("zusammenstellen");
   });
 
-  it("enthaelt REITER_REIHENFOLGE genau die vier Werte in Skizzen-Reihenfolge (DoD)", () => {
+  it("enthaelt REITER_REIHENFOLGE genau die fuenf Werte in Skizzen-Reihenfolge (#314 ersetzt den DoD 'vier Werte')", () => {
     expect(REITER_REIHENFOLGE).toEqual([
       "zusammenstellen",
       "aktionen",
       "vorlagen",
+      "marken",
       "projekte",
     ]);
   });
@@ -192,7 +193,8 @@ describe("istGueltigerReiter (DoD)", () => {
   );
 
   it("wirft auch fuer weitere unbekannte Zeichenketten nie (Fehlerpfad)", () => {
-    for (const wert of ["marken", "uebersicht", "   "]) {
+    // 'marken' ist seit #314 JETZT gueltig - aus der Abweisungsliste gestrichen:
+    for (const wert of ["uebersicht", "   ", "Marken"]) {
       expect(istGueltigerReiter(wert)).toBe(false);
     }
   });
@@ -239,5 +241,31 @@ describe("Bauvorschriften dieser Datei (DoD-Grep-Proben)", () => {
 
   it("enthaelt kein localStorage", () => {
     expect(CODEZEILEN).not.toMatch(/localStorage/);
+  });
+});
+// ---------------- #314: der fuenfte Reiter ----------------
+
+describe("#314: der Reiter 'marken'", () => {
+  beforeEach(() => {
+    setzeReiterZustandZurueck();
+  });
+
+  it("istGueltigerReiter('marken') ist true; Grossschreibung und Einzahl bleiben false", () => {
+    expect(istGueltigerReiter("marken")).toBe(true);
+    expect(istGueltigerReiter("Marken")).toBe(false);
+    expect(istGueltigerReiter("marke")).toBe(false);
+  });
+
+  it("wechsleReiter('marken') aendert holeReiter() und ruft jeden Hoerer GENAU einmal", () => {
+    const hoerer = vi.fn();
+    aufReiterGeaendert(hoerer);
+    wechsleReiter("marken");
+    expect(holeReiter()).toBe("marken");
+    expect(hoerer).toHaveBeenCalledTimes(1);
+    expect(hoerer).toHaveBeenCalledWith("marken");
+  });
+
+  it("holeReiter() liefert VOR jedem Wechsel weiterhin 'projekte' (unverändert)", () => {
+    expect(holeReiter()).toBe("projekte");
   });
 });
