@@ -11,10 +11,17 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (07.10.2026, nachm.) – gilt vor ALLEM weiter unten
+## STAND HEUTE (08.10.2026, abends) – gilt vor ALLEM weiter unten
 
-**Der volle Stand dieser Bau-Serie (alle M8-Issues gebaut bis auf #327, die an #311/#313/#314/#322 hängen) steht in [`docs/agents/uebergabe-2026-10-07-session-2.md`](docs/agents/uebergabe-2026-10-07-session-2.md)
-– LIES DIESE DATEI ZUERST, bevor du die veralte Tabelle hier unten liest.** Kurz:
+**Der volle Stand dieser Session steht in [`docs/agents/uebergabe-2026-10-08-session.md`](docs/agents/uebergabe-2026-10-08-session.md)
+– LIES DIESE DATEI ZUERST.** Kurz:
+
+- **M8 ist KOMPLETT: 60/60, 0 baubereit, 0 UNKLAR** (gemessen `python3 tools/bereitschaft.py`); 297 Dateien, 5398 Tests grün, Typecheck/Lint 0, Branch `main` (165 Commits vor origin, NICHT gepusht).
+- **Gebaut und gemergt heute:** #311, #313, #314, #322, #327 und #399 – die Kette „Eine Marke → Marken je Aktion" plus der letzte Speicher-Empfänger und die #324-Vermittlung. Alle Issues geschlossen, Nachträge an jedem Issue.
+- **User-Entscheidungen 08.10.:** Rot bleibt die Markenfarbe, das Logo bleibt wie es ist (kein Logo-Tausch); „direkt richtig bauen" → die Vorlagen-Editor-Auswahl „Vorschau gegen Marke" ist gebaut (Default: eingebaute Marke, Zeichen nur über #312).
+- **AM ARBEITSBAUM:** Sauber (nur die drei bekannten Vorbefund-Artefakte untracked). Zahlwörter: ModulWurzeln **6** (markenEditor = sechster Eintrag), Reiter **5** ([Marken], Position vier), Abo-Aufrufe des Speicherhinweises **3**, `ProjektVerwaltungWurzelProps` **6** Felder.
+- **Offen beim User:** optische Abnahme der Markenspeicher-Anzeige (#327-Nachtrag), TV-Test, macOS-Artefakt (#7), Push der 165 Commits.
+- **Nachholbedarf:** die 4 „Unhandled Errors" aus `marken-editor-wurzel.spec.ts` sind als Vorbefunde belegt, aber noch in keinem Issue gemeldet.
 
 - **M8: 59/60, 1 baubereit (#327)** (gemessen `python3 tools/bereitschaft.py`); 5362 Tests grün, 294 Dateien, Typecheck/Lint 0, Branch `main`.
 - **Gebaut und gemergt seit der Vorsession:** #297, #298, #299, #300, #302, #323, #324, #326, #330, #336, #331. #309 war bereits geschlossen. Diff belegt: Reparatur-Commit `dcefc40` (Lint-Fehler + Faser in marken-bereitstellung.ts).
