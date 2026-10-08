@@ -106,7 +106,7 @@ function baueSichten(): Sichten {
     hole: () => doppel.voraussetzungen as never,
     verwirfMotivBestand: () => {},
   }
-  return { projekt: zugang, vorlagen, zeichnen, marken: { lade: () => defaultErgebnis() as never, hole: () => null, aufGeaendert: () => () => {} } }
+  return { projekt: zugang, vorlagen, zeichnen, marken: { lade: vi.fn(), hole: vi.fn(() => null), aufGeaendert: vi.fn(() => () => {}) } }
 }
 
 function defaultErgebnis(): never {
@@ -218,6 +218,20 @@ describe('Der Kernnachweis: wer bekommt welchen Zugang', () => {
     expect(actionEditorWurzeln.projekt).toBe(zugaenge.projektBearbeitung)
     expect(actionEditorWurzeln.hervorgehobeneAktionId).toBe(umgebung.hervorgehobeneAktionId)
     fertig()
+  })
+
+  it('marken wird UNVERAENDERT (toBe) gereicht - am action-editor UND am vorlagen-editor; die drei Funktionen des Zugangs werden hier NULL Mal gerufen (#313)', () => {
+    doppel.sicht = { projekt: BAUE_PROJEKT(), ladefehler: null }
+    const { zugaenge, fertig } = rendereReiter('aktionen')
+    expect(doppel.actionEditorProps[0]!.marken).toBe(zugaenge.marken)
+    const zugang = zugaenge.marken as { lade: ReturnType<typeof vi.fn>; hole: ReturnType<typeof vi.fn>; aufGeaendert: ReturnType<typeof vi.fn> }
+    expect(zugang.lade.mock.calls).toHaveLength(0)
+    expect(zugang.hole.mock.calls).toHaveLength(0)
+    expect(zugang.aufGeaendert.mock.calls).toHaveLength(0)
+    fertig()
+    const vorlagenLauf = rendereReiter('vorlagen')
+    expect(doppel.vorlagenEditorProps[0]!.marken).toBe(vorlagenLauf.zugaenge.marken)
+    vorlagenLauf.fertig()
   })
 
   it('composer bekommt verdrahtung ToBe-gleich; KEIN Feld des Buendels wird gerufen', () => {

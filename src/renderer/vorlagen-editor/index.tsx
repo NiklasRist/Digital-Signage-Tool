@@ -28,10 +28,12 @@
 //    sitzungshalter()-Aufruf (der Halter kommt als Eigenschaft).
 
 import { useEffect, useState, type JSX } from 'react'
-import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage, Zone } from '../../shared/contracts/vorlage'
-import type { VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
+import type { Marke } from '../../shared/contracts/marke'
+import type { VorlagenZugang, ZeichenZugang, MarkenZugang } from '../app-shell/sichten'
 import type { Sitzungshalter } from '../app-shell/undo-aufzeichnung-vorlage'
+import { stelleMarkeBereit, holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
+import { stelleSchriftenBereit } from '../template-canvas/schriften'
 
 import { GRUND_PARENT_EINGEBAUT, sichereStand, type EditorSitzung } from './arbeitskopie'
 import {
@@ -49,7 +51,6 @@ import { istSpeicherbar, pruefeVorlage, type Befund } from './pruefungen'
 import { alsNeueVorlage, ueberarbeiteVorlage, verwerfeBearbeitung } from './speichern'
 import {
   BEISPIEL_AKTION,
-  bereiteVorschauVor,
   zeichneVorschau,
   type VorschauFeld,
 } from './editor-vorschau'
@@ -88,12 +89,15 @@ import {
 } from './nutzung-anzeigen'
 import { NutzungAnzeige } from './nutzung-anzeigen.tsx'
 
-/** ZEICHENGLEICH aus #244 übernommen. */
+/** ZEICHENGLEICH aus #244 übernommen (FASSUNG mit dem Nachzug 08.10.2026: `marken`). */
 export interface VorlagenEditorWurzelProps {
   sichtbar: boolean
   vorlagen: VorlagenZugang
   zeichnen: ZeichenZugang
-  marke: Marke
+  /** Die AUSWAHLLISTE „Vorschau gegen Marke" (Variante (b), User-Entscheidung NACHTRAG 08.10.
+   *  in #313): Liste NUR fuer die Wahl – gezeichnet wird ueber stelleMarkeBereit/holeBereiteMarke
+   *  (#312). Default: die Marke mit `eingebaut: true`. */
+  marken: MarkenZugang
   /** Der Sitzungshalter der Shell (#245) – KEIN Projektzugang. */
   sitzung: Sitzungshalter
 }
@@ -330,6 +334,12 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
   const [nutzungsStand, setzeNutzungsStand] = useState<Nutzungsstand>(LEERER_NUTZUNGSSTAND)
   const [aufgeklappt, setzeAufgeklappt] = useState(false)
   const [neuerName, setzeNeuerName] = useState('')
+  // Die „Vorschau gegen Marke"-Auswahl (Variante (b), Nachtrag 08.10. in #313): die
+  // Liste kommt aus dem Marken-Zugang (#305); gemerkt wird NUR die Kennung - die
+  // aufgeloeste Marke wohnt EXCLUSIV im Bestand von #312 (kein Zwischenspeicher hier).
+  const [vorschauMarkeId, setzeVorschauMarkeId] = useState<string | null>(null)
+  const markenListe = p.marken.hole()?.marken ?? []
+  const [, setzeTakt] = useState(0)
 
   // Der Nutzungs-Hinweis: GENAU EINMAL je Sitzung, nach der PARENT-ID gefragt
   // (nicht nach der arbeitsId - Referenzen zeigen auf die nutzbare Vorlage).
@@ -350,13 +360,31 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
 
   // Die Vorbereitung der Vorschau: einmal je Editor-Auftritt, projetzId null
   // über BEISPIEL_AKTION (GEMELDETER Mangel: echte Aktion ohne Projektzugang).
+  // Die Marke: die gewählte der Auswahl, Default die EINGEBAUTE (Variante (b)).
+  // Reihenfolge (TK 9.10.3): die VIER gebündelten Schriften (#110), DANN die Marke
+  // samt importierter Schriften + Logo über #312 - erst wenn beides ok ist, wird
+  // gezeichnet. Der frühere Weg bereiteVorschauVor(#150) ist hier ersetzt; seine
+  // Logo-Einzel-Vorbereitung leistet stelleMarkeBereit je Marke (gemeldet in #313).
   useEffect(() => {
     let abgebrochen = false
-    void bereiteVorschauVor(null, [], [], p.marke).then(() => {
-      if (!abgebrochen) {
-        setzeVorbereitet(true)
+    const gewaehlteId =
+      vorschauMarkeId ??
+      (markenListe.find((m) => m.eingebaut) ?? markenListe[0])?.id ??
+      null
+    if (gewaehlteId === null) return
+    void (async () => {
+      try {
+        await stelleSchriftenBereit()
+      } catch {
+        return
       }
-    })
+      const antwort = await stelleMarkeBereit(gewaehlteId)
+      if (!abgebrochen && antwort.ok) {
+        setzeVorschauMarkeId(gewaehlteId)
+        setzeVorbereitet(true)
+        setzeTakt((t) => t + 1)
+      }
+    })()
     return () => {
       abgebrochen = true
     }
@@ -570,11 +598,30 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
               <VorschauCanvas
                 aktion={BEISPIEL_AKTION}
                 vorlage={sichtbarerStand(sitzung, geste) as Vorlage}
-                marke={p.marke}
+                marke={vorschauMarkeId !== null ? holeBereiteMarke(vorschauMarkeId) : null}
                 geleert={geleert}
               />
             )}
           </div>
+          {/* Die AUSWAHL „Vorschau gegen Marke" (Variante (b)): Liste aus dem
+              Zugan (#311) - WAEHLEN, nie zeichnen; die Zeichen-Marke kommt je Wahl
+              ueber stelleMarkeBereit/holeBereiteMarke (#312). */}
+          <label data-testid="vorschau-marke-wahl">
+            Vorschau gegen Marke{' '}
+            <select
+              value={vorschauMarkeId ?? ''}
+              onChange={(e) => {
+                setzeVorschauMarkeId(e.target.value)
+                setzeVorbereitet(false)
+              }}
+            >
+              {markenListe.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}{m.eingebaut ? ' (eingebaut)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
           <div data-testid="vorschau-schalter">
             {VORSCHAU_FELDER.map((eintrag) => (
               <button
@@ -689,14 +736,15 @@ function VorschauCanvas({
 }: {
   aktion: import('../../shared/contracts/aktion').Aktion
   vorlage: Vorlage | null
-  marke: Marke
+  marke: Marke | null
   geleert: ReadonlySet<VorschauFeld>
 }): JSX.Element {
   const [bild, setzeBild] = useState<{ breite: number; höhe: number; adresse: string } | null>(null)
   const [fehler, setzeFehler] = useState<string | null>(null)
 
   useEffect(() => {
-    if (vorlage === null) {
+    if (vorlage === null || marke === null) {
+      // Ohne bereitstehende Marke wird NICHT gezeichnet (kein Ersatz, #313).
       setzeBild(null)
       return
     }

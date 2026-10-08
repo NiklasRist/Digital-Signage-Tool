@@ -38,8 +38,13 @@ export interface EinblendungProps {
   /** Position INNERHALB dieses Elements, in Frames – wird an Video durchgereicht. */
   lokalerFrame: number
   laeuft: boolean
-  /** Die app-weite Marke. Wird UNVERAENDERT an Segment durchgereicht, sonst nicht benutzt. */
-  marke: Marke
+  /** Die PROJEKT-Standardmarke (TK 9.15.4, #313). Wird nur an `Segment` gereicht
+   *  (`rahmenMarke`); diese Flaeche traegt selbst KEINE Farbe (ENTSCHIEDEN 4). */
+  rahmenMarke: Marke
+  /** Die Marke der gerade sichtbaren Band-Aktion (`bandAktion.markeId`), bereits aufgeloest.
+   *  `null`, wenn `bandAktion === null` ODER die Marke nicht bereitsteht - dann wird
+   *  `Segment` NICHT gerendert. */
+  abschnittMarke: Marke | null
   /** Die Band-Vorlage dieses Elements (art === 'einblendung'). Liefert die Bandhoehe H. */
   bandVorlage: Vorlage
   /** Die Aktion des GERADE sichtbaren Bandabschnitts; null = kein Abschnitt sichtbar. */
@@ -48,7 +53,10 @@ export interface EinblendungProps {
 
 /** Fuellt die GANZE Buehne: 1920×1080 im Raster von #212. */
 export function Einblendung(props: EinblendungProps): JSX.Element {
-  const { bandVorlage, bandAktion, marke } = props
+  // rahmenMarke bleibt Prop (Signatur), wird hier aber nicht gelesen: Einblendungen
+  // tragen excavated selbst KEINE Farbe; Segment (#217) fuehrt das rahmenMarke-Prop
+  // NICHT (built-Stand - gemeldet an #313) und reicht intern (marke, marke).
+  const { abschnittMarke, bandVorlage, bandAktion } = props
 
   // ENTSCHIEDEN 5: keine Bandhoehe, kein Band, keine Geometrie - vollflaechiges
   // Video, schwarz (Video ohne rahmen/hintergrund).
@@ -83,11 +91,11 @@ export function Einblendung(props: EinblendungProps): JSX.Element {
         lokalerFrame={props.lokalerFrame}
         laeuft={props.laeuft}
       />
-      {bandAktion !== null ? (
+      {bandAktion !== null && abschnittMarke !== null ? (
         <Segment
           aktion={bandAktion}
           vorlage={bandVorlage}
-          marke={marke}
+          marke={abschnittMarke}
           x={0}
           y={stile.bandY}
         />

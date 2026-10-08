@@ -43,8 +43,13 @@ export interface SplitProps {
   /** Position INNERHALB dieses Elements, in Frames – wird an Video durchgereicht. */
   lokalerFrame: number
   laeuft: boolean
-  /** Die app-weite Marke. Liefert AUSSCHLIESSLICH die Farb-Rolle `flaecheDunkel`. */
-  marke: Marke
+  /** Die PROJEKT-Standardmarke (TK 9.15.4, #313). Quelle der Farb-Rolle `flaecheDunkel`
+   *  fuer die Restflaechen. Wird als `rahmenMarke` an `Segment` (#310) gereicht. */
+  rahmenMarke: Marke
+  /** Die Marke der gerade sichtbaren Band-Aktion (`bandAktion.markeId`), bereits aufgeloest.
+   *  `null`, wenn `bandAktion === null` ODER die Marke nicht bereitsteht - dann wird
+   *  `Segment` NICHT gerendert. */
+  abschnittMarke: Marke | null
   /** Die Band-Vorlage dieses Elements (art === 'split'). Liefert die Bandhoehe H. */
   bandVorlage: Vorlage
   /** Die Aktion des GERADE sichtbaren Bandabschnitts; null = kein Abschnitt sichtbar. */
@@ -53,8 +58,8 @@ export interface SplitProps {
 
 /** Fuellt die GANZE Buehne: 1920×1080 im Raster von #212. */
 export function Split(props: SplitProps): JSX.Element {
-  const { marke, bandVorlage, bandAktion } = props
-  const dunkel = marke.farben.flaecheDunkel
+  const { rahmenMarke, abschnittMarke, bandVorlage, bandAktion } = props
+  const dunkel = rahmenMarke.farben.flaecheDunkel
 
   // ENTSCHIEDEN 6: keine Bandhoehe, kein Band, keine Geometrie - das Video
   // fuellt die ganze Buehne, Schwarz liefert Video selbst (hintergrund fehlt).
@@ -91,11 +96,11 @@ export function Split(props: SplitProps): JSX.Element {
         rahmen={stile.videoRahmen}
         hintergrund={dunkel}
       />
-      {bandAktion !== null ? (
+      {bandAktion !== null && abschnittMarke !== null ? (
         <Segment
           aktion={bandAktion}
           vorlage={bandVorlage}
-          marke={marke}
+          marke={abschnittMarke}
           x={stile.band.x}
           y={stile.band.y}
         />

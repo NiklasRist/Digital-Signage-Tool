@@ -83,6 +83,24 @@ vi.mock('../../src/renderer/preview-player/vorschau-auswahl', async (importOrigi
   }
 })
 
+// #312: die zeichenbereiten Marken leben in der BEREITSTELLUNG; die Vorschau
+// loest sie ueber holeBereiteMarke auf. Zwei unterscheidbare Doppeln muessen es
+// sein - 'm1' (Inhalt) und 'm2' (Rahmen, die Standardmarke des Grundlaufs).
+const markenBereitschaft = vi.hoisted(() => ({
+  bereit: new Map<string, unknown>(),
+}))
+
+vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
+  holeBereiteMarke: (markeId: string) => markenBereitschaft.bereit.get(markeId) ?? null,
+  stelleMarkeBereit: async (markeId: string) => {
+    const marke = markenBereitschaft.bereit.get(markeId)
+    return marke === undefined
+      ? { ok: false, fehler: { code: 'marke_nicht_gefunden', meldung: markeId } }
+      : { ok: true, wert: marke }
+  },
+  leereMarkenBestand: () => {},
+}))
+
 // React 19: act(...)-Umgebung (Muster wie video-anzeige.spec.ts).
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -155,10 +173,11 @@ function baueProjekt(): Project {
   }
 }
 
-function baueMarke(): Marke {
+function baueMarke(id: string = 'm1'): Marke {
   return {
-    id: 'm1', name: 'Probe', parent: null, eingebaut: true,
-    farben: null as never, schriften: null as never, logo: null as never,
+    id, name: id === 'm2' ? 'Rahmen' : 'Inhalt', parent: null, eingebaut: id === 'm2',
+    farben: { flaecheDunkel: id === 'm2' ? '#445566' : '#112233' } as never,
+    schriften: null as never, logo: null as never,
     sicherheit: { horizontal: 96, vertikal: 54 }, radien: null as never,
     schatten: null as never, slogan: null as never, herkunftJeFeld: null as never,
   }
@@ -172,7 +191,7 @@ function baueVorlage(): Vorlage {
 }
 
 function baueVoraussetzungen(): Zeichenvoraussetzungen {
-  return { marke: baueMarke(), vorlagen: [baueVorlage()] }
+  return { vorlagen: [baueVorlage()] }
 }
 
 function eigenschaften(teil: Partial<VorschauProps> = {}): VorschauProps {
@@ -218,6 +237,7 @@ beforeEach(() => {
 afterEach(() => {
   document.body.innerHTML = ''
   vi.unstubAllGlobals()
+  markenBereitschaft.bereit.clear()
 })
 
 const druecke = (behaelter: HTMLDivElement, pruefKennung: string) => {
@@ -335,6 +355,70 @@ describe('Die Durchreichung der Auswahl', () => {
     const aufruf = doppel.videoAufrufe[0] as Record<string, unknown>
     expect(aufruf.assetId).toBe('asset-1')
     expect(aufruf.dateiname).toBe('medien-1.mp4')
+    fertig()
+  })
+})
+
+// ---------------- ENTSCHIEDEN 5 (#313): die Marken-Aufloesung ----------------
+
+describe('Die Marken-Aufloesung (#313, TK 9.15.4)', () => {
+  it('Segment bekommt die Marke der AKTION (m1), nicht die Standardmarke (m2)', () => {
+    markenBereitschaft.bereit.set('m1', baueMarke('m1'))
+    markenBereitschaft.bereit.set('m2', baueMarke('m2'))
+    const projekt = baueProjekt()
+    projekt.standardMarkeId = 'm2'
+    projekt.liste = [
+      baueElement({ art: 'segment', ref: 'a-1', dauer: 2, trimStart: 0, trimEnde: 2 }),
+    ]
+    const { behaelter, fertig } = rendere(eigenschaften({ projekt }))
+    // Doppel-Render durch den Klemm-Effekt sind normale Lebenszeichen: Die
+    // Aussage zielt auf den INHALT jeder Anmeldung, nicht auf die Zählerzahl.
+    const aufrufe = doppel.segmentAufrufe as Array<{ marke: Marke }>
+    expect(aufrufe.length).toBeGreaterThan(0)
+    expect(aufrufe.every((a) => a.marke.id === 'm1')).toBe(true)
+    fertig()
+  })
+
+  it('Split: der Rahmen kommt aus projekt.standardMarkeId (m2), der Abschnitt aus der Band-Aktion (m1); beide UNVERAENDERT (toBe)', () => {
+    const rahmenMarke = baueMarke('m2')
+    const abschnittMarke = baueMarke('m1')
+    markenBereitschaft.bereit.set('m1', abschnittMarke)
+    markenBereitschaft.bereit.set('m2', rahmenMarke)
+    const projekt = baueProjekt()
+    projekt.standardMarkeId = 'm2'
+    projekt.liste = [
+      baueElement({
+        art: 'video',
+        einblendung: { bandVorlageId: 'v-split-v', abschnitte: [{ aktionRef: 'a-1', dauer: 5 }] },
+      }),
+    ]
+    const bandVorlage: Vorlage = {
+      id: 'v-split-v', name: 'Split', art: 'split', höhe: 162,
+      parent: null, eingebaut: true, zonen: [],
+    }
+    const { behaelter, fertig } = rendere(
+      eigenschaften({ projekt, voraussetzungen: { vorlagen: [bandVorlage] } }),
+    )
+    // Doppel-Render ok - der INHALT zählt: toBe zur übergebenden Referenz.
+    const aufrufe = doppel.splitAufrufe as Array<Record<string, unknown>>
+    expect(aufrufe.length).toBeGreaterThan(0)
+    expect(aufrufe.every((a) => a.rahmenMarke === rahmenMarke)).toBe(true)
+    expect(aufrufe.every((a) => a.abschnittMarke === abschnittMarke)).toBe(true)
+    fertig()
+  })
+
+  it('Nicht bereitgestellte Marke: Segment und Split werden NICHT gerendert (keine Ersatzmarke, #312)', () => {
+    // bereit bleibt LEER (beide Loesungen liefern null):
+    const projekt = baueProjekt()
+    projekt.liste = [
+      baueElement({ art: 'segment', ref: 'a-1', dauer: 2, trimStart: 0, trimEnde: 2 }),
+    ]
+    const { behaelter, fertig } = rendere(eigenschaften({ projekt }))
+    expect(
+      doppel.segmentAufrufe,
+      JSON.stringify(doppel.segmentAufrufe),
+    ).toHaveLength(0)
+    expect(doppel.splitAufrufe).toHaveLength(0)
     fertig()
   })
 })

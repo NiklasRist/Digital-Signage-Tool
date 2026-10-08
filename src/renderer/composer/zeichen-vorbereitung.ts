@@ -26,19 +26,18 @@
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
 import type { Project } from '../../shared/contracts/project'
-import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import { KANAELE } from '../../shared/contracts/kanaele'
-import { rufeAuf } from '../ipc-client/rufe-auf'
+import { stelleMarkeBereit } from '../gemeinsam/marken-bereitstellung'
 import { stelleSchriftenBereit } from '../template-canvas/schriften'
-import { bereiteLogoVor, holeLogo } from '../template-canvas/logo-laden'
 import { bereiteMotiveVor, leereMotivBestand, holeMotiv } from '../template-canvas/bild-laden'
 import { holeUebersicht, ladeUebersicht } from '../vorlagen-editor/vorlagen-uebersicht'
 
-/** Alles, was zeichnende Aufrufe des composer als Parameter brauchen. */
+/** Alles, was zeichnende Aufrufe des composer als Parameter brauchen.
+ *  Trägt seit #313 KEIN Feld `marke` mehr – die Marke kommt je Aktion aus #312
+ *  (`holeBereiteMarke`). `voraussetzungen !== null` heißt: ALLE Marken des Projekts
+ *  stehen bereit (zusätzlich zu Schriften/Motiven, TK 9.10.3 Punkt 3). */
 export interface Zeichenvoraussetzungen {
-  marke: Marke
   vorlagen: readonly Vorlage[]
 }
 
@@ -50,19 +49,48 @@ export interface Zeichenvoraussetzungen {
 export async function bereiteZeichnenVor(
   projekt: Project,
 ): Promise<Ergebnis<Zeichenvoraussetzungen, string>> {
-  // REIHENFOLGE IST TEIL DES VERTRAGS (TK 9.10.3): Schriften UND Bild vor dem Zeichnen -
-  // hier heisst das: Schriften, Logo, Motive; die Vorlagen kommen DATABSICHTLICH aus
-  // der gemeinsamen Vorlagen-Sicht (#155) - niemand haelt hier einen zweiten Bestand.
+  // REIHENFOLGE IST TEIL DES VERTRAGS (#313, TK 9.10.3): Vorlagen, Schriften,
+  // Marken, Motive - alles VOR dem ersten Zeichen; die Marken brauchen
+  // `projekt.aktionen` (steht sofort zur Verfuegung), ihr Fehlschlag soll den
+  // teureren Motiv-Lauf nicht erst ausloesen.
 
-  const markeErgebnis = await rufeAuf<Marke>(KANAELE.config.leseMarke)
-  if (!markeErgebnis.ok) {
-    return { ok: false, fehler: { code: markeErgebnis.fehler.code, meldung: markeErgebnis.fehler.meldung } }
+  // Kein `config:leseMarke` mehr: die Operation ist aus der Operationstabelle
+  // des config-store entfallen (TK 9.5.6); kein Ersatzaufruf, kein Rest.
+  // Die nutzbaren Vorlagen kommen aus der gemeinsamen Übersicht (#155) - DIESELBE Sicht,
+  // auch der vorlagen-editor liest von hier; ein zweiter Vorlagenweg wäre die zweite Quelle.
+  const uebersicht = holeUebersicht() ?? (await ladeUebersicht().then((x) => (x.ok ? x.wert : null)))
+  if (uebersicht === null) {
+    return { ok: false, fehler: { code: 'unbekannter_fehler', meldung: 'Die Vorlagen-Übersicht ist nicht ladbar - Vorlagen fehlen.' } }
   }
-  const marke = markeErgebnis.wert
+  const vorlagen = uebersicht.nutzbare.map((eintrag) => eintrag.vorlage)
 
-  // Schriften und Logo hängen an der Marke, nicht am Projekt – auch ohne Projekt ladbar.
-  await stelleSchriftenBereit()
-  await bereiteLogoVor(marke)
+  // Schriften: die VIER gebuendelten Schriften haengen an keiner Marke (#291/#110).
+  // #119 wirft einen Ladeproblem-Wurf; hier gefangen und auf den EINEN Code gebracht -
+  // dieses Modul wirft nie Takes (Ergebnis-Huelle, TK 9.1.1).
+  try {
+    await stelleSchriftenBereit()
+  } catch (ursache) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'schriften_fehlen',
+        meldung: ursache instanceof Error ? ursache.message : String(ursache),
+      },
+    }
+  }
+
+  // Marken bereitstellen (#312): ALLE `aktion.markeId` aus `projekt.aktionen` - nicht
+  // nur die der Liste - plus `projekt.standardMarkeId` (die Marke des RAHMENS, TK 9.15.4),
+  // entdoppelt. Alles-oder-nichts: Eine unmoegliche Marke laesst den GANZEN Aufruf
+  // scheitern, mit UNVERAENDETEM Code - halb bereit gibt es nicht darstellbar.
+  const markeIds = new Set<string>(projekt.aktionen.map((aktion) => aktion.markeId))
+  markeIds.add(projekt.standardMarkeId)
+  for (const markeId of markeIds) {
+    const bereit = await stelleMarkeBereit(markeId)
+    if (!bereit.ok) {
+      return { ok: false, fehler: { code: bereit.fehler.code, meldung: bereit.fehler.meldung } }
+    }
+  }
 
   // Motive: JEDE Aktion, deren bildRef auf ein vorhandenes, heiles Asset zeigt. Fehlende
   // Assets entfallen still - das Zeichnen behandelt sie als Platzhalter (TK 9.10.7) und der
@@ -80,19 +108,14 @@ export async function bereiteZeichnenVor(
   // Erst leeren caller-seitig (verwirfMotivBestand) - hier wird der BESTAND NICHT geleert:
   // Nach einem Import soll der alte Bestand WEITERLEBEN, der neue Eintrag kommt dazu. Der
   // Vertrag sagt "Erneut aufrufen nach jedem Import", nicht "Besand verwerfen und neu".
+  // Erst leeren caller-seitig (verwirfMotivBestand) - hier wird der BESTAND NICHT geleert:
+  // Nach einem Import soll der alte Bestand WEITERLEBEN, der neue Eintrag kommt dazu. Der
+  // Vertrag sagt "Erneut aufrufen nach jedem Import", nicht "Besand verwerfen und neu".
   if (eintraege.length > 0) {
     await bereiteMotiveVor(projekt.id, eintraege)
   }
 
-  // Die nutzbaren Vorlagen kommen aus der gemeinsamen Übersicht (#155) - DIESELBE Sicht,
-  // auch der vorlagen-editor liest von hier; ein zweiter Vorlagenweg wäre die zweite Quelle.
-  const uebersicht = holeUebersicht() ?? (await ladeUebersicht().then((x) => (x.ok ? x.wert : null)))
-  if (uebersicht === null) {
-    return { ok: false, fehler: { code: 'unbekannter_fehler', meldung: 'Die Vorlagen-Übersicht ist nicht ladbar - Vorlagen fehlen.' } }
-  }
-  const vorlagen = uebersicht.nutzbare.map((eintrag) => eintrag.vorlage)
-
-  return { ok: true, wert: { marke, vorlagen } }
+  return { ok: true, wert: { vorlagen } }
 }
 
 /**

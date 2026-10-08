@@ -27,7 +27,6 @@
 
 import { useEffect, useState, type JSX } from 'react'
 
-import type { Marke } from '../../shared/contracts/marke'
 import type { Listenelement, Project } from '../../shared/contracts/project'
 import type { ProjektZugang, VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
 import type { ReparaturStand } from './reparatur-fuehrung'
@@ -79,8 +78,10 @@ export interface ComposerVerdrahtung {
 
 /**
  * ZEICHENGLEICH zu `ComposerWurzelProps` in #244 (`src/renderer/app-shell/inhalte.tsx`) – die Naht
- * ist geschlossen: #244 fuehrt seit #255/#256 dieselben sechs Felder und belegt `verdrahtung`
- * aus `umgebung.composerVerdrahtung`. Ohne dieses Buendel waere der Medien-Import nicht anstossbar
+ * ist geschlossen: #244 fuehrt seit #255/#256 dieselben FUENF Felder (seit #313 ohne `marke` – die
+ * Marke kommt je Aktion aus holeBereiteMarke (#312); der Rahmen bedient seine Restflaechen nicht
+ * hier, sondern der preview-player) und belegt `verdrahtung` aus `umgebung.composerVerdrahtung`.
+ * Ohne dieses Buendel waere der Medien-Import nicht anstossbar
  * (#228 verlangt den Starter als Parameter) und der Reparatur-Modus nicht mit der Shell verbunden
  * (#201 haelt den Stand und die laufende Uebergabe, #256 fuehrt sie aus).
  * Weicht die tatsaechliche Fassung in #244 hiervon ab, ist das ein Vertragsfehler an der Naht
@@ -92,7 +93,6 @@ export interface ComposerWurzelProps {
   projekt: ProjektZugang
   zeichnen: ZeichenZugang
   vorlagen: VorlagenZugang
-  marke: Marke
   verdrahtung: ComposerVerdrahtung
 }
 
