@@ -52,11 +52,12 @@ export interface RahmenEigenschaften {
   meldungsFlaeche?: () => JSX.Element
 }
 
-/** Die vier Reiterbeschriftungen (TK 9.14.1) – der einzige eigene Text des Rahmens. */
+/** Die fünf Reiterbeschriftungen (TK 9.14.1) – der einzige eigene Text des Rahmens. */
 const REITER_BESCHRIFTUNG: Record<ReiterId, string> = {
   zusammenstellen: 'Zusammenstellen',
   aktionen: 'Aktionen',
   vorlagen: 'Vorlagen',
+  marken: 'Marken',
   projekte: 'Projekte',
 }
 

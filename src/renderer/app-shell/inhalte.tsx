@@ -97,6 +97,18 @@ export interface VorlagenEditorWurzelProps {
   sitzung: Sitzungshalter
 }
 
+/** Eigenschaften der Wurzel-Komponente des `marken-editor` (Reiter Marken, TK 9.14.1).
+ *  DEFINIERENDE QUELLE (#314) – die Komponente selbst baut #330
+ *  (`src/renderer/marken-editor/index.tsx`).
+ *  KEIN Projektzugang: Der Marken-Bestand ist app-weit und gehört keinem Projekt (TK 9.14.2) –
+ *  dieselbe Festlegung, die #244 für den `vorlagen-editor` getroffen hat (ENTSCHIEDEN 6). */
+export interface MarkenEditorWurzelProps {
+  sichtbar: boolean
+  /** Zugang zum app-weiten Marken-Bestand (#305/#311). Wird UNVERAENDERT durchgereicht;
+   *  diese Datei ruft keine seiner drei Funktionen auf. */
+  marken: MarkenZugang
+}
+
 /** Eigenschaften der Wurzel-Komponente der `projekt-verwaltung` (Reiter Projekte).
  *  ZEICHENGLEICH zu `ProjektVerwaltungWurzelProps` in #252
  *  (`src/renderer/projekt-verwaltung/index.tsx`). */
@@ -120,14 +132,16 @@ export interface VorschauWurzelProps {
 }
 
 /**
- * Die vier Modul-Wurzeln. Sie werden als PARAMETER uebergeben, NICHT importiert (ENTSCHIEDEN 1).
+ * Die Modul-Wurzeln. Sie werden als PARAMETER uebergeben, NICHT importiert (ENTSCHIEDEN 1).
  * Das Pflichtfeld je Wurzel erzwingt, dass keine vergessen werden kann.
+ * SECHS Wurzeln seit #314: `markenEditor` ist Pflicht - sein Fehlen kompiliert nicht.
  */
 export interface ModulWurzeln {
   composer: (eigenschaften: ComposerWurzelProps) => JSX.Element
   vorschau: (eigenschaften: VorschauWurzelProps) => JSX.Element
   actionEditor: (eigenschaften: ActionEditorWurzelProps) => JSX.Element
   vorlagenEditor: (eigenschaften: VorlagenEditorWurzelProps) => JSX.Element
+  markenEditor: (eigenschaften: MarkenEditorWurzelProps) => JSX.Element
   projektVerwaltung: (eigenschaften: ProjektVerwaltungWurzelProps) => JSX.Element
 }
 
@@ -276,6 +290,14 @@ export function baueReiterInhalte(
         zeichnen: zugaenge.zeichnen,
         marken: zugaenge.marken,
         sitzung: umgebung.vorlagenSitzung,
+      }),
+    // Der fuenfte Reiter (TK 9.14.1, #314): GENAU eine Wurzel, OHNE Projektabfrage und
+    // OHNE Leerzustand (Marken sind app-weit, TK 9.14.2); auch ohne offenes Projekt
+    // voll benutzbar. Nichts wird hier geholt, abonniert oder gelesen.
+    marken: (reiterEigenschaften) =>
+      wurzeln.markenEditor({
+        sichtbar: reiterEigenschaften.sichtbar,
+        marken: zugaenge.marken,
       }),
     // Zusaetzlich zu #243 (entschieden): der ROHE Zugan (kein Projektwechsel
     // ist ein Bearbeitungsschritt). leereProjektHistorie wird nur GELEGT

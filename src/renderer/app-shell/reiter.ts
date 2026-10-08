@@ -24,14 +24,16 @@
 // Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
-/** Die vier Modus-Reiter (TK 9.14.1). Werte wörtlich aus #10 übernommen – s. „Fremde Signaturen". */
-export type ReiterId = 'zusammenstellen' | 'aktionen' | 'vorlagen' | 'projekte'
+/** Die FÜNF Modus-Reiter (TK 9.14.1). Der Wert 'marken' kommt mit TK v3.6 hinzu (#314). */
+export type ReiterId = 'zusammenstellen' | 'aktionen' | 'vorlagen' | 'marken' | 'projekte'
 
-/** Anzeigereihenfolge der Reiterleiste, exakt wie in der Skizze TK 9.14.1. */
+/** Anzeigereihenfolge der Reiterleiste, exakt wie in der Skizze TK 9.14.1:
+ *  zusammenstellen, aktionen, vorlagen, marken, projekte. */
 export const REITER_REIHENFOLGE: readonly ReiterId[] = [
   'zusammenstellen',
   'aktionen',
   'vorlagen',
+  'marken',
   'projekte',
 ]
 
@@ -97,6 +99,7 @@ export function istGueltigerReiter(wert: unknown): wert is ReiterId {
     wert === 'zusammenstellen' ||
     wert === 'aktionen' ||
     wert === 'vorlagen' ||
+    wert === 'marken' ||
     wert === 'projekte'
   )
 }
