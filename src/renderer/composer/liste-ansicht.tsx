@@ -24,6 +24,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 
 import type { Listenelement, Project } from '../../shared/contracts/project'
+import type { Marke } from '../../shared/contracts/marke'
 import type { Zeichenvoraussetzungen } from './zeichen-vorbereitung'
 import type { KaputteStelle } from './kaputt-erkennung'
 import type { ReparaturStand } from './reparatur-fuehrung'
@@ -40,6 +41,7 @@ import {
 import { ordneNeuOptimistisch } from './liste-reorder'
 import { erzeugeThumbnail, type Thumbnail } from './thumbnails'
 import { aufInlineMeldung } from './optimistisch'
+import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 
 export interface WiedergabelisteEigenschaften {
   /** Das geladene Projekt aus der gemeinsamen Sicht (#121). Wird NUR gelesen. */
@@ -102,7 +104,25 @@ function Zeile({
       return
     }
     let abgebrochen = false
-    erzeugeThumbnail(element, projekt, voraussetzungen.marke, voraussetzungen.vorlagen)
+    // Die Marke je ELEMENT (#313, TK 9.15.4): die Aktion des Segment-Elements -
+    // hergenommen aus der bereits gerechten Thumbnailquelle (quelle.aktion). Statt
+    // dem entfallenen `voraussetzungen.marke` löst holeBereiteMarke (#312) auf;
+    // null heisst: NICHT bereitgestellt - kein Thumbnail, kein Ersatzmarke.
+    const elementAktion = quelle.art === 'aktion' ? quelle.aktion : null
+    const marke = elementAktion !== null ? holeBereiteMarke(elementAktion.markeId) : null
+    if (elementAktion !== null && marke === null) {
+      setzeThumbnail({ quelle: 'fehlt' } as Thumbnail)
+      return
+    }
+    // Bei einem Segment-Element ist die Marke aufgeloest (oben). Ein VIDEO-Element
+    // braucht sie in erzeugeThumbnail nicht (Bild aus dem Video selbst) - der
+    // Aufruf durchreicht hier eine Marke, die der Weg nie liest (Vertrag #128).
+    erzeugeThumbnail(
+      element,
+      projekt,
+      marke ?? (null as unknown as Marke),
+      voraussetzungen.vorlagen,
+    )
       .then((bild: Thumbnail) => {
         // Fehlerpfade: ein Bild, das erst eintrifft, nachdem sich die Quelle
         // geändert hat, wird verworfen - ein veraltetes Bild darf nie stehenbleiben.

@@ -49,6 +49,16 @@ vi.mock('../../src/renderer/composer/thumbnails', () => ({
     })
   },
 }))
+// Die Marken-Aufloesung (#313): die zeichenbereite Marke der Testaktion ('m1')
+// sitzt in der Behaoelter-Karte von #312 (Adresse wie in vorschau-anzeige.spec.ts).
+vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
+  holeBereiteMarke: (markeId: string) => (markeId === 'm1' ? { id: 'm1' } : null),
+  stelleMarkeBereit: async (markeId: string) => ({
+    ok: markeId === 'm1',
+    ...(markeId === 'm1' ? { wert: { id: 'm1' } } : { fehler: { code: 'marke_nicht_gefunden', meldung: markeId } }),
+  }),
+  leereMarkenBestand: () => {},
+}))
 
 vi.mock('../../src/renderer/composer/optimistisch', async (importOriginal) => {
   const echt = await importOriginal<typeof import('../../src/renderer/composer/optimistisch')>()
@@ -133,7 +143,6 @@ function projekt(liste: Listenelement[]): Project {
 }
 
 const VORAUSSETZUNGEN: Zeichenvoraussetzungen = {
-  marke: { farben: {} as never, schriften: null as never, logo: null as never, sicherheit: null as never, radien: null as never, schatten: null as never, slogan: null as never, id: 'm1' as never, name: 'Probe' as never, parent: null as never, eingebaut: false as never, herkunftJeFeld: null as never },
   vorlagen: [],
 }
 

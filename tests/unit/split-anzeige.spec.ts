@@ -131,7 +131,8 @@ function eigenschaften(teil: Partial<SplitProps> = {}): SplitProps {
     trimEnde: 12,
     lokalerFrame: 45,
     laeuft: true,
-    marke: baueMarke(),
+    rahmenMarke: baueMarke(),
+    abschnittMarke: baueMarke(),
     bandVorlage: baueVorlage(162),
     bandAktion: baueAktion(),
     ...teil,
@@ -164,10 +165,10 @@ afterEach(() => {
 // ---------------- die Farbe ----------------
 
 describe('Die Farbe der Restflaechen (ENTSCHIEDEN 3/4)', () => {
-  it('der aeussere Behaelter traegt GENAU marke.farben.flaecheDunkel als Hintergrund', () => {
+  it('der aeussere Behaelter traegt GENAU rahmenMarke.farben.flaecheDunkel als Hintergrund', () => {
     const marke = baueMarke()
     marke.farben.flaecheDunkel = '#ABCDEF'
-    const { behaelter, fertig } = rendere(eigenschaften({ marke }))
+    const { behaelter, fertig } = rendere(eigenschaften({ rahmenMarke: marke }))
     const buehne = behaelter.firstElementChild as HTMLElement
     expect(buehne.style.background).toBe('rgb(171, 205, 239)')
     fertig()
@@ -176,7 +177,7 @@ describe('Die Farbe der Restflaechen (ENTSCHIEDEN 3/4)', () => {
   it('Video bekommt hintergrund = dieselbe flaecheDunkel (ENTSCHIEDEN 5)', () => {
     const marke = baueMarke()
     marke.farben.flaecheDunkel = '#123456'
-    rendere(eigenschaften({ marke }))
+    rendere(eigenschaften({ rahmenMarke: marke }))
     const aufruf = doppel.videoAufrufe[0] as { hintergrund?: string }
     expect(aufruf.hintergrund).toBe('#123456')
   })
@@ -223,6 +224,23 @@ describe('Das Band-Segment (#217)', () => {
     expect((doppel.videoAufrufe[0] as Record<string, unknown>).rahmen).toEqual({
       x: 144, y: 0, breite: 1632, höhe: 918,
     })
+  })
+
+  it('ABSCHNITT-Marke ohne Bereitschaft (bandAktion da, abschnittMarke null): Segment wird NICHT gerendert (#313, ENTSCHIEDEN 6)', () => {
+    rendere(eigenschaften({ abschnittMarke: null }))
+    expect(doppel.segmentAufrufe).toHaveLength(0)
+    // das Video bleibt unberuehrt (in den videoRahmen):
+    expect(doppel.videoAufrufe).toHaveLength(1)
+  })
+
+  it('rahmenMarke und abschnittMarke gehen als Prop-Doppel UNVERAENDERT (toBe) durch: marken-Referenz ist die uebergebene', () => {
+    const rahmenMarke = baueMarke()
+    const abschnittMarke = baueMarke()
+    rendere(eigenschaften({ rahmenMarke, abschnittMarke }))
+    expect(doppel.videoAufrufe).toHaveLength(1)
+    const aufruf = doppel.segmentAufrufe[0] as Record<string, unknown>
+    expect(aufruf.marke).toBe(abschnittMarke)
+    expect(aufruf.marke).not.toBe(rahmenMarke)
   })
 })
 

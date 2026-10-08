@@ -14,7 +14,7 @@
 //    setzeAkzentfarbe (#139) und behebeAktionsBild (#141; dessen aktion steckt
 //    in wert.aktion - sonst hängt mitAktion ein Objekt ohne id ANS ENDE und
 //    die Bibliothek trägt die Aktion doppelt).
-//  -拿着 Lage = WERT (EditorLage aus aktions-montage); die Hervorhebung aus
+//  - Die Lage = WERT (EditorLage aus aktions-montage); die Hervorhebung aus
 //    der Reparatur-Führung (#201) wird in einem Effekt AUF ÄNDERUNG
 //    ausgewertet - nicht bei jedem Rendering (sonst fände der Nutzer nie
 //    mehr selbst gestaltete Auswahl weg).
@@ -35,12 +35,12 @@
 //    keine Entprellung mit selbst gewählter Wartezeit).
 
 import { useEffect, useState, type JSX } from 'react'
-import type { Marke } from '../../shared/contracts/marke'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
 import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
-import type { ZeichenZugang, VorlagenZugang, ProjektZugang } from '../app-shell/sichten'
+import type { ZeichenZugang, VorlagenZugang, ProjektZugang, MarkenZugang } from '../app-shell/sichten'
+import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 
 import { baueBibliothek, zaehleKaputte } from './bibliothek'
 import {
@@ -53,7 +53,7 @@ import {
 } from './aktion-bearbeiten'
 import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
 import { entferneBild, starteBildImport, waehlbareBilder, weiseBildZu } from './bild-zuweisen'
-import { akzentVorschlaege, setzeAkzentfarbe } from './akzentfarbe'
+import { setzeAkzentfarbe } from './akzentfarbe'
 import {
   bereiteVorschauVor,
   haengeVorschauEin,
@@ -85,7 +85,9 @@ export interface ActionEditorWurzelProps {
   projekt: ProjektZugang
   zeichnen: ZeichenZugang
   vorlagen: VorlagenZugang
-  marke: Marke
+  /** NUR DIE AUSWAHLLISTE (FA-23, Wahlweg #319): welche Marken gibt es. GEZEICHNET wird
+   *  nie aus ihr - die Marke zum Zeichnen kommt je Aktion über holeBereiteMarke (#312). */
+  marken: MarkenZugang
   /** Die hervorzuhebende Aktion aus der Reparatur-Führung (#201); null = keine. */
   hervorgehobeneAktionId: string | null
 }
@@ -121,7 +123,17 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
       if (eintrag === null) {
         return
       }
-      await bereiteVorschauVor(eintrag.id, [...eintrag.aktionen], [...eintrag.assets], p.marke)
+      // Die Marke fuer die Logo-Vorbereitung: die STABILE Rahmen-Marke (TK 9.15.4) -
+      // sie wird von bereiteZeichnenVor (#313) IMMER bereitgestellt. Die Marken zum
+      // Zeichnen kommen je Aktion ueber holeBereiteMarke; der #140-Aufruf behaelt
+      // seine vierte Stellung (die Datei ist NICHT Teil dieses Issues).
+      const markeFuerVorbereitung = holeBereiteMarke(eintrag.standardMarkeId)
+      if (markeFuerVorbereitung === null) {
+        // Nicht bereitgestellt heisst: nicht vorbereiten, nicht zeichnen - kein
+        // Ersatz und kein Nachladen im Zeichenpfad (TK 9.10.3).
+        return
+      }
+      await bereiteVorschauVor(eintrag.id, [...eintrag.aktionen], [...eintrag.assets], markeFuerVorbereitung)
       setzeZeichenvoraussetzungenFrisch()
     })()
   }, [p, p.projekt])
@@ -316,8 +328,12 @@ function VorschauFlaeche({
       const zeichenv = p.zeichnen.hole()?.vorlagen ?? []
       const vorlage = findeZeichenVorlage(gewaehlt, zeichenv)
       if (vorlage === null) return
+      // Die Marke der GEWAEHLTEN Aktion (#313, ENTSCHIEDEN 5). null heisst: nicht
+      // zeichnen - keine Ersatzmarke, kein Nachladen im Zeichenpfad (TK 9.10.3).
+      const marke = holeBereiteMarke(gewaehlt.markeId)
+      if (marke === null) return
       try {
-        const bild = zeichneVorschau(gewaehlt, vorlage, p.marke)
+        const bild = zeichneVorschau(gewaehlt, vorlage, marke)
         haengeVorschauEin(ziel, bild)
         setzeFehlertext(null)
       } catch (ausnähm) {
@@ -478,7 +494,10 @@ function FormularFelder({
           Bild importieren
         </button>
       </div>
-      {/* die Akzentfarbe: freie Hex-Eintrag (#318, FA-24); die Vorschlaege der Palette */}
+      {/* die Akzentfarbe: freie Hex-Eintrag (#318, FA-24). Die PALETTEN-Optionen
+          („Akzentfarbe aus der Markenpalette", #250) sind seit #318 bzw. #313
+          UEBERHOLT und entfallen - der freie Farbwähler ist der Nachzug #325,
+          hier NICHT vorweggenommen. */}
       <div data-testid="aktion-akzent">
         <select
           data-testid="aktion-akzent-vorschlag"
@@ -486,16 +505,12 @@ function FormularFelder({
           onChange={(e) => {
             void (async () => {
               if (gewaehlt === null) return
-              // aus der Palette spontan über setzeAkzentfarbe (hex-Wert)
               const antwort = await setzeAkzentfarbe(gewaehlt.id, e.target.value === '' ? null : e.target.value)
               onEinspeisen(antwort)
             })()
           }}
         >
           <option value="">Markenwert</option>
-          {akzentVorschlaege(p.marke).map((vorschlag) => (
-            <option key={vorschlag.hex} value={vorschlag.hex}>{vorschlag.rolle}</option>
-          ))}
         </select>
       </div>
       {/* Die Kaputt-Verweisung (~#141): stellen und der Fix-Weg 'entfernen'. */}

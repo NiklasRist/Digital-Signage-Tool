@@ -38,12 +38,11 @@
 
 import { useEffect, useState, type CSSProperties, type JSX } from 'react'
 import type { Project } from '../../shared/contracts/project'
-import type { Marke } from '../../shared/contracts/marke'
 import type { Zeichenvoraussetzungen } from '../composer/zeichen-vorbereitung'
 import type { ComposerVerdrahtung } from '../composer/index'
 import type { ReiterId } from './reiter'
 import type { ReiterInhalt } from './rahmen'
-import type { ProjektZugang, VorlagenZugang, ZeichenZugang } from './sichten'
+import type { ProjektZugang, VorlagenZugang, ZeichenZugang, MarkenZugang } from './sichten'
 import type { Reiterzugaenge } from './inhalte-zugaenge'
 import type { Sitzungshalter } from './undo-aufzeichnung-vorlage'
 import { Leerzustand } from './leerzustand'
@@ -62,7 +61,6 @@ export interface ComposerWurzelProps {
   projekt: ProjektZugang
   zeichnen: ZeichenZugang
   vorlagen: VorlagenZugang
-  marke: Marke
   /** ZUSAETZLICH gegenueber der ersten Fassung dieses Issues – ohne dieses Buendel ist der Reiter
    *  unvollstaendig: kein Medien-Import (FA-03) und kein Anschluss an die Reparatur-Fuehrung
    *  (FA-19). Wird UNVERAENDERT aus `umgebung.composerVerdrahtung` durchgereicht. */
@@ -76,7 +74,11 @@ export interface ActionEditorWurzelProps {
   projekt: ProjektZugang
   zeichnen: ZeichenZugang
   vorlagen: VorlagenZugang
-  marke: Marke
+  /** NEU (#313, ENTSCHIEDEN 2): Zugang zum app-weiten Marken-Bestand, AUSSCHLIESSLICH als
+   *  Auswahlliste fuer die Markenwahl einer Aktion (FA-23, Setzweg in #319). NICHT die Marke zum
+   *  Zeichnen – die holt die Wurzel je Aktion ueber holeBereiteMarke (#312). Wird UNVERAENDERT
+   *  (`toBe`) durchgereicht; diese Datei ruft keine seiner drei Funktionen auf. */
+  marken: MarkenZugang
   /** Die hervorzuhebende Aktion aus der Reparatur-Fuehrung (#201); null = keine. */
   hervorgehobeneAktionId: string | null
 }
@@ -86,7 +88,10 @@ export interface VorlagenEditorWurzelProps {
   sichtbar: boolean
   vorlagen: VorlagenZugang
   zeichnen: ZeichenZugang
-  marke: Marke
+  /** NEU (#313-Nachzug 08.10.2026, User-Entscheidung Variante (b)): die AUSWAHLLISTE
+   *  „Vorschau gegen Marke". Liste nur fuer die Wahl – gezeichnet wird ueber
+   *  stelleMarkeBereit/holeBereiteMarke (#312). Default: die Marke mit `eingebaut: true`. */
+  marken: MarkenZugang
   /** Der Sitzungshalter der Shell (#245) – er haelt die Arbeitskopie ueber den Reiterwechsel
    *  hinweg und loest die Undo-Schnappschuesse aus. KEIN Projektzugang (ENTSCHIEDEN 6). */
   sitzung: Sitzungshalter
@@ -219,7 +224,6 @@ export function baueReiterInhalte(
           projekt: zugaenge.projektBearbeitung,
           zeichnen: zugaenge.zeichnen,
           vorlagen: zugaenge.vorlagen,
-          marke: zugaenge.marke,
           verdrahtung: umgebung.composerVerdrahtung,
         })}
       </div>
@@ -242,7 +246,7 @@ export function baueReiterInhalte(
       projekt: zugaenge.projektBearbeitung,
       zeichnen: zugaenge.zeichnen,
       vorlagen: zugaenge.vorlagen,
-      marke: zugaenge.marke,
+      marken: zugaenge.marken,
       hervorgehobeneAktionId: umgebung.hervorgehobeneAktionId,
     })
 
@@ -270,7 +274,7 @@ export function baueReiterInhalte(
         sichtbar: reiterEigenschaften.sichtbar,
         vorlagen: zugaenge.vorlagen,
         zeichnen: zugaenge.zeichnen,
-        marke: zugaenge.marke,
+        marken: zugaenge.marken,
         sitzung: umgebung.vorlagenSitzung,
       }),
     // Zusaetzlich zu #243 (entschieden): der ROHE Zugan (kein Projektwechsel

@@ -84,10 +84,14 @@ describe('Quelldatei-Verbote (Grep-Probe, auf beide Dateien)', () => {
       '#', 'rgb(', 'flaecheDunkel', 'loeseFarbe', 'opacity', 'filter',
       'main/', 'split-stile', 'setInterval', 'requestAnimationFrame',
       'media://', 'rufeAuf', 'abonniere', 'window.api',
-      'videoBreite', 'videoVersatz', 'rahmen',
+      'videoBreite', 'videoVersatz',
     ]) {
       expect(code).not.toContain(verbot)
     }
+    // `rahmen` galt als Verbot (keine Video-Geometrie im Code). Ab #313 trägt die
+    // verbindliche Signatur das Pflicht-PROP `rahmenMarke` - der Wortstamm allein
+    // trifft es. Gezählt wird das Muster OHNE die Prop-Namen:
+    expect(code).not.toMatch(/rahmen(?!Marke)/)
   })
 })
 
@@ -126,7 +130,8 @@ function eigenschaften(teil: Partial<EinblendungProps> = {}): EinblendungProps {
     trimEnde: 11,
     lokalerFrame: 60,
     laeuft: true,
-    marke: baueMarke(),
+    rahmenMarke: baueMarke(),
+    abschnittMarke: baueMarke(),
     bandVorlage: baueVorlage(162),
     bandAktion: baueAktion(),
     ...teil,

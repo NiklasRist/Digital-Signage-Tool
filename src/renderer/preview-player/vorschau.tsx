@@ -32,6 +32,7 @@ import type { JSX } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Project } from '../../shared/contracts/project'
 import type { Zeichenvoraussetzungen } from '../composer/zeichen-vorbereitung'
+import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import { Buehne } from './buehne'
 import { Video } from './video'
 import { Segment } from './segment'
@@ -160,7 +161,10 @@ export function Vorschau(props: VorschauProps): JSX.Element {
           kaputteStellen,
           schriftenBereit,
         )
-  const marke = props.voraussetzungen?.marke ?? null
+
+  // Die Auflösung (TK 9.15.4): Rahmen STABIL aus der Project-Standardmarke, Inhalt
+  // wechselt je Element (steht die Marke nicht bereit: NICHT zeichnen, #312).
+  const rahmenMarke = holeBereiteMarke(props.projekt.standardMarkeId)
 
   let buehneninhalt = null
   if (bild !== null) {
@@ -179,12 +183,25 @@ export function Vorschau(props: VorschauProps): JSX.Element {
         )
         break
       case 'segment':
-        if (marke !== null) {
-          buehneninhalt = <Segment aktion={bild.aktion} vorlage={bild.vorlage} marke={marke} />
+        if (rahmenMarke !== null) {
+          const marke = holeBereiteMarke(bild.aktion.markeId)
+          if (marke !== null) {
+            // ACHTUNG: SegmentProps fuehrt KEIN `rahmenMarke`-Prop (built-Stand #217/#310
+            // weicht vom abgeschriebenen Vertrag ab - gemeldet an #313); es reicht
+            // intern (marke, marke). Die abschnittMarke ist hier die Pflichtangabe.
+            buehneninhalt = (
+              <Segment
+                aktion={bild.aktion}
+                vorlage={bild.vorlage}
+                marke={marke}
+              />
+            )
+          }
         }
         break
       case 'split':
-        if (marke !== null) {
+        if (rahmenMarke !== null) {
+          const abschnittMarke = bild.bandAktion !== null ? holeBereiteMarke(bild.bandAktion.markeId) : null
           buehneninhalt = (
             <Split
               projektId={props.projekt.id}
@@ -194,7 +211,8 @@ export function Vorschau(props: VorschauProps): JSX.Element {
               trimEnde={bild.trimEnde}
               lokalerFrame={lokal}
               laeuft={stand.laeuft}
-              marke={marke}
+              rahmenMarke={rahmenMarke}
+              abschnittMarke={abschnittMarke}
               bandVorlage={bild.bandVorlage}
               bandAktion={bild.bandAktion}
             />
@@ -202,7 +220,8 @@ export function Vorschau(props: VorschauProps): JSX.Element {
         }
         break
       case 'einblendung':
-        if (marke !== null) {
+        if (rahmenMarke !== null) {
+          const abschnittMarke = bild.bandAktion !== null ? holeBereiteMarke(bild.bandAktion.markeId) : null
           buehneninhalt = (
             <Einblendung
               projektId={props.projekt.id}
@@ -212,7 +231,8 @@ export function Vorschau(props: VorschauProps): JSX.Element {
               trimEnde={bild.trimEnde}
               lokalerFrame={lokal}
               laeuft={stand.laeuft}
-              marke={marke}
+              rahmenMarke={rahmenMarke}
+              abschnittMarke={abschnittMarke}
               bandVorlage={bild.bandVorlage}
               bandAktion={bild.bandAktion}
             />
@@ -220,8 +240,10 @@ export function Vorschau(props: VorschauProps): JSX.Element {
         }
         break
       case 'platzhalter':
-        if (marke !== null) {
-          buehneninhalt = <Platzhalter grund={bild.grund} marke={marke} titel={bild.titel} />
+        // Der Platzhalter zeigt einen DEFEKT an und gehoert zum stabilen Rahmen:
+        // er bekommt die RAHMEN-Marke, nicht die wechselnde (Signatur #242/#313).
+        if (rahmenMarke !== null) {
+          buehneninhalt = <Platzhalter grund={bild.grund} marke={rahmenMarke} titel={bild.titel} />
         }
         break
       default:
