@@ -76,7 +76,7 @@ function meta(id: string, beschaedigt = false): ProjektMeta {
     ordner: id,
     beschaedigt,
     anzahlMedien: 0,
-    anzahlAusgaben: 0,
+    anzahlAusgaben: 0, standardMarkeId: null,
   }
 }
 

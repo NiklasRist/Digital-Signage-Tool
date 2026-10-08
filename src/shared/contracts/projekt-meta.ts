@@ -28,6 +28,7 @@ export interface ProjektMeta {
   beschaedigt:    boolean      // true = weder project.json noch project.json.bak lesbar
   anzahlMedien:   number       // Dateien in media/ – aus dem ORDNER gezählt, nicht aus project.json
   anzahlAusgaben: number       // fertige .mp4 in output/ – Zählweise wie listeAusgaben (.part zählt nicht)
+  standardMarkeId: string | null      // laufende Marke (FA-23, #399); bei beschaedigt: true mit null
 }
 
 /**

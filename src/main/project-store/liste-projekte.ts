@@ -73,7 +73,9 @@ export interface ProjektMeta {
   beschaedigt: boolean // true = weder project.json noch project.json.bak lesbar
   anzahlMedien: number   // Dateien in media/ - aus dem ORDNER gezaehlt, nicht aus project.json
   anzahlAusgaben: number // fertige .mp4 in output/ - Zaehlweise wie listeAusgaben (.part zaehlt nicht)
+  standardMarkeId: string | null // die laufende Marke (FA-23, #399); bei beschaedigt: true mit null
 }
+
 export async function listeProjekte(): Promise<Ergebnis<ProjektMeta[], ProjectStoreFehlercode>> {
   // DAS LOCK UMSCHLIESST DEN GANZEN SCAN, nicht die einzelnen Projekte.
   //
@@ -200,6 +202,9 @@ async function beschreibe(ordnername: string): Promise<ProjektMeta | null> {
       erstelltAm: zeiten.erstelltAm,
       geaendertAm: zeiten.geaendertAm,
       beschaedigt: true,
+      // Behelfslogik wie beim Namen: ohne lesbare Datei gibt es keinen Wert, der
+      // eine Marke benennt - null statt geraten.
+      standardMarkeId: null,
     }
   }
 
@@ -216,6 +221,7 @@ async function beschreibe(ordnername: string): Promise<ProjektMeta | null> {
     erstelltAm: metadaten.erstelltAm ?? zeiten?.erstelltAm ?? UNBEKANNTE_ZEIT,
     geaendertAm: metadaten.geaendertAm ?? zeiten?.geaendertAm ?? UNBEKANNTE_ZEIT,
     beschaedigt: false,
+    standardMarkeId: metadaten.standardMarkeId,
   }
 }
 
@@ -224,6 +230,7 @@ interface Metadaten {
   name: string
   erstelltAm: string | null
   geaendertAm: string | null
+  standardMarkeId: string | null
 }
 
 /**
@@ -272,7 +279,7 @@ async function leseDatei(pfad: string): Promise<Metadaten | null> {
 
   // SAFETY: die Zeile davor hat inhalt als nicht-null Objekt belegt; die Felder werden
   // darunter einzeln geprueft (typeof-Checks auf Zeichenkette, sonst null).
-  const felder = inhalt as { name?: unknown; erstelltAm?: unknown; geaendertAm?: unknown }
+  const felder = inhalt as { name?: unknown; erstelltAm?: unknown; geaendertAm?: unknown; standardMarkeId?: unknown }
   if (typeof felder.name !== 'string' || felder.name.trim().length === 0) {
     return null
   }
@@ -280,6 +287,8 @@ async function leseDatei(pfad: string): Promise<Metadaten | null> {
     name: felder.name,
     erstelltAm: zeitOderNull(felder.erstelltAm),
     geaendertAm: zeitOderNull(felder.geaendertAm),
+    // Die laufende Marke: EIN nicht-leerer String oder null (Behelfslogik wie oben).
+    standardMarkeId: standardMarkeOderNull(felder.standardMarkeId),
   }
 }
 
@@ -293,6 +302,11 @@ async function leseDatei(pfad: string): Promise<Metadaten | null> {
  */
 function zeitOderNull(wert: unknown): string | null {
   return typeof wert === 'string' && wert.length > 0 ? wert : null
+}
+
+/** Die laufende Marke: EIN nicht-leerer String oder null (Behelfslogik wie beim Namen). */
+function standardMarkeOderNull(wert: unknown): string | null {
+  return zeitOderNull(wert)
 }
 
 /**

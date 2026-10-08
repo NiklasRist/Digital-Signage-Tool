@@ -121,6 +121,9 @@ export interface ProjektVerwaltungWurzelProps {
    *  (#226) sind ueber `ProjektZugang` allein NICHT bildbar. */
   zeichnen: ZeichenZugang
   leereProjektHistorie: () => void
+  /** SECHSTES Feld (#324/#399): der Marken-Zugang fuer die Standardmarke-Auswahl
+   *  der Projektzeilen. Wird UNVERAENDERT (`toBe`) durchgereicht. */
+  marken: MarkenZugang
   wechsleZuZusammenstellen: () => void
 }
 
@@ -309,6 +312,7 @@ export function baueReiterInhalte(
         zeichnen: zugaenge.zeichnen,
         leereProjektHistorie,
         wechsleZuZusammenstellen: umgebung.wechsleZuZusammenstellen,
+        marken: zugaenge.marken,
       }),
   }
 }

@@ -12,7 +12,7 @@
 // selbst schliesst.
 
 import { useEffect, useState, type JSX } from 'react'
-import type { ProjektZugang, ZeichenZugang } from '../app-shell/sichten'
+import type { ProjektZugang, ZeichenZugang, MarkenZugang } from '../app-shell/sichten'
 
 import {
   aufProjektlisteGeaendert,
@@ -25,6 +25,9 @@ import { Projektlisteansicht } from './liste-ansicht'
 // tsconfig die .ts-Datei haben (TS5097-Zeile wie im Projekt ueblich).
 import { BeschaedigteZeile } from './beschaedigt.tsx'
 import { istOeffnenErlaubt, oeffneProjektordner } from './beschaedigt'
+// #324/#399: die Standardmarke-Auswahl (Bauteil + Lage-Regel).
+import { StandardmarkeAuswahl } from './standardmarke.tsx'
+import { baueStandardmarkenLage, wechsleStandardMarke } from './standardmarke'
 import { legeProjektAn, oeffneProjekt, pruefeProjektname } from './anlegen-oeffnen'
 import { baueDuplizierHinweis, dupliziereProjekt, pruefeDuplikatname, schlageDuplikatnamenVor } from './duplizieren'
 import {
@@ -36,6 +39,7 @@ import { LoeschBestaetigungsAnzeige } from './loeschen.tsx'
 import {
   baueDuplizierWirkungen,
   baueLoeschWirkungen,
+  baueStandardmarkenWirkungen,
   baueWechselWirkungen,
   gleicheDialogAb,
   KEIN_DIALOG,
@@ -48,7 +52,7 @@ import {
   type VerwaltungsUmgebung,
 } from './verwaltung-montage'
 
-/** ZEICHENGLEICH zu `ProjektVerwaltungWurzelProps` in #244. */
+/** ZEICHENGLEICH zu `ProjektVerwaltungWurzelProps` in #244. SECHSTES Feld seit #324/#399. */
 export interface ProjektVerwaltungWurzelProps {
   sichtbar: boolean
   /** ROHER Projektzugang (#243) – ein Projektwechsel ist kein Bearbeitungsschritt. */
@@ -56,6 +60,10 @@ export interface ProjektVerwaltungWurzelProps {
   zeichnen: ZeichenZugang
   leereProjektHistorie: () => void
   wechsleZuZusammenstellen: () => void
+  /** NEU (#324/#399): Zugang zum app-weiten Marken-Bestand - die WAHLLISTE fuer die
+   *  Standardmarke. Die Wurzel abonniert `marken.aufGeaendert` und liest daraus den
+   *  Bestand je Zeile; Zeichen lebt in `StandardmarkeAuswahl` (#324). */
+  marken: MarkenZugang
 }
 
 export function ProjektVerwaltungWurzel(p: ProjektVerwaltungWurzelProps): JSX.Element {
@@ -104,6 +112,21 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
     }
   }, [])
 
+  // Der Marken-Bestand: ABO ueber den Zugang (#324/#399) - die Auswahl einer Zeile
+  // liest ihn synchron aus diesem Merker (p.marken.hole()); einer Aenderung im
+  // Reiter Marken folgt die Liste hier sofort - der Takt zwingt das Re-Rendering.
+  // Kein zweiter IPC-Weg, kein eigener Bestand.
+  const [, setzeMarkenVersion] = useState(0)
+  const markenListe = p.marken.hole()?.marken ?? null
+  useEffect(() => {
+    const abmeldenMarken = p.marken.aufGeaendert(() => {
+      setzeMarkenVersion((alt) => alt + 1)
+    })
+    return () => {
+      abmeldenMarken()
+    }
+  }, [p])
+
   if (liste.ladefehler !== null) {
     return (
       <div data-testid="verwaltung-ladefehler" style={{ padding: 8, color: '#e5634d', fontSize: 12 }}>
@@ -116,6 +139,7 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
   const offen = offenesProjektId(ausgeladen)
   const wechsel = baueWechselWirkungen(umgebung)
   const loesch = baueLoeschWirkungen(umgebung)
+  const standardmarke = baueStandardmarkenWirkungen(umgebung)
 
   return (
     <div data-testid="projekt-verwaltung" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 8 }}>
@@ -168,6 +192,17 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
               })
             }}
             aufLoeschen={(metaB) => setzeDialog(oeffneLoeschen(metaB))}
+          />
+        )}
+        zeichneStandardmarke={(meta) => (
+          <StandardmarkeAuswahl
+            lage={baueStandardmarkenLage(meta, meta.standardMarkeId, markenListe)}
+            aufWechsel={(markeId) =>
+              (async () => {
+                const antwort = await wechsleStandardMarke(meta.id, markeId, standardmarke)
+                if (!antwort.ok) meldeFehler(antwort.fehler.code, antwort.fehler.meldung)
+              })()
+            }
           />
         )}
       />
