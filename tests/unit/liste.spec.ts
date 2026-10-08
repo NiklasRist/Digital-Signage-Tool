@@ -13,8 +13,8 @@ import { KANAELE } from "../../src/shared/contracts/kanaele";
 import { readFileSync } from "node:fs";
 
 // Benannter Nachweis der DoD: `ProjektMeta` wird aus `./liste` importiert und einem
-// Wert mit ALLEN ACHT Feldern zugewiesen - der Beleg fuer die sechs fremden
-// Importstellen (#223 ×2, #225, #226 ×2, #252).
+// Wert mit ALLEN NEUN Feldern zugewiesen (seit #399 mit `standardMarkeId`) - der
+// Beleg fuer die fremden Importstellen (#223 ×2, #225, #226 ×2, #252).
 import type { ProjektMeta } from "../../src/renderer/projekt-verwaltung/liste";
 const VOLLER_EINTRAG: ProjektMeta = {
   id: "p1",
@@ -25,6 +25,7 @@ const VOLLER_EINTRAG: ProjektMeta = {
   beschaedigt: false,
   anzahlMedien: 3,
   anzahlAusgaben: 1,
+  standardMarkeId: null,
 };
 
 const attrappen = vi.hoisted(() => ({

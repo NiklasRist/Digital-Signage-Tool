@@ -24,6 +24,10 @@ export interface ProjektlisteEigenschaften {
   /** Die Darstellung einer beschädigten Zeile kommt aus #223 und wird ÜBERGEBEN, nicht
    *  importiert – so bleibt die Zuständigkeit für den Sonderfall an einer Stelle. */
   zeichneBeschaedigteZeile: (meta: ProjektMeta) => JSX.Element
+  /** Der Zeichen-Schlitz für die Standardmarke der Zeile (#324/#399): kommt wie
+   *  `zeichneBeschaedigteZeile` ÜBERGEBEN, nicht importiert; die Zeile ruft ihn hinter
+   *  den Metadaten und vor den Knöpfen auf. */
+  zeichneStandardmarke: (meta: ProjektMeta) => JSX.Element
 }
 
 /**
@@ -90,6 +94,7 @@ export function Projektlisteansicht(p: ProjektlisteEigenschaften): JSX.Element {
               aufDuplizieren={p.aufDuplizieren}
               aufLoeschen={p.aufLoeschen}
               zeichneBeschaedigteZeile={p.zeichneBeschaedigteZeile}
+              zeichneStandardmarke={p.zeichneStandardmarke}
             />
           </li>
         )
@@ -106,6 +111,7 @@ interface ProjektzeileEigenschaften {
   aufDuplizieren: (meta: ProjektMeta) => void
   aufLoeschen: (meta: ProjektMeta) => void
   zeichneBeschaedigteZeile: (meta: ProjektMeta) => JSX.Element
+  zeichneStandardmarke: (meta: ProjektMeta) => JSX.Element
 }
 
 function Projektzeile(p: ProjektzeileEigenschaften): JSX.Element {
@@ -123,6 +129,8 @@ function Projektzeile(p: ProjektzeileEigenschaften): JSX.Element {
       <span> · {p.zeile.erstelltAmText}</span>
       <span> · geändert {p.zeile.geaendertAmText}</span>
       <span> · {p.zeile.ordner}</span>
+      {/* #324/#399: der Standard-Marke-Schlitz – HINTER den Metadaten, VOR den Knöpfen. */}
+      {p.zeichneStandardmarke(p.meta)}
       <button type="button" onClick={() => p.aufDuplizieren(p.meta)}>
         Duplizieren
       </button>

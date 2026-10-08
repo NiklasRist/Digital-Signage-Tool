@@ -36,7 +36,7 @@ const pfade = await import('../../src/main/project-store/pfade')
 const ALT = Date.UTC(2026, 0, 1, 10, 0, 0)
 const NEU = Date.UTC(2026, 0, 5, 10, 0, 0)
 
-function projektJson(name: string, geaendertAm = new Date(ALT).toISOString()): string {
+function projektJson(name: string, geaendertAm = new Date(ALT).toISOString(), standardMarkeId: string | null = null): string {
   return JSON.stringify({
     id: 'steht-absichtlich-anders-da',
     name,
@@ -47,6 +47,7 @@ function projektJson(name: string, geaendertAm = new Date(ALT).toISOString()): s
     aktionen: [],
     liste: [],
     letzterAusgabeName: null,
+    standardMarkeId,
   })
 }
 
@@ -85,7 +86,7 @@ afterEach(async () => {
 
 describe('listeProjekte (#35)', () => {
   it('liefert die Metadaten eines intakten Projekts, mit dem Ordnernamen als id', async () => {
-    await legeProjektAn('p1', projektJson('Sommeraktion'))
+    await legeProjektAn('p1', projektJson('Sommeraktion', new Date(ALT).toISOString(), 'm-1'))
 
     const e = await listeProjekte()
     expect(e.ok).toBe(true)
@@ -100,6 +101,7 @@ describe('listeProjekte (#35)', () => {
         beschaedigt: false,
         anzahlMedien: 0,
         anzahlAusgaben: 0,
+        standardMarkeId: 'm-1',
       },
     ])
   })
@@ -128,6 +130,8 @@ describe('listeProjekte (#35)', () => {
     expect(e.wert[0]?.name).toBe('kaputt')
     expect(e.wert[0]?.geaendertAm).toBe(new Date(NEU).toISOString())
     expect(e.wert[0]?.erstelltAm).toMatch(/^\d{4}-\d{2}-\d{2}T.*Z$/)
+    // Hat ein Eintrag ohne lesbares JSON keines: null statt geraten (#399, Behelfslogik beim Namen).
+    expect(e.wert[0]?.standardMarkeId).toBeNull()
   })
 
   it('listet ein intaktes und ein beschaedigtes Projekt nebeneinander', async () => {

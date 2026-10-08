@@ -23,6 +23,7 @@ import type { ProjektMeta } from './liste'
 import type { ProjektWechselWirkungen } from './anlegen-oeffnen'
 import type { DuplizierWirkungen } from './duplizieren'
 import type { LoeschWirkungen } from './loeschen'
+import type { StandardmarkenWirkungen } from './standardmarke'
 
 /** Welcher Dialog gerade offen ist. Ein WERT – keine Funktion mutiert ihn. */
 export type VerwaltungsDialog =
@@ -108,6 +109,30 @@ export function baueLoeschWirkungen(u: VerwaltungsUmgebung): LoeschWirkungen {
     verwirfMotivBestand: u.zeichnen.verwirfMotivBestand,
     leereProjektHistorie: u.leereProjektHistorie,
     leereProjektSicht: u.projekt.leere,
+    aktualisiereProjektliste: u.aktualisiereProjektliste,
+    meldeFehler: u.meldeFehler,
+  }
+}
+
+/** Baut das Buendel, das `wechsleStandardmarke` (#324) erwartet. VIER Felder, unverndert.
+ *  Nach NACHTRAG 23.08. in #324 (User-Entscheidung Variante (a)) schreitet die
+ *  ZEICHEN-Vorbereitung NACH einem erfolgreichen Wechsel am GELADENEN Projekt hier aus:
+ *  die WIrkingstream uebernimmProjekt ist das ORT darauf (sie wird ausschliesslich beim
+ *  geladenen Projekt gerufen, gut #324); DIESER Bauplatz des Buendels schliesst sie an. */
+export function baueStandardmarkenWirkungen(u: VerwaltungsUmgebung): StandardmarkenWirkungen {
+  return {
+    holeProjekt: () => u.projekt.hole().projekt,
+    uebernimmProjekt: (projekt: Project) => {
+      u.projekt.setzeProjekt(projekt)
+      // NACHTRAG #324 (Variante (a)): die Zeichenvoraussetzungen des GELADENEN
+      // Projekts sind mit der neuen Rahmen-Marke zu ermitteln - der Motiv-Bestand
+      // wird verworfen und neu vorbereitet (ueber die bestehenden zwei Wege,
+      // KEIN fuenftes Feld am Buendel).
+      u.zeichnen.verwirfMotivBestand()
+      void u.zeichnen.bereiteVor(projekt).then((ergebnis) => {
+        if (!ergebnis.ok) u.meldeFehler(ergebnis.fehler.code, ergebnis.fehler.meldung)
+      })
+    },
     aktualisiereProjektliste: u.aktualisiereProjektliste,
     meldeFehler: u.meldeFehler,
   }
