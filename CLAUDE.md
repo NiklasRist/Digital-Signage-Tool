@@ -56,6 +56,12 @@ den Issues:
   (Muster des Nachbarn); Spec meldet Errors 0 bei 18/18, der Volllauf nur noch den
   dokumentierten Vorbefund-Rejection (Error: weg, standardmarke-anzeige.spec.ts:150,
   #324-Testthema - bleibt stehen, gehoert zu #324).
+- **#404 TEIL 1 ERLEDIGT und gemergt** (ff90c7f/bde004c): Seed-Import gebaut und
+  gemessen - Testvideo aus dem gebuendelten ffmpeg, `queue:reiheEin` im echten
+  Fenster, 2 queue:geaendert-Ereignisse nach 0 ms, Galerie da, Eintrag 1;
+  Vorlagen-Kennung auf `vorlagen-uebersicht` (Erster-Falschbefund zurueckgenommen).
+  REST von #404: Render-Lauf (blockiert durch #342), Editor-Sitzung der Vorlagen,
+  Hobel der Standardmarke-Auswahl je Zeile in Objekten.
 - **Neue Issues fuer die naechsten Sessions (Reihenfolge-Suggestion):** #404 (Treiber-Ausbau zu den neun Schritten),
   dann die offenen #340/#342/#346/#347/#350/#352 (alle "fertige Funktion ohne Aufrufer"-Familie),
   dann #401, der Rest basiert auf dem Treiber-Protokoll.
