@@ -11,7 +11,47 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (08.10.2026, spät abends) – gilt vor ALLEM weiter unten
+## STAND HEUTE (09.10.2026, spaet) – gilt vor ALLEM weiter unten
+
+Diese Session hat AUFGERAEMT und das Fundament des Durchlaufs 2.0 gelegt. Kurz, alles belegt in
+den Issues:
+
+- **User-Entscheidungen:** Der TV-Test ist ENTFALLEN (Nachtraege an #184/#186/#188 angehaengt);
+  das macOS-Artefakt **#7 wurde GEBILDT UND GEMESSEN und geschlossen** (mac-Zielformat `dir`,
+  `.app` am echten Mac gestartet, Binaries aus `app.asar.unpacked` belegt, Merge `b1f1534`);
+  Zielformat `dir` ist diesmal als Issue-Kommentar in #7 belegt.
+- **Zweierlei Versehentliches entdeckt und User-Klaerung:** Der Reflog zeigt eine verworfene
+  ArbeitsaeAera (Bedienkonzept „Zwei Screens" AD v1.7/TK v3.21, „Banner & Aktionen" v1.8/v3.22,
+  26.-30.08. E2E- und Redesign-Linie). **User-Entscheidung: der Reset war GEWOLLT** -
+  die zugehoerigen lokalen Commits (f01def5, Stash) bleiben nur als Nachschlagequelle; die
+  E2E-Nutzerfluss-Spec dort ist Vorbild fuer den Treiber.
+- **Basis-Abgleich der 13 E2E-befund-Issues #340-#353 gegen heutiges main:** 7 GESCHLOSSEN
+  mit Beleg (#341, #343, #344 deckt den #70-Fix, #345, #348, #349, #353; #353 mit der Restnotiz
+  "Ersetzen nur via Führung"), 6 OFFEN mit Praezisierung (#340 media://-Stub, #342 Dialoge
+  gebaut aber unmountet, #346 Hinweis ohne Ruecksetzweg, #347 Render/Export fritzt Ausgaben
+  nicht auf, #350 tastatur.ts komplett ohne Aufrufer, #352 Roh-Codes am Feld).
+- **#401** angelegt: die 4 unhandled errors aus marken-editor-wurzel.spec.ts (Test-Narben, vier
+  Attrappen ohne mockResolvedValue); Verfahrensfehler (verbastelter erster Body) im Issue
+  transparent benannt und berichtigt.
+- **#289-Flaky** nachgetragen (dreimal im Volllauf gefallen, einzeln gruene Messung).
+- **Durchlauf-Treiber gebaut und geliefert im Erstlauf:** `scripts/durchlauf.mjs` + `npm run durchlauf`
+  (puppeteer-core steuert das gebaute Fenster, raeumt instanz.lock, sammelt Ereignisse und
+  Fenster-Fehler, schreibt das Fundsprotokoll `docs/agents/oberflaeche-durchlauf.md`),
+  Commit `7f9c096`, Lint/Typecheck 0.
+- **Erstlauf-Ergebnis (alles im Protokoll):** (a) 5 Reiter im Fenster = RICHTIG (app-shell/
+  reiter.ts, TK v3.6/#314); ein tod Altgeruest (`shell/reiter.ts` + ReiterInhalt.tsx +
+  WarteschlangenLeiste.tsx, 4-Reiter-Vertrag ohne Aufrufer) verursachte den Scheinwiderspruch
+  - **#402**. (b) **#347 und #342 im echten Fenster bestaetigt** (kein Auffrisch-Knopf; keine
+  Dialoge im DOM). (c) Nach Projekt-Anlegen fehlt der Name in der Liste - **#403**
+  (Ursache ungeklaert, Treiber-Rauschen inklusive). (d) Gegenprobe zum Treiber fehlte die
+  Kennung `vorlagen-editor-kopf` im DOM - Arbeit im **#404** (Treiber-Ausbau).
+- **Neue Issues fuer die naechsten Sessions (Reihenfolge-Suggestion):** #402 (klein, Frust-Scheinwiderspruch), #403 (Messklaerung), #404 (Treiber-Ausbau zu den neun Schritten),
+  dann die offenen #340/#342/#346/#347/#350/#352 (alle "fertige Funktion ohne Aufrufer"-Familie),
+  dann #401, der Rest basiert auf dem Treiber-Protokoll.
+
+---
+
+## STAND HEUTE (08.10.2026, spät abends) – gilt vor ALLEN älteren Angaben weiter unten
 
 **Der volle Stand dieser Abendsitzung steht in [`docs/agents/uebergabe-2026-10-08-session-2.md`](docs/agents/uebergabe-2026-10-08-session-2.md) – LIES DIESE DATEI ZUERST.** Kurz:
 
