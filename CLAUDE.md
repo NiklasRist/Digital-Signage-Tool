@@ -13,6 +13,14 @@
 
 ## STAND HEUTE (09.10.2026, spaet) – gilt vor ALLEM weiter unten
 
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-09-session.md`](docs/agents/uebergabe-2026-10-09-session.md) - LIES DIESE DATEI ZUERST.**
+Kurz: Aufgeräumt (#7, #401, #402, #403 geschlossen; TV-Test entfallen), der DURCHLAUFS-TREIBER
+ist gebaut (`npm run durchlauf`, Commit `7f9c096`/`ff90c7f`) und hat den Rest bereits zweimal
+gemessen (#347/#342 im echten Fenster bestaetigt; Seed-Import mit gelebten Ereignis-Kanal).
+Basis-Abgleich #340-#353: 7 geschlossen, 6 offen (Lueckenklasse). Reflog-Ära (Zwei-Screens,
+29.-30.08.) ist ALS VERWORFEN entschieden. Nächste Session: #342 zuerst, dann #404-Rest,
+dann #340/#347/#346/#350/#352.
+
 Diese Session hat AUFGERAEMT und das Fundament des Durchlaufs 2.0 gelegt. Kurz, alles belegt in
 den Issues:
 
