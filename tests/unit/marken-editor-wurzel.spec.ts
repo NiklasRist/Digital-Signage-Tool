@@ -224,6 +224,7 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     h.holeGeoeffnete.mockReturnValue(
       markeFuerTest({ slogan: { text: 'BESTTEXT', aktiv: false } }),
     );
+    h.setzeSlogan.mockResolvedValue({ ok: true, wert: null });
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
     // Nur den Schalter umbenennen
@@ -238,6 +239,7 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
   });
 
   it('Abstand: baueVorlagenHinweis VOR dem Schreiben; es heißt NULL, kein Hinweis', async () => {
+    h.setzeSicherheitsabstand.mockResolvedValue({ ok: true, wert: null });
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
     const feld = behaelterTest.querySelector<HTMLInputElement>('[data-testid="abstand-horizontal"]')!;
@@ -255,6 +257,7 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     h.baueSchriftAnzeige.mockReturnValue([
       { rolle: 'fliesstext', schrift: {}, importiert: false },
     ] as never);
+    h.waehleUndImportiereSchrift.mockResolvedValue({ ok: true, wert: null });
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
     expect((document.body.textContent as string).includes('LIZENZ')).toBe(true);
@@ -281,6 +284,7 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
   });
 
   it('Logo entfernen: entferneLogo GENAU EINMAL; HINWEIS_LOGO_ENTFERNT unverändert', async () => {
+    h.entferneLogo.mockResolvedValue({ ok: true, wert: null });
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
     expect((document.body.textContent as string).includes('HINWEIS')).toBe(true);
