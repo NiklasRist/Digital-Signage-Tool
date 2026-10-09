@@ -99,8 +99,12 @@ geschlossene Issues nicht ablesen. M7 ist damit inhaltlich VOLLSTAENDIG.
    (#131)?
 3. **Werkzeug-Limits:** `bereitschaft.py` zaehlt geschlossene Issues mit
    (#215 bleibt sichtbar); Ursache: `gh issue list --state all`.
-4. **Beim User:** TV-Test (FAT32/exFAT-Befund in #184/#186/#188),
-   macOS-Artefakt (#7).
+4. **Beim User:** [User-Entscheidung 09.10.2026] Der TV-Test (FAT32/exFAT-Befund in
+   #184/#186/#188) ist ENTFALLEN - kein offener Punkt mehr (Nachträge sind an allen drei Issues
+   angehängt). Das macOS-Artefakt (#7) ist am 09.10. gebaut UND gemessen worden (mac-Zielformat
+   `dir`, `.app` am echten Mac gestartet, Binaries aus `app.asar.unpacked` belegt, Merge
+   `b1f1534`) - **#7 ist geschlossen.** Offen bleibt: optische Abnahme der Marken-Speicher-Anzeige
+   (#327-Nachtrag).
 5. **Aufraeumen (optional):** Die gemergten Branches `bau/m7-262` und
    `abbau/naht-inhalte-vorlauf` koennen geloescht werden.
 

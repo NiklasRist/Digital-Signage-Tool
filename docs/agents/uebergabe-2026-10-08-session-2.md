@@ -37,7 +37,11 @@
 1. **Nachholbedarf:** die **4 unhandled errors** aus `tests/unit/marken-editor-wurzel.spec.ts` (`Cannot read properties of undefined (reading 'then')`) – per Stash-Gegenprobe als Vorbefund belegt, aber NOCH in keinem Issue gemeldet → **zuerst anlegen** (fortsetzen am Muster der #400-Dokumentation).
 2. **Flaky** `tests/unit/marken-dateien.spec.ts` (dreimal in diesen Sessions im Volllauf, je derselbe Test „auf EIGENSTAENDIGER Marke…"): im Einzel- und Zweitlauf grün – Nachtrag an **#289**, Regel von dort: erst die Meldung fassen, NICHT den Test verändern.
 3. `bereitschaft.py`: M8 60/60; M7 70/71 (das entfallene #215-Phantom).
-4. Beim User (unverändert): TV-Test (FAT32/exFAT, #184/#186/#188), macOS-Artefakt (#7), optische Abnahme der Marken-Speicher-Anzeige (#327-Nachtrag).
+4. [User-Entscheidung 09.10.2026] Der TV-Test (FAT32/exFAT, #184/#186/#188) ist ENTFAELLEN und kein
+   offener Punkt mehr. Das macOS-Artefakt (#7) wurde in der Session am 09.10. GEBILT UND GEMESSEN
+   (mac-Zielformat `dir`, `.app` am echten Mac gestartet, Binaries aus `app.asar.unpacked` belegt,
+   Merge `b1f1534`) - **#7 ist geschlossen.** Offen bleibt die
+   optische Abnahme der Marken-Speicher-Anzeige (#327-Nachtrag).
 5. **170 Commits ungesendet** auf origin – Push-Entscheidung beim User (nicht selbst pushen).
 6. **Design-Frage offen (User 08.10.):** „an sich gibt es kein Design" – die optische Gestalt ist KEIN Teil der gebauten Abnahmen. Der Plan: Design-/UX-Issues kommen NACH dem Durchlauf 2.0 als eigener Meilensteinschnitt („Oberfläche 2.0"). Pflocke aus den Auskünften des Users: die Markenfarbe ist ROT (Palette #FF4040/#DF3131/#971316, deckungsgleich mit fitnessworld24.li), das Logo bleibt wie es ist (orange/schwarz, NICHT gebündelt – ein echter Logo-Tausch wäre ein eigener Schritt mit eigener Abnahme), Referenz-Look: Canva/Clipchamp-Klarheit, nicht Copy.
 
