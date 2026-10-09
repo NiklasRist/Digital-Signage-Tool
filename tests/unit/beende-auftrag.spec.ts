@@ -387,7 +387,7 @@ describe('beendeAuftrag (#70)', () => {
     expect(welt.zustand.q3.map((e) => e.versuch)).toEqual([1, 2])
   })
 
-  it('haelt die Reihenfolge Q3 -> Q2 -> Q1-Entfernen -> Ereignis -> starteNaechsten', async () => {
+  it('haelt die Reihenfolge Q3 -> Q2 -> EREIGNIS -> Q1-Entfernen -> starteNaechsten (Nachtrag 08.10., BUGFIX: die Push muss den terminalen Auftrag tragen)', async () => {
     const { q1, beendeAuftrag } = await frisch()
     const auftrag = laeuft(q1, importAuftrag())
     const inQ1: Array<[string, boolean]> = []
@@ -398,12 +398,16 @@ describe('beendeAuftrag (#70)', () => {
     await beendeAuftrag(auftrag.auftragId, { status: 'erfolg', ergebnis: null })
 
     expect(welt.zustand.reihenfolge).toEqual(['q3', 'q2:streiche', 'ereignis', 'starteNaechsten'])
-    // Die zweite Spalte belegt Schritt 5: Q3 und Q2 sehen den Auftrag noch (nur so ist
-    // begonnenAm da), Ereignis und Torwaechter sehen die geraeumte Schlange.
+    // Die zweite Spalte belegt den NACHTRAG: Das Ereignis (im Haupt-Nachricht von #65
+    // gelesen holeStand) sieht den Auftrag NOCH mit Terminal-Status und ergebnis -
+    // sonst sah der Renderer einen 'erfolg'-Zustand NIE und der Nachlauf (#199) lief
+    // im echten Fenster nie (gemessen 08.10.: die letzte Push trug 0 Auftraege).
     expect(inQ1).toEqual([
       ['q3', true],
       ['q2:streiche', true],
-      ['ereignis', false],
+      ['ereignis', true],
+      // Nach dem Entfernen ist die Queue geraumt; die daraus folgende zweite Push
+      // traegt den Auftrag nicht mehr (harmlos, Nachlauf-Merker verhindert Doppel).
       ['starteNaechsten', false],
     ])
   })
