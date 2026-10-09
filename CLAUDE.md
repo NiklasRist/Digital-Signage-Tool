@@ -52,6 +52,10 @@ den Issues:
   Messfehler (innerText liest keine versteckten Elemente; der Anlege-Ablauf wechselt
   nach Zusammenstellen; Zeilen messen erst NACH Rueckwechsel). Die App arbeitete
   korrekt; Treiber mit korrigiertem Messweise committet.
+- **#401 ERLEDIGT und gemergt** (5ff1bb6): die vier Narben tragen je mockResolvedValue
+  (Muster des Nachbarn); Spec meldet Errors 0 bei 18/18, der Volllauf nur noch den
+  dokumentierten Vorbefund-Rejection (Error: weg, standardmarke-anzeige.spec.ts:150,
+  #324-Testthema - bleibt stehen, gehoert zu #324).
 - **Neue Issues fuer die naechsten Sessions (Reihenfolge-Suggestion):** #404 (Treiber-Ausbau zu den neun Schritten),
   dann die offenen #340/#342/#346/#347/#350/#352 (alle "fertige Funktion ohne Aufrufer"-Familie),
   dann #401, der Rest basiert auf dem Treiber-Protokoll.
