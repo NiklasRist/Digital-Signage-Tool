@@ -45,7 +45,14 @@ den Issues:
   Dialoge im DOM). (c) Nach Projekt-Anlegen fehlt der Name in der Liste - **#403**
   (Ursache ungeklaert, Treiber-Rauschen inklusive). (d) Gegenprobe zum Treiber fehlte die
   Kennung `vorlagen-editor-kopf` im DOM - Arbeit im **#404** (Treiber-Ausbau).
-- **Neue Issues fuer die naechsten Sessions (Reihenfolge-Suggestion):** #402 (klein, Frust-Scheinwiderspruch), #403 (Messklaerung), #404 (Treiber-Ausbau zu den neun Schritten),
+- **#402 ERLEDIGT und gemergt** (d1abaa6): die zwei toten Dateien
+  (shell/reiter.ts, shell/ReiterInhalt.tsx) geloescht (63 Zeilen), WarteschlangenLeiste
+  ALIVE belegt (App.tsx:59 + mock Korrektur im Issue); Typecheck/Lint 0, 5399 Tests gruen.
+- **#403 ENTWERTET und geschlossen** (d217936): Treiber-Rauschen - drei gemessene
+  Messfehler (innerText liest keine versteckten Elemente; der Anlege-Ablauf wechselt
+  nach Zusammenstellen; Zeilen messen erst NACH Rueckwechsel). Die App arbeitete
+  korrekt; Treiber mit korrigiertem Messweise committet.
+- **Neue Issues fuer die naechsten Sessions (Reihenfolge-Suggestion):** #404 (Treiber-Ausbau zu den neun Schritten),
   dann die offenen #340/#342/#346/#347/#350/#352 (alle "fertige Funktion ohne Aufrufer"-Familie),
   dann #401, der Rest basiert auf dem Treiber-Protokoll.
 
