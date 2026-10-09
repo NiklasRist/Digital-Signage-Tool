@@ -184,15 +184,28 @@ export async function beendeAuftrag(auftragId: string, ergebnis: HandlerErgebnis
   // muessen geschrieben sein, bevor der fluechtige Zustand verschwindet.
   await pflegeQ2(auftrag, ergebnis.status)
 
+  // SCHRITT 5 und 6 – NACHTRAG 08.10.2026 (BUGFIX, User-Entscheidung Variante A):
+  // Das Ereignis geht VOR dem Q1-Entfernen. Im urspruenglichen Schritt-Verlauf wurde
+  // der Auftrag ZUERST aus Q1 entfernt und DANACH gemeldet; die Push-Nutzlast ist
+  // `holeStand()` (#64) = Q1 + Q2-Fehlschlaege - der terminale Auftrag war zu beiden
+  // Zeitpunkten bereits weg, der Renderer sah status 'erfolg' samt `ergebnis` nie,
+  // und der Nachlauf (#199) - der EINZIGE Auswerter terminaler Uebergaenge - konnte
+  // im echten Fenster niemals laufen (gemessen: die letzte Push trug 0 Auftraege).
+  // Die hier erfolgreiche Reihenfolge meldet den terminalen Auftrag im GANZEN Stand;
+  // der daraus folgende zweite Push (nach dem Entfernen) traegt ihn nicht mehr und
+  // ist harmlos (der Merker im Nachlauf verhindert die Doppelauswertung).
+
+  // SCHRITT 6 (VERSCHOBEN, s. Nachtrag): Melden - und zwar ABGEWARTET, damit die
+  // Oberflaeche den vollstaendigen neuen Stand sieht und nicht zwei Meldungen in
+  // vertauschter Reihenfolge ankommen. Ein Fehlschlag der Meldung darf Schritt 7
+  // NICHT verhindern.
+  await meldeAenderung()
+
   // SCHRITT 5: Erst jetzt darf der fluechtige Eintrag weg. Bleibt er liegen, sieht der
   // Torwaechter dauerhaft einen laufenden Auftrag und die Schlange steht fuer den Rest
-  // der Sitzung.
+  // der Sitzung. Nach dem gemeldeten Push enthaelt die naechste Meldung ihn nicht mehr -
+  // ein zweiter, lehrer Push ist der Preis fuer die sichtbare Erfolg-Meldung.
   entferneAusQ1(auftragId)
-
-  // SCHRITT 6: Melden - und zwar ABGEWARTET, damit die Oberflaeche den vollstaendigen
-  // neuen Stand sieht und nicht zwei Meldungen in vertauschter Reihenfolge ankommen.
-  // Ein Fehlschlag der Meldung darf Schritt 7 NICHT verhindern.
-  await meldeAenderung()
 
   // SCHRITT 7: weiterdrehen. Ohne diesen Aufruf bleibt die Schlange stehen, obwohl alles
   // korrekt protokolliert wurde - ein Fehler, der aussieht wie ein Haenger und keiner ist.
