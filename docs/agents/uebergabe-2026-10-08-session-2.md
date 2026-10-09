@@ -34,7 +34,10 @@
 
 ## Offene Meldungen (Stand dieser Abendsitzung)
 
-1. **Nachholbedarf:** die **4 unhandled errors** aus `tests/unit/marken-editor-wurzel.spec.ts` (`Cannot read properties of undefined (reading 'then')`) – per Stash-Gegenprobe als Vorbefund belegt, aber NOCH in keinem Issue gemeldet → **zuerst anlegen** (fortsetzen am Muster der #400-Dokumentation).
+1. **Nachholbedarf ERLEDIGT (09.10.):** die **4 unhandled errors** aus `tests/unit/marken-editor-wurzel.spec.ts`
+   (`Cannot read properties of undefined (reading 'then')`) sind als **#401** angelegt (Test-Narben: vier
+   Test-Attrappen ohne `mockResolvedValue`; die Komponente bleibt unangetastet). Verfahrensfehler im Issue
+   transparent benannt: der erste Body war verbastelt und wurde frisch berichtigt.
 2. **Flaky** `tests/unit/marken-dateien.spec.ts` (dreimal in diesen Sessions im Volllauf, je derselbe Test „auf EIGENSTAENDIGER Marke…"): im Einzel- und Zweitlauf grün – Nachtrag an **#289**, Regel von dort: erst die Meldung fassen, NICHT den Test verändern.
 3. `bereitschaft.py`: M8 60/60; M7 70/71 (das entfallene #215-Phantom).
 4. [User-Entscheidung 09.10.2026] Der TV-Test (FAT32/exFAT, #184/#186/#188) ist ENTFAELLEN und kein
