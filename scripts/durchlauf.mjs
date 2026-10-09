@@ -225,7 +225,7 @@ const main = async () => {
     // Schritt 4 - Aktionen / Vorlagen / Marken: Zustand je Reiter.
     for (const [reiter, kennung] of [
       ["aktionen", "aktion-bibliothek"],
-      ["vorlagen", "vorlagen-editor-kopf"],
+      ["vorlagen", "vorlagen-uebersicht"],
       ["projekte", "projekt-verwaltung"],
     ]) {
       await klick(`[data-testid="reiter-${reiter}"]`);
@@ -236,6 +236,74 @@ const main = async () => {
           "Kennung fehlt", "Untersuchung", "Reiter-Montage");
       }
     }
+    // Schritt 4b - Medien-Seed: Ein mit dem mitgebündelten ffmpeg erzeugtes Testvideo
+    // wird ueber queue:reiheEin importiert (derselbe Weg wie die native Import-Quelle -
+    // der Dialog selbst bleibt nativ und wird nicht bedienbar gemockt). Messpartner: der
+    // der queue:geaendert-Ereignis-Kanal (#348-Folge, das vereinbarte Seed-Verfahren).
+    const aktivesProjektId = JSON.parse(fs.readFileSync(path.join(WURZEL, "config.json"), "utf-8")).aktivesProjektId;
+    if (typeof aktivesProjektId !== "string" || aktivesProjektId.length === 0) {
+      fund("Medien-Seed", "aktivesProjektId aus config.json (D3)", "nicht lesbar", "Untersuchung", "config.json");
+    } else {
+      const probe = path.join("/tmp", "durchlauf-probe.mp4");
+      const ffmpeg = path.join(WURZEL, "node_modules", "ffmpeg-static", "ffmpeg");
+      await new Promise((f, r) => {
+        const p = spawn(ffmpeg, ["-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=30",
+          "-t", "2", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-an", probe], { stdio: "ignore" });
+        p.on("exit", (c) => (c === 0 ? f() : r(new Error("ffmpeg erzeugt nichts (code " + c + ")"))));
+      });
+      if (!fs.existsSync(probe)) {
+        fund("Medien-Seed", "Testvideo erzeugt", "kein zugreifbares Video", "BLOCKER", "ffmpeg-static");
+      } else {
+        // Auf den Reiter Zusammenstellen wechseln: Galerie und Wiedergabeliste
+      // leben dort; im Projekte-Reiter ist die composer-Wurzel inaktiv.
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(700);
+      const seed = await seite.evaluate(async (pfad, projektId) => {
+          const alle = window.__durchlauf.kanaele;
+          const davor = alle.length;
+          const ergebnis = await window.api.invoke("queue:reiheEin", {
+            art: "import",
+            payload: { projektId: projektId, quellPfad: pfad },
+          });
+          let gewartet = 0;
+          while (alle.length === davor && gewartet < 20_000) {
+            await new Promise((w) => setTimeout(w, 250));
+            gewartet += 250;
+          }
+          return { dauerteMs: gewartet, ereignisse: alle.length - davor, ergebnis };
+        }, probe, aktivesProjektId);
+        const rein = seed.ereignisse;
+        if (rein === 0) {
+          fund("Ereignis-Kanale", "queue:geaendert laeufe beim Seed-Import",
+            "kein Ereignis nach 20 s", "BLOCKER", "auftrags-manager/ipc-verdrahtung.ts");
+        } else {
+          console.log(`[schritt-4b] Seed-Import: ${rein} queue-Ereignis(se) nach ${seed.dauerteMs} ms.`);
+        }
+        // Das Asset leitet nach dem Import; das Buchstabier-Gefecht wartet bis 12 s.
+        const eintrag = await seite.evaluate(() => new Promise((f) => {
+          const start = Date.now();
+          const nachsehen = () => {
+            const n = document.querySelectorAll('[data-testid^="galerie-eintrag-"]').length;
+            if (n > 0) return f(n);
+            if (Date.now() - start > 12_000) return f(0);
+            setTimeout(nachsehen, 400);
+          };
+          nachsehen();
+        }));
+        const galerieDa = await seite.evaluate(() => !!document.querySelector('[data-testid="asset-galerie"]'));
+        const leerP = await seite.evaluate(() => !!document.querySelector('[data-testid="galerie-leer"]'));
+        console.log(`[schritt-4b] Galerie da: ${galerieDa}, leer-Plakette: ${leerP}, Eintraege: ${eintrag}`);
+        if (!galerieDa) {
+          fund("Medien-Bibliothek", "asset-galerie im Reiter Zusammenstellen",
+            "Galerie nicht mountet", "BLOCKER", "composer/index.tsx");
+        } else if (eintrag === 0) {
+          fund("Medien-Bibliothek", "galerie-eintrag nach dem Seed-Import",
+            "kein Eintrag nach 12 s (" + (leerP ? "leer-Plakette an" : "kein leer") + ")",
+            "Befund", "composer/asset-galerie.tsx");
+        }
+      }
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     const fensterstand = await seite.evaluate(() => ({
       kanaele: window.__durchlauf.kanaele,
