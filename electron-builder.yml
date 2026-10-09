@@ -49,15 +49,14 @@ win:
   target: portable
 
 mac:
-  # ENTSCHIEDEN: zip, nicht dir.
+  # ENTSCHIEDEN (09.10.2026, User-Requested decision im Issue #7): dir, nicht zip.
   #
   # Vorgegeben war nur, was NICHT geht: kein dmg, kein pkg, kein Installer, keine
-  # Admin-Rechte. Von den beiden verbliebenen Moeglichkeiten ist zip die brauchbarere -
-  # EINE Datei, die sich weitergeben und auf einen Datentraeger legen laesst, waehrend
-  # `dir` einen Ordner hinterlaesst, den man erst von Hand packen muesste. Ausgepackt
-  # ist es dasselbe Bundle.
+  # Admin-Rechte. Entschieden ist `dir`: electron-builder erzeugt den fertigen
+  # .app-Ordner unzipped - EINFACHSTES Format, kein zweites werkzeuggesteuertes
+  # Pack-Artefakt; Verteilung bei Bedarf durch manuelles Zippen (Issue #7, Nachtrag).
   #
   # Signierung und Notarisierung sind nicht geplant (TK/Übergabe). Beim ersten Start
   # wird macOS die App deshalb als unbekannt melden.
-  target: zip
+  target: dir
   category: public.app-category.video
