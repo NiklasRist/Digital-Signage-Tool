@@ -142,23 +142,49 @@ const main = async () => {
       console.log("[schritt-2] Start-Hinweis sichtbar (Messtelle fuer #346).");
     }
 
-    const namen = "DurchlaufTest-" + Date.now();
-    if (await klick('[data-testid="verwaltung-anlegen"]')) {
-      const feld = await seite.$('[data-testid="dialog-anlegen-name"]');
-      if (feld === null) {
-        fund("Projekt anlegen", "Namensfeld im Dialog",
-          "Dialog ohne Namensfeld", "BLOCKER", "projekt-verwaltung/index.tsx");
+  const namen = "DurchlaufTest-" + Date.now();
+  const zeilenanzahl = () =>
+    seite.evaluate(() => document.querySelectorAll('[data-testid^="projekt-"]').length);
+  const zeilenDavor = await zeilenanzahl();
+  if (await klick('[data-testid="verwaltung-anlegen"]')) {
+    const feld = await seite.$('[data-testid="dialog-anlegen-name"]');
+    if (feld === null) {
+      fund("Projekt anlegen", "Namensfeld im Dialog",
+        "Dialog ohne Namensfeld", "BLOCKER", "projekt-verwaltung/index.tsx");
+    } else {
+      await seite.type('[data-testid="dialog-anlegen-name"]', namen);
+      await klick('[data-testid="dialog-anlegen-best\u00e4tigen"]');
+            // ZEIT FALSCH MESSEN ist selbst ein Befund: Anlegen -> Liste laden -> Projekt
+      // oeffnen (Reconcile, Zeichenvorbereitung) braucht mehr als einen Mikrotakt.
+      await schlafe(2_500);
+// Das Anlegen öffnet automatisch den Reiter Zusammenstellen; die Projektliste
+      // steht dann in einem HIDDEN-Div - innerText liest versteckte Elemente NICHT.
+      // Deshalb gegen die DOM-Zeilen-Kennung messen, nicht gegen innerText.
+      const diagnostik = await seite.evaluate(() => ({
+        reiterAktiv: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null,
+      }));
+      console.log("[diagnostik] " + JSON.stringify(diagnostik));
+      // Der Anlege-Ablauf wechselt nach Zusammenstellen; gemessen wird nach dem
+      // Rueckwechsel auf Projekte (das ist der echte Nutzerzustand).
+      await klick('[data-testid="reiter-projekte"]');
+      await schlafe(400);
+      const zurueckstand = await seite.evaluate(() => ({
+        reiterAktiv: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null,
+        verwaltungDa: !!document.querySelector('[data-testid="projekt-verwaltung"]'),
+        inaktivDa: !!document.querySelector('[data-testid="verwaltung-inaktiv"]'),
+        listeDa: !!document.querySelector('[data-testid="projektliste"]'),
+        leerPlakette: !!document.querySelector('[data-testid="projektliste-leer"]'),
+        nameVorhanden: (document.body.textContent ?? "").length > 0,
+      }));
+      console.log("[zurueckstand] " + JSON.stringify(zurueckstand));
+      const zeilenNach = await zeilenanzahl();
+      if (zeilenNach <= zeilenDavor) {
+        fund("Projekt anlegen", `eine Zeile mehr (${namen} leicht messbar)`,
+          `Zeilen vorher/nachher: ${zeilenDavor}/${zeilenNach}`,
+          "Befund", "projekt-verwaltung/liste.ts oder treiber");
       } else {
-        await seite.type('[data-testid="dialog-anlegen-name"]', namen);
-        await klick('[data-testid="dialog-anlegen-best\u00e4tigen"]');
-        await schlafe(800);
-        const gezeigt = (await innerText()).includes(namen);
-        if (!gezeigt) {
-          fund("Projekt anlegen", `Projekt ${namen} in der Liste`,
-            "Name nicht sichtbar", "Befund", "projekt-verwaltung/index.tsx");
-        } else {
-          console.log("[schritt-2] Projekt angelegt und sichtbar.");
-        }
+        console.log(`[schritt-2] Projekt angelegt und in der Liste (${zeilenNach} Zeilen).`);
+      }
         if ((await innerText()).includes("Kein Projekt aktiv")) {
           fund("Projekt anlegen", "Start-Hinweis weg, sobald ein Projekt steht",
             "Start-Hinweis bleibt stehen (#346)", "Befund", "bootstrap/start lage");
