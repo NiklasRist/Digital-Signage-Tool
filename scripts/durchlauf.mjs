@@ -213,6 +213,69 @@ const main = async () => {
         console.log(`[schritt-3] ${nachweis} nicht im Fenster (stuetzt #342).`);
       }
     }
+
+    // #342-Gegenprobe am echten Fenster: Der neue Oeffnungsknopf „Rendern..." oeffnet
+    // das Render-Overlay; „Exportieren" an der Ausgabe-Liste oeffnet das Export-Overlay.
+    // Abbrechen nimmt beide zurueck (kein Auftrag eingereiht).
+    const renderOeffner = await stehtDa('[data-testid="composer-render-oefnen"]');
+    if (renderOeffner) {
+      await klick('[data-testid="composer-render-oefnen"]');
+      await schlafe(400);
+      if (await stehtDa('[data-testid="render-dialog"]')) {
+        console.log("[schritt-3] render-dialog im Fenster nach Klick auf composer-render-oefnen (#342 behoben).");
+        const abbrechen = await seite.$('[data-testid="render-dialog"] button[type="button"]:not([data-testid])');
+        if (abbrechen) {
+          await abbrechen.click();
+          await schlafe(300);
+        }
+      } else {
+        fund("Zusammenstellen", "render-dialog nach Klick auf composer-render-oefnen",
+          "Overlay oeffnet nicht", "BLOCKER", "composer/index.tsx");
+      }
+    } else {
+      fund("Zusammenstellen", "composer-render-oefnen im Kopf der Zusammenstellung",
+        "Knopf nicht da", "BLOCKER", "composer/index.tsx");
+    }
+    const ausgabenBereich = await stehtDa('[data-testid="composer-ausgaben"]');
+    if (ausgabenBereich) {
+      const exportierKnopf = await seite.$('[data-testid="composer-ausgaben"] button');
+      let gefunden = false;
+      for (const knopf of await seite.$$('[data-testid="composer-ausgaben"] button')) {
+        const text = await seite.evaluate((e) => e.textContent, knopf);
+        if (text === "Exportieren") {
+          gefunden = true;
+          await knopf.click();
+          await schlafe(400);
+          break;
+        }
+      }
+      if (gefunden && (await stehtDa('[data-testid="export-dialog"]'))) {
+        console.log("[schritt-3] export-dialog im Fenster nach Klick auf Exportieren (#342 behoben).");
+        const abbrechen = await seite.$('[data-testid="export-dialog-abbrechen"]');
+        if (abbrechen) {
+          await abbrechen.click();
+          await schlafe(300);
+        }
+      } else {
+        const leerText = await seite.evaluate(() => {
+          const bereich = document.querySelector('[data-testid="composer-ausgaben"]');
+          return bereich === null ? null : bereich.textContent ?? "";
+        });
+        if (leerText !== null && leerText.includes("Noch keine Ausgabedatei")) {
+          console.log("[schritt-3] kein Exportieren-Knopf: Ausgabe-Liste leer (geladen) - korrekt, nichts zum Exportieren.");
+          fund("Zusammenstellen", "export-dialog nach Klick auf Exportieren",
+            "unbestaetigt - Ausgabe-Liste leer; Export-Weg bleibt bis zum ersten Render offen (#404 Render-Schritt)",
+            "Untersuchung", "composer/index.tsx");
+        } else {
+          fund("Zusammenstellen", "export-dialog nach Klick auf Exportieren an der Ausgabe-Liste",
+            gefunden ? "Overlay oeffnet nicht" : "kein Exportieren-Knopf", "BLOCKER",
+            "composer/index.tsx");
+        }
+      }
+    } else {
+      fund("Zusammenstellen", "Ausgaben-Bereich (composer-ausgaben) sichtbar",
+        "Bereich nicht da", "BLOCKER", "composer/index.tsx");
+    }
     const ausgabeKnopfNormalzustand = await stehtDa(
       '[data-testid="ausgabe-erneut-laden"]');
     if (ausgabeKnopfNormalzustand) {

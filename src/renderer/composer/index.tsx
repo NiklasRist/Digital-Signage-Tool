@@ -46,6 +46,49 @@ import { CSS } from '@dnd-kit/utilities'
 // einen Platzhalter-Hinweis statt einer falschen Oberflche (Befund gemeldet).
 import { entferneElementAusListe } from './element-entfernen'
 import { berechneGesamtlaenge, frameDauer } from './gesamtlaenge'
+// #342: Die zwei Dialoge (#231/#232) werden hier eingehaengt. Die Fachlichkeit
+// bleibt in den Bausteinen; diese Wurzel haelt GENAU EINE ComposerLage (#259)
+// als React-Zustand und schreibt sie ausschliesslich ueber deren Uebergaenge fort.
+import {
+  LEERE_COMPOSER_LAGE,
+  oeffneOverlay,
+  schliesseOverlay,
+  melde,
+  verwirfWurzelMeldung,
+  setzeLaeuft,
+  setzeAusgabeName,
+  setzeExportauswahl,
+  istRenderKnopfFrei,
+  type ComposerLage,
+} from './composer-montage'
+import {
+  pruefeAusgabeName,
+  pruefeUeberschreiben,
+  loeseRenderMitNamenAus,
+  vorbelegterName,
+  type RenderDialogWirkungen,
+} from './render-dialog'
+import { RenderDialogAnzeige } from './render-dialog.tsx'
+import {
+  LEERE_EXPORTAUSWAHL,
+  waehleDatei,
+  waehleZiel,
+  istExportBereit,
+  loeseExportMitAuswahlAus,
+  type ExportDialogWirkungen,
+} from './export-dialog'
+import { ExportDialogAnzeige } from './export-dialog.tsx'
+import {
+  ladeAusgaben,
+  holeAusgaben,
+  aufAusgabenGeaendert,
+  type Ausgabenstand,
+} from './ausgabe-liste'
+import { AusgabeListenansicht } from './ausgabe-liste.tsx'
+import { starteReparatur, istRenderFreigegeben } from './reparatur-fuehrung'
+import { loeseRenderAus, loeseExportAus } from './render-ausloesen'
+import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
+import type { Marke } from '../../shared/contracts/marke'
 import { importiereMedien, baueImportBericht, type ImportBericht } from './medien-import'
 import { AssetGalerie } from './asset-galerie'
 import { greifeDropAuf, reiheDropEin, type PfadHoler } from './medien-bibliothek'
@@ -141,6 +184,16 @@ export function ComposerInterna({
   // die Whitelist wird hier VORGEFILTERT (DoD: kein Auftrag fuer nicht
   // unterstuetzte Typen), die finale Pruefung bleibt im Main.
   const [dropFehler, setzeDropFehler] = useState<string | null>(null)
+  // #342: DIE EINE ComposerLage (#259). Kein zweiter Zustand fuer Overlay, Meldung,
+  // Ausgabename oder Exportauswahl - alles laeuft ueber die acht Uebergaenge.
+  const [lage, setzeLage] = useState<ComposerLage>(() => LEERE_COMPOSER_LAGE)
+  // #342: Der Bestand der Ausgaben wird GEHOLET, nicht geladen - der Stand liegt
+  // in ausgabe-liste.ts (#230); diese Wurzel abonniert ihn und stoesst den ersten
+  // Ladevorgang je Projekt an (M7-68, ENTSCHIEDEN 7). aktualisiereAusgaben bleibt
+  // dem Nachlauf (#199) vorbehalten und wird hier NICHT gerufen.
+  const [ausgabenStand, setzeAusgabenStand] = useState<Ausgabenstand>(() => holeAusgaben())
+
+  useEffect(() => aufAusgabenGeaendert(setzeAusgabenStand), [])
 
   useEffect(() => projekt.aufGeaendert(setzeSicht), [projekt])
 
@@ -150,6 +203,39 @@ export function ComposerInterna({
   useEffect(() => {
     setzeBandHinweis(null)
   }, [inhalt?.id])
+
+  // #342: Der erste Ladevorgang je Projekt (M7-68, ENTSCHIEDEN 7) - nur, wenn der
+  // gehaltene Bestand nicht schon zu diesem Projekt gehoert.
+  useEffect(() => {
+    if (inhalt !== null && holeAusgaben().projektId !== inhalt.id) {
+      void ladeAusgaben(inhalt.id)
+    }
+  }, [inhalt?.id])
+
+  // Die Zeichenvoraussetzungen werden NUR gelesen (#154); bereiteVor wird hier
+  // NICHT gerufen (M7-68, ENTSCHIEDEN 3).
+  const voraussetzungen = zeichnen.hole()
+
+  // #342: Der Render-Knopf oeffnet das Overlay und belegt den Namen FA-22-gemaess
+  // mit projekt.letzterAusgabeName (leer, wenn null - KEIN Ersatzname, #231
+  // ENTSCHIEDEN 3). Sperrschranken: Freigabe der Fuehrung (#132) via
+  // istRenderKnopfFrei (#259) und vorhandene Zeichenvoraussetzungen (ohne sie
+  // kann #134 keine PNGs zeichnen; kein Ersatzwert).
+  const oeffneRenderDialog = (): void => {
+    if (inhalt === null) return
+    setzeLage((alt) =>
+      setzeAusgabeName(oeffneOverlay(alt, { art: 'render' }), vorbelegterName(inhalt) ?? ''),
+    )
+  }
+  const renderKnopfFrei =
+    inhalt !== null &&
+    voraussetzungen !== null &&
+    // #342-MELDUNG (siehe Issue): #134 verlangt noch EINE Marke als Parameter
+    // (vor #313 gebaut); seit #313 kommt die Zeichen-Marke je Aktion aus
+    // holeBereiteMarke. Bis #134 nachzieht, geht die Standardmarke hinein -
+    // dasselbe Muster wie der Rahmen im preview-player (#312/#313).
+    holeBereiteMarke(inhalt.standardMarkeId) !== null &&
+    istRenderKnopfFrei(istRenderFreigegeben(inhalt), lage.laeuft)
 
   // ENTSCHIEDEN 8 (#249): Das Asset kommt aufgelst - hier in der Wurzel, nicht in
   // der Zeile. ENTSCHIEDEN 6a: kaputteBandAbschnitte UNVERNDERT aus dem Modell.
@@ -207,7 +293,26 @@ export function ComposerInterna({
         >
           Medien importieren
         </button>
+        <button
+          type="button"
+          data-testid="composer-render-oefnen"
+          disabled={!renderKnopfFrei}
+          onClick={oeffneRenderDialog}
+        >
+          Rendern…
+        </button>
       </div>
+
+      {lage.meldung !== null && (
+        <div
+          data-testid="composer-wurzel-meldung"
+          role="status"
+          style={{ color: lage.meldung.warnung ? FEHLERFARBE : undefined, fontSize: 12 }}
+          onClick={() => setzeLage((alt) => verwirfWurzelMeldung(alt))}
+        >
+          {lage.meldung.meldung}
+        </div>
+      )}
 
       {dropFehler !== null && (
         <div data-testid="composer-drop-fehler" style={{ color: FEHLERFARBE, fontSize: 12 }}>
@@ -300,7 +405,141 @@ export function ComposerInterna({
           >
             {inhalt === null ? <AssetGalerie projekt={null} /> : <AssetGalerie projekt={inhalt} />}
           </div>
+
+          {/* #342: Die Ausgabe-Liste (#230) - der Oeffnungsweg des Export-Dialogs
+              (#232). Der Export-Rueckruf oeffnet das Overlay mit LEERER Auswahl
+              (M7-60, ENTSCHIEDEN 3); der Erneut-laden-Weg geht direkt an #230. */}
+          <div data-testid="composer-ausgaben" style={{ borderTop: '1px solid #444', paddingTop: 8 }}>
+            <AusgabeListenansicht
+              stand={ausgabenStand}
+              aufExportieren={() =>
+                setzeLage((alt) =>
+                  oeffneOverlay(setzeExportauswahl(alt, LEERE_EXPORTAUSWAHL), { art: 'export' }),
+                )
+              }
+              aufErneutLaden={() => {
+                if (inhalt !== null) void ladeAusgaben(inhalt.id)
+              }}
+            />
+          </div>
         </>
+      )}
+
+      {/* #342: Das Render-Overlay (#231). befund und Ueberschreib-Lage werden je
+          Tastendruck neu gerechnet (#231/#259) - nie zwischengespeichert. */}
+      {lage.overlay.art === 'render' && inhalt !== null && voraussetzungen !== null && (
+        <div
+          data-testid="composer-overlay"
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 360 }}>
+            <RenderDialogAnzeige
+              eingabe={lage.ausgabeName}
+              befund={pruefeAusgabeName(lage.ausgabeName)}
+              lage={pruefeUeberschreiben(lage.ausgabeName, ausgabenStand.dateien)}
+              laeuft={lage.laeuft}
+              aufEingabe={(wert) => setzeLage((alt) => setzeAusgabeName(alt, wert))}
+              aufAusloesen={() => {
+                if (pruefeAusgabeName(lage.ausgabeName) !== 'ok' || lage.laeuft) return
+                setzeLage((alt) => setzeLaeuft(alt, true))
+                const wirkungen: RenderDialogWirkungen = {
+                  // ENTSCHIEDEN 5 (M7-68): #134 wird UEBERGEBEN, nie direkt gerufen -
+                  // #231 faengt kaputte_elemente ab und fuehrt in die Reparatur.
+                  loeseRenderAus: (projekt, ausgabeName, marke, vorlagenListe) =>
+                    loeseRenderAus(projekt, ausgabeName, marke, vorlagenListe),
+                  starteReparaturModus: () => {
+                    // M7-60, ENTSCHIEDEN 4 (b): derselbe Ablauf wie beim Klick -
+                    // Stand rechnen (#132) und der Shell melden, die ihn haelt.
+                    verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
+                  },
+                  meldeFehler: (code, meldung) =>
+                    setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
+                }
+                void loeseRenderMitNamenAus(
+                  inhalt,
+                  lage.ausgabeName,
+                  holeBereiteMarke(inhalt.standardMarkeId) as Marke,
+                  voraussetzungen.vorlagen,
+                  wirkungen,
+                ).then((ergebnis) => {
+                  setzeLage((alt) => {
+                    const ruhig = setzeLaeuft(alt, false)
+                    // eingereiht/reparatur: Overlay zu (M7-60-Fehlerpfade). abgelehnt:
+                    // die Meldung kam bereits ueber meldeFehler; Overlay bleibt offen.
+                    return ergebnis.art === 'abgelehnt' ? ruhig : schliesseOverlay(ruhig)
+                  })
+                })
+              }}
+              aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* #342: Das Export-Overlay (#232). Die Auswahl ist ein WERT der Lage;
+          Datei- und Zielwahl laufen ueber waehleDatei/waehleZiel (#232). */}
+      {lage.overlay.art === 'export' && inhalt !== null && (
+        <div
+          data-testid="composer-overlay"
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 360 }}>
+            <ExportDialogAnzeige
+              ausgaben={ausgabenStand.dateien}
+              auswahl={lage.exportauswahl}
+              laeuft={lage.laeuft}
+              aufDateiWaehlen={(dateiname) =>
+                setzeLage((alt) =>
+                  setzeExportauswahl(alt, waehleDatei(alt.exportauswahl, dateiname, ausgabenStand.dateien)),
+                )
+              }
+              aufZielWaehlen={() => {
+                void waehleZiel(lage.exportauswahl).then((ergebnis) => {
+                  if (ergebnis.ok) {
+                    // Abbruch (pfad === null) ist KEIN Fehler (#183): Auswahl unveraendert,
+                    // keine Meldung (M7-60-Fehlerpfade).
+                    if (!ergebnis.wert.abgebrochen) {
+                      setzeLage((alt) => setzeExportauswahl(alt, ergebnis.wert.auswahl))
+                    }
+                    return
+                  }
+                  setzeLage((alt) =>
+                    melde(alt, {
+                      code: ergebnis.fehler.code,
+                      meldung: ergebnis.fehler.meldung,
+                      warnung: true,
+                    }),
+                  )
+                })
+              }}
+              aufAusloesen={() => {
+                if (!istExportBereit(lage.exportauswahl) || lage.laeuft) return
+                setzeLage((alt) => setzeLaeuft(alt, true))
+                const wirkungen: ExportDialogWirkungen = {
+                  loeseExportAus: (projektId, dateiname, zielPfad) =>
+                    loeseExportAus(projektId, dateiname, zielPfad),
+                  meldeFehler: (code, meldung) =>
+                    setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
+                }
+                void loeseExportMitAuswahlAus(inhalt.id, lage.exportauswahl, wirkungen).then(
+                  (ergebnis) => {
+                    setzeLage((alt) => {
+                      const ruhig = setzeLaeuft(alt, false)
+                      return ergebnis.art === 'eingereiht' ? schliesseOverlay(ruhig) : ruhig
+                    })
+                  },
+                )
+              }}
+              aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
+            />
+          </div>
+        </div>
       )}
     </div>
   )
