@@ -435,6 +435,95 @@ const main = async () => {
       }
     }
 
+    // Schritt 4c - Render-Lauf ueber den echten Dialog (#404-Rest, Teil a):
+    // Seed-Video liegt in D1, der Dialog (#342) ist montiert. Der Render liest die
+    // SICHT (inhalt) - und #407 meldet, dass direkte D1-Mutationen die Sicht nicht
+    // erreichen. Der Lauf erzwinge nichts; er misst, was im echten Fenster passiert.
+    await klick('[data-testid="reiter-zusammenstellen"]');
+    await schlafe(600);
+    const renderLaufName = "durchlauf-render-" + Date.now();
+    if (!(await klick('[data-testid="composer-render-oefnen"]'))) {
+      fund("Render-Lauf", "composer-render-oefnen betaetigbar (#342)",
+        "Knopf nicht klickbar", "BLOCKER", "composer/index.tsx");
+    } else if (!(await stehtDa('[data-testid="render-dialog"]'))) {
+      const oefnerDiag = await seite.evaluate(() => ({
+        oefnerDa: !!document.querySelector('[data-testid="composer-render-oefnen"]'),
+        oefnerGesperrt: document.querySelector('[data-testid="composer-render-oefnen"]')?.disabled ?? null,
+      }));
+      console.log("[schritt-4c] Oefner-Diagnostik: " + JSON.stringify(oefnerDiag));
+      fund("Render-Lauf", "render-dialog nach Klick auf composer-render-oefnen",
+        "Overlay oeffnet nicht", "BLOCKER", "composer/index.tsx");
+    } else if (!(await stehtDa('[data-testid="render-dialog-name"]'))) {
+      fund("Render-Lauf", "Namensfeld render-dialog-name",
+        "Feld fehlt", "BLOCKER", "composer/render-dialog.tsx");
+    } else {
+      // FA-22: Name OHNE Endung tippen; der Dialog vorprueft je Tastendruck.
+      await seite.click('[data-testid="render-dialog-name"]');
+      await seite.type('[data-testid="render-dialog-name"]', renderLaufName);
+      const gesperrt = await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="render-dialog-ausloeser"]');
+        if (knopf === null) return null;
+        return { gesperrt: knopf.disabled,
+          befund: document.querySelector('[data-testid="render-dialog-befund"]')?.textContent ?? null };
+      });
+      if (gesperrt === null || gesperrt.gesperrt) {
+        fund("Render-Lauf", "Ausloeser betaetigbar nach Namenseingabe",
+          "knopf gesperrt: " + JSON.stringify(gesperrt), "Untersuchung",
+          "composer/render-dialog.tsx");
+      } else {
+        await klick('[data-testid="render-dialog-ausloeser"]');
+        // Der Fortschritt reist ueber render:fortschritt (Ereignis-Kanal, #348-Folge)
+        // - am Fenster-Sammelort beobachtet, nicht geraten.
+        const fortschritte = await seite.evaluate(() => new Promise((f) => {
+          const start = Date.now();
+          const nachsehen = () => {
+            const n = (window.__durchlauf?.kanaele ?? [])
+              .filter((e) => e.kanal === "render:fortschritt").length;
+            if (n > 0) return f(n);
+            if (Date.now() - start > 45_000) return f(0);
+            setTimeout(nachsehen, 500);
+          };
+          nachsehen();
+        }));
+        console.log(`[schritt-4c] render:fortschritt-Ereignisse: ${fortschritte}`);
+        // #347-Beleg: Die Ausgabe-Liste zeigt die Datei, OHNE dass ein Knopf
+        // betaetigt wird (der Nachlauf #199 frischt nach render-Erfolg auf).
+        const dateiInListe = await seite.evaluate((name) => new Promise((f) => {
+          const start = Date.now();
+          const nachsehen = () => {
+            const liste = document.querySelector('[data-testid="composer-ausgaben"]');
+            if (liste !== null && liste.textContent.includes(name)) return f(true);
+            if (Date.now() - start > 45_000) return f(false);
+            setTimeout(nachsehen, 500);
+          };
+          nachsehen();
+        }), renderLaufName);
+        if (fortschritte === 0 && !dateiInListe) {
+          const laufDiag = await seite.evaluate(() => ({
+            zeilen: document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+            meldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+            ladefehler: document.querySelector('[data-testid="composer-ladefehler"]')?.textContent ?? null,
+          }));
+          console.log("[schritt-4c] Lauf-Diagnostik: " + JSON.stringify(laufDiag));
+          fund("Render-Lauf", "render:fortschritt beim echten Render-Lauf (#404 Schritt 5/6)",
+            "kein Fortschritts-Ereignis nach 45 s und keine Ausgabedatei in der Liste",
+            "Untersuchung", "composer/index.tsx / auftrags-manager");
+        } else if (!dateiInListe) {
+          fund("Render-Lauf", `Ausgabe-Liste zeigt ${renderLaufName} ohne Knopfdruck (#347)`,
+            `${fortschritte} Fortschritts-Ereignis(se), aber die Datei erscheint nicht binnen 45 s`,
+            "Befund", "composer/ausgabe-liste.tsx (#199 Nachlauf)");
+        } else {
+          console.log(`[schritt-4c] Render-Lauf: Ausgabe "${renderLaufName}" steht in der Liste OHNE Auffrisch-Klick (#347 belegt).`);
+        }
+      }
+      // Das Overlay wieder schliessen, falls der Lauf nicht ausloesete.
+      const overlayOffen = await seite.$('[data-testid="render-dialog"] button[type="button"]:not([data-testid])');
+      if (overlayOffen) {
+        await overlayOffen.click();
+        await schlafe(300);
+      }
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     const fensterstand = await seite.evaluate(() => ({
       kanaele: window.__durchlauf.kanaele,
