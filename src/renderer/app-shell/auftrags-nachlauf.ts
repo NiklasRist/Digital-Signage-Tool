@@ -57,7 +57,7 @@ export function starteAuftragsNachlauf(
     if (ausgewertet.has(auftrag.auftragId)) return
     ausgewertet.add(auftrag.auftragId)
 
-    if (!(D1_AENDERNDE_ARTEN as readonly string[]).includes(auftrag.art)) return
+    const rohErgebnis: unknown = auftrag.ergebnis
 
     // kein Erfolg: KEIN Rollback (Fehlerklasse-Regel, TK 9.7.3) - Meldung, weiter arbeiten.
     if (auftrag.status === 'fehlgeschlagen' || auftrag.status === 'abgebrochen') {
@@ -67,7 +67,39 @@ export function starteAuftragsNachlauf(
       return
     }
 
-    const rohErgebnis: unknown = auftrag.ergebnis
+    // #347 (M7-06, Ablaufschritt 5): Ein ERFOLGREICHER Render/Export frischt die
+    // Ausgabe-Liste auf (der einzige Aktuell-Weg im Normalzustand). Kein
+    // verwirfMotivBestand, kein bereiteZeichnenVor, kein leereProjektHistorie -
+    // ein Render aendert weder Medien noch Bearbeitungsstand.
+    if (auftrag.art === 'render' || auftrag.art === 'export') {
+      wirkungen.aktualisiereAusgabenListe?.()
+      // Zusatz, NUR bei render (TK v3.2 / 9.3.6): Der Render hat
+      // Project.letzterAusgabeName in D1 bereits gesetzt; die Sicht wird hier
+      // nachgefuehrt - ALLEIN dieses Feld, gleiche Array-Referenzen. Kein nicht
+      // leerer Name => melden und überspringen (M7-06, ENTSCHIEDEN 7/8).
+      if (auftrag.art === 'render') {
+        const ergebnis = rohErgebnis as { ausgabeName?: unknown }
+        const name = (ergebnis ?? null)?.ausgabeName
+        if (typeof name !== 'string' || name.length === 0) {
+          wirkungen.meldeFehler(
+            'unbekannter_fehler',
+            `Der Render-Auftrag ${auftrag.auftragId} meldet Erfolg ohne gueltigen Ausgabename.`,
+          )
+          return
+        }
+        const projekt = wirkungen.holeProjekt()
+        if (
+          projekt !== null &&
+          projekt.id === (auftrag.payload as { projektId?: unknown }).projektId
+        ) {
+          wirkungen.setzeProjekt({ ...projekt, letzterAusgabeName: name })
+        }
+      }
+      return
+    }
+
+    // D1-ändernde Arten (import/loeschen) ab hier (M7-06, Schritte 2.1-2.4, 2.6).
+    if (!(D1_AENDERNDE_ARTEN as readonly string[]).includes(auftrag.art)) return
     if (rohErgebnis === null || rohErgebnis === undefined) {
       wirkungen.meldeFehler('unbekannter_fehler', `Der Auftrag ${auftrag.auftragId} meldet Erfolg ohne Ergebnis.`)
       return
