@@ -11,6 +11,27 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
+## STAND HEUTE (12.10.2026) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-12-session.md`](docs/agents/uebergabe-2026-10-12-session.md) – LIES DIESE DATEI ZUERST.**
+Kurz: SECHS E2E-Luecken geschlossen und gemergt - #342 (Dialoge montiert, `ComposerLage`
+als einziger Zustand), #347 (Ausgaben-Auffrisch im Nachlauf + Auffrisch-Knopf im
+Normalfall), #346 (Start-Hinweis wird reaktiv weggenommen), #340 (der ECHTE
+media://-Handler ist am Fenster MESSBAR belegt: 200 statt 404), #350 (Strg/Cmd+Z
+Undo/Redo), #352 (Formular-Befunde werden als Bediener-Sätze am Feld gezeigt).
+Suite 5421 Tests grün, Typecheck/Lint 0. NEU **#407**
+(direkte D1-Mutationen bringen die Liste nicht auf den Stand). Nächste Session:
+**#404-Rest** - jetzt baubar, weil #342/#347 weg sind; dann **#407**, dann das
+Schließen der BK-Issues #354-#359 (User-Freigabe liegt vor), dann #371/#274-Prüfung.
+Beim User: ca. 196 Commits ungesendet (Push nur auf Anweisung); optische Abnahme
+#327; #289-Flaky fiel zweimal in drei Vollläufen (einzeln immer grün, beobachten).
+
+Basis-Abgleich #340-#353: DAMIT SIND ALLE SECHS offenen Lücken der Familie „fertige
+Funktion ohne Aufrufer" geschlossen (#340/#342/#346/#347/#350/#352) - die Arbeit
+des Treibers geht jetzt in die Tiefe (Render-Lauf, Export, Editor-Sitzung).
+
+---
+
 ## STAND HEUTE (09.10.2026, spaet) – gilt vor ALLEM weiter unten
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-09-session.md`](docs/agents/uebergabe-2026-10-09-session.md) - LIES DIESE DATEI ZUERST.**
