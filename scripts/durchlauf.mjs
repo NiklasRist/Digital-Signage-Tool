@@ -300,12 +300,62 @@ const main = async () => {
       ["vorlagen", "vorlagen-uebersicht"],
       ["projekte", "projekt-verwaltung"],
     ]) {
-      await klick(`[data-testid="reiter-${reiter}"]`);
-      await schlafe(500);
+      // Der Reiter-Klick wird IM Fensterskript FRISCH ermittelt: die Reiter-
+      // Leiste re-rendert waehrend der Seed-/Dialog-Schritte, und ein
+      // Koordinaten-Click aus dem Treiber kann still daneben liegen
+      // (derselbe Befund-Muster #403 wie am Bedienweg-Knopf).
+      const reiterKlick = await seite.evaluate((name) => {
+        const tab = document.querySelector(`[data-testid="reiter-${name}"]`);
+        if (tab === null) return false;
+        tab.click();
+        return true;
+      }, reiter);
+      console.log(`[schritt-4] Reiter-Klick ${reiter}: ${String(reiterKlick)}`);
+      await schlafe(700);
+      if (reiter === "vorlagen") {
+        // #404-Rest (c) - Vorlagen-Editor-Sitzung am Treiber: aus der Uebersicht
+        // heraus die ERSTE Vorlage zur Bearbeitung oeffnen (Frischgriff im
+        // Fensterskript; Koordinaten-Klicks trafen hier genauso still daneben
+        // wie am Bedienweg-Knopf und an der Reiter-Leiste).
+        const bearbeitenKlick = await seite.evaluate(() => {
+          const zeile = document.querySelector('[data-testid^="vorlage-bearbeiten-"]');
+          if (zeile === null) return false;
+          zeile.click();
+          return true;
+        });
+        console.log(`[schritt-4] Editor-Sitzung oeffnen: ${String(bearbeitenKlick)}`);
+        await schlafe(1_200);
+        const sitzungsDiag = await seite.evaluate(() => ({
+          arbeitskopieKopf: !!document.querySelector('[data-testid="arbeitskopie-kopf"]'),
+          vorlagenUebersichtNoch: !!document.querySelector('[data-testid="vorlagen-uebersicht"]'),
+          inspektor: !!document.querySelector('[data-testid="inspektor"]'),
+        }));
+        console.log("[schritt-4] Vorlagen-Sitzungs-Diagnostik: " + JSON.stringify(sitzungsDiag));
+        if (!bearbeitenKlick) {
+          fund("Vorlagen-Editor", "Bearbeiten-Knopf an der Uebersicht",
+            "Kein Zeile-Knopf gefunden", "Untersuchung", "vorlagen-editor/index.tsx");
+        } else if (!sitzungsDiag.arbeitskopieKopf) {
+          fund("Vorlagen-Editor", "arbeitskopie-kopf nach Bearbeiten (#404 Rest c)",
+            `Sitzungsdiag: ${JSON.stringify(sitzungsDiag)}`, "Untersuchung", "vorlagen-editor/index.tsx");
+        } else {
+          console.log("[schritt-4] arbeitskopie-kopf im Fenster (Editor-Sitzung laueft).");
+        }
+      }
+
+      const reiterDiag = await seite.evaluate(() => ({
+        reiterAktiv: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null,
+        aktionEditorWurzel: !!document.querySelector('[data-testid="aktion-editor-root"]'),
+        aktionBibliothek: !!document.querySelector('[data-testid="aktion-bibliothek"]'),
+        vorlagenUebersicht: !!document.querySelector('[data-testid="vorlagen-uebersicht"]'),
+        arbeitskopieKopf: !!document.querySelector('[data-testid="arbeitskopie-kopf"]'),
+        projektVerwaltung: !!document.querySelector('[data-testid="projekt-verwaltung"]'),
+        keineAktion: (document.body.textContent ?? "").includes("Kein Projekt aktiv"),
+      }));
+      console.log(`[schritt-4] Reiter ${reiter}: ` + JSON.stringify(reiterDiag));
       const grund = await seite.evaluate((k) => document.body.innerHTML.includes(k), kennung);
       if (!grund) {
         fund("Reiter: " + reiter, `Kennung ${kennung} im DOM`,
-          "Kennung fehlt", "Untersuchung", "Reiter-Montage");
+          `Kennung fehlt (Diagnostik: ${JSON.stringify(reiterDiag)})`, "Untersuchung", "Reiter-Montage");
       }
     }
     // Schritt 4b - Medien-Seed: Ein mit dem mitgebündelten ffmpeg erzeugtes Testvideo
