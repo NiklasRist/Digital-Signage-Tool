@@ -51,7 +51,7 @@ import { verdrahteMarkenSpeicherstatusIPC } from "./ipc-gateway/marken-speichers
 import { verdrahteMarkenIPC } from "./ipc-gateway/marken-verdrahtung"; // #304
 import {
   MEDIA_SCHEMA,
-  registriereMediaProtokollHandlerStub,
+  registriereMediaProtokollHandler,
 } from "./media-protokoll";
 import { registriereMedienHandler } from "./media-service/handler-registrierung";
 import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
@@ -321,9 +321,12 @@ void app.whenReady().then(async () => {
   }
 
   // SCHRITT 4: Muss nach app.whenReady() und VOR dem Laden des Fensters stehen.
-  // Vorerst ein Stub, der jede Anfrage mit 404 beantwortet; die Aufloesung kommt vom
-  // M1-Issue "project-store: media://-Handler" (Pfad-Autoritaet, TK 9.5.7).
-  registriereMediaProtokollHandlerStub();
+  // #340: der ECHTE media://-Handler (#49/#50) - Aufloesung statt Stub; die Aufloesung
+  // liegt im project-store (Pfad-Autoritaet, TK 9.5.7). Der bisherige Stub
+  // (registriereMediaProtokollHandlerStub) beantwortete JEDE Anfrage mit 404 - das
+  // war die Luecke E01: Kein Bild und kein Video lies sich in Bibliothek oder
+  // Vorschau laden.
+  registriereMediaProtokollHandler();
 
   // SCHRITT 4b: der EIGENE marken://-Handler (#290) - unmittelbar nach dem media-Stub,
   // dieselbe Reihenfolge-Regel ("NACH app.whenReady(), vor dem Laden des Hauptfensters",

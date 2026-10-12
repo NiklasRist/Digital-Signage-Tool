@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { MEDIA_SCHEMA, registriereMediaProtokollHandlerStub } from "../../src/main/media-protokoll";
+import { MEDIA_SCHEMA, registriereMediaProtokollHandler } from "../../src/main/media-protokoll";
 
 describe("MEDIA_SCHEMA (#321, aus #9)", () => {
   it("traegt scheme 'media' und GENAU die vier Privilegien des gebauten Standes", () => {
@@ -39,12 +39,14 @@ describe("MEDIA_SCHEMA (#321, aus #9)", () => {
     expect(ohneKommentare.includes("registerSchemesAsPrivileged")).toBe(false);
   });
 
-  it("der Handler-Stub bleibt eine Funktion und die Datei bleibt pfadfrei (Grep-Probe auf CODE)", () => {
-    expect(typeof registriereMediaProtokollHandlerStub).toBe("function");
+  it("die echte Registrierung bleibt eine Funktion und die Datei bleibt pfadfrei (Grep-Probe auf CODE)", () => {
+    // #340: Der Stub ist GEGENENWARTIG abgelöst; registriereMediaProtokollHandler
+    // meldet den echten Aufloeser (project-store) an, ohne selbst Pfade zu bauen.
+    expect(typeof registriereMediaProtokollHandler).toBe("function");
     const ohneKommentare = strippe(testquelle());
     expect(ohneKommentare.includes("path.join")).toBe(false);
     expect(ohneKommentare.includes("node:fs")).toBe(false);
-    // protocol bleibt GENAU EINMAL im CODE uebrig - im Handler-Stub (protocol.handle).
+    // protocol bleibt GENAU EINMAL im CODE uebrig - in registriereMediaProtokollHandler.
     expect(ohneKommentare.match(/protocol\./g)?.length).toBe(1);
   });
 });
