@@ -85,6 +85,8 @@ import {
 import { aktualisiereReparatur } from './composer/reparatur-fuehrung'
 import { sitzungshalter } from './app-shell/undo-aufzeichnung-vorlage'
 import { wechsleReiter, holeReiter, type ReiterId } from './app-shell/reiter'
+import { registriereTastaturHandler } from './app-shell/tastatur'
+import { macheRueckgaengig, stelleWiederHer } from './app-shell/undo-projekt'
 import { Rahmen } from './app-shell/rahmen'
 
 /** Der Anzeige-Datentyp des StartHinweis (#196). */
@@ -217,6 +219,32 @@ export function App(): JSX.Element {
   }, [meldeFehler])
 
   useEffect(() => laufe(), [laufe])
+
+  // #350: Die Tastatur wird angeschlossen - ihre Vorgaben sind optional, unverdrahtete
+  // Tasten werden NICHT abgefangen. Verdrahtet hier: Rueckgaengig (Ctrl/Cmd+Z) und
+  // Wiederherstellen (Shift) ueber den Projekt-Zugang des Bootstrap-Laufs (9.13:
+  // nur die gemeinsame Projekt-Historie). Pfeile/Space/Delete haben heute keine
+  // von der Shell aus erreichbaren Ziele (E1: nur Typen ueber Modulgrenzen) - sie
+  // bleiben UNVERDRAHTET und werden nicht abgefangen (siehe Issue-Nachtrag).
+  useEffect(() => {
+    const abmelden = registriereTastaturHandler({
+      rueckgaengig: () => {
+        const zug = zugaengeRef.current
+        if (zug === null) return
+        void macheRueckgaengig({ holeProjekt: () => zug.projektRoh.hole().projekt, setzeProjekt: zug.projektRoh.setzeProjekt }).then((antwort) => {
+          if (!antwort.ok) meldeFehler(antwort.fehler.code, antwort.fehler.meldung)
+        })
+      },
+      wiederherstellen: () => {
+        const zug = zugaengeRef.current
+        if (zug === null) return
+        void stelleWiederHer({ holeProjekt: () => zug.projektRoh.hole().projekt, setzeProjekt: zug.projektRoh.setzeProjekt }).then((antwort) => {
+          if (!antwort.ok) meldeFehler(antwort.fehler.code, antwort.fehler.meldung)
+        })
+      },
+    })
+    return abmelden
+  }, [meldeFehler])
 
   // ENTSCHIEDEN 3: bei 'laeuft' und 'gescheitert' KEIN Rahmen, KEINE Wurzel,
   // KEIN Overlay.
