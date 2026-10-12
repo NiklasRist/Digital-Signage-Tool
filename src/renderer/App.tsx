@@ -35,7 +35,7 @@
 // `(assetId) => { void schliesseMedienImportAb(umgebung, assetId) }` - void
 // ist beabsichtigt (Vertrag synchron und total).
 
-import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type JSX } from 'react'
 import type { Project } from '../shared/contracts/project'
 import type { Auftrag } from '../shared/contracts/auftrag'
 import type { FixWirkung, Uebergabe } from './composer/reparatur-optionen'
@@ -128,6 +128,25 @@ export function App(): JSX.Element {
       abmelden()
     }
   }, [])
+
+  // #346: Der Start-Hinweis wird ZURUECKGENOMMEN, solange ein Projekt offen ist -
+  // seine Aussage lautet „kein aktives Projekt", und genau das endet hier. Reaktiv,
+  // weil „Projekt offen" ein Aussenzustand des Zugangs ist und kein React-Status.
+  // Der Abo-Wechsel haengt an der Identität des Projekt-Zugangs: sie ist solange
+  // null, wie die Lage nicht 'bereit' ist; ab 'bereit' wird auf den echten Zugang
+  // abonniert (React resent es bei Wechsel). Mit einem stabilen Abo, das schon
+  // beim Start ohne Zugang ein Noop war, wuerde spaeteres Oeffnen gemeldet, aber
+  // NIEMAND haette es abonniert.
+  const zugangProjekt = lage.schritt === 'bereit' ? lage.zugaenge.projektRoh : null
+  const abonniereProjektOffen = useMemo(() => {
+    if (zugangProjekt === null) return () => () => {}
+    return (hoerer: () => void) => zugangProjekt.aufGeaendert(hoerer)
+  }, [zugangProjekt])
+  const projektOffenAktiv = useSyncExternalStore(
+    abonniereProjektOffen,
+    () => (zugangProjekt?.hole().projekt ?? null) !== null,
+    () => false,
+  )
 
   // DIE UebergabeUmgebung - genau EINE; gebaut mit stabilem Kern, die
   // Selbstreferenz wandert UEBER den ref (kein Zirkel im Objekt-Literal).
@@ -229,6 +248,9 @@ export function App(): JSX.Element {
 
   const zugaenge = lage.zugaenge
   const projektOffen = zugaenge.projektRoh.hole().projekt
+  // Der Start-Hinweis gilt nur, solange kein Projekt offen ist (#346, see oben).
+  const startHinweisWirklich: StartHinweisInfo | null =
+    projektOffenAktiv ? null : lage.startHinweis
 
   const meldezeile = (text: string): JSX.Element => (
     <div data-testid="meldung-zeile" style={{ padding: '4px 8px', fontSize: 12 }}>
@@ -254,7 +276,12 @@ export function App(): JSX.Element {
       </>
     ),
     meldungsFlaeche: () =>
-      meldung === null && lage.startHinweis === null ? (
+  // #346: Der Start-Hinweis wird ZURUECKGENOMMEN, sobald ein Projekt offen
+  // ist - er sollte ja nur solange stehen, wie KEIN Projekt aktiv ist.
+  // Das Zuruecknehmen ist nur die DARSTELLUNG: Die Bootstrap-Lage wird
+  // NICHT angefasst - verschwindet das Projekt wieder, steht der Hinweis
+  // erneut, denn seine Aussage trifft dann wieder zu.
+      startHinweisWirklich === null && meldung === null ? (
         <></>
       ) : (
         <div data-testid="meldungs-flaeche">
@@ -266,7 +293,9 @@ export function App(): JSX.Element {
               </button>
             </div>
           ) : null}
-          {lage.startHinweis !== null ? <div>{meldezeile(startHinweisZeile(lage.startHinweis))}</div> : null}
+          {startHinweisWirklich !== null ? (
+            <div>{meldezeile(startHinweisZeile(startHinweisWirklich))}</div>
+          ) : null}
         </div>
       ),
   }
