@@ -184,7 +184,7 @@ vi.mock("../../src/main/media-protokoll", () => ({
   // MEDIA_SCHEMA ist seit #321 DATEN; der Bootstrap (#309) durchreicht das Objekt
   // unverändert. Der Inhalt selbst prueft media-protokoll-schema.spec.ts (#321).
   MEDIA_SCHEMA: { scheme: "media", privileges: { secure: true, supportFetchAPI: true, stream: true, standard: true } },
-  registriereMediaProtokollHandlerStub: vi.fn(),
+  registriereMediaProtokollHandler: vi.fn(),
 }));
 
 vi.mock("../../src/main/project-store/einzel-instanz", () => ({

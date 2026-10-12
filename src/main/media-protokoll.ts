@@ -18,6 +18,10 @@
 import { protocol } from "electron";
 import type { CustomScheme } from "electron";
 
+// #340: Der ECHTE Aufloeser (project-store, die Pfad-Autoritaet) - diese Datei baut
+// keinen Pfad, sie MELDET nur den Handler an.
+import { behandleMediaAnfrage } from "./project-store/media-protokoll";
+
 /** Das Schema, unter dem der Renderer Medien laedt. */
 const SCHEMA = "media";
 
@@ -53,32 +57,22 @@ export const MEDIA_SCHEMA: CustomScheme = {
 };
 
 /**
- * Meldet den Protokoll-Handler an - vorerst als STUB.
+ * Meldet den ECHTEN Protokoll-Handler an (#340).
  *
  * MUSS nach `app.whenReady()` und vor dem Laden des Fensters laufen (#3, Schritt 4).
  *
- * Der Stub beantwortet JEDE Anfrage mit 404. Das ist eine Entscheidung, keine
- * Verlegenheit: Eine leere Antwort mit Status 200 saehe fuer den Renderer wie ein
- * GEGLUECKTER Ladevorgang aus - ein <img> feuerte `load` statt `error`, und ein
- * fehlendes Motiv waere von einem leeren Motiv nicht zu unterscheiden. Genau diese
- * Unterscheidung braucht spaeter der Platzhalter-Pfad des template-canvas (TK 9.10.7:
- * ein fehlendes Motiv wird als Platzhalter gezeichnet und darf nie in den finalen
- * Render). Ausserdem muss der echte Handler fuer nicht vorhandene Dateien ohnehin 404
- * liefern - der Stub verhaelt sich also schon jetzt wie der Endzustand, nur eben fuer
- * alles.
+ * Die Aufloesung lebt in `project-store/media-protokoll.ts` (#49/#50,
+ * `behandleMediaAnfrage`) - nur lesend, Aufloesung ausschliesslich ueber die Pfad-
+ * Autoritaet, mit den Sicherheits-Invarianten aus TK 9.5.7 (kein `..`-Ausbruch,
+ * keine Symlink-Flucht). Diese Datei importiert sie nur, ohne selbst Pfade zu
+ * bauen - dieselbe Teilung wie bis dato: Registrierung hier, Aufloesung im
+ * project-store.
  *
- * ERSETZT WIRD DIESER STUB vom M1-Issue "project-store: media://-Handler". Dort kommt
- * die Aufloesung ueber die Pfad-Autoritaet dazu, einschliesslich der
- * Sicherheits-Invarianten aus TK 9.5.7 (kein `..`-Ausbruch, keine Symlink-Flucht,
- * strikt nur lesend).
+ * BISHER STATT DESSEN: ein Stub, der JEDE Anfrage mit 404 beantwortete (das war die
+ * Luecke E01/#340: fertige Funktion ohne Anmelder - kein Bild und kein Video kann
+ * im Renderer laden). Die Entscheidung, mit der der Stub gebaut wurde (Status 404
+ * statt leerem 200), lebt im echten Handler weiter.
  */
-export function registriereMediaProtokollHandlerStub(): void {
-  protocol.handle(SCHEMA, (anfrage) => {
-    // Die URL wird NICHT zerlegt und NICHT auf einen Pfad abgebildet - sie geht nur in
-    // die Meldung, damit beim Entwickeln sichtbar ist, dass der Handler erreicht wurde.
-    return new Response(`media:// ist noch nicht angebunden (#9): ${anfrage.url}`, {
-      status: 404,
-      headers: { "content-type": "text/plain; charset=utf-8" },
-    });
-  });
+export function registriereMediaProtokollHandler(): void {
+  protocol.handle(SCHEMA, (anfrage) => behandleMediaAnfrage(anfrage));
 }

@@ -87,6 +87,15 @@ const main = async () => {
         console.log(`[fenster ${meldung.type()}] ${meldung.text()}`);
       }
     });
+    // #340-Gegenprobe (Beobachtung s. Schritt 4b): JEDE media://-Antwort wird beobachtet.
+    // Der echte Handler liefert 200/206 - der Stub antwortete 404 auf ALLES. Der Anlass
+    // kommt spaeter (Seed-Import, Galerie-Bild).
+    const mediaAntworten = [];
+    seite.on("response", (antwort) => {
+      if ((antwort.url() || "").startsWith("media://")) {
+        mediaAntworten.push({ url: antwort.url(), status: antwort.status() });
+      }
+    });
     await seite.waitForSelector("body", { timeout: 30_000 });
     await schlafe(2_500);
 
@@ -363,6 +372,65 @@ const main = async () => {
           fund("Medien-Bibliothek", "galerie-eintrag nach dem Seed-Import",
             "kein Eintrag nach 12 s (" + (leerP ? "leer-Plakette an" : "kein leer") + ")",
             "Befund", "composer/asset-galerie.tsx");
+        }
+        // #340-Gegenprobe: media://-Handler statt Stub. Anlass: das Seed-Video wird
+        // ueber `project:fügeElementHinzu` in die Wiedergabeliste gehaengt; der Listen-
+        // thumbnail liest den Frame via media:// (thumbnails.ts) - die Anfrage ist
+        // beobachtet (LINDEN s oben). Der Stub antwortete 404 auf ALLES.
+        const assetId = await seite.evaluate(() => {
+          const eintrag = document.querySelector('[data-testid^="galerie-eintrag-"]');
+          return eintrag === null ? null : eintrag.getAttribute("data-testid").replace("galerie-eintrag-", "");
+        });
+        if (assetId && aktivesProjektId) {
+          const hinzufuegen = await seite.evaluate(async (ihre) => {
+            return window.api.invoke("project:fügeElementHinzu", { referenz: ihre });
+          }, assetId);
+          console.log("[schritt-4b] fuegeElementHinzu: " + JSON.stringify(hinzufuegen.ok ? "ok" : hinzufuegen.fehler));
+          await schlafe(3_500);
+          const listeDiag = await seite.evaluate(() => ({
+            zeilen: document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+            listeDa: !!document.querySelector('[data-testid="wiedergabeliste"]'),
+            leerDa: !!document.querySelector('[data-testid="wiedergabeliste-leer"]'),
+            ladefehler: document.querySelector('[data-testid="composer-ladefehler"]')?.textContent ?? null,
+            hauptFehler: document.querySelector('[data-testid="meldung-zeile"]')?.textContent ?? null,
+          }));
+          console.log("[schritt-4b] Listen-Diagnostik: " + JSON.stringify(listeDiag));
+          if (listeDiag.zeilen === 0) {
+            // fuegeElementHinzu schrieb D1 ('ok'), aber die Sicht zeigt noch die leere Liste -
+            // die Mutation-zu-Sicht-Aktualisierung fuer DIREKTE Operationen (kein Auftrag) ist
+            // eine LUECKE aus der Familie „fertige Funktion ohne Aufrufer". Als Fund MELDEN.
+            fund("Sicht-Aktualitaet", "Liste zeigt das frisch hinzugefuegte Element",
+              "Element HINZUGEFUEGT ('ok'), aber 0 Zeilen in der Ansicht - die Sicht wird bei direkten D1-Mutationen nicht aktualisiert",
+              "Befund", "nachlauf/verdrahtung - eigene Luecke, NICHT #340");
+          }
+        }
+        // #340-Gegenprobe (media-Antworten werden an der Kopf-Messstelle beobachtet): Ein
+        // BILD-Seed laesst die Galerie <img src="media://..."> rendern - die Anfrage
+        // streift den echten Handler (der Stub antwortete 404 auf ALLES).
+        const probeBild = path.join("/tmp", "durchlauf-probe.png");
+        const ffmpeg2 = path.join(WURZEL, "node_modules", "ffmpeg-static", "ffmpeg");
+        await new Promise((f, r) => {
+          const p = spawn(ffmpeg2, ["-y", "-f", "lavfi", "-i", "testsrc2=size=120x90:rate=1",
+            "-frames:v", "1", probeBild], { stdio: "ignore" });
+          p.on("exit", (c) => (c === 0 ? f() : r(new Error("ffmpeg erzeugt kein Bild (code " + c + ")"))));
+        });
+        await seite.evaluate(async (pfad2, projektId2) => {
+          return window.api.invoke("queue:reiheEin", {
+            art: "import",
+            payload: { projektId: projektId2, quellPfad: pfad2 },
+          });
+        }, probeBild, aktivesProjektId);
+        // Warten, bis die queue:geaendert-Ereignisse durchlaufen sind und die Galerie fragt.
+        await schlafe(3_500);
+        const gut = mediaAntworten.filter((a) => a.status < 400).length;
+        const schief = mediaAntworten.filter((a) => a.status >= 400).length;
+        console.log(`[schritt-4b] media://-Gegenprobe: ${gut} geladen(e), ${schief} abgelehnt(e) (${mediaAntworten.map((a) => a.status).join(", ") || "keine Anfrage"})`);
+        if (gut === 0) {
+          fund("media://-Protokoll", "media://-Anfrage liefert Bytes (#340)",
+            mediaAntworten.length === 0
+              ? "keine media://-Anfrage im Lauf - Gegenprobe unbestaetigt"
+              : "alle media://-Anfragen wurden abgelehnt (Stub oder Pruefung) - kein Bild/Video laedt",
+            "BLOCKER", "src/main/index.ts, Schritt 4");
         }
       }
     }
