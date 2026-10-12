@@ -38,7 +38,7 @@ export function AusgabeListenansicht(p: AusgabeListenEigenschaften): JSX.Element
     return (
       <div data-ton="hervorgehoben" data-testid="ausgaben-fehler">
         <span>Ausgabe-Liste nicht lesbar</span>
-        <button type="button" onClick={p.aufErneutLaden}>
+        <button type="button" data-testid="ausgabe-erneut-laden" onClick={p.aufErneutLaden}>
           Erneut laden
         </button>
       </div>
@@ -47,10 +47,14 @@ export function AusgabeListenansicht(p: AusgabeListenEigenschaften): JSX.Element
 
   if (p.stand.dateien.length === 0) {
     // Geladen und leer (noch nie gerendert) - KEIN Fehler und nie derselbe Text wie
-    // bei `unbekannt`. Der Weg zum Rendern gehoert #231.
+    // bei `unbekannt`. Der Weg zum Rendern gehoert #231. Auch hier gibt es den
+    // Auffrisch-Knopf (#347) - das Umladen nach fremden Dateizugriffen bleibt moeglich.
     return (
       <div data-ton="ruhig" data-testid="ausgaben-leer">
-        Noch keine Ausgabedatei
+        <span>Noch keine Ausgabedatei</span>
+        <button type="button" data-testid="ausgabe-erneut-laden" onClick={p.aufErneutLaden}>
+          Erneut laden
+        </button>
       </div>
     )
   }
@@ -59,7 +63,14 @@ export function AusgabeListenansicht(p: AusgabeListenEigenschaften): JSX.Element
     baueAusgabeZeilen(p.stand.dateien).map((zeile) => [zeile.dateiname, zeile]),
   )
   return (
-    <ul data-testid="ausgaben-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+    <div>
+      {/* #347: Der Auffrisch-Knopf gibt es ab jetzt AUCH im Normalzustand -
+          nicht nur im Fehlerpfad. Er geht an den Rueckruf; die Auffrischung
+          NACH einem Render/Export bleibt der Nachlauf-Weg (#199). */}
+      <button type="button" data-testid="ausgabe-erneut-laden" onClick={p.aufErneutLaden}>
+        Erneut laden
+      </button>
+      <ul data-testid="ausgaben-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
       {p.stand.dateien.map((datei) => {
         const zeile = zeilenVonName.get(datei.dateiname)
         if (!zeile) {
@@ -79,6 +90,7 @@ export function AusgabeListenansicht(p: AusgabeListenEigenschaften): JSX.Element
           </li>
         )
       })}
-    </ul>
+      </ul>
+    </div>
   )
 }
