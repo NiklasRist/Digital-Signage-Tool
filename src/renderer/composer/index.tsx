@@ -99,6 +99,13 @@ import { Wiedergabeliste } from './liste-ansicht.tsx'
 import { findeKaputteStellen } from './kaputt-erkennung'
 import { ElementBedienung } from './element-zeile.tsx'
 import { uebernehmeGrenzen } from './dauer-regler'
+// #407-Befund (12.10.2026): Der Baustein #123 hat zwei UI-Aufrufer, deren Ansichten
+// in der Geschichte nie in dieser Wurzel montiert wurden (Nachtrag am Issue #407).
+// Die Montage ist genau die Aufgabe dieser Datei (#261 "Bausteine anordnen").
+import { Bibliotheksansicht } from './bibliothek-ansicht.tsx'
+import { loescheMedium } from './medium-loeschen'
+import { MediumLoeschen } from './medium-loeschen.tsx'
+import { gibVideoHandlesFrei } from '../gemeinsam/video-handles'
 
 
 /**
@@ -266,6 +273,30 @@ export function ComposerInterna({
 
   const gesamt = berechneGesamtlaenge([...liste])
 
+  // Der Medien-Import (#228) hat EINEN Weg - der Kopf-Knopf und die Bibliotheksansicht
+  // bedienen denselben Ruf, kein zweiter Ablauf.
+  const importiere = (): void => {
+    if (inhalt === null) return
+    void importiereMedien(inhalt.id, verdrahtung.starteMedienImport).then((antwort) => {
+      if (antwort.ok) setzeImportBericht(antwort.wert)
+      else
+        setzeImportBericht({
+          eingereiht: 0,
+          abgebrochen: false,
+          text: antwort.fehler.meldung,
+          brauchtAufmerksamkeit: antwort.fehler.code !== 'unbekannter_fehler',
+        })
+    })
+  }
+
+  // #407: Die Loesch-Vorauswahl als WERT vor dem JSX gerechnet (klare Schranke;
+  // die Verschraenkung liest assetId IM verschraenkten Umfang, nicht in Rueckrufen).
+  const loeschAsset = (() => {
+    if (lage.overlay.art !== 'medium_loeschen' || inhalt === null) return null
+    const assetId = lage.overlay.assetId
+    return inhalt.assets.find((eintrag) => eintrag.id === assetId) ?? null
+  })()
+
   return (
     <div
       data-testid="composer-wurzel"
@@ -277,19 +308,7 @@ export function ComposerInterna({
         <button
           type="button"
           data-testid="composer-medien-import"
-          onClick={() => {
-            if (inhalt === null) return
-            void importiereMedien(inhalt.id, verdrahtung.starteMedienImport).then((antwort) => {
-              if (antwort.ok) setzeImportBericht(antwort.wert)
-              else
-                setzeImportBericht({
-                  eingereiht: 0,
-                  abgebrochen: false,
-                  text: antwort.fehler.meldung,
-                  brauchtAufmerksamkeit: antwort.fehler.code !== 'unbekannter_fehler',
-                })
-            })
-          }}
+          onClick={importiere}
         >
           Medien importieren
         </button>
@@ -406,6 +425,22 @@ export function ComposerInterna({
             {inhalt === null ? <AssetGalerie projekt={null} /> : <AssetGalerie projekt={inhalt} />}
           </div>
 
+          {/* #407/#227: Die Medien-Bibliothek mit dem EINEN Hinzufuege-Weg zum
+              Baustein #123 (der die Sicht selbst versorgt, element-hinzufuegen.ts).
+              Die Galerie oben ist die Vorschau-Flaeche, dieser Bereich bringt die
+              Aktionen am Medium unter (Hinzufuegen/Loeschen); der Import-Knopf
+              ruft denselben Weg wie der Kopf-Knopf oben. */}
+          <Bibliotheksansicht
+            projekt={inhalt}
+            aufImportieren={importiere}
+            aufMediumLoeschen={(assetId) =>
+              setzeLage((alt) => oeffneOverlay(alt, { art: 'medium_loeschen', assetId }))
+            }
+            aufFehler={(code, meldung) =>
+              setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
+            }
+          />
+
           {/* #342: Die Ausgabe-Liste (#230) - der Oeffnungsweg des Export-Dialogs
               (#232). Der Export-Rueckruf oeffnet das Overlay mit LEERER Auswahl
               (M7-60, ENTSCHIEDEN 3); der Erneut-laden-Weg geht direkt an #230. */}
@@ -474,6 +509,33 @@ export function ComposerInterna({
                 })
               }}
               aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* #259-Vertrag (art medium_loeschen) + #229: Die Bestätigungs-Anzeige des
+          Medium-Löschens. Der Auftrag reist über den Torwächter; das Ergebnis
+          zieht der Nachlauf (#199) nach, dieser Overlay-Code wartet NICHT. */}
+      {loeschAsset !== null && inhalt !== null && (
+        <div
+          data-testid="composer-overlay"
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 360 }}>
+            <MediumLoeschen
+              projekt={inhalt}
+              assetId={loeschAsset.id}
+              loescheMedium={loescheMedium}
+              gibVideoHandlesFrei={gibVideoHandlesFrei}
+              aufErledigt={() => setzeLage((alt) => schliesseOverlay(alt))}
+              aufAbgebrochen={() => setzeLage((alt) => schliesseOverlay(alt))}
+              aufFehler={(code, meldung) =>
+                setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
+              }
             />
           </div>
         </div>

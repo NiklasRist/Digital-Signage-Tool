@@ -373,35 +373,66 @@ const main = async () => {
             "kein Eintrag nach 12 s (" + (leerP ? "leer-Plakette an" : "kein leer") + ")",
             "Befund", "composer/asset-galerie.tsx");
         }
-        // #340-Gegenprobe: media://-Handler statt Stub. Anlass: das Seed-Video wird
-        // ueber `project:fügeElementHinzu` in die Wiedergabeliste gehaengt; der Listen-
-        // thumbnail liest den Frame via media:// (thumbnails.ts) - die Anfrage ist
-        // beobachtet (LINDEN s oben). Der Stub antwortete 404 auf ALLES.
+        // #340/#407-Gegenprobe: media://-Handler statt Stub. Anlass: das Seed-Video
+        // kommt in die Wiedergabeliste - ueber den ECHTEN Bedienweg "Zur Liste
+        // hinzufuegen" der Bibliotheksansicht (#227, in der Wurzel gemountet, siehe
+        // #407-Nachtrag): Der Baustein #123 versorgt die Sicht selbst
+        // (setzeListe in composer/element-hinzufuegen.ts). Der Zugriff auf das Video
+        // ging frueher als Roh-IPC-Ruf - das lag AN DER FALSCHEN Naht und rief
+        // keine Sicht-Pflege (Architektur: KEIN Auffrischen aus dem Main).
         const assetId = await seite.evaluate(() => {
-          const eintrag = document.querySelector('[data-testid^="galerie-eintrag-"]');
-          return eintrag === null ? null : eintrag.getAttribute("data-testid").replace("galerie-eintrag-", "");
+          const eintrag = document.querySelector('[data-testid^="medium-"]');
+          return eintrag === null ? null : eintrag.getAttribute("data-testid").replace("medium-", "");
         });
-        if (assetId && aktivesProjektId) {
-          const hinzufuegen = await seite.evaluate(async (ihre) => {
-            return window.api.invoke("project:fügeElementHinzu", { referenz: ihre });
-          }, assetId);
-          console.log("[schritt-4b] fuegeElementHinzu: " + JSON.stringify(hinzufuegen.ok ? "ok" : hinzufuegen.fehler));
+        const bibliothekDa = await seite.evaluate(() => !!document.querySelector('[data-testid="bibliothek"]'));
+        console.log(`[schritt-4b] Bibliotheksansicht gemountet: ${bibliothekDa} (Medium-Kennung: ${assetId})`);
+        if (!bibliothekDa) {
+          fund("Bibliotheksansicht", "bibliothek in der Wurzel gemountet (#407)",
+            "Ansicht fehlt im Fenster", "BLOCKER", "composer/index.tsx");
+        } else {
+          // Der Knopf "Zur Liste hinzufuegen" liegt je Medienzeile - hier ist das
+          // Seed-Video das EINZIGE Medium, also die erste Zeile. Geklickt wird IM
+          // Fensterskript FRISCH ermittelt: Ein vorab geholtes Element-Handle kann
+          // still auf verschobene Koordinaten zielen (React re-render, Befund-Muster
+          // #403) - der Frischgriff umgeht genau das. Abgewiesene Rufe hoebt
+          // `void hinzufuegen` still weg; sie werden gesammelt und belegt.
+          await seite.evaluate(() => {
+            window.__durchlauf.ablehnungen = [];
+            window.addEventListener('unhandledrejection', (ereignis) => {
+              window.__durchlauf.ablehnungen.push(String(ereignis.reason));
+            });
+          });
+          const klickDa = await seite.evaluate(() => {
+            const zeile = document.querySelector('[data-testid^="medium-"]');
+            const knopf = zeile === null
+              ? null
+              : [...(zeile.querySelectorAll('button') ?? [])]
+                  .find((k) => k.textContent === "Zur Liste hinzufügen");
+            if (knopf === null) return false;
+            knopf.click();
+            return true;
+          });
+          console.log("[schritt-4b] Klick am echten Bedienweg: " + String(klickDa));
+          if (!klickDa) {
+            fund("Sicht-Aktualitaet", 'Knopf "Zur Liste hinzufuegen" an der Medienzeile',
+              "Knopf nicht gefunden", "BLOCKER", "composer/bibliothek-ansicht.tsx");
+          }
           await schlafe(3_500);
+
           const listeDiag = await seite.evaluate(() => ({
             zeilen: document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
             listeDa: !!document.querySelector('[data-testid="wiedergabeliste"]'),
             leerDa: !!document.querySelector('[data-testid="wiedergabeliste-leer"]'),
             ladefehler: document.querySelector('[data-testid="composer-ladefehler"]')?.textContent ?? null,
-            hauptFehler: document.querySelector('[data-testid="meldung-zeile"]')?.textContent ?? null,
+            meldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+            ablehnungen: window.__durchlauf.ablehnungen ?? [],
           }));
           console.log("[schritt-4b] Listen-Diagnostik: " + JSON.stringify(listeDiag));
           if (listeDiag.zeilen === 0) {
-            // fuegeElementHinzu schrieb D1 ('ok'), aber die Sicht zeigt noch die leere Liste -
-            // die Mutation-zu-Sicht-Aktualisierung fuer DIREKTE Operationen (kein Auftrag) ist
-            // eine LUECKE aus der Familie „fertige Funktion ohne Aufrufer". Als Fund MELDEN.
-            fund("Sicht-Aktualitaet", "Liste zeigt das frisch hinzugefuegte Element",
-              "Element HINZUGEFUEGT ('ok'), aber 0 Zeilen in der Ansicht - die Sicht wird bei direkten D1-Mutationen nicht aktualisiert",
-              "Befund", "nachlauf/verdrahtung - eigene Luecke, NICHT #340");
+            fund("Sicht-Aktualitaet", "Liste zeigt das ueber den Bedienweg hinzugefuegte Element (#407)",
+              "Knopf geklickt, aber 0 Zeilen in der Ansicht", "Befund", "composer/index.tsx");
+          } else {
+            console.log(`[schritt-4b] Wiedergabeliste zeigt ${listeDiag.zeilen} Zeile(n) nach dem echten Bedienweg (#407 belegt).`);
           }
         }
         // #340-Gegenprobe (media-Antworten werden an der Kopf-Messstelle beobachtet): Ein
@@ -471,7 +502,22 @@ const main = async () => {
           "knopf gesperrt: " + JSON.stringify(gesperrt), "Untersuchung",
           "composer/render-dialog.tsx");
       } else {
-        await klick('[data-testid="render-dialog-ausloeser"]');
+        // Der Ausloeser wird IM Fensterskript frisch geklickt (dasselbe Muster wie
+        // der Bedienweg am Medium - verschobene Koordinaten werden vermieden);
+        // danach zeigt die Diagnostik, WO der Riecher geblieben ist.
+        await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="render-dialog-ausloeser"]');
+          if (knopf !== null) knopf.click();
+        });
+        await schlafe(3_000);
+        const ausloesDiag = await seite.evaluate(() => ({
+          dialogNoch: !!document.querySelector('[data-testid="render-dialog"]'),
+          knopfGesperrt: document.querySelector('[data-testid="render-dialog-ausloeser"]')?.disabled ?? null,
+          meldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+          kanaele: (window.__durchlauf?.kanaele ?? []).map((e) => e.kanal),
+          ablehnungen: window.__durchlauf?.ablehnungen ?? [],
+        }));
+        console.log("[schritt-4c] Ausloes-Diagnostik: " + JSON.stringify(ausloesDiag));
         // Der Fortschritt reist ueber render:fortschritt (Ereignis-Kanal, #348-Folge)
         // - am Fenster-Sammelort beobachtet, nicht geraten.
         const fortschritte = await seite.evaluate(() => new Promise((f) => {
@@ -503,6 +549,7 @@ const main = async () => {
             zeilen: document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
             meldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
             ladefehler: document.querySelector('[data-testid="composer-ladefehler"]')?.textContent ?? null,
+            ablehnungen: window.__durchlauf?.ablehnungen ?? [],
           }));
           console.log("[schritt-4c] Lauf-Diagnostik: " + JSON.stringify(laufDiag));
           fund("Render-Lauf", "render:fortschritt beim echten Render-Lauf (#404 Schritt 5/6)",
