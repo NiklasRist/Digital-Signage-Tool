@@ -4,10 +4,10 @@ import {
   schlageDuplikatnamenVor,
   baueDuplizierHinweis,
   dupliziereProjekt,
-} from './duplizieren'
-import { KANAELE } from '../../shared/contracts/kanaele'
-import * as rufeAufModule from '../ipc-client/rufe-auf'
-import type { ProjektMeta } from './liste'
+} from '../../src/renderer/projekt-verwaltung/duplizieren'
+import { KANAELE } from '../../src/shared/contracts/kanaele'
+import * as rufeAufModule from '../../src/renderer/ipc-client/rufe-auf'
+import type { ProjektMeta } from '../../src/renderer/projekt-verwaltung/liste'
 
 describe('duplizieren', () => {
   it('pruefeDuplikatname validiert korrekt', () => {
