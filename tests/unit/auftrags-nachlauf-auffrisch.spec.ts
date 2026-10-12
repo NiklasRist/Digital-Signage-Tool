@@ -86,12 +86,13 @@ describe('auftrags-nachlauf - der Auffrisch-Weg der Ausgaben (#347)', () => {
 
     expect(spione.aktualisiereAusgabenListe).toHaveBeenCalledTimes(1)
     expect(spione.setzeProjekt).toHaveBeenCalledTimes(1)
-    const nachher = spione.setzeProjekt.mock.calls[0][0] as Project
-    expect(nachher.letzterAusgabeName).toBe('sommer')
+    const nachher = spione.setzeProjekt.mock.calls[0]?.[0] as Project | undefined
+    expect(nachher).toBeDefined()
+    expect(nachher?.letzterAusgabeName).toBe('sommer')
     // Gleiche Array-Referenzen (M7-06, ENTSCHIEDEN 12): nur das EINZE Feld steht neu.
-    expect(nachher.assets).toBe(PROJEKT.assets)
-    expect(nachher.liste).toBe(PROJEKT.liste)
-    expect(nachher.aktionen).toBe(PROJEKT.aktionen)
+    expect(nachher?.assets).toBe(PROJEKT.assets)
+    expect(nachher?.liste).toBe(PROJEKT.liste)
+    expect(nachher?.aktionen).toBe(PROJEKT.aktionen)
     // Kein Motiv-Verwurf, keine Historie-Leerung, keine Zeichenvorbereitung bei Render.
     expect(spione.verwirfMotivBestand).not.toHaveBeenCalled()
     expect(spione.leereProjektHistorie).not.toHaveBeenCalled()
