@@ -51,6 +51,7 @@ import {
   type AktionsEntwurf,
   type EntwurfBefund,
 } from './aktion-bearbeiten'
+import { BefundAnzeige } from './befund-texte'
 import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
 import { entferneBild, starteBildImport, waehlbareBilder, weiseBildZu } from './bild-zuweisen'
 import { setzeAkzentfarbe } from './akzentfarbe'
@@ -428,9 +429,7 @@ function FormularFelder({
         />
       </label>
       {befunde.map((befund, i) => (
-        <p key={i} data-testid="aktion-befund" style={{ color: '#e5634d' }}>
-          {befund.feld}: {befund.grund}
-        </p>
+        <BefundAnzeige key={i} befund={befund} />
       ))}
       {/* die Vorlage: die Auswahl per speichereAktion (verhindert nur der WYSIWYG-Wahl) */}
       {waehlbare === null ? null : (
