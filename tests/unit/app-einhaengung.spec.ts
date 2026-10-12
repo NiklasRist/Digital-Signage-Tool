@@ -389,6 +389,9 @@ function stelleBereitOhneProjekt(
   d.baueSichtenAntwort = { ok: true, wert: { projekt: {}, vorlagen: {}, zeichnen: {}, marken: {} } }
   d.starteSitzungAntwort = { art: 'kein-projekt', reiter: 'projekte', hinweis }
   d.bereiteVorAntwort = { ok: true, wert: {} }
+  // #346: „kein Projekt aktiv" heisst auch AM ZUGANG: `hole().projekt` liefert
+  // null - der Lese-Zugang ist dieselbe Quelle wie der restaurierte Stand.
+  d.projektImZugang = null
 }
 
 /** Bereit MIT wiederhergestelltem Projekt (Schritt 3 ruft bereiteVor). */
@@ -761,6 +764,36 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     await act(async () => {
       await Promise.resolve()
       await Promise.resolve()
+    })
+    expect(behaelter.querySelector('[data-testid="meldungs-flaeche"]')).toBeNull()
+  })
+
+  // #346, der Kernbefund: Ein startHinweis, der beim Bootstrap gesetzt wurde,
+  // ist WEG, sobald ein Projekt offen ist - auch wenn er NACH dem Bootstrap
+  // durch ein ANGELEGTES/GEoeffNEtes Projekt erreicht wurde (Reaktiv; der
+  // Bootstrap-Lage wird NICHT angefasst).
+  it('Ein startHinweis verschwindet, sobald ein Projekt offen ist (#346, benannter Test)', async () => {
+    stelleBereitOhneProjekt({ art: 'kein_aktives_projekt' })
+    const { behaelter } = rendere()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    // Brückenzustand richtig angeschlossen: der Hinweis steht, kein Projekt offen...
+    expect(behaelter.querySelector('[data-testid="meldungs-flaeche"]')?.textContent).toContain(
+      'Kein Projekt',
+    )
+
+    // ...dann oeffnet sich ein Projekt: der Zugang meldet es. Der App-Abo
+    // hängt am vi.fn von aufGeaendert - jeder Aufruf dort ist ein Hörer.
+    await act(async () => {
+      d.projektImZugang = { id: 'p1' } as unknown
+      const abo = (
+        d.zugaengeDoppel as { projektRoh: { aufGeaendert: { mock: { calls: unknown[][] } } } }
+      ).projektRoh.aufGeaendert.mock.calls
+      for (const [h] of abo) {
+        ;(h as (schicht: unknown) => void)({ projekt: d.projektImZugang })
+      }
     })
     expect(behaelter.querySelector('[data-testid="meldungs-flaeche"]')).toBeNull()
   })
