@@ -196,7 +196,18 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
         )}
         zeichneStandardmarke={(meta) => (
           <StandardmarkeAuswahl
-            lage={baueStandardmarkenLage(meta, meta.standardMarkeId, markenListe)}
+            lage={baueStandardmarkenLage(
+              meta,
+              // #410 (Variante a): Bei der OFFENEN Zeile liest die Anzeige den Wert
+              // aus der Projekt-Sicht (die der Wechsel eben bestätigt hat), nicht
+              // aus der Liste - dort trifft der entprellte Schreibpfad die Anzeige
+              // später (Ablehnung als Wechsel zurückgekoppelt, s. #407-Familie).
+              // Fremde Zeilen bleiben auf dem Listen-Wert.
+              ausgeladen !== null && ausgeladen.id === meta.id
+                ? ausgeladen.standardMarkeId
+                : meta.standardMarkeId,
+              markenListe,
+            )}
             aufWechsel={(markeId) =>
               (async () => {
                 const antwort = await wechsleStandardMarke(meta.id, markeId, standardmarke)
