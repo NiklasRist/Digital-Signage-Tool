@@ -28,6 +28,7 @@ import { LEERE_EXPORTAUSWAHL, type Exportauswahl } from './export-dialog'
 import type { KaputteStelle } from './kaputt-erkennung'
 import type { ReparaturStand } from './reparatur-fuehrung'
 import type { FixWirkung, Uebergabe } from './reparatur-optionen'
+import type { MenueAdresse } from './kontext-menu'
 
 /** Was gerade ueber der Zusammenstellung liegt. Genau eins oder keins (s. ENTSCHIEDEN 1). */
 export type ComposerOverlay =
@@ -64,11 +65,16 @@ export interface ComposerLage {
   /** Die Auswahl des Export-Dialogs (#232). Wird ausschliesslich ueber waehleDatei und
    *  waehleZiel (#232) fortgeschrieben - diese Wurzel baut sie NICHT selbst. */
   exportauswahl: Exportauswahl
+  /** #408: Die Adresse des KontextMenues (Zeile im Fenster + Position); null = keins.
+   *  Genau EINS, kein zweites Stackfenster neben dem Overlay - Kontext-Menue und
+   *  Overlay sind getrennte Zustandsplätze, aber jedes hoechstens einmal offen. */
+  menueAdresse: MenueAdresse | null
 }
 
 /** Kein Overlay, keine Auswahl, keine Meldung, nichts laeuft, leerer Name, leere Exportauswahl. */
 export const LEERE_COMPOSER_LAGE: ComposerLage = {
   overlay: KEIN_OVERLAY,
+  menueAdresse: null,
   gewaehltesElementId: null,
   meldung: null,
   laeuft: false,
@@ -80,14 +86,29 @@ export const LEERE_COMPOSER_LAGE: ComposerLage = {
  *  Alle sind total: sie werfen nie. */
 export function oeffneOverlay(lage: ComposerLage, overlay: ComposerOverlay): ComposerLage {
   // ENTSCHIEDEN 1: GENAU EIN Overlay, kein Stapel. Ein bereits offenes wird
-  // ersetzt - es gibt keine Vorratshaltung fuer Fall, den es nicht gibt.
-  return { ...lage, overlay }
+  // ersetzt - es gibt keine Vorratshaltung fuer Faelle, die es nicht gibt.
+  // (#408) Ein offenes KontextMenue faellt dabei mit: Ein Doppel aus Overlay
+  // und Menue uebereinander ist ein zweiter Stapel, den es nicht gibt.
+  return { ...lage, overlay, menueAdresse: null }
 }
 
 export function schliesseOverlay(lage: ComposerLage): ComposerLage {
   // Nur das Overlay faellt; Auswahl, Meldung und laeuft bleiben unberuehrt -
   // ein Schliessen ist kein Reset (Fehlerpfade: „leaves untouched").
   return { ...lage, overlay: KEIN_OVERLAY }
+}
+
+/** #408: Das KontextMenue oeffnen - GENAU EINS, ein offenes wird ersetzt (dieselbe
+ *  Festlegung wie beim Overlay). Ein neues Overlay schliesst das Menue (kein
+ *  Stackfenster - die Begrenzung "Genau eins" gilt je FENSTER-Lage, s. oeffneOverlay).
+ */
+export function oeffneMenue(lage: ComposerLage, adresse: MenueAdresse): ComposerLage {
+  return { ...lage, menueAdresse: adresse }
+}
+
+export function schliesseMenue(lage: ComposerLage): ComposerLage {
+  // Nur das Menue faellt - Meldung, laeuft und Auswahl bleiben unberuehrt.
+  return { ...lage, menueAdresse: null }
 }
 
 export function waehleElement(lage: ComposerLage, elementId: string | null): ComposerLage {

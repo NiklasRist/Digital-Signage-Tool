@@ -25,7 +25,7 @@
 // Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
-import { useEffect, useState, type JSX } from 'react'
+import { useEffect, useState, type JSX, type MouseEvent as ReactMouseEvent } from 'react'
 
 import type { Listenelement, Project } from '../../shared/contracts/project'
 import type { ProjektZugang, VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
@@ -59,7 +59,6 @@ import {
   setzeAusgabeName,
   setzeExportauswahl,
   istRenderKnopfFrei,
-  type ComposerLage,
 } from './composer-montage'
 import {
   pruefeAusgabeName,
@@ -106,6 +105,11 @@ import { Bibliotheksansicht } from './bibliothek-ansicht.tsx'
 import { loescheMedium } from './medium-loeschen'
 import { MediumLoeschen } from './medium-loeschen.tsx'
 import { gibVideoHandlesFrei } from '../gemeinsam/video-handles'
+// #408: Das KontextMenue (#133-Familie, Duplikat/Entfernen) wird in DIESE Wurzel
+// montiert - sein Zustand wandert siehtbarseitig in die ComposerLage (menueAdresse,
+// composer-montage.ts); die Zeilen tragen data-element-id (#248) - kein Edits an #248.
+import { KontextMenue } from './kontext-menu.tsx'
+import { oeffneMenue, schliesseMenue, type ComposerLage } from './composer-montage'
 
 
 /**
@@ -297,9 +301,24 @@ export function ComposerInterna({
     return inhalt.assets.find((eintrag) => eintrag.id === assetId) ?? null
   })()
 
+  // #408: Der rechtsklick-Weg. Die Zeile traegt data-element-id (#248); diese
+  // Wurzel oeffnet das Menue UEBER die ComposerLage (oeffneMenue) - der Baustein
+  // zeichnet nur. Rechtsklick neben der Liste bleibt beim Browser-Standard.
+  const oeffneKontextMenue = (ereignis: React.MouseEvent): void => {
+    const ziel = ereignis.target as HTMLElement | null
+    if (ziel === null) return
+    const zeile = ziel.closest('[data-testid="wiedergabeliste-zeile"]')
+    if (zeile === null) return
+    const elementId = zeile.getAttribute('data-element-id')
+    if (elementId === null) return
+    ereignis.preventDefault()
+    setzeLage((alt) => oeffneMenue(alt, { elementId, x: ereignis.clientX, y: ereignis.clientY }))
+  }
+
   return (
     <div
       data-testid="composer-wurzel"
+      onContextMenu={oeffneKontextMenue}
       style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: 8, gap: 8 }}
     >
       <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -512,6 +531,17 @@ export function ComposerInterna({
             />
           </div>
         </div>
+      )}
+
+      {/* #408: Das KontextMenue (Duplikat/Entfernen) - der Baustein zeichnet,
+          die Adresse liegt in der ComposerLage; schliessen geht nur ueber
+          schliesseMenue, ein Overlay oeffnen nimmt das Menue mit (oeffneOverlay). */}
+      {lage.menueAdresse !== null && inhalt !== null && (
+        <KontextMenue
+          projekt={inhalt}
+          adresse={lage.menueAdresse}
+          schliesse={() => setzeLage((alt) => schliesseMenue(alt))}
+        />
       )}
 
       {/* #259-Vertrag (art medium_loeschen) + #229: Die Bestätigungs-Anzeige des

@@ -82,6 +82,7 @@ const lage: ComposerLage = {
   laeuft: true,
   ausgabeName: 'FA-22',
   exportauswahl: LEERE_EXPORTAUSWAHL,
+  menueAdresse: null,
 }
 
 function stelle(): KaputteStelle {
@@ -101,6 +102,8 @@ describe('Nullwerte', () => {
   })
 
   it('LEERE_COMPOSER_LAGE enthaelt genau die Vertragsfelder; die Exportauswahl ist toBe-gleich zu #232', () => {
+    // #408 (User-Entscheidung 13.10.2026): die ComposerLage traegt NEBEN dem Overlay
+    // die Adresse des KontextMenues (menueAdresse) - Nachtrag zu #259 ist angehaengt.
     expect(LEERE_COMPOSER_LAGE).toEqual({
       overlay: KEIN_OVERLAY,
       gewaehltesElementId: null,
@@ -108,6 +111,7 @@ describe('Nullwerte', () => {
       laeuft: false,
       ausgabeName: '',
       exportauswahl: LEERE_EXPORTAUSWAHL,
+      menueAdresse: null,
     })
     expect(LEERE_COMPOSER_LAGE.exportauswahl).toBe(LEERE_EXPORTAUSWAHL)
   })

@@ -687,6 +687,57 @@ const main = async () => {
       }
     }
 
+    // Schritt 4e - KontextMenue im echten Fenster (#408): Rechtsklick auf die
+    // ERSTE Zeile oeffnet das Menue (Fraschgriff im Fensterskript), dann ruft der
+    // Treiber "Duplikat am Listenende anfuegen" - durch den Baustein #123, der die
+    // Sicht selbst versorgt. GEMESSEN: Zeilen davor/danach.
+    const zeilenDavor4e = await seite.evaluate(
+      () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+    );
+    const menueOeffnen = await seite.evaluate(() => {
+      const zeile = document.querySelector('[data-testid="wiedergabeliste-zeile"]');
+      if (zeile === null) return false;
+      const rechteck = zeile.getBoundingClientRect();
+      zeile.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true, cancelable: true,
+        clientX: rechteck.left + 4, clientY: rechteck.top + 4,
+      }));
+      return true;
+    });
+    console.log(`[schritt-4e] Kontextmenue-Kaemme: ${String(menueOeffnen)} (Zeilen davor: ${zeilenDavor4e})`);
+    if (!menueOeffnen) {
+      fund("KontextMenue", "die erste Zeile fuer den Rechtsklick (#408)",
+        "keine Wiedergabeliste-Zeile im Fenster", "Untersuchung", "composer/liste-ansicht.tsx");
+    } else {
+      await schlafe(600);
+      const menueDa = await seite.evaluate(() => ({
+        menue: !!document.querySelector('[data-testid="kontext-menue"]'),
+        duplikat: !!document.querySelector('[data-testid="menue-duplikat"]'),
+      }));
+      console.log("[schritt-4e] Menue-Diagnostik: " + JSON.stringify(menueDa));
+      if (!menueDa.menue || !menueDa.duplikat) {
+        fund("KontextMenue", "kontext-menue samt menue-duplikat nach dem Rechtsklick (#408)",
+          `Menue-Diagn: ${JSON.stringify(menueDa)}`, "Befund", "composer/index.tsx");
+      } else {
+        await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="menue-duplikat"]');
+          if (knopf !== null) knopf.click();
+        });
+        await schlafe(3_500);
+        const zeilenDanach4e = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+        );
+        console.log(`[schritt-4e] Zeilen nach dem Duplikat: ${zeilenDanach4e}`);
+        if (zeilenDanach4e > zeilenDavor4e) {
+          console.log("[schritt-4e] Duplikat GEMESSEN: die Zeile wuchs am echten Menue (#408 belegt).");
+        } else {
+          fund("KontextMenue", "Duplikat verlaengert die Liste (#408/#123)",
+            `Zeilen davor/nachher: ${zeilenDavor4e}/${zeilenDanach4e}`, "Befund", "composer/kontext-menu.tsx");
+        }
+        // Das Menue selbst: nach einem Menue-Akt ist es geschliessen (tue() ruft schliesse).
+      }
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     const fensterstand = await seite.evaluate(() => ({
       kanaele: window.__durchlauf.kanaele,
