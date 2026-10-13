@@ -323,9 +323,9 @@ const VORSCHAU_FELDER: readonly { feld: VorschauFeld; beschriftung: string }[] =
 
 function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
   const sitzung = p.sitzung.holeSitzung()
-  if (sitzung === null) {
-    return <div data-testid="vorlagen-editor-lade" />
-  }
+
+  // ALLE Hooks VOR jedem Rueckgehweg: Die Hook-Anzahl darf nicht davon abhaengen,
+  // ob gerade eine Sitzung offen ist (Hook-Ordnungs-Verstoß, s. Issue #409).
 
   const [geste, setzeGeste] = useState<Geste>(KEINE_GESTE)
   const [gewaehlt, setzeGewaehlt] = useState<string | null>(null)
@@ -341,22 +341,33 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
   const markenListe = p.marken.hole()?.marken ?? []
   const [, setzeTakt] = useState(0)
 
-  // Der Nutzungs-Hinweis: GENAU EINMAL je Sitzung, nach der PARENT-ID gefragt
-  // (nicht nach der arbeitsId - Referenzen zeigen auf die nutzbare Vorlage).
-  if (!giltFuer(nutzungsStand, sitzung.parentId)) {
-    // Es ist die EINMAL-Prozedur: beginneLaden (die Anzeige "läuft") und der
-    // Aufruf; die Antwort geht zurück in den Stand (geladen/fehler).
-    const standMitLade = beginneLaden(nutzungsStand, sitzung.parentId)
-    if (standMitLade !== nutzungsStand) {
-      setzeNutzungsStand(standMitLade)
-      void holeNutzung(sitzung.parentId).then((antwort) => {
-        setzeNutzungsStand((bisher) => {
-          if (antwort.ok) return uebernimmNutzung(bisher, sitzung.parentId, antwort.wert)
-          return uebernimmFehler(bisher, sitzung.parentId, antwort.fehler.code, antwort.fehler.meldung)
-        })
-      })
+  // #409: Der Nutzungs-Hinweis laedt GENAU EINMAL je Sitzung - als Effect, der
+  // auf die PARENT-ID gehoert (nicht auf die arbeitsId - Referenzen zeigen auf
+  // die nutzbare Vorlage).
+
+  const parentId = sitzung?.parentId ?? null
+  useEffect(() => {
+    // Der alte Rendersatz (`beginneLaden(...)` je Durchlauf im BODY) konvergierte nie:
+    // beginneLaden liefert zustand 'laedt', giltFuer verlangt 'geladen' - jede
+    // Renderphase setzte erneut (React #301, ganzer Baum weg). Der Effect-Griff
+    // behaelt die einmalige Frage: giltFuer auf dem BESTAND verhindert die zweite.
+    if (parentId === null) return
+    let abgebrochen = false
+    setzeNutzungsStand((bisher) =>
+      giltFuer(bisher, parentId) ? bisher : beginneLaden(bisher, parentId),
+    )
+    void holeNutzung(parentId).then((antwort) => {
+      if (abgebrochen) return
+      setzeNutzungsStand((bisher) =>
+        antwort.ok
+          ? uebernimmNutzung(bisher, parentId, antwort.wert)
+          : uebernimmFehler(bisher, parentId, antwort.fehler.code, antwort.fehler.meldung),
+      )
+    })
+    return () => {
+      abgebrochen = true
     }
-  }
+  }, [parentId])
 
   // Die Vorbereitung der Vorschau: einmal je Editor-Auftritt, projetzId null
   // über BEISPIEL_AKTION (GEMELDETER Mangel: echte Aktion ohne Projektzugang).
@@ -388,7 +399,12 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
     return () => {
       abgebrochen = true
     }
-  }, [sitzung.arbeitsId])
+  }, [sitzung?.arbeitsId ?? null])
+
+  // Der Rueckweg NACH allen Hooks - nur noch Anzeige, keine Zustands-Arbeit.
+  if (sitzung === null) {
+    return <div data-testid="vorlagen-editor-lade" />
+  }
 
   const stand = sichtbarerStand(sitzung, geste)
   const vorlage = stand as Vorlage

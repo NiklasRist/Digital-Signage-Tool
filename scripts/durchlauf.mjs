@@ -353,7 +353,14 @@ const main = async () => {
       }));
       console.log(`[schritt-4] Reiter ${reiter}: ` + JSON.stringify(reiterDiag));
       const grund = await seite.evaluate((k) => document.body.innerHTML.includes(k), kennung);
-      if (!grund) {
+      // Sonderfall Vorlagen: Ist die Sitzung geoeffnet, steht der EDITOR statt
+      // der Uebersicht im Fenster - der Bestand der Kennung gilt dann ueber den
+      // arbeitskopie-kopf, nicht als Vermutung.
+      const sitzungOffen = await seite.evaluate(
+        () => !!document.querySelector('[data-testid="arbeitskopie-kopf"]'),
+      );
+
+      if (!grund && !(reiter === "vorlagen" && sitzungOffen)) {
         fund("Reiter: " + reiter, `Kennung ${kennung} im DOM`,
           `Kennung fehlt (Diagnostik: ${JSON.stringify(reiterDiag)})`, "Untersuchung", "Reiter-Montage");
       }
