@@ -110,7 +110,14 @@ const main = async () => {
           sammel.push({ kanal: kanal, fehler: String(tu) });
         }
       }
-      window.__durchlauf = { kanaele: sammel, kanalliste: Object.keys(window.api) };
+      // Ablehnungen des Fensters FRUEH abholen: `void x()`-Wegs versenken sie
+      // still (unhandled rejection feuert keinen pageerror) - ein Sammelort im
+      // Fensterspeicher macht sie fuer ALLE Schritte lesbar.
+      const ablehnungen = [];
+      window.addEventListener('unhandledrejection', (ereignis) => {
+        ablehnungen.push(String(ereignis.reason));
+      });
+      window.__durchlauf = { kanaele: sammel, ablehnungen, kanalliste: Object.keys(window.api) };
     });
 
     // Schritt 1 - Start: Shell steht, keine Platzhalter.
@@ -271,10 +278,10 @@ const main = async () => {
           return bereich === null ? null : bereich.textContent ?? "";
         });
         if (leerText !== null && leerText.includes("Noch keine Ausgabedatei")) {
-          console.log("[schritt-3] kein Exportieren-Knopf: Ausgabe-Liste leer (geladen) - korrekt, nichts zum Exportieren.");
+          console.log("[schritt-3] kein Exportieren-Knopf: Liste leer (geladen) - korrekt.");
           fund("Zusammenstellen", "export-dialog nach Klick auf Exportieren",
-            "unbestaetigt - Ausgabe-Liste leer; Export-Weg bleibt bis zum ersten Render offen (#404 Render-Schritt)",
-            "Untersuchung", "composer/index.tsx");
+            "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich.",
+            "MANUELL", "composer/index.tsx");
         } else {
           fund("Zusammenstellen", "export-dialog nach Klick auf Exportieren an der Ausgabe-Liste",
             gefunden ? "Overlay oeffnet nicht" : "kein Exportieren-Knopf", "BLOCKER",
@@ -365,7 +372,59 @@ const main = async () => {
           `Kennung fehlt (Diagnostik: ${JSON.stringify(reiterDiag)})`, "Untersuchung", "Reiter-Montage");
       }
     }
-    // Schritt 4b - Medien-Seed: Ein mit dem mitgebündelten ffmpeg erzeugtes Testvideo
+    // Schritt 4a - Standardmarke je Projekt-Zeile (#324, TK 9.14.3): die Auswahl ist
+    // ein echtes <select> mit aria-label "Standardmarke". Der Wechsel wird IM
+    // Fensterskript gesetzt (React liest die Aenderung ueber den nativen
+    // HTMLSelectElement-Wert) und der neue Wert wird danach gemessen.
+    const wechsleMarke = async () => {
+      return await seite.evaluate(() => {
+        const auswahl = document.querySelector('select[aria-label="Standardmarke"]')
+        if (auswahl === null) return { da: false }
+        const davor = auswahl.value
+        const eineAndere = [...auswahl.options].find((o) => o.value !== "" && o.value !== davor)
+        if (eineAndere === undefined) return { da: true, davor, leer: true }
+        const trage = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set
+        trage.call(auswahl, eineAndere.value)
+        auswahl.dispatchEvent(new Event("change", { bubbles: true }))
+        return { da: true, davor, ziel: eineAndere.value, leer: false }
+      });
+    };
+    const pruefeWert = async () => {
+      return await seite.evaluate(() => {
+        const auswahl = document.querySelector('select[aria-label="Standardmarke"]')
+        return { wert: auswahl === null ? null : auswahl.value };
+      });
+    };
+    const markeVersuch1 = await wechsleMarke();
+    console.log("[schritt-4a] Auswahl-Bedienung: " + JSON.stringify(markeVersuch1));
+    if (!markeVersuch1.da) {
+      fund("Standardmarke", "die Auswahl je Projekt-Zeile (#324)",
+        "kein select mit aria-label Standardmarke", "Untersuchung", "projekt-verwaltung");
+    } else if (markeVersuch1.leer === false) {
+      await schlafe(2_500);
+      const ablehnungenA = await seite.evaluate(() => window.__durchlauf?.ablehnungen ?? []);
+      console.log("[schritt-4a] Ablehnungen bis dahin: " + JSON.stringify(ablehnungenA));
+      const listenDiag = await seite.evaluate(async () => {
+        const antwort = await window.api.invoke("project:listeProjekte");
+        if (!antwort.ok) return { listenfehler: JSON.stringify(antwort.fehler ?? {}) };
+        const erster = antwort.wert[0] ?? null;
+        return erster === null ? { erster: null } : { erster: { id: erster.id, marke: erster.standardMarkeId } };
+      });
+      console.log("[schritt-4a] Frische Liste: " + JSON.stringify(listenDiag));
+      const danach = await pruefeWert();
+      console.log("[schritt-4a] Bedienelement danach: " + JSON.stringify(danach));
+      if (danach.wert !== markeVersuch1.ziel) {
+        fund("Standardmarke", "der Wechsel steht im Bedienelement (#324)",
+          `gewaehlt ${markeVersuch1.ziel}, gezeigt ${String(danach.wert)}`, "Befund",
+          "projekt-verwaltung/standardmarke.tsx");
+      } else {
+        console.log("[schritt-4a] Standardmarke-Wechsel GEMESSEN am echten select (davor/nach).");
+      }
+    } else {
+      console.log("[schritt-4a] Nur eine Marke im Bestand - der Wechsel braucht eine zweite (Seed-Weg ungetestet, UI-Weg folgt).");
+    }
+
+    // Schritt 4b - Medien-Seed: Ein mit dem mitgebundelten ffmpeg erzeugtes Testvideo
     // wird ueber queue:reiheEin importiert (derselbe Weg wie die native Import-Quelle -
     // der Dialog selbst bleibt nativ und wird nicht bedienbar gemockt). Messpartner: der
     // der queue:geaendert-Ereignis-Kanal (#348-Folge, das vereinbarte Seed-Verfahren).
