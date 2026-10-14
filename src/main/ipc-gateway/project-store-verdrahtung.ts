@@ -65,7 +65,7 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 //          : Promise<Ergebnis<Aktion, ProjectStoreFehlercode>>
 //   #40: löscheAktion(id: string): Promise<Ergebnis<{ stand: Bearbeitungsstand
 //          entfernteElementIds: string[]; geaenderteElementIds: string[] }, ProjectStoreFehlercode>>
-//   #41: fügeElementHinzu(referenz: string)
+//   #41: fügeElementHinzu(referenz: string, position?: number)   /* position: #411 */
 //          : Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>>
 //   #42: entferneElement(elementId: string): Promise<Ergebnis<void, ProjectStoreFehlercode>>
 //   #43: ordneNeu(reihenfolge: string[]): Promise<Ergebnis<void, ProjectStoreFehlercode>>
@@ -301,19 +301,35 @@ export function verdrahteProjectStoreIPC(): void {
   // ---------------------------------------------------------------------- Wiedergabeliste
   meldeAn(
     KANAELE.project.fügeElementHinzu,
-    (nutzlast: unknown): Ergebnis<{ referenz: string }, 'ungueltige_eingabe'> => {
+    (
+      nutzlast: unknown,
+    ): Ergebnis<{ referenz: string; position?: number }, 'ungueltige_eingabe'> => {
       if (!istObjekt(nutzlast)) {
-        return abgelehnt('fügeElementHinzu erwartet ein Objekt { referenz }.')
+        return abgelehnt('fügeElementHinzu erwartet ein Objekt { referenz, position? }.')
       }
       const referenz = nutzlast.referenz
       if (!istGefuellterText(referenz)) {
         return abgelehnt('fügeElementHinzu braucht eine nicht leere referenz.')
       }
-      return { ok: true, wert: { referenz } }
+      // ERGAENZT durch #411: position ist OPTIONAL. Womit sie mitkommt, MUSS eine
+      // Ganzzahl >= 0 sein (`typeof` schliesst Boolean/Strings/NaN vorab aus;
+      // `Number.isInteger` schliesst Brueche aus). Die Obergrenze (Listenlaenge) kennt
+      // der Gateway NICHT - die schlaegt #41 nach, wie die Referenz selbst.
+      const position = nutzlast.position
+      if (
+        position !== undefined &&
+        (typeof position !== 'number' || !Number.isInteger(position) || position < 0)
+      ) {
+        return abgelehnt(
+          'fügeElementHinzu: position muss eine Ganzzahl >= 0 sein (oder ganz wegbleiben).',
+        )
+      }
+      return { ok: true, wert: { referenz, position } }
     },
-    // Ob die Referenz auf ein Asset oder eine Aktion zeigt und ob es sie gibt, schlaegt #41
-    // nach - diese Datei kennt den Bestand nicht.
-    ({ referenz }) => fügeElementHinzu(referenz),
+    // Ob die Referenz auf ein Asset oder eine Aktion zeigt, ob es sie gibt und ob die
+    // position innerhalb der Listenlaenge liegt, schlaegt #41 nach - diese Datei kennt
+    // den Bestand nicht.
+    ({ referenz, position }) => fügeElementHinzu(referenz, position),
   )
 
   meldeAn(

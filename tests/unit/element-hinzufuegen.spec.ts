@@ -96,8 +96,19 @@ describe('fuegeElementHinzu - der Aufruf hinaus', () => {
     // Die SCHLÜSSELMENGE, nicht nur der Inhalt: Ein zusätzliches `dauer: 10` oder
     // `art: 'segment'` wäre genau die zweite Fachlogik neben #41, die das Issue
     // verbietet - und ein `toMatchObject` ginge daran vorbei.
+    // #411: OHNE `position` bleibt die Schlüsselmenge [['referenz']] - die Nutzlast
+    // wird KONDITIONAL gebaut, nicht als Shorthand mit `position: undefined`.
     expect(Object.keys(doppel.aufrufe[0]?.nutzlast as object)).toEqual(['referenz'])
     expect(doppel.aufrufe[0]?.nutzlast).toEqual({ referenz: 'a1' })
+  })
+
+  it('#411: MIT position trägt die Nutzlast GENAU die zwei Schlüssel referenz+position', async () => {
+    doppel.antwort = { ok: true, wert: element('e1', 'a1') }
+
+    await fuegeElementHinzu('a1', 2)
+
+    expect(Object.keys(doppel.aufrufe[0]?.nutzlast as object)).toEqual(['referenz', 'position'])
+    expect(doppel.aufrufe[0]?.nutzlast).toEqual({ referenz: 'a1', position: 2 })
   })
 
   it('reicht die Referenz unverändert durch - kein Kürzen, kein Umformen', async () => {
@@ -134,6 +145,25 @@ describe('fuegeElementHinzu - Erfolg', () => {
 
     expect(vorher).toHaveLength(1)
     expect(doppel.gesetzteListen[0]).not.toBe(vorher)
+  })
+
+  it('#411: fügt MIT position an DIESEM Sicht-Index ein, nicht ans Ende', async () => {
+    doppel.projekt = projekt([element('e0', 'a0'), element('e1', 'a1'), element('e2', 'a2')])
+    const neu = element('e-neu', 'a-neu')
+    doppel.antwort = { ok: true, wert: neu }
+
+    await fuegeElementHinzu('a-neu', 1)
+
+    const liste = aktuelleListe()
+    expect(liste).toHaveLength(4)
+    expect(liste[0]?.id).toBe('e0')
+    // Objektgleich: das zurueckgegebene Element steht an Index 1, nichts nachgebaut.
+    expect(liste[1]).toBe(neu)
+    expect(liste[2]?.id).toBe('e1')
+    expect(liste[3]?.id).toBe('e2')
+    // GENAU EIN setzeListe pro Erfolg - der Undo-Schnappschuss (einer) kommt aus der
+    // Huelle um dieser einzigen setzeListe (undo-aufzeichnung.spec.ts).
+    expect(doppel.gesetzteListen).toHaveLength(1)
   })
 
   it('liest den Stand der Sicht NACH der Antwort, nicht davor', async () => {

@@ -74,6 +74,10 @@ export const KANAELE = {
     bearbeiteAktion: 'project:bearbeiteAktion',
     löscheAktion: 'project:löscheAktion',
     fügeElementHinzu: 'project:fügeElementHinzu',
+    // #411 (Oberfläche 2.0, Weiche A): die Opsertation kennt seit 14.10.2026 den
+    // optionalen Parameter `position?: number` (0-basierter Einfüge-Index; ohne
+    // Parameter ans Ende). NUR die Signatur wächst - Kanalname UND Vertragstest
+    // (`kanal === `${modul}:${operation}``) bleiben unverändert.
     entferneElement: 'project:entferneElement',
     ordneNeu: 'project:ordneNeu',
     setzeTrim: 'project:setzeTrim',

@@ -58,8 +58,15 @@ import type { Asset } from '../../shared/contracts/asset'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Listenelement } from '../../shared/contracts/project'
+
+// #411 (Nachtrag an #41): der OPTIONALe Einfüge-Index. Ohne Parameter verhält sich die
+// Funktion byte-identisch wie vor #411 (ans Ende anhängen) - der Nachweis über die
+// Bestands-Specs, die unverändert laufen. Die Form (Ganzzahl >= 0) prüft die Nutzlast-Anmeldung (#411-Gateway-Anteil in
+// project-store-verdrahtung.ts); diese Datei prüft die Grenze gegen die LISTE
+// (0 <= position <= liste.length), weil nur sie die Länge kennt.
 export async function fügeElementHinzu(
   referenz: string,
+  position?: number,
 ): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> {
   // DAS LOCK NIMMT DIESE FUNKTION SELBST - dieselbe Linie wie #38, #42, #44, #45. Sie darf
   // NICHT noch einmal in mitD1Lock eingewickelt werden; der innere Aufruf wartete auf den
@@ -138,21 +145,50 @@ export async function fügeElementHinzu(
     }
     const element = ergebnis.wert
 
-    // ANS ENDE. "die naheliegende Umkehrung `fügeElementHinzu` vergibt eine neue `id`
-    // (9.11.4) und hängt das Element ans Ende" (TK 9.5.2, wörtlich, ohne die
-    // Hervorhebungssterne des Originals) - das ist
-    // keine eigene Wahl, sondern steht so im Vertrag. Die Signatur kennt ohnehin keinen
-    // Positionsparameter; wer das Element woanders haben will, ruft danach `ordneNeu` (#43).
-    // Ein `unshift` waere die stille Behauptung "neueste zuerst", die kein Vertrag aufstellt.
+    // EINFÜGEN, NICHT ÜBERSCHREIBEN (#411). "die naheliegende Umkehrung
+    // `fügeElementHinzu` vergibt eine neue `id` (9.11.4) und hängt das Element ans
+    // Ende" (TK 9.5.2, wörtlich, ohne die Hervorhebungssterne des Originals) - BLEIBT
+    // richtig für den Fall OHNE `position` (TK 9.5.2 ist durch #411 an dieser Stelle
+    // nicht geändert; der Nachtrag erweitert die Operation um den optionalen Weg und
+    // ist als Kommentar-Nachtrag an #41/#123 und im Plan
+    // docs/agents/oberflaeche-2-0-plan.md dokumentiert).
     //
-    // `push` und NICHT eine Zuweisung an `projekt.liste`: Die Reihenfolge IST die
-    // Array-Reihenfolge (TK 9.11.3, "kein separates position-Feld"), und #43 haelt sich aus
-    // demselben Grund an `splice` - wer eine Referenz auf das Array haelt (der Renderer haelt
-    // sie), saehe nach einer Zuweisung fuer immer den alten Stand.
+    // MIT `position` (0-basiert, 0 <= position <= liste.length): Das Element wird an
+    // dieser Array-Stelle EINGEFÜGT, der alte Inhaber der Stelle rückt nach hinten
+    // (`splice` mit Löschanzahl 0 - im Nutzerbild "in den Spalt fallen lassen"). Ein
+    // INDEX ist KEIN position-Feld am Element (TK 9.11.3 bleibt wörtlich richtig:
+    // "Die Reihenfolge ist die Array-Reihenfolge von `liste` - es gibt kein separates
+    // position-Feld"); er beschreibt die Array-Stelle zur Zeit des Anhängens und
+    // verschwindet danach.
+    //
+    // > liste.length ist eine Ablehnung (`ungueltige_eingabe`), KEINE Stilllegung zum
+    // > Ende: Ein stiller Auffang würde den Drop an der falschen Stelle platzieren,
+    // > und die Rückgabe (Listenelement) lügt über die Position.
+    // Ein `unshift`-Weg wäre die stille Behauptung "neueste zuerst", die kein Vertrag
+    // aufstellt.
+    //
+    // `push`/`splice` und NICHT eine Zuweisung an `projekt.liste`: Die Reihenfolge IST
+    // die Array-Reihenfolge (TK 9.11.3, "kein separates position-Feld"), und #43 haelt
+    // sich aus demselben Grund an `splice` - wer eine Referenz auf das Array haelt (der
+    // Renderer haelt sie), saehe nach einer Zuweisung fuer immer den alten Stand.
     //
     // Mutiert wird der LEBENDE Stand: #192 gibt "dieselbe Objektreferenz" heraus, "keine
     // Kopie" - und es geschieht INNERHALB des Locks.
-    projekt.liste.push(element)
+    if (position !== undefined) {
+      if (!Number.isInteger(position) || position < 0 || position > projekt.liste.length) {
+        return fehler(
+          'ungueltige_eingabe',
+          `fuegeElementHinzu: position muss eine Ganzzahl 0..${projekt.liste.length} ` +
+            `(Listenlaenge) sein; erhalten wurde ${String(position)}.`,
+        )
+      }
+      // Die NICHT-Ganzzahl-Sperre ist hier eine ZWEITE (die Nutzlast-Anmeldung sieht
+      // eine Ganzzahl >= 0 vor): Der Main vertraut dem Gateway nicht blind - dieselbe
+      // Linie wie die Nutzlast-Pruefer (TK 9.1.1 Punkt 6: jede Seite prueft).
+      projekt.liste.splice(position, 0, element)
+    } else {
+      projekt.liste.push(element)
+    }
 
     // ENTPRELLT, NICHT SOFORT. Das Hinzufuegen ist eine Instant-Operation (TK 9.5.4:
     // "Instant-Operationen (Millisekunden)"), kein Auftrag - nur Auftraege schreiben am Ende
