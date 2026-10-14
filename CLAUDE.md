@@ -11,7 +11,27 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (14.10.2026) – gilt vor ALLEM weiter unten
+## STAND HEUTE (14.10.2026, spaet) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-14-session-2.md`](docs/agents/uebergabe-2026-10-14-session-2.md) – LIES DIESE DATEI ZUERST.**
+Kurz: Die **Oberflaeche-2.0-Welle 1** ist gebaut und Treiber-gemessen (#411 position-Vertrag,
+#412 Spalten-Drop + Kanten, #413 Drag-Quellen, #414 Videostage oben/Composer unten,
+#415 Undo-Naht Variante a - **am echten Fenster GEMESSEN: Spalt-Drop 2 -> 3 Bloecke,
+Cmd+Z 3 -> 2 in EINEM Schritt**). Suite 5462 Tests gruen (308 Dateien), Typecheck/Lint 0.
+**Aber: der User hat 14.10. Befunde gemeldet, die zur KONVERTIERUNG fuehrten** (User-Weisung:
+teilerfuellte Issues werden NICHT als fertig gemeldet, sondern die Reste als eigene
+Nachzugs-Issues mit Herkunfts-Kommentar gefuehrt): **#416** (Aktion anlegen), **#417**
+(Drag zwischen Frames fuer den Menschen bedienbar), **#418** (Import = EIN Video,
+standardmaessig ausgewaehlt), **#419** (Videostage/Play), **#420** (KontextMenue an der
+Zeitleiste), **#421** (Reparatur-Kette). **Die Kernachse gilt ERST, wenn alle sechs
+erledigt sind.** Basis-Abgleich: `docs/agents/basis-abgleich-2026-10-14.md`.
+Datenaufraeum: 74 Durchlauf-Testprojekte geloescht (Backup im opencode-Temp), der Treiber
+raeumt je Lauf hinter sich (solange die App nicht fertig ist). 40 Commits ungesendet.
+Regel neu: Treiber-Beleg ist keine User-Abnahme.
+Nächste Session: die SECHS Nachzuege (Vorschlag: **#417 → #419 → #420 → #418 → #416 →
+#421**), dann User-Abnahme der Kernachse, dann Welle 2 (Banner-Spur) und die #371-Klaerung.
+
+## STAND HEUTE (14.10.2026, vormittags) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-14-session.md`](docs/agents/uebergabe-2026-10-14-session.md) – LIES DIESE DATEI ZUERST.**
 Kurz: Die Familie „fertige Funktion ohne Aufrufer" ist ABGEARBEITET - vier Issues geschlossen
