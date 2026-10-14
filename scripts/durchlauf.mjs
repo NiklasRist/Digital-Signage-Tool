@@ -734,7 +734,44 @@ const main = async () => {
           fund("KontextMenue", "Duplikat verlaengert die Liste (#408/#123)",
             `Zeilen davor/nachher: ${zeilenDavor4e}/${zeilenDanach4e}`, "Befund", "composer/kontext-menu.tsx");
         }
-        // Das Menue selbst: nach einem Menue-Akt ist es geschliessen (tue() ruft schliesse).
+        // Das Menue selbst: nach einem Menue-Akt ist es geschlossen (tue() ruft schliesse).
+        // #408-Zweitmessung (User-Entscheidung 14.10.2026): der ENTFERNEN-Weg wird
+        // am Treiber-Projekt ausprobiert - die Liste ist 2 Zeilen (Seed + Duplikat);
+        // "Element entfernen" auf der ERSTEN Zeile muss die Liste wieder auf 1 bringen.
+        await schlafe(600);
+        const entfernenKontext = await seite.evaluate(() => {
+          const zeile = document.querySelector('[data-testid="wiedergabeliste-zeile"]');
+          if (zeile === null) return false;
+          const rechteck = zeile.getBoundingClientRect();
+          zeile.dispatchEvent(new MouseEvent("contextmenu", {
+            bubbles: true, cancelable: true,
+            clientX: rechteck.left + 4, clientY: rechteck.top + 4,
+          }));
+          return true;
+        });
+        await schlafe(600);
+        const entfernenDa = await seite.evaluate(() => !!document.querySelector('[data-testid="menue-entfernen"]'));
+        console.log(`[schritt-4e] Entfernen-Menue: offen=${String(entfernenKontext && entfernenDa)}`);
+        if (!entfernenDa) {
+          fund("KontextMenue", "menue-entfernen nach dem zweiten Rechtsklick (#408)",
+            "Entfernen-Eintrag fehlt", "Befund", "composer/kontext-menu.tsx");
+        } else {
+          await seite.evaluate(() => {
+            const knopf = document.querySelector('[data-testid="menue-entfernen"]');
+            if (knopf !== null) knopf.click();
+          });
+          await schlafe(3_500);
+          const zeilenNachEntfernen = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+          );
+          console.log(`[schritt-4e] Zeilen nach dem Entfernen: ${zeilenNachEntfernen}`);
+          if (zeilenNachEntfernen < zeilenDanach4e) {
+            console.log("[schritt-4e] Entfernen GEMESSEN: die Liste schrumpft am echten Menue (#408 belegt).");
+          } else {
+            fund("KontextMenue", "Entfernen verkleinert die Liste (#408/#124)",
+              `Zeilen davor/nachher: ${zeilenDanach4e}/${zeilenNachEntfernen}`, "Befund", "composer/kontext-menu.tsx");
+          }
+        }
       }
     }
 
