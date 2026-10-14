@@ -11,7 +11,24 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (12.10.2026) – gilt vor ALLEM weiter unten
+## STAND HEUTE (14.10.2026) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-14-session.md`](docs/agents/uebergabe-2026-10-14-session.md) – LIES DIESE DATEI ZUERST.**
+Kurz: Die Familie „fertige Funktion ohne Aufrufer" ist ABGEARBEITET - vier Issues geschlossen
+und gemergt: **#407** (Bibliotheksansicht #227 + Loesch-Anzeige #229 in der Composer-Wurzel
+montiert; das Issue-Body-Hypothese wurde korrigiert: der Roh-IPC-Weg ist VERTRAG, die Luecke
+waren die zwei unmontierten Ansichten), **#409** (Vorlagen-Editor wirft nicht mehr React #301:
+Nutzungs-Laden aus dem Renderkoerper in einen Effect, Hooks vor dem Rueckweg), **#410**
+(Standardmarke-Zeile liest den Wert der OFFENEN Zeile aus der Projekt-Sicht statt des
+entprellten Listen-Stands), **#408** (KontextMenue montiert - ComposerLage traegt menueAdresse,
+#259-Nachtrag angehaengt; Duplikat 1->2 UND Entfernen 2->1 am echten Fenster gemessen).
+Treiber: Render-Lauf am echten Dialog belegt (#347 im echten Fenster), Export bleibt MANUELL
+(nativer Dialog, User-Entscheidung 13.10.), Vorlagen-Editor-Sitzung belegt. Suite 5431 Tests
+gruen (305 Dateien), Typecheck/Lint 0. Kein offener App-Befund. Nächste Session: **#371/#274
+pruefen**, dann das Design „Oberfläche 2.0". Beim User: ca. 22 Commits ungesendet (Push nur
+auf Anweisung); optische Abnahme #327; #289-Flaky (diesmal nicht aufgetreten, beobachten).
+
+## STAND HEUTE (12.10.2026) – gilt vor allem Aelteren weiter unten
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-12-session.md`](docs/agents/uebergabe-2026-10-12-session.md) – LIES DIESE DATEI ZUERST.**
 Kurz: SECHS E2E-Luecken geschlossen und gemergt - #342 (Dialoge montiert, `ComposerLage`
