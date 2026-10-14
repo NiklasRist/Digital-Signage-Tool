@@ -4,12 +4,12 @@
 (Spalten-Drop) + #413 (Drag-Quellen) parallel → #414 (Vorschau-Zentrum) → Abnahme
 (Treiber-Lauf am echten Fenster).
 
-**NACHTRAG 14.10. (User-Befunde):** Die Welle 1 gilt als TRAEGER-belegt, aber NICHT als
-User-abgenommen. Vier neue Befunde im Backlog: **#416** (kein Weg, eine Aktion anzulegen),
-**#417** (Drag zwischen Frames am echten Fenster fuer den User NICHT bedienbar - Widerspruch
-zum Treiber-Beleg loesen), **#418** (Import: GENAU EIN Video, standardmaessig ausgewaehlt),
-**#419** (Play + Video-Darstellung kaputt). Die Kernachse ist ERST fertig, wenn diese vier
-gelten (User-Abnahme).
+**NACHTRAG 14.10. (Konvertierung, User-Weisung):** Die zuletzt geschlossenen Issues gelten
+als TEILWEISE erfuellt; die Reste sind AUS DEN ELTHERN heraus als eigene Nachzugs-Issues
+gefuehrt (#416-#421), mit Herkunft-Kommentaren an den Eltern (#408, #412, #415,
+Aktions-Import-Preview-Ketten). Die Kernachse gilt ERST, wenn alle sechs Nachzuege
+(#416, #417, #418, #419, #420, #421) erledigt sind. Treiber-Abgleich: siehe
+`docs/agents/basis-abgleich-2026-10-14.md`.
 **Quelle der Was-Frage:** User-Anforderung (14.10., wörtlich): „das Video im Zentrum… die Aktion kannst du einfach per Drag and Drop zwischen Frames einfügen. Das ist die wichtigste Funktion überhaupt."
 **Referenz-Look:** CapCut / Canva / Clipchamp – Vorschau im Zentrum, Zeitleiste unten, Bibliothek als Dock.
 
