@@ -904,6 +904,33 @@ const main = async () => {
     }
 
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
+    // Aufräumblock (User-Entscheidung 14.10.2026, solange die App NICHT fertig ist):
+    // Jeder Lauf loescht seine eigenen Projekte ("DurchlaufTest-*") ueber den ECHTEN
+    // IPC-Weg (project:löscheProjekt, D1-Lock, Loesch-Asymmetrie im Projektstore) -
+    // so bleibt der Datenort zwischen den Laeufen leer und nichts schleppt sich an.
+    const aufraeumt = await seite.evaluate(async () => {
+      const liste = await window.api.invoke("project:listeProjekte");
+      const projekte = liste && liste.ok ? liste.wert : [];
+      const geloescht = [];
+      for (const eintrag of projekte) {
+        const name = String((eintrag && (eintrag.name ?? eintrag.titel)) ?? "");
+        if (!name.startsWith("DurchlaufTest")) continue;
+        try {
+          const antwort = await window.api.invoke("project:löscheProjekt", { id: String(eintrag.id) });
+          geloescht.push({ id: String(eintrag.id), ok: antwort.ok });
+        } catch (fehler) {
+          geloescht.push({ id: String(eintrag.id), ok: false, fehler: String(fehler) });
+        }
+      }
+      return { gefunden: projekte.length, geloescht };
+    });
+    console.log("[schritt-5] Aufraeumen: " + JSON.stringify(aufraeumt));
+    const nichtGeloescht = (aufraeumt.geloescht ?? []).filter((g) => !g.ok);
+    if (nichtGeloescht.length > 0) {
+      fund("Aufraeumen", "der Lauf loescht seine eigenen DurchlaufTest-Projekte",
+        `${nichtGeloescht.length} Einträge blieben liegengedecht (s. Protokoll)`, "Untersuchung", "scripts/durchlauf.mjs");
+    }
+
     const fensterstand = await seite.evaluate(() => ({
       kanaele: window.__durchlauf.kanaele,
       kanalliste: window.__durchlauf.kanalliste,
