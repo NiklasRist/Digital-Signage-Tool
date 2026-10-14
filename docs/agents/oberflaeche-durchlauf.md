@@ -597,3 +597,13 @@ Ereignisse gesammelt: 14
 - **BLOCKER** Zusammenstellen: erwartet "Wiedergabeliste sichtbar", erkannt "liste nicht da" (Ort: composer/index.tsx)
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
 - **Befund** Spalt-Drop-Undo: erwartet "Cmd+Z nimmt das Kanten-Einfuegen in EINEM Schritt zurueck", erkannt "Bloecke danach Undo: 3 (erwartet 2)" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-14T15:59:46.641Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **BLOCKER** Zusammenstellen: erwartet "Wiedergabeliste sichtbar", erkannt "liste nicht da" (Ort: composer/index.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

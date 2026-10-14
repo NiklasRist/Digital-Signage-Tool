@@ -5,7 +5,7 @@
 // Element selbst ans Ende der Sicht haengt.
 
 import type { JSX } from 'react'
-import type { Project } from '../../shared/contracts/project'
+import type { Listenelement, Project } from '../../shared/contracts/project'
 import type { MedienEintrag, AktionsEintrag } from './bibliothek-ansicht'
 import { baueMedienEintraege, baueAktionsEintraege, zaehleFehlende } from './bibliothek-ansicht'
 import { fuegeElementHinzu } from './element-hinzufuegen'
@@ -15,14 +15,13 @@ import { fuegeElementHinzu } from './element-hinzufuegen'
 import { useDraggable } from '@dnd-kit/core'
 
 export interface BibliothekEigenschaften {
-  /** Das geladene Projekt aus der gemeinsamen Sicht (#121, über #197). Wird nur gelesen. */
   projekt: Project
-  /** Medien importieren – der Rückruf führt zu #228; diese Ansicht öffnet KEINEN Dialog. */
   aufImportieren: () => void
-  /** Medium löschen – der Rückruf führt zu #229; diese Ansicht löscht NICHTS selbst. */
   aufMediumLoeschen: (assetId: string) => void
-  /** Ein Fehler beim Hinzufügen, den der Aufrufer anzeigt. Diese Ansicht zeigt ihn nicht selbst. */
   aufFehler: (code: string, meldung: string) => void
+  /** #415 (Variante a): der Sicht-Schreiber (Wrapped-Zugangs-`setzeListe`, #244-Huelle).
+   *  PFICHT - ohne ihn haette JEDES hier angelegte Element keinen Undo-Schritt. */
+  sichtSchreiber: (liste: Listenelement[]) => void
 }
 
 /**
@@ -62,6 +61,7 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
               eintrag={eintrag}
               aufMediumLoeschen={p.aufMediumLoeschen}
               aufFehler={p.aufFehler}
+              sichtSchreiber={p.sichtSchreiber}
             />
           ))}
         </ul>
@@ -73,7 +73,7 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
       ) : (
         <ul data-testid="aktionen-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {aktionen.map((eintrag) => (
-            <Aktionszeile key={eintrag.aktion.id} eintrag={eintrag} aufFehler={p.aufFehler} />
+            <Aktionszeile key={eintrag.aktion.id} eintrag={eintrag} aufFehler={p.aufFehler} sichtSchreiber={p.sichtSchreiber} />
           ))}
         </ul>
       )}
@@ -85,6 +85,7 @@ interface MedienzeileEigenschaften {
   eintrag: MedienEintrag
   aufMediumLoeschen: (assetId: string) => void
   aufFehler: (code: string, meldung: string) => void
+  sichtSchreiber: (liste: Listenelement[]) => void
 }
 
 function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
@@ -117,7 +118,7 @@ function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
         )}
         <span>{p.eintrag.bezeichnung}</span>
         {fehlt && <span> · fehlt</span>}
-        <button type="button" onClick={() => void hinzufuegen(p.eintrag.asset.id, p.aufFehler)}>
+        <button type="button" onClick={() => void hinzufuegen(p.eintrag.asset.id, p.aufFehler, p.sichtSchreiber)}>
           Zur Liste hinzufügen
         </button>
         <button type="button" onClick={() => p.aufMediumLoeschen(p.eintrag.asset.id)}>
@@ -131,6 +132,7 @@ function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
 interface AktionszeileEigenschaften {
   eintrag: AktionsEintrag
   aufFehler: (code: string, meldung: string) => void
+  sichtSchreiber: (liste: Listenelement[]) => void
 }
 
 function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
@@ -150,7 +152,7 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
       <div data-ton={p.eintrag.kaputt ? 'hervorgehoben' : 'ruhig'}>
         <span>{p.eintrag.bezeichnung}</span>
         {p.eintrag.kaputt && <span> · defekt</span>}
-        <button type="button" onClick={() => void hinzufuegen(p.eintrag.aktion.id, p.aufFehler)}>
+        <button type="button" onClick={() => void hinzufuegen(p.eintrag.aktion.id, p.aufFehler, p.sichtSchreiber)}>
           Zur Liste hinzufügen
         </button>
       </div>
@@ -163,8 +165,12 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
  * Anhängen an die Sicht (#123 tut das selbst), kein optimistisches Einfügen, kein
  * zweiter Versuch. Ein Fehler geht UNVERAENDERT an `aufFehler` (Fehlerpfade).
  */
-async function hinzufuegen(referenz: string, aufFehler: (code: string, meldung: string) => void): Promise<void> {
-  const ergebnis = await fuegeElementHinzu(referenz)
+async function hinzufuegen(
+  referenz: string,
+  aufFehler: (code: string, meldung: string) => void,
+  sichtSchreiber: (liste: Listenelement[]) => void,
+): Promise<void> {
+  const ergebnis = await fuegeElementHinzu(referenz, undefined, sichtSchreiber)
   if (!ergebnis.ok) {
     aufFehler(ergebnis.fehler.code, ergebnis.fehler.meldung)
   }

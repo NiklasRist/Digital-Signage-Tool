@@ -1,6 +1,6 @@
 import { useEffect, useRef, type JSX } from "react";
 
-import type { Project } from "../../shared/contracts/project";
+import type { Listenelement, Project } from "../../shared/contracts/project";
 import { entferneElementAusListe } from "./element-entfernen";
 import { fuegeElementHinzu } from "./element-hinzufuegen";
 
@@ -19,24 +19,35 @@ export function menueBezug(projekt: Project, elementId: string): { referenz: str
   return { referenz: element.ref }
 }
 
-export function fuehreMenueAktionAus(aktion: MenueAktion, elementId: string, referenz: string): void {
+// ERGAENZT durch #415 (Variante a): Beide Aktionen laufen ueber den Wrapped-Zugangs-
+// `setzeListe` (Pflichtparameter) - ohne ihn wuerden Duplikat/Entfernen NIE einen
+// Undo-Schritt nehmen (Treiber-Beleg: #414-Schritt 4f, Cmd+Z-Befund).
+export function fuehreMenueAktionAus(
+  aktion: MenueAktion,
+  elementId: string,
+  referenz: string,
+  sichtSchreiber: (liste: Listenelement[]) => void,
+): void {
   if (aktion === 'entfernen') {
-    void entferneElementAusListe(elementId)
+    void entferneElementAusListe(elementId, sichtSchreiber)
     return
   }
-  // Duplikat: fügeElementHinzu legt ein NEUES Element mit NEUER id ans ENDE der Liste
-  // (Vertrag des project-store) – es ist keine Positions- oder Identitätskopie.
-  void fuegeElementHinzu(referenz)
+  // Duplikat: fuegeElementHinzu legt ein NEUES Element mit NEUER id ans ENDE der Liste
+  // (Vertrag des project-store) - es ist keine Positions- oder Identitaetskopie.
+  void fuegeElementHinzu(referenz, undefined, sichtSchreiber)
 }
 
 export function KontextMenue({
   projekt,
   adresse,
   schliesse,
+  sichtSchreiber,
 }: {
   projekt: Project
   adresse: MenueAdresse
   schliesse: () => void
+  /** #415 (Variante a): der Sicht-Schreiber (Wrapped-Zugangs-`setzeListe`). */
+  sichtSchreiber: (liste: Listenelement[]) => void
 }): JSX.Element {
   const bezug = menueBezug(projekt, adresse.elementId)
   const menueReferenz = bezug === null ? null : bezug.referenz
@@ -59,7 +70,7 @@ export function KontextMenue({
   }
 
   const tue = (aktion: MenueAktion): void => {
-    fuehreMenueAktionAus(aktion, adresse.elementId, menueReferenz)
+    fuehreMenueAktionAus(aktion, adresse.elementId, menueReferenz, sichtSchreiber)
     schliesse()
   }
 

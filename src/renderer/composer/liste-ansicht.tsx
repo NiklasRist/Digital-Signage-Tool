@@ -56,6 +56,9 @@ export interface WiedergabelisteEigenschaften {
   /** Die Bedienelemente einer Zeile – sie kommen aus M7-56 und werden ÜBERGEBEN, nicht
    *  importiert (s. ENTSCHIEDEN 1). */
   zeichneBedienung: (modell: ListenZeileModell) => JSX.Element
+  /** #415 (Variante a): der Sicht-Schreiber (Wrapped-Zugangs-`setzeListe`, #244-
+   *  Huelle). PFICHT - der Reorder (#122) braucht ihn fuer den Undo-Schnappschuss. */
+  sichtSchreiber: (liste: Listenelement[]) => void
   /** Ruft der Nutzer eine Zeile auf (Klick), meldet die Ansicht die Auswahl nach oben.
    *  Diese Datei hält KEINE Auswahl (s. ENTSCHIEDEN 8). */
   aufZeileGewaehlt: (elementId: string) => void
@@ -236,8 +239,8 @@ export function Wiedergabeliste(p: WiedergabelisteEigenschaften): JSX.Element {
     // ENTSCHIEDEN 3: GENAU dieser Aufruf - #122 wendet optimistisch an, nimmt bei
     // Ablehnung selbst zurück und meldet die Inline-Meldung. Hier passiert sonst
     // NICHTS: kein zweiter Rollback, kein Sicht-Schreibweg, kein berechneNeueReihenfolge.
-    void ordneNeuOptimistisch(String(ereignis.active.id), ereignis.over ? String(ereignis.over.id) : null)
-  }, [])
+    void ordneNeuOptimistisch(String(ereignis.active.id), ereignis.over ? String(ereignis.over.id) : null, p.sichtSchreiber)
+  }, [p.sichtSchreiber])
 
   const elementFuer = useCallback(
     (elementId: string): Listenelement | undefined =>

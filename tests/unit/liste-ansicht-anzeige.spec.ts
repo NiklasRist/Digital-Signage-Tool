@@ -153,6 +153,7 @@ function eigenschaften(p: Project, teil: Partial<WiedergabelisteEigenschaften> =
     reparatur: null,
     voraussetzungen: null,
     zeichneBedienung: vi.fn(() => null as never) as unknown as WiedergabelisteEigenschaften['zeichneBedienung'],
+    sichtSchreiber: () => {},
     aufZeileGewaehlt: vi.fn(),
     ...teil,
   }

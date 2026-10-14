@@ -291,6 +291,7 @@ export function ComposerInterna({
           )
         }
         aufFehler={(code, meldung) => setzeBandHinweis(`${code}: ${meldung}`)}
+        sichtSchreiber={projekt.setzeListe}
       />
     )
   }
@@ -375,7 +376,7 @@ export function ComposerInterna({
       const aktiv = ereignis.active.id
       const ueber = ereignis.over?.id
       if (typeof aktiv !== 'string' || typeof ueber !== 'string') return
-      ordneNeuOptimistisch(aktiv, ueber)
+      ordneNeuOptimistisch(aktiv, ueber, projekt.setzeListe)
       return
     }
     // NEU-Drag (#413): Einfuegen an der Kante (#411-Mutation, nicht optimistisch).
@@ -383,7 +384,7 @@ export function ComposerInterna({
     if (index === null) index = leseKantenIndex(ereignis.over?.id)
     if (index === null) return
     setzeLaedtKante(index)
-    void fuegeElementHinzu(referenz, index)
+    void fuegeElementHinzu(referenz, index, projekt.setzeListe)
       .then((ergebnis) => {
         if (!ergebnis.ok) {
           setzeLage((alt) => melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }))
@@ -503,6 +504,7 @@ export function ComposerInterna({
             >
               <Bibliotheksansicht
                 projekt={inhalt}
+                sichtSchreiber={projekt.setzeListe}
                 aufImportieren={importiere}
                 aufMediumLoeschen={(assetId) =>
                   setzeLage((alt) => oeffneOverlay(alt, { art: 'medium_loeschen', assetId }))
@@ -520,6 +522,7 @@ export function ComposerInterna({
                 <>
                   <Wiedergabeliste
                     projekt={inhalt}
+                    sichtSchreiber={projekt.setzeListe}
                     stellen={findeKaputteStellen(inhalt)}
                     reparatur={verdrahtung.reparatur}
                     voraussetzungen={zeichnen.hole()}
@@ -673,6 +676,7 @@ export function ComposerInterna({
           projekt={inhalt}
           adresse={lage.menueAdresse}
           schliesse={() => setzeLage((alt) => schliesseMenue(alt))}
+          sichtSchreiber={projekt.setzeListe}
         />
       )}
 

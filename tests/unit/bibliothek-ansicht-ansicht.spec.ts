@@ -82,6 +82,7 @@ function eigenschaften(ueber: Partial<BibliothekEigenschaften> = {}): Bibliothek
     aufImportieren: () => {},
     aufMediumLoeschen: () => {},
     aufFehler: () => {},
+    sichtSchreiber: () => {},
     ...ueber,
   };
 }
@@ -158,7 +159,7 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx)", () => {
     });
 
     expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(1);
-    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledWith("a1");
+    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledWith("a1", undefined, expect.any(Function));
   });
 
   it("ruft fuegeElementHinzu genau einmal mit der Aktions-ID beim Aktions-Klick (DoD)", async () => {
@@ -175,7 +176,7 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx)", () => {
     });
 
     expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(1);
-    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledWith("k1");
+    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledWith("k1", undefined, expect.any(Function));
   });
 
   it("ist auch fuer fehlt-Medien und kaputte Aktionen erreichbar - kein Sperren (DoD)", async () => {

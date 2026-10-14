@@ -54,6 +54,9 @@ export interface ElementBedienungEigenschaften {
   aufEinblendungBearbeiten: (elementId: string) => void
   /** Meldeweg für Fehler, die diese Datei nicht auflöst. Sie zeigt NICHTS selbst an. */
   aufFehler: (code: string, meldung: string) => void
+  /** #415 (Variante a): der Sicht-Schreiber (Wrapped-Zugangs-`setzeListe`, #244-
+   *  Huelle). PFICHT - die Entfernung liefert sonst keinen Undo-Schritt. */
+  sichtSchreiber: (liste: Listenelement[]) => void
 }
 
 const KAPUTTFARBE = '#e5634d'
@@ -104,7 +107,8 @@ export function ElementBedienung(p: ElementBedienungEigenschaften): JSX.Element 
   }
 
   const entferne = (): void => {
-    void entferneElementAusListe(p.element.id).then((antwort) => {
+    // #415 (Variante a): ueber den Wrapped-Zugangs-`setzeListe` - kein rawer Store-Ruf.
+    void entferneElementAusListe(p.element.id, p.sichtSchreiber).then((antwort) => {
       if (!antwort.ok) {
         // Die Zeile bleibt stehen - sie wird nicht „vorsichtshalber" ausgeblendet.
         p.aufFehler(antwort.fehler.code, antwort.fehler.meldung)

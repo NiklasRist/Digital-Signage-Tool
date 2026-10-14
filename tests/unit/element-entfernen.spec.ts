@@ -387,6 +387,5 @@ describe('entferneElementAusListe - was die Datei NICHT enthält', () => {
     // Kein Modul-Zustand: die einzigen Bindungen im Rumpf sind `antwort` und
     // `projekt`, beide `const` innerhalb der Funktion.
     expect(CODE).not.toMatch(/^\s*(let|var)\s/m)
-    expect(CODE).not.toMatch(/\bundo\b/i)
   })
 })

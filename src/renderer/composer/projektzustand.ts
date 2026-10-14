@@ -172,6 +172,12 @@ export async function ladeProjekt(projektId: string): Promise<Ergebnis<Project>>
   return ergebnis
 }
 
+/** ERGAENZT durch #415 (Variante a): wie eine Liste in die SICHT geschrieben wird.
+ *  Die Composer-Bausteine bekommen DIESE Funktion als Pflichtparameter statt den rohen
+ *  Store-Ruf: Die Wrapped-Zugangs-`setzeListe` (#244-Huelle) legt vor jeem Schreiben
+ *  den Undo-Schnappschuss ab - ein zweiter Weg zum Store waere ein Undo-Leck. */
+export type SichtSchreiber = (liste: Listenelement[]) => void
+
 /** Momentaufnahme der Sicht. Der zurückgegebene Wert wird NIE verändert (s. Invarianten). */
 export function holeSicht(): Projektsicht {
   // Keine Kopie noetig: Das Objekt wird nie beschrieben, sondern bei jeder Aenderung

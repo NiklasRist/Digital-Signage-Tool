@@ -44,7 +44,16 @@ vi.mock('../../src/renderer/composer/projektzustand', () => ({
   },
 }))
 
+import { setzeListe as quelleSetzeListe } from '../../src/renderer/composer/projektzustand'
 import { fuegeElementHinzu } from '../../src/renderer/composer/element-hinzufuegen'
+
+// #415 (Variante a): der III. Param ist PFLICHT (Wrapped-Zugangs-`setzeListe`). Der
+// Test-Schreiber laeuft ueber DASSELBE gemockte setzeListe (#121) - genau wie die
+// Wrapped-Huelle es tut (Schnappschuss, dann Store). Wer vergisst einzubeziehen,
+// faellt sichtbar aus den bestandigen Sicht-Regeln heraus.
+const schreiber = (liste: Listenelement[]): void => {
+  quelleSetzeListe(liste)
+}
 
 // ---------------------------------------------------------------------------
 // Bausteine
@@ -89,7 +98,7 @@ describe('fuegeElementHinzu - der Aufruf hinaus', () => {
     const neu = element('e1', 'a1')
     doppel.antwort = { ok: true, wert: neu }
 
-    await fuegeElementHinzu('a1')
+    await fuegeElementHinzu('a1', undefined, schreiber)
 
     expect(doppel.aufrufe).toHaveLength(1)
     expect(doppel.aufrufe[0]?.kanal).toBe(KANAELE.project.fügeElementHinzu)
@@ -105,7 +114,7 @@ describe('fuegeElementHinzu - der Aufruf hinaus', () => {
   it('#411: MIT position trägt die Nutzlast GENAU die zwei Schlüssel referenz+position', async () => {
     doppel.antwort = { ok: true, wert: element('e1', 'a1') }
 
-    await fuegeElementHinzu('a1', 2)
+    await fuegeElementHinzu('a1', 2, schreiber)
 
     expect(Object.keys(doppel.aufrufe[0]?.nutzlast as object)).toEqual(['referenz', 'position'])
     expect(doppel.aufrufe[0]?.nutzlast).toEqual({ referenz: 'a1', position: 2 })
@@ -114,7 +123,7 @@ describe('fuegeElementHinzu - der Aufruf hinaus', () => {
   it('reicht die Referenz unverändert durch - kein Kürzen, kein Umformen', async () => {
     doppel.antwort = { ok: true, wert: element('e1', ' a1 ') }
 
-    await fuegeElementHinzu(' a1 ')
+    await fuegeElementHinzu(' a1 ', undefined, schreiber)
 
     expect(doppel.aufrufe[0]?.nutzlast).toEqual({ referenz: ' a1 ' })
   })
@@ -126,7 +135,7 @@ describe('fuegeElementHinzu - Erfolg', () => {
     const neu = element('e1', 'a1')
     doppel.antwort = { ok: true, wert: neu }
 
-    const ergebnis = await fuegeElementHinzu('a1')
+    const ergebnis = await fuegeElementHinzu('a1', undefined, schreiber)
 
     expect(ergebnis).toEqual({ ok: true, wert: neu })
     expect(aktuelleListe()).toHaveLength(2)
@@ -141,7 +150,7 @@ describe('fuegeElementHinzu - Erfolg', () => {
     doppel.projekt = projekt(vorher)
     doppel.antwort = { ok: true, wert: element('e1', 'a1') }
 
-    await fuegeElementHinzu('a1')
+    await fuegeElementHinzu('a1', undefined, schreiber)
 
     expect(vorher).toHaveLength(1)
     expect(doppel.gesetzteListen[0]).not.toBe(vorher)
@@ -152,7 +161,7 @@ describe('fuegeElementHinzu - Erfolg', () => {
     const neu = element('e-neu', 'a-neu')
     doppel.antwort = { ok: true, wert: neu }
 
-    await fuegeElementHinzu('a-neu', 1)
+    await fuegeElementHinzu('a-neu', 1, schreiber)
 
     const liste = aktuelleListe()
     expect(liste).toHaveLength(4)
@@ -174,7 +183,7 @@ describe('fuegeElementHinzu - Erfolg', () => {
     const neu = element('e1', 'a1')
     doppel.antwort = { ok: true, wert: neu }
 
-    const laufend = fuegeElementHinzu('a1')
+    const laufend = fuegeElementHinzu('a1', undefined, schreiber)
     doppel.projekt = projekt([element('e0', 'a0')])
     await laufend
 
@@ -184,7 +193,7 @@ describe('fuegeElementHinzu - Erfolg', () => {
   it('meldet den Erfolg auch dann, wenn das Projekt inzwischen geschlossen wurde', async () => {
     doppel.antwort = { ok: true, wert: element('e1', 'a1') }
 
-    const laufend = fuegeElementHinzu('a1')
+    const laufend = fuegeElementHinzu('a1', undefined, schreiber)
     doppel.projekt = null
     const ergebnis = await laufend
 
@@ -194,9 +203,9 @@ describe('fuegeElementHinzu - Erfolg', () => {
 
   it('dieselbe Aktions-Referenz zweimal ergibt ZWEI Elemente mit verschiedenen id', async () => {
     doppel.antwort = { ok: true, wert: element('e1', 'aktion-7') }
-    await fuegeElementHinzu('aktion-7')
+    await fuegeElementHinzu('aktion-7', undefined, schreiber)
     doppel.antwort = { ok: true, wert: element('e2', 'aktion-7') }
-    await fuegeElementHinzu('aktion-7')
+    await fuegeElementHinzu('aktion-7', undefined, schreiber)
 
     expect(aktuelleListe().map((e) => e.id)).toEqual(['e1', 'e2'])
     expect(aktuelleListe().map((e) => e.ref)).toEqual(['aktion-7', 'aktion-7'])
@@ -212,7 +221,7 @@ describe('fuegeElementHinzu - Fehlerpfade', () => {
       fehler: { code: 'nicht_gefunden', meldung: 'Referenz kennt niemand.' },
     }
 
-    const ergebnis = await fuegeElementHinzu('weg')
+    const ergebnis = await fuegeElementHinzu('weg', undefined, schreiber)
 
     expect(ergebnis).toEqual({
       ok: false,
@@ -229,14 +238,14 @@ describe('fuegeElementHinzu - Fehlerpfade', () => {
       fehler: { code: 'kein_projekt', meldung: 'Kein Projekt offen.' },
     }
 
-    const ergebnis = await fuegeElementHinzu('a1')
+    const ergebnis = await fuegeElementHinzu('a1', undefined, schreiber)
 
     expect(ergebnis.ok).toBe(false)
     if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('kein_projekt')
   })
 
   it('ein leerer Referenz-String löst KEINEN Aufruf aus', async () => {
-    const ergebnis = await fuegeElementHinzu('')
+    const ergebnis = await fuegeElementHinzu('', undefined, schreiber)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
@@ -245,14 +254,14 @@ describe('fuegeElementHinzu - Fehlerpfade', () => {
   })
 
   it('nur Leerzeichen zählen wie leer - dieselbe Grenze wie die Nutzlast-Prüfung', async () => {
-    const ergebnis = await fuegeElementHinzu('   ')
+    const ergebnis = await fuegeElementHinzu('   ', undefined, schreiber)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
   })
 
   it('ein nicht-String löst KEINEN Aufruf aus und wirft nicht', async () => {
-    const ergebnis = await fuegeElementHinzu(undefined as unknown as string)
+    const ergebnis = await fuegeElementHinzu(undefined as unknown as string, undefined, schreiber)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
@@ -262,7 +271,7 @@ describe('fuegeElementHinzu - Fehlerpfade', () => {
   it('ohne geladenes Projekt wird gar nicht erst gefragt', async () => {
     doppel.projekt = null
 
-    const ergebnis = await fuegeElementHinzu('a1')
+    const ergebnis = await fuegeElementHinzu('a1', undefined, schreiber)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)

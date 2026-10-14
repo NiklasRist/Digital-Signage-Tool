@@ -81,6 +81,7 @@ function bibliothek(): JSX.Element {
     aufImportieren: () => {},
     aufMediumLoeschen: () => {},
     aufFehler: () => {},
+    sichtSchreiber: () => {},
   })
 }
 
