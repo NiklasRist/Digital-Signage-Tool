@@ -1,4 +1,6 @@
 import { useState, type JSX } from "react";
+// #413: Drag-QUELLE je Karte (Weg zu #412s Kanten); der Klick-Weg bleibt.
+import { useDraggable } from "@dnd-kit/core";
 
 import type { Project } from "../../shared/contracts/project";
 import { baueMedienEintraege, zaehleFehlende } from "./bibliothek-ansicht";
@@ -69,21 +71,45 @@ export function AssetGalerie({ projekt }: { projekt: Project | null }): JSX.Elem
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, overflow: 'auto', minHeight: 0 }}>
         {sichtbare.map((eintrag) => (
-          <div
-            key={eintrag.asset.id}
-            data-testid={`galerie-eintrag-${eintrag.asset.id}`}
-            style={{
-              width: GALERIE_BREITE_PX,
-              height: GALERIE_HÖHE_PX,
-              display: 'flex',
-              flexDirection: 'column',
-              border: '1px solid #444',
-              borderRadius: 4,
-              overflow: 'hidden',
-              fontSize: 10,
-              opacity: eintrag.zustand === 'fehlt' ? 0.5 : 1,
-            }}
-          >
+          <GalerieKarte key={eintrag.asset.id} eintrag={eintrag} />
+        ))}
+        {sichtbare.length === 0 && (
+          <div data-testid="galerie-leer" style={{ color: '#8f8f8f', fontSize: 12 }}>
+            Keine Medien gefunden.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** #413 - Karte als Drag-QUELLE: `referenz = assetId`, `art` aus Asset.typ. Der
+ *  Fuege-Weg bleibt der Klick (heute nicht belegt in der Galerie, #390 offen); der
+ *  Drag ist der Weg zu #412s Kanten - der Main entscheidet ueber 'fehlt' (#123). */
+function GalerieKarte({ eintrag }: { eintrag: ReturnType<typeof baueMedienEintraege>[number] }): JSX.Element {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `quelle-${eintrag.asset.typ}-${eintrag.asset.id}`,
+    data: { referenz: eintrag.asset.id },
+  })
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      data-testid={`galerie-eintrag-${eintrag.asset.id}`}
+      style={{
+        width: GALERIE_BREITE_PX,
+        height: GALERIE_HÖHE_PX,
+        display: 'flex',
+        flexDirection: 'column',
+        border: '1px solid #444',
+        borderRadius: 4,
+        overflow: 'hidden',
+        fontSize: 10,
+        cursor: 'grab',
+        opacity: isDragging ? 0.6 : eintrag.zustand === 'fehlt' ? 0.5 : 1,
+      }}
+    >
             {eintrag.vorschauUrl !== null ? (
               <img
                 src={eintrag.vorschauUrl}
@@ -111,14 +137,6 @@ export function AssetGalerie({ projekt }: { projekt: Project | null }): JSX.Elem
             >
               {eintrag.bezeichnung}
             </div>
-          </div>
-        ))}
-        {sichtbare.length === 0 && (
-          <div data-testid="galerie-leer" style={{ color: '#8f8f8f', fontSize: 12 }}>
-            Keine Medien gefunden.
-          </div>
-        )}
-      </div>
     </div>
-  );
+  )
 }

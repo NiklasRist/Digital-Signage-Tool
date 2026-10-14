@@ -9,6 +9,10 @@ import type { Project } from '../../shared/contracts/project'
 import type { MedienEintrag, AktionsEintrag } from './bibliothek-ansicht'
 import { baueMedienEintraege, baueAktionsEintraege, zaehleFehlende } from './bibliothek-ansicht'
 import { fuegeElementHinzu } from './element-hinzufuegen'
+// #413: Die Karten/Zeilen werden als Drag-QUELLEN zur Zeitleiste (#412) - der Klick-Weg
+// bleibt UNVERAENDERT (zweiter Weg, nicht der einzige). Ein DndContext holt sie erst,
+// wenn #414 die Flaeche montiert; bis dahin laufen die Bestands-Specs unveraendert.
+import { useDraggable } from '@dnd-kit/core'
 
 export interface BibliothekEigenschaften {
   /** Das geladene Projekt aus der gemeinsamen Sicht (#121, über #197). Wird nur gelesen. */
@@ -85,8 +89,20 @@ interface MedienzeileEigenschaften {
 
 function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
   const fehlt = p.eintrag.zustand === 'fehlt'
+  // #413: Quelle je Karte; `referenz` ist EXAKT das, was #123/#411 lesen. Unter ausschliessendem
+  // `art`-Muster: 'video'/'bild' kommt aus Asset.typ, 'aktion' bei Aktionen.
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `quelle-${p.eintrag.asset.typ}-${p.eintrag.asset.id}`,
+    data: { referenz: p.eintrag.asset.id },
+  })
   return (
-    <li data-testid={`medium-${p.eintrag.asset.id}`}>
+    <li
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      data-testid={`medium-${p.eintrag.asset.id}`}
+      style={{ cursor: 'grab', opacity: isDragging ? 0.6 : 1 }}
+    >
       <div data-ton={fehlt ? 'hervorgehoben' : 'ruhig'}>
         {/* ENTSCHIEDEN 4: Bilder direkt als media://-img (TK 9.5.7); die URL gibt es
             nur bei typ bild UND zustand ok (ENTSCHIEDEN 5). */}
@@ -118,8 +134,19 @@ interface AktionszeileEigenschaften {
 }
 
 function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
+  // #413: Der Aktions-Drag traegt `aktionId` als Referenz (#413-Vertrag, `{ referenz }`).
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `quelle-aktion-${p.eintrag.aktion.id}`,
+    data: { referenz: p.eintrag.aktion.id },
+  })
   return (
-    <li data-testid={`aktion-${p.eintrag.aktion.id}`}>
+    <li
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      data-testid={`aktion-${p.eintrag.aktion.id}`}
+      style={{ cursor: 'grab', opacity: isDragging ? 0.6 : 1 }}
+    >
       <div data-ton={p.eintrag.kaputt ? 'hervorgehoben' : 'ruhig'}>
         <span>{p.eintrag.bezeichnung}</span>
         {p.eintrag.kaputt && <span> · defekt</span>}
