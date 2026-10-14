@@ -25,7 +25,7 @@
 // Schreiben EINMAL ESLint, welche Dateien no-unused-vars tatsaechlich melden, und
 // versieht nur diese. Deshalb steht sie nirgends ueberfluessig herum.
 
-import { useEffect, useState, type JSX, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useState, useRef, type JSX, type MouseEvent as ReactMouseEvent } from 'react'
 
 import type { Listenelement, Project } from '../../shared/contracts/project'
 import type { ProjektZugang, VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
@@ -34,9 +34,16 @@ import type { ListenZeileModell } from './liste-ansicht'
 import type { Uebergabe } from './reparatur-optionen'
 import type { MedienImportStarter } from './medien-import'
 import { aufSichtGeaendert, holeSicht, type Projektsicht } from './projektzustand'
-import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+// #414 (Oberflaeche 2.0): EIN DndContext auf Wurzel-Ebene - Quellen (#413) und
+// Kanten (#412) im selben Kontext. Der DnD-Zustand (neuZug/aktiveKante/laedtKante)
+// lebt HIER; die Zeitleiste ist die Praesentation (korbRef = Messraum).
+import { Zeitleiste, baueZeitleistenZeilen } from './zeitleiste.tsx'
+import { baueEinfugeKanten, leseKantenIndex, liestReferenz, waehleKanteAus } from './spalt-drop'
+import { fuegeElementHinzu } from './element-hinzufuegen'
+import { ordneNeuOptimistisch } from './liste-reorder'
 // NACHTRAG #248 (Variante A, 05.10.): Die ad-hoc-Wiedergabeliste dieser Wurzel
 // (DndContext/Zeile/Regler unten) ist hier durch die Issue-richtige
 // `Wiedergabeliste` aus liste-ansicht.tsx (#248) ERSETZT - dokumentierte Ausnahme
@@ -204,6 +211,19 @@ export function ComposerInterna({
   // dem Nachlauf (#199) vorbehalten und wird hier NICHT gerufen.
   const [ausgabenStand, setzeAusgabenStand] = useState<Ausgabenstand>(() => holeAusgaben())
 
+  // #414: der Drag-Zustand auf WURZEL-Ebene (EIN DndContext fuer die Quellen #413
+  // und die Kanten #412). neuZug = Drag-Daten `{ referenz }`; aktiveKante = gemessene
+  // Einfuege-Kante; laedtKante = wartendes Einfuegen (nicht optimistisch, TK 9.7.3).
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
+  const [neuZug, setzeNeuZug] = useState<string | null>(null)
+  const [aktiveKante, setzeAktiveKante] = useState<number | null>(null)
+  const [laedtKante, setzeLaedtKante] = useState<number | null>(null)
+  const zeigerStartX = useRef<number | null>(null)
+  const korbRef = useRef<HTMLDivElement | null>(null)
+  // #414 (Weiche B): die Zeitleiste ist PRIMÄR; die #248-Zeilen-Liste bleibt hinter
+  // dem Ansichtsschalter als Fallback erreichbar.
+  const [ansicht, setzeAnsicht] = useState<'zeitleiste' | 'liste'>('zeitleiste')
+
   useEffect(() => aufAusgabenGeaendert(setzeAusgabenStand), [])
 
   useEffect(() => projekt.aufGeaendert(setzeSicht), [projekt])
@@ -315,7 +335,77 @@ export function ComposerInterna({
     setzeLage((alt) => oeffneMenue(alt, { elementId, x: ereignis.clientX, y: ereignis.clientY }))
   }
 
+  // #414: der DnD-Verband auf der Wurzel (aus #412 uebernommen, auf den gemeinsamen
+  // Kontext gehoben; die Routing-Regeln sind woertlich die #412-Regeln).
+  const amDragStart = (ereignis: DragStartEvent): void => {
+    // NUR ein Drag MIT Referenz (Neu-Einfuegen, #413) oeffnet die Kanten.
+    setzeNeuZug(liestReferenz(ereignis.active.data.current))
+    const aktivator = ereignis.activatorEvent as MouseEvent
+    if (typeof aktivator?.clientX === 'number') zeigerStartX.current = aktivator.clientX
+  }
+
+  const amUeber = (ereignis: DragOverEvent): void => {
+    // Messbruecke zu `waehleKanteAus` (#412-Signatur): Zeiger-x (Start + delta) im
+    // Zeitleisten-Raum; gescrollte Korbe inklusive. Ohne Messstand Rueckfall auf den
+    // Droppable-Index (`kante-N`).
+    if (neuZug === null) return
+    const korb = korbRef.current
+    if (korb === null || zeigerStartX.current === null) {
+      setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
+      return
+    }
+    const umriss = korb.getBoundingClientRect()
+    if (umriss.width === 0 && umriss.height === 0) {
+      setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
+      return
+    }
+    const zeilen = baueZeitleistenZeilen(inhalt?.liste ?? [])
+    const xImKontext = zeigerStartX.current + ereignis.delta.x - umriss.left + korb.scrollLeft
+    const kanten = baueEinfugeKanten(zeilen.length)
+    const gemessen = waehleKanteAus(kanten, xImKontext, (index) => zeilen[index]?.breitePx ?? 64)
+    setzeAktiveKante(gemessen ?? leseKantenIndex(ereignis.over?.id))
+  }
+
+  const amEnde = (ereignis: DragEndEvent): void => {
+    setzeNeuZug(null)
+    setzeAktiveKante(null)
+    // Sortier-Drag EINES BESTANDELEMENTS (keine Referenz): der Reorder-Weg (#122).
+    const referenz = liestReferenz(ereignis.active.data.current)
+    if (referenz === null) {
+      const aktiv = ereignis.active.id
+      const ueber = ereignis.over?.id
+      if (typeof aktiv !== 'string' || typeof ueber !== 'string') return
+      ordneNeuOptimistisch(aktiv, ueber)
+      return
+    }
+    // NEU-Drag (#413): Einfuegen an der Kante (#411-Mutation, nicht optimistisch).
+    let index = aktiveKante
+    if (index === null) index = leseKantenIndex(ereignis.over?.id)
+    if (index === null) return
+    setzeLaedtKante(index)
+    void fuegeElementHinzu(referenz, index)
+      .then((ergebnis) => {
+        if (!ergebnis.ok) {
+          setzeLage((alt) => melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }))
+        }
+      })
+      .finally(() => setzeLaedtKante(null))
+  }
+
+  const amDragAbbruch = (): void => {
+    setzeNeuZug(null)
+    setzeAktiveKante(null)
+  }
+
   return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={amDragStart}
+      onDragOver={amUeber}
+      onDragEnd={amEnde}
+      onDragCancel={amDragAbbruch}
+    >
     <div
       data-testid="composer-wurzel"
       onContextMenu={oeffneKontextMenue}
@@ -382,82 +472,124 @@ export function ComposerInterna({
         </div>
       ) : (
         <>
-          <Wiedergabeliste
-            projekt={inhalt}
-            stellen={findeKaputteStellen(inhalt)}
-            reparatur={verdrahtung.reparatur}
-            voraussetzungen={zeichnen.hole()}
-            zeichneBedienung={zeichneBedienung}
-            aufZeileGewaehlt={(elementId) => {
-              // ENTSCHIEDEN 8 (#248): Diese Ansicht hlt KEINE Auswahl - hier ist
-              // die Wurzel der Aufrufer. Band-Hinweis zurcksetzen gehrt dazu.
-              setzeBandHinweis(null)
-              void elementId
-            }}
-          />
-
-          {bandHinweis !== null && (
-            <div data-testid="composer-band-hinweis" style={{ color: TAKTFARBE, fontSize: 12 }}>
-              {bandHinweis}
-            </div>
-          )}
-
-          <div
-            data-testid="composer-galerie"
-            style={{ flex: '1 1 auto', minHeight: 120, borderTop: '1px solid #444' }}
-            // #335: Die Drop-Zone der Medien-Bibliothek. preventDefault unterdrückt
-            // das Öffnen der Datei im Fenster; ohne Bearbeitung ist das ZIEHEN hier
-            // überhaupt erst ein Drop auf DIESEN Bereich.
-            onDragOver={(ereignis) => {
-              ereignis.preventDefault()
-            }}
-            onDrop={(ereignis) => {
-              ereignis.preventDefault()
-              if (inhalt === null) {
-                setzeDropFehler(
-                  'Es ist kein Projekt geladen – ein Import braucht ein geöffnetes Projekt.',
-                )
-                return
-              }
-              const dateien = Array.from(ereignis.dataTransfer.files)
-              const aufbereitung: ReturnType<typeof greifeDropAuf> = greifeDropAuf(
-                dateien,
-                pfadFuerDatei,
-              )
-              void reiheDropEin(inhalt.id, aufbereitung.einreihbar).then((einreihErgebnis) => {
-                // Abgewiesene Formate stehen unter demselben Code wie im Main
-                // (format_nicht_unterstuetzt) - EIN Berichtsweg, kein zweiter.
-                setzeImportBericht(
-                  baueImportBericht({
-                    ...einreihErgebnis,
-                    uebersprungen: [...einreihErgebnis.uebersprungen],
-                    abgelehnt: [
-                      ...einreihErgebnis.abgelehnt,
-                      ...aufbereitung.abgelehnt,
-                    ],
-                  }),
-                )
-                setzeDropFehler(null)
-              })
-            }}
-          >
-            {inhalt === null ? <AssetGalerie projekt={null} /> : <AssetGalerie projekt={inhalt} />}
+          {/* #414: Lage-Umbersatz - Bibliothek LINKS (Dock), Galerie + Fallback-Liste
+              in der Mitte, Zeitleiste UNTEN ueber die volle Breite (Weiche B: primär).
+              Die #248-Wiedergabeliste bleibt hinter dem Umschalter erreichbar. */}
+          <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              type="button"
+              data-testid="composer-ansicht-zeitleiste"
+              aria-pressed={ansicht === 'zeitleiste'}
+              onClick={() => setzeAnsicht('zeitleiste')}
+            >
+              Zeitleiste
+            </button>
+            <button
+              type="button"
+              data-testid="composer-ansicht-liste"
+              aria-pressed={ansicht === 'liste'}
+              onClick={() => setzeAnsicht('liste')}
+            >
+              Liste
+            </button>
+            <span style={{ flex: 1 }} />
           </div>
 
-          {/* #407/#227: Die Medien-Bibliothek mit dem EINEN Hinzufuege-Weg zum
-              Baustein #123 (der die Sicht selbst versorgt, element-hinzufuegen.ts).
-              Die Galerie oben ist die Vorschau-Flaeche, dieser Bereich bringt die
-              Aktionen am Medium unter (Hinzufuegen/Loeschen); der Import-Knopf
-              ruft denselben Weg wie der Kopf-Knopf oben. */}
-          <Bibliotheksansicht
+          <div style={{ flex: '1 1 auto', display: 'flex', gap: 8, minHeight: 0 }}>
+            {/* LINKS: Die Bibliothek (Dock breit genug fuer Hinzufuegen/Loeschen). */}
+            <div
+              data-testid="composer-bibliothek-dock"
+              style={{ width: 300, flexShrink: 0, minWidth: 240, minHeight: 0, overflow: 'auto', borderRight: '1px solid #444', paddingRight: 8 }}
+            >
+              <Bibliotheksansicht
+                projekt={inhalt}
+                aufImportieren={importiere}
+                aufMediumLoeschen={(assetId) =>
+                  setzeLage((alt) => oeffneOverlay(alt, { art: 'medium_loeschen', assetId }))
+                }
+                aufFehler={(code, meldung) =>
+                  setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
+                }
+              />
+            </div>
+
+            {/* MITTE: Galerie als lebende Drop-Zone (#335) + falls gewaehlt die
+                #248-Liste (Fallback). */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
+              {ansicht === 'liste' && (
+                <>
+                  <Wiedergabeliste
+                    projekt={inhalt}
+                    stellen={findeKaputteStellen(inhalt)}
+                    reparatur={verdrahtung.reparatur}
+                    voraussetzungen={zeichnen.hole()}
+                    zeichneBedienung={zeichneBedienung}
+                    aufZeileGewaehlt={(elementId) => {
+                      // ENTSCHIEDEN 8 (#248): Diese Ansicht haelt KEINE Auswahl - hier ist
+                      // die Wurzel der Aufrufer. Band-Hinweis zuruecksetzen gehoert dazu.
+                      setzeBandHinweis(null)
+                      void elementId
+                    }}
+                  />
+                  {bandHinweis !== null && (
+                    <div data-testid="composer-band-hinweis" style={{ color: TAKTFARBE, fontSize: 12 }}>
+                      {bandHinweis}
+                    </div>
+                  )}
+                </>
+              )}
+              <div
+                data-testid="composer-galerie"
+                style={{ flex: '1 1 auto', minHeight: 120, borderTop: '1px solid #444' }}
+                // #335: Die Drop-Zone der Medien-Bibliothek. preventDefault unterdrückt
+                // das Öffnen der Datei im Fenster; ohne Bearbeitung ist das ZIEHEN hier
+                // überhaupt erst ein Drop auf DIESEN Bereich.
+                onDragOver={(ereignis) => {
+                  ereignis.preventDefault()
+                }}
+                onDrop={(ereignis) => {
+                  ereignis.preventDefault()
+                  if (inhalt === null) {
+                    setzeDropFehler(
+                      'Es ist kein Projekt geladen – ein Import braucht ein geöffnetes Projekt.',
+                    )
+                    return
+                  }
+                  const dateien = Array.from(ereignis.dataTransfer.files)
+                  const aufbereitung: ReturnType<typeof greifeDropAuf> = greifeDropAuf(
+                    dateien,
+                    pfadFuerDatei,
+                  )
+                  void reiheDropEin(inhalt.id, aufbereitung.einreihbar).then((einreihErgebnis) => {
+                    // Abgewiesene Formate stehen unter demselben Code wie im Main
+                    // (format_nicht_unterstuetzt) - EIN Berichtsweg, kein zweiter.
+                    setzeImportBericht(
+                      baueImportBericht({
+                        ...einreihErgebnis,
+                        uebersprungen: [...einreihErgebnis.uebersprungen],
+                        abgelehnt: [
+                          ...einreihErgebnis.abgelehnt,
+                          ...aufbereitung.abgelehnt,
+                        ],
+                      }),
+                    )
+                    setzeDropFehler(null)
+                  })
+                }}
+              >
+                {inhalt === null ? <AssetGalerie projekt={null} /> : <AssetGalerie projekt={inhalt} />}
+              </div>
+            </div>
+          </div>
+
+          {/* UNTEN: die Zeitleiste über die volle Breite (Kernachse #412/#414).
+              Wird in JEDER Ansicht gezeigt - sie ist die Einfuege-Flaeche. */}
+          <Zeitleiste
             projekt={inhalt}
-            aufImportieren={importiere}
-            aufMediumLoeschen={(assetId) =>
-              setzeLage((alt) => oeffneOverlay(alt, { art: 'medium_loeschen', assetId }))
-            }
-            aufFehler={(code, meldung) =>
-              setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-            }
+            neuZug={neuZug}
+            aktiveKante={aktiveKante}
+            laedtKante={laedtKante}
+            korbRef={korbRef}
           />
 
           {/* #342: Die Ausgabe-Liste (#230) - der Oeffnungsweg des Export-Dialogs
@@ -634,6 +766,7 @@ export function ComposerInterna({
         </div>
       )}
     </div>
+    </DndContext>
   )
 }
 

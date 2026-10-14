@@ -172,16 +172,18 @@ export interface Reiterumgebung {
 // 23.08.): Liste LINKS (schmal), Vorschau RECHTS (gross). Nur Ordnung - keine
 // Fachlogik, keine Beschriftung, keine verschiebbare Trennlinie.
 // ----------------------------------------------------------------------------
-const REIHE: CSSProperties = {
+// #414 (Oberflaeche 2.0): Spalte fuer Zusammenstellen - Vorschau oben, Composer unten.
+const SPALTE: CSSProperties = {
   display: 'flex',
+  flexDirection: 'column',
   gap: 8,
   height: '100%',
   minHeight: 0,
   padding: 8,
   boxSizing: 'border-box',
 }
-const LISTE: CSSProperties = { width: 320, minWidth: 260, flexShrink: 0, minHeight: 0 }
-const BUEHNE: CSSProperties = { flex: 1, minWidth: 0, minHeight: 0, position: 'relative' }
+const BUEHNE_OBEN: CSSProperties = { height: '38%', flexShrink: 0, minHeight: 200, minWidth: 0, position: 'relative' }
+const COMPOSER_UNTEN: CSSProperties = { flex: 1, minWidth: 0, minHeight: 0 }
 
 /**
  * BUGFIX (Die Naht-Hooks, 08.10.): die STABLE Komponente, die den inline-Aufruf
@@ -259,26 +261,28 @@ export function baueReiterInhalte(
     return null as unknown as JSX.Element
   }
 
-  // Der Offene-Teil des Reiters Zusammenstellen: GENAU zwei Module, Liste
-  // links, Vorschau rechts (ENTSCHIEDEN 2). Die Vorschau bekommt WERTE
-  // (ENTSCHIEDEN 5): projekt aus dem ROHEN Stand, voraussetzungen via
-  // zeichnen.hole().
+  // Der Offene-Teil des Reiters Zusammenstellen - OBERFLAECHE-2.0-LAYOUT (#414,
+  // gemeldete Ausnahme zur alten Entscheiden-2-Geometrie "Liste links/Vorschau
+  // rechts"): Der User-Wortlaut 14.10.2026 ist "das Video im ZENTRUM"; die
+  // Buehne steht OBEN zentriert ueber der vollen Breite, der Composer (Bibliothek
+  // links, Zeitleiste unten) darunter. Beide Module bleiben DIESELBEN zwei
+  // Bausteine - nur die Geometrie teilt sie in Zeilen statt Spalten.
   const vereinigteOffenZusammenstellen = (sichtbar: boolean, projekt: Project) => (
-    <div style={REIHE}>
-      <div style={LISTE}>
+    <div style={SPALTE}>
+      <div style={BUEHNE_OBEN}>
+        {wurzeln.vorschau({
+          projekt,
+          voraussetzungen: zugaenge.zeichnen.hole(),
+          sichtbar,
+        })}
+      </div>
+      <div style={COMPOSER_UNTEN}>
         {wurzeln.composer({
           sichtbar,
           projekt: zugaenge.projektBearbeitung,
           zeichnen: zugaenge.zeichnen,
           vorlagen: zugaenge.vorlagen,
           verdrahtung: umgebung.composerVerdrahtung,
-        })}
-      </div>
-      <div style={BUEHNE}>
-        {wurzeln.vorschau({
-          projekt,
-          voraussetzungen: zugaenge.zeichnen.hole(),
-          sichtbar,
         })}
       </div>
     </div>
