@@ -53,13 +53,19 @@ import type { Listenelement } from '../../shared/contracts/project'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
-import { holeSicht, setzeListe } from './projektzustand'
+import { holeSicht, type SichtSchreiber } from './projektzustand'
 
 /** Stellt den Eintrag mit dieser Referenz ans Ende der Liste. `referenz` ist ENTWEDER eine
  *  Asset-ID (Video/Bild) ODER eine Aktions-ID (Segment) – welche es ist, entscheidet der Main. */
 export async function fuegeElementHinzu(
   referenz: string,
-  position?: number,
+  position: number | undefined,
+  // ERGAENZT durch #415 (Variante a): der SICHT-SCHREIBER. Jede Sicht-Korrektur
+  // laeuft ueber DIESEN Parameter (die Wrapped-Zugangs-`setzeListe`, #244-Huelle),
+  // nie mehr direkt in den rawen Store - ohne die Huelle gaebe es keinen
+  // Undo-Schnappschuss fuer das Element (Treiber-Beleg: Issue #414, Schritt 4f,
+  // Cmd+Z-Befund). Pflichtparameter: KEIN zweiter Weg zum Store.
+  sichtSchreiber: SichtSchreiber,
 ): Promise<Ergebnis<Listenelement>> {
   // `typeof` trotz `string` in der Signatur: Die Referenz kommt aus der Oberflaeche
   // (Medienliste, Aktions-Bibliothek, Drag) und kann dort aus einer ungetypten
@@ -142,10 +148,10 @@ export async function fuegeElementHinzu(
     // zeigt dann den D1-Stand. Der Main lehnt position > Listenlaenge ohnehin ab (#411).
     const liste = projekt.liste
     if (position === undefined) {
-      setzeListe([...liste, antwort.wert])
+      sichtSchreiber([...liste, antwort.wert])
     } else {
       const stelle = Math.max(0, Math.min(position, liste.length))
-      setzeListe([...liste.slice(0, stelle), antwort.wert, ...liste.slice(stelle)])
+      sichtSchreiber([...liste.slice(0, stelle), antwort.wert, ...liste.slice(stelle)])
     }
   }
   // Ist das Projekt waehrend des Aufrufs verschwunden (geschlossen, geloescht), wird

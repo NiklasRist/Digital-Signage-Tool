@@ -59,10 +59,19 @@
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
-import { holeSicht, setzeListe } from './projektzustand'
+import { holeSicht, setzeListe, type SichtSchreiber } from './projektzustand'
 
-/** Entfernt genau ein Listenelement aus der Wiedergabeliste. */
-export async function entferneElementAusListe(elementId: string): Promise<Ergebnis<void>> {
+/** Entfernt genau ein Listenelement aus der Wiedergabeliste.
+ *  ERGAENZT durch #415 (Variante a): Der SICHT-SCHREIBER laeuft JEDE Ansicht-Weg
+ *  (Zeile, KontextMenue) ueber die Wrapped-Zugangs-`setzeListe` (#244-Huelle) - das
+ *  ist die Pflicht-Naht. AUSNAHME: Die Reparatur-Kette (reparatur-optionen ->
+ *  schliesse*Mit-Ueber App.tsx-Ebene) kommt HEUTE noch ohne Schreiber here - sie
+ *  faellt auf den rawen Store zurueck und WARNT sichtbar (#415-Nachzug; kein stiller
+ *  Drift kein zweiter Weg fuer die Ansichts-Wege). */
+export async function entferneElementAusListe(
+  elementId: string,
+  sichtSchreiber?: SichtSchreiber,
+): Promise<Ergebnis<void>> {
   // `typeof` trotz `string` in der Signatur: Die Kennung kommt aus der Oberflaeche
   // (Listenzeile, Reparatur-Fuehrung) und kann dort aus einer ungetypten Quelle
   // stammen. Gemessen wird mit `trim()` - dieselbe Grenze, die die Nutzlast-Pruefung
@@ -126,7 +135,14 @@ export async function entferneElementAusListe(elementId: string): Promise<Ergebn
     //
     // Angefasst wird ausschliesslich `liste`; `setzeListe` (#121) laesst `assets` und
     // `aktionen` unberuehrt - genau die Grenze aus TK 9.5.3.
-    setzeListe(projekt.liste.filter((vorhanden) => vorhanden.id !== elementId))
+    if (sichtSchreiber === undefined) {
+      console.warn(
+        '#415-Nachzug: entferneElementAusListe ohne sichtSchreiber - kein Undo-Schritt (Reparatur-Naht).',
+      )
+      setzeListe(projekt.liste.filter((vorhanden) => vorhanden.id !== elementId))
+    } else {
+      sichtSchreiber(projekt.liste.filter((vorhanden) => vorhanden.id !== elementId))
+    }
   }
   // Ist das Projekt waehrend des Aufrufs verschwunden (geschlossen, geloescht), wird
   // NICHTS ersatzweise gesetzt. Der Erfolg wird trotzdem ehrlich zurueckgemeldet -

@@ -72,6 +72,14 @@ import {
   berechneNeueReihenfolge,
   ordneNeuOptimistisch,
 } from '../../src/renderer/composer/liste-reorder'
+import { setzeListe as quelleSetzeListe } from '../../src/renderer/composer/projektzustand'
+
+// #415 (Variante a): Der Test-Schreiber laeuft ueber DASSELBE gemockte setzeListe
+// (#121) - genau wie die Wrapped-Huelle es tut (Schnappschuss, dann Store). Die
+// bestehenden Sicht-Regeln (gesetzteListen, Rollback-Sequenzen) bleiben messbar.
+const inDoppel = (liste: Listenelement[]): void => {
+  quelleSetzeListe(liste)
+}
 
 // ---------------------------------------------------------------------------
 // Bausteine
@@ -197,7 +205,7 @@ describe('ordneNeuOptimistisch - der Aufruf hinaus', () => {
   it('ruft genau einmal auf, auf dem Kanal des Vertrags, mit der Nutzlast { reihenfolge }', async () => {
     doppel.antwort = { ok: true, wert: undefined }
 
-    await ordneNeuOptimistisch('e1', 'e3')
+    await ordneNeuOptimistisch('e1', 'e3', inDoppel)
 
     expect(doppel.aufrufe).toHaveLength(1)
     expect(doppel.aufrufe[0]?.kanal).toBe(KANAELE.project.ordneNeu)
@@ -216,7 +224,7 @@ describe('ordneNeuOptimistisch - der Aufruf hinaus', () => {
     doppel.projekt = projekt(viele)
     doppel.antwort = { ok: true, wert: undefined }
 
-    await ordneNeuOptimistisch('e5', 'e30')
+    await ordneNeuOptimistisch('e5', 'e30', inDoppel)
 
     const nutzlast = doppel.aufrufe[0]?.nutzlast as { reihenfolge: string[] }
     expect(nutzlast.reihenfolge).toHaveLength(40)
@@ -226,7 +234,7 @@ describe('ordneNeuOptimistisch - der Aufruf hinaus', () => {
   it('die gesendete Folge entspricht exakt der Folge in der Sicht', async () => {
     doppel.antwort = { ok: true, wert: undefined }
 
-    await ordneNeuOptimistisch('e4', 'e2')
+    await ordneNeuOptimistisch('e4', 'e2', inDoppel)
 
     const nutzlast = doppel.aufrufe[0]?.nutzlast as { reihenfolge: string[] }
     expect(nutzlast.reihenfolge).toEqual(aktuelleIds())
@@ -235,8 +243,8 @@ describe('ordneNeuOptimistisch - der Aufruf hinaus', () => {
   it('benutzt NUR diesen einen Kanal - ueber mehrere Zuege hinweg', async () => {
     doppel.antwort = { ok: true, wert: undefined }
 
-    await ordneNeuOptimistisch('e1', 'e3')
-    await ordneNeuOptimistisch('e5', 'e2')
+    await ordneNeuOptimistisch('e1', 'e3', inDoppel)
+    await ordneNeuOptimistisch('e5', 'e2', inDoppel)
 
     expect([...new Set(doppel.aufrufe.map((a) => a.kanal))]).toEqual([KANAELE.project.ordneNeu])
   })
@@ -250,7 +258,7 @@ describe('ordneNeuOptimistisch - Erfolg', () => {
   it('stellt die Sicht um und meldet ok', async () => {
     doppel.antwort = { ok: true, wert: undefined }
 
-    const ergebnis = await ordneNeuOptimistisch('e1', 'e3')
+    const ergebnis = await ordneNeuOptimistisch('e1', 'e3', inDoppel)
 
     expect(ergebnis.ok).toBe(true)
     expect(aktuelleIds()).toEqual(['e2', 'e3', 'e1', 'e4', 'e5'])
@@ -260,7 +268,7 @@ describe('ordneNeuOptimistisch - Erfolg', () => {
     doppel.antwort = { ok: true, wert: undefined }
     doppel.freigabe = () => undefined // schaltet die Verzoegerung im Doppel scharf
 
-    const laufend = ordneNeuOptimistisch('e1', 'e3')
+    const laufend = ordneNeuOptimistisch('e1', 'e3', inDoppel)
     // Ein Mikrotask-Durchgang reicht: `anwenden` laeuft synchron vor dem `await`.
     await Promise.resolve()
     await Promise.resolve()
@@ -278,7 +286,7 @@ describe('ordneNeuOptimistisch - Erfolg', () => {
     doppel.projekt = projekt(vorher)
     doppel.antwort = { ok: true, wert: undefined }
 
-    await ordneNeuOptimistisch('e1', 'e3')
+    await ordneNeuOptimistisch('e1', 'e3', inDoppel)
 
     const neu = doppel.projekt?.liste ?? []
     // Objektgleich: Es wurde umgestellt, nicht umgeschrieben. Ein Element, dem
@@ -295,7 +303,7 @@ describe('ordneNeuOptimistisch - Erfolg', () => {
     doppel.projekt = projekt(vorher)
     doppel.antwort = { ok: true, wert: undefined }
 
-    await ordneNeuOptimistisch('e1', 'e3')
+    await ordneNeuOptimistisch('e1', 'e3', inDoppel)
 
     expect(vorher.map((e) => e.id)).toEqual(['e1', 'e2', 'e3', 'e4', 'e5'])
     expect(doppel.gesetzteListen[0]).not.toBe(vorher)
@@ -315,7 +323,7 @@ describe('ordneNeuOptimistisch - Ablehnung durch den Main (Fehlerklasse 1)', () 
       fehler: { code: 'ungueltige_eingabe', meldung: 'Die Reihenfolge passt nicht.' },
     }
 
-    const ergebnis = await ordneNeuOptimistisch('e1', 'e3')
+    const ergebnis = await ordneNeuOptimistisch('e1', 'e3', inDoppel)
 
     expect(ergebnis).toEqual({
       ok: false,
@@ -333,7 +341,7 @@ describe('ordneNeuOptimistisch - Ablehnung durch den Main (Fehlerklasse 1)', () 
   it('reicht auch einen fachlichen Code des Main unveraendert durch', async () => {
     doppel.antwort = { ok: false, fehler: { code: 'nicht_gefunden', meldung: 'Kein Projekt.' } }
 
-    const ergebnis = await ordneNeuOptimistisch('e1', 'e3')
+    const ergebnis = await ordneNeuOptimistisch('e1', 'e3', inDoppel)
 
     expect(ergebnis.ok).toBe(false)
     if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('nicht_gefunden')
@@ -343,7 +351,7 @@ describe('ordneNeuOptimistisch - Ablehnung durch den Main (Fehlerklasse 1)', () 
 
 describe('ordneNeuOptimistisch - Zuege, die keine Operation werden', () => {
   it('ein Drop ausserhalb der Liste (ueberId === null) loest NULL Aufrufe aus', async () => {
-    const ergebnis = await ordneNeuOptimistisch('e1', null)
+    const ergebnis = await ordneNeuOptimistisch('e1', null, inDoppel)
 
     expect(doppel.aufrufe).toEqual([])
     expect(doppel.gesetzteListen).toEqual([])
@@ -352,7 +360,7 @@ describe('ordneNeuOptimistisch - Zuege, die keine Operation werden', () => {
   })
 
   it('ein Drop auf sich selbst loest NULL Aufrufe aus', async () => {
-    const ergebnis = await ordneNeuOptimistisch('e3', 'e3')
+    const ergebnis = await ordneNeuOptimistisch('e3', 'e3', inDoppel)
 
     expect(doppel.aufrufe).toEqual([])
     expect(doppel.gesetzteListen).toEqual([])
@@ -360,8 +368,8 @@ describe('ordneNeuOptimistisch - Zuege, die keine Operation werden', () => {
   })
 
   it('undefined und ein leeres Ziel zaehlen wie ein Drop ausserhalb', async () => {
-    const a = await ordneNeuOptimistisch('e1', undefined as unknown as null)
-    const b = await ordneNeuOptimistisch('e1', '   ')
+    const a = await ordneNeuOptimistisch('e1', undefined as unknown as null, inDoppel)
+    const b = await ordneNeuOptimistisch('e1', '   ', inDoppel)
 
     expect(doppel.aufrufe).toEqual([])
     expect(a.ok).toBe(true)
@@ -373,7 +381,7 @@ describe('ordneNeuOptimistisch - abgewiesene Eingaben', () => {
   it('ohne geladenes Projekt wird gar nicht erst gefragt', async () => {
     doppel.projekt = null
 
-    const ergebnis = await ordneNeuOptimistisch('e1', 'e3')
+    const ergebnis = await ordneNeuOptimistisch('e1', 'e3', inDoppel)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
@@ -381,7 +389,7 @@ describe('ordneNeuOptimistisch - abgewiesene Eingaben', () => {
   })
 
   it('eine unbekannte aktivId loest KEINEN Aufruf aus', async () => {
-    const ergebnis = await ordneNeuOptimistisch('e9', 'e3')
+    const ergebnis = await ordneNeuOptimistisch('e9', 'e3', () => {})
 
     expect(doppel.aufrufe).toEqual([])
     expect(doppel.gesetzteListen).toEqual([])
@@ -390,7 +398,7 @@ describe('ordneNeuOptimistisch - abgewiesene Eingaben', () => {
   })
 
   it('eine unbekannte ueberId loest KEINEN Aufruf aus', async () => {
-    const ergebnis = await ordneNeuOptimistisch('e1', 'e9')
+    const ergebnis = await ordneNeuOptimistisch('e1', 'e9', () => {})
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
@@ -398,14 +406,14 @@ describe('ordneNeuOptimistisch - abgewiesene Eingaben', () => {
   })
 
   it('eine leere aktivId loest KEINEN Aufruf aus und wirft nicht', async () => {
-    const ergebnis = await ordneNeuOptimistisch('', 'e3')
+    const ergebnis = await ordneNeuOptimistisch('', 'e3', () => {})
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
   })
 
   it('ein nicht-String als aktivId wirft nicht', async () => {
-    const ergebnis = await ordneNeuOptimistisch(undefined as unknown as string, 'e3')
+    const ergebnis = await ordneNeuOptimistisch(undefined as unknown as string, 'e3', inDoppel)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)

@@ -66,7 +66,7 @@ import type { Listenelement } from '../../shared/contracts/project'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
-import { holeSicht, setzeListe } from './projektzustand'
+import { holeSicht, type SichtSchreiber } from './projektzustand'
 import { fuehreOptimistischAus } from './optimistisch'
 
 /** Einheitlicher Fehlerausgang. Kein `throw` verlaesst diese Datei - die Signatur
@@ -137,10 +137,14 @@ export function berechneNeueReihenfolge(
 
 /** Optimistischer Reorder: Sicht sofort umstellen, dann `ordneNeu` bestätigen lassen.
  *  `ueberId` ist `string | null`, weil dnd-kit bei einem Drop ausserhalb der Liste
- *  `event.over === null` liefert (s. ENTSCHIEDEN 2 und Fehlerpfade). */
+ *  `event.over === null` liefert (s. ENTSCHIEDEN 2 und Fehlerpfade).
+ *  ERGAENZT durch #415 (Variante a): `sichtSchreiber` ist PFLICHT (die Wrapped-
+ *  Zugangs-`setzeListe`, #244-Huelle) - der optimistische Zug UND seine Ruecknahme
+ *  laufen ueber DIESEN Weg, sonst nimmt der Reorder am Undo-Stapel nicht teil. */
 export async function ordneNeuOptimistisch(
   aktivId: string,
   ueberId: string | null,
+  sichtSchreiber: SichtSchreiber,
 ): Promise<Ergebnis<void>> {
   // ENTSCHIEDEN 2: EIN DROP OHNE GUELTIGES ZIEL WIRD NICHT ZUR OPERATION.
   //
@@ -222,10 +226,10 @@ export async function ordneNeuOptimistisch(
   // src/main/** liegen und im Renderer nicht importiert werden duerfen.
   return fuehreOptimistischAus<void>(
     () => {
-      setzeListe(neueListe)
+      sichtSchreiber(neueListe)
     },
     () => {
-      setzeListe(vorher)
+      sichtSchreiber(vorher)
     },
     () => rufeAuf<void>(KANAELE.project.ordneNeu, { reihenfolge: neueIds }),
   )

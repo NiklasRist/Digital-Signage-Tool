@@ -127,6 +127,7 @@ function eigenschaften(
     kaputteBandAbschnitte: [],
     aufEinblendungBearbeiten: vi.fn(),
     aufFehler: vi.fn(),
+    sichtSchreiber: () => {},
     ...ueber,
   }
 }
