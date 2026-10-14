@@ -211,12 +211,23 @@ const main = async () => {
         "nicht klickbar", "BLOCKER", "projekt-verwaltung/index.tsx");
     }
 
-    // Schritt 3 - Zusammenstellen: Wiedergabeliste, Ausgaben, Dialog-Mounts (#342).
+    // Schritt 3 - Zusammenstellen: Zeitleiste (PRIMÄR seit #414, Weiche B), Ausgaben,
+    // Dialog-Mounts (#342). Die #248-Wiedergabeliste liegt hinter dem Umschalter.
     await klick('[data-testid="reiter-zusammenstellen"]');
     await schlafe(600);
-    if (!(await stehtDa('[data-testid="wiedergabeliste"]'))) {
-      fund("Zusammenstellen", "Wiedergabeliste sichtbar",
-        "liste nicht da", "BLOCKER", "composer/index.tsx");
+    if (!(await stehtDa('[data-testid="zeitleiste"]'))) {
+      fund("Zusammenstellen", "Zeitleiste im Fenster (primäre Ansicht seit #414)",
+        "zeitleiste nicht da", "BLOCKER", "composer/index.tsx");
+    } else {
+      const kanteRuhelageSichtbar = await seite.evaluate(
+        () => !!document.querySelector('[data-testid="zeitleiste-kante-0"]'),
+      );
+      if (kanteRuhelageSichtbar) {
+        fund("Zeitleiste", "die Kanten sind in der Ruhelage UNSICHTBAR (#412)",
+          "Kante-0 in der Ruhelage sichtbar", "Befund", "composer/zeitleiste.tsx");
+      } else {
+        console.log("[schritt-3] Zeitleiste da; die Kanten sind in der Ruhelage unsichtbar (#412).");
+      }
     }
     // Die Dialoge Render/Export sind gebaut, aber laut Basis-Abgleich ungemountet:
     // Wenn ihre Test-Kennungen im Fenster erscheinen, waere der #342-Befund eholt.
