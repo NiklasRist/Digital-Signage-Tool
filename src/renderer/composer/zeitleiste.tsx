@@ -1,11 +1,14 @@
-import { useState, type JSX } from "react";
+import { useState, useRef, type JSX } from "react";
 
 import {
   DndContext,
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
   type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
   closestCenter,
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, horizontalListSortingStrategy } from "@dnd-kit/sortable";
@@ -15,6 +18,8 @@ import type { Listenelement, Project } from "../../shared/contracts/project";
 import { ordneNeuOptimistisch } from "./liste-reorder";
 import { frameDauer } from "./gesamtlaenge";
 import { RENDER_PROFILE } from "../../shared/contracts/render-profile";
+import { fuegeElementHinzu } from "./element-hinzufuegen";
+import { baueEinfugeKanten, leseKantenIndex, liestReferenz, waehleKanteAus } from "./spalt-drop";
 
 const EA_PX_PRO_SEKUNDE = 8
 const ZEILE_HOEHE_PX = 64
@@ -67,6 +72,14 @@ void DEFAULT_VERSCHOBEN;
 export function Zeitleiste({ projekt }: { projekt: Project | null }): JSX.Element {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
   const [ziehen, setzeZiehen] = useState<'ruhig' | 'aktiv'>('ruhig')
+  // #412: Der laufende NEU-Drag (Referenz aus #413, `null` = Bestands-Sortier-Drag),
+  // die gemessene aktive Kante und die Kante, auf die ein Einfuegen GERADE wartet
+  // (Lade-Markierung, nicht optimistisch, TK 9.7.3).
+  const [neuZug, setzeNeuZug] = useState<string | null>(null)
+  const [aktiveKante, setzeAktiveKante] = useState<number | null>(null)
+  const [laedtKante, setzeLaedtKante] = useState<number | null>(null)
+  const korbRef = useRef<HTMLDivElement | null>(null)
+  const zeigerStartX = useRef<number | null>(null)
 
   if (projekt === null) {
     return <div data-testid="zeitleiste-kein-projekt" />
@@ -74,13 +87,66 @@ export function Zeitleiste({ projekt }: { projekt: Project | null }): JSX.Elemen
 
   const zeilen = baueZeitleistenZeilen(projekt?.liste ?? [])
   const ids = zeilen.map((zeile) => zeile.elementId)
+  const kanten = baueEinfugeKanten(zeilen.length)
 
   const amEnde = (ereignis: DragEndEvent): void => {
     setzeZiehen('ruhig')
-    const aktiv = ereignis.active.id
-    const ueber = ereignis.over?.id
-    if (typeof aktiv !== 'string' || typeof ueber !== 'string') return
-    void ordneNeuOptimistisch(aktiv, ueber)
+    setzeNeuZug(null)
+    setzeAktiveKante(null)
+    // Sortier-Drag EINES BESTANDELEMENTS (keine Referenz-Daten): der alte Reorder-Weg
+    // (#122), UNVERÄNDERT.
+    const referenz = liestReferenz(ereignis.active.data.current)
+    if (referenz === null) {
+      const aktiv = ereignis.active.id
+      const ueber = ereignis.over?.id
+      if (typeof aktiv !== 'string' || typeof ueber !== 'string') return
+      ordneNeuOptimistisch(aktiv, ueber)
+      return
+    }
+    // NEU-Drag aus Bibliothek/Galerie (#413): Einfügen an der aktiven Kante (#412).
+    let index = aktiveKante
+    if (index === null) index = leseKantenIndex(ereignis.over?.id)
+    if (index === null) {
+      // Der Zeiger lag bei keinem Messwert außerhalb: kein Aufruf, keine Meldung
+      // (Fehlerpfade-Tabelle des Issues, "Drop außerhalb einer Kante").
+      setzeLaedtKante(null)
+      return
+    }
+    setzeLaedtKante(index)
+    void fuegeElementHinzu(referenz, index).finally(() => setzeLaedtKante(null))
+  }
+
+  const amDragStart = (ereignis: DragStartEvent): void => {
+    setzeZiehen('aktiv')
+    // NUR ein Drag MIT Referenz (Neu-Einfuegen, #413) oeffnet die Kanten; ein
+    // Bestands-Sortier-Drag belaesst sie geschlossen (Invariant "Sortieren != Einfuegen").
+    setzeNeuZug(liestReferenz(ereignis.active.data.current))
+    // Die Zeiger-Startposition (dnd-kit haelt nur `activatorEvent` + `delta`).
+    const aktivator = ereignis.activatorEvent as MouseEvent
+    if (typeof aktivator?.clientX === 'number') zeigerStartX.current = aktivator.clientX
+  }
+
+  const amUeber = (ereignis: DragOverEvent): void => {
+    // Messbruecke zu `waehleKanteAus` (woertlich die verbindliche #412-Signatur): aus der
+    // Zeiger-x-Position im Zeitleisten-Koordinatenraum wird die naechste Kante gemessen.
+    // Start-x (activatorEvent) + Delta = aktuelle Zeiger-Position; das Fenster kann
+    // gescrollt sein, daher das Scroll-Offset dazu.
+    if (neuZug === null) return
+    const korb = korbRef.current
+    if (korb === null || zeigerStartX.current === null) {
+      setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
+      return
+    }
+    // jsdom und verdeckte Koerper liefern 0 (getBoundingClientRect) - dann Rueckfall.
+    const umriss = korb.getBoundingClientRect()
+    if (umriss.width === 0 && umriss.height === 0) {
+      const ruckfall = leseKantenIndex(ereignis.over?.id)
+      setzeAktiveKante(ruckfall)
+      return
+    }
+    const xImKontext = zeigerStartX.current + ereignis.delta.x - umriss.left + korb.scrollLeft
+    const gemessen = waehleKanteAus(kanten, xImKontext, (index) => zeilen[index]?.breitePx ?? 64)
+    setzeAktiveKante(gemessen ?? leseKantenIndex(ereignis.over?.id))
   }
 
   return (
@@ -95,13 +161,30 @@ export function Zeitleiste({ projekt }: { projekt: Project | null }): JSX.Elemen
         minHeight: 80,
       }}
     >
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={amEnde} onDragStart={() => setzeZiehen('aktiv')}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={amDragStart}
+        onDragOver={amUeber}
+        onDragEnd={amEnde}
+        onDragCancel={() => {
+          setzeZiehen('ruhig')
+          setzeNeuZug(null)
+          setzeAktiveKante(null)
+        }}
+      >
         <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, minHeight: ZEILE_HOEHE_PX }}>
+          <div ref={korbRef} style={{ display: 'flex', alignItems: 'stretch', gap: 2, minHeight: ZEILE_HOEHE_PX }}>
+            {neuZug !== null && <KantenBlock nummer={0} aktiv={aktiveKante === 0} laedt={laedtKante === 0} />}
             {zeilen.map((zeile, index) => (
-              <ZeilenBlock key={zeile.elementId} zeile={zeile} index={index} ziehen={ziehen === 'aktiv'} />
+              <span key={zeile.elementId} style={{ display: 'flex', alignItems: 'stretch', gap: 2, padding: 0 }}>
+                <ZeilenBlock zeile={zeile} index={index} ziehen={ziehen === 'aktiv'} />
+                {neuZug !== null && (
+                  <KantenBlock nummer={index + 1} aktiv={aktiveKante === index + 1} laedt={laedtKante === index + 1} />
+                )}
+              </span>
             ))}
-            {zeilen.length === 0 && (
+            {zeilen.length === 0 && neuZug === null && (
               <div data-testid="zeitleiste-leer" style={{ color: '#8f8f8f', fontSize: 12 }}>
                 Leere Wiedergabeliste
               </div>
@@ -111,6 +194,38 @@ export function Zeitleiste({ projekt }: { projekt: Project | null }): JSX.Elemen
       </DndContext>
     </div>
   );
+}
+
+/** #412 - Die EINE Einfüge-Kante als Drop-Ziel: unsichtbar in der Ruhelage, beim
+ *  Neu-Drag ein Spalt (Stummmodus 10 px), der aktive/geöffnete Spalt breiter, die
+ *  wartende Spalt-Position mit Lade-Streifen. */ 
+function KantenBlock({ nummer, aktiv, laedt }: { nummer: number; aktiv: boolean; laedt: boolean }): JSX.Element {
+  const { isOver, setNodeRef } = useDroppable({ id: `kante-${nummer}` })
+  return (
+    <div
+      ref={setNodeRef}
+      data-testid={`zeitleiste-kante-${nummer}`}
+      style={{
+        flex: '0 0 auto',
+        width: aktiv || isOver ? 22 : 10,
+        minWidth: 10,
+        height: ZEILE_HOEHE_PX,
+        borderRadius: 3,
+        transition: 'width 120ms ease',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#dbe4ee',
+        fontSize: 18,
+        background: isOver ? 'rgba(64, 141, 93, 0.35)' : aktiv ? 'rgba(47, 109, 181, 0.28)' : 'rgba(58, 58, 58, 0.2)',
+        outline: laedt ? '2px solid #2a9d8f' : 'none',
+        outlineOffset: -2,
+      }}
+      title={`Hier einfügen (Position ${nummer})`}
+    >
+      {laedt ? '…' : '+'}
+    </div>
+  )
 }
 
 function ZeilenBlock({
