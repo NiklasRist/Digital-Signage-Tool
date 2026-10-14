@@ -57,7 +57,10 @@ import { holeSicht, setzeListe } from './projektzustand'
 
 /** Stellt den Eintrag mit dieser Referenz ans Ende der Liste. `referenz` ist ENTWEDER eine
  *  Asset-ID (Video/Bild) ODER eine Aktions-ID (Segment) – welche es ist, entscheidet der Main. */
-export async function fuegeElementHinzu(referenz: string): Promise<Ergebnis<Listenelement>> {
+export async function fuegeElementHinzu(
+  referenz: string,
+  position?: number,
+): Promise<Ergebnis<Listenelement>> {
   // `typeof` trotz `string` in der Signatur: Die Referenz kommt aus der Oberflaeche
   // (Medienliste, Aktions-Bibliothek, Drag) und kann dort aus einer ungetypten
   // Quelle stammen. Der Main weist einen leeren Wert ohnehin ab; hier abgefangen
@@ -103,7 +106,14 @@ export async function fuegeElementHinzu(referenz: string): Promise<Ergebnis<List
   // was der Aufrufer statisch sieht. Enger machen kann ihn diese Datei nicht: Die
   // fachlichen Codes des project-store liegen in src/main/** und duerfen im
   // Renderer nicht importiert werden.
-  const antwort = await rufeAuf<Listenelement>(KANAELE.project.fügeElementHinzu, { referenz })
+  // KONDITIONALE Nutzlast (#411): Ohne `position` bleibt das Objekt SCHLUESSELGENAU das
+  // alte { referenz } - der Vertragstest der Bestands-Spec (Schluesselmenge ['referenz'])
+  // bleibt gruen; ein Shorthand { referenz, position } wuerde den Schluessel
+  // `position: undefined` mitreisen lassen und die Naht erweitern, ohne dass der Main
+  // ihn liest.
+  const nutzlast =
+    position === undefined ? { referenz } : { referenz, position }
+  const antwort = await rufeAuf<Listenelement>(KANAELE.project.fügeElementHinzu, nutzlast)
 
   if (!antwort.ok) {
     // Unveraendert durchgereicht - Code UND Meldung. An den Codes haengt echtes
@@ -120,13 +130,23 @@ export async function fuegeElementHinzu(referenz: string): Promise<Ergebnis<List
   // also nie mit.
   const projekt = holeSicht().projekt
   if (projekt !== null) {
-    // ANS ENDE, ohne Einfuegeposition: "Die Reihenfolge ist die Array-Reihenfolge
-    // von `liste` - es gibt kein separates `position`-Feld." (TK 9.11.3)
-    // Umsortieren danach ist Sache von #122.
+    // AN DIE RUECKGABE-POSITION (#411). Mit `position` fuegt sich das Element an DIESEM
+    // Index in die SICHT ein (neues Array, Unveraenderlichkeits-Invariante aus #121);
+    // ohne `position` wie bisher ans ENDE: "Umsortieren danach ist Sache von #122."
+    // (#123-Wortlaut). Sicht und Main einigen sich ueber DENSELBEN Index - es gibt kein
+    // zweites Positions-Buch (TK 9.11.3, "kein separates position-Feld").
     //
-    // Ein NEUES Array; die vorhandene Liste wird nicht an Ort und Stelle
-    // veraendert (Unveraenderlichkeits-Invariante aus #121).
-    setzeListe([...projekt.liste, antwort.wert])
+    // Grenzfall nur zur Absicherung gegen eine Concurrent-Mutation zwischen Main-Ruf und
+    // Rueckkehr: Ist die Sichtliste inzwischen anders lang, klemmt der Index ans Ende
+    // (so haengt `slice` das Element ans Ende) - der naechste Abgleich (TK 9.7.4)
+    // zeigt dann den D1-Stand. Der Main lehnt position > Listenlaenge ohnehin ab (#411).
+    const liste = projekt.liste
+    if (position === undefined) {
+      setzeListe([...liste, antwort.wert])
+    } else {
+      const stelle = Math.max(0, Math.min(position, liste.length))
+      setzeListe([...liste.slice(0, stelle), antwort.wert, ...liste.slice(stelle)])
+    }
   }
   // Ist das Projekt waehrend des Aufrufs verschwunden (geschlossen, geloescht), wird
   // NICHT ersatzweise irgendwo eingehaengt: Der Main hat das Element einem Projekt

@@ -239,3 +239,74 @@ describe("fuegeElementHinzu (#41)", () => {
     expect(p.liste).toHaveLength(1);
   });
 });
+
+// -------------------------------------------------------------------------
+// #411 (Oberflaeche 2.0, Weiche A): der optionale Einfüge-Index.
+// -------------------------------------------------------------------------
+
+describe("fügeElementHinzu - position (#411)", () => {
+  it("fügt an position 0 vor dem ersten Element ein (gesamte Liste rückt nach hinten)", async () => {
+    const p = projekt([element("e-alt")]);
+    merkeAktivesProjekt(p);
+
+    const ergebnis = await fügeElementHinzu("a-video", 0);
+
+    expect(ergebnis.ok).toBe(true);
+    expect(p.liste).toHaveLength(2);
+    expect(p.liste[0]?.ref).toBe("a-video");
+    expect(p.liste[1]?.id).toBe("e-alt");
+  });
+
+  it("fügt mitten in der Liste ein und schiebt den Rest nach hinten", async () => {
+    const p = projekt([element("e-1"), element("e-2"), element("e-3")]);
+    merkeAktivesProjekt(p);
+
+    await fügeElementHinzu("a-video", 1);
+
+    expect(p.liste.map((e) => e.ref)).toEqual(["akt-vorgabe", "a-video", "akt-vorgabe", "akt-vorgabe"]);
+    expect(p.liste.map((e) => e.id)).toEqual(["e-1", expect.any(String), "e-2", "e-3"]);
+    expect(p.liste).toHaveLength(4);
+    expect(p.liste[3]?.id).toBe("e-3");
+  });
+
+  it("verhält sich bei position === liste.length byte-identisch wie ohne position", async () => {
+    const p = projekt([element("e-1")]);
+    merkeAktivesProjekt(p);
+
+    const ergebnis = await fügeElementHinzu("a-video", p.liste.length);
+
+    expect(ergebnis.ok).toBe(true);
+    expect(p.liste).toHaveLength(2);
+    expect(p.liste[0]?.id).toBe("e-1");
+    expect(p.liste[1]?.ref).toBe("a-video");
+  });
+
+  it("lehnt position > liste.length als ungueltige_eingabe ab und ändert NICHTS", async () => {
+    const p = projekt([element("e-1")]);
+    merkeAktivesProjekt(p);
+
+    const ergebnis = await fügeElementHinzu("a-video", 3);
+
+    expect(ergebnis.ok).toBe(false);
+    if (ergebnis.ok) return;
+    expect(ergebnis.fehler.code).toBe("ungueltige_eingabe");
+    // Kritisch: kein stiller Auffang ans Ende. Der Drop an der falschen Stelle wäre
+    // die Lüge, die keine Operation mehr geradezieht.
+    expect(p.liste).toHaveLength(1);
+    expect(zustand.geplant).toEqual([]);
+  });
+
+  it("lehnt eine negative oder gebrochene position ab (Zweitprüfung, main-intern)", async () => {
+    const p = projekt([element("e-1")]);
+    merkeAktivesProjekt(p);
+
+    const negativ = await fügeElementHinzu("a-video", -1);
+    const gebrochen = await fügeElementHinzu("a-video", 0.5);
+
+    expect(negativ.ok).toBe(false);
+    expect(gebrochen.ok).toBe(false);
+    if (negativ.ok === false) expect(negativ.fehler.code).toBe("ungueltige_eingabe");
+    if (gebrochen.ok === false) expect(gebrochen.fehler.code).toBe("ungueltige_eingabe");
+    expect(p.liste).toHaveLength(1);
+  });
+});

@@ -170,11 +170,13 @@ describe("verdrahteProjectStoreIPC (#76)", () => {
 
     // Getrimmt wird NICHT, nur geprueft - Fremdfelder reisen nicht mit. Die Marken-Kennung
     // (#328) holt der ABLAUF selbst (listeMarken, marken-store) - der Kanal ruft genau ihn.
+    // #411: fuegeElementHinzu bekommt JETZT IMMER zwei Argumente - `position` ist
+    // `undefined`, wenn die Nutzlast ihn nicht traegt (Signatur-Nachtrag an #41).
     expect(ops.erstelleProjektAblauf).toHaveBeenCalledWith(" Sommer ");
     expect(ops.dupliziereProjekt).toHaveBeenCalledWith("p1", "Kopie");
     expect(ops.löscheProjekt).toHaveBeenCalledWith("p1");
     expect(ops.löscheAktion).toHaveBeenCalledWith("a1");
-    expect(ops.fügeElementHinzu).toHaveBeenCalledWith("a1");
+    expect(ops.fügeElementHinzu).toHaveBeenCalledWith("a1", undefined);
     expect(ops.entferneElement).toHaveBeenCalledWith("e1");
     expect(ops.setzeDauer).toHaveBeenCalledWith("e1", 12);
     expect(ops.listeAusgaben).toHaveBeenCalledWith(UUID);
@@ -235,6 +237,33 @@ describe("verdrahteProjectStoreIPC (#76)", () => {
       ).resolves.toMatchObject(UNGUELTIG);
     }
     expect(ops.setzeDauer).not.toHaveBeenCalled();
+  });
+
+  describe("position-Nutzlast (#411)", () => {
+    it("reicht eine gueltige position exakt durch", async () => {
+      ops.fügeElementHinzu.mockResolvedValue({ ok: true, wert: {} });
+
+      await rufe(KANAELE.project.fügeElementHinzu, { referenz: "a1", position: 0 });
+
+      expect(ops.fügeElementHinzu).toHaveBeenCalledWith("a1", 0);
+    });
+
+    it("reicht position = undefined als undefined durch (alt-Verfahren)", async () => {
+      ops.fügeElementHinzu.mockResolvedValue({ ok: true, wert: {} });
+
+      await rufe(KANAELE.project.fügeElementHinzu, { referenz: "a1" });
+
+      expect(ops.fügeElementHinzu).toHaveBeenCalledWith("a1", undefined);
+    });
+
+    it("lehnt ab: negativ, gebrochen, String, Boolean - und ruft #41 NICHT", async () => {
+      for (const position of [-1, 0.5, "2", true]) {
+        await expect(
+          rufe(KANAELE.project.fügeElementHinzu, { referenz: "a1", position }),
+        ).resolves.toMatchObject(UNGUELTIG);
+      }
+      expect(ops.fügeElementHinzu).not.toHaveBeenCalled();
+    });
   });
 
   it("laesst listeProjekte ohne Nutzlast arbeiten und ignoriert eine uebergebene", async () => {
