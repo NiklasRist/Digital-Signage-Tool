@@ -539,16 +539,19 @@ const main = async () => {
             zeilen: document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
             listeDa: !!document.querySelector('[data-testid="wiedergabeliste"]'),
             leerDa: !!document.querySelector('[data-testid="wiedergabeliste-leer"]'),
+            // #414: die zeitleiste-Kanten-bedingten Bloecken sind die PRIMIaERE Sicht.
+            bloecke: document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
             ladefehler: document.querySelector('[data-testid="composer-ladefehler"]')?.textContent ?? null,
             meldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
             ablehnungen: window.__durchlauf.ablehnungen ?? [],
           }));
           console.log("[schritt-4b] Listen-Diagnostik: " + JSON.stringify(listeDiag));
-          if (listeDiag.zeilen === 0) {
+          const sichtZeigtElement = listeDiag.zeilen > 0 || listeDiag.bloecke > 0;
+          if (!sichtZeigtElement) {
             fund("Sicht-Aktualitaet", "Liste zeigt das ueber den Bedienweg hinzugefuegte Element (#407)",
-              "Knopf geklickt, aber 0 Zeilen in der Ansicht", "Befund", "composer/index.tsx");
+              "Knopf geklickt, aber 0 Zeilen (Liste) und 0 Bloecke (Zeitleiste) in der Ansicht", "Befund", "composer/index.tsx");
           } else {
-            console.log(`[schritt-4b] Wiedergabeliste zeigt ${listeDiag.zeilen} Zeile(n) nach dem echten Bedienweg (#407 belegt).`);
+            console.log(`[schritt-4b] Die Sicht zeigt ${sichtZeigtElement ? (listeDiag.bloecke > 0 ? listeDiag.bloecke + " Zeitleisten-Bloecke" : listeDiag.zeilen + " Listen-Zeilen") : "nichts"} nach dem echten Bedienweg (#407 belegt).`);
           }
         }
         // #340-Gegenprobe (media-Antworten werden an der Kopf-Messstelle beobachtet): Ein
@@ -691,6 +694,13 @@ const main = async () => {
     // ERSTE Zeile oeffnet das Menue (Fraschgriff im Fensterskript), dann ruft der
     // Treiber "Duplikat am Listenende anfuegen" - durch den Baustein #123, der die
     // Sicht selbst versorgt. GEMESSEN: Zeilen davor/danach.
+    // #414: Das KontextMenue haengt an der #248-Zeilen-LISTE (Fallback);
+    // der Ansichtsschalter bringt sie zuerst in das Fenster.
+    await seite.evaluate(() => {
+      const knopf = document.querySelector('[data-testid="composer-ansicht-liste"]');
+      if (knopf !== null) knopf.click();
+    });
+    await schlafe(600);
     const zeilenDavor4e = await seite.evaluate(
       () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
     );
@@ -770,6 +780,124 @@ const main = async () => {
           } else {
             fund("KontextMenue", "Entfernen verkleinert die Liste (#408/#124)",
               `Zeilen davor/nachher: ${zeilenDanach4e}/${zeilenNachEntfernen}`, "Befund", "composer/kontext-menu.tsx");
+          }
+        }
+      }
+    }
+
+    // Schritt 4f - Spalt-Drop am echten Fenster (#411-#414 Abnahme, Kernachse):
+    // Liste auf 2 Bloecke bringen (Klick-Weg #407), dann ein ECHTER Pointer-Drag
+    // (dnd-kit PointerSensor) von der Bibliothekzeile in die Kante 1 ("Spalt 2 von 3").
+    // Erwartet: 3 Bloecke; die Kante-1 sitzt an Listen-Index 1 (Position 2). Danach
+    // Cmd+Z: GENAU EIN Schritt zurueck auf 2 Bloecke (#243/#350 am echten Fenster).
+    await schlafe(400);
+      const zweiterKlick = await seite.evaluate(() => {
+        const zeile = document.querySelector('[data-testid^="medium-"]');
+        const knopf = zeile === null
+          ? null
+          : [...(zeile.querySelectorAll('button') ?? [])]
+              .find((k) => k.textContent === "Zur Liste hinzufügen");
+        if (knopf === null) return false;
+        knopf.click();
+        return true;
+      });
+      console.log("[schritt-4f] Zweiter Klick am Bedienweg: " + String(zweiterKlick));
+      await schlafe(3_500);
+      const davor4f = await seite.evaluate(() => ({
+        bloecke: [...document.querySelectorAll('[data-testid^="zeitleiste-block-"]')]
+          .map((b) => b.getAttribute("data-ref")),
+        zeilen: document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+      }));
+      console.log("[schritt-4f] Bloecke davor (data-ref): " + JSON.stringify(davor4f));
+      if (davor4f.bloecke.length < 2) {
+        fund("Spalt-Drop", "zwei Bloecke in der Zeitleiste vor dem Drop",
+          `${davor4f.bloecke.length} Bloecke`, "Untersuchung", "composer/index.tsx");
+      } else {
+        const quelleHandle = await seite.$('[data-testid^="medium-"]');
+        const quelleBox = quelleHandle === null ? null : await quelleHandle.boundingBox();
+        if (quelleBox === null || quelleHandle === null) {
+          fund("Spalt-Drop", "die Quelle (Bibliothekszeile) ist sichtbar",
+            `Quelle-Box: ${JSON.stringify(quelleBox)}`,
+            "Untersuchung", "composer/index.tsx");
+        } else {
+          quelleHandle.dispose?.();
+          // Der Griff sitzt am LINKEN Rand der Zeile (Beschriftung) - ein Griff am
+          // Zeilen-Zentrum wuerde auf den "Zur Liste hinzufuegen"-Knopf fallen.
+          // dnd-kit braucht pointerdown + 4 px Bewegung (PointerSensor).
+          const grip = {
+            x: quelleBox.x + 6,
+            y: quelleBox.y + quelleBox.height / 2,
+          };
+          await seite.mouse.move(grip.x, grip.y);
+          await seite.mouse.down();
+          // ERST ein kleiner Zug: der Drag muss LAUFEN, damit die Kanten (#412-Ruhelage
+          // "unsichtbar, beim Neu-Drag sichtbar") ueberhaupt im Fenster stehen.
+          await seite.mouse.move(grip.x + 12, grip.y);
+          await schlafe(700);
+          const kanteLaufend = await seite.$('[data-testid="zeitleiste-kante-1"]');
+          const kanteBoxLaufend = kanteLaufend === null ? null : await kanteLaufend.boundingBox();
+          if (kanteBoxLaufend === null) {
+            await seite.mouse.up();
+            fund("Spalt-Drop", "waehrend des Neu-Drags steht die Kante-1 im Fenster",
+              "Kante-1 fehlt im laufenden Drag", "Untersuchung", "composer/index.tsx");
+          } else {
+            kanteLaufend.dispose?.();
+            const ziel = {
+              x: kanteBoxLaufend.x + kanteBoxLaufend.width / 2,
+              y: kanteBoxLaufend.y + kanteBoxLaufend.height / 2,
+            };
+            const schritte = 14;
+            let letzterX = grip.x + 12;
+            for (let teilschritt = 1; teilschritt <= schritte; teilschritt += 1) {
+              letzterX = grip.x + 12 + ((ziel.x - (grip.x + 12)) * teilschritt) / schritte;
+              await seite.mouse.move(
+                letzterX,
+                grip.y + ((ziel.y - grip.y) * teilschritt) / schritte,
+              );
+              await schlafe(35);
+            }
+            await schlafe(600);
+            await seite.mouse.up();
+            await schlafe(3_500);
+          const danach4f = await seite.evaluate(() => ({
+            bloecke: [...document.querySelectorAll('[data-testid^="zeitleiste-block-"]')]
+              .map((b) => b.getAttribute("data-ref")),
+            meldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+            ablehnungen: window.__durchlauf.ablehnungen ?? [],
+          }));
+          console.log("[schritt-4f] Bloecke danach (data-ref): " + JSON.stringify(danach4f));
+          const quelleRef = davor4f.bloecke[0];
+          const wuchs = danach4f.bloecke.length === davor4f.bloecke.length + 1;
+          const anStelleZwei = danach4f.bloecke[1] === quelleRef;
+          if (wuchs && anStelleZwei) {
+            console.log("[schritt-4f] Spalt-Drop GEMESSEN: Liste " + davor4f.bloecke.length +
+              " -> " + danach4f.bloecke.length + " Bloecke; Position 2 traegt die gezogene " +
+              "Referenz (Kernachse belegt).");
+          } else if (wuchs) {
+            fund("Spalt-Drop", "das Element steigt an der Kante-POSITION 2 in die Liste",
+              `Bloecke danach: ${JSON.stringify(danach4f.bloecke)}`, "Befund", "composer/index.tsx");
+          } else {
+            fund("Spalt-Drop", "ein Drop auf die Kante fuegt an dieser Position ein (#411/#412)",
+              `Bloecke davor/nachher: ${davor4f.bloecke.length}/${danach4f.bloecke.length}; ` +
+              `Meldung: ${JSON.stringify(danach4f.meldung)}; Ablehnungen: ${JSON.stringify(danach4f.ablehnungen)}`,
+              "Befund", "composer/index.tsx");
+          }
+          // #414-Abnahme-Rest: GENAU EIN Undo-Schritt nimmt das Einfuegen zurueck.
+          const davorUndo = davor4f.bloecke.length;
+          await seite.keyboard.down("Meta");
+          await seite.keyboard.press("z");
+          await seite.keyboard.up("Meta");
+          await schlafe(1_500);
+          const nachUndo4f = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+          );
+          if (nachUndo4f === davorUndo) {
+            console.log("[schritt-4f] Undo GEMESSEN: " + nachUndo4f +
+              " Bloecke nach Cmd+Z (#243/#350: ein Einfuegen ist EIN Schritt).");
+          } else {
+            fund("Spalt-Drop-Undo", "Cmd+Z nimmt das Kanten-Einfuegen in EINEM Schritt zurueck",
+              `Bloecke danach Undo: ${nachUndo4f} (erwartet ${davorUndo})`,
+              "Befund", "composer/index.tsx");
           }
         }
       }

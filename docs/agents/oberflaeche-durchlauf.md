@@ -553,3 +553,47 @@ Ereignisse gesammelt: 14
 
 - **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-14T15:20:29.531Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "zwei Bloecke in der Zeitleiste vor dem Drop", erkannt "0 Bloecke" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-14T15:21:22.258Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "zwei Bloecke in der Zeitleiste vor dem Drop", erkannt "0 Bloecke" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-14T15:22:34.762Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **BLOCKER** Zusammenstellen: erwartet "Wiedergabeliste sichtbar", erkannt "liste nicht da" (Ort: composer/index.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Sicht-Aktualitaet: erwartet "Liste zeigt das ueber den Bedienweg hinzugefuegte Element (#407)", erkannt "Knopf geklickt, aber 0 Zeilen in der Ansicht" (Ort: composer/index.tsx)
+- **Untersuchung** KontextMenue: erwartet "die erste Zeile fuer den Rechtsklick (#408)", erkannt "keine Wiedergabeliste-Zeile im Fenster" (Ort: composer/liste-ansicht.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "Quelle und Kante-1 sind sichtbar", erkannt "Quelle-Box: {"x":24,"y":399.8125,"height":39,"width":300}, Kante-Box: null" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-14T15:27:27.215Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **BLOCKER** Zusammenstellen: erwartet "Wiedergabeliste sichtbar", erkannt "liste nicht da" (Ort: composer/index.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Spalt-Drop-Undo: erwartet "Cmd+Z nimmt das Kanten-Einfuegen in EINEM Schritt zurueck", erkannt "Bloecke danach Undo: 3 (erwartet 2)" (Ort: composer/index.tsx)

@@ -17,17 +17,18 @@ const ZEILE_HOEHE_PX = 64
 export function baueZeitleistenZeilen(
   liste: readonly Listenelement[],
 ): Array<
-  | { elementId: string; art: 'video' | 'segment'; dauerSekunden: number; breitePx: number }
-  | { elementId: string; art: 'fehlt'; dauerSekunden: null; breitePx: number }
+  | { elementId: string; ref: string; art: 'video' | 'segment'; dauerSekunden: number; breitePx: number }
+  | { elementId: string; ref: string; art: 'fehlt'; dauerSekunden: null; breitePx: number }
 > {
   return liste.map((element) => {
     const einzeln = frameDauer(element)
     if (!einzeln.ok) {
       // Ein Element ohne bestimmbare Dauer bekommt einen Platzhalter – keine zweite Regel.
-      return { elementId: element.id, art: 'fehlt' as const, dauerSekunden: null, breitePx: 64 }
+      return { elementId: element.id, ref: element.ref, art: 'fehlt' as const, dauerSekunden: null, breitePx: 64 }
     }
     return {
       elementId: element.id,
+      ref: element.ref,
       art: element.art,
       dauerSekunden: einzeln.wert / RENDER_PROFILE.fps,
       breitePx: Math.max(24, Math.round((einzeln.wert / RENDER_PROFILE.fps) * EA_PX_PRO_SEKUNDE)),
@@ -172,6 +173,10 @@ function ZeilenBlock({
       {...attributes}
       {...listeners}
       data-testid={`zeitleiste-block-${index}`}
+      // #414-Abnahme-Messgroesse: die Quelleg-Referenz am Block, damit der Treiber die
+      // POSITION eines Einfuegens am echten Fenster belegen kann (welches Medium in
+      // welchem Slot steht). Muster wie data-element-id an der Zeilenliste (#248).
+      data-ref={zeile.ref ?? ""}
       style={{
         width: zeile.breitePx,
         flex: '0 0 auto',
