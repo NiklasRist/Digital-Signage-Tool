@@ -60,6 +60,7 @@ import { WarteschlangenLeiste } from './shell/WarteschlangenLeiste'
 import { leereProjektHistorie } from './app-shell/undo-historien'
 import { aktualisiereAusgaben } from './composer/ausgabe-liste'
 import { starteMedienImport } from './app-shell/medien-import-uebergabe'
+import { leererEntwurf, legeAktionAn } from './action-editor/aktion-bearbeiten'
 import { ComposerWurzel } from './composer/index'
 import { ActionEditorWurzel } from './action-editor'
 import { VorlagenEditorWurzel } from './vorlagen-editor'
@@ -176,6 +177,10 @@ export function App(): JSX.Element {
       wechsleZuZusammenstellen: () => wechsleReiter('zusammenstellen'),
       composerVerdrahtung: {
         starteMedienImport,
+        // #416: „Aktion anlegen" - der vollstaendige Entwurf entsteht HIER aus dem
+        // #136-Entwurf (#319: Marke = Projekt-Standardmarke, Akzentfarbe null).
+        legeAktionAn: ({ titel, vorlagenId, markeId }) =>
+          legeAktionAn({ ...leererEntwurf(vorlagenId, markeId, null), titel }),
         reparatur: reparatur.stand,
         meldeReparaturStand: (stand: ReparaturStand) => {
           if (umgebungRef.current !== null) meldeStand(umgebungRef.current, stand)

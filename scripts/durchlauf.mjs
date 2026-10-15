@@ -1127,6 +1127,43 @@ const main = async () => {
       }
     }
 
+    // Schritt 4g - Aktion anlegen aus dem Composer (#416): Inline-Erst-Anlage ohne
+    // Reiterwechsel. Titel eintippen, Vorlage waehlen, Knopf druecken - der Eintrag
+    // muss SOFORT in der Aktionen-Liste der Bibliothek stehen.
+    await klick('[data-testid="reiter-zusammenstellen"]');
+    await schlafe(600);
+    const aktionenDavor4g = await seite.evaluate(
+      () => document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]').length,
+    );
+    const formDa4g = await seite.evaluate(() => !!document.querySelector('[data-testid="aktion-anlegen"]'));
+    if (!formDa4g) {
+      fund("Aktion anlegen", "das Inline-Formular steht in der Bibliothek (#416)",
+        "aktion-anlegen fehlt", "Befund", "composer/bibliothek-ansicht.tsx");
+    } else {
+      await seite.evaluate(() => {
+        const feld = document.querySelector('[data-testid="aktion-anlegen-titel"]');
+        if (feld !== null) feld.scrollIntoView({ block: 'center' });
+      });
+      await schlafe(150);
+      await seite.click('[data-testid="aktion-anlegen-titel"]');
+      await seite.type('[data-testid="aktion-anlegen-titel"]', 'Durchlauf-Aktion-inline');
+      await schlafe(200);
+      await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="aktion-anlegen-knopf"]');
+        if (knopf !== null) knopf.click();
+      });
+      await schlafe(2_500);
+      const aktionenDanach4g = await seite.evaluate(
+        () => document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]').length,
+      );
+      if (aktionenDanach4g > aktionenDavor4g) {
+        console.log(`[schritt-4g] Aktion anlegen GEMESSEN: ${aktionenDavor4g} -> ${aktionenDanach4g} Aktionen (#416 belegt).`);
+      } else {
+        fund("Aktion anlegen", "die neue Aktion erscheint sofort in der Bibliothek (#416)",
+          `Aktionen davor/nachher: ${aktionenDavor4g}/${aktionenDanach4g}`, "Befund", "composer/index.tsx");
+      }
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     // Aufräumblock (User-Entscheidung 14.10.2026, solange die App NICHT fertig ist):
     // Jeder Lauf loescht seine eigenen Projekte ("DurchlaufTest-*") ueber den ECHTEN

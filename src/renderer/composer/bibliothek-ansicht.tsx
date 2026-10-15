@@ -6,9 +6,11 @@
 
 import type { JSX } from 'react'
 import type { Listenelement, Project } from '../../shared/contracts/project'
+import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { MedienEintrag, AktionsEintrag } from './bibliothek-ansicht'
 import { baueMedienEintraege, baueAktionsEintraege, zaehleFehlende } from './bibliothek-ansicht'
 import { fuegeElementHinzu } from './element-hinzufuegen'
+import { AktionAnlegen, type AktionAnlegenEingabe } from './aktion-anlegen.tsx'
 // #413: Die Karten/Zeilen werden als Drag-QUELLEN zur Zeitleiste (#412) - der Klick-Weg
 // bleibt UNVERAENDERT (zweiter Weg, nicht der einzige). Ein DndContext holt sie erst,
 // wenn #414 die Flaeche montiert; bis dahin laufen die Bestands-Specs unveraendert.
@@ -26,6 +28,10 @@ export interface BibliothekEigenschaften {
   ausgewaehltesId?: string | null
   /** #418: Klick auf eine Medienzeile macht sie zur Auswahl. */
   aufWaehlen?: (assetId: string) => void
+  /** #416: die nutzbaren Vorlagen fuer das Inline-Anlegen einer Aktion. */
+  vorlagen?: readonly Vorlage[]
+  /** #416: legt eine Aktion an (Titel + Vorlage; Marke = Projekt-Standardmarke). */
+  aufAktionAnlegen?: (eingabe: AktionAnlegenEingabe) => void
 }
 
 /**
@@ -74,8 +80,13 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
       )}
 
       <h2>Aktionen</h2>
+      {/* #416: Inline-Erst-Anlage - Titel + Vorlage, ohne Reiterwechsel. Die neue Aktion
+          erscheint sofort in der Liste darunter (Sicht-Pflege ueber den Zugang). */}
+      {p.aufAktionAnlegen !== undefined && (
+        <AktionAnlegen vorlagen={p.vorlagen ?? []} aufAnlegen={p.aufAktionAnlegen} />
+      )}
       {aktionen.length === 0 ? (
-        <p data-testid="aktionen-leer">Noch keine Aktionen - legen Sie welche im Aktions-Editor an.</p>
+        <p data-testid="aktionen-leer">Noch keine Aktionen - legen Sie oben eine an.</p>
       ) : (
         <ul data-testid="aktionen-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {aktionen.map((eintrag) => (
