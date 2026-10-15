@@ -11,7 +11,20 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (15.10.2026) – gilt vor ALLEM weiter unten
+## STAND HEUTE (15.10.2026, nachmittags) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-2.md`](docs/agents/uebergabe-2026-10-15-session-2.md) – LIES DIESE DATEI ZUERST.**
+Kurz: Die **User-Abnahme der Kernachse** (#416–#421) brachte eine Anforderungsaenderung, die entschieden
+UND gebaut ist: **Ein Projekt – ein Video**. **#422** (Bibliothek „Video", „Video importieren",
+Auto-Uebernahme ans Listenende, Ersetzen mit Bestätigung; das Video wird **nicht gelöscht**), **#423**
+(Anlegen: **Video zuerst, Pflicht** – ohne Video kein Projekt; Haeckchen entfernt), **#424** (sichtbare
+Undo/Redo-Pfeile in der Reiterleiste). AD **v1.7** / TK **v3.22**. Nur DOKUMENTIERT: **#425** (Band/FA-20
+anbinden – `EinblendungAnsicht` war „fertige Funktion ohne Aufrufer") und **#426** („Aktion unterbricht
+das Video kurz" – neue Anforderung, Modell/Render zu entwerfen). Suite **5491 Tests gruen (313 Dateien)**,
+Typecheck/Lint 0, **alles gepusht**. Naechste Session: **User-Abnahme #422–#424**, dann **#425 bauen**
+und **#426 entscheiden**.
+
+## STAND HEUTE (15.10.2026, vormittags) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15.md`](docs/agents/uebergabe-2026-10-15.md) – LIES DIESE DATEI ZUERST.**
 Kurz: **Die SECHS Kernachse-Nachzuege sind ALLE gebaut UND treiber-gemessen** (#416, #417,
