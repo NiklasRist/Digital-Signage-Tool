@@ -11,7 +11,20 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (15.10.2026, abends) – gilt vor ALLEM weiter unten
+## STAND HEUTE (15.10.2026, spaetabends) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-3.md`](docs/agents/uebergabe-2026-10-15-session-3.md) – LIES DIESE DATEI ZUERST.**
+Kurz: **#425 gebaut + treiber-gemessen** (Band-Aufnahme am Video, TK v3.23 / 9.7.7). **#422/#423
+User-abgenommen (ok)**; bei der Abnahme meldete der User zwei Befunde: **#427** (die App beendet
+sich nach dem Fenster-Schliessen nicht – Waisenprozess blockierte den Neustart) ist **GEBAUT und
+am echten Fenster gemessen** (Gegenprobe beisst; Merge `0ce2d17`); **#428** (neue Anforderung:
+„Zeitleiste soll Frames/Zeitstellen zeigen, Aktion an einer Zeitstelle im Video ablegen") ist
+**nur angelegt** (`braucht-entscheidung`, Modell offen). #425+#427 geschlossen.
+Suite **5512 Tests gruen (315 Dateien)**, Typecheck/Lint 0. Alles **lokal auf `main`**, **nicht
+gepusht**. Naechste Session: **#424-Abnahme** (konnte der User noch nicht testen), dann
+**#428 entscheiden**, dann **#426** und Welle 2 / #371.
+
+## STAND HEUTE (15.10.2026, abends) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-3.md`](docs/agents/uebergabe-2026-10-15-session-3.md) – LIES DIESE DATEI ZUERST.**
 Kurz: **#425 ist GEBAUT und treiber-gemessen** (Band-Aufnahme am Video). Vor dem Bauen wurden die

@@ -69,3 +69,38 @@ waehrend die Auto-Speicherung entprellt ist (3–5 s, TK 9.5.4). Der Protokollei
 - **Push nur auf ANWEISUNG** (Stand: lokal auf `main` gemergt, **nicht** gepusht).
 - Optische Abnahme **#327** weiterhin offen.
 - `#289`-Flaky beobachten.
+
+---
+
+## Nachtrag derselben Sitzung: die User-Abnahme #422–#424 hat zwei Befunde gebracht
+
+**Abgenommen und ok:** **#422** (ein Projekt/ein Video, „Video importieren", Auto-Übernahme,
+Ersetzen-Rückfrage, Löschen-Meldung) und **#423** (Video zuerst, Pflicht, kein Häkchen).
+**#424** (Undo/Redo-Pfeile) konnte der User **noch nicht** testen – dabei hatte er die App
+versehentlich geschlossen und konnte sie nicht neu starten.
+
+### #427 – App beendet sich nach dem Fenster-Schliessen nicht (GEBAUT, Merge `0ce2d17`)
+- **Ursache (am Code):** Beim roten Kreuz ist das Fenster beim `before-quit` bereits zerstört
+  (`window-all-closed` → `app.quit()`); der Ablauf stieg bei `hauptfenster.isDestroyed()` aus, **ohne
+  `app.quit()`** – der `preventDefault` stand, der Prozess blieb als Waise, `instanz.lock` blockierte
+  den Neustart.
+- **User-Entscheidungen:** erst flushen, dann beenden; **`before-quit` bleibt der EINZIGE Weg** (#336).
+- **Fix:** `beenden-ablauf.ts` → `flushesBeimBeendenOhneDialogAus()` (drei Sofort-Flushs, Fehlschlag
+  wird verworfen); `index.ts` behandelt den fenster-losen Fall damit und beendet.
+- **Beleg:** `scripts/pruefe-beenden.mjs` (eigenes Prozess-Maß, nicht Teil von `durchlauf`): mit Fix
+  beendet sich die App **sofort**; **Gegenprobe** (Fix aus) beißt – der Prozess lebt nach 20 s noch.
+  Rücknahme per Prüfsumme (`7da36827…`) belegt. Suite **5512 grün** (+3).
+
+### #428 – Zeitleiste als Zeit-/Frame-Band (NUR ANGELEGT, `braucht-entscheidung`)
+User-Befund: „Aktionen funktionieren gar nicht … nur dahinter und davor, weil die zeitleiste keine
+frames darstellt." Bestätigt: **die Zeitleiste soll Frames/Zeitstellen zeigen**, und eine Aktion soll
+**an einer Zeitstelle im Video** liegen. Das braucht ein **Modell** (Band-Abschnitt mit
+`position`/`start` vs. reine Reihenfolge) und berührt AD 4.5 / TK 9.2.8 – **bewusst offen**, siehe
+Issue #428 (STOPP-Punkte: Zeitstelle vs. Reihenfolge, Rotation, Frame-Raster, nur Video oder auch
+Segmente).
+
+### Reihenfolge fuer die naechste Sitzung
+1. **#424-Abnahme** (Rest der Kernachse), App neu starten (Fix #427 steckt im Build).
+2. **#428 entscheiden** (Modell/Raster), dann zuschneiden.
+3. **#426 entscheiden** (kurze Unterbrechung).
+4. Welle 2 / Banner-Spur, **#371-Klärung**.
