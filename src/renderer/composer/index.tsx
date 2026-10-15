@@ -28,6 +28,8 @@
 import { useEffect, useState, useRef, type JSX, type MouseEvent as ReactMouseEvent } from 'react'
 
 import type { Listenelement, Project } from '../../shared/contracts/project'
+import type { Aktion } from '../../shared/contracts/aktion'
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjektZugang, VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
 import type { ReparaturStand } from './reparatur-fuehrung'
 import type { ListenZeileModell } from './liste-ansicht'
@@ -120,6 +122,14 @@ import { KontextMenue } from './kontext-menu.tsx'
 import { oeffneMenue, schliesseMenue, type ComposerLage } from './composer-montage'
 
 
+/** #416: der Anlege-Auftrag (Roheingabe + Marke). Die Wurzel baut daraus KEINEN Entwurf -
+ *  das tut allein der Aktions-Editor (#136/#319); hier reisen nur die drei Werte. */
+export interface AktionAnlegenAuftrag {
+  titel: string
+  vorlagenId: string
+  markeId: string
+}
+
 /**
  * Was diese Wurzel aus ANDEREN Renderer-Modulen braucht und nicht importieren darf
  * (Entscheidung E1: modulübergreifend reisen nur Typen, keine Aufrufe).
@@ -128,6 +138,9 @@ export interface ComposerVerdrahtung {
   /** Der Medien-Dialog samt Import-Auftraegen (#204, `app-shell`). Wird an #228
    *  durchgereicht; diese Wurzel oeffnet KEINEN Dialog selbst. */
   starteMedienImport: MedienImportStarter
+  /** #416: „Aktion anlegen" (der #136-Weg). Der vollstaendige Entwurf entsteht im
+   *  Aktions-Editor; diese Wurzel reisst keinen zweiten Entwurf auf. */
+  legeAktionAn: (auftrag: AktionAnlegenAuftrag) => Promise<Ergebnis<Aktion>>
   /** Der Reparatur-Stand, den die Shell haelt (#201). null = nie gestartet.
    *  Wird NUR GELESEN – diese Wurzel haelt ihn NICHT (s. #259, ENTSCHIEDEN 5). */
   reparatur: ReparaturStand | null
@@ -279,6 +292,28 @@ export function ComposerInterna({
   // ENTSCHIEDEN 3). Sperrschranken: Freigabe der Fuehrung (#132) via
   // istRenderKnopfFrei (#259) und vorhandene Zeichenvoraussetzungen (ohne sie
   // kann #134 keine PNGs zeichnen; kein Ersatzwert).
+  // #416: Aktion anlegen aus dem Composer heraus. Die Wurzel baut KEINEN Entwurf (das tut
+  // der Aktions-Editor #136 ueber verdrahtung.legeAktionAn); sie ergaenzt NUR die Marke
+  // (Projekt-Standardmarke) und pflegt die SICHT nach dem Erfolg - Anhaengen ans ENDE,
+  // dieselbe Regel wie mitAktion (#136). Fehler gehen in die stehende Wurzel-Meldung.
+  const legeAktionAnInline = (eingabe: { titel: string; vorlagenId: string }): void => {
+    if (inhalt === null) return
+    void verdrahtung
+      .legeAktionAn({ titel: eingabe.titel, vorlagenId: eingabe.vorlagenId, markeId: inhalt.standardMarkeId })
+      .then((ergebnis) => {
+        if (!ergebnis.ok) {
+          setzeLage((alt) =>
+            melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
+          )
+          return
+        }
+        const aktion = ergebnis.wert
+        // Kein zweiter Entwurf, keine Kaskade: den neuen Stand in die Sicht geben; die
+        // Bibliothek liest inhalt.aktionen und zeigt den Eintrag SOFORT (#416-DoD).
+        projekt.setzeProjekt({ ...inhalt, aktionen: [...inhalt.aktionen, aktion] })
+      })
+  }
+
   const oeffneRenderDialog = (): void => {
     if (inhalt === null) return
     setzeLage((alt) =>
@@ -545,6 +580,8 @@ export function ComposerInterna({
                 aufImportieren={importiere}
                 ausgewaehltesId={lage.gewaehltesMediumId}
                 aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
+                vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+                aufAktionAnlegen={legeAktionAnInline}
                 aufMediumLoeschen={(assetId) =>
                   setzeLage((alt) => oeffneOverlay(alt, { art: 'medium_loeschen', assetId }))
                 }
