@@ -45,9 +45,13 @@ export interface BibliothekEigenschaften {
  * ENTSCHIEDEN 3: Kein <video> in dieser Ansicht - kein Frame-Weg neben #128.
  */
 export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
-  const medien = baueMedienEintraege(p.projekt)
+  // #422: Ein Projekt hat genau EIN Video. Der Medien-Bereich heisst "Video" und zeigt
+  // NUR Video-Assets; Bilder sind Motiv einer Aktion (action-editor) und erscheinen hier
+  // nicht mehr. Das Video ist automatisch Listeneintrag - es gibt fuer es KEIN
+  // "Zur Liste hinzufuegen" mehr (das bleibt fuer AKTIONEN).
+  const videos = baueMedienEintraege(p.projekt).filter((eintrag) => eintrag.typLabel === 'Video')
   const aktionen = baueAktionsEintraege(p.projekt)
-  const fehlende = zaehleFehlende(medien)
+  const fehlende = zaehleFehlende(videos)
 
   return (
     <div data-testid="bibliothek">
@@ -57,21 +61,19 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
         </div>
       )}
 
-      <h2>Medien</h2>
-      <button type="button" onClick={p.aufImportieren} data-testid="medien-importieren">
-        Medien importieren
+      <h2>Video</h2>
+      <button type="button" onClick={p.aufImportieren} data-testid="video-importieren">
+        Video importieren
       </button>
-      {medien.length === 0 ? (
-        <p data-testid="medien-leer">Noch keine Medien - importieren Sie zuerst ein Medium.</p>
+      {videos.length === 0 ? (
+        <p data-testid="video-leer">Noch kein Video - importieren Sie eines.</p>
       ) : (
-        <ul data-testid="medien-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          {medien.map((eintrag) => (
-            <Medienzeile
+        <ul data-testid="video-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {videos.map((eintrag) => (
+            <Videozeile
               key={eintrag.asset.id}
               eintrag={eintrag}
               aufMediumLoeschen={p.aufMediumLoeschen}
-              aufFehler={p.aufFehler}
-              sichtSchreiber={p.sichtSchreiber}
               ausgewaehlt={eintrag.asset.id === (p.ausgewaehltesId ?? null)}
               aufWaehlen={p.aufWaehlen}
             />
@@ -98,23 +100,19 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
   )
 }
 
-interface MedienzeileEigenschaften {
+interface VideozeileEigenschaften {
   eintrag: MedienEintrag
   aufMediumLoeschen: (assetId: string) => void
-  aufFehler: (code: string, meldung: string) => void
-  sichtSchreiber: (liste: Listenelement[]) => void
   /** #418: hervorgehoben? */
   ausgewaehlt: boolean
   aufWaehlen?: (assetId: string) => void
 }
 
-function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
+function Videozeile(p: VideozeileEigenschaften): JSX.Element {
   const fehlt = p.eintrag.zustand === 'fehlt'
-  // #417 (User-Weisung 15.10.2026): Medien (Bilder/Videos) sind KEINE Drag-Quelle.
-  // Der Drag in die Zeitleiste war fuer AKTIONEN gedacht (und spaeter fuer Banner);
-  // Bilder/Videos kommen weiter ueber den Klick-Weg ("Zur Liste hinzufuegen") und
-  // den Import in die Liste - der Weg bleibt unveraendert.
-  // #418: Die ausgewaehlte Medienzeile ist hervorgehoben (data-ausgewaehlt).
+  // #422 (User-Weisung 15.10.2026): Ein Projekt hat EIN Video. Es ist automatisch in
+  // der Wiedergabeliste - deshalb gibt es hier KEIN "Zur Liste hinzufuegen" (dieses
+  // bleibt allein den Aktions-Zeilen). Import/Loeschen stehen im Bereichskopf bzw. hier.
   return (
     <li
       data-testid={`medium-${p.eintrag.asset.id}`}
@@ -123,8 +121,8 @@ function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
       style={p.ausgewaehlt ? { outline: '2px solid #e5634d', outlineOffset: -2 } : undefined}
     >
       <div data-ton={fehlt ? 'hervorgehoben' : 'ruhig'}>
-        {/* ENTSCHIEDEN 4: Bilder direkt als media://-img (TK 9.5.7); die URL gibt es
-            nur bei typ bild UND zustand ok (ENTSCHIEDEN 5). */}
+        {/* Videos tragen in dieser Ansicht KEIN Vorschaubild (ENTSCHIEDEN 3/#128) -
+            der Zweig bleibt fuer den Fall, dass ein Eintrag doch eine URL traegt. */}
         {p.eintrag.vorschauUrl ? (
           <img
             src={p.eintrag.vorschauUrl}
@@ -136,9 +134,6 @@ function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
         )}
         <span>{p.eintrag.bezeichnung}</span>
         {fehlt && <span> · fehlt</span>}
-        <button type="button" onClick={() => void hinzufuegen(p.eintrag.asset.id, p.aufFehler, p.sichtSchreiber)}>
-          Zur Liste hinzufügen
-        </button>
         <button type="button" onClick={() => p.aufMediumLoeschen(p.eintrag.asset.id)}>
           Löschen
         </button>

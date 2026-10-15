@@ -97,15 +97,14 @@ afterAll(() => {
 })
 
 describe('Nur AKTIONEN sind ziehbar (#413/#417)', () => {
-  it('Die Medienzeilen (Bild/Video) sind KEINE Drag-Quelle', () => {
+  it('Die Video-Zeile der Bibliothek ist KEINE Drag-Quelle; Bilder erscheinen hier nicht (#422)', () => {
     const behaelter = montiere(bibliothek())
 
     const videoZeile = behaelter.querySelector('[data-testid="medium-a-video"]')
-    const bildZeile = behaelter.querySelector('[data-testid="medium-a-bild"]')
     expect(videoZeile).not.toBeNull()
-    expect(bildZeile).not.toBeNull()
     expect(videoZeile?.getAttribute('aria-roledescription')).not.toBe('draggable')
-    expect(bildZeile?.getAttribute('aria-roledescription')).not.toBe('draggable')
+    // #422: Bilder sind Motiv einer Aktion und stehen NICHT mehr in der Bibliothek.
+    expect(behaelter.querySelector('[data-testid="medium-a-bild"]')).toBeNull()
   })
 
   it('JEDE Aktionszeile traegt den draggable-Vertrag am DOM', () => {
@@ -152,7 +151,7 @@ describe('Das ausgewaehlte Medium ist hervorgehoben (#418)', () => {
     ).toBe('false')
   })
 
-  it('die gewaehlte Medienzeile der Bibliothek traegt data-ausgewaehlt=true', () => {
+  it('die gewaehlte Video-Zeile der Bibliothek traegt data-ausgewaehlt=true (#418/#422)', () => {
     const behaelter = montiere(
       createElement(Bibliotheksansicht, {
         projekt: projekt(),
@@ -166,8 +165,7 @@ describe('Das ausgewaehlte Medium ist hervorgehoben (#418)', () => {
     expect(
       behaelter.querySelector('[data-testid="medium-a-video"]')?.getAttribute('data-ausgewaehlt'),
     ).toBe('true')
-    expect(
-      behaelter.querySelector('[data-testid="medium-a-bild"]')?.getAttribute('data-ausgewaehlt'),
-    ).toBe('false')
+    // #422: Das Bild steht nicht mehr in der Bibliothek.
+    expect(behaelter.querySelector('[data-testid="medium-a-bild"]')).toBeNull()
   })
 })
