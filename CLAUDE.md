@@ -11,7 +11,22 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (14.10.2026, spaet) – gilt vor ALLEM weiter unten
+## STAND HEUTE (15.10.2026) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15.md`](docs/agents/uebergabe-2026-10-15.md) – LIES DIESE DATEI ZUERST.**
+Kurz: **Die SECHS Kernachse-Nachzuege sind ALLE gebaut UND treiber-gemessen** (#416, #417,
+#418, #419, #420, #421) – je ein Branch + Merge auf `main`. Damit ist die Kernachse
+inhaltlich fertig; es fehlt nur noch die **User-Abnahme** (Regel: Treiber-Beleg ist keine
+User-Abnahme). Wichtigste Messungen: #417 Aktion 2 -> 3 Bloecke an Position 2 (Undo 1
+Schritt), #419 Buehne 768x151 mit Video 268x151, #418 `data-ausgewaehlt=true` nach dem
+Import, #420 Kontextmenue an der Zeitleiste (Duplikat/Entfernen), #416 Inline-Anlegen
+Aktionen 1 -> 2, #421 Reparatur 2 -> 1 (Cmd+Z 1 Schritt). Zusatzbefund+behoben: `fuehreFixAus`
+hatte KEINEN Aufrufer (die Fix-Knoepfe fehlten) – neues `composer/reparatur-panel.tsx`.
+Suite **5477 Tests gruen (310 Dateien)**, Typecheck/Lint 0, 55 Commits ungesendet.
+Naechste Session: **User-Abnahme der Kernachse**, dann Welle 2 (Banner-Spur) und die
+#371-Klaerung.
+
+## STAND HEUTE (14.10.2026, spaet) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-14-session-2.md`](docs/agents/uebergabe-2026-10-14-session-2.md) – LIES DIESE DATEI ZUERST.**
 Kurz: Die **Oberflaeche-2.0-Welle 1** ist gebaut und Treiber-gemessen (#411 position-Vertrag,
