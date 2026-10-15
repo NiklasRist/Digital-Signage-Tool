@@ -1294,6 +1294,73 @@ const main = async () => {
       }
     }
 
+    // Schritt 4f3 - Undo/Redo-PFEILE am echten Fenster (#424): eine Aktion über den
+    // Klick-Weg hinzufuegen, dann den SICHTBAREN Pfeil-Rueckgaengig druecken (nicht nur
+    // Cmd+Z) und messen, dass die Liste schrumpft; danach Redo und messen, dass sie
+    // wieder waechst. Am Ende zuruecknehmen, damit der Zustand fuer 4g/4h gleich bleibt.
+    await klick('[data-testid="reiter-zusammenstellen"]');
+    await schlafe(600);
+    const bloeckeVor4f3 = await seite.evaluate(
+      () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+    );
+    const zweiter4f3 = await seite.evaluate(() => {
+      const zeile = document.querySelector('[data-testid="aktionen-liste"] [data-testid^="aktion-"]');
+      const knopf = zeile === null
+        ? null
+        : [...(zeile.querySelectorAll('button') ?? [])]
+            .find((k) => k.textContent === "Zur Liste hinzufügen");
+      if (knopf === null) return false;
+      knopf.click();
+      return true;
+    });
+    await schlafe(3_000);
+    const nachHinzu4f3 = await seite.evaluate(
+      () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+    );
+    const undoDa4f3 = await seite.evaluate(() => {
+      const k = document.querySelector('[data-testid="undo-pfeil"]');
+      return k === null ? null : { da: true, disabled: k.disabled };
+    });
+    const redoDa4f3 = await seite.evaluate(() => {
+      const k = document.querySelector('[data-testid="redo-pfeil"]');
+      return k === null ? null : { da: true, disabled: k.disabled };
+    });
+    let nachUndo4f3 = null;
+    let nachRedo4f3 = null;
+    if (undoDa4f3 !== null && undoDa4f3.disabled === false) {
+      await klick('[data-testid="undo-pfeil"]');
+      await schlafe(1_500);
+      nachUndo4f3 = await seite.evaluate(
+        () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+      );
+      if (redoDa4f3 !== null && nachUndo4f3 !== null) {
+        await klick('[data-testid="redo-pfeil"]');
+        await schlafe(1_500);
+        nachRedo4f3 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+        );
+      }
+    }
+    console.log(`[schritt-4f3] Pfeile: KlickHinzu=${zweiter4f3}, Bloecke ${bloeckeVor4f3}->${nachHinzu4f3}, undo=${JSON.stringify(undoDa4f3)}, redo=${JSON.stringify(redoDa4f3)}, nach Undo=${nachUndo4f3}, nach Redo=${nachRedo4f3}`);
+    if (undoDa4f3 === null || redoDa4f3 === null) {
+      fund("Undo/Redo-Pfeile", "die Pfeile stehen in der Reiterleiste (#424)",
+        `undo=${JSON.stringify(undoDa4f3)}, redo=${JSON.stringify(redoDa4f3)}`, "Befund", "app-shell/undo-pfeile.tsx");
+    } else if (undoDa4f3.disabled === true) {
+      fund("Undo/Redo-Pfeile", "der Undo-Pfeil ist nach einer Hinzufuegung AKTIV (#424)",
+        "undo-pfeil ist disabled", "Befund", "app-shell/undo-pfeile.tsx");
+    } else if (nachUndo4f3 === bloeckeVor4f3 && nachRedo4f3 === nachHinzu4f3) {
+      console.log("[schritt-4f3] Pfeile GEMESSEN: Undo schrumpft, Redo waechst (je EIN Schritt).");
+    } else {
+      fund("Undo/Redo-Pfeile", "Undo nimmt zurueck, Redo stellt wieder her (#424)",
+        `Bloecke: vor=${bloeckeVor4f3}, nach Hinzu=${nachHinzu4f3}, nach Undo=${nachUndo4f3}, nach Redo=${nachRedo4f3}`,
+        "Befund", "app-shell/undo-pfeile.tsx");
+    }
+    // Zustand fuer 4g/4h wiederherstellen (falls Redo die Aktion zurueckgebracht hat).
+    if (nachRedo4f3 !== null && nachRedo4f3 !== bloeckeVor4f3) {
+      await klick('[data-testid="undo-pfeil"]');
+      await schlafe(1_200);
+    }
+
     // Schritt 4g - Aktion anlegen aus dem Composer (#416): Inline-Erst-Anlage ohne
     // Reiterwechsel. Titel eintippen, Vorlage waehlen, Knopf druecken - der Eintrag
     // muss SOFORT in der Aktionen-Liste der Bibliothek stehen.
