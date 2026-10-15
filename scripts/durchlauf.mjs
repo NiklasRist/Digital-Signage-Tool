@@ -517,32 +517,26 @@ const main = async () => {
           fund("Bibliotheksansicht", "bibliothek in der Wurzel gemountet (#407)",
             "Ansicht fehlt im Fenster", "BLOCKER", "composer/index.tsx");
         } else {
-          // Der Knopf "Zur Liste hinzufuegen" liegt je Medienzeile - hier ist das
-          // Seed-Video das EINZIGE Medium, also die erste Zeile. Geklickt wird IM
-          // Fensterskript FRISCH ermittelt: Ein vorab geholtes Element-Handle kann
-          // still auf verschobene Koordinaten zielen (React re-render, Befund-Muster
-          // #403) - der Frischgriff umgeht genau das. Abgewiesene Rufe hoebt
-          // `void hinzufuegen` still weg; sie werden gesammelt und belegt.
+          // #422: Das importierte Video landet AUTOMATISCH in der Wiedergabeliste - an
+          // der Video-Zeile gibt es KEIN "Zur Liste hinzufuegen" mehr. Gemessen wird
+          // also OHNE jeden Klick, dass die Sicht das Element von selbst traegt.
+          // Abgewiesene Rufe der automatischen Uebernahme werden gesammelt und belegt.
           await seite.evaluate(() => {
             window.__durchlauf.ablehnungen = [];
             window.addEventListener('unhandledrejection', (ereignis) => {
               window.__durchlauf.ablehnungen.push(String(ereignis.reason));
             });
           });
-          const klickDa = await seite.evaluate(() => {
+          const zeileHatHinzufuegen = await seite.evaluate(() => {
             const zeile = document.querySelector('[data-testid^="medium-"]');
-            const knopf = zeile === null
+            return zeile === null
               ? null
-              : [...(zeile.querySelectorAll('button') ?? [])]
-                  .find((k) => k.textContent === "Zur Liste hinzufügen");
-            if (knopf === null) return false;
-            knopf.click();
-            return true;
+              : [...(zeile.querySelectorAll('button') ?? [])].some((k) => k.textContent === "Zur Liste hinzufügen");
           });
-          console.log("[schritt-4b] Klick am echten Bedienweg: " + String(klickDa));
-          if (!klickDa) {
-            fund("Sicht-Aktualitaet", 'Knopf "Zur Liste hinzufuegen" an der Medienzeile',
-              "Knopf nicht gefunden", "BLOCKER", "composer/bibliothek-ansicht.tsx");
+          console.log("[schritt-4b] Video-Zeile hat 'Zur Liste hinzufuegen': " + String(zeileHatHinzufuegen) + " (soll false sein, #422)");
+          if (zeileHatHinzufuegen === true) {
+            fund("Sicht-Aktualitaet", "die Video-Zeile traegt KEIN 'Zur Liste hinzufuegen' (#422)",
+              "Knopf ist noch da", "Befund", "composer/bibliothek-ansicht.tsx");
           }
           await schlafe(3_500);
 
@@ -559,10 +553,10 @@ const main = async () => {
           console.log("[schritt-4b] Listen-Diagnostik: " + JSON.stringify(listeDiag));
           const sichtZeigtElement = listeDiag.zeilen > 0 || listeDiag.bloecke > 0;
           if (!sichtZeigtElement) {
-            fund("Sicht-Aktualitaet", "Liste zeigt das ueber den Bedienweg hinzugefuegte Element (#407)",
-              "Knopf geklickt, aber 0 Zeilen (Liste) und 0 Bloecke (Zeitleiste) in der Ansicht", "Befund", "composer/index.tsx");
+            fund("Sicht-Aktualitaet", "Liste zeigt das automatisch uebernommene Video (#422)",
+              "kein Klick erfolgte, aber 0 Zeilen (Liste) und 0 Bloecke (Zeitleiste) in der Ansicht", "Befund", "composer/index.tsx");
           } else {
-            console.log(`[schritt-4b] Die Sicht zeigt ${sichtZeigtElement ? (listeDiag.bloecke > 0 ? listeDiag.bloecke + " Zeitleisten-Bloecke" : listeDiag.zeilen + " Listen-Zeilen") : "nichts"} nach dem echten Bedienweg (#407 belegt).`);
+            console.log(`[schritt-4b] Die Sicht zeigt ${sichtZeigtElement ? (listeDiag.bloecke > 0 ? listeDiag.bloecke + " Zeitleisten-Bloecke" : listeDiag.zeilen + " Listen-Zeilen") : "nichts"} nach dem Import (#422 automatisch belegt).`);
           }
         }
 
@@ -1008,7 +1002,10 @@ const main = async () => {
         "aktionen-liste ohne Aktionszeile", "Befund", "composer/bibliothek-ansicht.tsx");
     }
       const zweiterKlick = await seite.evaluate(() => {
-        const zeile = document.querySelector('[data-testid^="medium-"]');
+        // #422: an der Video-Zeile gibt es kein "Zur Liste hinzufuegen" mehr - der
+        // zweite Block entsteht ueber den ECHTEN Weg der AKTIONEN (die sind ziehbar
+        // und haben den Knopf weiterhin).
+        const zeile = document.querySelector('[data-testid="aktionen-liste"] [data-testid^="aktion-"]');
         const knopf = zeile === null
           ? null
           : [...(zeile.querySelectorAll('button') ?? [])]
