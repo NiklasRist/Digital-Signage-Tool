@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.6 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.22 (Aktionen auf das Video: Band parallel anzuschließen, kurze Unterbrechung als neue, noch zu entwerfende Anforderung; s. 9.7.7)
+**Version:** 3.23 (Band parallel an das Video angeschlossen: Drop einer Aktion auf den Video-Block, Ziel-/Vorlagen-/Dauer-Regeln; s. 9.7.7)
 **Datum:** 15.10.2026
 **Status:** In Planung
 
@@ -1437,17 +1437,29 @@ setzt das **in der Oberfläche** um:
   Programmfehler entstehen, nicht durch Bedienung. Bilder sind weiterhin nur **Motiv einer Aktion**
   (action-editor, 9.8) und kein eigenes Listenelement.
 
-#### 9.7.7 Aktionen auf das Video legen: Band und Unterbrechung (v3.22)
+#### 9.7.7 Aktionen auf das Video legen: Band und Unterbrechung (v3.22, Band gebaut in v3.23 / #425)
 
 Der Nutzer legt eine Aktion **auf das Video**, statt sie nur davor/danach einzuordnen (AD 4.5). Zwei Wirkungen:
 
-- **Band (parallel, FA-20) – gebaut, aber nicht angeschlossen.** Die Ansicht `composer/einblendung-ansicht.tsx`
+- **Band (parallel, FA-20) – gebaut und angeschlossen (v3.23, #425).** Die Ansicht `composer/einblendung-ansicht.tsx`
   (#253/M7-60) bearbeitet das Werbeband EINES Video-Elements (Band-Vorlage wählen, Abschnitte
-  anlegen/ordnen); die Logik liegt in `einblendung-bearbeiten.ts` (#129). Sie ist **nicht montiert** –
-  der Composer zeigt nur den Platzhalter „M7-61 nicht angebunden". Anzuschließen ist: (a) die Ansicht am
-  Video-Element öffnen, (b) eine aus der Bibliothek gezogene **Aktion auf das Video** als **Band-Abschnitt**
-  aufnehmen (über die bestehenden `einblendung-bearbeiten`-Operationen – kein zweiter Schreibweg),
-  (c) Undo wie jede andere Sicht-Korrektur (ein Schritt, #243-Hülle).
+  anlegen/ordnen); die Logik liegt in `einblendung-bearbeiten.ts` (#129). Sie ist im Composer
+  **montiert** – das Video-Element öffnet sie (Elementbedienung, `aufEinblendungBearbeiten`). Eine aus
+  der Bibliothek **auf das Video** gezogene **Aktion** wird ein **Band-Abschnitt** über die
+  **bestehenden** `einblendung-bearbeiten`-Operationen (`entwurfAus`, `fuegeAbschnittAn`,
+  `uebernehmeBand` – kein zweiter Schreibweg); die Sicht-Korrektur läuft über den Wrapped-Zugang
+  (`setzeListe`, #243) und ist **EIN Undo-Schritt**. Die **Elementdauer** des Videos ändert das Band
+  **nie** (9.2.8). Drei Regeln sind mit v3.23 festgelegt (User-Entscheidungen 15.10.2026, s. #425):
+  - **Ziel:** nur der **Körper** eines **Video**-Blocks ist Band-Ziel (`band-aufnahme.ts`, gemessen am
+    Zeitleisten-Layout #412/#417). Ein Drop auf einem **Aktions-Segment** ordnet **sequenziell**
+    davor/danach ein – das leistet die bestehende Kanten-Messung (`waehleKanteAus`, #412); die
+    Band-Bearbeitung wird dabei **nicht** angerissen.
+  - **Startdauer** eines angehängten Abschnitts: die **Dauer-Kette des Produkts**
+    `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10` (AD 4.4, 9.8.4) – **nicht** der feste
+    `STANDARD_ANZEIGEDAUER_SEKUNDEN` (der bleibt nur der letzte Rückfall).
+  - **Band-Vorlage**, wenn am Video noch keine gewählt ist: die **erste wählbare**
+    (`waehlbareBandVorlagen`, #129) – derselbe Startentwurf wie die Ansicht (ENTSCHIEDEN 3, #253).
+    Keine zweite, unsichtbare Ordnung neben der Bestandsreihenfolge.
 - **Kurze Unterbrechung (NEU – offen, noch nicht gebaut).** Die Aktion **pausiert** das Video kurz,
   läuft, danach läuft das Video **weiter**. Das berührt **Datenmodell und Render** (das Video wird an
   der Stelle geteilt: Video-Teil · Aktion · Video-Teil) und ist **noch zu entwerfen** – Modell, Konkatenation

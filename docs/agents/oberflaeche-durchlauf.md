@@ -825,3 +825,31 @@ Ereignisse gesammelt: 14
 
 - **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-15T15:18:53.373Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Treiber-Messfehler (zurueckgenommen)** Band-Aufnahme: erwartet "ein Drop auf das Video wird ein Band-Abschnitt (#425)", erkannt "Abschnitte: null". Ursache: der Treiber las `project.json` 3,5 s nach dem Drop, waehrend die Auto-Speicherung entprellt ist (3-5 s, TK 9.5.4). Kein App-Befund. Der naechste Lauf misst zusaetzlich in der Oberflaeche und mit 6,5 s Wartezeit - und belegt die Band-Aufnahme.
+
+## Nachlauf vom 2026-10-15T15:20:57.104Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-15T15:23:35.172Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

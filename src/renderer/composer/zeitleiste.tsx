@@ -72,6 +72,10 @@ export interface ZeitleistenEigenschaften {
   /** #414: der Korb der Zeitleiste - der MESSRAUM fuer waehleKanteAus. Ref kommt von
    *  der Wurzel, die den DndContext haelt (EIN Kontext fuer Quellen und Kanten). */
   korbRef: React.RefObject<HTMLDivElement | null>
+  /** #425: die Kennung des Video-Blocks, ueber dem ein Aktion-Neuzug gerade steht -
+   *  dort entstuende ein BAND-Abschnitt (nicht sequenziell). null = kein Band-Ziel.
+   *  Die Messung liegt in `band-aufnahme.ts` (#425); hier wird nur gezeichnet. */
+  bandZiel?: string | null
 }
 
 export function Zeitleiste({
@@ -80,6 +84,7 @@ export function Zeitleiste({
   aktiveKante,
   laedtKante,
   korbRef,
+  bandZiel = null,
 }: ZeitleistenEigenschaften): JSX.Element {
   if (projekt === null) {
     return <div data-testid="zeitleiste-kein-projekt" />
@@ -108,7 +113,7 @@ export function Zeitleiste({
           {neuZug !== null && <KantenBlock nummer={0} aktiv={aktiveKante === 0} laedt={laedtKante === 0} />}
           {zeilen.map((zeile, index) => (
             <span key={zeile.elementId} style={{ display: 'flex', alignItems: 'stretch', gap: 2, padding: 0 }}>
-              <ZeilenBlock zeile={zeile} index={index} />
+              <ZeilenBlock zeile={zeile} index={index} istBandZiel={zeile.elementId === bandZiel} />
               {neuZug !== null && (
                 <KantenBlock nummer={index + 1} aktiv={aktiveKante === index + 1} laedt={laedtKante === index + 1} />
               )}
@@ -166,9 +171,11 @@ function KantenBlock({ nummer, aktiv, laedt }: { nummer: number; aktiv: boolean;
 function ZeilenBlock({
   zeile,
   index,
+  istBandZiel = false,
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
+  istBandZiel?: boolean;
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: zeile.elementId })
   const beschriftung = zeilenBeschriftung(zeile, index)
@@ -179,6 +186,8 @@ function ZeilenBlock({
       {...attributes}
       {...listeners}
       data-testid={`zeitleiste-block-${index}`}
+      // #425: sichtbares Band-Ziel - der Drop hier wird ein Band-Abschnitt.
+      data-band-ziel={istBandZiel ? 'true' : 'false'}
       // #420: dieselbe Traeger-Konvention wie die #248-Listenzeile (data-element-id) -
       // so oeffnet EIN Selektor in der Wurzel das EINE KontextMenue fuer BEIDE Ansichten.
       // data-ref bleibt (die #414-Abnahme-Messgroesse).
@@ -193,7 +202,9 @@ function ZeilenBlock({
         fontSize: 10,
         overflow: 'hidden',
         cursor: 'grab',
-        border: `1px solid ${zeile.art === 'fehlt' ? '#e5634d' : '#3a3a3a'}`,
+        border: `1px solid ${istBandZiel ? '#e5a94d' : zeile.art === 'fehlt' ? '#e5634d' : '#3a3a3a'}`,
+        outline: istBandZiel ? '2px solid #e5a94d' : 'none',
+        outlineOffset: -2,
         background: zeile.art === 'video' ? '#2f6db5' : zeile.art === 'segment' ? '#2a9d8f' : '#333',
         color: '#fff',
         display: 'flex',
@@ -206,7 +217,7 @@ function ZeilenBlock({
       title={zeile.art === 'fehlt' ? 'Dauer unbestimmbar' : `${beschriftung.dauerText}`}
     >
       <span>{beschriftung.dauerText}</span>
-      <span style={{ opacity: 0.7 }}>{beschriftung.art}</span>
+      <span style={{ opacity: 0.7 }}>{istBandZiel ? 'Band' : beschriftung.art}</span>
     </div>
   );
 }

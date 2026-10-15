@@ -35,7 +35,7 @@ import type { ReparaturStand } from './reparatur-fuehrung'
 import type { ListenZeileModell } from './liste-ansicht'
 import type { Uebergabe } from './reparatur-optionen'
 import type { MedienImportStarter } from './medien-import'
-import { aufSichtGeaendert, holeSicht, type Projektsicht } from './projektzustand'
+import { aufSichtGeaendert, type Projektsicht } from './projektzustand'
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -117,6 +117,13 @@ import { Bibliotheksansicht } from './bibliothek-ansicht.tsx'
 import { loescheMedium } from './medium-loeschen'
 import { MediumLoeschen } from './medium-loeschen.tsx'
 import { gibVideoHandlesFrei } from '../gemeinsam/video-handles'
+// #425: Die Band-Bearbeitung (#253/M7-60) wird endlich MONTIERT (Familie „fertige
+// Funktion ohne Aufrufer"); der Drop einer Aktion auf das VIDEO wird ein Band-Abschnitt.
+// Die reine Aufnahme-Logik liegt in band-aufnahme.ts, der eine Schreibweg in
+// uebernehmeBand (#129) - diese Wurzel ruft nur und pflegt die Sicht.
+import { EinblendungAnsicht } from './einblendung-ansicht.tsx'
+import { uebernehmeBand } from './einblendung-bearbeiten'
+import { bandZielAus, bandAufnahmeAus, startdauerFuerBandabschnitt } from './band-aufnahme'
 // #408: Das KontextMenue (#133-Familie, Duplikat/Entfernen) wird in DIESE Wurzel
 // montiert - sein Zustand wandert siehtbarseitig in die ComposerLage (menueAdresse,
 // composer-montage.ts); die Zeilen tragen data-element-id (#248) - kein Edits an #248.
@@ -218,9 +225,12 @@ export function ComposerInterna({
   vorlagen: VorlagenZugang
 }): JSX.Element {
   const [sicht, setzeSicht] = useState<Projektsicht>(() => projekt.hole())
-  // Die Band-/Fehlermeldungen von #249: Bandbearbeitung (M7-61) ist nicht
-  // angebunden - der Hinweis ist ein Platzhalter, KEINE falsche Oberflche.
-  const [bandHinweis, setzeBandHinweis] = useState<string | null>(null)
+  // #425: Die Band-Bearbeitung ist jetzt montiert. `bandElementId` haelt das Video-
+  // Element, dessen Werbeband gerade bearbeitet wird (null = Ansicht zu). Fehler der
+  // Band-Bearbeitung reisen ueber die stehende Wurzel-Meldung (lage.meldung).
+  const [bandElementId, setzeBandElementId] = useState<string | null>(null)
+  // #425: der Video-Block, ueber dem ein Aktion-Neuzug gerade steht (Band-Ziel).
+  const [bandZiel, setzeBandZiel] = useState<string | null>(null)
   // Der Bericht des Imports (#228): ohne ihn "passiert" der Import für den Nutzer
   // NICHTS - eingereiht wird zwar im Main, aber sichtbar war das nie (Befund 04.10.).
   const [importBericht, setzeImportBericht] = useState<ImportBericht | null>(null)
@@ -309,7 +319,10 @@ export function ComposerInterna({
   }, [inhalt?.assets])
 
   useEffect(() => {
-    setzeBandHinweis(null)
+    // #425: Beim Projektwechsel die Band-Ansicht schliessen - ein Element des alten
+    // Projekts ist im neuen nicht mehr vorhanden.
+    setzeBandElementId(null)
+    setzeBandZiel(null)
   }, [inhalt?.id])
 
   // #342: Der erste Ladevorgang je Projekt (M7-68, ENTSCHIEDEN 7) - nur, wenn der
@@ -421,12 +434,10 @@ export function ComposerInterna({
         }
         vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
         kaputteBandAbschnitte={modell.kaputteBandAbschnitte}
-        aufEinblendungBearbeiten={(elementId) =>
-          setzeBandHinweis(
-            `Bandbearbeitung fr ${elementId}: die Einblendungs-Ansicht (M7-61) ist hier noch nicht angebunden.`,
-          )
+        aufEinblendungBearbeiten={setzeBandElementId}
+        aufFehler={(code, meldung) =>
+          setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
         }
-        aufFehler={(code, meldung) => setzeBandHinweis(`${code}: ${meldung}`)}
         sichtSchreiber={projekt.setzeListe}
       />
     )
@@ -469,6 +480,12 @@ export function ComposerInterna({
     return inhalt.assets.find((eintrag) => eintrag.id === assetId) ?? null
   })()
 
+  // #425: Das Video-Element, dessen Werbeband gerade bearbeitet wird (null = Ansicht zu).
+  const bandElement = (() => {
+    if (bandElementId === null || inhalt === null) return null
+    return inhalt.liste.find((eintrag) => eintrag.id === bandElementId) ?? null
+  })()
+
   // #408/#420: Der rechtsklick-Weg. EIN Traeger-Selektor fuer BEIDE Ansichten: die
   // #248-Listenzeile UND der #414-Zeitleisten-Block tragen `data-element-id` (#420).
   // Damit oeffnet dieselbe Wurzel das EINE KontextMenue ueber die ComposerLage
@@ -489,6 +506,7 @@ export function ComposerInterna({
   const amDragStart = (ereignis: DragStartEvent): void => {
     // NUR ein Drag MIT Referenz (Neu-Einfuegen, #413) oeffnet die Kanten.
     setzeNeuZug(liestReferenz(ereignis.active.data.current))
+    setzeBandZiel(null)
     const aktivator = ereignis.activatorEvent as MouseEvent
     if (typeof aktivator?.clientX === 'number') zeigerStartX.current = aktivator.clientX
   }
@@ -501,11 +519,13 @@ export function ComposerInterna({
     const korb = korbRef.current
     if (korb === null || zeigerStartX.current === null) {
       setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
+      setzeBandZiel(null)
       return
     }
     const umriss = korb.getBoundingClientRect()
     if (umriss.width === 0 && umriss.height === 0) {
       setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
+      setzeBandZiel(null)
       return
     }
     const zeilen = baueZeitleistenZeilen(inhalt?.liste ?? [])
@@ -518,11 +538,64 @@ export function ComposerInterna({
     // die uebergebene "Breite" den Layout-Vorschub Block + Kante + zwei Luecken.
     const gemessen = waehleKanteAus(kanten, xImKontext, (index) => (zeilen[index]?.breitePx ?? 64) + KANTEN_VORSCHUB_PX)
     setzeAktiveKante(gemessen ?? leseKantenIndex(ereignis.over?.id))
+    // #425: Steht der Zeiger im KOERPER eines VIDEO-Blocks, wird der Drop ein Band-
+    // Abschnitt (nicht sequenziell). Die Messung liegt rein in band-aufnahme.ts.
+    setzeBandZiel(
+      bandZielAus(zeilen, zeilen.map((zeile) => zeile.breitePx), xImKontext, KANTEN_VORSCHUB_PX),
+    )
+  }
+
+  // #425: EINE Aktion ins Werbeband des Video-Elements aufnehmen. Der Entwurf kommt
+  // aus band-aufnahme.ts (erste waehlbare Band-Vorlage, Dauer-Kette des Produkts),
+  // geschrieben wird ausschliesslich ueber uebernehmeBand (#129) - kein zweiter
+  // Schreibweg. Die Sicht-Korrektur geht ueber den Wrapped-Zugang (EIN Undo-Schritt).
+  const nehmeAktionInsBandAuf = (videoId: string, aktionId: string): void => {
+    const frisch = projekt.hole().projekt
+    if (frisch === null) return
+    const element = frisch.liste.find((eintrag) => eintrag.id === videoId)
+    if (element === undefined || element.art !== 'video') return
+    const aktion = frisch.aktionen.find((eintrag) => eintrag.id === aktionId)
+    if (aktion === undefined) return
+
+    const dauer = startdauerFuerBandabschnitt(aktion.standardDauer, frisch.standardSegmentdauer)
+    const entwurf = bandAufnahmeAus(
+      element,
+      aktion.id,
+      dauer,
+      (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage),
+    )
+    if (entwurf === null) {
+      setzeLage((alt) =>
+        melde(alt, {
+          code: 'keine_band_vorlage',
+          meldung:
+            'Für ein Werbeband wird eine Band-Vorlage gebraucht (Art „split“ oder „einblendung“). Lege eine Vorlage im Reiter Vorlagen an.',
+          warnung: true,
+        }),
+      )
+      return
+    }
+
+    void uebernehmeBand(element.id, entwurf).then((antwort) => {
+      if (!antwort.ok) {
+        setzeLage((alt) => melde(alt, { code: antwort.fehler.code, meldung: antwort.fehler.meldung, warnung: true }))
+        return
+      }
+      // Die Sicht NACH dem await frisch holen (kein gemerkter Stand) und GENAU EIN
+      // setzeListe - das ist der eine Undo-Schritt ueber den Wrapped-Zugang (#243).
+      const aktuell = projekt.hole().projekt
+      if (aktuell === null) return
+      const neu = antwort.wert
+      projekt.setzeListe(aktuell.liste.map((eintrag) => (eintrag.id === neu.id ? neu : eintrag)))
+    })
   }
 
   const amEnde = (ereignis: DragEndEvent): void => {
     setzeNeuZug(null)
     setzeAktiveKante(null)
+    // #425: Das Band-Ziel VOR dem Zuruecksetzen lesen - der Drop entscheidet daran.
+    const zielVideo = bandZiel
+    setzeBandZiel(null)
     // Sortier-Drag EINES BESTANDELEMENTS (keine Referenz): der Reorder-Weg (#122).
     const referenz = liestReferenz(ereignis.active.data.current)
     if (referenz === null) {
@@ -530,6 +603,13 @@ export function ComposerInterna({
       const ueber = ereignis.over?.id
       if (typeof aktiv !== 'string' || typeof ueber !== 'string') return
       ordneNeuOptimistisch(aktiv, ueber, projekt.setzeListe)
+      return
+    }
+    // #425: Drop auf dem VIDEO-Koerper -> Band-Abschnitt; die Video-Elementdauer
+    // bleibt unberuehrt (TK 9.2.8). Auf einem Segment-Koerper ist `zielVideo` null;
+    // dann laeuft der Drop wie bisher an die gemessene Kante (sequenziell davor/danach).
+    if (zielVideo !== null) {
+      nehmeAktionInsBandAuf(zielVideo, referenz)
       return
     }
     // NEU-Drag (#413): Einfuegen an der Kante (#411-Mutation, nicht optimistisch).
@@ -549,6 +629,7 @@ export function ComposerInterna({
   const amDragAbbruch = (): void => {
     setzeNeuZug(null)
     setzeAktiveKante(null)
+    setzeBandZiel(null)
   }
 
   return (
@@ -736,16 +817,10 @@ export function ComposerInterna({
                     zeichneBedienung={zeichneBedienung}
                     aufZeileGewaehlt={(elementId) => {
                       // ENTSCHIEDEN 8 (#248): Diese Ansicht haelt KEINE Auswahl - hier ist
-                      // die Wurzel der Aufrufer. Band-Hinweis zuruecksetzen gehoert dazu.
-                      setzeBandHinweis(null)
+                      // die Wurzel der Aufrufer.
                       void elementId
                     }}
                   />
-                  {bandHinweis !== null && (
-                    <div data-testid="composer-band-hinweis" style={{ color: TAKTFARBE, fontSize: 12 }}>
-                      {bandHinweis}
-                    </div>
-                  )}
                 </>
               )}
               <div
@@ -808,6 +883,7 @@ export function ComposerInterna({
             aktiveKante={aktiveKante}
             laedtKante={laedtKante}
             korbRef={korbRef}
+            bandZiel={bandZiel}
           />
 
           {/* #342: Die Ausgabe-Liste (#230) - der Oeffnungsweg des Export-Dialogs
@@ -878,6 +954,43 @@ export function ComposerInterna({
                 })
               }}
               aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* #425: Die Band-Bearbeitung (#253/M7-60) - endlich montiert. Sie bearbeitet
+          das Werbeband des Video-Elements; das Uebernehmen liefert das neue Element,
+          die Wurzel korrigiert die Sicht (EIN Undo-Schritt, #243-Huelle). */}
+      {bandElement !== null && inhalt !== null && (
+        <div
+          data-testid="composer-overlay-band"
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 460, maxHeight: '80vh', overflow: 'auto' }}>
+            <EinblendungAnsicht
+              element={bandElement}
+              aktionen={inhalt.aktionen}
+              vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+              stellen={findeKaputteStellen(inhalt)}
+              aufUebernommen={(element) => {
+                const aktuell = projekt.hole().projekt
+                if (aktuell === null) {
+                  setzeBandElementId(null)
+                  return
+                }
+                projekt.setzeListe(
+                  aktuell.liste.map((eintrag) => (eintrag.id === element.id ? element : eintrag)),
+                )
+                setzeBandElementId(null)
+              }}
+              aufAbbrechen={() => setzeBandElementId(null)}
+              aufFehler={(code, meldung) =>
+                setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
+              }
             />
           </div>
         </div>

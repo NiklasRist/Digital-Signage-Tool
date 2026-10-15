@@ -11,7 +11,22 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (15.10.2026, nachmittags) – gilt vor ALLEM weiter unten
+## STAND HEUTE (15.10.2026, abends) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-3.md`](docs/agents/uebergabe-2026-10-15-session-3.md) – LIES DIESE DATEI ZUERST.**
+Kurz: **#425 ist GEBAUT und treiber-gemessen** (Band-Aufnahme am Video). Vor dem Bauen wurden die
+drei STOPP-Punkte des Issues mit dem User entschieden: (1) Startdauer = Dauer-Kette
+`aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`; (2) Band-Vorlage ohne vorhandene =
+die erste waehlbare (#129); (3) Drop auf ein Aktions-Segment = sequenziell davor/danach (kein
+Ablehnen) – nur der **Koerper eines VIDEO-Blocks** ist Band-Ziel. `einblendung-ansicht.tsx`
+(#253/M7-60) ist jetzt **montiert** (war „fertige Funktion ohne Aufrufer"). Neu:
+`composer/band-aufnahme.ts` (rein), `zeitleiste.tsx` mit sichtbarem Band-Ziel (`data-band-ziel`).
+Treiber 4f2: `bandZiel=true; Bloecke 2->2; Abschnitte=[{aktionRef, dauer:10}]; Band-Zeilen=1;
+Undo Cmd+Z -> 0`. TK **v3.23** / 9.7.7, `.docx` neu. Suite **5509 Tests gruen (315 Dateien)**,
+Typecheck/Lint 0. Branch `bau/425-band-anbinden` (noch **nicht gepusht**).
+Naechste Session: **User-Abnahme #422–#424**, dann **#426 entscheiden**, dann Welle 2 / #371.
+
+## STAND HEUTE (15.10.2026, nachmittags) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-2.md`](docs/agents/uebergabe-2026-10-15-session-2.md) – LIES DIESE DATEI ZUERST.**
 Kurz: Die **User-Abnahme der Kernachse** (#416–#421) brachte eine Anforderungsaenderung, die entschieden

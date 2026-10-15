@@ -1147,6 +1147,153 @@ const main = async () => {
       }
     }
 
+    // Schritt 4f2 - BAND-Aufnahme am echten Fenster (#425): eine Aktion wird auf den
+    // VIDEO-Block gezogen (nicht an eine Kante). Erwartet: das Video-Element traegt
+    // danach einen Band-Abschnitt (harter Beleg: project.json), die Zahl der
+    // Zeitleisten-Bloecke bleibt GLEICH (das Band ist kein neues Listenelement, TK 9.2.8),
+    // und waehrend des Zugs traegt der Video-Block data-band-ziel="true".
+    await klick('[data-testid="reiter-zusammenstellen"]');
+    await schlafe(600);
+    const videoBlock4f2 = await seite.$('[data-testid="zeitleiste-block-0"]');
+    const videoBlockBox4f2 = videoBlock4f2 === null ? null : await videoBlock4f2.boundingBox();
+    const bloeckeVor4f2 = await seite.evaluate(
+      () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+    );
+    const quelle4f2 = await seite.$('[data-testid="aktionen-liste"] [data-testid^="aktion-"]');
+    if (videoBlockBox4f2 === null || quelle4f2 === null) {
+      fund("Band-Aufnahme", "Video-Block und Aktionszeile fuer den Band-Drag",
+        `videoBox=${JSON.stringify(videoBlockBox4f2)}, quelle=${quelle4f2 !== null}`,
+        "Untersuchung", "composer/index.tsx");
+    } else {
+      await quelle4f2.evaluate((el) => el.scrollIntoView({ block: "center", inline: "nearest" }));
+      await schlafe(200);
+      const qBox4f2 = await quelle4f2.boundingBox();
+      videoBlock4f2?.dispose?.();
+      quelle4f2.dispose?.();
+      if (qBox4f2 === null) {
+        fund("Band-Aufnahme", "die Aktionszeile ist als Drag-Quelle sichtbar",
+          "Quelle-Box null", "Untersuchung", "composer/index.tsx");
+      } else {
+        const grip4f2 = { x: qBox4f2.x + 6, y: qBox4f2.y + qBox4f2.height / 2 };
+        await seite.mouse.move(grip4f2.x, grip4f2.y);
+        await seite.mouse.down();
+        await seite.mouse.move(grip4f2.x + 12, grip4f2.y);
+        await schlafe(500);
+        // Ziel: die MITTE des Video-Blocks (der Koerper ist das Band-Ziel, nicht die Kante).
+        const ziel4f2 = {
+          x: videoBlockBox4f2.x + videoBlockBox4f2.width / 2,
+          y: videoBlockBox4f2.y + videoBlockBox4f2.height / 2,
+        };
+        const schritte4f2 = 16;
+        for (let t = 1; t <= schritte4f2; t += 1) {
+          await seite.mouse.move(
+            grip4f2.x + 12 + ((ziel4f2.x - (grip4f2.x + 12)) * t) / schritte4f2,
+            grip4f2.y + ((ziel4f2.y - grip4f2.y) * t) / schritte4f2,
+          );
+          await schlafe(30);
+        }
+        await schlafe(500);
+        const bandZiel4f2 = await seite.evaluate(
+          () => document.querySelector('[data-testid="zeitleiste-block-0"]')?.getAttribute("data-band-ziel"),
+        );
+        await seite.mouse.up();
+        await schlafe(6_500);
+        const bloeckeNach4f2 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+        );
+        // Der harte Beleg ist der STORE-Stand auf der Platte (der Main schreibt die
+        // Einblendung ueber setzeEinblendung, #129) - nach dem entprellten Auto-Speichern.
+        let abschnitte4f2 = null;
+        try {
+          const json4f2 = JSON.parse(
+            fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
+          );
+          const videoEl4f2 = (json4f2.liste ?? []).find((e) => e.art === "video");
+          abschnitte4f2 = videoEl4f2 && videoEl4f2.einblendung ? videoEl4f2.einblendung.abschnitte : null;
+        } catch (tu) {
+          abschnitte4f2 = "lesefehler: " + String(tu);
+        }
+        // Zweiter Beleg aus der OBERFLAECHE: die Band-Ansicht oeffnen und die
+        // Abschnittszeilen zaehlen (der Baustein liest die vorhandene Einblendung).
+        await klick('[data-testid="composer-ansicht-liste"]');
+        await schlafe(500);
+        const bandKnopf4f2 = await seite.$('[data-testid="element-band"]');
+        let bandZeilen4f2 = null;
+        if (bandKnopf4f2 !== null) {
+          await bandKnopf4f2.click();
+          await schlafe(700);
+          bandZeilen4f2 = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid="band-abschnitt-griff"]').length,
+          );
+          await seite.evaluate(() => {
+            const overlay = document.querySelector('[data-testid="composer-overlay-band"]');
+            const ab = overlay === null
+              ? null
+              : [...overlay.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen');
+            if (ab) ab.click();
+          });
+          await schlafe(200);
+        }
+        await klick('[data-testid="composer-ansicht-zeitleiste"]');
+        await schlafe(200);
+        const meldung4f2 = await seite.evaluate(
+          () => document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+        );
+        console.log(`[schritt-4f2] Band: bandZiel=${bandZiel4f2}; Bloecke ${bloeckeVor4f2}->${bloeckeNach4f2}; Abschnitte=${JSON.stringify(abschnitte4f2)}; Band-Zeilen=${bandZeilen4f2}; Meldung=${JSON.stringify(meldung4f2)}`);
+        const hatAbschnitt4f2 =
+          (Array.isArray(abschnitte4f2) && abschnitte4f2.some((a) => a.aktionRef === aktionsId417)) ||
+          (typeof bandZeilen4f2 === "number" && bandZeilen4f2 > 0);
+        if (bandZiel4f2 !== "true") {
+          fund("Band-Aufnahme", "der Video-Block ist waehrend des Zugs sichtbar das Band-Ziel (#425)",
+            `data-band-ziel=${bandZiel4f2}`, "Befund", "composer/index.tsx");
+        }
+        if (!hatAbschnitt4f2) {
+          fund("Band-Aufnahme", "ein Drop auf das Video wird ein Band-Abschnitt (#425)",
+            `Abschnitte: ${JSON.stringify(abschnitte4f2)}; Band-Zeilen: ${bandZeilen4f2}; Meldung: ${JSON.stringify(meldung4f2)}`,
+            "Befund", "composer/index.tsx");
+        } else if (bloeckeNach4f2 !== bloeckeVor4f2) {
+          fund("Band-Aufnahme", "das Band ist KEIN neues Listenelement (TK 9.2.8)",
+            `Bloecke ${bloeckeVor4f2}->${bloeckeNach4f2}`, "Befund", "composer/index.tsx");
+        } else {
+          console.log("[schritt-4f2] Band-Aufnahme GEMESSEN: das Video traegt einen Band-Abschnitt, die Blockzahl ist unveraendert (#425 belegt).");
+        }
+        // DoD: die Aufnahme ist EIN Undo-Schritt (Cmd+Z). Gemessen wird in der
+        // Oberflaeche: nach EINEM Cmd+Z ist der Band-Abschnitt weg (Band-Zeilen 0).
+        await seite.keyboard.down("Meta");
+        await seite.keyboard.press("z");
+        await seite.keyboard.up("Meta");
+        await schlafe(1_500);
+        await klick('[data-testid="composer-ansicht-liste"]');
+        await schlafe(400);
+        const bandKnopfUndo4f2 = await seite.$('[data-testid="element-band"]');
+        let bandZeilenUndo4f2 = null;
+        if (bandKnopfUndo4f2 !== null) {
+          await bandKnopfUndo4f2.click();
+          await schlafe(600);
+          bandZeilenUndo4f2 = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid="band-abschnitt-griff"]').length,
+          );
+          await seite.evaluate(() => {
+            const overlay = document.querySelector('[data-testid="composer-overlay-band"]');
+            const ab = overlay === null
+              ? null
+              : [...overlay.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen');
+            if (ab) ab.click();
+          });
+          await schlafe(200);
+        }
+        await klick('[data-testid="composer-ansicht-zeitleiste"]');
+        await schlafe(200);
+        console.log(`[schritt-4f2] Undo: Band-Zeilen nach Cmd+Z = ${bandZeilenUndo4f2}`);
+        if (bandZeilenUndo4f2 !== 0) {
+          fund("Band-Aufnahme-Undo", "Cmd+Z nimmt die Band-Aufnahme in EINEM Schritt zurueck (#243)",
+            `Band-Zeilen nach Undo: ${bandZeilenUndo4f2}`, "Befund", "composer/index.tsx");
+        } else {
+          console.log("[schritt-4f2] Undo GEMESSEN: die Band-Aufnahme ist EIN Schritt (Cmd+Z, #425 belegt).");
+        }
+      }
+    }
+
     // Schritt 4g - Aktion anlegen aus dem Composer (#416): Inline-Erst-Anlage ohne
     // Reiterwechsel. Titel eintippen, Vorlage waehlen, Knopf druecken - der Eintrag
     // muss SOFORT in der Aktionen-Liste der Bibliothek stehen.
