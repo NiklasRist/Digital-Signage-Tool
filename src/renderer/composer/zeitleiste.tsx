@@ -179,9 +179,10 @@ function ZeilenBlock({
       {...attributes}
       {...listeners}
       data-testid={`zeitleiste-block-${index}`}
-      // #414-Abnahme-Messgroesse: die Quelleg-Referenz am Block, damit der Treiber die
-      // POSITION eines Einfuegens am echten Fenster belegen kann (welches Medium in
-      // welchem Slot steht). Muster wie data-element-id an der Zeilenliste (#248).
+      // #420: dieselbe Traeger-Konvention wie die #248-Listenzeile (data-element-id) -
+      // so oeffnet EIN Selektor in der Wurzel das EINE KontextMenue fuer BEIDE Ansichten.
+      // data-ref bleibt (die #414-Abnahme-Messgroesse).
+      data-element-id={zeile.elementId}
       data-ref={zeile.ref ?? ""}
       style={{
         width: zeile.breitePx,

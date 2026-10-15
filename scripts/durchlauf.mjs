@@ -860,6 +860,89 @@ const main = async () => {
       }
     }
 
+    // Schritt 4e2 - KontextMenue an der ZEITLEISTE (#420): dieselbe Komponente, die
+    // andere Ansicht. Rechtsklick auf den ersten Zeitleisten-Block oeffnet das EINE
+    // Menue; Duplikat/Entfernen wirken an der Zeitleiste genauso wie an der #248-Liste.
+    await seite.evaluate(() => {
+      const knopf = document.querySelector('[data-testid="composer-ansicht-zeitleiste"]');
+      if (knopf !== null) knopf.click();
+    });
+    await schlafe(600);
+    const bloeckeDavor4e2 = await seite.evaluate(
+      () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+    );
+    const blockMenue = await seite.evaluate(() => {
+      const block = document.querySelector('[data-testid^="zeitleiste-block-"]');
+      if (block === null) return false;
+      const rechteck = block.getBoundingClientRect();
+      block.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true, cancelable: true,
+        clientX: rechteck.left + 4, clientY: rechteck.top + 4,
+      }));
+      return true;
+    });
+    console.log(`[schritt-4e2] Zeitleisten-Kontextmenue: ${String(blockMenue)} (Bloecke davor: ${bloeckeDavor4e2})`);
+    if (!blockMenue || bloeckeDavor4e2 === 0) {
+      fund("KontextMenue-Zeitleiste", "ein Zeitleisten-Block fuer den Rechtsklick (#420)",
+        `Bloecke: ${bloeckeDavor4e2}`, "Untersuchung", "composer/zeitleiste.tsx");
+    } else {
+      await schlafe(600);
+      const menueDa2 = await seite.evaluate(() => ({
+        menue: !!document.querySelector('[data-testid="kontext-menue"]'),
+        duplikat: !!document.querySelector('[data-testid="menue-duplikat"]'),
+      }));
+      if (!menueDa2.menue || !menueDa2.duplikat) {
+        fund("KontextMenue-Zeitleiste", "kontext-menue nach Rechtsklick auf einen Zeitleisten-Block (#420)",
+          `Menue-Diagn: ${JSON.stringify(menueDa2)}`, "Befund", "composer/index.tsx");
+      } else {
+        await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="menue-duplikat"]');
+          if (knopf !== null) knopf.click();
+        });
+        await schlafe(3_500);
+        const bloeckeDanach4e2 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+        );
+        if (bloeckeDanach4e2 > bloeckeDavor4e2) {
+          console.log(`[schritt-4e2] Duplikat GEMESSEN an der Zeitleiste: ${bloeckeDavor4e2} -> ${bloeckeDanach4e2} Bloecke (#420 belegt).`);
+        } else {
+          fund("KontextMenue-Zeitleiste", "Duplikat verlaengert die Zeitleiste (#420)",
+            `Bloecke davor/nachher: ${bloeckeDavor4e2}/${bloeckeDanach4e2}`, "Befund", "composer/kontext-menu.tsx");
+        }
+        await schlafe(600);
+        await seite.evaluate(() => {
+          const block = document.querySelector('[data-testid^="zeitleiste-block-"]');
+          if (block === null) return;
+          const rechteck = block.getBoundingClientRect();
+          block.dispatchEvent(new MouseEvent("contextmenu", {
+            bubbles: true, cancelable: true,
+            clientX: rechteck.left + 4, clientY: rechteck.top + 4,
+          }));
+        });
+        await schlafe(600);
+        const entfernenDa2 = await seite.evaluate(() => !!document.querySelector('[data-testid="menue-entfernen"]'));
+        if (!entfernenDa2) {
+          fund("KontextMenue-Zeitleiste", "menue-entfernen nach dem zweiten Rechtsklick an der Zeitleiste (#420)",
+            "Entfernen-Eintrag fehlt", "Befund", "composer/kontext-menu.tsx");
+        } else {
+          await seite.evaluate(() => {
+            const knopf = document.querySelector('[data-testid="menue-entfernen"]');
+            if (knopf !== null) knopf.click();
+          });
+          await schlafe(3_500);
+          const bloeckeNachEntfernen4e2 = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+          );
+          if (bloeckeNachEntfernen4e2 < bloeckeDanach4e2) {
+            console.log(`[schritt-4e2] Entfernen GEMESSEN an der Zeitleiste: ${bloeckeDanach4e2} -> ${bloeckeNachEntfernen4e2} Bloecke (#420 belegt).`);
+          } else {
+            fund("KontextMenue-Zeitleiste", "Entfernen verkuerzt die Zeitleiste (#420)",
+              `Bloecke davor/nachher: ${bloeckeDanach4e2}/${bloeckeNachEntfernen4e2}`, "Befund", "composer/kontext-menu.tsx");
+          }
+        }
+      }
+    }
+
     // Schritt 4f - Spalt-Drop am echten Fenster (#411-#414 Abnahme, Kernachse;
     // Quellen-Wechsel mit #417: gezogen wird eine AKTION, kein Medium).
     // User-Klaerung 15.10.2026 (#417): Drag&Drop ist fuer AKTIONEN gedacht (und spaeter

@@ -349,15 +349,16 @@ export function ComposerInterna({
     return inhalt.assets.find((eintrag) => eintrag.id === assetId) ?? null
   })()
 
-  // #408: Der rechtsklick-Weg. Die Zeile traegt data-element-id (#248); diese
-  // Wurzel oeffnet das Menue UEBER die ComposerLage (oeffneMenue) - der Baustein
-  // zeichnet nur. Rechtsklick neben der Liste bleibt beim Browser-Standard.
+  // #408/#420: Der rechtsklick-Weg. EIN Traeger-Selektor fuer BEIDE Ansichten: die
+  // #248-Listenzeile UND der #414-Zeitleisten-Block tragen `data-element-id` (#420).
+  // Damit oeffnet dieselbe Wurzel das EINE KontextMenue ueber die ComposerLage
+  // (oeffneMenue, #259) - kein zweites Menue, keine zweite Adresse. Rechtsklick neben
+  // Traegern (kein `data-element-id` in der Kette) bleibt beim Browser-Standard.
   const oeffneKontextMenue = (ereignis: React.MouseEvent): void => {
     const ziel = ereignis.target as HTMLElement | null
     if (ziel === null) return
-    const zeile = ziel.closest('[data-testid="wiedergabeliste-zeile"]')
-    if (zeile === null) return
-    const elementId = zeile.getAttribute('data-element-id')
+    const traeger = ziel.closest('[data-element-id]')
+    const elementId = traeger === null ? null : traeger.getAttribute('data-element-id')
     if (elementId === null) return
     ereignis.preventDefault()
     setzeLage((alt) => oeffneMenue(alt, { elementId, x: ereignis.clientX, y: ereignis.clientY }))
