@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 15.08.2026
-**Version:** 1.6 (Entwurf – Reichweite der Standarddauer geschärft: bereits platzierte Elemente bleiben unberührt)
+**Datum:** 15.10.2026
+**Version:** 1.7 (Ein Projekt – ein Video: genau **ein** Video je Projekt, Import beim Anlegen und im Projekt-Editor, Ersetzen mit Bestätigung, automatische Übernahme in die Wiedergabeliste, s. 4.9)
 **Status:** In Abstimmung
 
 ---
@@ -74,11 +74,11 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 
 | ID | Anforderung | Beschreibung | Priorität |
 |---|---|---|---|
-| FA-01 | Video importieren | Ein oder mehrere bestehende Videos (mind. MP4) können in das Projekt importiert und in einer Liste verwaltet werden. | Muss |
+| FA-01 | Video importieren | Ein Projekt enthält **genau ein** Video (mind. MP4). Es wird beim Anlegen des Projekts oder im Projekt-Editor importiert und **automatisch ans Ende der Wiedergabeliste** gestellt; ein erneuter Import **ersetzt** es nach Bestätigung. Details: 4.9. | Muss |
 | FA-02 | Produkt/Aktion anlegen | Produkte bzw. Aktionen können neu angelegt werden (Felder z. B.: Titel, Beschreibung/Text, optional Preis, optional Bild, Anzeigedauer). | Muss |
-| FA-03 | Inhalte bearbeiten/löschen | Vorhandene Videos und Produkte/Aktionen können bearbeitet und entfernt werden. | Muss |
+| FA-03 | Inhalte bearbeiten/löschen | Das importierte Video sowie Produkte/Aktionen können bearbeitet und entfernt werden; das Video wird über einen erneuten Import **ersetzt** (4.9). | Muss |
 | FA-04 | Aktions-Segment erzeugen | Aus einem Produkt/einer Aktion (Text + optional Bild) wird ein anzeigbares Video-/Bildsegment mit definierter Anzeigedauer erzeugt. | Muss |
-| FA-05 | Reihenfolge festlegen | Alle Elemente (Videos + Aktions-Segmente) können zu einer Wiedergabeliste zusammengestellt und in der Reihenfolge angeordnet werden (z. B. per Drag-and-drop). | Muss |
+| FA-05 | Reihenfolge festlegen | Das Video und die Aktions-Segmente können zu einer Wiedergabeliste zusammengestellt und in der Reihenfolge angeordnet werden (z. B. per Drag-and-drop). | Muss |
 | FA-06 | Anzeigedauer steuern | Je Aktions-Segment ist eine individuelle Anzeigedauer einstellbar; die Bedienung erfolgt über einen **einheitlichen Dauer-/Trim-Regler** – Kürzen *und* Verlängern per Griff, s. 4.4. Der **Startwert** kommt aus einer **projektweiten Standarddauer**, die je Aktion überschreibbar ist (s. 4.4). | Soll |
 | FA-07 | Vorschau | Die zusammengestellte Sequenz kann vor dem Rendern in der Anwendung vorab betrachtet werden. | Soll |
 | FA-08 | Ausgabe-Rendering | Aus der Wiedergabeliste wird **je Lauf eine einzige, durchgehende MP4-Datei** in definierter Auflösung und Codierung erzeugt (Verkettung aller Segmente). Dass es **eine** Datei ist, ist wesentlich: nur so läuft die Schleife am Fernseher ohne sichtbaren Übergang (Risiko R-04). | Muss |
@@ -331,6 +331,26 @@ Schrift würde den Markenbruch erst am Fernseher zeigen.
 
 ---
 
+### 4.9 Ein Projekt – ein Video (FA-01)
+
+Ein Projekt enthält **genau ein Video** neben **beliebig vielen Aktions-Segmenten**. Das Video ist der
+Hauptinhalt; die Werbung läuft sequenziell zwischen den Elementen oder parallel zum Video (4.5, FA-20).
+Das ist die Grundannahme des Werkzeugs: gepflegt wird **ein** Hauptvideo, dazu die wechselnde Werbung.
+
+- **Import beim Anlegen.** Ein neues Projekt kann sein Video bereits beim **Anlegen** erhalten (Name +
+  „Video importieren", FA-10). Das importierte Video wird **automatisch ans Ende der Wiedergabeliste**
+  gestellt – es ist sofort Inhalt, ohne einen zweiten Bedienschritt.
+- **Import im Projekt.** Im Projekt-Editor (Reiter [Zusammenstellen]) heißt der Weg **„Video importieren"**.
+- **Ersetzen statt Wechseln.** Liegt schon ein Video vor, **ersetzt** ein erneuter Import es – nach einer
+  **Bestätigung**. Es gibt **keine** Auswahl unter mehreren Videos und keinen beiläufigen „Video
+  austauschen"-Schalter: Ein Projekt hat genau eines. Der Import hat Dateiwirkung und ist **nicht**
+  rückgängig zu machen (FA-21) – deshalb die Bestätigung.
+- **Kein zweites Video.** Es gibt **keinen** Bedienweg, ein zweites Video neben dem vorhandenen in die
+  Wiedergabeliste zu legen. Bilder bleiben möglich – aber ausschließlich als **Motiv einer Aktion**
+  (4.1), nie als eigenes Listenelement.
+
+---
+
 ## 5. Nicht-funktionale Anforderungen
 
 | ID | Anforderung | Beschreibung | Priorität |
@@ -422,7 +442,7 @@ Bei späterem Bedarf ohne Architekturbruch erweiterbar:
 
 Die erste Version gilt als erfolgreich, wenn:
 
-1. Videos sowie Produkte/Aktionen über die Oberfläche angelegt, bearbeitet, gelöscht und in der Reihenfolge angeordnet werden können (FA-01 bis FA-05).
+1. Ein Video sowie Produkte/Aktionen über die Oberfläche importiert/angelegt, bearbeitet, gelöscht und in der Reihenfolge angeordnet werden können (FA-01 bis FA-05).
 2. Aus der Zusammenstellung **eine durchgehende** abspielbare MP4-Datei erzeugt und auf einen USB-Speicher exportiert wird (FA-08, FA-09).
 3. Diese MP4 auf dem Studio-Fernseher als Endlosschleife wiedergegeben wird (Abschnitt 7).
 4. Die Bedienung ohne technische Vorkenntnisse möglich ist (NFA-01).

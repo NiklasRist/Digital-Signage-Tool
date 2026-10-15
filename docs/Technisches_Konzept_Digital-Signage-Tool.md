@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.6 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.20 (`StartBefund` mit drei Zuständen als Vertrag in 9.5.4 festgelegt; sonst unverändert gegenüber v3.19)
-**Datum:** 16.08.2026
+**Version:** 3.21 (Ein Projekt – ein Video: Import beim Anlegen und im Projekt-Editor, „Video importieren", Ersetzen mit Bestätigung, automatische Übernahme ans Listenende; Durchsetzung in der Oberfläche, 9.7.6/9.14.3)
+**Datum:** 15.10.2026
 **Status:** In Planung
 
 ---
@@ -1415,6 +1415,28 @@ wartete auf ein Ergebnis, das von Anfang an feststand. Beide Codes verhindern ge
 kann eine Datei verschwinden, und die Grenzkontrolle des Main darf sich nicht auf den Renderer
 verlassen.
 
+#### 9.7.6 Ein Projekt – ein Video (v3.21)
+
+Ein Projekt hat **genau ein Video** (FA-01, 4.9) neben beliebig vielen Aktions-Segmenten. Der composer
+setzt das **in der Oberfläche** um:
+
+- **Der Medien-Bereich heißt „Video" und zeigt das eine Video** – Bezeichnung und Dauer, dazu
+  **„Video importieren"** und **Löschen**. Das Video steht **automatisch** am Ende der Wiedergabeliste
+  (bzw. an der Stelle, an die es gestellt wurde); ein „Zur Liste hinzufügen" entfällt für es, weil es
+  bereits Inhalt ist. Der **Aktions**-Bereich bleibt unverändert (Aktionen werden weiterhin per Klick
+  oder Drag hinzugefügt).
+- **Import ist der Weg ins Projekt.** Der Kopf-Knopf heißt **„Video importieren"** (nicht mehr „Medien
+  importieren"); er importiert **genau ein Video** (`nurTyp: 'video'`, #418) und stellt es **ans Ende der
+  Wiedergabeliste**.
+- **Liegt schon ein Video vor, ersetzt der Import es – nach Bestätigung.** Der Vorgang hat Dateiwirkung
+  und ist **nicht** undo-fähig (9.13.3); deshalb die Rückfrage. Ein bloßes Umschalten zwischen mehreren
+  Videos gibt es nicht.
+- **Durchsetzung nur in der Oberfläche (bewusste Grenze, v3.21).** Das Datenmodell `project-store`
+  (9.5.2, 9.11.3) lässt **technisch weiterhin** mehrere Video-Elemente zu; es gibt **keinen** neuen
+  Fehlercode und **keine** neue Main-Invariante. Ein zweites Video kann damit heute nur durch einen
+  Programmfehler entstehen, nicht durch Bedienung. Bilder sind weiterhin nur **Motiv einer Aktion**
+  (action-editor, 9.8) und kein eigenes Listenelement.
+
 ---
 
 ### 9.8 Modul `action-editor` [P2] (Renderer)
@@ -2182,6 +2204,14 @@ Marken-Editor führt den app-weiten **Bestand** und kennt keine Projekte (9.15.2
 (9.15.1), und nennt die betroffenen Projekte **namentlich**. Ohne eine Stelle, an der sich der Wechsel
 vollziehen lässt, wäre die Sperre eine Sackgasse – und weil in der Regel **mehrere**, nicht geladene Projekte
 betroffen sind, muss der Wechsel hier möglich sein, ohne jedes davon vorher zu öffnen.
+
+**Dazu seit v3.21 die Video-Import-Option beim Anlegen.** Der Anlege-Dialog führt neben dem Projektnamen
+optional **„Video importieren"** (FA-01, 4.9). Ist ein Video gewählt, legt die App das Projekt an,
+**wechselt in den Reiter Zusammenstellen** (Invariante unten: Öffnen → Zusammenstellen) und stößt den
+Video-Import an; das Video ist danach **bereits am Ende der Wiedergabeliste**. Der Import nutzt denselben
+Weg wie der Composer-Knopf (media-service 9.4, composer 9.7.6) – die Projektverwaltung baut **keinen**
+zweiten Importpfad. *Warum hier:* Der häufigste erste Schritt – „neues Projekt mit meinem Video" – soll
+ohne Reiterwechsel und ohne einen zweiten Bedienschritt gelingen.
 
 **Ist NICHT:** kein Dateisystem-Zugriff, keine absoluten Pfade (die Pfad-Autorität ist der `project-store`, 9.5.7), keine eigene Reparatur einer defekten `project.json`, kein Verzeichnis-Browser in der App.
 
