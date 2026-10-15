@@ -1398,6 +1398,36 @@ const main = async () => {
       }
     }
 
+    // Schritt 4g2 - Undo nach einer AKTIONS-Anlage (User-Pfad 15.10.2026: „eine Aktion
+    // namens nnn hinzugefügt" -> Undo tat nichts). Gemessen wird am AKTIONS-Zähler der
+    // Bibliothek: nach dem Undo-Pfeil muss die neu angelegte Aktion verschwinden.
+    {
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(500);
+      const aktionenVorUndo4g2 = await seite.evaluate(
+        () => document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]').length,
+      );
+      const undoAktiv4g2 = await seite.evaluate(() => {
+        const k = document.querySelector('[data-testid="undo-pfeil"]');
+        return k === null ? null : k.disabled === false;
+      });
+      if (undoAktiv4g2 === true) {
+        await klick('[data-testid="undo-pfeil"]');
+        await schlafe(1_500);
+      }
+      const aktionenNachUndo4g2 = await seite.evaluate(
+        () => document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]').length,
+      );
+      console.log(`[schritt-4g2] Aktions-Anlage rückgängig: Aktionen ${aktionenVorUndo4g2}->${aktionenNachUndo4g2}; Undo war aktiv=${undoAktiv4g2}`);
+      if (undoAktiv4g2 === true && aktionenNachUndo4g2 !== aktionenVorUndo4g2 - 1) {
+        fund("Undo Aktions-Anlage", "der Undo-Pfeil nimmt eine neu angelegte Aktion zurück (#416/FA-21)",
+          `Aktionen ${aktionenVorUndo4g2}->${aktionenNachUndo4g2} (erwartet ${aktionenVorUndo4g2 - 1})`,
+          "Befund", "composer/index.tsx");
+      } else if (undoAktiv4g2 === true) {
+        console.log("[schritt-4g2] Undo nach Aktions-Anlage GEMESSEN (#416/FA-21).");
+      }
+    }
+
     // Schritt 4h - Reparatur-Fuehrung (#421): eine KAPUTTE Stelle erzeugen (die kopierte
     // Medien-Datei loeschen), das Projekt per UI neu oeffnen (Reconcile -> Asset 'fehlt'),
     // dann eine Fix-Option bedienen und Cmd+Z messen (EIN Schritt ueber den Wrapped-Schreiber).
