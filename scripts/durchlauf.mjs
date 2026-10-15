@@ -796,12 +796,70 @@ const main = async () => {
       }
     }
 
-    // Schritt 4f - Spalt-Drop am echten Fenster (#411-#414 Abnahme, Kernachse):
-    // Liste auf 2 Bloecke bringen (Klick-Weg #407), dann ein ECHTER Pointer-Drag
-    // (dnd-kit PointerSensor) von der Bibliothekzeile in die Kante 1 ("Spalt 2 von 3").
-    // Erwartet: 3 Bloecke; die Kante-1 sitzt an Listen-Index 1 (Position 2). Danach
-    // Cmd+Z: GENAU EIN Schritt zurueck auf 2 Bloecke (#243/#350 am echten Fenster).
+    // Schritt 4f - Spalt-Drop am echten Fenster (#411-#414 Abnahme, Kernachse;
+    // Quellen-Wechsel mit #417: gezogen wird eine AKTION, kein Medium).
+    // User-Klaerung 15.10.2026 (#417): Drag&Drop ist fuer AKTIONEN gedacht (und spaeter
+    // Banner) - Bilder/Videos sind KEINE Drag-Quelle mehr. Eine Aktion ist im heutigen
+    // Stand nicht aus dem Composer heraus anzulegen (#416 offen); sie wird daher ueber
+    // den ECHTEN Vertragskanal project:erstelleAktion gesaet, danach wird das Projekt
+    // per UI neu geoeffnet (der Weg, der die gemeinsame Sicht nachzieht). Dann Liste auf
+    // 2 Bloecke (Klick-Weg #407) und die AKTIONSzeile per Pointer-Drag in die Kante 1
+    // ziehen ("zwischen die Videoframes", Position 2). Erwartet: 3 Bloecke, Position 2
+    // traegt die Aktions-Id. Danach Cmd+Z: GENAU EIN Schritt zurueck auf 2 Bloecke.
     await schlafe(400);
+    const saat417 = await seite.evaluate(async (projektId) => {
+      const projektAntwort = await window.api.invoke("project:öffneProjekt", { id: projektId });
+      if (projektAntwort === null || projektAntwort.ok !== true) {
+        return { fehler: "oeffneProjekt: " + JSON.stringify(projektAntwort) };
+      }
+      const antwort = await window.api.invoke("project:erstelleAktion", {
+        aktionsdaten: {
+          titel: "Durchlauf-Aktion",
+          beschreibung: null,
+          preis: null,
+          bildRef: null,
+          cta: null,
+          standardDauer: null,
+          vorlagenId: "vollbild",
+          markeId: projektAntwort.wert.standardMarkeId,
+          akzentfarbe: null,
+        },
+      });
+      if (antwort === null || antwort.ok !== true) {
+        return { fehler: "erstelleAktion: " + JSON.stringify(antwort) };
+      }
+      return { aktionId: antwort.wert.id };
+    }, aktivesProjektId);
+    let aktionsId417 = null;
+    if (typeof saat417.aktionId === "string") {
+      aktionsId417 = saat417.aktionId;
+      console.log(`[schritt-4f] Aktions-Saat angelegt: ${aktionsId417}`);
+    } else {
+      fund("Spalt-Drop", "eine Aktion als Drag-Quelle (Saat via project:erstelleAktion)",
+        `${saat417.fehler}`, "BLOCKER", "project-store/erstelle-aktion.ts");
+    }
+    // Projekt per UI neu oeffnen - erst das zieht die gemeinsame Sicht nach (ein roher
+    // IPC-Mutationsruf allein erreicht die Sicht NICHT, s. composer/projektzustand.ts).
+    await klick('[data-testid="reiter-projekte"]');
+    await schlafe(400);
+    const neuGeoeffnet417 = await seite.evaluate((pid) => {
+      const zeile = document.querySelector(`[data-testid="projekt-${pid}"]`);
+      const knopf = zeile === null ? null : zeile.querySelector("button");
+      if (knopf === null) return false;
+      knopf.click();
+      return true;
+    }, aktivesProjektId);
+    console.log(`[schritt-4f] Projekt neu geoeffnet: ${neuGeoeffnet417}`);
+    await schlafe(2_500);
+    await klick('[data-testid="reiter-zusammenstellen"]');
+    await schlafe(700);
+    const aktionDa417 = await seite.evaluate(
+      () => !!document.querySelector('[data-testid="aktionen-liste"] [data-testid^="aktion-"]'),
+    );
+    if (!aktionDa417) {
+      fund("Spalt-Drop", "die Aktionszeile steht nach der Saat in der Bibliothek",
+        "aktionen-liste ohne Aktionszeile", "Befund", "composer/bibliothek-ansicht.tsx");
+    }
       const zweiterKlick = await seite.evaluate(() => {
         const zeile = document.querySelector('[data-testid^="medium-"]');
         const knopf = zeile === null
@@ -824,17 +882,25 @@ const main = async () => {
         fund("Spalt-Drop", "zwei Bloecke in der Zeitleiste vor dem Drop",
           `${davor4f.bloecke.length} Bloecke`, "Untersuchung", "composer/index.tsx");
       } else {
-        const quelleHandle = await seite.$('[data-testid^="medium-"]');
+        const quelleHandle = await seite.$('[data-testid="aktionen-liste"] [data-testid^="aktion-"]');
+        // #417-Messlehre: Die Aktions-Zeile liegt UNTER dem Medien-Block der Bibliothek.
+        // In einem kleinen Fenster faellt sie unter den sichtbaren Bereich - ein Griff
+        // dorthin traefe ins Leere (elementFromPoint -> null, belegt). Ein Mensch
+        // scrollt die Bibliothek zuerst; genau das bildet der Treiber hier nach.
+        if (quelleHandle !== null) {
+          await quelleHandle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
+          await schlafe(200);
+        }
         const quelleBox = quelleHandle === null ? null : await quelleHandle.boundingBox();
         if (quelleBox === null || quelleHandle === null) {
-          fund("Spalt-Drop", "die Quelle (Bibliothekszeile) ist sichtbar",
+          fund("Spalt-Drop", "die Aktionszeile als Drag-Quelle ist sichtbar",
             `Quelle-Box: ${JSON.stringify(quelleBox)}`,
             "Untersuchung", "composer/index.tsx");
         } else {
           quelleHandle.dispose?.();
-          // Der Griff sitzt am LINKEN Rand der Zeile (Beschriftung) - ein Griff am
-          // Zeilen-Zentrum wuerde auf den "Zur Liste hinzufuegen"-Knopf fallen.
-          // dnd-kit braucht pointerdown + 4 px Bewegung (PointerSensor).
+          // Der Griff sitzt am LINKEN Rand der Zeile (Titel) - das Zeilen-Zentrum
+          // traefe den "Zur Liste hinzufuegen"-Knopf. dnd-kit braucht pointerdown
+          // + 4 px Bewegung (PointerSensor, composer/index.tsx).
           const grip = {
             x: quelleBox.x + 6,
             y: quelleBox.y + quelleBox.height / 2,
@@ -877,9 +943,9 @@ const main = async () => {
             ablehnungen: window.__durchlauf.ablehnungen ?? [],
           }));
           console.log("[schritt-4f] Bloecke danach (data-ref): " + JSON.stringify(danach4f));
-          const quelleRef = davor4f.bloecke[0];
+          const quelleRef = aktionsId417;
           const wuchs = danach4f.bloecke.length === davor4f.bloecke.length + 1;
-          const anStelleZwei = danach4f.bloecke[1] === quelleRef;
+          const anStelleZwei = quelleRef !== null && danach4f.bloecke[1] === quelleRef;
           if (wuchs && anStelleZwei) {
             console.log("[schritt-4f] Spalt-Drop GEMESSEN: Liste " + davor4f.bloecke.length +
               " -> " + danach4f.bloecke.length + " Bloecke; Position 2 traegt die gezogene " +

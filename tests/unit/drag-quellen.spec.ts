@@ -1,4 +1,8 @@
-// Tests zu #413 - Bibliothek und Galerie als Drag-QUELLEN zur Zeitleiste.
+// Tests zu #413/#417 - Drag-QUELLEN zur Zeitleiste.
+//
+// User-Weisung 15.10.2026 (#417): Ziehbar in die Zeitleiste sind NUR Aktionen
+// (und spaeter Banner) - Bilder/Videos (Medien) sind KEINE Drag-Quelle. Der Drag
+// fuer Medien ist ENTFERNT; der Klick-Weg bleibt.
 //
 // jsdom-Kontext: Jede Zeile/Karte wird IN einem echten DndContext (@dnd-kit/core)
 // montiert - useDraggable verlangt einen Container. Geprueft wird der DRAGGABLE-Vertrag
@@ -92,16 +96,16 @@ afterAll(() => {
   }
 })
 
-describe('Die Medien- und Aktionszeilen sind ziehbar (#413)', () => {
-  it('JEDE Medienzeile traegt den draggable-Vertrag am DOM', () => {
+describe('Nur AKTIONEN sind ziehbar (#413/#417)', () => {
+  it('Die Medienzeilen (Bild/Video) sind KEINE Drag-Quelle', () => {
     const behaelter = montiere(bibliothek())
 
     const videoZeile = behaelter.querySelector('[data-testid="medium-a-video"]')
     const bildZeile = behaelter.querySelector('[data-testid="medium-a-bild"]')
     expect(videoZeile).not.toBeNull()
     expect(bildZeile).not.toBeNull()
-    expect(videoZeile?.getAttribute('aria-roledescription')).toBe('draggable')
-    expect(bildZeile?.getAttribute('aria-roledescription')).toBe('draggable')
+    expect(videoZeile?.getAttribute('aria-roledescription')).not.toBe('draggable')
+    expect(bildZeile?.getAttribute('aria-roledescription')).not.toBe('draggable')
   })
 
   it('JEDE Aktionszeile traegt den draggable-Vertrag am DOM', () => {
@@ -122,15 +126,15 @@ describe('Die Medien- und Aktionszeilen sind ziehbar (#413)', () => {
   })
 })
 
-describe('Die Galerie-Karten sind ziehbar (#413)', () => {
-  it('JEDE Galerie-Karte traegt den draggable-Vertrag am DOM', () => {
+describe('Die Galerie-Karten sind KEINE Drag-Quelle (#417)', () => {
+  it('JEDE Galerie-Karte traegt den draggable-Vertrag NICHT', () => {
     const behaelter = montiere(createElement(AssetGalerie, { projekt: projekt() }))
 
     const karte = behaelter.querySelector('[data-testid="galerie-eintrag-a-video"]')
     const bildKarte = behaelter.querySelector('[data-testid="galerie-eintrag-a-bild"]')
     expect(karte).not.toBeNull()
     expect(bildKarte).not.toBeNull()
-    expect(karte?.getAttribute('aria-roledescription')).toBe('draggable')
-    expect(bildKarte?.getAttribute('aria-roledescription')).toBe('draggable')
+    expect(karte?.getAttribute('aria-roledescription')).not.toBe('draggable')
+    expect(bildKarte?.getAttribute('aria-roledescription')).not.toBe('draggable')
   })
 })
