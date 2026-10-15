@@ -46,16 +46,15 @@ projekt geben"
 - Der Import bleibt der bestehende Auftrag über den Torwächter (`nurTyp: 'video'`, TK 9.3) – kein
   direktes `media-service`-Aufrufen.
 
-## Nicht selbst entscheiden – STOPP und fragen
-- **Undo-Semantik des Ersetzens.** AD 4.9 sagt: der Import ist **nicht** rückgängig zu machen
-  (Dateiwirkung). Der Listenteil (altes Element entfernen + neues ans Ende) läuft aber über den
-  Undo-fähigen Sicht-Schreiber (`sichtSchreiber`, #415/#421) und erzeugte so **einen** Schritt.
-  Vor dem Bauen klären: Ersetzen als **ein** Undo-Schritt oder Historien-Leerung?
-- **Verhalten „Löschen" des Videos.** Heute blockiert Medien-Löschen bei Referenz
-  (`asset_referenziert`, TK 9.4.6). Soll das Video-Löschen die Listenzelle mitbereinigen (und die
-  Undo-Naht nutzen) oder weiter blockieren? Klären, bevor gebaut wird.
-- **Form der Bestätigung.** Eigener Dialog über die bestehende `ComposerLage`/Dialog-Mechanik
-  (`verwaltung-montage`-Muster) oder ein Inline-Hinweis – nicht raten.
+## Entschieden (User, 15.10.2026) – keine offenen Punkte mehr
+- **Ersetzen = EIN Undo-Schritt.** Cmd+Z bringt das vorige Video (Listeneintrag) in **einem** Schritt
+  zurück; der Import selbst (Datei) ist nicht rückgängig (AD FA-21). Der Undo-fähige Sicht-Schreiber
+  (`sichtSchreiber`, #415/#421) trägt den Schritt.
+- **Löschen = aus Liste UND Medien** (mit Bestätigung). Der Listen-Teil läuft über den Sicht-Schreiber
+  (undo-fähig), das Löschen der Datei ist nicht rückgängig (AD FA-21); die Reihenfolge folgt der
+  Lösch-Asymmetrie (erst Referenz aus der Liste, dann Datei) bzw. dem bestehenden `löscheMedium`.
+- **Bestätigung vor Ersetzen und vor Löschen** über die bestehende Composer-Mechanik
+  (`ComposerLage`) – **kein** `window.confirm`, keine native Rückfrage.
 
 ## Definition of Done
 - [ ] Kopf-Knopf und Bibliothek heißen „Video importieren".

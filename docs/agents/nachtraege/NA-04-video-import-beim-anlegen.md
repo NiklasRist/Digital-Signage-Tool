@@ -32,12 +32,11 @@ den Import an; das Video ist danach **bereits am Ende der Wiedergabeliste**.
 - Nach dem Anlegen: Projekt offen im Reiter **Zusammenstellen**, Video **am Ende der Wiedergabeliste**.
 - Das ist abhängig von **NA-03** (Video-Bereich/„Video importieren"/automatische Übernahme).
 
-## Nicht selbst entscheiden – STOPP und fragen
-- **Ablauf-Reihenfolge.** Anlegen, dann Import, dann Reiterwechsel – oder Import-Auswahl vor dem
-  Anlegen und danach sofort einreihen? Vor dem Bauen mit dem User festlegen (bestimmt den Effekt bei
-  einem fehlgeschlagenen Import: Projekt ohne Video bleibt bestehen oder nicht).
-- **Fehlerfall Import.** Schlägt der Import fehl (beschädigte Datei, Abbruch), bleibt das angelegte
-  Projekt bestehen (leer) – oder wird es zurückgenommen? Nicht raten.
+## Entschieden (User, 15.10.2026) – keine offenen Punkte mehr
+- **Ablauf-Reihenfolge:** Dialog sammelt Name **+ optionales Video**. Bei „Anlegen": Projekt anlegen,
+  in den Reiter **Zusammenstellen** wechseln, **danach** den Import starten.
+- **Fehlerfall Import:** schlägt der Import fehl (beschädigte Datei, Abbruch), **bleibt** das angelegte
+  (leere) Projekt bestehen und der Fehler wird gemeldet – **kein** Rollback des Projekts.
 
 ## Definition of Done
 - [ ] Der Anlegen-Dialog bietet „Video importieren" (optional).
