@@ -65,6 +65,7 @@ import {
   setzeLaeuft,
   setzeAusgabeName,
   setzeExportauswahl,
+  waehleMedium,
   istRenderKnopfFrei,
 } from './composer-montage'
 import {
@@ -236,6 +237,26 @@ export function ComposerInterna({
 
   const inhalt: Project | null = sicht.projekt
   const liste = inhalt?.liste ?? []
+
+  // #418: Nach einem Import ist das neue VIDEO standardmaessig ausgewaehlt. Erkannt wird
+  // es am NEU erscheinenden Video-Asset der Sicht (der Composer-Import legt genau ein
+  // Video an - Bilder kommen ueber einen anderen Weg, #418). Der Erstlauf merkt nur und
+  // waehlt nichts: Ein Reiterwechsel montiert diese Wurzel frisch (Abbau verboten, aber
+  // unsichtbar), und dann soll nicht eines der bestehenden Medien markiert aufblitzen.
+  const bekannteAssets = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    const assets = inhalt?.assets ?? []
+    if (bekannteAssets.current === null) {
+      bekannteAssets.current = new Set(assets.map((eintrag) => eintrag.id))
+      return
+    }
+    const neu = assets.filter((eintrag) => !bekannteAssets.current?.has(eintrag.id))
+    bekannteAssets.current = new Set(assets.map((eintrag) => eintrag.id))
+    const neuesVideo = neu.find((eintrag) => eintrag.typ === 'video')
+    if (neuesVideo !== undefined) {
+      setzeLage((alt) => waehleMedium(alt, neuesVideo.id))
+    }
+  }, [inhalt?.assets])
 
   useEffect(() => {
     setzeBandHinweis(null)
@@ -521,6 +542,8 @@ export function ComposerInterna({
                 projekt={inhalt}
                 sichtSchreiber={projekt.setzeListe}
                 aufImportieren={importiere}
+                ausgewaehltesId={lage.gewaehltesMediumId}
+                aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
                 aufMediumLoeschen={(assetId) =>
                   setzeLage((alt) => oeffneOverlay(alt, { art: 'medium_loeschen', assetId }))
                 }
@@ -595,7 +618,15 @@ export function ComposerInterna({
                   })
                 }}
               >
-                {inhalt === null ? <AssetGalerie projekt={null} /> : <AssetGalerie projekt={inhalt} />}
+                {inhalt === null ? (
+                  <AssetGalerie projekt={null} />
+                ) : (
+                  <AssetGalerie
+                    projekt={inhalt}
+                    ausgewaehltesId={lage.gewaehltesMediumId}
+                    aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
+                  />
+                )}
               </div>
             </div>
           </div>

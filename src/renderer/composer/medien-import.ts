@@ -80,8 +80,9 @@ export function dateinameAusPfad(pfad: string): string {
 }
 
 /**
- * Stößt den Import für die Medien-Bibliothek an: BEIDE Typen zulassen (`nurTyp: null`).
- * Wartet NICHT auf den Ausgang der Aufträge – der läuft über #199 zurück.
+ * Stößt den Import für die Medien-Bibliothek an. #418: NUR Videos und GENAU EIN Video
+ * (`nurTyp: 'video'`); Bilder kommen über ihren eigenen Weg (Aktions-Bild). Wartet NICHT
+ * auf den Ausgang der Aufträge – der läuft über #199 zurück.
  */
 export async function importiereMedien(
   projektId: string,
@@ -98,10 +99,11 @@ export async function importiereMedien(
     }
   }
 
-  // Schritt 2 - der Uebergabe-Weg aus #204, IMMER mit nurTyp: null (Bibliothek fuehrt
-  // beide Typen). Kein Warten auf den Ausgang - der laeuft ueber #199 zurueck.
+  // Schritt 2 - der Uebergabe-Weg aus #204. #418: NUR Videos (`nurTyp: 'video'`); der
+  // typisierte Import ist ein EINZEL-Import (der Dialog erhaelt einzel: true). Kein Warten
+  // auf den Ausgang - der laeuft ueber #199 zurueck.
   try {
-    const ergebnis = await starte(projektId, null)
+    const ergebnis = await starte(projektId, 'video')
     if (!ergebnis.ok) {
       // Schritt 3 - Code UNVERAENDERT zurueck, kein Bericht, kein zweiter Versuch.
       return ergebnis

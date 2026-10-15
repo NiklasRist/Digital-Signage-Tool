@@ -578,6 +578,8 @@ const main = async () => {
           const kv = kasten === null ? null : kasten.getBoundingClientRect();
           const fv = flaeche === null ? null : flaeche.getBoundingClientRect();
           const vv = video === null ? null : video.getBoundingClientRect();
+          const medium = document.querySelector('[data-testid^="medium-"]');
+          const galerie = document.querySelector('[data-testid^="galerie-eintrag-"]');
           return {
             vorschau: !!document.querySelector('[data-testid="vorschau"]'),
             kasten: kv === null ? null : { w: Math.round(kv.width), h: Math.round(kv.height) },
@@ -585,9 +587,19 @@ const main = async () => {
             videoDa: video !== null,
             video: vv === null ? null : { w: Math.round(vv.width), h: Math.round(vv.height) },
             playLabel: document.querySelector('[data-testid="vorschau-play-pause"]')?.textContent ?? null,
+            // #418: das nach dem Import standardmaessig ausgewaehlte Video.
+            auswahlMedium: medium === null ? null : medium.getAttribute('data-ausgewaehlt'),
+            auswahlGalerie: galerie === null ? null : galerie.getAttribute('data-ausgewaehlt'),
           };
         });
         console.log("[schritt-4b3] Videostage: " + JSON.stringify(buehneDiag));
+        if (buehneDiag.auswahlMedium !== 'true' && buehneDiag.auswahlGalerie !== 'true') {
+          fund("Import-Auswahl", "das importierte Video ist standardmaessig ausgewaehlt (#418)",
+            `medium=${buehneDiag.auswahlMedium}, galerie=${buehneDiag.auswahlGalerie}`,
+            "Befund", "composer/index.tsx");
+        } else {
+          console.log(`[schritt-4b3] Import-Auswahl GEMESSEN: medium=${buehneDiag.auswahlMedium}, galerie=${buehneDiag.auswahlGalerie}.`);
+        }
         if (buehneDiag.kasten === null || buehneDiag.kasten.h < 10) {
           fund("Videostage", "die Buehne hat eine sichtbare Hoehe (> 10 px)",
             `Kasten/Flaeche: ${JSON.stringify(buehneDiag.kasten)}/${JSON.stringify(buehneDiag.flaeche)}`,

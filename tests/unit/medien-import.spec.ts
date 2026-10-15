@@ -42,24 +42,24 @@ describe('importiereMedien - der Ablauf', () => {
     starte = vi.fn<MedienImportStarter>()
   })
 
-  it('ruft den Starter genau einmal mit (projektId, null) - zweiter Parameter IMMER null (DoD)', async () => {
+  it('ruft den Starter genau einmal mit (projektId, video) - zweiter Parameter IMMER video (#418)', async () => {
     starte.mockResolvedValue({ ok: true, wert: ergebnisVon204({ auftragIds: ['A1'] }) })
 
     const ergebnis = await importiereMedien('p1', starte)
 
     expect(ergebnis.ok).toBe(true)
     expect(starte).toHaveBeenCalledTimes(1)
-    expect(starte.mock.calls[0]).toEqual(['p1', null])
+    expect(starte.mock.calls[0]).toEqual(['p1', 'video'])
   })
 
-  it('lässt BEIDE Typen zu - null ist der einzige jemals übergebene zweite Parameter (DoD)', async () => {
+  it("laesst NUR Videos zu - 'video' ist der einzige jemals uebergebene zweite Parameter (#418)", async () => {
     starte.mockResolvedValue({ ok: true, wert: ergebnisVon204() })
 
     await importiereMedien('projekt-1', starte)
     await importiereMedien('projekt-2', starte)
 
     for (const aufruf of starte.mock.calls) {
-      expect(aufruf[1]).toBeNull()
+      expect(aufruf[1]).toBe('video')
     }
     expect(starte).toHaveBeenCalledTimes(2)
   })

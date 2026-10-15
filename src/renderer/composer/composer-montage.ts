@@ -54,6 +54,10 @@ export interface ComposerLage {
   overlay: ComposerOverlay
   /** Die zuletzt angeklickte Zeile; null = keine. Reine Anzeige-Auswahl. */
   gewaehltesElementId: string | null
+  /** #418: das ausgewaehlte MEDIUM (Bild/Video). Nach dem Import ist das neue Video
+   *  standardmaessig ausgewaehlt (hervorgehoben in Galerie/Bibliothek, Default fuer
+   *  „Zur Liste hinzufuegen"). null = keins. Reine Anzeige-Auswahl, kein zweiter Ort. */
+  gewaehltesMediumId: string | null
   /** Die zuletzt gezeigte Meldung; null = keine. */
   meldung: WurzelMeldung | null
   /** true, solange ein Ausloesen laeuft - die Ausloese-Knoepfe sind dann gesperrt. */
@@ -76,6 +80,7 @@ export const LEERE_COMPOSER_LAGE: ComposerLage = {
   overlay: KEIN_OVERLAY,
   menueAdresse: null,
   gewaehltesElementId: null,
+  gewaehltesMediumId: null,
   meldung: null,
   laeuft: false,
   ausgabeName: '',
@@ -115,6 +120,12 @@ export function waehleElement(lage: ComposerLage, elementId: string | null): Com
   // Die reine Anzeige-Auswahl; ob es die Zeile gibt, weiss allein die Wurzel
   // (#261), nicht diese Datei - hier wird nichts geprueft.
   return { ...lage, gewaehltesElementId: elementId }
+}
+
+/** #418: setzt das ausgewaehlte MEDIUM. Reine Anzeige-Auswahl - ob es das Medium gibt,
+ *  weiss allein die Wurzel. Wird nach einem erfolgreichen Import belegt. */
+export function waehleMedium(lage: ComposerLage, assetId: string | null): ComposerLage {
+  return { ...lage, gewaehltesMediumId: assetId }
 }
 
 export function melde(lage: ComposerLage, meldung: WurzelMeldung): ComposerLage {

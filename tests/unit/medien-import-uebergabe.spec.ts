@@ -107,7 +107,7 @@ describe('starteMedienImport - der Ablauf', () => {
       wert: { auftragIds: [], uebersprungen: [], abgelehnt: [], abgebrochen: true },
     })
     // Genau EIN Aufruf (der Dialog), und der kam BEREITS ohne ZWEITES Argument.
-    expect(attrappen.rufeAuf.mock.calls).toEqual([[KANAELE.media.öffneMedienDialog]])
+    expect(attrappen.rufeAuf.mock.calls).toEqual([[KANAELE.media.öffneMedienDialog, {}]])
   })
 
   it('reicht einen fehlgeschlagenen Dialog UNVERAENDERT durch und reiht nichts ein', async () => {
@@ -120,7 +120,7 @@ describe('starteMedienImport - der Ablauf', () => {
       ok: false,
       fehler: { code: 'unbekannter_fehler', meldung: 'Ploetz' },
     })
-    expect(attrappen.rufeAuf.mock.calls).toEqual([[KANAELE.media.öffneMedienDialog]])
+    expect(attrappen.rufeAuf.mock.calls).toEqual([[KANAELE.media.öffneMedienDialog, {}]])
   })
 
   it('faengt einen Werfenden Dialog als unbekannter_fehler und reiht nichts ein', async () => {
@@ -131,7 +131,7 @@ describe('starteMedienImport - der Ablauf', () => {
 
     expect(ergebnis.ok).toBe(false)
     if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('unbekannter_fehler')
-    expect(attrappen.rufeAuf.mock.calls).toEqual([[KANAELE.media.öffneMedienDialog]])
+    expect(attrappen.rufeAuf.mock.calls).toEqual([[KANAELE.media.öffneMedienDialog, {}]])
   })
 
   it('reiht bei drei Pfaden dreimal ein - Argumente UND Reihenfolge der Spion-Aufrufe (DoD)', async () => {
@@ -149,7 +149,7 @@ describe('starteMedienImport - der Ablauf', () => {
       wert: { auftragIds: ['A1', 'A2', 'A3'], uebersprungen: [], abgelehnt: [], abgebrochen: false },
     })
     expect(attrappen.rufeAuf.mock.calls).toEqual([
-      [KANAELE.media.öffneMedienDialog],
+      [KANAELE.media.öffneMedienDialog, {}],
       [KANAELE.queue.reiheEin, { art: 'import', payload: { projektId: 'projekt-1', quellPfad: '/a/1.mp4' } }],
       [KANAELE.queue.reiheEin, { art: 'import', payload: { projektId: 'projekt-1', quellPfad: '/a/2.mp4' } }],
       [KANAELE.queue.reiheEin, { art: 'import', payload: { projektId: 'projekt-1', quellPfad: '/a/3.mp4' } }],
@@ -205,7 +205,7 @@ describe('starteMedienImport - der Ablauf', () => {
       },
     })
     expect(attrappen.rufeAuf.mock.calls).toEqual([
-      [KANAELE.media.öffneMedienDialog],
+      [KANAELE.media.öffneMedienDialog, { nurTyp: 'bild', einzel: true }],
       [KANAELE.queue.reiheEin, { art: 'import', payload: { projektId: 'projekt-1', quellPfad: 'a.png' } }],
       [KANAELE.queue.reiheEin, { art: 'import', payload: { projektId: 'projekt-1', quellPfad: 'c.jpg' } }],
     ])
@@ -302,7 +302,7 @@ describe('starteMedienImport - der Ablauf', () => {
     })
     // Und danach kam NICHTS mehr: kein holeStand, kein Abo, kein Nachfragen.
     expect(attrappen.rufeAuf.mock.calls).toEqual([
-      [KANAELE.media.öffneMedienDialog],
+      [KANAELE.media.öffneMedienDialog, {}],
       [KANAELE.queue.reiheEin, { art: 'import', payload: { projektId: 'projekt-1', quellPfad: 'x.mp4' } }],
     ])
   })

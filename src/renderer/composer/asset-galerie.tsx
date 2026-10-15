@@ -23,7 +23,17 @@ export function filtereGalerie(
   })
 }
 
-export function AssetGalerie({ projekt }: { projekt: Project | null }): JSX.Element {
+export function AssetGalerie({
+  projekt,
+  ausgewaehltesId = null,
+  aufWaehlen,
+}: {
+  projekt: Project | null
+  /** #418: das hervorgehobene Medium (nach dem Import standardmaessig das neue Video). */
+  ausgewaehltesId?: string | null
+  /** #418: Klick auf eine Karte macht sie zur Auswahl. Fehlt der Rueckruf, wird nur gezeichnet. */
+  aufWaehlen?: (assetId: string) => void
+}): JSX.Element {
   const [suchtext, setzeSuchtext] = useState('')
   const [typFilter, setzeTypFilter] = useState<TypFilter>('alle')
 
@@ -69,7 +79,12 @@ export function AssetGalerie({ projekt }: { projekt: Project | null }): JSX.Elem
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, overflow: 'auto', minHeight: 0 }}>
         {sichtbare.map((eintrag) => (
-          <GalerieKarte key={eintrag.asset.id} eintrag={eintrag} />
+          <GalerieKarte
+            key={eintrag.asset.id}
+            eintrag={eintrag}
+            ausgewaehlt={eintrag.asset.id === ausgewaehltesId}
+            aufWaehlen={aufWaehlen}
+          />
         ))}
         {sichtbare.length === 0 && (
           <div data-testid="galerie-leer" style={{ color: '#8f8f8f', fontSize: 12 }}>
@@ -83,20 +98,32 @@ export function AssetGalerie({ projekt }: { projekt: Project | null }): JSX.Elem
 
 /** #417 (User-Weisung 15.10.2026) - die Galerie-Karten sind KEINE Drag-Quelle mehr:
  *  der Drag in die Zeitleiste ist fuer AKTIONEN gedacht, nicht fuer Bilder/Videos.
- *  Der Main entscheidet ueber 'fehlt' (#123); der Klick-Weg (#390 offen) bleibt. */
-function GalerieKarte({ eintrag }: { eintrag: ReturnType<typeof baueMedienEintraege>[number] }): JSX.Element {
+ *  Der Main entscheidet ueber 'fehlt' (#123); der Klick-Weg (#390 offen) bleibt.
+ *  #418: Die ausgewaehlte Karte ist hervorgehoben (data-ausgewaehlt + Rahmen). */
+function GalerieKarte({
+  eintrag,
+  ausgewaehlt,
+  aufWaehlen,
+}: {
+  eintrag: ReturnType<typeof baueMedienEintraege>[number]
+  ausgewaehlt: boolean
+  aufWaehlen?: (assetId: string) => void
+}): JSX.Element {
   return (
     <div
       data-testid={`galerie-eintrag-${eintrag.asset.id}`}
+      data-ausgewaehlt={ausgewaehlt ? 'true' : 'false'}
+      onClick={aufWaehlen === undefined ? undefined : () => aufWaehlen(eintrag.asset.id)}
       style={{
         width: GALERIE_BREITE_PX,
         height: GALERIE_HÖHE_PX,
         display: 'flex',
         flexDirection: 'column',
-        border: '1px solid #444',
+        border: ausgewaehlt ? '2px solid #e5634d' : '1px solid #444',
         borderRadius: 4,
         overflow: 'hidden',
         fontSize: 10,
+        cursor: aufWaehlen === undefined ? 'default' : 'pointer',
         opacity: eintrag.zustand === 'fehlt' ? 0.5 : 1,
       }}
     >

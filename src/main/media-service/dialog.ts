@@ -82,40 +82,60 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 // KEIN DATEIZUGRIFF: kein `fs`, keine Existenzpruefung, keine Groessenermittlung, kein
 // Vorab-Lesen. Der Dialog liefert Pfade, sonst nichts (TK 9.4.1).
 
-export async function öffneMedienDialog(): Promise<Ergebnis<{ pfade: string[] }>> {
+export interface MedienDialogOptionen {
+  /**
+   * Nur DIESEN Medientyp im Datei-Filter anbieten. `undefined` = beide (der kombinierte
+   * Filter ist dann der erste und vorausgewaehlt). #418: Der Composer laedt Videos.
+   */
+  nurTyp?: 'video' | 'bild'
+  /**
+   * true = GENAU EINE Datei (`properties` OHNE `multiSelections`). #418: Der
+   * Composer-Import nimmt genau ein Video. `false`/`undefined` = Mehrfachauswahl wie
+   * bisher (Bild-Weg des Aktions-Editors bleibt unberuehrt).
+   */
+  einzel?: boolean
+}
+
+export async function öffneMedienDialog(
+  optionen: MedienDialogOptionen = {},
+): Promise<Ergebnis<{ pfade: string[] }>> {
   try {
+    // #418: `einzel` und `nurTyp` sind OPTIONAL und rueckwaertskompatibel. Ohne Angabe
+    // bleibt alles wie bisher (Mehrfachauswahl, kombinierter Filter). Der Bild-Weg
+    // (Aktions-Editor) ruft ohne Optionen - sein Verhalten aendert sich NICHT.
+    const einzel = optionen.einzel === true
+    const nurTyp = optionen.nurTyp === 'video' || optionen.nurTyp === 'bild' ? optionen.nurTyp : null
     // Die Optionen stehen ABSICHTLICH als Literal im Aufruf und nicht in einer eigenen
     // Konstanten: So typisiert TypeScript `properties` kontextuell gegen Electrons
     // `OpenDialogOptions`. Aus einer separaten Konstanten wuerde `string[]`, und ein
     // Tippfehler in einem der Eigenschaftsnamen fiele erst am laufenden Dialog auf.
+    //
+    // Die ENDUNGEN des Filters kommen weiter aus FORMAT_WHITELIST (#13) und stehen OHNE
+    // fuehrenden Punkt - so erwartet es Electron.
     const antwort = await dialog.showOpenDialog({
-      // 'openFile' + 'multiSelections' - beides Pflicht. Die Mehrfachauswahl ist keine
-      // Bequemlichkeit, sondern der Vertrag: "| Nutzer waehlt Dateien | `pfade` = Array
-      // absoluter Quellpfade |" (TK 9.4.3). Ohne sie koennte das Array nie mehr als
-      // einen Eintrag tragen.
-      //
-      // KEIN 'openDirectory' (auf Windows und Linux kann ein Dialog nicht beides sein -
-      // gesetzt wuerde daraus ein reiner Ordner-Waehler, und der Import bekaeme
-      // Verzeichnisse statt Dateien) und KEIN 'promptToCreate' (das bietet an, eine
-      // nicht vorhandene Datei anzulegen; importiert wuerde eine leere Huelle).
-      properties: ['openFile', 'multiSelections'],
+      // 'openFile' ist Pflicht; 'multiSelections' NUR, wenn nicht `einzel` verlangt ist.
+      // Die Mehrfachauswahl war der urspruengliche Vertrag ("| Nutzer waehlt Dateien |";
+      // TK 9.4.3) - #418 ergaenzt die Einzel-Auswahl als OPTION, ohne sie zu ersetzen.
+      properties: einzel ? ['openFile'] : ['openFile', 'multiSelections'],
 
-      // Die Reihenfolge ist verbindlich: Der ERSTE Eintrag ist im Dialog vorausgewaehlt,
-      // und das muss der kombinierte sein. Der Nutzer stellt eine Werbeschleife aus
-      // Videos UND Bildern zusammen; muesste er erst den Typ waehlen, koennte er nicht
-      // beides in einem Zug auswaehlen.
+      // Die Reihenfolge ist verbindlich: Der ERSTE Eintrag ist im Dialog vorausgewaehlt.
+      // Bei `nurTyp` gibt es nur den einen, passenden Filter; ohne `nurTyp` bleibt der
+      // kombinierte erste (der Nutzer stellt Videos UND Bilder in einem Zug zusammen).
       //
-      // Die Namen sind reine Anzeigetexte. Die Endungen kommen aus FORMAT_WHITELIST
-      // (#13) und stehen OHNE fuehrenden Punkt - so erwartet es Electron; mit Punkt
-      // findet der Dialog auf Windows lautlos nichts mehr.
-      filters: [
-        {
-          name: 'Medien',
-          extensions: [...FORMAT_WHITELIST.video, ...FORMAT_WHITELIST.bild],
-        },
-        { name: 'Videos', extensions: [...FORMAT_WHITELIST.video] },
-        { name: 'Bilder', extensions: [...FORMAT_WHITELIST.bild] },
-      ],
+      // Die Namen sind reine Anzeigetexte.
+      filters:
+        nurTyp === 'video'
+          ? [{ name: 'Videos', extensions: [...FORMAT_WHITELIST.video] }]
+          : nurTyp === 'bild'
+            ? [{ name: 'Bilder', extensions: [...FORMAT_WHITELIST.bild] }]
+            : [
+                {
+                  name: 'Medien',
+                  extensions: [...FORMAT_WHITELIST.video, ...FORMAT_WHITELIST.bild],
+                },
+                { name: 'Videos', extensions: [...FORMAT_WHITELIST.video] },
+                { name: 'Bilder', extensions: [...FORMAT_WHITELIST.bild] },
+              ],
 
       // KEIN `title`: Der verbindliche Ablauf des Issues nennt genau `properties` und
       // `filters`. Ohne eigenen Titel zeigt das Betriebssystem seinen eigenen,

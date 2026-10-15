@@ -101,6 +101,38 @@ describe('uebergebene Optionen', () => {
   })
 })
 
+describe('#418: optionale Einzel-/Typ-Auswahl', () => {
+  async function optionenMit(optionen: Parameters<typeof öffneMedienDialog>[0]): Promise<Optionen> {
+    showOpenDialog.mockResolvedValue({ canceled: true, filePaths: [] })
+    await öffneMedienDialog(optionen)
+    return letzteOptionen()
+  }
+
+  it('ohne Optionen bleibt die Mehrfachauswahl erhalten (rueckwaertskompatibel)', async () => {
+    expect((await optionenMit({})).properties).toEqual(
+      expect.arrayContaining(['openFile', 'multiSelections']),
+    )
+  })
+
+  it('einzel:true nimmt die Mehrfachauswahl heraus', async () => {
+    const properties = (await optionenMit({ einzel: true })).properties ?? []
+    expect(properties).toContain('openFile')
+    expect(properties).not.toContain('multiSelections')
+  })
+
+  it("nurTyp:'video' bietet nur den Video-Filter an", async () => {
+    const optionen = await optionenMit({ nurTyp: 'video', einzel: true })
+    expect(optionen.filters?.map((f) => f.name)).toEqual(['Videos'])
+    expect(optionen.filters?.[0]?.extensions.length).toBeGreaterThan(0)
+  })
+
+  it("nurTyp:'bild' bietet nur den Bild-Filter an", async () => {
+    const optionen = await optionenMit({ nurTyp: 'bild' })
+    expect(optionen.filters?.map((f) => f.name)).toEqual(['Bilder'])
+    expect(optionen.filters?.[0]?.extensions.length).toBeGreaterThan(0)
+  })
+})
+
 // Die Kopplung an die EINE Quelle (TK 9.4.2, TK 9.4.8 Punkt 7). Die Erwartungen werden
 // aus FORMAT_WHITELIST erzeugt statt abgetippt: Kaeme der Konstanten ein Format hinzu,
 // ohne dass der Dialog es anbietet, schluege dieser Block fehl - eine abgetippte Liste

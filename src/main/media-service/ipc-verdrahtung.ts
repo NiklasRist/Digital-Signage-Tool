@@ -16,14 +16,14 @@
 // `Ergebnis` wird hier seit #332 nicht mehr als Typ gebraucht - der einzige Verwender
 // war der umgezogene Pruefer. In den Signatur-Vermerken unten steht der Name weiter,
 // dort aber als Text.
-import type { GenerischerFehlercode } from '../../shared/contracts/ergebnis'
+import type { GenerischerFehlercode, Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'                // #25
 // Der Pruefer liegt seit #332 an EINEM Ort. Bis dahin stand er hier als Kopie - Wort
 // fuer Wort auch in #71, #76 und #77. Der Import ueber die Modulgrenze ist kein neuer
 // Grenzuebertritt: `registriereHandler` kommt aus derselben Richtung.
-import { ohneNutzlast } from '../ipc-gateway/nutzlast-pruefer'          // #332
+import { abgelehnt, istObjekt } from '../ipc-gateway/nutzlast-pruefer'  // #332
 import { registriereHandler } from '../ipc-gateway/registriere-handler' // #23
-import { öffneMedienDialog } from './dialog'                            // #81
+import { öffneMedienDialog, type MedienDialogOptionen } from './dialog' // #81/#418
 
 // Fremde Aufrufe - vollstaendige Signaturen, beide gegen die GEBAUTEN Dateien geprueft,
 // nicht gegen das Zitat im Issue:
@@ -38,14 +38,45 @@ import { öffneMedienDialog } from './dialog'                            // #81
 //        // `ausfuehren` unveraendert zurueck.
 //   #81: öffneMedienDialog(): Promise<Ergebnis<{ pfade: string[] }>>
 //        // Auswahl -> pfade = absolute Quellpfade; Abbruch -> ok: true mit pfade = [].
+//   #418: öffneMedienDialog(optionen?: MedienDialogOptionen)
+//        // NEU: optionaler Parameter ({ nurTyp?: 'video'|'bild'; einzel?: boolean }).
+//        // Ohne Optionen byte-identisch zum #81-Verhalten (Mehrfachauswahl, beide Typen).
+//        // Nachtrag an #81 (rueckwaertskompatibel) - der Bild-Weg ruft ohne Optionen.
 
-// DER VALIDIERER ENTFAELLT NICHT, obwohl es nichts zu pruefen gibt: Der Wrapper (#23)
-// verlangt ihn, und er ist die Stelle, an der festgehalten ist, dass hier nichts
-// erwartet wird. Ein `null` oder ein Cast stuende an derselben Stelle und saehe aus wie
-// ein Versehen. IGNORIEREN, NICHT ABLEHNEN (verbindlich im Issue) - genau so ist der
-// andere nutzlastfreie Kanal festgelegt (`queue:holeStand`, #71); zwei verschiedene
-// Regeln fuer zwei nutzlastfreie Kanaele waeren eine Falle fuer jeden, der den
-// Renderer-Aufruf schreibt. Seit #332 ist es buchstaeblich derselbe Baustein.
+/**
+ * Prueft die OPTIONALE Nutzlast des Dialog-Kanals (#418).
+ *
+ * Bis #418 war der Kanal nutzlastfrei (`ohneNutzlast` verwarf jedes Argument). Mit dem
+ * optionalen Parameter traegt er jetzt eine kleine, benannte Form. Fehlt sie, gilt der
+ * alte Zustand (keine Optionen); eine FALSCHE Form wird abgelehnt - anders als bei den
+ * nutzlastfreien Kanaelen, wo eine mitgeschickte Nutzlast folgenlos ist, hat sie hier
+ * WIRKUNG (Filter/Auswahl) und darf nicht still verworfen werden.
+ */
+function pruefeDialogOptionen(
+  nutzlast: unknown,
+): Ergebnis<unknown, 'ungueltige_eingabe'> | { ok: true; wert: MedienDialogOptionen } {
+  if (nutzlast === undefined || nutzlast === null) return { ok: true, wert: {} }
+  if (!istObjekt(nutzlast)) {
+    return abgelehnt('Der Medien-Dialog erwartet hoechstens { nurTyp, einzel }.')
+  }
+  const { nurTyp, einzel } = nutzlast
+  if (nurTyp !== undefined && nurTyp !== 'video' && nurTyp !== 'bild') {
+    return abgelehnt('nurTyp muss "video" oder "bild" sein.')
+  }
+  if (einzel !== undefined && typeof einzel !== 'boolean') {
+    return abgelehnt('einzel muss ein Wahrheitswert sein.')
+  }
+  const wert: MedienDialogOptionen = {}
+  if (nurTyp === 'video' || nurTyp === 'bild') wert.nurTyp = nurTyp
+  if (typeof einzel === 'boolean') wert.einzel = einzel
+  return { ok: true, wert }
+}
+
+// DER VALIDIERER TRAEGT JETZT EINE KLEINE FORM (#418). Bis dahin war dieser Kanal
+// nutzlastfrei, und der Pruefer hielt fest, dass NICHTS erwartet wird (IGNORIEREN,
+// NICHT ABLEHNEN - wie `queue:holeStand`, #71). Mit dem optionalen Parameter hat eine
+// mitgeschickte Nutzlast WIRKUNG; sie wird deshalb geprueft und eine falsche Form
+// ABGELEHNT (s. `pruefeDialogOptionen`). Fehlt sie ganz, gilt der alte Zustand.
 
 export function verdrahteMedienIPC(): void {
   // Der Name kommt aus der Registry (#25); in dieser Datei steht kein Kanalname als
@@ -68,20 +99,17 @@ export function verdrahteMedienIPC(): void {
   // Kommentar - so bleibt die Grep-Probe des Issues aussagekraeftig.
   registriereHandler<{ pfade: string[] }, GenerischerFehlercode>(
     KANAELE.media.öffneMedienDialog,
-    ohneNutzlast,
-    // DIE PFEILFUNKTION IST TRAGEND, NICHT KOSMETIK: `öffneMedienDialog` direkt als
-    // dritten Parameter zu uebergeben wuerde uebersetzen (ein Parameter weniger ist
-    // erlaubt), rief die Funktion aber MIT der validierten Nutzlast auf. Heute folgenlos,
-    // weil sie kein Argument liest - aber es waere eine Weitergabe von Renderer-Daten an
-    // eine Funktion, die nach Vertrag keine bekommt, und der naechste Parameter, der dort
-    // hinzukaeme, waere ab dem ersten Tag fremdbelegt.
+    pruefeDialogOptionen,
+    // DIE PFEILFUNKTION reicht die VALIDIERTE Nutzlast weiter. Durch `pruefeDialogOptionen`
+    // ist die Form garantiert ({ nurTyp?, einzel? }); der Cast stellt dem Uebersetzer nur
+    // den geprueften Wert als `MedienDialogOptionen` bereit.
     //
     // Das Ergebnis reist UNVERAENDERT zurueck: kein Auspacken von `wert`, kein `throw`,
     // kein Umschreiben von Codes - und vor allem KEIN Umdeuten des leeren `pfade`-Arrays
     // in einen Fehler. Der Abbruch ist der haeufigste Ausgang des Dialogs und "kein
     // Fehler" (TK 9.4.3); wer ihn hier zu einem machte, liesse die Oberflaeche fuer eine
     // bewusste Nutzerentscheidung eine Fehlermeldung zeigen.
-    () => öffneMedienDialog(),
+    (optionen) => öffneMedienDialog(optionen as MedienDialogOptionen),
   )
 }
 // registriert GENAU EINEN Kanal – media:öffneMedienDialog – über den Wrapper aus #23,
