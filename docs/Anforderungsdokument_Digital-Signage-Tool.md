@@ -93,7 +93,7 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-17 | Fehlgeschlagene Vorgänge wiederholen | Ein fehlgeschlagener Auftrag bleibt mit Fehlergrund sichtbar und kann erneut ausgeführt werden; er wird dabei ans Ende der Warteschlange gestellt. | Muss |
 | FA-18 | Vorgänge abbrechen/entfernen | Ein noch nicht gestarteter Auftrag kann aus der Warteschlange entfernt, ein laufender Render abgebrochen werden. | Soll |
 | FA-19 | Geführte Reparatur kaputter Elemente | Verweisen Elemente auf ein **fehlendes Medium** (z. B. extern gelöschte Datei), führt die Anwendung den Nutzer **vor dem Rendern** aktiv durch die Reparatur: kaputte Elemente werden **nacheinander** hervorgehoben („X von N behoben") und können **neu verknüpft/importiert, ersetzt oder entfernt** werden; der Render wird **erst freigegeben, wenn alle behoben** sind. Betrifft auch **Aktions-Bilder** – fehlt das Bild einer Aktion, wird die Aktion repariert, was in einem Schritt **alle** Listenelemente behebt, die diese Aktion verwenden. | Soll |
-| FA-20 | Parallele Anzeige (Split-Screen / Einblendung) — **Hauptbetriebsart** | Werbeinhalte laufen **parallel während eines Videos**: entweder als **Split-Screen** (Video oben verkleinert, Werbeband darunter, nichts verdeckt) oder als **Einblendung** (Video vollflächig, Band überlagernd). Während eines Videos können **mehrere Aktionen nacheinander** im Band rotieren. Die sequenzielle Werbepause (FA-04) bleibt zusätzlich möglich. Details: 4.5. | Muss |
+| FA-20 | Parallele Anzeige (Split-Screen / Einblendung) — **Hauptbetriebsart** | Werbeinhalte laufen **parallel während eines Videos**: entweder als **Split-Screen** (Video oben verkleinert, Werbeband darunter, nichts verdeckt) oder als **Einblendung** (Video vollflächig, Band überlagernd). Während eines Videos können **mehrere Aktionen nacheinander** im Band rotieren. Eine Aktion kann das laufende Video auch **kurz unterbrechen** (Video pausiert, Aktion, Video läuft weiter). Die sequenzielle Werbepause (FA-04) bleibt zusätzlich möglich. Details: 4.5. | Muss |
 | FA-21 | Rückgängig / Wiederherstellen | **Beide** Editoren – Projekt-Bearbeitung und Vorlagen-Editor – bieten **Undo/Redo** für Bearbeitungsschritte (Liste, Reihenfolge, Trim, Dauer, Aktionen, Zonen). **Nicht** rückgängig machbar sind abgeschlossene Vorgänge mit Dateiwirkung (Import, Löschen von Medien, Render, Export) – ein gelöschtes Medium muss neu importiert werden. | Muss |
 | FA-22 | Mehrere benannte Ausgabedateien | Ein Projekt kann **mehrere** gerenderte MP4-Dateien vorhalten. Beim Speichern eines Renders vergibt der Nutzer den Dateinamen; vorbelegt ist der **zuletzt verwendete** Name, sodass wiederholtes Rendern die vorige Fassung standardmäßig **ersetzt** und der Ordner nicht zuläuft. Ein abweichender Name legt eine zusätzliche Datei an. Datum und Uhrzeit stehen in der Ausgabe-Liste der Anwendung, **nicht** im Dateinamen. | Muss |
 | FA-23 | Marken-Bestand | Die Anwendung führt **mehrere Marken** in einem **app-weiten, projektunabhängigen** Bestand. Ein Projekt darf mehrere Marken verwenden; eine **Aktion** trägt **genau eine**. Eine Marke kann von einer anderen **abgeleitet** sein und einzelne Werte überschreiben (Saison- oder Kampagnen-Look). Die Fitnessworld24-Marke ist immer vorhanden und **nicht löschbar**. Jedes Projekt führt zusätzlich eine **Standardmarke**, die den Rahmen färbt (Band-Hintergrund, Restflächen; s. 4.8); sie ist in der **Projektverwaltung wechselbar**. Eine Marke lässt sich nur löschen, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als Standardmarke** sie mehr nutzt. | Muss |
@@ -238,6 +238,20 @@ Welche Art eine Vorlage bedient, wird **bei der Vorlagenerstellung gewählt** (F
 **Bewusste Konsequenz beim Split-Screen:** Das Video erscheint kleiner (bei 162 px Band ca. 72 % der Fläche) — reine Geometrie bei festem 16:9-Rahmen, kein Fehler. Wer das Video in **voller** Größe behalten will, nutzt die **Einblendung** (Art 2), die dafür den unteren Bildbereich verdeckt.
 
 **Platz im Band:** In ein 162 px hohes Band passt eine **kompakte Zeile** (Logo, Titel, Preis/CTA); eine längere Beschreibung ist dort nicht vorgesehen. Höhere Bänder sind über eigene Vorlagen möglich — sie verkleinern beim Split-Screen entsprechend das Video.
+
+**Eine Aktion auf das Video legen (User-Entscheidung 15.10.2026).** In der Zusammenstellung zieht man
+eine Aktion **auf das Video** – sie wird dann **während** des Videos gezeigt, nicht davor oder danach.
+Zwei Wirkungen sind möglich:
+
+- **Band (parallel, FA-20):** Die Aktion erscheint im Werbeband (Split-Screen oder Einblendung); das
+  Video läuft **weiter**. Mehrere Aktionen können im Band **rotieren**.
+- **Kurze Unterbrechung (neu):** Die Aktion **unterbricht** das Video – das Video **pausiert**, die
+  Aktion läuft, danach läuft das Video **an derselben Stelle weiter**. Modell und Render hierfür sind
+  noch zu entwerfen (s. Technisches Konzept 9.7.7).
+
+Bisher war nur das **sequenzielle** Einordnen *zwischen* den Elementen möglich (vor/nach dem Video,
+FA-04/FA-05). Das Drag-and-drop **zwischen Zeitleisten-Blöcken** bleibt erhalten; das Ablegen **auf dem
+Video** ist der neue Weg *während* des Videos.
 
 ### 4.6 Vorlagen bearbeiten: Arbeitskopie und explizites Speichern (FA-13)
 

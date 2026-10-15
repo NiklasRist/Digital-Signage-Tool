@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.6 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.21 (Ein Projekt – ein Video: Import beim Anlegen und im Projekt-Editor, „Video importieren", Ersetzen mit Bestätigung, automatische Übernahme ans Listenende; Durchsetzung in der Oberfläche, 9.7.6/9.14.3)
+**Version:** 3.22 (Aktionen auf das Video: Band parallel anzuschließen, kurze Unterbrechung als neue, noch zu entwerfende Anforderung; s. 9.7.7)
 **Datum:** 15.10.2026
 **Status:** In Planung
 
@@ -1436,6 +1436,25 @@ setzt das **in der Oberfläche** um:
   Fehlercode und **keine** neue Main-Invariante. Ein zweites Video kann damit heute nur durch einen
   Programmfehler entstehen, nicht durch Bedienung. Bilder sind weiterhin nur **Motiv einer Aktion**
   (action-editor, 9.8) und kein eigenes Listenelement.
+
+#### 9.7.7 Aktionen auf das Video legen: Band und Unterbrechung (v3.22)
+
+Der Nutzer legt eine Aktion **auf das Video**, statt sie nur davor/danach einzuordnen (AD 4.5). Zwei Wirkungen:
+
+- **Band (parallel, FA-20) – gebaut, aber nicht angeschlossen.** Die Ansicht `composer/einblendung-ansicht.tsx`
+  (#253/M7-60) bearbeitet das Werbeband EINES Video-Elements (Band-Vorlage wählen, Abschnitte
+  anlegen/ordnen); die Logik liegt in `einblendung-bearbeiten.ts` (#129). Sie ist **nicht montiert** –
+  der Composer zeigt nur den Platzhalter „M7-61 nicht angebunden". Anzuschließen ist: (a) die Ansicht am
+  Video-Element öffnen, (b) eine aus der Bibliothek gezogene **Aktion auf das Video** als **Band-Abschnitt**
+  aufnehmen (über die bestehenden `einblendung-bearbeiten`-Operationen – kein zweiter Schreibweg),
+  (c) Undo wie jede andere Sicht-Korrektur (ein Schritt, #243-Hülle).
+- **Kurze Unterbrechung (NEU – offen, noch nicht gebaut).** Die Aktion **pausiert** das Video kurz,
+  läuft, danach läuft das Video **weiter**. Das berührt **Datenmodell und Render** (das Video wird an
+  der Stelle geteilt: Video-Teil · Aktion · Video-Teil) und ist **noch zu entwerfen** – Modell, Konkatenation
+  (TK 9.2) und Undo-Semantik. **Nicht selbst entscheiden.**
+
+Die verwandte **„Banner-Spur"** (Welle 2, BA-Familie) ist davon zu trennen: ihre Plan-Quelle
+`trennung-banner-aktionen-plan.md` **fehlt im Repo**; die Band-Kette ist eigenständig und ohne sie baubar.
 
 ---
 
