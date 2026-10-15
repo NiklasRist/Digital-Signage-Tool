@@ -169,6 +169,13 @@ vi.mock("electron", () => {
     dialog: {
       showErrorBox: h.zeigeFehler,
     },
+    // #431: der Bootstrap setzt ein eigenes Anwendungsmenue. Der Doppel stellt die
+    // beiden Aufrufe - sonst wuerfe `Menu.setApplicationMenu` und der Startablauf
+    // braeche mitten in der Kette ab.
+    Menu: {
+      buildFromTemplate: vi.fn((vorlage: unknown) => ({ vorlage })),
+      setApplicationMenu: vi.fn(),
+    },
     session: { defaultSession: { webRequest: { onHeadersReceived: vi.fn() } } },
   };
 });

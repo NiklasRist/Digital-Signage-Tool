@@ -59,4 +59,27 @@ describe('tastatur (#350)', () => {
     taste({ key: 'z', ctrl: true })
     expect(vorgaben.rueckgaengig).not.toHaveBeenCalled()
   })
+
+  it('Cmd+Z in einem Textfeld loest NICHT das Projekt-Undo aus (natives Feld-Undo, #431)', () => {
+    const vorgaben = { rueckgaengig: vi.fn(), wiederherstellen: vi.fn() }
+    const abmelden = registriereTastaturHandler(vorgaben)
+    const feld = document.createElement('input')
+    document.body.appendChild(feld)
+
+    const ereignis = new KeyboardEvent('keydown', {
+      key: 'z',
+      metaKey: true,
+      cancelable: true,
+      bubbles: true,
+    })
+    feld.dispatchEvent(ereignis)
+
+    // Kein Projekt-Undo und KEIN preventDefault - das Feld behaelt seine Tipp-Undo.
+    expect(vorgaben.rueckgaengig).not.toHaveBeenCalled()
+    expect(vorgaben.wiederherstellen).not.toHaveBeenCalled()
+    expect(ereignis.defaultPrevented).toBe(false)
+
+    feld.remove()
+    abmelden()
+  })
 })
