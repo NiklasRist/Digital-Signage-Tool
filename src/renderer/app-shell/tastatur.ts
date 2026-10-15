@@ -29,6 +29,17 @@ export interface TastaturVorgaben {
 }
 
 /**
+ * Ist das Ereignisziel ein editierbares Feld (Texteingabe)? Dann gehoert Cmd+Z dem Feld
+ * (native Tipp-Undo), nicht der Projekt-Bearbeitung (#431). Rein lesend, wirft nie.
+ * `contentEditable` deckt Rich-Text-Felder mit ab; `isContentEditable` fehlt an Nicht-HTMLElementen.
+ */
+function istEingabefeld(ziel: EventTarget | null): boolean {
+  if (!(ziel instanceof HTMLElement)) return false
+  const marke = ziel.tagName
+  return marke === 'INPUT' || marke === 'TEXTAREA' || ziel.isContentEditable
+}
+
+/**
  * Registriert die Tastenkuerzel an `document` und liefert die Abbauroutine.
  * Sie laeuft nach dem Registrieren selbststaendig; ein erneutes Mounten macht
  * nichts Besonderes noetig (Abbau, dann Neu-Registrieren).
@@ -37,6 +48,12 @@ export function registriereTastaturHandler(vorgaben: TastaturVorgaben): () => vo
   const laeuft = (ereignis: KeyboardEvent): void => {
     if (ereignis.ctrlKey || ereignis.metaKey) {
       if (ereignis.key.toLowerCase() === 'z') {
+        // #431: In einem fokussierten Textfeld gehoert Cmd+Z dem Feld (native Tipp-Undo) -
+        // NICHT der Projekt-Bearbeitung. Seit dem eigenen Menue (#431) fehlt die
+        // Menue-Rolle "undo", die das vorher abfing; ohne diesen Waechter wuerde Cmd+Z
+        // beim Tippen versehentlich das Projekt zuruecknehmen. Kein preventDefault:
+        // Chromium macht die Feld-Undo selbst.
+        if (istEingabefeld(ereignis.target)) return
         if (vorgaben.rueckgaengig === undefined && vorgaben.wiederherstellen === undefined) return
         ereignis.preventDefault()
         if (ereignis.shiftKey) {

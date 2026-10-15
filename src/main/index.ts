@@ -29,7 +29,7 @@
 
 import path from "node:path";
 
-import { app, BrowserWindow, dialog, protocol, session } from "electron";
+import { app, BrowserWindow, dialog, Menu, protocol, session } from "electron";
 
 import { verdrahteQueueIPC } from "./auftrags-manager/ipc-verdrahtung";
 import { meldeExportHandlerAn } from "./export-service/handler-anmeldung";
@@ -58,6 +58,7 @@ import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
 import { MARKEN_SCHEMA, registriereMarkenProtokollHandler } from "./marken-store/marken-protokoll"; // #290
 import { flushBestand as flushMarkenBestand } from "./marken-store/schreibe-marken"; // #277, ALIAS-PFLICHT
 import { pruefeBeendenUndFlush, flushesBeimBeendenOhneDialogAus } from "./beenden-ablauf"; // #336, #427
+import { menueVorlage } from "./anwendungs-menue"; // #431
 import { erzwingeEinzelInstanz } from "./project-store/einzel-instanz"; // #51, SCHRITT 2
 import { ermittleDatenOrt } from "./datenort"; // #5, Pfad-Autoritaet
 import { flushBeimBeenden } from "./project-store/auto-speichern";
@@ -318,6 +319,17 @@ void app.whenReady().then(async () => {
   // zwar weit entfernt von hier.
   if (!(await pruefeBinariesOderBrichAb())) {
     return;
+  }
+
+  // #431: das EIGENE Anwendungsmenue. Ohne diesen Aufruf legt Electron auf macOS ein
+  // Standardmenue mit `Edit -> Undo/Redo (Cmd+Z / Shift+Cmd+Z)` an; diese Acceleratoren
+  // schlucken Cmd+Z, bevor der Renderer (#350) es sieht. Die Vorlage laesst Undo/Redo in
+  // der Edit-Gruppe weg (Begruendung: anwendungs-menue.ts), damit Cmd+Z die Seite erreicht.
+  // NUR auf macOS: dort gibt es das Standardmenue; Windows/Linux bekommen kein Menue.
+  if (process.platform === "darwin") {
+    Menu.setApplicationMenu(Menu.buildFromTemplate(menueVorlage()));
+  } else {
+    Menu.setApplicationMenu(null);
   }
 
   // SCHRITT 4: Muss nach app.whenReady() und VOR dem Laden des Fensters stehen.
