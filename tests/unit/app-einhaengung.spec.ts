@@ -560,7 +560,7 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(d.tagebuch).toEqual(['laeuftAn', 'baueAb', 'laeuftAn'])
   })
 
-  it("Bei 'bereit' bekommt Rahmen ALLE VIER Eigenschaften: inhalte, warteschlangenLeiste, speicherHinweis und meldungsFlaeche - keine bleibt leer", async () => {
+  it("Bei 'bereit' bekommt Rahmen ALLE FUENF Eigenschaften: inhalte, warteschlangenLeiste, speicherHinweis, meldungsFlaeche und undoRedo (#424) - keine bleibt leer", async () => {
     stelleBereitOhneProjekt()
     const { behaelter } = rendere()
     await act(async () => {
@@ -572,9 +572,10 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       'inhalte',
       'meldungsFlaeche',
       'speicherHinweis',
+      'undoRedo',
       'warteschlangenLeiste',
     ])
-    expect(Object.keys(rahmenEigenschaften)).toHaveLength(4)
+    expect(Object.keys(rahmenEigenschaften)).toHaveLength(5)
     // inhalte ist ToBe zum Ergebnis von baueReiterInhalte.
     const baueRufe = vi.mocked(inhalteModul.baueReiterInhalte)
     expect(rahmenEigenschaften.inhalte).toBe(
@@ -921,7 +922,7 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(vi.mocked(uebergabeModul.meldeStand)).toHaveBeenCalledWith(expect.anything(), stand)
   })
 
-  it("Der dritte Kernnachweis, benannter Test 'das UebergabeOverlay ist eingesetzt': genau einmal, als GESCHWISTER des Rahmens, und Rahmen behaelt GENAU VIER Eigenschaften", async () => {
+  it("Der dritte Kernnachweis, benannter Test 'das UebergabeOverlay ist eingesetzt': genau einmal, als GESCHWISTER des Rahmens, und Rahmen behaelt GENAU FUENF Eigenschaften (#424)", async () => {
     stelleBereitOhneProjekt()
     const { behaelter } = rendere()
     await act(async () => {
@@ -938,8 +939,8 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(rahmenKnoten!.parentElement).toBe(behaelter)
     expect(rahmenKnoten!.contains(overlayKnoten!)).toBe(false)
     expect(overlayKnoten!.contains(rahmenKnoten!)).toBe(false)
-    // GENAU VIER Eigenschaften im Rahmen - das Overlay ist KEIN fuenfter Eintrag:
-    expect(Object.keys(letzterRahmen())).toHaveLength(4)
+    // GENAU FUENF Eigenschaften im Rahmen - das Overlay ist KEIN sechster Eintrag:
+    expect(Object.keys(letzterRahmen())).toHaveLength(5)
   })
 
   it('UebergabeOverlay bekommt ALLE SIEBEN Eigenschaften belegt: lage, projekt, die drei Abschluss-Funktionen und aufFehler (benannter Test)', async () => {

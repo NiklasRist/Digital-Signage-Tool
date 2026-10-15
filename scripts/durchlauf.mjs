@@ -224,6 +224,13 @@ const main = async () => {
     // Dialog-Mounts (#342). Die #248-Wiedergabeliste liegt hinter dem Umschalter.
     await klick('[data-testid="reiter-zusammenstellen"]');
     await schlafe(600);
+    // #424: Die Undo/Redo-Pfeile sitzen in der Reiterleiste der Shell.
+    if (await stehtDa('[data-testid="undo-pfeil"]')) {
+      console.log("[schritt-3] Undo/Redo-Pfeile in der Reiterleiste (#424).");
+    } else {
+      fund("Undo/Redo-Pfeile", "die Pfeile sind in der Reiterleiste sichtbar (#424)",
+        "undo-pfeil fehlt", "Befund", "app-shell/undo-pfeile.tsx");
+    }
     if (!(await stehtDa('[data-testid="zeitleiste"]'))) {
       fund("Zusammenstellen", "Zeitleiste im Fenster (primäre Ansicht seit #414)",
         "zeitleiste nicht da", "BLOCKER", "composer/index.tsx");
