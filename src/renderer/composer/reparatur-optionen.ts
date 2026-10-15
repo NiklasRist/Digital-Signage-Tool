@@ -36,7 +36,7 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { entferneElementAusListe } from './element-entfernen'
-import { gleicheElementAb } from './projektzustand'
+import { holeSicht, type SichtSchreiber } from './projektzustand'
 import type { KaputteStelle } from './kaputt-erkennung'
 
 export type FixOptionId =
@@ -135,18 +135,23 @@ function holeBand(
 
 /** Die gemeinsame Sende- und Abgleichroutine der drei schreibenden Wege.
  *
- *  Bei `ok` geht das zurueckgegebene `Listenelement` an `gleicheElementAb` (#121) -
- *  ohne diesen Schritt bliebe die Sicht auf dem alten Stand, `findeKaputteStellen`
- *  meldete die behobene Stelle weiter, und "X von N" spraenge nie weiter. Bei
- *  `ok: false` wird der Fehler UNVERAENDERT durchgereicht (Code, Meldung und
- *  `daten`) und die Sicht NICHT angefasst. */
+ *  Bei `ok` wird die Sicht ueber den WRAPPED-`sichtSchreiber` (#244-Huelle) auf den neuen
+ *  Stand gebracht - NICHT mehr ueber `gleicheElementAb`. Erst so nimmt jede Reparatur-Reihe
+ *  einen Undo-Schritt (#421). Die Ersetzung ist dieselbe wie bei `gleicheElementAb`: nur das
+ *  Element mit der zurueckgegebenen id wird getauscht, nichts angehaengt, nichts gestrichen.
+ *  Bei `ok: false` wird der Fehler UNVERAENDERT durchgereicht und die Sicht NICHT angefasst. */
 async function sendeUndGleicheAb(
   kanal: string,
   nutzlast: unknown,
+  sichtSchreiber: SichtSchreiber,
 ): Promise<Ergebnis<FixWirkung>> {
   const antwort = await rufeAuf<Listenelement>(kanal, nutzlast)
   if (!antwort.ok) return antwort
-  gleicheElementAb(antwort.wert)
+  const projekt = holeSicht().projekt
+  if (projekt !== null) {
+    // Nicht gefundene id -> KEIN Anhaengen (dieselbe Regel wie gleicheElementAb, #121).
+    sichtSchreiber(projekt.liste.map((vorhanden) => (vorhanden.id === antwort.wert.id ? antwort.wert : vorhanden)))
+  }
   return { ok: true, wert: { art: 'erledigt' } }
 }
 
@@ -154,6 +159,7 @@ export async function fuehreFixAus(
   stelle: KaputteStelle,
   option: FixOptionId,
   projekt: Project,
+  sichtSchreiber: SichtSchreiber,
 ): Promise<Ergebnis<FixWirkung>> {
   // Erst die Ebene, dann die Wirkung: Passt die Option nicht zur Stelle, geschieht
   // NICHTS - kein IPC-Aufruf, keine Uebergabe. Dieselbe Haltung, die der Main
@@ -221,7 +227,7 @@ export async function fuehreFixAus(
       // sonst zwei Aufrufer, und nur #124 zieht die Sicht nach. Bliebe das entfernte
       // Element in der Sicht stehen, zaehlte "X von N" die behobene Stelle weiter mit
       // und `istRenderFreigegeben` bliebe dauerhaft false.
-      const antwort = await entferneElementAusListe(stelle.elementId)
+      const antwort = await entferneElementAusListe(stelle.elementId, sichtSchreiber)
       if (!antwort.ok) return antwort
       return { ok: true, wert: { art: 'erledigt' } }
     }
@@ -257,10 +263,11 @@ export async function fuehreFixAus(
       // In IPC-Form, nicht als nackter Funktionsaufruf: Der Renderer darf `src/main`
       // nicht importieren, der einzige Weg ueber die Prozessgrenze ist `rufeAuf`
       // (#24), und Kanalnamen kommen aus `KANAELE` (#25), nie als String-Literal.
-      return await sendeUndGleicheAb(KANAELE.project.setzeEinblendung, {
-        elementId: stelle.elementId,
-        einblendung,
-      })
+      return await sendeUndGleicheAb(
+        KANAELE.project.setzeEinblendung,
+        { elementId: stelle.elementId, einblendung },
+        sichtSchreiber,
+      )
     }
 
     default:
@@ -277,6 +284,7 @@ export async function fuehreFixAus(
 export async function schliesseMediumFixAb(
   elementId: string,
   neueAssetId: string,
+  sichtSchreiber: SichtSchreiber,
 ): Promise<Ergebnis<FixWirkung>> {
   if (!istKennung(elementId) || !istKennung(neueAssetId)) {
     return fehler(
@@ -289,10 +297,11 @@ export async function schliesseMediumFixAb(
   // Ziel existiert und ob sein Typ zur `art` des Elements passt, prueft #152 im Main
   // (TK 9.1.1 Punkt 6). Eine Pruefung hier waere eine zweite Wahrheit ueber den
   // Medienbestand - und die beiden koennten auseinanderlaufen.
-  return await sendeUndGleicheAb(KANAELE.project.setzeElementReferenz, {
-    elementId,
-    referenz: neueAssetId,
-  })
+  return await sendeUndGleicheAb(
+    KANAELE.project.setzeElementReferenz,
+    { elementId, referenz: neueAssetId },
+    sichtSchreiber,
+  )
 }
 
 /** Der Gegenweg zu `aktion_ersetzen`: Nachdem der Nutzer in der Aktions-Auswahl eine andere Aktion
@@ -301,6 +310,7 @@ export async function schliesseMediumFixAb(
 export async function schliesseAktionsFixAb(
   elementId: string,
   neueAktionId: string,
+  sichtSchreiber: SichtSchreiber,
 ): Promise<Ergebnis<FixWirkung>> {
   if (!istKennung(elementId) || !istKennung(neueAktionId)) {
     return fehler(
@@ -316,10 +326,11 @@ export async function schliesseAktionsFixAb(
   // Die ALTE Aktion wird dabei nicht angefasst. Sie bleibt in der Bibliothek und
   // bleibt an ihren uebrigen Verwendungen kaputt; wer alle Verwendungen auf einmal
   // heilen will, nimmt `aktionsbild_reparieren` - das steht deshalb an erster Stelle.
-  return await sendeUndGleicheAb(KANAELE.project.setzeElementReferenz, {
-    elementId,
-    referenz: neueAktionId,
-  })
+  return await sendeUndGleicheAb(
+    KANAELE.project.setzeElementReferenz,
+    { elementId, referenz: neueAktionId },
+    sichtSchreiber,
+  )
 }
 
 /** Der Gegenweg zu `abschnitt_ersetzen`: Nachdem der Nutzer in der Aktions-Auswahl eine andere
@@ -332,6 +343,7 @@ export async function schliesseAbschnittsFixAb(
   abschnittIndex: number,
   neueAktionId: string,
   projekt: Project,
+  sichtSchreiber: SichtSchreiber,
 ): Promise<Ergebnis<FixWirkung>> {
   if (
     !istKennung(elementId) ||
@@ -366,5 +378,5 @@ export async function schliesseAbschnittsFixAb(
 
   // `setzeEinblendung`, NIEMALS `setzeElementReferenz`: `Listenelement.ref` wird hier
   // nicht angefasst - der `ref` des Videos zeigt weiterhin auf sein Asset.
-  return await sendeUndGleicheAb(KANAELE.project.setzeEinblendung, { elementId, einblendung })
+  return await sendeUndGleicheAb(KANAELE.project.setzeEinblendung, { elementId, einblendung }, sichtSchreiber)
 }

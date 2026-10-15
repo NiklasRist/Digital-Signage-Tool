@@ -59,18 +59,16 @@
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
-import { holeSicht, setzeListe, type SichtSchreiber } from './projektzustand'
+import { holeSicht, type SichtSchreiber } from './projektzustand'
 
 /** Entfernt genau ein Listenelement aus der Wiedergabeliste.
- *  ERGAENZT durch #415 (Variante a): Der SICHT-SCHREIBER laeuft JEDE Ansicht-Weg
- *  (Zeile, KontextMenue) ueber die Wrapped-Zugangs-`setzeListe` (#244-Huelle) - das
- *  ist die Pflicht-Naht. AUSNAHME: Die Reparatur-Kette (reparatur-optionen ->
- *  schliesse*Mit-Ueber App.tsx-Ebene) kommt HEUTE noch ohne Schreiber here - sie
- *  faellt auf den rawen Store zurueck und WARNT sichtbar (#415-Nachzug; kein stiller
- *  Drift kein zweiter Weg fuer die Ansichts-Wege). */
+ *  #415 (Variante a) / #421: Der SICHT-SCHREIBER ist PFLICHT und laeuft ueber die
+ *  Wrapped-Zugangs-`setzeListe` (#244-Huelle) - JEDER Weg (Zeile, KontextMenue,
+ *  Reparatur-Kette) nimmt so einen Undo-Schritt. Den frueheren WARN-Fallback ohne
+ *  Schreiber gibt es NICHT mehr: kein zweiter Weg, kein stiller Drift (#421). */
 export async function entferneElementAusListe(
   elementId: string,
-  sichtSchreiber?: SichtSchreiber,
+  sichtSchreiber: SichtSchreiber,
 ): Promise<Ergebnis<void>> {
   // `typeof` trotz `string` in der Signatur: Die Kennung kommt aus der Oberflaeche
   // (Listenzeile, Reparatur-Fuehrung) und kann dort aus einer ungetypten Quelle
@@ -133,16 +131,9 @@ export async function entferneElementAusListe(
     // `liste` - es gibt kein separates `position`-Feld." (TK 9.11.3) Es bleibt keine
     // Luecke, kein Platzhalter, kein `undefined`.
     //
-    // Angefasst wird ausschliesslich `liste`; `setzeListe` (#121) laesst `assets` und
-    // `aktionen` unberuehrt - genau die Grenze aus TK 9.5.3.
-    if (sichtSchreiber === undefined) {
-      console.warn(
-        '#415-Nachzug: entferneElementAusListe ohne sichtSchreiber - kein Undo-Schritt (Reparatur-Naht).',
-      )
-      setzeListe(projekt.liste.filter((vorhanden) => vorhanden.id !== elementId))
-    } else {
-      sichtSchreiber(projekt.liste.filter((vorhanden) => vorhanden.id !== elementId))
-    }
+    // Angefasst wird ausschliesslich `liste`; der Sicht-Schreiber (Wrapped-setzeListe)
+    // laesst `assets` und `aktionen` unberuehrt - genau die Grenze aus TK 9.5.3.
+    sichtSchreiber(projekt.liste.filter((vorhanden) => vorhanden.id !== elementId))
   }
   // Ist das Projekt waehrend des Aufrufs verschwunden (geschlossen, geloescht), wird
   // NICHTS ersatzweise gesetzt. Der Erfolg wird trotzdem ehrlich zurueckgemeldet -

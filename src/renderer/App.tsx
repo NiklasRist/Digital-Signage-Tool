@@ -83,6 +83,7 @@ import {
   schliesseAktionsFixAb,
   schliesseAbschnittsFixAb,
 } from './composer/reparatur-optionen'
+import type { SichtSchreiber } from './composer/projektzustand'
 import { aktualisiereReparatur } from './composer/reparatur-fuehrung'
 import { sitzungshalter } from './app-shell/undo-aufzeichnung-vorlage'
 import { wechsleReiter, holeReiter, type ReiterId } from './app-shell/reiter'
@@ -118,6 +119,12 @@ export function App(): JSX.Element {
   const zugaengeRef = useRef<Reiterzugaenge | null>(null)
   const umgebungRef = useRef<UebergabeUmgebung | null>(null)
   const abbauRef = useRef<(() => void) | null>(null)
+
+  // #421: Der Sicht-Schreiber der Reparatur-Rueckwege - der WRAPPED-Zugang (#244-Huelle),
+  // damit jede Reparatur-Reihe einen Undo-Schritt nimmt. Der Zugang steht erst nach dem
+  // Bootstrap im ref; vorher ist keine Reparatur ansteuerbar, deshalb der No-op-Rueckfall.
+  const reparaturSchreiber = (): SichtSchreiber =>
+    zugaengeRef.current?.projektBearbeitung.setzeListe ?? (() => undefined)
 
   // DER Meldeweg - DIESE eine Funktion, stabil (ToBe ueber alle drei Stellen).
   const meldeFehler = useCallback((code: string, meldungText: string) => {
@@ -161,7 +168,11 @@ export function App(): JSX.Element {
       wechsleReiter: (ziel: ReiterId) => wechsleReiter(ziel),
       rechneStandNeu: (stand: ReparaturStand, projekt: Project) => aktualisiereReparatur(stand, projekt),
       starteMedienImport,
-      schliesseMediumFixAb,
+      // #421: Der Rueckweg schreibt ueber den WRAPPED-Zugang (#244-Huelle) - so nimmt
+      // die Reparatur-Reihe einen Undo-Schritt. reparaturSchreiber liest die Sicht bei
+      // JEDEM Aufruf frisch aus dem ref (der Zugang steht erst nach dem Bootstrap bereit).
+      schliesseMediumFixAb: (elementId: string, neueAssetId: string) =>
+        schliesseMediumFixAb(elementId, neueAssetId, reparaturSchreiber()),
       meldeFehler,
     }
     umgebungRef.current = selbst
@@ -339,9 +350,12 @@ export function App(): JSX.Element {
       <UebergabeOverlay
         lage={reparatur}
         projekt={projektOffen}
-        schliesseMediumFixAb={schliesseMediumFixAb}
-        schliesseAktionsFixAb={schliesseAktionsFixAb}
-        schliesseAbschnittsFixAb={schliesseAbschnittsFixAb}
+        schliesseMediumFixAb={(elementId: string, neueAssetId: string) =>
+          schliesseMediumFixAb(elementId, neueAssetId, reparaturSchreiber())}
+        schliesseAktionsFixAb={(elementId: string, neueAktionId: string) =>
+          schliesseAktionsFixAb(elementId, neueAktionId, reparaturSchreiber())}
+        schliesseAbschnittsFixAb={(elementId: string, abschnittIndex: number, neueAktionId: string, p: Project) =>
+          schliesseAbschnittsFixAb(elementId, abschnittIndex, neueAktionId, p, reparaturSchreiber())}
         aufAbgeschlossen={(wirkung: FixWirkung) => schliesseFixAb(umgebung, wirkung)}
         aufAbgebrochen={() => beendeLaufende(umgebung)}
         aufFehler={meldeFehler}
