@@ -168,6 +168,15 @@ const main = async () => {
       fund("Projekt anlegen", "Namensfeld im Dialog",
         "Dialog ohne Namensfeld", "BLOCKER", "projekt-verwaltung/index.tsx");
     } else {
+      // #423: Der Anlegen-Dialog bietet „Video importieren". Der Import selbst oeffnet
+      // einen NATIVEN Dialog - der Treiber bedient ihn nicht (MANUELL, wie der Export).
+      // Gemessen wird deshalb das Vorhandensein des Haekchens; gesetzt wird es NICHT.
+      if (await stehtDa('[data-testid="dialog-anlegen-video"]')) {
+        console.log("[schritt-2] Anlegen-Dialog bietet 'Video importieren' (#423).");
+      } else {
+        fund("Projekt anlegen", 'Häkchen "Video importieren" im Anlegen-Dialog (#423)',
+          "Häkchen fehlt", "Befund", "projekt-verwaltung/index.tsx");
+      }
       await seite.type('[data-testid="dialog-anlegen-name"]', namen);
       await klick('[data-testid="dialog-anlegen-best\u00e4tigen"]');
             // ZEIT FALSCH MESSEN ist selbst ein Befund: Anlegen -> Liste laden -> Projekt

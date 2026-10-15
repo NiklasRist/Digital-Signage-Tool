@@ -64,6 +64,9 @@ export interface ProjektVerwaltungWurzelProps {
    *  Standardmarke. Die Wurzel abonniert `marken.aufGeaendert` und liest daraus den
    *  Bestand je Zeile; Zeichen lebt in `StandardmarkeAuswahl` (#324). */
   marken: MarkenZugang
+  /** NEU (#423): startet nach dem Anlegen den Video-Import (derselbe Weg wie der
+   *  Composer-Knopf, `starteMedienImport(_, 'video')`). Wird UNVERAENDERT durchgereicht. */
+  starteVideoImport: (projektId: string) => void
 }
 
 export function ProjektVerwaltungWurzel(p: ProjektVerwaltungWurzelProps): JSX.Element {
@@ -78,6 +81,9 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
   const [liste, setzeListe] = useState<Projektliste>(() => holeProjektliste())
   const [dialog, setzeDialog] = useState<VerwaltungsDialog>(KEIN_DIALOG)
   const [anlegenName, setzeAnlegenName] = useState('')
+  // #423: „Video importieren" im Anlegen-Dialog (optional). Nach dem Anlegen und dem
+  // Wechsel in den Reiter Zusammenstellen startet der Video-Import.
+  const [anlegenVideo, setzeAnlegenVideo] = useState(false)
   const [duplikatName, setzeDuplikatName] = useState('')
   const [meldungsText, setzeMeldung] = useState<string | null>(null)
   const meldeFehler = (code: string, meldung: string): void => {
@@ -229,6 +235,15 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
               onChange={(e) => setzeAnlegenName(e.target.value)}
             />
           </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={anlegenVideo}
+              data-testid="dialog-anlegen-video"
+              onChange={(e) => setzeAnlegenVideo(e.target.checked)}
+            />{' '}
+            Video importieren
+          </label>
           <button
             type="button"
             data-testid="dialog-anlegen-bestätigen"
@@ -241,8 +256,13 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
               }
               void legeProjektAn(anlegenName, wechsel).then((antwort) => {
                 if (antwort.ok) {
+                  // #423: nach dem Anlegen (Projekt offen, Reiter Zusammenstellen) den
+                  // Video-Import starten - derselbe Weg wie der Composer-Knopf. Schlaegt
+                  // der Import fehl, bleibt das (leere) Projekt bestehen (User-Entscheid.).
+                  if (anlegenVideo) p.starteVideoImport(antwort.wert.id)
                   setzeDialog(schliesseDialog())
                   setzeAnlegenName('')
+                  setzeAnlegenVideo(false)
                 } else {
                   meldeFehler(antwort.fehler.code, antwort.fehler.meldung)
                 }
