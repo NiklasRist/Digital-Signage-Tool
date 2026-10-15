@@ -99,6 +99,14 @@ describe('Die Zeitleiste zeigt die Einfuege-Kanten (#414)', () => {
     expect(behaelter.querySelector('[data-testid="zeitleiste-block-1"]')).not.toBeNull()
   })
 
+  it('#420: jeder Block traegt data-element-id (dieselbe Traeger-Konvention wie die #248-Liste)', () => {
+    const behaelter = montiere({ projekt: projekt(2), neuZug: null, aktiveKante: null, laedtKante: null })
+    // Der Rechtsklick-Selektor der Wurzel sucht `[data-element-id]` - ohne diese Angabe
+    // bliebe das KontextMenue an der Zeitleiste wirkungslos (#420).
+    expect(behaelter.querySelector('[data-testid="zeitleiste-block-0"]')?.getAttribute('data-element-id')).toBe('e0')
+    expect(behaelter.querySelector('[data-testid="zeitleiste-block-1"]')?.getAttribute('data-element-id')).toBe('e1')
+  })
+
   it('Neu-Drag: Kanten 0..N erscheinen (Liste mit 2 -> 3 Kanten, inklusive Ende-Kante)', () => {
     const behaelter = montiere({ projekt: projekt(2), neuZug: 'a1', aktiveKante: null, laedtKante: null })
     expect(kante(behaelter, 0)).not.toBeNull()
