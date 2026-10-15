@@ -114,25 +114,43 @@ describe("verdrahteMedienIPC (#93) - Anmeldung", () => {
   });
 });
 
-describe("verdrahteMedienIPC (#93) - Nutzlast", () => {
-  it("nimmt jede Nutzlast an, statt sie abzulehnen", () => {
+describe("verdrahteMedienIPC (#93) - Nutzlast (#418)", () => {
+  it("ohne Nutzlast gilt der alte Zustand (leere Optionen), nicht abgelehnt", () => {
     const validiere = registrierungen[0]?.validiere;
     expect(validiere).toBeTypeOf("function");
 
-    for (const nutzlast of [undefined, null, { unerwartet: 1 }, "x", 42, ["a"]]) {
-      expect(validiere?.(nutzlast)).toMatchObject({ ok: true });
+    for (const nutzlast of [undefined, null, {}]) {
+      expect(validiere?.(nutzlast)).toEqual({ ok: true, wert: {} });
     }
   });
 
-  it("ruft öffneMedienDialog ohne Argument auf, auch mit mitgeschickter Nutzlast", async () => {
+  it("reicht gueltige Optionen unveraendert durch", () => {
+    const validiere = registrierungen[0]?.validiere;
+    expect(validiere?.({ nurTyp: "video", einzel: true })).toEqual({
+      ok: true,
+      wert: { nurTyp: "video", einzel: true },
+    });
+    expect(validiere?.({ nurTyp: "bild" })).toEqual({ ok: true, wert: { nurTyp: "bild" } });
+  });
+
+  it("weist eine FALSCHE Form ab (die Nutzlast hat hier Wirkung)", () => {
+    const validiere = registrierungen[0]?.validiere;
+    for (const nutzlast of ["x", 42, ["a"], { nurTyp: "audio" }, { einzel: "ja" }]) {
+      expect(validiere?.(nutzlast)).toMatchObject({ ok: false });
+    }
+  });
+
+  it("ruft öffneMedienDialog MIT den validierten Optionen auf", async () => {
     await rufe();
-    await rufe({ unerwartet: 1 });
+    await rufe({ nurTyp: "video", einzel: true });
 
     expect(dialogMock.öffneMedienDialog).toHaveBeenCalledTimes(2);
     // `toHaveBeenCalledWith()` allein wuerde eine ueberzaehlige Nutzlast nicht sicher
     // aufdecken - geprueft wird die Argumentliste selbst.
-    expect(dialogMock.öffneMedienDialog.mock.calls[0]).toEqual([]);
-    expect(dialogMock.öffneMedienDialog.mock.calls[1]).toEqual([]);
+    expect(dialogMock.öffneMedienDialog.mock.calls[0]).toEqual([{}]);
+    expect(dialogMock.öffneMedienDialog.mock.calls[1]).toEqual([
+      { nurTyp: "video", einzel: true },
+    ]);
   });
 });
 

@@ -22,6 +22,10 @@ export interface BibliothekEigenschaften {
   /** #415 (Variante a): der Sicht-Schreiber (Wrapped-Zugangs-`setzeListe`, #244-Huelle).
    *  PFICHT - ohne ihn haette JEDES hier angelegte Element keinen Undo-Schritt. */
   sichtSchreiber: (liste: Listenelement[]) => void
+  /** #418: das hervorgehobene Medium (nach dem Import standardmaessig das neue Video). */
+  ausgewaehltesId?: string | null
+  /** #418: Klick auf eine Medienzeile macht sie zur Auswahl. */
+  aufWaehlen?: (assetId: string) => void
 }
 
 /**
@@ -62,6 +66,8 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
               aufMediumLoeschen={p.aufMediumLoeschen}
               aufFehler={p.aufFehler}
               sichtSchreiber={p.sichtSchreiber}
+              ausgewaehlt={eintrag.asset.id === (p.ausgewaehltesId ?? null)}
+              aufWaehlen={p.aufWaehlen}
             />
           ))}
         </ul>
@@ -86,6 +92,9 @@ interface MedienzeileEigenschaften {
   aufMediumLoeschen: (assetId: string) => void
   aufFehler: (code: string, meldung: string) => void
   sichtSchreiber: (liste: Listenelement[]) => void
+  /** #418: hervorgehoben? */
+  ausgewaehlt: boolean
+  aufWaehlen?: (assetId: string) => void
 }
 
 function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
@@ -94,8 +103,14 @@ function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
   // Der Drag in die Zeitleiste war fuer AKTIONEN gedacht (und spaeter fuer Banner);
   // Bilder/Videos kommen weiter ueber den Klick-Weg ("Zur Liste hinzufuegen") und
   // den Import in die Liste - der Weg bleibt unveraendert.
+  // #418: Die ausgewaehlte Medienzeile ist hervorgehoben (data-ausgewaehlt).
   return (
-    <li data-testid={`medium-${p.eintrag.asset.id}`}>
+    <li
+      data-testid={`medium-${p.eintrag.asset.id}`}
+      data-ausgewaehlt={p.ausgewaehlt ? 'true' : 'false'}
+      onClick={p.aufWaehlen === undefined ? undefined : () => p.aufWaehlen?.(p.eintrag.asset.id)}
+      style={p.ausgewaehlt ? { outline: '2px solid #e5634d', outlineOffset: -2 } : undefined}
+    >
       <div data-ton={fehlt ? 'hervorgehoben' : 'ruhig'}>
         {/* ENTSCHIEDEN 4: Bilder direkt als media://-img (TK 9.5.7); die URL gibt es
             nur bei typ bild UND zustand ok (ENTSCHIEDEN 5). */}

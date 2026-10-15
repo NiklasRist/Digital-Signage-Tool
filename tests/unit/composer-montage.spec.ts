@@ -26,6 +26,7 @@ import {
   oeffneOverlay,
   schliesseOverlay,
   waehleElement,
+  waehleMedium,
   melde,
   verwirfWurzelMeldung,
   setzeLaeuft,
@@ -78,6 +79,7 @@ describe('composer-montage.ts – Verbote (Grep, nur auf DIESE Datei)', () => {
 const lage: ComposerLage = {
   overlay: { art: 'einblendung', elementId: 'el-1' },
   gewaehltesElementId: 'el-1',
+  gewaehltesMediumId: 'm-1',
   meldung: { code: 'probe', meldung: 'Probe', warnung: true },
   laeuft: true,
   ausgabeName: 'FA-22',
@@ -107,6 +109,7 @@ describe('Nullwerte', () => {
     expect(LEERE_COMPOSER_LAGE).toEqual({
       overlay: KEIN_OVERLAY,
       gewaehltesElementId: null,
+      gewaehltesMediumId: null,
       meldung: null,
       laeuft: false,
       ausgabeName: '',
@@ -164,6 +167,18 @@ describe('die acht Lage-Funktionen: neu, total, ohne Mutation', () => {
     expect(leer.laeuft).toBe(true)
     const anders = waehleElement(lage, 'el-9')
     expect(anders.gewaehltesElementId).toBe('el-9')
+  })
+
+  it('#418: waehleMedium setzt das ausgewaehlte Medium, null geleert; alles andere unberuehrt', () => {
+    const anders = waehleMedium(lage, 'asset-9')
+    expect(anders).not.toBe(lage)
+    expect(anders.gewaehltesMediumId).toBe('asset-9')
+    // Nur das Medium wechselt - Element-Auswahl, Overlay, Meldung und laeuft bleiben.
+    expect(anders.gewaehltesElementId).toBe(lage.gewaehltesElementId)
+    expect(anders.overlay).toBe(lage.overlay)
+    expect(anders.meldung).toBe(lage.meldung)
+    expect(anders.laeuft).toBe(lage.laeuft)
+    expect(waehleMedium(lage, null).gewaehltesMediumId).toBeNull()
   })
 
   it('melde ERSETZT eine stehende Meldung (genau eine, nie ein Stapel)', () => {

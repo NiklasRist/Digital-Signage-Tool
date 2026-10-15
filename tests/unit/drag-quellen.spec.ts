@@ -138,3 +138,36 @@ describe('Die Galerie-Karten sind KEINE Drag-Quelle (#417)', () => {
     expect(bildKarte?.getAttribute('aria-roledescription')).not.toBe('draggable')
   })
 })
+
+describe('Das ausgewaehlte Medium ist hervorgehoben (#418)', () => {
+  it('die gewaehlte Galerie-Karte traegt data-ausgewaehlt=true, die andere nicht', () => {
+    const behaelter = montiere(
+      createElement(AssetGalerie, { projekt: projekt(), ausgewaehltesId: 'a-video' }),
+    )
+    expect(
+      behaelter.querySelector('[data-testid="galerie-eintrag-a-video"]')?.getAttribute('data-ausgewaehlt'),
+    ).toBe('true')
+    expect(
+      behaelter.querySelector('[data-testid="galerie-eintrag-a-bild"]')?.getAttribute('data-ausgewaehlt'),
+    ).toBe('false')
+  })
+
+  it('die gewaehlte Medienzeile der Bibliothek traegt data-ausgewaehlt=true', () => {
+    const behaelter = montiere(
+      createElement(Bibliotheksansicht, {
+        projekt: projekt(),
+        aufImportieren: () => {},
+        aufMediumLoeschen: () => {},
+        aufFehler: () => {},
+        sichtSchreiber: () => {},
+        ausgewaehltesId: 'a-video',
+      }),
+    )
+    expect(
+      behaelter.querySelector('[data-testid="medium-a-video"]')?.getAttribute('data-ausgewaehlt'),
+    ).toBe('true')
+    expect(
+      behaelter.querySelector('[data-testid="medium-a-bild"]')?.getAttribute('data-ausgewaehlt'),
+    ).toBe('false')
+  })
+})

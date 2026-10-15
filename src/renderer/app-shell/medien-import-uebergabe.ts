@@ -40,6 +40,10 @@ export interface ImportUebergabeErgebnis {
  *
  * `nurTyp`: null = beide Typen zulassen (Medien-Bibliothek). 'bild' = nur Bilder behalten
  * (Aktions-Bild); alles andere landet in `uebersprungen`. Der Dialog selbst filtert NICHT.
+ *
+ * #418: Ein TYPISIERTER Import (`nurTyp` gesetzt) ist ein EINZEL-Import. Der Composer
+ * laedt genau EIN Video; der Dialog erhaelt dafuer `{ nurTyp, einzel: true }`. Ohne
+ * `nurTyp` (Reparatur-Uebergabe) bleibt die Mehrfachauswahl wie bisher.
  */
 export async function starteMedienImport(
   projektId: string,
@@ -56,12 +60,14 @@ export async function starteMedienImport(
     }
   }
 
-  // Schritt 2 - Dialog oeffnen, ohne Nutzlast. Schlaegt der AUFRUF fehl, ist das
-  // ein Fehler des Gesamtaufrufs: nichts eingereiht, Code unveraendert.
+  // Schritt 2 - Dialog oeffnen. #418: mit den abgeleiteten Optionen (typisierter Import
+  // = EINZEL-Import, s. Kopfkommentar). Schlaegt der AUFRUF fehl, ist das ein Fehler des
+  // Gesamtaufrufs: nichts eingereiht, Code unveraendert.
   let pfade: string[]
   try {
     const dialog = await rufeAuf<{ pfade: string[] }>(
       KANAELE.media.öffneMedienDialog,
+      nurTyp === null ? {} : { nurTyp, einzel: true },
     )
     if (!dialog.ok) {
       return dialog
