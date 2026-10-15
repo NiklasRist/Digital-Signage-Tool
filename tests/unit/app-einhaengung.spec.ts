@@ -957,11 +957,12 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     const overlay = letztesOverlay()
     expect(overlay.lage).toBe(halterDoppel.holeLage())
     expect(overlay.projekt).toBe(d.projektImZugang)
-    expect(overlay.schliesseMediumFixAb).toBe(vi.mocked(optionenModul.schliesseMediumFixAb))
-    expect(overlay.schliesseAktionsFixAb).toBe(vi.mocked(optionenModul.schliesseAktionsFixAb))
-    expect(overlay.schliesseAbschnittsFixAb).toBe(
-      vi.mocked(optionenModul.schliesseAbschnittsFixAb),
-    )
+    // #421: Die drei Rueckwege sind jetzt duenne Wrapper (sie reichen den Sicht-Schreiber
+    // des Wrapped-Zugangs hinein) - nicht mehr ToBe-gleich zum rohen Export. Belegt wird
+    // hier die BELEGUNG; die Verdrahtung des Schreibers prueft der Treiber/das Verhalten.
+    expect(overlay.schliesseMediumFixAb).toBeTypeOf('function')
+    expect(overlay.schliesseAktionsFixAb).toBeTypeOf('function')
+    expect(overlay.schliesseAbschnittsFixAb).toBeTypeOf('function')
     expect(overlay.aufFehler).toBe(letzterSchritt().meldeFehler)
     expect(overlay.aufAbgeschlossen).toBeDefined()
     expect(overlay.aufAbgebrochen).toBeDefined()
@@ -1013,7 +1014,7 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(vi.mocked(optionenModul.schliesseAbschnittsFixAb)).not.toHaveBeenCalled()
   })
 
-  it('Der Nachweis des Import-Rueckwegs, benannter Test (ENTSCHIEDEN 8): schliesseMediumFixAb ToBe, und meldeImportErgebnis(a9) setzt schliesseMedienImportAb mit derselben Umgebung', async () => {
+  it('Der Nachweis des Import-Rueckwegs, benannter Test (ENTSCHIEDEN 8): schliesseMediumFixAb belegt, und meldeImportErgebnis(a9) setzt schliesseMedienImportAb mit derselben Umgebung', async () => {
     stelleBereitOhneProjekt()
     rendere()
     await act(async () => {
@@ -1021,7 +1022,8 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       await Promise.resolve()
     })
     const umgebung = fangeUmgebung()
-    expect(umgebung.schliesseMediumFixAb).toBe(vi.mocked(optionenModul.schliesseMediumFixAb))
+    // #421: ein Wrapper (reicht den Wrapped-Sicht-Schreiber hinein) - belegt, nicht ToBe.
+    expect(umgebung.schliesseMediumFixAb).toBeTypeOf('function')
     const schritte = letzterSchritt() as { meldeImportErgebnis: (assetId: string) => void }
     await act(async () => {
       schritte.meldeImportErgebnis('a9')

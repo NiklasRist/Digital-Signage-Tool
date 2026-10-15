@@ -49,6 +49,11 @@ vi.mock('../../src/renderer/composer/projektzustand', () => ({
 }))
 
 import { entferneElementAusListe } from '../../src/renderer/composer/element-entfernen'
+import { setzeListe } from '../../src/renderer/composer/projektzustand'
+
+// #421: `sichtSchreiber` ist Pflicht. Das Doppel reicht denselben (gemockten) `setzeListe`
+// hinein, den die Datei frueher selbst gerufen hat - die Erwartungen bleiben damit gueltig.
+const schreibe = setzeListe
 
 // ---------------------------------------------------------------------------
 // Bausteine
@@ -117,7 +122,7 @@ describe('entferneElementAusListe - der Aufruf hinaus', () => {
     doppel.projekt = projekt(fuenf())
     doppel.antwort = { ok: true, wert: undefined }
 
-    await entferneElementAusListe('e2')
+    await entferneElementAusListe('e2', schreibe)
 
     expect(doppel.aufrufe).toHaveLength(1)
     expect(doppel.aufrufe[0]?.kanal).toBe(KANAELE.project.entferneElement)
@@ -131,8 +136,8 @@ describe('entferneElementAusListe - der Aufruf hinaus', () => {
     doppel.projekt = projekt(fuenf())
     doppel.antwort = { ok: true, wert: undefined }
 
-    await entferneElementAusListe('e2')
-    await entferneElementAusListe('e4')
+    await entferneElementAusListe('e2', schreibe)
+    await entferneElementAusListe('e4', schreibe)
 
     const kanaele = new Set(doppel.aufrufe.map((a) => a.kanal))
     expect([...kanaele]).toEqual([KANAELE.project.entferneElement])
@@ -141,7 +146,7 @@ describe('entferneElementAusListe - der Aufruf hinaus', () => {
   it('reicht die Kennung unverändert durch - kein Kürzen, kein Umformen', async () => {
     doppel.antwort = { ok: true, wert: undefined }
 
-    await entferneElementAusListe(' e2 ')
+    await entferneElementAusListe(' e2 ', schreibe)
 
     expect(doppel.aufrufe[0]?.nutzlast).toEqual({ elementId: ' e2 ' })
   })
@@ -152,7 +157,7 @@ describe('entferneElementAusListe - Erfolg', () => {
     doppel.projekt = projekt(fuenf())
     doppel.antwort = { ok: true, wert: undefined }
 
-    const ergebnis = await entferneElementAusListe('e3')
+    const ergebnis = await entferneElementAusListe('e3', schreibe)
 
     expect(ergebnis.ok).toBe(true)
     expect(aktuelleListe().map((e) => e.id)).toEqual(['e1', 'e2', 'e4', 'e5'])
@@ -166,7 +171,7 @@ describe('entferneElementAusListe - Erfolg', () => {
     doppel.projekt = projekt(vorher)
     doppel.antwort = { ok: true, wert: undefined }
 
-    await entferneElementAusListe('e3')
+    await entferneElementAusListe('e3', schreibe)
 
     expect(aktuelleListe()[0]).toBe(vorher[0])
     expect(aktuelleListe()[2]).toBe(vorher[3])
@@ -177,7 +182,7 @@ describe('entferneElementAusListe - Erfolg', () => {
     doppel.projekt = projekt(vorher)
     doppel.antwort = { ok: true, wert: undefined }
 
-    await entferneElementAusListe('e3')
+    await entferneElementAusListe('e3', schreibe)
 
     expect(vorher).toHaveLength(5)
     expect(vorher.map((e) => e.id)).toEqual(['e1', 'e2', 'e3', 'e4', 'e5'])
@@ -192,7 +197,7 @@ describe('entferneElementAusListe - Erfolg', () => {
     const aktionenVorher = doppel.projekt.aktionen
     doppel.antwort = { ok: true, wert: undefined }
 
-    await entferneElementAusListe('e3')
+    await entferneElementAusListe('e3', schreibe)
 
     // Objektgleich UND inhaltsgleich: Ein "Aufräumen" hätte hier ein neues Array
     // gesetzt oder Einträge gestrichen.
@@ -206,7 +211,7 @@ describe('entferneElementAusListe - Erfolg', () => {
     doppel.projekt = projekt([element('e1', 'a1')])
     doppel.antwort = { ok: true, wert: undefined }
 
-    const ergebnis = await entferneElementAusListe('e1')
+    const ergebnis = await entferneElementAusListe('e1', schreibe)
 
     expect(doppel.aufrufe).toHaveLength(1)
     expect(ergebnis.ok).toBe(true)
@@ -220,7 +225,7 @@ describe('entferneElementAusListe - Erfolg', () => {
     doppel.projekt = projekt([element('e1', 'a1'), element('e2', 'a2')])
     doppel.antwort = { ok: true, wert: undefined }
 
-    const laufend = entferneElementAusListe('e1')
+    const laufend = entferneElementAusListe('e1', schreibe)
     doppel.projekt = projekt([element('e1', 'a1'), element('e2', 'a2'), element('e9', 'a9')])
     await laufend
 
@@ -231,7 +236,7 @@ describe('entferneElementAusListe - Erfolg', () => {
     doppel.projekt = projekt(fuenf())
     doppel.antwort = { ok: true, wert: undefined }
 
-    const laufend = entferneElementAusListe('e3')
+    const laufend = entferneElementAusListe('e3', schreibe)
     doppel.projekt = null
     const ergebnis = await laufend
 
@@ -251,7 +256,7 @@ describe('entferneElementAusListe - der Reparatur-Weg (TK 9.7.5)', () => {
     )
     doppel.antwort = { ok: true, wert: undefined }
 
-    const ergebnis = await entferneElementAusListe('e3')
+    const ergebnis = await entferneElementAusListe('e3', schreibe)
 
     expect(ergebnis.ok).toBe(true)
     // DERSELBE eine Aufruf, kein zusätzlicher Zweig, kein Vorab-Check.
@@ -271,7 +276,7 @@ describe('entferneElementAusListe - Fehlerpfade', () => {
       fehler: { code: 'nicht_gefunden', meldung: 'Kein Element mit dieser id.' },
     }
 
-    const ergebnis = await entferneElementAusListe('e3')
+    const ergebnis = await entferneElementAusListe('e3', schreibe)
 
     expect(ergebnis).toEqual({
       ok: false,
@@ -285,7 +290,7 @@ describe('entferneElementAusListe - Fehlerpfade', () => {
     doppel.projekt = projekt(fuenf())
     doppel.antwort = { ok: false, fehler: { code: 'kein_projekt', meldung: 'Kein Projekt offen.' } }
 
-    const ergebnis = await entferneElementAusListe('e3')
+    const ergebnis = await entferneElementAusListe('e3', schreibe)
 
     expect(ergebnis.ok).toBe(false)
     if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('kein_projekt')
@@ -296,7 +301,7 @@ describe('entferneElementAusListe - Fehlerpfade', () => {
   it('eine leere Kennung löst KEINEN Aufruf aus', async () => {
     doppel.projekt = projekt(fuenf())
 
-    const ergebnis = await entferneElementAusListe('')
+    const ergebnis = await entferneElementAusListe('', schreibe)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
@@ -305,14 +310,14 @@ describe('entferneElementAusListe - Fehlerpfade', () => {
   })
 
   it('nur Leerzeichen zählen wie leer - dieselbe Grenze wie die Nutzlast-Prüfung', async () => {
-    const ergebnis = await entferneElementAusListe('   ')
+    const ergebnis = await entferneElementAusListe('   ', schreibe)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
   })
 
   it('ein nicht-String löst KEINEN Aufruf aus und wirft nicht', async () => {
-    const ergebnis = await entferneElementAusListe(undefined as unknown as string)
+    const ergebnis = await entferneElementAusListe(undefined as unknown as string, schreibe)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
@@ -322,7 +327,7 @@ describe('entferneElementAusListe - Fehlerpfade', () => {
   it('ohne geladenes Projekt wird gar nicht erst gefragt', async () => {
     doppel.projekt = null
 
-    const ergebnis = await entferneElementAusListe('e3')
+    const ergebnis = await entferneElementAusListe('e3', schreibe)
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
