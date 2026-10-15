@@ -565,6 +565,58 @@ const main = async () => {
             console.log(`[schritt-4b] Die Sicht zeigt ${sichtZeigtElement ? (listeDiag.bloecke > 0 ? listeDiag.bloecke + " Zeitleisten-Bloecke" : listeDiag.zeilen + " Listen-Zeilen") : "nichts"} nach dem echten Bedienweg (#407 belegt).`);
           }
         }
+
+        // Schritt 4b3 - Videostage am echten Fenster (#419): Zeigt die Buehne das Video,
+        // und laeuft der Transport? Gemessen werden die Buehnen-Maße (der #414-Kandidat
+        // "Buehne kollabiert") und der Play-Weg (currentTime + Uhr-Frame).
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await schlafe(600);
+        const buehneDiag = await seite.evaluate(() => {
+          const kasten = document.querySelector('[data-testid="buehne-kasten"]');
+          const flaeche = document.querySelector('[data-testid="buehne-flaeche"]');
+          const video = document.querySelector('[data-testid="preview-video"] video');
+          const kv = kasten === null ? null : kasten.getBoundingClientRect();
+          const fv = flaeche === null ? null : flaeche.getBoundingClientRect();
+          const vv = video === null ? null : video.getBoundingClientRect();
+          return {
+            vorschau: !!document.querySelector('[data-testid="vorschau"]'),
+            kasten: kv === null ? null : { w: Math.round(kv.width), h: Math.round(kv.height) },
+            flaeche: fv === null ? null : { w: Math.round(fv.width), h: Math.round(fv.height) },
+            videoDa: video !== null,
+            video: vv === null ? null : { w: Math.round(vv.width), h: Math.round(vv.height) },
+            playLabel: document.querySelector('[data-testid="vorschau-play-pause"]')?.textContent ?? null,
+          };
+        });
+        console.log("[schritt-4b3] Videostage: " + JSON.stringify(buehneDiag));
+        if (buehneDiag.kasten === null || buehneDiag.kasten.h < 10) {
+          fund("Videostage", "die Buehne hat eine sichtbare Hoehe (> 10 px)",
+            `Kasten/Flaeche: ${JSON.stringify(buehneDiag.kasten)}/${JSON.stringify(buehneDiag.flaeche)}`,
+            "Befund", "preview-player/vorschau.tsx");
+        } else {
+          console.log(`[schritt-4b3] Buehne hat Hoehe ${buehneDiag.kasten.h} px; Video-Box ${JSON.stringify(buehneDiag.video)}.`);
+        }
+        await klick('[data-testid="vorschau-play-pause"]');
+        await schlafe(1_200);
+        const playDiag = await seite.evaluate(() => {
+          const video = document.querySelector('[data-testid="preview-video"] video');
+          return {
+            playLabel: document.querySelector('[data-testid="vorschau-play-pause"]')?.textContent ?? null,
+            currentTime: video === null ? null : Math.round((video.currentTime ?? 0) * 100) / 100,
+            paused: video === null ? null : video.paused,
+            frame: document.querySelector('[data-testid="vorschau-zeitleiste"]')?.value ?? null,
+          };
+        });
+        console.log("[schritt-4b3] Play: " + JSON.stringify(playDiag));
+        const lief = playDiag.currentTime !== null && playDiag.currentTime > 0;
+        const uhrLief = playDiag.frame !== null && Number(playDiag.frame) > 0;
+        if (!lief && !uhrLief) {
+          fund("Videostage", "Play bewegt die Vorschau (currentTime > 0 oder Uhr-Frame > 0)",
+            JSON.stringify(playDiag), "Befund", "preview-player/vorschau.tsx");
+        } else {
+          console.log(`[schritt-4b3] Play GEMESSEN: currentTime=${playDiag.currentTime}, Uhr-Frame=${playDiag.frame}.`);
+        }
+        await klick('[data-testid="vorschau-play-pause"]');
+        await schlafe(300);
         // #340-Gegenprobe (media-Antworten werden an der Kopf-Messstelle beobachtet): Ein
         // BILD-Seed laesst die Galerie <img src="media://..."> rendern - die Anfrage
         // streift den echten Handler (der Stub antwortete 404 auf ALLES).

@@ -255,9 +255,18 @@ export function Vorschau(props: VorschauProps): JSX.Element {
   const markiert = markierterIndex(stand, achse)
 
   return (
-    <div data-testid="vorschau">
-      <Buehne>{buehneninhalt}</Buehne>
-      <div data-testid="vorschau-transport">
+    // #419: Die Wurzel FUeLLT den ihr gegebenen Buehnenplatz (in #244 ist das BUEHNE_OBEN
+    // mit 38 % Hoehe). Ohne definite Hoehe kollabierte die Buehne (height:100%) auf 0 -
+    // das Video war da, aber unsichtbar. Deshalb: Flex-Spalte, Buehne waechst, Transport
+    // nimmt seine Eigenhoehe.
+    <div
+      data-testid="vorschau"
+      style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, gap: 4 }}
+    >
+      <div style={{ flex: '1 1 auto', minHeight: 0 }}>
+        <Buehne>{buehneninhalt}</Buehne>
+      </div>
+      <div data-testid="vorschau-transport" style={{ flex: '0 0 auto' }}>
         <button
           data-testid="vorschau-play-pause"
           onClick={() => {

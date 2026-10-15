@@ -132,6 +132,12 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
               key={reiter}
               hidden={reiter !== zustand.aktiv}
               data-testid={`rahmen-inhalt-${reiter}`}
+              // #419: Der Reiter-Wrapper FUeLLT den Inhaltsbereich. Ohne definite Hoehe
+              // loesen `height: 100%`-Ketten im Reiterinhalt auf `auto` auf; die
+              // Prozenthoehen der Zusammenstellen-Spalte (#414: Buehne 38 %) kollabierten
+              // dann auf 0. Die fruehere Zeilen-Anordnung verbarg das (die Vorschau bekam
+              // ihre Hoehe vom laengeren Composer daneben); die Spalte deckt es auf.
+              style={{ height: '100%' }}
             >
               {createElement(eigenschaften.inhalte[reiter], {
                 sichtbar: reiter === zustand.aktiv,
