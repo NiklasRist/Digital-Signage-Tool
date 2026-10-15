@@ -11,7 +11,20 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (15.10.2026, spaetabends) – gilt vor ALLEM weiter unten
+## STAND HEUTE (15.10.2026, nachts) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-3.md`](docs/agents/uebergabe-2026-10-15-session-3.md) – LIES DIESE DATEI ZUERST.**
+Kurz: Aus der Abnahme **#422–#424** (422/423 abgenommen) kamen weitere Befunde. **#431 GEBAUT +
+gemessen + geschlossen** – Cmd+Z wurde vom **Electron-Standardmenue** geschluckt (Rolle „undo",
+Cmd+Z-Accelerator); jetzt ein eigenes Menue ohne Undo/Redo-Acceleratoren + Fokus-Waechter in #350,
+Merge `05d1850`, TK v3.24 / 9.14.2. **#429** (Dauer/Trim erzeugen **keinen** Undo-Schnappschuss –
+Vertragsbruch zu TK 9.13.1) und **#430** (Aktions-Loeschen fehlt in der Composer-Bibliothek) und
+**#428** (Zeitleiste als Zeit-/Frame-Band) sind **angelegt, NICHT gebaut**. Suite **5516 gruen
+(316 Dateien)**, Typecheck/Lint 0. Alles **lokal auf `main`**, **nicht gepusht**.
+Naechste Session: **#429 bauen** (User-Wunsch), **#424-Abnahme** (Cmd+Z ist jetzt pruefbar),
+dann **#430/#428 entscheiden**.
+
+## STAND HEUTE (15.10.2026, spaetabends) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-3.md`](docs/agents/uebergabe-2026-10-15-session-3.md) – LIES DIESE DATEI ZUERST.**
 Kurz: **#425 gebaut + treiber-gemessen** (Band-Aufnahme am Video, TK v3.23 / 9.7.7). **#422/#423

@@ -104,3 +104,31 @@ Segmente).
 2. **#428 entscheiden** (Modell/Raster), dann zuschneiden.
 3. **#426 entscheiden** (kurze Unterbrechung).
 4. Welle 2 / Banner-Spur, **#371-Klärung**.
+
+---
+
+## Nachtrag 2 derselben Sitzung: weitere Abnahme-Befunde (#429/#430/#431)
+
+Bei der Fortsetzung der Abnahme: **#422/#423 ok**; der User meldete **„undo/redo geht nicht"** und
+**„aktionen kann man nicht löschen"**, ausserdem die **Zeitleiste-Frames** (#428).
+
+- **#431 GEBAUT + gemessen + geschlossen (Merge `05d1850`, TK v3.24 / 9.14.2).** Hart gemessen mit
+  `scripts/pruefe-menue.cjs`: Electron legt auf macOS ein **Standardmenue** mit
+  `Edit → Undo (CommandOrControl+Z)`/`Redo` an; diese **Acceleratoren schlucken Cmd+Z**, bevor der
+  Renderer (#350) es sieht. **Der Treiber „maß" Cmd+Z nur, weil CDP die Taste direkt an die Seite
+  sendet** – ein falscher Beleg (betrifft auch frühere #350-Belege). Fix: eigenes Menue
+  (`src/main/anwendungs-menue.ts`, Edit ohne Undo/Redo), auf Windows/Linux kein Menue; Fokus-Wächter
+  in `tastatur.ts`. Beleg am gebauten Menue (temporärer Log, per Prüfsumme zurückgenommen):
+  keine `undo/redo`-Rolle, kein `+Z`-Accelerator.
+- **#429 ANGELEGT, NICHT gebaut.** Dauer/Trim schreiben über das **rohe** `gleicheElementAb`; die
+  Undo-Hülle (#243) umhüllt nur `setzeListe`/`setzeProjekt` → **kein Schnappschuss**. TK 9.13.1
+  verlangt aber ausdrücklich Trim+Dauer → **Vertragsbruch**. (Nicht die Ursache des User-Falls –
+  eine **Aktions-Anlage** zeichnet korrekt auf, Treiber 4g2: 2→1.)
+- **#430 ANGELEGT, NICHT gebaut.** Aktions-Löschen fehlt in der Composer-Bibliothek; der User will
+  es an allen Stellen (Bibliothek, Reiter Aktionen, Liste/Zeitleiste, „im Editor in einem Projekt").
+- **Unbestätigt/zurückgenommen:** Eine Treiber-Sonde zum Anlegen im **Aktionen-Reiter** stieg nach
+  „Anlegen" nicht (2→2). Ob Bedienweg oder Sonde, ist **nicht geklärt** – die Projekt-Daten des Users
+  zeigen eine dort angelegte Aktion. Als „Treiber-Sonde zurückgenommen" im Protokoll vermerkt.
+
+Zähler: Suite **5516 grün (316 Dateien)**, Typecheck/Lint 0, lokal auf `main`, **nicht gepusht**.
+Neue Werkzeuge: `scripts/pruefe-beenden.mjs` (#427), `scripts/pruefe-menue.cjs` (#431).
