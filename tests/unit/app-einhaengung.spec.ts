@@ -832,8 +832,9 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       'aufProjekteWechseln',
       'composerVerdrahtung',
       'hervorgehobeneAktionId',
-      'starteVideoImport',
+      'importiereVideoPfad',
       'vorlagenSitzung',
+      'waehleVideoPfad',
       'wechsleZuZusammenstellen',
     ])
   })

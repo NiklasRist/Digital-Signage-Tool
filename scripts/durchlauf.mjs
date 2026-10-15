@@ -168,52 +168,59 @@ const main = async () => {
       fund("Projekt anlegen", "Namensfeld im Dialog",
         "Dialog ohne Namensfeld", "BLOCKER", "projekt-verwaltung/index.tsx");
     } else {
-      // #423: Der Anlegen-Dialog bietet „Video importieren". Der Import selbst oeffnet
-      // einen NATIVEN Dialog - der Treiber bedient ihn nicht (MANUELL, wie der Export).
-      // Gemessen wird deshalb das Vorhandensein des Haekchens; gesetzt wird es NICHT.
+      // #423 (User 15.10.2026): Video zuerst, PFLICHT - kein Haekchen mehr. Ein Klick auf
+      // „Anlegen" oeffnet jetzt einen NATIVEN Video-Dialog; der Treiber bedient ihn NICHT
+      // (MANUELL, wie der Export). Gemessen wird: kein Haekchen; dann Abbrechen.
       if (await stehtDa('[data-testid="dialog-anlegen-video"]')) {
-        console.log("[schritt-2] Anlegen-Dialog bietet 'Video importieren' (#423).");
+        fund("Projekt anlegen", 'kein "Video importieren"-Haekchen mehr (#423)',
+          "Haekchen ist noch da", "Befund", "projekt-verwaltung/index.tsx");
       } else {
-        fund("Projekt anlegen", 'Häkchen "Video importieren" im Anlegen-Dialog (#423)',
-          "Häkchen fehlt", "Befund", "projekt-verwaltung/index.tsx");
+        console.log("[schritt-2] Anlegen-Dialog ohne Haekchen (Video zuerst, #423); Video-Dialog = NATIV (MANUELL).");
       }
-      await seite.type('[data-testid="dialog-anlegen-name"]', namen);
-      await klick('[data-testid="dialog-anlegen-best\u00e4tigen"]');
-            // ZEIT FALSCH MESSEN ist selbst ein Befund: Anlegen -> Liste laden -> Projekt
-      // oeffnen (Reconcile, Zeichenvorbereitung) braucht mehr als einen Mikrotakt.
-      await schlafe(2_500);
-// Das Anlegen öffnet automatisch den Reiter Zusammenstellen; die Projektliste
-      // steht dann in einem HIDDEN-Div - innerText liest versteckte Elemente NICHT.
-      // Deshalb gegen die DOM-Zeilen-Kennung messen, nicht gegen innerText.
-      const diagnostik = await seite.evaluate(() => ({
-        reiterAktiv: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null,
-      }));
-      console.log("[diagnostik] " + JSON.stringify(diagnostik));
-      // Der Anlege-Ablauf wechselt nach Zusammenstellen; gemessen wird nach dem
-      // Rueckwechsel auf Projekte (das ist der echte Nutzerzustand).
-      await klick('[data-testid="reiter-projekte"]');
-      await schlafe(400);
-      const zurueckstand = await seite.evaluate(() => ({
-        reiterAktiv: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null,
-        verwaltungDa: !!document.querySelector('[data-testid="projekt-verwaltung"]'),
-        inaktivDa: !!document.querySelector('[data-testid="verwaltung-inaktiv"]'),
-        listeDa: !!document.querySelector('[data-testid="projektliste"]'),
-        leerPlakette: !!document.querySelector('[data-testid="projektliste-leer"]'),
-        nameVorhanden: (document.body.textContent ?? "").length > 0,
-      }));
-      console.log("[zurueckstand] " + JSON.stringify(zurueckstand));
-      const zeilenNach = await zeilenanzahl();
-      if (zeilenNach <= zeilenDavor) {
-        fund("Projekt anlegen", `eine Zeile mehr (${namen} leicht messbar)`,
-          `Zeilen vorher/nachher: ${zeilenDavor}/${zeilenNach}`,
-          "Befund", "projekt-verwaltung/liste.ts oder treiber");
+      await seite.evaluate(() => {
+        const dlg = document.querySelector('[data-testid="dialog-anlegen"]');
+        const ab = dlg === null ? null : [...dlg.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen');
+        if (ab) ab.click();
+      });
+      await schlafe(300);
+
+      // Den UI-Anlege-Weg selbst kann der Treiber nicht fahren (nativer Video-Dialog).
+      // Er legt das Projekt per IPC-Seed an und OEFFNET es dann ueber die Projektliste
+      // (der echte UI-Weg wechselt nach Zusammenstellen) - so bleibt der Rest messbar.
+      const neueId = await seite.evaluate(async (name) => {
+        const ant = await window.api.invoke("project:erstelleProjekt", { name });
+        return ant && ant.ok ? ant.wert.id : null;
+      }, namen);
+      if (neueId === null) {
+        fund("Projekt anlegen", "Projekt per IPC anlegen (Messweg)",
+          "erstelleProjekt ohne Ergebnis", "BLOCKER", "project-store/erstelle-projekt.ts");
       } else {
-        console.log(`[schritt-2] Projekt angelegt und in der Liste (${zeilenNach} Zeilen).`);
-      }
+        await klick('[data-testid="verwaltung-erneut-laden"]');
+        await schlafe(700);
+        const geoeffnet = await seite.evaluate((id) => {
+          const zeile = document.querySelector(`[data-testid="projekt-${id}"]`);
+          const knopf = zeile === null ? null : zeile.querySelector('button');
+          if (knopf === null) return false;
+          knopf.click();
+          return true;
+        }, neueId);
+        console.log("[schritt-2] Projekt ueber die Liste geoeffnet: " + String(geoeffnet));
+        await schlafe(2_500);
+        await klick('[data-testid="reiter-projekte"]');
+        await schlafe(400);
+        const zeilenNach = await zeilenanzahl();
+        if (zeilenNach <= zeilenDavor) {
+          fund("Projekt anlegen", `eine Zeile mehr (${namen} leicht messbar)`,
+            `Zeilen vorher/nachher: ${zeilenDavor}/${zeilenNach}`,
+            "Befund", "projekt-verwaltung/liste.ts oder treiber");
+        } else {
+          console.log(`[schritt-2] Projekt angelegt und in der Liste (${zeilenNach} Zeilen).`);
+        }
         if ((await innerText()).includes("Kein Projekt aktiv")) {
           fund("Projekt anlegen", "Start-Hinweis weg, sobald ein Projekt steht",
             "Start-Hinweis bleibt stehen (#346)", "Befund", "bootstrap/start lage");
         }
+      }
       }
     } else {
       fund("Projekt anlegen", "Knopf verwaltung-anlegen",

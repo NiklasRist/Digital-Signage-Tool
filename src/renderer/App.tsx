@@ -61,6 +61,7 @@ import { WarteschlangenLeiste } from './shell/WarteschlangenLeiste'
 import { leereProjektHistorie } from './app-shell/undo-historien'
 import { aktualisiereAusgaben } from './composer/ausgabe-liste'
 import { starteMedienImport } from './app-shell/medien-import-uebergabe'
+import { waehleVideoPfad, reiheVideoImportEin } from './app-shell/anlegen-video'
 import { leererEntwurf, legeAktionAn } from './action-editor/aktion-bearbeiten'
 import { ComposerWurzel } from './composer/index'
 import { ActionEditorWurzel } from './action-editor'
@@ -187,11 +188,12 @@ export function App(): JSX.Element {
     () => ({
       aufProjekteWechseln: () => wechsleReiter('projekte'),
       wechsleZuZusammenstellen: () => wechsleReiter('zusammenstellen'),
-      // #423: nach dem Anlegen mit „Video importieren" startet der Import - derselbe
-      // Weg wie der Composer-Knopf (`starteMedienImport(_, 'video')`). Schlaegt der
-      // Aufruf fehl, meldet die Shell; das (leere) Projekt bleibt bestehen.
-      starteVideoImport: (projektId: string) => {
-        void starteMedienImport(projektId, 'video').then((ergebnis) => {
+      // #423: „Video zuerst, Pflicht" beim Anlegen - der Dialog zuerst, dann (nach dem
+      // Anlegen) das Einreihen des gewaehlten Pfads. Derselbe Auftragsweg wie der
+      // Composer-Knopf.
+      waehleVideoPfad,
+      importiereVideoPfad: (projektId: string, pfad: string) => {
+        void reiheVideoImportEin(projektId, pfad).then((ergebnis) => {
           if (!ergebnis.ok) meldeFehler(ergebnis.fehler.code, ergebnis.fehler.meldung)
         })
       },
