@@ -703,15 +703,18 @@ export function ComposerInterna({
                 vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
                 aufAktionAnlegen={legeAktionAnInline}
                 aufMediumLoeschen={(assetId) => {
-                  // #422: Das Video aus der Liste nehmen (EIN Undo-Schritt), DANN das
-                  // Loesch-Overlay - so ist die Loesch-Asymmetrie erfuellt (erst die
-                  // Referenz loesen, dann die Datei, TK 9.4.6). Das Loeschen der Datei
-                  // selbst ist nicht undo-faehig (AD FA-21).
-                  const ohneVideo = inhalt.liste.filter(
-                    (element) => !(element.art === 'video' && element.ref === assetId),
+                  // #423 (User 15.10.2026: "immer mindestens ein Video"): Das eine Video
+                  // wird NICHT geloescht - ein Projekt hat immer genau eines. Ersetzen
+                  // geht ueber „Video importieren".
+                  void assetId
+                  setzeLage((alt) =>
+                    melde(alt, {
+                      code: 'asset_referenziert',
+                      meldung:
+                        'Ein Projekt hat immer genau ein Video – bitte über „Video importieren" ersetzen.',
+                      warnung: true,
+                    }),
                   )
-                  if (ohneVideo.length !== inhalt.liste.length) projekt.setzeListe(ohneVideo)
-                  setzeLage((alt) => oeffneOverlay(alt, { art: 'medium_loeschen', assetId }))
                 }}
                 aufFehler={(code, meldung) =>
                   setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))

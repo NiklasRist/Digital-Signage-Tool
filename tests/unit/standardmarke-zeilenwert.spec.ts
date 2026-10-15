@@ -94,7 +94,8 @@ function baueEigenschaften(sichtProjekt: Project | null): Record<string, unknown
     zeichnen: { hole: () => null },
     leereProjektHistorie: () => undefined,
     wechsleZuZusammenstellen: () => undefined,
-    starteVideoImport: () => undefined,
+    waehleVideoPfad: async () => ({ ok: true, wert: { pfade: [] } }),
+    importiereVideoPfad: () => undefined,
     marken: {
       hole: () => ({
         marken: [

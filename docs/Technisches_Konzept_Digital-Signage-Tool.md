@@ -1421,10 +1421,10 @@ Ein Projekt hat **genau ein Video** (FA-01, 4.9) neben beliebig vielen Aktions-S
 setzt das **in der Oberfläche** um:
 
 - **Der Medien-Bereich heißt „Video" und zeigt das eine Video** – Bezeichnung und Dauer, dazu
-  **„Video importieren"** und **Löschen**. Das Video steht **automatisch** am Ende der Wiedergabeliste
-  (bzw. an der Stelle, an die es gestellt wurde); ein „Zur Liste hinzufügen" entfällt für es, weil es
-  bereits Inhalt ist. Der **Aktions**-Bereich bleibt unverändert (Aktionen werden weiterhin per Klick
-  oder Drag hinzugefügt).
+  **„Video importieren"**. Das Video steht **automatisch** am Ende der Wiedergabeliste (bzw. an der
+  Stelle, an die es gestellt wurde); ein „Zur Liste hinzufügen" entfällt für es, weil es bereits Inhalt
+  ist. Es wird **nicht gelöscht** – ein Projekt hat immer genau eines (nur Ersetzen). Der **Aktions**-
+  Bereich bleibt unverändert (Aktionen werden weiterhin per Klick oder Drag hinzugefügt).
 - **Import ist der Weg ins Projekt.** Der Kopf-Knopf heißt **„Video importieren"** (nicht mehr „Medien
   importieren"); er importiert **genau ein Video** (`nurTyp: 'video'`, #418) und stellt es **ans Ende der
   Wiedergabeliste**.
@@ -2205,13 +2205,11 @@ Marken-Editor führt den app-weiten **Bestand** und kennt keine Projekte (9.15.2
 vollziehen lässt, wäre die Sperre eine Sackgasse – und weil in der Regel **mehrere**, nicht geladene Projekte
 betroffen sind, muss der Wechsel hier möglich sein, ohne jedes davon vorher zu öffnen.
 
-**Dazu seit v3.21 die Video-Import-Option beim Anlegen.** Der Anlege-Dialog führt neben dem Projektnamen
-optional **„Video importieren"** (FA-01, 4.9). Ist ein Video gewählt, legt die App das Projekt an,
-**wechselt in den Reiter Zusammenstellen** (Invariante unten: Öffnen → Zusammenstellen) und stößt den
-Video-Import an; das Video ist danach **bereits am Ende der Wiedergabeliste**. Der Import nutzt denselben
-Weg wie der Composer-Knopf (media-service 9.4, composer 9.7.6) – die Projektverwaltung baut **keinen**
-zweiten Importpfad. *Warum hier:* Der häufigste erste Schritt – „neues Projekt mit meinem Video" – soll
-ohne Reiterwechsel und ohne einen zweiten Bedienschritt gelingen.
+**Dazu seit v3.21: Video zuerst, Pflicht beim Anlegen.** „Anlegen" öffnet **zuerst** den Video-Dialog
+(nativ, `media:öffneMedienDialog`); erst nach gewähltem Video legt die App das Projekt an, wechselt in den
+Reiter **Zusammenstellen** und reiht den Import ein. Bricht der Nutzer ab, entsteht **kein** Projekt
+(FA-01, 4.9). Der Import nutzt denselben Weg wie der Composer-Knopf (media-service 9.4, composer 9.7.6) –
+die Projektverwaltung baut **keinen** zweiten Importpfad.
 
 **Ist NICHT:** kein Dateisystem-Zugriff, keine absoluten Pfade (die Pfad-Autorität ist der `project-store`, 9.5.7), keine eigene Reparatur einer defekten `project.json`, kein Verzeichnis-Browser in der App.
 

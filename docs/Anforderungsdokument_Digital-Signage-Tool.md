@@ -337,17 +337,17 @@ Ein Projekt enthält **genau ein Video** neben **beliebig vielen Aktions-Segment
 Hauptinhalt; die Werbung läuft sequenziell zwischen den Elementen oder parallel zum Video (4.5, FA-20).
 Das ist die Grundannahme des Werkzeugs: gepflegt wird **ein** Hauptvideo, dazu die wechselnde Werbung.
 
-- **Import beim Anlegen.** Ein neues Projekt kann sein Video bereits beim **Anlegen** erhalten (Name +
-  „Video importieren", FA-10). Das importierte Video wird **automatisch ans Ende der Wiedergabeliste**
-  gestellt – es ist sofort Inhalt, ohne einen zweiten Bedienschritt.
+- **Video zuerst, Pflicht.** Beim **Anlegen** wird **zuerst** das Video gewählt (nativer Datei-Dialog);
+  erst danach entsteht das Projekt. Bricht der Nutzer ab, entsteht **kein** Projekt – ein Projekt ohne
+  Video gibt es nicht. Das gewählte Video wird **automatisch ans Ende der Wiedergabeliste** gestellt.
 - **Import im Projekt.** Im Projekt-Editor (Reiter [Zusammenstellen]) heißt der Weg **„Video importieren"**.
 - **Ersetzen statt Wechseln.** Liegt schon ein Video vor, **ersetzt** ein erneuter Import es – nach einer
   **Bestätigung**. Es gibt **keine** Auswahl unter mehreren Videos und keinen beiläufigen „Video
   austauschen"-Schalter: Ein Projekt hat genau eines. Der Import hat Dateiwirkung und ist **nicht**
   rückgängig zu machen (FA-21) – deshalb die Bestätigung.
-- **Kein zweites Video.** Es gibt **keinen** Bedienweg, ein zweites Video neben dem vorhandenen in die
-  Wiedergabeliste zu legen. Bilder bleiben möglich – aber ausschließlich als **Motiv einer Aktion**
-  (4.1), nie als eigenes Listenelement.
+- **Immer genau ein Video.** Ein Projekt hat **immer** genau ein Video; es wird **nicht gelöscht**
+  (nur ersetzt). Es gibt **keinen** Bedienweg zu einem zweiten Video oder zu gar keinem. Bilder bleiben
+  möglich – aber ausschließlich als **Motiv einer Aktion** (4.1), nie als eigenes Listenelement.
 
 ---
 

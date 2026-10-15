@@ -38,6 +38,7 @@
 
 import { useEffect, useState, type CSSProperties, type JSX } from 'react'
 import type { Project } from '../../shared/contracts/project'
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Zeichenvoraussetzungen } from '../composer/zeichen-vorbereitung'
 import type { ComposerVerdrahtung } from '../composer/index'
 import type { ReiterId } from './reiter'
@@ -125,9 +126,12 @@ export interface ProjektVerwaltungWurzelProps {
    *  der Projektzeilen. Wird UNVERAENDERT (`toBe`) durchgereicht. */
   marken: MarkenZugang
   wechsleZuZusammenstellen: () => void
-  /** SIEBTES Feld (#423): startet nach dem Anlegen den Video-Import (derselbe Weg wie der
+  /** SIEBTES Feld (#423): „Video zuerst" - oeffnet nur den Video-Dialog. Wird
+   *  UNVERAENDERT durchgereicht. */
+  waehleVideoPfad: () => Promise<Ergebnis<{ pfade: string[] }, string>>
+  /** ACHTES Feld (#423): reiht den gewaehlten Video-Pfad ein (derselbe Weg wie der
    *  Composer-Knopf). Wird UNVERAENDERT durchgereicht. */
-  starteVideoImport: (projektId: string) => void
+  importiereVideoPfad: (projektId: string, pfad: string) => void
 }
 
 /** Eigenschaften der Vorschau – ZEICHENGLEICH aus #242 uebernommen. */
@@ -160,10 +164,12 @@ export interface Reiterumgebung {
    *  UNVERAENDERT in `ProjektVerwaltungWurzelProps` gelegt (ENTSCHIEDEN 11); diese Datei
    *  ruft ihn NIE selbst. */
   wechsleZuZusammenstellen: () => void
-  /** #423: startet nach dem Anlegen den Video-Import (derselbe Weg wie der Composer-Knopf,
-   *  `starteMedienImport(_, 'video')`). Wird UNVERAENDERT in `ProjektVerwaltungWurzelProps`
-   *  gelegt; diese Datei ruft ihn NIE selbst. */
-  starteVideoImport: (projektId: string) => void
+  /** #423: oeffnet NUR den Video-Dialog (Video zuerst beim Anlegen - Pflicht). Wird
+   *  UNVERAENDERT in `ProjektVerwaltungWurzelProps` gelegt; diese Datei ruft ihn NIE. */
+  waehleVideoPfad: () => Promise<Ergebnis<{ pfade: string[] }, string>>
+  /** #423: reiht den gewaehlten Video-Pfad als Import-Auftrag ein (derselbe Weg wie der
+   *  Composer-Knopf). Wird UNVERAENDERT durchgereicht. */
+  importiereVideoPfad: (projektId: string, pfad: string) => void
   /** Das Verdrahtungs-Buendel des `composer` (#261). Wird UNVERAENDERT gereicht; diese
    *  Datei ruft keines seiner Felder (kein Lesen, keine Ergaenzung). */
   composerVerdrahtung: ComposerVerdrahtung
@@ -354,7 +360,8 @@ export function baueReiterInhalte(
         leereProjektHistorie,
         wechsleZuZusammenstellen: umgebung.wechsleZuZusammenstellen,
         marken: zugaenge.marken,
-        starteVideoImport: umgebung.starteVideoImport,
+        waehleVideoPfad: umgebung.waehleVideoPfad,
+        importiereVideoPfad: umgebung.importiereVideoPfad,
       }),
   }
 }

@@ -13,6 +13,7 @@
 
 import { useEffect, useState, type JSX } from 'react'
 import type { ProjektZugang, ZeichenZugang, MarkenZugang } from '../app-shell/sichten'
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
 
 import {
   aufProjektlisteGeaendert,
@@ -64,9 +65,11 @@ export interface ProjektVerwaltungWurzelProps {
    *  Standardmarke. Die Wurzel abonniert `marken.aufGeaendert` und liest daraus den
    *  Bestand je Zeile; Zeichen lebt in `StandardmarkeAuswahl` (#324). */
   marken: MarkenZugang
-  /** NEU (#423): startet nach dem Anlegen den Video-Import (derselbe Weg wie der
-   *  Composer-Knopf, `starteMedienImport(_, 'video')`). Wird UNVERAENDERT durchgereicht. */
-  starteVideoImport: (projektId: string) => void
+  /** NEU (#423): „Video zuerst" beim Anlegen - oeffnet NUR den Video-Dialog (Pflicht).
+   *  Wird UNVERAENDERT durchgereicht. */
+  waehleVideoPfad: () => Promise<Ergebnis<{ pfade: string[] }, string>>
+  /** NEU (#423): reiht den gewaehlten Video-Pfad ein (derselbe Weg wie der Composer-Knopf). */
+  importiereVideoPfad: (projektId: string, pfad: string) => void
 }
 
 export function ProjektVerwaltungWurzel(p: ProjektVerwaltungWurzelProps): JSX.Element {
@@ -81,9 +84,6 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
   const [liste, setzeListe] = useState<Projektliste>(() => holeProjektliste())
   const [dialog, setzeDialog] = useState<VerwaltungsDialog>(KEIN_DIALOG)
   const [anlegenName, setzeAnlegenName] = useState('')
-  // #423: „Video importieren" im Anlegen-Dialog (optional). Nach dem Anlegen und dem
-  // Wechsel in den Reiter Zusammenstellen startet der Video-Import.
-  const [anlegenVideo, setzeAnlegenVideo] = useState(false)
   const [duplikatName, setzeDuplikatName] = useState('')
   const [meldungsText, setzeMeldung] = useState<string | null>(null)
   const meldeFehler = (code: string, meldung: string): void => {
@@ -235,15 +235,6 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
               onChange={(e) => setzeAnlegenName(e.target.value)}
             />
           </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={anlegenVideo}
-              data-testid="dialog-anlegen-video"
-              onChange={(e) => setzeAnlegenVideo(e.target.checked)}
-            />{' '}
-            Video importieren
-          </label>
           <button
             type="button"
             data-testid="dialog-anlegen-bestätigen"
@@ -254,19 +245,26 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
                 meldeFehler('ungueltige_eingabe', 'Der Projektname ist leer.')
                 return
               }
-              void legeProjektAn(anlegenName, wechsel).then((antwort) => {
-                if (antwort.ok) {
-                  // #423: nach dem Anlegen (Projekt offen, Reiter Zusammenstellen) den
-                  // Video-Import starten - derselbe Weg wie der Composer-Knopf. Schlaegt
-                  // der Import fehl, bleibt das (leere) Projekt bestehen (User-Entscheid.).
-                  if (anlegenVideo) p.starteVideoImport(antwort.wert.id)
-                  setzeDialog(schliesseDialog())
-                  setzeAnlegenName('')
-                  setzeAnlegenVideo(false)
-                } else {
-                  meldeFehler(antwort.fehler.code, antwort.fehler.meldung)
+              // #423 (User-Anforderung 15.10.2026): „Video zuerst, Pflicht". Der
+              // Video-Dialog kommt ZUERST; ohne gewaehltes Video entsteht KEIN Projekt.
+              void (async () => {
+                const wahl = await p.waehleVideoPfad()
+                if (!wahl.ok) {
+                  meldeFehler(wahl.fehler.code, wahl.fehler.meldung)
+                  return
                 }
-              })
+                const pfad = wahl.wert.pfade[0]
+                if (pfad === undefined) return // abgebrochen - kein Projekt
+                const antwort = await legeProjektAn(anlegenName, wechsel)
+                if (!antwort.ok) {
+                  meldeFehler(antwort.fehler.code, antwort.fehler.meldung)
+                  return
+                }
+                // Projekt offen (Reiter Zusammenstellen) - jetzt den Auftrag einreihen.
+                p.importiereVideoPfad(antwort.wert.id, pfad)
+                setzeDialog(schliesseDialog())
+                setzeAnlegenName('')
+              })()
             }}
           >
             Anlegen

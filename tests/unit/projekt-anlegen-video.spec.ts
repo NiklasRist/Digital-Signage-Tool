@@ -1,6 +1,5 @@
-// Issue #423: Der Anlegen-Dialog kann optional ein Video importieren. Nach dem Anlegen
-// (Projekt offen, Reiter Zusammenstellen) startet der Video-Import ueber denselben Weg
-// wie der Composer-Knopf.
+// Issue #423 (Nachtrag 15.10.2026): Beim Anlegen ist der Video-Import PFLICHT und laeuft
+// ZUERST - kein Haekchen. Ohne gewaehltes Video entsteht KEIN Projekt.
 //
 // Geprueft wird NUR src/renderer/projekt-verwaltung/index.tsx (+ dieser Test). liste,
 // beschaedigt und die Wirkungs-Bausteine sind DOPPEL; `legeProjektAn` ist ein Doppel,
@@ -30,9 +29,7 @@ const listeDoppel = vi.hoisted(() => {
   }
 })
 
-const anlegenDoppel = vi.hoisted(() => ({
-  legeProjektAn: vi.fn(),
-}))
+const anlegenDoppel = vi.hoisted(() => ({ legeProjektAn: vi.fn() }))
 
 vi.mock(import('../../src/renderer/projekt-verwaltung/liste'), async (importOriginal) => {
   const ist = (await importOriginal()) as Record<string, unknown>
@@ -50,8 +47,7 @@ vi.mock('../../src/renderer/projekt-verwaltung/beschaedigt', () => ({
 vi.mock('../../src/renderer/projekt-verwaltung/anlegen-oeffnen', () => ({
   legeProjektAn: anlegenDoppel.legeProjektAn,
   oeffneProjekt: vi.fn(),
-  // Name wird hier nicht geprueft (das tut anlegen-oeffnen selbst) - dieses Doppel
-  // laesst den Anlege-Weg durchlaufen, damit #423 (der Import-Ruf) messbar ist.
+  // Name wird hier nicht geprueft (das tut anlegen-oeffnen selbst).
   pruefeProjektname: (eingabe: string) => ({ ok: true, name: eingabe }),
 }))
 vi.mock('../../src/renderer/projekt-verwaltung/duplizieren', () => ({
@@ -80,7 +76,10 @@ function projekt(id: string): Project {
   } as Project
 }
 
-function baueEigenschaften(starteVideoImport: (id: string) => void): Record<string, unknown> {
+function baueEigenschaften(
+  waehleVideoPfad: () => Promise<Ergebnis<{ pfade: string[] }, string>>,
+  importiereVideoPfad: (id: string, pfad: string) => void,
+): Record<string, unknown> {
   const sicht: Projektsicht = { projekt: null, ladefehler: null }
   return {
     sichtbar: true,
@@ -95,12 +94,9 @@ function baueEigenschaften(starteVideoImport: (id: string) => void): Record<stri
     zeichnen: { hole: () => null, verwirfMotivBestand: () => undefined, bereiteVor: async () => ({ ok: true, wert: null }) },
     leereProjektHistorie: () => undefined,
     wechsleZuZusammenstellen: () => undefined,
-    marken: {
-      hole: () => ({ marken: [] }),
-      lade: async () => null,
-      aufGeaendert: () => () => undefined,
-    },
-    starteVideoImport,
+    marken: { hole: () => ({ marken: [] }), lade: async () => null, aufGeaendert: () => () => undefined },
+    waehleVideoPfad,
+    importiereVideoPfad,
   }
 }
 
@@ -129,39 +125,53 @@ async function klicke(testId: string): Promise<void> {
   await act(async () => {})
 }
 
-describe('projekt-verwaltung - Video-Import beim Anlegen (#423)', () => {
-  it('der Anlegen-Dialog bietet "Video importieren" (Häkchen)', async () => {
-    const starteVideoImport = vi.fn()
+describe('projekt-verwaltung - Video-Import Pflicht beim Anlegen (#423)', () => {
+  it('der Anlegen-Dialog hat KEIN „Video importieren"-Haekchen mehr', async () => {
     await act(async () => {
-      wurzel.render(createElement(ProjektVerwaltungWurzel, baueEigenschaften(starteVideoImport) as never) as ReactElement)
+      wurzel.render(
+        createElement(
+          ProjektVerwaltungWurzel,
+          baueEigenschaften(async () => ({ ok: true, wert: { pfade: [] } }), () => undefined) as never,
+        ) as ReactElement,
+      )
     })
     await klicke('verwaltung-anlegen')
-    expect(behaelter.querySelector('[data-testid="dialog-anlegen-video"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="dialog-anlegen-video"]')).toBeNull()
+    expect(behaelter.querySelector('[data-testid="dialog-anlegen-bestätigen"]')).not.toBeNull()
   })
 
-  it('ohne Häkchen wird KEIN Video-Import gestartet', async () => {
-    const starteVideoImport = vi.fn()
+  it('OHNE gewaehltes Video entsteht KEIN Projekt (Video zuerst, Pflicht)', async () => {
+    const importiereVideoPfad = vi.fn()
     await act(async () => {
-      wurzel.render(createElement(ProjektVerwaltungWurzel, baueEigenschaften(starteVideoImport) as never) as ReactElement)
+      wurzel.render(
+        createElement(
+          ProjektVerwaltungWurzel,
+          baueEigenschaften(async () => ({ ok: true, wert: { pfade: [] } }), importiereVideoPfad) as never,
+        ) as ReactElement,
+      )
+    })
+    await klicke('verwaltung-anlegen')
+    await klicke('dialog-anlegen-bestätigen')
+
+    expect(anlegenDoppel.legeProjektAn).not.toHaveBeenCalled()
+    expect(importiereVideoPfad).not.toHaveBeenCalled()
+  })
+
+  it('MIT gewaehltem Video wird das Projekt angelegt UND der Pfad importiert', async () => {
+    const importiereVideoPfad = vi.fn()
+    await act(async () => {
+      wurzel.render(
+        createElement(
+          ProjektVerwaltungWurzel,
+          baueEigenschaften(async () => ({ ok: true, wert: { pfade: ['/tmp/v.mp4'] } }), importiereVideoPfad) as never,
+        ) as ReactElement,
+      )
     })
     await klicke('verwaltung-anlegen')
     await klicke('dialog-anlegen-bestätigen')
 
     expect(anlegenDoppel.legeProjektAn).toHaveBeenCalledTimes(1)
-    expect(starteVideoImport).not.toHaveBeenCalled()
-  })
-
-  it('mit Häkchen startet der Video-Import mit der Kennung des NEUEN Projekts', async () => {
-    const starteVideoImport = vi.fn()
-    await act(async () => {
-      wurzel.render(createElement(ProjektVerwaltungWurzel, baueEigenschaften(starteVideoImport) as never) as ReactElement)
-    })
-    await klicke('verwaltung-anlegen')
-    await klicke('dialog-anlegen-video')
-    await klicke('dialog-anlegen-bestätigen')
-
-    expect(anlegenDoppel.legeProjektAn).toHaveBeenCalledTimes(1)
-    expect(starteVideoImport).toHaveBeenCalledTimes(1)
-    expect(starteVideoImport).toHaveBeenCalledWith('p-neu')
+    expect(importiereVideoPfad).toHaveBeenCalledTimes(1)
+    expect(importiereVideoPfad).toHaveBeenCalledWith('p-neu', '/tmp/v.mp4')
   })
 })
