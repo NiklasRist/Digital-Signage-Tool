@@ -50,6 +50,11 @@ export interface RahmenEigenschaften {
    *  Wird genau einmal gerendert, außerhalb aller Reiterinhalte, und überlebt den Reiterwechsel.
    *  Fehlt sie, bleibt der Platz leer – es wird NICHTS ersatzweise gezeigt. */
   meldungsFlaeche?: () => JSX.Element
+  /** #424: Die sichtbaren Undo/Redo-Pfeile. Sitzen in der Reiterleiste und überleben den
+   *  Reiterwechsel (TK 9.14.2: im Marken-Reiter abgeschaltet, nicht an einen fremden Stapel
+   *  gebunden). Der SLOT bekommt den aktiven Reiter, weil nur der Rahmen ihn kennt. Fehlt er,
+   *  bleibt der Platz leer – es wird NICHTS ersatzweise gezeigt. */
+  undoRedo?: (reiter: ReiterId) => JSX.Element
 }
 
 /** Die fünf Reiterbeschriftungen (TK 9.14.1) – der einzige eigene Text des Rahmens. */
@@ -117,6 +122,7 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
             {REITER_BESCHRIFTUNG[reiter]}
           </button>
         ))}
+        {eigenschaften.undoRedo ? eigenschaften.undoRedo(zustand.aktiv) : null}
         {eigenschaften.speicherHinweis ? eigenschaften.speicherHinweis() : null}
       </nav>
 

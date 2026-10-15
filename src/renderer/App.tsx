@@ -48,6 +48,7 @@ import {
 } from './app-shell/bootstrap'
 import { verteileZugaenge, type Reiterzugaenge } from './app-shell/inhalte-zugaenge'
 import { baueReiterInhalte, type ModulWurzeln, type Reiterumgebung } from './app-shell/inhalte'
+import { UndoPfeile } from './app-shell/undo-pfeile'
 import { baueSichten } from './app-shell/sichten'
 import { starteSitzung, merkeAktivenReiter } from './app-shell/start'
 import { starteAuftragsNachlauf } from './app-shell/auftrags-nachlauf'
@@ -270,6 +271,13 @@ export function App(): JSX.Element {
     return abmelden
   }, [meldeFehler])
 
+  // #424: stabiler Zugang fuer die Undo/Redo-Pfeile - `useCallback` mit leerer
+  // Abhaengigkeit, damit die Leiste ihr Abo NICHT bei jedem Render neu aufbaut.
+  const holeProjektzugang = useCallback(
+    () => (zugaengeRef.current === null ? null : zugaengeRef.current.projektRoh),
+    [],
+  )
+
   // ENTSCHIEDEN 3: bei 'laeuft' und 'gescheitert' KEIN Rahmen, KEINE Wurzel,
   // KEIN Overlay.
   if (lage.schritt === 'laeuft') {
@@ -313,6 +321,10 @@ export function App(): JSX.Element {
   const rahmenEigenschaften = {
     inhalte: baueReiterInhalte(zugaenge, WURZELN, reiterumgebung),
     warteschlangenLeiste: () => <WarteschlangenLeiste />,
+    // #424: die sichtbaren Undo/Redo-Pfeile in der Reiterleiste.
+    undoRedo: (reiter: ReiterId) => (
+      <UndoPfeile reiter={reiter} holeProjektzugang={holeProjektzugang} meldeFehler={meldeFehler} />
+    ),
     speicherHinweis: () => (
       <>
         {/* unverändert aus #262, Schritt 5 – Zeichen für Zeichen */}
