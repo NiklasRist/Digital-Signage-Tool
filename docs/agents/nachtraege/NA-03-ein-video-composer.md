@@ -1,4 +1,4 @@
-### Issue NA-03: [composer] Ein Projekt – ein Video: „Video importieren", Video-Bereich, automatische Übernahme, Ersetzen mit Bestätigung
+### Issue NA-03 (= #422): [composer] Ein Projekt – ein Video: „Video importieren", Video-Bereich, automatische Übernahme, Ersetzen mit Bestätigung
 
 ## Ziel (in einem Satz)
 Der Projekt-Editor (Reiter [Zusammenstellen]) behandelt **genau ein Video** je Projekt: der Knopf heißt
@@ -68,5 +68,5 @@ projekt geben"
 
 ## Abhängigkeiten
 - Blockiert von: – (Basis steht: #407/#418)
-- Blockiert: **NA-04** (der Anlege-Weg nutzt denselben Import + die automatische Übernahme).
+- Blockiert: **#423** (der Anlege-Weg nutzt denselben Import + die automatische Übernahme).
 - Bezug: AD v1.7 (4.9, FA-01, FA-03, FA-05), TK v3.21 (9.7.6), #418

@@ -1,4 +1,4 @@
-### Issue NA-04: [projekt-verwaltung] Video-Import beim Anlegen eines Projekts
+### Issue NA-04 (= #423): [projekt-verwaltung] Video-Import beim Anlegen eines Projekts
 
 ## Ziel (in einem Satz)
 Beim Anlegen eines Projekts lässt sich neben dem Namen optional direkt ein Video importieren; nach dem
@@ -49,5 +49,5 @@ den Import an; das Video ist danach **bereits am Ende der Wiedergabeliste**.
 - [ ] Treiber-Messung am echten Fenster (keine User-Abnahme).
 
 ## Abhängigkeiten
-- Blockiert von: **NA-03** (Composer-Import + automatische Übernahme)
+- Blockiert von: **#422** (Composer-Import + automatische Übernahme)
 - Bezug: AD v1.7 (4.9, FA-01, FA-10), TK v3.21 (9.14.3)
