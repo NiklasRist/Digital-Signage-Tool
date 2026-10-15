@@ -33,7 +33,7 @@ vi.mock('electron', () => ({
   protocol: {},
 }))
 
-const { pruefeBeendenUndFlush } = await import('../../src/main/beenden-ablauf');
+const { pruefeBeendenUndFlush, flushesBeimBeendenOhneDialogAus } = await import('../../src/main/beenden-ablauf');
 const { KANAELE } = await import('../../src/shared/contracts/kanaele');
 
 function fenster(): never {
@@ -143,5 +143,46 @@ describe('pruefeBeendenUndFlush (#336)', () => {
     const erlaubt = await pruefeBeendenUndFlush(fesFenster() as never);
     expect(erlaubt).toBe(true);
     expect(h.webContentsSend).toHaveBeenCalledTimes(0);
+  });
+});
+
+describe('flushesBeimBeendenOhneDialogAus (#427)', () => {
+  it('ruft alle drei Flushs GENAU einmal, in der Reihenfolge project, vorlagen, marken', async () => {
+    const reihenfolge: string[] = [];
+    h.flushBeimBeenden.mockImplementation(async () => {
+      reihenfolge.push('project');
+      return { ok: true };
+    });
+    h.flushVorlagenBestand.mockImplementation(async () => {
+      reihenfolge.push('vorlagen');
+      return { ok: true };
+    });
+    h.flushMarkenBestand.mockImplementation(async () => {
+      reihenfolge.push('marken');
+      return { ok: true };
+    });
+
+    await flushesBeimBeendenOhneDialogAus();
+
+    expect(reihenfolge).toEqual(['project', 'vorlagen', 'marken']);
+    // KEIN Fehler-Dialog: das Fenster wird nicht einmal angefasst.
+    expect(h.webContentsSend).toHaveBeenCalledTimes(0);
+    expect(h.registriereEntscheidung).toHaveBeenCalledTimes(0);
+  });
+
+  it('ein gescheiterter Flush wird verworfen, die uebrigen laufen trotzdem', async () => {
+    h.flushVorlagenBestand.mockResolvedValue(fehler('speicher_fehler', 'Platte zu voll'));
+    await expect(flushesBeimBeendenOhneDialogAus()).resolves.toBeUndefined();
+    expect(h.flushBeimBeenden).toHaveBeenCalledTimes(1);
+    expect(h.flushVorlagenBestand).toHaveBeenCalledTimes(1);
+    expect(h.flushMarkenBestand).toHaveBeenCalledTimes(1);
+  });
+
+  it('eine ABGELEHNTE Zusage wird geschluckt und beendet den Durchlauf nicht', async () => {
+    h.flushBeimBeenden.mockRejectedValue(new Error('EIO'));
+    await expect(flushesBeimBeendenOhneDialogAus()).resolves.toBeUndefined();
+    // Die beiden folgenden Flushs laufen weiter.
+    expect(h.flushVorlagenBestand).toHaveBeenCalledTimes(1);
+    expect(h.flushMarkenBestand).toHaveBeenCalledTimes(1);
   });
 });
