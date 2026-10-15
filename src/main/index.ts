@@ -57,7 +57,7 @@ import { registriereMedienHandler } from "./media-service/handler-registrierung"
 import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
 import { MARKEN_SCHEMA, registriereMarkenProtokollHandler } from "./marken-store/marken-protokoll"; // #290
 import { flushBestand as flushMarkenBestand } from "./marken-store/schreibe-marken"; // #277, ALIAS-PFLICHT
-import { pruefeBeendenUndFlush } from "./beenden-ablauf"; // #336
+import { pruefeBeendenUndFlush, flushesBeimBeendenOhneDialogAus } from "./beenden-ablauf"; // #336, #427
 import { erzwingeEinzelInstanz } from "./project-store/einzel-instanz"; // #51, SCHRITT 2
 import { ermittleDatenOrt } from "./datenort"; // #5, Pfad-Autoritaet
 import { flushBeimBeenden } from "./project-store/auto-speichern";
@@ -537,6 +537,21 @@ let beendenAbgeschlossen = false;
  */
 app.on("before-quit", (ereignis) => {
   if (beendenAbgeschlossen) return;
+  // #427: Beim Schliessen ueber das rote Kreuz ist das Fenster beim `before-quit`
+  // bereits zerstoert (window-all-closed -> app.quit). Ohne Fenster gibt es keinen
+  // Renderer fuer den Fehler-Dialog aus #336 - die drei Sofort-Flushs laufen trotzdem
+  // (flushesBeimBeendenOhneDialogAus), ein Fehlschlag wird verworfen, dann wird beendet.
+  // OHNE diesen Zweig blieb der Prozess als Waise stehen (der alte Ablauf stieg bei
+  // zerstoertem Fenster aus, ohne app.quit() - die Einzelinstanz-Sperre blockierte den
+  // Neustart). `before-quit` bleibt der EINZIGE Beenden-Weg (#336).
+  if (hauptfenster === null || hauptfenster.isDestroyed()) {
+    ereignis.preventDefault();
+    void flushesBeimBeendenOhneDialogAus().finally(() => {
+      beendenAbgeschlossen = true;
+      app.quit();
+    });
+    return;
+  }
   ereignis.preventDefault();
   void fuehreBeendenAblaufAus();
 });

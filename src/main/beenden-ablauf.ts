@@ -110,6 +110,28 @@ async function flushUeberhauptAus(
 }
 
 /**
+ * #427: der fenster-lose Beenden-Weg. Beim Schliessen ueber das rote Kreuz ist das
+ * Fenster beim `before-quit` bereits zerstoert (window-all-closed -> app.quit), es gibt
+ * also keinen Renderer mehr, der den Fehler-Dialog aus #336 zeigen koennte. Die drei
+ * Sofort-Flushs laufen trotzdem (sie brauchen das Fenster nicht), ein Fehlschlag oder
+ * eine Ablehnung wird still verworfen - der letzte Ausweg ("Trotzdem schliessen", #336)
+ * ist hier die einzige Wahl, denn ein Stillstand liesse den Prozess als Waise stehen.
+ *
+ * Die Reihenfolge ist dieselbe wie in `pruefeBeendenUndFlush`: project, vorlagen, marken.
+ * KEIN erneuter Versuch - es gibt niemanden, der ihn verlangen koennte.
+ */
+export async function flushesBeimBeendenOhneDialogAus(): Promise<void> {
+  for (const speicher of ['project', 'vorlagen', 'marken'] as const) {
+    try {
+      await flushUeberhauptAus(speicher)
+    } catch {
+      // Verworfen: Der Prozess MUSS enden; ein liegengebliebener Flush ist kein Grund,
+      // den Main als Waise am Leben zu lassen (genau das war #427).
+    }
+  }
+}
+
+/**
  * Der RUECKKANAL: der Kanal beenden:entscheidung (Instant, Renderer -> Main).
  * Der Hoerer wird GENAU einmal registriert (also nur vom EINEN Ablauf-Callback);
  * eine doppelte Registrierung bei ipcMain.handle wirft bewusst.
