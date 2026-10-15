@@ -1,9 +1,13 @@
-// Verhaltenstest zu #227 - die Darstellung (bibliothek-ansicht.tsx, jsdom).
+// Verhaltenstest zu #227/#422 - die Darstellung (bibliothek-ansicht.tsx, jsdom).
 //
-// Die Ansicht haelt keinen Zustand, filtert nichts und fuehrt nur EINE Operation
-// aus: `fuegeElementHinzu` (#123). Gemessen wird: zwei getrennte Bereiche, der
-// Hinweis ueber fehlende Medien, dass fehlt/kaputt gekennzeichnet aber NICHT gesperrt
-// ist, und dass ein Klick genau EINEN Aufruf mit der richtigen Referenz ausloest.
+// #422 (15.10.2026): Ein Projekt hat genau EIN Video. Der Medien-Bereich heisst "Video"
+// und zeigt NUR Video-Assets; Bilder sind Motiv einer Aktion (action-editor) und
+// erscheinen hier nicht mehr. Das Video ist automatisch Listeneintrag - es gibt fuer es
+// KEIN "Zur Liste hinzufuegen" mehr (das bleibt fuer AKTIONEN).
+//
+// Gemessen wird: zwei getrennte Bereiche, der Hinweis ueber fehlende Videos, dass ein
+// fehlendes Video gekennzeichnet aber NICHT gesperrt ist, dass die Video-Zeile keinen
+// Hinzufuegen-Knopf traegt, und dass ein Aktions-Klick genau EINEN Aufruf ausloest.
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
@@ -87,7 +91,7 @@ function eigenschaften(ueber: Partial<BibliothekEigenschaften> = {}): Bibliothek
   };
 }
 
-describe("Bibliotheksansicht (bibliothek-ansicht.tsx)", () => {
+describe("Bibliotheksansicht (bibliothek-ansicht.tsx, #422)", () => {
   let host: HTMLElement;
   let root: Root;
 
@@ -106,7 +110,7 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx)", () => {
     host.remove();
   });
 
-  it("zeigt zwei getrennte Bereiche: Medien und Aktionen (ENTSCHIEDEN 7)", () => {
+  it("zeigt zwei getrennte Bereiche: Video und Aktionen", () => {
     const p = projekt({
       id: "p1",
       assets: [asset({ id: "a1" })],
@@ -116,13 +120,26 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx)", () => {
       root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
     });
 
-    expect(host.textContent).toContain("Medien");
+    expect(host.textContent).toContain("Video");
     expect(host.textContent).toContain("Aktionen");
-    expect(host.querySelector("[data-testid='medien-liste']")).not.toBeNull();
+    expect(host.querySelector("[data-testid='video-liste']")).not.toBeNull();
     expect(host.querySelector("[data-testid='aktionen-liste']")).not.toBeNull();
   });
 
-  it("zeigt den Hinweis ueber fehlende Medien nur, wenn welche fehlen (Fehlerpfad)", () => {
+  it("zeigt nur VIDEO-Assets - ein Bild erscheint hier nicht (Bild = Aktions-Motiv)", () => {
+    const p = projekt({
+      id: "p1",
+      assets: [asset({ id: "v1", typ: "video" }), asset({ id: "b1", typ: "bild", dauer: null })],
+    });
+    act(() => {
+      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
+    });
+
+    expect(host.querySelector("[data-testid='medium-v1']")).not.toBeNull();
+    expect(host.querySelector("[data-testid='medium-b1']")).toBeNull();
+  });
+
+  it("zeigt den Hinweis ueber fehlende Videos nur, wenn welche fehlen (Fehlerpfad)", () => {
     const p = projekt({
       id: "p1",
       assets: [asset({ id: "a1", zustand: "ok" }), asset({ id: "a2", zustand: "fehlt" })],
@@ -136,30 +153,26 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx)", () => {
     );
   });
 
-  it("zeiigt Leer-Hinweise fuer leere Bereiche (Fehlerpfad)", () => {
+  it("zeigt Leer-Hinweise fuer leere Bereiche (Fehlerpfad)", () => {
     act(() => {
       root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: projekt({ id: "p1" }) })));
     });
 
-    expect(host.querySelector("[data-testid='medien-leer']")).not.toBeNull();
+    expect(host.querySelector("[data-testid='video-leer']")).not.toBeNull();
     expect(host.querySelector("[data-testid='aktionen-leer']")).not.toBeNull();
   });
 
-  it("ruft fuegeElementHinzu genau einmal mit der Asset-ID beim Medien-Klick (DoD)", async () => {
+  it("die Video-Zeile traegt KEINEN Hinzufuegen-Knopf, aber Loeschen (#422)", () => {
     const p = projekt({ id: "p1", assets: [asset({ id: "a1" })] });
     act(() => {
       root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
     });
 
-    const knopf = Array.from(host.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Zur Liste hinzufügen"),
-    );
-    await act(async () => {
-      knopf?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(1);
-    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledWith("a1", undefined, expect.any(Function));
+    const zeile = host.querySelector("[data-testid='medium-a1']");
+    expect(zeile).not.toBeNull();
+    const knopfe = Array.from(zeile?.querySelectorAll("button") ?? []);
+    expect(knopfe.some((b) => b.textContent?.includes("Zur Liste hinzufügen"))).toBe(false);
+    expect(knopfe.some((b) => b.textContent?.includes("Löschen"))).toBe(true);
   });
 
   it("ruft fuegeElementHinzu genau einmal mit der Aktions-ID beim Aktions-Klick (DoD)", async () => {
@@ -179,32 +192,30 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx)", () => {
     expect(attrappen.fuegeElementHinzu).toHaveBeenCalledWith("k1", undefined, expect.any(Function));
   });
 
-  it("ist auch fuer fehlt-Medien und kaputte Aktionen erreichbar - kein Sperren (DoD)", async () => {
+  it("ist auch fuer kaputte Aktionen erreichbar - kein Sperren (DoD)", async () => {
     const p = projekt({
       id: "p1",
-      assets: [asset({ id: "a1", zustand: "fehlt" })],
       aktionen: [aktion({ id: "k1", bildRef: "unbekannt" })],
     });
     act(() => {
       root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
     });
 
-    const knopfe = Array.from(host.querySelectorAll("button")).filter((b) =>
+    const knopf = Array.from(host.querySelectorAll("button")).find((b) =>
       b.textContent?.includes("Zur Liste hinzufügen"),
     );
-    expect(knopfe).toHaveLength(2); // beide da, keiner gesperrt
+    expect(knopf).toBeDefined();
 
     await act(async () => {
-      knopfe[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      knopfe[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      knopf?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(2);
-    expect(attrappen.fuegeElementHinzu.mock.calls.map((c) => c[0])).toEqual(["a1", "k1"]);
+    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(1);
+    expect(attrappen.fuegeElementHinzu.mock.calls.map((c) => c[0])).toEqual(["k1"]);
   });
 
   it("leitet einen Fehler von fuegeElementHinzu unveraendert an aufFehler - kein zweiter Aufruf (DoD)", async () => {
-    const p = projekt({ id: "p1", assets: [asset({ id: "a1" })] });
+    const p = projekt({ id: "p1", aktionen: [aktion({ id: "k1" })] });
     attrappen.fuegeElementHinzu.mockResolvedValueOnce({
       ok: false,
       fehler: { code: "nicht_gefunden", meldung: "weg" },
@@ -224,19 +235,6 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx)", () => {
     expect(aufFehler).toHaveBeenCalledTimes(1);
     expect(aufFehler).toHaveBeenCalledWith("nicht_gefunden", "weg");
     expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(1);
-  });
-
-  it("loest bei einem Bild eine media://-Vorschau aus (ENTSCHIEDEN 4)", () => {
-    const p = projekt({
-      id: "p1",
-      assets: [asset({ id: "a1", typ: "bild", zustand: "ok", dateiname: "a-b-c.png" })],
-    });
-    act(() => {
-      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
-    });
-
-    const img = host.querySelector("img");
-    expect(img?.getAttribute("src")).toBe("media://p1/a-b-c.png");
   });
 });
 

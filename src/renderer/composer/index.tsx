@@ -192,6 +192,12 @@ export function ComposerWurzel(p: ComposerWurzelProps): JSX.Element {
 const FEHLERFARBE = '#e5634d'
 const TAKTFARBE = '#d9a441'
 
+/** #422: Traegt die Wiedergabeliste bereits ein Video-Element? Dann ist der naechste
+ *  Import ein ERSETZEN (genau ein Video pro Projekt, User-Entscheidung 15.10.2026). */
+function hatVideoElement(projekt: Project): boolean {
+  return projekt.liste.some((element) => element.art === 'video')
+}
+
 /** #417: Layout-Vorschub je Zeitleisten-Block = Kantenbreite (10 px, zeitleiste.tsx) +
  *  ZWEI Luecken (je 2 px, `gap: 2` in korb UND in der Block-Gruppe). Er hebt den
  *  Zeiger-Raum (mit Kanten) auf den Modell-Raum von `waehleKanteAus` (Summe der
@@ -224,6 +230,9 @@ export function ComposerInterna({
   // die Whitelist wird hier VORGEFILTERT (DoD: kein Auftrag fuer nicht
   // unterstuetzte Typen), die finale Pruefung bleibt im Main.
   const [dropFehler, setzeDropFehler] = useState<string | null>(null)
+  // #422: liegt schon ein Video vor, fragt der Import VORHER nach (der Import hat
+  // Dateiwirkung und ist nicht undo-faehig, AD 4.9/FA-21) - kein window.confirm.
+  const [ersetztFrage, setzeErsetztFrage] = useState(false)
   // #342: DIE EINE ComposerLage (#259). Kein zweiter Zustand fuer Overlay, Meldung,
   // Ausgabename oder Exportauswahl - alles laeuft ueber die acht Uebergaenge.
   const [lage, setzeLage] = useState<ComposerLage>(() => LEERE_COMPOSER_LAGE)
@@ -259,6 +268,31 @@ export function ComposerInterna({
   // waehlt nichts: Ein Reiterwechsel montiert diese Wurzel frisch (Abbau verboten, aber
   // unsichtbar), und dann soll nicht eines der bestehenden Medien markiert aufblitzen.
   const bekannteAssets = useRef<Set<string> | null>(null)
+  // #422: Ein neu importiertes Video landet AUTOMATISCH ans Ende der Wiedergabeliste.
+  // Liegt schon ein Video in der Liste, wird es ERSETZT (User: genau EIN Video pro
+  // Projekt). Beides in EINEM Schreibvorgang: `fuegeElementHinzu` liefert das neue
+  // Element ueber den Sicht-Schreiber (hier gesammelt, NICHT sofort geschrieben), die
+  // alte Video-Zeile wird entfernt - dann geht GENAU EIN `setzeListe` (und damit EIN
+  // Undo-Schnappschuss, #422-Entscheidung) hinaus.
+  const fuegeVideoAnsEndeEin = (assetId: string): void => {
+    let zwischenstand: Listenelement[] | null = null
+    void fuegeElementHinzu(assetId, undefined, (liste) => {
+      zwischenstand = liste
+    }).then((ergebnis) => {
+      if (!ergebnis.ok) {
+        setzeLage((alt) =>
+          melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
+        )
+        return
+      }
+      if (zwischenstand === null) return
+      const neuesElement = ergebnis.wert
+      const ohneAlte = zwischenstand.filter(
+        (element) => element.art !== 'video' || element.id === neuesElement.id,
+      )
+      projekt.setzeListe(ohneAlte)
+    })
+  }
   useEffect(() => {
     const assets = inhalt?.assets ?? []
     if (bekannteAssets.current === null) {
@@ -270,6 +304,7 @@ export function ComposerInterna({
     const neuesVideo = neu.find((eintrag) => eintrag.typ === 'video')
     if (neuesVideo !== undefined) {
       setzeLage((alt) => waehleMedium(alt, neuesVideo.id))
+      fuegeVideoAnsEndeEin(neuesVideo.id)
     }
   }, [inhalt?.assets])
 
@@ -399,9 +434,20 @@ export function ComposerInterna({
 
   const gesamt = berechneGesamtlaenge([...liste])
 
+  // #422: Liegt schon ein Video vor, wird ERSETZT - der Import hat Dateiwirkung und ist
+  // nicht undo-faehig, deshalb fragt die Wurzel VORHER nach (User-Entscheidung 15.10.).
+  const importiere = (): void => {
+    if (inhalt === null) return
+    if (hatVideoElement(inhalt)) {
+      setzeErsetztFrage(true)
+      return
+    }
+    starteImport()
+  }
+
   // Der Medien-Import (#228) hat EINEN Weg - der Kopf-Knopf und die Bibliotheksansicht
   // bedienen denselben Ruf, kein zweiter Ablauf.
-  const importiere = (): void => {
+  const starteImport = (): void => {
     if (inhalt === null) return
     void importiereMedien(inhalt.id, verdrahtung.starteMedienImport).then((antwort) => {
       if (antwort.ok) setzeImportBericht(antwort.wert)
@@ -531,7 +577,7 @@ export function ComposerInterna({
           data-testid="composer-medien-import"
           onClick={importiere}
         >
-          Medien importieren
+          Video importieren
         </button>
         <button
           type="button"
@@ -575,6 +621,35 @@ export function ComposerInterna({
           }}
         >
           {importBericht.text}
+        </div>
+      )}
+
+      {/* #422: Die Rueckfrage vor dem ERSETZEN. Sie erscheint, wenn schon ein Video in
+          der Liste liegt - der Import hat Dateiwirkung und ist nicht undo-faehig. */}
+      {ersetztFrage && (
+        <div
+          data-testid="composer-ersetzen-frage"
+          role="status"
+          style={{ fontSize: 12, display: 'flex', gap: 8, alignItems: 'center' }}
+        >
+          <span>Es gibt bereits ein Video. Beim Import wird es ersetzt.</span>
+          <button
+            type="button"
+            data-testid="composer-ersetzen-ja"
+            onClick={() => {
+              setzeErsetztFrage(false)
+              starteImport()
+            }}
+          >
+            Video ersetzen
+          </button>
+          <button
+            type="button"
+            data-testid="composer-ersetzen-nein"
+            onClick={() => setzeErsetztFrage(false)}
+          >
+            Abbrechen
+          </button>
         </div>
       )}
 
@@ -627,9 +702,17 @@ export function ComposerInterna({
                 aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
                 vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
                 aufAktionAnlegen={legeAktionAnInline}
-                aufMediumLoeschen={(assetId) =>
+                aufMediumLoeschen={(assetId) => {
+                  // #422: Das Video aus der Liste nehmen (EIN Undo-Schritt), DANN das
+                  // Loesch-Overlay - so ist die Loesch-Asymmetrie erfuellt (erst die
+                  // Referenz loesen, dann die Datei, TK 9.4.6). Das Loeschen der Datei
+                  // selbst ist nicht undo-faehig (AD FA-21).
+                  const ohneVideo = inhalt.liste.filter(
+                    (element) => !(element.art === 'video' && element.ref === assetId),
+                  )
+                  if (ohneVideo.length !== inhalt.liste.length) projekt.setzeListe(ohneVideo)
                   setzeLage((alt) => oeffneOverlay(alt, { art: 'medium_loeschen', assetId }))
-                }
+                }}
                 aufFehler={(code, meldung) =>
                   setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
                 }
