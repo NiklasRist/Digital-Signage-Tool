@@ -186,6 +186,14 @@ export function App(): JSX.Element {
     () => ({
       aufProjekteWechseln: () => wechsleReiter('projekte'),
       wechsleZuZusammenstellen: () => wechsleReiter('zusammenstellen'),
+      // #423: nach dem Anlegen mit „Video importieren" startet der Import - derselbe
+      // Weg wie der Composer-Knopf (`starteMedienImport(_, 'video')`). Schlaegt der
+      // Aufruf fehl, meldet die Shell; das (leere) Projekt bleibt bestehen.
+      starteVideoImport: (projektId: string) => {
+        void starteMedienImport(projektId, 'video').then((ergebnis) => {
+          if (!ergebnis.ok) meldeFehler(ergebnis.fehler.code, ergebnis.fehler.meldung)
+        })
+      },
       composerVerdrahtung: {
         starteMedienImport,
         // #416: „Aktion anlegen" - der vollstaendige Entwurf entsteht HIER aus dem
@@ -203,7 +211,7 @@ export function App(): JSX.Element {
       hervorgehobeneAktionId: reparatur.hervorgehobeneAktionId,
       vorlagenSitzung: sitzungshalter(),
     }),
-    [reparatur],
+    [reparatur, meldeFehler],
   )
 
   // DER Bootstrap - GENAU EINmal je Fenster (Aufbau-Effekt); SetzeLage spigelt

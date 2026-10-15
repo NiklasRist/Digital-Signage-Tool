@@ -134,6 +134,7 @@ function baueUmgebung() {
   return {
     aufProjekteWechseln: vi.fn(),
     wechsleZuZusammenstellen: vi.fn(),
+    starteVideoImport: vi.fn(),
     composerVerdrahtung: {
       starteMedienImport: vi.fn(),
       reparatur: null,
