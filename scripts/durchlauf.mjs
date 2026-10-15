@@ -1164,6 +1164,77 @@ const main = async () => {
       }
     }
 
+    // Schritt 4h - Reparatur-Fuehrung (#421): eine KAPUTTE Stelle erzeugen (die kopierte
+    // Medien-Datei loeschen), das Projekt per UI neu oeffnen (Reconcile -> Asset 'fehlt'),
+    // dann eine Fix-Option bedienen und Cmd+Z messen (EIN Schritt ueber den Wrapped-Schreiber).
+    let kaputtGemacht = false;
+    try {
+      const projektJson = JSON.parse(
+        fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
+      );
+      const videoAsset = (projektJson.assets ?? []).find((a) => a.typ === "video" && a.zustand === "ok");
+      if (videoAsset !== undefined) {
+        const datei = path.join(WURZEL, "projects", aktivesProjektId, "media", videoAsset.dateiname);
+        if (fs.existsSync(datei)) { fs.unlinkSync(datei); kaputtGemacht = true; }
+      }
+    } catch (tu) {
+      console.log("[schritt-4h] Kaputt-Machen fehlgeschlagen: " + String(tu));
+    }
+    if (!kaputtGemacht) {
+      fund("Reparatur-Fuehrung", "eine kaputte Stelle fuer den Treiber (#421)",
+        "keine Video-Datei zum Loeschen gefunden", "Untersuchung", "tests/scripts");
+    } else {
+      await klick('[data-testid="reiter-projekte"]');
+      await schlafe(400);
+      await seite.evaluate((pid) => {
+        const zeile = document.querySelector(`[data-testid="projekt-${pid}"]`);
+        const knopf = zeile === null ? null : zeile.querySelector("button");
+        if (knopf !== null) knopf.click();
+      }, aktivesProjektId);
+      await schlafe(2_500);
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(800);
+      const panelDa4h = await seite.evaluate(() => !!document.querySelector('[data-testid="reparatur-panel"]'));
+      if (!panelDa4h) {
+        fund("Reparatur-Fuehrung", "das Reparatur-Panel erscheint bei kaputter Stelle (#421)",
+          "kein reparatur-panel im Fenster", "Befund", "composer/index.tsx");
+      } else {
+        const bloeckeDavor4h = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+        );
+        const klickFix4h = await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="reparatur-option-element_entfernen"]');
+          if (knopf === null) return false;
+          knopf.click();
+          return true;
+        });
+        await schlafe(3_500);
+        const bloeckeDanach4h = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+        );
+        if (klickFix4h && bloeckeDanach4h < bloeckeDavor4h) {
+          console.log(`[schritt-4h] Reparatur "Element entfernen" GEMESSEN: ${bloeckeDavor4h} -> ${bloeckeDanach4h} Bloecke (#421 belegt).`);
+          await seite.keyboard.down("Meta");
+          await seite.keyboard.press("z");
+          await seite.keyboard.up("Meta");
+          await schlafe(1_500);
+          const bloeckeNachUndo4h = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+          );
+          if (bloeckeNachUndo4h === bloeckeDavor4h) {
+            console.log(`[schritt-4h] Undo GEMESSEN: ${bloeckeDavor4h} Bloecke nach Cmd+Z (Reparatur = EIN Schritt).`);
+          } else {
+            fund("Reparatur-Fuehrung", "Cmd+Z nimmt die Reparatur in EINEM Schritt zurueck (#421)",
+              `Bloecke davor/nachher Undo: ${bloeckeDavor4h}/${bloeckeNachUndo4h}`, "Befund", "composer/index.tsx");
+          }
+        } else {
+          fund("Reparatur-Fuehrung", "eine Fix-Option entfernt das kaputte Element (#421)",
+            `Bloecke davor/nachher: ${bloeckeDavor4h}/${bloeckeDanach4h}, geklickt=${String(klickFix4h)}`,
+            "Befund", "composer/index.tsx");
+        }
+      }
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     // Aufräumblock (User-Entscheidung 14.10.2026, solange die App NICHT fertig ist):
     // Jeder Lauf loescht seine eigenen Projekte ("DurchlaufTest-*") ueber den ECHTEN
