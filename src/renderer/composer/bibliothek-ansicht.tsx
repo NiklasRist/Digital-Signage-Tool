@@ -90,20 +90,12 @@ interface MedienzeileEigenschaften {
 
 function Medienzeile(p: MedienzeileEigenschaften): JSX.Element {
   const fehlt = p.eintrag.zustand === 'fehlt'
-  // #413: Quelle je Karte; `referenz` ist EXAKT das, was #123/#411 lesen. Unter ausschliessendem
-  // `art`-Muster: 'video'/'bild' kommt aus Asset.typ, 'aktion' bei Aktionen.
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `quelle-${p.eintrag.asset.typ}-${p.eintrag.asset.id}`,
-    data: { referenz: p.eintrag.asset.id },
-  })
+  // #417 (User-Weisung 15.10.2026): Medien (Bilder/Videos) sind KEINE Drag-Quelle.
+  // Der Drag in die Zeitleiste war fuer AKTIONEN gedacht (und spaeter fuer Banner);
+  // Bilder/Videos kommen weiter ueber den Klick-Weg ("Zur Liste hinzufuegen") und
+  // den Import in die Liste - der Weg bleibt unveraendert.
   return (
-    <li
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      data-testid={`medium-${p.eintrag.asset.id}`}
-      style={{ cursor: 'grab', opacity: isDragging ? 0.6 : 1 }}
-    >
+    <li data-testid={`medium-${p.eintrag.asset.id}`}>
       <div data-ton={fehlt ? 'hervorgehoben' : 'ruhig'}>
         {/* ENTSCHIEDEN 4: Bilder direkt als media://-img (TK 9.5.7); die URL gibt es
             nur bei typ bild UND zustand ok (ENTSCHIEDEN 5). */}
@@ -136,7 +128,9 @@ interface AktionszeileEigenschaften {
 }
 
 function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
-  // #413: Der Aktions-Drag traegt `aktionId` als Referenz (#413-Vertrag, `{ referenz }`).
+  // #413/#417: Die AKTIONS-Zeile ist die (einzige) Drag-QUELLE der Kernachse - die
+  // User-Weisung 15.10.2026 stellt klar: der Drag in die Zeitleiste ist fuer AKTIONEN
+  // gedacht, nicht fuer Bilder/Videos. `referenz` ist die aktionId (#123/#411).
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `quelle-aktion-${p.eintrag.aktion.id}`,
     data: { referenz: p.eintrag.aktion.id },
@@ -147,7 +141,9 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
       {...attributes}
       {...listeners}
       data-testid={`aktion-${p.eintrag.aktion.id}`}
-      style={{ cursor: 'grab', opacity: isDragging ? 0.6 : 1 }}
+      // userSelect: die Aktions-Zeile ist Text - ohne das startet ein Ziehen mit
+      // Textauswahl statt als Drag (Gegenprobe am echten Fenster, #417).
+      style={{ cursor: 'grab', opacity: isDragging ? 0.6 : 1, userSelect: 'none' }}
     >
       <div data-ton={p.eintrag.kaputt ? 'hervorgehoben' : 'ruhig'}>
         <span>{p.eintrag.bezeichnung}</span>

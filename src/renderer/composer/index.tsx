@@ -176,6 +176,12 @@ export function ComposerWurzel(p: ComposerWurzelProps): JSX.Element {
 const FEHLERFARBE = '#e5634d'
 const TAKTFARBE = '#d9a441'
 
+/** #417: Layout-Vorschub je Zeitleisten-Block = Kantenbreite (10 px, zeitleiste.tsx) +
+ *  ZWEI Luecken (je 2 px, `gap: 2` in korb UND in der Block-Gruppe). Er hebt den
+ *  Zeiger-Raum (mit Kanten) auf den Modell-Raum von `waehleKanteAus` (Summe der
+ *  Blockbreiten, s. amUeber). 10 + 2 + 2 = 14. */
+const KANTEN_VORSCHUB_PX = 14
+
 export function ComposerInterna({
   projekt,
   verdrahtung,
@@ -363,7 +369,12 @@ export function ComposerInterna({
     const zeilen = baueZeitleistenZeilen(inhalt?.liste ?? [])
     const xImKontext = zeigerStartX.current + ereignis.delta.x - umriss.left + korb.scrollLeft
     const kanten = baueEinfugeKanten(zeilen.length)
-    const gemessen = waehleKanteAus(kanten, xImKontext, (index) => zeilen[index]?.breitePx ?? 64)
+    // #417: `waehleKanteAus` rechnet die Grenzen als SUMME der uebergebenen Breiten. Der
+    // Zeiger-x liegt aber im echten Layout, in dem zwischen zwei Bloecken eine Kante (10 px)
+    // und ZWEI Luecken (je 2 px) stehen. Ohne den Vorschub je Block liegen Modellgrenzen und
+    // sichtbare Kanten auseinander - bei kurzen Bloecken um eine ganze Kante. Deshalb traegt
+    // die uebergebene "Breite" den Layout-Vorschub Block + Kante + zwei Luecken.
+    const gemessen = waehleKanteAus(kanten, xImKontext, (index) => (zeilen[index]?.breitePx ?? 64) + KANTEN_VORSCHUB_PX)
     setzeAktiveKante(gemessen ?? leseKantenIndex(ereignis.over?.id))
   }
 
@@ -404,6 +415,10 @@ export function ComposerInterna({
       collisionDetection={closestCenter}
       onDragStart={amDragStart}
       onDragOver={amUeber}
+      // #417: onDragOver feuert NUR beim Wechsel des `over`-Ziels. Beim Ziehen aus der
+      // Bibliothek bleibt `over` oft dieselbe Kante - die Messung liefe dann EINMAL bei
+      // dx=0 und JEDER Drop landete an Kante 0. onDragMove feuert bei JEDER Bewegung.
+      onDragMove={amUeber}
       onDragEnd={amEnde}
       onDragCancel={amDragAbbruch}
     >

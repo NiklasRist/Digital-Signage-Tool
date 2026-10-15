@@ -126,21 +126,27 @@ export function Zeitleiste({
 }
 
 /** #412 - Die EINE Einfüge-Kante als Drop-Ziel: unsichtbar in der Ruhelage, beim
- *  Neu-Drag ein Spalt (Stummmodus 10 px), der aktive/geöffnete Spalt breiter, die
- *  wartende Spalt-Position mit Lade-Streifen. */
+ *  Neu-Drag ein Spalt. #417: Der aktiv/ueberfahrene Spalt ist sichtbar BREITER, aber
+ *  LAYOUTNEUTRAL: Breite UND negative Raender wachsen zusammen (22 + (-6) + (-6) = 10).
+ *  So bleibt der Vorschub je Block konstant (10 + 2 + 2 = 14, s. KANTEN_VORSCHUB_PX in
+ *  composer/index.tsx) - sichtbare Kanten und gemessene Grenzen (waehleKanteAus) passen
+ *  stabil zusammen. Eine rein breitere Box verschoebe die Nachbarn waehrend des Zugs. */
 function KantenBlock({ nummer, aktiv, laedt }: { nummer: number; aktiv: boolean; laedt: boolean }): JSX.Element {
   const { isOver, setNodeRef } = useDroppable({ id: `kante-${nummer}` })
+  const geoeffnet = aktiv || isOver
   return (
     <div
       ref={setNodeRef}
       data-testid={`zeitleiste-kante-${nummer}`}
       style={{
         flex: '0 0 auto',
-        width: aktiv || isOver ? 22 : 10,
+        width: geoeffnet ? 22 : 10,
+        marginLeft: geoeffnet ? -6 : 0,
+        marginRight: geoeffnet ? -6 : 0,
         minWidth: 10,
         height: ZEILE_HOEHE_PX,
         borderRadius: 3,
-        transition: 'width 120ms ease',
+        transition: 'width 120ms ease, margin 120ms ease',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
