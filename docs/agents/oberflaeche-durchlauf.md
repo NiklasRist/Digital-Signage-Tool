@@ -724,3 +724,32 @@ Ereignisse gesammelt: 14
 
 - **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-15T08:31:06.854Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Videostage: erwartet "die Buehne hat eine sichtbare Hoehe (> 10 px)", erkannt "Kasten/Flaeche: {"w":768,"h":0}/{"w":0,"h":0}" (Ort: preview-player/vorschau.tsx)
+
+## Nachlauf vom 2026-10-15T08:32:47.964Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Videostage: erwartet "die Buehne hat eine sichtbare Hoehe (> 10 px)", erkannt "Kasten/Flaeche: {"w":768,"h":0}/{"w":0,"h":0}" (Ort: preview-player/vorschau.tsx)
+
+## Nachlauf vom 2026-10-15T08:34:24.645Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
