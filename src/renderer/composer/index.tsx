@@ -94,7 +94,9 @@ import {
   type Ausgabenstand,
 } from './ausgabe-liste'
 import { AusgabeListenansicht } from './ausgabe-liste.tsx'
-import { starteReparatur, istRenderFreigegeben } from './reparatur-fuehrung'
+import { starteReparatur, istRenderFreigegeben, aktualisiereReparatur } from './reparatur-fuehrung'
+import { fuehreFixAus, type FixOptionId } from './reparatur-optionen'
+import { ReparaturPanel } from './reparatur-panel.tsx'
 import { loeseRenderAus, loeseExportAus } from './render-ausloesen'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import type { Marke } from '../../shared/contracts/marke'
@@ -292,6 +294,43 @@ export function ComposerInterna({
   // ENTSCHIEDEN 3). Sperrschranken: Freigabe der Fuehrung (#132) via
   // istRenderKnopfFrei (#259) und vorhandene Zeichenvoraussetzungen (ohne sie
   // kann #134 keine PNGs zeichnen; kein Ersatzwert).
+  // #421: Die gefuehrte Reparatur benutzbar machen. Der Composer zeigte bis hierher nur
+  // den Fortschrittstext; es gab KEINEN Weg, eine Fix-Option auszuloesen (#421-Befund).
+  // Diese Wurzel startet die Fuehrung, sobald es kaputte Stellen gibt, und fuehrt jede
+  // Fix-Option aus. Ueber `projekt.setzeListe` (Wrapped-Zugang, #244) nimmt jede Reihe
+  // einen Undo-Schritt.
+  useEffect(() => {
+    if (inhalt === null) return
+    if (findeKaputteStellen(inhalt).length === 0) return
+    if (verdrahtung.reparatur === null || !verdrahtung.reparatur.aktiv) {
+      verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
+    }
+  }, [inhalt, verdrahtung])
+
+  const repariere = (option: FixOptionId): void => {
+    const stand = verdrahtung.reparatur
+    const stelle = stand === null ? null : stand.aktuelle
+    if (inhalt === null || stelle === null) return
+    void fuehreFixAus(stelle, option, inhalt, projekt.setzeListe).then((ergebnis) => {
+      if (!ergebnis.ok) {
+        setzeLage((alt) =>
+          melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
+        )
+        return
+      }
+      // Uebergabe (z. B. Medium ersetzen): die Shell fuehrt sie aus (Overlay/Reiter).
+      if (ergebnis.wert.art === 'uebergabe') {
+        verdrahtung.meldeUebergabe(ergebnis.wert.an)
+        return
+      }
+      // erledigt: Stand aus dem FRISCHEN Projektstand neu rechnen (nie vorhersagen).
+      const frisch = projekt.hole().projekt
+      if (frisch !== null && stand !== null) {
+        verdrahtung.meldeReparaturStand(aktualisiereReparatur(stand, frisch))
+      }
+    })
+  }
+
   // #416: Aktion anlegen aus dem Composer heraus. Die Wurzel baut KEINEN Entwurf (das tut
   // der Aktions-Editor #136 ueber verdrahtung.legeAktionAn); sie ergaenzt NUR die Marke
   // (Projekt-Standardmarke) und pflegt die SICHT nach dem Erfolg - Anhaengen ans ENDE,
@@ -503,6 +542,12 @@ export function ComposerInterna({
           Rendern…
         </button>
       </div>
+
+      {/* #421: das Bedien-Panel der gefuehrten Reparatur - sichtbar, solange es eine
+          aktuelle kaputte Stelle gibt. Ohne es waere `fuehreFixAus` weiter ohne Aufrufer. */}
+      {verdrahtung.reparatur !== null && verdrahtung.reparatur.aktuelle !== null && (
+        <ReparaturPanel stand={verdrahtung.reparatur} aufFix={repariere} />
+      )}
 
       {lage.meldung !== null && (
         <div
