@@ -15,7 +15,8 @@
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-16-session.md`](docs/agents/uebergabe-2026-10-16-session.md) – LIES DIESE DATEI ZUERST.**
 **WICHTIG OFFEN:** Die **Frames-Anzeige** der Zeitleiste erfuellt den User noch nicht („geht immer
-noch nicht") – NICHT diagnostiziert; am echten Fenster klaeren.
+noch nicht") – NICHT diagnostiziert; **Issue #433** (`braucht-entscheidung`) angelegt; am echten
+Fenster klaeren.
 
 **Neuer Plan-Zug – nach der #432-Lehre: kein Umbau ohne Plan.** Der Befund „`composer/index.tsx`
 ist schwer zu bearbeiten" wurde gemessen und in zwei Plaene gefasst:
@@ -56,8 +57,8 @@ Ein Drop auf dem Video fuegt **an der Zeitstelle** ein: liegt sie mitten in eine
 dieser **framegenau geteilt** und die neue Aktion dazwischengesetzt (`teileUndFuege`/
 `bandAufnahmeMitTeilung`) – das Band bleibt eine **durchgehende Rotation** (FA-20), **kein Luecke,
 kein Modellfeld, keine Render-Aenderung**.
-Naechste Session: **Frames-Anzeige klaeren** (offenes Beduerfnis des Users, siehe Uebergabe-Datei),
-dann **S4/S5** des Composer-Umbaus; im Programm offen **Q3**, **Q4** und **Q1.2**.
+Naechste Session: **#433 loesen** (Frames-Anzeige, offenes Beduerfnis des Users), dann **S4/S5** des
+Composer-Umbaus; im Programm offen **Q3**, **Q4** und **Q1.2**.
 
 ## STAND HEUTE (16.10.2026, Abnahme-Session) – historisiert durch den Abschnitt darueber
 

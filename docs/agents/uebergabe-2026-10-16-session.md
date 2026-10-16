@@ -35,10 +35,11 @@ enthaelt 0 Nicht-Kommentar-Zeilen".
 **Die Frames-Anzeige in der Leiste erfuellt den User NICHT.** Woertlich: „das mit den frames
 anzeigen geht immer noch nicht." Gebaut ist: eine Frame-Achse mit Zoom-Regler (4→128 px/s) und
 Labels in `mm:ss:ff`; bei hohem Zoom liegt der Tick-Schritt bei einzelnen Frames. **Was genau
-fehlt/klemmt, ist NICHT diagnostiziert** – am echten Fenster pruefen: Erscheint die Zoom-Steuerung
-(`data-testid="zeitleiste-zoom"`)? Aendert der Regler das Bild? Werden bei hohem Zoom die Frames
-sichtbar? Vermutlich erwartet der User **sichtbare Frames schon bei Standard-Zoom** (dort ist ein
-Frame 0,27 px – technisch nicht darstellbar) – das ist eine **UX-Klaerung**, keine reine Mechanik.
+fehlt/klemmt, ist NICHT diagnostiziert** – als **Issue #433** angelegt (`braucht-entscheidung`).
+Am echten Fenster pruefen: Erscheint die Zoom-Steuerung (`data-testid="zeitleiste-zoom"`)? Aendert
+der Regler das Bild? Werden bei hohem Zoom die Frames sichtbar? Vermutlich erwartet der User
+**sichtbare Frames schon bei Standard-Zoom** (dort ist ein Frame 0,27 px – technisch nicht
+darstellbar) – das ist eine **UX-Klaerung**, keine reine Mechanik.
 
 ## Weitere offene Punkte
 
