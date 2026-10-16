@@ -21,6 +21,9 @@ import type { FarbRolle, SchriftRolle, Schrift, Herkunft } from '../../shared/co
 import type { MarkenFehlercode } from './fehlercodes'
 import { eingebauteMarke } from './anfangsbestand'
 import { ermittleDatenOrt } from '../datenort'
+// Q2/A: die domain-freie Schreib-Mechanik liegt jetzt an EINER Stelle
+// (docs/agents/schreib-mechanik-plan.md). Die Zahl WARTEZEITEN_MS bleibt hier.
+import { istCode, mitWiederholung, taugtAlsSicherung, text } from '../gemeinsam/schreib-mechanik'
 
 /**
  * Die drei verbindlichen Antworten des Rumpfs - in DREI Bauteilen:
@@ -485,7 +488,7 @@ async function schreibeDateiNeu(inhalt: MarkenEintrag[]): Promise<SchreibErc> {
   if (!ausBakGerettet) {
     const sicherungstest = await taugtAlsSicherung(ziel)
     const kopierFehler = sicherungstest
-      ? await mitWiederholung(() => fs.copyFile(ziel, sicherung))
+      ? await mitWiederholung(() => fs.copyFile(ziel, sicherung), WARTEZEITEN_MS)
       : null
     if (kopierFehler !== null && !istCode(kopierFehler, 'ENOENT')) {
       // ENOENT = es gibt noch keine marken.json (der erste Start) - dann ist nichts
@@ -536,7 +539,7 @@ async function schreibeDateiNeu(inhalt: MarkenEintrag[]): Promise<SchreibErc> {
 
   // SCHRITT C: der unteilbare Moment. Die vorhandene Zieldatei wird NICHT vorher
   // geloescht - das oeffnete ein Fenster, in dem GAR KEINE marken.json existiert.
-  const umbenennFehler = await mitWiederholung(() => fs.rename(temp, ziel))
+  const umbenennFehler = await mitWiederholung(() => fs.rename(temp, ziel), WARTEZEITEN_MS)
   if (umbenennFehler !== null) {
     return { ok: false, code: 'speicher_fehler', meldung: `${DATEINAME} konnte nicht ersetzt werden: ${text(umbenennFehler)}` }
   }
@@ -545,64 +548,6 @@ async function schreibeDateiNeu(inhalt: MarkenEintrag[]): Promise<SchreibErc> {
   return { ok: true }
 }
 
-/**
- * Ist die vorhandene Datei als Sicherung ueberhaupt brauchbar? Gleiche Antwort wie
- * in #46 (taugtAlsSicherung): die Pruefung ist bewusst schwach ("parsebar ja/nein"),
- * denn hier geht es nur um die Frage, ob diese Datei als Rueckfallebene taugt. Ein
- * faechlich defekter aber PARSBARER Bestand ist die Frage der Operatore, nicht die
- * dieser Datei.
- */
-async function taugtAlsSicherung(pfad: string): Promise<boolean> {
-  try {
-    JSON.parse(await fs.readFile(pfad, 'utf8')) as unknown
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
- * Fuehrt `arbeit` aus und wiederholt sie bei EPERM/EBUSY (offene Handles unter
- * Windows: Virenscanner, Editor, Sicherung). Dieselben Wartezeiten wie in #31, #46
- * und #187; der Vorschlag WEICHT bewusst NICHT ab, weil er in allen drei Fragefaellen
- * des STOPP-Blocks angefragt war. Gut geschrieben als eigene Kopie weil die
- * Modulgrenze (kein import aus project-store) kein gemeinsames Modul verlangt.
- */
-async function mitWiederholung(arbeit: () => Promise<void>): Promise<unknown> {
-  let letzter: unknown = null
-  for (const warteMs of [0, ...WARTEZEITEN_MS]) {
-    if (warteMs > 0) {
-      await new Promise<void>((weiter) => setTimeout(weiter, warteMs))
-    }
-    try {
-      await arbeit()
-      return null
-    } catch (ursache) {
-      letzter = ursache
-      // Alles andere (ENOENT, ENOSPC, EACCES) verschwindet nicht von selbst - dort
-      // waere Warten nur die Verzoegerung mit demeinselben Ausgang.
-      if (!istCode(ursache, 'EPERM', 'EBUSY')) {
-        return ursache
-      }
-    }
-  }
-  return letzter
-}
-
-/** Prueft den `code` eines Node-Systemfehlers (Gleichlaut mit #46). */
-function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat `code` in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
-}
-
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Tiefe Kopie - der verbindliche Weg, wie der Bestand diese Datei verlaesst und wie
