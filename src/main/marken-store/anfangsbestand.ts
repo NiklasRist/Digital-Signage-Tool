@@ -1,17 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #280.
 // [marken-store] Bestand beim Start sicherstellen – die eingebaute Fitnessworld24-Marke
-//
-// Die Signaturen sind VERBINDlich und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellet, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 9dba96bd8c9f9320
 
 import { erzeugeId } from '../../shared/contracts/id'          // #20
 import { SICHERHEITSABSTAND_PX } from '../../shared/contracts/konstanten'   // #21

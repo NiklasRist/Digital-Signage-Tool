@@ -1,8 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #118.
 // [template-canvas] Ein SegmentBild als PNG - toBlob in ein Uint8Array
-//
-// Signaturen VERBINDLICH aus dem Issue; der Rumpf ist gefuellt - die
-// GERUEST-PRUEFSUMME gilt nicht mehr, die Datei wurde bearbeitet.
 //
 // DIE ZWEITE VERWENDUNG desselben Aufrufs (TK 9.10.1): Anzeige und Export golten
 // aus DEMSELBEN SegmentBild; ES WIRD HIER NICHTS GEzeichnet - kein zweiter

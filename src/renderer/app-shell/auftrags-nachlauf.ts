@@ -1,9 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #199.
 // [app-shell] Der einzige Auswerter der Warteschlangen-Ereignisse
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue.
 
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { Asset } from '../../shared/contracts/asset'

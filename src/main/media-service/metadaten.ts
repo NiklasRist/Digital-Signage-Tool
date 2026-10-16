@@ -1,23 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #83.
 // [media-service] Metadaten auswerten: Maße, Rotation, Dauer
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 21e2c985d5150653
-//
-// ERLEDIGT (13.08.2026): Abschaltzeile entfernt, der Rumpf ist gefuellt.
-// `ImportFehlercode` bleibt importiert und wird unten per `satisfies` benutzt - der vom
-// Issue verlangte BELEG, dass 'probe_fehler' aus der Modul-Union (#79) stammt, ist damit
-// eine echte Compiler-Pruefung statt eines Kommentars. Die im Issue vorgesehene
-// Ausweichloesung (Beleg in die Testdatei) wird deshalb nicht gebraucht.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ImportFehlercode } from './fehlercodes'

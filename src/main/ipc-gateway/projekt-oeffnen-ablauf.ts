@@ -1,20 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #94.
 // [ipc-gateway] Ablauf beim Öffnen eines Projekts koordinieren
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: d1dfb7c317ee6998
-//
-// ERLEDIGT (13.08.2026): Die Abschaltzeile fuer no-unused-vars ist mit dem Fuellen
-// des Rumpfes entfernt; alle Importe und der Parameter werden jetzt benutzt.
 //
 // DIESE DATEI IST DER EINZIGE ORT, AN DEM DAS OEFFNEN EIN VORGANG IST. Drei Module
 // beschreiben je einen Teil davon (project-store laedt, auftrags-manager holt Q2,
