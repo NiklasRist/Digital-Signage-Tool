@@ -19,7 +19,7 @@ import { CSS } from '@dnd-kit/utilities'
 // Kanten (#412) im selben Kontext. Der DnD-Zustand (neuZug/aktiveKante/laedtKante)
 // lebt HIER; die Zeitleiste ist die Praesentation (korbRef = Messraum).
 import { Zeitleiste, baueZeitleistenZeilen } from './zeitleiste.tsx'
-import { EA_PX_PRO_SEKUNDE } from './zeitband'
+import { EA_PX_PRO_SEKUNDE, ZOOM_STUFEN } from './zeitband'
 import { baueEinfugeKanten, leseKantenIndex, liestReferenz, waehleKanteAus } from './spalt-drop'
 import { fuegeElementHinzu } from './element-hinzufuegen'
 import { ordneNeuOptimistisch } from './liste-reorder'
@@ -93,8 +93,8 @@ import { Bibliotheksansicht } from './bibliothek-ansicht.tsx'
 // Funktion ohne Aufrufer"); der Drop einer Aktion auf das VIDEO wird ein Band-Abschnitt.
 // Die reine Aufnahme-Logik liegt in band-aufnahme.ts, der eine Schreibweg in
 // uebernehmeBand (#129) - diese Wurzel ruft nur und pflegt die Sicht.
-import { uebernehmeBand, verschiebeAbschnitt } from './einblendung-bearbeiten'
-import { bandZielAus, bandZeitImVideo, bandEinfuegeIndex, bandAufnahmeAus, startdauerFuerBandabschnitt } from './band-aufnahme'
+import { uebernehmeBand } from './einblendung-bearbeiten'
+import { bandZielAus, bandZeitImVideo, bandAufnahmeAus, bandAufnahmeMitTeilung, startdauerFuerBandabschnitt } from './band-aufnahme'
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 // #408: Das KontextMenue (#133-Familie, Duplikat/Entfernen) wird in DIESE Wurzel
 // montiert - sein Zustand wandert siehtbarseitig in die ComposerLage (menueAdresse,
@@ -225,6 +225,9 @@ export function ComposerInterna({
   // #428: die Zeitstelle (Sekunden) im Video-Koerper unter dem Zeiger - der Drop legt
   // den Abschnitt dort in die Rotation (Entscheidung 1a). null = keine gemessen.
   const [bandZeit, setzeBandZeit] = useState<number | null>(null)
+  // #428: das Zoom-Mass der Zeitleiste (px/s). Bild UND Drop-Messung nutzen denselben Wert -
+  // sonst laegen gemessene Zeit und gezeichnetes Band auseinander.
+  const [pxProSekunde, setzePxProSekunde] = useState<number>(EA_PX_PRO_SEKUNDE)
   // Der Bericht des Imports (#228): ohne ihn "passiert" der Import für den Nutzer
   // NICHTS - eingereiht wird zwar im Main, aber sichtbar war das nie (Befund 04.10.).
   const [importBericht, setzeImportBericht] = useState<ImportBericht | null>(null)
@@ -540,7 +543,7 @@ export function ComposerInterna({
       setzeBandZeit(null)
       return
     }
-    const zeilen = baueZeitleistenZeilen(inhalt?.liste ?? [])
+    const zeilen = baueZeitleistenZeilen(inhalt?.liste ?? [], pxProSekunde)
     const xImKontext = zeigerStartX.current + ereignis.delta.x - umriss.left + korb.scrollLeft
     const kanten = baueEinfugeKanten(zeilen.length)
     // #417: `waehleKanteAus` rechnet die Grenzen als SUMME der uebergebenen Breiten. Der
@@ -557,7 +560,7 @@ export function ComposerInterna({
     // #428: dazu die ZEITSTELLE im Video-Koerper - der Drop legt den Abschnitt dort
     // in die Rotation (Entscheidung 1a), statt ihn immer anzuhangen.
     setzeBandZeit(
-      bandZeitImVideo(zeilen, breiten, xImKontext, KANTEN_VORSCHUB_PX, EA_PX_PRO_SEKUNDE)?.zeitSekunden ??
+      bandZeitImVideo(zeilen, breiten, xImKontext, KANTEN_VORSCHUB_PX, pxProSekunde)?.zeitSekunden ??
         null,
     )
   }
@@ -575,30 +578,21 @@ export function ComposerInterna({
     if (aktion === undefined) return
 
     const dauer = startdauerFuerBandabschnitt(aktion.standardDauer, frisch.standardSegmentdauer)
-    const mitAktion = bandAufnahmeAus(
-      element,
-      aktion.id,
-      dauer,
-      (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage),
-    )
-    if (mitAktion === null) {
+    const einzeln = frameDauer(element)
+    const videoSekunden = einzeln.ok ? einzeln.wert / RENDER_PROFILE.fps : null
+    const vorlagenListe = (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)
+    // #428B: mit Zeitstelle den Abschnitt teilen; ohne brauchbare Messung anhaengen.
+    const entwurf =
+      videoSekunden === null || zeitSekunden === null
+        ? bandAufnahmeAus(element, aktion.id, dauer, vorlagenListe)
+        : bandAufnahmeMitTeilung(element, aktion.id, dauer, vorlagenListe, zeitSekunden, videoSekunden)
+    if (entwurf === null) {
       meldeWurzel(
         'keine_band_vorlage',
         'Für ein Werbeband wird eine Band-Vorlage gebraucht (Art „split“ oder „einblendung“). Lege eine Vorlage im Reiter Vorlagen an.',
       )
       return
     }
-    // #428: Der angehaengte Abschnitt wandert an die ZEITSTELLE der Rotation. Die
-    // bestehenden Abschnitte und die (getrimmte) Videolaenge kommen aus demselben
-    // Element; ohne Messung bleibt es beim Anhaengen (`letzter`).
-    const letzter = mitAktion.abschnitte.length - 1
-    const einzeln = frameDauer(element)
-    const videoSekunden = einzeln.ok ? einzeln.wert / RENDER_PROFILE.fps : null
-    const ziel =
-      zeitSekunden === null || videoSekunden === null
-        ? letzter
-        : bandEinfuegeIndex(zeitSekunden, element.einblendung?.abschnitte ?? [], videoSekunden)
-    const entwurf = ziel < letzter ? verschiebeAbschnitt(mitAktion, letzter, ziel) : mitAktion
 
     void uebernehmeBand(element.id, entwurf).then((antwort) => {
       if (!antwort.ok) {
@@ -658,6 +652,15 @@ export function ComposerInterna({
     setzeAktiveKante(null)
     setzeBandZiel(null)
     setzeBandZeit(null)
+  }
+
+  // #428: Zoom um eine Stufe (die Zeitleiste reicht nur die Richtung herein).
+  const zoome = (richtung: -1 | 1): void => {
+    setzePxProSekunde((alt) => {
+      const stelle = ZOOM_STUFEN.indexOf(alt as (typeof ZOOM_STUFEN)[number])
+      const naechste = Math.min(ZOOM_STUFEN.length - 1, Math.max(0, stelle + richtung))
+      return ZOOM_STUFEN[naechste] ?? alt
+    })
   }
 
   // S3 (Naht N3): Die Wurzel baut die Wirkungen und reicht sie als Rueckrufe an die
@@ -993,6 +996,8 @@ export function ComposerInterna({
             laedtKante={laedtKante}
             korbRef={korbRef}
             bandZiel={bandZiel}
+            pxProSekunde={pxProSekunde}
+            aufZoom={zoome}
           />
 
           {/* #342: Die Ausgabe-Liste (#230) - der Oeffnungsweg des Export-Dialogs

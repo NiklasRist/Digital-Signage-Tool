@@ -16,7 +16,7 @@ import {
   startdauerFuerBandabschnitt,
   bandAufnahmeAus,
   bandZielAus,
-  bandEinfuegeIndex,
+  teileUndFuege,
   bandZeitImVideo,
 } from '../../src/renderer/composer/band-aufnahme'
 
@@ -135,45 +135,64 @@ describe('bandZielAus', () => {
   })
 })
 
-// #428: Zeitstelle -> Einfüge-Index. Das Band bleibt eine Rotation; die Zeit wählt
-// nur die STELLE in der Folge (Entscheidung 1a). Zeitverhalten wörtlich nach TK 9.2.8.
-describe('bandEinfuegeIndex (#428)', () => {
-  const drei = [{ dauer: 10 }, { dauer: 10 }, { dauer: 10 }] // bandGesamt 30
+// #428B: Zeitstelle -> an dieser Stelle EINFUEGEN und den dort liegenden Abschnitt TEILEN.
+// Das Band bleibt eine durchgehende Rotation (FA-20); die Zeit waehlt die Stelle (B).
+describe('teileUndFuege (#428B)', () => {
+  const A = 'aktion-a'
+  const B = 'aktion-b'
 
-  it('leerer Bestand ergibt die erste Stelle', () => {
-    expect(bandEinfuegeIndex(7, [], 60)).toBe(0)
+  it('leerer Bestand ergibt nur den neuen Abschnitt', () => {
+    expect(teileUndFuege([], B, 5, 6, 30)).toEqual([{ aktionRef: B, dauer: 5 }])
   })
 
-  it('keine Wiederholung, wenn die Folge das Video fuellt: t faellt in seinen Abschnitt', () => {
-    expect(bandEinfuegeIndex(0, drei, 30)).toBe(0) // 0–10
-    expect(bandEinfuegeIndex(5, drei, 30)).toBe(0)
-    expect(bandEinfuegeIndex(12, drei, 30)).toBe(1) // 10–20
-    expect(bandEinfuegeIndex(25, drei, 30)).toBe(2) // 20–30
+  it('ohne Messung wird angehaengt', () => {
+    const bestand = [{ aktionRef: A, dauer: 10 }]
+    expect(teileUndFuege(bestand, B, 5, null, 30)).toEqual([
+      { aktionRef: A, dauer: 10 },
+      { aktionRef: B, dauer: 5 },
+    ])
+  })
+
+  it('mitten im Abschnitt wird geteilt und dazwischen gesetzt', () => {
+    // t=6 in [0,10]: [A 0-6] [B 6-11] [A 6-10]
+    expect(teileUndFuege([{ aktionRef: A, dauer: 10 }], B, 5, 6, 10)).toEqual([
+      { aktionRef: A, dauer: 6 },
+      { aktionRef: B, dauer: 5 },
+      { aktionRef: A, dauer: 4 },
+    ])
+  })
+
+  it('genau an einer Grenze wird nur davor/danach eingefuegt (keine Teilung)', () => {
+    const zwei = [
+      { aktionRef: A, dauer: 10 },
+      { aktionRef: A, dauer: 10 },
+    ]
+    expect(teileUndFuege(zwei, B, 5, 10, 20)).toEqual([
+      { aktionRef: A, dauer: 10 },
+      { aktionRef: B, dauer: 5 },
+      { aktionRef: A, dauer: 10 },
+    ])
+    expect(teileUndFuege(zwei, B, 5, 0, 20)).toEqual([
+      { aktionRef: B, dauer: 5 },
+      { aktionRef: A, dauer: 10 },
+      { aktionRef: A, dauer: 10 },
+    ])
+  })
+
+  it('kuerzere Folge: die Zeitstelle zaehlt in der WIEDERHOLTEN Folge (t mod bandGesamt)', () => {
+    // bandGesamt 10 < Video 30; t=25 -> 25 % 10 = 5
+    expect(teileUndFuege([{ aktionRef: A, dauer: 10 }], B, 5, 25, 30)).toEqual([
+      { aktionRef: A, dauer: 5 },
+      { aktionRef: B, dauer: 5 },
+      { aktionRef: A, dauer: 5 },
+    ])
   })
 
   it('hinter dem letzten Abschnitt wird angehaengt', () => {
-    expect(bandEinfuegeIndex(30, drei, 30)).toBe(3)
-    expect(bandEinfuegeIndex(99, drei, 30)).toBe(3)
-  })
-
-  it('kuerzere Folge wiederholt sich (t mod bandGesamt, TK 9.2.8)', () => {
-    const zwei = [{ dauer: 10 }, { dauer: 10 }] // bandGesamt 20, Video 50
-    expect(bandEinfuegeIndex(5, zwei, 50)).toBe(0)
-    expect(bandEinfuegeIndex(15, zwei, 50)).toBe(1)
-    expect(bandEinfuegeIndex(25, zwei, 50)).toBe(0) // 25 % 20 = 5
-    expect(bandEinfuegeIndex(35, zwei, 50)).toBe(1) // 35 % 20 = 15
-  })
-
-  it('unbrauchbare Zahlen fallen auf den Anfang', () => {
-    expect(bandEinfuegeIndex(Number.NaN, drei, 30)).toBe(0)
-    expect(bandEinfuegeIndex(-3, drei, 30)).toBe(0)
-    expect(bandEinfuegeIndex(5, drei, Number.NaN)).toBe(0)
-    expect(bandEinfuegeIndex(5, drei, 0)).toBe(0)
-  })
-
-  it('Abschnitte ohne brauchbare Dauer zaehlen nicht (bandGesamt 0 -> Anfang)', () => {
-    const kaputt = [{ dauer: Number.NaN }, { dauer: -1 }]
-    expect(bandEinfuegeIndex(5, kaputt, 30)).toBe(0)
+    expect(teileUndFuege([{ aktionRef: A, dauer: 10 }], B, 5, 10, 10)).toEqual([
+      { aktionRef: A, dauer: 10 },
+      { aktionRef: B, dauer: 5 },
+    ])
   })
 })
 
