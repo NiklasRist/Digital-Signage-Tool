@@ -96,7 +96,7 @@ export function ElementBedienung(p: ElementBedienungEigenschaften): JSX.Element 
       return
     }
     const { anfang, ende } = lage
-    void uebernehmeGrenzen(p.element, anfang, ende).then((antwort) => {
+    void uebernehmeGrenzen(p.element, anfang, ende, p.sichtSchreiber).then((antwort) => {
       if (!antwort.ok) {
         // Ablehnung: aufFehler mit UNVERÄNDERTEM Code; die Ruhelage des Modells gilt
         // weiter - die Sicht korrigiert #125 selbst, hier wird nichts zurückgenommen.

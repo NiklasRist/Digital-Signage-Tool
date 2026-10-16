@@ -890,3 +890,42 @@ Ereignisse gesammelt: 14
 - **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
 - **Treiber-Sonde zurueckgenommen (unbestaetigt)** Undo Reiter-Anlage: erwartet "der Undo-Pfeil nimmt eine im Aktionen-Reiter angelegte Aktion zurück", erkannt "Aktionen 2->2->1". Die Sonde fuellte das Anlege-Formular im Aktionen-Reiter und der Zaehler stieg nach „Anlegen" NICHT - ob das Anlegen am Bedienweg lag oder an der Sonde, ist NICHT geklaert (die Projekt-Daten des Users zeigen eine dort angelegte Aktion „nnn"). Sonde entfernt; kein App-Befund behauptet.
+
+## Nachlauf vom 2026-10-16T09:39:19.610Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund (waehrend des Baus, durch den #429-Fix behoben)** Dauer/Trim-Undo: erwartet "der Undo-Pfeil nimmt eine Dauer-/Trim-Aenderung zurueck (#429/TK 9.13.1)", erkannt "Dauer nach Undo \"1,9 s\" (erwartet \"2,0 s\")" (Ort: composer/dauer-regler.ts)
+
+## Nachlauf vom 2026-10-16T09:41:21.620Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund (waehrend des Baus, durch den #429-Fix behoben)** Dauer/Trim-Undo: erwartet "der Undo-Pfeil nimmt eine Dauer-/Trim-Aenderung zurueck (#429/TK 9.13.1)", erkannt "Dauer nach Undo \"1,9 s\" (erwartet \"2,0 s\")" (Ort: composer/dauer-regler.ts)
+
+## Nachlauf vom 2026-10-16T09:43:40.615Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund (waehrend des Baus, durch den #429-Fix behoben)** Dauer/Trim-Undo: erwartet "der Undo-Pfeil nimmt eine Dauer-/Trim-Aenderung zurueck (#429/TK 9.13.1)", erkannt "Dauer nach Undo \"1,9 s\" (erwartet \"2,0 s\")" (Ort: composer/dauer-regler.ts)
+
+## Nachlauf vom 2026-10-16T09:46:21.063Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
