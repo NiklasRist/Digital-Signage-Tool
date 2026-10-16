@@ -43,14 +43,15 @@ ist schwer zu bearbeiten" wurde gemessen und in zwei Plaene gefasst:
   `git diff -- src` hatte **0 Nicht-Kommentar-Zeilen**. **Q1.2** (wiederholte Begruendungen) offen.
 - **#432 als verworfen geschlossen** (`not planned`); der Branch ist geloescht.
 
-Zaehler: Suite **5549 gruen (322 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
+Zaehler: Suite **5550 gruen (322 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
 (4f/4f2/4f4/4g2/4g4 unveraendert). Alles **lokal auf `main`**, **nicht gepusht**.
-**#428 GEBAUT, gemergt** (Merge `063b135`, Branch geloescht; Plan `docs/agents/428-zeitband-plan.md`):
-Die Zeitleiste zeigt jetzt ein **Sekundenraster** (Tick je Sekunde, Label alle 5 s) und die
-**Band-Abschnitte** im Video-Block an ihren Zeitstellen (`zeitband.ts`, rein). Ein Drop auf dem
-Video fuegt den Abschnitt an der **Zeitstelle in der Rotation** ein (`bandEinfuegeIndex`,
-Wiederholung/Abschnitt nach TK 9.2.8) statt immer ans Ende. **Entscheidung 1a** umgesetzt: das Band
-bleibt eine Rotation, **kein Modellfeld, keine Render-Aenderung**.
+**#428 GEBAUT, gemergt** (Merges `063b135` + `f7583c4`; Plan `docs/agents/428-zeitband-plan.md`):
+Die Zeitleiste zeigt eine **Frame-Achse mit Zoom** (px/s; bei hohem Zoom einzelne Frames) und Labels
+in `mm:ss:ff` (`zeitband.ts`, rein) sowie die **Band-Abschnitte** im Video-Block an ihren Zeitstellen.
+Ein Drop auf dem Video fuegt **an der Zeitstelle** ein: liegt sie mitten in einem Abschnitt, wird
+dieser **framegenau geteilt** und die neue Aktion dazwischengesetzt (`teileUndFuege`/
+`bandAufnahmeMitTeilung`) – das Band bleibt eine **durchgehende Rotation** (FA-20), **kein Luecke,
+kein Modellfeld, keine Render-Aenderung**.
 Naechste Session: **S4/S5** des Composer-Umbaus (Regionen + DnD-Hook, jetzt frei); im Programm offen
 **Q3** (Fragmentierung), **Q4** (Tests gegen die Anforderungen) und **Q1.2** (wiederholte
 Begruendungen).
