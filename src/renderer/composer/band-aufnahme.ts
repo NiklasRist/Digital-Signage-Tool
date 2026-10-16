@@ -87,6 +87,50 @@ export function bandAufnahmeAus(
 }
 
 /**
+ * #428: Der Einfüge-Index für eine Aktion, die an einer ZEITSTELLE `zeitSekunden` auf
+ * das Video gezogen wurde. Das Band bleibt eine ROTATION (Entscheidung 1a) - die
+ * Zeit ist nur die Bedienung: sie wählt die Stelle in der Abschnittsfolge.
+ *
+ * Die Abbildung ist genau das Zeitverhalten aus TK 9.2.8: Ist die Folge kürzer als
+ * das Video, WIEDERHOLT sie sich (`t mod bandGesamt`); ist sie länger, wird am
+ * Videoende abgeschnitten (also `min(t, bandGesamt)`). Eingefügt wird VOR den
+ * Abschnitt, in dessen Zeitfenster die wirksame Zeit fällt; hinter dem letzten
+ * Abschnitt ans Ende.
+ *
+ * REIN: kein Zustand, kein IPC. Ein leerer Bestand ergibt 0 (der erste Abschnitt);
+ * unbrauchbare Zahlen (NaN, negativ) fallen auf 0 zurück - eine erfundene Position
+ * wäre schlimmer als der Anfang.
+ */
+export function bandEinfuegeIndex(
+  zeitSekunden: number,
+  abschnitte: readonly { dauer: number }[],
+  videoDauer: number,
+): number {
+  if (abschnitte.length === 0) return 0
+  if (!Number.isFinite(zeitSekunden) || zeitSekunden < 0) return 0
+  if (!Number.isFinite(videoDauer) || videoDauer <= 0) return 0
+
+  let bandGesamt = 0
+  for (const abschnitt of abschnitte) {
+    if (Number.isFinite(abschnitt.dauer) && abschnitt.dauer > 0) bandGesamt += abschnitt.dauer
+  }
+  if (bandGesamt <= 0) return 0
+
+  // TK 9.2.8: kürzere Folge wiederholt sich, längere wird abgeschnitten.
+  const wirksam = bandGesamt < videoDauer ? zeitSekunden % bandGesamt : Math.min(zeitSekunden, bandGesamt)
+
+  let ende = 0
+  for (let stelle = 0; stelle < abschnitte.length; stelle += 1) {
+    const abschnitt = abschnitte[stelle]
+    if (abschnitt === undefined) return stelle
+    const dauer = Number.isFinite(abschnitt.dauer) && abschnitt.dauer > 0 ? abschnitt.dauer : 0
+    ende += dauer
+    if (wirksam < ende) return stelle
+  }
+  return abschnitte.length
+}
+
+/**
  * Die Kennung des Video-Blocks, in dessen KOERPER der Zeiger `xImKontext` steht;
  * sonst null. Ein Segment-Koerper liefert ABSICHTLICH null (User-Entscheidung 3):
  * Ein Drop darauf ordnet sequenziell davor/danach ein - das erledigt die
@@ -96,12 +140,15 @@ export function bandAufnahmeAus(
  * wird je Block addiert (Kante + zwei Luecken, s. `KANTEN_VORSCHUB_PX`). Nur so
  * passen Koerper-Grenzen und die gemessenen Kanten-Grenzen aus #417 zusammen.
  */
-export function bandZielAus(
+/** Der gemeinsame Durchlauf fuer `bandZielAus` und `bandZeitImVideo`: der Blockkoerper
+ *  unter dem Zeiger samt seinem Startpunkt. Ein Durchlauf fuer beide Fragen - sonst
+ *  koennten Ziel und Zeit auseinanderlaufen. */
+function findeKoerper(
   zeilen: readonly { elementId: string; art: 'video' | 'segment' | 'fehlt' }[],
   breitePx: readonly number[],
   xImKontext: number,
   vorschubPx: number,
-): string | null {
+): { zeile: { elementId: string; art: 'video' | 'segment' | 'fehlt' }; koerperStart: number } | null {
   if (!Number.isFinite(xImKontext)) return null
   if (!Number.isFinite(vorschubPx) || vorschubPx < 0) return null
   if (zeilen.length !== breitePx.length) return null
@@ -117,11 +164,53 @@ export function bandZielAus(
     const koerperStart = kante + KOERPER_VORLAUF_PX
     const koerperEnde = kante + slot - KOERPER_NACHLAUF_PX
     if (xImKontext >= koerperStart && xImKontext <= koerperEnde) {
-      // Nur der Video-Koerper ist ein Band-Ziel; ein Segment-Koerper faellt
-      // bewusst durch (null) - die Kante daneben bleibt der sequenzielle Weg.
-      return zeile.art === 'video' ? zeile.elementId : null
+      return { zeile, koerperStart }
     }
     kante += slot
   }
   return null
+}
+
+/**
+ * Die Kennung des Video-Blocks, in dessen KOERPER der Zeiger `xImKontext` steht;
+ * sonst null. Ein Segment-Koerper liefert ABSICHTLICH null (User-Entscheidung 3):
+ * Ein Drop darauf ordnet sequenziell davor/danach ein - das erledigt die
+ * bestehende Kanten-Messung (`waehleKanteAus`), nicht diese Funktion.
+ *
+ * `breitePx(i)` ist die REINE Blockbreite (ohne Kanten-Vorschub); `vorschubPx`
+ * wird je Block addiert (Kante + zwei Luecken, s. `KANTEN_VORSCHUB_PX`). Nur so
+ * passen Koerper-Grenzen und die gemessenen Kanten-Grenzen aus #417 zusammen.
+ */
+export function bandZielAus(
+  zeilen: readonly { elementId: string; art: 'video' | 'segment' | 'fehlt' }[],
+  breitePx: readonly number[],
+  xImKontext: number,
+  vorschubPx: number,
+): string | null {
+  const treffer = findeKoerper(zeilen, breitePx, xImKontext, vorschubPx)
+  if (treffer === null) return null
+  // Nur der Video-Koerper ist ein Band-Ziel; ein Segment-Koerper faellt bewusst
+  // durch (null) - die Kante daneben bleibt der sequenzielle Weg.
+  return treffer.zeile.art === 'video' ? treffer.zeile.elementId : null
+}
+
+/**
+ * #428: die ZEITSTELLE (Sekunden ab Videoanfang) unter dem Zeiger, wenn er im
+ * Koerper eines VIDEO-Blocks steht; sonst null. Sie speist den Einfüge-Index
+ * (`bandEinfuegeIndex`): der Drop an einer Zeitstelle waehlt die Stelle der Rotation.
+ */
+export function bandZeitImVideo(
+  zeilen: readonly { elementId: string; art: 'video' | 'segment' | 'fehlt' }[],
+  breitePx: readonly number[],
+  xImKontext: number,
+  vorschubPx: number,
+  pxProSekunde: number,
+): { elementId: string; zeitSekunden: number } | null {
+  if (!Number.isFinite(pxProSekunde) || pxProSekunde <= 0) return null
+  const treffer = findeKoerper(zeilen, breitePx, xImKontext, vorschubPx)
+  if (treffer === null || treffer.zeile.art !== 'video') return null
+  return {
+    elementId: treffer.zeile.elementId,
+    zeitSekunden: Math.max(0, (xImKontext - treffer.koerperStart) / pxProSekunde),
+  }
 }

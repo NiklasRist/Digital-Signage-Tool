@@ -6,12 +6,15 @@ import {
 import { SortableContext, useSortable, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-import type { Listenelement, Project } from "../../shared/contracts/project";
+import type { Listenelement, Project, Einblendung } from "../../shared/contracts/project";
 import { frameDauer } from "./gesamtlaenge";
 import { RENDER_PROFILE } from "../../shared/contracts/render-profile";
+import { EA_PX_PRO_SEKUNDE, baueZeitachse, baueBandspur } from "./zeitband";
 
-const EA_PX_PRO_SEKUNDE = 8
 const ZEILE_HOEHE_PX = 64
+/** Die Lücke zwischen zwei Blöcken (identisch zum `gap` der Blockzeile) - die Zeitachse
+ *  muss DIESELBE Lücke tragen, sonst rutscht sie gegen die Blöcke. */
+const LUECKE_PX = 2
 
 /** Baut die Zeilen der Zeitleiste in ARRAY-Reihenfolge; kein Sortieren, nur Anzeige-Klemmung. */
 export function baueZeitleistenZeilen(
@@ -92,6 +95,11 @@ export function Zeitleiste({
 
   const zeilen = baueZeitleistenZeilen(projekt?.liste ?? [])
   const ids = zeilen.map((zeile) => zeile.elementId)
+  const achse = baueZeitachse(zeilen)
+  // #428: die Einblendung je Video-Element - fuer die Band-Spur im Block.
+  const einblendungen = new Map(
+    (projekt?.liste ?? []).map((element) => [element.id, element.art === 'video' ? element.einblendung : null]),
+  )
 
   return (
     <div
@@ -105,6 +113,40 @@ export function Zeitleiste({
         minHeight: 80,
       }}
     >
+      {/* #428: die Zeitachse ueber der Blockzeile - gleiche Segmente/Luecken/Kanten wie
+          die Bloecke, darum sitzt sie deckungsgleich. Tick je Sekunde, beschriftet jede fuenfte. */}
+      <div
+        data-testid="zeitleiste-zeitachse"
+        style={{ display: 'flex', alignItems: 'flex-end', gap: LUECKE_PX, height: 18 }}
+      >
+        {neuZug !== null && <span style={{ flex: '0 0 auto', width: 10 }} />}
+        {achse.map((segment, index) => (
+          <span key={ids[index] ?? index} style={{ display: 'flex', gap: LUECKE_PX }}>
+            <span style={{ flex: '0 0 auto', width: segment.breitePx, position: 'relative', height: 18 }}>
+              {segment.ticks.map((tick) => (
+                <span
+                  key={tick.sekunde}
+                  style={{
+                    position: 'absolute',
+                    left: tick.xPx,
+                    bottom: 0,
+                    width: 1,
+                    height: tick.beschriftet ? 10 : 5,
+                    background: tick.beschriftet ? '#9aa4b2' : '#4a4a4a',
+                  }}
+                >
+                  {tick.beschriftet && (
+                    <span style={{ position: 'absolute', left: 2, bottom: 8, fontSize: 9, color: '#9aa4b2', whiteSpace: 'nowrap' }}>
+                      {tick.sekunde}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </span>
+            {neuZug !== null && <span style={{ flex: '0 0 auto', width: 10 }} />}
+          </span>
+        ))}
+      </div>
       {/* EIN DndContext (#414): er lebt auf der COMPOSER-WURZEL, damit Quellen
           (#413) und Kanten (#412) im SELBEN Kontext liegen; diese Komponente haengt
           ihr Sortable-Fragment und ihren Messraum (korbRef) ein. */}
@@ -113,7 +155,12 @@ export function Zeitleiste({
           {neuZug !== null && <KantenBlock nummer={0} aktiv={aktiveKante === 0} laedt={laedtKante === 0} />}
           {zeilen.map((zeile, index) => (
             <span key={zeile.elementId} style={{ display: 'flex', alignItems: 'stretch', gap: 2, padding: 0 }}>
-              <ZeilenBlock zeile={zeile} index={index} istBandZiel={zeile.elementId === bandZiel} />
+              <ZeilenBlock
+                zeile={zeile}
+                index={index}
+                istBandZiel={zeile.elementId === bandZiel}
+                einblendung={einblendungen.get(zeile.elementId) ?? null}
+              />
               {neuZug !== null && (
                 <KantenBlock nummer={index + 1} aktiv={aktiveKante === index + 1} laedt={laedtKante === index + 1} />
               )}
@@ -172,13 +219,20 @@ function ZeilenBlock({
   zeile,
   index,
   istBandZiel = false,
+  einblendung = null,
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
   istBandZiel?: boolean;
+  einblendung?: Einblendung | null;
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: zeile.elementId })
   const beschriftung = zeilenBeschriftung(zeile, index)
+  // #428: die Band-Abschnitte an ihren Zeitstellen - nur am Video, nur wenn ein Band da ist.
+  const spur =
+    zeile.art === 'video' && einblendung !== null
+      ? baueBandspur(einblendung.abschnitte, zeile.dauerSekunden)
+      : null
 
   return (
     <div
@@ -216,7 +270,30 @@ function ZeilenBlock({
       }}
       title={zeile.art === 'fehlt' ? 'Dauer unbestimmbar' : `${beschriftung.dauerText}`}
     >
-      <span>{beschriftung.dauerText}</span>
+      <span>
+        {beschriftung.dauerText}
+        {zeile.art === 'video' && zeile.dauerSekunden !== null
+          ? ` · ${Math.round(zeile.dauerSekunden * RENDER_PROFILE.fps)} F`
+          : ''}
+      </span>
+      {spur !== null && (
+        <span
+          data-testid={`zeitleiste-bandspur-${index}`}
+          style={{ position: 'relative', height: 8, width: '100%', background: 'rgba(0,0,0,0.3)', borderRadius: 2, overflow: 'hidden' }}
+        >
+          {spur.segmente.map((segment, stelle) => (
+            <span
+              key={stelle}
+              style={{ position: 'absolute', left: segment.startPx, width: segment.breitePx, top: 0, height: '100%', background: '#e5a94d', borderRight: '1px solid #1f1f1f' }}
+            />
+          ))}
+          {spur.wiederholungen > 1 && (
+            <span style={{ position: 'absolute', right: 1, top: -1, fontSize: 8, color: '#f2f2f2' }}>
+              {`x${spur.wiederholungen}`}
+            </span>
+          )}
+        </span>
+      )}
       <span style={{ opacity: 0.7 }}>{istBandZiel ? 'Band' : beschriftung.art}</span>
     </div>
   );
