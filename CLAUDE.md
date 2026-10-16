@@ -11,7 +11,29 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (16.10.2026) – gilt vor ALLEM weiter unten
+## STAND HEUTE (16.10.2026, Composer-Umbau + Programm Codequalitaet) – gilt vor ALLEM weiter unten
+
+**Neuer Plan-Zug – nach der #432-Lehre: kein Umbau ohne Plan.** Der Befund „`composer/index.tsx`
+ist schwer zu bearbeiten" wurde gemessen und in zwei Plaene gefasst:
+- **[`docs/agents/composer-umbau-plan.md`](docs/agents/composer-umbau-plan.md) – S1–S3 gebaut,
+  treiber-gemessen, nach `main` gemergt** (Merge `70007ef`, Branch `bau/composer-umbau`). **S1:** EIN
+  Overlay-Rahmen (`overlay-rahmen.tsx`) statt vier Kopien. **S2:** EIN Wurzel-Melder
+  (`wurzel-meldung.ts`), 15 Wiederholungen weg. **S3:** die vier Overlays
+  (`render-/export-/medium-loeschen-/band-overlay.tsx`) als eigene Bausteine; die Wurzel reicht nur
+  Lage + Daten + Rueckrufe herein. **S4/S5 erst NACH #428** (sonst Konflikt an der
+  Zeitleisten-/DnD-Stelle). Ehrlich: `index.tsx` 1170→1113, composer-Modul **+6 Dateien** – der
+  Gewinn ist Ort-Klarheit, nicht Zeilen.
+- **[`docs/agents/codequalitaet-programm.md`](docs/agents/codequalitaet-programm.md)** – vier Straenge
+  Q1–Q4; Reihenfolge **Q2→Q1→Q3→Q4**. **Q2-Ziel A = Atomar-Schreib-Kern:** die `schreibe-*`-Familie
+  (5 Dateien, ~2900 Zeilen) baut atomares Schreiben + `.bak` + Retry **5x von Hand**
+  (`mitWiederholung`/`taugtAlsSicherung` byte-gleich, `WARTEZEITEN_MS` 6x) – belegte Duplikation.
+- **#432 als verworfen geschlossen** (`not planned`); der Branch ist geloescht.
+
+Zaehler: Suite **5523 gruen (318 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
+(4f2/4f4/4g2/4g4 unveraendert). Alles **lokal auf `main`**, **nicht gepusht**.
+Naechste Session: **Q2/A planen + bauen** (Atomar-Schreib-Kern), dann **#428 entscheiden**.
+
+## STAND HEUTE (16.10.2026, Abnahme-Session) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-3.md`](docs/agents/uebergabe-2026-10-15-session-3.md) – LIES DIESE DATEI ZUERST.**
 Kurz (Fortsetzung): **User-abgenommen am 16.10.: #429 (Dauer/Trim + Undo) und #430 (Aktion löschen)**,
