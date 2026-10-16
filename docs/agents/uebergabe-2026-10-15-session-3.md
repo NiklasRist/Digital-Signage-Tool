@@ -164,3 +164,32 @@ Zähler: Suite **5519 grün (317 Dateien)**, Typecheck/Lint 0, lokal auf `main` 
 3. **#426 entscheiden** (kurze Unterbrechung).
 4. Welle 2 / Banner-Spur, **#371-Klärung**.
 5. **#424-Abnahme** ist über #431 mit erledigt (Pfeile + Cmd+Z gemessen/abgenommen).
+
+---
+
+## Nachtrag 4: #430 gebaut und geschlossen (Aktion in der Composer-Bibliothek löschen)
+
+**#430 GEBAUT + treiber-gemessen + geschlossen (Merge `a97ec47`, TK v3.25 / 9.7.2).**
+User-Entscheidungen 16.10.2026: Löschen in der **Composer-Bibliothek** (Aktionszeile), **ohne
+Rückfrage** (EIN Undo-Schritt); der **Reiter Aktionen** bleibt mit seiner Zahlen-Vorschau (#142);
+„im Editor eines Projekts" = der Reiter Aktionen.
+
+- **`bibliothek-ansicht.tsx`**: optionale Eigenschaft `aufAktionLoeschen`; die Aktionszeile trägt
+  dann einen **Löschen**-Knopf (ohne die Eigenschaft: kein Knopf).
+- **`composer/index.tsx`**: `ComposerVerdrahtung.loescheAktion` (Modulgrenze E1) + `loescheAktionInline`
+  – wendet den zurückgegebenen `stand` in **EINEM** `setzeProjekt` an (Wrapped-Zugang). Die Kaskade
+  rechnet der Main (TK 9.5.3); **nichts wird nachgebaut**.
+- **`App.tsx`**: reicht `loescheAktion` (der #142-Weg) durch.
+- **Beleg:** Treiber **4g4** (echtes Fenster): Aktionen `1 → 0 → Undo 1` in **EINEM** Schritt.
+- **Treffer beim Bauen:** der neue Knopf-Testid `aktion-loeschen-…` verfälschte den **Treiber-Zähler**
+  (`[data-testid^="aktion-"]` matchte Zeile UND Knopf) – auf `> li` korrigiert. (Die Funktion war korrekt.)
+- **Tests:** `composer-aktion-loeschen.spec` (2), `bibliothek-ansicht-ansicht.spec` (+2).
+
+Zähler: Suite **5523 grün (318 Dateien)**, Typecheck/Lint 0, lokal auf `main` (14 Commits vor
+`origin/main`), **nicht gepusht**.
+
+### Reihenfolge für die nächste Sitzung (Stand nach #430)
+1. **#428 entscheiden** (Zeitleiste als Zeit-/Frame-Band; Modell offen).
+2. **#426 entscheiden** (kurze Unterbrechung).
+3. Welle 2 / Banner-Spur, **#371-Klärung**.
+4. **#424-Abnahme** ist über #431 mit erledigt.

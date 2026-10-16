@@ -14,16 +14,16 @@
 ## STAND HEUTE (16.10.2026) – gilt vor ALLEM weiter unten
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-3.md`](docs/agents/uebergabe-2026-10-15-session-3.md) – LIES DIESE DATEI ZUERST.**
-Kurz (Fortsetzung): **#429 GEBAUT + treiber-gemessen + geschlossen** – Dauer-/Trim-Änderungen legen
-jetzt einen Undo-Schnappschuss an (Treiber 4f4: 2,0 → 1,9 → Undo → 2,0 in EINEM Schritt; Gegenprobe
-beißt). Fix: `uebernehmeGrenzen` (#125) bekommt den **Sicht-Schreiber** als vierten Parameter; der
-Bestätigungs-Abgleich bleibt beim rohen `gleicheElementAb` (sonst zwei Schnappschüsse). **#431** (Menü)
-und **#427** (Beenden) sind vorher in derselben Sitzung gebaut+gemessen+geschlossen; **#425** ebenso.
-Aus der Abnahme #422–#424 sind **#422/#423 abgenommen**, **#424** (Pfeile sichtbar/aktiv), wobei
-**#431** die eigentliche Ursache von „Cmd+Z tat nichts" war. **#430** (Aktions-Löschen in der Composer-
-Bibliothek) und **#428** (Zeitleiste als Zeit-/Frame-Band) sind **angelegt, NICHT gebaut**.
-Suite **5519 Tests gruen (317 Dateien)**, Typecheck/Lint 0. Alles **lokal auf `main` mit 11 Commits
-vor `origin/main`**, **nicht gepusht**. Naechste Session: **#430/#428 entscheiden**, dann **#426**.
+Kurz (Fortsetzung): Nach der Abnahme sind in dieser Sitzung **#425, #427, #429, #430 und #431** gebaut,
+treiber-gemessen und geschlossen; **#422/#423 abgenommen**. **#430** (16.10.) – Aktion in der
+Composer-Bibliothek **löschen** (ohne Rückfrage, EIN Undo-Schritt; Treiber 4g4: 1→0→Undo 1). **#429** –
+Dauer/Trim legen jetzt einen **Undo-Schnappschuss** an (Treiber 4f4: 2,0→1,9→Undo→2,0 in EINEM Schritt);
+`uebernehmeGrenzen` (#125) bekam dafür den **Sicht-Schreiber** als vierten Parameter. **#431** – eigenes
+Anwendungsmenü ohne Undo/Redo-Acceleratoren (Cmd+Z erreichte den Renderer nicht; Ursache von „Cmd+Z tat
+nichts"). **#427** – Beenden nach Fenster-Schliessen (kein Waisenprozess). **#425** – Band-Aufnahme am
+Video. **Nur angelegt, NICHT gebaut:** **#428** (Zeitleiste als Zeit-/Frame-Band) und **#426**
+(kurze Unterbrechung). Suite **5523 Tests gruen (318 Dateien)**, Typecheck/Lint 0. Alles **lokal auf
+`main` mit 14 Commits vor `origin/main`**, **nicht gepusht**. Naechste Session: **#428/#426 entscheiden**.
 
 ## STAND HEUTE (15.10.2026, nachts) – historisiert durch den Abschnitt darueber
 
