@@ -128,6 +128,9 @@ import { bandZielAus, bandAufnahmeAus, startdauerFuerBandabschnitt } from './ban
 // montiert - sein Zustand wandert siehtbarseitig in die ComposerLage (menueAdresse,
 // composer-montage.ts); die Zeilen tragen data-element-id (#248) - kein Edits an #248.
 import { KontextMenue } from './kontext-menu.tsx'
+// S1 (docs/agents/composer-umbau-plan.md, Naht N1): der EINE Overlay-Rahmen statt
+// vier wortgleicher Backdrops inline.
+import { OverlayRahmen } from './overlay-rahmen.tsx'
 import { oeffneMenue, schliesseMenue, type ComposerLage } from './composer-montage'
 
 
@@ -943,92 +946,79 @@ export function ComposerInterna({
       {/* #342: Das Render-Overlay (#231). befund und Ueberschreib-Lage werden je
           Tastendruck neu gerechnet (#231/#259) - nie zwischengespeichert. */}
       {lage.overlay.art === 'render' && inhalt !== null && voraussetzungen !== null && (
-        <div
-          data-testid="composer-overlay"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 360 }}>
-            <RenderDialogAnzeige
-              eingabe={lage.ausgabeName}
-              befund={pruefeAusgabeName(lage.ausgabeName)}
-              lage={pruefeUeberschreiben(lage.ausgabeName, ausgabenStand.dateien)}
-              laeuft={lage.laeuft}
-              aufEingabe={(wert) => setzeLage((alt) => setzeAusgabeName(alt, wert))}
-              aufAusloesen={() => {
-                if (pruefeAusgabeName(lage.ausgabeName) !== 'ok' || lage.laeuft) return
-                setzeLage((alt) => setzeLaeuft(alt, true))
-                const wirkungen: RenderDialogWirkungen = {
-                  // ENTSCHIEDEN 5 (M7-68): #134 wird UEBERGEBEN, nie direkt gerufen -
-                  // #231 faengt kaputte_elemente ab und fuehrt in die Reparatur.
-                  loeseRenderAus: (projekt, ausgabeName, marke, vorlagenListe) =>
-                    loeseRenderAus(projekt, ausgabeName, marke, vorlagenListe),
-                  starteReparaturModus: () => {
-                    // M7-60, ENTSCHIEDEN 4 (b): derselbe Ablauf wie beim Klick -
-                    // Stand rechnen (#132) und der Shell melden, die ihn haelt.
-                    verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
-                  },
-                  meldeFehler: (code, meldung) =>
-                    setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
-                }
-                void loeseRenderMitNamenAus(
-                  inhalt,
-                  lage.ausgabeName,
-                  holeBereiteMarke(inhalt.standardMarkeId) as Marke,
-                  voraussetzungen.vorlagen,
-                  wirkungen,
-                ).then((ergebnis) => {
-                  setzeLage((alt) => {
-                    const ruhig = setzeLaeuft(alt, false)
-                    // eingereiht/reparatur: Overlay zu (M7-60-Fehlerpfade). abgelehnt:
-                    // die Meldung kam bereits ueber meldeFehler; Overlay bleibt offen.
-                    return ergebnis.art === 'abgelehnt' ? ruhig : schliesseOverlay(ruhig)
-                  })
+        <OverlayRahmen testid="composer-overlay">
+          <RenderDialogAnzeige
+            eingabe={lage.ausgabeName}
+            befund={pruefeAusgabeName(lage.ausgabeName)}
+            lage={pruefeUeberschreiben(lage.ausgabeName, ausgabenStand.dateien)}
+            laeuft={lage.laeuft}
+            aufEingabe={(wert) => setzeLage((alt) => setzeAusgabeName(alt, wert))}
+            aufAusloesen={() => {
+              if (pruefeAusgabeName(lage.ausgabeName) !== 'ok' || lage.laeuft) return
+              setzeLage((alt) => setzeLaeuft(alt, true))
+              const wirkungen: RenderDialogWirkungen = {
+                // ENTSCHIEDEN 5 (M7-68): #134 wird UEBERGEBEN, nie direkt gerufen -
+                // #231 faengt kaputte_elemente ab und fuehrt in die Reparatur.
+                loeseRenderAus: (projekt, ausgabeName, marke, vorlagenListe) =>
+                  loeseRenderAus(projekt, ausgabeName, marke, vorlagenListe),
+                starteReparaturModus: () => {
+                  // M7-60, ENTSCHIEDEN 4 (b): derselbe Ablauf wie beim Klick -
+                  // Stand rechnen (#132) und der Shell melden, die ihn haelt.
+                  verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
+                },
+                meldeFehler: (code, meldung) =>
+                  setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
+              }
+              void loeseRenderMitNamenAus(
+                inhalt,
+                lage.ausgabeName,
+                holeBereiteMarke(inhalt.standardMarkeId) as Marke,
+                voraussetzungen.vorlagen,
+                wirkungen,
+              ).then((ergebnis) => {
+                setzeLage((alt) => {
+                  const ruhig = setzeLaeuft(alt, false)
+                  // eingereiht/reparatur: Overlay zu (M7-60-Fehlerpfade). abgelehnt:
+                  // die Meldung kam bereits ueber meldeFehler; Overlay bleibt offen.
+                  return ergebnis.art === 'abgelehnt' ? ruhig : schliesseOverlay(ruhig)
                 })
-              }}
-              aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
-            />
-          </div>
-        </div>
+              })
+            }}
+            aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
+          />
+        </OverlayRahmen>
       )}
 
       {/* #425: Die Band-Bearbeitung (#253/M7-60) - endlich montiert. Sie bearbeitet
           das Werbeband des Video-Elements; das Uebernehmen liefert das neue Element,
           die Wurzel korrigiert die Sicht (EIN Undo-Schritt, #243-Huelle). */}
       {bandElement !== null && inhalt !== null && (
-        <div
-          data-testid="composer-overlay-band"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
+        <OverlayRahmen
+          testid="composer-overlay-band"
+          panelStil={{ minWidth: 460, maxHeight: '80vh', overflow: 'auto' }}
         >
-          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 460, maxHeight: '80vh', overflow: 'auto' }}>
-            <EinblendungAnsicht
-              element={bandElement}
-              aktionen={inhalt.aktionen}
-              vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
-              stellen={findeKaputteStellen(inhalt)}
-              aufUebernommen={(element) => {
-                const aktuell = projekt.hole().projekt
-                if (aktuell === null) {
-                  setzeBandElementId(null)
-                  return
-                }
-                projekt.setzeListe(
-                  aktuell.liste.map((eintrag) => (eintrag.id === element.id ? element : eintrag)),
-                )
+          <EinblendungAnsicht
+            element={bandElement}
+            aktionen={inhalt.aktionen}
+            vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+            stellen={findeKaputteStellen(inhalt)}
+            aufUebernommen={(element) => {
+              const aktuell = projekt.hole().projekt
+              if (aktuell === null) {
                 setzeBandElementId(null)
-              }}
-              aufAbbrechen={() => setzeBandElementId(null)}
-              aufFehler={(code, meldung) =>
-                setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
+                return
               }
-            />
-          </div>
-        </div>
+              projekt.setzeListe(
+                aktuell.liste.map((eintrag) => (eintrag.id === element.id ? element : eintrag)),
+              )
+              setzeBandElementId(null)
+            }}
+            aufAbbrechen={() => setzeBandElementId(null)}
+            aufFehler={(code, meldung) =>
+              setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
+            }
+          />
+        </OverlayRahmen>
       )}
 
       {/* #408: Das KontextMenue (Duplikat/Entfernen) - der Baustein zeichnet,
@@ -1047,90 +1037,74 @@ export function ComposerInterna({
           Medium-Löschens. Der Auftrag reist über den Torwächter; das Ergebnis
           zieht der Nachlauf (#199) nach, dieser Overlay-Code wartet NICHT. */}
       {loeschAsset !== null && inhalt !== null && (
-        <div
-          data-testid="composer-overlay"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 360 }}>
-            <MediumLoeschen
-              projekt={inhalt}
-              assetId={loeschAsset.id}
-              loescheMedium={loescheMedium}
-              gibVideoHandlesFrei={gibVideoHandlesFrei}
-              aufErledigt={() => setzeLage((alt) => schliesseOverlay(alt))}
-              aufAbgebrochen={() => setzeLage((alt) => schliesseOverlay(alt))}
-              aufFehler={(code, meldung) =>
-                setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-              }
-            />
-          </div>
-        </div>
+        <OverlayRahmen testid="composer-overlay">
+          <MediumLoeschen
+            projekt={inhalt}
+            assetId={loeschAsset.id}
+            loescheMedium={loescheMedium}
+            gibVideoHandlesFrei={gibVideoHandlesFrei}
+            aufErledigt={() => setzeLage((alt) => schliesseOverlay(alt))}
+            aufAbgebrochen={() => setzeLage((alt) => schliesseOverlay(alt))}
+            aufFehler={(code, meldung) =>
+              setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
+            }
+          />
+        </OverlayRahmen>
       )}
 
       {/* #342: Das Export-Overlay (#232). Die Auswahl ist ein WERT der Lage;
           Datei- und Zielwahl laufen ueber waehleDatei/waehleZiel (#232). */}
       {lage.overlay.art === 'export' && inhalt !== null && (
-        <div
-          data-testid="composer-overlay"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 360 }}>
-            <ExportDialogAnzeige
-              ausgaben={ausgabenStand.dateien}
-              auswahl={lage.exportauswahl}
-              laeuft={lage.laeuft}
-              aufDateiWaehlen={(dateiname) =>
-                setzeLage((alt) =>
-                  setzeExportauswahl(alt, waehleDatei(alt.exportauswahl, dateiname, ausgabenStand.dateien)),
-                )
-              }
-              aufZielWaehlen={() => {
-                void waehleZiel(lage.exportauswahl).then((ergebnis) => {
-                  if (ergebnis.ok) {
-                    // Abbruch (pfad === null) ist KEIN Fehler (#183): Auswahl unveraendert,
-                    // keine Meldung (M7-60-Fehlerpfade).
-                    if (!ergebnis.wert.abgebrochen) {
-                      setzeLage((alt) => setzeExportauswahl(alt, ergebnis.wert.auswahl))
-                    }
-                    return
+        <OverlayRahmen testid="composer-overlay">
+          <ExportDialogAnzeige
+            ausgaben={ausgabenStand.dateien}
+            auswahl={lage.exportauswahl}
+            laeuft={lage.laeuft}
+            aufDateiWaehlen={(dateiname) =>
+              setzeLage((alt) =>
+                setzeExportauswahl(alt, waehleDatei(alt.exportauswahl, dateiname, ausgabenStand.dateien)),
+              )
+            }
+            aufZielWaehlen={() => {
+              void waehleZiel(lage.exportauswahl).then((ergebnis) => {
+                if (ergebnis.ok) {
+                  // Abbruch (pfad === null) ist KEIN Fehler (#183): Auswahl unveraendert,
+                  // keine Meldung (M7-60-Fehlerpfade).
+                  if (!ergebnis.wert.abgebrochen) {
+                    setzeLage((alt) => setzeExportauswahl(alt, ergebnis.wert.auswahl))
                   }
-                  setzeLage((alt) =>
-                    melde(alt, {
-                      code: ergebnis.fehler.code,
-                      meldung: ergebnis.fehler.meldung,
-                      warnung: true,
-                    }),
-                  )
-                })
-              }}
-              aufAusloesen={() => {
-                if (!istExportBereit(lage.exportauswahl) || lage.laeuft) return
-                setzeLage((alt) => setzeLaeuft(alt, true))
-                const wirkungen: ExportDialogWirkungen = {
-                  loeseExportAus: (projektId, dateiname, zielPfad) =>
-                    loeseExportAus(projektId, dateiname, zielPfad),
-                  meldeFehler: (code, meldung) =>
-                    setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
+                  return
                 }
-                void loeseExportMitAuswahlAus(inhalt.id, lage.exportauswahl, wirkungen).then(
-                  (ergebnis) => {
-                    setzeLage((alt) => {
-                      const ruhig = setzeLaeuft(alt, false)
-                      return ergebnis.art === 'eingereiht' ? schliesseOverlay(ruhig) : ruhig
-                    })
-                  },
+                setzeLage((alt) =>
+                  melde(alt, {
+                    code: ergebnis.fehler.code,
+                    meldung: ergebnis.fehler.meldung,
+                    warnung: true,
+                  }),
                 )
-              }}
-              aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
-            />
-          </div>
-        </div>
+              })
+            }}
+            aufAusloesen={() => {
+              if (!istExportBereit(lage.exportauswahl) || lage.laeuft) return
+              setzeLage((alt) => setzeLaeuft(alt, true))
+              const wirkungen: ExportDialogWirkungen = {
+                loeseExportAus: (projektId, dateiname, zielPfad) =>
+                  loeseExportAus(projektId, dateiname, zielPfad),
+                meldeFehler: (code, meldung) =>
+                  setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
+              }
+              void loeseExportMitAuswahlAus(inhalt.id, lage.exportauswahl, wirkungen).then(
+                (ergebnis) => {
+                  setzeLage((alt) => {
+                    const ruhig = setzeLaeuft(alt, false)
+                    return ergebnis.art === 'eingereiht' ? schliesseOverlay(ruhig) : ruhig
+                  })
+                },
+              )
+            }}
+            aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
+          />
+        </OverlayRahmen>
       )}
     </div>
     </DndContext>
