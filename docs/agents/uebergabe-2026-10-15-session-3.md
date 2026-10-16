@@ -135,7 +135,7 @@ Neue Werkzeuge: `scripts/pruefe-beenden.mjs` (#427), `scripts/pruefe-menue.cjs` 
 
 ---
 
-## Nachtrag 3: #429 gebaut und geschlossen (Dauer/Trim → Undo)
+## Nachtrag 3: #429 gebaut und geschlossen (Dauer/Trim → Undo) – **User-abgenommen 16.10.2026**
 
 **#429 GEBAUT + treiber-gemessen + geschlossen (Merge `e7a6f7d`).** Der User hatte #431 zuerst gewählt;
 danach #429.
@@ -167,7 +167,7 @@ Zähler: Suite **5519 grün (317 Dateien)**, Typecheck/Lint 0, lokal auf `main` 
 
 ---
 
-## Nachtrag 4: #430 gebaut und geschlossen (Aktion in der Composer-Bibliothek löschen)
+## Nachtrag 4: #430 gebaut und geschlossen (Aktion in der Composer-Bibliothek löschen) – **User-abgenommen 16.10.2026**
 
 **#430 GEBAUT + treiber-gemessen + geschlossen (Merge `a97ec47`, TK v3.25 / 9.7.2).**
 User-Entscheidungen 16.10.2026: Löschen in der **Composer-Bibliothek** (Aktionszeile), **ohne
