@@ -35,13 +35,19 @@ ist schwer zu bearbeiten" wurde gemessen und in zwei Plaene gefasst:
   Systemfehler-Helfer und liegen jetzt neutral in `src/main/gemeinsam/systemfehler.ts`; **24
   byte-gleiche Kopien** in `main/` entfernt (netto −108 Zeilen; `ffmpeg-adapter/uniformitaet.ts`
   ausgenommen – andere Sache).
+- **Q1 (Kommentare) GEBAUT, gemergt** (Merge `c648fc3`, Branch geloescht;
+  `docs/agents/kommentar-regeln.md` + `kommentar-plan.md`): der generierte **Geruest-Kopf ist aus
+  allen 241 Dateien** entfernt (**netto −4157 Zeilen**; `[modul]`-Zweckzeile und Hand-Begruendungen
+  blieben). Guard `tests/unit/kommentar-guard.spec.ts`; **9 DoD-Grep-Proben** auf den neuen Vertrag
+  gezogen (User-Entscheidung – die DoD wurde NICHT still umgeschrieben). Gegenprobe:
+  `git diff -- src` hatte **0 Nicht-Kommentar-Zeilen**. **Q1.2** (wiederholte Begruendungen) offen.
 - **#432 als verworfen geschlossen** (`not planned`); der Branch ist geloescht.
 
-Zaehler: Suite **5535 gruen (320 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
+Zaehler: Suite **5536 gruen (321 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
 (4f2/4f4/4g2/4g4 unveraendert). Alles **lokal auf `main`**, **nicht gepusht**.
-Naechste Session: **#428 entscheiden** (Zeitleiste als Zeit-/Frame-Band); danach Q1 (Kommentare),
-Q3 (Fragmentierung), Q4 (Tests gegen die Anforderungen) im Programm, sowie **S4/S5** des
-Composer-Umbaus nach #428.
+Naechste Session: **#428 entscheiden** (Zeitleiste als Zeit-/Frame-Band); im Programm offen **Q3**
+(Fragmentierung) und **Q4** (Tests gegen die Anforderungen), sowie **Q1.2** (wiederholte
+Begruendungen) und **S4/S5** des Composer-Umbaus (nach #428).
 
 ## STAND HEUTE (16.10.2026, Abnahme-Session) – historisiert durch den Abschnitt darueber
 
