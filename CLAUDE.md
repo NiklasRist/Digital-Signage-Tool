@@ -24,14 +24,21 @@ ist schwer zu bearbeiten" wurde gemessen und in zwei Plaene gefasst:
   Zeitleisten-/DnD-Stelle). Ehrlich: `index.tsx` 1170→1113, composer-Modul **+6 Dateien** – der
   Gewinn ist Ort-Klarheit, nicht Zeilen.
 - **[`docs/agents/codequalitaet-programm.md`](docs/agents/codequalitaet-programm.md)** – vier Straenge
-  Q1–Q4; Reihenfolge **Q2→Q1→Q3→Q4**. **Q2-Ziel A = Atomar-Schreib-Kern:** die `schreibe-*`-Familie
-  (5 Dateien, ~2900 Zeilen) baut atomares Schreiben + `.bak` + Retry **5x von Hand**
-  (`mitWiederholung`/`taugtAlsSicherung` byte-gleich, `WARTEZEITEN_MS` 6x) – belegte Duplikation.
+  Q1–Q4; Reihenfolge **Q2→Q1→Q3→Q4**. **Q2/A (Atomar-Schreib-Kern) GEBAUT, gemergt** (Merge `c6c77af`,
+  Plan `docs/agents/schreib-mechanik-plan.md`, Branch geloescht): die domain-freie Mechanik
+  (`mitWiederholung`/`taugtAlsSicherung`/`istCode`/`text`) liegt in
+  `src/main/gemeinsam/schreib-mechanik.ts`; die fuenf `schreibe-*`-Dateien nutzen sie. **Weg 2:** nur die
+  **Mechanik** geteilt – die **Zahl** `WARTEZEITEN_MS` und die **Serialisierung** bleiben je Store
+  (TK 9.5.4); die begrenzte Umkehr der „BEWUSST NICHT"-Entscheidung ist im Modul-Kopf begruendet und als
+  Nachtrag an #31/#47/#98/#71 gemeldet. `schreibe-*` **2917→2600** Zeilen, src netto **−235**.
+  **Nebenbefund:** `text`/`istCode` sind in ~28 weiteren `main/`-Dateien byte-gleich kopiert (offen).
 - **#432 als verworfen geschlossen** (`not planned`); der Branch ist geloescht.
 
-Zaehler: Suite **5523 gruen (318 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
+Zaehler: Suite **5534 gruen (319 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
 (4f2/4f4/4g2/4g4 unveraendert). Alles **lokal auf `main`**, **nicht gepusht**.
-Naechste Session: **Q2/A planen + bauen** (Atomar-Schreib-Kern), dann **#428 entscheiden**.
+Naechste Session: **breite `text`/`istCode`-Duplikation zuschneiden** (~28 Dateien), dann
+**#428 entscheiden**; Q1 (Kommentare), Q3 (Fragmentierung), Q4 (Tests gegen die Anforderungen) stehen
+noch im Programm.
 
 ## STAND HEUTE (16.10.2026, Abnahme-Session) – historisiert durch den Abschnitt darueber
 
