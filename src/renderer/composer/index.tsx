@@ -62,7 +62,6 @@ import {
   LEERE_COMPOSER_LAGE,
   oeffneOverlay,
   schliesseOverlay,
-  melde,
   verwirfWurzelMeldung,
   setzeLaeuft,
   setzeAusgabeName,
@@ -70,14 +69,14 @@ import {
   waehleMedium,
   istRenderKnopfFrei,
 } from './composer-montage'
+// S2 (Naht N2): EIN Melder fuer die stehende Wurzel-Meldung statt 15 Wiederholungen.
+import { wurzelMelder } from './wurzel-meldung'
 import {
   pruefeAusgabeName,
-  pruefeUeberschreiben,
   loeseRenderMitNamenAus,
   vorbelegterName,
   type RenderDialogWirkungen,
 } from './render-dialog'
-import { RenderDialogAnzeige } from './render-dialog.tsx'
 import {
   LEERE_EXPORTAUSWAHL,
   waehleDatei,
@@ -86,7 +85,6 @@ import {
   loeseExportMitAuswahlAus,
   type ExportDialogWirkungen,
 } from './export-dialog'
-import { ExportDialogAnzeige } from './export-dialog.tsx'
 import {
   ladeAusgaben,
   holeAusgaben,
@@ -114,20 +112,22 @@ import { uebernehmeGrenzen } from './dauer-regler'
 // in der Geschichte nie in dieser Wurzel montiert wurden (Nachtrag am Issue #407).
 // Die Montage ist genau die Aufgabe dieser Datei (#261 "Bausteine anordnen").
 import { Bibliotheksansicht } from './bibliothek-ansicht.tsx'
-import { loescheMedium } from './medium-loeschen'
-import { MediumLoeschen } from './medium-loeschen.tsx'
-import { gibVideoHandlesFrei } from '../gemeinsam/video-handles'
 // #425: Die Band-Bearbeitung (#253/M7-60) wird endlich MONTIERT (Familie „fertige
 // Funktion ohne Aufrufer"); der Drop einer Aktion auf das VIDEO wird ein Band-Abschnitt.
 // Die reine Aufnahme-Logik liegt in band-aufnahme.ts, der eine Schreibweg in
 // uebernehmeBand (#129) - diese Wurzel ruft nur und pflegt die Sicht.
-import { EinblendungAnsicht } from './einblendung-ansicht.tsx'
 import { uebernehmeBand } from './einblendung-bearbeiten'
 import { bandZielAus, bandAufnahmeAus, startdauerFuerBandabschnitt } from './band-aufnahme'
 // #408: Das KontextMenue (#133-Familie, Duplikat/Entfernen) wird in DIESE Wurzel
 // montiert - sein Zustand wandert siehtbarseitig in die ComposerLage (menueAdresse,
 // composer-montage.ts); die Zeilen tragen data-element-id (#248) - kein Edits an #248.
 import { KontextMenue } from './kontext-menu.tsx'
+// S3 (docs/agents/composer-umbau-plan.md, Naht N3): die vier Overlays sind eigene
+// Bausteine; die Wurzel reicht nur Lage + Daten + Rueckrufe herein.
+import { RenderOverlay } from './render-overlay.tsx'
+import { ExportOverlay } from './export-overlay.tsx'
+import { MediumLoeschenOverlay } from './medium-loeschen-overlay.tsx'
+import { BandOverlay } from './band-overlay.tsx'
 import { oeffneMenue, schliesseMenue, type ComposerLage } from './composer-montage'
 
 
@@ -259,6 +259,9 @@ export function ComposerInterna({
   // #342: DIE EINE ComposerLage (#259). Kein zweiter Zustand fuer Overlay, Meldung,
   // Ausgabename oder Exportauswahl - alles laeuft ueber die acht Uebergaenge.
   const [lage, setzeLage] = useState<ComposerLage>(() => LEERE_COMPOSER_LAGE)
+  // S2 (Naht N2): der EINE Melder der Wurzel - `(code, meldung) => void`; er passt
+  // direkt auf die `aufFehler`/`meldeFehler`-Rueckrufe der Bausteine.
+  const meldeWurzel = wurzelMelder(setzeLage)
   // #342: Der Bestand der Ausgaben wird GEHOLET, nicht geladen - der Stand liegt
   // in ausgabe-liste.ts (#230); diese Wurzel abonniert ihn und stoesst den ersten
   // Ladevorgang je Projekt an (M7-68, ENTSCHIEDEN 7). aktualisiereAusgaben bleibt
@@ -303,9 +306,7 @@ export function ComposerInterna({
       zwischenstand = liste
     }).then((ergebnis) => {
       if (!ergebnis.ok) {
-        setzeLage((alt) =>
-          melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
-        )
+        meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
         return
       }
       if (zwischenstand === null) return
@@ -374,9 +375,7 @@ export function ComposerInterna({
     if (inhalt === null || stelle === null) return
     void fuehreFixAus(stelle, option, inhalt, projekt.setzeListe).then((ergebnis) => {
       if (!ergebnis.ok) {
-        setzeLage((alt) =>
-          melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
-        )
+        meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
         return
       }
       // Uebergabe (z. B. Medium ersetzen): die Shell fuehrt sie aus (Overlay/Reiter).
@@ -402,9 +401,7 @@ export function ComposerInterna({
       .legeAktionAn({ titel: eingabe.titel, vorlagenId: eingabe.vorlagenId, markeId: inhalt.standardMarkeId })
       .then((ergebnis) => {
         if (!ergebnis.ok) {
-          setzeLage((alt) =>
-            melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
-          )
+          meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
           return
         }
         const aktion = ergebnis.wert
@@ -423,9 +420,7 @@ export function ComposerInterna({
     if (inhalt === null) return
     void verdrahtung.loescheAktion(aktionId).then((ergebnis) => {
       if (!ergebnis.ok) {
-        setzeLage((alt) =>
-          melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
-        )
+        meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
         return
       }
       const aktuell = projekt.hole().projekt
@@ -469,9 +464,7 @@ export function ComposerInterna({
         vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
         kaputteBandAbschnitte={modell.kaputteBandAbschnitte}
         aufEinblendungBearbeiten={setzeBandElementId}
-        aufFehler={(code, meldung) =>
-          setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-        }
+        aufFehler={meldeWurzel}
         sichtSchreiber={projekt.setzeListe}
       />
     )
@@ -599,20 +592,16 @@ export function ComposerInterna({
       (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage),
     )
     if (entwurf === null) {
-      setzeLage((alt) =>
-        melde(alt, {
-          code: 'keine_band_vorlage',
-          meldung:
-            'Für ein Werbeband wird eine Band-Vorlage gebraucht (Art „split“ oder „einblendung“). Lege eine Vorlage im Reiter Vorlagen an.',
-          warnung: true,
-        }),
+      meldeWurzel(
+        'keine_band_vorlage',
+        'Für ein Werbeband wird eine Band-Vorlage gebraucht (Art „split“ oder „einblendung“). Lege eine Vorlage im Reiter Vorlagen an.',
       )
       return
     }
 
     void uebernehmeBand(element.id, entwurf).then((antwort) => {
       if (!antwort.ok) {
-        setzeLage((alt) => melde(alt, { code: antwort.fehler.code, meldung: antwort.fehler.meldung, warnung: true }))
+        meldeWurzel(antwort.fehler.code, antwort.fehler.meldung)
         return
       }
       // Die Sicht NACH dem await frisch holen (kein gemerkter Stand) und GENAU EIN
@@ -654,7 +643,7 @@ export function ComposerInterna({
     void fuegeElementHinzu(referenz, index, projekt.setzeListe)
       .then((ergebnis) => {
         if (!ergebnis.ok) {
-          setzeLage((alt) => melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }))
+          meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
         }
       })
       .finally(() => setzeLaedtKante(null))
@@ -664,6 +653,92 @@ export function ComposerInterna({
     setzeNeuZug(null)
     setzeAktiveKante(null)
     setzeBandZiel(null)
+  }
+
+  // S3 (Naht N3): Die Wurzel baut die Wirkungen und reicht sie als Rueckrufe an die
+  // Overlay-Bausteine; die Handler bleiben HIER (Zustands-Ownership, #259).
+  const waehleExportDatei = (dateiname: string): void => {
+    setzeLage((alt) =>
+      setzeExportauswahl(alt, waehleDatei(alt.exportauswahl, dateiname, ausgabenStand.dateien)),
+    )
+  }
+
+  const waehleExportZiel = (): void => {
+    void waehleZiel(lage.exportauswahl).then((ergebnis) => {
+      if (ergebnis.ok) {
+        // Abbruch (pfad === null) ist KEIN Fehler (#183): Auswahl unveraendert,
+        // keine Meldung (M7-60-Fehlerpfade).
+        if (!ergebnis.wert.abgebrochen) {
+          setzeLage((alt) => setzeExportauswahl(alt, ergebnis.wert.auswahl))
+        }
+        return
+      }
+      meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
+    })
+  }
+
+  // #342: Das Ausloesen des Renders (#231). ENTSCHIEDEN 5 (M7-68): #134 wird
+  // UEBERGEBEN, nie direkt gerufen - #231 faengt kaputte_elemente ab und fuehrt in
+  // die Reparatur.
+  const starteRender = (): void => {
+    if (inhalt === null || voraussetzungen === null) return
+    if (pruefeAusgabeName(lage.ausgabeName) !== 'ok' || lage.laeuft) return
+    setzeLage((alt) => setzeLaeuft(alt, true))
+    const wirkungen: RenderDialogWirkungen = {
+      loeseRenderAus: (projekt, ausgabeName, marke, vorlagenListe) =>
+        loeseRenderAus(projekt, ausgabeName, marke, vorlagenListe),
+      starteReparaturModus: () => {
+        // M7-60, ENTSCHIEDEN 4 (b): derselbe Ablauf wie beim Klick -
+        // Stand rechnen (#132) und der Shell melden, die ihn haelt.
+        verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
+      },
+      meldeFehler: meldeWurzel,
+    }
+    void loeseRenderMitNamenAus(
+      inhalt,
+      lage.ausgabeName,
+      holeBereiteMarke(inhalt.standardMarkeId) as Marke,
+      voraussetzungen.vorlagen,
+      wirkungen,
+    ).then((ergebnis) => {
+      setzeLage((alt) => {
+        const ruhig = setzeLaeuft(alt, false)
+        // eingereiht/reparatur: Overlay zu (M7-60-Fehlerpfade). abgelehnt:
+        // die Meldung kam bereits ueber meldeFehler; Overlay bleibt offen.
+        return ergebnis.art === 'abgelehnt' ? ruhig : schliesseOverlay(ruhig)
+      })
+    })
+  }
+
+  const starteExport = (): void => {
+    if (inhalt === null) return
+    if (!istExportBereit(lage.exportauswahl) || lage.laeuft) return
+    setzeLage((alt) => setzeLaeuft(alt, true))
+    const wirkungen: ExportDialogWirkungen = {
+      loeseExportAus: (projektId, dateiname, zielPfad) =>
+        loeseExportAus(projektId, dateiname, zielPfad),
+      meldeFehler: meldeWurzel,
+    }
+    void loeseExportMitAuswahlAus(inhalt.id, lage.exportauswahl, wirkungen).then((ergebnis) => {
+      setzeLage((alt) => {
+        const ruhig = setzeLaeuft(alt, false)
+        return ergebnis.art === 'eingereiht' ? schliesseOverlay(ruhig) : ruhig
+      })
+    })
+  }
+
+  // #425: Uebernahme der Band-Bearbeitung. Die Sicht-Korrektur geht ueber den
+  // Wrapped-Zugang (EIN Undo-Schritt, #243); danach schliesst die Ansicht.
+  const uebernehmeBandElement = (element: Listenelement): void => {
+    const aktuell = projekt.hole().projekt
+    if (aktuell === null) {
+      setzeBandElementId(null)
+      return
+    }
+    projekt.setzeListe(
+      aktuell.liste.map((eintrag) => (eintrag.id === element.id ? element : eintrag)),
+    )
+    setzeBandElementId(null)
   }
 
   return (
@@ -823,18 +898,12 @@ export function ComposerInterna({
                   // wird NICHT geloescht - ein Projekt hat immer genau eines. Ersetzen
                   // geht ueber „Video importieren".
                   void assetId
-                  setzeLage((alt) =>
-                    melde(alt, {
-                      code: 'asset_referenziert',
-                      meldung:
-                        'Ein Projekt hat immer genau ein Video – bitte über „Video importieren" ersetzen.',
-                      warnung: true,
-                    }),
+                  meldeWurzel(
+                    'asset_referenziert',
+                    'Ein Projekt hat immer genau ein Video – bitte über „Video importieren" ersetzen.',
                   )
                 }}
-                aufFehler={(code, meldung) =>
-                  setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-                }
+                aufFehler={meldeWurzel}
               />
             </div>
 
@@ -943,92 +1012,29 @@ export function ComposerInterna({
       {/* #342: Das Render-Overlay (#231). befund und Ueberschreib-Lage werden je
           Tastendruck neu gerechnet (#231/#259) - nie zwischengespeichert. */}
       {lage.overlay.art === 'render' && inhalt !== null && voraussetzungen !== null && (
-        <div
-          data-testid="composer-overlay"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 360 }}>
-            <RenderDialogAnzeige
-              eingabe={lage.ausgabeName}
-              befund={pruefeAusgabeName(lage.ausgabeName)}
-              lage={pruefeUeberschreiben(lage.ausgabeName, ausgabenStand.dateien)}
-              laeuft={lage.laeuft}
-              aufEingabe={(wert) => setzeLage((alt) => setzeAusgabeName(alt, wert))}
-              aufAusloesen={() => {
-                if (pruefeAusgabeName(lage.ausgabeName) !== 'ok' || lage.laeuft) return
-                setzeLage((alt) => setzeLaeuft(alt, true))
-                const wirkungen: RenderDialogWirkungen = {
-                  // ENTSCHIEDEN 5 (M7-68): #134 wird UEBERGEBEN, nie direkt gerufen -
-                  // #231 faengt kaputte_elemente ab und fuehrt in die Reparatur.
-                  loeseRenderAus: (projekt, ausgabeName, marke, vorlagenListe) =>
-                    loeseRenderAus(projekt, ausgabeName, marke, vorlagenListe),
-                  starteReparaturModus: () => {
-                    // M7-60, ENTSCHIEDEN 4 (b): derselbe Ablauf wie beim Klick -
-                    // Stand rechnen (#132) und der Shell melden, die ihn haelt.
-                    verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
-                  },
-                  meldeFehler: (code, meldung) =>
-                    setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
-                }
-                void loeseRenderMitNamenAus(
-                  inhalt,
-                  lage.ausgabeName,
-                  holeBereiteMarke(inhalt.standardMarkeId) as Marke,
-                  voraussetzungen.vorlagen,
-                  wirkungen,
-                ).then((ergebnis) => {
-                  setzeLage((alt) => {
-                    const ruhig = setzeLaeuft(alt, false)
-                    // eingereiht/reparatur: Overlay zu (M7-60-Fehlerpfade). abgelehnt:
-                    // die Meldung kam bereits ueber meldeFehler; Overlay bleibt offen.
-                    return ergebnis.art === 'abgelehnt' ? ruhig : schliesseOverlay(ruhig)
-                  })
-                })
-              }}
-              aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
-            />
-          </div>
-        </div>
+        <RenderOverlay
+          ausgabeName={lage.ausgabeName}
+          laeuft={lage.laeuft}
+          ausgaben={ausgabenStand.dateien}
+          aufEingabe={(wert) => setzeLage((alt) => setzeAusgabeName(alt, wert))}
+          aufAusloesen={starteRender}
+          aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
+        />
       )}
 
       {/* #425: Die Band-Bearbeitung (#253/M7-60) - endlich montiert. Sie bearbeitet
           das Werbeband des Video-Elements; das Uebernehmen liefert das neue Element,
           die Wurzel korrigiert die Sicht (EIN Undo-Schritt, #243-Huelle). */}
       {bandElement !== null && inhalt !== null && (
-        <div
-          data-testid="composer-overlay-band"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 460, maxHeight: '80vh', overflow: 'auto' }}>
-            <EinblendungAnsicht
-              element={bandElement}
-              aktionen={inhalt.aktionen}
-              vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
-              stellen={findeKaputteStellen(inhalt)}
-              aufUebernommen={(element) => {
-                const aktuell = projekt.hole().projekt
-                if (aktuell === null) {
-                  setzeBandElementId(null)
-                  return
-                }
-                projekt.setzeListe(
-                  aktuell.liste.map((eintrag) => (eintrag.id === element.id ? element : eintrag)),
-                )
-                setzeBandElementId(null)
-              }}
-              aufAbbrechen={() => setzeBandElementId(null)}
-              aufFehler={(code, meldung) =>
-                setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-              }
-            />
-          </div>
-        </div>
+        <BandOverlay
+          element={bandElement}
+          aktionen={inhalt.aktionen}
+          vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+          stellen={findeKaputteStellen(inhalt)}
+          aufUebernommen={uebernehmeBandElement}
+          aufAbbrechen={() => setzeBandElementId(null)}
+          aufFehler={meldeWurzel}
+        />
       )}
 
       {/* #408: Das KontextMenue (Duplikat/Entfernen) - der Baustein zeichnet,
@@ -1047,90 +1053,27 @@ export function ComposerInterna({
           Medium-Löschens. Der Auftrag reist über den Torwächter; das Ergebnis
           zieht der Nachlauf (#199) nach, dieser Overlay-Code wartet NICHT. */}
       {loeschAsset !== null && inhalt !== null && (
-        <div
-          data-testid="composer-overlay"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 360 }}>
-            <MediumLoeschen
-              projekt={inhalt}
-              assetId={loeschAsset.id}
-              loescheMedium={loescheMedium}
-              gibVideoHandlesFrei={gibVideoHandlesFrei}
-              aufErledigt={() => setzeLage((alt) => schliesseOverlay(alt))}
-              aufAbgebrochen={() => setzeLage((alt) => schliesseOverlay(alt))}
-              aufFehler={(code, meldung) =>
-                setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-              }
-            />
-          </div>
-        </div>
+        <MediumLoeschenOverlay
+          projekt={inhalt}
+          assetId={loeschAsset.id}
+          aufErledigt={() => setzeLage((alt) => schliesseOverlay(alt))}
+          aufAbgebrochen={() => setzeLage((alt) => schliesseOverlay(alt))}
+          aufFehler={meldeWurzel}
+        />
       )}
 
       {/* #342: Das Export-Overlay (#232). Die Auswahl ist ein WERT der Lage;
           Datei- und Zielwahl laufen ueber waehleDatei/waehleZiel (#232). */}
       {lage.overlay.art === 'export' && inhalt !== null && (
-        <div
-          data-testid="composer-overlay"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <div style={{ background: '#1f1f1f', padding: 16, minWidth: 360 }}>
-            <ExportDialogAnzeige
-              ausgaben={ausgabenStand.dateien}
-              auswahl={lage.exportauswahl}
-              laeuft={lage.laeuft}
-              aufDateiWaehlen={(dateiname) =>
-                setzeLage((alt) =>
-                  setzeExportauswahl(alt, waehleDatei(alt.exportauswahl, dateiname, ausgabenStand.dateien)),
-                )
-              }
-              aufZielWaehlen={() => {
-                void waehleZiel(lage.exportauswahl).then((ergebnis) => {
-                  if (ergebnis.ok) {
-                    // Abbruch (pfad === null) ist KEIN Fehler (#183): Auswahl unveraendert,
-                    // keine Meldung (M7-60-Fehlerpfade).
-                    if (!ergebnis.wert.abgebrochen) {
-                      setzeLage((alt) => setzeExportauswahl(alt, ergebnis.wert.auswahl))
-                    }
-                    return
-                  }
-                  setzeLage((alt) =>
-                    melde(alt, {
-                      code: ergebnis.fehler.code,
-                      meldung: ergebnis.fehler.meldung,
-                      warnung: true,
-                    }),
-                  )
-                })
-              }}
-              aufAusloesen={() => {
-                if (!istExportBereit(lage.exportauswahl) || lage.laeuft) return
-                setzeLage((alt) => setzeLaeuft(alt, true))
-                const wirkungen: ExportDialogWirkungen = {
-                  loeseExportAus: (projektId, dateiname, zielPfad) =>
-                    loeseExportAus(projektId, dateiname, zielPfad),
-                  meldeFehler: (code, meldung) =>
-                    setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
-                }
-                void loeseExportMitAuswahlAus(inhalt.id, lage.exportauswahl, wirkungen).then(
-                  (ergebnis) => {
-                    setzeLage((alt) => {
-                      const ruhig = setzeLaeuft(alt, false)
-                      return ergebnis.art === 'eingereiht' ? schliesseOverlay(ruhig) : ruhig
-                    })
-                  },
-                )
-              }}
-              aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
-            />
-          </div>
-        </div>
+        <ExportOverlay
+          ausgaben={ausgabenStand.dateien}
+          auswahl={lage.exportauswahl}
+          laeuft={lage.laeuft}
+          aufDateiWaehlen={waehleExportDatei}
+          aufZielWaehlen={waehleExportZiel}
+          aufAusloesen={starteExport}
+          aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
+        />
       )}
     </div>
     </DndContext>
