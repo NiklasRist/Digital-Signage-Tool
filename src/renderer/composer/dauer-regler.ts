@@ -79,6 +79,12 @@
 // Balken, die Griffe und das Zahlenfeld gehoeren in die Oberflaechen-Datei. So sind
 // Grenzen, Klemmung und Verzweigung ohne Browser pruefbar.
 //
+// ERGAENZUNG #429 (Signatur): `uebernehmeGrenzen` bekommt einen VIERTEN Parameter, den
+// SICHT-SCHREIBER (die umhuellte `setzeListe`, #243-Huelle). Grund: TK 9.13.1 zaehlt
+// „Trim, Dauer" ausdruecklich zum Undo; der frueher benutzte rohe `gleicheElementAb`
+// lief an der Undo-Huelle vorbei (kein Schnappschuss). Die Vertragserweiterung ist im
+// Issue gemeldet (#429, beruehrt die Signatur von #125).
+//
 // KEINE EIGENE ROLLBACK-REGEL. „**Fehlerklasse 1 – Operation abgelehnt
 // (synchron):** z. B. ungültiger Wert. → optimistischen Schritt **rückgängig**
 // machen (letzter bestätigter Stand) + kurze Inline-Meldung." (TK 9.7.3) - und
@@ -92,7 +98,7 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { DAUER_BEREICH } from '../../shared/contracts/konstanten'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
-import { gleicheElementAb, holeSicht } from './projektzustand'
+import { gleicheElementAb, holeSicht, type SichtSchreiber } from './projektzustand'
 import { fuehreOptimistischAus } from './optimistisch'
 
 /** Das eine Modell hinter dem einen Regler – für Video und Aktions-Segment gleich geformt. */
@@ -365,6 +371,11 @@ export async function uebernehmeGrenzen(
   element: Listenelement,
   anfang: number,
   ende: number,
+  // ERGAENZT durch #429: der SICHT-SCHREIBER (die umhuellte `setzeListe`, #243-Huelle).
+  // PFLICHT - ohne ihn gaebe es fuer Trim/Dauer KEINEN Undo-Schnappschuss (Vertragsbruch
+  // zu TK 9.13.1). Derselbe Weg wie element-entfernen.ts, element-hinzufuegen.ts und
+  // liste-reorder.ts: die Huelle legt vor dem Schreiben den Schnappschuss ab.
+  sichtSchreiber: SichtSchreiber,
 ): Promise<Ergebnis<Listenelement>> {
   // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als unknown
   // sichtbar; die Form wird unmittelbar darunter geprueft (Ergebnis-Huelle statt Wurf).
@@ -486,16 +497,28 @@ export async function uebernehmeGrenzen(
   // driften)." (TK 9.7.3) Anwenden, Zuruecknehmen und Bestaetigen gehen als
   // Rueckrufe an #126 - die Entscheidung, WANN zurueckgenommen wird, faellt dort.
   //
+  // #429: Geschrieben wird ueber den SICHT-SCHREIBER (die umhuellte setzeListe), NICHT
+  // mehr ueber das rohe `gleicheElementAb`. Nur so laeuft die Aenderung durch die
+  // Undo-Huelle (#243) und TK 9.13.1 („Trim, Dauer" gehoeren ins Undo) ist erfuellt.
+  // Die Huelle legt beim Anwenden EINEN Schnappschuss ab; die Ruecknahme erkennt sie als
+  // Ruecknahme (R1) und die Bestaetigung als wirkungsgleich (R2) - dieselbe Bauform wie
+  // liste-reorder.ts. Der Aufrufer liefert den Schreiber (ElementBedienung, #249).
+  const schreibeSicht = (ersatz: Listenelement): void => {
+    const sicht = holeSicht().projekt
+    if (sicht === null) return
+    sichtSchreiber(sicht.liste.map((eintrag) => (eintrag.id === ersatz.id ? ersatz : eintrag)))
+  }
+
   // `rufeAuf<Listenelement>` ohne zweiten Typparameter: Der Fehlercode reist zur
   // LAUFZEIT unveraendert durch (nichts hier fasst ihn an); enger machen kann die
   // Datei ihn nicht, weil die fachlichen Codes des project-store in src/main/**
   // liegen und im Renderer nicht importiert werden duerfen.
   const ergebnis = await fuehreOptimistischAus<Listenelement>(
     () => {
-      gleicheElementAb(neu)
+      schreibeSicht(neu)
     },
     () => {
-      gleicheElementAb(vorher)
+      schreibeSicht(vorher)
     },
     () => rufeAuf<Listenelement>(kanal, nutzlast),
   )
@@ -506,6 +529,13 @@ export async function uebernehmeGrenzen(
     // wurde, und ab dann zeigte die Sicht dauerhaft etwas anderes als die Datei.
     // Uebernommen wird EXAKT das zurueckgegebene Element, ohne Mischen mit dem
     // optimistischen Stand.
+    //
+    // #429: Der Abgleich laeuft ueber das ROHE `gleicheElementAb`, NICHT ueber den
+    // Sicht-Schreiber. Er ist KEIN zweiter Nutzerschritt, sondern die Bestaetigung
+    // DESSELBEN Schritts - ein Aufzeichnen ueber die Huelle erzeugte einen ZWEITEN
+    // Schnappschuss (das bestaetigte Element ist ein neues Objekt; `standGleich` der
+    // Huelle vergleicht per Referenz) und machte die Ruecknahme zu ZWEI Schritten.
+    // Gemessen am echten Fenster: so kostet Trim/Dauer EINEN Undo-Schritt.
     gleicheElementAb(ergebnis.wert)
   }
   // Bei `ok: false` passiert hier NICHTS: Das Zuruecknehmen hat #126 bereits

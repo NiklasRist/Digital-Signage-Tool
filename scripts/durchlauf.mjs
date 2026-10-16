@@ -1361,6 +1361,69 @@ const main = async () => {
       await schlafe(1_200);
     }
 
+    // Schritt 4f4 - Dauer/Trim-Undo am echten Fenster (#429): die Grenze am Regler
+    // ziehen (Dauer aendert sich) und mit dem Undo-PFEIL zuruecknehmen. Zuvor schrieb
+    // der Dauer-/Trim-Weg am Undo-Stapel vorbei - der Pfeil tat fuer ihn nichts.
+    {
+      await klick('[data-testid="composer-ansicht-liste"]');
+      await schlafe(700);
+      const dauerVor4f4 = await seite.evaluate(
+        () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
+      );
+      const griff4f4 = await seite.$('[data-testid="element-griff-ende"]');
+      const box4f4 = griff4f4 === null ? null : await griff4f4.boundingBox();
+      griff4f4?.dispose?.();
+      let dauerNach4f4 = dauerVor4f4;
+      let dauerUndo4f4 = dauerVor4f4;
+      if (box4f4 !== null) {
+        const mx = box4f4.x + box4f4.width / 2;
+        const my = box4f4.y + box4f4.height / 2;
+        await seite.mouse.move(mx, my);
+        await seite.mouse.down();
+        for (let i = 1; i <= 8; i += 1) {
+          await seite.mouse.move(mx - i * 8, my);
+          await schlafe(30);
+        }
+        await seite.mouse.up();
+        await schlafe(1_500);
+        dauerNach4f4 = await seite.evaluate(
+          () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
+        );
+        const undoZustand4f4 = await seite.evaluate(() => {
+          const k = document.querySelector('[data-testid="undo-pfeil"]');
+          return k === null ? null : { da: true, disabled: k.disabled };
+        });
+        const zeilenVorUndo4f4 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+        );
+        await klick('[data-testid="undo-pfeil"]');
+        await schlafe(1_500);
+        dauerUndo4f4 = await seite.evaluate(
+          () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
+        );
+        const zeilenNachUndo4f4 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+        );
+        const meldung4f4 = await seite.evaluate(
+          () => document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+        );
+        console.log(`[schritt-4f4] Diagnose: undo=${JSON.stringify(undoZustand4f4)}, Zeilen ${zeilenVorUndo4f4}->${zeilenNachUndo4f4}, Meldung=${JSON.stringify(meldung4f4)}`);
+      }
+      console.log(`[schritt-4f4] Dauer/Trim-Undo: ${JSON.stringify(dauerVor4f4)} -> ${JSON.stringify(dauerNach4f4)} -> Undo ${JSON.stringify(dauerUndo4f4)}`);
+      if (dauerNach4f4 === dauerVor4f4) {
+        fund("Dauer/Trim-Undo", "das Ziehen am Regler aendert die Dauer (Vorbedingung)",
+          `Dauer unveraendert (${JSON.stringify(dauerVor4f4)})`, "Untersuchung", "composer/element-zeile.tsx");
+      } else if (dauerUndo4f4 !== dauerVor4f4) {
+        fund("Dauer/Trim-Undo", "der Undo-Pfeil nimmt eine Dauer-/Trim-Aenderung zurueck (#429/TK 9.13.1)",
+          `Dauer nach Undo ${JSON.stringify(dauerUndo4f4)} (erwartet ${JSON.stringify(dauerVor4f4)})`,
+          "Befund", "composer/dauer-regler.ts");
+      } else {
+        console.log("[schritt-4f4] Dauer/Trim-Undo GEMESSEN: der Pfeil nimmt die Regler-Aenderung in EINEM Schritt zurueck (#429).");
+      }
+      await klick('[data-testid="composer-ansicht-zeitleiste"]');
+      await schlafe(200);
+    }
+
     // Schritt 4g - Aktion anlegen aus dem Composer (#416): Inline-Erst-Anlage ohne
     // Reiterwechsel. Titel eintippen, Vorlage waehlen, Knopf druecken - der Eintrag
     // muss SOFORT in der Aktionen-Liste der Bibliothek stehen.

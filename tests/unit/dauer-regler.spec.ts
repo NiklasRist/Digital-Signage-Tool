@@ -52,11 +52,10 @@ vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
 
 vi.mock('../../src/renderer/composer/projektzustand', () => ({
   holeSicht: () => ({ projekt: doppel.projekt, ladefehler: null }),
+  // Der BESTAETIGUNGS-Abgleich geht (weiterhin) ueber das ROHE gleicheElementAb - kein
+  // zweiter Schnappschuss (#429). Der Doppel bildet den Sicht-Effekt nach.
   gleicheElementAb: (element: Listenelement) => {
     doppel.abgeglichen.push(element)
-    // Wie #121: genau EIN Element wird anhand seiner id ersetzt, ein NEUES Array
-    // entsteht. Liefe die geprüfte Datei über einen anderen Weg an die Liste, fiele
-    // es hier auf.
     if (doppel.projekt === null) return
     doppel.projekt = {
       ...doppel.projekt,
@@ -158,6 +157,19 @@ beforeEach(() => {
   doppel.optimistischGerufen = 0
   doppel.zurueckgenommen = 0
 })
+
+/**
+ * #429: der SICHT-SCHREIBER (die umhuellte `setzeListe`). In der Produktion legt die
+ * Undo-Huelle beim Schreiben den Schnappschuss ab; hier bildet der Doppel nur den
+ * Sicht-Effekt nach - und haelt je Schreibvorgang das EINE Element (alle Testprojekte
+ * haben genau eines) in `abgeglichen` fest, damit Reihenfolge und Inhalt pruefbar sind.
+ */
+function sichtSchreiber(liste: Listenelement[]): void {
+  if (doppel.projekt !== null) {
+    doppel.projekt = { ...doppel.projekt, liste }
+  }
+  doppel.abgeglichen.push(liste[0] as Listenelement)
+}
 
 // ---------------------------------------------------------------------------
 // baueReglerModell
@@ -299,13 +311,17 @@ describe('begrenze', () => {
 // ---------------------------------------------------------------------------
 
 describe('uebernehmeGrenzen', () => {
+  // #429: der Schreiber ist Pflicht - hier der Doppel oben.
+  const grenzen = (el: Listenelement, a: number, b: number) =>
+    uebernehmeGrenzen(el, a, b, sichtSchreiber)
+
   it('ruft fuer ein Video ausschliesslich setzeTrim mit den rohen Sekunden', async () => {
     const element = videoElement()
     doppel.projekt = projektMit(element)
     const bestaetigt: Listenelement = { ...element, trimStart: 9.13, trimEnde: 63.29 }
     doppel.antwort = { ok: true, wert: bestaetigt }
 
-    const ergebnis = await uebernehmeGrenzen(element, 9.13, 63.29)
+    const ergebnis = await grenzen(element, 9.13, 63.29)
 
     expect(ergebnis).toEqual({ ok: true, wert: bestaetigt })
     expect(doppel.aufrufe).toEqual([
@@ -325,7 +341,7 @@ describe('uebernehmeGrenzen', () => {
     doppel.projekt = projektMit(element)
     doppel.antwort = { ok: true, wert: { ...element, dauer: 31.87 } }
 
-    await uebernehmeGrenzen(element, 0, 31.87)
+    await grenzen(element, 0, 31.87)
 
     expect(doppel.aufrufe).toEqual([
       {
@@ -344,7 +360,7 @@ describe('uebernehmeGrenzen', () => {
     const bestaetigt: Listenelement = { ...element, trimStart: 9.13, trimEnde: 60.0 }
     doppel.antwort = { ok: true, wert: bestaetigt }
 
-    await uebernehmeGrenzen(element, 9.13, 63.29)
+    await grenzen(element, 9.13, 63.29)
 
     const inSicht = doppel.projekt?.liste[0]
     expect(inSicht).toEqual(bestaetigt)
@@ -361,7 +377,7 @@ describe('uebernehmeGrenzen', () => {
       fehler: { code: 'ungueltige_eingabe', meldung: 'zu lang' },
     }
 
-    const ergebnis = await uebernehmeGrenzen(element, 9.13, 63.29)
+    const ergebnis = await grenzen(element, 9.13, 63.29)
 
     // Code und Meldung UNVERAENDERT durchgereicht.
     expect(ergebnis).toEqual({
@@ -378,7 +394,7 @@ describe('uebernehmeGrenzen', () => {
     doppel.projekt = projektMit(element)
     doppel.antwort = { ok: false, fehler: { code: 'kein_projekt', meldung: 'zu' } }
 
-    const ergebnis = await uebernehmeGrenzen(element, 0, 31.87)
+    const ergebnis = await grenzen(element, 0, 31.87)
     expect(ergebnis.ok ? null : ergebnis.fehler.code).toBe('kein_projekt')
   })
 
@@ -390,7 +406,7 @@ describe('uebernehmeGrenzen', () => {
       [Number.NaN, 10.5],
       [1.5, Number.POSITIVE_INFINITY],
     ] as const) {
-      const ergebnis = await uebernehmeGrenzen(element, paar[0], paar[1])
+      const ergebnis = await grenzen(element, paar[0], paar[1])
       expect(ergebnis.ok ? null : ergebnis.fehler.code).toBe('ungueltige_eingabe')
     }
     expect(doppel.aufrufe).toEqual([])
@@ -401,9 +417,9 @@ describe('uebernehmeGrenzen', () => {
     const element = videoElement()
     doppel.projekt = projektMit(element)
 
-    const gleich = await uebernehmeGrenzen(element, 12.37, 12.37)
+    const gleich = await grenzen(element, 12.37, 12.37)
     expect(gleich.ok ? null : gleich.fehler.code).toBe('ungueltige_eingabe')
-    const verdreht = await uebernehmeGrenzen(element, 40.19, 12.37)
+    const verdreht = await grenzen(element, 40.19, 12.37)
     expect(verdreht.ok ? null : verdreht.fehler.code).toBe('ungueltige_eingabe')
 
     expect(doppel.aufrufe).toEqual([])
@@ -413,7 +429,7 @@ describe('uebernehmeGrenzen', () => {
   it('weist bei einem Segment einen anfang ungleich 0 ohne IPC-Aufruf ab', async () => {
     const element = standbild()
     doppel.projekt = projektMit(element)
-    const ergebnis = await uebernehmeGrenzen(element, 2.83, 31.87)
+    const ergebnis = await grenzen(element, 2.83, 31.87)
     expect(ergebnis.ok ? null : ergebnis.fehler.code).toBe('ungueltige_eingabe')
     expect(doppel.aufrufe).toEqual([])
   })
@@ -422,10 +438,10 @@ describe('uebernehmeGrenzen', () => {
     doppel.projekt = projektMit(videoElement())
 
     const fremd = { ...standbild(), art: 'ton' } as unknown as Listenelement
-    const a = await uebernehmeGrenzen(fremd, 0, 31.87)
+    const a = await grenzen(fremd, 0, 31.87)
     expect(a.ok ? null : a.fehler.code).toBe('ungueltige_eingabe')
 
-    const b = await uebernehmeGrenzen(null as unknown as Listenelement, 0, 31.87)
+    const b = await grenzen(null as unknown as Listenelement, 0, 31.87)
     expect(b.ok ? null : b.fehler.code).toBe('ungueltige_eingabe')
 
     expect(doppel.aufrufe).toEqual([])
@@ -433,7 +449,7 @@ describe('uebernehmeGrenzen', () => {
 
   it('fragt ohne geladenes Projekt gar nicht erst', async () => {
     doppel.projekt = null
-    const ergebnis = await uebernehmeGrenzen(videoElement(), 9.13, 63.29)
+    const ergebnis = await grenzen(videoElement(), 9.13, 63.29)
     expect(ergebnis.ok ? null : ergebnis.fehler.code).toBe('ungueltige_eingabe')
     expect(doppel.aufrufe).toEqual([])
   })
@@ -447,7 +463,7 @@ describe('uebernehmeGrenzen', () => {
     doppel.projekt = projektMit(bestaetigt)
     doppel.antwort = { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: 'nein' } }
 
-    await uebernehmeGrenzen(veraltet, 9.13, 63.29)
+    await grenzen(veraltet, 9.13, 63.29)
 
     expect(doppel.projekt?.liste[0]).toEqual(bestaetigt)
     expect(doppel.projekt?.liste[0]?.trimStart).toBe(2.03)
