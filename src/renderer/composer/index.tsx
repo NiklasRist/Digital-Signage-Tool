@@ -62,7 +62,6 @@ import {
   LEERE_COMPOSER_LAGE,
   oeffneOverlay,
   schliesseOverlay,
-  melde,
   verwirfWurzelMeldung,
   setzeLaeuft,
   setzeAusgabeName,
@@ -70,6 +69,8 @@ import {
   waehleMedium,
   istRenderKnopfFrei,
 } from './composer-montage'
+// S2 (Naht N2): EIN Melder fuer die stehende Wurzel-Meldung statt 15 Wiederholungen.
+import { wurzelMelder } from './wurzel-meldung'
 import {
   pruefeAusgabeName,
   pruefeUeberschreiben,
@@ -262,6 +263,9 @@ export function ComposerInterna({
   // #342: DIE EINE ComposerLage (#259). Kein zweiter Zustand fuer Overlay, Meldung,
   // Ausgabename oder Exportauswahl - alles laeuft ueber die acht Uebergaenge.
   const [lage, setzeLage] = useState<ComposerLage>(() => LEERE_COMPOSER_LAGE)
+  // S2 (Naht N2): der EINE Melder der Wurzel - `(code, meldung) => void`; er passt
+  // direkt auf die `aufFehler`/`meldeFehler`-Rueckrufe der Bausteine.
+  const meldeWurzel = wurzelMelder(setzeLage)
   // #342: Der Bestand der Ausgaben wird GEHOLET, nicht geladen - der Stand liegt
   // in ausgabe-liste.ts (#230); diese Wurzel abonniert ihn und stoesst den ersten
   // Ladevorgang je Projekt an (M7-68, ENTSCHIEDEN 7). aktualisiereAusgaben bleibt
@@ -306,9 +310,7 @@ export function ComposerInterna({
       zwischenstand = liste
     }).then((ergebnis) => {
       if (!ergebnis.ok) {
-        setzeLage((alt) =>
-          melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
-        )
+        meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
         return
       }
       if (zwischenstand === null) return
@@ -377,9 +379,7 @@ export function ComposerInterna({
     if (inhalt === null || stelle === null) return
     void fuehreFixAus(stelle, option, inhalt, projekt.setzeListe).then((ergebnis) => {
       if (!ergebnis.ok) {
-        setzeLage((alt) =>
-          melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
-        )
+        meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
         return
       }
       // Uebergabe (z. B. Medium ersetzen): die Shell fuehrt sie aus (Overlay/Reiter).
@@ -405,9 +405,7 @@ export function ComposerInterna({
       .legeAktionAn({ titel: eingabe.titel, vorlagenId: eingabe.vorlagenId, markeId: inhalt.standardMarkeId })
       .then((ergebnis) => {
         if (!ergebnis.ok) {
-          setzeLage((alt) =>
-            melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
-          )
+          meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
           return
         }
         const aktion = ergebnis.wert
@@ -426,9 +424,7 @@ export function ComposerInterna({
     if (inhalt === null) return
     void verdrahtung.loescheAktion(aktionId).then((ergebnis) => {
       if (!ergebnis.ok) {
-        setzeLage((alt) =>
-          melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
-        )
+        meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
         return
       }
       const aktuell = projekt.hole().projekt
@@ -472,9 +468,7 @@ export function ComposerInterna({
         vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
         kaputteBandAbschnitte={modell.kaputteBandAbschnitte}
         aufEinblendungBearbeiten={setzeBandElementId}
-        aufFehler={(code, meldung) =>
-          setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-        }
+        aufFehler={meldeWurzel}
         sichtSchreiber={projekt.setzeListe}
       />
     )
@@ -602,20 +596,16 @@ export function ComposerInterna({
       (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage),
     )
     if (entwurf === null) {
-      setzeLage((alt) =>
-        melde(alt, {
-          code: 'keine_band_vorlage',
-          meldung:
-            'Für ein Werbeband wird eine Band-Vorlage gebraucht (Art „split“ oder „einblendung“). Lege eine Vorlage im Reiter Vorlagen an.',
-          warnung: true,
-        }),
+      meldeWurzel(
+        'keine_band_vorlage',
+        'Für ein Werbeband wird eine Band-Vorlage gebraucht (Art „split“ oder „einblendung“). Lege eine Vorlage im Reiter Vorlagen an.',
       )
       return
     }
 
     void uebernehmeBand(element.id, entwurf).then((antwort) => {
       if (!antwort.ok) {
-        setzeLage((alt) => melde(alt, { code: antwort.fehler.code, meldung: antwort.fehler.meldung, warnung: true }))
+        meldeWurzel(antwort.fehler.code, antwort.fehler.meldung)
         return
       }
       // Die Sicht NACH dem await frisch holen (kein gemerkter Stand) und GENAU EIN
@@ -657,7 +647,7 @@ export function ComposerInterna({
     void fuegeElementHinzu(referenz, index, projekt.setzeListe)
       .then((ergebnis) => {
         if (!ergebnis.ok) {
-          setzeLage((alt) => melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }))
+          meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
         }
       })
       .finally(() => setzeLaedtKante(null))
@@ -826,18 +816,12 @@ export function ComposerInterna({
                   // wird NICHT geloescht - ein Projekt hat immer genau eines. Ersetzen
                   // geht ueber „Video importieren".
                   void assetId
-                  setzeLage((alt) =>
-                    melde(alt, {
-                      code: 'asset_referenziert',
-                      meldung:
-                        'Ein Projekt hat immer genau ein Video – bitte über „Video importieren" ersetzen.',
-                      warnung: true,
-                    }),
+                  meldeWurzel(
+                    'asset_referenziert',
+                    'Ein Projekt hat immer genau ein Video – bitte über „Video importieren" ersetzen.',
                   )
                 }}
-                aufFehler={(code, meldung) =>
-                  setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-                }
+                aufFehler={meldeWurzel}
               />
             </div>
 
@@ -966,8 +950,7 @@ export function ComposerInterna({
                   // Stand rechnen (#132) und der Shell melden, die ihn haelt.
                   verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
                 },
-                meldeFehler: (code, meldung) =>
-                  setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
+                meldeFehler: meldeWurzel,
               }
               void loeseRenderMitNamenAus(
                 inhalt,
@@ -1014,9 +997,7 @@ export function ComposerInterna({
               setzeBandElementId(null)
             }}
             aufAbbrechen={() => setzeBandElementId(null)}
-            aufFehler={(code, meldung) =>
-              setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-            }
+            aufFehler={meldeWurzel}
           />
         </OverlayRahmen>
       )}
@@ -1045,9 +1026,7 @@ export function ComposerInterna({
             gibVideoHandlesFrei={gibVideoHandlesFrei}
             aufErledigt={() => setzeLage((alt) => schliesseOverlay(alt))}
             aufAbgebrochen={() => setzeLage((alt) => schliesseOverlay(alt))}
-            aufFehler={(code, meldung) =>
-              setzeLage((alt) => melde(alt, { code, meldung, warnung: true }))
-            }
+            aufFehler={meldeWurzel}
           />
         </OverlayRahmen>
       )}
@@ -1075,13 +1054,7 @@ export function ComposerInterna({
                   }
                   return
                 }
-                setzeLage((alt) =>
-                  melde(alt, {
-                    code: ergebnis.fehler.code,
-                    meldung: ergebnis.fehler.meldung,
-                    warnung: true,
-                  }),
-                )
+                meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
               })
             }}
             aufAusloesen={() => {
@@ -1090,8 +1063,7 @@ export function ComposerInterna({
               const wirkungen: ExportDialogWirkungen = {
                 loeseExportAus: (projektId, dateiname, zielPfad) =>
                   loeseExportAus(projektId, dateiname, zielPfad),
-                meldeFehler: (code, meldung) =>
-                  setzeLage((alt) => melde(alt, { code, meldung, warnung: true })),
+                meldeFehler: meldeWurzel,
               }
               void loeseExportMitAuswahlAus(inhalt.id, lage.exportauswahl, wirkungen).then(
                 (ergebnis) => {
