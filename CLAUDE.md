@@ -43,17 +43,17 @@ ist schwer zu bearbeiten" wurde gemessen und in zwei Plaene gefasst:
   `git diff -- src` hatte **0 Nicht-Kommentar-Zeilen**. **Q1.2** (wiederholte Begruendungen) offen.
 - **#432 als verworfen geschlossen** (`not planned`); der Branch ist geloescht.
 
-Zaehler: Suite **5536 gruen (321 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
-(4f2/4f4/4g2/4g4 unveraendert). Alles **lokal auf `main`**, **nicht gepusht**.
-**#428 ENTSCHIEDEN (16.10.2026):** Das Band bleibt eine **Rotation** – eine „Zeitstelle" ist nur die
-**Bedienung** (Drop bei Zeit *t* → Einfüge-Position in der Rotation), **kein Modellfeld**; TK 9.11.3
-(„kein Positions-Feld") und 9.2.8 (Wiederholung/Abschnitt) bleiben unveraendert, FA-20
-(„durchgehendes Werbeband") gewahrt. Die Zeitleiste bekommt ein **Sekundenraster + Frame am
-Video-Block**; Zeitachse fuer den ganzen Streifen, Abschnitt-Ablage nur am Video. #428 ist damit ein
-**UI-Vorhaben ohne Modell-/Render-Aenderung** (Label `braucht-entscheidung` entfernt).
-Naechste Session: **#428 bauen** (Zeitband-Zeitleiste), dann **S4/S5** des Composer-Umbaus; im
-Programm offen **Q3** (Fragmentierung), **Q4** (Tests gegen die Anforderungen) und **Q1.2**
-(wiederholte Begruendungen).
+Zaehler: Suite **5549 gruen (322 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
+(4f/4f2/4f4/4g2/4g4 unveraendert). Alles **lokal auf `main`**, **nicht gepusht**.
+**#428 GEBAUT, gemergt** (Merge `063b135`, Branch geloescht; Plan `docs/agents/428-zeitband-plan.md`):
+Die Zeitleiste zeigt jetzt ein **Sekundenraster** (Tick je Sekunde, Label alle 5 s) und die
+**Band-Abschnitte** im Video-Block an ihren Zeitstellen (`zeitband.ts`, rein). Ein Drop auf dem
+Video fuegt den Abschnitt an der **Zeitstelle in der Rotation** ein (`bandEinfuegeIndex`,
+Wiederholung/Abschnitt nach TK 9.2.8) statt immer ans Ende. **Entscheidung 1a** umgesetzt: das Band
+bleibt eine Rotation, **kein Modellfeld, keine Render-Aenderung**.
+Naechste Session: **S4/S5** des Composer-Umbaus (Regionen + DnD-Hook, jetzt frei); im Programm offen
+**Q3** (Fragmentierung), **Q4** (Tests gegen die Anforderungen) und **Q1.2** (wiederholte
+Begruendungen).
 
 ## STAND HEUTE (16.10.2026, Abnahme-Session) – historisiert durch den Abschnitt darueber
 
