@@ -13,6 +13,8 @@
 
 import fs from 'node:fs/promises'
 
+import { istCode } from './systemfehler'
+
 /**
  * Fuehrt `arbeit` aus und wiederholt sie, solange der Fehler auf ein offenes Handle hindeutet.
  * Rueckgabe `null` = gelungen; sonst der letzte Fehler.
@@ -50,10 +52,8 @@ export async function mitWiederholung(
   return letzter
 }
 
-/**
- * Taugt die Datei unter `pfad` als Rueckfallebene? Geprueft wird nur, ob sie parsebares JSON ist -
- * eine kaputte `.bak` als "Sicherung" zu behalten waere schlimmer als keine.
- */
+/** Taugt die Datei unter `pfad` als Rueckfallebene? Geprueft wird nur, ob sie parsebares JSON ist -
+ *  eine kaputte `.bak` als "Sicherung" zu behalten waere schlimmer als keine. */
 export async function taugtAlsSicherung(pfad: string): Promise<boolean> {
   try {
     // SAFETY: JSON.parse liefert `any`; der Cast auf unknown macht das Ergebnis zum
@@ -63,20 +63,4 @@ export async function taugtAlsSicherung(pfad: string): Promise<boolean> {
   } catch {
     return false
   }
-}
-
-/** Prueft den `code` eines Node-Systemfehlers, ohne ihn auf einen Typ zu zwingen, den er nicht hat. */
-export function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
-}
-
-/** Die Meldung eines Fehlers als Text - `Error` wird ausgelesen, alles andere stringifiziert. */
-export function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
 }

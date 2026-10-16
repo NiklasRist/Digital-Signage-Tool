@@ -4,12 +4,8 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  istCode,
-  mitWiederholung,
-  taugtAlsSicherung,
-  text,
-} from "../../src/main/gemeinsam/schreib-mechanik";
+import { mitWiederholung, taugtAlsSicherung } from "../../src/main/gemeinsam/schreib-mechanik";
+import { istCode } from "../../src/main/gemeinsam/systemfehler";
 
 // Q2/A (docs/agents/schreib-mechanik-plan.md): Testachse des gemeinsamen Mechanik-Moduls.
 // Bis hierher lagen diese Helfer byte-gleich in den fuenf `schreibe-*`-Dateien; ihre
@@ -30,29 +26,6 @@ function systemfehler(code: string): Error & { code: string } {
   fehler.code = code;
   return fehler;
 }
-
-describe("istCode", () => {
-  it("erkennt einen passenden Systemfehler-Code", () => {
-    expect(istCode(systemfehler("EPERM"), "EPERM", "EBUSY")).toBe(true);
-  });
-
-  it("lehnt fremde Codes und Nicht-Objekte ab", () => {
-    expect(istCode(systemfehler("ENOENT"), "EPERM", "EBUSY")).toBe(false);
-    expect(istCode("EPERM", "EPERM")).toBe(false);
-    expect(istCode(null, "EPERM")).toBe(false);
-  });
-});
-
-describe("text", () => {
-  it("nimmt die Meldung eines Error", () => {
-    expect(text(new Error("kaputt"))).toBe("kaputt");
-  });
-
-  it("stringifiziert alles andere", () => {
-    expect(text("roh")).toBe("roh");
-    expect(text(42)).toBe("42");
-  });
-});
 
 describe("taugtAlsSicherung", () => {
   it("true fuer parsebares JSON", async () => {
