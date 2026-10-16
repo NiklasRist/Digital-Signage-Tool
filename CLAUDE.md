@@ -45,9 +45,15 @@ ist schwer zu bearbeiten" wurde gemessen und in zwei Plaene gefasst:
 
 Zaehler: Suite **5536 gruen (321 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
 (4f2/4f4/4g2/4g4 unveraendert). Alles **lokal auf `main`**, **nicht gepusht**.
-Naechste Session: **#428 entscheiden** (Zeitleiste als Zeit-/Frame-Band); im Programm offen **Q3**
-(Fragmentierung) und **Q4** (Tests gegen die Anforderungen), sowie **Q1.2** (wiederholte
-Begruendungen) und **S4/S5** des Composer-Umbaus (nach #428).
+**#428 ENTSCHIEDEN (16.10.2026):** Das Band bleibt eine **Rotation** – eine „Zeitstelle" ist nur die
+**Bedienung** (Drop bei Zeit *t* → Einfüge-Position in der Rotation), **kein Modellfeld**; TK 9.11.3
+(„kein Positions-Feld") und 9.2.8 (Wiederholung/Abschnitt) bleiben unveraendert, FA-20
+(„durchgehendes Werbeband") gewahrt. Die Zeitleiste bekommt ein **Sekundenraster + Frame am
+Video-Block**; Zeitachse fuer den ganzen Streifen, Abschnitt-Ablage nur am Video. #428 ist damit ein
+**UI-Vorhaben ohne Modell-/Render-Aenderung** (Label `braucht-entscheidung` entfernt).
+Naechste Session: **#428 bauen** (Zeitband-Zeitleiste), dann **S4/S5** des Composer-Umbaus; im
+Programm offen **Q3** (Fragmentierung), **Q4** (Tests gegen die Anforderungen) und **Q1.2**
+(wiederholte Begruendungen).
 
 ## STAND HEUTE (16.10.2026, Abnahme-Session) – historisiert durch den Abschnitt darueber
 
