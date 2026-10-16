@@ -31,14 +31,17 @@ ist schwer zu bearbeiten" wurde gemessen und in zwei Plaene gefasst:
   **Mechanik** geteilt – die **Zahl** `WARTEZEITEN_MS` und die **Serialisierung** bleiben je Store
   (TK 9.5.4); die begrenzte Umkehr der „BEWUSST NICHT"-Entscheidung ist im Modul-Kopf begruendet und als
   Nachtrag an #31/#47/#98/#71 gemeldet. `schreibe-*` **2917→2600** Zeilen, src netto **−235**.
-  **Nebenbefund:** `text`/`istCode` sind in ~28 weiteren `main/`-Dateien byte-gleich kopiert (offen).
+  **S7 (Nachtrag Q2/A) GEBAUT, gemergt** (Merge `76b52ef`): `text`/`istCode` sind generische
+  Systemfehler-Helfer und liegen jetzt neutral in `src/main/gemeinsam/systemfehler.ts`; **24
+  byte-gleiche Kopien** in `main/` entfernt (netto −108 Zeilen; `ffmpeg-adapter/uniformitaet.ts`
+  ausgenommen – andere Sache).
 - **#432 als verworfen geschlossen** (`not planned`); der Branch ist geloescht.
 
-Zaehler: Suite **5534 gruen (319 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
+Zaehler: Suite **5535 gruen (320 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund
 (4f2/4f4/4g2/4g4 unveraendert). Alles **lokal auf `main`**, **nicht gepusht**.
-Naechste Session: **breite `text`/`istCode`-Duplikation zuschneiden** (~28 Dateien), dann
-**#428 entscheiden**; Q1 (Kommentare), Q3 (Fragmentierung), Q4 (Tests gegen die Anforderungen) stehen
-noch im Programm.
+Naechste Session: **#428 entscheiden** (Zeitleiste als Zeit-/Frame-Band); danach Q1 (Kommentare),
+Q3 (Fragmentierung), Q4 (Tests gegen die Anforderungen) im Programm, sowie **S4/S5** des
+Composer-Umbaus nach #428.
 
 ## STAND HEUTE (16.10.2026, Abnahme-Session) – historisiert durch den Abschnitt darueber
 

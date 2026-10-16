@@ -59,6 +59,11 @@ Treiber unverändert; ein Commit je Store.
 - **S5** `auftrags-manager/schreibe-queue-json.ts` umstellen.
 - **S6** `vorlagen-store/schreibe-vorlagen.ts` umstellen.
 
+**Nachtrag S7 (16.10.2026, gebaut):** `text`/`istCode` sind generische Systemfehler-Helfer und
+**nicht** schreibspezifisch – sie liegen jetzt neutral in `src/main/gemeinsam/systemfehler.ts`
+(H1). `schreib-mechanik.ts` nutzt `istCode` von dort; **24 byte-gleiche Kopien** in `main/`
+wurden entfernt (`ffmpeg-adapter/uniformitaet.ts` ausgenommen – andere Sache). Merge `76b52ef`.
+
 **Sicherheitsnetz:** die fünf bestehenden `tests/unit/schreibe-*.spec.ts` pinnt je Store das
 Verhalten; sie bleiben unverändert grün.
 
