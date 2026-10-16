@@ -11,7 +11,21 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (15.10.2026, nachts) – gilt vor ALLEM weiter unten
+## STAND HEUTE (16.10.2026) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-3.md`](docs/agents/uebergabe-2026-10-15-session-3.md) – LIES DIESE DATEI ZUERST.**
+Kurz (Fortsetzung): **#429 GEBAUT + treiber-gemessen + geschlossen** – Dauer-/Trim-Änderungen legen
+jetzt einen Undo-Schnappschuss an (Treiber 4f4: 2,0 → 1,9 → Undo → 2,0 in EINEM Schritt; Gegenprobe
+beißt). Fix: `uebernehmeGrenzen` (#125) bekommt den **Sicht-Schreiber** als vierten Parameter; der
+Bestätigungs-Abgleich bleibt beim rohen `gleicheElementAb` (sonst zwei Schnappschüsse). **#431** (Menü)
+und **#427** (Beenden) sind vorher in derselben Sitzung gebaut+gemessen+geschlossen; **#425** ebenso.
+Aus der Abnahme #422–#424 sind **#422/#423 abgenommen**, **#424** (Pfeile sichtbar/aktiv), wobei
+**#431** die eigentliche Ursache von „Cmd+Z tat nichts" war. **#430** (Aktions-Löschen in der Composer-
+Bibliothek) und **#428** (Zeitleiste als Zeit-/Frame-Band) sind **angelegt, NICHT gebaut**.
+Suite **5519 Tests gruen (317 Dateien)**, Typecheck/Lint 0. Alles **lokal auf `main` mit 11 Commits
+vor `origin/main`**, **nicht gepusht**. Naechste Session: **#430/#428 entscheiden**, dann **#426**.
+
+## STAND HEUTE (15.10.2026, nachts) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-15-session-3.md`](docs/agents/uebergabe-2026-10-15-session-3.md) – LIES DIESE DATEI ZUERST.**
 Kurz: Aus der Abnahme **#422–#424** (422/423 abgenommen) kamen weitere Befunde. **#431 GEBAUT +

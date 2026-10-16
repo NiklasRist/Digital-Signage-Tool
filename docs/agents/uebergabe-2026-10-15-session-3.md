@@ -132,3 +132,35 @@ Bei der Fortsetzung der Abnahme: **#422/#423 ok**; der User meldete **„undo/re
 
 Zähler: Suite **5516 grün (316 Dateien)**, Typecheck/Lint 0, lokal auf `main`, **nicht gepusht**.
 Neue Werkzeuge: `scripts/pruefe-beenden.mjs` (#427), `scripts/pruefe-menue.cjs` (#431).
+
+---
+
+## Nachtrag 3: #429 gebaut und geschlossen (Dauer/Trim → Undo)
+
+**#429 GEBAUT + treiber-gemessen + geschlossen (Merge `e7a6f7d`).** Der User hatte #431 zuerst gewählt;
+danach #429.
+
+- **Ursache:** `uebernehmeGrenzen` (#125) schrieb den optimistischen Stand und die Bestätigung über das
+  **rohe** `gleicheElementAb` – die Undo-Hülle (#243) umhüllt nur `setzeListe`/`setzeProjekt`. Damit lief
+  jede Dauer-/Trim-Änderung am Undo-Stapel vorbei (TK 9.13.1 verlangt Trim+Dauer im Undo → Vertragsbruch).
+- **Fix:** `uebernehmeGrenzen` bekommt einen **vierten Parameter, den Sicht-Schreiber** (die umhüllte
+  `setzeListe`) – wie `element-entfernen`/`element-hinzufuegen`/`liste-reorder`. Anwenden/Rücknehmen laufen
+  darüber → **EIN** Schnappschuss. Der **Bestätigungs-Abgleich** bleibt beim **rohen** `gleicheElementAb`:
+  über die Hülle entstünde ein **zweiter** Schnappschuss (das bestätigte Element ist ein neues Objekt;
+  `standGleich` vergleicht per Referenz) → die Rücknahme kostete **zwei** Schritte (am echten Fenster
+  gemessen, danach behoben).
+- **Beleg:** Treiber **4f4** (echtes Fenster): Dauer `2,0 → 1,9 → Undo → 2,0` in **EINEM** Schritt.
+  Neuer Test `tests/unit/dauer-regler-undo.spec.ts` mit der **echten Hülle** (`kannRueckgaengig`).
+  **Gegenprobe** (Anwenden am Stapel vorbei) beißt – 3/3 fallen; **Rücknahme per Prüfsumme** belegt.
+- **Signatur von #125 geändert** – im Issue #125 als Kommentar gemeldet (Nachtrag), Kopf von
+  `dauer-regler.ts` trägt die Ergänzung.
+
+Zähler: Suite **5519 grün (317 Dateien)**, Typecheck/Lint 0, lokal auf `main` (11 Commits vor
+`origin/main`), **nicht gepusht**.
+
+### Reihenfolge für die nächste Sitzung (aktualisiert)
+1. **#430 entscheiden** (Aktions-Löschen an allen Stellen: Bibliothek, Reiter Aktionen, Liste, Editor).
+2. **#428 entscheiden** (Zeitleiste als Zeit-/Frame-Band; Modell offen).
+3. **#426 entscheiden** (kurze Unterbrechung).
+4. Welle 2 / Banner-Spur, **#371-Klärung**.
+5. **#424-Abnahme** ist über #431 mit erledigt (Pfeile + Cmd+Z gemessen/abgenommen).
