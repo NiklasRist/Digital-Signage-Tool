@@ -38,6 +38,7 @@ import {
   leseQueueDatei,
   schreibeQueueDatei,
 } from './schreibe-queue-json'
+import { text } from '../gemeinsam/systemfehler'
 import type { QueueFehlercode } from './schreibe-queue-json'   // = 'speicher_fehler' (#69)
 
 // Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
@@ -248,9 +249,6 @@ function pruefeDatei(inhalt: unknown): Ergebnis<unknown[], QueueFehlercode> {
   return { ok: true, wert: eintraege as unknown[] }
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle - bewusst ohne Nutztyp, damit sie sowohl fuer `Ergebnis<void, …>`

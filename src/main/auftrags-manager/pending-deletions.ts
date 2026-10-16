@@ -41,6 +41,7 @@ import { istGefuellterText } from '../ipc-gateway/nutzlast-pruefer'
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { PendingDeletion } from './q2-wiederholung'      // Typ und Dateiform aus #55
 import type { QueueFehlercode } from './schreibe-queue-json'  // = 'speicher_fehler' (#69)
+import { text } from '../gemeinsam/systemfehler'
                                                               // NUR als Typ – #69 wird aus dieser
                                                               // Datei NICHT aufgerufen
 
@@ -217,9 +218,6 @@ function pruefeEingaben(
   return null
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle - ohne Nutztyp, damit sie fuer `Ergebnis<PendingDeletion[], …>`

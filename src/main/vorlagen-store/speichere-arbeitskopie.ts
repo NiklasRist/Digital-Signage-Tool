@@ -29,6 +29,7 @@ import type { Vorlage, Zone } from '../../shared/contracts/vorlage'
 import { isDeepStrictEqual } from 'node:util'
 import type { VorlagenFehlercode } from './fehlercodes'
 import { aendereBestand } from './schreibe-vorlagen'
+import { text } from '../gemeinsam/systemfehler'
 
 // Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #98: aendereBestand<T>(
@@ -351,9 +352,6 @@ function tiefGleich(a: Zone, b: Zone): boolean {
   return isDeepStrictEqual(a, b)
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle - bewusst OHNE Nutztyp, damit sie fuer `Ergebnis<Vorlage, …>`

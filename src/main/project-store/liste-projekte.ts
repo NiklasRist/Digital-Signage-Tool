@@ -22,6 +22,7 @@ import { PROJEKT_DATEI as DATEI, PROJEKT_DATEI_SICHERUNG as SICHERUNG, ausgabeOr
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Dirent } from 'node:fs'
+import { istCode, text } from '../gemeinsam/systemfehler'
 
 // DIESE DATEI LIEST UND MELDET - SIE REPARIERT NICHTS.
 //
@@ -408,20 +409,6 @@ function zeitpunkt(wert: string): number {
   return Number.isNaN(zahl) ? 0 : zahl
 }
 
-/** Prueft den `code` eines Node-Systemfehlers, ohne ihn auf einen Typ zu zwingen, den er nicht hat. */
-function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
-}
-
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 // NICHT HIER, UND GEMELDET:
 //

@@ -76,6 +76,7 @@ import { dialog, type OpenDialogOptions } from 'electron'
 import { leseKonfig } from '../config-store/lese-konfig'
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import { text } from '../gemeinsam/systemfehler'
 
 export async function wähleExportZiel(): Promise<Ergebnis<{ pfad: string | null }>> {
   // Die Vorbelegung wird VOR dem `try` geholt und kann selbst nicht scheitern (s.
@@ -219,15 +220,4 @@ async function ermittleVorbelegung(): Promise<string | null> {
  */
 function vermerke(ursache: unknown): void {
   console.error('[export-service] wähleExportZiel:', ursache)
-}
-
-/**
- * Die Ausnahme als Klartext - `message` bei einem `Error`, sonst die Zeichenkette.
- *
- * `String(ursache)` greift bewusst auch fuer geworfene Nicht-Fehler (eine Zeichenkette,
- * `undefined`, ein Objekt): Diese Funktion darf selbst unter keinen Umstaenden werfen,
- * sonst risse sie genau den Zweig auf, der die Prozessgrenze schuetzen soll.
- */
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
 }

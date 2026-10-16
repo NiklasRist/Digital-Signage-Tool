@@ -45,6 +45,7 @@ import path from 'node:path'
 import type { Bewegung } from '../../shared/contracts/protokoll'
 import { ermittleDatenOrt } from '../datenort'
 import { QUEUE_SCHEMA_VERSION, leseQueueDatei, schreibeQueueDatei } from './schreibe-queue-json'
+import { text } from '../gemeinsam/systemfehler'
 
 const MAX_JOURNAL_EINTRAEGE = 1000   // modul-lokale Konstante, NICHT in die projektweiten
                                      // Konstanten (#21) auslagern – das waere eine fremde Datei
@@ -301,9 +302,6 @@ function vermerke(meldung: string): void {
   console.warn(`[auftrags-manager] ${meldung}`)
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle.

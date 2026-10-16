@@ -31,6 +31,7 @@ import { ladeQ2 } from './q2-wiederholung';
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis';
 import type { QueueFehlercode } from './schreibe-queue-json'; // #69
+import { text } from '../gemeinsam/systemfehler'
 
 // Fremder Aufruf - vollstaendige Signatur, damit hier nichts geraten wird:
 //   #55: ladeQ2(projektId: string): Promise<Ergebnis<Q2Datei, QueueFehlercode>>
@@ -147,9 +148,6 @@ function istBrauchbareProjektId(wert: unknown): wert is string {
   return !wert.includes('..');
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache);
-}
 
 // NICHT HIER, UND GEMELDET:
 //

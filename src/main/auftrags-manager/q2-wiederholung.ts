@@ -45,6 +45,7 @@ import { QUEUE_SCHEMA_VERSION, leseQueueDatei, schreibeQueueDatei } from './schr
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { QueueFehlercode } from './schreibe-queue-json'   // = 'speicher_fehler' (#69)
+import { text } from '../gemeinsam/systemfehler'
 
 // Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #69: leseQueueDatei<T>(pfad: string, fallback: T): Promise<Ergebnis<T, QueueFehlercode>>
@@ -477,9 +478,6 @@ function istPendingDeletion(wert: unknown): wert is PendingDeletion {
   return istGefuellterText(roh.dateiname) && istGefuellterText(roh.vermerktAm)
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle - ohne Nutztyp, damit sie fuer `Ergebnis<Q2Datei, …>` genauso passt

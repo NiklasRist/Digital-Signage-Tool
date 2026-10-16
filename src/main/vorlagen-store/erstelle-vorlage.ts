@@ -34,6 +34,7 @@ import { aendereBestand } from './schreibe-vorlagen'
 import { eingebauteVorlagen } from './eingebaute-vorlagen'
 import { erzeugeId } from '../../shared/contracts/id'
 import { berechneBandGeometrie } from '../../shared/band-geometrie'
+import { text } from '../gemeinsam/systemfehler'
 
 // Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #98: aendereBestand<T>(
@@ -372,9 +373,6 @@ function quelleFuer(
   return null
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle - bewusst OHNE Nutztyp, damit sie fuer `Ergebnis<Vorlage, …>` genauso

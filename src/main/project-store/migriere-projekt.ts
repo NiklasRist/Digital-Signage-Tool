@@ -33,6 +33,7 @@ import { AKTUELLE_SCHEMA_VERSION } from '../../shared/contracts/konstanten'
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Project } from '../../shared/contracts/project'
+import { text } from '../gemeinsam/systemfehler'
 export type MigrationsSchritt = (
   alt: Record<string, unknown>,
 ) => Record<string, unknown>
@@ -221,9 +222,6 @@ function istText(wert: unknown): boolean {
   return typeof wert === 'string'
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /** Die Fehlerseite der Huelle. `Ergebnis<Project>` traegt genau die generischen Codes (#12). */
 function fehler(

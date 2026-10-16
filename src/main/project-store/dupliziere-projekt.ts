@@ -35,6 +35,7 @@ import { mitD1Lock } from './d1-lock'                                        // 
 import { migriereProjekt } from './migriere-projekt'                         // #48
 import { PROJEKT_DATEI as DATEI, medienOrdner, projektOrdner } from './pfade'
 import { schreibeProjekt } from './schreibe-projekt'                         // #46
+import { istCode, text } from '../gemeinsam/systemfehler'
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #32:  mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
@@ -484,20 +485,6 @@ function istKopierbareId(id: unknown): id is string {
   return path.dirname(ordner) === path.dirname(vergleich) && path.basename(ordner) === id
 }
 
-/** Prueft den `code` eines Node-Systemfehlers, ohne ihn auf einen Typ zu zwingen, den er nicht hat. */
-function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
-}
-
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle.

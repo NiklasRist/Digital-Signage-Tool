@@ -28,6 +28,7 @@ import { eingebauteMarke } from './anfangsbestand'
 import { loeseMarkeAuf } from './vererbung'
 import { leseRohMetadaten } from '../media-service/ffprobe'
 import { werteMetadatenAus } from '../media-service/metadaten'
+import { istCode, text } from '../gemeinsam/systemfehler'
 
 // Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #13:   export const FORMAT_WHITELIST = {
@@ -359,17 +360,4 @@ function basenameOhneEndung(pfad: string): string {
   const basis = pfad.split(/[\\/]/).pop() ?? pfad
   const teile = basis.split('.')
   return teile.length < 2 ? basis : (teile.slice(0, -1).join('.') ?? basis)
-}
-
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
-
-/** Prueft den `code` eines Node-Systemfehlers (Muster wie in #277). */
-function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) return false
-  // SAFETY: die Zeile davor hat `code` in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
 }
