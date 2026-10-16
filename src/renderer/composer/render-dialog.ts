@@ -1,10 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #231.
 // [composer] Render auslösen – Namenseingabe, Überschreib-Hinweis, Reparatur statt Fehlermeldung
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf: gefuellt (Issue #231 /
-// M7-38); die GERUEST-PRUEFSUMME oben stimmt nicht mehr - ihr Nichtmehrstimmen
-// IST das Signal, die Datei wurde bearbeitet.
 //
 // ============================================== ====
 // REGELN, herausgenommen aus dem Issue (alle verbindlich):

@@ -1,20 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #114.
 // [template-canvas] Eine Textzone zeichnen
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 94524f29978083bf
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// (entfernt - Rumpf gefuellt, Issue #114)
 //
 // UEBER DIESER DATEI LAEUFT JEDE BUCHSTABE, DEN DAS SYSTEM AUF EINEN FERNSEHER
 // BRINGT. Deshalb gilt hier das Vorzeichen des Issues ganz strikt:

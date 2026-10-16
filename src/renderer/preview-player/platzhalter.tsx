@@ -1,4 +1,3 @@
-/* GERUEST-PRUEFSUMME: 72D98D4D6B774CC225B810B108E6627C */
 import type { JSX } from 'react'
 import React from 'react'
 

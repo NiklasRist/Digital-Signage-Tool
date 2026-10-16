@@ -199,7 +199,7 @@ describe('Grep-Proben aus der Definition of Done', () => {
 
   it('die Abschaltzeile aus Zeile 1 ist entfernt', () => {
     expect(quelltext.startsWith('/* eslint-disable')).toBe(false)
-    expect(quelltext.startsWith('// GENERIERT aus dem Signaturblock von Issue #135.')).toBe(true)
+    expect(quelltext.startsWith('// [')).toBe(true)
   })
 
   it('die vier Signaturen sind woertlich unveraendert geblieben', () => {

@@ -1,10 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #138.
 // [action-editor] Bild zuweisen – aus der Bibliothek wählen oder neu importieren
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf: gefuellt (Issue #138),
-// Signaturen UNVERAENDERT uebernommen; die GERUEST-PRUEFSUMME oben stimmt nicht
-// mehr - ihr Nichtmehrstimmen IST das Signal, die Datei wurde bearbeitet.
 //
 // ============================================================
 // REGELN (issue-gebunden):

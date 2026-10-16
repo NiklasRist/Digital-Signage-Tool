@@ -1,9 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #223.
 // [projekt-verwaltung] Beschädigte Projekte darstellen und quellen
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'

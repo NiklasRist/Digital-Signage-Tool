@@ -1,10 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #200.
 // [app-shell] Der dauerhafte Hinweis „nicht gespeichert"
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf: gefuellt (Issue #200);
-// die GERUEST-PRUEFSUMME-Abschalt-Logik geht nicht aus dieser Datei hervor,
-// sie trug den werfenden Rumpf und trägt jetzt die Umsetzung.
 //
 // ============================================== ====
 // DER ANFANGSZUSTAND HEISST 'unbekannt' - und das ist der ORIGINALENTSCHEID

@@ -437,8 +437,8 @@ describe("export-verdrahtung.ts - Codeinspektion", () => {
     // ist ein blinder Filter (wie der CRLF-Fall oben) von einem sauberen nicht zu
     // unterscheiden: Er faellt dann nur auf, solange zufaellig ein Kanalname im
     // Kommentar steht, und wird lautlos wertlos, sobald keiner mehr dort steht.
-    expect(quelle).toContain("GERUEST-PRUEFSUMME");
-    expect(ohneKommentare).not.toContain("GERUEST-PRUEFSUMME");
+    expect(quelle).toContain("WAS DIESE DATEI IST");
+    expect(ohneKommentare).not.toContain("WAS DIESE DATEI IST");
     expect(quelle).toContain("VERWORFEN WIRD STILL");
     expect(ohneKommentare).not.toContain("VERWORFEN WIRD STILL");
 

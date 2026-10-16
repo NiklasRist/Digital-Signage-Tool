@@ -264,9 +264,7 @@ describe('ordneZonenNeu (#146) - Fehlerpfade', () => {
 describe('Grep-Proben aus der Definition of Done', () => {
   it('die Abschaltzeile aus Zeile 1 ist entfernt', () => {
     expect(zeilenDurchgehend.startsWith('/* eslint-disable')).toBe(false)
-    expect(zeilenDurchgehend.startsWith('// GENERIERT aus dem Signaturblock von Issue #146.')).toBe(
-      true,
-    )
+    expect(zeilenDurchgehend.startsWith('// [')).toBe(true)
   })
 
   it('die Signaturen sind woertlich unveraendert geblieben', () => {

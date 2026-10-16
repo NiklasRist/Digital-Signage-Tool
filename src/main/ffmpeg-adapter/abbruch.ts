@@ -1,21 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #159.
 // [ffmpeg-adapter] Laufenden ffmpeg-Prozess plattformsicher beenden
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: ed80a0d887439ec7
-//
-// ERLEDIGT (14.08.2026): Rumpf gefuellt, die dateiweite Abschaltzeile
-// (@typescript-eslint/no-unused-vars) ist damit entfernt - beide Parameter und der
-// Import werden jetzt benutzt.
 //
 // AM 14.08.2026 AUF DIESEM RECHNER NACHGEMESSEN (Windows 11, das gebuendelte
 // ffmpeg-static, ein Lauf ueber `testsrc` mit `-t 600` in eine Datei):

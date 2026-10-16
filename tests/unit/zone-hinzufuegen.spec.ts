@@ -385,15 +385,13 @@ describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
 })
 
 describe('Grep-Proben aus der Definition of Done', () => {
-  it('die Abschaltzeile aus Zeile 1 ist entfernt, der Geruest-Kopf beginnt die Datei', () => {
-    expect(QUELLE.split('\n')[0]!.startsWith('// GENERIERT aus dem Signaturblock von Issue #147.')).toBe(
-      true,
-    )
+  it('keine Abschaltzeile in Zeile 1 und kein Geruest-Kopf (Q1, 16.10.2026)', () => {
+    expect(QUELLE.split('\n')[0]!.startsWith('// [')).toBe(true)
     expect(QUELLE.split('\n')[0]).not.toContain('eslint-disable')
   })
 
-  it('laesst die GERUEST-PRUEFSUMME-Zeile unangetastet', () => {
-    expect(QUELLE).toContain('// GERUEST-PRUEFSUMME: 7abaf8996202b225')
+  it('traegt keinen Geruest-Kopf mehr', () => {
+    expect(QUELLE).not.toContain('GERUEST-PRUEFSUMME')
   })
 
   it('haelt die verbindlichen Signaturen woertlich', () => {

@@ -1,8 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #134.
 // [composer] Render und Export auslösen
-//
-// Signaturen VERBINDLICH aus dem Issue; der Rumpf ist gefuellt - die
-// GERUEST-PRUEFSUMME gilt nicht mehr, die Datei wurde bearbeitet.
 //
 // DREI TEURE STILLE FEHLER, gegen die der Ablauf verdrahtet ist:
 //  1. kein DIREKTER Aufruf des Renders: Der Weg fuehrt über reiheEin (TK 9.3.4) -

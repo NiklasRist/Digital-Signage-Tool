@@ -1,8 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #140.
 // [action-editor] Live-Vorschau der Aktion - bereitstellen, zeichnen, einhaengen
-//
-// Signaturen VERBINDLICH aus dem Issue; Rumpf gefuellt (GERUEST-PRUEFSUMME
-// gilt nicht mehr, die Datei wurde bearbeitet).
 //
 // ZWEI eigentliche Aufgaben in einer Datei:
 //  - bereiteVorschauVor: Schriften (#110), Logo (#119) und ALLE Motive der

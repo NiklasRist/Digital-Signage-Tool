@@ -1,20 +1,4 @@
-// GENERIERT aus dem Signaturblock von Issue #116.
 // [template-canvas] Eine dekorative Zone zeichnen
-//
-// Die Signaturen sind VERBINDLICH und stammen woertlich aus dem Issue - nicht
-// aendern. Zu fuellen ist ausschliesslich der Rumpf; jeder wirft heute und nennt
-// dabei sein Issue. Wer hier eine Signatur anpasst, aendert einen Vertrag, auf den
-// sich andere Module stuetzen - das gehoert ins Issue, nicht in diese Datei.
-//
-// Die Pruefsumme haelt fest, was der Generator hier zuletzt hinterlassen hat.
-// Stimmt sie beim naechsten Lauf nicht mehr, wurde die Datei bearbeitet - dann
-// fasst der Generator sie NIE an, auch wenn sich das Issue geaendert hat. Sie
-// mitzupflegen ist NICHT deine Aufgabe: Wer den Rumpf fuellt, laesst sie einfach
-// stehen; ihr Nichtmehrstimmen IST das Signal.
-// GERUEST-PRUEFSUMME: 421a5660f16fea1a
-//
-// ZUR ABSCHALTZEILE IN ZEILE 1 - SIE IST BEIM FUELLEN DES RUMPFES ZU ENTFERNEN:
-// (entfernt - Rumpf gefuellt, Issue #116)
 //
 // WARUM ES DIESE FUNKTION GIBT: Sie ist der Grund, warum eigene Vorlagen (FA-13)
 // ein reiner Datensatz bleiben koennen. Alles Gestaltbare hier - Flaeche, Pille,
