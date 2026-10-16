@@ -16,6 +16,8 @@ import {
   startdauerFuerBandabschnitt,
   bandAufnahmeAus,
   bandZielAus,
+  bandEinfuegeIndex,
+  bandZeitImVideo,
 } from '../../src/renderer/composer/band-aufnahme'
 
 function vorlage(id: string, art: Vorlage['art'], parent: string | null): Vorlage {
@@ -130,5 +132,64 @@ describe('bandZielAus', () => {
   it('ein Segment an erster Stelle liefert ebenfalls null im Koerper', () => {
     const nurSegment = [{ elementId: 'el-seg', art: 'segment' as const }]
     expect(bandZielAus(nurSegment, [100], 60, 14)).toBeNull()
+  })
+})
+
+// #428: Zeitstelle -> Einfüge-Index. Das Band bleibt eine Rotation; die Zeit wählt
+// nur die STELLE in der Folge (Entscheidung 1a). Zeitverhalten wörtlich nach TK 9.2.8.
+describe('bandEinfuegeIndex (#428)', () => {
+  const drei = [{ dauer: 10 }, { dauer: 10 }, { dauer: 10 }] // bandGesamt 30
+
+  it('leerer Bestand ergibt die erste Stelle', () => {
+    expect(bandEinfuegeIndex(7, [], 60)).toBe(0)
+  })
+
+  it('keine Wiederholung, wenn die Folge das Video fuellt: t faellt in seinen Abschnitt', () => {
+    expect(bandEinfuegeIndex(0, drei, 30)).toBe(0) // 0–10
+    expect(bandEinfuegeIndex(5, drei, 30)).toBe(0)
+    expect(bandEinfuegeIndex(12, drei, 30)).toBe(1) // 10–20
+    expect(bandEinfuegeIndex(25, drei, 30)).toBe(2) // 20–30
+  })
+
+  it('hinter dem letzten Abschnitt wird angehaengt', () => {
+    expect(bandEinfuegeIndex(30, drei, 30)).toBe(3)
+    expect(bandEinfuegeIndex(99, drei, 30)).toBe(3)
+  })
+
+  it('kuerzere Folge wiederholt sich (t mod bandGesamt, TK 9.2.8)', () => {
+    const zwei = [{ dauer: 10 }, { dauer: 10 }] // bandGesamt 20, Video 50
+    expect(bandEinfuegeIndex(5, zwei, 50)).toBe(0)
+    expect(bandEinfuegeIndex(15, zwei, 50)).toBe(1)
+    expect(bandEinfuegeIndex(25, zwei, 50)).toBe(0) // 25 % 20 = 5
+    expect(bandEinfuegeIndex(35, zwei, 50)).toBe(1) // 35 % 20 = 15
+  })
+
+  it('unbrauchbare Zahlen fallen auf den Anfang', () => {
+    expect(bandEinfuegeIndex(Number.NaN, drei, 30)).toBe(0)
+    expect(bandEinfuegeIndex(-3, drei, 30)).toBe(0)
+    expect(bandEinfuegeIndex(5, drei, Number.NaN)).toBe(0)
+    expect(bandEinfuegeIndex(5, drei, 0)).toBe(0)
+  })
+
+  it('Abschnitte ohne brauchbare Dauer zaehlen nicht (bandGesamt 0 -> Anfang)', () => {
+    const kaputt = [{ dauer: Number.NaN }, { dauer: -1 }]
+    expect(bandEinfuegeIndex(5, kaputt, 30)).toBe(0)
+  })
+})
+
+// #428: die Zeitstelle im Video-Koerper (Sekunden ab Videoanfang) fuer den zeitbasierten Drop.
+describe('bandZeitImVideo (#428)', () => {
+  const video = [{ elementId: 'vid', art: 'video' as const }]
+
+  it('misst die Zeit ab dem Koerperstart (12 px Vorlauf, 8 px/s)', () => {
+    // koerperStart = 0 + 12; (28 - 12) / 8 = 2 s
+    expect(bandZeitImVideo(video, [80], 28, 14, 8)).toEqual({ elementId: 'vid', zeitSekunden: 2 })
+  })
+
+  it('null ausserhalb des Koerpers, auf einem Segment oder bei unbrauchbarem Mass', () => {
+    expect(bandZeitImVideo(video, [80], -5, 14, 8)).toBeNull()
+    expect(bandZeitImVideo(video, [80], 999, 14, 8)).toBeNull()
+    expect(bandZeitImVideo([{ elementId: 's', art: 'segment' as const }], [80], 28, 14, 8)).toBeNull()
+    expect(bandZeitImVideo(video, [80], 28, 14, 0)).toBeNull()
   })
 })
