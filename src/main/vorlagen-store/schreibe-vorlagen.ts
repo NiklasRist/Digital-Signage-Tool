@@ -35,6 +35,9 @@ import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { VorlagenFehlercode } from './fehlercodes'
 import { eingebauteVorlagen, EINGEBAUTE_VORLAGEN_IDS } from './eingebaute-vorlagen'
 import { ermittleDatenOrt } from '../datenort'
+// Q2/A: die domain-freie Schreib-Mechanik liegt jetzt an EINER Stelle
+// (docs/agents/schreib-mechanik-plan.md). Die Zahl WARTEZEITEN_MS bleibt hier.
+import { istCode, mitWiederholung, taugtAlsSicherung, text } from '../gemeinsam/schreib-mechanik'
 
 // Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #5:     ermittleDatenOrt(): string
@@ -729,7 +732,7 @@ async function schreibeJetzt(vorlagen: Vorlage[]): Promise<Ergebnis<void, Vorlag
   //      Sicherung. Uebernommen aus #31/#46/#69, wo sie beim Bau von #34 gefunden wurde.
   const sicherungsFehler =
     !ausBakGerettet && (await taugtAlsSicherung(ziel))
-      ? await mitWiederholung(() => fs.copyFile(ziel, sicherung))
+      ? await mitWiederholung(() => fs.copyFile(ziel, sicherung), WARTEZEITEN_MS)
       : null
   if (sicherungsFehler !== null && !istCode(sicherungsFehler, 'ENOENT')) {
     // ENOENT = es gibt noch keine vorlagen.json (erster Start). Dann ist nichts zu sichern, und
@@ -776,7 +779,7 @@ async function schreibeJetzt(vorlagen: Vorlage[]): Promise<Ergebnis<void, Vorlag
   // SCHRITT 3: der unteilbare Moment. Vorher zeigt der Name auf den alten Stand, nachher auf den
   // neuen; ein Dritter sieht nie etwas dazwischen. Die vorhandene Zieldatei wird NICHT vorher
   // geloescht - das oeffnete ein Fenster, in dem gar keine vorlagen.json existiert.
-  const umbenennFehler = await mitWiederholung(() => fs.rename(temp, ziel))
+  const umbenennFehler = await mitWiederholung(() => fs.rename(temp, ziel), WARTEZEITEN_MS)
   if (umbenennFehler !== null) {
     // Die .tmp bleibt hier bewusst liegen - anders als im Zweig darueber. Sie ist an dieser Stelle
     // VOLLSTAENDIG und gesynct, also die einzige Fassung des neuen Standes auf der Platte; sie
@@ -788,58 +791,6 @@ async function schreibeJetzt(vorlagen: Vorlage[]): Promise<Ergebnis<void, Vorlag
   // und alle weiteren Schreibvorgaenge kopieren wieder ganz normal nach .bak."
   ausBakGerettet = false
   return { ok: true, wert: undefined }
-}
-
-/**
- * Ist die vorhandene Zieldatei als Sicherung ueberhaupt brauchbar?
- *
- * Die Pruefung ist bewusst schwach - nur "laesst sich lesen und als JSON auswerten". Sie beurteilt
- * NICHT, ob der Inhalt fachlich vollstaendig ist. Hier geht es allein um die Frage, ob diese Datei
- * als Rueckfallebene taugt - und eine Datei, die nicht einmal parst, taugt es nicht.
- *
- * Ist sie unbrauchbar, wird die Sicherung UEBERSPRUNGEN statt abgebrochen: Die vorhandene `.bak`
- * bleibt unberuehrt und damit die letzte heile Fassung, und der neue, gute Stand wird trotzdem
- * geschrieben. Ein Abbruch waere hier das Gegenteil von hilfreich - er verweigerte das Speichern
- * genau dann, wenn die Hauptdatei ohnehin schon kaputt ist.
- */
-async function taugtAlsSicherung(pfad: string): Promise<boolean> {
-  try {
-    // SAFETY: JSON.parse liefert `any`; der Cast auf unknown macht das Ergebnis zum
-    // ungeprueften Wert - gewollt, denn hier zaehlt nur das "parsebar ja/nein".
-    JSON.parse(await fs.readFile(pfad, 'utf8')) as unknown
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
- * Fuehrt `arbeit` aus und wiederholt sie, solange der Fehler auf ein offenes Handle hindeutet.
- * Rueckgabe `null` = gelungen; sonst der letzte Fehler.
- *
- * Die Schleife laeuft ueber die Wartezeiten statt ueber einen Zaehler - so gibt es keinen
- * Feldzugriff, der wegen `noUncheckedIndexedAccess` `undefined` liefern koennte, und damit auch
- * keine Versuchung zum verbotenen `!` (#193).
- */
-async function mitWiederholung(arbeit: () => Promise<void>): Promise<unknown> {
-  let letzter: unknown = null
-  for (const warteMs of [0, ...WARTEZEITEN_MS]) {
-    if (warteMs > 0) {
-      await new Promise<void>((weiter) => setTimeout(weiter, warteMs))
-    }
-    try {
-      await arbeit()
-      return null
-    } catch (ursache) {
-      letzter = ursache
-      // Alles andere (ENOENT, ENOSPC, EACCES) verschwindet nicht von selbst - dort waere Warten nur
-      // eine Verzoegerung mit demselben Ausgang.
-      if (!istCode(ursache, 'EPERM', 'EBUSY')) {
-        return ursache
-      }
-    }
-  }
-  return letzter
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -911,20 +862,6 @@ function tiefeKopie(vorlagen: Vorlage[]): Vorlage[] {
   return structuredClone(vorlagen)
 }
 
-/** Prueft den `code` eines Node-Systemfehlers, ohne ihn auf einen Typ zu zwingen, den er nicht hat. */
-function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
-}
-
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle - bewusst OHNE Nutztyp, damit sie fuer `Ergebnis<void, …>` genauso
