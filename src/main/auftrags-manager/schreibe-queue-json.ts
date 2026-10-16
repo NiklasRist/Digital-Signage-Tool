@@ -31,6 +31,9 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
+// Q2/A: die domain-freie Schreib-Mechanik liegt jetzt an EINER Stelle
+// (docs/agents/schreib-mechanik-plan.md). Die Zahl WARTEZEITEN_MS bleibt hier.
+import { istCode, mitWiederholung, taugtAlsSicherung, text } from '../gemeinsam/schreib-mechanik'
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #49: projektOrdner(projektId: string): string
@@ -433,7 +436,7 @@ async function schreibeJetzt(ziel: string, inhalt: string): Promise<Ergebnis<voi
   // Ein Verschieben liesse die Queue-Datei fuer die Dauer des Schreibvorgangs verschwinden.
   // NUR sichern, wenn die vorhandene Datei als Rueckfallebene taugt - s. taugtAlsSicherung().
   const sicherungsFehler = (await taugtAlsSicherung(ziel))
-    ? await mitWiederholung(() => fs.copyFile(ziel, sicherung))
+    ? await mitWiederholung(() => fs.copyFile(ziel, sicherung), WARTEZEITEN_MS)
     : null
   if (sicherungsFehler !== null && !istCode(sicherungsFehler, 'ENOENT')) {
     // ENOENT = die Datei gibt es noch nicht (erste Benutzung). Dann ist nichts zu sichern, und
@@ -489,7 +492,7 @@ async function schreibeJetzt(ziel: string, inhalt: string): Promise<Ergebnis<voi
   // SCHRITT 3: der unteilbare Moment. Vorher zeigt der Name auf den alten Stand, nachher auf den
   // neuen; ein Dritter sieht nie etwas dazwischen. Die vorhandene Zieldatei wird NICHT vorher
   // geloescht - das oeffnete ein Fenster, in dem die Datei gar nicht existiert.
-  const umbenennFehler = await mitWiederholung(() => fs.rename(temp, ziel))
+  const umbenennFehler = await mitWiederholung(() => fs.rename(temp, ziel), WARTEZEITEN_MS)
   if (umbenennFehler !== null) {
     // Die .tmp bleibt hier bewusst liegen - anders als im Zweig darueber. Sie ist an dieser
     // Stelle VOLLSTAENDIG und gesynct, also die einzige Fassung des neuen Standes auf der Platte;
@@ -504,85 +507,6 @@ async function schreibeJetzt(ziel: string, inhalt: string): Promise<Ergebnis<voi
   return { ok: true, wert: undefined }
 }
 
-/**
- * Ist die vorhandene Zieldatei als Sicherung ueberhaupt brauchbar?
- *
- * WARUM DIESE FRAGE UEBERHAUPT GESTELLT WIRD (gefunden beim Bau von #34 am 12.08.2026, hier
- * uebernommen): Die Sicherung laeuft als ERSTER Schritt und kopierte in #31/#46 zunaechst, was
- * immer dort lag. Wurde eine Datei gerade AUS ihrer .bak gerettet - weil die Hauptdatei defekt
- * war -, dann kopierte der naechste Schreibvorgang genau diese defekte Datei ueber die einzige
- * heile Fassung. Scheitert danach das Schreiben, und die haeufigste Ursache dafuer ist eine
- * volle Platte, ist der Stand ENDGUELTIG weg.
- *
- * Fuer die Queue-Dateien ist dieser Ablauf nicht bloss denkbar, sondern eingebaut: leseJetzt
- * liefert oben ausdruecklich den Inhalt der .bak zurueck und laesst die defekte Hauptdatei
- * liegen. Ohne diese Pruefung wuerde der darauffolgende Schreibvorgang die Rettung zunichte
- * machen.
- *
- * Die Pruefung ist bewusst schwach - nur "laesst sich lesen und als JSON auswerten". Sie
- * beurteilt NICHT, ob der Inhalt fachlich vollstaendig ist; das entscheiden #55/#56/#57. Hier
- * geht es allein um die Frage, ob diese Datei als Rueckfallebene taugt - und eine Datei, die
- * nicht einmal parst, taugt es nicht.
- *
- * Ist sie unbrauchbar, wird die Sicherung UEBERSPRUNGEN statt abgebrochen: Die vorhandene .bak
- * bleibt unberuehrt und damit die letzte heile Fassung, und der neue, gute Stand wird trotzdem
- * geschrieben. Ein Abbruch waere hier das Gegenteil von hilfreich - er verweigerte das Speichern
- * genau dann, wenn die Hauptdatei ohnehin schon kaputt ist.
- */
-async function taugtAlsSicherung(pfad: string): Promise<boolean> {
-  try {
-    // SAFETY: JSON.parse liefert `any`; der Cast auf unknown macht das Ergebnis zum
-    // ungeprueften Wert - gewollt, denn hier zaehlt nur das "parsebar ja/nein".
-    JSON.parse(await fs.readFile(pfad, 'utf8')) as unknown
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
- * Fuehrt `arbeit` aus und wiederholt sie, solange der Fehler auf ein offenes Handle hindeutet.
- * Rueckgabe `null` = gelungen; sonst der letzte Fehler.
- *
- * Die Schleife laeuft ueber die Wartezeiten statt ueber einen Zaehler - so gibt es keinen
- * Feldzugriff, der wegen `noUncheckedIndexedAccess` `undefined` liefern koennte, und damit auch
- * keine Versuchung zum verbotenen `!` (#193).
- */
-async function mitWiederholung(arbeit: () => Promise<void>): Promise<unknown> {
-  let letzter: unknown = null
-  for (const warteMs of [0, ...WARTEZEITEN_MS]) {
-    if (warteMs > 0) {
-      await new Promise<void>((weiter) => setTimeout(weiter, warteMs))
-    }
-    try {
-      await arbeit()
-      return null
-    } catch (ursache) {
-      letzter = ursache
-      // Alles andere (ENOENT, ENOSPC, EACCES) verschwindet nicht von selbst - dort waere Warten
-      // nur eine Verzoegerung mit demselben Ausgang.
-      if (!istCode(ursache, 'EPERM', 'EBUSY')) {
-        return ursache
-      }
-    }
-  }
-  return letzter
-}
-
-/** Prueft den `code` eines Node-Systemfehlers, ohne ihn auf einen Typ zu zwingen, den er nicht hat. */
-function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
-}
-
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle - bewusst OHNE Nutztyp, damit sie fuer `Ergebnis<void, …>` genauso
