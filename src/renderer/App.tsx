@@ -63,6 +63,7 @@ import { aktualisiereAusgaben } from './composer/ausgabe-liste'
 import { starteMedienImport } from './app-shell/medien-import-uebergabe'
 import { waehleVideoPfad, reiheVideoImportEin } from './app-shell/anlegen-video'
 import { leererEntwurf, legeAktionAn } from './action-editor/aktion-bearbeiten'
+import { loescheAktion } from './action-editor/aktion-loeschen'
 import { ComposerWurzel } from './composer/index'
 import { ActionEditorWurzel } from './action-editor'
 import { VorlagenEditorWurzel } from './vorlagen-editor'
@@ -203,6 +204,9 @@ export function App(): JSX.Element {
         // #136-Entwurf (#319: Marke = Projekt-Standardmarke, Akzentfarbe null).
         legeAktionAn: ({ titel, vorlagenId, markeId }) =>
           legeAktionAn({ ...leererEntwurf(vorlagenId, markeId, null), titel }),
+        // #430: „Aktion loeschen" - der Composer wendet den zurueckgegebenen Stand an.
+        // Reine Durchreichung des #142-Wegs (Kaskade rechnet der Main).
+        loescheAktion,
         reparatur: reparatur.stand,
         meldeReparaturStand: (stand: ReparaturStand) => {
           if (umgebungRef.current !== null) meldeStand(umgebungRef.current, stand)

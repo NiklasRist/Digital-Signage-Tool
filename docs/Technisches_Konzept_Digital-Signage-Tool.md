@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.6 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.24 (Anwendungsmenue ohne Undo/Redo-Acceleratoren: Cmd+Z erreicht die Projekt-Bearbeitung; s. 9.14.2)
+**Version:** 3.25 (Aktion loeschen aus der Composer-Bibliothek, ohne Rueckfrage und in EINEM Undo-Schritt; s. 9.7.2)
 **Datum:** 15.10.2026
 **Status:** In Planung
 
@@ -1359,6 +1359,7 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 - **Ausgang – Instant-Mutationen** (`project-store` 9.5.2): `fügeElementHinzu` (Asset- **oder** Aktions-Referenz; mehrere Listenelemente dürfen dieselbe Aktion referenzieren), `entferneElement`, `ordneNeu`, `setzeTrim`, `setzeDauer`, sowie – **nur bei Video-Elementen** – `setzeEinblendung` (Band-Vorlage wählen, Abschnitte hinzufügen/ordnen/entfernen, Abschnitts-Dauern setzen; FA-20, 9.2.8).
 - **Parallele Einblendung in der UI (FA-20):** Am Video-Element lässt sich ein Werbeband anhängen: **Band-Vorlage** wählen (`art: "band"`, 9.11.1) und eine **Folge von Aktionen mit Dauern** zusammenstellen. Der composer zeigt dabei an, ob die Folge **kürzer** als das Video ist (dann wiederholt sie sich) oder **länger** (dann wird am Videoende abgeschnitten) – damit der Nutzer die Wirkung versteht, ohne rendern zu müssen. Die Elementdauer bleibt **allein** durch das Video bestimmt; das Band verändert sie nie.
 - **Ausgang – Aufträge** (Queue 9.3): `render`, `export`.
+- **Aktion löschen aus der Bibliothek (v3.25, #430):** Jede **Aktionszeile** der Composer-Bibliothek trägt neben „Zur Liste hinzufügen“ ein **Löschen**. Es wirkt **ohne Rückfrage** und ist **ein** Undo-Schritt (TK 9.13.1: „Aktionen … löschen“ ist undo-fähig). Die **Kaskade** (Segment-Listenelemente verschwinden ganz, Band-Abschnitte fallen weg; TK 9.5.3) rechnet der `project-store` – der Composer wendet den zurückgegebenen `stand` an und baut **nichts** nach. Der **Reiter Aktionen** behält seine Zahlen-Vorschau (#142); die Bibliothek fragt bewusst **nicht**, weil der Schritt in einem Zug rückgängig zu machen ist.
 
 #### 9.7.3 Optimistische Bedienung & Fehlerbehandlung
 

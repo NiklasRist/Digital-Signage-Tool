@@ -27,7 +27,7 @@
 
 import { useEffect, useState, useRef, type JSX, type MouseEvent as ReactMouseEvent } from 'react'
 
-import type { Listenelement, Project } from '../../shared/contracts/project'
+import type { Listenelement, Project, Bearbeitungsstand } from '../../shared/contracts/project'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjektZugang, VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
@@ -139,6 +139,16 @@ export interface AktionAnlegenAuftrag {
   markeId: string
 }
 
+/** #430: die Antwort des Loeschens (Form von `loescheAktion`, #142). Die Kaskade rechnet
+ *  der Main (TK 9.5.3); `stand` traegt die neue `liste`/`aktionen`, die beiden
+ *  Kennungslisten erklaeren, was geschah. Der Composer wendet `stand` an - nachgebaut
+ *  wird nichts. */
+export interface LoeschAktionAntwort {
+  stand: Bearbeitungsstand
+  entfernteElementIds: string[]
+  geaenderteElementIds: string[]
+}
+
 /**
  * Was diese Wurzel aus ANDEREN Renderer-Modulen braucht und nicht importieren darf
  * (Entscheidung E1: modulübergreifend reisen nur Typen, keine Aufrufe).
@@ -150,6 +160,9 @@ export interface ComposerVerdrahtung {
   /** #416: „Aktion anlegen" (der #136-Weg). Der vollstaendige Entwurf entsteht im
    *  Aktions-Editor; diese Wurzel reisst keinen zweiten Entwurf auf. */
   legeAktionAn: (auftrag: AktionAnlegenAuftrag) => Promise<Ergebnis<Aktion>>
+  /** #430: „Aktion loeschen" (der #142-Weg). Die Kaskade rechnet der Main; diese Wurzel
+   *  wendet den zurueckgegebenen Stand an (EIN Undo-Schritt ueber den Wrapped-Zugang). */
+  loescheAktion: (aktionId: string) => Promise<Ergebnis<LoeschAktionAntwort>>
   /** Der Reparatur-Stand, den die Shell haelt (#201). null = nie gestartet.
    *  Wird NUR GELESEN – diese Wurzel haelt ihn NICHT (s. #259, ENTSCHIEDEN 5). */
   reparatur: ReparaturStand | null
@@ -399,6 +412,27 @@ export function ComposerInterna({
         // Bibliothek liest inhalt.aktionen und zeigt den Eintrag SOFORT (#416-DoD).
         projekt.setzeProjekt({ ...inhalt, aktionen: [...inhalt.aktionen, aktion] })
       })
+  }
+
+  // #430: eine Aktion loeschen (der #142-Weg). Der Main rechnet die Kaskade
+  // (TK 9.5.3); diese Wurzel baut sie NICHT nach, sondern wendet den zurueckgegebenen
+  // Stand an. `projekt.setzeProjekt` laeuft ueber den Wrapped-Zugang -> EIN Undo-Schritt
+  // (TK 9.13.1: "Aktionen ... loeschen" ist undo-faehig). KEINE Rueckfrage (User-Entscheidung
+  // 16.10.2026) - der Schritt ist in EINEM Zug rueckgaengig zu machen.
+  const loescheAktionInline = (aktionId: string): void => {
+    if (inhalt === null) return
+    void verdrahtung.loescheAktion(aktionId).then((ergebnis) => {
+      if (!ergebnis.ok) {
+        setzeLage((alt) =>
+          melde(alt, { code: ergebnis.fehler.code, meldung: ergebnis.fehler.meldung, warnung: true }),
+        )
+        return
+      }
+      const aktuell = projekt.hole().projekt
+      if (aktuell === null) return
+      const stand = ergebnis.wert.stand
+      projekt.setzeProjekt({ ...aktuell, aktionen: stand.aktionen, liste: stand.liste })
+    })
   }
 
   const oeffneRenderDialog = (): void => {
@@ -783,6 +817,7 @@ export function ComposerInterna({
                 aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
                 vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
                 aufAktionAnlegen={legeAktionAnInline}
+                aufAktionLoeschen={loescheAktionInline}
                 aufMediumLoeschen={(assetId) => {
                   // #423 (User 15.10.2026: "immer mindestens ein Video"): Das eine Video
                   // wird NICHT geloescht - ein Projekt hat immer genau eines. Ersetzen

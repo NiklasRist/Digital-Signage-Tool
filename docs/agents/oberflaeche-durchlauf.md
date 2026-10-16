@@ -929,3 +929,23 @@ Ereignisse gesammelt: 14
 
 - **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-16T10:01:26.741Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Undo Aktions-Anlage: erwartet "der Undo-Pfeil nimmt eine neu angelegte Aktion zurück (#416/FA-21)", erkannt "Aktionen 4->2 (erwartet 3)" (Ort: composer/index.tsx)
+- **Befund** Aktion loeschen: erwartet "der Loeschen-Knopf entfernt die Aktion aus der Bibliothek (#430)", erkannt "Aktionen 2->0 (erwartet 1)" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-16T10:03:29.946Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 13
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

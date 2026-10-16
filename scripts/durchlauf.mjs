@@ -1430,7 +1430,7 @@ const main = async () => {
     await klick('[data-testid="reiter-zusammenstellen"]');
     await schlafe(600);
     const aktionenDavor4g = await seite.evaluate(
-      () => document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]').length,
+      () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
     );
     const formDa4g = await seite.evaluate(() => !!document.querySelector('[data-testid="aktion-anlegen"]'));
     if (!formDa4g) {
@@ -1451,7 +1451,7 @@ const main = async () => {
       });
       await schlafe(2_500);
       const aktionenDanach4g = await seite.evaluate(
-        () => document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]').length,
+        () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
       );
       if (aktionenDanach4g > aktionenDavor4g) {
         console.log(`[schritt-4g] Aktion anlegen GEMESSEN: ${aktionenDavor4g} -> ${aktionenDanach4g} Aktionen (#416 belegt).`);
@@ -1468,7 +1468,7 @@ const main = async () => {
       await klick('[data-testid="reiter-zusammenstellen"]');
       await schlafe(500);
       const aktionenVorUndo4g2 = await seite.evaluate(
-        () => document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]').length,
+        () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
       );
       const undoAktiv4g2 = await seite.evaluate(() => {
         const k = document.querySelector('[data-testid="undo-pfeil"]');
@@ -1479,7 +1479,7 @@ const main = async () => {
         await schlafe(1_500);
       }
       const aktionenNachUndo4g2 = await seite.evaluate(
-        () => document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]').length,
+        () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
       );
       console.log(`[schritt-4g2] Aktions-Anlage rückgängig: Aktionen ${aktionenVorUndo4g2}->${aktionenNachUndo4g2}; Undo war aktiv=${undoAktiv4g2}`);
       if (undoAktiv4g2 === true && aktionenNachUndo4g2 !== aktionenVorUndo4g2 - 1) {
@@ -1488,6 +1488,45 @@ const main = async () => {
           "Befund", "composer/index.tsx");
       } else if (undoAktiv4g2 === true) {
         console.log("[schritt-4g2] Undo nach Aktions-Anlage GEMESSEN (#416/FA-21).");
+      }
+    }
+
+    // Schritt 4g4 - Aktion in der Bibliothek loeschen + Undo (#430). Ohne Rueckfrage;
+    // der Schritt ist in EINEM Zug rueckgaengig zu machen.
+    {
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(500);
+      const vor4g4 = await seite.evaluate(
+        () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
+      );
+      const loeschKnopf4g4 = await seite.$('[data-testid^="aktion-loeschen-"]');
+      let nach4g4 = vor4g4;
+      let undo4g4 = vor4g4;
+      if (loeschKnopf4g4 === null) {
+        fund("Aktion loeschen", "Loeschen-Knopf in der Composer-Bibliothek (#430)",
+          "kein aktion-loeschen-Knopf gefunden", "Befund", "composer/bibliothek-ansicht.tsx");
+      } else {
+        await loeschKnopf4g4.click();
+        loeschKnopf4g4.dispose?.();
+        await schlafe(2_000);
+        nach4g4 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
+        );
+        await klick('[data-testid="undo-pfeil"]');
+        await schlafe(1_500);
+        undo4g4 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
+        );
+        console.log(`[schritt-4g4] Aktion loeschen: ${vor4g4} -> ${nach4g4} -> Undo ${undo4g4}`);
+        if (nach4g4 !== vor4g4 - 1) {
+          fund("Aktion loeschen", "der Loeschen-Knopf entfernt die Aktion aus der Bibliothek (#430)",
+            `Aktionen ${vor4g4}->${nach4g4} (erwartet ${vor4g4 - 1})`, "Befund", "composer/index.tsx");
+        } else if (undo4g4 !== vor4g4) {
+          fund("Aktion loeschen-Undo", "Cmd+Z/Pfeil nimmt das Loeschen in EINEM Schritt zurueck (#430/TK 9.13.1)",
+            `Aktionen nach Undo ${undo4g4} (erwartet ${vor4g4})`, "Befund", "composer/index.tsx");
+        } else {
+          console.log("[schritt-4g4] Aktion loeschen GEMESSEN: entfernt und in EINEM Schritt rueckgaengig (#430).");
+        }
       }
     }
 
