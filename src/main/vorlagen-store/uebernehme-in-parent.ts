@@ -28,6 +28,7 @@ import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/erg
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { VorlagenFehlercode } from './fehlercodes'
 import { aendereBestand } from './schreibe-vorlagen'
+import { text } from '../gemeinsam/systemfehler'
 
 /**
  * Übernimmt den Stand einer Arbeitskopie VOLLSTAENDIG in ihren Parent (TK 9.12.1):
@@ -187,9 +188,6 @@ function pruefeHoehe(kopie: Vorlage): Ergebnis<never, VorlagenFehlercode> | null
   return null
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle - bewusst OHNE Nutztyp, damit sie fuer `Ergebnis<Vorlage, …>`

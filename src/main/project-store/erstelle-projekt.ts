@@ -32,6 +32,7 @@ import {
   AKTUELLE_SCHEMA_VERSION,
   STANDARD_ANZEIGEDAUER_SEKUNDEN,
 } from '../../shared/contracts/konstanten'
+import { text } from '../gemeinsam/systemfehler'
 
 import { merkeAktivesProjekt } from './aktives-projekt'          // #192
 import { mitD1Lock } from './d1-lock'
@@ -232,9 +233,6 @@ function speicherFehler(meldung: string): Ergebnis<Project, ProjectStoreFehlerco
   return { ok: false, fehler: { code: 'speicher_fehler', meldung } }
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 // NICHT HIER, UND GEMELDET:
 //

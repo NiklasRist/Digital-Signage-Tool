@@ -26,6 +26,7 @@
 
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import { aendereKonfig, type ConfigFehlercode } from './schreibe-config'   // #31
+import { text } from '../gemeinsam/systemfehler'
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #31: aendereKonfig<T>(
@@ -133,6 +134,3 @@ function fehler(code: GenerischerFehlercode, meldung: string): Ergebnis<void> {
   return { ok: false, fehler: { code, meldung } }
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}

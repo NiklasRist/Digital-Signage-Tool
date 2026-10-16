@@ -58,6 +58,7 @@ import { projektOrdner } from './pfade'                           // #49
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
+import { istCode, text } from '../gemeinsam/systemfehler'
 
 // WARUM `aendereKonfig` (#31) UND NICHT `setzeAktivesProjekt` (#27): Die Abhaengigkeitsliste des
 // Issues nennt #27 als die Stelle, die "das aktive Projekt in config-store zurueck auf null"
@@ -376,20 +377,6 @@ async function vergissAktivesProjekt(id: string): Promise<string | null> {
   return geaendert.ok ? null : geaendert.fehler.meldung
 }
 
-/** Prueft den `code` eines Node-Systemfehlers, ohne ihn auf einen Typ zu zwingen, den er nicht hat. */
-function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
-}
-
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 /**
  * Die Fehlerseite der Huelle.

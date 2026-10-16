@@ -17,6 +17,7 @@ import { stat } from 'node:fs/promises'
 import { shell } from 'electron'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { projektOrdner } from './pfade'
+import { istCode } from '../gemeinsam/systemfehler'
 
 /**
  * "intern protokolliert" - dieselbe vorlaeufige Loesung wie im ipc-gateway (#23)
@@ -31,14 +32,6 @@ function protokolliere(stelle: string, ursache: unknown): void {
   console.error(`[project-store/oeffne-projektordner] ${stelle}:`, ursache)
 }
 
-function istCode(ursache: unknown, code: string): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der Vergleich darunter prueft es zur Laufzeit.
-  return (ursache as { code?: unknown }).code === code
-}
 
 /**
  * Öffnet `projects/<projektId>/` im Datei-Explorer des Betriebssystems (TK 9.5.2).

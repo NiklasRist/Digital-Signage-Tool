@@ -57,6 +57,7 @@ import { PROJEKT_DATEI as DATEI, PROJEKT_DATEI_SICHERUNG as SICHERUNG, projektOr
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { Project } from '../../shared/contracts/project'
 import type { ProjectStoreFehlercode } from './assets'            // #72
+import { istCode, text } from '../gemeinsam/systemfehler'
 
 /** Dateiname im Projektordner - gleichlautend mit dem Schreiber (#46) und mit #35. */
 
@@ -455,20 +456,6 @@ function fehler(
   return { ok: false, fehler: { code: grund, meldung } }
 }
 
-/** Prueft den `code` eines Node-Systemfehlers, ohne ihn auf einen Typ zu zwingen, den er nicht hat. */
-function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
-}
-
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 // NICHT HIER, UND GEMELDET:
 //

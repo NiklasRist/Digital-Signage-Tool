@@ -18,6 +18,7 @@ import { holeQ2Stand } from './q2-wiederholung'
 
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import { text } from '../gemeinsam/systemfehler'
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #54: alleQ1(): Auftrag[]
@@ -146,6 +147,3 @@ function juengsterZuerst(a: Auftrag, b: Auftrag): number {
   return 0
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}

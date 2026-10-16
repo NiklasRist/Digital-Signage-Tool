@@ -33,7 +33,9 @@ import path from 'node:path'
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 // Q2/A: die domain-freie Schreib-Mechanik liegt jetzt an EINER Stelle
 // (docs/agents/schreib-mechanik-plan.md). Die Zahl WARTEZEITEN_MS bleibt hier.
-import { istCode, mitWiederholung, taugtAlsSicherung, text } from '../gemeinsam/schreib-mechanik'
+import { mitWiederholung, taugtAlsSicherung } from '../gemeinsam/schreib-mechanik'
+// Die generischen Systemfehler-Helfer liegen neutral (Q2/A S7).
+import { istCode, text } from '../gemeinsam/systemfehler'
 
 // Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
 //   #49: projektOrdner(projektId: string): string

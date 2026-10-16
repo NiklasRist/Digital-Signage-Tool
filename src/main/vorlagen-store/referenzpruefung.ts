@@ -25,6 +25,7 @@ import type { VorlagenReferenz, Vorlagennutzung } from '../../shared/contracts/v
 // BEIDE Typen gehören #95 und werden hier NUR importiert, NIE neu deklariert: Sie reisen als
 // fehler.daten über die IPC-Grenze (#107), und der Renderer darf nicht aus src/main/** importieren.
 import type { ProjectStoreFehlercode } from '../project-store/assets'
+import { text } from '../gemeinsam/systemfehler'
 
 // EIN FEHLSCHLAG DIESER FUNKTION IST KEINE LEERE TREFFERLISTE.
 //
@@ -278,9 +279,4 @@ function feldArray(wurzel: Record<string, unknown>, feld: 'aktionen' | 'liste'):
 function idVon(eintrag: Record<string, unknown>): string {
   const wert = eintrag['id']
   return typeof wert === 'string' ? wert : ''
-}
-
-/** Fehlergrund als Text - `unknown` ist im catch alles, was geworfen wurde. */
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
 }

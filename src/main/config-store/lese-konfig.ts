@@ -21,6 +21,7 @@ import { ermittleDatenOrt } from '../datenort'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { AppKonfig } from '../../shared/contracts/app-konfig'   // #265
 import type { ConfigFehlercode } from './schreibe-config'            // #31
+import { istCode, text } from '../gemeinsam/systemfehler'
 
 const DATEI = 'config.json'
 
@@ -140,20 +141,6 @@ function alsAppKonfig(wert: unknown): AppKonfig | null {
   }
 }
 
-/** Prueft den `code` eines Node-Systemfehlers, ohne ihn auf einen Typ zu zwingen, den er nicht hat. */
-function istCode(ursache: unknown, ...codes: readonly string[]): boolean {
-  if (typeof ursache !== 'object' || ursache === null || !('code' in ursache)) {
-    return false
-  }
-  // SAFETY: die Zeile davor hat code in ursache belegt; der Cast macht das Feld
-  // sichtbar, und der typeof-Check darunter prueft es zur Laufzeit.
-  const code = (ursache as { code?: unknown }).code
-  return typeof code === 'string' && codes.includes(code)
-}
-
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 // AppKonfig: { aktivesProjektId: string | null, letztesExportZiel: string | null,
 //              uiVoreinstellungen: Record<string, unknown> }   // #265 - OHNE marke;
 //              die Marke kommt ausschliesslich ueber leseMarke() (#29)

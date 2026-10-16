@@ -46,6 +46,7 @@ import { schreibeProjekt } from './schreibe-projekt'
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Project } from '../../shared/contracts/project'
+import { text } from '../gemeinsam/systemfehler'
 export type AutoSpeichernEreignis =
   | { typ: "gespeichert" }
   | { typ: "fehler"; code: ProjectStoreFehlercode | GenerischerFehlercode }
@@ -364,9 +365,6 @@ function melde(ereignis: AutoSpeichernEreignis): void {
   }
 }
 
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
-}
 
 // NICHT HIER, UND GEMELDET:
 //

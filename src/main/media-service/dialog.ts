@@ -16,6 +16,7 @@
 import { dialog } from 'electron'
 import { FORMAT_WHITELIST } from '../../shared/contracts/asset'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import { text } from '../gemeinsam/systemfehler'
 
 // DER EINSTIEGSPUNKT JEDES IMPORTS (FA-01) - und die einzige Stelle, an der ein
 // absoluter Fremdpfad ins System kommt. Zwei Dinge entscheiden sich hier, und beide
@@ -198,15 +199,4 @@ export async function öffneMedienDialog(
  */
 function vermerke(ursache: unknown): void {
   console.error('[media-service] öffneMedienDialog: Der Datei-Dialog hat geworfen:', ursache)
-}
-
-/**
- * Die Ausnahme als Klartext - `message` bei einem `Error`, sonst die Zeichenkette.
- *
- * `String(ursache)` greift bewusst auch fuer geworfene Nicht-Fehler (eine Zeichenkette,
- * `undefined`, ein Objekt): Diese Funktion darf selbst unter keinen Umstaenden werfen,
- * sonst risse sie genau den Zweig auf, der die Prozessgrenze schuetzen soll.
- */
-function text(ursache: unknown): string {
-  return ursache instanceof Error ? ursache.message : String(ursache)
 }
