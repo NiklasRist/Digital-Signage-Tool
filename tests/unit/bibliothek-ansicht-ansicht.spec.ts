@@ -175,6 +175,36 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx, #422)", () => {
     expect(knopfe.some((b) => b.textContent?.includes("Löschen"))).toBe(true);
   });
 
+  it("ohne aufAktionLoeschen traegt die Aktionszeile KEINEN Loeschen-Knopf (#430)", () => {
+    const p = projekt({ id: "p1", aktionen: [aktion({ id: "k1" })] });
+    act(() => {
+      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
+    });
+
+    expect(host.querySelector("[data-testid='aktion-loeschen-k1']")).toBeNull();
+  });
+
+  it("mit aufAktionLoeschen loest der Loeschen-Knopf GENAU EINEN Ruf mit der Aktions-ID aus (#430)", async () => {
+    const aufAktionLoeschen = vi.fn();
+    const p = projekt({ id: "p1", aktionen: [aktion({ id: "k1" })] });
+    act(() => {
+      root.render(
+        createElement(Bibliotheksansicht, eigenschaften({ projekt: p, aufAktionLoeschen })),
+      );
+    });
+
+    const knopf = host.querySelector("[data-testid='aktion-loeschen-k1']");
+    expect(knopf).not.toBeNull();
+    await act(async () => {
+      knopf?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(aufAktionLoeschen).toHaveBeenCalledTimes(1);
+    expect(aufAktionLoeschen).toHaveBeenCalledWith("k1");
+    // Der Loeschen-Knopf reisst KEINEN Hinzufuege-Ruf mit an.
+    expect(attrappen.fuegeElementHinzu).not.toHaveBeenCalled();
+  });
+
   it("ruft fuegeElementHinzu genau einmal mit der Aktions-ID beim Aktions-Klick (DoD)", async () => {
     const p = projekt({ id: "p1", aktionen: [aktion({ id: "k1" })] });
     act(() => {

@@ -32,6 +32,9 @@ export interface BibliothekEigenschaften {
   vorlagen?: readonly Vorlage[]
   /** #416: legt eine Aktion an (Titel + Vorlage; Marke = Projekt-Standardmarke). */
   aufAktionAnlegen?: (eingabe: AktionAnlegenEingabe) => void
+  /** #430: loescht eine Aktion (Kaskade im Main). FEHLT sie, gibt es KEINEN Loeschen-Knopf
+   *  (dieselbe Haltung wie bei `aufAktionAnlegen`: die Ansicht erfindet keinen Weg). */
+  aufAktionLoeschen?: (aktionId: string) => void
 }
 
 /**
@@ -92,7 +95,7 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
       ) : (
         <ul data-testid="aktionen-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {aktionen.map((eintrag) => (
-            <Aktionszeile key={eintrag.aktion.id} eintrag={eintrag} aufFehler={p.aufFehler} sichtSchreiber={p.sichtSchreiber} />
+            <Aktionszeile key={eintrag.aktion.id} eintrag={eintrag} aufFehler={p.aufFehler} sichtSchreiber={p.sichtSchreiber} aufLoeschen={p.aufAktionLoeschen} />
           ))}
         </ul>
       )}
@@ -146,6 +149,8 @@ interface AktionszeileEigenschaften {
   eintrag: AktionsEintrag
   aufFehler: (code: string, meldung: string) => void
   sichtSchreiber: (liste: Listenelement[]) => void
+  /** #430: loescht die Aktion (ohne Rueckfrage, EIN Undo-Schritt). Fehlt sie, kein Knopf. */
+  aufLoeschen?: (aktionId: string) => void
 }
 
 function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
@@ -172,6 +177,17 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
         <button type="button" onClick={() => void hinzufuegen(p.eintrag.aktion.id, p.aufFehler, p.sichtSchreiber)}>
           Zur Liste hinzufügen
         </button>
+        {/* #430: Aktion loeschen - OHNE Rueckfrage (User-Entscheidung 16.10.2026); der
+            Schritt ist in EINEM Zug rueckgaengig zu machen (TK 9.13.1). */}
+        {p.aufLoeschen !== undefined && (
+          <button
+            type="button"
+            data-testid={`aktion-loeschen-${p.eintrag.aktion.id}`}
+            onClick={() => p.aufLoeschen?.(p.eintrag.aktion.id)}
+          >
+            Löschen
+          </button>
+        )}
       </div>
     </li>
   )
