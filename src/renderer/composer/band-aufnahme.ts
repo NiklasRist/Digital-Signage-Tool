@@ -27,6 +27,7 @@
 import type { Listenelement } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../shared/contracts/konstanten'
+import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 import { fuegeAbschnittAn, waehlbareBandVorlagen, type BandEntwurf } from './einblendung-bearbeiten'
 import { entwurfAus } from './einblendung-ansicht'
 
@@ -87,47 +88,103 @@ export function bandAufnahmeAus(
 }
 
 /**
- * #428: Der Einfüge-Index für eine Aktion, die an einer ZEITSTELLE `zeitSekunden` auf
- * das Video gezogen wurde. Das Band bleibt eine ROTATION (Entscheidung 1a) - die
- * Zeit ist nur die Bedienung: sie wählt die Stelle in der Abschnittsfolge.
- *
- * Die Abbildung ist genau das Zeitverhalten aus TK 9.2.8: Ist die Folge kürzer als
- * das Video, WIEDERHOLT sie sich (`t mod bandGesamt`); ist sie länger, wird am
- * Videoende abgeschnitten (also `min(t, bandGesamt)`). Eingefügt wird VOR den
- * Abschnitt, in dessen Zeitfenster die wirksame Zeit fällt; hinter dem letzten
- * Abschnitt ans Ende.
- *
- * REIN: kein Zustand, kein IPC. Ein leerer Bestand ergibt 0 (der erste Abschnitt);
- * unbrauchbare Zahlen (NaN, negativ) fallen auf 0 zurück - eine erfundene Position
- * wäre schlimmer als der Anfang.
+ * Die WIRKSAME Zeit in der Bandfolge: bei kuerzerer Folge `t mod bandGesamt`, sonst bis
+ * `bandGesamt` beschnitten - genau das Zeitverhalten aus TK 9.2.8. `null`, wenn die Folge
+ * keine brauchbare Dauer hat (dann gibt es keine Stelle).
  */
-export function bandEinfuegeIndex(
+function wirksameBandzeit(
   zeitSekunden: number,
   abschnitte: readonly { dauer: number }[],
   videoDauer: number,
-): number {
-  if (abschnitte.length === 0) return 0
-  if (!Number.isFinite(zeitSekunden) || zeitSekunden < 0) return 0
-  if (!Number.isFinite(videoDauer) || videoDauer <= 0) return 0
-
-  let bandGesamt = 0
+): number | null {
+  if (!Number.isFinite(zeitSekunden) || zeitSekunden < 0) return null
+  if (!Number.isFinite(videoDauer) || videoDauer <= 0) return null
+  let gesamt = 0
   for (const abschnitt of abschnitte) {
-    if (Number.isFinite(abschnitt.dauer) && abschnitt.dauer > 0) bandGesamt += abschnitt.dauer
+    if (Number.isFinite(abschnitt.dauer) && abschnitt.dauer > 0) gesamt += abschnitt.dauer
   }
-  if (bandGesamt <= 0) return 0
+  if (gesamt <= 0) return null
+  return gesamt < videoDauer ? zeitSekunden % gesamt : Math.min(zeitSekunden, gesamt)
+}
 
-  // TK 9.2.8: kürzere Folge wiederholt sich, längere wird abgeschnitten.
-  const wirksam = bandGesamt < videoDauer ? zeitSekunden % bandGesamt : Math.min(zeitSekunden, bandGesamt)
+/** Rundet auf das naechste Frame (30 fps, TK 9.2.6) - Teil-Dauern muessen frame-genau sein. */
+function rundeAufFrame(sekunden: number): number {
+  return Math.round(sekunden * RENDER_PROFILE.fps) / RENDER_PROFILE.fps
+}
+
+/**
+ * #428B (User-Entscheidung 16.10.2026): teilt den Abschnitt an der ZEITSTELLE und fuegt die
+ * neue Aktion dazwischen - `[A 0-10]` + Drop bei 6 s -> `[A 0-6] [NEU 6-16] [A 6-10]`.
+ *
+ * Das Band bleibt eine durchgehende ROTATION (FA-20): es entsteht KEINE Luecke. Faellt die
+ * Zeitstelle genau auf eine Abschnittsgrenze, wird nur davor/danach eingefuegt; hinter dem
+ * letzten Abschnitt (oder ohne brauchbare Zeit) wird angehaengt. Die Teil-Dauern sind
+ * frame-gerundet (die Abschnitts-Dauer unterliegt derselben Rundung wie alles, 9.2.8).
+ */
+export function teileUndFuege(
+  bestehende: readonly { aktionRef: string; dauer: number }[],
+  aktionRef: string,
+  dauer: number,
+  zeitSekunden: number | null,
+  videoDauer: number,
+): Array<{ aktionRef: string; dauer: number }> {
+  const neu = { aktionRef, dauer }
+  if (bestehende.length === 0) return [neu]
+  if (zeitSekunden === null) return [...bestehende, neu]
+
+  const wirksam = wirksameBandzeit(zeitSekunden, bestehende, videoDauer)
+  if (wirksam === null) return [...bestehende, neu]
 
   let ende = 0
-  for (let stelle = 0; stelle < abschnitte.length; stelle += 1) {
-    const abschnitt = abschnitte[stelle]
-    if (abschnitt === undefined) return stelle
-    const dauer = Number.isFinite(abschnitt.dauer) && abschnitt.dauer > 0 ? abschnitt.dauer : 0
-    ende += dauer
-    if (wirksam < ende) return stelle
+  for (let stelle = 0; stelle < bestehende.length; stelle += 1) {
+    const abschnitt = bestehende[stelle]
+    if (abschnitt === undefined) return [...bestehende, neu]
+    const dauerAbschnitt = Number.isFinite(abschnitt.dauer) && abschnitt.dauer > 0 ? abschnitt.dauer : 0
+    const start = ende
+    ende += dauerAbschnitt
+
+    if (wirksam <= start + 1e-9) {
+      return [...bestehende.slice(0, stelle), neu, ...bestehende.slice(stelle)]
+    }
+    if (wirksam < ende - 1e-9) {
+      const vorne = rundeAufFrame(wirksam - start)
+      const hinten = rundeAufFrame(ende - wirksam)
+      if (vorne <= 0) return [...bestehende.slice(0, stelle), neu, ...bestehende.slice(stelle)]
+      if (hinten <= 0) return [...bestehende.slice(0, stelle + 1), neu, ...bestehende.slice(stelle + 1)]
+      return [
+        ...bestehende.slice(0, stelle),
+        { aktionRef: abschnitt.aktionRef, dauer: vorne },
+        neu,
+        { aktionRef: abschnitt.aktionRef, dauer: hinten },
+        ...bestehende.slice(stelle + 1),
+      ]
+    }
   }
-  return abschnitte.length
+  return [...bestehende, neu]
+}
+
+/**
+ * #428B: wie `bandAufnahmeAus`, aber die neue Aktion wird an der ZEITSTELLE eingefuegt und
+ * ein dort liegender Abschnitt geteilt - kein zweiter Schreibweg (nur `entwurfAus` +
+ * `teileUndFuege`), `uebernehmeBand` unveraendert.
+ */
+export function bandAufnahmeMitTeilung(
+  element: Listenelement,
+  aktionId: string,
+  dauer: number,
+  vorlagen: readonly Vorlage[],
+  zeitSekunden: number | null,
+  videoDauer: number,
+): BandEntwurf | null {
+  const bandWahl = waehlbareBandVorlagen(vorlagen)
+  const erste = bandWahl[0]
+  if (erste === undefined) return null
+  const basis = entwurfAus(element, erste.id)
+  if (basis === null) return null
+  return {
+    bandVorlageId: basis.bandVorlageId,
+    abschnitte: teileUndFuege(basis.abschnitte, aktionId, dauer, zeitSekunden, videoDauer),
+  }
 }
 
 /**

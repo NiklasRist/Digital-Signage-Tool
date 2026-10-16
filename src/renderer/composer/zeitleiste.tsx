@@ -16,9 +16,11 @@ const ZEILE_HOEHE_PX = 64
  *  muss DIESELBE Lücke tragen, sonst rutscht sie gegen die Blöcke. */
 const LUECKE_PX = 2
 
-/** Baut die Zeilen der Zeitleiste in ARRAY-Reihenfolge; kein Sortieren, nur Anzeige-Klemmung. */
+/** Baut die Zeilen der Zeitleiste in ARRAY-Reihenfolge; kein Sortieren, nur Anzeige-Klemmung.
+ *  `pxProSekunde` ist das aktuelle Zoom-Mass (#428). */
 export function baueZeitleistenZeilen(
   liste: readonly Listenelement[],
+  pxProSekunde: number = EA_PX_PRO_SEKUNDE,
 ): Array<
   | { elementId: string; ref: string; art: 'video' | 'segment'; dauerSekunden: number; breitePx: number }
   | { elementId: string; ref: string; art: 'fehlt'; dauerSekunden: null; breitePx: number }
@@ -34,7 +36,7 @@ export function baueZeitleistenZeilen(
       ref: element.ref,
       art: element.art,
       dauerSekunden: einzeln.wert / RENDER_PROFILE.fps,
-      breitePx: Math.max(24, Math.round((einzeln.wert / RENDER_PROFILE.fps) * EA_PX_PRO_SEKUNDE)),
+      breitePx: Math.max(24, Math.round((einzeln.wert / RENDER_PROFILE.fps) * pxProSekunde)),
     }
   })
 }
@@ -79,6 +81,10 @@ export interface ZeitleistenEigenschaften {
    *  dort entstuende ein BAND-Abschnitt (nicht sequenziell). null = kein Band-Ziel.
    *  Die Messung liegt in `band-aufnahme.ts` (#425); hier wird nur gezeichnet. */
   bandZiel?: string | null
+  /** #428: das Zoom-Mass (px je Sekunde); Bild und Drop-Messung nutzen DENSELBEN Wert. */
+  pxProSekunde?: number
+  /** #428: den Zoom um eine Stufe aendern (die Wurzel haelt den Wert). */
+  aufZoom?: (richtung: -1 | 1) => void
 }
 
 export function Zeitleiste({
@@ -88,14 +94,16 @@ export function Zeitleiste({
   laedtKante,
   korbRef,
   bandZiel = null,
+  pxProSekunde = EA_PX_PRO_SEKUNDE,
+  aufZoom,
 }: ZeitleistenEigenschaften): JSX.Element {
   if (projekt === null) {
     return <div data-testid="zeitleiste-kein-projekt" />
   }
 
-  const zeilen = baueZeitleistenZeilen(projekt?.liste ?? [])
+  const zeilen = baueZeitleistenZeilen(projekt?.liste ?? [], pxProSekunde)
   const ids = zeilen.map((zeile) => zeile.elementId)
-  const achse = baueZeitachse(zeilen)
+  const achse = baueZeitachse(zeilen, pxProSekunde)
   // #428: die Einblendung je Video-Element - fuer die Band-Spur im Block.
   const einblendungen = new Map(
     (projekt?.liste ?? []).map((element) => [element.id, element.art === 'video' ? element.einblendung : null]),
@@ -113,8 +121,23 @@ export function Zeitleiste({
         minHeight: 80,
       }}
     >
+      {/* #428: Zoom-Steuerung (px/s). Bei hohem Zoom werden einzelne Frames sichtbar. */}
+      {aufZoom !== undefined && (
+        <div
+          data-testid="zeitleiste-zoom"
+          style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 10, color: '#9aa4b2' }}
+        >
+          <button type="button" data-testid="zeitleiste-zoom-aus" onClick={() => aufZoom(-1)}>
+            Zoom −
+          </button>
+          <span data-testid="zeitleiste-zoom-wert">{`${pxProSekunde} px/s`}</span>
+          <button type="button" data-testid="zeitleiste-zoom-ein" onClick={() => aufZoom(1)}>
+            Zoom +
+          </button>
+        </div>
+      )}
       {/* #428: die Zeitachse ueber der Blockzeile - gleiche Segmente/Luecken/Kanten wie
-          die Bloecke, darum sitzt sie deckungsgleich. Tick je Sekunde, beschriftet jede fuenfte. */}
+          die Bloecke, darum sitzt sie deckungsgleich. Tick-Schritt und Label folgen dem Zoom. */}
       <div
         data-testid="zeitleiste-zeitachse"
         style={{ display: 'flex', alignItems: 'flex-end', gap: LUECKE_PX, height: 18 }}
@@ -125,7 +148,7 @@ export function Zeitleiste({
             <span style={{ flex: '0 0 auto', width: segment.breitePx, position: 'relative', height: 18 }}>
               {segment.ticks.map((tick) => (
                 <span
-                  key={tick.sekunde}
+                  key={`${index}-${tick.xPx}`}
                   style={{
                     position: 'absolute',
                     left: tick.xPx,
@@ -137,7 +160,7 @@ export function Zeitleiste({
                 >
                   {tick.beschriftet && (
                     <span style={{ position: 'absolute', left: 2, bottom: 8, fontSize: 9, color: '#9aa4b2', whiteSpace: 'nowrap' }}>
-                      {tick.sekunde}
+                      {tick.text}
                     </span>
                   )}
                 </span>
@@ -160,6 +183,7 @@ export function Zeitleiste({
                 index={index}
                 istBandZiel={zeile.elementId === bandZiel}
                 einblendung={einblendungen.get(zeile.elementId) ?? null}
+                pxProSekunde={pxProSekunde}
               />
               {neuZug !== null && (
                 <KantenBlock nummer={index + 1} aktiv={aktiveKante === index + 1} laedt={laedtKante === index + 1} />
@@ -220,18 +244,20 @@ function ZeilenBlock({
   index,
   istBandZiel = false,
   einblendung = null,
+  pxProSekunde = EA_PX_PRO_SEKUNDE,
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
   istBandZiel?: boolean;
   einblendung?: Einblendung | null;
+  pxProSekunde?: number;
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: zeile.elementId })
   const beschriftung = zeilenBeschriftung(zeile, index)
   // #428: die Band-Abschnitte an ihren Zeitstellen - nur am Video, nur wenn ein Band da ist.
   const spur =
     zeile.art === 'video' && einblendung !== null
-      ? baueBandspur(einblendung.abschnitte, zeile.dauerSekunden)
+      ? baueBandspur(einblendung.abschnitte, zeile.dauerSekunden, pxProSekunde)
       : null
 
   return (
