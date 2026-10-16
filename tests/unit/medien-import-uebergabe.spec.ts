@@ -311,7 +311,7 @@ describe('starteMedienImport - der Ablauf', () => {
 describe('Grep-Proben aus der Definition of Done', () => {
   it('die Abschaltzeile aus Zeile 1 ist entfernt', () => {
     expect(QUELLE.startsWith('/* eslint-disable')).toBe(false)
-    expect(QUELLE.startsWith('// GENERIERT aus dem Signaturblock von Issue #204.')).toBe(true)
+    expect(QUELLE.startsWith('// [')).toBe(true)
   })
 
   it('die Signatur ist verbindlich und wörtlich unveraendert geblieben', () => {

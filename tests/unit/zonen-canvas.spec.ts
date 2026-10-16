@@ -330,13 +330,13 @@ describe('bemasseZone', () => {
 })
 
 describe('Bauvorschriften dieser Datei (DoD-Grep-Proben)', () => {
-  it('traegt die Abschaltzeile nicht mehr und beginnt weiter mit dem Geruest-Kopf', () => {
-    expect(QUELLE.split('\n')[0]!.startsWith('// GENERIERT aus dem Signaturblock')).toBe(true)
+  it('keine Abschaltzeile in Zeile 1 und kein Geruest-Kopf (Q1, 16.10.2026)', () => {
+    expect(QUELLE.split('\n')[0]!.startsWith('// [')).toBe(true)
     expect(QUELLE.split('\n')[0]).not.toContain('eslint-disable')
   })
 
-  it('laesst die GERUEST-PRUEFSUMME-Zeile unangetastet', () => {
-    expect(QUELLE).toContain('// GERUEST-PRUEFSUMME: d48a0028d5c7bc7a')
+  it('traegt keinen Geruest-Kopf mehr', () => {
+    expect(QUELLE).not.toContain('GERUEST-PRUEFSUMME')
   })
 
   it('exportiert raste NICHT - geprueft wird ueber die exportierten Funktionen (DoD)', () => {
