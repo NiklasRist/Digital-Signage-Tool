@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 15.10.2026
-**Version:** 1.7 (Ein Projekt – ein Video: genau **ein** Video je Projekt, Import beim Anlegen und im Projekt-Editor, Ersetzen mit Bestätigung, automatische Übernahme in die Wiedergabeliste, s. 4.9)
+**Datum:** 17.10.2026
+**Version:** 1.8 (Aktion unterbricht das Video: entschiedenes Modell „Einschub am Video" – Video-Teil · Aktion · Video-Teil, frame-genau, das Video bleibt EIN Element; s. 4.5)
 **Status:** In Abstimmung
 
 ---
@@ -245,9 +245,11 @@ Zwei Wirkungen sind möglich:
 
 - **Band (parallel, FA-20):** Die Aktion erscheint im Werbeband (Split-Screen oder Einblendung); das
   Video läuft **weiter**. Mehrere Aktionen können im Band **rotieren**.
-- **Kurze Unterbrechung (neu):** Die Aktion **unterbricht** das Video – das Video **pausiert**, die
-  Aktion läuft, danach läuft das Video **an derselben Stelle weiter**. Modell und Render hierfür sind
-  noch zu entwerfen (s. Technisches Konzept 9.7.7).
+- **Kurze Unterbrechung (entschieden 17.10.2026):** Die Aktion **unterbricht** das Video – das Video
+  **pausiert**, die Aktion läuft, danach läuft das Video **an derselben Stelle weiter**. Die
+  Unterbrechung ist ein **Einschub am Video-Element** (`unterbrechungen`, Technisches Konzept 9.11.3):
+  das Video bleibt **EIN** Element und wird im Render **frame-genau** in **Video-Teil · Aktion ·
+  Video-Teil** zerlegt (9.2.9). So bleibt das **sequenzielle** Gegenstück zum **parallelen** Band.
 
 Bisher war nur das **sequenzielle** Einordnen *zwischen* den Elementen möglich (vor/nach dem Video,
 FA-04/FA-05). Das Drag-and-drop **zwischen Zeitleisten-Blöcken** bleibt erhalten; das Ablegen **auf dem

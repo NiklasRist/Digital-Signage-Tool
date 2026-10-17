@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.6 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.25 (Aktion loeschen aus der Composer-Bibliothek, ohne Rueckfrage und in EINEM Undo-Schritt; s. 9.7.2)
-**Datum:** 15.10.2026
+**Version:** 3.26 (Aktion unterbricht das Video: Modell `unterbrechungen` am Video-Element, frame-genaue Zerlegung im Render, Einschub-Bedienung im Composer; s. 9.2.9 / 9.7.7 / 9.11.3)
+**Datum:** 17.10.2026
 **Status:** In Planung
 
 ---
@@ -48,7 +48,7 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 - **Projekt** – ID, Name, Erstell-/Änderungsdatum, geordnete Elementliste, **projektweite Standard-Segmentdauer** (Startwert neuer Aktions-Segmente, 9.8.4). *(FA-15, FA-10, FA-06)*
 - **Aktion/Produkt** – ID, Titel (Pflicht), Beschreibung?, Preis?, Bildreferenz?, CTA?, Anzeigedauer?, Vorlagen-ID, Akzentfarbe? (ersetzt die Akzent-Rollen der Vorlage, 9.10.9). *(FA-02, 4.1)*
 - **Medium (Asset)** – ID, Typ (video|image), Dateiname, Maße, Dauer (Video, via ffprobe), Importdatum. *(FA-01)*
-- **Listenelement** – ID, Art (Video|Aktions-Segment – **`bild` ist ab v3.16 gestrichen**, 9.11.3), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`. Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
+- **Listenelement** – ID, Art (Video|Aktions-Segment – **`bild` ist ab v3.16 gestrichen**, 9.11.3), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`. Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). **Nur bei Video** außerdem **Unterbrechungen** für die sequenzielle Anzeige: `{ zeitstelle, aktionRef, dauer }[]` – Einschübe, bei denen das Video pausiert (9.2.9, v3.26). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
 - **Vorlage** – datengetriebene Layout-Definition: `art` (vollflächig | Split-Band | Einblendung), `höhe` (bei Bändern), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Vollbild", „Split", „Band-Standard". **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
 - **Ausführungs-Protokoll / Ausgabe-Historie** – ID, Projekt-ID, Datum, Pfad, Dauer (nur bei Render, sonst leer – 9.3), Größe. Geführt von der Auftragsverwaltung als Speicher **Q3** (append-only, dauerhaft), nicht mehr in D3. *(Abschnitt 7, 9.3)*
 
@@ -633,6 +633,21 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 - **Alle Abschnitte eines Elements nutzen dieselbe Band-Vorlage** (eine `bandVorlageId` pro Einblendung) – damit `H` und die Kompositionsart während eines Videos nicht wechseln. Ein Wechsel mitten im Video würde die Geometrie springen lassen.
 - **Ohne** Band bleibt die Verarbeitung **unverändert**: Video vollflächig 1920 × 1080 mit **schwarzen** Balken nach 9.2.4.
 
+#### 9.2.9 Unterbrechungen des Videos (FA-20, v3.26)
+
+Ein `"video"`-Element kann **Unterbrechungen** tragen (9.11.3): Einschübe, bei denen das Video **pausiert**, eine Aktion läuft und das Video danach **an derselben Stelle weiterläuft** (AD 4.5). Sie sind das **sequenzielle** Gegenstück zum **parallelen** Band (9.2.8).
+
+**Zerlegung (bindend).** Ein Video-Element mit `n` Unterbrechungen wird zu `2n+1` Render-Items:
+`[VideoClip₀][Aktion₁][VideoClip₁]…[Aktion_n][VideoClip_n]`. Die `zeitstelle` ist eine **Zeit** in Sekunden ab 0 der **getrimmten** Sicht; jeder Schnitt wird auf das **Frame-Raster** gerundet (`round(t × 30)`, 9.2.6) – **derselbe** Rundungsweg wie der Trim, kein zweiter. Die Video-Teil-Clips sind damit `round(zᵢ×30) − round(zᵢ₋₁×30)` Frames, die Aktions-Einschübe `round(dauerᵢ×30)` Frames. Jeder Teil-Clip ist ein `"video"`-Item, jeder Einschub ein `"segment"`-Item (Aktions-ID → PNG via `template-canvas`, 9.10), vollflächig wie ein sequenzielles Segment.
+
+**Elementdauer.** Die Dauer des Video-Elements ist die **Summe** aus Video-Frames **plus** allen Einschub-Frames (`round(zeitstelle₁×30) + Σ round(dauerᵢ×30) + (Video-Frames − round(zeitstelle_n×30))`). Sie unterliegt **derselben** EINE-Regel-zwei-Orte-Zusage wie ohne Unterbrechung (9.2.6): `composer/gesamtlaenge.ts` und `render-service/frames.ts` rechnen mit derselben Formel; das Band (`einblendung`) zählt **nie** mit (9.2.8).
+
+**Wechselwirkung mit dem Band.** Trägt das Element zusätzlich eine `einblendung`, liegt das Band auf den **Video-Teil-Clips** auf (9.2.8) und läuft auf der **gespielten Videozeit** weiter – während eines Einschubs **pausiert** es (die Band-Rotation ist an die Videozeit gebunden, nicht an die Wanduhr). Der Band-Offset eines Teil-Clips ist die bis zu seinem Anfang bereits gespielte Videozeit.
+
+**Prüfung.** `zeitstelle` außerhalb `(0, Videoelementdauer)`, `dauer ≤ 0`, nicht aufsteigende oder sich überschneidende Einträge, oder ein `aktionRef` ohne Aktion → `ungueltiges_element` (9.2.3).
+
+**Ohne** Unterbrechungen bleibt die Verarbeitung **unverändert** (ein Clip, ggf. mit Band).
+
 ### 9.3 Subsystem `auftrags-manager` (Auftragsverwaltung) [P6]
 
 **Richtung:** Renderer → Main (Aufträge einreihen/steuern), Main → Renderer (Zustands-Push), ausschließlich über den typisierten IPC-Vertrag.
@@ -1024,6 +1039,7 @@ Rolle, die er bei `setzeStandardMarke` spielt (s. u.).
 | `setzeTrim` | `elementId`, `trimStart`, `trimEnde` → `Ergebnis<Listenelement>` (validiert `0 ≤ start < ende ≤ Videodauer`) |
 | `setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **10–45 s**; nur bei `art: "segment"` – ein Video-Element hat keine eigene Dauer, es hat einen Trim) |
 | `setzeEinblendung` | `elementId`, `einblendung` (`Einblendung` **oder** `null`) → `Ergebnis<Listenelement>` – **nur bei `art: "video"`**; setzt Band-Vorlage und Abschnittsfolge in einem Zug (FA-20, 9.2.8). Die Bandhöhe kommt **ausschließlich** aus der Vorlage und ist kein Wert am Listenelement. Wird das Band leer, ist `einblendung = null`; das Videoelement **bleibt** (9.5.3) |
+| `setzeUnterbrechungen` | `elementId`, `unterbrechungen` (`Unterbrechung[]`) → `Ergebnis<Listenelement>` – **nur bei `art: "video"`** (v3.26); setzt die Einschübe in einem Zug (9.2.9). Validiert: jede `zeitstelle` in `(0, Videoelementdauer)`, `dauer > 0`, aufsteigend nach `zeitstelle`, **keine Überschneidung**, jeder `aktionRef` existiert in `Project.aktionen`. Wird die Liste leer, ist sie `[]`; das Videoelement **bleibt** (9.5.3). EIN Undo-Schritt (9.13.1) |
 | `setzeElementReferenz` | `elementId`, `referenz` → `Ergebnis<Listenelement>` – setzt die Referenz eines bestehenden Elements um, **ohne** seine Position und seine `id` zu verlieren. Der Zielbestand folgt der `art`: `video` → Asset in `Project.assets` mit `typ: "video"`, `segment` → Aktion in `Project.aktionen`. Bei `video` werden `trimStart`/`trimEnde` auf `null` zurückgesetzt, weil sie sich auf die alte Quelllänge bezogen. Trägt die Fix-Optionen „neu verknüpfen/importieren" und „durch ein anderes ersetzen" des Reparatur-Modus (FA-19, 9.7.5) |
 
 **Projekt-Standardmarke (FA-23):**
@@ -1202,15 +1218,16 @@ trotzdem um**, als Schranke für den Tag, an dem eine dieser Operationen ihre Co
 #### 9.5.3 Löschsemantik – bewusste Asymmetrie
 
 - **Medium löschen** (`media-service` 9.4.6): **blockiert** bei Referenz (`asset_referenziert`). Die Datei ist die schwere, geteilte Ressource; versehentlicher Verlust wäre teuer.
-- **Aktion löschen** (`löscheAktion`): **Kaskade – aber chirurgisch.** Eine Aktion kann an **zwei** Stellen referenziert sein, und die richtige Reaktion ist jeweils eine andere:
+- **Aktion löschen** (`löscheAktion`): **Kaskade – aber chirurgisch.** Eine Aktion kann an **drei** Stellen referenziert sein, und die richtige Reaktion ist jeweils eine andere:
   1. **Listenelement mit `art: "segment"`**, dessen `ref` die Aktion ist → das Element **ist** diese Aktion und wird **entfernt**.
   2. **`einblendung.abschnitte[].aktionRef`** in einem **Video**-Element → die Aktion ist nur **ein Abschnitt** eines rotierenden Bandes. Hier werden **ausschließlich die betroffenen Abschnitte** entfernt; das **Videoelement bleibt erhalten**.
+  3. **`unterbrechungen[].aktionRef`** in einem **Video**-Element (v3.26) → die Aktion ist nur **ein Einschub**. Auch hier wird **ausschließlich der betroffene Einschub** entfernt; das **Videoelement bleibt**.
 
   **Warum diese Unterscheidung zwingend ist:** Würde Fall 2 wie Fall 1 behandelt, verlöre der Nutzer sein **Video aus der Wiedergabeliste**, nur weil eine von mehreren rotierenden Werbeaktionen gelöscht wurde. Würde Fall 2 gar nicht behandelt, bliebe eine **verwaiste Referenz** und der Render bräche.
 
-  **Randfall:** Wird ein Band durch das Entfernen leer (keine Abschnitte mehr), entfällt die **Einblendung ganz** (`einblendung = null`) – das **Videoelement bleibt**. Ein Band mit null Abschnitten hätte nichts zu zeigen, und der Render müsste eine Bandspur der Länge 0 bauen.
+  **Randfall:** Wird ein Band durch das Entfernen leer (keine Abschnitte mehr), entfällt die **Einblendung ganz** (`einblendung = null`) – das **Videoelement bleibt**. Ein Band mit null Abschnitten hätte nichts zu zeigen, und der Render müsste eine Bandspur der Länge 0 bauen. **Dasselbe** gilt für die Einschübe (v3.26): wird `unterbrechungen` durch das Entfernen leer, ist es `[]` – das Videoelement bleibt.
 
-  **Rückgabe:** `löscheAktion` meldet **beide** Wirkungen – `entfernteElementIds` (entfernte Listenelemente) **und** `geaenderteElementIds` (Videos, deren Band gekürzt oder entfernt wurde) – damit die UI präzise benennen kann, was geschehen ist („aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt"). **Zusätzlich trägt die Rückgabe den vollständigen neuen `stand`** (Aktions-Bibliothek und Wiedergabeliste **nach** der Kaskade, 9.5.2): Er ist es, der die Sicht auf das Projekt weiterschaltet und damit den Undo-Schnappschuss auslöst (9.13.2) – die Kennungen allein könnten das nicht, aus ihnen ist der neue Stand nicht rekonstruierbar.
+  **Rückgabe:** `löscheAktion` meldet **beide** Wirkungen – `entfernteElementIds` (entfernte Listenelemente) **und** `geaenderteElementIds` (Videos, deren Band gekürzt/entfernt oder deren `unterbrechungen` gekürzt wurden) – damit die UI präzise benennen kann, was geschehen ist („aus 2 Elementen entfernt und aus dem Werbeband von 3 Videos gekürzt"). **Zusätzlich trägt die Rückgabe den vollständigen neuen `stand`** (Aktions-Bibliothek und Wiedergabeliste **nach** der Kaskade, 9.5.2): Er ist es, der die Sicht auf das Projekt weiterschaltet und damit den Undo-Schnappschuss auslöst (9.13.2) – die Kennungen allein könnten das nicht, aus ihnen ist der neue Stand nicht rekonstruierbar.
 
   Die von der Aktion **verwendeten Medien-Assets bleiben unangetastet** und projektweit verfügbar – eine Aktion *referenziert* ein Asset nur, sie besitzt es nicht.
 
@@ -1461,10 +1478,16 @@ Der Nutzer legt eine Aktion **auf das Video**, statt sie nur davor/danach einzuo
   - **Band-Vorlage**, wenn am Video noch keine gewählt ist: die **erste wählbare**
     (`waehlbareBandVorlagen`, #129) – derselbe Startentwurf wie die Ansicht (ENTSCHIEDEN 3, #253).
     Keine zweite, unsichtbare Ordnung neben der Bestandsreihenfolge.
-- **Kurze Unterbrechung (NEU – offen, noch nicht gebaut).** Die Aktion **pausiert** das Video kurz,
-  läuft, danach läuft das Video **weiter**. Das berührt **Datenmodell und Render** (das Video wird an
-  der Stelle geteilt: Video-Teil · Aktion · Video-Teil) und ist **noch zu entwerfen** – Modell, Konkatenation
-  (TK 9.2) und Undo-Semantik. **Nicht selbst entscheiden.**
+- **Kurze Unterbrechung – Modell entschieden (v3.26).** Die Aktion **pausiert** das Video kurz, läuft,
+  danach läuft das Video **weiter**. Das Video bleibt **EIN** Listenelement; es trägt das Feld
+  `unterbrechungen` (9.11.3). Der **Render** zerlegt es frame-genau in **Video-Teil · Aktion ·
+  Video-Teil** (9.2.9). In der Zeitleiste ist der **Körper eines Video-Blocks** das Drop-Ziel: ein Drop
+  **auf dem Video** ordnet an der gemessenen **Zeitstelle** ein – als **Band-Abschnitt** (parallel,
+  oben) **oder** als **Unterbrechung** (sequenziell), je nach gewählter Wirkung (AD 4.5); die genaue
+  Bedienung (Umschalter/Kontextweg) schneidet das Bau-Issue. Eine Aktion ist **entweder** Band-Abschnitt
+  **oder** Unterbrechung, **nie beides** – dieselbe Aktion darf nicht zugleich parallel und
+  unterbrechend laufen. Löscht man die Aktion, greift dieselbe chirurgische Kaskade wie beim Band
+  (9.5.3): nur der betroffene Einschub entfällt, das **Videoelement bleibt**.
 
 Die verwandte **„Banner-Spur"** (Welle 2, BA-Familie) ist davon zu trennen: ihre Plan-Quelle
 `trennung-banner-aktionen-plan.md` **fehlt im Repo**; die Band-Kette ist eigenständig und ohne sie baubar.
@@ -1937,15 +1960,25 @@ Listenelement {
   trimStart:   number | null                            // Sekunden – nur bei video
   trimEnde:    number | null                            // Sekunden – nur bei video
   einblendung: { bandVorlageId, abschnitte: [{ aktionRef, dauer }] } | null   // nur bei video
+  unterbrechungen: [{ zeitstelle, aktionRef, dauer }]   // nur bei video; [] = keine (9.2.9, v3.26)
 }
 ```
 
 **Belegung je `art` (bindend):**
 
-| `art` | `ref` zeigt auf | `dauer` | `trimStart`/`trimEnde` | `einblendung` |
-|---|---|---|---|---|
-| `video` | `Asset` (typ `video`) | `null` – die Dauer ergibt sich aus dem Trim | gesetzt | erlaubt |
-| `segment` | `Aktion` | gesetzt (10–45 s; Startwert aus der Kette 9.8.4) | `null` | `null` |
+| `art` | `ref` zeigt auf | `dauer` | `trimStart`/`trimEnde` | `einblendung` | `unterbrechungen` |
+|---|---|---|---|---|---|
+| `video` | `Asset` (typ `video`) | `null` – die Dauer ergibt sich aus dem Trim | gesetzt | erlaubt | erlaubt (`[]` = keine) |
+| `segment` | `Aktion` | gesetzt (10–45 s; Startwert aus der Kette 9.8.4) | `null` | `null` | `[]` |
+
+**`unterbrechungen` – der sequenzielle Einschub (v3.26, bindend).** Jeder Eintrag ist eine
+**Unterbrechung**: das Video **pausiert** an der `zeitstelle` (Sekunden, ab 0 der getrimmten Sicht),
+die Aktion `aktionRef` läuft für `dauer` Sekunden, danach läuft das Video an derselben Stelle weiter
+(AD 4.5). Das Feld ist das **sequenzielle** Gegenstück zum **parallelen** Band (`einblendung`); ein
+Video-Element kann **beides** tragen. `zeitstelle` und `dauer` unterliegen **derselben Frame-Rundung**
+wie der Trim (9.2.6) – es gibt keinen zweiten Rundungsweg. Die Einträge sind nach `zeitstelle`
+**aufsteigend** und **überschneiden sich nicht**; die Zerlegung in Video-Teile und Aktions-Segmente
+steht in 9.2.9. Bei `art: "segment"` ist das Feld **immer** `[]` (analog zu `einblendung = null`).
 
 **Die Elementart `bild` ist mit v3.16 gestrichen (bindend).** Die Zeile lautete bis v3.15: „`bild` | `Asset` (typ `bild`) | gesetzt (10–45 s) | `null` | `null`". `Listenelement.art` kennt nur noch **zwei** Werte.
 
