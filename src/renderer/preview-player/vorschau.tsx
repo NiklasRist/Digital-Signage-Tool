@@ -27,6 +27,10 @@
 // ENTSCHIEDEN 1/13: Hier wird NICHTS gerechnet (Achse #213, Bandtakt #220,
 // Geometrie #218/#219, Dauer #127); der Transport zeigt genau Play/Pause,
 // Zeitleiste, Markierung, Gesamtdauer - keine Geschwindigkeit, kein Ton.
+//
+// #426 (TK 9.2.9): Laeuft ein Einschub, bleibt dasselbe <video> MONTIERT (an der
+// Zeitstelle pausiert) und die AKTION liegt als eigene Flaeche darueber - kein
+// Neuaufbau, kein Neuladen des Mediums beim Wechsel Video <-> Einschub.
 
 import type { JSX } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -166,6 +170,15 @@ export function Vorschau(props: VorschauProps): JSX.Element {
   // wechselt je Element (steht die Marke nicht bereit: NICHT zeichnen, #312).
   const rahmenMarke = holeBereiteMarke(props.projekt.standardMarkeId)
 
+  // #426 (TK 9.2.9): Laeuft hier ein Einschub, tritt die AKTION an die Stelle des Videos,
+  // das an der Zeitstelle PAUSIERT ist. `lokalerBildFrame` ist dann der Frame im gezeigten
+  // VIDEO-Teil, `videoLaeuft` falsch - so bleibt dasselbe <video> montiert und springt nicht.
+  const videoartig =
+    bild !== null && (bild.art === 'video' || bild.art === 'split' || bild.art === 'einblendung')
+  const einschub = videoartig ? bild.zerlegung?.einschub ?? null : null
+  const lokalerBildFrame = videoartig ? bild.zerlegung?.lokalerFrame ?? lokal : lokal
+  const videoLaeuft = einschub === null ? stand.laeuft : false
+
   let buehneninhalt = null
   if (bild !== null) {
     switch (bild.art) {
@@ -177,8 +190,8 @@ export function Vorschau(props: VorschauProps): JSX.Element {
             assetId={bild.assetId}
             trimStart={bild.trimStart}
             trimEnde={bild.trimEnde}
-            lokalerFrame={lokal}
-            laeuft={stand.laeuft}
+            lokalerFrame={lokalerBildFrame}
+            laeuft={videoLaeuft}
           />
         )
         break
@@ -209,8 +222,8 @@ export function Vorschau(props: VorschauProps): JSX.Element {
               assetId={bild.assetId}
               trimStart={bild.trimStart}
               trimEnde={bild.trimEnde}
-              lokalerFrame={lokal}
-              laeuft={stand.laeuft}
+              lokalerFrame={lokalerBildFrame}
+              laeuft={videoLaeuft}
               rahmenMarke={rahmenMarke}
               abschnittMarke={abschnittMarke}
               bandVorlage={bild.bandVorlage}
@@ -229,8 +242,8 @@ export function Vorschau(props: VorschauProps): JSX.Element {
               assetId={bild.assetId}
               trimStart={bild.trimStart}
               trimEnde={bild.trimEnde}
-              lokalerFrame={lokal}
-              laeuft={stand.laeuft}
+              lokalerFrame={lokalerBildFrame}
+              laeuft={videoLaeuft}
               rahmenMarke={rahmenMarke}
               abschnittMarke={abschnittMarke}
               bandVorlage={bild.bandVorlage}
@@ -252,6 +265,20 @@ export function Vorschau(props: VorschauProps): JSX.Element {
     }
   }
 
+  // #426: der Einschub selbst - eine vollflaechige Aktion ueber dem pausierten Video.
+  // Die Marke kommt aus der AKTION (wie beim Segment), nicht aus der Standardmarke.
+  let einschubBild = null
+  if (einschub !== null && rahmenMarke !== null) {
+    const marke = holeBereiteMarke(einschub.aktion.markeId)
+    if (marke !== null) {
+      einschubBild = (
+        <div data-testid="preview-einschub" style={{ position: 'absolute', inset: 0 }}>
+          <Segment aktion={einschub.aktion} vorlage={einschub.vorlage} marke={marke} />
+        </div>
+      )
+    }
+  }
+
   const markiert = markierterIndex(stand, achse)
 
   return (
@@ -264,7 +291,10 @@ export function Vorschau(props: VorschauProps): JSX.Element {
       style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, gap: 4 }}
     >
       <div style={{ flex: '1 1 auto', minHeight: 0 }}>
-        <Buehne>{buehneninhalt}</Buehne>
+        <Buehne>
+          {buehneninhalt}
+          {einschubBild}
+        </Buehne>
       </div>
       <div data-testid="vorschau-transport" style={{ flex: '0 0 auto' }}>
         <button

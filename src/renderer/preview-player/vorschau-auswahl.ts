@@ -23,14 +23,33 @@
 // ENTSCHIEDEN 5/6: keine Band-Vorlage (unbekannt, vollflaeche, hoehe null)
 // heisst ein flaches Video; kein akzeptierbarer Abschnitt - oder eine
 // unbekannte Aktion darin - heisst bandAktion: null (kein Band gezeichnet).
+//
+// #426 (TK v3.26 / 9.2.9): Traegt ein Video Unterbrechungen, liefert `video-zerlegung.ts`
+// den gerade gezeigten VIDEO-Teil (waehrend eines Einschubs: den Teil DAVOR an seinem Ende -
+// das Video pausiert) und die laufende AKTION. Beide reisen im optionalen `zerlegung`-Feld;
+// fehlt es, gilt der bisherige Weg unveraendert (verhaltensgleich).
 
 import type { Project } from '../../shared/contracts/project'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { KaputtGrund, KaputteStelle } from '../composer/kaputt-erkennung'
 import type { Achsenabschnitt } from './zeitachse'
+import { sekundenZuFrame } from './zeitachse'
 import { findeSegmentquelle } from './segment-quelle'
 import { baueBandtakt, waehleAbschnitt } from './band-takt'
+import { loeseVideoTeil } from './video-zerlegung'
+
+/**
+ * #426 (TK v3.26 / 9.2.9): die Vorschau-Zerlegung eines UNTERBROCHENEN Videos. Sie fehlt an
+ * Video-Bildern OHNE Unterbrechung - dann gelten `trimStart`, `trimEnde` und `lokalerFrame`
+ * unveraendert fuer das ganze Element (der bisherige Weg, verhaltensgleich).
+ */
+export interface VideoZerlegung {
+  /** Der Frame INNERHALB des gerade gezeigten VIDEO-Teils (nicht des ganzen Elements). */
+  lokalerFrame: number
+  /** Die Aktion, die gerade als Einschub laeuft (das Video pausiert) - `null` in einem Video-Teil. */
+  einschub: { aktion: Aktion; vorlage: Vorlage } | null
+}
 
 /**
  * Was auf der Buehne steht – als WERT, nicht als JSX. Genau eine Variante je Baustein aus
@@ -39,7 +58,7 @@ import { baueBandtakt, waehleAbschnitt } from './band-takt'
 export type Vorschaubild =
   | { art: 'leer' }
   | { art: 'platzhalter'; grund: KaputtGrund; titel?: string }
-  | { art: 'video'; assetId: string; dateiname: string; trimStart: number; trimEnde: number }
+  | { art: 'video'; assetId: string; dateiname: string; trimStart: number; trimEnde: number; zerlegung?: VideoZerlegung }
   | { art: 'segment'; aktion: Aktion; vorlage: Vorlage }
   | {
       art: 'split'
@@ -49,6 +68,7 @@ export type Vorschaubild =
       trimEnde: number
       bandVorlage: Vorlage
       bandAktion: Aktion | null
+      zerlegung?: VideoZerlegung
     }
   | {
       art: 'einblendung'
@@ -58,6 +78,7 @@ export type Vorschaubild =
       trimEnde: number
       bandVorlage: Vorlage
       bandAktion: Aktion | null
+      zerlegung?: VideoZerlegung
     }
 // `assetId` ist IMMER `asset.id` (#13) desselben Assets, aus dem auch `dateiname` stammt – NIE
 // `element.ref` und NIE der Dateiname. Sie geht unveraendert in `VideoProps.assetId` (#216) und
@@ -146,9 +167,43 @@ export function waehleVorschaubild(
   const trimStart = element.trimStart ?? 0
   const trimEnde = element.trimEnde ?? 0
 
+  // #426 (TK 9.2.9): Unterbrechungen zerlegen das Video in [Video-Teil][Aktion]… Die
+  // Zerlegung kommt aus `video-zerlegung.ts` (dieselbe `zerlegeVideo` wie der Render, #435).
+  const unterbrechungen = element.unterbrechungen ?? []
+  const teilStand =
+    unterbrechungen.length === 0
+      ? null
+      : loeseVideoTeil(trimStart, trimEnde, unterbrechungen, lokalerFrame)
+
+  // Laeuft hier ein Einschub, tritt die AKTION an die Stelle des pausierten Videos. Fehlt
+  // die Aktion oder ihre Vorlage, gilt dieselbe Regel wie beim Segment (ENTSCHIEDEN 4).
+  let einschubAktion: { aktion: Aktion; vorlage: Vorlage } | null = null
+  if (teilStand !== null && teilStand.einschub !== null) {
+    const quelle = findeSegmentquelle(teilStand.einschub.aktionRef, projekt.aktionen, vorlagen, schriftenBereit)
+    if (quelle.zustand === 'bereit') {
+      einschubAktion = { aktion: quelle.aktion, vorlage: quelle.vorlage }
+    } else if (quelle.zustand === 'aktion_unbekannt') {
+      return { art: 'platzhalter', grund: 'aktion_unbekannt' }
+    } else {
+      return { art: 'leer' }
+    }
+  }
+
+  // Die Zerlegung nur bei Unterbrechungen mitfuehren - sonst bleibt das Bild wie bisher.
+  const zusatz: { zerlegung?: VideoZerlegung } =
+    teilStand === null
+      ? {}
+      : { zerlegung: { lokalerFrame: teilStand.video.lokalerFrame, einschub: einschubAktion } }
+  const videoTrimStart = teilStand?.video.trimStart ?? trimStart
+  const videoTrimEnde = teilStand?.video.trimEnde ?? trimEnde
+  // Die GESPIELTEN Video-Frames steuern die Bandphase (waehrend eines Einschubs pausiert es);
+  // die Bandwiederholung endet am VIDEO-Ende - ohne die Einschub-Frames.
+  const bandLokalerFrame = teilStand?.video.gespielteFrames ?? lokalerFrame
+  const videoFrames = sekundenZuFrame(trimEnde) - sekundenZuFrame(trimStart)
+
   // Keine Einblendung: ein flaches Video.
   if (element.einblendung === null) {
-    return { art: 'video', assetId, dateiname, trimStart, trimEnde }
+    return { art: 'video', assetId, dateiname, trimStart: videoTrimStart, trimEnde: videoTrimEnde, ...zusatz }
   }
 
   // ENTSCHIEDEN 5: keine brauchbare Band-Vorlage heisst KEIN Band, keine
@@ -160,13 +215,13 @@ export function waehleVorschaubild(
     bandVorlage.art === 'vollflaeche' ||
     bandVorlage.höhe === null
   ) {
-    return { art: 'video', assetId, dateiname, trimStart, trimEnde }
+    return { art: 'video', assetId, dateiname, trimStart: videoTrimStart, trimEnde: videoTrimEnde, ...zusatz }
   }
 
   // Der sichtbare Abschnitt; null = kein Band gezeichnet (ENTSCHIEDEN 6) -
   // ebenso, wenn die Aktion des Abschnitts im Projekt fehlt.
   const takt = baueBandtakt(einblendung)
-  const ausgewaehlt = waehleAbschnitt(takt, lokalerFrame, abschnitt.frames)
+  const ausgewaehlt = waehleAbschnitt(takt, bandLokalerFrame, videoFrames)
   let bandAktion: Aktion | null = null
   if (ausgewaehlt !== null) {
     bandAktion =
@@ -174,9 +229,9 @@ export function waehleVorschaubild(
   }
 
   if (bandVorlage.art === 'split') {
-    return { art: 'split', assetId, dateiname, trimStart, trimEnde, bandVorlage, bandAktion }
+    return { art: 'split', assetId, dateiname, trimStart: videoTrimStart, trimEnde: videoTrimEnde, bandVorlage, bandAktion, ...zusatz }
   }
-  return { art: 'einblendung', assetId, dateiname, trimStart, trimEnde, bandVorlage, bandAktion }
+  return { art: 'einblendung', assetId, dateiname, trimStart: videoTrimStart, trimEnde: videoTrimEnde, bandVorlage, bandAktion, ...zusatz }
 }
 
 /**
