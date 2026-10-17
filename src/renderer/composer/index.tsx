@@ -12,17 +12,16 @@ import type { ListenZeileModell } from './liste-ansicht'
 import type { Uebergabe } from './reparatur-optionen'
 import type { MedienImportStarter } from './medien-import'
 import { aufSichtGeaendert, type Projektsicht } from './projektzustand'
-import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core'
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 // #414 (Oberflaeche 2.0): EIN DndContext auf Wurzel-Ebene - Quellen (#413) und
 // Kanten (#412) im selben Kontext. Der DnD-Zustand (neuZug/aktiveKante/laedtKante)
-// lebt HIER; die Zeitleiste ist die Praesentation (korbRef = Messraum).
-import { Zeitleiste, baueZeitleistenZeilen } from './zeitleiste.tsx'
+// liegt im Hook `verwendeZeitleistenZug` (S5); die Zeitleiste ist die Praesentation
+// (korbRef = Messraum).
+import { Zeitleiste } from './zeitleiste.tsx'
 import { EA_PX_PRO_SEKUNDE, ZOOM_STUFEN } from './zeitband'
-import { baueEinfugeKanten, leseKantenIndex, liestReferenz, waehleKanteAus } from './spalt-drop'
 import { fuegeElementHinzu } from './element-hinzufuegen'
-import { ordneNeuOptimistisch } from './liste-reorder'
 // NACHTRAG #248 (Variante A, 05.10.): Die ad-hoc-Wiedergabeliste dieser Wurzel
 // (DndContext/Zeile/Regler unten) ist hier durch die Issue-richtige
 // `Wiedergabeliste` aus liste-ansicht.tsx (#248) ERSETZT - dokumentierte Ausnahme
@@ -68,7 +67,8 @@ import {
   aufAusgabenGeaendert,
   type Ausgabenstand,
 } from './ausgabe-liste'
-import { AusgabeListenansicht } from './ausgabe-liste.tsx'
+// S4 (Naht N4): die Ausgaben-Region als eigener Baustein.
+import { AusgabenBereich } from './ausgaben-bereich.tsx'
 import { starteReparatur, istRenderFreigegeben, aktualisiereReparatur } from './reparatur-fuehrung'
 import { fuehreFixAus, type FixOptionId } from './reparatur-optionen'
 import { ReparaturPanel } from './reparatur-panel.tsx'
@@ -76,7 +76,8 @@ import { loeseRenderAus, loeseExportAus } from './render-ausloesen'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import type { Marke } from '../../shared/contracts/marke'
 import { importiereMedien, baueImportBericht, type ImportBericht } from './medien-import'
-import { AssetGalerie } from './asset-galerie'
+// S4 (Naht N4): die Galerie-Region (Datei-Drop-Zone #335) als eigener Baustein.
+import { GalerieBereich } from './galerie-bereich.tsx'
 import { greifeDropAuf, reiheDropEin, type PfadHoler } from './medien-bibliothek'
 import { pfadFuerDatei } from '../ipc-client/pfad-fuer-datei'
 // Mit Endung: der Pfad ohne Endung löst gegen die reine .ts-Naht auf, nicht gegen
@@ -88,14 +89,11 @@ import { uebernehmeGrenzen } from './dauer-regler'
 // #407-Befund (12.10.2026): Der Baustein #123 hat zwei UI-Aufrufer, deren Ansichten
 // in der Geschichte nie in dieser Wurzel montiert wurden (Nachtrag am Issue #407).
 // Die Montage ist genau die Aufgabe dieser Datei (#261 "Bausteine anordnen").
-import { Bibliotheksansicht } from './bibliothek-ansicht.tsx'
-// #425: Die Band-Bearbeitung (#253/M7-60) wird endlich MONTIERT (Familie „fertige
-// Funktion ohne Aufrufer"); der Drop einer Aktion auf das VIDEO wird ein Band-Abschnitt.
-// Die reine Aufnahme-Logik liegt in band-aufnahme.ts, der eine Schreibweg in
-// uebernehmeBand (#129) - diese Wurzel ruft nur und pflegt die Sicht.
-import { uebernehmeBand } from './einblendung-bearbeiten'
-import { bandZielAus, bandZeitImVideo, bandAufnahmeAus, bandAufnahmeMitTeilung, startdauerFuerBandabschnitt } from './band-aufnahme'
-import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
+// S4 (Naht N4): die Bibliothek-Region als eigener Baustein (der Dock traegt die Ansicht).
+import { BibliothekDock } from './bibliothek-dock.tsx'
+// S5 (Naht N5): der DnD-Zustand und die vier DndContext-Handler liegen im Hook
+// `verwendeZeitleistenZug` (Drag-Verband, Band-Aufnahme #425, Zeitstelle #428).
+import { verwendeZeitleistenZug } from './verwende-zeitleisten-zug'
 // #408: Das KontextMenue (#133-Familie, Duplikat/Entfernen) wird in DIESE Wurzel
 // montiert - sein Zustand wandert siehtbarseitig in die ComposerLage (menueAdresse,
 // composer-montage.ts); die Zeilen tragen data-element-id (#248) - kein Edits an #248.
@@ -196,12 +194,6 @@ function hatVideoElement(projekt: Project): boolean {
   return projekt.liste.some((element) => element.art === 'video')
 }
 
-/** #417: Layout-Vorschub je Zeitleisten-Block = Kantenbreite (10 px, zeitleiste.tsx) +
- *  ZWEI Luecken (je 2 px, `gap: 2` in korb UND in der Block-Gruppe). Er hebt den
- *  Zeiger-Raum (mit Kanten) auf den Modell-Raum von `waehleKanteAus` (Summe der
- *  Blockbreiten, s. amUeber). 10 + 2 + 2 = 14. */
-const KANTEN_VORSCHUB_PX = 14
-
 export function ComposerInterna({
   projekt,
   verdrahtung,
@@ -220,11 +212,6 @@ export function ComposerInterna({
   // Element, dessen Werbeband gerade bearbeitet wird (null = Ansicht zu). Fehler der
   // Band-Bearbeitung reisen ueber die stehende Wurzel-Meldung (lage.meldung).
   const [bandElementId, setzeBandElementId] = useState<string | null>(null)
-  // #425: der Video-Block, ueber dem ein Aktion-Neuzug gerade steht (Band-Ziel).
-  const [bandZiel, setzeBandZiel] = useState<string | null>(null)
-  // #428: die Zeitstelle (Sekunden) im Video-Koerper unter dem Zeiger - der Drop legt
-  // den Abschnitt dort in die Rotation (Entscheidung 1a). null = keine gemessen.
-  const [bandZeit, setzeBandZeit] = useState<number | null>(null)
   // #428: das Zoom-Mass der Zeitleiste (px/s). Bild UND Drop-Messung nutzen denselben Wert -
   // sonst laegen gemessene Zeit und gezeichnetes Band auseinander.
   const [pxProSekunde, setzePxProSekunde] = useState<number>(EA_PX_PRO_SEKUNDE)
@@ -252,15 +239,9 @@ export function ComposerInterna({
   // dem Nachlauf (#199) vorbehalten und wird hier NICHT gerufen.
   const [ausgabenStand, setzeAusgabenStand] = useState<Ausgabenstand>(() => holeAusgaben())
 
-  // #414: der Drag-Zustand auf WURZEL-Ebene (EIN DndContext fuer die Quellen #413
-  // und die Kanten #412). neuZug = Drag-Daten `{ referenz }`; aktiveKante = gemessene
-  // Einfuege-Kante; laedtKante = wartendes Einfuegen (nicht optimistisch, TK 9.7.3).
+  // #414: EIN DndContext auf Wurzel-Ebene fuer die Quellen (#413) und die Kanten (#412).
+  // Der Drag-Zustand und die vier Handler liegen im Hook `verwendeZeitleistenZug` (S5).
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
-  const [neuZug, setzeNeuZug] = useState<string | null>(null)
-  const [aktiveKante, setzeAktiveKante] = useState<number | null>(null)
-  const [laedtKante, setzeLaedtKante] = useState<number | null>(null)
-  const zeigerStartX = useRef<number | null>(null)
-  const korbRef = useRef<HTMLDivElement | null>(null)
   // #414 (Weiche B): die Zeitleiste ist PRIMÄR; die #248-Zeilen-Liste bleibt hinter
   // dem Ansichtsschalter als Fallback erreichbar.
   const [ansicht, setzeAnsicht] = useState<'zeitleiste' | 'liste'>('zeitleiste')
@@ -271,6 +252,18 @@ export function ComposerInterna({
 
   const inhalt: Project | null = sicht.projekt
   const liste = inhalt?.liste ?? []
+
+  // S5 (Naht N5): der EINE Zeitleisten-Zug - Drag-Zustand + die vier DndContext-Handler.
+  // Zustand und Schreibwege bleiben an EINER Stelle; die Wirkungen reisen als Rueckrufe.
+  const zug = verwendeZeitleistenZug({
+    projektId: inhalt?.id ?? null,
+    liste,
+    pxProSekunde,
+    holeProjekt: () => projekt.hole().projekt,
+    setzeListe: projekt.setzeListe,
+    holeVorlagen: () => (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage),
+    melde: meldeWurzel,
+  })
 
   // #418: Nach einem Import ist das neue VIDEO standardmaessig ausgewaehlt. Erkannt wird
   // es am NEU erscheinenden Video-Asset der Sicht (der Composer-Import legt genau ein
@@ -318,10 +311,8 @@ export function ComposerInterna({
 
   useEffect(() => {
     // #425: Beim Projektwechsel die Band-Ansicht schliessen - ein Element des alten
-    // Projekts ist im neuen nicht mehr vorhanden.
+    // Projekts ist im neuen nicht mehr vorhanden. (Das Band-Ziel faellt im Hook weg.)
     setzeBandElementId(null)
-    setzeBandZiel(null)
-    setzeBandZeit(null)
   }, [inhalt?.id])
 
   // #342: Der erste Ladevorgang je Projekt (M7-68, ENTSCHIEDEN 7) - nur, wenn der
@@ -484,6 +475,46 @@ export function ComposerInterna({
     })
   }
 
+  // #423 (User 15.10.2026: "immer mindestens ein Video"): Das eine Video wird NICHT
+  // geloescht - ein Projekt hat immer genau eines. Ersetzen geht ueber
+  // „Video importieren". Die Meldung steht hier, nicht in der Ansicht (Ownership, #259).
+  const meldeVideoPflicht = (): void => {
+    meldeWurzel(
+      'asset_referenziert',
+      'Ein Projekt hat immer genau ein Video – bitte über „Video importieren" ersetzen.',
+    )
+  }
+
+  // Der Datei-Drop der Galerie (#335): Die Wirkung (Dateien einreihen, Bericht setzen)
+  // liegt in der Wurzel; `GalerieBereich` reicht nur die fallengelassenen Dateien herein.
+  const verarbeiteGalerieDrop = (dateien: File[]): void => {
+    if (inhalt === null) {
+      setzeDropFehler(
+        'Es ist kein Projekt geladen – ein Import braucht ein geöffnetes Projekt.',
+      )
+      return
+    }
+    const aufbereitung: ReturnType<typeof greifeDropAuf> = greifeDropAuf(
+      dateien,
+      pfadFuerDatei,
+    )
+    void reiheDropEin(inhalt.id, aufbereitung.einreihbar).then((einreihErgebnis) => {
+      // Abgewiesene Formate stehen unter demselben Code wie im Main
+      // (format_nicht_unterstuetzt) - EIN Berichtsweg, kein zweiter.
+      setzeImportBericht(
+        baueImportBericht({
+          ...einreihErgebnis,
+          uebersprungen: [...einreihErgebnis.uebersprungen],
+          abgelehnt: [
+            ...einreihErgebnis.abgelehnt,
+            ...aufbereitung.abgelehnt,
+          ],
+        }),
+      )
+      setzeDropFehler(null)
+    })
+  }
+
   // #407: Die Loesch-Vorauswahl als WERT vor dem JSX gerechnet (klare Schranke;
   // die Verschraenkung liest assetId IM verschraenkten Umfang, nicht in Rueckrufen).
   const loeschAsset = (() => {
@@ -511,147 +542,6 @@ export function ComposerInterna({
     if (elementId === null) return
     ereignis.preventDefault()
     setzeLage((alt) => oeffneMenue(alt, { elementId, x: ereignis.clientX, y: ereignis.clientY }))
-  }
-
-  // #414: der DnD-Verband auf der Wurzel (aus #412 uebernommen, auf den gemeinsamen
-  // Kontext gehoben; die Routing-Regeln sind woertlich die #412-Regeln).
-  const amDragStart = (ereignis: DragStartEvent): void => {
-    // NUR ein Drag MIT Referenz (Neu-Einfuegen, #413) oeffnet die Kanten.
-    setzeNeuZug(liestReferenz(ereignis.active.data.current))
-    setzeBandZiel(null)
-    setzeBandZeit(null)
-    const aktivator = ereignis.activatorEvent as MouseEvent
-    if (typeof aktivator?.clientX === 'number') zeigerStartX.current = aktivator.clientX
-  }
-
-  const amUeber = (ereignis: DragOverEvent): void => {
-    // Messbruecke zu `waehleKanteAus` (#412-Signatur): Zeiger-x (Start + delta) im
-    // Zeitleisten-Raum; gescrollte Korbe inklusive. Ohne Messstand Rueckfall auf den
-    // Droppable-Index (`kante-N`).
-    if (neuZug === null) return
-    const korb = korbRef.current
-    if (korb === null || zeigerStartX.current === null) {
-      setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
-      setzeBandZiel(null)
-      setzeBandZeit(null)
-      return
-    }
-    const umriss = korb.getBoundingClientRect()
-    if (umriss.width === 0 && umriss.height === 0) {
-      setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
-      setzeBandZiel(null)
-      setzeBandZeit(null)
-      return
-    }
-    const zeilen = baueZeitleistenZeilen(inhalt?.liste ?? [], pxProSekunde)
-    const xImKontext = zeigerStartX.current + ereignis.delta.x - umriss.left + korb.scrollLeft
-    const kanten = baueEinfugeKanten(zeilen.length)
-    // #417: `waehleKanteAus` rechnet die Grenzen als SUMME der uebergebenen Breiten. Der
-    // Zeiger-x liegt aber im echten Layout, in dem zwischen zwei Bloecken eine Kante (10 px)
-    // und ZWEI Luecken (je 2 px) stehen. Ohne den Vorschub je Block liegen Modellgrenzen und
-    // sichtbare Kanten auseinander - bei kurzen Bloecken um eine ganze Kante. Deshalb traegt
-    // die uebergebene "Breite" den Layout-Vorschub Block + Kante + zwei Luecken.
-    const gemessen = waehleKanteAus(kanten, xImKontext, (index) => (zeilen[index]?.breitePx ?? 64) + KANTEN_VORSCHUB_PX)
-    setzeAktiveKante(gemessen ?? leseKantenIndex(ereignis.over?.id))
-    // #425: Steht der Zeiger im KOERPER eines VIDEO-Blocks, wird der Drop ein Band-
-    // Abschnitt (nicht sequenziell). Die Messung liegt rein in band-aufnahme.ts.
-    const breiten = zeilen.map((zeile) => zeile.breitePx)
-    setzeBandZiel(bandZielAus(zeilen, breiten, xImKontext, KANTEN_VORSCHUB_PX))
-    // #428: dazu die ZEITSTELLE im Video-Koerper - der Drop legt den Abschnitt dort
-    // in die Rotation (Entscheidung 1a), statt ihn immer anzuhangen.
-    setzeBandZeit(
-      bandZeitImVideo(zeilen, breiten, xImKontext, KANTEN_VORSCHUB_PX, pxProSekunde)?.zeitSekunden ??
-        null,
-    )
-  }
-
-  // #425: EINE Aktion ins Werbeband des Video-Elements aufnehmen. Der Entwurf kommt
-  // aus band-aufnahme.ts (erste waehlbare Band-Vorlage, Dauer-Kette des Produkts),
-  // geschrieben wird ausschliesslich ueber uebernehmeBand (#129) - kein zweiter
-  // Schreibweg. Die Sicht-Korrektur geht ueber den Wrapped-Zugang (EIN Undo-Schritt).
-  const nehmeAktionInsBandAuf = (videoId: string, aktionId: string, zeitSekunden: number | null): void => {
-    const frisch = projekt.hole().projekt
-    if (frisch === null) return
-    const element = frisch.liste.find((eintrag) => eintrag.id === videoId)
-    if (element === undefined || element.art !== 'video') return
-    const aktion = frisch.aktionen.find((eintrag) => eintrag.id === aktionId)
-    if (aktion === undefined) return
-
-    const dauer = startdauerFuerBandabschnitt(aktion.standardDauer, frisch.standardSegmentdauer)
-    const einzeln = frameDauer(element)
-    const videoSekunden = einzeln.ok ? einzeln.wert / RENDER_PROFILE.fps : null
-    const vorlagenListe = (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)
-    // #428B: mit Zeitstelle den Abschnitt teilen; ohne brauchbare Messung anhaengen.
-    const entwurf =
-      videoSekunden === null || zeitSekunden === null
-        ? bandAufnahmeAus(element, aktion.id, dauer, vorlagenListe)
-        : bandAufnahmeMitTeilung(element, aktion.id, dauer, vorlagenListe, zeitSekunden, videoSekunden)
-    if (entwurf === null) {
-      meldeWurzel(
-        'keine_band_vorlage',
-        'Für ein Werbeband wird eine Band-Vorlage gebraucht (Art „split“ oder „einblendung“). Lege eine Vorlage im Reiter Vorlagen an.',
-      )
-      return
-    }
-
-    void uebernehmeBand(element.id, entwurf).then((antwort) => {
-      if (!antwort.ok) {
-        meldeWurzel(antwort.fehler.code, antwort.fehler.meldung)
-        return
-      }
-      // Die Sicht NACH dem await frisch holen (kein gemerkter Stand) und GENAU EIN
-      // setzeListe - das ist der eine Undo-Schritt ueber den Wrapped-Zugang (#243).
-      const aktuell = projekt.hole().projekt
-      if (aktuell === null) return
-      const neu = antwort.wert
-      projekt.setzeListe(aktuell.liste.map((eintrag) => (eintrag.id === neu.id ? neu : eintrag)))
-    })
-  }
-
-  const amEnde = (ereignis: DragEndEvent): void => {
-    setzeNeuZug(null)
-    setzeAktiveKante(null)
-    // #425: Das Band-Ziel VOR dem Zuruecksetzen lesen - der Drop entscheidet daran.
-    const zielVideo = bandZiel
-    // #428: ebenso die Zeitstelle; sie waehlt die Stelle in der Rotation.
-    const zielZeit = bandZeit
-    setzeBandZiel(null)
-    setzeBandZeit(null)
-    // Sortier-Drag EINES BESTANDELEMENTS (keine Referenz): der Reorder-Weg (#122).
-    const referenz = liestReferenz(ereignis.active.data.current)
-    if (referenz === null) {
-      const aktiv = ereignis.active.id
-      const ueber = ereignis.over?.id
-      if (typeof aktiv !== 'string' || typeof ueber !== 'string') return
-      ordneNeuOptimistisch(aktiv, ueber, projekt.setzeListe)
-      return
-    }
-    // #425: Drop auf dem VIDEO-Koerper -> Band-Abschnitt; die Video-Elementdauer
-    // bleibt unberuehrt (TK 9.2.8). Auf einem Segment-Koerper ist `zielVideo` null;
-    // dann laeuft der Drop wie bisher an die gemessene Kante (sequenziell davor/danach).
-    if (zielVideo !== null) {
-      nehmeAktionInsBandAuf(zielVideo, referenz, zielZeit)
-      return
-    }
-    // NEU-Drag (#413): Einfuegen an der Kante (#411-Mutation, nicht optimistisch).
-    let index = aktiveKante
-    if (index === null) index = leseKantenIndex(ereignis.over?.id)
-    if (index === null) return
-    setzeLaedtKante(index)
-    void fuegeElementHinzu(referenz, index, projekt.setzeListe)
-      .then((ergebnis) => {
-        if (!ergebnis.ok) {
-          meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
-        }
-      })
-      .finally(() => setzeLaedtKante(null))
-  }
-
-  const amDragAbbruch = (): void => {
-    setzeNeuZug(null)
-    setzeAktiveKante(null)
-    setzeBandZiel(null)
-    setzeBandZeit(null)
   }
 
   // #428: Zoom um eine Stufe (die Zeitleiste reicht nur die Richtung herein).
@@ -753,14 +643,14 @@ export function ComposerInterna({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={amDragStart}
-      onDragOver={amUeber}
+      onDragStart={zug.amDragStart}
+      onDragOver={zug.amUeber}
       // #417: onDragOver feuert NUR beim Wechsel des `over`-Ziels. Beim Ziehen aus der
       // Bibliothek bleibt `over` oft dieselbe Kante - die Messung liefe dann EINMAL bei
       // dx=0 und JEDER Drop landete an Kante 0. onDragMove feuert bei JEDER Bewegung.
-      onDragMove={amUeber}
-      onDragEnd={amEnde}
-      onDragCancel={amDragAbbruch}
+      onDragMove={zug.amUeber}
+      onDragEnd={zug.amEnde}
+      onDragCancel={zug.amDragAbbruch}
     >
     <div
       data-testid="composer-wurzel"
@@ -887,33 +777,20 @@ export function ComposerInterna({
           </div>
 
           <div style={{ flex: '1 1 auto', display: 'flex', gap: 8, minHeight: 0 }}>
-            {/* LINKS: Die Bibliothek (Dock breit genug fuer Hinzufuegen/Loeschen). */}
-            <div
-              data-testid="composer-bibliothek-dock"
-              style={{ width: 300, flexShrink: 0, minWidth: 240, minHeight: 0, overflow: 'auto', borderRight: '1px solid #444', paddingRight: 8 }}
-            >
-              <Bibliotheksansicht
-                projekt={inhalt}
-                sichtSchreiber={projekt.setzeListe}
-                aufImportieren={importiere}
-                ausgewaehltesId={lage.gewaehltesMediumId}
-                aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
-                vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
-                aufAktionAnlegen={legeAktionAnInline}
-                aufAktionLoeschen={loescheAktionInline}
-                aufMediumLoeschen={(assetId) => {
-                  // #423 (User 15.10.2026: "immer mindestens ein Video"): Das eine Video
-                  // wird NICHT geloescht - ein Projekt hat immer genau eines. Ersetzen
-                  // geht ueber „Video importieren".
-                  void assetId
-                  meldeWurzel(
-                    'asset_referenziert',
-                    'Ein Projekt hat immer genau ein Video – bitte über „Video importieren" ersetzen.',
-                  )
-                }}
-                aufFehler={meldeWurzel}
-              />
-            </div>
+            {/* S4 (Naht N4): die Bibliothek-Region als eigener Baustein; die #423-Wirkung
+                (kein Video-Loeschen) bleibt in der Wurzel (Ownership, #259). */}
+            <BibliothekDock
+              projekt={inhalt}
+              sichtSchreiber={projekt.setzeListe}
+              aufImportieren={importiere}
+              ausgewaehltesId={lage.gewaehltesMediumId}
+              aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
+              vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+              aufAktionAnlegen={legeAktionAnInline}
+              aufAktionLoeschen={loescheAktionInline}
+              aufMediumLoeschen={meldeVideoPflicht}
+              aufFehler={meldeWurzel}
+            />
 
             {/* MITTE: Galerie als lebende Drop-Zone (#335) + falls gewaehlt die
                 #248-Liste (Fallback). */}
@@ -935,55 +812,14 @@ export function ComposerInterna({
                   />
                 </>
               )}
-              <div
-                data-testid="composer-galerie"
-                style={{ flex: '1 1 auto', minHeight: 120, borderTop: '1px solid #444' }}
-                // #335: Die Drop-Zone der Medien-Bibliothek. preventDefault unterdrückt
-                // das Öffnen der Datei im Fenster; ohne Bearbeitung ist das ZIEHEN hier
-                // überhaupt erst ein Drop auf DIESEN Bereich.
-                onDragOver={(ereignis) => {
-                  ereignis.preventDefault()
-                }}
-                onDrop={(ereignis) => {
-                  ereignis.preventDefault()
-                  if (inhalt === null) {
-                    setzeDropFehler(
-                      'Es ist kein Projekt geladen – ein Import braucht ein geöffnetes Projekt.',
-                    )
-                    return
-                  }
-                  const dateien = Array.from(ereignis.dataTransfer.files)
-                  const aufbereitung: ReturnType<typeof greifeDropAuf> = greifeDropAuf(
-                    dateien,
-                    pfadFuerDatei,
-                  )
-                  void reiheDropEin(inhalt.id, aufbereitung.einreihbar).then((einreihErgebnis) => {
-                    // Abgewiesene Formate stehen unter demselben Code wie im Main
-                    // (format_nicht_unterstuetzt) - EIN Berichtsweg, kein zweiter.
-                    setzeImportBericht(
-                      baueImportBericht({
-                        ...einreihErgebnis,
-                        uebersprungen: [...einreihErgebnis.uebersprungen],
-                        abgelehnt: [
-                          ...einreihErgebnis.abgelehnt,
-                          ...aufbereitung.abgelehnt,
-                        ],
-                      }),
-                    )
-                    setzeDropFehler(null)
-                  })
-                }}
-              >
-                {inhalt === null ? (
-                  <AssetGalerie projekt={null} />
-                ) : (
-                  <AssetGalerie
-                    projekt={inhalt}
-                    ausgewaehltesId={lage.gewaehltesMediumId}
-                    aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
-                  />
-                )}
-              </div>
+              {/* S4 (Naht N4): die Galerie-Region als eigener Baustein; die Drop-Wirkung
+                  liegt in der Wurzel (`verarbeiteGalerieDrop`, Ownership #259). */}
+              <GalerieBereich
+                projekt={inhalt}
+                ausgewaehltesId={lage.gewaehltesMediumId}
+                aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
+                aufDateiDrop={verarbeiteGalerieDrop}
+              />
             </div>
           </div>
 
@@ -991,31 +827,29 @@ export function ComposerInterna({
               Wird in JEDER Ansicht gezeigt - sie ist die Einfuege-Flaeche. */}
           <Zeitleiste
             projekt={inhalt}
-            neuZug={neuZug}
-            aktiveKante={aktiveKante}
-            laedtKante={laedtKante}
-            korbRef={korbRef}
-            bandZiel={bandZiel}
+            neuZug={zug.neuZug}
+            aktiveKante={zug.aktiveKante}
+            laedtKante={zug.laedtKante}
+            korbRef={zug.korbRef}
+            bandZiel={zug.bandZiel}
             pxProSekunde={pxProSekunde}
             aufZoom={zoome}
           />
 
-          {/* #342: Die Ausgabe-Liste (#230) - der Oeffnungsweg des Export-Dialogs
-              (#232). Der Export-Rueckruf oeffnet das Overlay mit LEERER Auswahl
-              (M7-60, ENTSCHIEDEN 3); der Erneut-laden-Weg geht direkt an #230. */}
-          <div data-testid="composer-ausgaben" style={{ borderTop: '1px solid #444', paddingTop: 8 }}>
-            <AusgabeListenansicht
-              stand={ausgabenStand}
-              aufExportieren={() =>
-                setzeLage((alt) =>
-                  oeffneOverlay(setzeExportauswahl(alt, LEERE_EXPORTAUSWAHL), { art: 'export' }),
-                )
-              }
-              aufErneutLaden={() => {
-                if (inhalt !== null) void ladeAusgaben(inhalt.id)
-              }}
-            />
-          </div>
+          {/* S4 (Naht N4): die Ausgaben-Region als eigener Baustein (#230/#232-Oeffnungsweg).
+              Der Export-Rueckruf oeffnet das Overlay mit LEERER Auswahl (M7-60,
+              ENTSCHIEDEN 3); der Erneut-laden-Weg geht direkt an #230. */}
+          <AusgabenBereich
+            stand={ausgabenStand}
+            aufExportieren={() =>
+              setzeLage((alt) =>
+                oeffneOverlay(setzeExportauswahl(alt, LEERE_EXPORTAUSWAHL), { art: 'export' }),
+              )
+            }
+            aufErneutLaden={() => {
+              if (inhalt !== null) void ladeAusgaben(inhalt.id)
+            }}
+          />
         </>
       )}
 
