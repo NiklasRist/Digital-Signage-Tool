@@ -11,7 +11,27 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (16.10.2026, Composer-Umbau + Programm Codequalitaet) – gilt vor ALLEM weiter unten
+## STAND HEUTE (17.10.2026, Composer S4/S5 + #433 Filmstreifen) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-17-session.md`](docs/agents/uebergabe-2026-10-17-session.md) – LIES DIESE DATEI ZUERST.**
+
+- **Composer-Umbau S4/S5 GEBAUT und gemergt** (Merge `2ede5d4`; Plan `docs/agents/composer-umbau-plan.md`).
+  **S4:** die drei Regionen als eigene, gesteuerte Bausteine (`bibliothek-dock.tsx`,
+  `galerie-bereich.tsx`, `ausgaben-bereich.tsx`). **S5:** der DnD-Zug im Hook
+  `verwende-zeitleisten-zug.ts` (`neuZug`/`aktiveKante`/`laedtKante`/`bandZiel`/`bandZeit`/`korbRef`
+  + die vier Handler + Projektwechsel-Reset). Verhaltensneutral: DOM/Testids zeichengleich, Treiber
+  ohne Befund. `index.tsx` **1123→957**. **S6** (Leichen bewerten) bleibt bis nach dem UI-Umbau.
+- **#433 GEBAUT und gemergt** (Merge `517c5cc`; Plan `docs/agents/433-frames-plan.md`): Der
+  **Video-Block der Zeitleiste zeigt einen Filmstreifen aus echten Einzelbildern** des Videos.
+  User-Entscheidung: „literally die frames … die einzelnen Bilder"; Standard-Zoom bleibt. Die
+  Anzahl folgt der Blockbreite (Zoom): Treiber 4b4 **1 Bild @ Standard → 6 Bilder @ 128 px/s**.
+  Baustein `video-filmstreifen.tsx` nutzt `fangeBild`/`warteAufMetadaten` aus `thumbnails.ts`
+  (keine zweite Bildquelle). **OFFEN: optische User-Abnahme am echten Fenster** (Issue bleibt offen).
+- Zaehler: Suite **5556 gruen (323 Dateien)**, Typecheck/Lint 0. Alles **lokal auf `main`**,
+  **nicht gepusht**.
+- Naechste Session: **#433 optisch abnehmen**, dann im Programm **Q3/Q4/Q1.2**; **#426** weiter offen.
+
+## STAND HEUTE (16.10.2026, Composer-Umbau + Programm Codequalitaet) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-16-session.md`](docs/agents/uebergabe-2026-10-16-session.md) – LIES DIESE DATEI ZUERST.**
 **WICHTIG OFFEN:** Die **Frames-Anzeige** der Zeitleiste erfuellt den User noch nicht („geht immer
