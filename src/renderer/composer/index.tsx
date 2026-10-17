@@ -68,7 +68,8 @@ import {
   aufAusgabenGeaendert,
   type Ausgabenstand,
 } from './ausgabe-liste'
-import { AusgabeListenansicht } from './ausgabe-liste.tsx'
+// S4 (Naht N4): die Ausgaben-Region als eigener Baustein.
+import { AusgabenBereich } from './ausgaben-bereich.tsx'
 import { starteReparatur, istRenderFreigegeben, aktualisiereReparatur } from './reparatur-fuehrung'
 import { fuehreFixAus, type FixOptionId } from './reparatur-optionen'
 import { ReparaturPanel } from './reparatur-panel.tsx'
@@ -76,7 +77,8 @@ import { loeseRenderAus, loeseExportAus } from './render-ausloesen'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import type { Marke } from '../../shared/contracts/marke'
 import { importiereMedien, baueImportBericht, type ImportBericht } from './medien-import'
-import { AssetGalerie } from './asset-galerie'
+// S4 (Naht N4): die Galerie-Region (Datei-Drop-Zone #335) als eigener Baustein.
+import { GalerieBereich } from './galerie-bereich.tsx'
 import { greifeDropAuf, reiheDropEin, type PfadHoler } from './medien-bibliothek'
 import { pfadFuerDatei } from '../ipc-client/pfad-fuer-datei'
 // Mit Endung: der Pfad ohne Endung löst gegen die reine .ts-Naht auf, nicht gegen
@@ -88,7 +90,8 @@ import { uebernehmeGrenzen } from './dauer-regler'
 // #407-Befund (12.10.2026): Der Baustein #123 hat zwei UI-Aufrufer, deren Ansichten
 // in der Geschichte nie in dieser Wurzel montiert wurden (Nachtrag am Issue #407).
 // Die Montage ist genau die Aufgabe dieser Datei (#261 "Bausteine anordnen").
-import { Bibliotheksansicht } from './bibliothek-ansicht.tsx'
+// S4 (Naht N4): die Bibliothek-Region als eigener Baustein (der Dock traegt die Ansicht).
+import { BibliothekDock } from './bibliothek-dock.tsx'
 // #425: Die Band-Bearbeitung (#253/M7-60) wird endlich MONTIERT (Familie „fertige
 // Funktion ohne Aufrufer"); der Drop einer Aktion auf das VIDEO wird ein Band-Abschnitt.
 // Die reine Aufnahme-Logik liegt in band-aufnahme.ts, der eine Schreibweg in
@@ -481,6 +484,46 @@ export function ComposerInterna({
           text: antwort.fehler.meldung,
           brauchtAufmerksamkeit: antwort.fehler.code !== 'unbekannter_fehler',
         })
+    })
+  }
+
+  // #423 (User 15.10.2026: "immer mindestens ein Video"): Das eine Video wird NICHT
+  // geloescht - ein Projekt hat immer genau eines. Ersetzen geht ueber
+  // „Video importieren". Die Meldung steht hier, nicht in der Ansicht (Ownership, #259).
+  const meldeVideoPflicht = (): void => {
+    meldeWurzel(
+      'asset_referenziert',
+      'Ein Projekt hat immer genau ein Video – bitte über „Video importieren" ersetzen.',
+    )
+  }
+
+  // Der Datei-Drop der Galerie (#335): Die Wirkung (Dateien einreihen, Bericht setzen)
+  // liegt in der Wurzel; `GalerieBereich` reicht nur die fallengelassenen Dateien herein.
+  const verarbeiteGalerieDrop = (dateien: File[]): void => {
+    if (inhalt === null) {
+      setzeDropFehler(
+        'Es ist kein Projekt geladen – ein Import braucht ein geöffnetes Projekt.',
+      )
+      return
+    }
+    const aufbereitung: ReturnType<typeof greifeDropAuf> = greifeDropAuf(
+      dateien,
+      pfadFuerDatei,
+    )
+    void reiheDropEin(inhalt.id, aufbereitung.einreihbar).then((einreihErgebnis) => {
+      // Abgewiesene Formate stehen unter demselben Code wie im Main
+      // (format_nicht_unterstuetzt) - EIN Berichtsweg, kein zweiter.
+      setzeImportBericht(
+        baueImportBericht({
+          ...einreihErgebnis,
+          uebersprungen: [...einreihErgebnis.uebersprungen],
+          abgelehnt: [
+            ...einreihErgebnis.abgelehnt,
+            ...aufbereitung.abgelehnt,
+          ],
+        }),
+      )
+      setzeDropFehler(null)
     })
   }
 
@@ -887,33 +930,20 @@ export function ComposerInterna({
           </div>
 
           <div style={{ flex: '1 1 auto', display: 'flex', gap: 8, minHeight: 0 }}>
-            {/* LINKS: Die Bibliothek (Dock breit genug fuer Hinzufuegen/Loeschen). */}
-            <div
-              data-testid="composer-bibliothek-dock"
-              style={{ width: 300, flexShrink: 0, minWidth: 240, minHeight: 0, overflow: 'auto', borderRight: '1px solid #444', paddingRight: 8 }}
-            >
-              <Bibliotheksansicht
-                projekt={inhalt}
-                sichtSchreiber={projekt.setzeListe}
-                aufImportieren={importiere}
-                ausgewaehltesId={lage.gewaehltesMediumId}
-                aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
-                vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
-                aufAktionAnlegen={legeAktionAnInline}
-                aufAktionLoeschen={loescheAktionInline}
-                aufMediumLoeschen={(assetId) => {
-                  // #423 (User 15.10.2026: "immer mindestens ein Video"): Das eine Video
-                  // wird NICHT geloescht - ein Projekt hat immer genau eines. Ersetzen
-                  // geht ueber „Video importieren".
-                  void assetId
-                  meldeWurzel(
-                    'asset_referenziert',
-                    'Ein Projekt hat immer genau ein Video – bitte über „Video importieren" ersetzen.',
-                  )
-                }}
-                aufFehler={meldeWurzel}
-              />
-            </div>
+            {/* S4 (Naht N4): die Bibliothek-Region als eigener Baustein; die #423-Wirkung
+                (kein Video-Loeschen) bleibt in der Wurzel (Ownership, #259). */}
+            <BibliothekDock
+              projekt={inhalt}
+              sichtSchreiber={projekt.setzeListe}
+              aufImportieren={importiere}
+              ausgewaehltesId={lage.gewaehltesMediumId}
+              aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
+              vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+              aufAktionAnlegen={legeAktionAnInline}
+              aufAktionLoeschen={loescheAktionInline}
+              aufMediumLoeschen={meldeVideoPflicht}
+              aufFehler={meldeWurzel}
+            />
 
             {/* MITTE: Galerie als lebende Drop-Zone (#335) + falls gewaehlt die
                 #248-Liste (Fallback). */}
@@ -935,55 +965,14 @@ export function ComposerInterna({
                   />
                 </>
               )}
-              <div
-                data-testid="composer-galerie"
-                style={{ flex: '1 1 auto', minHeight: 120, borderTop: '1px solid #444' }}
-                // #335: Die Drop-Zone der Medien-Bibliothek. preventDefault unterdrückt
-                // das Öffnen der Datei im Fenster; ohne Bearbeitung ist das ZIEHEN hier
-                // überhaupt erst ein Drop auf DIESEN Bereich.
-                onDragOver={(ereignis) => {
-                  ereignis.preventDefault()
-                }}
-                onDrop={(ereignis) => {
-                  ereignis.preventDefault()
-                  if (inhalt === null) {
-                    setzeDropFehler(
-                      'Es ist kein Projekt geladen – ein Import braucht ein geöffnetes Projekt.',
-                    )
-                    return
-                  }
-                  const dateien = Array.from(ereignis.dataTransfer.files)
-                  const aufbereitung: ReturnType<typeof greifeDropAuf> = greifeDropAuf(
-                    dateien,
-                    pfadFuerDatei,
-                  )
-                  void reiheDropEin(inhalt.id, aufbereitung.einreihbar).then((einreihErgebnis) => {
-                    // Abgewiesene Formate stehen unter demselben Code wie im Main
-                    // (format_nicht_unterstuetzt) - EIN Berichtsweg, kein zweiter.
-                    setzeImportBericht(
-                      baueImportBericht({
-                        ...einreihErgebnis,
-                        uebersprungen: [...einreihErgebnis.uebersprungen],
-                        abgelehnt: [
-                          ...einreihErgebnis.abgelehnt,
-                          ...aufbereitung.abgelehnt,
-                        ],
-                      }),
-                    )
-                    setzeDropFehler(null)
-                  })
-                }}
-              >
-                {inhalt === null ? (
-                  <AssetGalerie projekt={null} />
-                ) : (
-                  <AssetGalerie
-                    projekt={inhalt}
-                    ausgewaehltesId={lage.gewaehltesMediumId}
-                    aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
-                  />
-                )}
-              </div>
+              {/* S4 (Naht N4): die Galerie-Region als eigener Baustein; die Drop-Wirkung
+                  liegt in der Wurzel (`verarbeiteGalerieDrop`, Ownership #259). */}
+              <GalerieBereich
+                projekt={inhalt}
+                ausgewaehltesId={lage.gewaehltesMediumId}
+                aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
+                aufDateiDrop={verarbeiteGalerieDrop}
+              />
             </div>
           </div>
 
@@ -1000,22 +989,20 @@ export function ComposerInterna({
             aufZoom={zoome}
           />
 
-          {/* #342: Die Ausgabe-Liste (#230) - der Oeffnungsweg des Export-Dialogs
-              (#232). Der Export-Rueckruf oeffnet das Overlay mit LEERER Auswahl
-              (M7-60, ENTSCHIEDEN 3); der Erneut-laden-Weg geht direkt an #230. */}
-          <div data-testid="composer-ausgaben" style={{ borderTop: '1px solid #444', paddingTop: 8 }}>
-            <AusgabeListenansicht
-              stand={ausgabenStand}
-              aufExportieren={() =>
-                setzeLage((alt) =>
-                  oeffneOverlay(setzeExportauswahl(alt, LEERE_EXPORTAUSWAHL), { art: 'export' }),
-                )
-              }
-              aufErneutLaden={() => {
-                if (inhalt !== null) void ladeAusgaben(inhalt.id)
-              }}
-            />
-          </div>
+          {/* S4 (Naht N4): die Ausgaben-Region als eigener Baustein (#230/#232-Oeffnungsweg).
+              Der Export-Rueckruf oeffnet das Overlay mit LEERER Auswahl (M7-60,
+              ENTSCHIEDEN 3); der Erneut-laden-Weg geht direkt an #230. */}
+          <AusgabenBereich
+            stand={ausgabenStand}
+            aufExportieren={() =>
+              setzeLage((alt) =>
+                oeffneOverlay(setzeExportauswahl(alt, LEERE_EXPORTAUSWAHL), { art: 'export' }),
+              )
+            }
+            aufErneutLaden={() => {
+              if (inhalt !== null) void ladeAusgaben(inhalt.id)
+            }}
+          />
         </>
       )}
 
