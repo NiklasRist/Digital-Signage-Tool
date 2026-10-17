@@ -11,7 +11,7 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (17.10.2026, Composer S4/S5 + #433 Filmstreifen) – gilt vor ALLEM weiter unten
+## STAND HEUTE (17.10.2026, Composer S4/S5, #433 Filmstreifen, #426/#434/#435 Unterbrechung) – gilt vor ALLEM weiter unten
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-17-session.md`](docs/agents/uebergabe-2026-10-17-session.md) – LIES DIESE DATEI ZUERST.**
 
@@ -29,7 +29,7 @@
   (keine zweite Bildquelle). **OFFEN: optische User-Abnahme am echten Fenster** (Issue bleibt offen).
 - Zaehler: Suite **5602 gruen (327 Dateien)**, Typecheck/Lint 0. Alles **lokal auf `main`**,
   **nicht gepusht**.
-- **#426 (Aktion unterbricht das Video) ENTSCHIEDEN + dokumentiert, NOCH NICHT GEBAUT.** User-Entscheidung
+- **#426 (Aktion unterbricht das Video) ENTSCHIEDEN; #434/#435 GEBAUT, #436/#437 offen.** User-Entscheidung
   **17.10.2026: Modell A – Einschub am Video-Element** (`Listenelement.unterbrechungen`,
   `[{ zeitstelle, aktionRef, dauer }]`; das Video bleibt EIN Element; sequenzielles Gegenstueck zum
   parallelen Band). **AD v1.8 / TK v3.26** (9.2.9 Render-Zerlegung, 9.5.2 `setzeUnterbrechungen`,

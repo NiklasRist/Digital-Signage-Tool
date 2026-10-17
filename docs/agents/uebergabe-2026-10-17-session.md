@@ -1,4 +1,4 @@
-# Uebergabe – Session 17.10.2026 (Composer S4/S5, #433 Filmstreifen)
+# Uebergabe – Session 17.10.2026 (Composer S4/S5, #433 Filmstreifen, #426/#434/#435 Unterbrechung)
 
 > Fuer die naechste Sitzung: Lies zuerst `CLAUDE.md` (STAND HEUTE), dann diese Datei.
 > Vorgaenger: `docs/agents/uebergabe-2026-10-16-session.md`.
@@ -6,7 +6,10 @@
 ## Worum es ging
 
 Der User hat die Reihenfolge vorgegeben: „2 dann 1" – zuerst den **Composer-Umbau S4/S5**
-(der offene Rest aus dem Plan), danach **#433** (die Frames-Anzeige).
+(der offene Rest aus dem Plan), danach **#433** (die Frames-Anzeige). Aus der Rueckmeldung
+zu #433 („man kann immer noch keine aktionen zwischen den frames hinzufuegen") wurde **#426
+(Video unterbrechen)** geklaert, entschieden (**Modell A – Einschub am Video-Element**), in
+**AD v1.8 / TK v3.26** fortgeschrieben und in Bau-Issues geschnitten (**#434–#437**).
 
 ## Gebaut und gemergt (alles **lokal auf `main`**, **nicht gepusht**)
 
@@ -35,7 +38,7 @@ bei einem Drop auf das Video passiert. **Entschieden: Modell A – Einschub am V
 (`Listenelement.unterbrechungen`). **AD v1.8 / TK v3.26** fortgeschrieben (9.2.9 Render-Zerlegung,
 9.5.2 `setzeUnterbrechungen`, 9.5.3 Kaskade Fall 3, 9.7.7 Bedienung, 9.11.3 Modell), `.docx`
 synchron, Plan `docs/agents/426-unterbrechung-plan.md`, Merge `080ee4e`. **Bau-Issues #434–#437
-geschnitten (#426 bleibt als Eltern offen). **#434 (Modell + Store) ist GEBAUT und gemergt**
+geschnitten** (#426 bleibt als Eltern offen). **#434 (Modell + Store) ist GEBAUT und gemergt**
 (Merge `e772993`): `Listenelement.unterbrechungen` (optional im Typ, Ladung ergaenzt `[]`),
 `setzeUnterbrechungen` + Kanal `project:setzeUnterbrechungen` (Position 14), Kaskade Fall 3,
 5 Vertragstests nachgezogen. **#435 (Render-Zerlegung) ist GEBAUT und gemergt** (Merge
@@ -56,7 +59,9 @@ Streifen optisch passt (Dichte `ZIEL_BREITE_PX = 40`, feste Bildhoehe 64). Label
 
 - **Composer S6** (tatenlose Leichen bewerten) – erst nach dem UI-Umbau.
 - Im Programm: **Q1.2**, **Q3**, **Q4** (`codequalitaet-programm.md`).
-- **#426** (kurze Unterbrechung) weiter nur angelegt.
+- **#426** (Aktion unterbricht das Video): **entschieden** (Modell A, AD v1.8/TK v3.26); **#434
+  (Modell+Store) und #435 (Render-Zerlegung) gebaut**; offen sind **#436 (Vorschau)** und **#437
+  (Composer-Bedienung)**.
 - Altlasten: der #324-Vorbefund (`standardmarke-anzeige.spec.ts`); #289-Flaky.
 
 ## Zaehler
