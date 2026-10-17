@@ -29,7 +29,15 @@
   (keine zweite Bildquelle). **OFFEN: optische User-Abnahme am echten Fenster** (Issue bleibt offen).
 - Zaehler: Suite **5556 gruen (323 Dateien)**, Typecheck/Lint 0. Alles **lokal auf `main`**,
   **nicht gepusht**.
-- Naechste Session: **#433 optisch abnehmen**, dann im Programm **Q3/Q4/Q1.2**; **#426** weiter offen.
+- **#426 (Aktion unterbricht das Video) ENTSCHIEDEN + dokumentiert, NOCH NICHT GEBAUT.** User-Entscheidung
+  **17.10.2026: Modell A – Einschub am Video-Element** (`Listenelement.unterbrechungen`,
+  `[{ zeitstelle, aktionRef, dauer }]`; das Video bleibt EIN Element; sequenzielles Gegenstueck zum
+  parallelen Band). **AD v1.8 / TK v3.26** (9.2.9 Render-Zerlegung, 9.5.2 `setzeUnterbrechungen`,
+  9.5.3 Kaskade, 9.7.7 Bedienung, 9.11.3 Modell), `.docx` synchron, Plan
+  `docs/agents/426-unterbrechung-plan.md`, Merge `080ee4e`. **Bau-Issues #434 (Modell+Store), #435
+  (Render), #436 (Vorschau), #437 (Composer-Bedienung)** geschnitten; #426 bleibt als Eltern offen.
+- Naechste Session: **#426/1 = #434 bauen** (Modell + Store), dann #435/#436/#437; **#433 optisch
+  abnehmen**; im Programm **Q3/Q4/Q1.2**.
 
 ## STAND HEUTE (16.10.2026, Composer-Umbau + Programm Codequalitaet) – historisiert durch den Abschnitt darueber
 

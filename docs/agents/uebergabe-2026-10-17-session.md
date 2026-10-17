@@ -29,6 +29,14 @@ Neuer Baustein `video-filmstreifen.tsx` (rein: `anzahlBilder`/`bildZeitpunkte`);
 `fangeBild`/`warteAufMetadaten` aus `thumbnails.ts` (keine zweite Bildquelle). Im `ZeilenBlock`
 der Zeitleiste liegt der Streifen hinter Text und Band-Spur (zIndex). Treiber-Schritt **4b4**.
 
+Der User meldete danach: **„man kann immer noch keine aktionen zwischen den frames hinzufügen"**.
+Klaerung: er meint **#426 (Video unterbrechen)** – **nicht** den parallelen Band-Drop, der heute
+bei einem Drop auf das Video passiert. **Entschieden: Modell A – Einschub am Video-Element**
+(`Listenelement.unterbrechungen`). **AD v1.8 / TK v3.26** fortgeschrieben (9.2.9 Render-Zerlegung,
+9.5.2 `setzeUnterbrechungen`, 9.5.3 Kaskade Fall 3, 9.7.7 Bedienung, 9.11.3 Modell), `.docx`
+synchron, Plan `docs/agents/426-unterbrechung-plan.md`, Merge `080ee4e`. **Bau-Issues #434–#437
+geschnitten (#426 bleibt als Eltern offen).** Gebaut ist noch nichts.
+
 **Belege je Zug:** `typecheck`/`lint` 0, Suite gruen, Treiber ohne Befund (4f/4f2/4f4/4g2/4g4
 unveraendert). #433 zusaetzlich: 4b4 misst **1** Einzelbild bei Standard-Zoom → **6** bei 128 px/s.
 
@@ -52,5 +60,7 @@ Suite **5556 gruen (323 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund. Alles
 
 ## Naechste Sitzung (Vorschlag)
 
-1. **#433 optisch abnehmen** am echten Fenster.
-2. dann **Q3**/**Q4**/**Q1.2**, danach **S6**.
+1. **#434 bauen** (Modell + Store fuer #426 – „Aktion unterbricht das Video"), dann **#435**
+   (Render), **#436** (Vorschau), **#437** (Composer-Bedienung).
+2. **#433 optisch abnehmen** am echten Fenster.
+3. dann **Q3**/**Q4**/**Q1.2**, danach **S6**.
