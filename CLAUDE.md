@@ -34,8 +34,9 @@
   `[{ zeitstelle, aktionRef, dauer }]`; das Video bleibt EIN Element; sequenzielles Gegenstueck zum
   parallelen Band). **AD v1.8 / TK v3.26** (9.2.9 Render-Zerlegung, 9.5.2 `setzeUnterbrechungen`,
   9.5.3 Kaskade, 9.7.7 Bedienung, 9.11.3 Modell), `.docx` synchron, Plan
-  `docs/agents/426-unterbrechung-plan.md`, Merge `080ee4e`. **Bau-Issues #434 (Modell+Store), #435
-  (Render), #436 (Vorschau), #437 (Composer-Bedienung)** geschnitten; #426 bleibt als Eltern offen.
+  `docs/agents/426-unterbrechung-plan.md`, Merge `080ee4e`. **Bau-Issues #434 (Modell+Store,
+  GEBAUT+gemergt `e772993`), #435 (Render), #436 (Vorschau), #437 (Composer-Bedienung)** geschnitten;
+  #426 bleibt als Eltern offen.
 - Naechste Session: **#426/1 = #434 bauen** (Modell + Store), dann #435/#436/#437; **#433 optisch
   abnehmen**; im Programm **Q3/Q4/Q1.2**.
 

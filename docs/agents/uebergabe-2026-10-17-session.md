@@ -35,7 +35,10 @@ bei einem Drop auf das Video passiert. **Entschieden: Modell A – Einschub am V
 (`Listenelement.unterbrechungen`). **AD v1.8 / TK v3.26** fortgeschrieben (9.2.9 Render-Zerlegung,
 9.5.2 `setzeUnterbrechungen`, 9.5.3 Kaskade Fall 3, 9.7.7 Bedienung, 9.11.3 Modell), `.docx`
 synchron, Plan `docs/agents/426-unterbrechung-plan.md`, Merge `080ee4e`. **Bau-Issues #434–#437
-geschnitten (#426 bleibt als Eltern offen).** Gebaut ist noch nichts.
+geschnitten (#426 bleibt als Eltern offen). **#434 (Modell + Store) ist GEBAUT und gemergt**
+(Merge `e772993`): `Listenelement.unterbrechungen` (optional im Typ, Ladung ergaenzt `[]`),
+`setzeUnterbrechungen` + Kanal `project:setzeUnterbrechungen` (Position 14), Kaskade Fall 3,
+5 Vertragstests nachgezogen; Suite **5588/325**, Typecheck/Lint 0. **#435/#436/#437 offen.**
 
 **Belege je Zug:** `typecheck`/`lint` 0, Suite gruen, Treiber ohne Befund (4f/4f2/4f4/4g2/4g4
 unveraendert). #433 zusaetzlich: 4b4 misst **1** Einzelbild bei Standard-Zoom → **6** bei 128 px/s.
@@ -55,12 +58,12 @@ Streifen optisch passt (Dichte `ZIEL_BREITE_PX = 40`, feste Bildhoehe 64). Label
 
 ## Zaehler
 
-Suite **5556 gruen (323 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund. Alles **lokal auf
+Suite **5588 gruen (325 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund. Alles **lokal auf
 `main`**, **nicht gepusht** (Push nur auf Anweisung).
 
 ## Naechste Sitzung (Vorschlag)
 
-1. **#434 bauen** (Modell + Store fuer #426 – „Aktion unterbricht das Video"), dann **#435**
-   (Render), **#436** (Vorschau), **#437** (Composer-Bedienung).
+1. **#435 bauen** (Render – frame-genaue Zerlegung fuer #426), dann **#436** (Vorschau),
+   **#437** (Composer-Bedienung / Drop auf das Video).
 2. **#433 optisch abnehmen** am echten Fenster.
 3. dann **Q3**/**Q4**/**Q1.2**, danach **S6**.
