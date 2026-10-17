@@ -37,8 +37,8 @@
   `docs/agents/426-unterbrechung-plan.md`, Merge `080ee4e`. **Bau-Issues #434 (Modell+Store,
   GEBAUT+gemergt `e772993`) und #435 (Render-Zerlegung, GEBAUT+gemergt `c8ba86f`)**, dazu #436
   (Vorschau) und #437 (Composer-Bedienung) geschnitten; #426 bleibt als Eltern offen.
-- Naechste Session: **#426/1 = #434 bauen** (Modell + Store), dann #435/#436/#437; **#433 optisch
-  abnehmen**; im Programm **Q3/Q4/Q1.2**.
+- Naechste Session: **#436 bauen** (Vorschau – Pause an der Zeitstelle), dann **#437** (Bedienung);
+  **#433 optisch abnehmen**; im Programm **Q3/Q4/Q1.2**.
 
 ## STAND HEUTE (16.10.2026, Composer-Umbau + Programm Codequalitaet) – historisiert durch den Abschnitt darueber
 
