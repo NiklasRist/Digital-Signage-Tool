@@ -42,11 +42,12 @@ import { pruefeAusgabeName } from './render-dialog'
 import { zeichneSegment } from '../template-canvas/zeichne-segment'
 import { alsPng } from '../template-canvas/als-png'
 
-import type { Project } from '../../shared/contracts/project'
+import type { Project, Listenelement } from '../../shared/contracts/project'
 import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage } from '../../shared/contracts/vorlage'
-import type { RenderRequest, RenderItem } from '../../shared/contracts/render-request'
+import type { RenderRequest, RenderItem, RenderItemVideo } from '../../shared/contracts/render-request'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
+import { zerlegeVideo, rotiereBand } from './unterbrechungs-zerlegung'
 
 export type AusloeseFehlercode = 'kaputte_elemente' | 'png_export_fehler'
 
@@ -140,56 +141,58 @@ export async function loeseRenderAus(
           fehler: { code: 'ungueltige_eingabe', meldung: `Listenelement "${element.id}" (Video) hat weder trimEnde noch eine Asset-Dauer.`, daten: undefined },
         }
       }
-      if (element.einblendung === null) {
-        elemente.push({ id: element.id, art: 'video', medienRef: asset.dateiname, trimStart, trimEnde, einblendung: null })
+
+      // Das Werbeband EINMAL bauen (falls vorhanden) - es wird auf JEDEN Video-Teil gelegt.
+      const band = await baueBand(element, projekt, vorlagen, marke)
+      if (!band.ok) return band
+
+      // OHNE Unterbrechungen: EIN Video-Item, wie bisher.
+      const unterbrechungen = element.unterbrechungen ?? []
+      if (unterbrechungen.length === 0) {
+        elemente.push({ id: element.id, art: 'video', medienRef: asset.dateiname, trimStart, trimEnde, einblendung: band.wert })
         continue
       }
-      // Einblendung: art + Höhe aus der SELBEN Band-Vorlage wie die PNGs (TK 9.2.8).
-      const bandVorlage = vorlagen.find((v) => v.id === element.einblendung?.bandVorlageId)
-      if (bandVorlage === undefined) {
-        return {
-          ok: false,
-          fehler: { code: 'ungueltige_eingabe' as const, meldung: `Listenelement "${element.id}" verweist auf eine unbekannte Band-Vorlage.`, daten: undefined },
+
+      // #435: das Video an den Zeitstellen zerlegen (rein, `unterbrechungs-zerlegung.ts`).
+      // Jeder Video-Teil traegt das Band in der richtigen Phase (`rotiereBand`); die
+      // Einschuebe werden eigene Segment-Items. Die `id` bleibt die des Elements, damit der
+      // Reparatur-Modus (9.7.5) das Element ueber `RenderResult.fehlerhaftesElementId` findet.
+      for (const stueck of zerlegeVideo(trimStart, trimEnde, unterbrechungen)) {
+        if (stueck.art === 'video') {
+          elemente.push({
+            id: element.id,
+            art: 'video',
+            medienRef: asset.dateiname,
+            trimStart: stueck.trimStart,
+            trimEnde: stueck.trimEnde,
+            einblendung:
+              band.wert === null
+                ? null
+                : { ...band.wert, abschnitte: rotiereBand(band.wert.abschnitte, stueck.bandVersatzSekunden) },
+          })
+          continue
         }
-      }
-      if (bandVorlage.art === 'vollflaeche' || bandVorlage.höhe === null) {
-        // Ein Band aus dieser Vorlage ist nicht baubar; kein Ersatzwert (kein 0,
-        // kein 162, keine Art lei - TK 9.2.8/ #17).
-        return {
-          ok: false,
-          fehler: { code: 'ungueltige_eingabe', meldung: `Listenelement "${element.id}" verweist auf eine Vorlage ohne Bandhöhe.`, daten: undefined },
-        }
-      }
-      const abschnitte: Array<{ png: Uint8Array; dauer: number }> = []
-      for (const abschnitt of element.einblendung.abschnitte) {
-        const absAktion = projekt.aktionen.find((a) => a.id === abschnitt.aktionRef)
-        if (absAktion === undefined) {
+        const aktion = projekt.aktionen.find((a) => a.id === stueck.aktionRef)
+        if (aktion === undefined) {
           return {
             ok: false,
-            fehler: { code: 'png_export_fehler' as const, meldung: `Band-Abschnitt von "${element.id}" zeigt auf eine unbekannte Aktion.`, daten: undefined },
+            fehler: { code: 'ungueltige_eingabe' as const, meldung: `Unterbrechung von "${element.id}" zeigt auf eine unbekannte Aktion.`, daten: undefined },
           }
         }
-        // rahmenMarke === marke (TK v3.18 / M8-21).
-        const bandPng = await alsPng(zeichneSegment(absAktion, bandVorlage, marke, marke))
-        if (!bandPng.ok) {
-          return { ok: false, fehler: { code: 'png_export_fehler', meldung: bandPng.fehler.meldung, daten: undefined } }
+        const zeichenvorlage = vorlagen.find((v) => v.id === aktion.vorlagenId)
+        if (zeichenvorlage === undefined) {
+          return {
+            ok: false,
+            fehler: { code: 'ungueltige_eingabe' as const, meldung: `Aktion "${aktion.titel}" verwendet eine unbekannte Vorlage.`, daten: undefined },
+          }
         }
-        abschnitte.push({ png: bandPng.wert, dauer: abschnitt.dauer })
+        // Der Wurf von zeichneSegment wird NICHT gefangen (E-7). rahmenMarke === marke.
+        const png = await alsPng(zeichneSegment(aktion, zeichenvorlage, marke, marke))
+        if (!png.ok) {
+          return { ok: false, fehler: { code: 'png_export_fehler', meldung: png.fehler.meldung, daten: undefined } }
+        }
+        elemente.push({ id: element.id, art: 'segment', png: png.wert, dauer: stueck.dauer })
       }
-      elemente.push({
-        id: element.id,
-        art: 'video',
-        medienRef: asset.dateiname,
-        trimStart,
-        trimEnde,
-        einblendung: {
-          // KH (E5, #174): art und Höhe entsprechend den PNGs, im selben Pass
-          art: bandVorlage.art === 'split' ? 'split' : 'einblendung',
-          höhe: bandVorlage.höhe,
-          bandVorlageId: element.einblendung.bandVorlageId,
-          abschnitte,
-        },
-      })
     }
   }
 
@@ -203,6 +206,64 @@ export async function loeseRenderAus(
     ausgabeName,
   }
   return rufeAuf<{ auftragId: string }>(KANAELE.queue.reiheEin, { art: 'render', payload: request })
+}
+
+/**
+ * Baut das Werbeband EINES Video-Elements (oder null). art + Höhe kommen aus DERSELBEN
+ * Band-Vorlage wie die PNGs (TK 9.2.8); die Abschnitts-PNGs entstehen ueber DENSELBEN
+ * Zeichenpfad wie ein Segment (`zeichneSegment`/`alsPng`).
+ *
+ * AUSGELAGERT (statt inline in `loeseRenderAus`), weil ein unterbrochenes Video MEHRERE
+ * Video-Teile hat, die sich DASSELBE Band teilen - je Teil in anderer Phase (`rotiereBand`,
+ * #435). So wird das Band EINMAL gezeichnet, nicht je Teil.
+ */
+async function baueBand(
+  element: Listenelement,
+  projekt: Project,
+  vorlagen: readonly Vorlage[],
+  marke: Marke,
+): Promise<Ergebnis<RenderItemVideo['einblendung'], AusloeseFehlercode>> {
+  if (element.einblendung === null) return { ok: true, wert: null }
+  const eigenesBand = element.einblendung
+  const bandVorlage = vorlagen.find((v) => v.id === eigenesBand.bandVorlageId)
+  if (bandVorlage === undefined) {
+    return {
+      ok: false,
+      fehler: { code: 'ungueltige_eingabe', meldung: `Listenelement "${element.id}" verweist auf eine unbekannte Band-Vorlage.`, daten: undefined },
+    }
+  }
+  if (bandVorlage.art === 'vollflaeche' || bandVorlage.höhe === null) {
+    return {
+      ok: false,
+      fehler: { code: 'ungueltige_eingabe', meldung: `Listenelement "${element.id}" verweist auf eine Vorlage ohne Bandhöhe.`, daten: undefined },
+    }
+  }
+  const abschnitte: Array<{ png: Uint8Array; dauer: number }> = []
+  for (const abschnitt of eigenesBand.abschnitte) {
+    const absAktion = projekt.aktionen.find((a) => a.id === abschnitt.aktionRef)
+    if (absAktion === undefined) {
+      return {
+        ok: false,
+        fehler: { code: 'png_export_fehler', meldung: `Band-Abschnitt von "${element.id}" zeigt auf eine unbekannte Aktion.`, daten: undefined },
+      }
+    }
+    // Der Wurf von zeichneSegment wird NICHT gefangen (E-7). rahmenMarke === marke.
+    const bandPng = await alsPng(zeichneSegment(absAktion, bandVorlage, marke, marke))
+    if (!bandPng.ok) {
+      return { ok: false, fehler: { code: 'png_export_fehler', meldung: bandPng.fehler.meldung, daten: undefined } }
+    }
+    abschnitte.push({ png: bandPng.wert, dauer: abschnitt.dauer })
+  }
+  return {
+    ok: true,
+    wert: {
+      // KH (E5, #174): art und Höhe entsprechend den PNGs, im selben Pass
+      art: bandVorlage.art === 'split' ? 'split' : 'einblendung',
+      höhe: bandVorlage.höhe,
+      bandVorlageId: eigenesBand.bandVorlageId,
+      abschnitte,
+    },
+  }
 }
 
 export async function loeseExportAus(
