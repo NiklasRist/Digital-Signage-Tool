@@ -1,6 +1,6 @@
 # Plan: Composer-Wurzel arbeitsfähig machen
 
-**Status:** Entwurf zur Abnahme. **Erstellt:** 16.10.2026.
+**Status:** S1–S5 GEBAUT und gemergt (S1–S3 `70007ef`; S4 `df08324`; S5 `fd68efb`). **Erstellt:** 16.10.2026.
 **Art:** struktureller Bau, **verhaltensneutral** (kein Verhaltens-/Optikwechsel).
 **Herkunft:** Befund „`composer/index.tsx` ist schwer zu bearbeiten" (Messung 16.10.2026).
 **Abgelehnte Vorgängerarbeit:** **#432** (offen, wird geschlossen) – dort stand nur „groß →
@@ -80,7 +80,14 @@ könnte nach dem **UI-Umbau** wieder gebraucht werden. Also **nur inventarisiere
 `grep`-Beweis „kein Aufrufer") und hier festhalten. **Gelöscht wird erst in S6.**
 
 **S1 – Overlay-Rahmen (N1).** **S2 – Meldungs-Helfer (N2).** **S3 – Overlays (N3)** einzeln.
-**S4 – Regionen (N4).** **S5 – DnD-Hook (N5).**
+**S4 – Regionen (N4)** [GEBAUT `df08324`]: Bibliothek-Dock (`bibliothek-dock.tsx`),
+Galerie-Dropzone (`galerie-bereich.tsx`) und Ausgaben-Sektion (`ausgaben-bereich.tsx`)
+sind eigene, gesteuerte Bausteine - die Wurzel reicht Werte + Rueckrufe herein.
+**S5 – DnD-Hook (N5)** [GEBAUT `fd68efb`]: `verwende-zeitleisten-zug.ts` haelt
+`neuZug`/`aktiveKante`/`laedtKante`/`bandZiel`/`bandZeit`/`korbRef` + die vier
+DndContext-Handler (und den Projektwechsel-Reset des Band-Ziels). Beide belegt:
+Typecheck/Lint 0, Suite 5550/322, Treiber ohne Befund (4f/4f2/4f4/4g2/4g4 unveraendert),
+DOM/Testids zeichengleich; `index.tsx` 1123→957.
 **S6 – erst nach dem UI-Umbau:** tatenlose Leichen bewerten (löschen **oder behalten**).
 
 **Rücknahme je Schritt** über `git revert <commit>`; die Treiber-Messung ist die Gegenprobe.
