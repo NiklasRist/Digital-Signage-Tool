@@ -23,22 +23,31 @@ function klemme(wert: unknown, unten: number, oben: number): number | null {
   return wert
 }
 
-function fangeEin(video: HTMLVideoElement): Thumbnail {
+/** Zieht das AKTUELLE Videobild auf ein Canvas fester Hoehe (Seitenverhaeltnis bleibt).
+ *  null = kein Bild (Video nicht geladen, keine Flaeche). Exportiert, damit der
+ *  Filmstreifen (#433) DIESELBE Aufnahme benutzt - keine zweite Bild-Quelle. */
+export function fangeBild(video: HTMLVideoElement, hoehe: number): HTMLCanvasElement | null {
   const breite = video.videoWidth
   const höhe = video.videoHeight
-  if (breite === 0 || höhe === 0) return { quelle: 'fehlt' }
+  if (breite === 0 || höhe === 0) return null
 
   const canvas = document.createElement('canvas')
-  canvas.width = Math.round((breite / höhe) * THUMBNAIL_HÖHE)
-  canvas.height = THUMBNAIL_HÖHE
+  canvas.width = Math.max(1, Math.round((breite / höhe) * hoehe))
+  canvas.height = hoehe
   const context = canvas.getContext('2d')
-  if (context === null) return { quelle: 'fehlt' }
+  if (context === null) return null
 
   context.drawImage(video, 0, 0, canvas.width, canvas.height)
+  return canvas
+}
+
+function fangeEin(video: HTMLVideoElement): Thumbnail {
+  const canvas = fangeBild(video, THUMBNAIL_HÖHE)
+  if (canvas === null) return { quelle: 'fehlt' }
   return { quelle: 'canvas', canvas, breite: canvas.width, höhe: canvas.height }
 }
 
-function warteAufMetadaten(video: HTMLVideoElement): Promise<void> {
+export function warteAufMetadaten(video: HTMLVideoElement): Promise<void> {
   if (video.readyState >= 1) return Promise.resolve()
   return new Promise((löse, ablehne) => {
     const fertig = () => löse()

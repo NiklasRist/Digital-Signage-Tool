@@ -674,6 +674,36 @@ const main = async () => {
               : "alle media://-Anfragen wurden abgelehnt (Stub oder Pruefung) - kein Bild/Video laedt",
             "BLOCKER", "src/main/index.ts, Schritt 4");
         }
+
+        // Schritt 4b4 - Filmstreifen (#433): zeigt der Video-Block die EINZELBILDER des
+        // Videos? Der Baustein holt sie ueber media:// (wie die Thumbnails, #128).
+        await schlafe(1_500);
+        const filmDiag = await seite.evaluate(() => ({
+          streifen: document.querySelectorAll('[data-testid="zeitleiste-filmstreifen"]').length,
+          bilder: document.querySelectorAll('[data-testid="zeitleiste-filmstreifen-bild"]').length,
+        }));
+        console.log("[schritt-4b4] Filmstreifen: " + JSON.stringify(filmDiag));
+        if (filmDiag.streifen === 0 || filmDiag.bilder === 0) {
+          fund("Frames-Anzeige", "der Video-Block zeigt Einzelbilder des Videos (#433)",
+            JSON.stringify(filmDiag), "Befund", "composer/zeitleiste.tsx");
+        } else {
+          console.log(`[schritt-4b4] Filmstreifen GEMESSEN: ${filmDiag.bilder} Einzelbild(er) im Video-Block (#433 belegt).`);
+        }
+        // Gegenprobe: Hineinzoomen verbreitert den Block - es muessen MEHR Einzelbilder werden.
+        for (let i = 0; i < 4; i++) await klick('[data-testid="zeitleiste-zoom-ein"]');
+        await schlafe(1_500);
+        const filmZoom = await seite.evaluate(() => ({
+          bilder: document.querySelectorAll('[data-testid="zeitleiste-filmstreifen-bild"]').length,
+          wert: document.querySelector('[data-testid="zeitleiste-zoom-wert"]')?.textContent ?? null,
+        }));
+        console.log("[schritt-4b4] Filmstreifen nach Zoom +: " + JSON.stringify(filmZoom));
+        if (filmZoom.bilder <= filmDiag.bilder) {
+          fund("Frames-Anzeige", "Hineinzoomen zeigt mehr Einzelbilder (#433)",
+            `${filmDiag.bilder} -> ${filmZoom.bilder} (${String(filmZoom.wert)})`,
+            "Befund", "composer/zeitleiste.tsx");
+        } else {
+          console.log(`[schritt-4b4] Zoom GEMESSEN: ${filmDiag.bilder} -> ${filmZoom.bilder} Einzelbilder bei ${String(filmZoom.wert)}.`);
+        }
       }
     }
 

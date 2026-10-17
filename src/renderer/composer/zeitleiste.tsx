@@ -10,6 +10,8 @@ import type { Listenelement, Project, Einblendung } from "../../shared/contracts
 import { frameDauer } from "./gesamtlaenge";
 import { RENDER_PROFILE } from "../../shared/contracts/render-profile";
 import { EA_PX_PRO_SEKUNDE, baueZeitachse, baueBandspur } from "./zeitband";
+// #433: der Video-Block zeigt die EINZELBILDER des Videos als Filmstreifen.
+import { VideoFilmstreifen } from "./video-filmstreifen";
 
 const ZEILE_HOEHE_PX = 64
 /** Die Lücke zwischen zwei Blöcken (identisch zum `gap` der Blockzeile) - die Zeitachse
@@ -108,6 +110,8 @@ export function Zeitleiste({
   const einblendungen = new Map(
     (projekt?.liste ?? []).map((element) => [element.id, element.art === 'video' ? element.einblendung : null]),
   )
+  // #433: die Listenelemente selbst - der Filmstreifen des Video-Blocks braucht ref/trim.
+  const elementeNachId = new Map((projekt?.liste ?? []).map((element) => [element.id, element]))
 
   return (
     <div
@@ -184,6 +188,8 @@ export function Zeitleiste({
                 istBandZiel={zeile.elementId === bandZiel}
                 einblendung={einblendungen.get(zeile.elementId) ?? null}
                 pxProSekunde={pxProSekunde}
+                projekt={projekt}
+                element={elementeNachId.get(zeile.elementId) ?? null}
               />
               {neuZug !== null && (
                 <KantenBlock nummer={index + 1} aktiv={aktiveKante === index + 1} laedt={laedtKante === index + 1} />
@@ -245,12 +251,18 @@ function ZeilenBlock({
   istBandZiel = false,
   einblendung = null,
   pxProSekunde = EA_PX_PRO_SEKUNDE,
+  projekt = null,
+  element = null,
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
   istBandZiel?: boolean;
   einblendung?: Einblendung | null;
   pxProSekunde?: number;
+  /** #433: das Projekt - der Video-Block holt daraus die Einzelbilder. */
+  projekt?: Project | null;
+  /** #433: das Listenelement selbst (Filmstreifen braucht `ref`/`trim`). */
+  element?: Listenelement | null;
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: zeile.elementId })
   const beschriftung = zeilenBeschriftung(zeile, index)
@@ -274,6 +286,7 @@ function ZeilenBlock({
       data-element-id={zeile.elementId}
       data-ref={zeile.ref ?? ""}
       style={{
+        position: 'relative',
         width: zeile.breitePx,
         flex: '0 0 auto',
         height: ZEILE_HOEHE_PX,
@@ -296,7 +309,16 @@ function ZeilenBlock({
       }}
       title={zeile.art === 'fehlt' ? 'Dauer unbestimmbar' : `${beschriftung.dauerText}`}
     >
-      <span>
+      {/* #433: der Filmstreifen liegt HINTER dem Text (zIndex 0); der Text bleibt lesbar. */}
+      {zeile.art === 'video' && projekt !== null && element !== null && (
+        <VideoFilmstreifen
+          projekt={projekt}
+          element={element}
+          breitePx={zeile.breitePx}
+          hoehePx={ZEILE_HOEHE_PX}
+        />
+      )}
+      <span style={{ position: 'relative', zIndex: 1, textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}>
         {beschriftung.dauerText}
         {zeile.art === 'video' && zeile.dauerSekunden !== null
           ? ` · ${Math.round(zeile.dauerSekunden * RENDER_PROFILE.fps)} F`
@@ -305,7 +327,7 @@ function ZeilenBlock({
       {spur !== null && (
         <span
           data-testid={`zeitleiste-bandspur-${index}`}
-          style={{ position: 'relative', height: 8, width: '100%', background: 'rgba(0,0,0,0.3)', borderRadius: 2, overflow: 'hidden' }}
+          style={{ position: 'relative', zIndex: 1, height: 8, width: '100%', background: 'rgba(0,0,0,0.3)', borderRadius: 2, overflow: 'hidden' }}
         >
           {spur.segmente.map((segment, stelle) => (
             <span
@@ -320,7 +342,7 @@ function ZeilenBlock({
           )}
         </span>
       )}
-      <span style={{ opacity: 0.7 }}>{istBandZiel ? 'Band' : beschriftung.art}</span>
+      <span style={{ position: 'relative', zIndex: 1, opacity: 0.7, textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}>{istBandZiel ? 'Band' : beschriftung.art}</span>
     </div>
   );
 }
