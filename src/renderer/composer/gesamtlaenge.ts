@@ -114,7 +114,7 @@ export function frameDauer(element: Listenelement): Ergebnis<number> {
   // SAFETY: der Cast erweitert nur um null/undefined und macht die Felder als unknown
   // sichtbar; die Form wird unmittelbar darunter geprueft (Ergebnis-Huelle statt Wurf).
   const roh = element as
-    | { art?: unknown; dauer?: unknown; trimStart?: unknown; trimEnde?: unknown }
+    | { art?: unknown; dauer?: unknown; trimStart?: unknown; trimEnde?: unknown; unterbrechungen?: unknown }
     | null
     | undefined
 
@@ -204,7 +204,13 @@ export function frameDauer(element: Listenelement): Ergebnis<number> {
       )
     }
 
-    return { ok: true, wert: endFrame - startFrame }
+    // #426/#435: Die Unterbrechungen verlaengern das Element um ihre Dauer (frame-gerundet,
+    // dieselbe Regel). Die Teil-Clips des render-service (`frames.ts`) ergeben ueber ihre
+    // Teleskop-Summe GENAU dieselbe Zahl - "EINE Regel, zwei Orte" (9.2.6).
+    const einschub = zaehleEinschubFrames(id, roh.unterbrechungen)
+    if (!einschub.ok) return einschub
+
+    return { ok: true, wert: endFrame - startFrame + einschub.wert }
   }
 
   if (art === 'segment') {
@@ -240,6 +246,34 @@ export function frameDauer(element: Listenelement): Ergebnis<number> {
     `Unbekannte Elementart ${JSON.stringify(art)}. ` +
       'Zulaessig sind ausschliesslich "video" und "segment".',
   )
+}
+
+/**
+ * Die Frame-Summe der Unterbrechungen EINES Video-Elements (#426/#435). Fehlt das Feld, ist
+ * es 0 (Alt-Bestand; das Laden ergaenzt `[]`, s. `migriere-projekt.ts`).
+ *
+ * Ein Eintrag mit unbrauchbarer `dauer` ist ein KAPUTTES Element - dieselbe Huelle wie beim
+ * Trim: Ohne diese Pruefung stuende in der Anzeige eine zu kurze Gesamtlaenge, und der
+ * Render braeche spaeter mit `ungueltiges_element` ab.
+ */
+function zaehleEinschubFrames(id: string, unterbrechungen: unknown): Ergebnis<number> {
+  if (unterbrechungen === undefined || unterbrechungen === null) return { ok: true, wert: 0 }
+  if (!Array.isArray(unterbrechungen)) {
+    return ungueltigesElement(id, 'Die Unterbrechungen eines Videos muessen eine Liste sein.')
+  }
+  let frames = 0
+  for (const eintrag of unterbrechungen) {
+    const dauer = (eintrag as { dauer?: unknown } | null | undefined)?.dauer
+    if (typeof dauer !== 'number' || !Number.isFinite(dauer) || dauer <= 0) {
+      return ungueltigesElement(
+        id,
+        `Die Dauer einer Unterbrechung muss eine endliche Zahl groesser als 0 sein, ` +
+          `vorgefunden: ${String(dauer)}.`,
+      )
+    }
+    frames += zuFrames(dauer)
+  }
+  return { ok: true, wert: frames }
 }
 
 /** Summe über die ganze Liste. Eine leere Liste ergibt 0 Frames und ist KEIN Fehler. */

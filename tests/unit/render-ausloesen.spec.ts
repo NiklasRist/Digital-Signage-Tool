@@ -216,6 +216,50 @@ describe('loeseRenderAus (#134) - die Items', () => {
   })
 })
 
+describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
+  const videoAsset = {
+    id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa',
+    maße: { breite: 10, höhe: 10 }, dauer: 12, importdatum: 'x', zustand: 'ok' as const,
+  } as never as Project['assets'][number]
+  const bandVorlage = { id: 'band-1', name: 'band', art: 'split' as const, höhe: 162, parent: null, eingebaut: true, zonen: [] }
+
+  function unterbrochen(unterbrechungen: Project['liste'][number]['unterbrechungen'], einblendung: Project['liste'][number]['einblendung'] = null) {
+    return { ...video('e1', 'v1', einblendung, 2, 12), unterbrechungen }
+  }
+
+  function items(): Array<{ art: string; trimStart?: number; trimEnde?: number; dauer?: number; einblendung?: { abschnitte: Array<{ dauer: number }> } | null }> {
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: never } }
+    return nutzlast.payload.elemente as never
+  }
+
+  it('ohne Unterbrechungen bleibt EIN Video-Item', async () => {
+    await loeseRenderAus(projekt([unterbrochen([])], [AKTION_OK], [videoAsset]), 'sommer', marke(), VORLAGEN_OK)
+    expect(items().map((i) => i.art)).toEqual(['video'])
+  })
+
+  it('zerlegt in Video-Teil · Aktion · Video-Teil an der Zeitstelle', async () => {
+    const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 5 }])], [AKTION_OK], [videoAsset])
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK)
+    expect(antwort.ok).toBe(true)
+    const elemente = items()
+    expect(elemente.map((i) => i.art)).toEqual(['video', 'segment', 'video'])
+    expect(elemente[0]).toMatchObject({ trimStart: 2, trimEnde: 5 })
+    expect(elemente[1]).toMatchObject({ dauer: 5 })
+    expect(elemente[2]).toMatchObject({ trimStart: 5, trimEnde: 12 })
+  })
+
+  it('jeder Video-Teil traegt das Band in der zum Zeitpunkt gedrehten Phase', async () => {
+    const einblendung = { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 4 }] }
+    const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 5 }], einblendung)], [AKTION_OK], [videoAsset])
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), [...VORLAGEN_OK, bandVorlage])
+    expect(antwort.ok).toBe(true)
+    const elemente = items()
+    // Teil 1 beginnt bei Phase 0 -> [4]; Teil 2 beginnt 3 s spaeter -> [1,3].
+    expect(elemente[0]?.einblendung?.abschnitte.map((a) => a.dauer)).toEqual([4])
+    expect(elemente[2]?.einblendung?.abschnitte.map((a) => a.dauer)).toEqual([1, 3])
+  })
+})
+
 describe('loeseExportAus (#134)', () => {
   it('reichtig e über queue:reiheEin, payload mit projektId/dateiname/zielPfad; kein Dialog', async () => {
     const antwort = await loeseExportAus('p-1', 'sommer.mp4', 'E:\\Stick')
