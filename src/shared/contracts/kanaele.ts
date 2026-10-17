@@ -100,6 +100,10 @@ export const KANAELE = {
     // Identisch zum Muster oben: Instant-Kanal in diesem Namensraum, Schluessel ohne
     // Umlaut (wie setzeTrim, setzeDauer, setzeEinblendung im selben Block).
     setzeStandardMarke: 'project:setzeStandardMarke',
+
+    // ERGAENZT durch #426 (TK v3.26, 9.5.2): die Unterbrechungen eines Video-Elements.
+    // Instant-Operation in diesem Namensraum; Schluessel und String sind zeichengleich.
+    setzeUnterbrechungen: 'project:setzeUnterbrechungen',
   },
 
   // config-store (#77). Die fünf Namen ENTSTEHEN hier und nirgends sonst; die

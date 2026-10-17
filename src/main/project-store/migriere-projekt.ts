@@ -163,7 +163,30 @@ export function migriereProjekt(
   }
 
   // Die Form ist zur Laufzeit belegt, nicht behauptet: `istProjektForm` IST die Pruefung.
-  return { ok: true, wert: aktuell }
+  //
+  // #426 (TK v3.26): Das Feld `unterbrechungen` ist Teil von schemaVersion 1 (wie
+  // `standardSegmentdauer`, 9.5.5) - es gibt KEINE Migration. Aeltere project.json kennen das
+  // Feld nicht; ein fehlendes wird beim LADEN auf `[]` ergaenzt, damit der lebende Stand die
+  // Vertragsform traegt. Sonst muesste JEDE Verbrauchsstelle `undefined` abfangen - eine
+  // zweite Vorstellung von "keine Unterbrechung".
+  return { ok: true, wert: ergaenzeUnterbrechungen(aktuell) }
+}
+
+/**
+ * Ergaenzt fehlende `unterbrechungen` (#426) mit `[]`. NICHT `einblendung`: das Feld ist
+ * seit jeher Pflicht und wird von jeder Erzeugungsstelle gesetzt; nur `unterbrechungen` ist
+ * neu. Gibt dasselbe Objekt zurueck, wenn nichts fehlte (kein unnoetiger Neubau).
+ */
+function ergaenzeUnterbrechungen(projekt: Project): Project {
+  let geaendert = false
+  const liste = projekt.liste.map((element) => {
+    if (Array.isArray((element as { unterbrechungen?: unknown }).unterbrechungen)) {
+      return element
+    }
+    geaendert = true
+    return { ...element, unterbrechungen: [] }
+  })
+  return geaendert ? { ...projekt, liste } : projekt
 }
 // wendet, beginnend bei rohdaten.schemaVersion, Schritte aus `kette` an, bis das Ergebnis die
 // aktuelle schemaVersion erreicht (Kettenprinzip: 1→2, 2→3, … – nie ein Sprung in einem Schritt).

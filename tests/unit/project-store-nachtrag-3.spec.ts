@@ -102,9 +102,9 @@ describe("verdrahteProjectStoreNachtrag3IPC (#323)", () => {
 });
 
 describe("KANAELE.project (#323)", () => {
-  it("traegt GENAU 21 Eintraege (20 bestehende + setzeStandardMarke); Stichproben der bestehenden sind enthalten", () => {
+  it("traegt GENAU 22 Eintraege (21 nach #323 + setzeUnterbrechungen durch #426); Stichproben der bestehenden sind enthalten", () => {
     const eintraege = Object.entries(KANAELE.project);
-    expect(eintraege).toHaveLength(21);
+    expect(eintraege).toHaveLength(22);
     const namen = eintraege.map(([, v]) => v as string);
     for (const schluessel in { // Stichprobe bestehender Eintraege unveraendert
       listeProjekte: 0,
@@ -119,14 +119,14 @@ describe("KANAELE.project (#323)", () => {
 });
 
 describe("index.ts-Verdrahtung (#323)", () => {
-  it("ruft verdrahteProjectStoreNachtrag3IPC GENAU EINMAL; Schritt 5 enthaelt GENAU 13 Aufrufe; Schritt 7 enthaelt 4", async () => {
+  it("ruft verdrahteProjectStoreNachtrag3IPC GENAU EINMAL; Schritt 5 enthaelt GENAU 14 Aufrufe; Schritt 7 enthaelt 4", async () => {
     const fs = await import("node:fs/promises");
     const text = await fs.readFile("src/main/index.ts", "utf8");
     expect((text.match(/^  verdrahteProjectStoreNachtrag3IPC\(\);/gm) ?? [])).toHaveLength(1);
     expect((text.match(/verdrahteProjectStoreNachtrag3IPC/g) ?? [])).toHaveLength(3); // Import + Kommentar (Nummerierung) + Ruf
     const schritt5 = text.slice(text.indexOf("SCHRITT 5"), text.indexOf("SCHRITT 6"));
     const rufeFuenf = (schritt5.match(/^  [a-zA-Z].*\(\);/gm) ?? []);
-    expect(rufeFuenf.length).toBe(13);
+    expect(rufeFuenf.length).toBe(14);
     const schritt7 = text.slice(text.indexOf("SCHRITT 7"), text.indexOf("SCHRITT 8"));
     expect((schritt7.match(/^  [a-zA-Z].*\(fenster\);/gm) ?? []).length).toBe(4);
     void KANAELE;

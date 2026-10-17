@@ -241,6 +241,10 @@ function bauAusAsset(asset: Asset): Ergebnis<Listenelement, ProjectStoreFehlerco
         // Nutzer sie in der Bandbearbeitung waehlt (setzeEinblendung, TK 9.5.2) - hier eine
         // leere Huelle anzulegen hiesse, ein Band zu behaupten, das es nicht gibt.
         einblendung: null,
+        // #426: keine Einschuebe - wie das Band entsteht eine Unterbrechung erst durch die
+        // Bedienung (setzeUnterbrechungen, TK 9.5.2). Ein leeres Array ist der Zustand
+        // "keine Unterbrechung", nicht ein behaupteter Einschub.
+        unterbrechungen: [],
       },
     }
   }
@@ -294,6 +298,7 @@ function bauAusAktion(aktion: Aktion): Ergebnis<Listenelement, ProjectStoreFehle
       trimStart: null,
       trimEnde: null,
       einblendung: null,
+      unterbrechungen: [],
     },
   }
 }

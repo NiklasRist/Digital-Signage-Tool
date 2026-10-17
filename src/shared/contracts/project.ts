@@ -36,6 +36,28 @@ export interface Listenelement {
   trimStart: number | null                       // Sekunden – nur video
   trimEnde: number | null                        // Sekunden – nur video
   einblendung: Einblendung | null                // nur video
+  // #426 / TK v3.26 (9.2.9): der SEQUENZIELLE Einschub - das Gegenstueck zum parallelen
+  // Band. Das Video bleibt EIN Element; der Render zerlegt es frame-genau in
+  // Video-Teil · Aktion · Video-Teil. Nur bei `art: 'video'`; bei `segment` immer `[]`.
+  //
+  // OPTIONAL IM TYP (migrationsfrei, TK 9.5.5): Das Feld ist Teil von schemaVersion 1, aber
+  // aeltere project.json kennen es nicht. Zwei Garantien halten es einfach: (1) JEDE
+  // Erzeugungsstelle setzt `[]` (fuege-element-hinzu.ts); (2) das LADEN ergaenzt ein
+  // fehlendes Feld auf `[]` (migriere-projekt.ts). Verbraucher duerfen `undefined` wie `[]`
+  // lesen - "keine Unterbrechung".
+  unterbrechungen?: Unterbrechung[]
+}
+
+/**
+ * Eine Unterbrechung des Videos (#426, TK 9.2.9/9.11.3): das Video pausiert an der
+ * `zeitstelle`, die Aktion `aktionRef` laeuft `dauer` Sekunden, danach laeuft das Video
+ * an derselben Stelle weiter. `zeitstelle`/`dauer` werden ROH gespeichert (wie der Trim);
+ * die Frame-Rundung passiert im render-service (9.2.6) - kein zweiter Rundungsweg.
+ */
+export interface Unterbrechung {
+  zeitstelle: number   // Sekunden, ab 0 der getrimmten Video-Sicht
+  aktionRef: string    // Aktion, die hier laeuft
+  dauer: number        // Sekunden
 }
 
 export interface Einblendung {

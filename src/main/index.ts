@@ -45,6 +45,7 @@ import { verdrahteProjectStoreNachtragIPC } from "./ipc-gateway/project-store-na
 import { verdrahteProjectStoreNachtrag2IPC } from "./ipc-gateway/project-store-nachtrag-2";
 import { verdrahteProjectStoreNachtrag3IPC } from "./ipc-gateway/project-store-nachtrag-3"; // #323
 import { verdrahteProjectStoreNachtrag4IPC } from "./ipc-gateway/project-store-nachtrag-4";
+import { verdrahteProjectStoreNachtrag5IPC } from "./ipc-gateway/project-store-nachtrag-5"; // #426
 import { verdrahteProjectStoreIPC } from "./ipc-gateway/project-store-verdrahtung";
 import { verdrahteSpeicherstatusIPC } from "./ipc-gateway/speicherstatus-verdrahtung";
 import { verdrahteMarkenSpeicherstatusIPC } from "./ipc-gateway/marken-speicherstatus-verdrahtung"; // #304
@@ -445,6 +446,13 @@ void app.whenReady().then(async () => {
   //     aber HINTEN an, damit die Positionen 1 bis 12 unveraendert bleiben
   //     (Vertrag #3). Argumentlos - kein Fenster, kein Zustand.
   verdrahteProjectStoreNachtrag3IPC();
+
+  // 14. verdrahteProjectStoreNachtrag5IPC() - #426,
+  //     src/main/ipc-gateway/project-store-nachtrag-5.ts. Meldet GENAU EINEN Kanal an
+  //     (project:setzeUnterbrechungen). Derselbe Namensraum `project:` wie die
+  //     Positionen 1 bis 3 und 11/13; doppelte Registrierung faellt sofort auf.
+  //     Argumentlos - kein Fenster, kein Zustand.
+  verdrahteProjectStoreNachtrag5IPC();
 
   // SCHRITT 6: Fenster erzeugen und Inhalt laden.
   const fenster = erstelleHauptfenster();

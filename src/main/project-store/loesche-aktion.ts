@@ -89,13 +89,16 @@ export async function löscheAktion(id: string): Promise<LoeschAktionErgebnis> {
     // SCHRITT 1: DIE KASCADE. Erst danach faellt der Aktions-Datensatz selbst (Schritt 2,
     // so festgelegt in der "Architektur-Entscheidung dieses Issues").
     //
-    // DIE ZWEI REFERENZARTEN WERDEN VERSCHIEDEN BEHANDELT - das ist der ganze Inhalt
+    // DIE DREI REFERENZARTEN WERDEN VERSCHIEDEN BEHANDELT - das ist der ganze Inhalt
     // dieses Issues (TK 9.5.3):
     //   Fall 1  Listenelement mit `art: "segment"`, dessen `ref` die Aktion ist -> "das
     //           Element IST diese Aktion und wird entfernt".
     //   Fall 2  `einblendung.abschnitte[].aktionRef` in einem Video-Element -> "die Aktion
     //           ist nur EIN Abschnitt eines rotierenden Bandes. Hier werden ausschliesslich
     //           die betroffenen Abschnitte entfernt; das Videoelement bleibt erhalten."
+    //   Fall 3  `unterbrechungen[].aktionRef` in einem Video-Element (#426) -> die Aktion
+    //           ist nur EIN Einschub; nur der betroffene Eintrag faellt, das Videoelement
+    //           bleibt.
     //
     // WARUM DAS NICHT ZUSAMMENFALLEN DARF: "Wuerde Fall 2 wie Fall 1 behandelt, verloere
     // der Nutzer sein Video aus der Wiedergabeliste, nur weil eine von mehreren rotierenden
@@ -127,8 +130,24 @@ export async function löscheAktion(id: string): Promise<LoeschAktionErgebnis> {
         return
       }
 
+      // FALL 3: die Einschuebe (#426, TK 9.5.3) - nur der betroffene Eintrag faellt; das
+      // Videoelement bleibt. Zuerst behandelt, damit ein Element mit Band UND Einschub
+      // hoechstens EINMAL in `geaenderteElementIds` steht.
+      let unterbrechungGeaendert = false
+      const unterbrechungen = element.unterbrechungen
+      if (Array.isArray(unterbrechungen)) {
+        const verbleibendeUnterbrechungen = unterbrechungen.filter(
+          (unterbrechung) => unterbrechung.aktionRef !== id,
+        )
+        if (verbleibendeUnterbrechungen.length !== unterbrechungen.length) {
+          element.unterbrechungen = verbleibendeUnterbrechungen
+          unterbrechungGeaendert = true
+        }
+      }
+
       const einblendung = element.einblendung
       if (einblendung === null) {
+        if (unterbrechungGeaendert) geaenderteElementIds.push(element.id)
         return
       }
 
@@ -146,7 +165,9 @@ export async function löscheAktion(id: string): Promise<LoeschAktionErgebnis> {
         // Kein Abschnitt betroffen. Das Element wird NICHT gemeldet - `geaenderteElementIds`
         // benennt die Stellen, die die Oberflaeche hervorheben soll ("aus dem Werbeband von
         // 3 Videos gekuerzt", TK 9.5.3); ein unveraendertes Video darunter waere eine
-        // falsche Auskunft.
+        // falsche Auskunft. Ein Element, dessen Einschub sich geaendert hat, wird dennoch
+        // gemeldet (es hat sich geaendert) - nur ein voellig unveraendertes nicht.
+        if (unterbrechungGeaendert) geaenderteElementIds.push(element.id)
         return
       }
 

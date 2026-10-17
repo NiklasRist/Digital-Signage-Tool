@@ -385,7 +385,7 @@ describe("Kanal-Registry (#25) nach der Ergaenzung durch #191", () => {
     // 17 -> 18 am 23.08.2026: #334 traegt den Kanal `setzeStandardSegmentdauer` nach.
     // 18 -> 20 am 02.10.2026: #240 wird nachgetragen (setzeBearbeitungsstand,
     // öffneProjektordner) und der gerade gekennzeichnete Zustand gelangt damit in den Verdrag.
-    expect(Object.keys(KANAELE.project)).toHaveLength(21); // +1 durch #323
+    expect(Object.keys(KANAELE.project)).toHaveLength(22); // +1 durch #323, +1 durch #426
     expect(KANAELE.project.setzeBearbeitungsstand).toBe("project:setzeBearbeitungsstand");
     expect(KANAELE.project.öffneProjektordner).toBe("project:öffneProjektordner");
     expect(KANAELE.project.listeAusgaben).toBe("project:listeAusgaben");
