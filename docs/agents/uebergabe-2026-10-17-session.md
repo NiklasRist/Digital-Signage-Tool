@@ -38,7 +38,10 @@ synchron, Plan `docs/agents/426-unterbrechung-plan.md`, Merge `080ee4e`. **Bau-I
 geschnitten (#426 bleibt als Eltern offen). **#434 (Modell + Store) ist GEBAUT und gemergt**
 (Merge `e772993`): `Listenelement.unterbrechungen` (optional im Typ, Ladung ergaenzt `[]`),
 `setzeUnterbrechungen` + Kanal `project:setzeUnterbrechungen` (Position 14), Kaskade Fall 3,
-5 Vertragstests nachgezogen; Suite **5588/325**, Typecheck/Lint 0. **#435/#436/#437 offen.**
+5 Vertragstests nachgezogen. **#435 (Render-Zerlegung) ist GEBAUT und gemergt** (Merge
+`c8ba86f`): reines `unterbrechungs-zerlegung.ts` (`zerlegeVideo`/`rotiereBand`), der Renderer
+baut Video-Teile + Aktions-Segmente, `gesamtlaenge.ts` zaehlt die Einschub-Frames mit (die
+Teleskop-Summe der Teile trifft `frames.ts` genau). **#436/#437 offen.**
 
 **Belege je Zug:** `typecheck`/`lint` 0, Suite gruen, Treiber ohne Befund (4f/4f2/4f4/4g2/4g4
 unveraendert). #433 zusaetzlich: 4b4 misst **1** Einzelbild bei Standard-Zoom → **6** bei 128 px/s.
@@ -58,12 +61,12 @@ Streifen optisch passt (Dichte `ZIEL_BREITE_PX = 40`, feste Bildhoehe 64). Label
 
 ## Zaehler
 
-Suite **5588 gruen (325 Dateien)**, Typecheck/Lint 0, Treiber ohne Befund. Alles **lokal auf
-`main`**, **nicht gepusht** (Push nur auf Anweisung).
+Suite **5602 gruen (327 Dateien)**, Typecheck/Lint 0, Treiber offen (kein Befund aus frueheren
+Laeufen). Alles **lokal auf `main`**, **nicht gepusht** (Push nur auf Anweisung).
 
 ## Naechste Sitzung (Vorschlag)
 
-1. **#435 bauen** (Render – frame-genaue Zerlegung fuer #426), dann **#436** (Vorschau),
-   **#437** (Composer-Bedienung / Drop auf das Video).
+1. **#436 bauen** (Vorschau – Pause an der Zeitstelle fuer #426), dann **#437** (Composer-Bedienung /
+   Drop auf das Video).
 2. **#433 optisch abnehmen** am echten Fenster.
 3. dann **Q3**/**Q4**/**Q1.2**, danach **S6**.
