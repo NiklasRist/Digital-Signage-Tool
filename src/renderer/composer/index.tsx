@@ -12,17 +12,16 @@ import type { ListenZeileModell } from './liste-ansicht'
 import type { Uebergabe } from './reparatur-optionen'
 import type { MedienImportStarter } from './medien-import'
 import { aufSichtGeaendert, type Projektsicht } from './projektzustand'
-import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core'
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 // #414 (Oberflaeche 2.0): EIN DndContext auf Wurzel-Ebene - Quellen (#413) und
 // Kanten (#412) im selben Kontext. Der DnD-Zustand (neuZug/aktiveKante/laedtKante)
-// lebt HIER; die Zeitleiste ist die Praesentation (korbRef = Messraum).
-import { Zeitleiste, baueZeitleistenZeilen } from './zeitleiste.tsx'
+// liegt im Hook `verwendeZeitleistenZug` (S5); die Zeitleiste ist die Praesentation
+// (korbRef = Messraum).
+import { Zeitleiste } from './zeitleiste.tsx'
 import { EA_PX_PRO_SEKUNDE, ZOOM_STUFEN } from './zeitband'
-import { baueEinfugeKanten, leseKantenIndex, liestReferenz, waehleKanteAus } from './spalt-drop'
 import { fuegeElementHinzu } from './element-hinzufuegen'
-import { ordneNeuOptimistisch } from './liste-reorder'
 // NACHTRAG #248 (Variante A, 05.10.): Die ad-hoc-Wiedergabeliste dieser Wurzel
 // (DndContext/Zeile/Regler unten) ist hier durch die Issue-richtige
 // `Wiedergabeliste` aus liste-ansicht.tsx (#248) ERSETZT - dokumentierte Ausnahme
@@ -92,13 +91,9 @@ import { uebernehmeGrenzen } from './dauer-regler'
 // Die Montage ist genau die Aufgabe dieser Datei (#261 "Bausteine anordnen").
 // S4 (Naht N4): die Bibliothek-Region als eigener Baustein (der Dock traegt die Ansicht).
 import { BibliothekDock } from './bibliothek-dock.tsx'
-// #425: Die Band-Bearbeitung (#253/M7-60) wird endlich MONTIERT (Familie „fertige
-// Funktion ohne Aufrufer"); der Drop einer Aktion auf das VIDEO wird ein Band-Abschnitt.
-// Die reine Aufnahme-Logik liegt in band-aufnahme.ts, der eine Schreibweg in
-// uebernehmeBand (#129) - diese Wurzel ruft nur und pflegt die Sicht.
-import { uebernehmeBand } from './einblendung-bearbeiten'
-import { bandZielAus, bandZeitImVideo, bandAufnahmeAus, bandAufnahmeMitTeilung, startdauerFuerBandabschnitt } from './band-aufnahme'
-import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
+// S5 (Naht N5): der DnD-Zustand und die vier DndContext-Handler liegen im Hook
+// `verwendeZeitleistenZug` (Drag-Verband, Band-Aufnahme #425, Zeitstelle #428).
+import { verwendeZeitleistenZug } from './verwende-zeitleisten-zug'
 // #408: Das KontextMenue (#133-Familie, Duplikat/Entfernen) wird in DIESE Wurzel
 // montiert - sein Zustand wandert siehtbarseitig in die ComposerLage (menueAdresse,
 // composer-montage.ts); die Zeilen tragen data-element-id (#248) - kein Edits an #248.
@@ -199,12 +194,6 @@ function hatVideoElement(projekt: Project): boolean {
   return projekt.liste.some((element) => element.art === 'video')
 }
 
-/** #417: Layout-Vorschub je Zeitleisten-Block = Kantenbreite (10 px, zeitleiste.tsx) +
- *  ZWEI Luecken (je 2 px, `gap: 2` in korb UND in der Block-Gruppe). Er hebt den
- *  Zeiger-Raum (mit Kanten) auf den Modell-Raum von `waehleKanteAus` (Summe der
- *  Blockbreiten, s. amUeber). 10 + 2 + 2 = 14. */
-const KANTEN_VORSCHUB_PX = 14
-
 export function ComposerInterna({
   projekt,
   verdrahtung,
@@ -223,11 +212,6 @@ export function ComposerInterna({
   // Element, dessen Werbeband gerade bearbeitet wird (null = Ansicht zu). Fehler der
   // Band-Bearbeitung reisen ueber die stehende Wurzel-Meldung (lage.meldung).
   const [bandElementId, setzeBandElementId] = useState<string | null>(null)
-  // #425: der Video-Block, ueber dem ein Aktion-Neuzug gerade steht (Band-Ziel).
-  const [bandZiel, setzeBandZiel] = useState<string | null>(null)
-  // #428: die Zeitstelle (Sekunden) im Video-Koerper unter dem Zeiger - der Drop legt
-  // den Abschnitt dort in die Rotation (Entscheidung 1a). null = keine gemessen.
-  const [bandZeit, setzeBandZeit] = useState<number | null>(null)
   // #428: das Zoom-Mass der Zeitleiste (px/s). Bild UND Drop-Messung nutzen denselben Wert -
   // sonst laegen gemessene Zeit und gezeichnetes Band auseinander.
   const [pxProSekunde, setzePxProSekunde] = useState<number>(EA_PX_PRO_SEKUNDE)
@@ -255,15 +239,9 @@ export function ComposerInterna({
   // dem Nachlauf (#199) vorbehalten und wird hier NICHT gerufen.
   const [ausgabenStand, setzeAusgabenStand] = useState<Ausgabenstand>(() => holeAusgaben())
 
-  // #414: der Drag-Zustand auf WURZEL-Ebene (EIN DndContext fuer die Quellen #413
-  // und die Kanten #412). neuZug = Drag-Daten `{ referenz }`; aktiveKante = gemessene
-  // Einfuege-Kante; laedtKante = wartendes Einfuegen (nicht optimistisch, TK 9.7.3).
+  // #414: EIN DndContext auf Wurzel-Ebene fuer die Quellen (#413) und die Kanten (#412).
+  // Der Drag-Zustand und die vier Handler liegen im Hook `verwendeZeitleistenZug` (S5).
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
-  const [neuZug, setzeNeuZug] = useState<string | null>(null)
-  const [aktiveKante, setzeAktiveKante] = useState<number | null>(null)
-  const [laedtKante, setzeLaedtKante] = useState<number | null>(null)
-  const zeigerStartX = useRef<number | null>(null)
-  const korbRef = useRef<HTMLDivElement | null>(null)
   // #414 (Weiche B): die Zeitleiste ist PRIMÄR; die #248-Zeilen-Liste bleibt hinter
   // dem Ansichtsschalter als Fallback erreichbar.
   const [ansicht, setzeAnsicht] = useState<'zeitleiste' | 'liste'>('zeitleiste')
@@ -274,6 +252,18 @@ export function ComposerInterna({
 
   const inhalt: Project | null = sicht.projekt
   const liste = inhalt?.liste ?? []
+
+  // S5 (Naht N5): der EINE Zeitleisten-Zug - Drag-Zustand + die vier DndContext-Handler.
+  // Zustand und Schreibwege bleiben an EINER Stelle; die Wirkungen reisen als Rueckrufe.
+  const zug = verwendeZeitleistenZug({
+    projektId: inhalt?.id ?? null,
+    liste,
+    pxProSekunde,
+    holeProjekt: () => projekt.hole().projekt,
+    setzeListe: projekt.setzeListe,
+    holeVorlagen: () => (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage),
+    melde: meldeWurzel,
+  })
 
   // #418: Nach einem Import ist das neue VIDEO standardmaessig ausgewaehlt. Erkannt wird
   // es am NEU erscheinenden Video-Asset der Sicht (der Composer-Import legt genau ein
@@ -321,10 +311,8 @@ export function ComposerInterna({
 
   useEffect(() => {
     // #425: Beim Projektwechsel die Band-Ansicht schliessen - ein Element des alten
-    // Projekts ist im neuen nicht mehr vorhanden.
+    // Projekts ist im neuen nicht mehr vorhanden. (Das Band-Ziel faellt im Hook weg.)
     setzeBandElementId(null)
-    setzeBandZiel(null)
-    setzeBandZeit(null)
   }, [inhalt?.id])
 
   // #342: Der erste Ladevorgang je Projekt (M7-68, ENTSCHIEDEN 7) - nur, wenn der
@@ -556,147 +544,6 @@ export function ComposerInterna({
     setzeLage((alt) => oeffneMenue(alt, { elementId, x: ereignis.clientX, y: ereignis.clientY }))
   }
 
-  // #414: der DnD-Verband auf der Wurzel (aus #412 uebernommen, auf den gemeinsamen
-  // Kontext gehoben; die Routing-Regeln sind woertlich die #412-Regeln).
-  const amDragStart = (ereignis: DragStartEvent): void => {
-    // NUR ein Drag MIT Referenz (Neu-Einfuegen, #413) oeffnet die Kanten.
-    setzeNeuZug(liestReferenz(ereignis.active.data.current))
-    setzeBandZiel(null)
-    setzeBandZeit(null)
-    const aktivator = ereignis.activatorEvent as MouseEvent
-    if (typeof aktivator?.clientX === 'number') zeigerStartX.current = aktivator.clientX
-  }
-
-  const amUeber = (ereignis: DragOverEvent): void => {
-    // Messbruecke zu `waehleKanteAus` (#412-Signatur): Zeiger-x (Start + delta) im
-    // Zeitleisten-Raum; gescrollte Korbe inklusive. Ohne Messstand Rueckfall auf den
-    // Droppable-Index (`kante-N`).
-    if (neuZug === null) return
-    const korb = korbRef.current
-    if (korb === null || zeigerStartX.current === null) {
-      setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
-      setzeBandZiel(null)
-      setzeBandZeit(null)
-      return
-    }
-    const umriss = korb.getBoundingClientRect()
-    if (umriss.width === 0 && umriss.height === 0) {
-      setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
-      setzeBandZiel(null)
-      setzeBandZeit(null)
-      return
-    }
-    const zeilen = baueZeitleistenZeilen(inhalt?.liste ?? [], pxProSekunde)
-    const xImKontext = zeigerStartX.current + ereignis.delta.x - umriss.left + korb.scrollLeft
-    const kanten = baueEinfugeKanten(zeilen.length)
-    // #417: `waehleKanteAus` rechnet die Grenzen als SUMME der uebergebenen Breiten. Der
-    // Zeiger-x liegt aber im echten Layout, in dem zwischen zwei Bloecken eine Kante (10 px)
-    // und ZWEI Luecken (je 2 px) stehen. Ohne den Vorschub je Block liegen Modellgrenzen und
-    // sichtbare Kanten auseinander - bei kurzen Bloecken um eine ganze Kante. Deshalb traegt
-    // die uebergebene "Breite" den Layout-Vorschub Block + Kante + zwei Luecken.
-    const gemessen = waehleKanteAus(kanten, xImKontext, (index) => (zeilen[index]?.breitePx ?? 64) + KANTEN_VORSCHUB_PX)
-    setzeAktiveKante(gemessen ?? leseKantenIndex(ereignis.over?.id))
-    // #425: Steht der Zeiger im KOERPER eines VIDEO-Blocks, wird der Drop ein Band-
-    // Abschnitt (nicht sequenziell). Die Messung liegt rein in band-aufnahme.ts.
-    const breiten = zeilen.map((zeile) => zeile.breitePx)
-    setzeBandZiel(bandZielAus(zeilen, breiten, xImKontext, KANTEN_VORSCHUB_PX))
-    // #428: dazu die ZEITSTELLE im Video-Koerper - der Drop legt den Abschnitt dort
-    // in die Rotation (Entscheidung 1a), statt ihn immer anzuhangen.
-    setzeBandZeit(
-      bandZeitImVideo(zeilen, breiten, xImKontext, KANTEN_VORSCHUB_PX, pxProSekunde)?.zeitSekunden ??
-        null,
-    )
-  }
-
-  // #425: EINE Aktion ins Werbeband des Video-Elements aufnehmen. Der Entwurf kommt
-  // aus band-aufnahme.ts (erste waehlbare Band-Vorlage, Dauer-Kette des Produkts),
-  // geschrieben wird ausschliesslich ueber uebernehmeBand (#129) - kein zweiter
-  // Schreibweg. Die Sicht-Korrektur geht ueber den Wrapped-Zugang (EIN Undo-Schritt).
-  const nehmeAktionInsBandAuf = (videoId: string, aktionId: string, zeitSekunden: number | null): void => {
-    const frisch = projekt.hole().projekt
-    if (frisch === null) return
-    const element = frisch.liste.find((eintrag) => eintrag.id === videoId)
-    if (element === undefined || element.art !== 'video') return
-    const aktion = frisch.aktionen.find((eintrag) => eintrag.id === aktionId)
-    if (aktion === undefined) return
-
-    const dauer = startdauerFuerBandabschnitt(aktion.standardDauer, frisch.standardSegmentdauer)
-    const einzeln = frameDauer(element)
-    const videoSekunden = einzeln.ok ? einzeln.wert / RENDER_PROFILE.fps : null
-    const vorlagenListe = (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)
-    // #428B: mit Zeitstelle den Abschnitt teilen; ohne brauchbare Messung anhaengen.
-    const entwurf =
-      videoSekunden === null || zeitSekunden === null
-        ? bandAufnahmeAus(element, aktion.id, dauer, vorlagenListe)
-        : bandAufnahmeMitTeilung(element, aktion.id, dauer, vorlagenListe, zeitSekunden, videoSekunden)
-    if (entwurf === null) {
-      meldeWurzel(
-        'keine_band_vorlage',
-        'Für ein Werbeband wird eine Band-Vorlage gebraucht (Art „split“ oder „einblendung“). Lege eine Vorlage im Reiter Vorlagen an.',
-      )
-      return
-    }
-
-    void uebernehmeBand(element.id, entwurf).then((antwort) => {
-      if (!antwort.ok) {
-        meldeWurzel(antwort.fehler.code, antwort.fehler.meldung)
-        return
-      }
-      // Die Sicht NACH dem await frisch holen (kein gemerkter Stand) und GENAU EIN
-      // setzeListe - das ist der eine Undo-Schritt ueber den Wrapped-Zugang (#243).
-      const aktuell = projekt.hole().projekt
-      if (aktuell === null) return
-      const neu = antwort.wert
-      projekt.setzeListe(aktuell.liste.map((eintrag) => (eintrag.id === neu.id ? neu : eintrag)))
-    })
-  }
-
-  const amEnde = (ereignis: DragEndEvent): void => {
-    setzeNeuZug(null)
-    setzeAktiveKante(null)
-    // #425: Das Band-Ziel VOR dem Zuruecksetzen lesen - der Drop entscheidet daran.
-    const zielVideo = bandZiel
-    // #428: ebenso die Zeitstelle; sie waehlt die Stelle in der Rotation.
-    const zielZeit = bandZeit
-    setzeBandZiel(null)
-    setzeBandZeit(null)
-    // Sortier-Drag EINES BESTANDELEMENTS (keine Referenz): der Reorder-Weg (#122).
-    const referenz = liestReferenz(ereignis.active.data.current)
-    if (referenz === null) {
-      const aktiv = ereignis.active.id
-      const ueber = ereignis.over?.id
-      if (typeof aktiv !== 'string' || typeof ueber !== 'string') return
-      ordneNeuOptimistisch(aktiv, ueber, projekt.setzeListe)
-      return
-    }
-    // #425: Drop auf dem VIDEO-Koerper -> Band-Abschnitt; die Video-Elementdauer
-    // bleibt unberuehrt (TK 9.2.8). Auf einem Segment-Koerper ist `zielVideo` null;
-    // dann laeuft der Drop wie bisher an die gemessene Kante (sequenziell davor/danach).
-    if (zielVideo !== null) {
-      nehmeAktionInsBandAuf(zielVideo, referenz, zielZeit)
-      return
-    }
-    // NEU-Drag (#413): Einfuegen an der Kante (#411-Mutation, nicht optimistisch).
-    let index = aktiveKante
-    if (index === null) index = leseKantenIndex(ereignis.over?.id)
-    if (index === null) return
-    setzeLaedtKante(index)
-    void fuegeElementHinzu(referenz, index, projekt.setzeListe)
-      .then((ergebnis) => {
-        if (!ergebnis.ok) {
-          meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
-        }
-      })
-      .finally(() => setzeLaedtKante(null))
-  }
-
-  const amDragAbbruch = (): void => {
-    setzeNeuZug(null)
-    setzeAktiveKante(null)
-    setzeBandZiel(null)
-    setzeBandZeit(null)
-  }
-
   // #428: Zoom um eine Stufe (die Zeitleiste reicht nur die Richtung herein).
   const zoome = (richtung: -1 | 1): void => {
     setzePxProSekunde((alt) => {
@@ -796,14 +643,14 @@ export function ComposerInterna({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={amDragStart}
-      onDragOver={amUeber}
+      onDragStart={zug.amDragStart}
+      onDragOver={zug.amUeber}
       // #417: onDragOver feuert NUR beim Wechsel des `over`-Ziels. Beim Ziehen aus der
       // Bibliothek bleibt `over` oft dieselbe Kante - die Messung liefe dann EINMAL bei
       // dx=0 und JEDER Drop landete an Kante 0. onDragMove feuert bei JEDER Bewegung.
-      onDragMove={amUeber}
-      onDragEnd={amEnde}
-      onDragCancel={amDragAbbruch}
+      onDragMove={zug.amUeber}
+      onDragEnd={zug.amEnde}
+      onDragCancel={zug.amDragAbbruch}
     >
     <div
       data-testid="composer-wurzel"
@@ -980,11 +827,11 @@ export function ComposerInterna({
               Wird in JEDER Ansicht gezeigt - sie ist die Einfuege-Flaeche. */}
           <Zeitleiste
             projekt={inhalt}
-            neuZug={neuZug}
-            aktiveKante={aktiveKante}
-            laedtKante={laedtKante}
-            korbRef={korbRef}
-            bandZiel={bandZiel}
+            neuZug={zug.neuZug}
+            aktiveKante={zug.aktiveKante}
+            laedtKante={zug.laedtKante}
+            korbRef={zug.korbRef}
+            bandZiel={zug.bandZiel}
             pxProSekunde={pxProSekunde}
             aufZoom={zoome}
           />
