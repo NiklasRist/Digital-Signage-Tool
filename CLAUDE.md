@@ -68,7 +68,7 @@
     im Panel. Jetzt rechnet `composer/index.tsx` bei jedem neuen Projektstand einmal neu
     (Referenz-Wache gegen Schleifen).
   - **Offen:** eine **Treiber-Matrix „Anforderung → Szenario"**, damit Lücken sichtbar werden.
-- `main` **85 Commits vor `origin/main`**; **nicht gepusht**.
+- `main` **86 Commits vor `origin/main`**; **nicht gepusht**.
 - Nächster Schritt: **Treiber-Matrix** oder **#433**. **#433** bleibt beim User.
 
 ## STAND HEUTE (19.10.2026, zweite Sitzung: #438 GEBAUT UND GEMERGT, #426-Familie geschlossen) – historisiert durch den Abschnitt darueber
