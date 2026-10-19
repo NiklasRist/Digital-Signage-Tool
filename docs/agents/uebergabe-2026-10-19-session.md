@@ -1,4 +1,4 @@
-# Uebergabe – Session 19.10.2026 (#436/#437 Unterbrechungen gebaut; Vorfall und Wiederherstellung)
+# Uebergabe – Session 19.10.2026 (#436/#437 Unterbrechungen gebaut und gemergt; Vorfall und Wiederherstellung)
 
 > Fuer die naechste Sitzung: Lies zuerst `CLAUDE.md` (STAND HEUTE), dann diese Datei.
 > Vorgaenger: `docs/agents/uebergabe-2026-10-17-session.md`.
@@ -6,19 +6,18 @@
 ## Worum es ging
 
 Reihenfolge des Users: zuerst **#436** (Vorschau – Pause an der Zeitstelle), dann **#437**
-(Composer-Bedienung – Einschub ablegen/entfernen). Beides ist gebaut, getestet und
-**committet**, aber **noch nicht nach `main` gemergt**. Dazwischen lag ein Vorfall, der
-uncommittete Arbeit zerstoerte und in dieser Sitzung wieder aufgebaut wurde (s. u.).
+(Composer-Bedienung – Einschub ablegen/entfernen). Beides ist gebaut, getestet, committet
+und **nach `main` gemergt**. Dazwischen lag ein Vorfall, der uncommittete Arbeit zerstoerte
+und in dieser Sitzung wieder aufgebaut wurde (s. u.).
 
-## Gebaut (committet, NICHT gemergt, NICHT gepusht)
+## Gebaut und gemergt
 
-| Issue | Branch | Commit | Kurz |
-|---|---|---|---|
-| **#436** Vorschau | `bau/436-vorschau-unterbrechung` | `e326926` | Aktion ueber dem pausierten Video an der Zeitstelle; `<video>` bleibt montiert; Treiber 4b5. |
-| **#437** Composer | `bau/437-unterbrechung-composer` | `9d02952` | Drop entscheidet per **Vorlage** (`vollflaeche` → Unterbrechung, sonst Band); Marken; Entfernen = EIN Undo. |
+| Issue | Branch | Commit | Merge | Kurz |
+|---|---|---|---|---|
+| **#436** Vorschau | `bau/436-vorschau-unterbrechung` | `e326926` | `04cd903` | Aktion ueber dem pausierten Video an der Zeitstelle; `<video>` bleibt montiert; Treiber 4b5. |
+| **#437** Composer | `bau/437-unterbrechung-composer` | `9d02952` | `db457a3` | Drop entscheidet per **Vorlage** (`vollflaeche` → Unterbrechung, sonst Band); Marken; Entfernen = EIN Undo. |
 
-`main` steht unveraendert auf `e2ff160` (56 Commits vor `origin/main`). Die beiden Branches
-sind **gestapelt** (#437 baut auf #436 auf).
+`main` steht jetzt **61 Commits vor `origin/main`** (nicht gepusht; Push nur auf Anweisung).
 
 ### #436 – Vorschau
 
@@ -54,7 +53,8 @@ UI-Schalter: `art: 'vollflaeche'` → Unterbrechung, `art: 'split' | 'einblendun
 ```
 
 Suite **5636 gruen (330 Dateien)**, Typecheck/Lint 0. Der eine gemeldete „error" ist der
-bekannte, vorbestehende `standardmarke-anzeige`-Fall (kein Test rot).
+bekannte, vorbestehende `standardmarke-anzeige`-Fall (kein Test rot). **Nach dem Merge auf
+`main` erneut geprueft:** Typecheck/Lint 0, Suite 5636, Treiber 4b5/4b6 ohne Befund.
 
 **Gegenproben (beide per Pruefsumme zurueckgenommen):**
 
@@ -83,15 +83,16 @@ passiert.
 
 ## Offene Punkte
 
-- **Merge nach `main`:** #436 und #437 sind committet, aber nicht gemergt. Reihenfolge:
-  **#436, dann #437** (gestapelt).
+- **#436/#437 sind auf GitHub noch offen.** Merge und Treiberbelege stehen; das Schliessen
+  (mit Verweis auf `04cd903`/`db457a3` und 4b5/4b6) ist der naechste formale Schritt.
 - **#438 NEU** (https://github.com/NiklasRist/Digital-Signage-Tool/issues/438):
   Unterbrechungen in der Kaputt-Erkennung (**vierter Fall**). **BLOCKIERT, bis TK 9.7.5
   von „drei" auf „vier" fortgeschrieben ist** – der Nachtrag steht vollstaendig im Issue.
   Danach bauen: der Render darf nicht freigegeben werden, wenn nur ein Einschub ein
   fehlendes Aktionsbild hat (TK 9.10.7 / FA-19).
 - **#433** optisch abnehmen (Issue offen).
-- **#426** bleibt Eltern-Issue offen, bis #434–#437 gemergt sind.
+- **#426** bleibt Eltern-Issue offen; die vier Bau-Issues **#434–#437** sind gebaut und
+  gemergt.
 - **S6** (Leichen bewerten), Programm **Q3/Q4/Q1.2**.
 - Altlasten: `standardmarke-anzeige.spec.ts` (bekannter act-/Rejection-Fehler),
   `marken-dateien.spec.ts` (flaky unter Vollast, isoliert gruen).
@@ -105,9 +106,8 @@ Gegenprobe: echte Chat-Anfrage **HTTP 200**.
 
 ## Naechste Sitzung (Vorschlag)
 
-1. **#436 und #437 nach `main` mergen** (in dieser Reihenfolge), danach Suite + Treiber
-   erneut.
-2. **#438 bauen** – **erst** den TK-9.7.5-Nachtrag (drei → vier), dann Code + Tests +
+1. **#438 bauen** – **erst** den TK-9.7.5-Nachtrag (drei → vier), dann Code + Tests +
    Gegenprobe.
+2. **#436/#437 auf GitHub schliessen** (Merge-Commits + Treiberzitate als Beleg).
 3. **#433** optisch abnehmen am echten Fenster.
 4. dann **Q3/Q4/Q1.2**, danach **S6**.

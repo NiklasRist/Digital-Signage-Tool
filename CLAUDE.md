@@ -11,31 +11,31 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (19.10.2026, #436/#437 Unterbrechungen gebaut, #438 Luecke) – gilt vor ALLEM weiter unten
+## STAND HEUTE (19.10.2026, #436/#437 Unterbrechungen GEBAUT UND GEMERGT, #438 Luecke) – gilt vor ALLEM weiter unten
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-19-session.md`](docs/agents/uebergabe-2026-10-19-session.md) – LIES DIESE DATEI ZUERST.**
 
-- **#436 (Vorschau) GEBAUT und committet** (`e326926`, Branch `bau/436-vorschau-unterbrechung`):
-  An der Zeitstelle steht die Aktion ueber dem **pausierten** `<video>`, danach laeuft das
-  Video an derselben Stelle weiter (TK v3.26 / 9.2.9). Treiber-Schritt **4b5**.
-- **#437 (Composer-Bedienung) GEBAUT und committet** (`9d02952`, Branch
-  `bau/437-unterbrechung-composer`): Die **Vorlage der Aktion** entscheidet den Drop
-  (`vollflaeche` → Unterbrechung, sonst Band); Marken im Video-Block; Entfernen per Klick,
-  je **EIN Undo-Schritt**. Treiber-Schritt **4b6**. Der `#4f`-Seed nutzt jetzt
-  `band-standard` (sonst waere der Body-Drop eine Unterbrechung).
-- **NICHT gemergt, NICHT gepusht.** `main` steht unveraendert auf `e2ff160` (56 Commits vor
-  `origin/main`); die beiden Branches sind **gestapelt** (#437 auf #436).
-- **Belege:** Treiber 4b5 (`Einschub @53 … -> danach @84`) und 4b6 (`Marken 0->1 …
-  1 -> 0 -> 1 -> 0`) am echten Fenster; Suite **5636 gruen (330 Dateien)**,
-  Typecheck/Lint 0. Gegenproben je Issue mit Pruefsumme zurueckgenommen (Details in der
-  Session-Datei).
+- **#436 (Vorschau) GEBAUT und gemergt** (`e326926`, Merge `04cd903`): An der Zeitstelle steht
+  die Aktion ueber dem **pausierten** `<video>`, danach laeuft das Video an derselben Stelle
+  weiter (TK v3.26 / 9.2.9). Treiber-Schritt **4b5**.
+- **#437 (Composer-Bedienung) GEBAUT und gemergt** (`9d02952`, Merge `db457a3`): Die **Vorlage
+  der Aktion** entscheidet den Drop (`vollflaeche` → Unterbrechung, sonst Band); Marken im
+  Video-Block; Entfernen per Klick, je **EIN Undo-Schritt**. Treiber-Schritt **4b6**. Der
+  `#4f`-Seed nutzt jetzt `band-standard` (sonst waere der Body-Drop eine Unterbrechung).
+- **`main` traegt beides; NICHT gepusht.** `main` steht jetzt **61 Commits vor `origin/main`**
+  (Push nur auf Anweisung). Beide Merge-Commits wurden nach dem Merge erneut geprueft:
+  Typecheck/Lint 0, Suite **5636 gruen (330 Dateien)**, Treiber 4b5/4b6 ohne Befund.
+- **Belege:** Treiber 4b5 (`Einschub @53 … -> danach @85`) und 4b6 (`Marken 0->1 …
+  1 -> 0 -> 1 -> 0`) am echten Fenster. Gegenproben je Issue mit Pruefsumme
+  zurueckgenommen (Details in der Session-Datei).
 - **#438 NEU angelegt** (Unterbrechungen in der Kaputt-Erkennung, **vierter Fall**):
   **blockiert, bis TK 9.7.5 von „drei" auf „vier"** fortgeschrieben ist – der Nachtrag
   steht vollstaendig im Issue. Ohne ihn wuerde der Render mit einem Platzhalter im
   Einschub freigegeben (TK 9.10.7 / FA-19).
-- **#426 bleibt Eltern-Issue offen**, bis #434–#437 gemergt sind.
-- Naechste Session: **#436 + #437 mergen** (in dieser Reihenfolge), dann **#438** (nach dem
-  TK-Nachtrag), **#433 optisch abnehmen**; im Programm **Q3/Q4/Q1.2**.
+- **#426 bleibt Eltern-Issue offen**; die vier Bau-Issues #434–#437 sind gebaut und gemergt.
+  **#436/#437 sind auf GitHub noch offen** (Schliessen mit Beleg steht aus).
+- Naechste Session: **#438** (nach dem TK-9.7.5-Nachtrag), **#433 optisch abnehmen**; im
+  Programm **Q3/Q4/Q1.2**; danach **S6**.
 
 ## STAND HEUTE (17.10.2026, Composer S4/S5, #433 Filmstreifen, #426/#434/#435 Unterbrechung) – historisiert durch den Abschnitt darueber
 

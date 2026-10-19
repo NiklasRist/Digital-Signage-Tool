@@ -3,10 +3,10 @@
 **Status:** GEBAUT bis auf #438. **Erstellt:** 17.10.2026; **Stand 19.10.2026:**
 - #434 Modell+Store: GEBAUT+gemergt (`e772993`)
 - #435 Render-Zerlegung: GEBAUT+gemergt (`c8ba86f`)
-- #436 Vorschau: GEBAUT+committet (`e326926`, Branch `bau/436-vorschau-unterbrechung`)
-- #437 Composer-Bedienung: GEBAUT+committet (`9d02952`, Branch `bau/437-unterbrechung-composer`)
+- #436 Vorschau: GEBAUT+gemergt (`e326926`, Merge `04cd903`)
+- #437 Composer-Bedienung: GEBAUT+gemergt (`9d02952`, Merge `db457a3`)
 - **#438 Kaputt-Erkennung (vierter Fall): offen, blockiert bis TK 9.7.5 „drei" → „vier"**
-- #426 bleibt Eltern-Issue, bis #436/#437 gemergt sind.
+- #426 bleibt Eltern-Issue; die vier Bau-Issues #434–#437 sind gebaut und gemergt.
 **Art:** neue Anforderung – Datenmodell, Render, Vorschau, Bedienung.
 **Quellen:** #426; AD v1.8 (4.5/FA-20); TK v3.26 (9.2.9, 9.5.2, 9.5.3, 9.7.7, 9.11.3).
 
