@@ -22,7 +22,11 @@ import type { FixWirkung } from '../composer/reparatur-optionen'
 import type { ShellReparatur } from './reparatur-fuehrung-shell'
 import { AssetAuswahl, type AssetAuswahlEigenschaften } from './asset-auswahl'
 import { AktionsAuswahl, type AktionsAuswahlEigenschaften } from './aktions-auswahl'
-import { overlayFuer, elementIdFuer, abschnittIndexFuer } from './uebergabe'
+import {
+  UnterbrechungsAuswahl,
+  type UnterbrechungsAuswahlEigenschaften,
+} from './unterbrechungs-auswahl'
+import { overlayFuer, elementIdFuer, abschnittIndexFuer, unterbrechungsIndexFuer } from './uebergabe'
 
 export interface UebergabeOverlayEigenschaften {
   /** Die gehaltene Lage (M7-64 `reparaturhalter`). Diese Datei haelt sie NICHT selbst. */
@@ -36,6 +40,13 @@ export interface UebergabeOverlayEigenschaften {
   schliesseAbschnittsFixAb: (
     elementId: string,
     abschnittIndex: number,
+    neueAktionId: string,
+    projekt: Project,
+  ) => Promise<Ergebnis<FixWirkung>>
+  /** Rückweg für Fall 4 (v3.27): tauscht die `aktionRef` GENAU EINES Einschubs. */
+  schliesseUnterbrechungsFixAb: (
+    elementId: string,
+    unterbrechungIndex: number,
     neueAktionId: string,
     projekt: Project,
   ) => Promise<Ergebnis<FixWirkung>>
@@ -59,6 +70,24 @@ export function UebergabeOverlay(p: UebergabeOverlayEigenschaften): JSX.Element 
   if (elementId === null) {
     // Defensiv unmöglich: `art !== 'keins'` garantiert ein Ziel mit elementId.
     return null
+  }
+
+  if (art === 'unterbrechungs-auswahl') {
+    const unterbrechungIndex = unterbrechungsIndexFuer(p.lage.laufendeUebergabe)
+    if (unterbrechungIndex === null) {
+      // Defensiv unmöglich: `art === 'unterbrechungs-auswahl'` garantiert das Ziel.
+      return null
+    }
+    const eigenschaften: UnterbrechungsAuswahlEigenschaften = {
+      elementId,
+      unterbrechungIndex,
+      projekt: p.projekt,
+      schliesseUnterbrechungsFixAb: p.schliesseUnterbrechungsFixAb,
+      aufAbgeschlossen: p.aufAbgeschlossen,
+      aufAbgebrochen: p.aufAbgebrochen,
+      aufFehler: p.aufFehler,
+    }
+    return <UnterbrechungsAuswahl {...eigenschaften} />
   }
 
   if (art === 'asset-auswahl') {

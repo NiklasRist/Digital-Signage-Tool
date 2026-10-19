@@ -85,6 +85,7 @@ import {
   schliesseMediumFixAb,
   schliesseAktionsFixAb,
   schliesseAbschnittsFixAb,
+  schliesseUnterbrechungsFixAb,
 } from './composer/reparatur-optionen'
 import type { SichtSchreiber } from './composer/projektzustand'
 import { aktualisiereReparatur } from './composer/reparatur-fuehrung'
@@ -382,6 +383,8 @@ export function App(): JSX.Element {
           schliesseAktionsFixAb(elementId, neueAktionId, reparaturSchreiber())}
         schliesseAbschnittsFixAb={(elementId: string, abschnittIndex: number, neueAktionId: string, p: Project) =>
           schliesseAbschnittsFixAb(elementId, abschnittIndex, neueAktionId, p, reparaturSchreiber())}
+        schliesseUnterbrechungsFixAb={(elementId: string, unterbrechungIndex: number, neueAktionId: string, p: Project) =>
+          schliesseUnterbrechungsFixAb(elementId, unterbrechungIndex, neueAktionId, p, reparaturSchreiber())}
         aufAbgeschlossen={(wirkung: FixWirkung) => schliesseFixAb(umgebung, wirkung)}
         aufAbgebrochen={() => beendeLaufende(umgebung)}
         aufFehler={meldeFehler}

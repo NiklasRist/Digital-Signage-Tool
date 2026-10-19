@@ -21,6 +21,8 @@ const BESCHRIFTUNG: Record<FixOptionId, string> = {
   aktion_ersetzen: 'Andere Aktion wählen',
   abschnitt_ersetzen: 'Anderen Abschnitt wählen',
   abschnitt_entfernen: 'Abschnitt entfernen',
+  unterbrechung_ersetzen: 'Andere Aktion für den Einschub wählen',
+  unterbrechung_entfernen: 'Einschub entfernen',
 }
 
 export interface ReparaturPanelEigenschaften {

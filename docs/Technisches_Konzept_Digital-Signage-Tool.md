@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.6 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.26 (Aktion unterbricht das Video: Modell `unterbrechungen` am Video-Element, frame-genaue Zerlegung im Render, Einschub-Bedienung im Composer; s. 9.2.9 / 9.7.7 / 9.11.3)
-**Datum:** 17.10.2026
+**Version:** 3.27 (Unterbrechungen sind eine vierte kaputte Stelle der Reparatur-Erkennung; s. 9.7.5, v3.26-Modell in 9.2.9)
+**Datum:** 19.10.2026
 **Status:** In Planung
 
 ---
@@ -1393,20 +1393,23 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
   *Begründung:* Der Zustand „kein Projekt geladen" ist im Datentyp der Sicht **bereits vorgesehen**; es fehlte allein der **Weg dorthin**. Ohne ihn zeigt die Oberfläche nach dem Löschen des aktiven Projekts weiter dessen Liste, Aktionen und Vorschau – **Geisterdaten**, auf die jeder Klick ins Leere läuft, während der Ordner auf der Platte schon weg ist. **Ausdrücklich verboten ist die naheliegende Notlösung**, statt dessen ein **leeres Projekt mit erfundener Kennung** in die Sicht zu setzen: Das sähe richtig aus, aber jede folgende Instant-Operation liefe in `nicht_gefunden` (9.1.1), und das Auto-Speichern (9.5.4) legte womöglich einen Projektordner an, den **niemand angelegt hat**.
 - **Angezeigte Reihenfolge = gerenderte Reihenfolge** – keine versteckte Sortierung.
 - **Thumbnails renderer-seitig, ohne ffmpeg:** Video-Vorschaubild per nativem `<video>` (auf `trimStart` spulen → Frame ins Canvas), Aktions-Segment per `template-canvas` (pixelgleich zur Vorschau). Der Main bekommt **keine** Thumbnail-Pflicht (konsistent mit Variante A).
-- **Kaputte Stellen blockieren den Render und starten die geführte Reparatur (9.7.5):** zeigt ein Listenelement **oder ein Band-Abschnitt** auf ein `fehlt`-Asset (media-service 9.4.7), wird die Stelle **rot markiert**; ein Render wird nicht gestartet (er würde mit `medium_fehlt` scheitern bzw. einen Platzhalter einbetten), sondern der Nutzer in den Reparatur-Modus geführt.
+- **Kaputte Stellen blockieren den Render und starten die geführte Reparatur (9.7.5):** zeigt ein Listenelement, **ein Band-Abschnitt oder eine Unterbrechung** auf ein `fehlt`-Asset (media-service 9.4.7), wird die Stelle **rot markiert**; ein Render wird nicht gestartet (er würde mit `medium_fehlt` scheitern bzw. einen Platzhalter einbetten), sondern der Nutzer in den Reparatur-Modus geführt.
 - **Render friert die Liste beim Einreihen ein (9.3.5):** die Liste bleibt danach editierbar, aber der bereits eingereihte Render nutzt den Snapshot – der composer stellt das nicht in Frage.
 
-#### 9.7.5 Reparatur-Modus für kaputte Elemente
+#### 9.7.5 Reparatur-Modus für kaputte Elemente (vierter Fall, v3.27)
 
-**Kaputt** ist eine Stelle, deren Referenz ins Leere zeigt – v. a. ein Asset, das der Reconcile beim Projekt-Öffnen als `fehlt` markiert hat (media-service 9.4.7). Es gibt **drei** solche Stellen, und alle drei zählen:
+**Kaputt** ist eine Stelle, deren Referenz ins Leere zeigt – v. a. ein Asset, das der Reconcile beim Projekt-Öffnen als `fehlt` markiert hat (media-service 9.4.7). Es gibt **vier** solche Stellen, und alle vier zählen:
 
 | # | Kaputte Stelle | Repariert wird auf Ebene |
 |---|---|---|
 | 1 | Listenelement → **Asset fehlt** (Video) | Listenelement |
 | 2 | Listenelement (`segment`) → **Aktion**, deren Bild fehlt | **Aktion** (behebt alle Verwendungen) |
 | 3 | **Band-Abschnitt** eines Videos → **Aktion**, deren Bild fehlt | **Aktion** (behebt alle Verwendungen) |
+| 4 | **Unterbrechung** eines Videos → **Aktion**, deren Bild fehlt | **Aktion** (behebt alle Verwendungen) |
 
 **Fall 3 ist der leicht zu übersehende:** Das Video selbst ist einwandfrei, nur ein Abschnitt seines Bandes zeigt auf eine Aktion mit fehlendem Bild. Würde er nicht gezählt, gälte das Element als heil – `template-canvas` zeichnete aber einen **Platzhalter**, und der darf **nie** in den finalen Render (9.10.7). Der Nutzer stünde vor einem blockierten Render **ohne** gezeigten Weg.
+
+**Fall 4 (v3.27) ist dieselbe Begründung eine Ebene tiefer:** Der Einschub ist Teil der Render-Zerlegung `Video-Teil · Aktion · Video-Teil` (9.2.9); das Video ist heil, nur die Aktion **eines Einschubs** hat kein Bild. Zählt die Erkennung ihn nicht, gälte das Element als heil, `template-canvas` zeichnete aber einen **Platzhalter** im Einschub – und der darf **nie** in den finalen Render (9.10.7).
 
 Bloßes Blockieren genügt nicht; der composer **führt den Nutzer aktiv durch die Reparatur**, damit garantiert **alle** kaputten Stellen behoben werden:
 
@@ -1415,6 +1418,7 @@ Bloßes Blockieren genügt nicht; der composer **führt den Nutzer aktiv durch d
 - **Fix-Optionen je Element:** Medium **neu verknüpfen/importieren** (media-service), durch ein **anderes ersetzen** (Referenz umsetzen), oder das **Element entfernen** (`entferneElement`, project-store). Es werden ausschließlich bestehende Operationen genutzt.
 - **Aktions-Segmente werden auf Aktions-Ebene repariert:** Ist ein Aktions-Segment kaputt, weil das **Bild der Aktion** fehlt, liegt der Defekt an der **Aktion**, nicht am einzelnen Listenelement. Die Reparatur leitet dann in den `action-editor` [P2] über (Bild neu verknüpfen/ersetzen/entfernen). Da Aktionen **referenzierbar** sind, behebt **ein** Fix an der Aktion **alle** Stellen, die sie verwenden – Listenelemente **und Band-Abschnitte**. Der Fortschritt „X von N" kann dadurch um mehr als eins sinken.
 - **Kaputter Band-Abschnitt (Fall 3):** Er wird als **eigene** Reparatur-Position geführt und angesteuert. Fix-Optionen: **Bild der Aktion reparieren** (`action-editor`, behebt alle Verwendungen), **Abschnitt durch eine andere Aktion ersetzen**, oder **Abschnitt entfernen**. Beim Entfernen gilt die Regel aus 9.5.3: **wird das Band dadurch leer, entfällt die Einblendung – das Videoelement bleibt.**
+- **Kaputte Unterbrechung (Fall 4, v3.27):** Sie wird ebenfalls als **eigene** Reparatur-Position geführt (der Einschub ist kein Listenelement). Fix-Optionen in derselben Unterscheidung wie Fall 3: **Bild der Aktion reparieren** (`action-editor`, behebt alle Verwendungen), **Einschub durch eine andere Aktion ersetzen** (`setzeUnterbrechungen`, nur `aktionRef` getauscht – `zeitstelle`/`dauer` bleiben), oder **Einschub entfernen** (`setzeUnterbrechungen` mit gefilterter Liste; wird sie leer, bleibt das Videoelement, 9.5.3). **Kein** „Element entfernen" – das Video ist heil.
 - **Freigabe:** Erst wenn **kein** kaputtes Element mehr existiert, ist der Render wieder frei. So kann ein Lauf nicht an einem übersehenen kaputten Element scheitern.
 
 **Zwei Fehlercodes entstehen im `composer` selbst – vor jedem IPC-Aufruf.** Sie sind modul-lokal und

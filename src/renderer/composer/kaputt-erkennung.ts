@@ -29,6 +29,11 @@ export type KaputteStelle =
       grund: KaputtGrund }
   | { art: 'band_abschnitt'; elementId: string; abschnittIndex: number; aktionId: string;
       assetId: string | null; grund: KaputtGrund }
+  // Fall 4 (TK 9.7.5, v3.27): eine Unterbrechung des Videos zeigt auf eine Aktion
+  // mit fehlendem Bild. `unterbrechungIndex` indiziert `element.unterbrechungen` -
+  // ein ANDERES Array als das Band (#131: verschiedene Ebenen, verschiedene Indizes).
+  | { art: 'unterbrechung'; elementId: string; unterbrechungIndex: number; aktionId: string;
+      assetId: string | null; grund: KaputtGrund }
 
 /**
  * Das Urteil ueber EINE Referenz: `null` heisst heil, sonst der Grund samt der
@@ -155,6 +160,35 @@ export function findeKaputteStellen(projekt: Project): KaputteStelle[] {
         }
       }
     }
+
+    // Fall 4 (TK 9.7.5, v3.27) - dieselbe Begruendung wie Fall 3, eine Ebene
+    // tiefer: Das Video ist heil, nur ein EINSCHUB zeigt auf eine Aktion mit
+    // fehlendem Bild. Der Render zerlegt ihn nach 9.2.9 in Video-Teil · Aktion ·
+    // Video-Teil; `template-canvas` zeichnete im Einschub einen PLATZHALTER, und
+    // der darf nie in den finalen Render (9.10.7).
+    //
+    // Geprueft wird NACH dem Video-Asset und NACH dem Band - stabile Reihenfolge
+    // wie #131. Wie bei Fall 3 werden die Einschuebe AUCH DANN geprueft, wenn das
+    // Video oben schon kaputt war: Ein Video mit fehlender Datei und kaputtem
+    // Einschub liefert ZWEI Stellen, sonst liefe "X von N" rueckwaerts.
+    //
+    // `unterbrechungen` ist im Typ optional (migrationsfrei, TK 9.5.5):
+    // `undefined` wird wie `[]` gelesen - "keine Unterbrechung".
+    if (element.art === 'video') {
+      for (const [unterbrechungIndex, unterbrechung] of (element.unterbrechungen ?? []).entries()) {
+        const befund = pruefeAktionsBild(unterbrechung.aktionRef, aktionen, assets)
+        if (befund !== null) {
+          stellen.push({
+            art: 'unterbrechung',
+            elementId: element.id,
+            unterbrechungIndex,
+            aktionId: unterbrechung.aktionRef,
+            assetId: befund.assetId,
+            grund: befund.grund,
+          })
+        }
+      }
+    }
   }
 
   // KEINE Entduplizierung: Verwenden drei Listenelemente dieselbe kaputte
@@ -165,15 +199,16 @@ export function findeKaputteStellen(projekt: Project): KaputteStelle[] {
   return stellen
 }
 
-/** Alle Stellen, die EIN Fix an dieser Aktion mit behebt – Listenelemente UND Band-Abschnitte. */
+/** Alle Stellen, die EIN Fix an dieser Aktion mit behebt – Listenelemente, Band-Abschnitte UND Unterbrechungen. */
 export function stellenZuAktion(
   stellen: readonly KaputteStelle[],
   aktionId: string,
 ): KaputteStelle[] {
   // Traegt die Zusage aus TK 9.7.5: "Da Aktionen referenzierbar sind, behebt EIN
   // Fix an der Aktion ALLE Stellen, die sie verwenden - Listenelemente UND
-  // Band-Abschnitte. Der Fortschritt 'X von N' kann dadurch um mehr als eins
-  // sinken."
+  // Band-Abschnitte." Seit v3.27 auch Unterbrechungen: Auch der Einschub haengt an
+  // einer Aktion, und ein Fix an deren Bild behebt ihn mit. Der Fortschritt
+  // 'X von N' kann dadurch um mehr als eins sinken.
   //
   // `element_asset` bleibt aussen vor: Diese Stellen haengen an keiner Aktion und
   // werden auf Listenelement-Ebene repariert (TK 9.7.5, Zeile 1 der Tabelle).
@@ -182,7 +217,9 @@ export function stellenZuAktion(
   // denselben Eintraegen in unveraenderter Reihenfolge.
   return stellen.filter(
     (stelle) =>
-      (stelle.art === 'element_aktion' || stelle.art === 'band_abschnitt') &&
+      (stelle.art === 'element_aktion' ||
+        stelle.art === 'band_abschnitt' ||
+        stelle.art === 'unterbrechung') &&
       stelle.aktionId === aktionId,
   )
 }

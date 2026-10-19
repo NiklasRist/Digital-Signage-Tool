@@ -56,6 +56,10 @@ export interface ListenZeileModell {
   kaputt: boolean
   /** Indizes der kaputten Band-Abschnitte dieses Elements, aufsteigend. Leer, wenn keiner. */
   kaputteBandAbschnitte: readonly number[]
+  /** Indizes der kaputten Unterbrechungen dieses Elements (Fall 4, v3.27), aufsteigend.
+   *  Leer, wenn keine. Getrenntes Feld von `kaputteBandAbschnitte`, weil beide Indizes
+   *  VERSCHIEDENE Arrays indizieren (#131). */
+  kaputteUnterbrechungen: readonly number[]
   /** true, wenn `aktuelleStelle` zu DIESEM Element gehört (Reparatur-Führung, TK 9.7.5). */
   hervorgehoben: boolean
 }
@@ -73,15 +77,23 @@ export function baueListenZeilen(
   // ausschlaggebend bleibt ausschliesslich projekt.liste.
   const kaputtElemente = new Set<string>()
   const kaputteBaender = new Map<string, number[]>()
+  const kaputteEinschuebe = new Map<string, number[]>()
   for (const stelle of stellen) {
     if (stelle.art === 'element_asset' || stelle.art === 'element_aktion') {
       kaputtElemente.add(stelle.elementId)
-    } else {
-      // band_abschnitt: die Zeile gilt NICHT als kaputt (Fall 3, TK 9.7.5) -
-      // der Index kommt an den Band-Zugang, nicht an die Zeile.
+    } else if (stelle.art === 'band_abschnitt') {
+      // Die Zeile gilt NICHT als kaputt (Fall 3, TK 9.7.5) - der Index kommt an
+      // den Band-Zugang, nicht an die Zeile.
       const bisher = kaputteBaender.get(stelle.elementId) ?? []
       bisher.push(stelle.abschnittIndex)
       kaputteBaender.set(stelle.elementId, bisher)
+    } else {
+      // unterbrechung (Fall 4, v3.27): ebenfalls KEINE kaputte Zeile - der
+      // Einschub ist kein Listenelement; der Index wird an der Videozeile
+      // gesammelt. Getrennt vom Band, weil er ein anderes Array indiziert.
+      const bisher = kaputteEinschuebe.get(stelle.elementId) ?? []
+      bisher.push(stelle.unterbrechungIndex)
+      kaputteEinschuebe.set(stelle.elementId, bisher)
     }
   }
 
@@ -106,6 +118,7 @@ export function baueListenZeilen(
     const dauerText = dauerFrames > 0 ? formatiereReglerDauer(dauerFrames / RENDER_PROFILE.fps) : DAUER_UNBEKANNT
 
     const bandIndizes = kaputteBaender.get(element.id) ?? []
+    const einschubIndizes = kaputteEinschuebe.get(element.id) ?? []
     return {
       elementId: element.id,
       position: abIndex + 1,
@@ -117,6 +130,7 @@ export function baueListenZeilen(
       // Aufsteigend und ohne Dubletten - Unsortierung oder Doppelte in der Eingabe
       // wuerde die Anzeige unzuverlaessig machen.
       kaputteBandAbschnitte: [...new Set(bandIndizes)].sort((a, b) => a - b),
+      kaputteUnterbrechungen: [...new Set(einschubIndizes)].sort((a, b) => a - b),
       hervorgehoben: aktuelleStelle !== null && aktuelleElementId === element.id,
     }
   })
