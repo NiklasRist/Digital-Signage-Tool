@@ -41,11 +41,13 @@ import {
 } from "./ffmpeg-pfad";
 import { verdrahteConfigStoreIPC } from "./ipc-gateway/config-store-verdrahtung";
 import { verdrahteExportUndFortschrittIPC } from "./ipc-gateway/export-verdrahtung";
-import { verdrahteProjectStoreNachtragIPC } from "./ipc-gateway/project-store-nachtrag";
-import { verdrahteProjectStoreNachtrag2IPC } from "./ipc-gateway/project-store-nachtrag-2";
-import { verdrahteProjectStoreNachtrag3IPC } from "./ipc-gateway/project-store-nachtrag-3"; // #323
-import { verdrahteProjectStoreNachtrag4IPC } from "./ipc-gateway/project-store-nachtrag-4";
-import { verdrahteProjectStoreNachtrag5IPC } from "./ipc-gateway/project-store-nachtrag-5"; // #426
+import {
+  verdrahteProjectStoreNachtragIPC,
+  verdrahteProjectStoreNachtrag2IPC,
+  verdrahteProjectStoreNachtrag3IPC, // #323
+  verdrahteProjectStoreNachtrag4IPC,
+  verdrahteProjectStoreNachtrag5IPC, // #426
+} from "./ipc-gateway/project-store-nachtrag";
 import { verdrahteProjectStoreIPC } from "./ipc-gateway/project-store-verdrahtung";
 import { verdrahteSpeicherstatusIPC } from "./ipc-gateway/speicherstatus-verdrahtung";
 import { verdrahteMarkenSpeicherstatusIPC } from "./ipc-gateway/marken-speicherstatus-verdrahtung"; // #304
@@ -375,7 +377,7 @@ void app.whenReady().then(async () => {
   verdrahteProjectStoreNachtragIPC();
 
   //  3. verdrahteProjectStoreNachtrag2IPC() - #240 (project:setzeBearbeitungsstand,
-  //     project:oeffneProjektordner), src/main/ipc-gateway/project-store-nachtrag-2.ts.
+  //     project:oeffneProjektordner), src/main/ipc-gateway/project-store-nachtrag.ts.
   //     Meldet die beiden nachgetragenen project-Kanaele an (mit #274 verdrahtet).
   //     Unmittelbar nach 2., aus demselben Grund: derselbe Namensraum `project:` -
   //     eine doppelte Registrierung faellt so sofort auf. Argumentlos, kein Fenster.
@@ -426,7 +428,7 @@ void app.whenReady().then(async () => {
   meldeExportHandlerAn();
 
   // 11. verdrahteProjectStoreNachtrag4IPC() - #334,
-  //     src/main/ipc-gateway/project-store-nachtrag-4.ts. Meldet GENAU EINEN Kanal an
+  //     src/main/ipc-gateway/project-store-nachtrag.ts. Meldet GENAU EINEN Kanal an
   //     (project:setzeStandardSegmentdauer). Derselbe Namensraum `project:` wie die
   //     Positionen 1 bis 3 - doppelte Registrierung faellt sofort auf.
   verdrahteProjectStoreNachtrag4IPC();
@@ -439,7 +441,7 @@ void app.whenReady().then(async () => {
   verdrahteMarkenIPC();
 
   // 13. verdrahteProjectStoreNachtrag3IPC() - #323,
-  //     src/main/ipc-gateway/project-store-nachtrag-3.ts (gebautes, 07.10.). Meldet
+  //     src/main/ipc-gateway/project-store-nachtrag.ts (gebautes, 07.10.). Meldet
   //     GENAU EINEN Kanal an (project:setzeStandardMarke). Derselbe Namensraum
   //     `project:` wie die Positionen 1 bis 3; das Issue gewuenschte die Position
   //     direkt nach Nachtrag2, das GEBaute Muster (#334, #304) haengt neue Eintraege
@@ -448,7 +450,7 @@ void app.whenReady().then(async () => {
   verdrahteProjectStoreNachtrag3IPC();
 
   // 14. verdrahteProjectStoreNachtrag5IPC() - #426,
-  //     src/main/ipc-gateway/project-store-nachtrag-5.ts. Meldet GENAU EINEN Kanal an
+  //     src/main/ipc-gateway/project-store-nachtrag.ts. Meldet GENAU EINEN Kanal an
   //     (project:setzeUnterbrechungen). Derselbe Namensraum `project:` wie die
   //     Positionen 1 bis 3 und 11/13; doppelte Registrierung faellt sofort auf.
   //     Argumentlos - kein Fenster, kein Zustand.

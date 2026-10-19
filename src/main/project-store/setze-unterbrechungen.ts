@@ -170,4 +170,4 @@ function fehler<T>(
 //    handhabt es genauso (setze-einblendung.ts, Meldeblock 4).
 // 3. KEIN ANFASSEN VON `trimStart`/`trimEnde`/`dauer`/`einblendung` - nur `unterbrechungen`.
 // 4. KEIN UNDO-SCHNAPPSCHUSS - den legt die Huelle um die Projekt-Sicht (#243, 9.13.2).
-// 5. KEIN IPC-KANAL hier - Verdrahtung im ipc-gateway (project-store-nachtrag-5.ts).
+// 5. KEIN IPC-KANAL hier - Verdrahtung im ipc-gateway (project-store-nachtrag.ts, Eintrag 5).

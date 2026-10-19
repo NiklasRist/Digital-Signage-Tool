@@ -231,12 +231,14 @@ vi.mock("../../src/main/ipc-gateway/project-store-verdrahtung", () => ({
   verdrahteProjectStoreIPC: h.verdrahteProjectStoreIPC,
 }));
 
+// Q3/B (19.10.2026): Die fuenf Nachträge liegen in EINER Datei; die fuenf
+// Einstiegspunkte bleiben, weil die Positionen 1-14 in src/main/index.ts Vertrag aus #3 sind.
 vi.mock("../../src/main/ipc-gateway/project-store-nachtrag", () => ({
   verdrahteProjectStoreNachtragIPC: h.verdrahteProjectStoreNachtragIPC,
-}));
-
-vi.mock("../../src/main/ipc-gateway/project-store-nachtrag-2", () => ({
   verdrahteProjectStoreNachtrag2IPC: h.verdrahteProjectStoreNachtrag2IPC,
+  verdrahteProjectStoreNachtrag3IPC: h.verdrahteProjectStoreNachtrag3IPC,
+  verdrahteProjectStoreNachtrag4IPC: h.verdrahteProjectStoreNachtrag4IPC,
+  verdrahteProjectStoreNachtrag5IPC: h.verdrahteProjectStoreNachtrag5IPC,
 }));
 
 vi.mock("../../src/main/ipc-gateway/vorlagen-nachtrag", () => ({
@@ -245,18 +247,6 @@ vi.mock("../../src/main/ipc-gateway/vorlagen-nachtrag", () => ({
 
 vi.mock("../../src/main/ipc-gateway/speicherstatus-verdrahtung", () => ({
   verdrahteSpeicherstatusIPC: h.verdrahteSpeicherstatusIPC,
-}));
-
-vi.mock("../../src/main/ipc-gateway/project-store-nachtrag-4", () => ({
-  verdrahteProjectStoreNachtrag4IPC: h.verdrahteProjectStoreNachtrag4IPC,
-}));
-
-vi.mock("../../src/main/ipc-gateway/project-store-nachtrag-3", () => ({
-  verdrahteProjectStoreNachtrag3IPC: h.verdrahteProjectStoreNachtrag3IPC,
-}));
-
-vi.mock("../../src/main/ipc-gateway/project-store-nachtrag-5", () => ({
-  verdrahteProjectStoreNachtrag5IPC: h.verdrahteProjectStoreNachtrag5IPC,
 }));
 
 vi.mock("../../src/main/render-service/handler-anmeldung", () => ({
