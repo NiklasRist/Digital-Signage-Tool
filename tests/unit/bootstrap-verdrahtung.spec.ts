@@ -241,10 +241,6 @@ vi.mock("../../src/main/ipc-gateway/project-store-nachtrag", () => ({
   verdrahteProjectStoreNachtrag5IPC: h.verdrahteProjectStoreNachtrag5IPC,
 }));
 
-vi.mock("../../src/main/ipc-gateway/vorlagen-nachtrag", () => ({
-  verdrahteVorlagenNachtragIPC: h.verdrahteVorlagenNachtragIPC,
-}));
-
 vi.mock("../../src/main/ipc-gateway/speicherstatus-verdrahtung", () => ({
   verdrahteSpeicherstatusIPC: h.verdrahteSpeicherstatusIPC,
 }));
@@ -285,8 +281,11 @@ vi.mock("../../src/main/vorlagen-store/schreibe-vorlagen", () => ({
   flushBestand: h.flushBestand,
 }));
 
+// Q3/B (19.10.2026): Der nachgetragene vorlagen-Kanal liegt in derselben Datei;
+// der getrennte Einstiegspunkt bleibt wegen der Positionen 1-14 (Vertrag aus #3).
 vi.mock("../../src/main/vorlagen-store/ipc-verdrahtung", () => ({
   verdrahteVorlagenIPC: h.verdrahteVorlagenIPC,
+  verdrahteVorlagenNachtragIPC: h.verdrahteVorlagenNachtragIPC,
 }));
 
 /**

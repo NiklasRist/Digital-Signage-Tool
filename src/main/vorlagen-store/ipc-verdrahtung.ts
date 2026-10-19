@@ -4,9 +4,12 @@ import { KANAELE } from '../../shared/contracts/kanaele' // #25
 import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from '../ipc-gateway/nutzlast-pruefer' // #332
 // Die lokale Kopie ist mit #337 entfallen - EINE `meldeAn` (#333).
 import { meldeAn } from '../ipc-gateway/melde-an' // #337
+import { registriereHandler } from '../ipc-gateway/registriere-handler' // #23
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import type { Vorlage, VorlagenArt } from '../../shared/contracts/vorlage'
+import type { Vorlage, VorlagenArt, Vorlagennutzung } from '../../shared/contracts/vorlage'
+import type { VorlagenFehlercode } from './fehlercodes'
+import { pruefeVorlagenReferenzen } from './referenzpruefung' // #106
 import { alsEigenstaendige } from './als-eigenstaendige' // #104
 import { erstelleVorlage } from './erstelle-vorlage' // #100
 import { listeArbeitskopien, listeVorlagen } from './liste' // #99
@@ -191,5 +194,49 @@ export function verdrahteVorlagenIPC(): void {
       return { ok: true, wert: { id } }
     },
     ({ id }) => löscheVorlage(id),
+  )
+}
+
+// ---------------------------------------------------------------------------------------
+// Der nachgetragene Kanal (#255): EINE zusätzliche Anmeldung.
+//
+// WARUM ER HIER STEHT UND NICHT MEHR IN `ipc-gateway/vorlagen-nachtrag.ts` (Q3, 19.10.2026):
+// Die Auslagerung war eine Zerlegung ohne Traeger - eine Grenze fuer die Zahl der Eintraege
+// je Datei ist nirgends geprueft. Der getrennte EINSTIEGSPUNKT bleibt, weil die Positionen
+// 1-14 in `main/index.ts` Vertrag aus #3 sind.
+
+export function verdrahteVorlagenNachtragIPC(): void {
+  // GENAU EIN Kanal - der Name kommt aus der Registry (#25), hier steht kein Kanalname als
+  // Zeichenkette. Kein Schutz gegen einen zweiten Aufruf: #3 ruft genau einmal, und
+  // `ipcMain.handle` wirft bei doppelter Anmeldung von sich aus. Kein Ereignis, keine
+  // Fensterreferenz, kein Zustand, kein eigenes try/catch (das gehoert #23), kein Lock,
+  // keine eigene Zaehlung: Die Trefferlisten zaehlt #106.
+  registriereHandler<Vorlagennutzung, VorlagenFehlercode>(
+    KANAELE.vorlagen.pruefeVorlagenReferenzen,
+    // Form-Pruefung nach TK 9.1.1 Punkt 6: Objekt mit nicht leerer String-`vorlagenId`.
+    // MEHR NICHT - insbesondere KEINE UUID-Formpruefung: Die eingebauten Vorlagen heissen
+    // "vollbild", "split" und "band-standard" (#106) und waeren sonst dauerhaft unpruefbar.
+    (nutzlast: unknown): Ergebnis<{ vorlagenId: string }, 'ungueltige_eingabe'> => {
+      if (!istObjekt(nutzlast)) {
+        return abgelehnt('pruefeVorlagenReferenzen erwartet ein Objekt { vorlagenId }.')
+      }
+      // Erst in eine Konstante, dann pruefen: An einer Konstanten greift die Verengung
+      // durch die Waechterfunktionen verlaesslich, an einem Feld eines Record-Typs nicht
+      // ueberall. `istGefuellterText` erkennt auch reine Leerzeichen als leer, laesst aber
+      // den Wert UNVERAENDERT weiterreisen (keine Nutzlast-Reparatur, keine Trim-Sendung).
+      const vorlagenId = nutzlast.vorlagenId
+      if (!istGefuellterText(vorlagenId)) {
+        return abgelehnt('pruefeVorlagenReferenzen braucht eine nicht leere vorlagenId.')
+      }
+
+      // NUR das eine erwartete Feld reist weiter; ein Fremdfeld landete nicht im Main.
+      return { ok: true, wert: { vorlagenId } }
+    },
+    // #106 heisst den Parameter `vorlagenId` (MELDE-KLAUSEL: der Aufruf folgt der Datei,
+    // nicht der Operationstabelle in TK 9.12.1, die ihn `id` nennt).
+    // SAFETY: die Validierungsfunktion (pruefe) hat die Form der Nutzlast unmittelbar
+    // zuvor belegt; der Cast benennt diese belegte Form fuer den Feldzugriff.
+    (validierteNutzlast) =>
+      pruefeVorlagenReferenzen((validierteNutzlast as { vorlagenId: string }).vorlagenId),
   )
 }
