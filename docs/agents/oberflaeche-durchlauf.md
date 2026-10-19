@@ -1073,3 +1073,28 @@ Ereignisse gesammelt: 14
 
 - **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-19T12:52:38.859Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Unterbrechung Drag: erwartet "ein Drop einer vollflaechigen Aktion auf das Video wird EINE Unterbrechung (#437)", erkannt "Marken 0->0; Store-Einschuebe 0; data-band-ziel=true" (Ort: composer/verwende-zeitleisten-zug.ts)
+- **Befund** Unterbrechung Drag: erwartet "die Unterbrechungs-Marke ist im Fenster anklickbar", erkannt "keine Marke gefunden" (Ort: composer/zeitleiste.tsx)
+
+> *Gegenprobe (19.10.2026, #437):* Dieser Lauf ist die NEGATIV-Probe. Der
+> Unterbrechungs-Zweig in `verwende-zeitleisten-zug.ts` wurde absichtlich wirkungslos
+> gemacht (`if (false)`); die zwei Befunde SIND das erwartete Ergebnis. Nach der
+> Ruecknahme (Pruefsumme wieder identisch) laeuft der Drop erneut sauber (Nachlauf 12:55).
+
+## Nachlauf vom 2026-10-19T12:55:21.822Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

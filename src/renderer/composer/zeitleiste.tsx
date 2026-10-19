@@ -10,6 +10,8 @@ import type { Listenelement, Project, Einblendung } from "../../shared/contracts
 import { frameDauer } from "./gesamtlaenge";
 import { RENDER_PROFILE } from "../../shared/contracts/render-profile";
 import { EA_PX_PRO_SEKUNDE, baueZeitachse, baueBandspur } from "./zeitband";
+// #437: die Marken der Unterbrechungen liegen sequenziell im Video-Block.
+import { unterbrechungsMarken } from "./unterbrechungs-aufnahme";
 // #433: der Video-Block zeigt die EINZELBILDER des Videos als Filmstreifen.
 import { VideoFilmstreifen } from "./video-filmstreifen";
 
@@ -87,6 +89,10 @@ export interface ZeitleistenEigenschaften {
   pxProSekunde?: number
   /** #428: den Zoom um eine Stufe aendern (die Wurzel haelt den Wert). */
   aufZoom?: (richtung: -1 | 1) => void
+  /** #437: eine Unterbrechung am Video entfernen (Index in `element.unterbrechungen`). */
+  aufUnterbrechungEntfernen?: (elementId: string, index: number) => void
+  /** #437: die Wirkung des laufenden Video-Drops - steuert nur das Bild (Label/Farbe). */
+  videoWirkung?: 'band' | 'unterbrechung'
 }
 
 export function Zeitleiste({
@@ -98,6 +104,8 @@ export function Zeitleiste({
   bandZiel = null,
   pxProSekunde = EA_PX_PRO_SEKUNDE,
   aufZoom,
+  aufUnterbrechungEntfernen,
+  videoWirkung = 'band',
 }: ZeitleistenEigenschaften): JSX.Element {
   if (projekt === null) {
     return <div data-testid="zeitleiste-kein-projekt" />
@@ -190,6 +198,8 @@ export function Zeitleiste({
                 pxProSekunde={pxProSekunde}
                 projekt={projekt}
                 element={elementeNachId.get(zeile.elementId) ?? null}
+                aufUnterbrechungEntfernen={aufUnterbrechungEntfernen}
+                videoWirkung={videoWirkung}
               />
               {neuZug !== null && (
                 <KantenBlock nummer={index + 1} aktiv={aktiveKante === index + 1} laedt={laedtKante === index + 1} />
@@ -253,6 +263,8 @@ function ZeilenBlock({
   pxProSekunde = EA_PX_PRO_SEKUNDE,
   projekt = null,
   element = null,
+  aufUnterbrechungEntfernen,
+  videoWirkung = 'band',
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
@@ -263,9 +275,19 @@ function ZeilenBlock({
   projekt?: Project | null;
   /** #433: das Listenelement selbst (Filmstreifen braucht `ref`/`trim`). */
   element?: Listenelement | null;
+  /** #437: Unterbrechung entfernen (Index in `element.unterbrechungen`). */
+  aufUnterbrechungEntfernen?: (elementId: string, index: number) => void;
+  /** #437: Wirkung des Drops - nur fuer Label und Farbe. */
+  videoWirkung?: 'band' | 'unterbrechung';
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: zeile.elementId })
   const beschriftung = zeilenBeschriftung(zeile, index)
+  // #437: die Unterbrechungs-Marken des Video-Blocks (sequenzielle Positionen).
+  const marken = zeile.art === 'video' && element !== null ? unterbrechungsMarken(element) : []
+  // #437: das Drop-Ziel zeigt die WIRKUNG an - eine vollflaechige Aktion wird eine
+  // Unterbrechung (violett), eine Band-Aktion ein Band-Abschnitt (orange).
+  const zielArt = istBandZiel ? (videoWirkung === 'unterbrechung' ? 'Unterbrechung' : 'Band') : null
+  const zielFarbe = videoWirkung === 'unterbrechung' ? '#b07ae5' : '#e5a94d'
   // #428: die Band-Abschnitte an ihren Zeitstellen - nur am Video, nur wenn ein Band da ist.
   const spur =
     zeile.art === 'video' && einblendung !== null
@@ -295,8 +317,8 @@ function ZeilenBlock({
         fontSize: 10,
         overflow: 'hidden',
         cursor: 'grab',
-        border: `1px solid ${istBandZiel ? '#e5a94d' : zeile.art === 'fehlt' ? '#e5634d' : '#3a3a3a'}`,
-        outline: istBandZiel ? '2px solid #e5a94d' : 'none',
+        border: `1px solid ${istBandZiel ? zielFarbe : zeile.art === 'fehlt' ? '#e5634d' : '#3a3a3a'}`,
+        outline: istBandZiel ? `2px solid ${zielFarbe}` : 'none',
         outlineOffset: -2,
         background: zeile.art === 'video' ? '#2f6db5' : zeile.art === 'segment' ? '#2a9d8f' : '#333',
         color: '#fff',
@@ -318,6 +340,36 @@ function ZeilenBlock({
           hoehePx={ZEILE_HOEHE_PX}
         />
       )}
+      {/* #437: die Unterbrechungen als Marken ueber dem Filmstreifen. Ein Klick entfernt
+          sie (EIN Schreibvorgang, EIN Undo-Schritt). */}
+      {marken.map((marke) => (
+        <button
+          key={marke.index}
+          type="button"
+          data-testid={`zeitleiste-unterbrechung-${index}-${marke.index}`}
+          data-zeitstelle={marke.zeitstelle}
+          title={`Unterbrechung bei ${marke.zeitstelle.toFixed(2)} s entfernen`}
+          aria-label={`Unterbrechung bei ${marke.zeitstelle.toFixed(2)} s entfernen`}
+          onPointerDown={(ereignis) => ereignis.stopPropagation()}
+          onClick={(ereignis) => {
+            ereignis.stopPropagation()
+            aufUnterbrechungEntfernen?.(zeile.elementId, marke.index)
+          }}
+          style={{
+            position: 'absolute',
+            left: Math.max(0, Math.round(marke.startSekunden * pxProSekunde)),
+            top: 0,
+            width: Math.max(6, Math.round(marke.dauerSekunden * pxProSekunde)),
+            height: '100%',
+            padding: 0,
+            border: '1px solid #f2f2f2',
+            borderRadius: 2,
+            background: 'rgba(229, 169, 77, 0.55)',
+            cursor: 'pointer',
+            zIndex: 2,
+          }}
+        />
+      ))}
       <span style={{ position: 'relative', zIndex: 1, textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}>
         {beschriftung.dauerText}
         {zeile.art === 'video' && zeile.dauerSekunden !== null
@@ -342,7 +394,7 @@ function ZeilenBlock({
           )}
         </span>
       )}
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.7, textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}>{istBandZiel ? 'Band' : beschriftung.art}</span>
+      <span style={{ position: 'relative', zIndex: 1, opacity: 0.7, textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}>{zielArt ?? beschriftung.art}</span>
     </div>
   );
 }

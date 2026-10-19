@@ -20,6 +20,13 @@ import { fuegeElementHinzu } from './element-hinzufuegen'
 import { ordneNeuOptimistisch } from './liste-reorder'
 import { uebernehmeBand } from './einblendung-bearbeiten'
 import {
+  fuegeUnterbrechungEin,
+  istVollflaechigeAktion,
+  spieleZeitBeiSequenzzeit,
+  videoSekunden,
+} from './unterbrechungs-aufnahme'
+import { setzeElementUnterbrechungen } from './unterbrechungs-bearbeiten'
+import {
   bandZielAus,
   bandZeitImVideo,
   bandAufnahmeAus,
@@ -56,6 +63,9 @@ export interface ZeitleistenZug {
   laedtKante: number | null
   /** #425: die Kennung des Video-Blocks unter dem Zeiger (Band-Ziel) - an die Zeitleiste. */
   bandZiel: string | null
+  /** #437: die Wirkung des laufenden Video-Drops - die Vorlage der gezogenen AKTION
+   *  entscheidet (`vollflaeche` -> Unterbrechung, sonst Band). Nur fuer das Bild. */
+  videoWirkung: 'band' | 'unterbrechung'
   /** #414: der Korb der Zeitleiste - der MESSRAUM fuer `waehleKanteAus`. */
   korbRef: RefObject<HTMLDivElement | null>
   amDragStart: (ereignis: DragStartEvent) => void
@@ -73,14 +83,20 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
   // #425/#428: das Band-Ziel und die Zeitstelle im Video-Koerper.
   const [bandZiel, setzeBandZiel] = useState<string | null>(null)
   const [bandZeit, setzeBandZeit] = useState<number | null>(null)
+  // #437: die GESPIELTE Videozeit unter dem Zeiger (fuer den Unterbrechungs-Drop) und die
+  // Wirkung des laufenden Video-Drops - die VORLAGE der gezogenen AKTION entscheidet.
+  const [unterbrechungsZeit, setzeUnterbrechungsZeit] = useState<number | null>(null)
+  const [dropWirkung, setzeDropWirkung] = useState<'band' | 'unterbrechung'>('band')
   const zeigerStartX = useRef<number | null>(null)
   const korbRef = useRef<HTMLDivElement | null>(null)
 
-  // #425: Beim Projektwechsel faellt das Band-Ziel weg - ein Element des alten Projekts
+  // #425/#437: Beim Projektwechsel faellt das Band-Ziel weg - ein Element des alten Projekts
   // ist im neuen nicht mehr vorhanden (dieselbe Regel, die zuvor die Wurzel trug).
   useEffect(() => {
     setzeBandZiel(null)
     setzeBandZeit(null)
+    setzeUnterbrechungsZeit(null)
+    setzeDropWirkung('band')
   }, [projektId])
 
   // #425: EINE Aktion ins Werbeband des Video-Elements aufnehmen. Der Entwurf kommt
@@ -126,13 +142,73 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     })
   }
 
+  // #437: EINE Aktion als UNTERBRECHUNG in das Video aufnehmen. Die Vorlage der Aktion
+  // (vollflaeche) hat den Weg entschieden; hier wird nur die Zeitstelle geprueft und die
+  // Liste gebaut. Geschrieben wird ueber setzeElementUnterbrechungen (#426); die
+  // Sicht-Korrektur geht ueber den Wrapped-Zugang (EIN Undo-Schritt, #243).
+  const nehmeAktionAlsUnterbrechungAuf = (
+    videoId: string,
+    aktionId: string,
+    zeitSekunden: number | null,
+  ): void => {
+    const frisch = holeProjekt()
+    if (frisch === null) return
+    const element = frisch.liste.find((eintrag) => eintrag.id === videoId)
+    if (element === undefined || element.art !== 'video') return
+    const aktion = frisch.aktionen.find((eintrag) => eintrag.id === aktionId)
+    if (aktion === undefined) return
+    const gesamt = videoSekunden(element)
+    if (gesamt === null || zeitSekunden === null) {
+      melde('keine_zeitstelle', 'Ohne brauchbare Zeitstelle laesst sich keine Unterbrechung anlegen.')
+      return
+    }
+    const dauer = startdauerFuerBandabschnitt(aktion.standardDauer, frisch.standardSegmentdauer)
+    const entwurf = fuegeUnterbrechungEin(
+      element.unterbrechungen ?? [],
+      aktion.id,
+      dauer,
+      zeitSekunden,
+      gesamt,
+    )
+    if (!entwurf.ok) {
+      melde('unterbrechung_nicht_moeglich', entwurf.meldung)
+      return
+    }
+    void setzeElementUnterbrechungen(element.id, entwurf.unterbrechungen).then((antwort) => {
+      if (!antwort.ok) {
+        melde(antwort.fehler.code, antwort.fehler.meldung)
+        return
+      }
+      // Die Sicht NACH dem await frisch holen (kein gemerkter Stand) und GENAU EIN
+      // setzeListe - das ist der eine Undo-Schritt ueber den Wrapped-Zugang (#243).
+      const aktuell = holeProjekt()
+      if (aktuell === null) return
+      const neu = antwort.wert
+      setzeListe(aktuell.liste.map((eintrag) => (eintrag.id === neu.id ? neu : eintrag)))
+    })
+  }
+
   // #414: der DnD-Verband auf der Wurzel (aus #412 uebernommen, auf den gemeinsamen
   // Kontext gehoben; die Routing-Regeln sind woertlich die #412-Regeln).
   const amDragStart = (ereignis: DragStartEvent): void => {
     // NUR ein Drag MIT Referenz (Neu-Einfuegen, #413) oeffnet die Kanten.
-    setzeNeuZug(liestReferenz(ereignis.active.data.current))
+    const referenz = liestReferenz(ereignis.active.data.current)
+    setzeNeuZug(referenz)
     setzeBandZiel(null)
     setzeBandZeit(null)
+    setzeUnterbrechungsZeit(null)
+    // #437: Die VORLAGE der gezogenen AKTION entscheidet die Wirkung eines Video-Drops
+    // (vollflaeche -> Unterbrechung, sonst Band). Media/Unbekanntes -> Band (bisheriges).
+    const frisch = holeProjekt()
+    const aktion =
+      referenz !== null && frisch !== null
+        ? frisch.aktionen.find((eintrag) => eintrag.id === referenz)
+        : undefined
+    setzeDropWirkung(
+      aktion !== undefined && istVollflaechigeAktion(aktion, holeVorlagen())
+        ? 'unterbrechung'
+        : 'band',
+    )
     const aktivator = ereignis.activatorEvent as MouseEvent
     if (typeof aktivator?.clientX === 'number') zeigerStartX.current = aktivator.clientX
   }
@@ -147,6 +223,7 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
       setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
       setzeBandZiel(null)
       setzeBandZeit(null)
+      setzeUnterbrechungsZeit(null)
       return
     }
     const umriss = korb.getBoundingClientRect()
@@ -154,6 +231,7 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
       setzeAktiveKante(leseKantenIndex(ereignis.over?.id))
       setzeBandZiel(null)
       setzeBandZeit(null)
+      setzeUnterbrechungsZeit(null)
       return
     }
     const zeilen = baueZeitleistenZeilen(liste, pxProSekunde)
@@ -172,9 +250,16 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     setzeBandZiel(bandZielAus(zeilen, breiten, xImKontext, KANTEN_VORSCHUB_PX))
     // #428: dazu die ZEITSTELLE im Video-Koerper - der Drop legt den Abschnitt dort
     // in die Rotation (Entscheidung 1a), statt ihn immer anzuhangen.
-    setzeBandZeit(
-      bandZeitImVideo(zeilen, breiten, xImKontext, KANTEN_VORSCHUB_PX, pxProSekunde)?.zeitSekunden ??
-        null,
+    const zeitZiel = bandZeitImVideo(zeilen, breiten, xImKontext, KANTEN_VORSCHUB_PX, pxProSekunde)
+    setzeBandZeit(zeitZiel?.zeitSekunden ?? null)
+    // #437: dieselbe Position in der GESPIELTEN Videozeit - Unterbrechungen liegen im
+    // SEQUENZ-Block (Video0 · Aktion1 · Video1 …), nicht auf der Wanduhr.
+    const zielId = zeitZiel?.elementId
+    const zielElement = zielId === undefined ? undefined : liste.find((eintrag) => eintrag.id === zielId)
+    setzeUnterbrechungsZeit(
+      zeitZiel !== null && zielElement !== undefined
+        ? spieleZeitBeiSequenzzeit(zielElement, zeitZiel.zeitSekunden)
+        : null,
     )
   }
 
@@ -185,8 +270,12 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     const zielVideo = bandZiel
     // #428: ebenso die Zeitstelle; sie waehlt die Stelle in der Rotation.
     const zielZeit = bandZeit
+    // #437: und die gespielte Zeitstelle samt Wirkung (Band oder Unterbrechung).
+    const zielUnterbrechung = unterbrechungsZeit
+    const wirkung = dropWirkung
     setzeBandZiel(null)
     setzeBandZeit(null)
+    setzeUnterbrechungsZeit(null)
     // Sortier-Drag EINES BESTANDELEMENTS (keine Referenz): der Reorder-Weg (#122).
     const referenz = liestReferenz(ereignis.active.data.current)
     if (referenz === null) {
@@ -200,7 +289,13 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     // bleibt unberuehrt (TK 9.2.8). Auf einem Segment-Koerper ist `zielVideo` null;
     // dann laeuft der Drop wie bisher an die gemessene Kante (sequenziell davor/danach).
     if (zielVideo !== null) {
-      nehmeAktionInsBandAuf(zielVideo, referenz, zielZeit)
+      // #437: Die Vorlage der Aktion entscheidet - vollflaechig wird eine Unterbrechung,
+      // sonst (Band-Aktion) ein Band-Abschnitt wie bisher.
+      if (wirkung === 'unterbrechung') {
+        nehmeAktionAlsUnterbrechungAuf(zielVideo, referenz, zielUnterbrechung)
+      } else {
+        nehmeAktionInsBandAuf(zielVideo, referenz, zielZeit)
+      }
       return
     }
     // NEU-Drag (#413): Einfuegen an der Kante (#411-Mutation, nicht optimistisch).
@@ -222,6 +317,7 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     setzeAktiveKante(null)
     setzeBandZiel(null)
     setzeBandZeit(null)
+    setzeUnterbrechungsZeit(null)
   }
 
   return {
@@ -229,6 +325,7 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     aktiveKante,
     laedtKante,
     bandZiel,
+    videoWirkung: dropWirkung,
     korbRef,
     amDragStart,
     amUeber,

@@ -825,6 +825,185 @@ const main = async () => {
       }
     }
 
+    // Schritt 4b6 - Unterbrechung per Drag (#437): Eine VOLLFLAECHIGE Aktion wird auf den
+    // VIDEO-Koerper gezogen. Nach #437 entscheidet die VORLAGE der Aktion: `vollflaeche` ->
+    // Unterbrechung (sequenziell, 9.2.9); eine Band-Vorlage bliebe ein Band. Erwartet: EINE
+    // Marke im Video-Block; ein Klick entfernt sie; Aufnahme UND Entfernen sind je EIN Undo.
+    await klick('[data-testid="reiter-zusammenstellen"]');
+    await schlafe(700);
+    const projektDatei4b6 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+    let basis4b6 = null;
+    try {
+      basis4b6 = JSON.parse(fs.readFileSync(projektDatei4b6, "utf-8"));
+    } catch (tu) {
+      fund("Unterbrechung Drag", "project.json lesbar (Video-Element, Marke)",
+        "nicht lesbar: " + String(tu), "Untersuchung", "project.json");
+    }
+    const video4b6 = basis4b6 === null
+      ? null
+      : (Array.isArray(basis4b6.liste) ? basis4b6.liste : []).find((e) => e && e.art === "video");
+    if (basis4b6 === null || !video4b6) {
+      fund("Unterbrechung Drag", "ein Video-Element fuer den Unterbrechungs-Drop (#437)",
+        "keins gefunden", "Untersuchung", "composer/index.tsx");
+    } else {
+      // Aktion mit vollflaechiger Vorlage saen - der EINZIGE vollflaechige Weg im Composer.
+      const saat4b6 = await seite.evaluate(async (markeId) => {
+        const antwort = await window.api.invoke("project:erstelleAktion", {
+          aktionsdaten: {
+            titel: "Durchlauf-Unterbrechung",
+            beschreibung: null, preis: null, bildRef: null, cta: null,
+            standardDauer: 1, vorlagenId: "vollbild", markeId, akzentfarbe: null,
+          },
+        });
+        if (antwort === null || antwort.ok !== true) {
+          return { fehler: "erstelleAktion: " + JSON.stringify(antwort) };
+        }
+        return { aktionId: antwort.wert.id };
+      }, basis4b6.standardMarkeId);
+      if (typeof saat4b6.aktionId !== "string") {
+        fund("Unterbrechung Drag", "eine vollflaechige Aktion als Drag-Quelle (#437)",
+          `${saat4b6.fehler}`, "BLOCKER", "project-store/erstelle-aktion.ts");
+      } else {
+        // Sicht nachziehen: roher IPC-Ruf erreicht die Sicht NICHT - Projekt per UI neu oeffnen.
+        await klick('[data-testid="reiter-projekte"]');
+        await schlafe(400);
+        await seite.evaluate((id) => {
+          const zeile = document.querySelector(`[data-testid="projekt-${id}"]`);
+          const knopf = zeile === null ? null : zeile.querySelector("button");
+          if (knopf) knopf.click();
+        }, aktivesProjektId);
+        await schlafe(2_500);
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await schlafe(700);
+
+        // Die vollflaechige Aktionszeile finden, in den sichtbaren Bereich holen, messen.
+        await seite.evaluate(() => {
+          const zeilen = [...document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]')];
+          const z = zeilen.find((e) => e.textContent.includes("Durchlauf-Unterbrechung"));
+          if (z) z.scrollIntoView({ block: "center", inline: "nearest" });
+        });
+        await schlafe(300);
+        const qBox4b6 = await seite.evaluate(() => {
+          const zeilen = [...document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]')];
+          const z = zeilen.find((e) => e.textContent.includes("Durchlauf-Unterbrechung"));
+          if (!z) return null;
+          const r = z.getBoundingClientRect();
+          return { x: r.x, y: r.y, width: r.width, height: r.height };
+        });
+        const marken4b6 = () => seite.evaluate(
+          () => document.querySelectorAll('[data-testid^="zeitleiste-unterbrechung-"]').length,
+        );
+        const vor4b6 = await marken4b6();
+        if (qBox4b6 === null) {
+          fund("Unterbrechung Drag", "die vollflaechige Aktionszeile ist als Drag-Quelle sichtbar",
+            "Quelle-Box null", "Untersuchung", "composer/index.tsx");
+        } else {
+          const blockSelektor4b6 = `[data-element-id="${video4b6.id}"]`;
+          const grip4b6 = { x: qBox4b6.x + 6, y: qBox4b6.y + qBox4b6.height / 2 };
+          await seite.mouse.move(grip4b6.x, grip4b6.y);
+          await seite.mouse.down();
+          await seite.mouse.move(grip4b6.x + 12, grip4b6.y);
+          await schlafe(400);
+          // Ziel JETZT messen - der Drag hat die Kanten geoeffnet und damit das Layout verschoben.
+          const zielBox4b6 = await seite.evaluate((sel) => {
+            const block = document.querySelector(sel);
+            if (!block) return null;
+            const r = block.getBoundingClientRect();
+            return { x: r.x, y: r.y, width: r.width, height: r.height };
+          }, blockSelektor4b6);
+          if (zielBox4b6 === null) {
+            await seite.mouse.up();
+            fund("Unterbrechung Drag", "der Video-Block steht fuer den Drop im Fenster",
+              "Video-Block nicht gefunden", "Befund", "composer/index.tsx");
+          } else {
+            const ziel4b6 = { x: zielBox4b6.x + zielBox4b6.width / 2, y: zielBox4b6.y + zielBox4b6.height / 2 };
+            const schritte4b6 = 16;
+            for (let t = 1; t <= schritte4b6; t += 1) {
+              await seite.mouse.move(
+                grip4b6.x + 12 + ((ziel4b6.x - (grip4b6.x + 12)) * t) / schritte4b6,
+                grip4b6.y + ((ziel4b6.y - grip4b6.y) * t) / schritte4b6,
+              );
+              await schlafe(30);
+            }
+            await schlafe(500);
+            const bandZiel4b6 = await seite.evaluate(
+              (sel) => document.querySelector(sel)?.getAttribute("data-band-ziel"),
+              blockSelektor4b6,
+            );
+            await seite.mouse.up();
+            // Auf das entprellte Auto-Speichern warten (wie #4f2) - der harte Beleg ist
+            // der STORE-Stand auf der Platte, nicht nur die optimistische Marke im DOM.
+            await schlafe(6_500);
+            const nachDrop4b6 = await marken4b6();
+            // Harter Beleg: der STORE-Stand auf der Platte traegt einen Einschub.
+            let einschuebe4b6 = null;
+            try {
+              const j = JSON.parse(fs.readFileSync(projektDatei4b6, "utf-8"));
+              const v = (j.liste ?? []).find((e) => e.art === "video");
+              einschuebe4b6 = v ? (v.unterbrechungen ?? []).length : null;
+            } catch {
+              einschuebe4b6 = "lesefehler";
+            }
+            console.log(`[schritt-4b6] Unterbrechung: Marken ${vor4b6}->${nachDrop4b6}; store-Einschuebe=${JSON.stringify(einschuebe4b6)}; data-band-ziel=${bandZiel4b6}.`);
+            if (nachDrop4b6 !== 1 || einschuebe4b6 !== 1) {
+              fund("Unterbrechung Drag", "ein Drop einer vollflaechigen Aktion auf das Video wird EINE Unterbrechung (#437)",
+                `Marken ${vor4b6}->${nachDrop4b6}; Store-Einschuebe ${JSON.stringify(einschuebe4b6)}; data-band-ziel=${bandZiel4b6}`,
+                "Befund", "composer/verwende-zeitleisten-zug.ts");
+            } else {
+              console.log("[schritt-4b6] Unterbrechungs-Drop GEMESSEN: der Video-Block traegt EINE Marke (#437 belegt).");
+            }
+            // Entfernen: Klick auf die Marke (EIN Undo-Schritt). Danach 0 Marken.
+            const markeSelektor = await seite.evaluate(() => {
+              const marke = document.querySelector('[data-testid^="zeitleiste-unterbrechung-"]');
+              return marke ? marke.getAttribute("data-testid") : null;
+            });
+            if (markeSelektor === null) {
+              fund("Unterbrechung Drag", "die Unterbrechungs-Marke ist im Fenster anklickbar",
+                "keine Marke gefunden", "Befund", "composer/zeitleiste.tsx");
+            } else {
+              await klick(`[data-testid="${markeSelektor}"]`);
+              await schlafe(1_500);
+              const nachEntfernen4b6 = await marken4b6();
+              await seite.keyboard.down("Meta");
+              await seite.keyboard.press("z");
+              await seite.keyboard.up("Meta");
+              await schlafe(1_500);
+              const nachUndoEins4b6 = await marken4b6();
+              await seite.keyboard.down("Meta");
+              await seite.keyboard.press("z");
+              await seite.keyboard.up("Meta");
+              await schlafe(1_500);
+              const nachUndoZwei4b6 = await marken4b6();
+              console.log(`[schritt-4b6] Entfernen: ${nachEntfernen4b6}; Undo1=${nachUndoEins4b6}; Undo2=${nachUndoZwei4b6}.`);
+              if (nachEntfernen4b6 !== 0) {
+                fund("Unterbrechung Drag", "ein Klick auf die Marke entfernt die Unterbrechung (#437)",
+                  `Marken nach Entfernen: ${nachEntfernen4b6}`, "Befund", "composer/index.tsx");
+              } else if (nachUndoEins4b6 !== 1 || nachUndoZwei4b6 !== 0) {
+                fund("Unterbrechung Drag", "Aufnahme (Undo2) und Entfernen (Undo1) sind je EIN Undo-Schritt",
+                  `Entfernen=${nachEntfernen4b6}; Undo1=${nachUndoEins4b6}; Undo2=${nachUndoZwei4b6}`,
+                  "Befund", "composer/index.tsx");
+              } else {
+                console.log("[schritt-4b6] Unterbrechung Entfernen/Undo GEMESSEN: 1 -> 0 -> 1 -> 0 (je EIN Schritt, #437 belegt).");
+              }
+            }
+          }
+        }
+        // Aufraeumen: die geseaete Aktion wieder entfernen (loescheAktion kaskadiert auf den
+        // Einschub, #426) - sonst faende #4f eine fremde erste Aktionszeile vor.
+        await seite.evaluate(async (aktionId) => {
+          return window.api.invoke("project:löscheAktion", { id: aktionId });
+        }, saat4b6.aktionId);
+        await klick('[data-testid="reiter-projekte"]');
+        await schlafe(400);
+        await seite.evaluate((id) => {
+          const zeile = document.querySelector(`[data-testid="projekt-${id}"]`);
+          const knopf = zeile === null ? null : zeile.querySelector("button");
+          if (knopf) knopf.click();
+        }, aktivesProjektId);
+        await schlafe(2_000);
+      }
+    }
+
     // Schritt 4c - Render-Lauf ueber den echten Dialog (#404-Rest, Teil a):
     // Seed-Video liegt in D1, der Dialog (#342) ist montiert. Der Render liest die
     // SICHT (inhalt) - und #407 meldet, dass direkte D1-Mutationen die Sicht nicht
@@ -1132,7 +1311,7 @@ const main = async () => {
           bildRef: null,
           cta: null,
           standardDauer: null,
-          vorlagenId: "vollbild",
+          vorlagenId: "band-standard",
           markeId: projektAntwort.wert.standardMarkeId,
           akzentfarbe: null,
         },
