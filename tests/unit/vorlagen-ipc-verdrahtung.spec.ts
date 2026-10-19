@@ -124,7 +124,8 @@ describe('verdrahteVorlagenIPC (#109) – die Anmeldung', () => {
       KANAELE.vorlagen.löscheVorlage,
     ]
     expect(erwartet).toHaveLength(9)
-    // #255 (pruefeVorlagenReferenzen) meldet seine Datei separat - hier darf er nicht auftauchen.
+    // #255 (pruefeVorlagenReferenzen) hat einen EIGENEN Einstiegspunkt
+    // (`verdrahteVorlagenNachtragIPC`, seit Q3/B in derselben Datei) - hier darf er nicht auftauchen.
     expect(angemeldet.has('vorlagen:pruefeVorlagenReferenzen')).toBe(false)
     expect([...angemeldet.keys()].sort()).toEqual([...erwartet].sort())
     // Eine zweite Anmeldung desselben Kanals wirft erst im Betrieb - die Map allein
@@ -140,7 +141,7 @@ describe('verdrahteVorlagenIPC (#109) – die Anmeldung', () => {
     }
     // Nutzerentscheidung 17.08.2026: Umlaut-Schluessel (gebauter Code), s. Kopfkommentar.
     expect(KANAELE.vorlagen.löscheVorlage).toBe('vorlagen:löscheVorlage')
-    // Der zehnte Kanal kam mit #255 dazu (src/main/ipc-gateway/vorlagen-nachtrag.ts).
+    // Der zehnte Kanal kam mit #255 dazu (seit Q3/B in src/main/vorlagen-store/ipc-verdrahtung.ts).
     expect(KANAELE.vorlagen.pruefeVorlagenReferenzen).toBe('vorlagen:pruefeVorlagenReferenzen')
     // Der elfte mit #238 (speicherstatus-verdrahtung.ts) - das erste ERREIGNIS dieses
     // Blocks, deshalb kein Aufruf-Kanal: er steht nicht in einer eigenen Verdrahtungsdatei.
@@ -351,8 +352,11 @@ describe('verdrahteVorlagenIPC (#109) – Grep-Proben der DoD', () => {
     expect(CODETEIL).not.toMatch(/BrowserWindow|webContents/)
   })
 
-  it('ruft weder die Schreibbausteine noch die Referenzpruefung auf', () => {
+  it('ruft weder die Schreibbausteine noch den Bestand auf', () => {
     expect(CODETEIL).not.toMatch(/ladeBestand|aendereBestand|flushBestand/)
-    expect(CODETEIL).not.toMatch(/pruefeVorlagenReferenzen/)
+    // Die Trennung "Basis-Einstieg meldet den #255-Kanal NICHT an" ist seit Q3/B keine
+    // Datei-Grenze mehr; sie wird oben am ECHTEN Lauf gemessen (`angemeldet` enthaelt
+    // nach `verdrahteVorlagenIPC()` genau neun Kanaele). Ein Quelltext-Grep auf den
+    // Funktionsnamen koennte diese Zusage nicht mehr tragen.
   })
 })

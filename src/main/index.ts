@@ -68,8 +68,10 @@ import { flushBeimBeenden } from "./project-store/auto-speichern";
 import { raeumeVerwaisteArbeitsbereiche } from "./render-service/arbeitsbereich";
 import { meldeRenderHandlerAn } from "./render-service/handler-anmeldung";
 import { flushBestand } from "./vorlagen-store/schreibe-vorlagen";
-import { verdrahteVorlagenIPC } from "./vorlagen-store/ipc-verdrahtung";
-import { verdrahteVorlagenNachtragIPC } from "./ipc-gateway/vorlagen-nachtrag";
+import {
+  verdrahteVorlagenIPC,
+  verdrahteVorlagenNachtragIPC,
+} from "./vorlagen-store/ipc-verdrahtung";
 
 /**
  * Im Entwicklungslauf setzt scripts/dev.mjs diese Variable auf die URL des
@@ -409,7 +411,7 @@ void app.whenReady().then(async () => {
   verdrahteVorlagenIPC();
 
   //  8. verdrahteVorlagenNachtragIPC() - #255 (vorlagen:pruefeReferenzen),
-  //     src/main/ipc-gateway/vorlagen-nachtrag.ts. Meldet den Kanal an (mit #274
+  //     src/main/vorlagen-store/ipc-verdrahtung.ts. Meldet den Kanal an (mit #274
   //     verdrahtet). Unmittelbar nach 7., Namensraum `vorlagen:`; argumentlos, kein Fenster.
   verdrahteVorlagenNachtragIPC();
 

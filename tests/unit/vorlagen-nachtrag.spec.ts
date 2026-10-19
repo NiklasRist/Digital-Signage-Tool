@@ -35,7 +35,7 @@ vi.mock("../../src/main/vorlagen-store/referenzpruefung", () => ({
 }));
 
 const { verdrahteVorlagenNachtragIPC } = await import(
-  "../../src/main/ipc-gateway/vorlagen-nachtrag"
+  "../../src/main/vorlagen-store/ipc-verdrahtung"
 );
 
 // EINMAL verdrahten, wie im Bootstrap (#3) nach verdrahteVorlagenIPC().
@@ -187,8 +187,9 @@ describe("verdrahteVorlagenNachtragIPC (#255)", () => {
 });
 
 describe("Quelltext-Proben zu #255", () => {
+  // Q3/B (19.10.2026): Der Kanal liegt jetzt in der gemeinsamen vorlagen-Verdrahtung.
   const CODE = readFileSync(
-    new URL("../../src/main/ipc-gateway/vorlagen-nachtrag.ts", import.meta.url),
+    new URL("../../src/main/vorlagen-store/ipc-verdrahtung.ts", import.meta.url),
     "utf8",
   );
   // Der Kommentarteil traegt Kanalnamen und Modulnamen als Prosa; geprueft wird der Code.
