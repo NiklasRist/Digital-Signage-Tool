@@ -9,7 +9,8 @@ import { KANAELE } from '../../shared/contracts/kanaele'                      //
 import { leseMarke } from '../marken-store/lese-marke'                        // #283
 import { setzeStandardMarke } from '../project-store/setze-standard-marke'    // #323
 import { abgelehnt, istGefuellterText, istObjekt } from './nutzlast-pruefer'  // #332
-import { registriereHandler } from './registriere-handler'                    // #23
+// Die lokale Kopie ist mit #337 entfallen - EINE `meldeAn` (#333).
+import { meldeAn } from './melde-an'                                          // #337
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Project } from '../../shared/contracts/project'
@@ -17,18 +18,6 @@ import type { Project } from '../../shared/contracts/project'
 interface StandardMarkenNutzlast {
   projektId: string
   markeId: string
-}
-
-function meldeAn<W, T, F extends string>(
-  kanal: string,
-  pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
-  rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
-): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
-    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert; der Cast benennt nur
-    // diese belegte Form. (dieselbe Huelle wie #334)
-    rufe(validierteNutzlast as W),
-  )
 }
 
 function pruefeForm(nutzlast: unknown): Ergebnis<StandardMarkenNutzlast, 'ungueltige_eingabe'> {

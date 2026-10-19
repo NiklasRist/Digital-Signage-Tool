@@ -2,7 +2,8 @@
 
 import { KANAELE } from '../../shared/contracts/kanaele' // #25
 import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from '../ipc-gateway/nutzlast-pruefer' // #332
-import { registriereHandler } from '../ipc-gateway/registriere-handler' // #23
+// Die lokale Kopie ist mit #337 entfallen - EINE `meldeAn` (#333).
+import { meldeAn } from '../ipc-gateway/melde-an' // #337
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Vorlage, VorlagenArt } from '../../shared/contracts/vorlage'
@@ -29,27 +30,6 @@ import { verwerfeArbeitskopie } from './verwerfe-arbeitskopie' // #105
 //          : Promise<Ergebnis<Vorlage, VorlagenFehlercode>>
 //   #105: verwerfeArbeitskopie(arbeitsId: string): Promise<Ergebnis<void, VorlagenFehlercode>>
 //   #107: löscheVorlage(id: string): Promise<Ergebnis<void, VorlagenFehlercode>>
-
-/**
- * Die EINE Stelle, an der aus `unknown` etwas Getipptes wird - gleiche Bauform wie in
- * `project-store-verdrahtung.ts` (#76) und `config-store-verdrahtung.ts` (#77).
- *
- * `registriereHandler` (#23) reicht der Fachoperation genau das herein, was der Validierer
- * als `wert` zurueckgegeben hat; seine Signatur schreibt aber `validierteNutzlast: unknown`,
- * der Typ geht auf dem Weg verloren. `pruefe` und `rufe` sind ueber `W` aneinander gebunden:
- * Ein Validierer, der etwas anderes liefert als die Operation erwartet, uebersetzt nicht.
- */
-function meldeAn<W, T, F extends string>(
-  kanal: string,
-  pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
-  rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
-): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
-    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert und in die Huelle
-    // gelegt; der Cast benennt diese belegte Form, damit rufe den geprueften Typ sieht.
-    rufe(validierteNutzlast as W),
-  )
-}
 
 /** "endliche Zahl" - `Number.isFinite` und NICHT `typeof === 'number'` (gleiche Regel wie #76). */
 function istEndlicheZahl(wert: unknown): wert is number {

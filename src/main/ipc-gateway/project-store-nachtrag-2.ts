@@ -3,27 +3,14 @@
 // Die Nutlast-Pruefer (#332) und der Registrier-Wrapper (#23) an EINEM Ort - importiert,
 // nicht kopiert; dieselbe Bauweise wie #153 (project-store-nachtrag).
 import { abgelehnt, istGefuellterText, istObjekt } from './nutzlast-pruefer'
-import { registriereHandler } from './registriere-handler'
+// Die lokale Kopie ist mit #337 entfallen - EINE `meldeAn` (#333).
+import { meldeAn } from './melde-an'
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import type { Bearbeitungsstand } from '../../shared/contracts/project'
 import { setzeBearbeitungsstand } from '../project-store/bearbeitungsstand'
 import { öffneProjektordner } from '../project-store/oeffne-projektordner'
-
-/**
- * Die eine Stelle, an der aus `unknown` etwas Getipptes wird.
- * ZEICHENGLEICH zu `meldeAn` in #153/#76/#77/#71 (die Doppelung ist dort am Dateiende
- * gemeldet; hier passiert sie aus demselben Grund wieder - dasselbe Problem, dieselbe
- * Bauvorschrift, keine neue Entscheidung).
- */
-function meldeAn<W, T, F extends string>(
-  kanal: string,
-  pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
-  rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
-): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) => rufe(validierteNutzlast as W))
-}
 
 export function verdrahteProjectStoreNachtrag2IPC(): void {
   meldeAn(KANAELE.project.setzeBearbeitungsstand, (nutzlast: unknown): Ergebnis<Bearbeitungsstand, 'ungueltige_eingabe'> => {
