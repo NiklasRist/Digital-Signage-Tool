@@ -55,8 +55,15 @@
   **Abschaltzeile weg**. Datei **985 → 948**. Beleg: Lint 0 **ohne** Abschaltzeile,
   `npm run pruefung` **Exit 0**. Der Composer-Umbau S1–S6 ist damit **abgeschlossen**
   (`docs/agents/composer-umbau-plan.md`).
-- `main` **80 Commits vor `origin/main`**; **nicht gepusht**.
-- Nächster Schritt: **Q4-3** (Investition vom Mock zum echten Fenster). **#433** bleibt beim User.
+- **Q4-3 begonnen** (`0292fe7`, Merge `9d84872`): Die erste Zusage, die bisher nur der
+  Unit-Test hielt, misst jetzt der **Treiber Schritt 4h** am echten Fenster: **FA-19 /
+  TK 9.7.5 – „Render erst frei, wenn alles behoben"**. Beleg: `Render-Sperre GEMESSEN:
+  Knopf gesperrt, Fortschritt "0 von N behoben"`. `npm run pruefung` **Exit 0**.
+  **Offen:** der vierte Fall (#438) am Fenster – dafür fehlt im Seed ein **Bild-Asset**;
+  außerdem eine **Treiber-Matrix „Anforderung → Szenario"**, damit Lücken sichtbar werden.
+- `main` **83 Commits vor `origin/main`**; **nicht gepusht**.
+- Nächster Schritt: **#438 am Fenster** (Bild-Asset in den Seed, Einschub kaputt machen)
+  oder die **Treiber-Matrix**. **#433** bleibt beim User.
 
 ## STAND HEUTE (19.10.2026, zweite Sitzung: #438 GEBAUT UND GEMERGT, #426-Familie geschlossen) – historisiert durch den Abschnitt darueber
 

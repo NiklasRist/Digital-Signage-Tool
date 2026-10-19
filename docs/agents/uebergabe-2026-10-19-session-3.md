@@ -125,6 +125,21 @@ dateiweite `eslint-disable`-Zeile. **`index.tsx` 985 → 948.** Commit `55d840a`
 `3eeccf6`. Beleg: Lint 0 **ohne** Abschaltzeile, Typecheck 0, `npm run pruefung` **Exit 0**.
 Der Composer-Umbau (S1–S6) ist damit abgeschlossen.
 
+## Q4-3 – erste Treiber-Investition
+
+Erste Zusage, die bisher nur der Unit-Test hielt, jetzt am echten Fenster: **FA-19 /
+TK 9.7.5 – „Render erst frei, wenn alles behoben"**. Treiber-Schritt **4h** prüft nach dem
+Erzeugen einer kaputten Stelle zusätzlich:
+
+- `reparatur-fortschritt` = **„0 von N behoben"** (N ≥ 1),
+- `composer-render-oefnen` ist **`disabled`**.
+
+Beleg (Exit 0): `[schritt-4h] Render-Sperre GEMESSEN: Knopf gesperrt, Fortschritt "0 von N behoben" (FA-19).`
+Commit `0292fe7`, Merge `9d84872`.
+
+**Offen:** vierter Fall (#438) am Fenster (Seed braucht ein **Bild-Asset**), und eine
+**Treiber-Matrix „Anforderung → Szenario"**.
+
 ## Naechste Sitzung (Vorschlag)
 
 1. **Q4-3 – Investition verschieben:** neue Zusagen zuerst als **Treiber-Szenario**
