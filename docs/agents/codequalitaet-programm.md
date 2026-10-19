@@ -78,6 +78,22 @@ darf"); `meldeAn` **6×** definiert; Platzhalter-Barrels (`shared/contracts/inde
 **Vorgehen.** Konsolidieren (eine Registry, ein `meldeAn` – deckt #337 ab); Barrels/`shell/`
 bereinigen. Kleinster Strang.
 
+**Stand (19.10.2026): Q3 GEBAUT und gemergt.**
+- **Q3/A – ein `meldeAn`** (`f91c2b3`, Merge `495bc0c`): sechs lokale Kopien entfernt
+  (fünf `project-store-nachtrag*` + `vorlagen-store/ipc-verdrahtung`); **#337 geschlossen**.
+  Gemessene Abweichung: sechs Kopien, nicht drei; die Fundorte in #337 lagen unter
+  `ipc-gateway/`, nicht `project-store/` (gebauter Code gewinnt).
+- **Q3/C – Barrels/`shell/`** (`406b1f4`): **15** Platzhalter-`index.ts` gelöscht (nicht zwei),
+  `renderer/shell/WarteschlangenLeiste.tsx` → `queue-panel/warteschlangen-leiste.tsx`,
+  Ordner `shell/` entfernt.
+- **Q3/B – eine Datei je Namensraum** (`14c3075` + `484eea2`, Merges `aa12d3c` + `f84ee2a`):
+  fünf `project-store-nachtrag*.ts` → **eine** Datei; `vorlagen-nachtrag.ts` → in
+  `vorlagen-store/ipc-verdrahtung.ts`. **Die fünf bzw. zwei Einstiegspunkte bleiben**, weil die
+  Positionen 1–14 in `main/index.ts` Vertrag aus #3 sind – eine Registry, aber mehrere
+  betitelte Türen. Befund: die Begründung „Eintragszahl darf nicht überschritten werden" war
+  **nirgends geprüft**, sie stand nur in Kommentaren.
+- Belege: Typecheck/Lint 0, Volllauf **5672 grün (331 Dateien)** nach jedem Schritt.
+
 ## Q4 – Tests gegen die Anforderungen
 
 **Befund.** `npm test` prüft **nur** 318 Unit-Dateien (62 % mit `vi.mock`) – **nicht** die
