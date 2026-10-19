@@ -86,11 +86,38 @@ Aufteilung keinen Traeger mehr.
 bleiben untracked. Branch `q3/prozess-fragmentierung` (nur Q3/A) und die zwei
 Q3/B-Branches sind gemergt und koennen geloescht werden.
 
+## Q4 – Audit und Pflicht-Gate (im Anschluss, noch in dieser Sitzung)
+
+**Audit** `docs/agents/q4-test-audit.md` (Commit `c5293a4`): Baseline, Methode, Stichprobe und
+**alle 20 Verdachtsfälle** gelesen – **20 × `halten`**. Kein Test prüft nur eine Attrappe.
+Damit **keine Deleting-Welle**; der Befund ist das **Gate**: `npm test` lief nur
+`tests/unit/**`, Integration und Treiber standen daneben.
+
+**Gate gebaut** (Commit `c146352`, Merge `ea71499`):
+- `npm run pruefung` = `build` → `test` → `test:integration` → `durchlauf`.
+- Treiber: Exitcode 2 jetzt auch bei einem Fund der Schwere **`Befund`** (vorher nur bei
+  `pageerror`). `Untersuchung`/`MANUEL` bleiben Hinweise.
+- **Vollständiger Lauf grün (Exit 0):** 5672 Tests / 331 Dateien, 49 / 12 Integration,
+  Treiber ohne Befund.
+
+**Drei echte Befunde, die der erste Gate-Lauf aufdeckte (behoben):**
+1. **Produktionsfehler** in `projekt-verwaltung/standardmarke.tsx`: Eine abgelehnte
+   `aufWechsel`-Zusage verließ die `void`-IIFE als **unbehandelte Rejection** – sie blockierte
+   den Unit-Lauf. Fix: `catch` im `try/finally` (der Aufrufer meldet selbst, hier keine
+   zweite Meldung).
+2. **Test-Race** in `marken-dateien.spec.ts`: Die entprellte Auto-Speicherung schrieb während
+   des `afterEach`-Aufräumens → sporadisch `ENOTEMPTY`. Fix: `flushBestand()` + `maxRetries`
+   vor dem `fs.rm`.
+3. **Zwei veraltete Integrationstests:** `dateisystem-erkennung-echt` erwartete auf macOS
+   `null`, gebaut ist aber `diskutil` → `'anderes'`; `standbild-echt` maß die Frist über
+   `signal`, obwohl ffmpeg SIGTERM abfängt → jetzt über `dauerMs`.
+
+Damit ist der frühere `standardmarke-anzeige`-„error" **weg**.
+
 ## Naechste Sitzung (Vorschlag)
 
-1. **Q4 – Tests gegen die Anforderungen**, zuerst **Audit ohne Codeaenderung**: jeden Test
-   klassifizieren (was pinnt er? welches AD/TK? Mock-Test ohne Aussage? Redundanz?), Ergebnis
-   als Tabelle. Danach getrennt entscheiden: Integration + Treiber ins Gate, Investition vom
-   Mock zum echten Fenster.
+1. **Q4-3 – Investition verschieben:** neue Zusagen zuerst als **Treiber-Szenario**
+   (Anforderung → echtes Fenster) formulieren; Unit-Tests bleiben für reine Logik. Das Gate
+   `npm run pruefung` ist Pflicht vor jedem Merge.
 2. **#433** beim User: optische Abnahme des Filmstreifens (offen).
-3. Danach **S6** (Leichen bewerten) und die Uebergabe-Doku aktuell halten.
+3. **S6** (Leichen bewerten) und die Uebergabe-Doku aktuell halten.

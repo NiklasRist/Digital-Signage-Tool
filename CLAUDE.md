@@ -29,13 +29,28 @@
     geprüft**, sie stand nur in Kommentaren.
 - **#433 bleibt offen** – optische Abnahme am echten Fenster steht weiter aus (User konnte noch
   nicht testen). Der Dev-Lauf wurde sauber beendet, kein Waisenprozess.
-- **Belege:** Typecheck/Lint 0, nach jedem Q3-Schritt Volllauf **5672 grün (331 Dateien)**.
-  Einziger „error" bleibt der bekannte `standardmarke-anzeige`-Vorbefund. Ein Lauf hatte
-  einmal 1 Fehler ohne Reproduktion (Name nicht mitgeschnitten) – beobachten.
-- `main` **73 Commits vor `origin/main`**; **nicht gepusht**.
-- Nächster Schritt: **Q4 (Tests gegen die Anforderungen)** – zuerst ein **Audit ohne
-  Codeänderung** (jeder Test: was pinnt er? welches AD/TK? Mock-Test ohne Aussage?), dann
-  Gate-Entscheidung. Danach **S6**. **#433** bleibt beim User.
+- **Q4-Audit GEBAUT** (`docs/agents/q4-test-audit.md`): Baseline (331 Dateien, 4.607 `it`,
+  559 `vi.mock`, 132 Dateien ohne Mock), Methode und **alle 20 Verdachtsfälle gelesen –
+  20 × `halten`**. Fazit: **keine Deleting-Welle**; das Problem war das **Gate**, nicht die
+  Tests. `npm test` lief nur `tests/unit/**`.
+- **Q4-Gate GEBAUT:** `npm run pruefung` = `build` → `test` (Unit) → `test:integration` →
+  `durchlauf`. Der Treiber setzt jetzt auch bei einem Fund der Schwere **`Befund`** Exitcode 2
+  (`Untersuchung`/`MANUEL` bleiben Hinweise). **Ein vollständiger Lauf ist grün:**
+  5672/331 + 49/12 + Treiber ohne Befund.
+- **Drei echte Befunde beim ersten Gate-Lauf behoben (nicht kosmetisch):**
+  1. `standardmarke.tsx` ließ eine abgelehnte `aufWechsel`-Zusage als **unbehandelte
+     Rejection** entkommen (fix: `catch` im `finally`-Muster) – das blockierte das Gate.
+  2. `marken-dateien.spec.ts` racing mit der entprellten Auto-Speicherung (`ENOTEMPTY` im
+     `afterEach`); fix: `flushBestand()` + `maxRetries` vor dem Aufräumen.
+  3. Zwei Integrationstests widersprachen dem gebauten Code bzw. der Plattform:
+     `dateisystem-erkennung-echt` erwartete auf macOS `null` (gebaut ist `diskutil` →
+     `'anderes'`), `standbild-echt` maß die Frist über `signal` (ffmpeg fängt SIGTERM) –
+     jetzt über `dauerMs`.
+- **Belege:** Typecheck/Lint 0, `npm run pruefung` **Exit 0** (Build + Unit + Integration +
+  Treiber). Der frühere `standardmarke-anzeige`-„error" ist damit **weg**.
+- `main` **77 Commits vor `origin/main`**; **nicht gepusht**.
+- Nächster Schritt: **Q4-3** (Investition vom Mock zum echten Fenster) oder **S6**
+  (Leichen bewerten). **#433** bleibt beim User.
 
 ## STAND HEUTE (19.10.2026, zweite Sitzung: #438 GEBAUT UND GEMERGT, #426-Familie geschlossen) – historisiert durch den Abschnitt darueber
 
