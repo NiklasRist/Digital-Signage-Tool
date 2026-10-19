@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // [composer] Modul-Wurzel: die Bausteine anordnen und verdrahten
 
-import { useEffect, useState, useRef, type JSX, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useState, useRef, type JSX } from 'react'
 
 import type { Listenelement, Project, Bearbeitungsstand } from '../../shared/contracts/project'
 import type { Aktion } from '../../shared/contracts/aktion'
@@ -11,10 +10,8 @@ import type { ReparaturStand } from './reparatur-fuehrung'
 import type { ListenZeileModell } from './liste-ansicht'
 import type { Uebergabe } from './reparatur-optionen'
 import type { MedienImportStarter } from './medien-import'
-import { aufSichtGeaendert, type Projektsicht } from './projektzustand'
+import type { Projektsicht } from './projektzustand'
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
-import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 // #414 (Oberflaeche 2.0): EIN DndContext auf Wurzel-Ebene - Quellen (#413) und
 // Kanten (#412) im selben Kontext. Der DnD-Zustand (neuZug/aktiveKante/laedtKante)
 // liegt im Hook `verwendeZeitleistenZug` (S5); die Zeitleiste ist die Praesentation
@@ -29,8 +26,6 @@ import { fuegeElementHinzu } from './element-hinzufuegen'
 // Die Bedienung kommt aus #249 (element-zeile.tsx); die Einblendungs-Ansicht
 // (M7-61) ist NOCH NICHT angebunden: `aufEinblendungBearbeiten` zeigt bis dahin
 // einen Platzhalter-Hinweis statt einer falschen Oberflche (Befund gemeldet).
-import { entferneElementAusListe } from './element-entfernen'
-import { berechneGesamtlaenge, frameDauer } from './gesamtlaenge'
 // #342: Die zwei Dialoge (#231/#232) werden hier eingehaengt. Die Fachlichkeit
 // bleibt in den Bausteinen; diese Wurzel haelt GENAU EINE ComposerLage (#259)
 // als React-Zustand und schreibt sie ausschliesslich ueber deren Uebergaenge fort.
@@ -78,14 +73,13 @@ import type { Marke } from '../../shared/contracts/marke'
 import { importiereMedien, baueImportBericht, type ImportBericht } from './medien-import'
 // S4 (Naht N4): die Galerie-Region (Datei-Drop-Zone #335) als eigener Baustein.
 import { GalerieBereich } from './galerie-bereich.tsx'
-import { greifeDropAuf, reiheDropEin, type PfadHoler } from './medien-bibliothek'
+import { greifeDropAuf, reiheDropEin } from './medien-bibliothek'
 import { pfadFuerDatei } from '../ipc-client/pfad-fuer-datei'
 // Mit Endung: der Pfad ohne Endung löst gegen die reine .ts-Naht auf, nicht gegen
 // die .tsx (dieselbe Auflösung, die composer/index gegen index.tsx geschaltet hat).
 import { Wiedergabeliste } from './liste-ansicht.tsx'
 import { findeKaputteStellen } from './kaputt-erkennung'
 import { ElementBedienung } from './element-zeile.tsx'
-import { uebernehmeGrenzen } from './dauer-regler'
 // #407-Befund (12.10.2026): Der Baustein #123 hat zwei UI-Aufrufer, deren Ansichten
 // in der Geschichte nie in dieser Wurzel montiert wurden (Nachtrag am Issue #407).
 // Die Montage ist genau die Aufgabe dieser Datei (#261 "Bausteine anordnen").
@@ -472,7 +466,6 @@ export function ComposerInterna({
     )
   }
 
-  const gesamt = berechneGesamtlaenge([...liste])
 
   // #422: Liegt schon ein Video vor, wird ERSETZT - der Import hat Dateiwirkung und ist
   // nicht undo-faehig, deshalb fragt die Wurzel VORHER nach (User-Entscheidung 15.10.).
@@ -949,37 +942,5 @@ export function ComposerInterna({
       )}
     </div>
     </DndContext>
-  )
-}
-
-function Zeile({
-  element,
-  index,
-  auswaehlen,
-}: {
-  element: Listenelement
-  index: number
-  auswaehlen: () => void
-}): JSX.Element {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: element.id })
-  const einzeln = frameDauer(element)
-  return (
-    <li
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      data-testid={`composer-zeile-${index}`}
-      onClick={auswaehlen}
-      style={{
-        padding: '2px 0',
-        cursor: 'grab',
-        color: einzeln.ok ? undefined : FEHLERFARBE,
-        transform: CSS.Translate.toString(transform),
-        transition,
-      }}
-    >
-      {element.art === 'video' ? 'Video' : 'Segment'} · Element {index + 1}
-      {einzeln.ok ? '' : ' (Dauer unbestimmbar)'}
-    </li>
   )
 }
