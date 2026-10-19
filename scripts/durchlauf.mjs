@@ -149,6 +149,28 @@ const main = async () => {
       catch { return false; }
     };
     const stehtDa = async (auswahl) => (await seite.$$(auswahl)).length > 0;
+    // Projekt ueber die LISTE neu oeffnen (der einzige Weg, der den Reconcile ausloest).
+    // Auf die Zeile WARTEN statt 400 ms zu raten: Unter Last ist die Liste noch nicht
+    // gerendert, der Klick liefe ins Leere und das Fenster behielte den ALTEN Stand
+    // (gemessen am 19.10.2026 in Schritt 4h nach dem #438-Seed).
+    const oeffneUeberListe = async (pid) => {
+      await klick('[data-testid="reiter-projekte"]');
+      const frist = Date.now() + 8_000;
+      let da = false;
+      while (Date.now() < frist) {
+        da = await stehtDa(`[data-testid="projekt-${pid}"]`);
+        if (da) break;
+        await schlafe(200);
+      }
+      if (!da) return false;
+      await seite.evaluate((id) => {
+        const zeile = document.querySelector(`[data-testid="projekt-${id}"]`);
+        const knopf = zeile === null ? null : zeile.querySelector("button");
+        if (knopf !== null) knopf.click();
+      }, pid);
+      await schlafe(2_500);
+      return true;
+    };
     const innerText = () => seite.evaluate(() => document.body.innerText);
 
     await klick('[data-testid="reiter-projekte"]');
@@ -1857,6 +1879,117 @@ const main = async () => {
       }
     }
 
+    // Schritt 4i - VIERTER FALL (#438) am echten Fenster: Ein kaputter EINSCHUB (Aktion
+    // mit fehlendem Bild) muss als `unterbrechung` im Reparatur-Panel stehen und den
+    // Render sperren. Bisher hielt das nur der Unit-Test (TK 9.7.5 v3.27).
+    //
+    // Derselbe echte Weg wie 4h: Bild-Asset aus Schritt 4b3 benutzen, Aktion per
+    // Vertragskanal anlegen, Einschub per `setzeUnterbrechungen` setzen, die Bilddatei
+    // auf der Platte loeschen und das Projekt ueber die Liste NEU OEFFNEN (Reconcile
+    // setzt `zustand: 'fehlt'`). Danach raeumt der Schritt sich weg, damit 4h wieder
+    // GENAU EINE (Video-)Stelle vorfindet.
+    {
+      let bildAsset4i = null;
+      let videoId4i = null;
+      let markeId4i = null;
+      try {
+        const pj4i = JSON.parse(
+          fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
+        );
+        bildAsset4i = (pj4i.assets ?? []).find((a) => a.typ === "bild" && a.zustand === "ok") ?? null;
+        videoId4i = ((pj4i.liste ?? []).find((e) => e && e.art === "video") ?? {}).id ?? null;
+        markeId4i = pj4i.standardMarkeId;
+      } catch (tu) {
+        console.log("[schritt-4i] Projektstand nicht lesbar: " + String(tu));
+      }
+      if (bildAsset4i === null || videoId4i === null) {
+        fund("Vierter Fall (#438)", "ein Bild-Asset (aus 4b3) und ein Video-Element im Seed",
+          "Seed unvollstaendig", "Untersuchung", "scripts/durchlauf.mjs");
+      } else {
+        const seed4i = await seite.evaluate(async (elementId, markeId, bildRef) => {
+          const akt = await window.api.invoke("project:erstelleAktion", {
+            aktionsdaten: {
+              titel: "Durchlauf-Einschub-kaputt",
+              beschreibung: null, preis: null, bildRef, cta: null,
+              standardDauer: null, vorlagenId: "vollbild", markeId, akzentfarbe: null,
+            },
+          });
+          if (!akt || !akt.ok) return { aktion: akt };
+          const unter = await window.api.invoke("project:setzeUnterbrechungen", {
+            elementId,
+            unterbrechungen: [{ zeitstelle: 1, aktionRef: akt.wert.id, dauer: 1 }],
+          });
+          return { aktionId: akt.wert.id, unterbrechung: unter };
+        }, videoId4i, markeId4i, bildAsset4i.id);
+
+        const bildDatei4i = path.join(WURZEL, "projects", aktivesProjektId, "media", bildAsset4i.dateiname);
+        if (!seed4i.aktionId) {
+          fund("Vierter Fall (#438)", "Aktion mit Bild per project:erstelleAktion",
+            JSON.stringify(seed4i), "Befund", "project-store/erstelle-aktion.ts");
+        } else if (!seed4i.unterbrechung || !seed4i.unterbrechung.ok) {
+          fund("Vierter Fall (#438)", "Einschub per project:setzeUnterbrechungen",
+            JSON.stringify(seed4i.unterbrechung), "Befund", "project-store/setze-unterbrechungen.ts");
+        } else if (!fs.existsSync(bildDatei4i)) {
+          fund("Vierter Fall (#438)", "die Bilddatei des Seeds liegt auf der Platte",
+            "Datei nicht gefunden", "Untersuchung", "scripts/durchlauf.mjs");
+        } else {
+          fs.unlinkSync(bildDatei4i);
+          await oeffneUeberListe(aktivesProjektId);
+          await klick('[data-testid="reiter-zusammenstellen"]');
+          await schlafe(800);
+          const lage4i = await seite.evaluate(() => ({
+            panel: !!document.querySelector('[data-testid="reparatur-panel"]'),
+            stelle: document.querySelector('[data-testid="reparatur-stelle"]')?.textContent ?? null,
+            fortschritt: document.querySelector('[data-testid="reparatur-fortschritt"]')?.textContent ?? null,
+            renderGesperrt: document.querySelector('[data-testid="composer-render-oefnen"]')?.disabled ?? null,
+          }));
+          const stelleOk4i = (lage4i.stelle ?? "").includes("unterbrechung");
+          if (!lage4i.panel || !stelleOk4i || lage4i.renderGesperrt !== true) {
+            fund("Vierter Fall (#438)", "kaputter Einschub erscheint als 'unterbrechung' und sperrt den Render",
+              JSON.stringify(lage4i), "Befund", "composer/kaputt-erkennung.ts");
+          } else {
+            console.log(`[schritt-4i] Vierter Fall GEMESSEN: ${String(lage4i.stelle)} - Render gesperrt, ${String(lage4i.fortschritt)} (#438 belegt).`);
+          }
+          // Aufraeumen ueber die KASKADE (#426/TK 9.5.3): `löscheAktion` entfernt den
+          // Einschub mit. Das fehlende Asset bleibt in D1, ist danach aber
+          // unreferenziert -> keine kaputte Stelle mehr.
+          await seite.evaluate(async (aktionId) => {
+            await window.api.invoke("project:löscheAktion", { id: aktionId });
+          }, seed4i.aktionId);
+          // Der Auto-Speicher ist ENTRELLT (3-5 s, TK 9.5.4). Statt zu raten, wird die
+          // PLATTE befragt: erst wenn Unterbrechung und Aktion dort weg sind, wird neu
+          // geoeffnet - sonst laese 4h den alten Stand und faende die falsche Stelle.
+          let aufgeraeumt4i = false;
+          const frist4i = Date.now() + 12_000;
+          while (Date.now() < frist4i) {
+            try {
+              const pj = JSON.parse(fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"));
+              const videoJetzt = (pj.liste ?? []).find((e) => e && e.id === videoId4i);
+              const aktionNochDa = (pj.aktionen ?? []).some((a) => a && a.id === seed4i.aktionId);
+              if (((videoJetzt?.unterbrechungen ?? []).length === 0) && !aktionNochDa) { aufgeraeumt4i = true; break; }
+            } catch { /* Datei wird gerade geschrieben */ }
+            await schlafe(300);
+          }
+          if (!aufgeraeumt4i) {
+            fund("Vierter Fall (#438)", "das Aufraeumen steht auf der Platte (Unterbrechung/Aktion weg)",
+              "project.json traegt beides noch nach 12 s", "Befund", "project-store/schreibe-projekt.ts");
+          }
+          await oeffneUeberListe(aktivesProjektId);
+          await klick('[data-testid="reiter-zusammenstellen"]');
+          await schlafe(600);
+          // Erst weiter, wenn die Reparatur-Anzeige WEG ist - sie haengt am neuen Stand.
+          const fristWeg4i = Date.now() + 10_000;
+          while (Date.now() < fristWeg4i) {
+            const nochDa4i = await seite.evaluate(
+              () => !!document.querySelector('[data-testid="reparatur-panel"]'),
+            );
+            if (!nochDa4i) break;
+            await schlafe(300);
+          }
+        }
+      }
+    }
+
     // Schritt 4h - Reparatur-Fuehrung (#421): eine KAPUTTE Stelle erzeugen (die kopierte
     // Medien-Datei loeschen), das Projekt per UI neu oeffnen (Reconcile -> Asset 'fehlt'),
     // dann eine Fix-Option bedienen und Cmd+Z messen (EIN Schritt ueber den Wrapped-Schreiber).
@@ -1877,16 +2010,22 @@ const main = async () => {
       fund("Reparatur-Fuehrung", "eine kaputte Stelle fuer den Treiber (#421)",
         "keine Video-Datei zum Loeschen gefunden", "Untersuchung", "tests/scripts");
     } else {
-      await klick('[data-testid="reiter-projekte"]');
-      await schlafe(400);
-      await seite.evaluate((pid) => {
-        const zeile = document.querySelector(`[data-testid="projekt-${pid}"]`);
-        const knopf = zeile === null ? null : zeile.querySelector("button");
-        if (knopf !== null) knopf.click();
-      }, aktivesProjektId);
-      await schlafe(2_500);
+      await oeffneUeberListe(aktivesProjektId);
       await klick('[data-testid="reiter-zusammenstellen"]');
       await schlafe(800);
+      // WARTEN statt raten: Das Oeffnen laeuft asynchron (Reconcile + Zeichen-
+      // voraussetzungen). Erst wenn die ERWARTETE Stelle (das Video-Asset) im Panel
+      // steht, ist der neue Stand wirklich da - sonst laese der Test den ALTEN.
+      const fristStelle4h = Date.now() + 12_000;
+      let stelleJetzt4h = null;
+      while (Date.now() < fristStelle4h) {
+        stelleJetzt4h = await seite.evaluate(
+          () => document.querySelector('[data-testid="reparatur-stelle"]')?.textContent ?? null,
+        );
+        if ((stelleJetzt4h ?? "").includes("element_asset")) break;
+        await schlafe(300);
+      }
+      console.log("[schritt-4h] Stelle nach dem Oeffnen: " + String(stelleJetzt4h));
       const panelDa4h = await seite.evaluate(() => !!document.querySelector('[data-testid="reparatur-panel"]'));
       if (!panelDa4h) {
         fund("Reparatur-Fuehrung", "das Reparatur-Panel erscheint bei kaputter Stelle (#421)",
@@ -1940,8 +2079,14 @@ const main = async () => {
               `Bloecke davor/nachher Undo: ${bloeckeDavor4h}/${bloeckeNachUndo4h}`, "Befund", "composer/index.tsx");
           }
         } else {
+          const diag4h = await seite.evaluate(() => ({
+            stelle: document.querySelector('[data-testid="reparatur-stelle"]')?.textContent ?? null,
+            fortschritt: document.querySelector('[data-testid="reparatur-fortschritt"]')?.textContent ?? null,
+            optionen: [...document.querySelectorAll('[data-testid^="reparatur-option-"]')]
+              .map((e) => e.getAttribute('data-testid')),
+          }));
           fund("Reparatur-Fuehrung", "eine Fix-Option entfernt das kaputte Element (#421)",
-            `Bloecke davor/nachher: ${bloeckeDavor4h}/${bloeckeDanach4h}, geklickt=${String(klickFix4h)}`,
+            `Bloecke davor/nachher: ${bloeckeDavor4h}/${bloeckeDanach4h}, geklickt=${String(klickFix4h)}, Lage=${JSON.stringify(diag4h)}`,
             "Befund", "composer/index.tsx");
         }
       }

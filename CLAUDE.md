@@ -59,11 +59,17 @@
   Unit-Test hielt, misst jetzt der **Treiber Schritt 4h** am echten Fenster: **FA-19 /
   TK 9.7.5 – „Render erst frei, wenn alles behoben"**. Beleg: `Render-Sperre GEMESSEN:
   Knopf gesperrt, Fortschritt "0 von N behoben"`. `npm run pruefung` **Exit 0**.
-  **Offen:** der vierte Fall (#438) am Fenster – dafür fehlt im Seed ein **Bild-Asset**;
-  außerdem eine **Treiber-Matrix „Anforderung → Szenario"**, damit Lücken sichtbar werden.
-- `main` **83 Commits vor `origin/main`**; **nicht gepusht**.
-- Nächster Schritt: **#438 am Fenster** (Bild-Asset in den Seed, Einschub kaputt machen)
-  oder die **Treiber-Matrix**. **#433** bleibt beim User.
+  - **Vierter Fall (#438) am Fenster belegt** (Treiber-Schritt **4i**): Bild-Asset aus 4b3,
+    Aktion mit Bild, Einschub per `setzeUnterbrechungen`, Bilddatei löschen, Projekt über die
+    Liste neu öffnen. Beleg: `Vierter Fall GEMESSEN: unterbrechung · asset_fehlt – Render
+    gesperrt, 0 von 1 behoben`.
+  - **Dabei einen echten UI-Fehler gefunden und behoben:** Der Reparatur-Stand wurde nur
+    **gestartet**, nie neu gerechnet – nach Projektwechsel/Aufräumen stand die **alte** Stelle
+    im Panel. Jetzt rechnet `composer/index.tsx` bei jedem neuen Projektstand einmal neu
+    (Referenz-Wache gegen Schleifen).
+  - **Offen:** eine **Treiber-Matrix „Anforderung → Szenario"**, damit Lücken sichtbar werden.
+- `main` **85 Commits vor `origin/main`**; **nicht gepusht**.
+- Nächster Schritt: **Treiber-Matrix** oder **#433**. **#433** bleibt beim User.
 
 ## STAND HEUTE (19.10.2026, zweite Sitzung: #438 GEBAUT UND GEMERGT, #426-Familie geschlossen) – historisiert durch den Abschnitt darueber
 

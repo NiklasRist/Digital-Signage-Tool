@@ -357,12 +357,35 @@ export function ComposerInterna({
   // Diese Wurzel startet die Fuehrung, sobald es kaputte Stellen gibt, und fuehrt jede
   // Fix-Option aus. Ueber `projekt.setzeListe` (Wrapped-Zugang, #244) nimmt jede Reihe
   // einen Undo-Schritt.
+  // Der Stand wird bei JEDEM neuen Projektstand EINMAL neu gerechnet (TK 9.7.5:
+  // "bei jedem Aufruf neu gerechnet"). Frueher wurde die Fuehrung nur GESTARTET, wenn
+  // keine lief - nach einem Projektwechsel oder einem Aufraeumen zeigte das Panel
+  // deshalb die Stellen des ALTEN Stands (am echten Fenster gemessen, 19.10.2026:
+  // 4h fand die Unterbrechung statt des Video-Assets; der Fix-Knopf fehlte).
+  // Die Referenz-Wache verhindert die Schleife: `meldeReparaturStand` erzeugt neue
+  // Props, aber derselbe `inhalt` rechnet nicht erneut.
+  const standQuelle = useRef<Project | null>(null)
+  const standProjektId = useRef<string | null>(null)
   useEffect(() => {
     if (inhalt === null) return
-    if (findeKaputteStellen(inhalt).length === 0) return
-    if (verdrahtung.reparatur === null || !verdrahtung.reparatur.aktiv) {
-      verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
+    if (standQuelle.current === inhalt) return
+    standQuelle.current = inhalt
+    const bisher = verdrahtung.reparatur
+    if (findeKaputteStellen(inhalt).length === 0) {
+      // Ist nichts mehr offen, MUSS eine laufende Anzeige enden - sonst bliebe eine
+      // bereits behobene Stelle als letzte sichtbar (dieselbe Ursache wie oben).
+      if (bisher !== null && bisher.aktiv) {
+        verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
+      }
+      return
     }
+    const projektwechsel = standProjektId.current !== inhalt.id
+    standProjektId.current = inhalt.id
+    verdrahtung.meldeReparaturStand(
+      projektwechsel || bisher === null || !bisher.aktiv
+        ? starteReparatur(inhalt)
+        : aktualisiereReparatur(bisher, inhalt),
+    )
   }, [inhalt, verdrahtung])
 
   const repariere = (option: FixOptionId): void => {

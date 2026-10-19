@@ -153,8 +153,22 @@ Beleg (Lauf `npm run pruefung`, Exit 0):
 [schritt-4h] Render-Sperre GEMESSEN: Knopf gesperrt, Fortschritt "0 von N behoben" (FA-19).
 ```
 
-**Noch offen (bewusst, eigener Schritt):** der **vierte Fall (#438)** am echten Fenster –
-ein kaputter **Einschub** (Aktion ohne Bild) sperrt den Render ebenfalls. Dafür fehlt im
-Treiber-Seed bisher ein **Bild-Asset** für Aktionen; der Fall ist derzeit nur durch
-Unit-Tests gedeckt. Ebenfalls offen: eine Treiber-Matrix „Anforderung → Szenario", damit
-Lücken sichtbar werden, statt sie zu erraten.
+**Vierter Fall (#438) – inzwischen am Fenster belegt (Treiber-Schritt 4i).** Der Seed
+benutzt das **Bild-Asset aus 4b3**, legt eine Aktion mit diesem Bild an, setzt einen Einschub
+(`setzeUnterbrechungen`), löscht die Bilddatei und öffnet das Projekt über die Liste neu
+(Reconcile → `fehlt`). Gemessen:
+
+```
+[schritt-4i] Vierter Fall GEMESSEN: Defekte Stelle: unterbrechung · asset_fehlt
+             - Render gesperrt, 0 von 1 behoben (#438 belegt).
+```
+
+**Dabei gefundener echter UI-Fehler (behoben in `composer/index.tsx`):** Der Reparatur-Stand
+wurde nur **gestartet**, wenn noch keine Führung lief. Nach einem Projektwechsel oder nach dem
+Aufräumen blieb deshalb die **alte** Stelle im Panel stehen (der Fix-Knopf gehörte zu einer
+Stelle, die es nicht mehr gab). Jetzt wird der Stand bei jedem neuen Projektstand **einmal neu
+gerechnet** (`starteReparatur` bei Projektwechsel/leerem Stand, sonst `aktualisiereReparatur`);
+eine Referenz-Wache verhindert die Schleife. Erst dadurch war 4h nach 4i wieder messbar.
+
+**Noch offen:** eine Treiber-Matrix „Anforderung → Szenario", damit Lücken sichtbar werden,
+statt sie zu erraten.
