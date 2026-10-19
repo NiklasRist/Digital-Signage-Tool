@@ -14,7 +14,7 @@
 |---|---|---|
 | #381 Zwei-Panel-Layout | ✅ | `App.tsx` |
 | #382 Thumbnails | ✅ | `composer/thumbnails.ts` |
-| #384 Fortschrittsbalken | ✅ | `queue-panel/leiste-zusammenfassung.ts`, `shell/WarteschlangenLeiste.tsx` |
+| #384 Fortschrittsbalken | ✅ | `queue-panel/leiste-zusammenfassung.ts`, `queue-panel/warteschlangen-leiste.tsx` |
 | #385 Undo-Stapel | ✅ | `app-shell/undo-stapel.ts` |
 | #390 Asset-Galerie | ✅ | `composer/bibliothek-ansicht.ts` (#227), `composer/asset-galerie.tsx`, `composer/wiedergabe-ansicht.tsx`, `App.tsx` |
 | #393 Vorlagen-Vorschau | ✅ | `vorlagen-editor/editor-vorschau.ts` |
@@ -68,7 +68,7 @@ Bewusst offen (M7-Themen, nicht Neue-Funktionen): Segment-Zeichnung in der Bühn
 ### Was BREAKT (bewusst – die nächsten Züge, in dieser Reihenfolge)
 
 1. **`auftrags-nachlauf` neu montiert** (Lauf 8): In der Inhalts-Mounter-Fassung fehlt noch der Echte-Aufruf – prüfen, ob die Meldungen durchlaufen, wenn man Import auslöst. Die `aktualisiereAusgabenListe` liest unrealisiert (optionale Funktion; #230).
-2. **Warteschlangen-Leiste füllen (M7-Kontrakt im Dateiheader von `shell/WarteschlangenLeiste.tsx`)**: `holeStand()` EINMAL, dann Abo; Fortschritt an `%`; Fehler-Zustand entsprechend `fasseZusammen` (#206 = gefüllt).
+2. **Warteschlangen-Leiste füllen (M7-Kontrakt im Dateiheader von `queue-panel/warteschlangen-leiste.tsx`)**: `holeStand()` EINMAL, dann Abo; Fortschritt an `%`; Fehler-Zustand entsprechend `fasseZusammen` (#206 = gefüllt).
 3. **Composer-Bericht anzeigen** – Belohnen „Medien importieren" ruft `importiereMedien` aus composer/medien-import.ts (#228 = bereits gefüllt; die Berichtszeile fehlt am UI-Weg).
 4. **Reparatur halter #201** (app-shell/reparatur-fuehrung-shell.ts) – Meshing von meldeReparaturStand/meldeUebergabe; dann die Restkette der Restcooperation-Runner-Reiter-workflow (Aktionen/Vorlagen).
 5. **Aktionen- und Vorlagen-Reiter mounten** (die Aufreihungsart, unter Zuhilfe der lib: action-editor/vorlagen-editor stehen und habenNULL Cleve-Datei) – Momentan Platzhalter.

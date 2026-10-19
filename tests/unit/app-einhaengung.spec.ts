@@ -208,7 +208,7 @@ vi.mock('../../src/renderer/preview-player/vorschau', () => ({
   Vorschau: vi.fn(() => createElement('div', { 'data-testid': 'wurzel-vorschau-marke' })),
 }))
 
-vi.mock('../../src/renderer/shell/WarteschlangenLeiste', () => ({
+vi.mock('../../src/renderer/queue-panel/warteschlangen-leiste', () => ({
   WarteschlangenLeiste: vi.fn(() => {
     d.leisteRufe.push(1)
     return createElement('div', { 'data-testid': 'leiste-marke' })
