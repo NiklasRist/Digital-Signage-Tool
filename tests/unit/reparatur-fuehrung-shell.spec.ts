@@ -50,6 +50,11 @@ const UEBERGABE_AKTIONS_AUSWAHL: Uebergabe = {
   elementId: 'el-1',
   abschnittIndex: null,
 }
+const UEBERGABE_UNTERBRECHUNGS_AUSWAHL: Uebergabe = {
+  ziel: 'unterbrechungs-auswahl',
+  elementId: 'el-1',
+  unterbrechungIndex: 1,
+}
 const UEBERGABE_MEDIEN_IMPORT: Uebergabe = { ziel: 'medien-import', elementId: 'el-1' }
 
 // ---------------------------------------------------------------------------
@@ -82,6 +87,10 @@ describe('reiterFuerUebergabe - die Zuordnungstabelle', () => {
 
   it('liefert für eine aktions-auswahl-Übergabe null - die Auswahl bleibt im Reiter', () => {
     expect(reiterFuerUebergabe(UEBERGABE_AKTIONS_AUSWAHL)).toBeNull()
+  })
+
+  it('liefert für eine unterbrechungs-auswahl-Übergabe null - die Auswahl bleibt im Reiter', () => {
+    expect(reiterFuerUebergabe(UEBERGABE_UNTERBRECHUNGS_AUSWAHL)).toBeNull()
   })
 
   it('liefert für eine medien-import-Übergabe null - der Dialog ist kein Reiter', () => {

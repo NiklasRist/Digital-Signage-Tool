@@ -56,6 +56,18 @@ describe('ReparaturPanel (#421)', () => {
     expect(aufFix).toHaveBeenCalledWith('abschnitt_entfernen')
   })
 
+  it('zeigt beim Einschub die Options-Knoepfe mit Beschriftung (Fall 4, v3.27)', () => {
+    const stelle: KaputteStelle = { art: 'unterbrechung', elementId: 'el-3', unterbrechungIndex: 1, aktionId: 'a', assetId: 'x', grund: 'asset_fehlt' }
+    const behaelter = montiere(createElement(ReparaturPanel, { stand: stand(stelle, 3, 1), aufFix: () => {} }))
+
+    const ersetzen = behaelter.querySelector('[data-testid="reparatur-option-unterbrechung_ersetzen"]')
+    const entfernen = behaelter.querySelector('[data-testid="reparatur-option-unterbrechung_entfernen"]')
+    expect(ersetzen?.textContent).toBe('Andere Aktion für den Einschub wählen')
+    expect(entfernen?.textContent).toBe('Einschub entfernen')
+    // Kein "Element entfernen" - das Video ist heil (wie Fall 3).
+    expect(behaelter.querySelector('[data-testid="reparatur-option-element_entfernen"]')).toBeNull()
+  })
+
   it('ohne aktuelle Stelle zeigt es nichts an', () => {
     const behaelter = montiere(createElement(ReparaturPanel, { stand: stand(null), aufFix: () => {} }))
     expect(behaelter.querySelector('[data-testid="reparatur-panel"]')).toBeNull()

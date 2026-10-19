@@ -74,8 +74,9 @@ function element(
   art: Listenelement['art'],
   ref: string,
   einblendung: Einblendung | null = null,
+  unterbrechungen?: Array<{ zeitstelle: number; aktionRef: string; dauer: number }>,
 ): Listenelement {
-  return { id, art, ref, dauer: null, trimStart: null, trimEnde: null, einblendung }
+  return { id, art, ref, dauer: null, trimStart: null, trimEnde: null, einblendung, unterbrechungen }
 }
 
 function projekt(teile: Partial<Pick<Project, 'assets' | 'aktionen' | 'liste'>>): Project {
@@ -250,6 +251,27 @@ describe('ein Fix an EINER Aktion senkt „X von N" um MEHR als eins (TK 9.7.5)'
     expect(nachher.behoben).toBe(nachher.gesamt)
     expect(nachher.behoben).toBe(4)
     // Und das ist der Moment der Freigabe.
+    expect(istRenderFreigegeben(p)).toBe(true)
+  })
+})
+
+describe('Fall 4 (v3.27): der kaputte EINSCHUB sperrt den Render', () => {
+  it('nur ein kaputter Einschub genügt - istRenderFreigegeben ist false', () => {
+    const p = projekt({
+      assets: [asset('v-ok', 'ok'), asset('b-weg', 'fehlt', 'bild')],
+      aktionen: [aktion('a1', 'b-weg')],
+      liste: [element('e1', 'video', 'v-ok', null, [{ zeitstelle: 2.5, aktionRef: 'a1', dauer: 3 }])],
+    })
+
+    // Ohne Fall 4 gälte das Video als heil, der Auftrag würde eingereiht und die
+    // MP4 liefe mit einem Platzhalter im Einschub (TK 9.10.7).
+    expect(istRenderFreigegeben(p)).toBe(false)
+    const stand = starteReparatur(p)
+    expect(stand.gesamt).toBe(1)
+    expect(stand.aktuelle?.art).toBe('unterbrechung')
+
+    // Ein Fix an der Aktion behebt den Einschub - und gibt den Render frei.
+    p.aktionen[0]!.bildRef = null
     expect(istRenderFreigegeben(p)).toBe(true)
   })
 })

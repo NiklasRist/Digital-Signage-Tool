@@ -26,6 +26,7 @@ import {
   schliesseFixAb,
   schliesseMedienImportAb,
   setzeReparaturhalterZurueck,
+  unterbrechungsIndexFuer,
   type UebergabeUmgebung,
 } from '../../src/renderer/app-shell/uebergabe'
 
@@ -141,10 +142,11 @@ const A = 'aktion-1' as const
 // ---------------- Die fünf reinen Funktionen ----------------
 
 describe('overlayFuer / brauchtMedienDialog / elementIdFuer / abschnittIndexFuer (#256)', () => {
-  it('fünf benannte Overlay-Zuordnungen', () => {
+  it('sechs benannte Overlay-Zuordnungen', () => {
     expect(overlayFuer(null)).toBe('keins')
     expect(overlayFuer({ ziel: 'asset-auswahl', elementId: 'e1' })).toBe('asset-auswahl')
     expect(overlayFuer({ ziel: 'aktions-auswahl', elementId: 'e1', abschnittIndex: null })).toBe('aktions-auswahl')
+    expect(overlayFuer({ ziel: 'unterbrechungs-auswahl', elementId: 'e1', unterbrechungIndex: 1 })).toBe('unterbrechungs-auswahl')
     expect(overlayFuer({ ziel: 'action-editor', aktionId: A })).toBe('keins')
     expect(overlayFuer({ ziel: 'medien-import', elementId: 'e1' })).toBe('keins')
   })
@@ -156,9 +158,10 @@ describe('overlayFuer / brauchtMedienDialog / elementIdFuer / abschnittIndexFuer
     expect(brauchtMedienDialog({ ziel: 'medien-import', elementId: 'e1' })).toBe(true)
   })
 
-  it('elementIdFuer: Kennung bei den zwei Auswahl-Zielen, null sonst', () => {
+  it('elementIdFuer: Kennung bei den drei Auswahl-Zielen, null sonst', () => {
     expect(elementIdFuer({ ziel: 'asset-auswahl', elementId: 'e1' })).toBe('e1')
     expect(elementIdFuer({ ziel: 'aktions-auswahl', elementId: 'e2', abschnittIndex: null })).toBe('e2')
+    expect(elementIdFuer({ ziel: 'unterbrechungs-auswahl', elementId: 'e4', unterbrechungIndex: 1 })).toBe('e4')
     expect(elementIdFuer({ ziel: 'action-editor', aktionId: A })).toBeNull()
     expect(elementIdFuer({ ziel: 'medien-import', elementId: 'e3' })).toBeNull()
     expect(elementIdFuer(null)).toBeNull()
@@ -168,7 +171,15 @@ describe('overlayFuer / brauchtMedienDialog / elementIdFuer / abschnittIndexFuer
     expect(abschnittIndexFuer({ ziel: 'aktions-auswahl', elementId: 'e1', abschnittIndex: 1 })).toBe(1)
     expect(abschnittIndexFuer({ ziel: 'aktions-auswahl', elementId: 'e1', abschnittIndex: null })).toBeNull()
     expect(abschnittIndexFuer({ ziel: 'asset-auswahl', elementId: 'e1' })).toBeNull()
+    expect(abschnittIndexFuer({ ziel: 'unterbrechungs-auswahl', elementId: 'e4', unterbrechungIndex: 1 })).toBeNull()
     expect(abschnittIndexFuer(null)).toBeNull()
+  })
+
+  it('unterbrechungsIndexFuer: die Zahl genau beim Einschub', () => {
+    expect(unterbrechungsIndexFuer({ ziel: 'unterbrechungs-auswahl', elementId: 'e4', unterbrechungIndex: 2 })).toBe(2)
+    expect(unterbrechungsIndexFuer({ ziel: 'aktions-auswahl', elementId: 'e1', abschnittIndex: 1 })).toBeNull()
+    expect(unterbrechungsIndexFuer({ ziel: 'asset-auswahl', elementId: 'e1' })).toBeNull()
+    expect(unterbrechungsIndexFuer(null)).toBeNull()
   })
 })
 

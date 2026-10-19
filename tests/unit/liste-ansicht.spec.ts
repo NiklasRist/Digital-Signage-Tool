@@ -251,6 +251,23 @@ describe('baueListenZeilen (#248)', () => {
     expect(zeilen[0]?.kaputteBandAbschnitte).toEqual([1, 3])
   })
 
+  it('reine unterbrechung setzt kaputt NICHT und füllt kaputteUnterbrechungen (Fall 4, v3.27)', () => {
+    // Der Einschub ist kein Listenelement; sein Index wird getrennt vom Band
+    // gesammelt, weil er ein anderes Array indiziert (#131).
+    const stellen: KaputteStelle[] = [
+      { art: 'unterbrechung', elementId: 'v-2', unterbrechungIndex: 2, aktionId: 'x-2', assetId: null, grund: 'asset_fehlt' },
+      { art: 'unterbrechung', elementId: 'v-2', unterbrechungIndex: 0, aktionId: 'x-1', assetId: null, grund: 'asset_fehlt' },
+      { art: 'unterbrechung', elementId: 'v-2', unterbrechungIndex: 2, aktionId: 'x-2', assetId: null, grund: 'asset_fehlt' },
+      { art: 'band_abschnitt', elementId: 'v-2', abschnittIndex: 1, aktionId: 'x-3', assetId: null, grund: 'asset_fehlt' },
+    ]
+    const liste = [element('v-2', 'video', 'a-2', { trimStart: 0.1, trimEnde: 5.87 })]
+    const zeilen = baueListenZeilen(projekt(liste, assets, aktionen), stellen, null)
+
+    expect(zeilen[0]?.kaputt).toBe(false)
+    expect(zeilen[0]?.kaputteUnterbrechungen).toEqual([0, 2])
+    expect(zeilen[0]?.kaputteBandAbschnitte).toEqual([1])
+  })
+
   it('hervorgehoben bei GENAU EINER Zeile (aktuelle Stell - sonst bei keiner)', () => {
     const liste = [
       element('v-1', 'video', 'a-1', { trimStart: 0.1, trimEnde: 5.87 }),

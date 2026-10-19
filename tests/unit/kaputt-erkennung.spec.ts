@@ -1,6 +1,7 @@
 // Verhaltenstests zu #131 - `findeKaputteStellen` und `stellenZuAktion` im composer.
 //
-// Der Prüfumfang ist die Tabelle der DREI kaputten Stellen aus TK 9.7.5. Fall 3
+// Der Prüfumfang ist die Tabelle der VIER kaputten Stellen aus TK 9.7.5 (Fall 4
+// seit v3.27: Unterbrechung eines einwandfreien Videos). Fall 3
 // (Band-Abschnitt eines EINWANDFREIEN Videos) ist der teure: Er ist der einzige,
 // bei dem das Listenelement selbst heil aussieht. Fällt er weg, gilt das Projekt
 // als heil, `template-canvas` zeichnet einen Platzhalter, und der landet in der
@@ -69,8 +70,14 @@ function element(
   art: Listenelement['art'],
   ref: string,
   einblendung: Einblendung | null = null,
+  unterbrechungen?: Array<{ zeitstelle: number; aktionRef: string; dauer: number }>,
 ): Listenelement {
-  return { id, art, ref, dauer: null, trimStart: null, trimEnde: null, einblendung }
+  return { id, art, ref, dauer: null, trimStart: null, trimEnde: null, einblendung, unterbrechungen }
+}
+
+function einschub(...aktionRefs: string[]): Array<{ zeitstelle: number; aktionRef: string; dauer: number }> {
+  // Krumme Zeitstellen, damit eine fest verdrahtete 0 nicht zufaellig stimmt.
+  return aktionRefs.map((aktionRef, index) => ({ zeitstelle: 1.5 + index * 2, aktionRef, dauer: 3 }))
 }
 
 function projekt(teile: Partial<Pick<Project, 'assets' | 'aktionen' | 'liste'>>): Project {
@@ -196,7 +203,164 @@ describe('alle drei Arten in EINEM Projekt (Prüfumfang TK 9.7.5)', () => {
   })
 })
 
+describe('Fall 4 - Unterbrechung eines einwandfreien Videos (TK 9.7.5 v3.27)', () => {
+  it('meldet genau EINE Stelle, obwohl das Video selbst tadellos ist', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok'), asset('bild-weg', 'fehlt', 'bild')],
+      aktionen: [aktion('a1', 'bild-weg')],
+      liste: [element('e1', 'video', 'v1', null, einschub('a1'))],
+    })
+
+    expect(findeKaputteStellen(p)).toEqual([
+      {
+        art: 'unterbrechung',
+        elementId: 'e1',
+        unterbrechungIndex: 0,
+        aktionId: 'a1',
+        assetId: 'bild-weg',
+        grund: 'asset_fehlt',
+      },
+    ])
+  })
+
+  it('meldet KEINE element_asset-Stelle dazu - das Video ist nicht der Defekt', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok'), asset('bild-weg', 'fehlt', 'bild')],
+      aktionen: [aktion('a1', 'bild-weg')],
+      liste: [element('e1', 'video', 'v1', null, einschub('a1'))],
+    })
+
+    expect(findeKaputteStellen(p).map((s) => s.art)).toEqual(['unterbrechung'])
+  })
+
+  it('trifft den richtigen Einschub, wenn nur der mittlere von dreien kaputt ist', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok'), asset('b-ok', 'ok', 'bild'), asset('b-weg', 'fehlt', 'bild')],
+      aktionen: [aktion('a-heil', 'b-ok'), aktion('a-kaputt', 'b-weg')],
+      liste: [element('e1', 'video', 'v1', null, einschub('a-heil', 'a-kaputt', 'a-heil'))],
+    })
+
+    const stellen = findeKaputteStellen(p)
+    expect(stellen).toHaveLength(1)
+    expect(stellen[0]).toEqual({
+      art: 'unterbrechung',
+      elementId: 'e1',
+      unterbrechungIndex: 1,
+      aktionId: 'a-kaputt',
+      assetId: 'b-weg',
+      grund: 'asset_fehlt',
+    })
+  })
+
+  it('zählt jeden kaputten Einschub einzeln, in Array-Reihenfolge', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok'), asset('b-weg', 'fehlt', 'bild')],
+      aktionen: [aktion('a1', 'b-weg')],
+      liste: [element('e1', 'video', 'v1', null, einschub('a1', 'a1', 'a1'))],
+    })
+
+    expect(
+      findeKaputteStellen(p).map((s) => (s.art === 'unterbrechung' ? s.unterbrechungIndex : -1)),
+    ).toEqual([0, 1, 2])
+  })
+
+  it('unterbrechungen ohne Defekt (Aktion ohne Bild) erzeugen keine Stelle', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok')],
+      aktionen: [aktion('a-ohne-bild', null)],
+      liste: [element('e1', 'video', 'v1', null, einschub('a-ohne-bild'))],
+    })
+
+    expect(findeKaputteStellen(p)).toEqual([])
+  })
+
+  it('unbekannte Aktions-ID im Einschub -> aktion_unbekannt, assetId null', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok')],
+      aktionen: [],
+      liste: [element('e1', 'video', 'v1', null, einschub('a-weg'))],
+    })
+
+    expect(findeKaputteStellen(p)).toEqual([
+      {
+        art: 'unterbrechung',
+        elementId: 'e1',
+        unterbrechungIndex: 0,
+        aktionId: 'a-weg',
+        assetId: null,
+        grund: 'aktion_unbekannt',
+      },
+    ])
+  })
+
+  it('fehlendes unterbrechungen-Feld (undefined) liefert keine Stelle', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok')],
+      aktionen: [aktion('a1', 'bild-weg')],
+      liste: [element('e1', 'video', 'v1')],
+    })
+
+    expect(findeKaputteStellen(p)).toEqual([])
+  })
+
+  it('stellenZuAktion behebt den Einschub mit (ein Fix an der Aktion heilt alle Verwendungen)', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok'), asset('b-weg', 'fehlt', 'bild')],
+      aktionen: [aktion('a-kaputt', 'b-weg')],
+      liste: [
+        element('e1', 'segment', 'a-kaputt'),
+        element('e2', 'video', 'v1', band('a-kaputt')),
+        element('e3', 'video', 'v1', null, einschub('a-kaputt')),
+      ],
+    })
+
+    const stellen = findeKaputteStellen(p)
+    expect(stellen.map((s) => s.art)).toEqual(['element_aktion', 'band_abschnitt', 'unterbrechung'])
+    expect(stellenZuAktion(stellen, 'a-kaputt').map((s) => s.art)).toEqual([
+      'element_aktion',
+      'band_abschnitt',
+      'unterbrechung',
+    ])
+  })
+})
+
 describe('ein Element kann MEHRERE Stellen liefern', () => {
+  it('Video mit fehlendem Asset UND kaputtem Einschub gibt zwei Stellen', () => {
+    // Dieselbe Regel wie Fall 3: Bei Abbruch nach dem ersten Defekt verschwände
+    // die zweite Stelle aus der Zählung und "X von N" liefe rückwärts.
+    const p = projekt({
+      assets: [asset('v-weg', 'fehlt'), asset('b-weg', 'fehlt', 'bild')],
+      aktionen: [aktion('a1', 'b-weg')],
+      liste: [element('e1', 'video', 'v-weg', null, einschub('a1'))],
+    })
+
+    expect(findeKaputteStellen(p)).toEqual([
+      { art: 'element_asset', elementId: 'e1', assetId: 'v-weg', grund: 'asset_fehlt' },
+      {
+        art: 'unterbrechung',
+        elementId: 'e1',
+        unterbrechungIndex: 0,
+        aktionId: 'a1',
+        assetId: 'b-weg',
+        grund: 'asset_fehlt',
+      },
+    ])
+  })
+
+  it('Band-Abschnitt kommt VOR der Unterbrechung (stabile Reihenfolge)', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok'), asset('b-weg', 'fehlt', 'bild')],
+      aktionen: [aktion('a1', 'b-weg')],
+      liste: [element('e1', 'video', 'v1', band('a1'), einschub('a1'))],
+    })
+
+    expect(findeKaputteStellen(p).map((s) => s.art)).toEqual([
+      'band_abschnitt',
+      'unterbrechung',
+    ])
+  })
+
+
   it('Video mit fehlendem Asset UND kaputtem Bandabschnitt gibt zwei Stellen', () => {
     // Der Abbruch nach dem ersten Defekt wäre still: Die zweite Stelle
     // verschwände aus der Zählung und tauchte nach der ersten Reparatur wieder

@@ -47,6 +47,7 @@ import {
   schliesseAbschnittsFixAb,
   schliesseAktionsFixAb,
   schliesseMediumFixAb,
+  schliesseUnterbrechungsFixAb,
 } from '../../src/renderer/composer/reparatur-optionen'
 
 /** #421: Der Pflicht-Schreiber. Er schreibt die uebergebene Liste mit; `abgeglichen`
@@ -68,9 +69,20 @@ const BAND: Einblendung = {
   ],
 }
 
-function video(id: string, einblendung: Einblendung | null): Listenelement {
-  return { id, art: 'video', ref: 'asset-video', dauer: null, trimStart: 2, trimEnde: 8, einblendung }
+function video(
+  id: string,
+  einblendung: Einblendung | null,
+  unterbrechungen?: Array<{ zeitstelle: number; aktionRef: string; dauer: number }>,
+): Listenelement {
+  return { id, art: 'video', ref: 'asset-video', dauer: null, trimStart: 2, trimEnde: 8, einblendung, unterbrechungen }
 }
+
+/** Drei Einschuebe mit krummen Zeitstellen - eine fest verdrahtete Zahl faellt damit auf. */
+const EINSCHUEBE = [
+  { zeitstelle: 1.5, aktionRef: 'aktion-a', dauer: 3 },
+  { zeitstelle: 4.5, aktionRef: 'aktion-b', dauer: 5 },
+  { zeitstelle: 7.5, aktionRef: 'aktion-c', dauer: 4 },
+]
 
 function projektMit(...elemente: Listenelement[]): Project {
   return {
@@ -108,6 +120,15 @@ const STELLE_ABSCHNITT: KaputteStelle = {
   art: 'band_abschnitt',
   elementId: 'el-3',
   abschnittIndex: 1,
+  aktionId: 'aktion-b',
+  assetId: 'asset-weg',
+  grund: 'asset_fehlt',
+}
+
+const STELLE_UNTERBRECHUNG: KaputteStelle = {
+  art: 'unterbrechung',
+  elementId: 'el-3',
+  unterbrechungIndex: 1,
   aktionId: 'aktion-b',
   assetId: 'asset-weg',
   grund: 'asset_fehlt',
@@ -159,15 +180,29 @@ describe('optionenFuer', () => {
       'abschnitt_ersetzen',
       'abschnitt_entfernen',
     ])
+    expect(optionenFuer(STELLE_UNTERBRECHUNG)).toEqual([
+      'aktionsbild_reparieren',
+      'unterbrechung_ersetzen',
+      'unterbrechung_entfernen',
+    ])
   })
 
   it('bietet bei einem Band-Abschnitt NIE element_entfernen an - das Video ist einwandfrei', () => {
     expect(optionenFuer(STELLE_ABSCHNITT)).not.toContain('element_entfernen')
   })
 
+  it('bietet beim Einschub NIE element_entfernen und NIE die Band-Optionen an - andere Ebene', () => {
+    // Ein gemeinsamer `abschnittIndex` haette einen Unterbrechungs-Fix erlaubt, der
+    // versehentlich das Band umschreibt (#131: verschiedene Ebenen, verschiedene Indizes).
+    expect(optionenFuer(STELLE_UNTERBRECHUNG)).not.toContain('element_entfernen')
+    expect(optionenFuer(STELLE_UNTERBRECHUNG)).not.toContain('abschnitt_ersetzen')
+    expect(optionenFuer(STELLE_UNTERBRECHUNG)).not.toContain('abschnitt_entfernen')
+  })
+
   it('stellt aktionsbild_reparieren voran, weil nur es alle Verwendungen auf einmal behebt', () => {
     expect(optionenFuer(STELLE_AKTION)[0]).toBe('aktionsbild_reparieren')
     expect(optionenFuer(STELLE_ABSCHNITT)[0]).toBe('aktionsbild_reparieren')
+    expect(optionenFuer(STELLE_UNTERBRECHUNG)[0]).toBe('aktionsbild_reparieren')
   })
 
   it('liefert bei unbekannter Stellen-Art eine leere Liste', () => {
@@ -340,6 +375,188 @@ describe('fuehreFixAus - abschnitt_entfernen', () => {
       fehler: { code: 'speicher_fehler', meldung: 'abgelehnt', daten: { x: 1 } },
     })
     expect(doppel.abgeglichen).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Fall 4 (v3.27) - unterbrechung_ersetzen / unterbrechung_entfernen
+// ---------------------------------------------------------------------------
+
+describe('fuehreFixAus - unterbrechung_ersetzen', () => {
+  it('übergibt an die EIGENE Auswahl mit dem unterbrechungIndex - kein IPC', async () => {
+    const ergebnis = await fuehreFixAus(
+      STELLE_UNTERBRECHUNG,
+      'unterbrechung_ersetzen',
+      projektMit(video('el-3', BAND, EINSCHUEBE)),
+      schreibe,
+    )
+    expect(ergebnis).toEqual({
+      ok: true,
+      wert: {
+        art: 'uebergabe',
+        an: { ziel: 'unterbrechungs-auswahl', elementId: 'el-3', unterbrechungIndex: 1 },
+      },
+    })
+    expect(doppel.aufrufe).toEqual([])
+  })
+})
+
+describe('fuehreFixAus - unterbrechung_entfernen', () => {
+  it('sendet setzeUnterbrechungen mit einer um genau einen Eintrag kürzeren Liste', async () => {
+    const projekt = projektMit(video('el-3', BAND, EINSCHUEBE))
+    const ergebnis = await fuehreFixAus(STELLE_UNTERBRECHUNG, 'unterbrechung_entfernen', projekt, schreibe)
+
+    expect(ergebnis).toEqual({ ok: true, wert: { art: 'erledigt' } })
+    expect(doppel.aufrufe).toEqual([
+      {
+        kanal: KANAELE.project.setzeUnterbrechungen,
+        nutzlast: {
+          elementId: 'el-3',
+          unterbrechungen: [
+            { zeitstelle: 1.5, aktionRef: 'aktion-a', dauer: 3 },
+            { zeitstelle: 7.5, aktionRef: 'aktion-c', dauer: 4 },
+          ],
+        },
+      },
+    ])
+    expect(doppel.abgeglichen).toEqual([ANTWORT_ELEMENT])
+  })
+
+  it('sendet beim letzten Einschub eine leere Liste - das Videoelement bleibt (TK 9.5.3)', async () => {
+    const stelle: KaputteStelle = { ...STELLE_UNTERBRECHUNG, unterbrechungIndex: 0 }
+    await fuehreFixAus(
+      stelle,
+      'unterbrechung_entfernen',
+      projektMit(video('el-3', BAND, [EINSCHUEBE[0] as { zeitstelle: number; aktionRef: string; dauer: number }])),
+      schreibe,
+    )
+
+    expect(doppel.aufrufe).toEqual([
+      { kanal: KANAELE.project.setzeUnterbrechungen, nutzlast: { elementId: 'el-3', unterbrechungen: [] } },
+    ])
+  })
+
+  it('verändert weder das Projekt noch das ursprüngliche Einschub-Array', async () => {
+    const einschuebe = [...EINSCHUEBE]
+    const projekt = projektMit(video('el-3', BAND, einschuebe))
+    const vorher = JSON.stringify(projekt)
+
+    await fuehreFixAus(STELLE_UNTERBRECHUNG, 'unterbrechung_entfernen', projekt, schreibe)
+
+    expect(JSON.stringify(projekt)).toBe(vorher)
+    expect(einschuebe).toHaveLength(3)
+  })
+
+  it('meldet nicht_gefunden bei unbekanntem Element, Nicht-Video und Index außerhalb', async () => {
+    expect(
+      await fuehreFixAus(STELLE_UNTERBRECHUNG, 'unterbrechung_entfernen', projektMit(), schreibe),
+    ).toMatchObject({ ok: false, fehler: { code: 'nicht_gefunden' } })
+
+    const segment: Listenelement = {
+      id: 'el-3', art: 'segment', ref: 'a', dauer: 5, trimStart: null, trimEnde: null, einblendung: null,
+    }
+    expect(
+      await fuehreFixAus(STELLE_UNTERBRECHUNG, 'unterbrechung_entfernen', projektMit(segment), schreibe),
+    ).toMatchObject({ ok: false, fehler: { code: 'nicht_gefunden' } })
+
+    expect(
+      await fuehreFixAus(STELLE_UNTERBRECHUNG, 'unterbrechung_entfernen', projektMit(video('el-3', BAND)), schreibe),
+    ).toMatchObject({ ok: false, fehler: { code: 'nicht_gefunden' } })
+
+    expect(doppel.aufrufe).toEqual([])
+  })
+
+  it('reicht die Ablehnung von #426 unverändert durch, ohne die Sicht anzufassen', async () => {
+    ablehnung('speicher_fehler')
+    const ergebnis = await fuehreFixAus(
+      STELLE_UNTERBRECHUNG,
+      'unterbrechung_entfernen',
+      projektMit(video('el-3', BAND, EINSCHUEBE)),
+      schreibe,
+    )
+    expect(ergebnis).toEqual({
+      ok: false,
+      fehler: { code: 'speicher_fehler', meldung: 'abgelehnt', daten: { x: 1 } },
+    })
+    expect(doppel.abgeglichen).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// schliesseUnterbrechungsFixAb
+// ---------------------------------------------------------------------------
+
+describe('schliesseUnterbrechungsFixAb', () => {
+  it('tauscht genau einen Eintrag - gleiche Länge und Reihenfolge, zeitstelle und dauer unverändert', async () => {
+    const projekt = projektMit(video('el-3', BAND, EINSCHUEBE))
+    const ergebnis = await schliesseUnterbrechungsFixAb('el-3', 1, 'aktion-neu', projekt, schreibe)
+
+    expect(ergebnis).toEqual({ ok: true, wert: { art: 'erledigt' } })
+    expect(doppel.aufrufe).toEqual([
+      {
+        kanal: KANAELE.project.setzeUnterbrechungen,
+        nutzlast: {
+          elementId: 'el-3',
+          unterbrechungen: [
+            { zeitstelle: 1.5, aktionRef: 'aktion-a', dauer: 3 },
+            { zeitstelle: 4.5, aktionRef: 'aktion-neu', dauer: 5 },
+            { zeitstelle: 7.5, aktionRef: 'aktion-c', dauer: 4 },
+          ],
+        },
+      },
+    ])
+    expect(doppel.abgeglichen).toEqual([ANTWORT_ELEMENT])
+  })
+
+  it('verändert weder das Projekt noch das ursprüngliche Einschub-Array', async () => {
+    const einschuebe = [...EINSCHUEBE]
+    const projekt = projektMit(video('el-3', BAND, einschuebe))
+    const vorher = JSON.stringify(projekt)
+
+    await schliesseUnterbrechungsFixAb('el-3', 1, 'aktion-neu', projekt, schreibe)
+
+    expect(JSON.stringify(projekt)).toBe(vorher)
+    expect(einschuebe[1]).toEqual({ zeitstelle: 4.5, aktionRef: 'aktion-b', dauer: 5 })
+  })
+
+  it('lehnt leere Kennungen und einen ungültigen Index ohne IPC-Aufruf ab', async () => {
+    const projekt = projektMit(video('el-3', BAND, EINSCHUEBE))
+    for (const [elementId, index, aktionId] of [
+      ['', 1, 'a'],
+      ['el-3', 1, ''],
+      ['  ', 1, 'a'],
+      ['el-3', -1, 'a'],
+      ['el-3', 1.5, 'a'],
+    ] as const) {
+      expect(
+        await schliesseUnterbrechungsFixAb(elementId, index, aktionId, projekt, schreibe),
+      ).toMatchObject({ ok: false, fehler: { code: 'ungueltige_eingabe' } })
+    }
+    expect(doppel.aufrufe).toEqual([])
+  })
+
+  it('meldet nicht_gefunden bei unbekanntem Element, Nicht-Video und Index außerhalb', async () => {
+    expect(
+      await schliesseUnterbrechungsFixAb('el-x', 0, 'a', projektMit(), schreibe),
+    ).toMatchObject({ ok: false, fehler: { code: 'nicht_gefunden' } })
+    expect(
+      await schliesseUnterbrechungsFixAb('el-3', 3, 'a', projektMit(video('el-3', BAND, EINSCHUEBE)), schreibe),
+    ).toMatchObject({ ok: false, fehler: { code: 'nicht_gefunden' } })
+    expect(doppel.aufrufe).toEqual([])
+  })
+
+  it('ist zusammen mit unterbrechung_ersetzen keine Sackgasse mehr', async () => {
+    const projekt = projektMit(video('el-3', BAND, EINSCHUEBE))
+    const uebergabe = await fuehreFixAus(STELLE_UNTERBRECHUNG, 'unterbrechung_ersetzen', projekt, schreibe)
+    expect(uebergabe).toMatchObject({
+      ok: true,
+      wert: { an: { ziel: 'unterbrechungs-auswahl', elementId: 'el-3', unterbrechungIndex: 1 } },
+    })
+    erfolg()
+    expect(await schliesseUnterbrechungsFixAb('el-3', 1, 'aktion-neu', projekt, schreibe)).toEqual({
+      ok: true,
+      wert: { art: 'erledigt' },
+    })
   })
 })
 
@@ -583,5 +800,42 @@ describe('Ebenen-Grenze Fall 3', () => {
     )
     expect(referenzAufrufe).toEqual([])
     expect(doppel.aufrufe.every((aufruf) => aufruf.kanal === KANAELE.project.setzeEinblendung)).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Die Ebenen-Grenze Fall 4: der Einschub fasst Band und Referenz NIE an
+// ---------------------------------------------------------------------------
+
+describe('Ebenen-Grenze Fall 4 (v3.27)', () => {
+  it('ruft bei unterbrechung_ersetzen, unterbrechung_entfernen und schliesseUnterbrechungsFixAb nur setzeUnterbrechungen', async () => {
+    const projekt = projektMit(video('el-3', BAND, EINSCHUEBE))
+    doppel.aufrufe = []
+    await fuehreFixAus(STELLE_UNTERBRECHUNG, 'unterbrechung_ersetzen', projekt, schreibe)
+    await fuehreFixAus(STELLE_UNTERBRECHUNG, 'unterbrechung_entfernen', projekt, schreibe)
+    await schliesseUnterbrechungsFixAb('el-3', 1, 'aktion-neu', projekt, schreibe)
+
+    expect(doppel.aufrufe.map((aufruf) => aufruf.kanal)).toEqual([
+      KANAELE.project.setzeUnterbrechungen,
+      KANAELE.project.setzeUnterbrechungen,
+    ])
+  })
+
+  it('lehnt Band-Optionen auf einer Unterbrechungs-Stelle ab', async () => {
+    const projekt = projektMit(video('el-3', BAND, EINSCHUEBE))
+    expect(await fuehreFixAus(STELLE_UNTERBRECHUNG, 'abschnitt_entfernen', projekt, schreibe)).toMatchObject({
+      ok: false,
+      fehler: { code: 'ungueltige_eingabe' },
+    })
+    expect(await fuehreFixAus(STELLE_UNTERBRECHUNG, 'abschnitt_ersetzen', projekt, schreibe)).toMatchObject({
+      ok: false,
+      fehler: { code: 'ungueltige_eingabe' },
+    })
+  })
+
+  it('lehnt unterbrechung_entfernen auf einer Band-Stelle ab', async () => {
+    expect(
+      await fuehreFixAus(STELLE_ABSCHNITT, 'unterbrechung_entfernen', projektMit(video('el-3', BAND, EINSCHUEBE)), schreibe),
+    ).toMatchObject({ ok: false, fehler: { code: 'ungueltige_eingabe' } })
   })
 })

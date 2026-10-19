@@ -115,6 +115,7 @@ export function reiterFuerUebergabe(an: Uebergabe): ReiterId | null {
       return 'aktionen'
     case 'asset-auswahl':
     case 'aktions-auswahl':
+    case 'unterbrechungs-auswahl':
     case 'medien-import':
       return null
     default:

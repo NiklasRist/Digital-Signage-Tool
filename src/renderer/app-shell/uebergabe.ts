@@ -31,7 +31,7 @@ import {
 } from './reparatur-fuehrung-shell'
 
 /** Welches Overlay die Anzeige einsetzt. `'keins'` heisst: NICHTS wird gezeigt. */
-export type OverlayArt = 'keins' | 'asset-auswahl' | 'aktions-auswahl'
+export type OverlayArt = 'keins' | 'asset-auswahl' | 'aktions-auswahl' | 'unterbrechungs-auswahl'
 
 /**
  * Das Overlay zu einer Uebergabe. REIN und TOTAL: wirft nie.
@@ -47,6 +47,8 @@ export function overlayFuer(uebergabe: Uebergabe | null): OverlayArt {
       return 'asset-auswahl'
     case 'aktions-auswahl':
       return 'aktions-auswahl'
+    case 'unterbrechungs-auswahl':
+      return 'unterbrechungs-auswahl'
     default:
       // medien-import: Datei-Dialog des Betriebssystems. action-editor: die Shell
       // wechselt den Reiter; ein Overlay verdeckte genau die Oberfläche, zu der
@@ -65,7 +67,9 @@ export function elementIdFuer(uebergabe: Uebergabe | null): string | null {
   if (uebergabe === null) {
     return null
   }
-  return uebergabe.ziel === 'asset-auswahl' || uebergabe.ziel === 'aktions-auswahl'
+  return uebergabe.ziel === 'asset-auswahl' ||
+    uebergabe.ziel === 'aktions-auswahl' ||
+    uebergabe.ziel === 'unterbrechungs-auswahl'
     ? uebergabe.elementId
     : null
 }
@@ -76,6 +80,14 @@ export function abschnittIndexFuer(uebergabe: Uebergabe | null): number | null {
     return null
   }
   return uebergabe.abschnittIndex
+}
+
+/** Der Einschub-Index; null ausser beim Ziel `unterbrechungs-auswahl`. Rein; wirft nie. */
+export function unterbrechungsIndexFuer(uebergabe: Uebergabe | null): number | null {
+  if (uebergabe === null || uebergabe.ziel !== 'unterbrechungs-auswahl') {
+    return null
+  }
+  return uebergabe.unterbrechungIndex
 }
 
 /**

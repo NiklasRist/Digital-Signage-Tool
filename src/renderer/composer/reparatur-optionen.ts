@@ -12,13 +12,14 @@
 //   Fall 2 `element_aktion` -> AKTIONS-Ebene (ein Fix heilt alle Verwendungen) oder
 //                              Referenz des Segments per setzeElementReferenz
 //   Fall 3 `band_abschnitt` -> AKTIONS-Ebene oder das BAND per setzeEinblendung.
+//   Fall 4 `unterbrechung`  -> AKTIONS-Ebene oder der EINSCHUB per setzeUnterbrechungen.
 // Ein Band-Abschnitt ist KEIN Listenelement: Er hat keine eigene `id` in `liste`,
 // und die `ref` des Videos zeigt weiter auf SEIN Asset. Wer hier
 // setzeElementReferenz mit der elementId eines 'band_abschnitt' riefe, haengte das
 // VIDEO um (und #152 setzt bei art 'video' zusaetzlich Trim zurueck), waehrend der
 // kaputte Abschnitt stehenbliebe.
 
-import type { Project, Einblendung, Listenelement } from '../../shared/contracts/project'
+import type { Project, Einblendung, Listenelement, Unterbrechung } from '../../shared/contracts/project'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
@@ -34,6 +35,8 @@ export type FixOptionId =
   | 'aktion_ersetzen'          // Fall 2: dem Segment eine andere Aktion geben
   | 'abschnitt_ersetzen'       // Fall 3: dem Band-Abschnitt eine andere Aktion geben
   | 'abschnitt_entfernen'      // Fall 3: den Abschnitt aus dem Band nehmen
+  | 'unterbrechung_ersetzen'   // Fall 4 (v3.27): dem Einschub eine andere Aktion geben
+  | 'unterbrechung_entfernen'  // Fall 4 (v3.27): den Einschub aus dem Video nehmen
 
 /** Die zulässigen Optionen dieser Stelle, in Anzeigereihenfolge. Rein, ohne Seiteneffekt. */
 export function optionenFuer(stelle: KaputteStelle): FixOptionId[] {
@@ -59,6 +62,12 @@ export function optionenFuer(stelle: KaputteStelle): FixOptionId[] {
     case 'band_abschnitt':
       return ['aktionsbild_reparieren', 'abschnitt_ersetzen', 'abschnitt_entfernen']
 
+    // Fall 4 (v3.27): dieselbe Unterscheidung wie Fall 3 - das Video ist heil,
+    // deshalb KEIN `element_entfernen`. Der Einschub wird ueber
+    // `setzeUnterbrechungen` geschrieben, nicht ueber das Band.
+    case 'unterbrechung':
+      return ['aktionsbild_reparieren', 'unterbrechung_ersetzen', 'unterbrechung_entfernen']
+
     default:
       // Der Vertrag wurde erweitert, diese Datei nicht. Eine leere Liste ist hier
       // die ehrliche Antwort: `fuehreFixAus` lehnt danach JEDE Option mit
@@ -72,6 +81,9 @@ export type Uebergabe =
   | { ziel: 'action-editor'; aktionId: string }                  // Bild der Aktion reparieren
   | { ziel: 'asset-auswahl'; elementId: string }                 // anderes Asset für das Element
   | { ziel: 'aktions-auswahl'; elementId: string; abschnittIndex: number | null }
+  // Fall 4 (v3.27) - eigener Zweig statt eines mehrdeutigen `abschnittIndex`:
+  // `abschnittIndex` und `unterbrechungIndex` indizieren VERSCHIEDENE Arrays.
+  | { ziel: 'unterbrechungs-auswahl'; elementId: string; unterbrechungIndex: number }
 
 export type FixWirkung =
   | { art: 'erledigt' }              // eine Store-Operation ist gelaufen und hat bestätigt
@@ -118,6 +130,34 @@ function holeBand(
     }
   }
   return { ok: true, einblendung: element.einblendung }
+}
+
+/** Die Unterbrechungsliste eines Video-Elements aus dem uebergebenen Projektstand
+ *  holen - der gemeinsame Vorlauf von `unterbrechung_entfernen` und
+ *  `schliesseUnterbrechungsFixAb`. Dieselben Pruefungen mit demselben Code
+ *  `nicht_gefunden` wie `holeBand`; `undefined` wird wie `[]` gelesen (TK 9.5.5). */
+function holeEinschuebe(
+  projekt: Project,
+  elementId: string,
+  unterbrechungIndex: number,
+): { ok: true; unterbrechungen: Unterbrechung[] } | { ok: false; grund: string } {
+  const element = projekt.liste.find((eintrag) => eintrag.id === elementId)
+  if (element === undefined) {
+    return { ok: false, grund: `Kein Listenelement mit der Kennung ${elementId}.` }
+  }
+  if (element.art !== 'video') {
+    return { ok: false, grund: `Das Listenelement ${elementId} ist kein Video.` }
+  }
+  const unterbrechungen = element.unterbrechungen ?? []
+  // Index ausserhalb -> die Erkennung ist veraltet, es wurde inzwischen etwas an
+  // den Einschueben geaendert. Keine Wirkung, kein IPC-Aufruf.
+  if (unterbrechungIndex < 0 || unterbrechungIndex >= unterbrechungen.length) {
+    return {
+      ok: false,
+      grund: `Das Video ${elementId} hat keinen Einschub an Position ${unterbrechungIndex}.`,
+    }
+  }
+  return { ok: true, unterbrechungen }
 }
 
 /** Die gemeinsame Sende- und Abgleichroutine der drei schreibenden Wege.
@@ -179,7 +219,11 @@ export async function fuehreFixAus(
       // Nur die beiden Aktions-Faelle tragen eine `aktionId`; die Tabelle oben bietet
       // die Option nirgends sonst an. Die Pruefung steht trotzdem hier, weil erst sie
       // dem Typsystem die Verengung erlaubt.
-      if (stelle.art !== 'element_aktion' && stelle.art !== 'band_abschnitt') {
+      if (
+        stelle.art !== 'element_aktion' &&
+        stelle.art !== 'band_abschnitt' &&
+        stelle.art !== 'unterbrechung'
+      ) {
         return fehler('ungueltige_eingabe', 'Diese Stelle haengt an keiner Aktion.')
       }
       return { ok: true, wert: { art: 'uebergabe', an: { ziel: 'action-editor', aktionId: stelle.aktionId } } }
@@ -203,6 +247,25 @@ export async function fuehreFixAus(
         wert: {
           art: 'uebergabe',
           an: { ziel: 'aktions-auswahl', elementId: stelle.elementId, abschnittIndex: stelle.abschnittIndex },
+        },
+      }
+    }
+
+    case 'unterbrechung_ersetzen': {
+      if (stelle.art !== 'unterbrechung') {
+        return fehler('ungueltige_eingabe', 'Nur ein Einschub kann ersetzt werden.')
+      }
+      // EIGENES Ziel, nicht `aktions-auswahl`: Der Rueckweg arbeitet ueber
+      // `setzeUnterbrechungen` und darf nicht versehentlich das Band umschreiben.
+      return {
+        ok: true,
+        wert: {
+          art: 'uebergabe',
+          an: {
+            ziel: 'unterbrechungs-auswahl',
+            elementId: stelle.elementId,
+            unterbrechungIndex: stelle.unterbrechungIndex,
+          },
         },
       }
     }
@@ -253,6 +316,30 @@ export async function fuehreFixAus(
       return await sendeUndGleicheAb(
         KANAELE.project.setzeEinblendung,
         { elementId: stelle.elementId, einblendung },
+        sichtSchreiber,
+      )
+    }
+
+    case 'unterbrechung_entfernen': {
+      if (stelle.art !== 'unterbrechung') {
+        return fehler('ungueltige_eingabe', 'Nur ein Einschub kann entfernt werden.')
+      }
+
+      const video = holeEinschuebe(projekt, stelle.elementId, stelle.unterbrechungIndex)
+      if (!video.ok) return fehler('nicht_gefunden', video.grund)
+
+      // Ein NEUES Array; der uebergebene Projektstand bleibt Lesegut (wie bei
+      // `abschnitt_entfernen`). Wird die Liste leer, ist sie `[]` - der Store
+      // laesst das VIDEOELEMENT stehen (TK 9.5.3), es gibt keine Kaskade wie beim
+      // leeren Band (die Einblendung entfaellt dort, weil sie `null | Einblendung`
+      // ist; `unterbrechungen` ist eine Liste).
+      const unterbrechungen = video.unterbrechungen.filter(
+        (_, index) => index !== stelle.unterbrechungIndex,
+      )
+
+      return await sendeUndGleicheAb(
+        KANAELE.project.setzeUnterbrechungen,
+        { elementId: stelle.elementId, unterbrechungen },
         sichtSchreiber,
       )
     }
@@ -366,4 +453,47 @@ export async function schliesseAbschnittsFixAb(
   // `setzeEinblendung`, NIEMALS `setzeElementReferenz`: `Listenelement.ref` wird hier
   // nicht angefasst - der `ref` des Videos zeigt weiterhin auf sein Asset.
   return await sendeUndGleicheAb(KANAELE.project.setzeEinblendung, { elementId, einblendung }, sichtSchreiber)
+}
+
+/** Der Gegenweg zu `unterbrechung_ersetzen` (Fall 4, v3.27): Nachdem der Nutzer in der
+ *  Auswahl eine andere Aktion bestimmt hat, tauscht DIESE Funktion die `aktionRef` GENAU
+ *  EINES Einschubs aus. Sie laeuft ueber `setzeUnterbrechungen` (#426) und NIEMALS ueber
+ *  `setzeEinblendung` oder `setzeElementReferenz` - ein Einschub ist weder Band noch
+ *  Listenelement. `zeitstelle` und `dauer` werden UNVERAENDERT uebernommen: Der Nutzer
+ *  hat das Motiv getauscht, nicht die Zeit - eine still geaenderte Dauer verschoebe den
+ *  Einschub gegen das Video (Analogie zu `schliesseAbschnittsFixAb`). */
+export async function schliesseUnterbrechungsFixAb(
+  elementId: string,
+  unterbrechungIndex: number,
+  neueAktionId: string,
+  projekt: Project,
+  sichtSchreiber: SichtSchreiber,
+): Promise<Ergebnis<FixWirkung>> {
+  if (
+    !istKennung(elementId) ||
+    !istKennung(neueAktionId) ||
+    !Number.isInteger(unterbrechungIndex) ||
+    unterbrechungIndex < 0
+  ) {
+    return fehler(
+      'ungueltige_eingabe',
+      'schliesseUnterbrechungsFixAb braucht nicht leere Kennungen und einen ganzzahligen unterbrechungIndex >= 0.',
+    )
+  }
+
+  const video = holeEinschuebe(projekt, elementId, unterbrechungIndex)
+  if (!video.ok) return fehler('nicht_gefunden', video.grund)
+
+  // Ein NEUES Array gleicher LAENGE und gleicher REIHENFOLGE; nur der eine Eintrag
+  // ist ersetzt, `zeitstelle`/`dauer` bleiben Zeichen fuer Zeichen stehen.
+  const unterbrechungen = video.unterbrechungen.map((einschub, index) =>
+    index === unterbrechungIndex ? { ...einschub, aktionRef: neueAktionId } : einschub,
+  )
+
+  // Der Leer-Fall aus TK 9.5.3 tritt hier NIE ein - ein Ersetzen entfernt nichts.
+  return await sendeUndGleicheAb(
+    KANAELE.project.setzeUnterbrechungen,
+    { elementId, unterbrechungen },
+    sichtSchreiber,
+  )
 }

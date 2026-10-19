@@ -17,6 +17,7 @@ import { LEERE_SHELL_REPARATUR, type ShellReparatur } from '../../src/renderer/a
 const doppel = vi.hoisted(() => ({
   assetAuswahl: [] as Array<Record<string, unknown>>,
   aktionsAuswahl: [] as Array<Record<string, unknown>>,
+  unterbrechungsAuswahl: [] as Array<Record<string, unknown>>,
 }))
 
 vi.mock('../../src/renderer/app-shell/asset-auswahl', () => ({
@@ -29,6 +30,13 @@ vi.mock('../../src/renderer/app-shell/asset-auswahl', () => ({
 vi.mock('../../src/renderer/app-shell/aktions-auswahl', () => ({
   AktionsAuswahl: (eigenschaften: Record<string, unknown>) => {
     doppel.aktionsAuswahl.push(eigenschaften)
+    return null
+  },
+}))
+
+vi.mock('../../src/renderer/app-shell/unterbrechungs-auswahl', () => ({
+  UnterbrechungsAuswahl: (eigenschaften: Record<string, unknown>) => {
+    doppel.unterbrechungsAuswahl.push(eigenschaften)
     return null
   },
 }))
@@ -78,6 +86,7 @@ function eigenschaften(lage: ShellReparatur, pjct: Project | null = projekt(), t
   schliesseMediumFixAb: Mock
   schliesseAktionsFixAb: Mock
   schliesseAbschnittsFixAb: Mock
+  schliesseUnterbrechungsFixAb: Mock
   aufAbgeschlossen: Mock
   aufAbgebrochen: Mock
   aufFehler: Mock
@@ -85,6 +94,7 @@ function eigenschaften(lage: ShellReparatur, pjct: Project | null = projekt(), t
   const schliesseMediumFixAb = vi.fn()
   const schliesseAktionsFixAb = vi.fn()
   const schliesseAbschnittsFixAb = vi.fn()
+  const schliesseUnterbrechungsFixAb = vi.fn()
   const aufAbgeschlossen = vi.fn()
   const aufAbgebrochen = vi.fn()
   const aufFehler = vi.fn()
@@ -92,6 +102,7 @@ function eigenschaften(lage: ShellReparatur, pjct: Project | null = projekt(), t
     schliesseMediumFixAb,
     schliesseAktionsFixAb,
     schliesseAbschnittsFixAb,
+    schliesseUnterbrechungsFixAb,
     aufAbgeschlossen,
     aufAbgebrochen,
     aufFehler,
@@ -101,6 +112,7 @@ function eigenschaften(lage: ShellReparatur, pjct: Project | null = projekt(), t
       schliesseMediumFixAb,
       schliesseAktionsFixAb,
       schliesseAbschnittsFixAb,
+      schliesseUnterbrechungsFixAb,
       aufAbgeschlossen,
       aufAbgebrochen,
       aufFehler,
@@ -122,6 +134,7 @@ function rendere(props: UebergabeOverlayEigenschaften): { behaelter: HTMLDivElem
 beforeEach(() => {
   doppel.assetAuswahl = []
   doppel.aktionsAuswahl = []
+  doppel.unterbrechungsAuswahl = []
 })
 
 afterEach(() => {
@@ -167,6 +180,23 @@ describe('UebergabeOverlay (#256)', () => {
     const e = eigenschaften(lageMit({ ziel: 'aktions-auswahl', elementId: 'e1', abschnittIndex: 2 }))
     const { fertig } = rendere(e.props)
     expect(doppel.aktionsAuswahl[0]?.abschnittIndex).toBe(2)
+    fertig()
+  })
+
+  it('unterbrechungs-auswahl: NUR UnterbrechungsAuswahl mit dem Index und dem Rückweg (toBe)', () => {
+    const p = projekt()
+    const e = eigenschaften(
+      lageMit({ ziel: 'unterbrechungs-auswahl', elementId: 'e1', unterbrechungIndex: 2 }),
+      p,
+    )
+    const { fertig } = rendere(e.props)
+    expect(doppel.unterbrechungsAuswahl.length).toBe(1)
+    expect(doppel.aktionsAuswahl.length).toBe(0)
+    expect(doppel.assetAuswahl.length).toBe(0)
+    expect(doppel.unterbrechungsAuswahl[0]?.elementId).toBe('e1')
+    expect(doppel.unterbrechungsAuswahl[0]?.unterbrechungIndex).toBe(2)
+    expect(doppel.unterbrechungsAuswahl[0]?.projekt).toBe(p)
+    expect(doppel.unterbrechungsAuswahl[0]?.schliesseUnterbrechungsFixAb).toBe(e.schliesseUnterbrechungsFixAb)
     fertig()
   })
 
