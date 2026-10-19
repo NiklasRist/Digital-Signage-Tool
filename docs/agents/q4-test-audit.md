@@ -135,4 +135,26 @@ Damit gibt es **keinen Streichkandidaten** aus dieser Runde. Die hohe Mock-Zahl 
   Neue Zusagen brauchen weiterhin ein neues Treiber-Szenario (Schritt Q4-3).
 
 **Weiterhin nicht gebaut:** Streichungen, Rückbau von Tests, Änderung der Unit-Auswahl.
-**Offen:** Q4-3 (Investition vom Mock zum echten Fenster) als eigener Strang.
+
+## 8. Q4-3 – erste Treiber-Investition (19.10.2026)
+
+Die erste Zusage, die bisher **nur** der Unit-Test hielt, wird jetzt am echten Fenster
+gemessen: **FA-19 / TK 9.7.5 – „der Render wird erst freigegeben, wenn alle behoben sind".**
+
+`scripts/durchlauf.mjs`, Schritt **4h** prüft nun zusätzlich, nachdem eine kaputte Stelle
+erzeugt und das Projekt neu geöffnet wurde:
+
+- `reparatur-fortschritt` zeigt **„0 von N behoben"** mit N ≥ 1,
+- `composer-render-oefnen` ist **`disabled`** (keine zweite Ableitung – der echte Knopf).
+
+Beleg (Lauf `npm run pruefung`, Exit 0):
+
+```
+[schritt-4h] Render-Sperre GEMESSEN: Knopf gesperrt, Fortschritt "0 von N behoben" (FA-19).
+```
+
+**Noch offen (bewusst, eigener Schritt):** der **vierte Fall (#438)** am echten Fenster –
+ein kaputter **Einschub** (Aktion ohne Bild) sperrt den Render ebenfalls. Dafür fehlt im
+Treiber-Seed bisher ein **Bild-Asset** für Aktionen; der Fall ist derzeit nur durch
+Unit-Tests gedeckt. Ebenfalls offen: eine Treiber-Matrix „Anforderung → Szenario", damit
+Lücken sichtbar werden, statt sie zu erraten.
