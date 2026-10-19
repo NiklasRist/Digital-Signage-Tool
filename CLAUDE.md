@@ -48,9 +48,15 @@
      jetzt über `dauerMs`.
 - **Belege:** Typecheck/Lint 0, `npm run pruefung` **Exit 0** (Build + Unit + Integration +
   Treiber). Der frühere `standardmarke-anzeige`-„error" ist damit **weg**.
-- `main` **77 Commits vor `origin/main`**; **nicht gepusht**.
-- Nächster Schritt: **Q4-3** (Investition vom Mock zum echten Fenster) oder **S6**
-  (Leichen bewerten). **#433** bleibt beim User.
+- **S6 (Leichen bewertet und entfernt) GEBAUT und gemergt** (`55d840a`, Merge `3eeccf6`):
+  In `composer/index.tsx` standen die S0-Leichen unverändert – `Zeile` (34 Zeilen),
+  `const gesamt` und **fünf** weitere Importe, alle nur durch die dateiweite
+  `eslint-disable`-Zeile verdeckt. Alle hatten **keinen Aufrufer** (Grep je Name) → gelöscht,
+  **Abschaltzeile weg**. Datei **985 → 948**. Beleg: Lint 0 **ohne** Abschaltzeile,
+  `npm run pruefung` **Exit 0**. Der Composer-Umbau S1–S6 ist damit **abgeschlossen**
+  (`docs/agents/composer-umbau-plan.md`).
+- `main` **80 Commits vor `origin/main`**; **nicht gepusht**.
+- Nächster Schritt: **Q4-3** (Investition vom Mock zum echten Fenster). **#433** bleibt beim User.
 
 ## STAND HEUTE (19.10.2026, zweite Sitzung: #438 GEBAUT UND GEMERGT, #426-Familie geschlossen) – historisiert durch den Abschnitt darueber
 

@@ -114,6 +114,17 @@ Damit **keine Deleting-Welle**; der Befund ist das **Gate**: `npm test` lief nur
 
 Damit ist der frühere `standardmarke-anzeige`-„error" **weg**.
 
+## S6 – Leichen bewertet und entfernt
+
+Der S0-Bestand des Composer-Plans war nach S1–S5 unverändert da. Alle Leichen hatten
+**keinen Aufrufer** (Grep je Name; nur der Import-Treffer):
+`Zeile` (34 Zeilen), `const gesamt`, `SortableContext`/`horizontalListSortingStrategy`/
+`useSortable`, `CSS`, `berechneGesamtlaenge`/`frameDauer`, `ReactMouseEvent`,
+`aufSichtGeaendert`, `entferneElementAusListe`, `PfadHoler`, `uebernehmeGrenzen` – dazu die
+dateiweite `eslint-disable`-Zeile. **`index.tsx` 985 → 948.** Commit `55d840a`, Merge
+`3eeccf6`. Beleg: Lint 0 **ohne** Abschaltzeile, Typecheck 0, `npm run pruefung` **Exit 0**.
+Der Composer-Umbau (S1–S6) ist damit abgeschlossen.
+
 ## Naechste Sitzung (Vorschlag)
 
 1. **Q4-3 – Investition verschieben:** neue Zusagen zuerst als **Treiber-Szenario**
