@@ -8,26 +8,10 @@
 import { KANAELE } from '../../shared/contracts/kanaele'                          // #25
 import { setzeStandardSegmentdauer } from '../project-store/setze-standard-segmentdauer' // #334
 import { abgelehnt, istGefuellterText, istObjekt } from './nutzlast-pruefer'      // #332
-import { registriereHandler } from './registriere-handler'                        // #23
+// Die lokale Kopie ist mit #337 entfallen - EINE `meldeAn` (#333).
+import { meldeAn } from './melde-an'                                              // #337
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-
-/**
- * Die eine Stelle, an der aus `unknown` etwas Getipptes wird - zeichengleich zur Huelle
- * `meldeAn` in `project-store-nachtrag.ts` (#153); ihre Zusammenfuehrung braucht ein
- * eigenes Issue, nicht diese Datei.
- */
-function meldeAn<W, T, F extends string>(
-  kanal: string,
-  pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
-  rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
-): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
-    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert; der Cast benennt nur
-    // diese belegte Form.
-    rufe(validierteNutzlast as W),
-  )
-}
 
 export function verdrahteProjectStoreNachtrag4IPC(): void {
   // KEIN Schutz gegen einen zweiten Aufruf: #3 ruft genau einmal, und `ipcMain.handle`

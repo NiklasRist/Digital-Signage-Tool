@@ -6,7 +6,8 @@ import { setzeElementReferenz } from '../project-store/setze-element-referenz' /
 // Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort - importiert, NICHT kopiert.
 // Genau die vierfache Kopie war der Anlass fuer #332; eine fuenfte waere der Rueckfall.
 import { abgelehnt, istGefuellterText, istObjekt } from './nutzlast-pruefer'  // #332
-import { registriereHandler } from './registriere-handler'                   // #23
+// Die lokale Kopie ist mit #337 entfallen - EINE `meldeAn` (#333).
+import { meldeAn } from './melde-an'                                          // #337
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Einblendung } from '../../shared/contracts/project'
@@ -31,32 +32,6 @@ import type { Einblendung } from '../../shared/contracts/project'
 //           : Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>>
 //   #152: setzeElementReferenz(elementId: string, referenz: string)
 //           : Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>>
-
-/**
- * Die eine Stelle, an der aus `unknown` etwas Getipptes wird.
- *
- * `registriereHandler` (#23) reicht der Fachoperation genau das herein, was der Validierer
- * als `wert` zurueckgegeben hat - seine Signatur schreibt aber `validierteNutzlast: unknown`,
- * der Typ geht auf dem Weg also verloren. Ohne diese Huelle stuende in JEDEM Kanal ein
- * eigenes `as`, das niemand mehr gegen seinen Validierer halten kann.
- *
- * ZEICHENGLEICH zu `meldeAn` in `project-store-verdrahtung.ts` (#76),
- * `config-store-verdrahtung.ts` (#77) und `auftrags-manager/ipc-verdrahtung.ts` (#71). Sie
- * zusammenzufuehren hiesse, fremde Dateien zu aendern - dieses Issue erlaubt genau zwei
- * Dateien. Die Doppelung ist am Dateiende gemeldet (Vermerk 2); sie ist derselbe Fall, den
- * #332 fuer die Nutzlast-Pruefer bereits aufgeloest hat.
- */
-function meldeAn<W, T, F extends string>(
-  kanal: string,
-  pruefe: (nutzlast: unknown) => Ergebnis<W, 'ungueltige_eingabe'>,
-  rufe: (geprueft: W) => Promise<Ergebnis<T, F>>,
-): void {
-  registriereHandler<T, F>(kanal, pruefe, (validierteNutzlast) =>
-    // SAFETY: pruefe hat die Nutzlast unmittelbar zuvor validiert und in die Huelle
-    // gelegt; der Cast benennt diese belegte Form, damit rufe den geprueften Typ sieht.
-    rufe(validierteNutzlast as W),
-  )
-}
 
 export function verdrahteProjectStoreNachtragIPC(): void {
   // Beide Namen kommen aus der Registry (#25); in dieser Datei steht kein einziger
