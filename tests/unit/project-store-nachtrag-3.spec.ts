@@ -17,7 +17,7 @@ vi.mock("../../src/main/project-store/setze-standard-marke", () => ({
 }));
 
 const { verdrahteProjectStoreNachtrag3IPC } = await import(
-  "../../src/main/ipc-gateway/project-store-nachtrag-3"
+  "../../src/main/ipc-gateway/project-store-nachtrag"
 );
 import { KANAELE } from "../../src/shared/contracts/kanaele";
 
