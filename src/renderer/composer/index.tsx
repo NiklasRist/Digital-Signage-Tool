@@ -94,6 +94,10 @@ import { BibliothekDock } from './bibliothek-dock.tsx'
 // S5 (Naht N5): der DnD-Zustand und die vier DndContext-Handler liegen im Hook
 // `verwendeZeitleistenZug` (Drag-Verband, Band-Aufnahme #425, Zeitstelle #428).
 import { verwendeZeitleistenZug } from './verwende-zeitleisten-zug'
+// #437: Unterbrechungen entfernen - die reine Listen-Bildung liegt in unterbrechungs-aufnahme.ts,
+// geschrieben wird ueber den EINEN Weg setzeElementUnterbrechungen (#426).
+import { entferneUnterbrechung } from './unterbrechungs-aufnahme'
+import { setzeElementUnterbrechungen } from './unterbrechungs-bearbeiten'
 // #408: Das KontextMenue (#133-Familie, Duplikat/Entfernen) wird in DIESE Wurzel
 // montiert - sein Zustand wandert siehtbarseitig in die ComposerLage (menueAdresse,
 // composer-montage.ts); die Zeilen tragen data-element-id (#248) - kein Edits an #248.
@@ -264,6 +268,28 @@ export function ComposerInterna({
     holeVorlagen: () => (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage),
     melde: meldeWurzel,
   })
+
+  // #437: EINE Unterbrechung am Video entfernen. Die neue Liste kommt aus
+  // `entferneUnterbrechung` (rein), geschrieben wird ueber den EINEN Weg
+  // `setzeElementUnterbrechungen` (#426). Die Sicht-Korrektur geht ueber den
+  // Wrapped-Zugang `projekt.setzeListe` - EIN Undo-Schritt (#243).
+  const entferneUnterbrechungAmVideo = (elementId: string, index: number): void => {
+    const frisch = projekt.hole().projekt
+    if (frisch === null) return
+    const element = frisch.liste.find((eintrag) => eintrag.id === elementId)
+    if (element === undefined || element.art !== 'video') return
+    const neu = entferneUnterbrechung(element.unterbrechungen ?? [], index)
+    void setzeElementUnterbrechungen(element.id, neu).then((antwort) => {
+      if (!antwort.ok) {
+        meldeWurzel(antwort.fehler.code, antwort.fehler.meldung)
+        return
+      }
+      const aktuell = projekt.hole().projekt
+      if (aktuell === null) return
+      const wert = antwort.wert
+      projekt.setzeListe(aktuell.liste.map((eintrag) => (eintrag.id === wert.id ? wert : eintrag)))
+    })
+  }
 
   // #418: Nach einem Import ist das neue VIDEO standardmaessig ausgewaehlt. Erkannt wird
   // es am NEU erscheinenden Video-Asset der Sicht (der Composer-Import legt genau ein
@@ -834,6 +860,8 @@ export function ComposerInterna({
             bandZiel={zug.bandZiel}
             pxProSekunde={pxProSekunde}
             aufZoom={zoome}
+            aufUnterbrechungEntfernen={entferneUnterbrechungAmVideo}
+            videoWirkung={zug.videoWirkung}
           />
 
           {/* S4 (Naht N4): die Ausgaben-Region als eigener Baustein (#230/#232-Oeffnungsweg).
