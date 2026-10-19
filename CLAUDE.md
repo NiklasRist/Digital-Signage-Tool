@@ -11,7 +11,30 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (19.10.2026, #436/#437 Unterbrechungen GEBAUT UND GEMERGT, #438 Luecke) – gilt vor ALLEM weiter unten
+## STAND HEUTE (19.10.2026, zweite Sitzung: #438 GEBAUT UND GEMERGT, #426-Familie geschlossen) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-19-session-2.md`](docs/agents/uebergabe-2026-10-19-session-2.md) – LIES DIESE DATEI ZUERST.**
+
+- **#438 (Kaputt-Erkennung, vierter Fall) GEBAUT und gemergt** (`d2ebbbc`, Merge `bfbf1df`):
+  `findeKaputteStellen` erkennt auch eine **Unterbrechung**, deren Aktion fehlt bzw. deren
+  Aktionsbild ein `fehlt`-Asset ist – als eigene vierte Stelle, die den Render sperrt
+  (`istRenderFreigegeben` = false). **Zuerst** wurde **TK 9.7.5 von „drei" auf „vier"**
+  fortgeschrieben, Kopf auf **TK v3.27 / 19.10.2026**, `.docx` neu erzeugt. Neuer Typ
+  `unterbrechung`, neue Fix-Optionen `unterbrechung_ersetzen`/`unterbrechung_entfernen`,
+  neues Uebergabe-Ziel `unterbrechungs-auswahl` (eigene Anzeige `app-shell/unterbrechungs-auswahl.tsx`).
+  **Ueber die Issue-Dateiliste hinaus** verdrahtet (sonst Sackgasse) – im Issue-Beleg benannt.
+- **Gegenprobe #438:** `unterbrechungen`-Zweig entfernt → **9 Tests rot**; Ruecknahme
+  byte-identisch (Pruefsumme `a030205391d23c865ebf70ea54acbd070285b939036d5c0eca1ed66aced40b1d`).
+- **Volllauf 5672 Tests gruen (331 Dateien)**, Typecheck/Lint 0 (der eine gemeldete „error"
+  ist der bekannte `standardmarke-anzeige`-Vorbefund, kein Test rot).
+- **Auf GitHub geschlossen:** **#436**, **#437**, **#438** und das **Eltern-Issue #426**
+  (alle vier Bau-Issues #434–#437 sind durch). Beleg-Kommentare je Issue.
+- **Ehrlich offen:** `kaputteUnterbrechungen` (Feld in `liste-ansicht.ts`) wird noch von
+  keiner Komponente angezeigt – Markierung im Video-Block ist ein eigener optischer Schritt.
+- `main` **64 Commits vor `origin/main`**; **nicht gepusht**.
+- Naechste Sitzung: **#433 optisch abnehmen**; im Programm **Q3/Q4/Q1.2**, danach **S6**.
+
+## STAND HEUTE (19.10.2026, #436/#437 Unterbrechungen GEBAUT UND GEMERGT, #438 Luecke) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-19-session.md`](docs/agents/uebergabe-2026-10-19-session.md) – LIES DIESE DATEI ZUERST.**
 
