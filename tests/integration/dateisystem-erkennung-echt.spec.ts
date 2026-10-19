@@ -49,9 +49,15 @@ describe('dateisystemErkennung.erkenne gegen das echte Betriebssystem (#184)', (
       // NICHT "NTFS" - das haengt am Rechner -, sondern dass ueberhaupt eine Antwort
       // kommt und dass sie nicht faelschlich `fat32` lautet.
       expect(erkannt).toBe('anderes')
+    } else if (process.platform === 'darwin') {
+      // Gebauter Code gewinnt: macOS wird seit dem 23.08.2026 ueber
+      // `diskutil info -plist` erkannt (gemessen an drei echten Datentraegern).
+      // Ein Ordner unter <Temp> liegt auf APFS - weder FAT32 noch exFAT, also
+      // die ehrliche Antwort 'anderes'. Die fruehere Erwartung `null` stammte aus
+      // der Zeit VOR dieser Messung.
+      expect(erkannt).toBe('anderes')
     } else {
-      // Auf macOS/Linux ist das Verfahren ungemessen; dort ist `null` die richtige,
-      // ehrliche Antwort und keine Luecke.
+      // Linux ist nicht implementiert; dort bleibt `null` die ehrliche Antwort.
       expect(erkannt).toBeNull()
     }
   }, 30_000)

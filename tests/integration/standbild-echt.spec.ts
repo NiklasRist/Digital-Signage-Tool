@@ -212,9 +212,11 @@ describe("Standbild-Zwischenclip gegen das echte ffmpeg", () => {
 
       const ergebnis = lauf(ohne, 15_000);
 
-      // Vom Signal getoetet, nicht selbst beendet.
-      expect(ergebnis.signal).not.toBeNull();
-      expect(ergebnis.code).toBeNull();
+      // NICHT ueber das Signal messen: ffmpeg faengt SIGTERM ab und beendet sich
+      // mit einem Code - `signal` ist deshalb `null`, obwohl die Frist gegriffen
+      // hat (gemessen am 19.10.2026, macOS). Die Zusage lautet "endet NICHT von
+      // selbst"; gemessen wird deshalb die ZEIT: Der Lauf erreicht die Frist.
+      expect(ergebnis.dauerMs).toBeGreaterThanOrEqual(14_000);
     },
     60_000,
   );

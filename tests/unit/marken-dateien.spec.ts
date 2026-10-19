@@ -36,7 +36,12 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await fs.rm(zustand.ordner, { recursive: true, force: true });
+  // Der Store speichert ENTPRELLT (TK 9.5.4); ein Schreibvorgang kann nach dem Testkoerper
+  // noch unterwegs sein. Ohne diesen Flush vor dem Aufraeumen racing das `fs.rm` mit dem
+  // Schreiber und scheitert sporadisch mit ENOTEMPTY (gemessen am 19.10.2026 unter Vollast).
+  // `maxRetries` deckt den Rest des Fensters ab, ohne den Test zu entschaerfen.
+  await flushBestand().catch(() => undefined);
+  await fs.rm(zustand.ordner, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 });
 
 const PNG_1x1 = Buffer.from(

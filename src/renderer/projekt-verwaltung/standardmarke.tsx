@@ -35,6 +35,11 @@ export function StandardmarkeAuswahl(p: StandardmarkeEigenschaften): JSX.Element
       setzeLaeuft(true)
       try {
         await p.aufWechsel(markeId)
+      } catch {
+        // Der Aufrufer meldet seinen Fehler selbst (ENTSCHIEDEN 5); hier gibt es KEINE
+        // zweite Meldung. Das `catch` ist trotzdem Pflicht: ohne es verliesse die
+        // Ablehnung die `void`-IIFE als unbehandelte Rejection (am 19.10.2026 gemessen,
+        // blockierte sie `npm run pruefung`).
       } finally {
         setzeLaeuft(false)
       }
