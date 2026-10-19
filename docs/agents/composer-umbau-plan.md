@@ -1,6 +1,6 @@
 # Plan: Composer-Wurzel arbeitsfähig machen
 
-**Status:** S1–S5 GEBAUT und gemergt (S1–S3 `70007ef`; S4 `df08324`; S5 `fd68efb`). **Erstellt:** 16.10.2026.
+**Status:** **S1–S6 GEBAUT und gemergt** (S1–S3 `70007ef`; S4 `df08324`; S5 `fd68efb`; S6 19.10.2026). **Erstellt:** 16.10.2026.
 **Art:** struktureller Bau, **verhaltensneutral** (kein Verhaltens-/Optikwechsel).
 **Herkunft:** Befund „`composer/index.tsx` ist schwer zu bearbeiten" (Messung 16.10.2026).
 **Abgelehnte Vorgängerarbeit:** **#432** (offen, wird geschlossen) – dort stand nur „groß →
@@ -88,7 +88,16 @@ sind eigene, gesteuerte Bausteine - die Wurzel reicht Werte + Rueckrufe herein.
 DndContext-Handler (und den Projektwechsel-Reset des Band-Ziels). Beide belegt:
 Typecheck/Lint 0, Suite 5550/322, Treiber ohne Befund (4f/4f2/4f4/4g2/4g4 unveraendert),
 DOM/Testids zeichengleich; `index.tsx` 1123→957.
-**S6 – erst nach dem UI-Umbau:** tatenlose Leichen bewerten (löschen **oder behalten**).
+**S6 – Leichen bewertet und gelöscht (19.10.2026).** Der S0-Bestand war nach S1–S5
+unverändert vorhanden: die Funktion `Zeile`, `const gesamt` und **fünf** weitere Importe, die
+nur die dateiweite Zeile `/* eslint-disable @typescript-eslint/no-unused-vars */` verdeckte.
+Bewertung: **alle löschen** – keiner hat einen Aufrufer, keiner ist Teil eines geplanten
+Wegs (Grep je Name, nur der Import-Treffer). Entfernt: `Zeile` (34 Zeilen), `gesamt`,
+`SortableContext`/`horizontalListSortingStrategy`/`useSortable`, `CSS`, `berechneGesamtlaenge`/
+`frameDauer`, `ReactMouseEvent`, `aufSichtGeaendert`, `entferneElementAusListe`, `PfadHoler`,
+`uebernehmeGrenzen` **und die `eslint-disable`-Zeile**. `index.tsx` **985 → 948**.
+Beleg: Lint 0 **ohne** Abschaltzeile, Typecheck 0, `npm run pruefung` **Exit 0**
+(5672 Tests/331 Dateien, 49/12 Integration, Treiber ohne Befund).
 
 **Rücknahme je Schritt** über `git revert <commit>`; die Treiber-Messung ist die Gegenprobe.
 
@@ -105,6 +114,6 @@ DOM/Testids zeichengleich; `index.tsx` 1123→957.
 
 1. **Handler-Ort in den Overlays:** Wirkungen aus der Wurzel (Vorschlag) oder Handler in der
    Komponente?
-2. **`eslint-disable`:** jetzt gezielt ausnehmen oder bis S6 lassen?
+2. **`eslint-disable`:** **erledigt in S6** – die dateiweite Abschaltzeile ist weg; Lint ist ohne sie 0.
 3. **Zeitpunkt:** S1–S3 vor **#428**, S4–S5 danach (Vorschlag) – oder alles am Stück?
 4. **#432:** als **verworfen** schließen (Kommentar mit Verweis auf diesen Plan).
