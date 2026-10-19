@@ -1892,6 +1892,25 @@ const main = async () => {
         fund("Reparatur-Fuehrung", "das Reparatur-Panel erscheint bei kaputter Stelle (#421)",
           "kein reparatur-panel im Fenster", "Befund", "composer/index.tsx");
       } else {
+        // Q4-3 (19.10.2026): Die Zusage aus FA-19/TK 9.7.5 am ECHTEN Fenster messen -
+        // "der Render wird erst freigegeben, wenn alle behoben sind". Bisher bewies das
+        // nur der Unit-Test; hier haengt es an `disabled` des echten Knopfes.
+        const lage4h = await seite.evaluate(() => ({
+          fortschritt: document.querySelector('[data-testid="reparatur-fortschritt"]')?.textContent ?? null,
+          renderGesperrt: document.querySelector('[data-testid="composer-render-oefnen"]')?.disabled ?? null,
+        }));
+        const fortschrittOk = /^0 von [1-9]\d* behoben$/.test((lage4h.fortschritt ?? "").trim());
+        if (!fortschrittOk) {
+          fund("Reparatur-Fuehrung", 'der Fortschritt zeigt "0 von N behoben" mit N >= 1 (TK 9.7.5)',
+            `Fortschritt "${String(lage4h.fortschritt)}"`, "Befund", "composer/index.tsx");
+        }
+        if (lage4h.renderGesperrt !== true) {
+          fund("Render-Sperre", "composer-render-oefnen ist bei kaputter Stelle GESPERRT (FA-19/TK 9.7.5)",
+            `disabled=${String(lage4h.renderGesperrt)}`, "Befund", "composer/index.tsx");
+        } else if (fortschrittOk) {
+          console.log('[schritt-4h] Render-Sperre GEMESSEN: Knopf gesperrt, Fortschritt "0 von N behoben" (FA-19).');
+        }
+
         const bloeckeDavor4h = await seite.evaluate(
           () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
         );
