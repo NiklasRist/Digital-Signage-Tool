@@ -1985,7 +1985,13 @@ const main = async () => {
     fs.appendFileSync(PROTOKOLL, zeilen.join("\n") + "\n");
     console.log("[protokoll] " + PROTOKOLL + " erweitert.");
 
-    if (erlebteFehler.length > 0) process.exitCode = 2;
+    // Gate (Q4, 19.10.2026): `npm run pruefung` muss an einem echten Fund scheitern.
+    // `Untersuchung` und `MANUELL` bleiben Hinweise - sie sind keine Regression.
+    const befundZahl = funde.filter((f) => f.schwere === "Befund").length;
+    if (befundZahl > 0) {
+      console.error(`[befund] ${befundZahl} Fund(e) der Schwere "Befund" - Pruefung nicht bestanden.`);
+    }
+    if (erlebteFehler.length > 0 || befundZahl > 0) process.exitCode = 2;
   } finally {
     await browser.close().catch(() => {});
     elektron.kill();

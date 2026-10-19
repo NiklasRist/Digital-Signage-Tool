@@ -66,37 +66,43 @@ das Testobjekt echt läuft.
 **Zwischenergebnis:** In der Stichprobe findet sich **kein** Test, der nur die Attrappe prüft.
 Die Vermutung „viele Tests testen die Mocks" bestätigt sich an diesen fünf Stellen **nicht**.
 
-## 4. Verdachtsfälle – Prüfreihenfolge, kein Urteil
+## 4. Alle 20 Verdachtsfälle gelesen – Urteile
 
-Sortiert nach `vi.mock` je `it` (die höchste Dichte zuerst). Diese Dateien werden **zuerst
-gelesen**, weil dort das Verhältnis von Attrappen zu geprüfter Zusage am ehesten kippen kann:
+Sortiert nach `vi.mock` je `it` (die höchste Dichte zuerst). Gelesen wurden Kopfkommentar,
+`it`-Titel und die tragenden Erwartungen. **Urteil `halten` = die Datei pinnt eine Zusage aus
+AD/TK/Issue am echten Testobjekt; die Attrappen sitzen nur an äußeren Grenzen.**
 
-| Datei | `it` | `vi.mock` | Mocks/`it` | `expect` | davon `toHaveBeenCalled` |
-|---|---|---|---|---|---|
-| `composer-aktion-loeschen.spec.ts` | 2 | 7 | 3,50 | 8 | 4 |
-| `standardmarke-zeilenwert.spec.ts` | 2 | 5 | 2,50 | 6 | 0 |
-| `composer-band.spec.ts` | 4 | 9 | 2,25 | 12 | 1 |
-| `live-vorschau.spec.ts` | 3 | 5 | 1,67 | 6 | 4 |
-| `projekt-anlegen-video.spec.ts` | 3 | 5 | 1,67 | 7 | 5 |
-| `vorlagen-editor-sitzung.spec.ts` | 2 | 3 | 1,50 | 3 | 0 |
-| `composer-dialog-einhaengung.spec.ts` | 6 | 7 | 1,17 | 23 | 0 |
-| `bootstrap-verdrahtung.spec.ts` | 20 | 23 | 1,15 | 58 | 23 |
-| `composer-ein-video.spec.ts` | 7 | 8 | 1,14 | 15 | 7 |
-| `project-store-verdrahtung.spec.ts` | 16 | 16 | 1,00 | 39 | 22 |
-| `app-einhaengung.spec.ts` | 29 | 25 | 0,86 | 132 | 19 |
-| `setze-standard-marke.spec.ts` | 7 | 6 | 0,86 | 31 | 14 |
-| `marken-verdrahtung.spec.ts` | 11 | 9 | 0,82 | 30 | 11 |
-| `zeichen-vorbereitung.spec.ts` | 5 | 4 | 0,80 | 19 | 0 |
-| `dauer-regler-undo.spec.ts` | 3 | 2 | 0,67 | 5 | 0 |
-| `marken-editor-wurzel.spec.ts` | 18 | 11 | 0,61 | 54 | 31 |
-| `config-store-verdrahtung.spec.ts` | 10 | 6 | 0,60 | 19 | 7 |
-| `start-wiederherstellung.spec.ts` | 5 | 3 | 0,60 | 16 | 1 |
-| `beenden-ablauf.spec.ts` | 7 | 4 | 0,57 | 33 | 20 |
-| `vorschau-anzeige.spec.ts` | 14 | 8 | 0,57 | 43 | 0 |
+| Datei | `it` | `vi.mock` | Mocks/`it` | `expect` | davon `toHaveBeenCalled` | Urteil |
+|---|---|---|---|---|---|---|
+| `composer-aktion-loeschen.spec.ts` | 2 | 7 | 3,50 | 8 | 4 | halten |
+| `standardmarke-zeilenwert.spec.ts` | 2 | 5 | 2,50 | 6 | 0 | halten |
+| `composer-band.spec.ts` | 4 | 9 | 2,25 | 12 | 1 | halten |
+| `live-vorschau.spec.ts` | 3 | 5 | 1,67 | 6 | 4 | halten |
+| `projekt-anlegen-video.spec.ts` | 3 | 5 | 1,67 | 7 | 5 | halten |
+| `vorlagen-editor-sitzung.spec.ts` | 2 | 3 | 1,50 | 3 | 0 | halten |
+| `composer-dialog-einhaengung.spec.ts` | 6 | 7 | 1,17 | 23 | 0 | halten |
+| `bootstrap-verdrahtung.spec.ts` | 20 | 23 | 1,15 | 58 | 23 | halten |
+| `composer-ein-video.spec.ts` | 7 | 8 | 1,14 | 15 | 7 | halten |
+| `project-store-verdrahtung.spec.ts` | 16 | 16 | 1,00 | 39 | 22 | halten |
+| `app-einhaengung.spec.ts` | 29 | 25 | 0,86 | 132 | 19 | halten |
+| `setze-standard-marke.spec.ts` | 7 | 6 | 0,86 | 31 | 14 | halten |
+| `marken-verdrahtung.spec.ts` | 11 | 9 | 0,82 | 30 | 11 | halten |
+| `zeichen-vorbereitung.spec.ts` | 5 | 4 | 0,80 | 19 | 0 | halten |
+| `dauer-regler-undo.spec.ts` | 3 | 2 | 0,67 | 5 | 0 | halten |
+| `marken-editor-wurzel.spec.ts` | 18 | 11 | 0,61 | 54 | 31 | halten |
+| `config-store-verdrahtung.spec.ts` | 10 | 6 | 0,60 | 19 | 7 | halten |
+| `start-wiederherstellung.spec.ts` | 5 | 3 | 0,60 | 16 | 1 | halten |
+| `beenden-ablauf.spec.ts` | 7 | 4 | 0,57 | 33 | 20 | halten |
+| `vorschau-anzeige.spec.ts` | 14 | 8 | 0,57 | 43 | 0 | halten |
 
 **Warnung zur Kennzahl:** Eine hohe `toHaveBeenCalled`-Quote ist ebenfalls kein Urteil.
 `bootstrap-verdrahtung.spec.ts` und `project-store-verdrahtung.spec.ts` **müssen** Aufrufe
 prüfen – ihr Gegenstand ist die Verdrahtung selbst.
+
+**Ergebnis: 20 von 20 `halten`.** Kein Test prüft nur eine Attrappe; keiner ist ohne Aussage.
+Damit gibt es **keinen Streichkandidaten** aus dieser Runde. Die hohe Mock-Zahl erklärt sich
+überall aus demselben Muster: eine echte Wurzel (Komponente oder Verdrahtung) und gemockte
+**äußere** Grenzen (Electron, IPC, Dateisystem, Geschwister-Ansichten).
 
 ## 5. Was das Audit bisher trägt
 
@@ -110,28 +116,23 @@ prüfen – ihr Gegenstand ist die Verdrahtung selbst.
    Sollte die Vollprüfung doch welche finden, werden sie **benannt und einzeln** entsorgt –
    nicht pauschal.
 
-## 6. Vorschlag für die nächsten Schritte
+## 6. Entscheidung des Auftraggebers (19.10.2026)
 
-**Schritt Q4-1 (Audit fortsetzen, ohne Code):** Die 20 Verdachtsfälle aus Abschnitt 4 lesen
-und je Datei ein Urteil `halten / verdichten / streichen` mit einer Zeile Begründung
-festhalten. Ergebnis in diesem Dokument ergänzen.
+1. **Alle 20 Verdachtsfälle lesen** – erledigt (Abschnitt 4): 20 × `halten`.
+2. **`npm run pruefung` wird verpflichtend** (vor jedem Merge) und führt
+   **Unit + Integration + Treiber** nacheinander aus.
 
-**Schritt Q4-2 (Gate, erst danach entscheiden):**
-- `npm test` bleibt der schnelle Unit-Lauf.
-- Ein neuer Befehl `npm run pruefung` (Vorschlag) führt **Unit + Integration + Treiber**
-  nacheinander aus und ist der Lauf vor einem Merge.
-- **Voraussetzung:** Der Treiber muss stabil und schnell genug sein; sein Protokoll ist
-  bereits da (`docs/agents/oberflaeche-durchlauf.md`).
+## 7. Umsetzung des Gates
 
-**Schritt Q4-3 (Investition verschieben):** Neue Zusagen werden zuerst als
-Treiber-Szenario formuliert (Anforderung → echtes Fenster), Unit-Tests bleiben für reine
-Logik. Kein Rückbau bestehender Tests ohne Befund aus Q4-1.
+- `package.json` → **`pruefung`**: `build` (der Treiber braucht `dist/`), dann `test`
+  (Unit), dann `test:integration`, dann `durchlauf`.
+- **Treiber-Exitcode:** Der Treiber setzte bisher nur bei `pageerror` einen Fehlercode.
+  Er setzt jetzt auch bei einem Fund der Schwere **`Befund`** Exitcode 2 – `Untersuchung`
+  und `MANUEL` bleiben Hinweise. Ohne diese Änderung wäre das Gate blind gegen genau die
+  Funde, für die es da ist.
+- **Grenze, ehrlich benannt:** Der Treiber ist ein *Regressions*-Gate, keine vollständige
+  Anforderungsprüfung. Er misst nur die Szenarien, die in `scripts/durchlauf.mjs` stehen.
+  Neue Zusagen brauchen weiterhin ein neues Treiber-Szenario (Schritt Q4-3).
 
-## 7. Offene Entscheidung (beim Auftraggeber)
-
-- Soll `npm run pruefung` **verpflichtend** werden (vor jedem Merge), oder bleibt der Treiber
-  ein Beweismittel auf Anweisung?
-- Sollen die 20 Verdachtsfälle vollständig gelesen werden (Aufwand ca. 1 Sitzung), oder
-  genügen die fünf bereits gelesenen plus die drei auffälligsten?
-
-**Nicht entschieden und nicht gebaut:** Gate-Umstellung, Streichungen, neue Testbefehle.
+**Weiterhin nicht gebaut:** Streichungen, Rückbau von Tests, Änderung der Unit-Auswahl.
+**Offen:** Q4-3 (Investition vom Mock zum echten Fenster) als eigener Strang.

@@ -22,7 +22,8 @@
     "lint:fix": "eslint . --fix",
     "test": "vitest run tests/unit",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "durchlauf": "node scripts/durchlauf.mjs"
+    "durchlauf": "node scripts/durchlauf.mjs",
+    "pruefung": "npm run build && npm run test && npm run test:integration && npm run durchlauf"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
