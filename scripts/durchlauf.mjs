@@ -704,6 +704,124 @@ const main = async () => {
         } else {
           console.log(`[schritt-4b4] Zoom GEMESSEN: ${filmDiag.bilder} -> ${filmZoom.bilder} Einzelbilder bei ${String(filmZoom.wert)}.`);
         }
+
+        // Schritt 4b5 - Unterbrechung in der Vorschau (#436): Der Bedienweg (#437) ist noch
+        // nicht gebaut, deshalb legt der Treiber Aktion + Unterbrechung per IPC-Seed an (wie
+        // den Medien-Seed) und MISST dann an der Vorschau: an der Zeitstelle steht die Aktion
+        // auf der Buehne und das Video ist PAUSIERT; danach laeuft es an derselben Stelle
+        // weiter (TK v3.26 / 9.2.9).
+        const projektDatei = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+        let seedBasis = null;
+        try {
+          seedBasis = JSON.parse(fs.readFileSync(projektDatei, "utf-8"));
+        } catch {
+          fund("Unterbrechungs-Seed", "project.json lesbar (elementId, standardMarkeId)",
+            "nicht lesbar: " + projektDatei, "Untersuchung", "project.json");
+        }
+        const videoElement = seedBasis === null
+          ? null
+          : (Array.isArray(seedBasis.liste) ? seedBasis.liste : []).find((e) => e && e.art === "video");
+        if (seedBasis === null || !videoElement) {
+          fund("Unterbrechungs-Seed", "ein Video-Element in der Wiedergabeliste (aus Schritt 4b)",
+            "keins gefunden", "Befund", "composer/index.tsx");
+        } else {
+          const seed = await seite.evaluate(async (elementId, markeId) => {
+            const akt = await window.api.invoke("project:erstelleAktion", {
+              aktionsdaten: {
+                titel: "Durchlauf-Einschub",
+                beschreibung: null, preis: null, bildRef: null, cta: null,
+                standardDauer: null, vorlagenId: "vollbild", markeId, akzentfarbe: null,
+              },
+            });
+            if (!akt || !akt.ok) return { aktion: akt };
+            const unter = await window.api.invoke("project:setzeUnterbrechungen", {
+              elementId,
+              unterbrechungen: [{ zeitstelle: 1, aktionRef: akt.wert.id, dauer: 1 }],
+            });
+            return { aktion: akt, unterbrechung: unter };
+          }, videoElement.id, seedBasis.standardMarkeId);
+          if (!seed.aktion || !seed.aktion.ok) {
+            fund("Unterbrechungs-Seed", "Aktion per IPC angelegt (#426)",
+              JSON.stringify(seed.aktion), "Befund", "project-store/erstelle-aktion.ts");
+          } else if (!seed.unterbrechung || !seed.unterbrechung.ok) {
+            fund("Unterbrechungs-Seed", "Unterbrechung per IPC gesetzt (#426)",
+              JSON.stringify(seed.unterbrechung), "Befund", "project-store/setze-unterbrechungen.ts");
+          } else {
+            // Die Renderer-SICHT kennt keinen Nachzieh-Kanal (composer/projektzustand.ts:
+            // nur Laden ueber oeffneProjekt). Deshalb das Projekt ueber die LISTE erneut
+            // oeffnen - das flusht den lebenden Stand mitsamt den Seeds und laedt ihn frisch.
+            await klick('[data-testid="reiter-projekte"]');
+            await schlafe(400);
+            await klick('[data-testid="verwaltung-erneut-laden"]');
+            await schlafe(700);
+            await seite.evaluate((id) => {
+              const zeile = document.querySelector(`[data-testid="projekt-${id}"]`);
+              const knopf = zeile === null ? null : zeile.querySelector('button');
+              if (knopf) knopf.click();
+            }, aktivesProjektId);
+            await schlafe(2_500);
+            await klick('[data-testid="reiter-zusammenstellen"]');
+            await schlafe(800);
+
+            // Auf einen Frame IM Einschub springen: Zeitstelle 1 s = Frame 30, Einschub [30, 60).
+            const setzeFrame = (wert) => seite.evaluate((w) => {
+              const schieber = document.querySelector('[data-testid="vorschau-zeitleiste"]');
+              if (schieber === null) return false;
+              const setzen = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+              if (setzen) setzen.call(schieber, String(w));
+              schieber.dispatchEvent(new Event("input", { bubbles: true }));
+              return true;
+            }, wert);
+            const vorschauDiag = () => seite.evaluate(() => {
+              const video = document.querySelector('[data-testid="preview-video"] video');
+              return {
+                einschub: !!document.querySelector('[data-testid="preview-einschub"]'),
+                paused: video === null ? null : video.paused,
+                frame: document.querySelector('[data-testid="vorschau-zeitleiste"]')?.value ?? null,
+              };
+            });
+
+            await klick('[data-testid="vorschau-play-pause"]'); // die Uhr laeuft
+            await schlafe(300);
+            const schieberDa = await setzeFrame(45);
+            if (!schieberDa) {
+              fund("Unterbrechung Vorschau", "die Vorschau-Zeitleiste ist bedienbar (#436)",
+                "keine vorschau-zeitleiste im Fenster", "Befund", "preview-player/vorschau.tsx");
+            } else {
+              await schlafe(300);
+              const imEinschub = await vorschauDiag();
+              console.log("[schritt-4b5] Im Einschub: " + JSON.stringify(imEinschub));
+              await setzeFrame(70); // nach dem Einschub (zweiter Video-Teil)
+              await schlafe(500);
+              const danach = await vorschauDiag();
+              console.log("[schritt-4b5] Danach: " + JSON.stringify(danach));
+              if (!imEinschub.einschub || imEinschub.paused !== true) {
+                fund("Unterbrechung Vorschau", "an der Zeitstelle: Aktion auf der Buehne, Video PAUSIERT",
+                  JSON.stringify(imEinschub), "Befund", "preview-player/vorschau.tsx");
+              } else if (danach.einschub || danach.paused !== false) {
+                fund("Unterbrechung Vorschau", "nach dem Einschub: Video laeuft an derselben Stelle weiter",
+                  JSON.stringify(danach), "Befund", "preview-player/vorschau.tsx");
+              } else {
+                console.log(`[schritt-4b5] Unterbrechung GEMESSEN: Einschub @${imEinschub.frame} (Video pausiert) -> danach @${danach.frame} (Video laeuft), #436 belegt.`);
+              }
+            }
+
+            // Der Seed raeumt sich weg: die Durchlauf-Aktion samt Unterbrechung wieder
+            // entfernen (loescheAktion kaskadiert auf den Einschub, #426), Sicht per UI
+            // nachziehen - sonst faende #4f spaeter eine FREMDE erste Aktionszeile vor.
+            await seite.evaluate(async (aktionId) => {
+              return window.api.invoke("project:löscheAktion", { id: aktionId });
+            }, seed.aktion.wert.id);
+            await klick('[data-testid="reiter-projekte"]');
+            await schlafe(400);
+            await seite.evaluate((id) => {
+              const zeile = document.querySelector(`[data-testid="projekt-${id}"]`);
+              const knopf = zeile === null ? null : zeile.querySelector("button");
+              if (knopf) knopf.click();
+            }, aktivesProjektId);
+            await schlafe(2_000);
+          }
+        }
       }
     }
 

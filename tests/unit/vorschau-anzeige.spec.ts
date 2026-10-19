@@ -422,3 +422,51 @@ describe('Die Marken-Aufloesung (#313, TK 9.15.4)', () => {
     fertig()
   })
 })
+
+// ---------------- #426: der Einschub in der Vorschau ----------------
+
+describe('Unterbrechung (#426, TK 9.2.9)', () => {
+  function unterbrochenesProjekt(): Project {
+    const projekt = baueProjekt()
+    // trim 0..2 = 60 Frames; Zeitstelle 1 s -> erster Teil [0,30), Einschub [30,60), zweiter [60,90).
+    projekt.liste = [
+      baueElement({ unterbrechungen: [{ zeitstelle: 1, aktionRef: 'a-1', dauer: 1 }] }),
+    ]
+    return projekt
+  }
+
+  function springeZu(behaelter: HTMLDivElement, wert: number): void {
+    const schieber = behaelter.querySelector('[data-testid="vorschau-zeitleiste"]') as HTMLInputElement
+    // Die kontrollierte Range: der native Setter plus das 'input'-Ereignis erreicht React.
+    const setzen = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    act(() => {
+      setzen?.call(schieber, String(wert))
+      schieber.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  it('im Einschub: der Aktions-Einschub steht auf der Buehne und das Video ist PAUSIERT am Teil-Ende', () => {
+    markenBereitschaft.bereit.set('m1', baueMarke('m1'))
+    const { behaelter, fertig } = rendere(eigenschaften({ projekt: unterbrochenesProjekt() }))
+    druecke(behaelter, 'vorschau-play-pause') // die Uhr laeuft
+    springeZu(behaelter, 40)                   // Frame 40 liegt im Einschub [30,60)
+    expect(behaelter.querySelector('[data-testid="preview-einschub"]')).not.toBeNull()
+    const letzter = doppel.videoAufrufe.at(-1) as { laeuft: boolean; lokalerFrame: number }
+    expect(letzter.laeuft).toBe(false)
+    expect(letzter.lokalerFrame).toBe(30) // Ende des ersten Teils - die Pause an der Zeitstelle
+    fertig()
+  })
+
+  it('danach weiter: ab Frame 70 ist der Einschub weg und das Video laeuft am Teil-Anfang wieder', () => {
+    markenBereitschaft.bereit.set('m1', baueMarke('m1'))
+    const { behaelter, fertig } = rendere(eigenschaften({ projekt: unterbrochenesProjekt() }))
+    druecke(behaelter, 'vorschau-play-pause')
+    springeZu(behaelter, 40)
+    springeZu(behaelter, 70) // Frame 70 liegt im zweiten Video-Teil [60,90)
+    expect(behaelter.querySelector('[data-testid="preview-einschub"]')).toBeNull()
+    const letzter = doppel.videoAufrufe.at(-1) as { laeuft: boolean; lokalerFrame: number }
+    expect(letzter.laeuft).toBe(true)
+    expect(letzter.lokalerFrame).toBe(10)
+    fertig()
+  })
+})

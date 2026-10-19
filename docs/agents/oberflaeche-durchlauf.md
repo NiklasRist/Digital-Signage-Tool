@@ -1048,3 +1048,28 @@ Ereignisse gesammelt: 14
 
 - **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-17T15:44:35.344Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 9
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Render-Lauf: erwartet "render:fortschritt beim echten Render-Lauf (#404 Schritt 5/6)", erkannt "kein Fortschritts-Ereignis nach 45 s und keine Ausgabedatei in der Liste" (Ort: composer/index.tsx / auftrags-manager)
+- **Befund** Spalt-Drop: erwartet "das Element steigt an der Kante-POSITION 2 in die Liste", erkannt "Bloecke danach: ["5307475c-f74f-42aa-83aa-8ad242b443d9","d37f738a-2924-43ce-93f8-69b4edbc6d9e","d37f738a-2924-43ce-93f8-69b4edbc6d9e"]" (Ort: composer/index.tsx)
+
+> *Berichtigung (17.10.2026, beim Bau von #436):* Dieser Lauf war ein ZWISCHENSTAND des
+> Treibers. Der neue Schritt 4b5 säte eine Aktion, die #4f als erste Aktionszeile aufgriff -
+> der Befund war ein TREIBER-Artefakt, kein App-Fehler. Nach dem Selbst-Aufräumen des Seeds
+> läuft #4f wieder sauber (s. Nachlauf 15:50). Der Eintrag bleibt als Beleg stehen.
+
+## Nachlauf vom 2026-10-17T15:50:01.157Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 14
+
+- **Untersuchung** Start: erwartet "4 Reiter (TK 9.14.1)", erkannt "gemessen 5" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

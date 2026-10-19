@@ -243,6 +243,80 @@ describe('Schritt 5: video - die drei Varianten', () => {
   })
 })
 
+// ---------------- Schritt 5: video mit Unterbrechungen (#426) ----------------
+
+describe('Schritt 5: video mit Unterbrechungen (#426)', () => {
+  const ASSET = baueAsset({ id: 'identifikator', dateiname: 'medien-x.mp4' })
+  const U = { zeitstelle: 3.17, aktionRef: 'a-1', dauer: 1.73 }
+  const ELEMENT = baueElement({
+    ref: 'identifikator', trimStart: 2.53, trimEnde: 10.47, unterbrechungen: [U],
+  })
+
+  it('Video-Teil: die TEIL-Grenzen und der TEIL-Frame stehen im Bild; kein Einschub', () => {
+    const projekt = baueProjekt({ liste: [ELEMENT], assets: [ASSET] })
+    expect(waehleVorschaubild(projekt, ABSCHNITT, 10, [], [], true)).toEqual({
+      art: 'video', assetId: 'identifikator', dateiname: 'medien-x.mp4',
+      trimStart: 2.53, trimEnde: 2.53 + 3.17,
+      zerlegung: { lokalerFrame: 10, einschub: null },
+    })
+  })
+
+  it('Einschub: die AKTION steht in zerlegung.einschub; das Video ist am Teil-Ende (95) geparkt', () => {
+    const aktion = baueAktion()
+    const vorlage = baueVorlage()
+    doppel.segmentquelle = { zustand: 'bereit', aktion, vorlage }
+    const projekt = baueProjekt({ liste: [ELEMENT], assets: [ASSET], aktionen: [aktion] })
+    const bild = waehleVorschaubild(projekt, ABSCHNITT, 120, [vorlage], [], true)
+    expect(bild.art).toBe('video')
+    const zerlegung = (bild as Extract<Vorschaubild, { art: 'video' }>).zerlegung
+    expect(zerlegung?.lokalerFrame).toBe(95)
+    expect(zerlegung?.einschub?.aktion).toBe(aktion)
+    expect(zerlegung?.einschub?.vorlage).toBe(vorlage)
+    // Die Aktion wird ueber denselben Weg wie ein Segment aufgeloest.
+    expect(doppel.segmentquellen).toEqual([{ aktionId: 'a-1', schriftenBereit: true }])
+  })
+
+  it('unbekannte Einschub-Aktion -> Platzhalter; fehlende Vorlage oder Schriften -> LEERE Flaeche', () => {
+    const projekt = baueProjekt({ liste: [ELEMENT], assets: [ASSET] })
+    doppel.segmentquelle = { zustand: 'aktion_unbekannt', aktionId: 'a-1' }
+    expect(waehleVorschaubild(projekt, ABSCHNITT, 120, [], [], true)).toEqual({
+      art: 'platzhalter', grund: 'aktion_unbekannt',
+    })
+    doppel.segmentquelle = { zustand: 'vorlage_unbekannt', vorlagenId: 'v-1' }
+    expect(waehleVorschaubild(projekt, ABSCHNITT, 120, [], [], true)).toEqual({ art: 'leer' })
+    doppel.segmentquelle = { zustand: 'schriften_fehlen' }
+    expect(waehleVorschaubild(projekt, ABSCHNITT, 120, [], [], true)).toEqual({ art: 'leer' })
+  })
+
+  it('OHNE Unterbrechungen fehlt `zerlegung` - das Bild bleibt exakt wie bisher', () => {
+    const projekt = baueProjekt({ liste: [baueElement({ ref: 'identifikator' })], assets: [ASSET] })
+    expect(waehleVorschaubild(projekt, ABSCHNITT, 5, [], [], true)).toEqual({
+      art: 'video', assetId: 'identifikator', dateiname: 'medien-x.mp4', trimStart: 2, trimEnde: 12,
+    })
+  })
+
+  it('Bandphase: waehleAbschnitt bekommt die GESPIELTEN Video-Frames und das VIDEO-Ende (ohne Einschub-Frames)', () => {
+    const projekt = baueProjekt({
+      liste: [baueElement({ ref: 'identifikator', trimStart: 2.53, trimEnde: 10.47, unterbrechungen: [U], einblendung: EINBLENDUNG })],
+      assets: [ASSET],
+    })
+    const split = baueVorlage({ id: 'bv-1', art: 'split', höhe: 162 })
+    // Der Einschub wird ueber findeSegmentquelle aufgeloest; fuer die Bandmessung muss er stehen.
+    doppel.segmentquelle = { zustand: 'bereit', aktion: baueAktion(), vorlage: split }
+    // erster Video-Teil, Frame 10: gespielt 10, Video umfasst 238 Frames
+    waehleVorschaubild(projekt, ABSCHNITT, 10, [split], [], true)
+    // zweiter Video-Teil, Frame 200: gespielt 95 + (200-147) = 148
+    waehleVorschaubild(projekt, ABSCHNITT, 200, [split], [], true)
+    // Einschub, Frame 120: das Band steht an der Zeitstelle (gespielt 95)
+    waehleVorschaubild(projekt, ABSCHNITT, 120, [split], [], true)
+    expect(doppel.abschnittAufrufe).toEqual([
+      { lokalerFrame: 10, elementFrames: 238 },
+      { lokalerFrame: 148, elementFrames: 238 },
+      { lokalerFrame: 95, elementFrames: 238 },
+    ])
+  })
+})
+
 // ---------------- Schritt 5: segment ----------------
 
 describe('Schritt 5: segment', () => {
