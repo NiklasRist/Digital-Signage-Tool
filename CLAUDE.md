@@ -11,7 +11,33 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (19.10.2026, zweite Sitzung: #438 GEBAUT UND GEMERGT, #426-Familie geschlossen) – gilt vor ALLEM weiter unten
+## STAND HEUTE (19.10.2026, dritte Sitzung: Q3 GEBAUT UND GEMERGT) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-19-session-3.md`](docs/agents/uebergabe-2026-10-19-session-3.md) – LIES DIESE DATEI ZUERST.**
+
+- **Q3 (Prozess-Fragmentierung) ist komplett gebaut und gemergt** – Programm
+  `docs/agents/codequalitaet-programm.md` (Stand dort nachgetragen):
+  - **Q3/A:** EINE `meldeAn` (`melde-an.ts`), **sechs** lokale Kopien entfernt – **#337 geschlossen**
+    (`f91c2b3` / Merge `495bc0c`). Gemessene Abweichung zu #337: sechs statt drei Kopien, Pfade
+    unter `ipc-gateway/` statt `project-store/` (gebauter Code gewinnt).
+  - **Q3/C:** **15** Platzhalter-`index.ts` gelöscht; `renderer/shell/` aufgelöst
+    (`WarteschlangenLeiste` → `queue-panel/warteschlangen-leiste.tsx`), `406b1f4`.
+  - **Q3/B:** fünf `project-store-nachtrag*.ts` → **eine** Datei; `vorlagen-nachtrag.ts` in
+    `vorlagen-store/ipc-verdrahtung.ts` (`14c3075`+`484eea2`, Merges `aa12d3c`+`f84ee2a`).
+    **Die Einstiegspunkte bleiben** – die Positionen 1–14 in `main/index.ts` sind Vertrag aus #3.
+    Befund: die alte Begründung „Eintragszahl darf nicht überschritten werden" ist **nirgends
+    geprüft**, sie stand nur in Kommentaren.
+- **#433 bleibt offen** – optische Abnahme am echten Fenster steht weiter aus (User konnte noch
+  nicht testen). Der Dev-Lauf wurde sauber beendet, kein Waisenprozess.
+- **Belege:** Typecheck/Lint 0, nach jedem Q3-Schritt Volllauf **5672 grün (331 Dateien)**.
+  Einziger „error" bleibt der bekannte `standardmarke-anzeige`-Vorbefund. Ein Lauf hatte
+  einmal 1 Fehler ohne Reproduktion (Name nicht mitgeschnitten) – beobachten.
+- `main` **73 Commits vor `origin/main`**; **nicht gepusht**.
+- Nächster Schritt: **Q4 (Tests gegen die Anforderungen)** – zuerst ein **Audit ohne
+  Codeänderung** (jeder Test: was pinnt er? welches AD/TK? Mock-Test ohne Aussage?), dann
+  Gate-Entscheidung. Danach **S6**. **#433** bleibt beim User.
+
+## STAND HEUTE (19.10.2026, zweite Sitzung: #438 GEBAUT UND GEMERGT, #426-Familie geschlossen) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-19-session-2.md`](docs/agents/uebergabe-2026-10-19-session-2.md) – LIES DIESE DATEI ZUERST.**
 
