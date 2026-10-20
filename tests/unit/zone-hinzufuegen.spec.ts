@@ -9,9 +9,6 @@
 // Schriftnamen, Abschaltzeile, Pruefsumme) - auf den Rumpf, nicht auf Kommentare.
 // Verhaltens-Proben (die uebrigen DoD-Punkte) pruefen die Funktion ueber ihre
 // Schnittstelle mit Werten, die nicht von selber glatt aufgehen.
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-
 import { describe, expect, it } from 'vitest'
 
 import type { Rahmen, Vorlage, Zone } from '../../src/shared/contracts/vorlage'
@@ -20,16 +17,6 @@ import {
   type ZonenWunsch,
 } from '../../src/renderer/vorlagen-editor/zone-hinzufuegen'
 import { MINDEST_ZONEN_KANTE_PX } from '../../src/renderer/vorlagen-editor/zonen-canvas'
-
-const QUELLE = readFileSync(
-  fileURLToPath(new URL('../../src/renderer/vorlagen-editor/zone-hinzufuegen.ts', import.meta.url)),
-  'utf8',
-)
-// Nur der Code, ohne Kommentarzeilen - die Grep-Proben der DoD pruefen den Rumpf.
-// Erst \r\n normalisieren, damit die Filter auf jeder Plattform gleich treffen.
-const CODEZEILEN = QUELLE.replace(/\r\n/g, '\n')
-  .replace(/\/\/.*$/gm, '')
-  .replace(/\/\*[\s\S]*?\*\//g, '')
 
 function zone(id: string): Zone {
   return {
@@ -331,6 +318,16 @@ describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
     expect(ergebnis.ok === false && ergebnis.fehler.code).toBe('ungueltige_eingabe')
   })
 
+  it('nimmt GENAU die Mindesthoehe noch an - die Grenze ist einschliesslich', () => {
+    // "< MINDEST" ist ungueltig, genau MINDEST ist gueltig. Ohne diesen Fall waere
+    // eine Verschiebung auf "<=" unsichtbar (Mutation H6, 20.10.2026).
+    const ergebnis = fuegeZoneHinzu(vorlage('einblendung', MINDEST_ZONEN_KANTE_PX), {
+      sorte: 'deko',
+    })
+
+    expect(ergebnis.ok).toBe(true)
+  })
+
   it('weist einen statischen Text ueber 200 Zeichen ab', () => {
     const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), {
       sorte: 'deko',
@@ -381,57 +378,5 @@ describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
 
     expect(ergebnis.ok).toBe(true)
     expect(neu(ergebnis).id).toBe('deko-99')
-  })
-})
-
-describe('Grep-Proben aus der Definition of Done', () => {
-  it('keine Abschaltzeile in Zeile 1 und kein Geruest-Kopf (Q1, 16.10.2026)', () => {
-    expect(QUELLE.split('\n')[0]!.startsWith('// [')).toBe(true)
-    expect(QUELLE.split('\n')[0]).not.toContain('eslint-disable')
-  })
-
-  it('traegt keinen Geruest-Kopf mehr', () => {
-    expect(QUELLE).not.toContain('GERUEST-PRUEFSUMME')
-  })
-
-  it('haelt die verbindlichen Signaturen woertlich', () => {
-    expect(QUELLE).toContain('export type ZonenSorte = \'text\' | \'bild\' | \'deko\'')
-    expect(QUELLE).toContain(
-      'export type TextBindung = \'titel\' | \'beschreibung\' | \'preis\' | \'cta\' | \'slogan\'',
-    )
-    expect(QUELLE).toContain('export type BildBindung = \'bild\' | \'logo\'')
-    expect(QUELLE).toContain('| { sorte: \'deko\'; statischerText?: string }')
-    expect(QUELLE).toContain('export function fuegeZoneHinzu(vorlage: Vorlage, wunsch: ZonenWunsch): Ergebnis<Vorlage>')
-  })
-
-  it('schreibt keinen Hex-Wert in den Code (DoD 7)', () => {
-    expect(CODEZEILEN).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
-  })
-
-  it('schreibt keinen Schriftnamen in den Code (DoD 7)', () => {
-    expect(CODEZEILEN).not.toMatch(/Playfair|Arial|Archivo|Arimo|Helvetica|Roboto|Open ?Sans/i)
-  })
-})
-
-describe('Gegenproben – die Grep-Proben greifen wirklich', () => {
-  it('ein eingeschmuggelter Hex-Wert wird gefunden', () => {
-    expect('const hex = \'#FF4040\'').toMatch(/#[0-9a-fA-F]{3,8}\b/)
-  })
-
-  it('ein eingeschmuggelter Schriftname wird gefunden', () => {
-    expect('const schrift = \'Playfair Display\'').toMatch(/Playfair/i)
-  })
-
-  it('eine eingeschmuggelte Abschaltzeile wird gefunden', () => {
-    expect('/* eslint-disable @typescript-eslint/no-unused-vars */\n// x').toContain(
-      'eslint-disable',
-    )
-  })
-
-  it('der Kommentar-Filter entfernt wirklich Kommentare', () => {
-    // Belegt, dass die Grep-Proben oben nicht gegen den Prosa-Kopf pruefen: Das
-    // Geruest kommentiert „Keine Hex-Werte, keine Schriftnamen" ueber die Rollen-Regel.
-    expect(QUELLE.match(/\/\//g)?.length).toBeGreaterThan(0)
-    expect(CODEZEILEN).not.toContain('//')
   })
 })

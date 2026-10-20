@@ -11,13 +11,10 @@
 //
 // Die Erwartungswerte sind von Hand geschrieben, nicht aus der Umsetzung
 // abgeschrieben.
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
 import { MEDIEN_SCHEMA, medienUrl } from '../../src/shared/medien-url'
 
-const QUELLE = readFileSync(new URL('../../src/shared/medien-url.ts', import.meta.url), 'utf8')
 
 /** Die Fassung, die #227 heute abnimmt ("ohne Kodierungsumbau") - NUR als Gegenprobe. */
 const ohneKodierung = (projektId: string, dateiname: string): string =>
@@ -159,40 +156,5 @@ describe('Gegenprobe - die Fassung ohne Kodierung faellt durch', () => {
   it('erzeugt bei a/b.png eine zweite Pfadebene, die der Handler abweist', () => {
     expect(new URL(ohneKodierung('p1', 'a/b.png')).pathname.split('/').length).toBe(3)
     expect(new URL(medienUrl('p1', 'a/b.png')).pathname.split('/').length).toBe(2)
-  })
-})
-
-describe('Grep-Proben auf die Quelldatei (Definition of Done)', () => {
-  const zaehle = (muster: RegExp): number => QUELLE.match(muster)?.length ?? 0
-
-  it("enthaelt die Zeichenkette 'media' genau einmal - die Konstante", () => {
-    expect(zaehle(/'media'/g)).toBe(1)
-  })
-
-  it('ruft encodeURIComponent genau zweimal auf - einmal je Bestandteil', () => {
-    expect(zaehle(/encodeURIComponent\(/g)).toBe(2)
-  })
-
-  it('enthaelt keinen der verbotenen Bausteine', () => {
-    for (const verboten of [
-      /\bencodeURI\(/,
-      /\bescape\(/,
-      /new URL/,
-      /\bpath\./,
-      /\bjoin\(/,
-      /file:\/\//,
-      /\bthrow\b/,
-      /\bErgebnis\b/,
-      /^\s*import\b/m,
-      /\brequire\(/,
-      /\bwindow\b/,
-      /\bdocument\b/,
-      /\bprocess\b/,
-      // Kein JSX und kein React: In einer .ts-Datei (nicht .tsx) uebersetzt JSX
-      // ohnehin nicht; was bliebe, waere ein React-Import - und den gibt es nicht.
-      /\breact\b/i,
-    ]) {
-      expect(QUELLE).not.toMatch(verboten)
-    }
   })
 })

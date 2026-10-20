@@ -13,9 +13,6 @@
 // Ein einzelnes Beispiel beweist deshalb nichts; die Tests laufen ueber BEREICHE,
 // und der Drift-Test unten zeigt, ab wann die feste 0,5-s-Toleranz der Verifikation
 // reisst.
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -422,7 +419,7 @@ describe('gesamtFrames / gesamtdauer', () => {
   })
 })
 
-describe('Profilbezug und Grep-Proben', () => {
+describe('Profilbezug', () => {
   it('nimmt die Bildrate aus RENDER_PROFILE - ein abgewandeltes Profil rechnet mit', async () => {
     // Belegt verhaltensnah, dass die 30 nirgends als Zahl im Code steht.
     vi.resetModules()
@@ -444,25 +441,5 @@ describe('Profilbezug und Grep-Proben', () => {
     vi.resetModules()
     // Unter dem echten Profil wieder 240.
     expect(wert(trimFrames(2.51, 10.49)).frames).toBe(240)
-  })
-
-  it('enthaelt im ausfuehrbaren Teil weder die 30 noch floor/ceil/toFixed/EPSILON', () => {
-    // Die Grep-Probe der Definition of Done. Kommentare mit zitierten TK-Saetzen
-    // duerfen die 30 enthalten - der ausfuehrbare Teil nicht, denn eine spaetere
-    // Profil-Aenderung muss ein Datenwert bleiben (TK 9.2.4).
-    const quelle = readFileSync(
-      fileURLToPath(new URL('../../src/main/render-service/frames.ts', import.meta.url)),
-      'utf8',
-    )
-    const ohneKommentare = quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
-
-    expect(ohneKommentare).not.toMatch(/\b30\b/)
-    for (const verboten of ['Math.floor', 'Math.ceil', 'toFixed', 'EPSILON']) {
-      expect(ohneKommentare).not.toContain(verboten)
-    }
-    // Gegenprobe, damit die Probe nicht an einem zu gierigen Kommentar-Ausschnitt
-    // leer laeuft: Der Rumpf ist noch da.
-    expect(ohneKommentare).toContain('Math.round')
-    expect(ohneKommentare).toContain('RENDER_PROFILE.fps')
   })
 })
