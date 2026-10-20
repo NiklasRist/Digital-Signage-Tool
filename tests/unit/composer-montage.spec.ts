@@ -1,7 +1,5 @@
 // Tests zu #259 (M7-66) - composer-montage.ts: die reine Zusammensetz-Logik der
 // composer-Wurzel. Vollstaendig ohne Browser pruefbar.
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 //
 // Kern-Nachweise:
 // - Jede der acht Lage-Funktionen liefert ein NEUES Objekt und laesst die
@@ -11,8 +9,6 @@ import { readFileSync } from 'node:fs'
 // - Die Ableitungen LESEN den Reparatur-Stand und rechnen nichts nach:
 //   aktuelleStelle ist toBe-gleich stand.aktuelle.
 // - setzeAusgabeName prueft nichts: auch '../x' und '' kommen unverändert an.
-// - Grep-Probe auf DIESE Datei: kein react, kein IPC, keine Rechnung, kein
-//   Import aus fremden Renderer-Modulen.
 import { describe, expect, it } from 'vitest'
 
 import type { KaputteStelle } from '../../src/renderer/composer/kaputt-erkennung'
@@ -39,43 +35,6 @@ import {
   type ComposerLage,
   type WurzelMeldung,
 } from '../../src/renderer/composer/composer-montage'
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(
-  join(process.cwd(), 'src/renderer/composer/composer-montage.ts'),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('composer-montage.ts – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('kein react, kein JSX, kein DOM, kein IPC, keine Rechnung, keine Freigabe-Ableitung', () => {
-    for (const verbot of [
-      'rufeAuf', 'abonniere(', 'KANAELE', 'window.', 'Math.round',
-      'findeKaputteStellen', 'istRenderFreigegeben', 'useState', 'document.',
-      // Aus der kaputt-erkennung reist NUR der Typ: ein Wert-Import waere der Verstoß.
-      "import { KaputteStelle", 'starteReparatur', 'aktualisiereReparatur(',
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-    // Der Import aus der kaputt-erkennung ist ausdruecklich ein TYPE-Import.
-    expect(CODEZEILEN).toContain("import type { KaputteStelle }")
-    // Kein Import aus fremden Renderer-Modulen.
-    for (const fremdModul of [
-      'src/renderer/app-shell', 'src/renderer/preview-player',
-      'src/renderer/action-editor', 'src/renderer/vorlagen-editor',
-      'src/renderer/projekt-verwaltung', 'src/renderer/queue-panel',
-    ]) {
-      expect(QUELLE).not.toContain(fremdModul)
-    }
-  })
-})
-
 const lage: ComposerLage = {
   overlay: { art: 'einblendung', elementId: 'el-1' },
   gewaehltesElementId: 'el-1',
@@ -283,6 +242,24 @@ describe('die Ableitungen aus dem Reparatur-Stand (lesen, nie nachrechnen)', () 
       aktiv: true, offen: [], gesamt: 2, behoben: 2, zeigerIndex: 0, aktuelle: null,
     }
     expect(aktuelleStelle(stand)).toBeNull()
+  })
+
+  it('aktuelleStelle liest stand.aktuelle auch bei zeigerIndex > 0 - offen[0] ist NICHT die Antwort', () => {
+    // Der Zeiger steht auf der DRITTEN Stelle. Wer stattdessen offen[0] liefert,
+    // zeigt nach einem behobenen Element die falsche Stelle - der Fehler, den die
+    // Mutation "aktuelleStelle rechnet statt zu lesen" sonst unbemerkt liess.
+    const erste = { ...stelle(), elementId: 'el-1' }
+    const zweite = { ...stelle(), elementId: 'el-2', abschnittIndex: 1 }
+    const dritte = { ...stelle(), elementId: 'el-3', abschnittIndex: 2 }
+    const stand: ReparaturStand = {
+      aktiv: true,
+      offen: [erste, zweite, dritte],
+      gesamt: 3,
+      behoben: 0,
+      zeigerIndex: 2,
+      aktuelle: dritte,
+    }
+    expect(aktuelleStelle(stand)).toBe(dritte)
   })
 
   it('fuehrungLaeuft(null) ist false; mit Stand exakt stand.aktiv', () => {

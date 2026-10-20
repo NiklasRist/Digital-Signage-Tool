@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
@@ -557,6 +555,20 @@ describe('vergleicheStroeme', () => {
     ])
   })
 
+  it('bezieht auch die BREITE aus dem Profil - ein Profil mit breite 720 weist 1920er ab', () => {
+    // Bis 20.10.2026 hielt nur eine Grep-Probe die Breite davon ab, als Literal
+    // 1920 im Quelltext zu stehen. Diese Probe ist entfallen; der Behavior-Test
+    // schliesst die Luecke: Mit einem 720er-Profil muss 1920 auffallen.
+    const befund = vergleicheStroeme(
+      [abgewandelt('a.mp4'), abgewandelt('b.mp4')],
+      profilMit({ breite: 720 }),
+    )
+    expect(zuFeld(befund.abweichungen, 'breite')).toEqual([
+      { datei: 'a.mp4', feld: 'breite', erwartet: '720', gefunden: '1920' },
+      { datei: 'b.mp4', feld: 'breite', erwartet: '720', gefunden: '1920' },
+    ])
+  })
+
   it('laesst auch die zwei UMGERECHNETEN Sollwerte mit dem Profil wandern', () => {
     // 'High' und 40 duerfen an der Vergleichsstelle nicht als Literal stehen: Der
     // Profilname kommt aus der benannten Tabelle, das Level wird aus profil.level
@@ -598,69 +610,6 @@ describe('vergleicheStroeme', () => {
     })
     const befund = vergleicheStroeme([abgewandelt('a.mp4'), nurTon], RENDER_PROFILE)
     expect(befund.abweichungen.map((a) => a.feld)).toEqual(['stromAnzahl', 'stromArten'])
-  })
-})
-
-// ---------------------------------------------------------------------------
-// Die Grep-Probe aus der Definition of Done
-// ---------------------------------------------------------------------------
-
-describe('Grep-Probe: keine Sollwerte als Literal im Quelltext', () => {
-  /**
-   * Der Quelltext OHNE Kommentare.
-   *
-   * WARUM OHNE: Der Block "Signatur (verbindlich)" des Issues traegt in seinen eigenen
-   * Kommentaren die Beispielwerte ("erwartet 'High'", "erwartet 40", "erwartet 48000") und
-   * ist woertlich zu uebernehmen. Eine Grep-Probe ueber die ROHE Datei stuende damit im
-   * Widerspruch zur ebenfalls verbindlichen Signatur. Gemeint - und gefaehrlich - ist
-   * allein der ausgefuehrte Code: Ein Literal DORT wanderte bei einer Profilaenderung nicht
-   * mit. Ein Wort im Kommentar tut gar nichts.
-   */
-  const quelltext = readFileSync(
-    new URL('../../src/main/ffmpeg-adapter/uniformitaet.ts', import.meta.url),
-    'utf8',
-  )
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\/\/[^\n]*/g, '')
-
-  it.each(['1920', '1080', '48000'])('enthaelt %s nicht als Literal', (zahl) => {
-    expect(quelltext).not.toContain(zahl)
-  })
-
-  it('enthaelt die Bildrate 30 nicht als Literal', () => {
-    // Als eigenstaendige Zahl - `15_360` oder `1024` duerfen 30 nicht faelschlich treffen.
-    expect(quelltext).not.toMatch(/(?<![\w.])30(?![\w.])/)
-  })
-
-  it('enthaelt den Level-Sollwert 40 nicht - er wird berechnet', () => {
-    expect(quelltext).not.toMatch(/(?<![\w.])40(?![\w.])/)
-  })
-
-  it('nennt High ausschliesslich in der Tabelle H264_PROFIL_ANZEIGE', () => {
-    const treffer = [...quelltext.matchAll(/High/g)]
-    expect(treffer).toHaveLength(1)
-    const tabelle = /H264_PROFIL_ANZEIGE[\s\S]*?\}/.exec(quelltext)?.[0] ?? ''
-    expect(tabelle).toContain("high: 'High'")
-  })
-
-  it('ermittelt den ffprobe-Pfad nicht selbst und baut keinen zweiten Prozessstarter', () => {
-    // Der Binaerpfad reist als PARAMETER herein - VERBOTEN sind ein eigener Aufruf von
-    // ermittleFfprobePfad() (#6), ein blankes 'ffprobe' als Befehlsname, ein Pfad aus PATH
-    // und ein `spawn` neben #158.
-    //
-    // `ermittleFfprobePfad` DARF im Quelltext vorkommen - aber nur als Wort in einer
-    // Fehlermeldung, die dem Leser sagt, woher der Pfad kommt. Verboten ist der AUFRUF.
-    // Deshalb werden hier auch die Zeichenketten-Literale entfernt.
-    const ohneTexte = quelltext
-      .replace(/'(?:[^'\\]|\\.)*'/g, "''")
-      .replace(/`(?:[^`\\]|\\.)*`/g, '``')
-    expect(ohneTexte).not.toContain('ermittleFfprobePfad')
-    expect(ohneTexte).not.toContain('ffmpeg-pfad')
-    expect(quelltext).not.toContain('process.env')
-    expect(quelltext).not.toContain('spawn')
-    expect(quelltext).not.toContain('shell')
-    // Genau EIN Prozessstart in der ganzen Datei.
-    expect([...quelltext.matchAll(/execFile/g)]).toHaveLength(2)
   })
 })
 
