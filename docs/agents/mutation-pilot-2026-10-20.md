@@ -201,3 +201,53 @@ Datei fuer Datei, **nie pauschal**.
 Dateien waren die Verhaltens-Tests stark. Der belegte Ballast ist die Kategorie
 **Quelltext-/Meta-Probe** – 55 Tests in zwei Piloten, Tendenz in den verbleibenden 102
 Dateien aehnlich.
+
+---
+
+## 9. Pilot 3: fünf weitere Dateien (20.10.2026, Fortsetzung)
+
+**Dateien:** `frames` (render-service), `zone-hinzufuegen` (vorlagen-editor),
+`einblendung-vorschau` (composer), `medien-url` (shared),
+`medien-import-uebergabe` (app-shell).
+
+| Kategorie | Anzahl | erkannt |
+|---|---|---|
+| Verhaltens-Mutationen | 33 | **30** |
+| harmlose Refactorings | 5 | **0 rot** |
+| Quelltext-/Meta-Tests entfernt | **29** | – |
+| Verhaltens-Tests ergaenzt | **1** | – |
+
+**Eine echte Luecke gefunden und geschlossen:** **H6** – die Mindestkante einer Zone
+(`MINDEST_ZONEN_KANTE_PX = 8`) wurde mit `<=` statt `<` geprueft; genau 8 px waere
+abgelehnt worden. Kein Test deckte die Grenze **einschliesslich** ab. Neu: eine Vorlage
+mit genau 8 px Hoehe nimmt noch eine Zone auf.
+
+**Drei nicht gefangene Mutationen sind aequivalent:**
+
+- **E6** – `abschnitt.dauer > 0` gegen `>= 0`: Bei Dauer 0 ergibt `Math.round(0 * fps)`
+  in beiden Faellen 0 Frames; negative Dauern werden in beiden Faellen verworfen.
+- **I4** – `punkt <= 0` gegen `< 0`: Bei `.gitignore` lautet die „Endung" `gitignore`;
+  sie steht in keiner Whitelist, das Ergebnis ist so oder so `null`.
+- **I8** – Windows-Trenner im `split`: Die letzte Endung eines Pfades liegt immer hinter
+  dem letzten Punkt der GESAMTEN Zeichenkette; das Verzeichnis-Trennzeichen aendert das
+  Ergebnis fuer alle Pfade mit bekannter Endung nicht.
+
+**Entfernt (29):** 1 in `frames` (Literal-30-Probe), 9 in `zone-hinzufuegen`, 8 in
+`einblendung-vorschau`, 3 in `medien-url`, 8 in `medien-import-uebergabe` – jeweils
+Quelltext-Verbote und Gegenproben, die nur die eigenen Regexe pruefen.
+
+## 10. Stand nach drei Piloten
+
+| | |
+|---|---|
+| Mutationen gesamt | **101**: 96 erkannt, 5 aequivalent |
+| Refactorings | **0 / 15 rot** |
+| Quelltext-/Meta-Tests entfernt | **84** |
+| Verhaltens-Tests ergaenzt | **6** |
+| Echte Luecken geschlossen | **6** |
+| Suite | 5.702 → **5.624** |
+| Verbleibend | **143** Dateien mit `readFileSync`, **97** mit Grep-/Bauvorschriften-`describe` |
+
+Das Bild ist ueber drei Runden stabil: Die Verhaltens-Tests tragen, die
+Quelltext-/Meta-Proben sind der Ballast. In 13 geprueften Dateien wurden **84** solche
+Tests entfernt, ohne eine einzige nicht-aequivalente Mutation zu verlieren.

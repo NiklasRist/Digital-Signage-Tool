@@ -13,9 +13,6 @@
 // Video von 10 s: Sekunden-Rechnung sagt „Folge kuerzer, wiederholt sich",
 // Frame-Rechnung sagt „passt exakt" (je 100 Frames, Summe 300 = 300) - genau die
 // Abweichung, die diese Datei sichtbar machen soll.
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-
 import { describe, expect, it } from 'vitest'
 
 import { planeBandAblauf } from '../../src/renderer/composer/einblendung-vorschau'
@@ -301,67 +298,5 @@ describe('abschnittsFrames spiegeln die Folge in gleicher Reihenfolge', () => {
     expect(plan.volleDurchlaeufe).toBe(2)
     expect(plan.restFrames).toBe(150)
     expect(plan.angeschnittenerIndex).toBe(1)
-  })
-})
-
-describe('Grep-Proben aus der Definition of Done', () => {
-  const pfad = fileURLToPath(new URL('../../src/renderer/composer/einblendung-vorschau.ts', import.meta.url))
-  const quelltext = readFileSync(pfad, 'utf8')
-
-  // Kommentare entfernen - die Regeln gelten dem CODE. Der Dateikopf und die
-  // Erklaerungen zitieren den Vertrag („30 fps", „#130"), und das voellig zu Recht.
-  // REIHENFOLGE BEACHTEN: erst die Zeilen-, dann die Blockkommentare.
-  const code = quelltext.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
-
-  it('die Abschaltzeile aus Zeile 1 ist entfernt', () => {
-    expect(quelltext.startsWith('/* eslint-disable')).toBe(false)
-    expect(quelltext.startsWith('// [')).toBe(true)
-  })
-
-  it('die Signatur ist woeertlich unveraendert geblieben', () => {
-    expect(quelltext).toContain("export type BandVerhalten = 'leer' | 'exakt' | 'wiederholt' | 'abgeschnitten'")
-    expect(quelltext).toContain('export function planeBandAblauf')
-    expect(quelltext).toContain('trimStartSek: number')
-    expect(quelltext).toContain('ReadonlyArray<{ aktionRef: string; dauer: number }>')
-  })
-
-  it('die Bildrate kommt aus RENDER_PROFILE.fps, nie als Literal 30', () => {
-    expect(code).toContain('RENDER_PROFILE.fps')
-    expect(code).not.toMatch(/\b30\b/)
-  })
-
-  it('rundet Frames ausschliesslich mit Math.round über RENDER_PROFILE.fps', () => {
-    // Jede Multiplikation mit der Bildrate liegt in einem Math.round; weder
-    // Math.ceil noch Math.floor tauchen als Fake-Rundung auf.
-    expect(code).toMatch(/Math\.round\([^)]*fps\)/)
-    expect(code).not.toContain('Math.ceil')
-    expect(code).not.toMatch(/Math\.floor\([^)]*fps\)/)
-  })
-
-  it('enthaelt weder IPC noch Dateisystem noch den werfenden Rumpf', () => {
-    expect(code).not.toContain('window.api')
-    expect(code).not.toContain('rufeAuf')
-    expect(code).not.toMatch(/\bfrom '(node:)?fs'/)
-    expect(quelltext).not.toContain('Rumpf gehoert zu Issue #130')
-  })
-
-  it('der Vertrag verlangt keine Ergebnis-Huelle: Rueckgabetyp ist BandAblaufplan', () => {
-    expect(code).toContain('): BandAblaufplan {')
-    expect(code).not.toContain('Ergebnis<')
-  })
-})
-
-describe('Gegenproben, die pruefen, dass die Grep-Proben wirklich greifen', () => {
-  // Eine Probe ohne Beleg ist keine Probe: Diese Faelschungen muessen DURCHFALLEN.
-  // Wuerde eine davon gruen, triefe der Filter ins Leere.
-  it('eine eingeschmuggelte Bildrate 30 wird gefunden', () => {
-    const gefaelscht = "const fps = 30 // Fake"
-    const code = gefaelscht.replace(/\/\/.*$/gm, '')
-    expect(code).toMatch(/\b30\b/)
-  })
-
-  it('eine eingeschmuggelte Abschaltzeile wird gefunden', () => {
-    const gefaelscht = "/* eslint-disable @typescript-eslint/no-unused-vars */\n// x"
-    expect(gefaelscht.startsWith('/* eslint-disable')).toBe(true)
   })
 })

@@ -35,19 +35,18 @@
   Reiterinhalte je Zugaengen-Satz memoisiert und die Umgebung reist als **Getter**.
   Nachher: **12** Effekt-Durchlaeufe, **keine** `Maximum update depth`-Meldung. Neuer
   Waechter in `app-einhaengung.spec.ts` (App-Rendern baut die Inhalte nicht neu).
-- **Gate:** `npm run pruefung` **Exit 0** - **5.652 Unit-Tests (333 Dateien)**, **49
+- **Gate:** `npm run pruefung` **Exit 0** - **5.624 Unit-Tests (333 Dateien)**, **49
   Integrationstests (12 Dateien)**, Treiber ohne Befund. Typecheck/Lint 0.
-- **Mutations-Piloten** (`docs/agents/mutation-pilot-2026-10-20.md`): **zwei Runden, acht
-  Dateien** gegen **68 Verhaltens-Mutationen** und **10 harmlose Refactorings**. **66**
-  Mutationen erkannt, **2** sind nachweislich aequivalent (Z8 unerreichbare Schutzschicht,
-  B4 redundante Bedingung); **0/10** Refactorings rot. **Fuenf echte Luecken** gefunden und
-  mit Verhaltens-Tests geschlossen (`aktuelleStelle` mit `zeigerIndex > 0`,
-  `aktuelleRenderId` mit laufendem Import vor Render, Breite aus dem Profil, Undo-Tiefe 1,
-  `aria-selected` im Rahmen). **55 Quelltext-/Meta-Tests entfernt** (Codeform, Signaturen,
-  Testwerkzeuge statt Verhalten), **5 Verhaltens-Tests ergaenzt**. Suite **5.652 Tests**.
-  Befund: Die Behavior-Tests der acht Dateien sind **nicht** Ballast; der belegte Ballast
-  ist die Kategorie Quelltext-/Signatur-Probe (verbleibend: 148 Dateien mit
-  `readFileSync`, 102 mit Grep-/Bauvorschriften-`describe`).
+- **Mutations-Piloten** (`docs/agents/mutation-pilot-2026-10-20.md`): **drei Runden, 13
+  Dateien** gegen **101 Verhaltens-Mutationen** und **15 harmlose Refactorings**. **96**
+  Mutationen erkannt, **5** nachweislich aequivalent; **0/15** Refactorings rot. **Sechs
+  echte Luecken** gefunden und geschlossen (u. a. `aktuelleStelle` mit `zeigerIndex > 0`,
+  `aktuelleRenderId` mit laufendem Import vor Render, Undo-Tiefe 1, `aria-selected` im
+  Rahmen, Mindestkante 8 px). **84 Quelltext-/Meta-Tests entfernt** (Codeform, Signaturen,
+  Testwerkzeuge statt Verhalten), **6 Verhaltens-Tests ergaenzt**. Suite **5.624 Tests**.
+  Befund: Die Behavior-Tests der 13 Dateien sind **nicht** Ballast; der belegte Ballast
+  ist die Kategorie Quelltext-/Signatur-Probe (verbleibend: **143** Dateien mit
+  `readFileSync`, **97** mit Grep-/Bauvorschriften-`describe`).
 - **Ehrlich offen:**
   - **Gate-Blindstelle:** Der Treiber wertet `console.error` nicht; "Maximum update depth"
     waere trotz grünem Lauf sichtbar gewesen. Ein Befund-Rang dafuer ist **nicht** gebaut.
