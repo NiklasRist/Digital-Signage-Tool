@@ -138,8 +138,8 @@ const main = async () => {
     const reiterZahl = (await seite.$$('[role="tab"]')).length;
     const tabs = await seite.$$eval('[role="tab"]', (e) => e.map((b) => b.textContent.trim()));
     console.log(`[schritt-1] Reiter gemessen: ${reiterZahl} -> ${tabs.join(", ")}`);
-    if (reiterZahl !== 4) {
-      fund("Start", "4 Reiter (TK 9.14.1)", `gemessen ${reiterZahl}`, "Untersuchung", "rahmen.tsx");
+    if (reiterZahl !== 5) {
+      fund("Start", "5 Reiter (TK 9.14.1)", `gemessen ${reiterZahl}`, "Untersuchung", "rahmen.tsx");
     }
 
 
