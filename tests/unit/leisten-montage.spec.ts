@@ -318,6 +318,29 @@ describe('leisten-montage', () => {
       expect(aktuelleRenderId(sicht)).toBeNull()
     })
 
+    it('ein laufender Import VOR einem laufenden Render gewinnt NICHT - die Art entscheidet', () => {
+      // Ohne die art-Bedingung liefert die Suche den Import zuerst; er traegt keine
+      // renderId, das Ergebnis waere null - und der Fortschritt des echten Renders
+      // wuerde lautlos verworfen.
+      const basis = {
+        label: 'Test',
+        fortschritt: null,
+        versuche: 0,
+        fehler: null,
+        ergebnis: null,
+        erstelltAm: new Date().toISOString(),
+      }
+      const sicht: AuftragsSicht = {
+        zustand: 'geladen',
+        auftraege: [
+          { ...basis, auftragId: 'i1', art: 'import', status: 'laeuft', payload: {} },
+          { ...basis, auftragId: 'r1', art: 'render', status: 'laeuft', payload: { renderId: 'r1' } },
+        ] as Auftrag[],
+      }
+
+      expect(aktuelleRenderId(sicht)).toBe('r1')
+    })
+
     it('returns renderId of running render auftrag', () => {
       const renderAuftrag: Auftrag = {
         auftragId: 'render1',

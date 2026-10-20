@@ -35,8 +35,18 @@
   Reiterinhalte je Zugaengen-Satz memoisiert und die Umgebung reist als **Getter**.
   Nachher: **12** Effekt-Durchlaeufe, **keine** `Maximum update depth`-Meldung. Neuer
   Waechter in `app-einhaengung.spec.ts` (App-Rendern baut die Inhalte nicht neu).
-- **Gate:** `npm run pruefung` **Exit 0** - **5.702 Unit-Tests (333 Dateien)**, **49
+- **Gate:** `npm run pruefung` **Exit 0** - **5.697 Unit-Tests (333 Dateien)**, **49
   Integrationstests (12 Dateien)**, Treiber ohne Befund. Typecheck/Lint 0.
+- **Mutations-Pilot** (`docs/agents/mutation-pilot-2026-10-20.md`): Drei Dateien
+  (`composer-montage`, `uniformitaet`, `leisten-montage`) gegen **29 Verhaltens-Mutationen**
+  und **5 harmlose Refactorings** geprueft. Vorher **25/27** gefangen; die zwei Luecken
+  (`aktuelleStelle` mit `zeigerIndex > 0`, `aktuelleRenderId` mit laufendem Import vor
+  laufendem Render) sind mit Verhaltens-Tests geschlossen. **8 Quelltext-/Grep-Tests
+  entfernt** (Codeform statt Verhalten), **3 Verhaltens-Tests ergaenzt** (u. a. Breite aus
+  dem Profil - die Literal-Probe war dort der einzige Waechter). Endstand: **29/29**
+  Mutationen erkannt, **0/5** Refactorings rot. Suite **5.697 Tests**. Befund: Die
+  Behavior-Tests dieser Dateien sind **nicht** Ballast; der belegte Ballast ist die
+  Kategorie Quelltext-/Signatur-Probe.
 - **Ehrlich offen:**
   - **Gate-Blindstelle:** Der Treiber wertet `console.error` nicht; "Maximum update depth"
     waere trotz grünem Lauf sichtbar gewesen. Ein Befund-Rang dafuer ist **nicht** gebaut.
