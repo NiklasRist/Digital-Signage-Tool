@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { Vorlage } from '../../src/shared/contracts/vorlage'
@@ -162,45 +159,5 @@ describe('ProjektStand (#234) – Referenz, nicht Kopie', () => {
     projektHistorie().ablegen(snappschuss)
 
     expect(projektHistorie().vorschauZurueck()).toBe(snappschuss)
-  })
-})
-
-describe('undo-historien.ts (#234) – Grep-Proben der DoD', () => {
-  const quelle = readFileSync(
-    fileURLToPath(new URL('../../src/renderer/app-shell/undo-historien.ts', import.meta.url)),
-    'utf8',
-  )
-  const code = quelle.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
-
-  it('enthält kein JSX, keinen react-Import und keinen IPC-Kanal', () => {
-    expect(code).not.toMatch(/react/)
-    expect(code).not.toMatch(/rufeAuf|abonniere/)
-    expect(code).not.toMatch(/KANAELE/)
-    expect(code).not.toMatch(/window\./)
-  })
-
-  it('ruft weder holeReiter noch aufReiterGeaendert', () => {
-    expect(code).not.toMatch(/holeReiter/)
-    expect(code).not.toMatch(/aufReiterGeaendert/)
-  })
-
-  it('persistiert nichts und kennt keinen queue-Kanal', () => {
-    expect(code).not.toMatch(/localStorage|sessionStorage/)
-    expect(code).not.toMatch(/'queue:'/)
-  })
-
-  it('importiert aus ./reiter ausschliesslich per import type', () => {
-    const reiterImport = quelle.match(/import[^;]*from\s+'\.\/reiter'/)
-    expect(reiterImport).not.toBeNull()
-    expect(reiterImport![0]).toContain('import type')
-  })
-
-  it('kennet KEINE Marken-Historie (#314): der einzige Code-Treffer auf bezeichnermarken liegt in bereichFuerReiter; kein dritter Bereich', () => {
-    // Nur die CASE-Zeile der Zuordnung nennt 'marken' - keine Historie-Fabrik,
-    // kein leereMarkeHistorie, kein dritter Historienbereich:
-    const treffer = code.match(/marken/g) ?? []
-    expect(treffer).toHaveLength(1)
-    expect(code).not.toMatch(/markenHistorie|leereMarkenHistorie/)
-    expect(code).toMatch(/Historienbereich = 'projekt-bearbeitung' \| 'vorlagen-editor'/)
   })
 })

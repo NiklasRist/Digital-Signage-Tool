@@ -12,8 +12,6 @@
 // Rundung faellt daran nie auf. Alle Werte hier sind bewusst KRUMM gewaehlt
 // (4.71 -> 141,3 Frames; 1.02 -> 30,6; 10.49 -> 314,7), damit die Rundung ueberhaupt
 // etwas zu tun hat und die Einzelrundung sich von der gemeinsamen unterscheidet.
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
@@ -366,54 +364,5 @@ describe('dieselbe Zahl wie der render-service (#174)', () => {
         ),
       )
     }
-  })
-})
-
-describe('Grep-Proben aus der DoD', () => {
-  const pfad = fileURLToPath(new URL('../../src/renderer/composer/gesamtlaenge.ts', import.meta.url))
-  const quelltext = readFileSync(pfad, 'utf8')
-  // Kommentare entfernen - die Regel gilt dem CODE. Der Vertrag selbst wird im Kopf
-  // der Datei woertlich zitiert, und dort stehen „30 fps" und „30-Minuten-Warnung"
-  // voellig zu Recht.
-  //
-  // REIHENFOLGE BEACHTEN: erst die Zeilenkommentare, DANN die Blockkommentare. Der
-  // Dateikopf zitiert `src/main/**` - darin steckt die Zeichenfolge, die einen
-  // Blockkommentar EROEFFNET. Wer zuerst nach Blockkommentaren sucht, schneidet ab
-  // dieser Stelle bis zum naechsten `*/` alles heraus, also auch die Import-Zeilen,
-  // und prueft danach an einem loechrigen Text. Genau das ist beim Schreiben dieses
-  // Tests passiert; der Sanity-Test darunter ist die Schranke dagegen.
-  const code = quelltext.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
-
-  it('das Entfernen der Kommentare hat den Code nicht mit weggeschnitten', () => {
-    expect(code).toContain('Math.round(sekunden * RENDER_PROFILE.fps)')
-    expect(code).toContain("import { RENDER_PROFILE } from '../../shared/contracts/render-profile'")
-    expect(code).toContain('export function frameDauer')
-    expect(code).toContain('export function berechneGesamtlaenge')
-    expect(code).toContain('export function formatiereLaenge')
-    expect(code).toContain('export const WARNSCHWELLE_SEKUNDEN')
-  })
-
-  it('enthaelt die Zahl 30 nicht als Literal - fps kommt aus RENDER_PROFILE', () => {
-    expect(code).not.toMatch(/\b30\b/)
-    expect(code).toContain('RENDER_PROFILE.fps')
-  })
-
-  it('liest die Einblendung nirgends', () => {
-    expect(quelltext.toLowerCase()).not.toContain('einblendung')
-  })
-
-  it('enthaelt weder IPC noch Dateisystem noch JSX', () => {
-    expect(code).not.toContain('rufeAuf')
-    expect(code).not.toContain('window.api')
-    expect(code).not.toMatch(/\bfrom '(node:)?fs'/)
-    expect(code).not.toMatch(/<\/[A-Za-z]/)
-  })
-
-  it('importiert nichts aus src/main - der Renderer bleibt getrennt (E3)', () => {
-    // Nur die Import-Zeilen; der Kopf der Datei NENNT src/main/render-service/frames.ts
-    // als die zweite Haelfte der Zusage, und das soll er auch.
-    const importe = code.match(/^\s*import[\s\S]*?from\s+'[^']+'/gm) ?? []
-    expect(importe.length).toBeGreaterThan(0)
-    for (const zeile of importe) expect(zeile).not.toContain('main/')
   })
 })

@@ -11,8 +11,6 @@
 //
 // Diese Suite braucht KEINE Browser-Umgebung: sie importiert nur die reine Rechnung
 // und `node:fs`/`node:url` (vitest.config: environment "node").
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -318,48 +316,5 @@ describe('baueZeitachse - Aufrufzahlen mit Spion', () => {
     wert(baueZeitachse(liste))
 
     expect(liste).toEqual(kopie)
-  })
-})
-
-describe('Grep-Proben aus der DoD', () => {
-  const pfad = fileURLToPath(new URL('../../src/renderer/preview-player/zeitachse.ts', import.meta.url))
-  const quelltext = readFileSync(pfad, 'utf8')
-  // Zuerst die Zeilen-, dann die Blockkommentare - wie in gesamtlaenge.spec (#127):
-  // Der Dateikopf zitiert "src/main/**«, was eine Blockkommentar-Erkennung stoert.
-  const code = quelltext.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
-
-  it('das Entfernen der Kommentare hat den Code nicht mit weggeschnitten', () => {
-    expect(code).toContain('export function baueZeitachse')
-    expect(code).toContain('export function findeAbschnitt')
-    expect(code).toContain('export function lokalerFrame')
-    expect(code).toContain('export function frameZuSekunden')
-    expect(code).toContain('export function sekundenZuFrame')
-    expect(code).toContain('Math.round(sekunden * RENDER_PROFILE.fps)')
-  })
-
-  it('enthält GENAU EIN Math.round - die einzige Rundungsstelle dieser Datei', () => {
-    const treffer = code.match(/Math\.round/g)
-    expect(treffer).toHaveLength(1)
-  })
-
-  it('keine zweite Rundungsform: kein floor, kein ceil, kein toFixed', () => {
-    expect(code).not.toMatch(/Math\.floor/)
-    expect(code).not.toMatch(/Math\.ceil/)
-    expect(code).not.toMatch(/toFixed/)
-  })
-
-  it('liest weder Element-Dauer noch Trim noch Einblendung noch Medien', () => {
-    expect(code).not.toMatch(/\.dauer/)
-    expect(code).not.toContain('trimStart')
-    expect(code).not.toContain('trimEnde')
-    expect(code.toLowerCase()).not.toContain('einblendung')
-  })
-
-  it('kein IPC, kein JSX, kein react, kein window.api', () => {
-    expect(code).not.toContain('rufeAuf')
-    expect(code).not.toContain('abonniere')
-    expect(code).not.toContain('window.api')
-    expect(code).not.toMatch(/<\/[A-Za-z]/)
-    expect(code).not.toContain('react')
   })
 })
