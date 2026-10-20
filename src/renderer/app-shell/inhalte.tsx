@@ -226,7 +226,7 @@ function ProjektKindWurzel({
 export function baueReiterInhalte(
   zugaenge: Reiterzugaenge,
   wurzeln: ModulWurzeln,
-  umgebung: Reiterumgebung,
+  holeUmgebung: () => Reiterumgebung,
 ): Record<ReiterId, ReiterInhalt> {
   // ENTSCHIEDEN 7: Beim Aufbau erst hole() (Initialisierung der Ansicht),
   // DANN aufGeaendert(); die Rueckgabe des Abonnements ist die Aufraeum-Funktion
@@ -236,6 +236,7 @@ export function baueReiterInhalte(
     reiter: ReiterId
     kindOffen: (sichtbar: boolean, projekt: Project) => JSX.Element
   }): JSX.Element {
+    const umgebung = holeUmgebung()
     const { sichtbar, reiter, kindOffen } = pruefEigenschaften
     const [sicht, setzeSicht] = useState(() => zugaenge.projektRoh.hole())
     useEffect(() => {
@@ -280,32 +281,36 @@ export function baueReiterInhalte(
   // Buehne steht OBEN zentriert ueber der vollen Breite, der Composer (Bibliothek
   // links, Zeitleiste unten) darunter. Beide Module bleiben DIESELBEN zwei
   // Bausteine - nur die Geometrie teilt sie in Zeilen statt Spalten.
-  const vereinigteOffenZusammenstellen = (sichtbar: boolean, projekt: Project) => (
-    <div style={SPALTE}>
-      <div style={BUEHNE_OBEN}>
-        {wurzeln.vorschau({
-          projekt,
-          voraussetzungen: zugaenge.zeichnen.hole(),
-          sichtbar,
-        })}
+  const vereinigteOffenZusammenstellen = (sichtbar: boolean, projekt: Project) => {
+    const umgebung = holeUmgebung()
+    return (
+      <div style={SPALTE}>
+        <div style={BUEHNE_OBEN}>
+          {wurzeln.vorschau({
+            projekt,
+            voraussetzungen: zugaenge.zeichnen.hole(),
+            sichtbar,
+          })}
+        </div>
+        <div style={COMPOSER_UNTEN}>
+          {wurzeln.composer({
+            sichtbar,
+            projekt: zugaenge.projektBearbeitung,
+            zeichnen: zugaenge.zeichnen,
+            vorlagen: zugaenge.vorlagen,
+            verdrahtung: umgebung.composerVerdrahtung,
+          })}
+        </div>
       </div>
-      <div style={COMPOSER_UNTEN}>
-        {wurzeln.composer({
-          sichtbar,
-          projekt: zugaenge.projektBearbeitung,
-          zeichnen: zugaenge.zeichnen,
-          vorlagen: zugaenge.vorlagen,
-          verdrahtung: umgebung.composerVerdrahtung,
-        })}
-      </div>
-    </div>
-  )
+    )
+  }
 
   // Der Offene-Teil des Reiters Aktionen: GENAU eine Wurzel, der UMHUELLTE
   // Zugang; die hervorzuhebende Aktion wird nur DURCHGEREICHT (Verbot: kein
   // zweiter Weg dorthin).
-  const aktionenOffen = (sichtbar: boolean) =>
-    wurzeln.actionEditor({
+  const aktionenOffen = (sichtbar: boolean) => {
+    const umgebung = holeUmgebung()
+    return wurzeln.actionEditor({
       sichtbar,
       projekt: zugaenge.projektBearbeitung,
       zeichnen: zugaenge.zeichnen,
@@ -313,6 +318,7 @@ export function baueReiterInhalte(
       marken: zugaenge.marken,
       hervorgehobeneAktionId: umgebung.hervorgehobeneAktionId,
     })
+  }
 
   const reiterAktionen = (reiterEigenschaften: { sichtbar: boolean }) => (
     <ProjektStandReiter
@@ -333,14 +339,16 @@ export function baueReiterInhalte(
     aktionen: (reiterEigenschaften) => reiterAktionen(reiterEigenschaften),
     // ENTSCHIEDEN 6: KEIN Projektzugang; der Sitzungshalter wird unveraendert
     // durchgereicht (ENTSCHIEDEN 12-Grundlage: Vorlagen sind app-weit).
-    vorlagen: (reiterEigenschaften) =>
-      wurzeln.vorlagenEditor({
+    vorlagen: (reiterEigenschaften) => {
+      const umgebung = holeUmgebung()
+      return wurzeln.vorlagenEditor({
         sichtbar: reiterEigenschaften.sichtbar,
         vorlagen: zugaenge.vorlagen,
         zeichnen: zugaenge.zeichnen,
         marken: zugaenge.marken,
         sitzung: umgebung.vorlagenSitzung,
-      }),
+      })
+    },
     // Der fuenfte Reiter (TK 9.14.1, #314): GENAU eine Wurzel, OHNE Projektabfrage und
     // OHNE Leerzustand (Marken sind app-weit, TK 9.14.2); auch ohne offenes Projekt
     // voll benutzbar. Nichts wird hier geholt, abonniert oder gelesen.
@@ -352,8 +360,9 @@ export function baueReiterInhalte(
     // Zusaetzlich zu #243 (entschieden): der ROHE Zugan (kein Projektwechsel
     // ist ein Bearbeitungsschritt). leereProjektHistorie wird nur GELEGT
     // (ENTSCHIEDEN 12) und hier nie gerufen.
-    projekte: (reiterEigenschaften) =>
-      wurzeln.projektVerwaltung({
+    projekte: (reiterEigenschaften) => {
+      const umgebung = holeUmgebung()
+      return wurzeln.projektVerwaltung({
         sichtbar: reiterEigenschaften.sichtbar,
         projekt: zugaenge.projektRoh,
         zeichnen: zugaenge.zeichnen,
@@ -362,7 +371,8 @@ export function baueReiterInhalte(
         marken: zugaenge.marken,
         waehleVideoPfad: umgebung.waehleVideoPfad,
         importiereVideoPfad: umgebung.importiereVideoPfad,
-      }),
+      })
+    },
   }
 }
 

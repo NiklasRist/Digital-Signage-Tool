@@ -197,7 +197,7 @@ function rendereReiter(
   const sichten = baueSichten()
   const zugaenge = verteileZugaenge(sichten)
   const umgebung = baueUmgebung()
-  const walks = baueReiterInhalte(zugaenge, baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], umgebung as unknown as Parameters<typeof baueReiterInhalte>[2])
+  const walks = baueReiterInhalte(zugaenge, baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], (() => umgebung) as unknown as Parameters<typeof baueReiterInhalte>[2])
   const inhalt = walks[reiter]
   act(() => {
     wurzel.render(createElement(inhalt, { sichtbar }) as ReactElement)
@@ -382,7 +382,7 @@ describe('Der Projektstand (ENTSCHIEDEN 7/8)', () => {
 
   it('genau fuenf Schluessel (#314 ersetzt die vier-Schluessel-Zeile; Reihenfolge wie in der Skizze TK 9.14.1)', () => {
     const sichten = baueSichten()
-    const walks = baueReiterInhalte(verteileZugaenge(sichten), baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], baueUmgebung() as unknown as Parameters<typeof baueReiterInhalte>[2])
+    const walks = baueReiterInhalte(verteileZugaenge(sichten), baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], (() => baueUmgebung()) as unknown as Parameters<typeof baueReiterInhalte>[2])
     expect(Object.keys(walks)).toEqual(['zusammenstellen', 'aktionen', 'vorlagen', 'marken', 'projekte'])
     void sichten
   })
@@ -417,7 +417,7 @@ describe('Der Projektstand (ENTSCHIEDEN 7/8)', () => {
       doppel.sicht = { projekt: null, ladefehler: null }
       const sichten = baueSichten()
       const zugaenge = verteileZugaenge(sichten)
-      const walks = baueReiterInhalte(zugaenge, baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], baueUmgebung() as unknown as Parameters<typeof baueReiterInhalte>[2])
+      const walks = baueReiterInhalte(zugaenge, baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], (() => baueUmgebung()) as unknown as Parameters<typeof baueReiterInhalte>[2])
       const inhalt = walks['marken']
       const ziel = document.createElement('div')
       document.body.appendChild(ziel)
@@ -494,7 +494,7 @@ describe('Die Naht-Hooks (BUGFIX)', () => {
     const inhalteFn = baueReiterInhalte(
       verteileZugaenge(baueSichten()),
       { ...baueWurzeln(), composer: mitHook } as never,
-      baueUmgebung() as never,
+      (() => baueUmgebung()) as never,
     )
     const ziel = document.createElement('div')
     document.body.appendChild(ziel)
