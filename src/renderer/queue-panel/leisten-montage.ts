@@ -21,12 +21,12 @@ export interface LeistenLage {
   meldung: { code: string; meldung: string } | null
 }
 
-/** Eingeklappt, keine Rueckfrage, keine Meldung. */
-export const LEERE_LEISTEN_LAGE: LeistenLage = {
+/** Eingeklappt, keine Rueckfrage, keine Meldung. Eingefroren - der Ausgangswert ist Vertrag. */
+export const LEERE_LEISTEN_LAGE: LeistenLage = Object.freeze({
   aufgeklappt: false,
   rueckfrage: null,
   meldung: null
-};
+});
 
 /** Jede dieser Funktionen liefert eine NEUE Lage; die uebergebene bleibt unveraendert.
  *  Alle sind total: sie werfen nie. */

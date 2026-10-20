@@ -2092,6 +2092,73 @@ const main = async () => {
       }
     }
 
+    // Schritt 4j - WARTESCHLANGE (#257/FA-16): Die Leiste ist im Arbeitsbereich immer
+    // sichtbar, zeigt einen GEHOLTEN Stand (nicht "wird geladen"), ueberlebt den
+    // Reiterwechsel und laesst sich auf-/zuklappen. Das ist die Zusage, die vor #257
+    // keinen Aufrufer hatte (die Leiste war ein leerer footer).
+    {
+      const leisteDa4j = await stehtDa('[data-testid="queue-panel"]');
+      if (!leisteDa4j) {
+        fund("Warteschlange", "queue-panel ist im Fenster sichtbar (#257/FA-16)",
+          "keine Warteschlangen-Leiste im DOM", "Befund", "queue-panel/index.tsx");
+      } else {
+        await schlafe(800);
+        const lage4j = await seite.evaluate(() => {
+          const leiste = document.querySelector('[data-testid="queue-panel"]');
+          return {
+            text: (leiste?.textContent ?? "").trim(),
+            listeZu: leiste?.querySelector("ul") === null,
+            zeilenZu: document.querySelectorAll('[data-testid^="auftrag-"]').length,
+          };
+        });
+        if (lage4j.text.includes("wird geladen")) {
+          fund("Warteschlange", "die Leiste zeigt den GEHOLTEN Stand (#205, TK 9.14.2)",
+            `Leiste haengt auf "${lage4j.text}"`, "Befund", "queue-panel/auftrags-sicht.ts");
+        } else if (lage4j.listeZu !== true) {
+          fund("Warteschlange", "die Leiste startet EINGEKLAPPT (ENTSCHIEDEN 3)",
+            "die Liste ist beim Aufbau schon offen", "Befund", "queue-panel/index.tsx");
+        } else {
+          console.log(`[schritt-4j] Warteschlange GEMESSEN: Leiste da, eingeklappt, Text "${lage4j.text}" (#257/FA-16).`);
+        }
+
+        // "Sie darf nie hinter einem Moduswechsel verschwinden" (TK 9.14.2).
+        await klick('[data-testid="reiter-aktionen"]');
+        await schlafe(400);
+        const nachWechsel4j = await stehtDa('[data-testid="queue-panel"]');
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await schlafe(400);
+        if (!nachWechsel4j) {
+          fund("Warteschlange", "die Leiste ueberlebt den Reiterwechsel (TK 9.14.2)",
+            "nach dem Wechsel auf Aktionen fehlt queue-panel", "Befund", "app-shell/rahmen.tsx");
+        } else {
+          console.log("[schritt-4j] Reiterwechsel GEMESSEN: die Leiste bleibt sichtbar (TK 9.14.2).");
+        }
+
+        // Aufklappen ueber den ECHTEN Schalter (aria-label aus #206).
+        const geklappt4j = await seite.evaluate(() => {
+          const knopf = document.querySelector('[aria-label="Warteschlange aufklappen"]');
+          if (knopf === null) return false;
+          knopf.click();
+          return true;
+        });
+        await schlafe(500);
+        const offen4j = await seite.evaluate(() => {
+          const leiste = document.querySelector('[data-testid="queue-panel"]');
+          return {
+            liste: leiste?.querySelector("ul") !== null,
+            leer: (leiste?.textContent ?? "").includes("Keine Aufträge"),
+            zeilen: document.querySelectorAll('[data-testid^="auftrag-"]').length,
+          };
+        });
+        if (!geklappt4j || (!offen4j.liste && !offen4j.leer)) {
+          fund("Warteschlange", "der Klapp-Schalter oeffnet die Auftragsliste (#257, #207)",
+            `geklickt=${String(geklappt4j)}, Lage=${JSON.stringify(offen4j)}`, "Befund", "queue-panel/index.tsx");
+        } else {
+          console.log(`[schritt-4j] Aufklappen GEMESSEN: ${offen4j.zeilen} Auftragszeile(n), leer=${String(offen4j.leer)}.`);
+        }
+      }
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     // Aufräumblock (User-Entscheidung 14.10.2026, solange die App NICHT fertig ist):
     // Jeder Lauf loescht seine eigenen Projekte ("DurchlaufTest-*") ueber den ECHTEN
