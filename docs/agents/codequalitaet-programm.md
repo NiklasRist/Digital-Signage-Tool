@@ -108,6 +108,23 @@ des Gates**. Der Nutzer hat recht: viele Tests ≠ gute/sinnvolle/anforderungsge
 3. **Investition verschieben:** vom Mock-Unit zum **echten Fenster** (Treiber-Szenarien, die
    die Anforderungen messen), wie vom Nutzer gefordert.
 
+### Q4-Nachtrag 20.10.2026: Mutation statt Mock-Zählung
+
+Der erste Audit (19.10.) sortierte nach **Mock-Dichte** – und übersah damit die teuerste
+Kategorie: **Quelltext-/Grep-/Signatur-Proben** haben null Mocks und prüfen keine Anforderung.
+Vier Mutation-Piloten (18 Dateien, `docs/agents/mutation-pilot-2026-10-20.md`) haben den
+Maßstab korrigiert:
+
+- **Frage:** „Bricht eine Zusage, wenn ich diese Zeile ändere?" – nicht „wie viele Mocks hat
+  der Test?".
+- **Ergebnis:** 130 Mutationen, 124 erkannt, 6 aequivalent; 7 echte Testluecken gefunden und
+  geschlossen; **109 Quelltext-/Meta-Tests entfernt**, ohne eine nicht-aequivalente Mutation
+  zu verlieren.
+- **Befund:** Die Verhaltens-Tests sind nicht das Problem. Der Ballast ist die Kategorie
+  Quelltext-Probe; sie gehoert in **Lint**, nicht in Tests.
+- **Naechste Charge:** 138 Dateien lesen noch eine Quelldatei, 92 tragen einen
+  Grep-/Bauvorschriften-`describe`. Weitere Runden nach demselben Rezept, nie pauschal.
+
 ## Reihenfolge (abgenommen)
 
 **Q2 (Gott-Dateien) → Q1 (Kommentare) → Q3 (Fragmentierung) → Q4 (Tests).**

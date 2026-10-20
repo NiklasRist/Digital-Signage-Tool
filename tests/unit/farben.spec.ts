@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SICHERHEITSABSTAND_PX } from "../../src/shared/contracts/konstanten";
@@ -7,16 +5,6 @@ import { loeseFarbe, loeseSchrift } from "../../src/renderer/template-canvas/far
 
 import type { Aktion } from "../../src/shared/contracts/aktion";
 import type { FarbRolle, Marke, SchriftRolle } from "../../src/shared/contracts/marke";
-
-const QUELLE = readFileSync(
-  new URL("../../src/renderer/template-canvas/farben.ts", import.meta.url),
-  "utf8",
-);
-
-const CODEZEILEN = QUELLE.split("\n").filter((z) => {
-  const t = z.trim();
-  return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-}).join("\n");
 
 // Die dreizehn Farb-Rollen mit ihren Werten aus TK 9.11.2.
 const FARBEN: Record<FarbRolle, string> = {
@@ -244,35 +232,16 @@ describe("loeseSchrift", () => {
     expect(loeseSchrift(marke(), rolle)).toEqual(marke().schriften[rolle]);
   });
 
+  it("liefert den Datensatz der Marke SELBST, nicht eine Kopie (TK 9.10.3)", () => {
+    // Die Datei verspricht Referenz, nicht Kopie. Ohne toBe bliebe ein
+    // `{ ...marke.schriften[rolle] }` unsichtbar (Mutation C4, 20.10.2026).
+    const m = marke();
+    expect(loeseSchrift(m, "fliesstext")).toBe(m.schriften.fliesstext);
+  });
+
   it("wirft bei einer Rolle, die die Marke nicht führt", () => {
     const { fliesstext: _entfernt, ...rest } = marke().schriften;
     const m = { ...marke(), schriften: rest } as Marke;
     expect(() => loeseSchrift(m, "fliesstext")).toThrow(/fliesstext/);
-  });
-});
-
-describe("Bauvorschriften dieser Datei", () => {
-  it("macht den dritten Parameter nicht optional", () => {
-    // @ts-expect-error der dritte Parameter ist Pflicht (Festlegung 8)
-    expect(() => loeseFarbe(marke(), "akzent")).toThrow();
-    expect(CODEZEILEN).not.toMatch(/aktion\?/);
-    expect(CODEZEILEN).not.toMatch(/aktion\s*:\s*Aktion\s*=/);
-  });
-
-  it("liest von der Aktion ausschließlich akzentfarbe", () => {
-    const felder = [...CODEZEILEN.matchAll(/aktion\.(\w+)/g)].map((t) => t[1]);
-    expect(new Set(felder)).toEqual(new Set(["akzentfarbe"]));
-  });
-
-  it("greift auf keinen Canvas-Kontext zu und baut keine Schrift-Kurzform", () => {
-    expect(CODEZEILEN).not.toMatch(/\bctx\b|fillStyle|strokeStyle|createLinearGradient|font\s*=/);
-  });
-
-  it("führt keinen Zwischenspeicher", () => {
-    expect(CODEZEILEN).not.toMatch(/new Map\(|new WeakMap\(/);
-  });
-
-  it("enthält keine literale Ersatzfarbe", () => {
-    expect(CODEZEILEN).not.toMatch(/#[0-9a-fA-F]{6}/);
   });
 });

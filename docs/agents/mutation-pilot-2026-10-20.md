@@ -251,3 +251,50 @@ Quelltext-Verbote und Gegenproben, die nur die eigenen Regexe pruefen.
 Das Bild ist ueber drei Runden stabil: Die Verhaltens-Tests tragen, die
 Quelltext-/Meta-Proben sind der Ballast. In 13 geprueften Dateien wurden **84** solche
 Tests entfernt, ohne eine einzige nicht-aequivalente Mutation zu verlieren.
+
+---
+
+## 11. Pilot 4: fünf weitere Dateien (20.10.2026, Fortsetzung)
+
+**Dateien:** `gesamtlaenge` (composer), `farben` (template-canvas), `undo-historien`
+(app-shell), `zeitachse` (preview-player), `arbeitskopie` (vorlagen-editor).
+
+| Kategorie | Anzahl | erkannt |
+|---|---|---|
+| Verhaltens-Mutationen | 29 | **28** |
+| harmlose Refactorings | 5 | **0 rot** |
+| Quelltext-/Meta-Tests entfernt | **25** | – |
+| Verhaltens-Tests ergaenzt | **1** | – |
+
+**Eine echte Luecke gefunden und geschlossen:** **C4** – `loeseSchrift` verspricht den
+Datensatz der Marke **selbst** (Referenz, keine Kopie, TK 9.10.3). Der Test prueft nur
+`toEqual`; `{ ...marke.schriften[rolle] }` blieb unsichtbar. Neu: `toBe` auf das
+Original-Objekt.
+
+**Eine nicht gefangene Mutation ist aequivalent:** **C3** – ohne die ausdrueckliche
+`belegt`-Pruefung wirft `alsCanvasFarbe` weiterhin, und seine Meldung nennt die Rolle
+(„Farb-Rolle \"linie\""). Die Zusage „kein Ersatzwert" bleibt; nur der spezielle
+Meldungstext „ist in der Marke nicht belegt" geht verloren. Kein Verhaltensunterschied
+im geprueften Sinn.
+
+**Entfernt (25):** Grep-/Bauvorschriften-Bloecke in `gesamtlaenge`, `farben`,
+`undo-historien`, `zeitachse`, `arbeitskopie`. Die Verhaltens-Tests dieser Dateien
+fingen alle nicht-aequivalenten Mutationen.
+
+## 12. Endstand nach vier Piloten
+
+| | |
+|---|---|
+| Runden / Dateien | **4 / 18** |
+| Mutationen | **130**: 124 erkannt, 6 aequivalent |
+| Refactorings | **0 / 20 rot** |
+| Quelltext-/Meta-Tests entfernt | **109** |
+| Verhaltens-Tests ergaenzt | **7** |
+| Echte Luecken geschlossen | **7** |
+| Suite | 5.702 → **5.600** |
+| Verbleibend | **138** Dateien mit `readFileSync`, **92** mit Grep-/Bauvorschriften-`describe` |
+
+Das Ergebnis ist ueber vier Runden stabil: **Die Verhaltens-Tests tragen, die
+Quelltext-/Meta-Proben sind der Ballast.** In 18 Dateien wurden 109 solche Tests entfernt,
+ohne eine einzige nicht-aequivalente Mutation zu verlieren. Die verbleibenden 92 Dateien
+enthalten schaetzungsweise noch 200–300 Tests dieser Kategorie.

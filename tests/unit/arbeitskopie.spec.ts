@@ -5,7 +5,6 @@
 // Testlauf nicht. Der Ersatz ist zugleich der Beweis: Der einzige Weg in den Main fuehrt
 // ueber diesen Kanal, und die Zaehl-/Spy-Tests pruefen die Aufrufreihenfolge und -grenzen.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 import type { Vorlage, Zone } from "../../src/shared/contracts/vorlage";
 import { KANAELE } from "../../src/shared/contracts/kanaele";
@@ -324,34 +323,5 @@ describe("sichereStand", () => {
     if (!ergebnis.ok) {
       expect(ergebnis.fehler.code).toBe("unbekannter_fehler");
     }
-  });
-});
-
-describe("DoD-Grep-Proben (Quelltext)", () => {
-  const CODE = readFileSync("src/renderer/vorlagen-editor/arbeitskopie.ts", "utf-8");
-
-  it("enthaelt keinen Timer, kein setTimeout, keine Historie, keinen Modul-Zustand", () => {
-    expect(CODE).not.toMatch(/setTimeout/);
-    expect(CODE).not.toMatch(/setInterval/);
-    expect(CODE).not.toMatch(/^let /m);
-  });
-
-  it("enthaelt kein vorlagen:geaendert und kein Abonnement", () => {
-    expect(CODE).not.toContain("vorlagen:geaendert");
-    expect(CODE).not.toMatch(/abonniere|\.on\(/);
-  });
-
-  it("importiert nichts aus vorlagen-uebersicht.ts (#155)", () => {
-    expect(CODE).not.toContain("vorlagen-uebersicht");
-  });
-
-  it("enthaelt kein Kanal-Literal 'vorlagen:'", () => {
-    expect(CODE).not.toContain("'vorlagen:");
-  });
-
-  it("enthaelt weder window.api noch fs noch ipcRenderer", () => {
-    expect(CODE).not.toMatch(/window\.api/);
-    expect(CODE).not.toMatch(/\bfs\b/);
-    expect(CODE).not.toContain("ipcRenderer");
   });
 });
