@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-
 import { describe, expect, it } from 'vitest'
 
 import type { Vorlage, Zone, ZonenRolle } from '../../src/shared/contracts/vorlage'
@@ -41,17 +38,6 @@ function vorlage(...zonen: Zone[]): Vorlage {
 }
 
 const ids = (liste: Array<{ id: string }>): string[] => liste.map((eintrag) => eintrag.id)
-
-// Quelltext der zu pruefenden Datei, einmal gelesen fuer beide Grep-Bloecke.
-// Kommentare entfernen - die Regeln gelten dem CODE. Der Dateikopf und die
-// Erklaerungen zitieren den Vertrag („Zeichenreihenfolge", „#146") zu Recht.
-// REIHENFOLGE BEACHTEN: erst die Zeilen-, dann die Blockkommentare. Und erst
-// \r\n normalisieren, damit die Filter auf jeder Plattform gleich treffen.
-const zeilenDurchgehend = readFileSync(
-  fileURLToPath(new URL('../../src/renderer/vorlagen-editor/zonen-liste.ts', import.meta.url)),
-  'utf8',
-).replace(/\r\n/g, '\n')
-const code = zeilenDurchgehend.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
 
 describe('baueZonenListe (#146)', () => {
   it('bildet je Zone einen Eintrag in IDENTISCHER Reihenfolge - 1:1, nichts sortiert', () => {
@@ -258,73 +244,5 @@ describe('ordneZonenNeu (#146) - Fehlerpfade', () => {
     expect(
       ergebnis.ok === true && ids(ergebnis.wert.filter((z) => z.rolle === 'fest')),
     ).toEqual(festeIdsVorher)
-  })
-})
-
-describe('Grep-Proben aus der Definition of Done', () => {
-  it('die Abschaltzeile aus Zeile 1 ist entfernt', () => {
-    expect(zeilenDurchgehend.startsWith('/* eslint-disable')).toBe(false)
-    expect(zeilenDurchgehend.startsWith('// [')).toBe(true)
-  })
-
-  it('die Signaturen sind woertlich unveraendert geblieben', () => {
-    expect(zeilenDurchgehend).toContain('export interface ZonenListenEintrag {')
-    expect(zeilenDurchgehend).toContain('export function baueZonenListe(vorlage: Vorlage):')
-    expect(zeilenDurchgehend).toContain('export function ordneZonenNeu(')
-    expect(zeilenDurchgehend).toContain('): Ergebnis<Zone[]> {')
-  })
-
-  it('enthält keinen sort, kein reverse und kein z-index im Code', () => {
-    expect(code).not.toMatch(/\.sort\(/)
-    expect(code).not.toMatch(/\.reverse\(/)
-    expect(code).not.toMatch(/z-index/)
-    expect(code).not.toMatch(/zIndex/)
-  })
-
-  it('schreibt kein Ebenen-Feld in die Zone - die Reihenfolge lebt allein im Array', () => {
-    // `ebene` steht verbindlich in ZonenListenEintrag (Anzeigetext) und wird dort aus
-    // `index` berechnet - als Eigenschaft an der Zone oder als z-index gaebe es eine
-    // zweite Quelle fuer dieselbe Information (TK 9.11.3).
-    expect(code).toContain('ebene: number')
-    expect(code).toContain('ebene: index + 1')
-    expect(code).not.toMatch(/zone\.ebene/)
-    expect(code).not.toMatch(/\.sort\([^)]*\bebene\b/)
-  })
-})
-
-describe('Gegenproben - die Grep-Proben greifen wirklich', () => {
-  // Eine Probe ohne Beleg ist keine Probe: Diese Faelschungen muessen DURCHFALLEN.
-  // Wuerde eine davon gruen, triefe der Filter ins Leere.
-  it('eine eingeschmuggelte Sortierung wird gefunden', () => {
-    const gefaelscht = 'const neu = zonen.sort((a, b) => a.id.localeCompare(b.id))'
-    expect(gefaelscht).toMatch(/\.sort\(/)
-  })
-
-  it('eine eingeschmuggelte Umkehrung wird gefunden', () => {
-    const gefaelscht = 'const neu = [...zonen].reverse()'
-    expect(gefaelscht).toMatch(/\.reverse\(/)
-  })
-
-  it('ein eingeschmuggeltes z-index wird gefunden', () => {
-    const gefaelscht = "zone.style = 'z-index: 99'"
-    expect(gefaelscht).toMatch(/z-index/)
-  })
-
-  it('ein eingeschmuggeltes Ebenen-Feld an der Zone wird gefunden', () => {
-    const gefaelscht = 'wirdGespeichert(zone.ebene)'
-    expect(gefaelscht).toMatch(/zone\.ebene/)
-  })
-
-  it('eine eingeschmuggelte Abschaltzeile wird gefunden', () => {
-    const gefaelscht = '/* eslint-disable @typescript-eslint/no-unused-vars */\n// x'
-    expect(gefaelscht.startsWith('/* eslint-disable')).toBe(true)
-  })
-
-  it('der Kommentar-Filter entfernt wirklich Kommentare', () => {
-    // Belegt, dass die Grep-Proben oben nicht gegen den Prosa-Kopf pruefen: Das
-    // Geruest kommentiert „Reine Abbildung 1:1 ... ohne jede Sortierung" - wuerde der
-    // Filter nicht beiessen, schluege dort sort/reverse an.
-    expect(zeilenDurchgehend.match(/\/\//g)?.length).toBeGreaterThan(0)
-    expect(code).not.toContain('//')
   })
 })

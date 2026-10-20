@@ -134,3 +134,70 @@ Tests schlecht sind, sondern weil sie die falsche Ebene prüfen.
    (Kandidaten: `rahmen`, `medien-import`, `bibliothek`, `zonen-liste`, `undo-stapel`).
 5. **Investition verschieben:** Treiber-Szenarien für FA-17/18, FA-13, FA-23/24 – dort,
    wo die Anforderungen tatsächlich brechen können.
+
+---
+
+## 8. Pilot 2: fünf weitere Dateien (20.10.2026, Fortsetzung)
+
+**Dateien:** `undo-stapel`, `zonen-liste`, `bibliothek` (action-editor), `medien-import`
+(composer), `rahmen` (app-shell). Dieselbe Methode, **39 Verhaltens-Mutationen** und
+**5 harmlose Refactorings**.
+
+### Ergebnis
+
+| Kategorie | Anzahl | erkannt |
+|---|---|---|
+| Verhaltens-Mutationen | 39 | **37** |
+| harmlose Refactorings | 5 | **0 rot** |
+| Quelltext-/Meta-Tests entfernt | **47** | – |
+| Verhaltens-Tests ergaenzt | **2** | – |
+
+**Zwei echte Lücken gefunden und geschlossen:**
+
+- **U7** – `erzeugeUndoStapel(1)` fiel still auf Tiefe 50 zurueck (`>= 1` → `> 1`), kein
+  Test fiel. Neu: Tiefe 1 ist gueltig, nach zwei `ablegen` bleibt genau einer.
+- **R1** – alle Reiter trugen `aria-selected={true}`; kein Test pruefte das Attribut.
+  Neu: genau der aktive Reiter ist markiert.
+
+### Die zwei nicht gefangenen Mutationen sind **aequivalent**, keine Luecken
+
+- **Z8** – die Pruefung „feste Zonen behalten ihre relative Reihenfolge" ist nach der
+  Sperre auf `rolle === 'fest'` **nicht erreichbar**: Eine feste Zone kann nicht bewegt
+  werden, und das Verschieben einer freien Zone aendert die Reihenfolge der festen nicht.
+  Der Test, der sie zu decken schien, war tautologisch. Die Schutzschicht bleibt als
+  defensive Absicherung stehen; sie braucht keinen Test.
+- **B4** – `bildAsset: kaputt ? null : findeBildAsset(...)` ist fuer `kaputt === true`
+  immer `null`, weil `kaputt` genau dann true ist, wenn `findeBildAsset` null liefert.
+  Die Bedingung ist redundant; beide Fassungen verhalten sich gleich.
+
+### Was entfernt wurde (47 Tests)
+
+- **10** in `undo-stapel` („enthaelt kein JSX/react/rufeAuf/…", „kein Modul-Zustand").
+- **10** in `zonen-liste` (4 Quelltext-Proben + 6 **Meta-Proben**, die nur die eigenen
+  Regexe gegen erfundene Zeichenketten testeten).
+- **10** in `bibliothek` (6 Quelltext + 4 Meta).
+- **10** in `medien-import` (6 Quelltext + 4 Meta).
+- **7** in `rahmen` (Bauvorschriften fuer `rahmen.tsx` und `App.tsx`).
+
+Die Verhaltens-Tests dieser fuenf Dateien fingen **alle nicht-aequivalenten** Mutationen.
+Die geloeschten Proben prueften Codeform, Signaturen (macht TypeScript) oder die
+Testwerkzeuge selbst. Sie sind durch die bestehenden Verhaltens-Tests bzw. eine spaetere
+Lint-Regel ersetzbar.
+
+### Stand nach beiden Piloten
+
+| | vorher | nachher |
+|---|---|---|
+| Suite | 5.702 Unit-Tests | **5.652** |
+| Quelltext-/Meta-Tests entfernt | – | **55** |
+| Verhaltens-Tests ergaenzt | – | **5** |
+| Verhaltens-Mutationen | – | **68**: 66 erkannt, 2 aequivalent |
+
+**Verbleibend (gemessen):** 148 Testdateien lesen noch eine Quelldatei; 102 Dateien tragen
+einen Grep-/Bauvorschriften-`describe`. Das ist die naechste Charge – dieselbe Methode,
+Datei fuer Datei, **nie pauschal**.
+
+**Nicht bestaetigt:** „Die Tests sind ueberwiegend irrelevant." In allen acht geprueften
+Dateien waren die Verhaltens-Tests stark. Der belegte Ballast ist die Kategorie
+**Quelltext-/Meta-Probe** – 55 Tests in zwei Piloten, Tendenz in den verbleibenden 102
+Dateien aehnlich.

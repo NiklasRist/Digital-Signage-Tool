@@ -1,8 +1,6 @@
 // Verhaltenstests zu #135 - die Aktions-Bibliothek des Projekts: alle Aktionen
 // in Bestandsreihenfolge, jede mit dem Kennzeichen, ob ihr Bild fehlt. Reine
 // Ableitung aus den zwei uebergebenen Arrays; kein IPC, kein Dateisystem.
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
@@ -185,76 +183,5 @@ describe('es wird nichts eigenmaechtig entschieden, nichts repariert', () => {
     const video = bildAsset('asset-video', 'ok', 'video')
     expect(findeBildAsset('asset-video', [video])).toBe(video)
     expect(istAktionKaputt(aktion('a-1', 'asset-video'), [video])).toBe(false)
-  })
-})
-
-describe('Grep-Proben aus der Definition of Done', () => {
-  const pfad = fileURLToPath(new URL('../../src/renderer/action-editor/bibliothek.ts', import.meta.url))
-  const quelltext = readFileSync(pfad, 'utf8')
-
-  // Kommentare entfernen - die Verbote gelten dem CODE. Die Erklaerungen
-  // duerfen die Regeln zitieren. REIHENFOLGE BEACHTEN: erst die Zeilen-, dann
-  // die Blockkommentare.
-  const code = quelltext.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
-
-  it('die Abschaltzeile aus Zeile 1 ist entfernt', () => {
-    expect(quelltext.startsWith('/* eslint-disable')).toBe(false)
-    expect(quelltext.startsWith('// [')).toBe(true)
-  })
-
-  it('die vier Signaturen sind woertlich unveraendert geblieben', () => {
-    expect(quelltext).toContain('export function findeBildAsset(bildRef: string | null, assets: Asset[]): Asset | null')
-    expect(quelltext).toContain('export function istAktionKaputt(aktion: Aktion, assets: Asset[]): boolean')
-    expect(quelltext).toContain('export function baueBibliothek(aktionen: Aktion[], assets: Asset[]): BibliothekEintrag[]')
-    expect(quelltext).toContain('export function zaehleKaputte(eintraege: BibliothekEintrag[]): number')
-    expect(quelltext).toContain('export interface BibliothekEintrag {')
-  })
-
-  it('kein sort, kein rufeAuf, kein window.api, kein fs (Grep-Probe)', () => {
-    expect(code).not.toContain('.sort(')
-    expect(code).not.toContain('rufeAuf')
-    expect(code).not.toContain('window.api')
-    expect(code).not.toMatch(/\bfrom '(node:)?fs'/)
-  })
-
-  it('keine Funktion wirft - der werfende Rumpf ist entfernt', () => {
-    expect(quelltext).not.toContain('Rumpf gehoert zu Issue #135')
-    expect(code).not.toContain('throw new Error')
-    expect(code).not.toMatch(/throw\b/)
-  })
-
-  it('kein Modul-Zustand: keine Top-Level-Variable ausser den Signaturen', () => {
-    // `const`/`let` auf oberster Ebene waere eigene Wahrheit neben dem
-    // project-store; die Datei ist nur Funktionen plus Typ-Interface.
-    expect(code).not.toMatch(/^(const|let|var)\s/m)
-  })
-
-  it('bildAsset ist bei kaputt bewusst null (nicht das fehlt-Asset durchreichen)', () => {
-    expect(code).toContain('bildAsset: kaputt ? null : ')
-  })
-})
-
-describe('Gegenproben, die pruefen, dass die Grep-Proben wirklich greifen', () => {
-  // Eine Probe ohne Beleg ist keine Probe: Diese Faelschungen muessen
-  // DURCHFALLEN. Wuerde eine davon gruen, triefe der Filter ins Leere.
-  it('eine eingeschmuggelte Abschaltzeile wird gefunden', () => {
-    const gefaelscht = "/* eslint-disable @typescript-eslint/no-unused-vars */\n// x"
-    expect(gefaelscht.startsWith('/* eslint-disable')).toBe(true)
-  })
-
-  it('ein eingeschmuggelter sort-Aufruf wird gefunden', () => {
-    const gefaelscht = "return eintraege.sort((a, b) => 0)"
-    expect(gefaelscht).toContain('.sort(')
-  })
-
-  it('ein eingeschmuggelter throw wird gefunden', () => {
-    const gefaelscht = "if (x) throw new Error('kaputt')"
-    expect(gefaelscht).toMatch(/throw new Error/)
-  })
-
-  it('eine eingeschmuggelte Top-Level-Konstante wird gefunden', () => {
-    const gefaelscht = "const zwischenlager: Asset[] = []"
-    const code = gefaelscht.replace(/\/\/.*$/gm, '')
-    expect(code).toMatch(/^(const|let|var)\s/m)
   })
 })
