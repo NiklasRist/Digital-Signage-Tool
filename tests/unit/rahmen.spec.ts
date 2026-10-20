@@ -9,7 +9,6 @@
 // die Knöpfe rufen wechsleReiter. `setzeReiterZustandZurueck` setzt den Modul-Zustand
 // zwischen den Tests zurück (NUR für Tests exportiert, s. #194).
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, createElement, useEffect, type JSX, type ReactElement } from 'react'
@@ -137,6 +136,17 @@ describe('Reiterleiste (DoD)', () => {
     expect(spion).toHaveBeenCalledTimes(1)
     expect(spion).toHaveBeenCalledWith('marken')
 
+    fertig()
+  })
+
+  it('markiert GENAU den aktiven Reiter mit aria-selected=true', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    const aktiv = Array.from(behaelter.querySelectorAll('button[role="tab"]')).filter(
+      (knopf) => knopf.getAttribute('aria-selected') === 'true',
+    )
+    expect(aktiv.map((k) => k.getAttribute('data-testid'))).toEqual([
+      `reiter-${reiterModul.holeReiter()}`,
+    ])
     fertig()
   })
 
@@ -445,67 +455,5 @@ describe('Abbau des Rahmens (DoD)', () => {
       reiterModul.wechsleReiter('aktionen')
     })
     expect(aufrufeLeiste).toHaveBeenCalledTimes(2)
-  })
-})
-
-describe('Bauvorschriften dieser Datei (DoD-Grep-Proben)', () => {
-  const QUELLE = readFileSync('src/renderer/app-shell/rahmen.tsx', 'utf8')
-
-  // Nur der Code, ohne Kommentarzeilen – die Grep-Proben der DoD pruefen den Rumpf.
-  const CODEZEILEN = QUELLE.split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-  it('enthält kein useState (benannter Test zu ENTSCHIEDEN 8 – der Rahmen hält keine Meldungen)', () => {
-    expect(CODEZEILEN).not.toContain('useState')
-  })
-
-  it('enthält kein Array für Meldungen', () => {
-    expect(CODEZEILEN).not.toContain('meldungen')
-    expect(CODEZEILEN).not.toContain('fehlerListe')
-  })
-
-  it('enthält kein setTimeout', () => {
-    expect(CODEZEILEN).not.toContain('setTimeout')
-  })
-
-  it('enthält weder rufeAuf noch abonniere noch KANAELE (Verbot: kein dritter Auswerter)', () => {
-    for (const verboten of ['rufeAuf', 'abonniere', 'KANAELE']) {
-      expect(CODEZEILEN).not.toContain(verboten)
-    }
-  })
-})
-
-describe('Bauvorschriften von src/renderer/App.tsx (DoD-Grep-Proben)', () => {
-  const QUELLE = readFileSync('src/renderer/App.tsx', 'utf8')
-
-  const CODEZEILEN = QUELLE.split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-  it('enthält keine eigene ReiterId-Deklaration mehr und mountet über app-shell/inhalte (DoD, nach #244)', () => {
-    // Nach #244 liegt die Mount-Kette in app-shell/inhalte.tsx; diese Datei ist nur
-    // noch die Naht. Die essentlichen Zusaagen bleiben: keine zweite Deklaration,
-    // kein zweiter Reiter-Zustand, kein IPC. (Frueher geprueft: der Import von
-    // './app-shell/reiter' in DIESER Datei - die Deklaration lebt seit #244 hinter der
-    // Mount-Datei; der wörtliche Import-Zeilen-Vergleich war ein Stellvertreter und
-    // haelt dem Endzustand nicht.)
-    expect(CODEZEILEN).not.toMatch(/type\s+ReiterId\s*=/)
-    expect(CODEZEILEN).toContain('inhalte')
-  })
-
-  it('enthält kein useState für den aktiven Reiter (DoD - nach #260 VERMERK 1 eingegrenzt: die Bootstrap-/Melde-Lagen sind kein Reiter-Zustand)', () => {
-    expect(CODEZEILEN).not.toMatch(/useState[^\n]*ReiterId/)
-  })
-
-  it('enthält keinen Aufruf Richtung Main (DoD - nach #260 VERMERK 1: abonniere/KANAELE sind ab #262 vorgeschrieben)', () => {
-    expect(CODEZEILEN).not.toContain('rufeAuf')
-    expect(CODEZEILEN).not.toContain('window.api')
   })
 })

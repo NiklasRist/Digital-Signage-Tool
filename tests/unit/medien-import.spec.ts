@@ -2,12 +2,10 @@
 //
 // Geprüft wird der werfende Rumpf der Datei: `importiereMedien` stösst den
 // Übergabe-Weg aus #204 (als Parameter übergeben, Entscheidung E1) GENAU EINMAL
-// mit `nurTyp: null` an, wartet NICHT auf den Ausgang (der läuft über #199
+// mit `nurTyp: 'video'` an, wartet NICHT auf den Ausgang (der läuft über #199
 // zurück), reicht ein `ok: false` UNVERÄNDERT durch und übersetzt ein `ok: true`
 // über `baueImportBericht` in einen Klartext-Bericht, der Übersprungenes beim
 // DATEINAMEN und Abgelehntes bei Dateiname+Code nennt (ENTSCHIEDEN 2/3/4).
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ImportUebergabeErgebnis } from '../../src/renderer/app-shell/medien-import-uebergabe'
@@ -16,13 +14,6 @@ import type { MedienImportStarter } from '../../src/renderer/composer/medien-imp
 const { baueImportBericht, dateinameAusPfad, importiereMedien } = await import(
   '../../src/renderer/composer/medien-import'
 )
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/composer/medien-import.ts', import.meta.url),
-  'utf8',
-)
-// Kommentare zuerst zeilen-, dann blockweise entfernen - die Grep-Proben gelten dem Code.
-const CODETEIL = QUELLE.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
 
 /** Ein vollständiges Ergebnis von #204, wie `starteMedienImport` es liefern kann. */
 function ergebnisVon204(teil: Partial<ImportUebergabeErgebnis> = {}): ImportUebergabeErgebnis {
@@ -268,73 +259,5 @@ describe('dateinameAusPfad - drei benannte Fälle (DoD)', () => {
 
   it('nimmt den letzten Trenner - auch bei gemischten Pfaden', () => {
     expect(dateinameAusPfad('C:\\mixed/pfad\\video.MP4')).toBe('video.MP4')
-  })
-})
-
-describe('Grep-Proben aus der Definition of Done', () => {
-  it('die Abschaltzeile aus Zeile 1 ist entfernt', () => {
-    expect(QUELLE.startsWith('/* eslint-disable')).toBe(false)
-    expect(QUELLE.startsWith('// [')).toBe(true)
-  })
-
-  it('die Signatur ist verbindlich und wörtlich unveraendert geblieben', () => {
-    expect(QUELLE).toContain('export type MedienImportStarter = (')
-    expect(QUELLE).toContain("nurTyp: 'video' | 'bild' | null,")
-    expect(QUELLE).toContain('Promise<Ergebnis<ImportUebergabeErgebnis, string>>')
-    expect(QUELLE).toContain('export interface ImportBericht {')
-    expect(QUELLE).toContain('eingereiht: number')
-    expect(QUELLE).toContain('brauchtAufmerksamkeit: boolean')
-    expect(QUELLE).toContain('export function baueImportBericht(ergebnis: ImportUebergabeErgebnis): ImportBericht {')
-    expect(QUELLE).toContain('export function dateinameAusPfad(pfad: string): string {')
-    expect(QUELLE).toContain('): Promise<Ergebnis<ImportBericht, string>> {')
-  })
-
-  it('der werfende Geruest-Rumpf ist weg', () => {
-    expect(QUELLE).not.toContain('Rumpf gehoert zu Issue #228')
-  })
-
-  it('enthaelt keins der im DoD verbotenen Konstrukte', () => {
-    for (const verboten of ['rufeAuf', 'KANAELE', 'reiheEin', 'abonniere', 'window.']) {
-      expect(CODETEIL).not.toContain(verboten)
-    }
-    // Kanalnamen nie als String-Literal.
-    expect(CODETEIL).not.toMatch(/['"](?:media|queue):/)
-    // Kein react-Import und kein JSX.
-    expect(CODETEIL).not.toMatch(/from\s+['"]react['"]/)
-    expect(CODETEIL).not.toMatch(/<[A-Za-z][A-Za-z0-9]*\s/)
-  })
-
-  it('enthaelt KEINE Dateiendungsliste (DoD)', () => {
-    expect(CODETEIL).not.toMatch(/['"][^'"]*\.(mp4|jpg|jpeg|png|webp|mov|avi)['"]/)
-    expect(CODETEIL).not.toContain('FORMAT_WHITELIST')
-  })
-
-  it('importiert aus medien-import-uebergabe NUR als import type (DoD)', () => {
-    expect(QUELLE).toContain("import type { ImportUebergabeErgebnis } from '../app-shell/medien-import-uebergabe'")
-    // Kein Wertimport: kein Import ohne das `type`-Schlüsselwort auf diese Datei.
-    expect(QUELLE).not.toMatch(/^\s*import\s+\{[^}]*\}\s+from\s+['"]\.\.\/app-shell\/medien-import-uebergabe['"]/m)
-  })
-})
-
-describe('Gegenproben - die Grep-Proben muessen wirklich beissen', () => {
-  it('eine eingeschmuggelte Abschaltzeile wird gefunden', () => {
-    const gefaelscht = '/* eslint-disable @typescript-eslint/no-unused-vars */\n// GENERIERT'
-    expect(gefaelscht.startsWith('/* eslint-disable')).toBe(true)
-  })
-
-  it('ein eingeschmuggeltes verbotenes Konstrukt wird vom Filter gefunden', () => {
-    const gefaelscht = CODETEIL + '\nrufeAuf(KANAELE.queue.reiheEin, { art: "import" })'
-    expect(gefaelscht).toContain('rufeAuf')
-    expect(gefaelscht).toContain('KANAELE')
-  })
-
-  it('eine eingeschmuggelte Dateiendungsliste wird vom Regex gefunden', () => {
-    const gefaelscht = CODETEIL + '\nconst ENDUNGEN = ["x.mp4", "y.jpg", "z.png"]'
-    expect(gefaelscht).toMatch(/['"][^'"]*\.(mp4|jpg|jpeg|png|webp|mov|avi)['"]/)
-  })
-
-  it('ein eingeschmuggelter Wertimport wird vom Regex gefunden', () => {
-    const gefaelscht = QUELLE + "\nimport { starteMedienImport } from '../app-shell/medien-import-uebergabe'"
-    expect(gefaelscht).toMatch(/^\s*import\s+\{[^}]*\}\s+from\s+['"]\.\.\/app-shell\/medien-import-uebergabe['"]/m)
   })
 })

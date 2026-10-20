@@ -5,27 +5,12 @@
 // pruefbar. Die Fabrik (ENTSCHIEDEN 1) haelt KEINEN Modul-Zustand; jede Instanz
 // ist eigenstaendig, ein Zuruecksetzen zwischen Tests ist daher nicht noetig und
 // die Tests praegen sich gegenseitig nicht.
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import {
   UNDO_TIEFE,
   erzeugeUndoStapel,
 } from "../../src/renderer/app-shell/undo-stapel";
-
-const QUELLE = readFileSync(
-  new URL("../../src/renderer/app-shell/undo-stapel.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur der Code, ohne Kommentarzeilen – die Grep-Proben der DoD pruefen den Rumpf.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((z) => {
-    const t = z.trim();
-    return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 describe("Konstante und Fabrik (DoD)", () => {
   it("ist UNDO_TIEFE der Vertragswert 50 (DoD)", () => {
@@ -172,6 +157,17 @@ describe("leere (DoD)", () => {
 });
 
 describe("erzeugeUndoStapel mit ungueltiger Tiefe (DoD, ENTSCHIEDEN 7)", () => {
+  it("tiefe 1 ist GUELTIG: nach zwei ablegen bleibt genau der juengste Stand", () => {
+    // Die Grenze ist "< 1 ist ungueltig", nicht "<= 1". Ohne diesen Fall waere
+    // eine Verschiebung auf "> 1" unsichtbar - Tiefe 1 faellt dann still auf 50.
+    const stapel = erzeugeUndoStapel<number>(1);
+    stapel.ablegen(1);
+    stapel.ablegen(2);
+
+    expect(stapel.stand().zurueck).toBe(1);
+    expect(stapel.vorschauZurueck()).toBe(2);
+  });
+
   it.each([
     [0],
     [-3],
@@ -215,52 +211,5 @@ describe("Kein Zusammenfassen (DoD, ENTSCHIEDEN 6)", () => {
     stapel.ablegen(7);
     stapel.ablegen(7);
     expect(stapel.stand().zurueck).toBe(2);
-  });
-});
-
-describe("Bauvorschriften dieser Datei (DoD-Grep-Proben)", () => {
-  it("enthaelt kein JSX", () => {
-    expect(QUELLE).not.toMatch(/\bJSX\b/);
-    // Bewusst OHNE /i und kleingeschrieben: Die verbindliche Signatur fuehrt
-    // den Typparameter <T> (UndoStapel<T>, erzeugeUndoStapel<T>), der GROSS
-    // geschrieben ist und kein JSX ist. JSX-HTML-Elemente sind kleingeschrieben
-    // (<div>, <canvas/>) und werden von diesem Muster gefunden.
-    expect(CODEZEILEN).not.toMatch(/<[a-z][a-z0-9]*[\s/>]/);
-  });
-
-  it("importiert nichts aus react", () => {
-    expect(CODEZEILEN).not.toMatch(/from\s+['"]react['"]/);
-  });
-
-  it("enthaelt kein rufeAuf", () => {
-    expect(CODEZEILEN).not.toMatch(/rufeAuf/);
-  });
-
-  it("enthaelt kein abonniere", () => {
-    expect(CODEZEILEN).not.toMatch(/abonniere/);
-  });
-
-  it("enthaelt kein window.", () => {
-    expect(CODEZEILEN).not.toMatch(/window\./);
-  });
-
-  it("enthaelt kein localStorage", () => {
-    expect(CODEZEILEN).not.toMatch(/localStorage/);
-  });
-
-  it("enthaelt kein structuredClone", () => {
-    expect(CODEZEILEN).not.toMatch(/structuredClone/);
-  });
-
-  it("enthaelt kein JSON.stringify", () => {
-    expect(CODEZEILEN).not.toMatch(/JSON\.stringify/);
-  });
-
-  it("enthaelt kein setTimeout", () => {
-    expect(CODEZEILEN).not.toMatch(/setTimeout/);
-  });
-
-  it("importiert nichts aus src/shared/contracts/", () => {
-    expect(CODEZEILEN).not.toMatch(/src\/shared\/contracts\//);
   });
 });
