@@ -11,7 +11,42 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (19.10.2026, dritte Sitzung: Q3 GEBAUT UND GEMERGT) – gilt vor ALLEM weiter unten
+## STAND HEUTE (20.10.2026: Treiber-Matrix, #257 gebaut, Update-Loop behoben) – gilt vor ALLEM weiter unten
+
+- **Treiber-Matrix gebaut** (`docs/agents/treiber-matrix.md`, Waechter
+  `tests/unit/treiber-matrix.spec.ts`): alle **24 FA** gegen die Treiber-Schritte gemappt,
+  Status nur fuer das echte Fenster. Befund: **1 von 15 Muss** war vollstaendig gemessen
+  (FA-05). Der Waechter prueft Vollstaendigkeit (jede FA genau eine Zeile, jede genannte
+  Kennung existiert, jeder `schritt-4*` ist zugeordnet) - **nicht** die Wahrheit der
+  Statusspalte.
+- **#257 GEBAUT, gemergt und geschlossen** (`056d21b`, Merge `3189564`):
+  `queue-panel/index.tsx` ist die Modul-Wurzel (Sicht genau einmal, danach Fortschritt;
+  Klappzustand, Rueckfrage, eine Meldung; Schalter aus #209/#210, Fehlertext aus #211).
+  Der **leere Platzhalter** `warteschlangen-leiste.tsx` ist geloescht, `App.tsx` importiert
+  `./queue-panel` (Abweichung von der Issue-Dateiliste im Issue-Kommentar gemeldet).
+  Treiber-Schritt **4j** misst: Leiste da, eingeklappt, geholter Stand, ueberlebt den
+  Reiterwechsel, klappt auf (1 Auftragszeile). **FA-16 ist damit teilweise gemessen**;
+  FA-17/18 sind erreichbar, aber noch ohne Treiber-Szenario.
+- **Update-Loop gefunden und behoben** (`docs/agents/update-loop-2026-10-20.md`,
+  `189b274`, Merge `ca403c7`): `baueReiterInhalte` wurde bei jedem App-Rendern gerufen;
+  seine Rueckgabe-Funktionen sind die Komponententypen im Rahmen - jeder App-Render
+  **mountete den aktiven Reiter neu** (gemessen: **2.300** Effekt-Durchlaeufe, > 1.900
+  Composer-Initialisierungen), der Reparatur-Effekt meldete erneut. Jetzt sind die
+  Reiterinhalte je Zugaengen-Satz memoisiert und die Umgebung reist als **Getter**.
+  Nachher: **12** Effekt-Durchlaeufe, **keine** `Maximum update depth`-Meldung. Neuer
+  Waechter in `app-einhaengung.spec.ts` (App-Rendern baut die Inhalte nicht neu).
+- **Gate:** `npm run pruefung` **Exit 0** - **5.702 Unit-Tests (333 Dateien)**, **49
+  Integrationstests (12 Dateien)**, Treiber ohne Befund. Typecheck/Lint 0.
+- **Ehrlich offen:**
+  - **Gate-Blindstelle:** Der Treiber wertet `console.error` nicht; "Maximum update depth"
+    waere trotz grünem Lauf sichtbar gewesen. Ein Befund-Rang dafuer ist **nicht** gebaut.
+  - **FA-17/18** (Fehlschlag provozieren, Wiederholen, Entfernen/Abbruch) brauchen ein
+    eigenes Treiber-Szenario; ein dauerhaft fehlgeschlagener Auftrag bleibt in Q2.
+  - **#433** optische Abnahme steht weiter beim User.
+- `main` **93 Commits vor `origin/main`**; **nicht gepusht**.
+- Naechster Schritt: **#433** beim User oder das **FA-17/18-Treiber-Szenario**.
+
+## STAND HEUTE (19.10.2026, dritte Sitzung: Q3 GEBAUT UND GEMERGT) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-19-session-3.md`](docs/agents/uebergabe-2026-10-19-session-3.md) – LIES DIESE DATEI ZUERST.**
 
