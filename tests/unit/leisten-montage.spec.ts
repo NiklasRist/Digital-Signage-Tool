@@ -24,6 +24,14 @@ describe('leisten-montage', () => {
         meldung: null
       })
     })
+
+    it('ist eingefroren und bleibt unveraendert (Object.freeze)', () => {
+      expect(Object.isFrozen(LEERE_LEISTEN_LAGE)).toBe(true)
+      expect(() => {
+        ;(LEERE_LEISTEN_LAGE as { aufgeklappt: boolean }).aufgeklappt = true
+      }).toThrow()
+      expect(LEERE_LEISTEN_LAGE.aufgeklappt).toBe(false)
+    })
   })
 
   describe('schalteKlappzustand', () => {
@@ -286,6 +294,27 @@ describe('leisten-montage', () => {
           }
         ] as Auftrag[]
       }
+      expect(aktuelleRenderId(sicht)).toBeNull()
+    })
+
+    it('returns null when nur laufender Import, anstehender Render und fehlgeschlagener Render vorliegen (keiner der drei gewinnt)', () => {
+      const basis = {
+        label: 'Test',
+        fortschritt: null,
+        versuche: 0,
+        fehler: null,
+        ergebnis: null,
+        erstelltAm: new Date().toISOString()
+      }
+      const sicht: AuftragsSicht = {
+        zustand: 'geladen',
+        auftraege: [
+          { ...basis, auftragId: 'i1', art: 'import', status: 'laeuft', payload: {} },
+          { ...basis, auftragId: 'r1', art: 'render', status: 'anstehend', payload: { renderId: 'r-a' } },
+          { ...basis, auftragId: 'r2', art: 'render', status: 'fehlgeschlagen', payload: { renderId: 'r-b' } }
+        ] as Auftrag[]
+      }
+
       expect(aktuelleRenderId(sicht)).toBeNull()
     })
 

@@ -53,9 +53,9 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-13 | Eigene Vorlagen anlegen/bearbeiten; Arbeitskopie + explizites Speichern | 4 | Die Editor-Sitzung oeffnet (`arbeitskopie-kopf` im DOM). Zonen aendern, speichern, verwerfen, neu anlegen: **kein** Schritt. | teilweise |
 | FA-14 | Video nicht-destruktiv trimmen | 4f4 | Derselbe Regler-Schritt wie FA-06 (Wert + Undo). Ob der **Trim** am Video-Element liegt und die Originaldatei unveraendert bleibt, wird nicht geprueft. | teilweise |
 | FA-15 | Fortlaufend automatisch speichern; letztes Projekt beim Start | 4f2, 4h | Nach dem Band-Drop wird `project.json` nach dem entprellten Speichern gelesen (Auto-Speichern implizit). Das **Wiederherstellen beim Start** (letztes Projekt, letztes Export-Ziel) ist ungemessen. | teilweise |
-| FA-16 | Sichtbare Warteschlange (Muss) | - | **Kein Szenario moeglich:** die Leiste ist ein leerer `<footer>`; die Auftragsliste wird nirgends montiert. Siehe Befund B1 und #257. | blockiert |
-| FA-17 | Fehlgeschlagenen Auftrag mit Grund wiederholen (Muss) | - | Wie FA-16: `wiederholeAuftrag`/`darfWiederholen` haben ausser Tests **keinen Aufrufer**. | blockiert |
-| FA-18 | Auftrag entfernen, laufenden Render abbrechen (Soll) | - | Wie FA-16: `entfernen.ts` wird nur als Typ importiert. | blockiert |
+| FA-16 | Sichtbare Warteschlange (Muss) | 4j | Die Leiste ist im Fenster, startet eingeklappt, zeigt einen **geholten** Stand (nicht "wird geladen"), bleibt beim Reiterwechsel sichtbar und laesst sich ueber den echten Schalter aufklappen (danach 1 Auftragszeile). **Seit #257 (20.10.2026).** | teilweise |
+| FA-17 | Fehlgeschlagenen Auftrag mit Grund wiederholen (Muss) | - | Die Oberflaeche ist seit #257 erreichbar (Schalter "Erneut versuchen" an einer `fehlgeschlagen`-Zeile). Ein Treiber-Szenario, das einen Fehlschlag **proviziert** und den Klick misst, fehlt. | Luecke |
+| FA-18 | Auftrag entfernen, laufenden Render abbrechen (Soll) | - | Die Oberflaeche ist seit #257 erreichbar (Schalter an `anstehend`/laufendem Render, Rueckfrage beim Abbruch). Ein Treiber-Szenario fehlt. | Luecke |
 | FA-19 | Gefuehrte Reparatur; Render erst frei, wenn alles behoben | 4h, 4i | Kaputte Stelle erzeugt und Projekt neu geoeffnet: Panel da, Fortschritt "0 von N behoben", Render-Knopf `disabled`; Fix "Element entfernen" schrumpft die Liste, Cmd+Z stellt in EINEM Schritt her. Vierter Fall (#438) als `unterbrechung` belegt. | gemessen |
 | FA-20 | Split-Screen/Einblendung, Rotation, Unterbrechung (Muss) | 4b5, 4b6, 4f2 | Unterbrechung pausiert das Video an der Zeitstelle und laeuft danach weiter; ein Drop auf den Video-Koerper erzeugt EINE Marke; ein Band-Drop legt einen Abschnitt im Store an, ohne die Blockzahl zu aendern, und ist ein Undo-Schritt. **Rotation mehrerer Aktionen** und die **Render-Ausgabe** von Band/Einblendung sind ungemessen. | teilweise |
 | FA-21 | Undo/Redo in beiden Editoren | 4f3, 4f, 4f2, 4f4, 4g2, 4g4, 4h | Pfeile sichtbar und aktiv; Undo schrumpft, Redo waechst; je eine Aktion ist EIN Schritt (Einfuegen, Band, Dauer/Trim, Anlage, Loeschen, Reparatur). Der **Vorlagen-Editor** hat kein Undo-Szenario. | teilweise |
@@ -63,13 +63,12 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-23 | Marken-Bestand, Standardmarke je Projekt, Loeschsperre (Muss) | 4a | Der Wechsel am echten `<select>` wird **nur ausgefuehrt, wenn eine zweite Marke existiert**. Im Messbestand liegt genau eine - der Treiber meldet das selbst. Loeschsperren ungemessen. | Luecke |
 | FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | - | Kein Schritt oeffnet den Marken-Reiter ueber das blosse Vorhandensein hinaus. | Luecke |
 
-**Zaehlung:** 2 x gemessen (FA-05, FA-19), 14 x teilweise, 2 x Luecke (FA-23, FA-24),
-3 x blockiert (FA-16/17/18), 3 x manuell (FA-09, FA-11, FA-12).
+**Zaehlung:** 2 x gemessen (FA-05, FA-19), 15 x teilweise, 4 x Luecke (FA-17, FA-18, FA-23,
+FA-24), 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
 
 Aufgeteilt nach Prioritaet (AD Abschnitt 4): **15 Muss**, 9 Soll.
-- **Muss:** 1 gemessen (FA-05), 9 teilweise, 2 Luecke (FA-23/24), 2 blockiert (FA-16/17),
-  1 manuell (FA-09).
-- **Soll:** 1 gemessen (FA-19), 5 teilweise, 1 blockiert (FA-18), 2 manuell (FA-11/12).
+- **Muss:** 1 gemessen (FA-05), 10 teilweise, 3 Luecke (FA-17/23/24), 1 manuell (FA-09).
+- **Soll:** 1 gemessen (FA-19), 5 teilweise, 1 Luecke (FA-18), 2 manuell (FA-11/12).
 
 Damit ist **1 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-05) -
 und **zwei weitere** (FA-16/17) haben heute ueberhaupt keine Oberflaeche (B1).
@@ -78,23 +77,31 @@ und **zwei weitere** (FA-16/17) haben heute ueberhaupt keine Oberflaeche (B1).
 
 ## 3. Befunde beim Aufstellen
 
-### B1 - FA-16/17/18 sind nicht "ungemessen", sondern **nicht montiert** (#257)
+### B1 - FA-16/17/18 waren nicht "ungemessen", sondern **nicht montiert** (#257 - am 20.10.2026 behoben)
 
-Das ist der schwerste Befund dieser Matrix und er betrifft eine **Muss**-Anforderung:
+Der Befund beim Aufstellen der Matrix:
 
-- `src/renderer/queue-panel/warteschlangen-leiste.tsx` gibt einen **leeren** `<footer>` mit
+- `src/renderer/queue-panel/warteschlangen-leiste.tsx` gab einen **leeren** `<footer>` mit
   32 px Hoehe zurueck - kein Inhalt, keine Anzeige.
-- `liste.tsx` (die Auftragsliste), `leisten-montage.ts` (Klappzustand, Rueckfrage,
-  `aktuelleRenderId`), `wiederholen.ts` (FA-17) und `entfernen.ts` (FA-18) haben
-  **ausserhalb von `queue-panel/` keinen Importeur** (Grep auf die Exportnamen; einziger
-  Treffer ausserhalb ist ein *Typ*-Import aus `entfernen.ts`).
-- `baueAuftragsSichtAuf` (#205, der `holeStand`-Aufruf) wird **nirgends** gerufen.
+- `liste.tsx`, `leisten-montage.ts`, `wiederholen.ts` und `entfernen.ts` hatten **ausserhalb
+  von `queue-panel/` keinen Importeur**; `baueAuftragsSichtAuf` (der `holeStand`-Aufruf) wurde
+  **nirgends** gerufen.
+- Das Messwerkzeug meldete M7 trotzdem mit "68 von 71 gebaut", weil es Dateien zaehlt, nicht
+  Aufrufer. #257 war **offen**.
 
-Damit ist genau die Lueckenklasse da, die dieses Projekt am haeufigsten getroffen hat:
-**fertige Funktion ohne Aufrufer**. Das Messwerkzeug meldet M7 mit "68 von 71 gebaut",
-weil es das Vorhandensein der Dateien zaehlt - nicht den Aufrufer. #257 ist **offen** und
-beschreibt den Bau der Modul-Wurzel; bis dahin kann kein Treiber-Szenario fuer FA-16/17/18
-existieren. **Die Matrix macht daraus eine Produkt-, keine Testluecke.**
+**Behoben mit #257:** `queue-panel/index.tsx` ist die Modul-Wurzel (Aufbau der Sicht genau
+einmal, danach der Fortschritt; Klappzustand, Rueckfrage, eine Meldung; Schalter aus #209/#210,
+Fehlertext aus #211). Die leere Platzhalterdatei ist geloescht, `App.tsx` importiert
+`./queue-panel`. Treiber-Schritt **4j** misst die Leiste am echten Fenster.
+
+**Abweichung von der Issue-Dateiliste (gemeldet):** #257 erlaubte nur `leisten-montage.ts` und
+`index.tsx`. Der gebaute Stand hatte die Leiste aber ueber `warteschlangen-leiste.tsx` in
+`App.tsx` haengen; ohne Aenderung an `App.tsx` (Importpfad), das Loeschen der Platzhalterdatei
+und den Mock-Pfad in `app-einhaengung.spec.ts` waere die neue Wurzel **wieder ein Aufrufer
+ohne Aufrufer** gewesen. Der gebaute Code gewinnt; die Abweichung steht im Issue-Kommentar.
+
+**Ehrlich offen:** 4j misst Sichtbarkeit, Aufklappen und den geholten Stand - **nicht** das
+gezielte Provozieren eines Fehlschlags (FA-17) oder das Entfernen/Abrechen (FA-18).
 
 ### B2 - FA-23 wird heute gar nicht gemessen
 
@@ -155,7 +162,7 @@ Reihenfolge nach MoSCoW: **Muss** zuerst. "Treiber" heisst: neuer oder erweitert
 
 | Rang | FA | Was fehlt | Weg |
 |---|---|---|---|
-| 1 | FA-16/17/18 | Die Warteschlange ist nicht sichtbar; Wiederholen/Entfernen nicht erreichbar | **Produkt:** #257 bauen. Danach Treiber: Auftrag erzeugen, Leiste aufklappen, Zeile und Zustand lesen; Fehlschlag provozieren, "Erneut versuchen" klicken; anstehenden Auftrag entfernen. |
+| 1 | FA-17/18 | Fehlschlag provozieren, "Erneut versuchen" und Entfernen/Abbruch am echten Fenster | Treiber: kaputten Import einreihen -> Zeile "fehlgeschlagen" mit Klartext, "Erneut versuchen" klicken; anstehenden Auftrag erzeugen und entfernen; laufenden Render abbrechen und die Rueckfrage bestaetigen. **Fallstrick:** ein dauerhaft fehlgeschlagener Auftrag bleibt in Q2 - der Lauf muss ihn am Ende aufraeumen oder mit einem eigenen Datenort fahren. |
 | 2 | FA-01/03 | Video **ersetzen** mit Bestaetigung; Aktion **bearbeiten** | Treiber: zweites Video importieren -> `composer-ersetzen-frage`, bestaetigen -> **ein** Video-Element bleibt, Datei getauscht; Aktion oeffnen, Titel aendern, speichern, Wert im Store lesen. |
 | 3 | FA-23 | Standardmarke wechseln (mangels zweiter Marke), Loeschsperre | Treiber: zweite Marke per `marken:erstelleMarke` seeden, dann 4a wie gebaut laufen lassen; Loeschen einer genutzten Marke versuchen und Sperrgrund lesen. |
 | 4 | FA-24 | Marken-Editor vollstaendig | Treiber: Reiter Marken, Marke anlegen, Akzentfarbe setzen, Kontrastwarnung ausloesen (Grenzwert), ableiten, Loeschsperre. |
@@ -197,6 +204,8 @@ der Statusspalte. Ob "teilweise" noch stimmt, entscheidet nur das Lesen des Schr
 - **Gate-Lauf am 20.10.2026** (`npm run pruefung`): Build, Unit, Integration und Treiber
   ohne `Befund`; die `Untersuchung` "4 Reiter" ist nach der Korrektur aus B3 **weg**. Im
   Fenster-Log stehen jedoch die `console.error` aus B5 - sie werden nicht gewertet.
+- **#257 am Fenster (20.10.2026):** `[schritt-4j] Warteschlange GEMESSEN: Leiste da,
+  eingeklappt ...`; Reiterwechsel und Aufklappen (1 Auftragszeile) ebenfalls belegt.
 - Aufrufer-Pruefung B1: `grep` auf `WarteschlangenLeiste`, `Liste`, `baueAuftragsSichtAuf`,
   `wiederholeAuftrag`, `darfWiederholen` ueber `src/` - ausserhalb `queue-panel/` kein
   Aufrufer.
