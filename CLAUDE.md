@@ -11,7 +11,9 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (20.10.2026: Treiber-Matrix, #257 gebaut, Update-Loop behoben) – gilt vor ALLEM weiter unten
+## STAND HEUTE (20.10.2026: Matrix, #257, Update-Loop, Mutationstests) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-20-session.md`](docs/agents/uebergabe-2026-10-20-session.md) – LIES DIESE DATEI ZUERST.**
 
 - **Treiber-Matrix gebaut** (`docs/agents/treiber-matrix.md`, Waechter
   `tests/unit/treiber-matrix.spec.ts`): alle **24 FA** gegen die Treiber-Schritte gemappt,
@@ -53,7 +55,7 @@
   - **FA-17/18** (Fehlschlag provozieren, Wiederholen, Entfernen/Abbruch) brauchen ein
     eigenes Treiber-Szenario; ein dauerhaft fehlgeschlagener Auftrag bleibt in Q2.
   - **#433** optische Abnahme steht weiter beim User.
-- `main` **102 Commits vor `origin/main`**; **nicht gepusht**.
+- `main` **105 Commits vor `origin/main`**; **nicht gepusht**.
 - Naechster Schritt: **#433** beim User oder das **FA-17/18-Treiber-Szenario**.
 
 ## STAND HEUTE (19.10.2026, dritte Sitzung: Q3 GEBAUT UND GEMERGT) – historisiert durch den Abschnitt darueber
