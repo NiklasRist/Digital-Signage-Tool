@@ -126,9 +126,9 @@ und sein Undo belegt sind - nicht, weil jede Reihenfolge-Bedienung belegt ist. D
 **Status** ist deshalb bewusst grob; die belastbare Aussage steht in der Spalte
 "Was am Fenster wirklich gemessen wird".
 
-### B5 - Der Treiber wertet `console.error` nicht (Gate-Blindstelle)
+### B5 - Der Treiber wertet `console.error` nicht (Gate-Blindstelle) - Loop am 20.10.2026 behoben
 
-Beim Gate-Lauf am **20.10.2026** (nach der Korrektur aus B3) meldete das Fenster mehrfach:
+Beim Gate-Lauf am **20.10.2026** meldete das Fenster mehrfach:
 
 ```
 [fenster error] Maximum update depth exceeded. This can happen when a component calls
@@ -136,22 +136,20 @@ setState inside useEffect, but useEffect either doesn't have a dependency array,
 of the dependencies changes on every render.
 ```
 
-Die Meldungen fielen **gehaeuft um 4i und 4h** (kaputte Stelle, Reparatur), also genau dort, wo
-der Q4-3-Fix vom 19.10. den Reparatur-Stand neu rechnet. Der Lauf blieb trotzdem **gruen**:
+Die Meldungen fielen gehaueft um 4i/4h (kaputte Stelle, Reparatur). Der Lauf blieb
+**gruen**, weil der Treiber `console.error` nur druckt; gewertet werden `pageerror` und
+`Befund`.
 
-- `seite.on("console")` **druckt** Fehler nur (`scripts/durchlauf.mjs`, Kopf des `main`),
-- gewertet werden `pageerror` und Funde der Schwere `Befund`,
-- das Protokoll (`docs/agents/oberflaeche-durchlauf.md`) enthaelt dazu **keine** Zeile -
-  `grep -c "Maximum update depth"` ergibt **0**.
+**Untersucht und behoben** (`docs/agents/update-loop-2026-10-20.md`): `baueReiterInhalte`
+wurde bei jedem App-Rendern aufgerufen; seine Rueckgabe-Funktionen sind die
+Komponententypen im Rahmen - jeder App-Render mountete den aktiven Reiter neu, der
+Reparatur-Effekt meldete erneut (gemessen: **2.300** Durchlaeufe). Die Reiterinhalte sind
+jetzt je Zugaengen-Satz memoisiert, die Umgebung reist als Getter. Nachher: **12**
+Effekt-Durchlaeufe, **keine** Loop-Meldung, Gate **Exit 0**.
 
-Damit ist die Ursache **nicht bestimmt** (ein React-Update-Loop ist wahrscheinlich, aber nicht
-belegt). Zwei getrennte Punkte folgen daraus:
-
-1. **Produkt:** Der Update-Loop braucht eine eigene Untersuchung mit Stack (eigener Schritt,
-   nicht Teil dieser Matrix).
-2. **Gate:** Ein `console.error` mit dieser Signatur sollte ein **Befund** sein. Sonst bleibt
-   die Schleife unsichtbar, obwohl sie im Log steht - dieselbe Klasse wie der Q4-Befund
-   "das Gate war blind".
+**Weiter offen (Gate):** "Maximum update depth" sollte ein **Befund** sein. Sonst bleibt
+eine Rueckkehr der Schleife unsichtbar, obwohl sie im Log steht - dieselbe Klasse wie der
+Q4-Befund "das Gate war blind".
 
 ---
 

@@ -437,11 +437,12 @@ function letztesOverlay(): Record<string, unknown> {
 
 /** Holt die EINE UebergabeUmgebung ueber den Weiterreicher-Weg (meldeUebergabe). */
 function fangeUmgebung(): Record<string, unknown> {
-  const reiterumgebung = vi.mocked(inhalteModul.baueReiterInhalte).mock.calls.at(-1)![2] as unknown as {
+  const holeUmgebung = vi.mocked(inhalteModul.baueReiterInhalte).mock.calls.at(-1)![2] as unknown as () => {
     composerVerdrahtung: {
       meldeUebergabe: (an: unknown) => void
     }
   }
+  const reiterumgebung = holeUmgebung()
   act(() => {
     reiterumgebung.composerVerdrahtung.meldeUebergabe({
       ziel: 'asset-auswahl',
@@ -808,11 +809,12 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     })
     const rufe = vi.mocked(inhalteModul.baueReiterInhalte).mock.calls
     expect(rufe).toHaveLength(1)
-    const [zugaenge, wurzeln, umgebung] = rufe[0] as unknown as [
+    const [zugaenge, wurzeln, holeUmgebung] = rufe[0] as unknown as [
       unknown,
       Record<string, unknown>,
-      Record<string, unknown>,
+      () => Record<string, unknown>,
     ]
+    const umgebung = holeUmgebung()
     expect(zugaenge).toBe(d.zugaengeDoppel)
     expect(wurzeln.composer).toBe(composerIndex.ComposerWurzel)
     expect(wurzeln.vorschau).toBe(vorschauModul.Vorschau)
@@ -839,6 +841,28 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     ])
   })
 
+  it('ein App-Rendern baut die Reiterinhalte NICHT neu - sonst mountet der aktive Reiter neu (Update-Loop 20.10.2026)', async () => {
+    stelleBereitMitProjekt()
+    rendere()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const bauRufe = (): number => vi.mocked(inhalteModul.baueReiterInhalte).mock.calls.length
+    expect(bauRufe()).toBe(1)
+
+    // Ein reiner App-Zustandswechsel (die Meldungsflaeche) darf die Komponententypen
+    // der Reiter nicht ersetzen. Vor dem Fix rief dieses Rendern baueReiterInhalte
+    // erneut -> neuer Typ -> React mountete den Composer neu -> Reparatur-Effekt
+    // meldete erneut -> Schleife (ueber 1.900 Mounts im Treiber).
+    const schritte = letzterSchritt() as { meldeFehler: (code: string, meldung: string) => void }
+    await act(async () => {
+      schritte.meldeFehler('probe', 'probe')
+      await Promise.resolve()
+    })
+    expect(bauRufe()).toBe(1)
+  })
+
   it('Die Reiterumgebung ist vollstaendig verdrahtet: vorlagenSitzung, starteMedienImport, reparatur und hervorgehobeneAktionId sind ToBe-gleich (benannter Test)', async () => {
     halterDoppel.setzeLage({
       stand: { doppel: 'stand' },
@@ -852,8 +876,9 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       await Promise.resolve()
       await Promise.resolve()
     })
-    const [, , umgebung] = vi.mocked(inhalteModul.baueReiterInhalte).mock
-      .calls.at(-1) as unknown as [unknown, unknown, Record<string, unknown>]
+    const [, , holeUmgebung] = vi.mocked(inhalteModul.baueReiterInhalte).mock
+      .calls.at(-1) as unknown as [unknown, unknown, () => Record<string, unknown>]
+    const umgebung = holeUmgebung()
     const verdrahtung = umgebung.composerVerdrahtung as unknown as {
       starteMedienImport: unknown
       reparatur: unknown
@@ -900,8 +925,9 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       await Promise.resolve()
       await Promise.resolve()
     })
-    const [, , umgebung] = vi.mocked(inhalteModul.baueReiterInhalte).mock
-      .calls.at(-1) as unknown as [unknown, unknown, Record<string, unknown>]
+    const [, , holeUmgebung] = vi.mocked(inhalteModul.baueReiterInhalte).mock
+      .calls.at(-1) as unknown as [unknown, unknown, () => Record<string, unknown>]
+    const umgebung = holeUmgebung()
     const verdrahtung = umgebung.composerVerdrahtung as unknown as {
       meldeUebergabe: (an: unknown) => void
       meldeReparaturStand: (stand: unknown) => void

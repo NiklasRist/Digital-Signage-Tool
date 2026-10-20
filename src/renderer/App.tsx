@@ -222,6 +222,23 @@ export function App(): JSX.Element {
     [reparatur, meldeFehler],
   )
 
+  // DIE Reiterinhalte werden EINMAL je Zugaengen-Satz gebaut. Ihre Funktionen sind die
+  // Komponententypen im Rahmen (#195): Entstuenden sie bei jedem App-Rendern neu, mountete
+  // React den aktiven Reiter bei jedem Rendern neu. Am echten Fenster gemessen am
+  // 20.10.2026: ueber 1.900 Composer-Mounts in einem Lauf, weil der Reparatur-Effekt
+  // einen Stand meldete, App renderte und der frische Mount den Stand erneut meldete.
+  // Die Umgebung bleibt aktuell, weil die Funktionen sie ueber diese Referenz LESEN -
+  // nicht aus einem beim Aufbau eingefrorenen Wert.
+  const umgebungStand = useRef<Reiterumgebung>(reiterumgebung)
+  umgebungStand.current = reiterumgebung
+  const zugaengeBereit = lage.schritt === 'bereit' ? lage.zugaenge : null
+  const inhalte = useMemo(
+    () => (zugaengeBereit === null
+      ? null
+      : baueReiterInhalte(zugaengeBereit, WURZELN, () => umgebungStand.current)),
+    [zugaengeBereit],
+  )
+
   // DER Bootstrap - GENAU EINmal je Fenster (Aufbau-Effekt); SetzeLage spigelt
   // gleichzeitig die Zugaenge in den ref (die Umgebung liest da zur Laufzeit).
   const laufe = useCallback((): () => void => {
@@ -314,6 +331,11 @@ export function App(): JSX.Element {
   }
 
   const zugaenge = lage.zugaenge
+  // Unerreichbar: 'laeuft' und 'gescheitert' sind oben zurueckgekehrt. Der Waechter
+  // macht die Nicht-Null-Zusage fuer den Typ und fuer spaetere Umbauten sichtbar.
+  if (inhalte === null) {
+    return null as unknown as JSX.Element
+  }
   const projektOffen = zugaenge.projektRoh.hole().projekt
   // Der Start-Hinweis gilt nur, solange kein Projekt offen ist (#346, see oben).
   const startHinweisWirklich: StartHinweisInfo | null =
@@ -326,7 +348,7 @@ export function App(): JSX.Element {
   )
 
   const rahmenEigenschaften = {
-    inhalte: baueReiterInhalte(zugaenge, WURZELN, reiterumgebung),
+    inhalte,
     warteschlangenLeiste: () => <WarteschlangenLeiste />,
     // #424: die sichtbaren Undo/Redo-Pfeile in der Reiterleiste.
     undoRedo: (reiter: ReiterId) => (
