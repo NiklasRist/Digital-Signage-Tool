@@ -53,7 +53,7 @@
   - **FA-17/18** (Fehlschlag provozieren, Wiederholen, Entfernen/Abbruch) brauchen ein
     eigenes Treiber-Szenario; ein dauerhaft fehlgeschlagener Auftrag bleibt in Q2.
   - **#433** optische Abnahme steht weiter beim User.
-- `main` **99 Commits vor `origin/main`**; **nicht gepusht**.
+- `main` **102 Commits vor `origin/main`**; **nicht gepusht**.
 - Naechster Schritt: **#433** beim User oder das **FA-17/18-Treiber-Szenario**.
 
 ## STAND HEUTE (19.10.2026, dritte Sitzung: Q3 GEBAUT UND GEMERGT) – historisiert durch den Abschnitt darueber
