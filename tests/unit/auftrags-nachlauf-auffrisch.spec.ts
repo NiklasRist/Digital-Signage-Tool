@@ -32,6 +32,7 @@ function baueWirkungen() {
     verwirfMotivBestand: vi.fn(),
     leereProjektHistorie: vi.fn(),
     meldeFehler: vi.fn(),
+    meldeImportErgebnis: vi.fn(),
     bereiteZeichnenVor: vi.fn(async () => ({ ok: true, wert: { vorlagen: [] } })),
   }
   return { spione, wirkungen: spione as unknown as NachlaufWirkungen }
@@ -68,6 +69,21 @@ function exportAuftrag(ergebnis: unknown): Auftrag {
     fortschritt: null,
     versuche: 0,
     fehler: null,
+    ergebnis,
+    erstelltAm: '',
+  } as Auftrag
+}
+
+function importAuftrag(status: Auftrag['status'], versuche: number, ergebnis: unknown): Auftrag {
+  return {
+    auftragId: 'i-1',
+    art: 'import',
+    status,
+    label: 'Import: bild.png',
+    payload: { projektId: 'p-1', quellPfad: '/tmp/bild.png' },
+    fortschritt: null,
+    versuche,
+    fehler: status === 'fehlgeschlagen' ? { code: 'datei_nicht_gefunden', meldung: 'weg' } : null,
     ergebnis,
     erstelltAm: '',
   } as Auftrag
@@ -150,5 +166,27 @@ describe('auftrags-nachlauf - der Auffrisch-Weg der Ausgaben (#347)', () => {
     expect(spione.setzeProjekt).not.toHaveBeenCalled()
     // Die Auffrisch selbst ist trotzdem geschehen - der Ordner ist die Wahrheit.
     expect(spione.aktualisiereAusgabenListe).toHaveBeenCalledTimes(1)
+  })
+
+  it('wertet den SPAETEREN Erfolg derselben Auftrags-Kennung aus - "Erneut versuchen" behaelt die ID (FA-17)', async () => {
+    const { spione, wirkungen } = baueWirkungen()
+    // Ein Fehlschlag (Versuch 1) und danach der geglueckte zweite Versuch DESSELBEN
+    // Auftrags: Die ID bleibt, nur `versuche` steigt (TK 9.3.3). Mit der ID allein als
+    // Merker fiel der Erfolg weg - das Asset erreichte die Sicht/Galerie nie, obwohl D1
+    // es trug (am echten Fenster gemessen 21.10.2026, Treiber 4k).
+    const fehlschlag = importAuftrag('fehlgeschlagen', 1, null)
+    const erfolg = importAuftrag('erfolg', 2, { id: 'as-1', dateiname: 'as-1.png' })
+    starteAuftragsNachlauf((hoerer) => {
+      hoerer([fehlschlag])
+      hoerer([erfolg])
+      return () => {}
+    }, wirkungen)
+    await warte()
+
+    expect(spione.meldeFehler).toHaveBeenCalledTimes(1)
+    expect(spione.setzeProjekt).toHaveBeenCalledTimes(1)
+    const nachher = spione.setzeProjekt.mock.calls[0]?.[0] as Project | undefined
+    expect(nachher?.assets.map((asset) => asset.id)).toEqual(['as-1'])
+    expect(spione.meldeImportErgebnis).toHaveBeenCalledWith('as-1')
   })
 })

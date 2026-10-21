@@ -2159,6 +2159,435 @@ const main = async () => {
       }
     }
 
+    // Schritt 4k - FA-17: Ein FEHLGESCHLAGENER Auftrag ist mit Grund sichtbar und laesst
+    // sich ueber den ECHTEN Schalter "Erneut versuchen" wiederholen. Der Fehlschlag wird
+    // provoziert (Import einer nicht vorhandenen Datei), der Grund am Fenster gelesen,
+    // die Ursache behoben (Datei anlegen) und danach der Schalter geklickt. Damit reisst
+    // die Messung BEIDE Haelften der Zusage: den Grund UND das Gelingen der Wiederholung.
+    {
+      // Die Leiste muss offen sein, sonst gibt es keine Zeilen im DOM (4j hat sie
+      // aufgeklappt - hier wird nicht darauf geraten).
+      const leisteZu4k = await seite.evaluate(
+        () => document.querySelector('[data-testid="queue-panel"] ul') === null,
+      );
+      if (leisteZu4k) {
+        await seite.evaluate(() => {
+          const knopf = document.querySelector('[aria-label="Warteschlange aufklappen"]');
+          if (knopf !== null) knopf.click();
+        });
+        await schlafe(400);
+      }
+
+      const fehlPfad = path.join("/tmp", "durchlauf-fa17-" + Date.now() + ".png");
+      if (fs.existsSync(fehlPfad)) fs.unlinkSync(fehlPfad);
+
+      // Der Fehlschlag entsteht IM FACHDIENST: `reiheEin` prueft die Nutzlast nur auf
+      // Struktur (keine Existenzpruefung, TK 9.3) - der Auftrag wird eingereiht und
+      // scheitert sichtbar als `datei_nicht_gefunden`.
+      const fehlAntwort = await seite.evaluate(async (pfad, projektId) => {
+        return window.api.invoke("queue:reiheEin", {
+          art: "import",
+          payload: { projektId, quellPfad: pfad },
+        });
+      }, fehlPfad, aktivesProjektId);
+
+      const fehlId = fehlAntwort && fehlAntwort.ok ? fehlAntwort.wert?.auftragId ?? null : null;
+      if (typeof fehlId !== "string" || fehlId.length === 0) {
+        fund("Wiederholen (FA-17)", "ein Import-Auftrag laesst sich einreihen",
+          "queue:reiheEin ohne auftragId: " + JSON.stringify(fehlAntwort),
+          "Befund", "auftrags-manager/ipc-verdrahtung.ts");
+      } else {
+        const zeilenText4k = () => seite.evaluate((id) => {
+          const zeile = document.querySelector(`[data-testid="auftrag-${id}"]`);
+          return zeile === null ? null : zeile.textContent;
+        }, fehlId);
+
+        const fristFehl4k = Date.now() + 20_000;
+        let textFehl4k = null;
+        while (Date.now() < fristFehl4k) {
+          textFehl4k = await zeilenText4k();
+          if ((textFehl4k ?? "").includes("fehlgeschlagen")) break;
+          await schlafe(250);
+        }
+        console.log("[schritt-4k] Fehlschlag-Zeile: " + String(textFehl4k));
+
+        const lage4k = await seite.evaluate((id) => {
+          const schalter = document.querySelector(`[data-testid="queue-schalter-${id}"]`);
+          const grund = document.querySelector(`[data-testid="queue-fehler-${id}"]`);
+          return {
+            grund: grund === null ? null : grund.textContent,
+            wiederholen: schalter === null ? false
+              : [...schalter.querySelectorAll("button")].some((b) => b.textContent === "Erneut versuchen"),
+            schalterText: schalter === null ? null : schalter.textContent,
+          };
+        }, fehlId);
+
+        if (!(textFehl4k ?? "").includes("fehlgeschlagen")) {
+          fund("Wiederholen (FA-17)", "der fehlgeschlagene Auftrag steht als Zeile in der Leiste (Q2, FA-16/17)",
+            `Zeile nach 20 s: ${String(textFehl4k)}`, "Befund", "auftrags-manager/hole-stand.ts");
+        } else if (!(lage4k.grund ?? "").includes("Datei nicht gefunden")) {
+          fund("Wiederholen (FA-17)", 'der Grund steht als Klartext an der Zeile ("Datei nicht gefunden", #211)',
+            `Grund: ${String(lage4k.grund)}`, "Befund", "queue-panel/fehlertexte.ts");
+        } else if (!lage4k.wiederholen) {
+          fund("Wiederholen (FA-17)", 'der Schalter "Erneut versuchen" steht an der fehlgeschlagenen Zeile (#210)',
+            `Schalter: ${String(lage4k.schalterText)}`, "Befund", "queue-panel/index.tsx");
+        } else {
+          console.log(`[schritt-4k] Fehlschlag GEMESSEN: Zeile "fehlgeschlagen", Grund "${String(lage4k.grund)}", Schalter "Erneut versuchen".`);
+
+          // Die Ursache beheben - sonst bewiese die Wiederholung nur, dass sie wieder
+          // scheitern kann. DIESELBE Datei am DIESELBEN Pfad, jetzt vorhanden.
+          const ffmpeg4k = path.join(WURZEL, "node_modules", "ffmpeg-static", "ffmpeg");
+          await new Promise((f, r) => {
+            const p = spawn(ffmpeg4k, ["-y", "-f", "lavfi", "-i", "testsrc2=size=120x90:rate=1",
+              "-frames:v", "1", fehlPfad], { stdio: "ignore" });
+            p.on("exit", (c) => (c === 0 ? f() : r(new Error("ffmpeg erzeugt kein Bild (code " + c + ")"))));
+          });
+
+          const galerieDavor4k = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid^="galerie-eintrag-"]').length,
+          );
+          // Der ERFOLGS-BELEG kommt aus D1, nicht aus einer Anzeige: Die importierte
+          // Datei muss als Asset im Projekt stehen (project.json, entprellt gespeichert).
+          const assetsDavor4k = (() => {
+            try {
+              const pj = JSON.parse(fs.readFileSync(
+                path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"));
+              return (pj.assets ?? []).length;
+            } catch {
+              return -1;
+            }
+          })();
+          const retry4k = await seite.evaluate((id) => {
+            const schalter = document.querySelector(`[data-testid="queue-schalter-${id}"]`);
+            if (schalter === null) return false;
+            const knopf = [...schalter.querySelectorAll("button")]
+              .find((b) => b.textContent === "Erneut versuchen");
+            if (knopf === undefined) return false;
+            knopf.click();
+            return true;
+          }, fehlId);
+          if (!retry4k) {
+            fund("Wiederholen (FA-17)", "der Schalter laesst sich am echten Fenster klicken",
+              "kein Klick ausgeloest", "Befund", "queue-panel/index.tsx");
+          } else {
+            // Erfolg heisst: der Auftrag ist aus Q1 UND Q2 weg (der Q2-Eintrag wird nur
+            // nach ERFOLG gestrichen, TK 9.3.5) - die Zeile verschwindet, und der Import
+            // legt einen Galerie-Eintrag an.
+            const fristWeg4k = Date.now() + 25_000;
+            let weg4k = false;
+            while (Date.now() < fristWeg4k) {
+              weg4k = await seite.evaluate(
+                (id) => document.querySelector(`[data-testid="auftrag-${id}"]`) === null, fehlId,
+              );
+              if (weg4k) break;
+              await schlafe(300);
+            }
+            // Auf den ENTRELLTEN Speicher warten: der Import schreibt das Asset sofort in
+            // D1, project.json aber erst nach dem Auto-Speichern (3-5 s, TK 9.5.4).
+            let assetsJetzt4k = assetsDavor4k;
+            const fristAssets4k = Date.now() + 15_000;
+            while (Date.now() < fristAssets4k) {
+              try {
+                const pj = JSON.parse(fs.readFileSync(
+                  path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"));
+                assetsJetzt4k = (pj.assets ?? []).length;
+              } catch { /* Datei wird gerade geschrieben */ }
+              if (assetsJetzt4k > assetsDavor4k) break;
+              await schlafe(300);
+            }
+            const galerieJetzt4k = await seite.evaluate(
+              () => document.querySelectorAll('[data-testid^="galerie-eintrag-"]').length,
+            );
+            const standNach4k = await seite.evaluate(async (id) => {
+              const antwort = await window.api.invoke("queue:holeStand");
+              return antwort && antwort.ok ? antwort.wert.some((a) => a.auftragId === id) : null;
+            }, fehlId);
+            console.log(`[schritt-4k] Wiederholung: Zeile weg=${String(weg4k)}, Assets ${assetsDavor4k}->${assetsJetzt4k}, Galerie ${galerieDavor4k}->${galerieJetzt4k}, Stand traegt den Auftrag=${String(standNach4k)}.`);
+            if (!weg4k) {
+              fund("Wiederholen (FA-17)", "der wiederholte Auftrag ist nach dem Erfolg nicht mehr in der Leiste",
+                `Zeile nach 25 s noch da, Assets ${assetsDavor4k}->${assetsJetzt4k}`,
+                "Befund", "auftrags-manager/beende-auftrag.ts");
+            } else if (assetsDavor4k < 0) {
+              fund("Wiederholen (FA-17)", "der Projektstand ist fuer den Erfolgsbeleg lesbar",
+                "project.json nicht lesbar", "Untersuchung", "scripts/durchlauf.mjs");
+            } else if (assetsJetzt4k <= assetsDavor4k) {
+              fund("Wiederholen (FA-17)", "die Wiederholung fuehrt den Import wirklich aus (Asset in D1)",
+                `Assets ${assetsDavor4k}->${assetsJetzt4k}`, "Befund", "media-service/import-datei.ts");
+            } else if (standNach4k === true) {
+              fund("Wiederholen (FA-17)", "der Erfolg streicht den Q2-Eintrag (TK 9.3.5)",
+                "holeStand traegt den Auftrag weiterhin", "Befund", "auftrags-manager/beende-auftrag.ts");
+            } else {
+              console.log("[schritt-4k] Wiederholen GEMESSEN: Grund gelesen, Datei nachgereicht, \"Erneut versuchen\" -> Auftrag aus Q1/Q2 weg, Asset in D1 (FA-17).");
+            }
+          }
+        }
+      }
+      // Messrest entfernen (die importierte Kopie liegt im Messprojekt und geht mit ihm).
+      if (fs.existsSync(fehlPfad)) fs.unlinkSync(fehlPfad);
+    }
+
+    // Schritt 4l - FA-18: Einen ANSTEHENDEN Auftrag entfernen und einen LAUFENDEN Render
+    // abbrechen - beides ueber die echten Schalter der Leiste. Der Render wird dafuer
+    // lang genug gemacht (30 Elemente auf dasselbe Video); die Elemente gehoeren nur dem
+    // Messprojekt und verschwinden mit ihm in Schritt 5.
+    {
+      const pj4lDatei = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      let videoAsset4l = null;
+      try {
+        const pj4l = JSON.parse(fs.readFileSync(pj4lDatei, "utf-8"));
+        videoAsset4l = (pj4l.assets ?? []).find((a) => a.typ === "video") ?? null;
+      } catch (tu) {
+        console.log("[schritt-4l] Projektstand nicht lesbar: " + String(tu));
+      }
+      if (videoAsset4l === null) {
+        fund("Warteschlange (FA-18)", "ein Video-Asset fuer den Render",
+          "kein Video-Asset im Messprojekt", "Untersuchung", "scripts/durchlauf.mjs");
+      } else {
+        // 4h hat die Videodatei GELOESCHT (kaputte Stelle) und nur das Element per Undo
+        // zurueckgeholt - die Datei fehlt seither. Fuer diesen Schritt wird sie
+        // wiederhergestellt; sonst scheiterte der Render an `medium_fehlt`, bevor es
+        // etwas zu entfernen oder abzubrechen gaebe.
+        const probe4l = path.join("/tmp", "durchlauf-probe.mp4");
+        if (!fs.existsSync(probe4l)) {
+          const ffmpeg4l = path.join(WURZEL, "node_modules", "ffmpeg-static", "ffmpeg");
+          await new Promise((f, r) => {
+            const p = spawn(ffmpeg4l, ["-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=30",
+              "-t", "2", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-an", probe4l], { stdio: "ignore" });
+            p.on("exit", (c) => (c === 0 ? f() : r(new Error("ffmpeg erzeugt nichts (code " + c + ")"))));
+          });
+        }
+        const videoDatei4l = path.join(WURZEL, "projects", aktivesProjektId, "media", videoAsset4l.dateiname);
+        fs.copyFileSync(probe4l, videoDatei4l);
+
+        // Die Liste auf einen sauberen, langen Render-Bestand bringen: alte Elemente weg,
+        // 30x dasselbe Video hinein. Beides ueber die Vertragskanaele (dieselbe Naht wie
+        // der Seed in 4b) - die Sicht wird danach durch NEU OEFFNEN nachgezogen (#407).
+        let alteIds4l = [];
+        try {
+          const pjJetzt = JSON.parse(fs.readFileSync(pj4lDatei, "utf-8"));
+          alteIds4l = (pjJetzt.liste ?? []).map((e) => e && e.id).filter((id) => typeof id === "string");
+        } catch (tu) {
+          console.log("[schritt-4l] Liste nicht lesbar: " + String(tu));
+        }
+        const umbau4l = await seite.evaluate(async (alteIds, referenz) => {
+          const entfernt = [];
+          for (const id of alteIds) {
+            const antwort = await window.api.invoke("project:entferneElement", { elementId: id });
+            entfernt.push(antwort && antwort.ok);
+          }
+          const angelegt = [];
+          for (let i = 0; i < 30; i++) {
+            const antwort = await window.api.invoke("project:fügeElementHinzu", { referenz });
+            angelegt.push(antwort && antwort.ok);
+          }
+          return {
+            entferntOk: entfernt.filter(Boolean).length,
+            entfernt: entfernt.length,
+            angelegtOk: angelegt.filter(Boolean).length,
+            angelegt: angelegt.length,
+          };
+        }, alteIds4l, videoAsset4l.id);
+        console.log("[schritt-4l] Listen-Umbau: " + JSON.stringify(umbau4l));
+        if (umbau4l.angelegtOk !== umbau4l.angelegt) {
+          fund("Warteschlange (FA-18)", "30 Video-Elemente fuer einen langen Render",
+            `${umbau4l.angelegtOk} von ${umbau4l.angelegt} angelegt`, "Untersuchung", "scripts/durchlauf.mjs");
+        }
+
+        // Der Auto-Speicher ist entprellt - erst wenn die PLATTE 30 Elemente traegt, wird
+        // neu geoeffnet (sonst laese die Ansicht den alten Stand).
+        let gespeichert4l = false;
+        const fristSave4l = Date.now() + 15_000;
+        while (Date.now() < fristSave4l) {
+          try {
+            const pj = JSON.parse(fs.readFileSync(pj4lDatei, "utf-8"));
+            if ((pj.liste ?? []).length === 30) { gespeichert4l = true; break; }
+          } catch { /* Datei wird gerade geschrieben */ }
+          await schlafe(300);
+        }
+        await oeffneUeberListe(aktivesProjektId);
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await schlafe(1_200);
+        const bloecke4l = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+        );
+        const reparatur4l = await seite.evaluate(
+          () => document.querySelector('[data-testid="reparatur-panel"]') !== null,
+        );
+        console.log(`[schritt-4l] Nach dem Neuoeffnen: ${bloecke4l} Bloecke, Reparatur-Panel=${String(reparatur4l)}, gespeichert=${String(gespeichert4l)}.`);
+
+        const renderName4l = "durchlauf-abbruch-" + Date.now();
+        if (!gespeichert4l || bloecke4l !== 30 || reparatur4l) {
+          fund("Warteschlange (FA-18)", "der Messbestand steht als 30 Bloecke ohne kaputte Stelle",
+            `gespeichert=${String(gespeichert4l)}, Bloecke=${bloecke4l}, Reparatur=${String(reparatur4l)}`,
+            "Untersuchung", "scripts/durchlauf.mjs");
+        } else if (!(await klick('[data-testid="composer-render-oefnen"]'))
+          || !(await stehtDa('[data-testid="render-dialog-name"]'))) {
+          fund("Warteschlange (FA-18)", "der Render-Dialog laesst sich oeffnen",
+            "kein Namensfeld im Dialog", "Befund", "composer/render-dialog.tsx");
+        } else {
+          // Namenfeld LEEREN (es traegt den letzten Ausgabenamen vor) und neu tippen.
+          await seite.click('[data-testid="render-dialog-name"]');
+          await seite.keyboard.down("Meta");
+          await seite.keyboard.press("a");
+          await seite.keyboard.up("Meta");
+          await seite.type('[data-testid="render-dialog-name"]', renderName4l);
+          const gesperrt4l = await seite.evaluate(() => {
+            const knopf = document.querySelector('[data-testid="render-dialog-ausloeser"]');
+            return knopf === null ? null : knopf.disabled;
+          });
+          if (gesperrt4l !== false) {
+            fund("Warteschlange (FA-18)", "der Ausloeser ist nach der Namenseingabe betaetigbar",
+              `disabled=${String(gesperrt4l)}`, "Untersuchung", "composer/render-dialog.tsx");
+          } else {
+            await seite.evaluate(() => {
+              const knopf = document.querySelector('[data-testid="render-dialog-ausloeser"]');
+              if (knopf !== null) knopf.click();
+            });
+
+            // Zeilen der Leiste als {id, text} - gesucht wird ueber das Label, weil die
+            // auftragId erst mit dem Ereignis ins Fenster kommt.
+            const zeilen4l = () => seite.evaluate(() =>
+              [...document.querySelectorAll('[data-testid^="auftrag-"]')].map((e) => ({
+                id: (e.getAttribute("data-testid") ?? "").replace("auftrag-", ""),
+                text: e.textContent ?? "",
+              })));
+            const gleicheZeile = (zeilen, teil) => zeilen.find((z) => z.text.includes(teil)) ?? null;
+
+            const fristLauf4l = Date.now() + 20_000;
+            let renderZeile4l = null;
+            while (Date.now() < fristLauf4l) {
+              renderZeile4l = gleicheZeile(await zeilen4l(), `Render: ${renderName4l}.mp4`);
+              if (renderZeile4l !== null && renderZeile4l.text.includes("läuft")) break;
+              renderZeile4l = null;
+              await schlafe(150);
+            }
+            if (renderZeile4l === null) {
+              fund("Warteschlange (FA-18)", "der Render steht als LAUFENDE Zeile in der Leiste",
+                "keine laufende Render-Zeile nach 20 s", "Befund", "queue-panel/auftrags-sicht.ts");
+            } else {
+              console.log(`[schritt-4l] Render laeuft: ${renderZeile4l.text}`);
+              // Ein gueltiger Import hinter dem laufenden Render -> er MUSS anstehen.
+              const wartPfad = path.join("/tmp", "durchlauf-fa18-" + Date.now() + ".png");
+              const ffmpegW = path.join(WURZEL, "node_modules", "ffmpeg-static", "ffmpeg");
+              await new Promise((f, r) => {
+                const p = spawn(ffmpegW, ["-y", "-f", "lavfi", "-i", "testsrc2=size=120x90:rate=1",
+                  "-frames:v", "1", wartPfad], { stdio: "ignore" });
+                p.on("exit", (c) => (c === 0 ? f() : r(new Error("ffmpeg erzeugt kein Bild (code " + c + ")"))));
+              });
+              await seite.evaluate(async (pfad, projektId) => {
+                return window.api.invoke("queue:reiheEin", {
+                  art: "import",
+                  payload: { projektId, quellPfad: pfad },
+                });
+              }, wartPfad, aktivesProjektId);
+
+              const fristWart4l = Date.now() + 10_000;
+              let wartZeile4l = null;
+              while (Date.now() < fristWart4l) {
+                wartZeile4l = gleicheZeile(await zeilen4l(), "Import: " + path.basename(wartPfad));
+                if (wartZeile4l !== null && wartZeile4l.text.includes("wartet")) break;
+                if (wartZeile4l !== null && wartZeile4l.text.includes("läuft")) break;
+                wartZeile4l = null;
+                await schlafe(150);
+              }
+              if (wartZeile4l === null) {
+                fund("Warteschlange (FA-18)", "ein Auftrag hinter einem laufenden Render steht als 'wartet'",
+                  "keine wartende Import-Zeile nach 10 s", "Untersuchung", "scripts/durchlauf.mjs");
+              } else if (!wartZeile4l.text.includes("wartet")) {
+                fund("Warteschlange (FA-18)", "der zweite Auftrag wartet hinter dem Render (serielle Freigabe, NFA-09)",
+                  `Zeile: ${wartZeile4l.text}`, "Untersuchung", "auftrags-manager/torwaechter.ts");
+              } else {
+                console.log(`[schritt-4l] Anstehend GEMESSEN: ${wartZeile4l.text}`);
+                const entferntKlick4l = await seite.evaluate((id) => {
+                  const schalter = document.querySelector(`[data-testid="queue-schalter-${id}"]`);
+                  if (schalter === null) return false;
+                  const knopf = [...schalter.querySelectorAll("button")]
+                    .find((b) => b.textContent === "Aus der Warteschlange nehmen");
+                  if (knopf === undefined) return false;
+                  knopf.click();
+                  return true;
+                }, wartZeile4l.id);
+                await schlafe(1_500);
+                const nachEntfernen4l = await zeilen4l();
+                const wartWeg4l = gleicheZeile(nachEntfernen4l, "Import: " + path.basename(wartPfad)) === null;
+                const renderNoch4l = gleicheZeile(nachEntfernen4l, `Render: ${renderName4l}.mp4`);
+                if (!entferntKlick4l || !wartWeg4l) {
+                  fund("Warteschlange (FA-18)", "der Schalter nimmt den anstehenden Auftrag aus der Leiste",
+                    `geklickt=${String(entferntKlick4l)}, Zeile weg=${String(wartWeg4l)}`,
+                    "Befund", "queue-panel/index.tsx");
+                } else {
+                  console.log("[schritt-4l] Entfernen GEMESSEN: anstehender Auftrag ist aus der Leiste verschwunden (FA-18).");
+                  const abortKlick4l = await seite.evaluate((id) => {
+                    const schalter = document.querySelector(`[data-testid="queue-schalter-${id}"]`);
+                    if (schalter === null) return false;
+                    const knopf = [...schalter.querySelectorAll("button")]
+                      .find((b) => b.textContent === "Render abbrechen");
+                    if (knopf === undefined) return false;
+                    knopf.click();
+                    return true;
+                  }, renderZeile4l.id);
+                  await schlafe(400);
+                  const frage4l = await seite.evaluate(() => {
+                    const frage = document.querySelector('[data-testid="queue-panel-rueckfrage"]');
+                    return {
+                      da: frage !== null,
+                      text: frage === null ? null
+                        : document.querySelector('[data-testid="queue-panel-rueckfrage-text"]')?.textContent ?? null,
+                    };
+                  });
+                  if (!abortKlick4l || !frage4l.da) {
+                    fund("Warteschlange (FA-18)", "der Abbruch fragt zuerst nach (#209, TK 9.2.3)",
+                      `geklickt=${String(abortKlick4l)}, Rueckfrage=${String(frage4l.da)}`,
+                      "Befund", "queue-panel/index.tsx");
+                  } else if (!(frage4l.text ?? "").includes("abbrechen?")
+                    || !(frage4l.text ?? "").includes("keine Ausgabedatei")) {
+                    fund("Warteschlange (FA-18)", "die Rueckfrage nennt Abbruch und unveraenderte Datei",
+                      `Text: ${String(frage4l.text)}`, "Befund", "queue-panel/entfernen.ts");
+                  } else {
+                    console.log(`[schritt-4l] Rueckfrage GEMESSEN: ${String(frage4l.text)}`);
+                    await seite.evaluate(() => {
+                      const knopf = document.querySelector('[data-testid="queue-panel-rueckfrage-bestaetigen"]');
+                      if (knopf !== null) knopf.click();
+                    });
+                    const fristAbbruch4l = Date.now() + 30_000;
+                    let renderWeg4l = false;
+                    while (Date.now() < fristAbbruch4l) {
+                      renderWeg4l = gleicheZeile(await zeilen4l(), `Render: ${renderName4l}.mp4`) === null;
+                      if (renderWeg4l) break;
+                      await schlafe(250);
+                    }
+                    const restStand4l = await seite.evaluate(async (ids) => {
+                      const antwort = await window.api.invoke("queue:holeStand");
+                      if (!antwort || !antwort.ok) return null;
+                      return antwort.wert
+                        .filter((a) => ids.includes(a.auftragId))
+                        .map((a) => ({ id: a.auftragId, status: a.status }));
+                    }, [renderZeile4l.id, wartZeile4l.id]);
+                    const ausgabe4l = path.join(WURZEL, "projects", aktivesProjektId, "output", renderName4l + ".mp4");
+                    const dateiDa4l = fs.existsSync(ausgabe4l);
+                    console.log(`[schritt-4l] Abbruch: Zeile weg=${String(renderWeg4l)}, Rest=${JSON.stringify(restStand4l)}, Ausgabedatei=${String(dateiDa4l)}.`);
+                    if (!renderWeg4l) {
+                      fund("Warteschlange (FA-18)", "der abgebrochene Render verlaesst die Leiste",
+                        "Zeile nach 30 s noch da", "Befund", "auftrags-manager/beende-auftrag.ts");
+                    } else if (Array.isArray(restStand4l) && restStand4l.length > 0) {
+                      fund("Warteschlange (FA-18)", "nach dem Abbruch bleibt kein Auftrag im Stand",
+                        JSON.stringify(restStand4l), "Befund", "auftrags-manager/beende-auftrag.ts");
+                    } else if (dateiDa4l) {
+                      fund("Warteschlange (FA-18)", "der Abbruch erzeugt KEINE Ausgabedatei (TK 9.2.3)",
+                        `Datei entstanden: ${ausgabe4l}`, "Befund", "auftrags-manager/entferne.ts");
+                    } else {
+                      console.log("[schritt-4l] Abbrechen GEMESSEN: Rueckfrage bestaetigt, Render abgebrochen, keine Ausgabedatei (FA-18).");
+                    }
+                  }
+                }
+              }
+              if (fs.existsSync(wartPfad)) fs.unlinkSync(wartPfad);
+            }
+          }
+        }
+      }
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     // Aufräumblock (User-Entscheidung 14.10.2026, solange die App NICHT fertig ist):
     // Jeder Lauf loescht seine eigenen Projekte ("DurchlaufTest-*") ueber den ECHTEN

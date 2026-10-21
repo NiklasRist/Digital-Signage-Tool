@@ -176,8 +176,20 @@ export async function beendeAuftrag(auftragId: string, ergebnis: HandlerErgebnis
   // SCHRITT 5: Erst jetzt darf der fluechtige Eintrag weg. Bleibt er liegen, sieht der
   // Torwaechter dauerhaft einen laufenden Auftrag und die Schlange steht fuer den Rest
   // der Sitzung. Nach dem gemeldeten Push enthaelt die naechste Meldung ihn nicht mehr -
-  // ein zweiter, lehrer Push ist der Preis fuer die sichtbare Erfolg-Meldung.
+  // ein zweiter, leerer Push ist der Preis fuer die sichtbare Erfolg-Meldung.
   entferneAusQ1(auftragId)
+
+  // SCHRITT 5b - NACHTRAG 21.10.2026 (am echten Fenster gemessen, Treiber 4k/4l): Der
+  // Stand hat sich mit dem Entfernen aus Q1 NOCH EINMAL geaendert, und diese Aenderung
+  // muss die Oberflaeche erreichen. Ohne diesen zweiten Push blieb die terminale Zeile
+  // in der Warteschlangen-Leiste stehen (gemessen: 25 s nach dem Erfolg, 30 s nach dem
+  // Abbruch), obwohl `holeStand` sie nicht mehr enthaelt - die Leiste zeigte einen
+  // Auftrag, den es nicht mehr gab. Der Kommentar oben setzte diesen Push bereits voraus
+  // ("der daraus folgende zweite Push (nach dem Entfernen)"), gebaut war er nie: #59
+  // meldet nur, wenn es einen NAECHSTEN Auftrag startet - bei leerer Schlange also gar
+  // nicht. Der Push ist deshalb NICHT harmlos, sondern der einzige Weg, auf dem die
+  // Zeile verschwindet.
+  await meldeAenderung()
 
   // SCHRITT 7: weiterdrehen. Ohne diesen Aufruf bleibt die Schlange stehen, obwohl alles
   // korrekt protokolliert wurde - ein Fehler, der aussieht wie ein Haenger und keiner ist.
