@@ -350,7 +350,9 @@ describe('beendeAuftrag (#70)', () => {
     expect(welt.streicheAusQ2).toHaveBeenCalledWith('p-1', auftrag.auftragId)
     expect(welt.merkeFehlschlag).not.toHaveBeenCalled()
     expect(q1.findeQ1(auftrag.auftragId)).toBeUndefined()
-    expect(welt.sendeQueueGeaendert).toHaveBeenCalledTimes(1)
+    // ZWEI Meldungen: die terminale (vor dem Entfernen, fuer den Nachlauf #199) und die
+    // geraeumte (nach dem Entfernen, damit die Zeile aus der Leiste verschwindet).
+    expect(welt.sendeQueueGeaendert).toHaveBeenCalledTimes(2)
     expect(welt.starteNaechsten).toHaveBeenCalledTimes(1)
   })
 
@@ -387,7 +389,7 @@ describe('beendeAuftrag (#70)', () => {
     expect(welt.zustand.q3.map((e) => e.versuch)).toEqual([1, 2])
   })
 
-  it('haelt die Reihenfolge Q3 -> Q2 -> EREIGNIS -> Q1-Entfernen -> starteNaechsten (Nachtrag 08.10., BUGFIX: die Push muss den terminalen Auftrag tragen)', async () => {
+  it('haelt die Reihenfolge Q3 -> Q2 -> EREIGNIS (terminal) -> Q1-Entfernen -> EREIGNIS (geraeumt) -> starteNaechsten', async () => {
     const { q1, beendeAuftrag } = await frisch()
     const auftrag = laeuft(q1, importAuftrag())
     const inQ1: Array<[string, boolean]> = []
@@ -397,17 +399,26 @@ describe('beendeAuftrag (#70)', () => {
 
     await beendeAuftrag(auftrag.auftragId, { status: 'erfolg', ergebnis: null })
 
-    expect(welt.zustand.reihenfolge).toEqual(['q3', 'q2:streiche', 'ereignis', 'starteNaechsten'])
-    // Die zweite Spalte belegt den NACHTRAG: Das Ereignis (im Haupt-Nachricht von #65
-    // gelesen holeStand) sieht den Auftrag NOCH mit Terminal-Status und ergebnis -
-    // sonst sah der Renderer einen 'erfolg'-Zustand NIE und der Nachlauf (#199) lief
-    // im echten Fenster nie (gemessen 08.10.: die letzte Push trug 0 Auftraege).
+    expect(welt.zustand.reihenfolge).toEqual([
+      'q3',
+      'q2:streiche',
+      'ereignis',
+      'ereignis',
+      'starteNaechsten',
+    ])
+    // Die zweite Spalte belegt BEIDE Zusagen:
+    // 1. Das ERSTE Ereignis (holeStand im Haupt-Nachricht von #65) sieht den Auftrag NOCH
+    //    mit Terminal-Status und ergebnis - sonst sah der Renderer einen 'erfolg'-Zustand
+    //    NIE und der Nachlauf (#199) lief im echten Fenster nie (gemessen 08.10.: die
+    //    letzte Push trug 0 Auftraege).
+    // 2. Das ZWEITE Ereignis kommt NACH dem Q1-Entfernen und traegt den Auftrag nicht
+    //    mehr. Ohne ihn blieb die terminale Zeile in der Leiste stehen, obwohl holeStand
+    //    sie nicht mehr enthaelt (am echten Fenster gemessen 21.10.2026, Treiber 4k/4l).
     expect(inQ1).toEqual([
       ['q3', true],
       ['q2:streiche', true],
       ['ereignis', true],
-      // Nach dem Entfernen ist die Queue geraumt; die daraus folgende zweite Push
-      // traegt den Auftrag nicht mehr (harmlos, Nachlauf-Merker verhindert Doppel).
+      ['ereignis', false],
       ['starteNaechsten', false],
     ])
   })

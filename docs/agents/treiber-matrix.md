@@ -1,6 +1,6 @@
 # Treiber-Matrix: Anforderung -> Szenario
 
-**Stand:** 20.10.2026. **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
+**Stand:** 21.10.2026. **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
 **Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-24),
 `scripts/durchlauf.mjs` (Treiber, echter Fensterlauf), `docs/agents/q4-test-audit.md` (Q4-3).
 
@@ -54,8 +54,8 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-14 | Video nicht-destruktiv trimmen | 4f4 | Derselbe Regler-Schritt wie FA-06 (Wert + Undo). Ob der **Trim** am Video-Element liegt und die Originaldatei unveraendert bleibt, wird nicht geprueft. | teilweise |
 | FA-15 | Fortlaufend automatisch speichern; letztes Projekt beim Start | 4f2, 4h | Nach dem Band-Drop wird `project.json` nach dem entprellten Speichern gelesen (Auto-Speichern implizit). Das **Wiederherstellen beim Start** (letztes Projekt, letztes Export-Ziel) ist ungemessen. | teilweise |
 | FA-16 | Sichtbare Warteschlange (Muss) | 4j | Die Leiste ist im Fenster, startet eingeklappt, zeigt einen **geholten** Stand (nicht "wird geladen"), bleibt beim Reiterwechsel sichtbar und laesst sich ueber den echten Schalter aufklappen (danach 1 Auftragszeile). **Seit #257 (20.10.2026).** | teilweise |
-| FA-17 | Fehlgeschlagenen Auftrag mit Grund wiederholen (Muss) | - | Die Oberflaeche ist seit #257 erreichbar (Schalter "Erneut versuchen" an einer `fehlgeschlagen`-Zeile). Ein Treiber-Szenario, das einen Fehlschlag **proviziert** und den Klick misst, fehlt. | Luecke |
-| FA-18 | Auftrag entfernen, laufenden Render abbrechen (Soll) | - | Die Oberflaeche ist seit #257 erreichbar (Schalter an `anstehend`/laufendem Render, Rueckfrage beim Abbruch). Ein Treiber-Szenario fehlt. | Luecke |
+| FA-17 | Fehlgeschlagenen Auftrag mit Grund wiederholen (Muss) | 4k | Ein Import einer **nicht vorhandenen** Datei wird eingereiht; die Zeile steht als `fehlgeschlagen` in der Leiste, der Grund als Klartext ("Datei nicht gefunden") und der Schalter "Erneut versuchen" daran. Dann wird die Datei angelegt und der echte Schalter geklickt: der Auftrag ist danach aus Q1 **und** Q2 weg, und das importierte Asset steht in D1 (project.json). **Seit 21.10.2026.** | gemessen |
+| FA-18 | Auftrag entfernen, laufenden Render abbrechen (Soll) | 4l | Ein 30-Elemente-Render laeuft; ein dahinter eingereihter Import steht als `wartet` und wird ueber "Aus der Warteschlange nehmen" entfernt (Zeile weg, Render laeuft weiter). Danach "Render abbrechen": die Rueckfrage erscheint mit Klartext ("keine Ausgabedatei"), Bestaetigen beendet den Render, die Zeile verschwindet, kein Auftrag bleibt im Stand, keine Ausgabedatei entsteht. **Seit 21.10.2026.** | gemessen |
 | FA-19 | Gefuehrte Reparatur; Render erst frei, wenn alles behoben | 4h, 4i | Kaputte Stelle erzeugt und Projekt neu geoeffnet: Panel da, Fortschritt "0 von N behoben", Render-Knopf `disabled`; Fix "Element entfernen" schrumpft die Liste, Cmd+Z stellt in EINEM Schritt her. Vierter Fall (#438) als `unterbrechung` belegt. | gemessen |
 | FA-20 | Split-Screen/Einblendung, Rotation, Unterbrechung (Muss) | 4b5, 4b6, 4f2 | Unterbrechung pausiert das Video an der Zeitstelle und laeuft danach weiter; ein Drop auf den Video-Koerper erzeugt EINE Marke; ein Band-Drop legt einen Abschnitt im Store an, ohne die Blockzahl zu aendern, und ist ein Undo-Schritt. **Rotation mehrerer Aktionen** und die **Render-Ausgabe** von Band/Einblendung sind ungemessen. | teilweise |
 | FA-21 | Undo/Redo in beiden Editoren | 4f3, 4f, 4f2, 4f4, 4g2, 4g4, 4h | Pfeile sichtbar und aktiv; Undo schrumpft, Redo waechst; je eine Aktion ist EIN Schritt (Einfuegen, Band, Dauer/Trim, Anlage, Loeschen, Reparatur). Der **Vorlagen-Editor** hat kein Undo-Szenario. | teilweise |
@@ -63,15 +63,16 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-23 | Marken-Bestand, Standardmarke je Projekt, Loeschsperre (Muss) | 4a | Der Wechsel am echten `<select>` wird **nur ausgefuehrt, wenn eine zweite Marke existiert**. Im Messbestand liegt genau eine - der Treiber meldet das selbst. Loeschsperren ungemessen. | Luecke |
 | FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | - | Kein Schritt oeffnet den Marken-Reiter ueber das blosse Vorhandensein hinaus. | Luecke |
 
-**Zaehlung:** 2 x gemessen (FA-05, FA-19), 15 x teilweise, 4 x Luecke (FA-17, FA-18, FA-23,
+**Zaehlung:** 4 x gemessen (FA-05, FA-17, FA-18, FA-19), 15 x teilweise, 2 x Luecke (FA-23,
 FA-24), 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
 
 Aufgeteilt nach Prioritaet (AD Abschnitt 4): **15 Muss**, 9 Soll.
-- **Muss:** 1 gemessen (FA-05), 10 teilweise, 3 Luecke (FA-17/23/24), 1 manuell (FA-09).
-- **Soll:** 1 gemessen (FA-19), 5 teilweise, 1 Luecke (FA-18), 2 manuell (FA-11/12).
+- **Muss:** 2 gemessen (FA-05, FA-17), 10 teilweise, 2 Luecke (FA-23/24), 1 manuell (FA-09).
+- **Soll:** 2 gemessen (FA-18, FA-19), 5 teilweise, 0 Luecke, 2 manuell (FA-11/12).
 
-Damit ist **1 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-05) -
-und **zwei weitere** (FA-16/17) haben heute ueberhaupt keine Oberflaeche (B1).
+Damit sind **2 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-05,
+FA-17). FA-16/17/18 hatten beim Aufstellen der Matrix **keine Oberflaeche** - das ist mit
+#257 behoben (B1); 4j misst die Leiste, 4k/4l die drei Bedienwege Fehlschlag/Entfernen/Abbruch.
 
 ---
 
@@ -100,8 +101,11 @@ Fehlertext aus #211). Die leere Platzhalterdatei ist geloescht, `App.tsx` import
 und den Mock-Pfad in `app-einhaengung.spec.ts` waere die neue Wurzel **wieder ein Aufrufer
 ohne Aufrufer** gewesen. Der gebaute Code gewinnt; die Abweichung steht im Issue-Kommentar.
 
-**Ehrlich offen:** 4j misst Sichtbarkeit, Aufklappen und den geholten Stand - **nicht** das
-gezielte Provozieren eines Fehlschlags (FA-17) oder das Entfernen/Abrechen (FA-18).
+**Ehrlich offen (Stand 21.10.2026 nach 4k/4l):** 4j misst Sichtbarkeit, Aufklappen und den
+geholten Stand; **4k** misst den provozierten Fehlschlag samt Grund und die gelungene
+Wiederholung, **4l** das Entfernen eines wartenden Auftrags und den bestaetigten Abbruch eines
+laufenden Renders. **Nicht** gemessen: der Fehlschlag eines RENDERS (nur Import) und das
+Entfernen waehrend eines Abbruchs.
 
 ### B2 - FA-23 wird heute gar nicht gemessen
 
@@ -125,6 +129,32 @@ Ein Treiber-Schritt pinnt **ein** Szenario. FA-05 ist "gemessen", weil ein Drop 
 und sein Undo belegt sind - nicht, weil jede Reihenfolge-Bedienung belegt ist. Die Spalte
 **Status** ist deshalb bewusst grob; die belastbare Aussage steht in der Spalte
 "Was am Fenster wirklich gemessen wird".
+
+### B6 - Die terminale Zeile blieb in der Leiste (21.10.2026, behoben)
+
+Beim Bau von 4k/4l gemessen: Nach **Erfolg** und nach **Abbruch** blieb die Auftragszeile in
+der Warteschlangen-Leiste stehen (25 s bzw. 30 s beobachtet), obwohl `queue:holeStand` sie
+nicht mehr enthielt. Ursache: `beende-auftrag.ts` meldete `queue:geaendert` **vor** dem
+Entfernen aus Q1 und danach nie wieder; `starteNaechsten` meldet nur, wenn es einen NAECHSTEN
+Auftrag startet - bei leerer Schlange also nicht. Der Kommentar an Schritt 5/6 setzte einen
+"zweiten Push (nach dem Entfernen)" bereits voraus; gebaut war er nie.
+
+**Behoben:** zweiter Push nach `entferneAusQ1`, Verhaltens-Test in `beende-auftrag.spec.ts`
+(Reihenfolge + Sichtbarkeit in Q1 je Meldung). Gegenprobe: Push entfernt -> 2 Tests rot,
+Ruecknahme byte-identisch.
+
+### B7 - "Erneut versuchen" erreichte die Sicht nicht (21.10.2026, behoben)
+
+Beim Bau von 4k gemessen: Nach dem Klick auf "Erneut versuchen" war der Auftrag aus Q1/Q2 weg
+und das Asset in D1 (project.json 2 -> 3), aber die Galerie blieb bei 2 Eintraegen. Ursache:
+`auftrags-nachlauf.ts` merkte sich die **`auftragId`** als "ausgewertet". Ein Wiederholungs-
+versuch behaelt laut TK 9.3.3 dieselbe ID; nur `versuche` steigt. Der Fehlschlag des ersten
+Versuchs galt damit als ausgewertet, der Spaeter-Erfolg fiel unter den Tisch - kein
+`setzeProjekt`, kein Asset in der Sicht.
+
+**Behoben:** Merker-Schluessel ist `auftragId:versuche` (je Versuch genau eine Auswertung);
+Verhaltens-Test in `auftrags-nachlauf-auffrisch.spec.ts`. Gegenprobe: Schluessel wieder auf
+die ID -> Test rot, Ruecknahme byte-identisch. Nach dem Fix: Galerie 2 -> 3.
 
 ### B5 - Der Treiber wertet `console.error` nicht (Gate-Blindstelle) - Loop am 20.10.2026 behoben
 
@@ -160,7 +190,7 @@ Reihenfolge nach MoSCoW: **Muss** zuerst. "Treiber" heisst: neuer oder erweitert
 
 | Rang | FA | Was fehlt | Weg |
 |---|---|---|---|
-| 1 | FA-17/18 | Fehlschlag provozieren, "Erneut versuchen" und Entfernen/Abbruch am echten Fenster | Treiber: kaputten Import einreihen -> Zeile "fehlgeschlagen" mit Klartext, "Erneut versuchen" klicken; anstehenden Auftrag erzeugen und entfernen; laufenden Render abbrechen und die Rueckfrage bestaetigen. **Fallstrick:** ein dauerhaft fehlgeschlagener Auftrag bleibt in Q2 - der Lauf muss ihn am Ende aufraeumen oder mit einem eigenen Datenort fahren. |
+| ~~1~~ | ~~FA-17/18~~ | **ERLEDIGT 21.10.2026** durch die Treiber-Schritte **4k/4l** - s. Abschnitt 2. | siehe 4k/4l |
 | 2 | FA-01/03 | Video **ersetzen** mit Bestaetigung; Aktion **bearbeiten** | Treiber: zweites Video importieren -> `composer-ersetzen-frage`, bestaetigen -> **ein** Video-Element bleibt, Datei getauscht; Aktion oeffnen, Titel aendern, speichern, Wert im Store lesen. |
 | 3 | FA-23 | Standardmarke wechseln (mangels zweiter Marke), Loeschsperre | Treiber: zweite Marke per `marken:erstelleMarke` seeden, dann 4a wie gebaut laufen lassen; Loeschen einer genutzten Marke versuchen und Sperrgrund lesen. |
 | 4 | FA-24 | Marken-Editor vollstaendig | Treiber: Reiter Marken, Marke anlegen, Akzentfarbe setzen, Kontrastwarnung ausloesen (Grenzwert), ableiten, Loeschsperre. |
@@ -204,6 +234,15 @@ der Statusspalte. Ob "teilweise" noch stimmt, entscheidet nur das Lesen des Schr
   Fenster-Log stehen jedoch die `console.error` aus B5 - sie werden nicht gewertet.
 - **#257 am Fenster (20.10.2026):** `[schritt-4j] Warteschlange GEMESSEN: Leiste da,
   eingeklappt ...`; Reiterwechsel und Aufklappen (1 Auftragszeile) ebenfalls belegt.
+- **4k/4l am Fenster (21.10.2026):** `[schritt-4k] Fehlschlag GEMESSEN: Zeile
+  "fehlgeschlagen", Grund "Datei nicht gefunden ...", Schalter "Erneut versuchen".` Dann
+  `Wiederholen GEMESSEN: ... Auftrag aus Q1/Q2 weg, Asset in D1 (FA-17).` Und
+  `[schritt-4l] Anstehend GEMESSEN: ... wartet`, `Entfernen GEMESSEN: anstehender Auftrag
+  ist aus der Leiste verschwunden (FA-18)`, `Abbrechen GEMESSEN: Rueckfrage bestaetigt,
+  Render abgebrochen, keine Ausgabedatei (FA-18)`.
+- **Gate 21.10.2026:** `npm run pruefung` ohne `Befund`; **5.601 Unit-Tests (333 Dateien)**,
+  **49 Integrationstests (12 Dateien)**. Typecheck/Lint 0. Die `Untersuchung`-Hinweise
+  (`requesting main frame too early`) traten nicht auf.
 - Aufrufer-Pruefung B1: `grep` auf `WarteschlangenLeiste`, `Liste`, `baueAuftragsSichtAuf`,
   `wiederholeAuftrag`, `darfWiederholen` ueber `src/` - ausserhalb `queue-panel/` kein
   Aufrufer.

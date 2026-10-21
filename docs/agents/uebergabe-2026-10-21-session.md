@@ -1,0 +1,103 @@
+# Uebergabe - Session 21.10.2026: FA-17/18 am echten Fenster
+
+> Fuer die naechste Sitzung: Lies zuerst `CLAUDE.md` (STAND HEUTE), dann diese Datei.
+> Vorgaenger: `docs/agents/uebergabe-2026-10-20-session.md`.
+
+## Worum es ging
+
+Der naechste Schritt aus der Treiber-Matrix: **FA-17 (fehlgeschlagenen Auftrag mit Grund
+wiederholen)** und **FA-18 (Auftrag entfernen, laufenden Render abbrechen)** waren die
+letzten beiden echten Anforderungsluecken mit vorhandener Oberflaeche. Der Auftrag war,
+die Zusage am echten Fenster zu messen - nicht, die Oberflaeche neu zu bauen.
+
+Branch: `bau/treiber-fa17-18`.
+
+---
+
+## 1. Zwei neue Treiber-Schritte
+
+**Datei:** `scripts/durchlauf.mjs`; Matrix: `docs/agents/treiber-matrix.md`.
+
+- **4k (FA-17):** Ein Import einer **nicht vorhandenen** PNG wird per `queue:reiheEin`
+  eingereiht. Gemessen: Zeile `fehlgeschlagen`, Grund als Klartext ("Datei nicht
+  gefunden"), Schalter "Erneut versuchen". Dann wird die Datei am selben Pfad angelegt und
+  der echte Schalter geklickt. Erfolg heisst: Zeile weg, `queue:holeStand` traegt den
+  Auftrag nicht mehr, **Asset in D1** (project.json 2 -> 3).
+- **4l (FA-18):** Das Messprojekt wird auf 30 Video-Elemente gebracht (Datei aus 4h
+  wiederhergestellt, Liste ueber `project:entferneElement`/`fuegeElementHinzu` neu, Projekt
+  neu geoeffnet). Ein Render laeuft; ein dahinter eingereihter Import steht als `wartet`
+  und wird ueber "Aus der Warteschlange nehmen" entfernt (Render laeuft weiter). Danach
+  "Render abbrechen": Rueckfrage mit Klartext, Bestaetigen, Zeile weg, `holeStand` leer,
+  **keine Ausgabedatei**.
+
+**Fallstrick aufgeloest:** Der Treiber laesst keinen dauerhaft fehlgeschlagenen Auftrag
+zurueck - 4k repariert die Ursache und wiederholt erfolgreich; 4l entfernt den wartenden
+Auftrag und bricht den Render ab (kein Q2-Eintrag, ein Abbruch ist kein Fehlschlag).
+
+---
+
+## 2. ZWEI ECHTE PRODUKTBEFUNDE - gemessen, behoben, gegengeprobt
+
+### B6 - Die terminale Zeile blieb in der Leiste
+
+- **Symptom:** Nach Erfolg (25 s beobachtet) und nach Abbruch (30 s) blieb die Zeile im
+  Panel, obwohl `holeStand` sie nicht mehr enthielt.
+- **Ursache:** `beende-auftrag.ts` meldete `queue:geaendert` nur VOR dem Entfernen aus Q1.
+  `starteNaechsten` meldet nur beim Start eines NAECHSTEN Auftrags - bei leerer Schlange
+  nie. Der Kommentar an Schritt 5/6 setzte einen zweiten Push voraus; gebaut war er nicht.
+- **Fix:** zweiter `queue:geaendert` nach `entferneAusQ1`.
+- **Gegenprobe:** Push entfernt -> **2 Tests rot**; Ruecknahme byte-identisch
+  (Pruefsumme `f348ce703bf8923c95385cc70ecdef2af27612edd0632347e7f2e83106b0e96e`).
+- **Test:** `tests/unit/beende-auftrag.spec.ts` prueft jetzt die Reihenfolge
+  `q3 -> q2 -> ereignis(terminal) -> ereignis(geraeumt) -> starteNaechsten` und dass die
+  zweite Meldung den Auftrag **nicht** mehr in Q1 sieht.
+
+### B7 - "Erneut versuchen" erreichte die Sicht nicht
+
+- **Symptom:** Nach dem Retry weg aus Q1/Q2 und Asset in D1 (2 -> 3), aber Galerie blieb
+  bei 2 Eintraegen.
+- **Ursache:** `auftrags-nachlauf.ts` merkte sich die **`auftragId`** als ausgewertet. Ein
+  Wiederholungsversuch behaelt die ID (TK 9.3.3), nur `versuche` steigt. Der Fehlschlag
+  galt als ausgewertet, der spaetere Erfolg fiel unter den Tisch.
+- **Fix:** Merker-Schluessel `auftragId:versuche` (eine Auswertung je Versuch).
+- **Gegenprobe:** Schluessel wieder auf die ID -> **Test rot**; Ruecknahme byte-identisch
+  (Pruefsumme `65fa8481d87eca21989332450df939155aacda65d1a891561ee2e200080f3175`).
+- **Test:** neue Verhaltensprobe in `tests/unit/auftrags-nachlauf-auffrisch.spec.ts`.
+- **Nach dem Fix am Fenster:** Galerie 2 -> 3.
+
+---
+
+## 3. Belege
+
+- **Gate:** `npm run pruefung` ohne `Befund`; **5.601 Unit-Tests (333 Dateien)**,
+  **49 Integrationstests (12 Dateien)**; Typecheck/Lint 0.
+- **Treiber 4k/4l:** beide `GEMESSEN`-Zeilen im Lauf (s. Abschnitt 1);
+  Protokoll in `docs/agents/oberflaeche-durchlauf.md`.
+- **Gegenproben:** beide mit Pruefsumme zurueckgenommen (s. o.).
+- **Matrix:** FA-17/18 auf `gemessen`; Zaehlung jetzt **4 gemessen, 15 teilweise,
+  2 Luecke, 3 manuell**. Waechter `tests/unit/treiber-matrix.spec.ts` gruen.
+
+---
+
+## 4. Ehrlich offen
+
+1. **Gate-Blindstelle:** Der Treiber wertet `console.error` weiterhin nicht (B5).
+2. **FA-23** (zweite Marke/Standardmarken-Wechsel) und **FA-24** (Marken-Editor) sind die
+   letzten Luecken; beide brauchen einen Seed (zweite Marke) bzw. einen neuen Schritt.
+3. **Nicht gemessen:** Fehlschlag eines RENDERS (4k provoziert nur einen Import-Fehler);
+   Entfernen waehrend eines Abbruchs.
+4. **#433** optische Abnahme steht weiter beim User.
+5. **Mutations-Chargen:** 138/92 Dateien verbleiben in der Quelltext-Proben-Kategorie.
+6. **`main` steht nach dem Merge 106 Commits vor `origin/main`** (vor diesem Commit: 105),
+   nicht gepusht.
+
+## 5. Regeln, die diese Session bestaetigt hat
+
+- **Ein gruener Treiber ist kein gruener Treiber, wenn er nur die Oberflaeche sieht.**
+  4k/4l haben zwei Fehler gefunden, die 5.600 Unit-Tests nicht fanden: eine fehlende
+  Meldung nach dem terminalen Uebergang und einen Merker, der "Versuch" mit "Auftrag"
+  verwechselte.
+- **Ein Kommentar, der eine Zusage behauptet, ist kein Beleg.** "Der daraus folgende
+  zweite Push" stand da - gebaut war er nie. Der Test hatte die Luecke mitgeschrieben.
+- **Erfolg an D1 messen, nicht an einer Anzeige.** Die Galerie war das Symptom; der Beleg
+  ist `project.json`.

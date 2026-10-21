@@ -42,15 +42,24 @@ export function starteAuftragsNachlauf(
   abonniereQueue: (hoerer: (auftraege: Auftrag[]) => void) => () => void,
   wirkungen: NachlaufWirkungen,
 ): () => void {
-  // Die gemerkten Kennungen: Jede Kennung wird GENAU EINMAL ausgewertet. Das Ereignis
+  // Die gemerkten Kennungen: Jede AUSFUEHRUNG wird GENAU EINMAL ausgewertet. Das Ereignis
   // traegt die GANZE Liste, nicht einen Übergang - ohne Merker lief der selbe Erfolg je
   // Push mehrfach hinein und erzeugte Asset-Dubletten.
+  //
+  // DER SCHLUESSEL IST ID + VERSUCH, NICHT DIE ID ALLEIN (Nachtrag 21.10.2026, am echten
+  // Fenster gemessen, Treiber 4k): Ein fehlgeschlagener Auftrag behaelt seine `auftragId`
+  // ueber "Erneut versuchen" hinweg (TK 9.3.3); nur `versuche` steigt beim naechsten Start.
+  // Mit der ID allein wurde der Fehlschlag als ausgewertet vermerkt - und der SPAETERE
+  // ERFOLG derselben ID fiel unter den Tisch: kein `setzeProjekt`, kein Asset in der
+  // Sicht/Galerie, obwohl D1 ihn trug. Der Versuch ist die Einheit, die TK 9.3.1 zaehlt
+  // (`versuche`), und genau je Versuch entsteht ein Q3-Eintrag.
+  const schluessel = (auftrag: Auftrag): string => `${auftrag.auftragId}:${auftrag.versuche}`
   const ausgewertet = new Set<string>()
 
   const merkAuftrag = async (auftrag: Auftrag): Promise<void> => {
     if (!(TERMINALE_ZUSTAENDE as readonly string[]).includes(auftrag.status)) return
-    if (ausgewertet.has(auftrag.auftragId)) return
-    ausgewertet.add(auftrag.auftragId)
+    if (ausgewertet.has(schluessel(auftrag))) return
+    ausgewertet.add(schluessel(auftrag))
 
     const rohErgebnis: unknown = auftrag.ergebnis
 
