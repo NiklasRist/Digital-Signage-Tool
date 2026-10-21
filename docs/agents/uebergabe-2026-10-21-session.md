@@ -1,16 +1,19 @@
-# Uebergabe - Session 21.10.2026: FA-17/18 am echten Fenster
+# Uebergabe - Session 21.10.2026: FA-17/18/23, drei Produktbefunde, UI-Ausrichtung
 
 > Fuer die naechste Sitzung: Lies zuerst `CLAUDE.md` (STAND HEUTE), dann diese Datei.
 > Vorgaenger: `docs/agents/uebergabe-2026-10-20-session.md`.
 
 ## Worum es ging
 
-Der naechste Schritt aus der Treiber-Matrix: **FA-17 (fehlgeschlagenen Auftrag mit Grund
+Erst der naechste Schritt aus der Treiber-Matrix: **FA-17 (fehlgeschlagenen Auftrag mit Grund
 wiederholen)** und **FA-18 (Auftrag entfernen, laufenden Render abbrechen)** waren die
-letzten beiden echten Anforderungsluecken mit vorhandener Oberflaeche. Der Auftrag war,
-die Zusage am echten Fenster zu messen - nicht, die Oberflaeche neu zu bauen.
+letzten beiden echten Anforderungsluecken mit vorhandener Oberflaeche. Danach **FA-23**
+(Standardmarke + Loeschsperre) als letzte Muss-Luecke. Der Auftrag war, die Zusagen am echten
+Fenster zu messen - nicht, die Oberflaeche neu zu bauen. Am Ende der Sitzung kam die
+**UI-Ausrichtung fuer „Oberfläche 2.0"** dazu (Aktionen und Banner, keine eigene
+Medienverwaltung) - als bestaetigte Leitlinie, nicht als Umbau.
 
-Branch: `bau/treiber-fa17-18`.
+Branches: `bau/treiber-fa17-18`, `bau/treiber-fa23`.
 
 ---
 
@@ -119,7 +122,7 @@ Auftrag und bricht den Render ab (kein Q2-Eintrag, ein Abbruch ist kein Fehlschl
    Entfernen waehrend eines Abbruchs.
 4. **#433** optische Abnahme steht weiter beim User.
 5. **Mutations-Chargen:** 138/92 Dateien verbleiben in der Quelltext-Proben-Kategorie.
-6. **`main` steht 118 Commits vor `origin/main`**, nicht gepusht. Beide Branches
+6. **`main` steht 119 Commits vor `origin/main`**, nicht gepusht. Beide Branches
    (`bau/treiber-fa17-18`, `bau/treiber-fa23`) sind nach `main` gemergt (Merges `17b3175`,
    `d19a12a`).
 
@@ -135,3 +138,27 @@ Auftrag und bricht den Render ab (kein Q2-Eintrag, ein Abbruch ist kein Fehlschl
   ist `project.json`.
 - **Besuchte Reiter bleiben montiert** (TK 9.14.2) - jeder Zustand, der eine Momentaufnahme
   einer Auswahl ist, muss beim Wechsel der Auswahl zurueckgesetzt werden.
+
+---
+
+## 6. UI-Ausrichtung fuer "Oberfläche 2.0" (User-bestaetigt am 21.10.2026)
+
+**Kein Umbau, kein Bau-Issue.** Die Richtung ist eine bestaetigte Leitlinie fuer den Schnitt
+"Oberfläche 2.0"; sie aendert weder AD/TK noch Code.
+
+- **Fokus im Projekteditor: Aktionen und Banner.** Dazu: Einfuegen, gute Aktionen erstellen,
+  evtl. Videobearbeitung (nachrangig).
+- **Eine eigene Bilder-/Videoverwaltung entfaellt als Flaeche.** Bilder und Videos sind ein
+  Teil der Aktion; Auswahl/Import geschieht dort, wo die Aktion entsteht.
+- **Bestaetigt:** "Banner" = die Banner-Spur / `BannerSchild` (BA-Familie #365+, Plan-Welle 2).
+- **Bestaetigt:** Das eine Projektvideo behaelt seinen schmalen Import/Ersetzen-Weg
+  (FA-01/#422) - es ist kein Aktionsbild.
+- **Medien als Daten bleiben** (`Aktion.bildRef`, Dateien, Render); gestrichen wird die
+  Verwaltungsflaeche, nicht die Faehigkeit.
+
+**Heimstatt:** `docs/agents/oberflaeche-2-0-plan.md`, Abschnitt 6; Volltext in
+`docs/agents/ui-ausrichtung-projekteditor-2026-10-21.md`.
+
+**Vor einem Umbau offen:** Welche Banner-Vertragslinie gilt (TK-Stand vs. BA-Familie)?
+Aktions-Editor ohne Reiterwechsel erreichbar? Videobearbeitung im selben Editor oder eigener
+Modus? Danach: Entscheidung -> AD/TK-Nachtrag -> Issue mit Signaturblock (kein Umbau ohne Plan).

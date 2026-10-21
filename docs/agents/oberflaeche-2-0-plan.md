@@ -112,9 +112,13 @@ Medien-Galerie sichtbar in den Vordergrund, waehrend die taegliche Arbeit danebe
   Projekteditor erreichbar, ohne Reiterwechsel?) - **offen**.
 - **Eine neue Welle** fuer die Umgewichtung ist erst nach der Entscheidung zu schneiden.
 
-**Die offenen Fragen (s. Notiz):** Banner - zweite Zeitleisten-Spur, und welche Linie ist
-verbindlich (TK-Stand vs. BA-Familie)? Aktions-Editor ohne Reiterwechsel? Videobearbeitung im
-selben Editor oder eigener Modus?
+**Entschieden (User, 21.10.2026):** „Banner" ist die **Banner-Spur / `BannerSchild`**
+(BA-Familie #365+); das **eine Projektvideo** behaelt seinen schmalen Import/Ersetzen-Weg
+(FA-01/#422), waehrend die Galerie als Flaeche entfaellt.
+
+**Offen (s. Notiz):** Welche Banner-Vertragslinie ist verbindlich (TK-Stand vs. BA-Familie)?
+Soll der Aktions-Editor ohne Reiterwechsel erreichbar sein? Gehoert Videobearbeitung in
+denselben Editor oder einen eigenen Modus?
 
 **Regel:** Erst Entscheidung, dann AD/TK-Nachtrag, dann Issue mit Signaturblock und
 Dateiliste - kein Umbau ohne Plan (Lehre aus #432).

@@ -29,16 +29,14 @@ Begruendung des Users, woertlich: **„so macht die ui keinen sinn"** - die heut
 stellt die Medien-Galerie sichtbar in den Vordergrund, waehrend die taegliche Arbeit
 (Aktionen erstellen, einfuegen, Banner setzen, anordnen) daneben klein wirkt.
 
-## Annahme, die noch zu bestaetigen ist
+## Entschieden (User, 21.10.2026)
 
-1. **„Banner" = die Banner-Spur / `BannerSchild`-Linie** (BA-Familie #365+, Plan-Welle 2) -
-   nicht ein neues Mediengenre und nicht die Marken-Banner. Falls etwas anderes gemeint ist:
-   hier korrigieren, bevor ein Schnitt daraus wird.
-2. **Das EINE Projektvideo bleibt ein eigener kleiner Bedienschritt** (Import/Ersetzen,
-   FA-01/#422) - es ist kein Aktionsbild und wird von keiner Aktion getragen. Die
-   Medienverwaltung als Galerie entfaellt trotzdem; der Video-Import bleibt als schmaler
-   Weg (Projekt anlegen, "Video importieren"). Falls auch dieser Weg in die Aktion wandern
-   soll: korrigieren.
+1. **„Banner" = die Banner-Spur / `BannerSchild`-Linie** (BA-Familie #365+, Plan-Welle 2).
+   Welche Vertragslinie verbindlich ist (TK-Stand vs. BA-Familie), bleibt eine eigene,
+   spaetere Entscheidung - die BEDEUTUNG ist geklaert.
+2. **Das EINE Projektvideo behaelt einen schmalen Import/Ersetzen-Weg** (FA-01/#422) - es
+   ist kein Aktionsbild. Die Galerie als Flaeche entfaellt trotzdem; der Video-Import bleibt
+   ein kleiner Bedienschritt (Projekt anlegen, "Video importieren").
 
 ## Was das NICHT ist
 
@@ -75,10 +73,10 @@ spaeter ansetzen wuerde.
 
 ## Offene Fragen (nicht entschieden)
 
-- **Bild-Import:** Wandert er vollstaendig in den Aktions-Editor (Annahme), oder bleibt ein
-  kleiner Import-Weg ausserhalb? (Die Galerie als Flaeche entfaellt in beiden Faellen.)
-- **Projektvideo:** Bleibt der schmale Import/Ersetzen-Weg (FA-01/#422) bestehen? (Annahme: ja.)
-- **Banner:** zweite Zeitleisten-Spur? Welche Linie ist verbindlich (TK-Stand vs. BA-Familie)?
+- **Bild-Import:** Dass er beim Aktions-Editor liegt, ist bestaetigt; offen ist die konkrete
+  Form (Feld im Editor, kleiner Dialog, Drag aus dem Dateisystem).
+- **Banner:** Die BEDEUTUNG ist geklaert (Banner-Spur). Offen: welche Vertragslinie gilt
+  (TK-Stand vs. BA-Familie #365+), und ob die Spur jetzt geschnitten wird.
 - Soll der Aktions-Editor aus dem Projekteditor heraus **ohne Reiterwechsel** erreichbar
   sein („gute Aktionen erstellen" direkt am Einfuegeweg)?
 - Gehoert „Videobearbeitung" (Trim, Unterbrechungen, Band) in denselben Editor oder bleibt

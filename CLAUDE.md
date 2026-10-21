@@ -11,7 +11,7 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde) – gilt vor ALLEM weiter unten
+## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde, UI-Ausrichtung) – gilt vor ALLEM weiter unten
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-21-session.md`](docs/agents/uebergabe-2026-10-21-session.md) – LIES DIESE DATEI ZUERST.**
 
@@ -42,13 +42,14 @@
      Oeffnen einer Marke nie zurueckgesetzt. Nach dem Zurueckstellen der Standardmarke
      blieb die Blockade stehen, ohne Loesch-Knopf. Jetzt setzt der Hoerer auf die
      geoeffnete Marke die Vorschau zurueck.
-- **UI-Ausrichtung notiert (21.10.2026, User, noch KEINE Anforderung):** Im Projekteditor
-  liegt der Fokus auf **Aktionsverwaltung, Einfuegen, dem Erstellen guter Aktionen und der
-  Banner-Spur**; evtl. Videobearbeitung. **Eine eigene Bilder-/Videoverwaltung entfaellt als
-  Flaeche** - Bilder und Videos sind Teil der Aktion (Ausnahme: das eine Projektvideo behaelt
-  seinen Import/Ersetzen-Weg, FA-01/#422). Begruendung des Users: „so macht die ui
-  keinen sinn". **Zuordnung (User):** gehoert zum Schnitt **„Oberfläche 2.0"** - Abschnitt 6
-  in [`docs/agents/oberflaeche-2-0-plan.md`](docs/agents/oberflaeche-2-0-plan.md); Volltext in
+- **UI-Ausrichtung fuer „Oberfläche 2.0" (21.10.2026, User bestaetigt; noch keine
+  AD/TK-Anforderung):** Im Projekteditor liegt der Fokus auf **Aktionsverwaltung, Einfuegen,
+  dem Erstellen guter Aktionen und der Banner-Spur**; evtl. Videobearbeitung. **Eine eigene
+  Bilder-/Videoverwaltung entfaellt als Flaeche** - Bilder und Videos sind Teil der Aktion.
+  **Bestaetigt:** „Banner" = Banner-Spur / `BannerSchild` (BA-Familie #365+); das eine
+  Projektvideo behaelt seinen schmalen Import/Ersetzen-Weg (FA-01/#422). Begruendung des
+  Users: „so macht die ui keinen sinn". **Zuordnung:** Abschnitt 6 in
+  [`docs/agents/oberflaeche-2-0-plan.md`](docs/agents/oberflaeche-2-0-plan.md); Volltext in
   [`docs/agents/ui-ausrichtung-projekteditor-2026-10-21.md`](docs/agents/ui-ausrichtung-projekteditor-2026-10-21.md).
   Ein Umbau braucht erst Entscheidung + AD/TK-Nachtrag + Issue (kein Umbau ohne Plan).
 - **Alle drei Gegenproben** beißen und sind byte-identisch zurueckgenommen (Pruefsummen in
@@ -59,7 +60,7 @@
   Matrix-Luecke; Fehlschlag eines **Renders** und Entfernen waehrend eines Abbruchs sind
   ungemessen; **#433** optische Abnahme beim User; Mutations-Chargen 138/92 offen.
 - **Branches `bau/treiber-fa17-18` und `bau/treiber-fa23`** wurden nach `main` gemergt
-  (Merges `17b3175`, `d19a12a`); `main` steht **118 Commits vor `origin/main`**.
+  (Merges `17b3175`, `d19a12a`); `main` steht **119 Commits vor `origin/main`**.
   **Nicht gepusht.**
 - Naechster Schritt: **FA-24** (Marken-Editor) oder die **Gate-Blindstelle** entscheiden.
 
