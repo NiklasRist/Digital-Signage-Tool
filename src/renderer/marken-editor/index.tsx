@@ -95,7 +95,20 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
       setzeZustand((alt) => ({ ...alt, markenUebersicht: uebersicht ?? null }))
     })
     const abmeldenMarke = aufGeoeffneteMarkeGeaendert((marke) => {
-      setzeZustand((alt) => ({ ...alt, markeOffen: marke !== null }))
+      // Die LOESCHVORSCHAU gehoert zur zuletzt geoeffneten Marke. Wechselt die geoeffnete
+      // Marke (oder wird dieselbe erneut geoeffnet), ist eine alte Vorschau veraltet.
+      // Am echten Fenster gemessen 21.10.2026 (Treiber 4a2): Nach einer gesperrten
+      // Loeschung blieb `marken-loesch-blockiert` stehen - auch nachdem die Marke im
+      // Reiter Projekte freigegeben war. Besuchte Reiter bleiben montiert (TK 9.14.2),
+      // der Zustand ueberlebte den Reiterwechsel, und der Ausweg "Wechsle die
+      // Standardmarke" war damit eine Sackgasse: kein Loesch-Knopf mehr, keine neue
+      // Pruefung. Das erneute Oeffnen der Marke ist der natuerliche Neustart der Pruefung.
+      setzeZustand((alt) => ({
+        ...alt,
+        markeOffen: marke !== null,
+        loeschvorschau: null,
+        meldeaktionFehler: null,
+      }))
     })
     return () => {
       abmeldenListe()

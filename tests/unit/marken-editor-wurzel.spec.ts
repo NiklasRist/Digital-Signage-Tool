@@ -13,7 +13,7 @@ import type { Marke, MarkenHerkunftJeFeld } from "../../src/shared/contracts/mar
 const h = vi.hoisted(() => ({
   oeffneMarke: vi.fn(() => Promise.resolve({ ok: true, wert: null })),
   holeGeoeffnete: vi.fn((): unknown => null),
-  aufGeoeffneteGeaendert: vi.fn(() => () => undefined),
+  aufGeoeffneteGeaendert: vi.fn((_cb?: unknown) => () => undefined),
   erstelleEigenstaendigeMarke: vi.fn(),
   setzeFarbe: vi.fn(),
   baueSchriftAnzeige: vi.fn(() => []),
@@ -392,6 +392,47 @@ describe('MarkenEditorWurzel (#330) - Herkunft, Loeschen, Ableiten', () => {
     expect(h.erstelleEigenstaendigeMarke).toHaveBeenCalledTimes(1);
     expect(zugang.lade).not.toHaveBeenCalled();
     expect(h.oeffneMarke).not.toHaveBeenCalled();
+  });
+
+  it('eine erneut geoeffnete Marke setzt die Loeschvorschau zurueck - der Ausweg ist keine Sackgasse', async () => {
+    h.holeGeoeffnete.mockReturnValue(markeFuerTest({ id: DIE_ID, parent: null }));
+    // Den Hoerer des Editors abfangen: Er wird gerufen, wenn eine Marke geoeffnet wird.
+    let hoerer: ((marke: unknown) => void) | null = null;
+    h.aufGeoeffneteGeaendert.mockImplementation((cb: unknown) => {
+      hoerer = cb as (marke: unknown) => void;
+      return () => undefined;
+    });
+    h.ermittleLoeschvorschau.mockResolvedValue({
+      ok: true,
+      wert: {
+        darfLoeschen: false,
+        eingebaut: false,
+        nutzung: {
+          aktionen: [],
+          abgeleiteteMarken: [],
+          standardInProjekten: [{ projektId: 'p-1', projektName: 'Projekt' }],
+        },
+      },
+    });
+    h.brauchtStandardmarkenAusweg.mockReturnValue(true);
+
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="loeschengesuch"]')!.click();
+    });
+    expect(behaelterTest.querySelector('[data-testid="marken-loesch-blockiert"]')).not.toBeNull();
+
+    // Der Nutzer folgt dem Ausweg ("Wechsle die Standardmarke im Reiter Projekte") und
+    // oeffnet die Marke danach wieder. Ohne Ruecksetzen blieb die Blockade stehen und
+    // der Loeschweg war bis zum App-Neustart verschwunden (gemessen 21.10.2026, Treiber 4a2).
+    await act(async () => {
+      hoerer?.(markeFuerTest({ id: DIE_ID, parent: null }));
+    });
+    expect(behaelterTest.querySelector('[data-testid="marken-loesch-blockiert"]')).toBeNull();
+    expect(behaelterTest.querySelector('[data-testid="loeschengesuch"]')).not.toBeNull();
+
+    h.aufGeoeffneteGeaendert.mockImplementation(() => () => undefined);
   });
 });
 
