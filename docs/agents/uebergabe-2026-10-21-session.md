@@ -30,7 +30,7 @@ Branch: `bau/treiber-fa17-18`.
   "Render abbrechen": Rueckfrage mit Klartext, Bestaetigen, Zeile weg, `holeStand` leer,
   **keine Ausgabedatei**.
 
-### FA-23 (zweiter Teil der Sitzung): Standardmarke und Loeschsperre
+### FA-23 (zweiter Teil der Sitzung, Branch `bau/treiber-fa23`): Standardmarke und Loeschsperre
 
 - **4a0:** legt eine **zweite Marke ueber die echte Oberflaeche** an (Namensfeld + "Neue
   Marke"). Vorher lag genau eine Marke im Bestand (B2) - der Wechsel war unpruefbar.
@@ -114,8 +114,9 @@ Auftrag und bricht den Render ab (kein Q2-Eintrag, ein Abbruch ist kein Fehlschl
    Entfernen waehrend eines Abbruchs.
 4. **#433** optische Abnahme steht weiter beim User.
 5. **Mutations-Chargen:** 138/92 Dateien verbleiben in der Quelltext-Proben-Kategorie.
-6. **`main` steht 109 Commits vor `origin/main`**, nicht gepusht. Der Branch
-   `bau/treiber-fa17-18` ist nach `main` gemergt (Merge `17b3175`).
+6. **`main` steht 112 Commits vor `origin/main`**, nicht gepusht. Beide Branches
+   (`bau/treiber-fa17-18`, `bau/treiber-fa23`) sind nach `main` gemergt (Merges `17b3175`,
+   `d19a12a`).
 
 ## 5. Regeln, die diese Session bestaetigt hat
 

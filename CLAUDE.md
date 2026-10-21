@@ -49,8 +49,9 @@
 - **Ehrlich offen:** Gate wertet `console.error` nicht (B5); **FA-24** ist die letzte
   Matrix-Luecke; Fehlschlag eines **Renders** und Entfernen waehrend eines Abbruchs sind
   ungemessen; **#433** optische Abnahme beim User; Mutations-Chargen 138/92 offen.
-- **Branch `bau/treiber-fa17-18`** wurde nach `main` gemergt (Merge `17b3175`); `main` steht
-  **109 Commits vor `origin/main`**. **Nicht gepusht.**
+- **Branches `bau/treiber-fa17-18` und `bau/treiber-fa23`** wurden nach `main` gemergt
+  (Merges `17b3175`, `d19a12a`); `main` steht **112 Commits vor `origin/main`**.
+  **Nicht gepusht.**
 - Naechster Schritt: **FA-24** (Marken-Editor) oder die **Gate-Blindstelle** entscheiden.
 
 ## STAND HEUTE (20.10.2026: Matrix, #257, Update-Loop, Mutationstests) – historisiert durch den Abschnitt darueber
