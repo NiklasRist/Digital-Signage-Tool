@@ -1,6 +1,9 @@
 # UI-Ausrichtung Projekteditor (Notiz vom 21.10.2026)
 
-> **Status: Notiz, keine Anforderung.** Keine AD-/TK-Aenderung, kein Umbau, kein Issue.
+> **Status: Notiz zur Leitlinie des Schnitts „Oberfläche 2.0".** Keine AD-/TK-Aenderung, kein
+> Umbau, kein eigenes Bau-Issue. **Zuordnung (User, 21.10.2026):** Die Richtung gehoert zum
+> Schnitt „Oberfläche 2.0" - Heimstatt ist
+> [`docs/agents/oberflaeche-2-0-plan.md`](oberflaeche-2-0-plan.md), Abschnitt 6.
 > Quelle: muendliche Vorgabe des Users am 21.10.2026. Woertlich festgehalten, weil die
 > Richtung sonst in der naechsten Sitzung verloren geht.
 
@@ -30,7 +33,8 @@ die taegliche Arbeit (Aktionen erstellen, einfuegen, anordnen) daneben klein wir
 
 ## Was daraus vor einem Umbau werden muss
 
-Der naechste Schritt ist **kein Code**, sondern ein Schnitt:
+Die Notiz ist **kein eigener Auftrag**. Sie ist Abschnitt 6 des Plans
+[`oberflaeche-2-0-plan.md`](oberflaeche-2-0-plan.md). Daraus wird erst etwas, wenn:
 
 1. **Entscheidung** mit dem User: Welche Flaechen bleiben immer sichtbar, welche werden
    eingeklappt/verschoben? Wo lebt die Medienverwaltung dann (Dock, Dialog, sekundaerer

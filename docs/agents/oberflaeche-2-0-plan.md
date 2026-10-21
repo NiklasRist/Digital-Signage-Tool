@@ -78,3 +78,39 @@ nach dem TK-Stand v3.20 gebaut wird (Plan-Dokument fehlt im Repo).
   UUID; die Lücke zeigt waehrend der Wartezeit eine Lade-Markierung.
 - Undo (#243/#350): Einfügen ist EIN Historien-Eintrag (kritisches Kriterium der Abnahme).
 - Versicherungs-Regel aus #123 bleibt: KEIN Vorfiltern, KEINE Entdopplung, UUID nie im Renderer.
+
+---
+
+## 6. Leitlinie 21.10.2026 - der Fokus des Projekteditors
+
+**Quelle:** User-Vorgabe vom 21.10.2026 (muendlich). **Status:** Leitlinie fuer diesen
+Schnitt, **keine AD-/TK-Anforderung** und kein Umbau-Auftrag. Volltext, Abgrenzung und
+offene Fragen: [`docs/agents/ui-ausrichtung-projekteditor-2026-10-21.md`](ui-ausrichtung-projekteditor-2026-10-21.md).
+
+**Die Vorgabe, sinngemaess:** Im Projekteditor (Reiter „Zusammenstellen") sollen **Bilder-
+und Videoverwaltung nicht der Fokus** sein. Fokus sind:
+
+1. **Aktionsverwaltung** (Aktionen sehen, pflegen, auswaehlen),
+2. **Einfuegen** (Aktion schnell und verstaendlich in die Wiedergabeliste),
+3. **gute Aktionen erstellen** (Titel, Text, Preis, Bild, Dauer),
+4. **evtl. Videobearbeitung** (nachrangig).
+
+Begruendung woertlich: **„so macht die ui keinen sinn"** - die heutige Gewichtung stellt die
+Medien-Galerie sichtbar in den Vordergrund, waehrend die taegliche Arbeit daneben klein wirkt.
+
+**Was das fuer die Wellen bedeutet (Vorschlag, nicht beschlossen):**
+
+- **Welle 1 bleibt unveraendert** - der Spalt-Drop und die Vorschau im Zentrum sind
+  ausdruecklich Teil des „Einfuegens" und damit vom Fokus gedeckt.
+- **Medienverwaltung wird Mittel, nicht Flaeche:** Galerie/Bibliothek bleiben erreichbar
+  (Import, Auswahl fuer `Aktion.bildRef`), bekommen aber keinen gleichrangigen Dauerplatz.
+  Ob Dock, einklappbarer Bereich oder eigener Zustand, ist **offen**.
+- **Der Weg „gute Aktion erstellen" bekommt Eigengewicht** (Aktions-Editor aus dem
+  Projekteditor erreichbar, ohne Reiterwechsel?) - **offen**.
+- **Eine neue Welle** fuer diese Umgewichtung ist erst nach der Entscheidung zu schneiden.
+
+**Die drei offenen Fragen (unverändert, s. Notiz):** Medien als Dock oder eigener Zustand?
+Aktions-Editor ohne Reiterwechsel? Videobearbeitung im selben Editor oder eigener Modus?
+
+**Regel:** Erst Entscheidung, dann AD/TK-Nachtrag, dann Issue mit Signaturblock und
+Dateiliste - kein Umbau ohne Plan (Lehre aus #432).

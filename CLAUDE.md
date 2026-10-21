@@ -45,7 +45,9 @@
 - **UI-Ausrichtung notiert (21.10.2026, User, noch KEINE Anforderung):** Im Projekteditor
   sind **Bilder-/Videoverwaltung nicht der Fokus**; Fokus sind **Aktionsverwaltung,
   Einfuegen und das Erstellen guter Aktionen**, evtl. Videobearbeitung. Begruendung des
-  Users: „so macht die ui keinen sinn". Details, Abgrenzung und offene Fragen in
+  Users: „so macht die ui keinen sinn". **Zuordnung (User):** gehoert zum Schnitt
+  **„Oberfläche 2.0"** - Abschnitt 6 in
+  [`docs/agents/oberflaeche-2-0-plan.md`](docs/agents/oberflaeche-2-0-plan.md); Volltext in
   [`docs/agents/ui-ausrichtung-projekteditor-2026-10-21.md`](docs/agents/ui-ausrichtung-projekteditor-2026-10-21.md).
   Ein Umbau braucht erst Entscheidung + AD/TK-Nachtrag + Issue (kein Umbau ohne Plan).
 - **Alle drei Gegenproben** beißen und sind byte-identisch zurueckgenommen (Pruefsummen in
@@ -56,7 +58,7 @@
   Matrix-Luecke; Fehlschlag eines **Renders** und Entfernen waehrend eines Abbruchs sind
   ungemessen; **#433** optische Abnahme beim User; Mutations-Chargen 138/92 offen.
 - **Branches `bau/treiber-fa17-18` und `bau/treiber-fa23`** wurden nach `main` gemergt
-  (Merges `17b3175`, `d19a12a`); `main` steht **115 Commits vor `origin/main`**.
+  (Merges `17b3175`, `d19a12a`); `main` steht **116 Commits vor `origin/main`**.
   **Nicht gepusht.**
 - Naechster Schritt: **FA-24** (Marken-Editor) oder die **Gate-Blindstelle** entscheiden.
 
