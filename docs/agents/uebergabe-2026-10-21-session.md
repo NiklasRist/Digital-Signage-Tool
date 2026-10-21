@@ -100,6 +100,11 @@ Auftrag und bricht den Render ab (kein Q2-Eintrag, ein Abbruch ist kein Fehlschl
 - **Treiber 4k/4l/4a0/4a2:** die `GEMESSEN`-Zeilen im Lauf (s. Abschnitt 1);
   Protokoll in `docs/agents/oberflaeche-durchlauf.md`.
 - **Gegenproben:** alle drei mit Pruefsumme zurueckgenommen (s. o.).
+- **Ehrlich:** Der erste Gate-Lauf dieser Runde brach in den **Integrationstests** mit
+  `Timeout waiting for worker to respond` ab. Ursache war ein **verwaister
+  Electron-Prozess** aus einem frueheren Treiber-Lauf, der `instanz.lock`/`instanz.signal`
+  hielt; nach dem Beenden der Prozesse und Loeschen der Sperren lief das Gate **Exit 0**.
+  Kein Code-Befund, aber ein Hinweis fuer den naechsten, der nach einem Abbruch weitermacht.
 - **Matrix:** FA-17/18/23 auf `gemessen`; Zaehlung jetzt **5 gemessen, 15 teilweise,
   1 Luecke (FA-24), 3 manuell**. Waechter `tests/unit/treiber-matrix.spec.ts` gruen.
 
