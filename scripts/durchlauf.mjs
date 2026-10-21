@@ -428,22 +428,89 @@ const main = async () => {
           `Kennung fehlt (Diagnostik: ${JSON.stringify(reiterDiag)})`, "Untersuchung", "Reiter-Montage");
       }
     }
+    // Schritt 4a0 - FA-23: eine ZWEITE Marke ueber die ECHTE Oberflaeche anlegen.
+    // Ohne sie kann 4a den Standardmarken-Wechsel nicht fahren (Bestand war genau eine
+    // Marke - B2 der Matrix). Der neue Name ist je Lauf eindeutig; die Marke wird in 4a2
+    // wieder geloescht, damit der Bestand nicht waechst.
+    const neueMarkeName4a0 = "DurchlaufMarke-" + Date.now();
+    let neueMarkeId4a0 = null;
+    {
+      const markenReiter4a0 = await seite.evaluate(() => {
+        const tab = document.querySelector('[data-testid="reiter-marken"]');
+        if (tab === null) return false;
+        tab.click();
+        return true;
+      });
+      await schlafe(1_200);
+      const listeDa4a0 = await stehtDa('[data-testid="marken-liste"]');
+      console.log(`[schritt-4a0] Marken-Reiter: geklickt=${String(markenReiter4a0)}, Liste=${String(listeDa4a0)}.`);
+      if (!markenReiter4a0 || !listeDa4a0) {
+        fund("Standardmarke (FA-23)", "der Marken-Reiter laesst sich oeffnen und zeigt die Liste",
+          `geklickt=${String(markenReiter4a0)}, Liste=${String(listeDa4a0)}`,
+          "Befund", "app-shell/rahmen.tsx");
+      } else {
+        const vorher4a0 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid="marken-liste"] button').length,
+        );
+        await seite.click('[data-testid="marken-liste"] input');
+        await seite.type('[data-testid="marken-liste"] input', neueMarkeName4a0);
+        await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="erstelle-eigenstaendige-marken-namen"]');
+          if (knopf !== null) knopf.click();
+        });
+        const frist4a0 = Date.now() + 15_000;
+        let nachher4a0 = vorher4a0;
+        while (Date.now() < frist4a0) {
+          nachher4a0 = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid="marken-liste"] button').length,
+          );
+          if (nachher4a0 > vorher4a0) break;
+          await schlafe(300);
+        }
+        const fehler4a0 = await seite.evaluate(
+          () => document.querySelector('[data-testid="marken-neu-fehler"]')?.textContent ?? null,
+        );
+        console.log(`[schritt-4a0] Marken vorher/nachher: ${vorher4a0}/${nachher4a0}, Fehler=${String(fehler4a0)}.`);
+        if (nachher4a0 <= vorher4a0) {
+          fund("Standardmarke (FA-23)", 'die zaehlende Marke "Neue Marke" legt eine zweite Marke an (FA-24)',
+            `Marken ${vorher4a0}->${nachher4a0}, Fehler: ${String(fehler4a0)}`,
+            "Befund", "marken-editor/index.tsx");
+        } else {
+          console.log(`[schritt-4a0] Zweite Marke GEMESSEN: "${neueMarkeName4a0}" (${vorher4a0} -> ${nachher4a0}).`);
+          neueMarkeId4a0 = await seite.evaluate(async (name) => {
+            const antwort = await window.api.invoke("marken:listeMarken");
+            if (!antwort || !antwort.ok) return null;
+            const treffer = antwort.wert.find((m) => m.name === name);
+            return treffer === undefined ? null : treffer.id;
+          }, neueMarkeName4a0);
+        }
+      }
+      // Zurueck zum Projekte-Reiter - 4a misst am echten <select>.
+      await seite.evaluate(() => {
+        const tab = document.querySelector('[data-testid="reiter-projekte"]');
+        if (tab !== null) tab.click();
+      });
+      await schlafe(1_200);
+    }
+
     // Schritt 4a - Standardmarke je Projekt-Zeile (#324, TK 9.14.3): die Auswahl ist
     // ein echtes <select> mit aria-label "Standardmarke". Der Wechsel wird IM
     // Fensterskript gesetzt (React liest die Aenderung ueber den nativen
     // HTMLSelectElement-Wert) und der neue Wert wird danach gemessen.
-    const wechsleMarke = async () => {
-      return await seite.evaluate(() => {
+    const wechsleMarke = async (zielId) => {
+      return await seite.evaluate((ziel) => {
         const auswahl = document.querySelector('select[aria-label="Standardmarke"]')
         if (auswahl === null) return { da: false }
         const davor = auswahl.value
-        const eineAndere = [...auswahl.options].find((o) => o.value !== "" && o.value !== davor)
-        if (eineAndere === undefined) return { da: true, davor, leer: true }
+        // GEZIELT die Marke aus 4a0 - nicht "irgendeine andere": Im Bestand koennen
+        // weitere Marken liegen; ein Wechsel auf die falsche machte 4a2 unpruefbar.
+        const gewaehlt = [...auswahl.options].find((o) => o.value === ziel)
+        if (gewaehlt === undefined) return { da: true, davor, leer: true }
         const trage = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set
-        trage.call(auswahl, eineAndere.value)
+        trage.call(auswahl, gewaehlt.value)
         auswahl.dispatchEvent(new Event("change", { bubbles: true }))
-        return { da: true, davor, ziel: eineAndere.value, leer: false }
-      });
+        return { da: true, davor, ziel: gewaehlt.value, leer: false }
+      }, zielId);
     };
     const pruefeWert = async () => {
       return await seite.evaluate(() => {
@@ -451,7 +518,11 @@ const main = async () => {
         return { wert: auswahl === null ? null : auswahl.value };
       });
     };
-    const markeVersuch1 = await wechsleMarke();
+    if (neueMarkeId4a0 === null) {
+      fund("Standardmarke (FA-23)", "die Kennung der neuen Marke ist lesbar",
+        "marken:listeMarken liefert sie nicht", "Untersuchung", "scripts/durchlauf.mjs");
+    }
+    const markeVersuch1 = await wechsleMarke(neueMarkeId4a0);
     console.log("[schritt-4a] Auswahl-Bedienung: " + JSON.stringify(markeVersuch1));
     if (!markeVersuch1.da) {
       fund("Standardmarke", "die Auswahl je Projekt-Zeile (#324)",
@@ -460,12 +531,22 @@ const main = async () => {
       await schlafe(2_500);
       const ablehnungenA = await seite.evaluate(() => window.__durchlauf?.ablehnungen ?? []);
       console.log("[schritt-4a] Ablehnungen bis dahin: " + JSON.stringify(ablehnungenA));
-      const listenDiag = await seite.evaluate(async () => {
+      const listenDiagLesen = () => seite.evaluate(async () => {
         const antwort = await window.api.invoke("project:listeProjekte");
         if (!antwort.ok) return { listenfehler: JSON.stringify(antwort.fehler ?? {}) };
         const erster = antwort.wert[0] ?? null;
         return erster === null ? { erster: null } : { erster: { id: erster.id, marke: erster.standardMarkeId } };
       });
+      let listenDiag = await listenDiagLesen();
+      // Die Liste liest die PLATTE; das Auto-Speichern ist entprellt (3-5 s, TK 9.5.4).
+      // Statt zu raten, wird bis 10 s nachgesehen - der Wechsel muss in D1 ankommen.
+      const fristListe4a = Date.now() + 10_000;
+      while (Date.now() < fristListe4a) {
+        if (listenDiag.erster !== null && listenDiag.erster !== undefined
+          && listenDiag.erster.marke === markeVersuch1.ziel) break;
+        await schlafe(400);
+        listenDiag = await listenDiagLesen();
+      }
       console.log("[schritt-4a] Frische Liste: " + JSON.stringify(listenDiag));
       const danach = await pruefeWert();
       console.log("[schritt-4a] Bedienelement danach: " + JSON.stringify(danach));
@@ -473,11 +554,204 @@ const main = async () => {
         fund("Standardmarke", "der Wechsel steht im Bedienelement (#324)",
           `gewaehlt ${markeVersuch1.ziel}, gezeigt ${String(danach.wert)}`, "Befund",
           "projekt-verwaltung/standardmarke.tsx");
+      } else if (listenDiag.erster === null || listenDiag.erster === undefined
+        || listenDiag.erster.marke !== markeVersuch1.ziel) {
+        // #324/FA-23: Der Wechsel muss in D1 ankommen, nicht nur im <select> stehen.
+        fund("Standardmarke", "der Wechsel steht im Projekt (project:listeProjekte, FA-23)",
+          `gewaehlt ${markeVersuch1.ziel}, Liste zeigt ${JSON.stringify(listenDiag.erster)}`,
+          "Befund", "project-store/setze-standard-marke.ts");
       } else {
-        console.log("[schritt-4a] Standardmarke-Wechsel GEMESSEN am echten select (davor/nach).");
+        console.log("[schritt-4a] Standardmarke-Wechsel GEMESSEN am echten select und in der Liste (davor/nach).");
       }
     } else {
       console.log("[schritt-4a] Nur eine Marke im Bestand - der Wechsel braucht eine zweite (Seed-Weg ungetestet, UI-Weg folgt).");
+    }
+
+    // Schritt 4a2 - FA-23 Loeschsperre: Die neue Marke ist jetzt die STANDARDMARKE des
+    // Messprojekts. Ein Loeschversuch muss mit Grund gesperrt werden (marke_referenziert,
+    // standardInProjekten) und den Ausweg nennen. Danach wird die Standardmarke
+    // zurueckgestellt: JETZT muss das Loeschen gehen - damit ist die Sperre nachweislich
+    // die Nutzung und nicht ein Zufall. Die Marke verschwindet wieder aus dem Bestand.
+    {
+      // Die aktive Projekt-Kennung steht zu diesem Zeitpunkt in D3 (config.json) -
+      // die Treiber-Variable `aktivesProjektId` entsteht erst mit dem Medien-Seed (4b).
+      let projektId4a2 = null;
+      try {
+        projektId4a2 = JSON.parse(fs.readFileSync(path.join(WURZEL, "config.json"), "utf-8")).aktivesProjektId ?? null;
+      } catch (tu) {
+        console.log("[schritt-4a2] config.json nicht lesbar: " + String(tu));
+      }
+      const neueMarke4a2 = await seite.evaluate(async (name) => {
+        const antwort = await window.api.invoke("marken:listeMarken");
+        if (!antwort || !antwort.ok) return null;
+        const treffer = antwort.wert.find((m) => m.name === name);
+        return treffer === undefined ? null : { id: treffer.id, name: treffer.name };
+      }, neueMarkeName4a0);
+
+      const stand4a2 = await seite.evaluate(() => {
+        const auswahl = document.querySelector('select[aria-label="Standardmarke"]');
+        return { wert: auswahl === null ? null : auswahl.value };
+      });
+      console.log(`[schritt-4a2] Neue Marke: ${JSON.stringify(neueMarke4a2)}, Standard im select: ${String(stand4a2.wert)}.`);
+
+      if (neueMarke4a2 === null) {
+        fund("Standardmarke (FA-23)", "die neue Marke steht im Bestand",
+          "marken:listeMarken findet sie nicht", "Befund", "marken-store/liste.ts");
+      } else if (stand4a2.wert !== neueMarke4a2.id) {
+        fund("Standardmarke (FA-23)", "4a hat die neue Marke als Standard gesetzt",
+          `select=${String(stand4a2.wert)}`, "Untersuchung", "scripts/durchlauf.mjs");
+      } else {
+        // Marken-Reiter, neue Marke oeffnen, Loeschversuch.
+        await seite.evaluate(() => {
+          const tab = document.querySelector('[data-testid="reiter-marken"]');
+          if (tab !== null) tab.click();
+        });
+        await schlafe(1_200);
+        const geoeffnet4a2 = await seite.evaluate((name) => {
+          const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] button')];
+          const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
+          if (knopf === undefined) return false;
+          knopf.click();
+          return true;
+        }, neueMarke4a2.name);
+        await schlafe(800);
+        const kopf4a2 = await seite.evaluate(
+          () => document.querySelector('[data-testid="marken-kopf"]')?.textContent ?? null,
+        );
+        const loeschKlick4a2 = await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="loeschengesuch"]');
+          if (knopf === null) return false;
+          knopf.click();
+          return true;
+        });
+        const frist4a2 = Date.now() + 10_000;
+        let lage4a2 = { blockiert: false, bestaetigen: false };
+        while (Date.now() < frist4a2) {
+          lage4a2 = await seite.evaluate(() => ({
+            blockiert: document.querySelector('[data-testid="marken-loesch-blockiert"]') !== null,
+            bestaetigen: [...document.querySelectorAll('[data-testid="marken-offen"] button')]
+              .some((b) => (b.textContent ?? "").trim() === "Löschen bestätigen"),
+          }));
+          if (lage4a2.blockiert || lage4a2.bestaetigen) break;
+          await schlafe(250);
+        }
+        const gruende4a2 = await seite.evaluate(() => ({
+          standard: document.querySelector('[data-testid="loesch-standard"]')?.textContent ?? null,
+          ausweg: document.querySelector('[data-testid="loesch-ausweg"]')?.textContent ?? null,
+        }));
+        console.log(`[schritt-4a2] Loeschversuch: geoeffnet=${String(geoeffnet4a2)}, Kopf=${String(kopf4a2)}, blockiert=${String(lage4a2.blockiert)}, Gruende=${JSON.stringify(gruende4a2)}.`);
+        if (!geoeffnet4a2 || kopf4a2 !== neueMarke4a2.name || !loeschKlick4a2) {
+          fund("Standardmarke (FA-23)", "die neue Marke laesst sich oeffnen und der Loeschweg startet",
+            `geoeffnet=${String(geoeffnet4a2)}, Kopf=${String(kopf4a2)}, Klick=${String(loeschKlick4a2)}`,
+            "Untersuchung", "marken-editor/index.tsx");
+        } else if (!lage4a2.blockiert) {
+          fund("Standardmarke (FA-23)", "eine als Standardmarke genutzte Marke ist NICHT loeschbar (TK 9.15.1/AD FA-23)",
+            `bestaetigen=${String(lage4a2.bestaetigen)}`, "Befund", "marken-store/loesche-marke.ts");
+        } else if (!(gruende4a2.standard ?? "").includes("DurchlaufTest")) {
+          fund("Standardmarke (FA-23)", "der Sperrgrund nennt das Projekt (standardInProjekten)",
+            `loesch-standard: ${String(gruende4a2.standard)}`, "Befund", "marken-editor/index.tsx");
+        } else if (gruende4a2.ausweg === null) {
+          fund("Standardmarke (FA-23)", "die Sperre nennt den Ausweg (Standardmarke im Reiter Projekte wechseln)",
+            "loesch-ausweg fehlt", "Befund", "marken-editor/index.tsx");
+        } else {
+          console.log(`[schritt-4a2] Loeschsperre GEMESSEN: ${String(gruende4a2.standard)}; Ausweg "${String(gruende4a2.ausweg)}".`);
+
+          // Standardmarke zurueckstellen - ueber DENSELBEN echten select wie 4a.
+          await seite.evaluate(() => {
+            const tab = document.querySelector('[data-testid="reiter-projekte"]');
+            if (tab !== null) tab.click();
+          });
+          await schlafe(1_200);
+          const zurueck4a2 = await seite.evaluate((ziel) => {
+            const auswahl = document.querySelector('select[aria-label="Standardmarke"]');
+            if (auswahl === null) return false;
+            const trage = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set;
+            trage.call(auswahl, ziel);
+            auswahl.dispatchEvent(new Event("change", { bubbles: true }));
+            return true;
+          }, markeVersuch1.davor);
+          await schlafe(2_500);
+          const standZurueckLesen = () => seite.evaluate(async (projektId) => {
+            if (typeof projektId !== "string") return null;
+            const liste = await window.api.invoke("project:listeProjekte");
+            const treffer = liste && liste.ok
+              ? liste.wert.find((p) => p.id === projektId) ?? null
+              : null;
+            return treffer === null ? null : treffer.standardMarkeId ?? treffer.marke ?? null;
+          }, projektId4a2);
+          let standZurueck4a2 = await standZurueckLesen();
+          const fristZurueck4a2 = Date.now() + 10_000;
+          while (Date.now() < fristZurueck4a2) {
+            if (standZurueck4a2 === markeVersuch1.davor) break;
+            await schlafe(400);
+            standZurueck4a2 = await standZurueckLesen();
+          }
+          if (!zurueck4a2 || standZurueck4a2 !== markeVersuch1.davor) {
+            fund("Standardmarke (FA-23)", "die Standardmarke laesst sich zurueckstellen",
+              `geklickt=${String(zurueck4a2)}, Projekt zeigt ${String(standZurueck4a2)}`,
+              "Befund", "projekt-verwaltung/standardmarke.tsx");
+          } else {
+            // Jetzt MUSS das Loeschen gehen - die Sperre war die Nutzung.
+            await seite.evaluate(() => {
+              const tab = document.querySelector('[data-testid="reiter-marken"]');
+              if (tab !== null) tab.click();
+            });
+            await schlafe(1_200);
+            await seite.evaluate((name) => {
+              const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] button')];
+              const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
+              if (knopf !== undefined) knopf.click();
+            }, neueMarke4a2.name);
+            await schlafe(800);
+            await seite.evaluate(() => {
+              const knopf = document.querySelector('[data-testid="loeschengesuch"]');
+              if (knopf !== null) knopf.click();
+            });
+            const fristFrei4a2 = Date.now() + 10_000;
+            let bestaetigen4a2 = false;
+            while (Date.now() < fristFrei4a2) {
+              bestaetigen4a2 = await seite.evaluate(
+                () => [...document.querySelectorAll('[data-testid="marken-offen"] button')]
+                  .some((b) => (b.textContent ?? "").trim() === "Löschen bestätigen"),
+              );
+              if (bestaetigen4a2) break;
+              await schlafe(250);
+            }
+            if (!bestaetigen4a2) {
+              fund("Standardmarke (FA-23)", "nach dem Zurueckstellen ist die Marke loeschbar (Sperre = Nutzung)",
+                "kein Bestaetigen-Knopf - weiterhin gesperrt", "Befund", "marken-store/referenzpruefung.ts");
+            } else {
+              await seite.evaluate(() => {
+                const knopf = [...document.querySelectorAll('[data-testid="marken-offen"] button')]
+                  .find((b) => (b.textContent ?? "").trim() === "Löschen bestätigen");
+                if (knopf !== undefined) knopf.click();
+              });
+              const fristGeloescht4a2 = Date.now() + 10_000;
+              let bestand4a2 = null;
+              while (Date.now() < fristGeloescht4a2) {
+                bestand4a2 = await seite.evaluate(async (name) => {
+                  const antwort = await window.api.invoke("marken:listeMarken");
+                  if (!antwort || !antwort.ok) return null;
+                  return {
+                    anzahl: antwort.wert.length,
+                    nochDa: antwort.wert.some((m) => m.name === name),
+                  };
+                }, neueMarke4a2.name);
+                if (bestand4a2 !== null && !bestand4a2.nochDa) break;
+                await schlafe(300);
+              }
+              console.log(`[schritt-4a2] Nach dem Loeschen: ${JSON.stringify(bestand4a2)}.`);
+              if (bestand4a2 === null || bestand4a2.nochDa) {
+                fund("Standardmarke (FA-23)", "die freigegebene Marke verschwindet aus dem Bestand",
+                  JSON.stringify(bestand4a2), "Befund", "marken-editor/index.tsx");
+              } else {
+                console.log("[schritt-4a2] Loeschsperre GEMESSEN: genutzt -> gesperrt mit Grund/Ausweg; zurueckgestellt -> geloescht (FA-23).");
+              }
+            }
+          }
+        }
+      }
+      // Der Marken-Reiter bleibt offen; 4b wechselt selbst auf Zusammenstellen.
     }
 
     // Schritt 4b - Medien-Seed: Ein mit dem mitgebundelten ffmpeg erzeugtes Testvideo
@@ -2614,6 +2888,27 @@ const main = async () => {
     if (nichtGeloescht.length > 0) {
       fund("Aufraeumen", "der Lauf loescht seine eigenen DurchlaufTest-Projekte",
         `${nichtGeloescht.length} Einträge blieben liegengedecht (s. Protokoll)`, "Untersuchung", "scripts/durchlauf.mjs");
+    }
+
+    // Auch die eigenen MESS-MARKEN (4a0): Sie sind projektuebergreifend und wuerden sonst
+    // den Bestand jedes Laufs wachsen lassen. Erlaubt ist nur der eindeutige Praefix;
+    // eine Ablehnung (noch referenziert) wird gemeldet, nicht verschwiegen.
+    const markenAufraeumt = await seite.evaluate(async () => {
+      const antwort = await window.api.invoke("marken:listeMarken");
+      if (!antwort || !antwort.ok) return { fehler: 'listeMarken' };
+      const eigene = antwort.wert.filter((m) => String(m.name).startsWith("DurchlaufMarke"));
+      const ergebnisse = [];
+      for (const marke of eigene) {
+        const weg = await window.api.invoke("marken:loescheMarke", { markeId: marke.id });
+        ergebnisse.push({ name: marke.name, ok: weg && weg.ok, code: weg && !weg.ok ? weg.fehler.code : null });
+      }
+      return { anzahl: eigene.length, ergebnisse };
+    });
+    console.log("[schritt-5] Marken-Aufraeumen: " + JSON.stringify(markenAufraeumt));
+    if (markenAufraeumt.fehler === undefined
+      && (markenAufraeumt.ergebnisse ?? []).some((e) => !e.ok)) {
+      fund("Aufraeumen", "der Lauf loescht seine eigenen DurchlaufMarke-Eintraege",
+        JSON.stringify(markenAufraeumt.ergebnisse), "Untersuchung", "scripts/durchlauf.mjs");
     }
 
     const fensterstand = await seite.evaluate(() => ({

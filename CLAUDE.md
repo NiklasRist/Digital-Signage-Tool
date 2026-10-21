@@ -11,7 +11,7 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (21.10.2026: FA-17/18 am echten Fenster, zwei Produktbefunde) – gilt vor ALLEM weiter unten
+## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde) – gilt vor ALLEM weiter unten
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-21-session.md`](docs/agents/uebergabe-2026-10-21-session.md) – LIES DIESE DATEI ZUERST.**
 
@@ -21,8 +21,13 @@
   Auftrag aus Q1/Q2 weg, **Asset in D1**. **4l:** 30-Elemente-Render laeuft, ein dahinter
   eingereihter Import steht `wartet` und wird entfernt (Render laeuft weiter); danach
   "Render abbrechen" mit Rueckfrage -> Zeile weg, Stand leer, **keine Ausgabedatei**.
-  Matrix: **4 gemessen** (FA-05/17/18/19), 15 teilweise, **2 Luecke** (FA-23/24), 3 manuell.
-- **Zwei echte Produktbefunde gefunden und behoben:**
+- **FA-23 ist ebenfalls gemessen** (Schritte **4a0/4a/4a2**): zweite Marke ueber die echte
+  Oberflaeche angelegt, Standardmarke am echten `<select>` **gezielt** gewechselt und in
+  `project:listeProjekte` belegt; Loeschversuch der genutzten Marke **gesperrt** mit
+  Projekt-Grund und Ausweg, nach dem Zurueckstellen **geloescht**. Der Schritt-5-Aufraeumen
+  loescht `DurchlaufMarke-*` (auch Reste abgebrochener Laeufe).
+  Matrix: **5 gemessen** (FA-05/17/18/19/23), 15 teilweise, **1 Luecke** (FA-24), 3 manuell.
+- **Drei echte Produktbefunde gefunden und behoben:**
   1. **Terminale Zeile blieb in der Leiste** (25 s nach Erfolg, 30 s nach Abbruch):
      `beende-auftrag.ts` meldete `queue:geaendert` nur VOR dem Q1-Entfernen; der im
      Kommentar vorausgesetzte "zweite Push" existierte nie. Jetzt zweiter Push nach
@@ -32,17 +37,21 @@
      die `auftragId` - ein Wiederholungsversuch behaelt sie (TK 9.3.3), nur `versuche`
      steigt. Der spaetere Erfolg fiel unter den Tisch (Galerie blieb bei 2, D1 hatte 3).
      Jetzt Merker-Schluessel `auftragId:versuche`.
-- **Beide Gegenproben** beißen (2 Tests rot bzw. 1 Test rot) und sind byte-identisch
-  zurueckgenommen (Pruefsummen in der Session-Datei).
-- **Gate:** `npm run pruefung` ohne `Befund` - **5.601 Unit-Tests (333 Dateien)**, **49
+  3. **Der "Ausweg" aus der Marken-Loeschsperre war eine Sackgasse:** Besuchte Reiter
+     bleiben montiert (TK 9.14.2); die `loeschvorschau` im `marken-editor` wurde beim
+     Oeffnen einer Marke nie zurueckgesetzt. Nach dem Zurueckstellen der Standardmarke
+     blieb die Blockade stehen, ohne Loesch-Knopf. Jetzt setzt der Hoerer auf die
+     geoeffnete Marke die Vorschau zurueck.
+- **Alle drei Gegenproben** beißen und sind byte-identisch zurueckgenommen (Pruefsummen in
+  der Session-Datei).
+- **Gate:** `npm run pruefung` ohne `Befund` - **5.602 Unit-Tests (333 Dateien)**, **49
   Integrationstests (12 Dateien)**, Typecheck/Lint 0.
-- **Ehrlich offen:** Gate wertet `console.error` nicht (B5); **FA-23/24** sind die letzten
-  Matrix-Luecken; Fehlschlag eines **Renders** und Entfernen waehrend eines Abbruchs sind
+- **Ehrlich offen:** Gate wertet `console.error` nicht (B5); **FA-24** ist die letzte
+  Matrix-Luecke; Fehlschlag eines **Renders** und Entfernen waehrend eines Abbruchs sind
   ungemessen; **#433** optische Abnahme beim User; Mutations-Chargen 138/92 offen.
 - **Branch `bau/treiber-fa17-18`** wurde nach `main` gemergt (Merge `17b3175`); `main` steht
   **109 Commits vor `origin/main`**. **Nicht gepusht.**
-- Naechster Schritt: **FA-23/24** (zweite Marke seeden, Marken-Editor) oder die
-  **Gate-Blindstelle** entscheiden.
+- Naechster Schritt: **FA-24** (Marken-Editor) oder die **Gate-Blindstelle** entscheiden.
 
 ## STAND HEUTE (20.10.2026: Matrix, #257, Update-Loop, Mutationstests) – historisiert durch den Abschnitt darueber
 

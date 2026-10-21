@@ -30,6 +30,19 @@ Branch: `bau/treiber-fa17-18`.
   "Render abbrechen": Rueckfrage mit Klartext, Bestaetigen, Zeile weg, `holeStand` leer,
   **keine Ausgabedatei**.
 
+### FA-23 (zweiter Teil der Sitzung): Standardmarke und Loeschsperre
+
+- **4a0:** legt eine **zweite Marke ueber die echte Oberflaeche** an (Namensfeld + "Neue
+  Marke"). Vorher lag genau eine Marke im Bestand (B2) - der Wechsel war unpruefbar.
+- **4a:** wechselt am echten `<select>` **gezielt auf die Kennung aus 4a0** (nicht
+  "irgendeine andere" - im Bestand koennen weitere Marken liegen) und belegt den Wert
+  zusaetzlich in `project:listeProjekte` (D1, mit Warten auf das entprellte Speichern).
+- **4a2:** Loeschversuch der nun genutzten Marke -> **gesperrt**, `loesch-standard` nennt
+  das Projekt, `loesch-ausweg` nennt den Weg. Dann Standardmarke zurueckstellen -> dieselbe
+  Marke ist **loeschbar** (Sperre = Nutzung, nicht Zufall) und verschwindet aus dem Bestand.
+- Der Schritt-5-Aufraeumen loescht ausserdem alle `DurchlaufMarke-*` - auch Reste
+  abgebrochener Laeufe.
+
 **Fallstrick aufgeloest:** Der Treiber laesst keinen dauerhaft fehlgeschlagenen Auftrag
 zurueck - 4k repariert die Ursache und wiederholt erfolgreich; 4l entfernt den wartenden
 Auftrag und bricht den Render ab (kein Q2-Eintrag, ein Abbruch ist kein Fehlschlag).
@@ -65,25 +78,38 @@ Auftrag und bricht den Render ab (kein Q2-Eintrag, ein Abbruch ist kein Fehlschl
 - **Test:** neue Verhaltensprobe in `tests/unit/auftrags-nachlauf-auffrisch.spec.ts`.
 - **Nach dem Fix am Fenster:** Galerie 2 -> 3.
 
+### B8 - Der "Ausweg" aus der Loeschsperre war eine Sackgasse
+
+- **Symptom:** Nach einer gesperrten Loeschung blieb `marken-loesch-blockiert` stehen. Der
+  Nutzer folgt dem Ausweg ("Wechsle die Standardmarke im Reiter Projekte"), kommt zurueck -
+  und es gibt **keinen Loesch-Knopf mehr**, bis die App neu startet.
+- **Ursache:** Besuchte Reiter bleiben montiert (TK 9.14.2); die `loeschvorschau` im
+  `marken-editor` wurde beim Oeffnen einer Marke nie zurueckgesetzt.
+- **Fix:** Der Abo-Hoerer auf die geoeffnete Marke setzt `loeschvorschau` und
+  `meldeaktionFehler` zurueck.
+- **Gegenprobe:** Ruecksetzen entfernt -> **Test rot**; Ruecknahme byte-identisch
+  (Pruefsumme `6eb2b99984fdfa292d72399f87a101d0a9b4c2448cb0535f73f05cc210fbffa7`).
+- **Test:** neue Verhaltensprobe in `tests/unit/marken-editor-wurzel.spec.ts`.
+
 ---
 
 ## 3. Belege
 
-- **Gate:** `npm run pruefung` ohne `Befund`; **5.601 Unit-Tests (333 Dateien)**,
+- **Gate:** `npm run pruefung` ohne `Befund`; **5.602 Unit-Tests (333 Dateien)**,
   **49 Integrationstests (12 Dateien)**; Typecheck/Lint 0.
-- **Treiber 4k/4l:** beide `GEMESSEN`-Zeilen im Lauf (s. Abschnitt 1);
+- **Treiber 4k/4l/4a0/4a2:** die `GEMESSEN`-Zeilen im Lauf (s. Abschnitt 1);
   Protokoll in `docs/agents/oberflaeche-durchlauf.md`.
-- **Gegenproben:** beide mit Pruefsumme zurueckgenommen (s. o.).
-- **Matrix:** FA-17/18 auf `gemessen`; Zaehlung jetzt **4 gemessen, 15 teilweise,
-  2 Luecke, 3 manuell**. Waechter `tests/unit/treiber-matrix.spec.ts` gruen.
+- **Gegenproben:** alle drei mit Pruefsumme zurueckgenommen (s. o.).
+- **Matrix:** FA-17/18/23 auf `gemessen`; Zaehlung jetzt **5 gemessen, 15 teilweise,
+  1 Luecke (FA-24), 3 manuell**. Waechter `tests/unit/treiber-matrix.spec.ts` gruen.
 
 ---
 
 ## 4. Ehrlich offen
 
 1. **Gate-Blindstelle:** Der Treiber wertet `console.error` weiterhin nicht (B5).
-2. **FA-23** (zweite Marke/Standardmarken-Wechsel) und **FA-24** (Marken-Editor) sind die
-   letzten Luecken; beide brauchen einen Seed (zweite Marke) bzw. einen neuen Schritt.
+2. **FA-24** (Marken-Editor) ist die letzte Luecke der Matrix; 4a0 beruehrt bereits das
+   Anlegen, der Rest (Farben, Kontrastwarnung, Ableiten, Schriften/Logo) fehlt.
 3. **Nicht gemessen:** Fehlschlag eines RENDERS (4k provoziert nur einen Import-Fehler);
    Entfernen waehrend eines Abbruchs.
 4. **#433** optische Abnahme steht weiter beim User.
@@ -96,8 +122,10 @@ Auftrag und bricht den Render ab (kein Q2-Eintrag, ein Abbruch ist kein Fehlschl
 - **Ein gruener Treiber ist kein gruener Treiber, wenn er nur die Oberflaeche sieht.**
   4k/4l haben zwei Fehler gefunden, die 5.600 Unit-Tests nicht fanden: eine fehlende
   Meldung nach dem terminalen Uebergang und einen Merker, der "Versuch" mit "Auftrag"
-  verwechselte.
+  verwechselte. 4a2 fand den dritten: eine Sperre, die ihren eigenen Ausweg blockiert.
 - **Ein Kommentar, der eine Zusage behauptet, ist kein Beleg.** "Der daraus folgende
   zweite Push" stand da - gebaut war er nie. Der Test hatte die Luecke mitgeschrieben.
 - **Erfolg an D1 messen, nicht an einer Anzeige.** Die Galerie war das Symptom; der Beleg
   ist `project.json`.
+- **Besuchte Reiter bleiben montiert** (TK 9.14.2) - jeder Zustand, der eine Momentaufnahme
+  einer Auswahl ist, muss beim Wechsel der Auswahl zurueckgesetzt werden.

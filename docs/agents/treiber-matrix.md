@@ -60,18 +60,18 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-20 | Split-Screen/Einblendung, Rotation, Unterbrechung (Muss) | 4b5, 4b6, 4f2 | Unterbrechung pausiert das Video an der Zeitstelle und laeuft danach weiter; ein Drop auf den Video-Koerper erzeugt EINE Marke; ein Band-Drop legt einen Abschnitt im Store an, ohne die Blockzahl zu aendern, und ist ein Undo-Schritt. **Rotation mehrerer Aktionen** und die **Render-Ausgabe** von Band/Einblendung sind ungemessen. | teilweise |
 | FA-21 | Undo/Redo in beiden Editoren | 4f3, 4f, 4f2, 4f4, 4g2, 4g4, 4h | Pfeile sichtbar und aktiv; Undo schrumpft, Redo waechst; je eine Aktion ist EIN Schritt (Einfuegen, Band, Dauer/Trim, Anlage, Loeschen, Reparatur). Der **Vorlagen-Editor** hat kein Undo-Szenario. | teilweise |
 | FA-22 | Mehrere benannte Ausgaben; Vorbelegung = letzter Name | 4c | Der Name wird ohne Endung eingetippt, der Dialog prueft, die Ausgabe steht danach in der Liste. **Zweite Ausgabe**, Vorbelegung und Ersetzen-statt-Anlegen sind ungemessen. | teilweise |
-| FA-23 | Marken-Bestand, Standardmarke je Projekt, Loeschsperre (Muss) | 4a | Der Wechsel am echten `<select>` wird **nur ausgefuehrt, wenn eine zweite Marke existiert**. Im Messbestand liegt genau eine - der Treiber meldet das selbst. Loeschsperren ungemessen. | Luecke |
+| FA-23 | Marken-Bestand, Standardmarke je Projekt, Loeschsperre (Muss) | 4a, 4a0, 4a2 | Eine **zweite Marke** wird ueber die echte Oberflaeche angelegt (4a0; vorher lag genau eine im Bestand - B2). 4a wechselt die Standardmarke am echten `<select>` **gezielt auf diese Marke** und belegt den Wert zusaetzlich in `project:listeProjekte` (D1). 4a2 versucht, die nun genutzte Marke zu loeschen: **gesperrt** mit Klartext-Grund (`loesch-standard` nennt das Projekt) und Ausweg; nach dem Zurueckstellen der Standardmarke wird sie **geloescht** (Sperre = Nutzung, nicht Zufall). **Seit 21.10.2026.** | gemessen |
 | FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | - | Kein Schritt oeffnet den Marken-Reiter ueber das blosse Vorhandensein hinaus. | Luecke |
 
-**Zaehlung:** 4 x gemessen (FA-05, FA-17, FA-18, FA-19), 15 x teilweise, 2 x Luecke (FA-23,
-FA-24), 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
+**Zaehlung:** 5 x gemessen (FA-05, FA-17, FA-18, FA-19, FA-23), 15 x teilweise, 1 x Luecke
+(FA-24), 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
 
 Aufgeteilt nach Prioritaet (AD Abschnitt 4): **15 Muss**, 9 Soll.
-- **Muss:** 2 gemessen (FA-05, FA-17), 10 teilweise, 2 Luecke (FA-23/24), 1 manuell (FA-09).
+- **Muss:** 3 gemessen (FA-05, FA-17, FA-23), 10 teilweise, 1 Luecke (FA-24), 1 manuell (FA-09).
 - **Soll:** 2 gemessen (FA-18, FA-19), 5 teilweise, 0 Luecke, 2 manuell (FA-11/12).
 
-Damit sind **2 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-05,
-FA-17). FA-16/17/18 hatten beim Aufstellen der Matrix **keine Oberflaeche** - das ist mit
+Damit sind **3 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-05,
+FA-17, FA-23). FA-16/17/18 hatten beim Aufstellen der Matrix **keine Oberflaeche** - das ist mit
 #257 behoben (B1); 4j misst die Leiste, 4k/4l die drei Bedienwege Fehlschlag/Entfernen/Abbruch.
 
 ---
@@ -107,13 +107,18 @@ Wiederholung, **4l** das Entfernen eines wartenden Auftrags und den bestaetigten
 laufenden Renders. **Nicht** gemessen: der Fehlschlag eines RENDERS (nur Import) und das
 Entfernen waehrend eines Abbruchs.
 
-### B2 - FA-23 wird heute gar nicht gemessen
+### B2 - FA-23 wurde nicht gemessen, weil nur EINE Marke im Bestand lag (behoben 21.10.2026)
 
-Schritt 4a sucht eine zweite Marke im Bestand. Im Messbestand (`marken.json`) liegt **genau
-eine** (Fitnessworld24). Der Treiber schreibt deshalb selbst:
+Schritt 4a sucht eine zweite Marke im Bestand. Im Messbestand (`marken.json`) lag **genau
+eine** (Fitnessworld24); der Treiber schrieb deshalb selbst:
 `Nur eine Marke im Bestand - der Wechsel braucht eine zweite (Seed-Weg ungetestet, UI-Weg folgt).`
-Der `select`-Wechsel wird also **nicht** ausgefuehrt. Ein Seed ist klein: `marken:erstelleMarke`
-ist verdrahtet (`src/shared/contracts/kanaele.ts`, `marken-store/erstelle-marke.ts`).
+
+**Behoben mit 4a0:** Die zweite Marke wird ueber die **echte Oberflaeche** angelegt
+(Namensfeld + "Neue Marke", `marken-editor/index.tsx`), nicht per Roh-IPC. 4a wechselt
+gezielt auf ihre Kennung (nicht "irgendeine andere" - im Bestand koennen weitere Marken
+liegen), und 4a2 raeumt sie am Ende wieder weg. Der Treiber loescht ausserdem alle
+`DurchlaufMarke-*` im Schritt-5-Aufraeumen, damit auch abgebrochene Laeufe keinen Bestand
+hinterlassen.
 
 ### B3 - Eine veraltete Erwartung im Treiber (behoben)
 
@@ -156,6 +161,22 @@ Versuchs galt damit als ausgewertet, der Spaeter-Erfolg fiel unter den Tisch - k
 Verhaltens-Test in `auftrags-nachlauf-auffrisch.spec.ts`. Gegenprobe: Schluessel wieder auf
 die ID -> Test rot, Ruecknahme byte-identisch. Nach dem Fix: Galerie 2 -> 3.
 
+### B8 - Der "Ausweg" aus der Loeschsperre war eine Sackgasse (21.10.2026, behoben)
+
+Beim Bau von 4a2 gemessen: Nach einer **gesperrten** Loeschung blieb
+`marken-loesch-blockiert` stehen. Der Nutzer folgt dem angezeigten Ausweg ("Wechsle die
+Standardmarke im Reiter Projekte"), kommt zurueck - und der Loeschweg ist **weg**: kein
+"Loeschen"-Knopf mehr, keine neue Pruefung, bis die App neu startet. Ursache: Besuchte
+Reiter bleiben montiert (TK 9.14.2); die `loeschvorschau` im `marken-editor` wurde beim
+Oeffnen einer Marke nie zurueckgesetzt.
+
+**Behoben:** Der Abo-Hoerer auf die geoeffnete Marke setzt `loeschvorschau` und
+`meldeaktionFehler` zurueck - das erneute Oeffnen der Marke ist der natuerliche Neustart
+der Pruefung. Verhaltens-Test in `marken-editor-wurzel.spec.ts`. Gegenprobe: Ruecksetzen
+entfernt -> Test rot, Ruecknahme byte-identisch.
+
+
+
 ### B5 - Der Treiber wertet `console.error` nicht (Gate-Blindstelle) - Loop am 20.10.2026 behoben
 
 Beim Gate-Lauf am **20.10.2026** meldete das Fenster mehrfach:
@@ -192,7 +213,7 @@ Reihenfolge nach MoSCoW: **Muss** zuerst. "Treiber" heisst: neuer oder erweitert
 |---|---|---|---|
 | ~~1~~ | ~~FA-17/18~~ | **ERLEDIGT 21.10.2026** durch die Treiber-Schritte **4k/4l** - s. Abschnitt 2. | siehe 4k/4l |
 | 2 | FA-01/03 | Video **ersetzen** mit Bestaetigung; Aktion **bearbeiten** | Treiber: zweites Video importieren -> `composer-ersetzen-frage`, bestaetigen -> **ein** Video-Element bleibt, Datei getauscht; Aktion oeffnen, Titel aendern, speichern, Wert im Store lesen. |
-| 3 | FA-23 | Standardmarke wechseln (mangels zweiter Marke), Loeschsperre | Treiber: zweite Marke per `marken:erstelleMarke` seeden, dann 4a wie gebaut laufen lassen; Loeschen einer genutzten Marke versuchen und Sperrgrund lesen. |
+| ~~3~~ | ~~FA-23~~ | **ERLEDIGT 21.10.2026** durch **4a0/4a/4a2** - s. Abschnitt 2 (Wechsel, Loeschsperre mit Grund/Ausweg, Freigabe nach Zurueckstellen). | siehe 4a0/4a/4a2 |
 | 4 | FA-24 | Marken-Editor vollstaendig | Treiber: Reiter Marken, Marke anlegen, Akzentfarbe setzen, Kontrastwarnung ausloesen (Grenzwert), ableiten, Loeschsperre. |
 | 5 | FA-13 | Vorlagen anlegen/bearbeiten/speichern/verwerfen | Treiber: aus der Uebersicht anlegen, Zone hinzufuegen, speichern, Store lesen; "Verwerfen" stellt den Ausgangsstand her. |
 | 6 | FA-22 | Zweite Ausgabe, Vorbelegung, Ersetzen statt Anlegen | Treiber: zweiten Render mit **gleichem** Namen -> eine Datei; mit **neuem** Namen -> zwei Zeilen; Namensfeld ist mit dem letzten Namen vorbelegt. |
@@ -240,9 +261,12 @@ der Statusspalte. Ob "teilweise" noch stimmt, entscheidet nur das Lesen des Schr
   `[schritt-4l] Anstehend GEMESSEN: ... wartet`, `Entfernen GEMESSEN: anstehender Auftrag
   ist aus der Leiste verschwunden (FA-18)`, `Abbrechen GEMESSEN: Rueckfrage bestaetigt,
   Render abgebrochen, keine Ausgabedatei (FA-18)`.
-- **Gate 21.10.2026:** `npm run pruefung` ohne `Befund`; **5.601 Unit-Tests (333 Dateien)**,
-  **49 Integrationstests (12 Dateien)**. Typecheck/Lint 0. Die `Untersuchung`-Hinweise
-  (`requesting main frame too early`) traten nicht auf.
+- **4a0/4a2 am Fenster (21.10.2026):** `Zweite Marke GEMESSEN: "DurchlaufMarke-…" (3 -> 4)`;
+  `Standardmarke-Wechsel GEMESSEN am echten select und in der Liste`; `Loeschsperre GEMESSEN:
+  DurchlaufTest-…; Ausweg "Wechsle die Standardmarke im Reiter Projekte."`; nach dem
+  Zurueckstellen `Nach dem Loeschen: {"anzahl":1,"nochDa":false}`.
+- **Gate 21.10.2026 (zweiter Lauf, mit FA-23):** `npm run pruefung` ohne `Befund`;
+  **5.602 Unit-Tests (333 Dateien)**, **49 Integrationstests (12 Dateien)**. Typecheck/Lint 0.
 - Aufrufer-Pruefung B1: `grep` auf `WarteschlangenLeiste`, `Liste`, `baueAuftragsSichtAuf`,
   `wiederholeAuftrag`, `darfWiederholen` ueber `src/` - ausserhalb `queue-panel/` kein
   Aufrufer.
