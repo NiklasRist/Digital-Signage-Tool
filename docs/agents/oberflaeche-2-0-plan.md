@@ -68,7 +68,8 @@ Abnahme von Welle 1 als Reiter/Fallback erreichbar.
 
 **Welle 2** (danach, nicht in Welle 1): Banner-Spur (zweite Zeitleisten-Spur, gleiche Zeitachse) –
 setzt die BA-Familie #365+ voraus (Datenmodell BannerSchild) UND die Klärung, ob die Banner-Linie
-nach dem TK-Stand v3.20 gebaut wird (Plan-Dokument fehlt im Repo).
+nach dem TK-Stand v3.20 gebaut wird (Plan-Dokument fehlt im Repo). **Seit der Leitlinie vom
+21.10.2026 Teil des Zielbildes** (Abschnitt 6), nicht mehr nur optional.
 **Welle 3** (Optik): Zoom der Zeitleiste, Thumbnails in den Blöcken, Playhead mit Wiedergabe-Mitscroll.
 
 ## 5. Verträge, die Welle 1 berührt
@@ -87,13 +88,15 @@ nach dem TK-Stand v3.20 gebaut wird (Plan-Dokument fehlt im Repo).
 Schnitt, **keine AD-/TK-Anforderung** und kein Umbau-Auftrag. Volltext, Abgrenzung und
 offene Fragen: [`docs/agents/ui-ausrichtung-projekteditor-2026-10-21.md`](ui-ausrichtung-projekteditor-2026-10-21.md).
 
-**Die Vorgabe, sinngemaess:** Im Projekteditor (Reiter „Zusammenstellen") sollen **Bilder-
-und Videoverwaltung nicht der Fokus** sein. Fokus sind:
+**Die Vorgabe, sinngemaess:** Im Projekteditor (Reiter „Zusammenstellen") liegt der Fokus
+auf **Aktionen und Banner**. Bilder-/Videoverwaltung sind **nicht** der Fokus (Abgrenzung,
+kein Streitthema - sie werden nicht gestrichen). Im Einzelnen:
 
 1. **Aktionsverwaltung** (Aktionen sehen, pflegen, auswaehlen),
 2. **Einfuegen** (Aktion schnell und verstaendlich in die Wiedergabeliste),
 3. **gute Aktionen erstellen** (Titel, Text, Preis, Bild, Dauer),
-4. **evtl. Videobearbeitung** (nachrangig).
+4. **Banner** (Banner-Spur / `BannerSchild`, BA-Familie #365+ - die bisherige **Welle 2**),
+5. **evtl. Videobearbeitung** (nachrangig).
 
 Begruendung woertlich: **„so macht die ui keinen sinn"** - die heutige Gewichtung stellt die
 Medien-Galerie sichtbar in den Vordergrund, waehrend die taegliche Arbeit daneben klein wirkt.
@@ -102,15 +105,16 @@ Medien-Galerie sichtbar in den Vordergrund, waehrend die taegliche Arbeit danebe
 
 - **Welle 1 bleibt unveraendert** - der Spalt-Drop und die Vorschau im Zentrum sind
   ausdruecklich Teil des „Einfuegens" und damit vom Fokus gedeckt.
-- **Medienverwaltung wird Mittel, nicht Flaeche:** Galerie/Bibliothek bleiben erreichbar
-  (Import, Auswahl fuer `Aktion.bildRef`), bekommen aber keinen gleichrangigen Dauerplatz.
-  Ob Dock, einklappbarer Bereich oder eigener Zustand, ist **offen**.
+- **Die Banner-Spur rueckt in den Fokus:** Welle 2 ist nicht mehr nur „danach, optional",
+  sondern Teil des Zielbildes. Sie setzt weiterhin die BA-Familie #365+ und deren Klaerung
+  voraus; ohne diese Entscheidung wird sie nicht geschnitten.
 - **Der Weg „gute Aktion erstellen" bekommt Eigengewicht** (Aktions-Editor aus dem
   Projekteditor erreichbar, ohne Reiterwechsel?) - **offen**.
-- **Eine neue Welle** fuer diese Umgewichtung ist erst nach der Entscheidung zu schneiden.
+- **Eine neue Welle** fuer die Umgewichtung ist erst nach der Entscheidung zu schneiden.
 
-**Die drei offenen Fragen (unverändert, s. Notiz):** Medien als Dock oder eigener Zustand?
-Aktions-Editor ohne Reiterwechsel? Videobearbeitung im selben Editor oder eigener Modus?
+**Die offenen Fragen (s. Notiz):** Banner - zweite Zeitleisten-Spur, und welche Linie ist
+verbindlich (TK-Stand vs. BA-Familie)? Aktions-Editor ohne Reiterwechsel? Videobearbeitung im
+selben Editor oder eigener Modus?
 
 **Regel:** Erst Entscheidung, dann AD/TK-Nachtrag, dann Issue mit Signaturblock und
 Dateiliste - kein Umbau ohne Plan (Lehre aus #432).
