@@ -119,7 +119,7 @@ Auftrag und bricht den Render ab (kein Q2-Eintrag, ein Abbruch ist kein Fehlschl
    Entfernen waehrend eines Abbruchs.
 4. **#433** optische Abnahme steht weiter beim User.
 5. **Mutations-Chargen:** 138/92 Dateien verbleiben in der Quelltext-Proben-Kategorie.
-6. **`main` steht 114 Commits vor `origin/main`**, nicht gepusht. Beide Branches
+6. **`main` steht 115 Commits vor `origin/main`**, nicht gepusht. Beide Branches
    (`bau/treiber-fa17-18`, `bau/treiber-fa23`) sind nach `main` gemergt (Merges `17b3175`,
    `d19a12a`).
 
