@@ -50,7 +50,7 @@
   Matrix-Luecke; Fehlschlag eines **Renders** und Entfernen waehrend eines Abbruchs sind
   ungemessen; **#433** optische Abnahme beim User; Mutations-Chargen 138/92 offen.
 - **Branches `bau/treiber-fa17-18` und `bau/treiber-fa23`** wurden nach `main` gemergt
-  (Merges `17b3175`, `d19a12a`); `main` steht **112 Commits vor `origin/main`**.
+  (Merges `17b3175`, `d19a12a`); `main` steht **114 Commits vor `origin/main`**.
   **Nicht gepusht.**
 - Naechster Schritt: **FA-24** (Marken-Editor) oder die **Gate-Blindstelle** entscheiden.
 
