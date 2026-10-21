@@ -21,9 +21,9 @@ Im **Projekteditor** (Reiter „Zusammenstellen") liegt der Fokus auf **Aktionen
 5. **Eventuell Videobearbeitung** - als moeglicher Schwerpunkt, aber nachrangig und
    ausdruecklich „evtl.".
 
-**Abgrenzung, kein Thema:** Bilder- und Videoverwaltung sind **nicht** der Fokus. Sie werden
-nicht gestrichen (Aktionen referenzieren ein Bild, FA-01/`Aktion.bildRef`), bekommen aber
-keinen eigenen Schwerpunkt in dieser Ansicht.
+**Bilder und Videos sind ein Teil der AKTION.** Eine eigene Bilder-/Videoverwaltung
+(Galerie/Bibliothek als eigener Bereich) entfaellt als Flaeche: Bild aussuchen und
+importieren geschieht dort, wo die Aktion entsteht bzw. bearbeitet wird.
 
 Begruendung des Users, woertlich: **„so macht die ui keinen sinn"** - die heutige Gewichtung
 stellt die Medien-Galerie sichtbar in den Vordergrund, waehrend die taegliche Arbeit
@@ -31,13 +31,21 @@ stellt die Medien-Galerie sichtbar in den Vordergrund, waehrend die taegliche Ar
 
 ## Annahme, die noch zu bestaetigen ist
 
-**„Banner" = die Banner-Spur / `BannerSchild`-Linie** (BA-Familie #365+, Plan-Welle 2) - nicht
-ein neues Mediengenre und nicht die Marken-Banner. Falls etwas anderes gemeint ist: hier
-korrigieren, bevor ein Schnitt daraus wird.
+1. **„Banner" = die Banner-Spur / `BannerSchild`-Linie** (BA-Familie #365+, Plan-Welle 2) -
+   nicht ein neues Mediengenre und nicht die Marken-Banner. Falls etwas anderes gemeint ist:
+   hier korrigieren, bevor ein Schnitt daraus wird.
+2. **Das EINE Projektvideo bleibt ein eigener kleiner Bedienschritt** (Import/Ersetzen,
+   FA-01/#422) - es ist kein Aktionsbild und wird von keiner Aktion getragen. Die
+   Medienverwaltung als Galerie entfaellt trotzdem; der Video-Import bleibt als schmaler
+   Weg (Projekt anlegen, "Video importieren"). Falls auch dieser Weg in die Aktion wandern
+   soll: korrigieren.
 
 ## Was das NICHT ist
 
-- **Keine Streichung** von Bildern/Videos - sie bleiben das Mittel fuer `Aktion.bildRef`.
+- **Keine Streichung der Medien als DATEN:** `Aktion.bildRef`, das Projektvideo, die
+  Bilddateien im Projekt und der Render bleiben unveraendert.
+- **Gestrichen wird die eigene Verwaltungsflaeche**, nicht die Faehigkeit, ein Bild
+  zuzuordnen oder zu importieren.
 - **Keine neue Anforderung an den Render** und keine Aenderung an AD/TK.
 - **Keine Entscheidung ueber das Layout.** Die Notiz beschreibt eine Richtung, nicht
   konkrete Panels, Groessen oder Reihenfolgen.
@@ -67,6 +75,9 @@ spaeter ansetzen wuerde.
 
 ## Offene Fragen (nicht entschieden)
 
+- **Bild-Import:** Wandert er vollstaendig in den Aktions-Editor (Annahme), oder bleibt ein
+  kleiner Import-Weg ausserhalb? (Die Galerie als Flaeche entfaellt in beiden Faellen.)
+- **Projektvideo:** Bleibt der schmale Import/Ersetzen-Weg (FA-01/#422) bestehen? (Annahme: ja.)
 - **Banner:** zweite Zeitleisten-Spur? Welche Linie ist verbindlich (TK-Stand vs. BA-Familie)?
 - Soll der Aktions-Editor aus dem Projekteditor heraus **ohne Reiterwechsel** erreichbar
   sein („gute Aktionen erstellen" direkt am Einfuegeweg)?

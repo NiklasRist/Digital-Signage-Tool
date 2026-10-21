@@ -89,8 +89,8 @@ Schnitt, **keine AD-/TK-Anforderung** und kein Umbau-Auftrag. Volltext, Abgrenzu
 offene Fragen: [`docs/agents/ui-ausrichtung-projekteditor-2026-10-21.md`](ui-ausrichtung-projekteditor-2026-10-21.md).
 
 **Die Vorgabe, sinngemaess:** Im Projekteditor (Reiter „Zusammenstellen") liegt der Fokus
-auf **Aktionen und Banner**. Bilder-/Videoverwaltung sind **nicht** der Fokus (Abgrenzung,
-kein Streitthema - sie werden nicht gestrichen). Im Einzelnen:
+auf **Aktionen und Banner**. Eine eigene **Bilder-/Videoverwaltung entfaellt als Flaeche** -
+Bilder und Videos sind ein Teil der Aktion und werden dort gewaehlt/importiert. Im Einzelnen:
 
 1. **Aktionsverwaltung** (Aktionen sehen, pflegen, auswaehlen),
 2. **Einfuegen** (Aktion schnell und verstaendlich in die Wiedergabeliste),
