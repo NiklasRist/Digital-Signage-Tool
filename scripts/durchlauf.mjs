@@ -1099,6 +1099,14 @@ const main = async () => {
         // (9) Aufraeumen IN diesem Schritt: das Kind zuerst (sonst ist die Basis noch
         // referenziert), danach die Basis. Beide ueber die echte Oberflaeche.
         const loescheUeberUi4m = async (name) => {
+          const vorhanden4m = await seite.evaluate((n) => {
+            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+            return knoepfe.some((k) => (k.textContent ?? "").trim() === n);
+          }, name);
+          if (!vorhanden4m) {
+            // Nichts anfassen, was nicht eindeutig diese Messmarke ist.
+            return { name, gesucht: false, bestaetigt: false, nochDa: false };
+          }
           await seite.evaluate((n) => {
             const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
             const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === n);
@@ -1146,6 +1154,424 @@ const main = async () => {
         }
       }
       // Der Marken-Reiter bleibt offen; 4b wechselt selbst auf Zusammenstellen.
+    }
+
+    // Schritt 4m2 - FA-24 Rest: Was 4m offen liess, wird hier am echten Fenster gemessen:
+    // ALLE dreizehn Farbrollen schreiben, Slogan und Sicherheitsabstand schreiben (inkl.
+    // Wachstums-Hinweis), die Bearbeitung einer abgeleiteten Marke (eigen -> geerbt) und
+    // die IMPORT-Pipeline fuer Schrift und Logo samt "Logo entfernen".
+    //
+    // Der NATIVE Dateidialog bleibt bewusst aussen vor (wie FA-09/Export): Er laesst sich
+    // nicht steuern. Gemessen wird die Pipeline ueber den echten Kanal
+    // `marken:importiereMarkenDatei` mit einer echten Datei - das ist derselbe Weg, den
+    // `datei-import.ts` nach der Auswahl nimmt. Was NICHT belegt ist, ist der Klick auf
+    // "Eigene Schrift/Logo waehlen" bis zum Dialog - dieser Teil bleibt MANUELL.
+    {
+      const stempel4m2 = Date.now();
+      const name4m2 = "DurchlaufMarke-FA24R-" + stempel4m2;
+      const kind4m2 = name4m2 + "-Kind";
+      const rollen4m2 = [
+        "akzent", "akzentKraeftig", "akzentTief",
+        "flaecheDunkel", "flaecheSehrDunkel", "flaecheHell", "flaecheAkzentZart",
+        "textAufDunkel", "textAufHell", "textSekundaer",
+        "linie", "scrimStart", "scrimEnde",
+      ];
+
+      const leseMarke4m2 = (id) => seite.evaluate(async (markeId) => {
+        const antwort = await window.api.invoke("marken:listeMarken");
+        if (!antwort || !antwort.ok) return null;
+        return antwort.wert.find((m) => m.id === markeId) ?? null;
+      }, id);
+      const warteAuf4m2 = async (id, pruefung, fristMs = 8_000) => {
+        const frist = Date.now() + fristMs;
+        let letzte = null;
+        while (Date.now() < frist) {
+          letzte = await leseMarke4m2(id);
+          if (letzte !== null && pruefung(letzte)) return letzte;
+          await schlafe(200);
+        }
+        return letzte;
+      };
+      const oeffne4m2 = async (name) => {
+        await seite.evaluate((n) => {
+          const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+          const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === n);
+          if (knopf !== undefined) knopf.click();
+        }, name);
+        const frist = Date.now() + 10_000;
+        while (Date.now() < frist) {
+          const kopf = await seite.evaluate(
+            () => document.querySelector('[data-testid="marken-kopf"]')?.textContent ?? null,
+          );
+          if (kopf === name) return true;
+          await schlafe(200);
+        }
+        return false;
+      };
+      const setzeWert4m2 = async (testid, wert, ereignis = "blur") => seite.evaluate(({ t, w, e }) => {
+        const feld = document.querySelector(`[data-testid="${t}"]`);
+        if (feld === null) return false;
+        const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setzeWert.call(feld, w);
+        if (e === "blur") {
+          feld.focus();
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+          feld.blur();
+        } else {
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        return true;
+      }, { t: testid, w: wert, e: ereignis });
+
+      const reiter4m2 = await seite.evaluate(() => {
+        const tab = document.querySelector('[data-testid="reiter-marken"]');
+        if (tab === null) return false;
+        tab.click();
+        return true;
+      });
+      await schlafe(1_200);
+
+      if (!reiter4m2) {
+        fund("Marken-Rest (FA-24)", "der Reiter Marken ist erreichbar",
+          "reiter-marken fehlt", "Befund", "app-shell/reiter.ts");
+      } else {
+        // Anlegen und oeffnen (deterministisch: nativer Setter + input, s. 4m).
+        await seite.evaluate((name) => {
+          const felder = [...document.querySelectorAll('[data-testid="marken-liste"] input')];
+          const feld = felder[0];
+          if (feld === undefined) return;
+          const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+          setzeWert.call(feld, name);
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+        }, name4m2);
+        await seite.evaluate(() => {
+          document.querySelector('[data-testid="erstelle-eigenstaendige-marken-namen"]')?.click();
+        });
+        const fristAnlegen4m2 = Date.now() + 15_000;
+        let angelegt4m2 = false;
+        while (Date.now() < fristAnlegen4m2) {
+          angelegt4m2 = await seite.evaluate((n) => {
+            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+            return knoepfe.some((k) => (k.textContent ?? "").trim() === n);
+          }, name4m2);
+          if (angelegt4m2) break;
+          await schlafe(200);
+        }
+        // Die Kennung ueber den Namen holen (die Liste liefert sie nicht als Attribut).
+        const id4m2 = await seite.evaluate(async (n) => {
+          const antwort = await window.api.invoke("marken:listeMarken");
+          if (!antwort || !antwort.ok) return null;
+          return antwort.wert.find((m) => m.name === n)?.id ?? null;
+        }, name4m2);
+        const geoeffnet4m2 = await oeffne4m2(name4m2);
+        if (!angelegt4m2 || !geoeffnet4m2 || id4m2 === null) {
+          fund("Marken-Rest (FA-24)", "die Messmarke laesst sich anlegen und oeffnen",
+            `angelegt=${String(angelegt4m2)}, geoeffnet=${String(geoeffnet4m2)}, id=${String(id4m2)}`,
+            "Befund", "marken-editor/index.tsx");
+        } else {
+          // (1) ALLE dreizehn Farbrollen ueber die Oberflaeche schreiben.
+          const erwartet4m2 = {};
+          for (let i = 0; i < rollen4m2.length; i += 1) {
+            const rolle = rollen4m2[i];
+            const wert = "#" + (i + 1).toString(16).padStart(2, "0").repeat(3);
+            erwartet4m2[rolle] = wert;
+            const gesetzt = await setzeWert4m2(`farbe-${rolle}`, wert, "blur");
+            if (!gesetzt) {
+              fund("Marken-Rest (FA-24)", `Farbfeld ${rolle} ist vorhanden`,
+                "Feld fehlt", "Befund", "marken-editor/index.tsx");
+              break;
+            }
+            const stand = await warteAuf4m2(id4m2, (m) => m.farben[rolle] === wert);
+            if (stand === null || stand.farben[rolle] !== wert) {
+              fund("Marken-Rest (FA-24)", `die Farbrolle ${rolle} laesst sich schreiben`,
+                `Store: ${String(stand?.farben?.[rolle])}`, "Befund", "marken-editor/farben-bearbeiten.ts");
+            }
+          }
+          const farben4m2 = await leseMarke4m2(id4m2);
+          const abweichend4m2 = rollen4m2.filter((r) => farben4m2?.farben?.[r] !== erwartet4m2[r]);
+          console.log(`[schritt-4m2] Farbrollen: ${rollen4m2.length - abweichend4m2.length}/${rollen4m2.length} im Store, abweichend=${JSON.stringify(abweichend4m2)}.`);
+          if (abweichend4m2.length > 0) {
+            fund("Marken-Rest (FA-24)", "alle dreizehn Farbrollen landen im Bestand",
+              JSON.stringify(abweichend4m2), "Befund", "marken-editor/farben-bearbeiten.ts");
+          } else {
+            console.log("[schritt-4m2] Alle dreizehn Farbrollen GEMESSEN (je ein eigener Wert im Bestand).");
+          }
+
+          // (2) Slogan schreiben: Text + Schalter, dann "Slogan uebernehmen".
+          const sloganText4m2 = "Saisonstart 2026";
+          await seite.evaluate(() => {
+            const abschnitt = document.querySelector('[data-testid="marken-slogan"]');
+            if (abschnitt === null) return;
+            const felder = [...abschnitt.querySelectorAll('input')];
+            const text = felder[0];
+            const schalter = felder[1];
+            if (text !== undefined) {
+              const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+              setzeWert.call(text, "Saisonstart 2026");
+              text.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+            if (schalter !== undefined && !schalter.checked) schalter.click();
+          });
+          await seite.evaluate(() => {
+            const abschnitt = document.querySelector('[data-testid="marken-slogan"]');
+            const knopf = abschnitt === null ? null : abschnitt.querySelector("button");
+            if (knopf !== null) knopf.click();
+          });
+          const standSlogan4m2 = await warteAuf4m2(id4m2,
+            (m) => m.slogan.text === sloganText4m2 && m.slogan.aktiv === true);
+          console.log(`[schritt-4m2] Slogan: ${JSON.stringify(standSlogan4m2?.slogan)}.`);
+          if (standSlogan4m2 === null || standSlogan4m2.slogan.text !== sloganText4m2
+            || standSlogan4m2.slogan.aktiv !== true) {
+            fund("Marken-Rest (FA-24)", "Slogan-Text und -Schalter landen im Bestand",
+              JSON.stringify(standSlogan4m2?.slogan), "Befund", "marken-editor/slogan-bearbeiten.ts");
+          } else {
+            console.log("[schritt-4m2] Slogan GEMESSEN (Text und Schalter im Bestand).");
+          }
+
+          // (3) Sicherheitsabstand schreiben: 80/40.
+          await setzeWert4m2("abstand-horizontal", "80", "input");
+          await setzeWert4m2("abstand-vertikal", "40", "input");
+          await seite.evaluate(() => {
+            const abschnitt = document.querySelector('[data-testid="marken-sicherheit"]');
+            const knopf = abschnitt === null ? null : abschnitt.querySelector("button");
+            if (knopf !== null) knopf.click();
+          });
+          const standAbstand4m2 = await warteAuf4m2(id4m2,
+            (m) => m.sicherheit.horizontal === 80 && m.sicherheit.vertikal === 40);
+          console.log(`[schritt-4m2] Abstand: ${JSON.stringify(standAbstand4m2?.sicherheit)}.`);
+          if (standAbstand4m2 === null || standAbstand4m2.sicherheit.horizontal !== 80
+            || standAbstand4m2.sicherheit.vertikal !== 40) {
+            fund("Marken-Rest (FA-24)", "der Sicherheitsabstand landet im Bestand",
+              JSON.stringify(standAbstand4m2?.sicherheit), "Befund", "marken-editor/sicherheitsabstand-bearbeiten.ts");
+          }
+
+          // (4) Wachstums-Hinweis: 120 ist groesser als 80 -> der Editor warnt VOR dem Speichern.
+          await setzeWert4m2("abstand-horizontal", "120", "input");
+          const hinweis4m2 = await seite.evaluate(
+            () => document.querySelector('[data-testid="abstand-hinweis"]')?.textContent ?? null,
+          );
+          console.log(`[schritt-4m2] Wachstums-Hinweis: ${String(hinweis4m2)}.`);
+          if (hinweis4m2 === null || !hinweis4m2.includes("120")) {
+            fund("Marken-Rest (FA-24)", "ein WACHSENDER Abstand warnt vor unsicheren Vorlagen (TK 9.11.4)",
+              `Hinweis: ${String(hinweis4m2)}`, "Befund", "marken-editor/sicherheitsabstand-bearbeiten.ts");
+          } else {
+            console.log("[schritt-4m2] Wachstums-Hinweis GEMESSEN (nennt den neuen Wert).");
+          }
+          // Nicht speichern: der Bestand bleibt bei 80/40.
+
+          // (5) IMPORT-Pipeline (ohne nativen Dialog, s. Kopf): Schrift und Logo ueber den
+          // echten Kanal, dann die Marke neu oeffnen und die Anzeige pruefen.
+          const schriftPfad4m2 = path.join(WURZEL, "src", "renderer", "assets", "fonts", "Arimo-Regular.woff2");
+          const logoPfad4m2 = path.join(WURZEL, "tools", "assets", "logo.png");
+          const importSchrift4m2 = await seite.evaluate(async ({ id, pfad }) => {
+            const antwort = await window.api.invoke("marken:importiereMarkenDatei", {
+              markeId: id, art: "schrift", schriftRolle: "fliesstext", quellPfad: pfad,
+            });
+            return antwort && antwort.ok ? "ok" : JSON.stringify(antwort?.fehler ?? antwort);
+          }, { id: id4m2, pfad: schriftPfad4m2 });
+          const importLogo4m2 = await seite.evaluate(async ({ id, pfad }) => {
+            const antwort = await window.api.invoke("marken:importiereMarkenDatei", {
+              markeId: id, art: "logo", schriftRolle: null, quellPfad: pfad,
+            });
+            return antwort && antwort.ok ? "ok" : JSON.stringify(antwort?.fehler ?? antwort);
+          }, { id: id4m2, pfad: logoPfad4m2 });
+          const neuGeoeffnet4m2 = await oeffne4m2(name4m2);
+          await schlafe(500);
+          const standImport4m2 = await leseMarke4m2(id4m2);
+          const importAnzeige4m2 = await seite.evaluate(() => {
+            const schriften = document.querySelector('[data-testid="marken-schriften"]');
+            const logo = document.querySelector('[data-testid="marken-logo"]');
+            return {
+              schriftText: (schriften?.innerText ?? ""),
+              logoKnopf: logo?.querySelector('[data-testid="entferne-logo"]') !== null,
+            };
+          });
+          console.log(`[schritt-4m2] Import: schrift=${importSchrift4m2}, logo=${importLogo4m2}, wieder geoeffnet=${String(neuGeoeffnet4m2)}, Store=${JSON.stringify({ schrift: standImport4m2?.schriften?.fliesstext, logo: standImport4m2?.logo })}, Anzeige=${JSON.stringify(importAnzeige4m2)}.`);
+          if (importSchrift4m2 !== "ok" || importLogo4m2 !== "ok") {
+            fund("Marken-Rest (FA-24)", "Schrift- und Logo-Import nehmen eine echte Datei an",
+              `schrift=${importSchrift4m2}, logo=${importLogo4m2}`, "Befund", "marken-store/importiere-datei.ts");
+          } else if (standImport4m2?.schriften?.fliesstext?.herkunft !== "importiert"
+            || standImport4m2?.logo === null) {
+            fund("Marken-Rest (FA-24)", "der Import steht danach im Bestand (herkunft importiert, Logo gesetzt)",
+              JSON.stringify({ schrift: standImport4m2?.schriften?.fliesstext, logo: standImport4m2?.logo }),
+              "Befund", "marken-store/importiere-datei.ts");
+          } else if (!importAnzeige4m2.schriftText.includes("(importiert)") || !importAnzeige4m2.logoKnopf) {
+            fund("Marken-Rest (FA-24)", "der Editor zeigt die importierte Schrift und den Logo-Weg",
+              JSON.stringify(importAnzeige4m2), "Befund", "marken-editor/index.tsx");
+          } else {
+            console.log("[schritt-4m2] Import GEMESSEN: Schrift herkunft=importiert, Logo gesetzt, Anzeige folgt.");
+
+            // (6) "Logo entfernen" ueber den echten Knopf. #298 laesst ZWEI gueltige
+            // Ergebnisse zu: logo null (Ersatz-Logo) ODER einen geerbten/gebündelten Wert.
+            // Gebaut ist fuer eine EIGENSTAENDIGE Marke der gebuendelte Wert der eingebauten
+            // Marke. Das ist kein Fehler im Sinne von #298, steht aber im Widerspruch zum
+            // angezeigten HINWEIS ("stattdessen erscheint der Markenname") - deshalb eine
+            // Untersuchung, kein Befund.
+            await seite.evaluate(() => {
+              document.querySelector('[data-testid="entferne-logo"]')?.click();
+            });
+            const ohneLogo4m2 = await warteAuf4m2(id4m2,
+              (m) => m.logo === null || m.logo?.herkunft !== "importiert");
+            const logo4m2 = ohneLogo4m2?.logo ?? null;
+            console.log(`[schritt-4m2] Nach Logo entfernen: ${JSON.stringify(logo4m2)}.`);
+            if (ohneLogo4m2 === null) {
+              fund("Marken-Rest (FA-24)", "der Bestand ist nach dem Logo-Entfernen lesbar",
+                "marken:listeMarken liefert die Marke nicht", "Befund", "marken-store/liste.ts");
+            } else if (logo4m2 !== null && logo4m2.herkunft === "importiert") {
+              fund("Marken-Rest (FA-24)", "Logo entfernen loest die importierte Datei ab",
+                JSON.stringify(logo4m2), "Befund", "marken-editor/logo-bearbeiten.ts");
+            } else if (logo4m2 === null) {
+              console.log("[schritt-4m2] Logo entfernen GEMESSEN (logo=null, Ersatz-Logo greift).");
+            } else {
+              fund("Marken-Rest (FA-24)", "der Hinweis verspricht das Ersatz-Logo, der Bestand liefert das gebuendelte Logo",
+                `logo=${JSON.stringify(logo4m2)} (durch #298 erlaubt; HINWEIS_LOGO_ENTFERNT nennt den Markennamen)`,
+                "Untersuchung", "marken-store/dateien.ts");
+            }
+          }
+
+          // (7) Eine ABGELEITETE Marke bearbeiten: eigen setzen, Herkunft zeigt "Eigener Wert",
+          // "Vererbung wiederherstellen" -> wieder geerbt.
+          const eingabeFelder4m2 = await seite.$$('[data-testid="marken-liste"] input');
+          const auswahl4m2 = await seite.$('[data-testid="marken-liste"] select');
+          if (eingabeFelder4m2.length < 2 || auswahl4m2 === null) {
+            fund("Marken-Rest (FA-24)", "Ableiten ist ueber die Oberflaeche bedienbar",
+              `Eingaben=${eingabeFelder4m2.length}, select=${auswahl4m2 !== null}`,
+              "Untersuchung", "marken-editor/index.tsx");
+          } else {
+            await seite.evaluate(({ name, basis }) => {
+              const felder = [...document.querySelectorAll('[data-testid="marken-liste"] input')];
+              const feld = felder[1];
+              if (feld !== undefined) {
+                const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                setzeWert.call(feld, name);
+                feld.dispatchEvent(new Event("input", { bubbles: true }));
+              }
+              const auswahl = document.querySelector('[data-testid="marken-liste"] select');
+              if (auswahl !== null) {
+                const trage = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set;
+                trage.call(auswahl, basis);
+                auswahl.dispatchEvent(new Event("change", { bubbles: true }));
+              }
+            }, { name: kind4m2, basis: id4m2 });
+            await seite.evaluate(() => {
+              document.querySelector('[data-testid="marke-ableiten"]')?.click();
+            });
+            const fristKind4m2 = Date.now() + 15_000;
+            let kind4m2Da = false;
+            while (Date.now() < fristKind4m2) {
+              kind4m2Da = await seite.evaluate((n) => {
+                const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+                return knoepfe.some((k) => (k.textContent ?? "").trim() === n);
+              }, kind4m2);
+              if (kind4m2Da) break;
+              await schlafe(250);
+            }
+            const kindId4m2 = await seite.evaluate(async (n) => {
+              const antwort = await window.api.invoke("marken:listeMarken");
+              if (!antwort || !antwort.ok) return null;
+              return antwort.wert.find((m) => m.name === n)?.id ?? null;
+            }, kind4m2);
+            if (!kind4m2Da || kindId4m2 === null || !(await oeffne4m2(kind4m2))) {
+              fund("Marken-Rest (FA-24)", "eine abgeleitete Marke laesst sich oeffnen",
+                `Kind=${String(kind4m2Da)}, id=${String(kindId4m2)}`, "Befund", "marken-editor/marke-ableiten.ts");
+            } else {
+              await setzeWert4m2("farbe-akzent", "#0e0e0e", "blur");
+              const eigenStand4m2 = await warteAuf4m2(kindId4m2,
+                (m) => m.herkunftJeFeld.farben.akzent === "eigen");
+              const eigenAnzeige4m2 = await seite.evaluate(() => ({
+                text: (document.querySelector('[data-testid="herkunft-farbe"]')?.textContent ?? "").trim(),
+                knopf: document.querySelector('[data-testid="herkunft-zurueck-farbe"]') !== null,
+              }));
+              console.log(`[schritt-4m2] Eigenwert am Kind: Store=${String(eigenStand4m2?.herkunftJeFeld?.farben?.akzent)}, Anzeige=${JSON.stringify(eigenAnzeige4m2)}.`);
+              if (eigenStand4m2 === null || eigenStand4m2.herkunftJeFeld.farben.akzent !== "eigen") {
+                fund("Marken-Rest (FA-24)", "ein gesetzter Wert am Kind wird als EIGEN gefuehrt",
+                  String(eigenStand4m2?.herkunftJeFeld?.farben?.akzent), "Befund", "marken-store/vererbung.ts");
+              } else if (!eigenAnzeige4m2.text.includes("Eigener Wert") || !eigenAnzeige4m2.knopf) {
+                fund("Marken-Rest (FA-24)", "der Editor zeigt 'Eigener Wert' und den Weg zurueck (TK 9.15.2)",
+                  JSON.stringify(eigenAnzeige4m2), "Befund", "marken-editor/herkunft-anzeigen.ts");
+              } else {
+                console.log("[schritt-4m2] Eigenwert-Anzeige GEMESSEN ('Eigener Wert' + Rueckweg).");
+                await seite.evaluate(() => {
+                  document.querySelector('[data-testid="herkunft-zurueck-farbe"]')?.click();
+                });
+                const geerbt4m2 = await warteAuf4m2(kindId4m2,
+                  (m) => m.herkunftJeFeld.farben.akzent === "geerbt");
+                const zurueckText4m2 = await seite.evaluate(
+                  () => (document.querySelector('[data-testid="herkunft-farbe"]')?.textContent ?? "").trim(),
+                );
+                console.log(`[schritt-4m2] Vererbung zurueck: Store=${String(geerbt4m2?.herkunftJeFeld?.farben?.akzent)}, Anzeige="${zurueckText4m2}".`);
+                if (geerbt4m2 === null || geerbt4m2.herkunftJeFeld.farben.akzent !== "geerbt"
+                  || !zurueckText4m2.includes("Geerbt von")) {
+                  fund("Marken-Rest (FA-24)", "die Vererbung laesst sich wiederherstellen",
+                    `Store=${String(geerbt4m2?.herkunftJeFeld?.farben?.akzent)}, Anzeige="${zurueckText4m2}"`,
+                    "Befund", "marken-editor/herkunft-anzeigen.ts");
+                } else {
+                  console.log("[schritt-4m2] Vererbung-wiederherstellen GEMESSEN (eigen -> geerbt).");
+                }
+              }
+            }
+          }
+        }
+
+        // Aufraeumen: Kind zuerst, dann die Basis (die Basis ist sonst referenziert).
+        const loesche4m2 = async (n) => {
+          const vorhanden = await seite.evaluate((name) => {
+            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+            return knoepfe.some((k) => (k.textContent ?? "").trim() === name);
+          }, n);
+          if (!vorhanden) return false;
+          await oeffne4m2(n);
+          await seite.evaluate(() => {
+            document.querySelector('[data-testid="loeschengesuch"]')?.click();
+          });
+          const frist = Date.now() + 10_000;
+          let bestaetigen = false;
+          while (Date.now() < frist) {
+            bestaetigen = await seite.evaluate(
+              () => [...document.querySelectorAll('[data-testid="marken-offen"] button')]
+                .some((b) => (b.textContent ?? "").trim() === "Löschen bestätigen"),
+            );
+            if (bestaetigen) break;
+            await schlafe(250);
+          }
+          if (bestaetigen) {
+            await seite.evaluate(() => {
+              const knopf = [...document.querySelectorAll('[data-testid="marken-offen"] button')]
+                .find((b) => (b.textContent ?? "").trim() === "Löschen bestätigen");
+              if (knopf !== undefined) knopf.click();
+            });
+            await schlafe(1_200);
+          }
+          return seite.evaluate(async (name) => {
+            const antwort = await window.api.invoke("marken:listeMarken");
+            if (!antwort || !antwort.ok) return null;
+            return antwort.wert.some((m) => m.name === name);
+          }, n);
+        };
+        // Die importierten Dateien der Messmarke VOR dem Loeschen ueber den echten Kanal
+        // entfernen. `löscheMarke` raeumt marken-assets/<markeId>/ nicht auf (B13) - ohne
+        // diesen Schritt hinterliesse jeder Lauf eine .woff2 im Datenort.
+        const aufraeumId4m2 = await seite.evaluate(async (n) => {
+          const antwort = await window.api.invoke("marken:listeMarken");
+          if (!antwort || !antwort.ok) return null;
+          return antwort.wert.find((m) => m.name === n)?.id ?? null;
+        }, name4m2);
+        if (aufraeumId4m2 !== null) {
+          await seite.evaluate(async (id) => {
+            await window.api.invoke("marken:entferneMarkenDatei",
+              { markeId: id, art: "schrift", schriftRolle: "fliesstext" });
+            await window.api.invoke("marken:entferneMarkenDatei",
+              { markeId: id, art: "logo", schriftRolle: null });
+          }, aufraeumId4m2);
+        }
+        const kindNochDa4m2 = await loesche4m2(kind4m2);
+        const basisNochDa4m2 = await loesche4m2(name4m2);
+        console.log(`[schritt-4m2] Aufraeumen: Kind noch da=${String(kindNochDa4m2)}, Basis noch da=${String(basisNochDa4m2)}.`);
+        if (kindNochDa4m2 === true || basisNochDa4m2 === true) {
+          fund("Marken-Rest (FA-24)", "die Messmarken lassen sich wieder loeschen",
+            `Kind=${String(kindNochDa4m2)}, Basis=${String(basisNochDa4m2)}`, "Untersuchung", "marken-editor/index.tsx");
+        }
+      }
     }
 
     // Schritt 4b - Medien-Seed: Ein mit dem mitgebundelten ffmpeg erzeugtes Testvideo

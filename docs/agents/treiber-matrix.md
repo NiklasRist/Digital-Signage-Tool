@@ -61,17 +61,17 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-21 | Undo/Redo in beiden Editoren | 4f3, 4f, 4f2, 4f4, 4g2, 4g4, 4h | Pfeile sichtbar und aktiv; Undo schrumpft, Redo waechst; je eine Aktion ist EIN Schritt (Einfuegen, Band, Dauer/Trim, Anlage, Loeschen, Reparatur). Der **Vorlagen-Editor** hat kein Undo-Szenario. | teilweise |
 | FA-22 | Mehrere benannte Ausgaben; Vorbelegung = letzter Name | 4c | Der Name wird ohne Endung eingetippt, der Dialog prueft, die Ausgabe steht danach in der Liste. **Zweite Ausgabe**, Vorbelegung und Ersetzen-statt-Anlegen sind ungemessen. | teilweise |
 | FA-23 | Marken-Bestand, Standardmarke je Projekt, Loeschsperre (Muss) | 4a, 4a0, 4a2 | Eine **zweite Marke** wird ueber die echte Oberflaeche angelegt (4a0; vorher lag genau eine im Bestand - B2). 4a wechselt die Standardmarke am echten `<select>` **gezielt auf diese Marke** und belegt den Wert zusaetzlich in `project:listeProjekte` (D1). 4a2 versucht, die nun genutzte Marke zu loeschen: **gesperrt** mit Klartext-Grund (`loesch-standard` nennt das Projekt) und Ausweg; nach dem Zurueckstellen der Standardmarke wird sie **geloescht** (Sperre = Nutzung, nicht Zufall). **Seit 21.10.2026.** | gemessen |
-| FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | 4m | Eine Marke wird ueber die echte Oberflaeche **angelegt und geoeffnet**; die **Akzentfarbe** wird frei auf `#808080` gesetzt und landet im Bestand (V2), die **Kontrast-Warnung** erscheint mit Zahl und Klartext, **ohne** die Wahl zu sperren (Feld bedienbar, kein Dialog); beim Wechsel auf eine Marke mit ausreichendem Kontrast verschwindet sie, und die Felder zeigen den Wert der **neu geoeffneten** Marke. Eine Marke wird **abgeleitet**: das Kind steht im Bestand, ist als `abgeleitet` gekennzeichnet und traegt 20 Herkunftszeilen ("Geerbt von ..."). **Ungemessen:** Import von Logo und Schriftdateien, das Schreiben von Slogan und Sicherheitsabstand, die uebrigen elf Farbrollen und die **Live-Vorschau** (offene Frage aus #303/#330, s. B11). **Seit 22.10.2026.** | teilweise |
+| FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | 4m, 4m2 | **4m:** Marke ueber die echte Oberflaeche **anlegen/oeffnen**, **Akzentfarbe frei** setzen (Wert im Bestand V2), **Kontrast-Warnung** am Grenzwert ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, Warnung weg bei ausreichendem Kontrast, Felder zeigen die **neu geoeffnete** Marke, **Ableiten** mit `abgeleitet` und Herkunftszeilen. **4m2:** **alle dreizehn Farbrollen** schreiben (13/13 im Bestand), **Slogan** (Text + Schalter) und **Sicherheitsabstand** (80/40) schreiben, **Wachsens-Hinweis** vor dem Speichern, **Bearbeiten einer abgeleiteten Marke** (eigen -> "Eigener Wert" -> Vererbung wiederherstellen -> geerbt), **Import-Pipeline** fuer Schrift und Logo mit echten Dateien (`herkunft: importiert`, Anzeige "(importiert)") und **Logo entfernen**. **MANUELL bleibt nur der native Dateidialog** (Klick auf "Eigene Schrift/Logo waehlen"), wie FA-09/Export; die Pipeline danach ist gemessen. **Nicht Teil von FA-24, aber offen:** die Live-Vorschau (TK 9.14.1/9.15.2, B11) und die Text/Store-Spannung beim Logo-Entfernen (B12). **Seit 22.10.2026.** | gemessen |
 
-**Zaehlung:** 5 x gemessen (FA-05, FA-17, FA-18, FA-19, FA-23), 16 x teilweise, 0 x Luecke,
+**Zaehlung:** 6 x gemessen (FA-05, FA-17, FA-18, FA-19, FA-23, FA-24), 15 x teilweise, 0 x Luecke,
 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
 
 Aufgeteilt nach Prioritaet (AD Abschnitt 4): **15 Muss**, 9 Soll.
-- **Muss:** 3 gemessen (FA-05, FA-17, FA-23), 11 teilweise, 0 Luecke, 1 manuell (FA-09).
+- **Muss:** 4 gemessen (FA-05, FA-17, FA-23, FA-24), 10 teilweise, 0 Luecke, 1 manuell (FA-09).
 - **Soll:** 2 gemessen (FA-18, FA-19), 5 teilweise, 0 Luecke, 2 manuell (FA-11/12).
 
-Damit sind **3 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-05,
-FA-17, FA-23). FA-16/17/18 hatten beim Aufstellen der Matrix **keine Oberflaeche** - das ist mit
+Damit sind **4 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-05,
+FA-17, FA-23, FA-24). FA-16/17/18 hatten beim Aufstellen der Matrix **keine Oberflaeche** - das ist mit
 #257 behoben (B1); 4j misst die Leiste, 4k/4l die drei Bedienwege Fehlschlag/Entfernen/Abbruch.
 
 ---
@@ -213,8 +213,42 @@ nicht gerufen: `MarkenEditorWurzelProps` hat genau zwei Felder (`sichtbar`, `mar
 `VorlagenZugang` und ohne `ZeichenZugang`, und `ZeichenZugang.bereiteVor` verlangt ein
 `Project`, das der Marken-Reiter laut TK 9.14.2 gerade nicht hat. #330 fuehrt das als
 **echte offene Frage** ("NICHT selbst entscheiden") und setzt bis zur Antwort bewusst keinen
-Ersatzweg. 4m laesst die Spalte deshalb aus und zaehlt sie bei FA-24 als ungemessen; FA-24
-ist damit **teilweise**, nicht "gemessen".
+Ersatzweg. 4m/4m2 lassen die Spalte deshalb aus. FA-24 selbst (AD: anlegen, bearbeiten,
+ableiten, Import, Kontrastwarnung) ist ohne sie gemessen - die Vorschau ist eine Zusage aus
+TK 9.14.1/9.15.2, nicht aus dem FA-24-Satz.
+
+### B12 - Logo entfernen: der Hinweis verspricht das Ersatz-Logo, der Bestand liefert das gebündelte Fremdlogo (offen, 22.10.2026)
+
+Beim Bau von 4m2 gemessen: Eine **eigenständige** Marke bekommt ein importiertes Logo
+(`logo.png`, `herkunft: importiert`). Nach "Logo entfernen" steht im Bestand **nicht** `logo:
+null` (Ersatz-Logo mit dem Markennamen), sondern das **gebündelte Logo der eingebauten Marke**
+(`logo-fitnessworld24.png`, `herkunft: gebuendelt`).
+
+Das ist **durch #298 ausdrücklich erlaubt** („das Ergebnis kann `logo: null` tragen ODER einen
+geerbten/gebündelten Wert – BEIDES ist ein gültiger Erfolg"), steht aber im Widerspruch zum
+angezeigten `HINWEIS_LOGO_ENTFERNT` („stattdessen erscheint der Markenname auf der
+Akzentfarbe") und zur Begründung in `erstelle-marke.ts`, die `logo: null` bewusst **nicht**
+mitkopiert, damit der Ersatz-Logo-Pfad (#293) erreichbar bleibt. Praktische Folge: Nach
+Import + Entfernen trägt eine Partner-Marke dauerhaft das Baller-Logo.
+
+**Nicht eigenmächtig geändert** – der gebaute Code gewinnt, die Entscheidung gehört dem
+Auftraggeber (Issue mit `braucht-entscheidung`). Der Treiber meldet den Fall als
+**Untersuchung**, nicht als Befund, weil #298 beide Ausgänge zulässt.
+
+### B13 - `löscheMarke` räumt `marken-assets/<markeId>/` nicht auf (offen, 22.10.2026)
+
+Beim Aufräumen von 4m2 gemessen: Drei Läufe importierten je eine Schrift und löschten die
+Marke über die Oberfläche; danach lagen drei verwaiste Ordner
+`marken-assets/<markeId>/fliesstext.woff2` im Datenort, deren Kennungen nicht mehr in
+`marken.json` standen. `loesche-marke.ts` enthält keinen Datei-/Ordner-Zugriff. TK 9.15.3
+sagt „die Kopie gehört der Marke" – mit dem Löschen gehört sie niemandem mehr.
+
+**Nicht gebaut** (eigene Entscheidung: rekursiv löschen im Store oder eigener Waisen-Lauf;
+ein Dateifehler darf das Löschen der Marke nicht verhindern). **Issue #441.** Der Treiber
+entfernt seine importierten Dateien jetzt vor dem Löschen der Messmarke, damit der Datenort
+zwischen den Läufen leer bleibt.
+
+
 
 ### B5 - Der Treiber wertet `console.error` nicht (Gate-Blindstelle) - Loop am 20.10.2026 behoben
 
@@ -253,7 +287,7 @@ Reihenfolge nach MoSCoW: **Muss** zuerst. "Treiber" heisst: neuer oder erweitert
 | ~~1~~ | ~~FA-17/18~~ | **ERLEDIGT 21.10.2026** durch die Treiber-Schritte **4k/4l** - s. Abschnitt 2. | siehe 4k/4l |
 | 2 | FA-01/03 | Video **ersetzen** mit Bestaetigung; Aktion **bearbeiten** | Treiber: zweites Video importieren -> `composer-ersetzen-frage`, bestaetigen -> **ein** Video-Element bleibt, Datei getauscht; Aktion oeffnen, Titel aendern, speichern, Wert im Store lesen. |
 | ~~3~~ | ~~FA-23~~ | **ERLEDIGT 21.10.2026** durch **4a0/4a/4a2** - s. Abschnitt 2 (Wechsel, Loeschsperre mit Grund/Ausweg, Freigabe nach Zurueckstellen). | siehe 4a0/4a/4a2 |
-| 4 | FA-24 | Marken-Editor vollstaendig | **ERLEDIGT 22.10.2026** fuer den Kern durch **4m** (anlegen, oeffnen, Akzentfarbe mit Kontrast-Warnung, ableiten, Wechsel). Offen bleiben: Logo-/Schrift-Import, Schreiben von Slogan/Abstand, weitere Farbrollen und die **Live-Vorschau** - sie braucht erst eine Entscheidung zu den Props (#303/#330, B11). |
+| ~~4~~ | ~~FA-24~~ | **ERLEDIGT 22.10.2026** durch **4m/4m2**: anlegen/oeffnen, alle dreizehn Farbrollen, Slogan, Sicherheitsabstand samt Wachstums-Hinweis, Ableiten und Bearbeiten (eigen -> geerbt), Import-Pipeline fuer Schrift/Logo, Logo entfernen. **MANUELL** bleibt nur der native Dateidialog. Offen (nicht FA-24): Live-Vorschau (B11) und die Text/Store-Spannung beim Logo-Entfernen (B12). | siehe 4m/4m2 |
 | 5 | FA-13 | Vorlagen anlegen/bearbeiten/speichern/verwerfen | Treiber: aus der Uebersicht anlegen, Zone hinzufuegen, speichern, Store lesen; "Verwerfen" stellt den Ausgangsstand her. |
 | 6 | FA-22 | Zweite Ausgabe, Vorbelegung, Ersetzen statt Anlegen | Treiber: zweiten Render mit **gleichem** Namen -> eine Datei; mit **neuem** Namen -> zwei Zeilen; Namensfeld ist mit dem letzten Namen vorbelegt. |
 | 7 | FA-08 | "Eine durchgehende Datei" inhaltlich | Treiber: nach dem Render die erzeugte Datei mit `ffprobe` messen (Dauer gegen Listensumme, genau eine Datei). Naeher an der Anforderung als "Datei erscheint in der Liste". |

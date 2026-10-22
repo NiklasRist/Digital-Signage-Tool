@@ -15,13 +15,16 @@
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-22-session.md`](docs/agents/uebergabe-2026-10-22-session.md) – LIES DIESE DATEI ZUERST.**
 
-- **FA-24 ist gemessen – die Matrix hat KEINE Luecke mehr.** Neuer Treiber-Schritt **4m**
+- **FA-24 ist gemessen – die Matrix hat KEINE Luecke mehr.** Treiber-Schritte **4m/4m2**
   (Branch `bau/treiber-fa24`): Marke ueber die Oberflaeche **anlegen und oeffnen**,
-  **Akzentfarbe frei** setzen (`#808080`; Wert im Bestand V2), **Kontrast-Warnung** am
-  Grenzwert ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, Warnung verschwindet beim Wechsel
-  auf eine Marke mit genug Kontrast, **Ableiten** mit Kennzeichnung `abgeleitet` und
-  20 Herkunftszeilen. Matrix jetzt **5 gemessen, 16 teilweise, 0 Luecke, 3 manuell**;
-  FA-24 ist **teilweise**, weil Live-Vorschau und Importe ungemessen sind.
+  **Akzentfarbe frei** setzen (Wert im Bestand V2), **Kontrast-Warnung** am Grenzwert
+  ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, **Ableiten** mit `abgeleitet` und
+  Herkunftszeilen. **4m2:** **alle dreizehn Farbrollen** (13/13 im Bestand), **Slogan** und
+  **Sicherheitsabstand** schreiben, **Wachstums-Hinweis**, **Bearbeiten einer abgeleiteten
+  Marke** (eigen -> geerbt), **Import-Pipeline** fuer Schrift/Logo mit echten Dateien
+  (`herkunft: importiert`), **Logo entfernen**. Matrix jetzt **6 gemessen, 15 teilweise,
+  0 Luecke, 3 manuell**; **Muss: 4 von 15** (FA-05/17/23/24). **MANUELL** bleibt nur der native
+  Dateidialog beim Import (wie FA-09/Export).
 - **Zwei echte Produktbefunde, behoben und gegengeprobt:**
   1. **B9 – Stand des ERSTEN Aufbaus:** Nach dem Oeffnen einer Marke mit 96/54 px standen im
      Abstands-Feld **0/0**; ein Klick auf "Abstand uebernehmen" haette den Sicherheitsabstand
@@ -45,16 +48,22 @@
 - **Gate:** `npm run pruefung` **Exit 0** – **5.604 Unit-Tests (333 Dateien)**,
   **49 Integrationstests (12 Dateien)**, Treiber ohne Befund; Typecheck/Lint 0.
 - **Ehrlich offen:**
+  - **B12 / #440 – Logo entfernen:** Der Hinweis verspricht das Ersatz-Logo ("der Markenname
+    erscheint"), der Bestand liefert bei einer eigenstaendigen Marke aber das **gebuendelte
+    Logo der eingebauten Marke**. #298 laesst beide Ausgaenge zu; der gebaute Code gewinnt,
+    die **Entscheidung liegt beim Auftraggeber** (drei Wege im Issue). Der Treiber meldet den
+    Fall als `Untersuchung`, nicht als Befund.
+  - **#441 – Loeschen raeumt `marken-assets/<markeId>/` nicht auf:** Importierte Dateien
+    bleiben als Leichen im Datenort. Der Treiber entfernt seine eigenen vor dem Loeschen der
+    Messmarke; die Store-Luecke ist offen.
   - **Live-Vorschau** des Marken-Editors (dritter Teil aus TK 9.14.1) ist gebaut, aber **nicht
     montiert**: #303/#330 fuehren die Props-Frage als "NICHT selbst entscheiden" (Vorlage,
-    `ZeichenZugang`, Schriften/Logo). Bleibt offen, bis entschieden.
-  - **Rest von FA-24:** Import von Logo/Schriftdateien, Schreiben von Slogan/Abstand, uebrige
-    elf Farbrollen.
+    `ZeichenZugang`, Schriften/Logo). Sie ist nicht Teil des FA-24-Satzes.
   - **Gate-Blindstelle B5:** `console.error` wird nicht gewertet.
   - **#433** optische Abnahme beim User; **Mutations-Chargen** 138/92 offen.
 - **Nicht gepusht.**
-- **Naechster Schritt:** **Live-Vorschau entscheiden** (#303/#330) oder **Rest von FA-24**
-  messen; alternativ die **Gate-Blindstelle B5** schliessen.
+- **Naechster Schritt:** **#440 entscheiden** (Logo-Entfernen), **Live-Vorschau entscheiden**
+  (#303/#330) oder die **Gate-Blindstelle B5** schliessen.
 
 ## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde, UI-Ausrichtung) – historisiert durch den Abschnitt darueber
 

@@ -9,8 +9,10 @@ Die letzte Luecke der Treiber-Matrix: **FA-24** (Marken-Editor). Der Auftrag war
 nicht neu bauen - der Editor und seine Bausteine stehen seit der M8-Reihe. Branch:
 `bau/treiber-fa24`.
 
-Ergebnis: **FA-24 ist jetzt teilweise gemessen** und hat **zwei echte Produktbefunde**
-geliefert, beide behoben und gegengeprobt. Die Matrix hat **keine Luecke** mehr.
+Ergebnis: **FA-24 ist gemessen** (anlegen, bearbeiten, ableiten, Import, Kontrastwarnung) und
+hat **zwei echte Produktbefunde** geliefert, beide behoben und gegengeprobt. Die Matrix hat
+**keine Luecke** mehr. Ein weiterer Widerspruch (Logo-Entfernen) ist als Entscheidung
+dokumentiert, nicht eigenmaechtig geaendert.
 
 ---
 
@@ -32,8 +34,9 @@ Der Schritt misst am echten Fenster:
 
 **Bewusst NICHT gemessen:** die **Live-Vorschau** (rechte Spalte). Sie ist gebaut
 (`live-vorschau.ts`, #303) aber nicht montiert; #330 fuehrt die Props-Frage als
-"NICHT selbst entscheiden" (Vorlage, `ZeichenZugang`, Schriften/Logo). Darum ist FA-24
-**teilweise**, nicht "gemessen" (Einzelheiten: Matrix, B11).
+"NICHT selbst entscheiden" (Vorlage, `ZeichenZugang`, Schriften/Logo). Die Vorschau ist eine
+Zusage aus TK 9.14.1/9.15.2, nicht aus dem FA-24-Satz; FA-24 selbst ist mit 4m/4m2 gemessen
+(Einzelheiten: Matrix, B11).
 
 **Drei Korrekturen am Messweg** (kein App-Fehler, im Treiber behoben):
 
@@ -44,6 +47,32 @@ Der Schritt misst am echten Fenster:
   den nativen Setter + `input`-Ereignis gesetzt - derselbe `onChange`-Pfad, ohne Tastenrennen.
 - Das Schritt-5-Aufraeumen loescht **abgeleitete Marken zuerst**; sonst bleibt die Basis als
   gesperrte Leiche liegen, wenn ein Lauf vorher abbricht.
+
+---
+
+## 1b. Schritt 4m2 - der Rest von FA-24
+
+**Datei:** `scripts/durchlauf.mjs`.
+
+Gemessen am echten Fenster (eigene Messmarke, danach geloescht):
+
+- **Alle dreizehn Farbrollen** ueber die Oberflaeche geschrieben, je ein eigener Wert,
+  **13/13 im Bestand**.
+- **Slogan** (Text + Schalter) ueber "Slogan uebernehmen" -> Bestand
+  `{"text":"Saisonstart 2026","aktiv":true}`.
+- **Sicherheitsabstand** 80/40 ueber "Abstand uebernehmen" -> Bestand; danach 120 gesetzt
+  (nicht gespeichert) -> **Wachsens-Hinweis** erscheint und nennt den neuen Wert.
+- **Abgeleitete Marke bearbeiten:** Akzent am Kind gesetzt -> Bestand `herkunftJeFeld.farben.akzent
+  = eigen`, Anzeige "Eigener Wert dieser Marke." + "Vererbung wiederherstellen"; Klick ->
+  `geerbt`, Anzeige "Geerbt von ...".
+- **Import-Pipeline** (Schrift `Arimo-Regular.woff2` und Logo `logo.png` ueber den echten Kanal
+  `marken:importiereMarkenDatei`, weil der native Dialog nicht steuerbar ist): Store
+  `fliesstext.herkunft = importiert`, `logo.herkunft = importiert`, die Anzeige folgt
+  ("(importiert)", Logo-Weg vorhanden).
+- **Logo entfernen** ueber den echten Knopf: siehe B12 (Widerspruch, Entscheidung offen).
+
+**MANUELL bleibt** der Klick auf "Eigene Schrift/Logo waehlen" bis zum nativen Dialog - wie
+FA-09/Export. Die Pipeline danach ist gemessen.
 
 ---
 
@@ -71,6 +100,28 @@ Der Schritt misst am echten Fenster:
 - **Gegenprobe:** `key` entfernt -> **Test rot** (`expected '#123456' to be '#FF4040'`);
   Ruecknahme byte-identisch (dieselbe Pruefsumme, Datei unveraendert).
 
+### B12 - Logo entfernen liefert das gebündelte Fremdlogo (offen, Entscheidung)
+
+- **Symptom:** Importiertes Logo (`herkunft: importiert`) auf einer eigenstaendigen Marke,
+  dann "Logo entfernen" -> im Bestand steht das **gebuendelte Logo der eingebauten Marke**
+  (`logo-fitnessworld24.png`), nicht `logo: null` (Ersatz-Logo).
+- **Bewertung:** #298 laesst **beide** Ausgaenge ausdruecklich zu; der Code ist issue-konform.
+  Aber `HINWEIS_LOGO_ENTFERNT` verspricht den Markennamen, und `erstelle-marke.ts` kopiert das
+  fremde Logo bewusst nicht mit, damit der Ersatz-Logo-Pfad (#293) erreichbar bleibt. Nach
+  Import + Entfernen traegt eine Partner-Marke dauerhaft das Baller-Logo.
+- **Nicht geaendert** (gebauter Code gewinnt, Entscheidung gehoert dem Auftraggeber).
+  **Issue #440** mit `braucht-entscheidung` und drei Wegen; der Treiber meldet den Fall als
+  **Untersuchung**, nicht als Befund.
+
+### B13 - `löscheMarke` raeumt `marken-assets/<markeId>/` nicht auf (offen)
+
+Beim Aufraeumen von 4m2: Drei Laeufe importierten je eine Schrift und loeschten die Marke;
+danach lagen drei verwaiste `marken-assets/<id>/fliesstext.woff2` im Datenort, deren
+Kennungen nicht mehr in `marken.json` standen (geprueft). `loesche-marke.ts` hat keinen
+Datei-Zugriff; TK 9.15.3 sagt „die Kopie gehoert der Marke". **Issue #441** (rekursiv
+loeschen oder Waisen-Lauf; ein Dateifehler darf das Marken-Loeschen nicht blockieren).
+Der Treiber entfernt seine importierten Dateien jetzt **vor** dem Loeschen der Messmarke.
+
 ---
 
 ## 3. Treiber-Flakiness beendet (eigener Commit)
@@ -90,21 +141,24 @@ steht statt still zu haengen. **Beleg:** `npm run durchlauf` danach **Exit 0**.
 ## 4. Belege
 
 - **Gate:** `npm run pruefung` **Exit 0** - **5.604 Unit-Tests (333 Dateien)**,
-  **49 Integrationstests (12 Dateien)**, Treiber ohne Befund; Typecheck/Lint 0.
-- **Treiber 4m:** `GEMESSEN`-Zeilen im Lauf; Protokoll in `docs/agents/oberflaeche-durchlauf.md`.
-- **Matrix:** FA-24 von `Luecke` auf `teilweise`; Zaehlung **5 gemessen, 16 teilweise,
-  0 Luecke, 3 manuell**. Waechter `tests/unit/treiber-matrix.spec.ts` gruen.
+  **49 Integrationstests (12 Dateien)**, Typecheck/Lint 0; Treiber ohne **Befund**
+  (eine `Untersuchung` zu B12, die #298 ausdruecklich erlaubt).
+- **Treiber 4m/4m2:** `GEMESSEN`-Zeilen im Lauf; Protokoll in `docs/agents/oberflaeche-durchlauf.md`.
+- **Matrix:** FA-24 von `Luecke` auf **`gemessen`**; Zaehlung **6 gemessen, 15 teilweise,
+  0 Luecke, 3 manuell** (Muss: 4 von 15 gemessen). Waechter `tests/unit/treiber-matrix.spec.ts` gruen.
 - **Nicht** gepusht; `main` bleibt hinter dem lokalen Stand.
 
 ## 5. Ehrlich offen
 
-1. **Live-Vorschau des Marken-Editors** (B11): braucht eine Entscheidung zu den Props
+1. **Logo entfernen (B12, #440):** Hinweis verspricht das Ersatz-Logo, der Bestand liefert das
+   gebuendelte Fremdlogo (durch #298 erlaubt). **Entscheidung noetig**, nicht eigenmaechtig
+   geaendert.
+2. **Live-Vorschau des Marken-Editors** (B11): braucht eine Entscheidung zu den Props
    (`VorlagenZugang`? `ZeichenZugang`? eigenes `stelleMarkeBereit`?) - #303/#330.
-2. **Rest von FA-24:** Import von Logo/Schriftdateien, Schreiben von Slogan und
-   Sicherheitsabstand, die uebrigen elf Farbrollen.
-3. **Gate-Blindstelle B5:** `console.error` wird weiterhin nicht gewertet.
-4. **#433** optische Abnahme beim User.
-5. **Mutations-Chargen** 138/92 Dateien offen.
+3. **MANUELL:** der native Dateidialog beim Logo-/Schrift-Import (wie FA-09/Export).
+4. **Gate-Blindstelle B5:** `console.error` wird weiterhin nicht gewertet.
+5. **#433** optische Abnahme beim User.
+6. **Mutations-Chargen** 138/92 Dateien offen.
 
 ## 6. Regeln, die diese Session bestaetigt hat
 
