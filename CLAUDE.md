@@ -11,7 +11,7 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (22.10.2026, zweite Sitzung: Live-Vorschau montiert, B14–B16) – gilt vor ALLEM weiter unten
+## STAND HEUTE (22.10.2026, zweite Sitzung: Live-Vorschau montiert, Muss-Luecken gemessen, B14–B18) – gilt vor ALLEM weiter unten
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-22-session-2.md`](docs/agents/uebergabe-2026-10-22-session-2.md) – LIES DIESE DATEI ZUERST.**
 
@@ -53,8 +53,12 @@
   und `split`; der Store kennt `einblendung`. Deshalb bleibt FA-13 **teilweise**.
 - **Noch offen:** Issue-Kommentare zu #303/#330 und #290 sind gesetzt; die #442-Diagnose
   (Ursache am Nutzerpfad) bleibt offen, das Label `braucht-entscheidung` ist veraltet.
+- **Naechster Schritt:** **Backlog-Abgleich (Charge 1)** – 322 offene Issues, alte/gebaute
+  schliessen, BK-01…06 als `not planned`, `.gitignore` fuer Laufzeitartefakte. Danach
+  Oberflaeche 2.0/Banner (erst AD/TK-Nachtrag). **Push nur auf Anweisung.**
+  Die kurze Einstiegsdatei ist [`UEBERGABE-NAECHSTE-SESSION.md`](UEBERGABE-NAECHSTE-SESSION.md).
 
-## STAND HEUTE (22.10.2026, frueher: FA-24 am echten Fenster, B9/B10, Treiber-Flakiness) – historisiert durch den Abschnitt darueber – historisiert durch den Abschnitt darueber
+## STAND HEUTE (22.10.2026, frueher: FA-24 am echten Fenster, B9/B10, Treiber-Flakiness) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-22-session.md`](docs/agents/uebergabe-2026-10-22-session.md) – LIES DIESE DATEI ZUERST.**
 

@@ -107,7 +107,6 @@ Zwei Verbesserungen am Messweg, die bleiben:
 
 ## 3. Gate
 
-Siehe `/tmp/pruefung.log` dieser Sitzung; Ergebnis wird hier nachgetragen:
 - `npm run lint` → 0.
 - `npm run typecheck` → 0.
 - `npm run pruefung` → **Exit 0** - **5.623 Unit-Tests (334 Dateien)**, **49 Integrationstests
@@ -130,7 +129,12 @@ Siehe `/tmp/pruefung.log` dieser Sitzung; Ergebnis wird hier nachgetragen:
 - `src/main/marken-store/marken-protokoll.ts` (`corsEnabled: true`)
 - Tests: `marken-editor-wurzel.spec.ts`, `inhalte-reiter.spec.ts`,
   `marken-schriften.spec.ts`, `logo-laden.spec.ts`, `marken-protokoll.spec.ts`
-- `scripts/durchlauf.mjs` (Vorschau-Messung, Quell-URL im Befund, Asset-Liste)
+- `scripts/durchlauf.mjs` (Vorschau-Messung, Quell-URL im Befund, Asset-Liste,
+  Treiber-Schritte 4b7, 4c2, 4f5, 4g3, 4n)
+- `src/renderer/composer/index.tsx` (B18: alte Video-Elemente im Bestand entfernen)
+- `src/renderer/vorlagen-editor/index.tsx` (B17: gueltige Zonen-Sorte)
+- Tests: `composer-ein-video.spec.ts` (Bestand-Entfernen), `vorlagen-editor-sitzung.spec.ts`
+  (Textzone-Klick)
 
 ---
 
@@ -187,10 +191,10 @@ welcher Hoehe/Deckkraft? Oder bleibt „Einblendung" eingebaut-only?
    **teilweise** (die belegten Wege: anlegen, Zone, uebernehmen, verwerfen).
 2. **#442-Diagnose** ist noch offen (Deutung entschieden, Ursache am Nutzerpfad nicht
    reproduziert).
-3. Die drei Befunde B14-B16 sind behoben, aber **noch nicht auf GitHub** als Kommentar
-   hinterlegt (in dieser Sitzung bewusst zuletzt, damit der Gate-Lauf nicht durch
-   Netzzugriffe stoert).
-4. #303/#330 sind noch offen; die Montage ist belegt, eine Schliessung braucht die
-   Issue-Kommentare.
+3. **Issue-Kommentare sind gesetzt:** #303, #330, #290 (B14-B16), #422 (B18/4b7),
+   #147 (B17/4n). #303/#330 sind noch **offen**; die Montage ist belegt, die Schliessung
+   ist eine eigene Entscheidung (Review).
+4. **#215/#240/#255** meldet `bereitschaft.py` als "bereit", obwohl die M-Aera als gebaut
+   gilt - vor dem Anfassen gegen den gebauten Code pruefen (Backlog-Hygiene).
 5. **#442** traegt weiter `braucht-entscheidung`, obwohl die Deutung entschieden ist -
    Backlog-Hygiene (Charge 1).

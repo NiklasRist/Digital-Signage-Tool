@@ -1,116 +1,86 @@
-# ÜBERGABE – nächste Session (Stand: 05.10.2026, abends, Commit `f30aba8`)
+# ÜBERGABE – nächste Session (Stand: 22.10.2026, spät, Commit `d1566ba`)
 
 ## ZUERST LESEN
-- [`CLAUDE.md`](CLAUDE.md) vollständig (die Übergabe; der Dateiname ist historisch).
-- [`AGENTS.md`](AGENTS.md) ist nur ein Zeiger darauf.
-- Danach `python3 tools/bereitschaft.py` (Fakten, nicht Behauptungen).
-- Die vorige Übergabe liegt als Archiv unter
-  `docs/agents/uebergabe-2026-10-05-morgens.md` (Morgen, Commit `2fd574b`).
 
-## STAND HEUTE (05.10.2026, abends) – gilt vor allen älteren Angaben in CLAUDE.md
+1. [`CLAUDE.md`](CLAUDE.md) vollständig (der Abschnitt **STAND HEUTE** ganz oben gilt; der
+   Dateiname ist historisch).
+2. [`docs/agents/uebergabe-2026-10-22-session-2.md`](docs/agents/uebergabe-2026-10-22-session-2.md)
+   – der volle Stand dieser Sitzung (Punkt 2 und 3).
+3. `python3 tools/bereitschaft.py` (Fakten, keine Behauptungen; der Lauf braucht ~2–4 min).
+4. [`docs/agents/treiber-matrix.md`](docs/agents/treiber-matrix.md) – was am echten Fenster
+   gemessen ist und was nicht.
 
-### Gemessen (tools/bereitschaft.py, Commit `f30aba8`)
-| Meilenstein | gebaut | baubereit | UNKLAR |
-|---|---|---|---|
-| M0–M6 | KOMPLETT | 0 | 0 |
-| M7 Oberfläche | 59 von 71 | 5 | 1 (#231 – die DATEI ist gebaut, Werkzeug-Format s. u.) |
-| M8 Marken | 21 von 60 | 4 | 0 (alle 4 faktisch blockiert, s. u.) |
+`AGENTS.md` ist nur ein Zeiger auf `CLAUDE.md`.
 
-- **Suite: 4632/4632 Tests grün**, Typecheck + Lint sauber, Branch `main`, Arbeitsbaum sauber.
-  Untracked bleiben: `.e2e-echt-datenort/`, `.e2e-flow-ist-datenort/`, `marken.json` –
-  Testartefakte, NICHT committen. `package-lock.json`-Drift ggf. mit `git checkout --` zurück.
+## STAND HEUTE (gemessen)
 
-### Was diese Session gebaut hat (alle auf main, je Issue EIN Commit, je ein Nachtrag auf GitHub)
-- `e0e8e2b` **#232** Export-Auswahl + Zielordner-Dialog (#183), Einreihen über #134.
-- `58d4f67` **#235** Undo/Redo der Projekt-Bearbeitung. **Vertragswiderspruch gemeldet und nach
-  gebautem Code gelöst** (Nachtrag #235): `Bearbeitungsstand` verlangt seit #334/TK v3.18
-  `standardSegmentdauer` im Schnappschuss – drei Felder statt der zwei im Issue-Text. Checkliste:
-  Issue-Texte von M7-43/#236 und M7-44 im selben Punkt prüfen.
-- `3381de1` **#249** Element-Zeile: EIN Regler, EINE Übernahme beim Loslassen (Kernnachweis),
-  Band-Zugang (Fall 3 aus TK 9.7.5), Entfernen ohne Rückfrage. `formatiereReglerDauer` lebt HIER –
-  die fehlende Datei war ein verborgener Baublocker für #248.
-- `e76c302` **#248** Wiedergabeliste nach Issue + **Umverdrahtung des composers** (User-Entscheidung
-  „Variante A"): Die ad-hoc-Liste in `composer/index.tsx` ist ersetzt; die verwaiste
-  `wiedergabe-ansicht.tsx` ist entfernt. `allowImportingTsExtensions: true` in
-  tsconfig.renderer.json und tsconfig.tests.json (dieselbe Klassenentscheidung wie der
-  #110-Tausch index.ts gegen index.tsx). Meldungen: drei Nachträge auf #248.
-- `c14cbe5` **#256** Übergabe-Overlays: Halter (`reparaturhalter`), Hinweg/Rückkehr über M7-08,
-  Import-Rückweg `schliesseMedienImportAb` (ENTSCHIEDEN 12/13 – M7-06 meldet, M7-69 ruft).
-- `01b7b03` **#335** Drag-and-drop-Import. **STOPP mit dem User geklärt: Variante A, KEIN zweiter
-  Kanal** (Beleg im Nachtrag). `webUtils.getPathForFile` lebt in der Preload-Brücke (Electron 43
-  kennt `file.path` nicht mehr), Wrapper `ipc-client/pfad-fuer-datei.ts`, Whitelist-Vorfilter
-  gegen `FORMAT_WHITELIST` (#13) → Abweisung OHNE Auftrag; Einreihung exakt über
-  `queue:reiheEin` mit `{art:'import'}` wie in #228; Bericht über `baueImportBericht` (#228).
-- `a4feef5` **#274** Bootstrap 7/7: Schritt 5, Position 3 (#240) und 8 (#255); Schritt 7,
-  Position 3 (#238). Rauchprobe `npm run dev` ohne Absturz. Schritt 2 (#51) bleibt unangetasteter
-  Sonderfall (`StartBefund` statt des aus #3 zitierten `boolean`).
-- `f30aba8` Messwerkzeug nachgezogen: `274` in `FERTIGE_BOOTSTRAP` (davor falsch „offen").
+- **Zwei Commits, `main` 139 Commits vor `origin/main`, NICHT gepusht.**
+  - `6746844` Live-Vorschau des Marken-Editors montiert (#303/#330) + B14–B16.
+  - `d1566ba` Muss-Lücken FA-01/03/22/08/13 am Fenster gemessen + B17/B18.
+- **Gate: `npm run pruefung` Exit 0** – **5.623 Unit-Tests (334 Dateien)**,
+  **49 Integrationstests (12 Dateien)**, Treiber ohne Befund. Lint/Typecheck 0.
+  (Ein erster Volllauf fiel am bekannten Flaky `einzel-instanz.spec.ts`; einzeln und im
+  zweiten Volllauf grün.)
+- **Treiber-Matrix: 10 gemessen, 11 teilweise, 0 Lücke, 3 manuell.**
+  **Muss: 8 von 15 gemessen** (FA-01, FA-03, FA-05, FA-08, FA-17, FA-22, FA-23, FA-24).
+- **`tools/bereitschaft.py`:** M0–M6 komplett, **M7 68/71** (3 „bereit": #215, #240, #255),
+  **M8 60/60**. Die 3 M7-Treffer sind vor dem Anfassen gegen den gebauten Code zu prüfen –
+  das Werkzeug sieht keine Vertragsdateien.
+- **Backlog: 322 offene Issues** (davon weiterhin ~295 aus der alten M-Ära ≤ #380 und
+  ~103 mit `braucht-entscheidung`).
 
-### Baubereit (5) – empfohlene Reihenfolge, Nummer nach map.json auflösen
-1. **#217 (M7-24) segment.tsx**, dann **#218 (M7-25) split-stile.ts**, dann **#219 (M7-26)
-   einblendung-stile.ts** – die drei preview-player-Rümpfe liegen in `src/renderer/preview-player/`.
-   Dazu passt die Umhüllung **#242 (M7-49) vorschau-auswahl.ts** (Baustein, hält die Auswahl) vor
-   ihrem Aufrufer.
-2. **#243 (M7-50) undo-aufzeichnung.ts** – umhüllt die gemeinsame Projekt-Sicht und ruft
-   `merkeVorAenderung` (#235). Ihr einziger Aufrufer ist die Übergabestelle der Shell (App.tsx,
-   M7-69) – ohne ihn fertig gebaut und wirkungslos; wie immer per grep belegen.
-3. **#253 (M7-61) einblendung-ansicht** und danach **#259 (M7-60) composer-montage**. Der
-   Composer-Index wartet mit dem `bandHinweis`-Platzhalter: Wenn die Einblendungs-Ansicht steht,
-   `aufEinblendungBearbeiten` im `composer/index.tsx` auf die echte Oberfläche BINDEN (dokumentierte
-   Ausnahme wie bei #248, Nachtrag).
-4. **#260 (M7-65) renderer-bootstrap**, dann **#262 (M7-69) App.tsx**. PFLICHT, weil die gemeldete
-   Lücke genau dort hängt: `UebergabeOverlay` (#256) und die `bandHinweis`-Naht (#253) brauchen den
-   Einsetzer. #262 holt `reparaturhalter()`, setzt das Overlay als GESCHWISTER von `<Rahmen>` (die
-   Belegung steht genau in #256, ENTSCHIEDEN 11) und verdrahtet `meldeImportErgebnis` →
-   `schliesseMedienImportAb`.
-5. Danach die **#231-Werkzeugklarung**: die Datei ist gebaut (Commit ef191f9), das Werkzeug zeigt
-   '? #231 None'. Vor dem Anfassen messen, WAS die Ausgabe verändert (Gegenprobe: Zeile in
-   docs/agents/m7/M7-38.md abgleichen oder Werkzeug lockern; Ausgang der Probe mit Prüfsumme
-   belegen und zurücknehmen).
+## Was diese Sitzung gebaut und gemessen hat
 
-### BEFUNDE, offen (melden, NICHT stillschweigend lösen)
-1. **#215 = STOPP (User-Entscheidung):** "wird dieses Issue noch gebaut?" – Kernregel ist seit
-   TK v3.16 entfallen; der .ts-Teil ist durch #258 gebaut.
-2. **Einsetzer-Lücke (gemeldet auf #256):** `UebergabeOverlay` hat keinen Aufrufer, bis M7-69
-   gebaut ist. Im selben Zug: `ElementBedienung` (#249) ist über `zeichneBedienung` im
-   Composer-Index verdrahtet – bleibt so, bis #259 die Montage stellt.
-3. **#231 zeigt als UNKLAR:** Werkzeug-Format gegen den wiederhergestellten Titel – siehe oben,
-   Gegenprobe mit Prüfsumme.
-4. **Buchhaltung nicht einheitlich:** Gebaute Issues bleiben auf GitHub gemischt offen/geschlossen
-   (M0/M1 überwiegend offen, einige wie #184 geschlossen). Der Baustand zählt hier über das
-   **Messwerkzeug**, nicht über GitHub-States – Eine Übereinkunft „wann wird ein Issue geschlossen?“
-   ist eine USER-Entscheidung; die nächste Session fragt NICHT stillschweigend nach und schließt
-   massenhaft nichts.
-5. **Veralteter Planungsstand `docs/agents/m9/`** (M9-01 bis M9-14, ohne map.json): Enthält u. a.
-   einen abweichenden Entwurf „#335 Universelles Undo/Redo", der dem ECHTEN #335 widerspricht.
-   Nur gemeldet; was daraus wird (Planung fortsetzen oder verwerfen), ist dem User vorzulegen.
-6. **Verwaiste Vorbauten (Commit `110b9a6`): `composer/kontext-menu.tsx`,
-   `composer/fehler-markierung.tsx`, `composer/statistik.tsx`, `composer/zeitleiste.tsx` haben
-   weiterhin KEinen Aufrufer. Wer sie braucht (Kandidat: #259 composer-montage), prüft und
-   mountet oder entfernt – selbst melden, nicht still.
-7. **TV-Test (Hardware) steht weiter beim User:** Firmware steht nur AM TV (Einstellungen →
-   Support → „Über dieses TV"); physisch testbar nur: Autostart nach Stromausfall und
-   „Repeat One"-Verlässlichkeit.
+### Punkt 2 – Live-Vorschau des Marken-Editors (A1, 22.10.2026)
+- Drittes Prop `vorlagen: VorlagenZugang`; Baustein `marken-editor/vorschau-flaeche.tsx`.
+- Fester Zeichenweg `zeichneMarkenVorschau` (#303) mit der Vorlage **„Vollbild"**.
+- Vorbereitung: `stelleSchriftenBereit()` → `stelleMarkenSchriftenBereit(marke)` →
+  `bereiteLogoVor(marke)`. Kein `stelleMarkeBereit`, kein `ZeichenZugang`, kein Projekt.
+- Treiber 4m misst `Live-Vorschau GEMESSEN: Canvas 1920x1080`.
 
-### M8-Blocker (unverändert)
-`src/shared/contracts/marke.ts` trägt die nötigen Erweiterungen (`Marke.id`,
-`Schrift.herkunft`, `Marke.logo.herkunft`, `parent`, `eingebaut`, `herkunftJeFeld`) NICHT –
-**#291/#293/#303/#319 sind deshalb faktisch nicht baubar**, obwohl „baubereit" gemessen wird
-(das Werkzeug sieht keine Vertragsdateien). Erst den Vertrag erweitern – Gegenstand des
-Zitat-Abgleichs zu #52 – dann bauen.
+### Punkt 3 – Muss-Lücken (alle am echten Fenster)
+| FA | Schritt | Beleg |
+|---|---|---|
+| FA-01 | 4b7 | Rückfrage vor dem Ersetzen, Abbrechen ohne Wirkung, Ersetzen → genau ein Video |
+| FA-03 | 4g3 | Aktion bearbeiten → Titel im `project.json`, Aktionszahl unverändert |
+| FA-22 | 4c2 | Vorbelegung, Ersetzen (mtime neu, eine Datei), zweite Ausgabe |
+| FA-08 | 4f5 | `ffprobe 12,022 s` gegen Anzeige `12 s`, eine Datei, kein `.part` |
+| FA-13 | 4n | Anlegen, Zone in Arbeitskopie, übernehmen, verwerfen, Cleanup |
 
-### Arbeitsweise (unverändert bindend, aus CLAUDE.md)
-- Issue-Text ist Quelle; Signaturblöcke NICHT ändern; Rumpf füllen; Gegenproben mit Beleg
-  (Prüfsumme vor/nach); Stash-Gegenprobe bei Testfehlern; „fertige Funktion ohne Aufrufer" per
-  grep prüfen; Nachträge ANHÄNGEN, nie ersetzen.
-- EIN Issue pro Commit; die Commit-Nachricht je Issue von Hand ansehen (Commit-Nachricht) auf Tippfehler
-  ansehen. `@ts-expect-error`-Direktiven für `.tsx`-Importe sind seit 05.10. in
-  renderer/tests überflüssig (allowImportingTsExtensions aktiv) – keine NACHTRÄGE mehr dazu.
-- jsdom-Tests: Muster aus `tests/unit/leiste-zeile.spec.ts` (createRoot + act),
-  `vi.hoisted` für Mock-Doppel; vi.restoreAllMocks sparsam je `afterEach`.
-- Deutsch ist die Projektsprache (Code, Kommentare, Commits).
+### Fünf echte Befunde, alle behoben
+1. **B14:** CSP erlaubte `marken:` nicht in `font-src`/`connect-src`.
+2. **B15:** `MARKEN_SCHEMA` fehlte `corsEnabled` (Probe aus #290 damit entschieden).
+3. **B16:** vererbte importierte Schrift/Logo baute die URL mit der Kind-Kennung → 404.
+4. **B17:** „+ Textzone (titel)" bestellte eine ungültige Zonen-Sorte und tat nichts.
+5. **B18:** Video-Ersetzen filterte nur die Sicht; im `project.json` standen danach zwei Videos.
 
-### NÄCHSTER SCHRITT
-`python3 tools/bereitschaft.py` → Start mit **#217 (M7-24)**, dann #218/#219, dann #242.
-Ob die drei preview-player-Issues einzeln oder im Set gebaut werden (muss je ein eigener
-Commit haben), ist für die nächste Session frei – EIN Issue pro Commit bleibt bindend.
+## Offene Entscheidungen (beim Auftraggeber)
+
+1. **FA-13/„Einblendung":** Soll sie über die Oberfläche anlegbar sein – und mit welcher
+   Höhe/Deckkraft? `ANLEGBARE_ARTEN` bietet nur `vollflaeche`/`split`; der Store kennt
+   `einblendung`. Deshalb bleibt FA-13 in der Matrix **teilweise**.
+2. **#442-Diagnose:** Die Deutung ist entschieden (Aktion an einer Zeitstelle = Unterbrechung,
+   TK 9.2.9); offen ist, warum der Weg beim Nutzer nicht greift. Das Label
+   `braucht-entscheidung` an #442 ist veraltet (Backlog-Hygiene).
+3. **Backlog-Abgleich (Charge 1):** 322 offene Issues; alte/gebaute schließen, BK-01…06
+   (#354–#359, verworfene Zwei-Screens-Ära) als `not planned`, Banner-Familie behalten.
+   Dazu `.gitignore` für Laufzeitartefakte (`marken.json`, `marken-assets/`, `.e2e-*-datenort/`).
+4. **Mutations-Chargen** 138/92 Dateien offen; Q1.2 (wiederholte Begründungen) offen.
+
+## Nächster Schritt
+
+**Backlog-Abgleich (Charge 1)**, danach die in `CLAUDE.md` vereinbarte Reihenfolge:
+Oberfläche 2.0 / Banner (zuerst AD/TK-Nachtrag), dann Aktions-Editor inline, #443
+(Hover-Overlay), Videobearbeitung. **Kein Umbau ohne Plan.**
+
+## Arbeitsweise (unverändert bindend)
+
+- Die Wahrheit steht in den Dokumenten, nicht im Code: AD → TK → Issue (Signaturblock
+  **nicht** ändern) → Code. Widerspricht ein Issue dem gebauten Code, **gewinnt der Code** –
+  und der Widerspruch wird gemeldet, nicht still aufgelöst.
+- Jede Behauptung belegen; jede Gegenprobe nachweislich zurücknehmen (Prüfsumme/`diff`).
+  „Eine Probe ohne Beleg ist keine Probe."
+- Für jedes Artefakt fragen: **wer erzeugt es?** „Fertige Funktion ohne Aufrufer" ist die
+  häufigste Lücke dieses Projekts.
+- Deutsch ist die Projektsprache – Code-Bezeichner, Kommentare, Commits, Issues.
+- **Push nur auf Anweisung.**
