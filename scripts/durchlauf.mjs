@@ -89,9 +89,20 @@ const main = async () => {
       // schliesst den Browser selbst (finally).
       if (!abschluss) console.log("[fenster zu] - vor dem Ende des Durchlaufs");
     });
+    // B5 (Gate-Blindstelle, behoben 22.10.2026): Ein `console.error` im Fenster ist ein
+    // BEFUND, keine Randnotiz. Am 20.10.2026 lief "Maximum update depth exceeded" durch
+    // ein gruenes Gate, weil der Treiber die Meldung nur druckte. Jede eindeutige
+    // Fehlermeldung zaehlt genau einmal (React wiederholt sie sonst pro Render).
+    const geseheneFensterFehler = new Set();
     seite.on("console", (meldung) => {
-      if (meldung.type() === 'error' || meldung.type() === 'warning') {
-        console.log(`[fenster ${meldung.type()}] ${meldung.text()}`);
+      if (meldung.type() === 'error') {
+        const text = meldung.text();
+        if (!geseheneFensterFehler.has(text)) {
+          geseheneFensterFehler.add(text);
+          fund("Fenster-Konsole", "kein console.error im Fenster", text, "Befund", "Renderer/React");
+        }
+      } else if (meldung.type() === 'warning') {
+        console.log(`[fenster warning] ${meldung.text()}`);
       }
     });
     // #340-Gegenprobe (Beobachtung s. Schritt 4b): JEDE media://-Antwort wird beobachtet.

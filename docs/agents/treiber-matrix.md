@@ -267,7 +267,7 @@ der Lauf beweist jetzt den Store-Weg.
 
 
 
-### B5 - Der Treiber wertet `console.error` nicht (Gate-Blindstelle) - Loop am 20.10.2026 behoben
+### B5 - Der Treiber wertet `console.error` nicht (Gate-Blindstelle) - behoben 22.10.2026
 
 Beim Gate-Lauf am **20.10.2026** meldete das Fenster mehrfach:
 
@@ -278,21 +278,29 @@ of the dependencies changes on every render.
 ```
 
 Die Meldungen fielen gehaueft um 4i/4h (kaputte Stelle, Reparatur). Der Lauf blieb
-**gruen**, weil der Treiber `console.error` nur druckt; gewertet werden `pageerror` und
+**gruen**, weil der Treiber `console.error` nur druckte; gewertet werden `pageerror` und
 `Befund`.
 
-**Untersucht und behoben** (`docs/agents/update-loop-2026-10-20.md`): `baueReiterInhalte`
+**Der Loop selbst wurde behoben** (`docs/agents/update-loop-2026-10-20.md`): `baueReiterInhalte`
 wurde bei jedem App-Rendern aufgerufen; seine Rueckgabe-Funktionen sind die
 Komponententypen im Rahmen - jeder App-Render mountete den aktiven Reiter neu, der
 Reparatur-Effekt meldete erneut (gemessen: **2.300** Durchlaeufe). Die Reiterinhalte sind
 jetzt je Zugaengen-Satz memoisiert, die Umgebung reist als Getter. Nachher: **12**
 Effekt-Durchlaeufe, **keine** Loop-Meldung, Gate **Exit 0**.
 
-**Weiter offen (Gate):** "Maximum update depth" sollte ein **Befund** sein. Sonst bleibt
-eine Rueckkehr der Schleife unsichtbar, obwohl sie im Log steht - dieselbe Klasse wie der
-Q4-Befund "das Gate war blind".
+**Die Blindstelle ist jetzt geschlossen (22.10.2026):** `scripts/durchlauf.mjs` wertet
+jedes eindeutige `console.error` aus dem Fenster als **`Befund`** ("Fenster-Konsole"); die
+Gate-Regel (`Befund` -> Exit 2) greift damit auch fuer React-Meldungen. `console.warn`
+bleibt ein Log-Hinweis. Doppelte Meldungen zaehlen einmal (React wiederholt sie sonst pro
+Render).
+
+**Gegenprobe mit Beleg:** `console.error("SEMPEL-B5 …")` voruebergehend in
+`src/renderer/main.tsx` -> Lauf **Exit 2** mit
+`[Befund] Fenster-Konsole :: kein console.error im Fenster -> SEMPEL-B5 …`; Zeile entfernt,
+Ruecknahme byte-identisch (`a4adeb90…c928cff1c`), Lauf wieder **Exit 0**.
 
 ---
+
 
 ## 4. Luecken nach Prioritaet (Vorschlag, nicht beschlossen)
 

@@ -148,6 +148,18 @@ steht statt still zu haengen. **Beleg:** `npm run durchlauf` danach **Exit 0**.
 
 ---
 
+## 3b. Gate-Blindstelle B5 geschlossen
+
+`scripts/durchlauf.mjs` wertet jedes **eindeutige** `console.error` aus dem Fenster als
+**Befund** ("Fenster-Konsole"); die Gate-Regel (Befund -> Exit 2) greift damit auch fuer
+React-Meldungen. `console.warn` bleibt Log-Hinweis, Doppelmeldungen zaehlen einmal.
+
+**Gegenprobe mit Beleg:** `console.error("SEMPEL-B5 …")` voruebergehend in
+`src/renderer/main.tsx` -> Lauf **Exit 2** mit
+`[Befund] Fenster-Konsole :: kein console.error im Fenster -> SEMPEL-B5 …`; Zeile entfernt,
+Ruecknahme **byte-identisch** (`a4adeb90…c928cff1c`), Lauf wieder Exit 0. Der normale
+Bestand hat **keine** `console.error`-Meldung (geprueft in den gruenen Laeufen).
+
 ## 4. Belege
 
 - **Gate:** `npm run pruefung` **Exit 0** - **5.609 Unit-Tests (333 Dateien)**,
@@ -163,9 +175,8 @@ steht statt still zu haengen. **Beleg:** `npm run durchlauf` danach **Exit 0**.
 1. **Live-Vorschau des Marken-Editors** (B11): braucht eine Entscheidung zu den Props
    (`VorlagenZugang`? `ZeichenZugang`? eigenes `stelleMarkeBereit`?) - #303/#330.
 2. **MANUELL:** der native Dateidialog beim Logo-/Schrift-Import (wie FA-09/Export).
-3. **Gate-Blindstelle B5:** `console.error` wird weiterhin nicht gewertet.
-4. **#433** optische Abnahme beim User.
-5. **Mutations-Chargen** 138/92 Dateien offen.
+3. **#433** optische Abnahme beim User.
+4. **Mutations-Chargen** 138/92 Dateien offen.
 
 ## 6. Regeln, die diese Session bestaetigt hat
 
