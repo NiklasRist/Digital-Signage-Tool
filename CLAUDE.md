@@ -60,11 +60,15 @@
   - **Live-Vorschau** des Marken-Editors (dritter Teil aus TK 9.14.1) ist gebaut, aber **nicht
     montiert**: #303/#330 fuehren die Props-Frage als "NICHT selbst entscheiden" (Vorlage,
     `ZeichenZugang`, Schriften/Logo). Sie ist nicht Teil des FA-24-Satzes.
-  - **Gate-Blindstelle B5:** `console.error` wird nicht gewertet.
   - **#433** optische Abnahme beim User; **Mutations-Chargen** 138/92 offen.
 - **Nicht gepusht.**
-- **Naechster Schritt:** **Live-Vorschau entscheiden** (#303/#330) oder die
-  **Gate-Blindstelle B5** schliessen; danach die naechste Matrix-Luecke (FA-13, FA-22).
+- **B5 geschlossen (Gate-Blindstelle):** `scripts/durchlauf.mjs` wertet jedes eindeutige
+  `console.error` aus dem Fenster als **Befund** ("Fenster-Konsole") - „Maximum update depth"
+  kann nicht mehr durch ein gruenes Gate laufen. `console.warn` bleibt Log-Hinweis.
+  Gegenprobe: eingebautes `console.error("SEMPEL-B5")` -> **Exit 2**, Rücknahme
+  byte-identisch (`a4adeb90…c928cff1c`), Lauf wieder Exit 0.
+- **Naechster Schritt:** **Live-Vorschau entscheiden** (#303/#330); danach die naechste
+  Matrix-Luecke (FA-13 Vorlagen-Editor, FA-22 zweite Ausgabe).
 
 ## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde, UI-Ausrichtung) – historisiert durch den Abschnitt darueber
 
