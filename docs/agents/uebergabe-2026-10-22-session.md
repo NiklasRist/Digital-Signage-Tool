@@ -185,13 +185,13 @@ Das Issue ist geschlossen.
 
 ## 5. Ehrlich offen
 
-1. **Live-Vorschau des Marken-Editors** (B11): braucht eine Entscheidung zu den Props
-   (`VorlagenZugang`? `ZeichenZugang`? eigenes `stelleMarkeBereit`?) - #303/#330.
+1. **Live-Vorschau des Marken-Editors** (B11): **entschieden** (A1 unten), die Montage
+   (`vorlagen`-Prop + eigene Vorbereitung) ist offen.
 2. **MANUELL:** der native Dateidialog beim Logo-/Schrift-Import (wie FA-09/Export).
-3. **#442** – „aktionen zwischen frames anlegen nicht geht" (aus der #433-Abnahme):
-   Bedienweg und Ergebnis sind offen, `braucht-entscheidung`.
-4. **#443** – „videosteuerung wie bei yt" (aus der #433-Abnahme): Umfang und Platzierung
-   offen, `braucht-entscheidung`.
+3. **#442** – „aktionen zwischen frames anlegen": **entschieden** = Aktion an einer
+   Zeitstelle im Video (Unterbrechung). Offen ist die **Diagnose**, warum der Weg beim
+   User nicht greift (vollflaechige vs. Band-Aktion).
+4. **#443** – Videosteuerung: **entschieden** = Kern-Set als Hover-Overlay; Bau in UI 2.0.
 5. **Mutations-Chargen** 138/92 Dateien offen.
 
 ## 6. Regeln, die diese Session bestaetigt hat
@@ -205,3 +205,43 @@ Das Issue ist geschlossen.
   ist derselbe `onChange`-Pfad ohne Tastenrennen; ein verschluckter Buchstabe ist ein
   Messfehler, kein Befund.
 - **Zwei Prozesse fuer eine Einzelinstanz sind ein Muenzwurf.** Der Treiber startet jetzt EINEN.
+
+## 7. Entscheidungen (Auftraggeber, 22.10.2026)
+
+| # | Frage | Entscheidung | Wirkung |
+|---|---|---|---|
+| A1 | Live-Vorschau Marken-Editor (#303/#330) | **`vorlagen: VorlagenZugang`** als drittes Prop + **eigene Vorbereitung** mit `stelleMarkenSchriftenBereit(marke)` und `bereiteLogoVor(marke)`; kein `stelleMarkeBereit`, kein `ZeichenZugang`, kein Projekt. Feste Vorlage „Vollbild". | #303 bleibt offen bis zur Montage; #312/ENTSCHIEDEN 5 bleibt gewahrt |
+| A2 | #442 „Aktionen zwischen Frames" | **Aktion an einer Zeitstelle im Video** (Unterbrechung, TK 9.2.9) – kein neues Modell. | Diagnose am Fenster; 4b6 belegt den vollflaechigen Weg, Band-Aktionen gehen in den Band-Weg (#437) |
+| A3 | #443 Videosteuerung | **Kern-Set** (Play/Pause, Scrubbing, Zeit, Lautstaerke/Stumm, Vollbild, ±5 s) als **Overlay beim Hovern**. Geschwindigkeit/Tastatur/±10 s spaeter. | Bau in UI 2.0; kein zweiter Player |
+| A4a | Banner-Vertragslinie | **BA-Familie #365+** (`BannerSchild`, `Projekt.bannerSchilder`, Abschnitte auf `schildRef`). | #365-#373/#371 freigegeben, **erst nach AD/TK-Nachtrag** |
+| A4b | Aktions-Editor | **Inline im Projekteditor**, ohne Reiterwechsel. | eigener Schnitt/Plan vor dem Bau |
+| A4c | Videobearbeitung | **Im selben Editor**, nachrangig. | eigener Schnitt/Plan vor dem Bau |
+
+Die Antworten sind als Kommentare an **#303**, **#442**, **#443** und **#365** hinterlegt;
+die UI-Leitlinie ist in `docs/agents/oberflaeche-2-0-plan.md` (Abschnitt 6) nachgetragen.
+
+## 8. Reihenfolge bis zur naechsten Abnahme
+
+**1. Backlog-Abgleich (Hygiene, zuerst).** 322 offene Issues, davon **295 aus der alten
+M-Aera (≤ #380)** und **103** mit `braucht-entscheidung`; `bereitschaft.py` meldet M0-M6/M8
+als gebaut. In Chargen: alte/built Issues mit Beleg schliessen, BK-01…06 (#354-#359,
+verworfene Zwei-Screens-Aera) als `not planned`, Banner-Familie behalten. Dazu `.gitignore`
+fuer Laufzeitartefakte (`marken.json`, `marken-assets/`, `.e2e-*-datenort/`).
+
+**2. Live-Vorschau Marken-Editor** (A1): Props + Vorbereitung + dritte Spalte, Treiber-Beleg.
+
+**3. Muss-Luecken der Matrix, in dieser Reihenfolge:**
+- **FA-01/03** – Aktion bearbeiten, Video ersetzen mit Bestaetigung; dazu die **#442-Diagnose**.
+- **FA-22** – zweite Ausgabe, Vorbelegung, Ersetzen statt Anlegen.
+- **FA-13** – Vorlagen anlegen/zonen/speichern/verwerfen.
+- **FA-08** – eine durchgehende MP4 per `ffprobe` (Dauer/Framezahl).
+
+**4. Oberflaeche 2.0 / Banner** (A4): zuerst AD/TK-Nachtrag (Banner + UI-Gewichtung), dann
+#365-#373/#371, dann Aktions-Editor inline, #443 (Hover-Overlay), Videobearbeitung im
+selben Editor.
+
+**5. Qualitaet und Abschluss:** Q1.2 (wiederholte Begruendungen), Mutationschargen
+(138/92) in Scheiben; Push der dann ~135+ Commits **nur auf Anweisung**.
+
+**Nicht vergessen:** Der Dev-Lauf ist beendet (kein Waisenprozess); die Abnahme #433 ist
+geschlossen; der Treiber startet seit 22.10. nur noch EINEN Electron-Prozess.

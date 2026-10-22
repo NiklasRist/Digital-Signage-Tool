@@ -122,3 +122,22 @@ denselben Editor oder einen eigenen Modus?
 
 **Regel:** Erst Entscheidung, dann AD/TK-Nachtrag, dann Issue mit Signaturblock und
 Dateiliste - kein Umbau ohne Plan (Lehre aus #432).
+
+### Entschieden 22.10.2026 (Auftraggeber) - die offenen Fragen aus Abschnitt 6
+
+- **Banner-Vertragslinie:** die **BA-Familie #365+** (`BannerSchild`, `Projekt.bannerSchilder`,
+  Abschnitte auf `schildRef`). Nicht der bestehende Einblendung-/Band-Weg. Voraussetzung:
+  AD/TK-Nachtrag (AD v1.8 / TK v3.27 fortschreiben), dann Signaturblock je Issue.
+  Damit sind Welle 2 und #365-#373/#371 grundsaetzlich freigegeben (noch nicht gebaut).
+- **Aktions-Editor:** **inline im Projekteditor** erreichbar, ohne Reiterwechsel.
+- **Videobearbeitung:** kommt **in denselben Editor** (nicht eigener Modus), bleibt aber
+  nachrangig hinter Aktionen/Einfuegen/Banner.
+- **Videosteuerung (#443):** **Kern-Set** (Play/Pause, Scrubbing, Zeit, Lautstaerke/Stumm,
+  Vollbild, +-5 s) als **Overlay beim Hovern** (YouTube-Muster). Geschwindigkeit, Tastatur
+  und +-10 s sind ein spaeterer Schritt; Tastatur nur abgestimmt mit #387.
+- **Marken-Live-Vorschau (#303):** `vorlagen: VorlagenZugang` als drittes Prop, eigene
+  Vorbereitung mit `stelleMarkenSchriftenBereit(marke)` und `bereiteLogoVor(marke)` - kein
+  `stelleMarkeBereit`, kein `ZeichenZugang`, kein Projekt.
+
+**Naechster Schritt fuer diesen Schnitt:** AD/TK-Nachtrag (Banner, UI-Gewichtung), danach
+je Baustein ein Issue mit Signaturblock. Kein Umbau ohne Plan.

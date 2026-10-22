@@ -57,11 +57,11 @@
   **49 Integrationstests (12 Dateien)**, Treiber ohne Befund **und ohne Untersuchung**;
   Typecheck/Lint 0.
 - **Ehrlich offen:**
-  - **Live-Vorschau** des Marken-Editors (dritter Teil aus TK 9.14.1) ist gebaut, aber **nicht
-    montiert**: #303/#330 fuehren die Props-Frage als "NICHT selbst entscheiden" (Vorlage,
-    `ZeichenZugang`, Schriften/Logo). Sie ist nicht Teil des FA-24-Satzes.
-  - **#442** („Aktionen zwischen Frames anlegen geht nicht") und **#443** („Videosteuerung wie
-    bei YouTube") sind Wuensche aus der #433-Abnahme und warten auf eine Entscheidung.
+  - **Backlog:** **322 offene Issues**, davon **295 aus der alten M-Aera (≤ #380)** und **103**
+    mit `braucht-entscheidung` - ueberwiegend gebauter Code oder die **verworfene**
+    Zwei-Screens-Aera. Vor dem naechsten Bauabschnitt **abgleichen** (Charge 1 der Reihenfolge).
+  - **Live-Vorschau** des Marken-Editors ist gebaut, aber **nicht montiert**; der Weg ist
+    **entschieden** (siehe unten).
   - **Mutations-Chargen** 138/92 offen.
 - **Nicht gepusht.**
 - **B5 geschlossen (Gate-Blindstelle):** `scripts/durchlauf.mjs` wertet jedes eindeutige
@@ -72,8 +72,28 @@
 - **#433 abgenommen (User, 22.10.2026):** Filmstreifen am echten Fenster bestaetigt, keine
   Aenderung an Dichte/Hoehe/Standard-Zoom. Treiber 4b4 (1 -> 6 Bilder bei 128 px/s) und die
   Sichtpruefung sind die Belege; #433 geschlossen.
-- **Naechster Schritt:** **Live-Vorschau entscheiden** (#303/#330), **#442/#443 entscheiden**;
-  danach die naechste Matrix-Luecke (FA-13 Vorlagen-Editor, FA-22 zweite Ausgabe).
+- **Entscheidungen (Auftraggeber, 22.10.2026):**
+  1. **Live-Vorschau (#303):** `vorlagen: VorlagenZugang` als drittes Prop + **eigene
+     Vorbereitung** mit `stelleMarkenSchriftenBereit(marke)`/`bereiteLogoVor(marke)`; **kein**
+     `stelleMarkeBereit`, **kein** `ZeichenZugang`, kein Projekt. Feste Vorlage „Vollbild".
+  2. **#442:** gemeint ist eine **Aktion an einer Zeitstelle im Video** (Unterbrechung, TK 9.2.9),
+     kein neues Modell. Offen ist die Diagnose, warum der Weg beim User nicht greift (4b6 belegt
+     den vollflaechigen Weg; Band-Aktionen gehen in den Band-Weg, #437).
+  3. **#443:** **Kern-Set** (Play/Pause, Scrubbing, Zeit, Lautstaerke/Stumm, Vollbild, ±5 s) als
+     **Hover-Overlay** (YouTube-Muster); Geschwindigkeit/Tastatur spaeter.
+  4. **Banner:** verbindlich ist die **BA-Familie #365+** (`BannerSchild`), **erst nach
+     AD/TK-Nachtrag**. **Aktions-Editor inline** im Projekteditor; **Videobearbeitung im
+     selben Editor** (nachrangig).
+  Hinterlegt an #303/#442/#443/#365 und in `docs/agents/oberflaeche-2-0-plan.md`.
+- **Reihenfolge (vereinbart):**
+  1. **Backlog-Abgleich** (alte/built Issues schliessen, BK-01…06 verwerfen, `.gitignore` fuer
+     Laufzeitartefakte).
+  2. **Live-Vorschau Marken-Editor** (A1).
+  3. **Muss-Luecken:** FA-01/03 (+ #442-Diagnose), FA-22, FA-13, FA-08.
+  4. **Oberflaeche 2.0 / Banner:** AD/TK-Nachtrag, dann #365-#373/#371, Aktions-Editor inline,
+     #443, Videobearbeitung.
+  5. **Qualitaet:** Q1.2, Mutationschargen; **Push nur auf Anweisung**.
+- **Naechster Schritt:** **Backlog-Abgleich** starten (Charge 1), dann die Live-Vorschau montieren.
 
 ## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde, UI-Ausrichtung) – historisiert durch den Abschnitt darueber
 
