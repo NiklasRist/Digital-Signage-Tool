@@ -252,8 +252,16 @@ export async function entferneMarkenDatei(
     }
   }
 
-  // SCHRITT 5: das Feld wird zurueck - SENTINEL bei parent != null, sonst return
-  // GEBUENDELT aus eingebauteMarke() (Werte der eingebauten Marke).
+  // SCHRITT 5: das Feld wird zurueck.
+  //   parent !== null   -> SENTINEL { geerbt: true } (folgt wieder dem Parent)
+  //   eingebaut         -> gebuendelter Wert (die eingebaute Marke IST der gebuendelte Fall)
+  //   eigenstaendig     -> logo: null (Ersatz-Logo mit dem Markennamen, TK 9.10.10)
+  // ENTSCHEIDUNG #440 (22.10.2026): Bis hierher bekam AUCH eine eigenstaendige Marke den
+  // gebuendelten Wert der eingebauten Marke - nach Import + Entfernen trug eine Partner-Marke
+  // dauerhaft das Baller-Logo, waehrend HINWEIS_LOGO_ENTFERNT den Markennamen verspricht und
+  // erstelle-marke.ts das fremde Logo bewusst NICHT mitkopiert. #298 liess beide Ausgaenge zu;
+  // entschieden ist der Ersatz-Logo-Pfad fuer eigenstaendige Marken. Schriften bleiben beim
+  // gebuendelten Wert: eine Marke BRAUCHT je Rolle eine Schrift, `null` gibt es dort nicht.
   let teilzeile: MarkenTeilwerte
   if (eintrag.parent !== null) {
     teilzeile =
@@ -264,7 +272,7 @@ export async function entferneMarkenDatei(
     const quelle = eingebauteMarke()
     teilzeile =
       art === 'logo'
-        ? ({ logo: quelle.logo } as unknown as MarkenTeilwerte)
+        ? ({ logo: eintrag.eingebaut ? quelle.logo : null } as unknown as MarkenTeilwerte)
         : ({
             schriften: { [schriftRolle as SchriftRolle]: quelle.schriften[schriftRolle as SchriftRolle] },
           } as unknown as MarkenTeilwerte)
@@ -274,7 +282,8 @@ export async function entferneMarkenDatei(
 }
 // - loescht die zuvor importierte Datei aus markenOrdner(markeId) (falls physisch vorhanden)
 // - setzt das Feld ueber bearbeiteMarke zurueck: bei parent !== null auf { geerbt: true },
-//   sonst (eigenstaendig ODER eingebaut) auf den GEBUENDELTEN Wert aus eingebauteMarke()
+//   sonst: eingebaut -> GEBUENDELTER Wert aus eingebauteMarke(); eigenstaendig -> logo: null
+//   (Ersatz-Logo, #440) bzw. GEBUENDELTER Wert fuer eine Schrift-Rolle (Pflichtfeld)
 
 // ---------------------------------------------------------------------------
 // Intern: Form-Pruefung, Endung, Uebersetzung der Fehler-Huelle.

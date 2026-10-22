@@ -1458,3 +1458,11 @@ Ereignisse gesammelt: 36
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
 - **Untersuchung** Marken-Rest (FA-24): erwartet "der Hinweis verspricht das Ersatz-Logo, der Bestand liefert das gebuendelte Logo", erkannt "logo={"datei":"logo-fitnessworld24.png","herkunft":"gebuendelt","seitenverhaeltnis":3.5} (durch #298 erlaubt; HINWEIS_LOGO_ENTFERNT nennt den Markennamen)" (Ort: marken-store/dateien.ts)
+
+## Nachlauf vom 2026-10-22T13:05:15.391Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 36
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

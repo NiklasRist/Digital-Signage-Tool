@@ -20,6 +20,7 @@ let markenOrdner: typeof import("../../src/main/marken-store/pfade").markenOrdne
 let loeseMarkenDateiPfad: typeof import("../../src/main/marken-store/pfade").loeseMarkenDateiPfad;
 let ladeBestand: typeof import("../../src/main/marken-store/schreibe-marken").ladeBestand;
 let flushBestand: typeof import("../../src/main/marken-store/schreibe-marken").flushBestand;
+let erstelleMarke: typeof import("../../src/main/marken-store/erstelle-marke").erstelleMarke;
 
 beforeEach(async () => {
   vi.resetModules();
@@ -33,6 +34,8 @@ beforeEach(async () => {
   const f = await import("../../src/main/marken-store/schreibe-marken");
   ladeBestand = f.ladeBestand;
   flushBestand = f.flushBestand;
+  const e = await import("../../src/main/marken-store/erstelle-marke");
+  erstelleMarke = e.erstelleMarke;
 });
 
 afterEach(async () => {
@@ -214,6 +217,46 @@ describe("entferneMarkenDatei (#289)", () => {
     if (!erg.ok) return;
     expect(erg.wert.schriften.headlineElegant?.herkunft).toBe("gebuendelt");
     expect(erg.wert.schriften.headlineElegant?.datei).toBe("PlayfairDisplay-Bold.woff2");
+  });
+
+  it("Logo entfernen auf EIGENSTAENDIGER Marke: logo null (Ersatz-Logo) - Entscheidung #440", async () => {
+    const angelegt = await erstelleMarke("Partner #440", null);
+    expect(angelegt.ok).toBe(true);
+    if (!angelegt.ok) return;
+    await flushBestand();
+
+    const quelle = await legeQuelleAn("logo-440.png", PNG_1x1);
+    const importiert = await importiereMarkenDatei(angelegt.wert.id, "logo", null, quelle);
+    expect(importiert.ok).toBe(true);
+    if (!importiert.ok) return;
+    expect(importiert.wert.logo?.herkunft).toBe("importiert");
+    await flushBestand();
+
+    const erg = await entferneMarkenDatei(angelegt.wert.id, "logo", null);
+    expect(erg.ok).toBe(true);
+    if (!erg.ok) return;
+    // Der Ersatz-Logo-Pfad (TK 9.10.10) - NICHT das gebuendelte Fremdlogo der eingebauten Marke.
+    expect(erg.wert.logo).toBeNull();
+    expect(erg.wert.herkunftJeFeld.logo).toBe("keins");
+    // Die importierte Datei ist weg.
+    await expect(fs.access(path.join(markenOrdner(angelegt.wert.id), "logo.png"))).rejects.toThrow();
+  });
+
+  it("Logo entfernen auf der EINGEBAUTEN Marke: gebuendelter Wert bleibt (#440-Grenze)", async () => {
+    const basis = await ladeBestand();
+    if (!basis.ok) return;
+    const markeId = basis.wert[0]!.id;
+
+    const quelle = await legeQuelleAn("logo-eingebaut.png", PNG_1x1);
+    const importiert = await importiereMarkenDatei(markeId, "logo", null, quelle);
+    expect(importiert.ok).toBe(true);
+    await flushBestand();
+
+    const erg = await entferneMarkenDatei(markeId, "logo", null);
+    expect(erg.ok).toBe(true);
+    if (!erg.ok) return;
+    expect(erg.wert.logo?.herkunft).toBe("gebuendelt");
+    expect(erg.wert.logo?.datei).toBe("logo-fitnessworld24.png");
   });
 
   it("die IMPORTIERTE physische Datei ist nach dem Entfernen WEG", async () => {

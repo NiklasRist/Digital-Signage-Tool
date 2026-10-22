@@ -61,7 +61,7 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-21 | Undo/Redo in beiden Editoren | 4f3, 4f, 4f2, 4f4, 4g2, 4g4, 4h | Pfeile sichtbar und aktiv; Undo schrumpft, Redo waechst; je eine Aktion ist EIN Schritt (Einfuegen, Band, Dauer/Trim, Anlage, Loeschen, Reparatur). Der **Vorlagen-Editor** hat kein Undo-Szenario. | teilweise |
 | FA-22 | Mehrere benannte Ausgaben; Vorbelegung = letzter Name | 4c | Der Name wird ohne Endung eingetippt, der Dialog prueft, die Ausgabe steht danach in der Liste. **Zweite Ausgabe**, Vorbelegung und Ersetzen-statt-Anlegen sind ungemessen. | teilweise |
 | FA-23 | Marken-Bestand, Standardmarke je Projekt, Loeschsperre (Muss) | 4a, 4a0, 4a2 | Eine **zweite Marke** wird ueber die echte Oberflaeche angelegt (4a0; vorher lag genau eine im Bestand - B2). 4a wechselt die Standardmarke am echten `<select>` **gezielt auf diese Marke** und belegt den Wert zusaetzlich in `project:listeProjekte` (D1). 4a2 versucht, die nun genutzte Marke zu loeschen: **gesperrt** mit Klartext-Grund (`loesch-standard` nennt das Projekt) und Ausweg; nach dem Zurueckstellen der Standardmarke wird sie **geloescht** (Sperre = Nutzung, nicht Zufall). **Seit 21.10.2026.** | gemessen |
-| FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | 4m, 4m2 | **4m:** Marke ueber die echte Oberflaeche **anlegen/oeffnen**, **Akzentfarbe frei** setzen (Wert im Bestand V2), **Kontrast-Warnung** am Grenzwert ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, Warnung weg bei ausreichendem Kontrast, Felder zeigen die **neu geoeffnete** Marke, **Ableiten** mit `abgeleitet` und Herkunftszeilen. **4m2:** **alle dreizehn Farbrollen** schreiben (13/13 im Bestand), **Slogan** (Text + Schalter) und **Sicherheitsabstand** (80/40) schreiben, **Wachsens-Hinweis** vor dem Speichern, **Bearbeiten einer abgeleiteten Marke** (eigen -> "Eigener Wert" -> Vererbung wiederherstellen -> geerbt), **Import-Pipeline** fuer Schrift und Logo mit echten Dateien (`herkunft: importiert`, Anzeige "(importiert)") und **Logo entfernen**. **MANUELL bleibt nur der native Dateidialog** (Klick auf "Eigene Schrift/Logo waehlen"), wie FA-09/Export; die Pipeline danach ist gemessen. **Nicht Teil von FA-24, aber offen:** die Live-Vorschau (TK 9.14.1/9.15.2, B11) und die Text/Store-Spannung beim Logo-Entfernen (B12). **Seit 22.10.2026.** | gemessen |
+| FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | 4m, 4m2 | **4m:** Marke ueber die echte Oberflaeche **anlegen/oeffnen**, **Akzentfarbe frei** setzen (Wert im Bestand V2), **Kontrast-Warnung** am Grenzwert ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, Warnung weg bei ausreichendem Kontrast, Felder zeigen die **neu geoeffnete** Marke, **Ableiten** mit `abgeleitet` und Herkunftszeilen. **4m2:** **alle dreizehn Farbrollen** schreiben (13/13 im Bestand), **Slogan** (Text + Schalter) und **Sicherheitsabstand** (80/40) schreiben, **Wachsens-Hinweis** vor dem Speichern, **Bearbeiten einer abgeleiteten Marke** (eigen -> "Eigener Wert" -> Vererbung wiederherstellen -> geerbt), **Import-Pipeline** fuer Schrift und Logo mit echten Dateien (`herkunft: importiert`, Anzeige "(importiert)") und **Logo entfernen**. **MANUELL bleibt nur der native Dateidialog** (Klick auf "Eigene Schrift/Logo waehlen"), wie FA-09/Export; die Pipeline danach ist gemessen. **Nicht Teil von FA-24:** die Live-Vorschau (TK 9.14.1/9.15.2, B11). **Logo entfernen** ist seit #440 entschieden und gemessen (B12). **Seit 22.10.2026.** | gemessen |
 
 **Zaehlung:** 6 x gemessen (FA-05, FA-17, FA-18, FA-19, FA-23, FA-24), 15 x teilweise, 0 x Luecke,
 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
@@ -217,23 +217,30 @@ Ersatzweg. 4m/4m2 lassen die Spalte deshalb aus. FA-24 selbst (AD: anlegen, bear
 ableiten, Import, Kontrastwarnung) ist ohne sie gemessen - die Vorschau ist eine Zusage aus
 TK 9.14.1/9.15.2, nicht aus dem FA-24-Satz.
 
-### B12 - Logo entfernen: der Hinweis verspricht das Ersatz-Logo, der Bestand liefert das gebündelte Fremdlogo (offen, 22.10.2026)
+### B12 - Logo entfernen: der Hinweis verspricht das Ersatz-Logo, der Bestand lieferte das gebündelte Fremdlogo (behoben 22.10.2026, #440)
 
 Beim Bau von 4m2 gemessen: Eine **eigenständige** Marke bekommt ein importiertes Logo
-(`logo.png`, `herkunft: importiert`). Nach "Logo entfernen" steht im Bestand **nicht** `logo:
+(`logo.png`, `herkunft: importiert`). Nach "Logo entfernen" stand im Bestand **nicht** `logo:
 null` (Ersatz-Logo mit dem Markennamen), sondern das **gebündelte Logo der eingebauten Marke**
 (`logo-fitnessworld24.png`, `herkunft: gebuendelt`).
 
-Das ist **durch #298 ausdrücklich erlaubt** („das Ergebnis kann `logo: null` tragen ODER einen
-geerbten/gebündelten Wert – BEIDES ist ein gültiger Erfolg"), steht aber im Widerspruch zum
+Das war **durch #298 ausdrücklich erlaubt** („das Ergebnis kann `logo: null` tragen ODER einen
+geerbten/gebündelten Wert – BEIDES ist ein gültiger Erfolg"), stand aber im Widerspruch zum
 angezeigten `HINWEIS_LOGO_ENTFERNT` („stattdessen erscheint der Markenname auf der
 Akzentfarbe") und zur Begründung in `erstelle-marke.ts`, die `logo: null` bewusst **nicht**
 mitkopiert, damit der Ersatz-Logo-Pfad (#293) erreichbar bleibt. Praktische Folge: Nach
-Import + Entfernen trägt eine Partner-Marke dauerhaft das Baller-Logo.
+Import + Entfernen trug eine Partner-Marke dauerhaft das Baller-Logo.
 
-**Nicht eigenmächtig geändert** – der gebaute Code gewinnt, die Entscheidung gehört dem
-Auftraggeber (Issue mit `braucht-entscheidung`). Der Treiber meldet den Fall als
-**Untersuchung**, nicht als Befund, weil #298 beide Ausgänge zulässt.
+**Entschieden (#440, Auftraggeber 22.10.2026) und gebaut:** Für eine **eigenständige** Marke
+setzt `entferneMarkenDatei` das Logo jetzt auf **`null`** (Ersatz-Logo, TK 9.10.10). Die
+**eingebaute** Marke behält den gebündelten Wert (er IST ihr Logo), und **Schriften** bleiben
+beim gebündelten Rückfall – eine Marke braucht je Rolle eine Schrift, `null` gibt es dort nicht.
+
+**Belege:** zwei Verhaltensproben in `marken-dateien.spec.ts` (eigenständig -> `null` +
+`herkunftJeFeld.logo = 'keins'`; eingebaut -> gebündelt). Gegenprobe: die alte Zeile
+(`quelle.logo` auch für eigenständig) -> **Test rot** (`expected {…} to be null`), Rücknahme
+byte-identisch (`b5305feb…dc13e`). Treiber 4m2: `Nach Logo entfernen: null` ->
+`GEMESSEN`. Gate: **5.606 Unit-Tests**, Exit 0.
 
 ### B13 - `löscheMarke` räumt `marken-assets/<markeId>/` nicht auf (offen, 22.10.2026)
 
@@ -287,7 +294,7 @@ Reihenfolge nach MoSCoW: **Muss** zuerst. "Treiber" heisst: neuer oder erweitert
 | ~~1~~ | ~~FA-17/18~~ | **ERLEDIGT 21.10.2026** durch die Treiber-Schritte **4k/4l** - s. Abschnitt 2. | siehe 4k/4l |
 | 2 | FA-01/03 | Video **ersetzen** mit Bestaetigung; Aktion **bearbeiten** | Treiber: zweites Video importieren -> `composer-ersetzen-frage`, bestaetigen -> **ein** Video-Element bleibt, Datei getauscht; Aktion oeffnen, Titel aendern, speichern, Wert im Store lesen. |
 | ~~3~~ | ~~FA-23~~ | **ERLEDIGT 21.10.2026** durch **4a0/4a/4a2** - s. Abschnitt 2 (Wechsel, Loeschsperre mit Grund/Ausweg, Freigabe nach Zurueckstellen). | siehe 4a0/4a/4a2 |
-| ~~4~~ | ~~FA-24~~ | **ERLEDIGT 22.10.2026** durch **4m/4m2**: anlegen/oeffnen, alle dreizehn Farbrollen, Slogan, Sicherheitsabstand samt Wachstums-Hinweis, Ableiten und Bearbeiten (eigen -> geerbt), Import-Pipeline fuer Schrift/Logo, Logo entfernen. **MANUELL** bleibt nur der native Dateidialog. Offen (nicht FA-24): Live-Vorschau (B11) und die Text/Store-Spannung beim Logo-Entfernen (B12). | siehe 4m/4m2 |
+| ~~4~~ | ~~FA-24~~ | **ERLEDIGT 22.10.2026** durch **4m/4m2**: anlegen/oeffnen, alle dreizehn Farbrollen, Slogan, Sicherheitsabstand samt Wachstums-Hinweis, Ableiten und Bearbeiten (eigen -> geerbt), Import-Pipeline fuer Schrift/Logo, Logo entfernen (B12 mit #440 entschieden: eigenstaendig -> `null`). **MANUELL** bleibt nur der native Dateidialog. Offen (nicht FA-24): Live-Vorschau (B11). | siehe 4m/4m2 |
 | 5 | FA-13 | Vorlagen anlegen/bearbeiten/speichern/verwerfen | Treiber: aus der Uebersicht anlegen, Zone hinzufuegen, speichern, Store lesen; "Verwerfen" stellt den Ausgangsstand her. |
 | 6 | FA-22 | Zweite Ausgabe, Vorbelegung, Ersetzen statt Anlegen | Treiber: zweiten Render mit **gleichem** Namen -> eine Datei; mit **neuem** Namen -> zwei Zeilen; Namensfeld ist mit dem letzten Namen vorbelegt. |
 | 7 | FA-08 | "Eine durchgehende Datei" inhaltlich | Treiber: nach dem Render die erzeugte Datei mit `ffprobe` messen (Dauer gegen Listensumme, genau eine Datei). Naeher an der Anforderung als "Datei erscheint in der Liste". |
