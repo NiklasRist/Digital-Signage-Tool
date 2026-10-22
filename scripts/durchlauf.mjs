@@ -17,6 +17,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import puppeteer from "puppeteer-core";
+import ffprobeStatic from "ffprobe-static";
 
 const WURZEL = process.cwd();
 const PROTOKOLL = path.join(WURZEL, "docs", "agents", "oberflaeche-durchlauf.md");
@@ -1632,6 +1633,163 @@ const main = async () => {
       }
     }
 
+    // Schritt 4n - FA-13: Vorlagen anlegen, Zone hinzufuegen, speichern, verwerfen.
+    // Gemessen wird am echten Editor; die Belege kommen aus `vorlagen:listeVorlagen`
+    // (Parent) und `vorlagen:listeArbeitskopien` (Arbeitskopie). Die Testvorlage wird
+    // am Ende ueber `vorlagen:löscheVorlage` entfernt - sonst bliebe sie in vorlagen.json.
+    {
+      const name4n = "DurchlaufVorlage-" + Date.now();
+      const leseVorlagen4n = () => seite.evaluate(async () => {
+        const antwort = await window.api.invoke("vorlagen:listeVorlagen");
+        return antwort && antwort.ok ? antwort.wert : null;
+      });
+      const leseArbeitskopien4n = () => seite.evaluate(async () => {
+        const antwort = await window.api.invoke("vorlagen:listeArbeitskopien");
+        return antwort && antwort.ok ? antwort.wert : null;
+      });
+      const warteVorlage4n = async (id, pruefung, fristMs = 20_000) => {
+        const frist = Date.now() + fristMs;
+        let letzte = null;
+        while (Date.now() < frist) {
+          const liste = await leseVorlagen4n();
+          letzte = liste === null ? null : liste.find((v) => v.id === id) ?? null;
+          if (letzte !== null && pruefung(letzte)) return letzte;
+          await schlafe(250);
+        }
+        return letzte;
+      };
+      let id4n = null;
+      try {
+        await klick('[data-testid="reiter-vorlagen"]');
+        await schlafe(800);
+        // Eine aus Schritt 4 offene Sitzung zuerst beenden, sonst steht die Uebersicht nicht.
+        const sitzungOffen4n = await seite.evaluate(
+          () => document.querySelector('[data-testid="arbeitskopie-kopf"]') !== null,
+        );
+        if (sitzungOffen4n) {
+          await seite.evaluate(() => document.querySelector('[data-testid="vorlage-verwerfen"]')?.click());
+          await schlafe(1_200);
+        }
+        const neuKnopf4n = await seite.$('[data-testid="vorlagen-neu-vollflaeche"]');
+        if (neuKnopf4n === null) {
+          fund("Vorlagen (FA-13)", "der Weg 'Neu: vollflaeche' steht in der Uebersicht",
+            "vorlagen-neu-vollflaeche fehlt", "Befund", "vorlagen-editor/index.tsx");
+        } else {
+          await neuKnopf4n.click();
+          neuKnopf4n.dispose?.();
+          await schlafe(300);
+          const nameGesetzt4n = await seite.evaluate((n) => {
+            const feld = document.querySelector('[data-testid="vorlage-name"]');
+            if (feld === null) return false;
+            const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+            setzeWert.call(feld, n);
+            feld.dispatchEvent(new Event("input", { bubbles: true }));
+            return true;
+          }, name4n);
+          await seite.evaluate(() => {
+            document.querySelector('[data-testid="vorlage-anlegen-bestaetigen"]')?.click();
+          });
+          const fristSitzung4n = Date.now() + 15_000;
+          let sitzungDa4n = false;
+          while (Date.now() < fristSitzung4n) {
+            sitzungDa4n = await seite.evaluate(
+              () => document.querySelector('[data-testid="arbeitskopie-kopf"]') !== null,
+            );
+            if (sitzungDa4n) break;
+            await schlafe(250);
+          }
+          const listeNachAnlegen4n = await leseVorlagen4n();
+          id4n = listeNachAnlegen4n?.find((v) => v.name === name4n)?.id ?? null;
+          console.log(`[schritt-4n] Anlegen: nameGesetzt=${String(nameGesetzt4n)}, Sitzung=${String(sitzungDa4n)}, id=${String(id4n)}.`);
+          if (!nameGesetzt4n || !sitzungDa4n || id4n === null) {
+            fund("Vorlagen (FA-13)", "eine eigene Vorlage laesst sich anlegen und oeffnen",
+              `Sitzung=${String(sitzungDa4n)}, id=${String(id4n)}`, "Befund", "vorlagen-editor/index.tsx");
+          } else {
+            const vorher4n = await warteVorlage4n(id4n, () => true);
+            const zonenVor4n = vorher4n?.zonen.length ?? null;
+            // Eine Textzone hinzufuegen (der Knopf ist der oeffentliche Weg, #147).
+            const zoneKlick4n = await seite.evaluate(() => {
+              const knopf = [...document.querySelectorAll('[data-testid="zone-hinzufuegen"] button')]
+                .find((b) => (b.textContent ?? "").includes("Textzone"));
+              if (knopf === undefined) return false;
+              knopf.click();
+              return true;
+            });
+            await schlafe(1_200);
+            const arbeitskopien4n = await leseArbeitskopien4n();
+            const kopie4n = arbeitskopien4n?.find((v) => v.parent === id4n) ?? null;
+            console.log(`[schritt-4n] Zone: geklickt=${String(zoneKlick4n)}, Zonen Parent ${String(zonenVor4n)} -> Arbeitskopie ${String(kopie4n?.zonen.length)}, Knopf "uebernehmen"=${String(await seite.evaluate(() => {
+              const k = document.querySelector('[data-testid="vorlage-uebernehmen"]');
+              return k === null ? null : k.disabled === false;
+            }))}.`);
+            if (!zoneKlick4n || zonenVor4n === null || kopie4n === null || kopie4n.zonen.length !== zonenVor4n + 1) {
+              fund("Vorlagen (FA-13)", "eine Textzone landet in der ARBEITSKOPIE (nicht im Parent)",
+                `Parent=${String(zonenVor4n)}, Kopie=${String(kopie4n?.zonen.length)}`,
+                "Befund", "vorlagen-editor/index.tsx");
+            } else {
+              await seite.evaluate(() => document.querySelector('[data-testid="vorlage-uebernehmen"]')?.click());
+              const gespeichert4n = await warteVorlage4n(id4n, (v) => v.zonen.length === zonenVor4n + 1);
+              const sitzungNach4n = await seite.evaluate(
+                () => document.querySelector('[data-testid="arbeitskopie-kopf"]') !== null,
+              );
+              console.log(`[schritt-4n] Speichern: Zonen Parent=${String(gespeichert4n?.zonen.length)} (erwartet ${String(zonenVor4n + 1)}), Sitzung noch offen=${String(sitzungNach4n)}.`);
+              if (gespeichert4n === null || gespeichert4n.zonen.length !== zonenVor4n + 1) {
+                fund("Vorlagen (FA-13)", "„Vorlage uebernehmen' schreibt die Zone in den Parent",
+                  `Zonen=${String(gespeichert4n?.zonen.length)}`, "Befund", "vorlagen-editor/index.tsx");
+              } else if (sitzungNach4n) {
+                fund("Vorlagen (FA-13)", "nach dem Uebernehmen ist die Sitzung beendet",
+                  "arbeitskopie-kopf steht noch", "Befund", "vorlagen-editor/index.tsx");
+              } else {
+                // Zweiter Durchgang: Zone hinzufuegen, dann VERWERFEN - der Parent bleibt.
+                const zeile4n = await seite.$(`[data-testid="vorlage-bearbeiten-${id4n}"]`);
+                if (zeile4n === null) {
+                  fund("Vorlagen (FA-13)", "die gespeicherte Vorlage laesst sich erneut bearbeiten",
+                    "vorlage-bearbeiten fehlt", "Befund", "vorlagen-editor/index.tsx");
+                } else {
+                  await zeile4n.click();
+                  zeile4n.dispose?.();
+                  await schlafe(1_200);
+                  await seite.evaluate(() => {
+                    const knopf = [...document.querySelectorAll('[data-testid="zone-hinzufuegen"] button')]
+                      .find((b) => (b.textContent ?? "").includes("Textzone"));
+                    if (knopf !== undefined) knopf.click();
+                  });
+                  await schlafe(1_000);
+                  await seite.evaluate(() => document.querySelector('[data-testid="vorlage-verwerfen"]')?.click());
+                  await schlafe(1_500);
+                  const nachVerwerfen4n = await warteVorlage4n(
+                    id4n, (v) => v.zonen.length === zonenVor4n + 1,
+                  );
+                  const kopieWeg4n = (await leseArbeitskopien4n())?.some((v) => v.parent === id4n) ?? true;
+                  console.log(`[schritt-4n] Verwerfen: Zonen Parent=${String(nachVerwerfen4n?.zonen.length)} (erwartet ${String(zonenVor4n + 1)}), Arbeitskopie=${String(kopieWeg4n)}.`);
+                  if (nachVerwerfen4n === null || nachVerwerfen4n.zonen.length !== zonenVor4n + 1) {
+                    fund("Vorlagen (FA-13)", "„Verwerfen' laesst den Parent unveraendert",
+                      `Zonen=${String(nachVerwerfen4n?.zonen.length)}`, "Befund", "vorlagen-editor/index.tsx");
+                  } else if (kopieWeg4n) {
+                    fund("Vorlagen (FA-13)", "nach dem Verwerfen ist keine Arbeitskopie mehr da",
+                      "Arbeitskopie steht noch", "Befund", "vorlagen-editor/index.tsx");
+                  } else {
+                    console.log("[schritt-4n] Vorlagen GEMESSEN: anlegen, Zone in der Arbeitskopie, uebernehmen -> Parent, erneut aendern -> verwerfen -> Parent unveraendert (FA-13).");
+                  }
+                }
+              }
+            }
+          }
+        }
+      } finally {
+        // Aufraeumen: die Testvorlage entfernen (sonst bleibt sie in vorlagen.json).
+        if (id4n !== null) {
+          const weg4n = await seite.evaluate(async (id) => {
+            const antwort = await window.api.invoke("vorlagen:löscheVorlage", { id });
+            return antwort && antwort.ok ? true : JSON.stringify(antwort?.fehler ?? antwort);
+          }, id4n);
+          console.log(`[schritt-4n] Aufraeumen: loeschen=${JSON.stringify(weg4n)}.`);
+          await klick('[data-testid="reiter-zusammenstellen"]');
+          await schlafe(300);
+        }
+      }
+    }
+
     // Schritt 4b - Medien-Seed: Ein mit dem mitgebundelten ffmpeg erzeugtes Testvideo
     // wird ueber queue:reiheEin importiert (derselbe Weg wie die native Import-Quelle -
     // der Dialog selbst bleibt nativ und wird nicht bedienbar gemockt). Messpartner: der
@@ -1877,6 +2035,105 @@ const main = async () => {
             "Befund", "composer/zeitleiste.tsx");
         } else {
           console.log(`[schritt-4b4] Zoom GEMESSEN: ${filmDiag.bilder} -> ${filmZoom.bilder} Einzelbilder bei ${String(filmZoom.wert)}.`);
+        }
+
+        // Schritt 4b7 - FA-01: EIN Video, ERSETZEN mit Rueckfrage. Der natuerliche Weg
+        // (Dateidialog) ist nativ und nicht steuerbar; gemessen werden (a) die Rueckfrage
+        // VOR dem Import, (b) Abbrechen aendert nichts, (c) die ERSETZEN-Wirkung, indem ein
+        // zweites Video ueber denselben Kanal importiert wird, den der Dialog danach nimmt
+        // (queue:reiheEin, wie der Medien-Seed 4b).
+        {
+          const projektDatei4b7 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+          const liesProjekt4b7 = () => JSON.parse(fs.readFileSync(projektDatei4b7, "utf-8"));
+          const videos4b7 = (p) => p.liste.filter((e) => e.art === "video");
+          const vorher4b7 = liesProjekt4b7();
+          const videoVor4b7 = videos4b7(vorher4b7);
+          console.log(`[schritt-4b7] Ausgang: ${videoVor4b7.length} Video-Element(e), Bloecke ${vorher4b7.liste.length}.`);
+          if (videoVor4b7.length !== 1) {
+            fund("Video ersetzen (FA-01)", "genau EIN Video vor dem Ersetzen",
+              `${videoVor4b7.length} Video-Element(e)`, "Untersuchung", "composer/index.tsx");
+          } else {
+            const frage4b7 = await seite.evaluate(() => {
+              document.querySelector('[data-testid="composer-medien-import"]')?.click();
+              return true;
+            });
+            const fristFrage4b7 = Date.now() + 6_000;
+            let frageDa4b7 = false;
+            while (Date.now() < fristFrage4b7) {
+              frageDa4b7 = await seite.evaluate(
+                () => document.querySelector('[data-testid="composer-ersetzen-frage"]') !== null,
+              );
+              if (frageDa4b7) break;
+              await schlafe(200);
+            }
+            const frageText4b7 = await seite.evaluate(
+              () => (document.querySelector('[data-testid="composer-ersetzen-frage"]')?.textContent ?? "").trim(),
+            );
+            console.log(`[schritt-4b7] Rueckfrage: da=${String(frageDa4b7)}, Text="${frageText4b7}".`);
+            if (!frage4b7 || !frageDa4b7) {
+              fund("Video ersetzen (FA-01)", "vor dem Ersetzen fragt die Wurzel nach (#422)",
+                `Rueckfrage da=${String(frageDa4b7)}`, "Befund", "composer/index.tsx");
+            } else {
+              await seite.evaluate(() => {
+                document.querySelector('[data-testid="composer-ersetzen-nein"]')?.click();
+              });
+              await schlafe(400);
+              const nachNein4b7 = liesProjekt4b7();
+              const frageWeg4b7 = await seite.evaluate(
+                () => document.querySelector('[data-testid="composer-ersetzen-frage"]') === null,
+              );
+              const videosNachNein4b7 = videos4b7(nachNein4b7);
+              console.log(`[schritt-4b7] Abbrechen: Frage weg=${String(frageWeg4b7)}, Videos=${videosNachNein4b7.length}, id unveraendert=${String(videosNachNein4b7[0]?.id === videoVor4b7[0].id)}.`);
+              if (!frageWeg4b7 || videosNachNein4b7.length !== 1
+                || videosNachNein4b7[0]?.id !== videoVor4b7[0].id) {
+                fund("Video ersetzen (FA-01)", "Abbrechen laesst das bisherige Video unberuehrt",
+                  `Frage weg=${String(frageWeg4b7)}, Videos=${videosNachNein4b7.length}`,
+                  "Befund", "composer/index.tsx");
+              } else {
+                // Zweites Video erzeugen und ueber queue:reiheEin importieren. Danach
+                // uebernimmt der Sicht-Effekt genau EIN neues Video ans Listenende und
+                // entfernt das alte (derselbe Weg, den der Dialog nach der Bestaetigung nimmt).
+                const probe2 = path.join("/tmp", "durchlauf-probe2.mp4");
+                const ffmpeg = path.join(WURZEL, "node_modules", "ffmpeg-static", "ffmpeg");
+                await new Promise((f, r) => {
+                  // 2 s wie das Seed-Video aus 4b: 4b5/4b6 legen eine Unterbrechung bei
+                  // 1 s an; bei einem 1-s-Video liegt die Zeitstelle ausserhalb (0..1).
+                  const proc = spawn(ffmpeg, ["-y", "-f", "lavfi", "-i", "color=c=red:size=320x180:rate=30",
+                    "-t", "2", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-an", probe2], { stdio: "ignore" });
+                  proc.on("exit", (c) => (c === 0 ? f() : r(new Error("ffmpeg erzeugt nichts (code " + c + ")"))));
+                });
+                await seite.evaluate(async (pfad, projektId) => {
+                  await window.api.invoke("queue:reiheEin", {
+                    art: "import",
+                    payload: { projektId, quellPfad: pfad },
+                  });
+                }, probe2, aktivesProjektId);
+                const fristErsetzt4b7 = Date.now() + 40_000;
+                let nachher4b7 = liesProjekt4b7();
+                while (Date.now() < fristErsetzt4b7) {
+                  nachher4b7 = liesProjekt4b7();
+                  const jetzt = videos4b7(nachher4b7);
+                  if (jetzt.length === 1 && jetzt[0].id !== videoVor4b7[0].id) break;
+                  await schlafe(400);
+                }
+                const videosNach4b7 = videos4b7(nachher4b7);
+                const neueVideoAssets4b7 = (nachher4b7.assets ?? []).filter((a) => a.typ === "video");
+                console.log(`[schritt-4b7] Ersetzen: Videos=${videosNach4b7.length}, alt weg=${String(!videosNach4b7.some((v) => v.id === videoVor4b7[0].id))}, Video-Assets=${neueVideoAssets4b7.length}, Bloecke ${vorher4b7.liste.length} -> ${nachher4b7.liste.length}.`);
+                if (videosNach4b7.length !== 1) {
+                  fund("Video ersetzen (FA-01)", "nach dem Import liegt weiterhin genau EIN Video in der Liste",
+                    `${videosNach4b7.length} Video-Element(e)`, "Befund", "composer/index.tsx");
+                } else if (videosNach4b7[0].id === videoVor4b7[0].id) {
+                  fund("Video ersetzen (FA-01)", "das neue Video ERSETZT das alte Element",
+                    `id unveraendert: ${videosNach4b7[0].id}`, "Befund", "composer/index.tsx");
+                } else if (neueVideoAssets4b7.length < 2) {
+                  fund("Video ersetzen (FA-01)", "das neue Video liegt als eigenes Asset vor",
+                    `${neueVideoAssets4b7.length} Video-Asset(s)`, "Befund", "media-service");
+                } else {
+                  console.log("[schritt-4b7] Video ersetzen GEMESSEN: Rueckfrage, Abbrechen ohne Wirkung, Ersetzen -> genau ein Video (FA-01; der native Dialog bleibt MANUELL).");
+                }
+              }
+            }
+          }
         }
 
         // Schritt 4b5 - Unterbrechung in der Vorschau (#436): Der Bedienweg (#437) ist noch
@@ -2280,6 +2537,313 @@ const main = async () => {
       if (overlayOffen) {
         await overlayOffen.click();
         await schlafe(300);
+      }
+    }
+
+    // Schritt 4c2 - FA-22: Die Vorbelegung, das ERSETZEN statt Anlegen und eine ZWEITE
+    // Ausgabe. Gemessen wird am echten Dialog und am Ausgabeordner; der Render selbst
+    // laeuft wie in 4c ueber den Dialog (kein zweiter Weg).
+    {
+      const ausgabeOrdner4c2 = path.join(WURZEL, "projects", aktivesProjektId, "output");
+      const mp4s4c2 = () => fs.existsSync(ausgabeOrdner4c2)
+        ? fs.readdirSync(ausgabeOrdner4c2).filter((d) => d.endsWith(".mp4"))
+        : [];
+      const part4c2 = () => fs.existsSync(ausgabeOrdner4c2)
+        ? fs.readdirSync(ausgabeOrdner4c2).filter((d) => d.endsWith(".part"))
+        : [];
+      const zeilen4c2 = () => seite.evaluate(
+        () => document.querySelectorAll('[data-testid="ausgaben-liste"] li').length,
+      );
+      const mtime4c2 = (name) => {
+        const datei = path.join(ausgabeOrdner4c2, `${name}.mp4`);
+        return fs.existsSync(datei) ? fs.statSync(datei).mtimeMs : null;
+      };
+      const setzeName4c2 = async (name) => seite.evaluate((n) => {
+        const feld = document.querySelector('[data-testid="render-dialog-name"]');
+        if (feld === null) return false;
+        const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setzeWert.call(feld, n);
+        feld.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      }, name);
+      const oeffneDialog4c2 = async () => {
+        await klick('[data-testid="composer-render-oefnen"]');
+        await schlafe(500);
+        return stehtDa('[data-testid="render-dialog-name"]');
+      };
+      const loeseAus4c2 = async () => {
+        await seite.evaluate(() => {
+          document.querySelector('[data-testid="render-dialog-ausloeser"]')?.click();
+        });
+        await schlafe(3_000);
+      };
+      const warteOhnePart4c2 = async (fristMs = 90_000) => {
+        const frist = Date.now() + fristMs;
+        while (Date.now() < frist) {
+          if (part4c2().length === 0) return true;
+          await schlafe(500);
+        }
+        return false;
+      };
+      const warteAufZeile4c2 = async (name, fristMs = 60_000) => {
+        const frist = Date.now() + fristMs;
+        while (Date.now() < frist) {
+          const treffer = await seite.evaluate((n) => {
+            const liste = document.querySelector('[data-testid="ausgaben-liste"]');
+            if (liste === null) return false;
+            return (liste.textContent ?? "").includes(n);
+          }, name);
+          if (treffer) return true;
+          await schlafe(500);
+        }
+        return false;
+      };
+
+      const vorher4c2 = { mp4: mp4s4c2(), zeilen: await zeilen4c2() };
+      console.log(`[schritt-4c2] Ausgang: ${JSON.stringify(vorher4c2)}.`);
+      if (!vorher4c2.mp4.includes(`${renderLaufName}.mp4`)) {
+        fund("Zweite Ausgabe (FA-22)", "die Ausgabe aus 4c liegt im Ausgabeordner",
+          JSON.stringify(vorher4c2), "Untersuchung", "render-service/ausgabe-platzieren.ts");
+      } else if (!(await oeffneDialog4c2())) {
+        fund("Zweite Ausgabe (FA-22)", "der Render-Dialog laesst sich erneut oeffnen",
+          "render-dialog-name fehlt", "Befund", "composer/render-dialog.tsx");
+      } else {
+        const vorbelegung4c2 = await seite.evaluate(
+          () => document.querySelector('[data-testid="render-dialog-name"]')?.value ?? null,
+        );
+        console.log(`[schritt-4c2] Vorbelegung: "${String(vorbelegung4c2)}" (erwartet "${renderLaufName}").`);
+        if (vorbelegung4c2 !== renderLaufName) {
+          fund("Zweite Ausgabe (FA-22)", "der Dialog ist mit dem letzten Ausgabenamen vorbelegt",
+            `Feld "${String(vorbelegung4c2)}" statt "${renderLaufName}"`,
+            "Befund", "composer/render-dialog.ts");
+        } else {
+          const mtimeVor4c2 = mtime4c2(renderLaufName);
+          await loeseAus4c2();
+          const ersetzt4c2 = await warteAufZeile4c2(renderLaufName);
+          // Die Zeile stand schon vor dem Lauf da (gleicher Name). Erst das
+          // Verschwinden der .part-Datei belegt, dass die neue Fassung FERTIG ist.
+          const ohnePart4c2 = await warteOhnePart4c2();
+          const mtimeNach4c2 = mtime4c2(renderLaufName);
+          const mp4Nach4c2 = mp4s4c2();
+          const zeilenNach4c2 = await zeilen4c2();
+          console.log(`[schritt-4c2] Ersetzen: Zeile=${String(ersetzt4c2)}, mtime ${String(mtimeVor4c2)} -> ${String(mtimeNach4c2)}, mp4=${JSON.stringify(mp4Nach4c2)}, Zeilen=${zeilenNach4c2}, part=${JSON.stringify(part4c2())}.`);
+          if (!ersetzt4c2 || !ohnePart4c2 || mp4Nach4c2.length !== 1 || !mp4Nach4c2.includes(`${renderLaufName}.mp4`)) {
+            fund("Zweite Ausgabe (FA-22)", "derselbe Name ERSETZT die vorhandene Ausgabe (kein zweites .mp4)",
+              `mp4=${JSON.stringify(mp4Nach4c2)}`, "Befund", "render-service/ausgabe-platzieren.ts");
+          } else if (mtimeVor4c2 === null || mtimeNach4c2 === null || mtimeNach4c2 <= mtimeVor4c2) {
+            fund("Zweite Ausgabe (FA-22)", "die vorhandene Datei wird neu geschrieben",
+              `mtime ${String(mtimeVor4c2)} -> ${String(mtimeNach4c2)}`,
+              "Befund", "render-service/ausgabe-platzieren.ts");
+          } else if (zeilenNach4c2 !== vorher4c2.zeilen) {
+            fund("Zweite Ausgabe (FA-22)", "das Ersetzen legt KEINE zweite Listenzeile an",
+              `Zeilen ${vorher4c2.zeilen} -> ${zeilenNach4c2}`, "Befund", "composer/ausgabe-liste.tsx");
+          } else {
+            console.log("[schritt-4c2] Ersetzen GEMESSEN: eine Datei, neu geschrieben, eine Listenzeile (FA-22).");
+          }
+
+          // Zweite AUSGABE mit neuem Namen: genau eine weitere Datei und eine weitere Zeile.
+          if (!(await oeffneDialog4c2())) {
+            fund("Zweite Ausgabe (FA-22)", "der Dialog laesst sich fuer die zweite Ausgabe oeffnen",
+              "render-dialog-name fehlt", "Befund", "composer/render-dialog.tsx");
+          } else {
+            const zweiterName4c2 = "durchlauf-zweite-" + Date.now();
+            await setzeName4c2(zweiterName4c2);
+            await loeseAus4c2();
+            const zweiteDa4c2 = await warteAufZeile4c2(zweiterName4c2);
+            const ohnePartZwei4c2 = await warteOhnePart4c2();
+            const mp4Zwei4c2 = mp4s4c2();
+            const zeilenZwei4c2 = await zeilen4c2();
+            console.log(`[schritt-4c2] Zweite Ausgabe: Zeile=${String(zweiteDa4c2)}, mp4=${JSON.stringify(mp4Zwei4c2)}, Zeilen=${zeilenZwei4c2}, part=${JSON.stringify(part4c2())}.`);
+            if (!zweiteDa4c2 || !ohnePartZwei4c2 || !mp4Zwei4c2.includes(`${zweiterName4c2}.mp4`)) {
+              fund("Zweite Ausgabe (FA-22)", "ein neuer Name legt eine ZWEITE Ausgabe an",
+                `mp4=${JSON.stringify(mp4Zwei4c2)}`, "Befund", "composer/render-dialog.tsx");
+            } else if (mp4Zwei4c2.length !== 2) {
+              fund("Zweite Ausgabe (FA-22)", "zwei Ausgaben liegen nebeneinander",
+                JSON.stringify(mp4Zwei4c2), "Befund", "render-service/ausgabe-platzieren.ts");
+            } else if (zeilenZwei4c2 !== vorher4c2.zeilen + 1) {
+              fund("Zweite Ausgabe (FA-22)", "die Ausgabenliste zeigt beide Fassungen",
+                `Zeilen ${zeilenZwei4c2} (erwartet ${vorher4c2.zeilen + 1})`,
+                "Befund", "composer/ausgabe-liste.tsx");
+            } else {
+              console.log("[schritt-4c2] Zweite Ausgabe GEMESSEN: zwei Dateien, zwei Listenzeilen (FA-22).");
+            }
+          }
+        }
+        // Ein noch offenes Overlay schliessen (Abbruchweg des Dialogs).
+        await seite.evaluate(() => {
+          const overlay = document.querySelector('[data-testid="render-dialog"]');
+          if (overlay === null) return;
+          const ab = [...overlay.querySelectorAll("button")].find((b) => (b.textContent ?? "").trim() === "Abbrechen");
+          if (ab) ab.click();
+        });
+        await schlafe(300);
+      }
+    }
+
+    // Schritt 4f5 - FA-08: Die erzeugte MP4 wird per ffprobe gegen die ANGEZEIGTE
+    // Gesamtlaenge geprueft. Der Lauf entsteht ueber den echten Dialog; die Liste traegt
+    // zu diesem Zeitpunkt Video + mindestens eine Aktion (sequenziell), also mehr als das
+    // 2-s-Seed-Video aus 4c. Geprueft werden: genau eine Datei, kein .part, Dauer passt
+    // zur Anzeige (Anzeige rundet AB, deshalb +/-1 s).
+    {
+      // EINE gueltige sequenzielle Aktion (vollflaeche) anlegen und ueber die
+      // Bibliothek an die Liste haengen. Der Band-Seed aus 4f traegt absichtlich
+      // `band-standard` (162 px) und ist fuer eine MP4-Prüfung untauglich; 4f5 laeuft
+      // deshalb VOR 4e (Liste sonst leer) und raeumt die Probe danach wieder ab.
+      const fa08Titel = "Durchlauf-FA08-" + Date.now();
+      const saat4f5 = await seite.evaluate(async ({ projektId, titel }) => {
+        const projektAntwort = await window.api.invoke("project:öffneProjekt", { id: projektId });
+        if (!projektAntwort || !projektAntwort.ok) return { fehler: "oeffneProjekt" };
+        const antwort = await window.api.invoke("project:erstelleAktion", {
+          projektId,
+          aktionsdaten: {
+            titel,
+            beschreibung: null,
+            preis: null,
+            bildRef: null,
+            cta: null,
+            standardDauer: 10,
+            vorlagenId: "vollbild",
+            markeId: projektAntwort.wert.standardMarkeId,
+            akzentfarbe: null,
+          },
+        });
+        return antwort && antwort.ok ? { aktionId: antwort.wert.id } : { fehler: JSON.stringify(antwort) };
+      }, { projektId: aktivesProjektId, titel: fa08Titel });
+      if (typeof saat4f5.aktionId !== "string") {
+        fund("Dauer der MP4 (FA-08)", "eine vollflaechige Aktion als sequenzieller Inhalt",
+          String(saat4f5.fehler), "Untersuchung", "project-store/erstelle-aktion.ts");
+      } else {
+        // Sicht nachziehen: Projekt ueber die Liste neu oeffnen, dann die Aktionszeile
+        // ueber ihren echten Knopf an die Liste haengen.
+        await oeffneUeberListe(aktivesProjektId);
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await schlafe(800);
+        const hinzu4f5 = await seite.evaluate((id) => {
+          const zeile = document.querySelector(`[data-testid="aktion-${id}"]`);
+          if (zeile === null) return false;
+          const knopf = zeile.querySelector("button");
+          if (knopf === null) return false;
+          knopf.click();
+          return true;
+        }, saat4f5.aktionId);
+        const fristHinzu4f5 = Date.now() + 10_000;
+        let bloecke4f5 = 0;
+        while (Date.now() < fristHinzu4f5) {
+          bloecke4f5 = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+          );
+          if (bloecke4f5 >= 2) break;
+          await schlafe(250);
+        }
+        console.log(`[schritt-4f5] Aktions-Probe: angelegt=${String(hinzu4f5)}, Bloecke=${bloecke4f5}.`);
+        // Die Gesamtdauer zeichnet die LISTEN-Ansicht (#248).
+        await klick('[data-testid="composer-ansicht-liste"]');
+        await schlafe(700);
+      const anzeige4f5 = await seite.evaluate(
+        () => document.querySelector('[data-testid="wiedergabeliste-laenge"]')?.textContent ?? null,
+      );
+      const treffer4f5 = /(\d+):(\d\d)/.exec(String(anzeige4f5));
+      const angezeigtSek4f5 = treffer4f5 === null
+        ? null
+        : Number(treffer4f5[1]) * 60 + Number(treffer4f5[2]);
+      console.log(`[schritt-4f5] Anzeige: "${String(anzeige4f5)}" (${String(angezeigtSek4f5)} s).`);
+      if (angezeigtSek4f5 === null || angezeigtSek4f5 < 3) {
+        fund("Dauer der MP4 (FA-08)", "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt",
+          `Anzeige "${String(anzeige4f5)}"`, "Untersuchung", "composer/liste-ansicht.tsx");
+      } else {
+        const name4f5 = "durchlauf-fa08-" + Date.now();
+        const ziel4f5 = path.join(WURZEL, "projects", aktivesProjektId, "output", `${name4f5}.mp4`);
+        const oeffnen4f5 = await klick('[data-testid="composer-render-oefnen"]');
+        await schlafe(500);
+        const feldDa4f5 = await stehtDa('[data-testid="render-dialog-name"]');
+        if (!oeffnen4f5 || !feldDa4f5) {
+          fund("Dauer der MP4 (FA-08)", "der Render-Dialog laesst sich oeffnen",
+            `geklickt=${String(oeffnen4f5)}, Feld=${String(feldDa4f5)}`,
+            "Befund", "composer/render-dialog.tsx");
+        } else {
+          const nameGesetzt4f5 = await seite.evaluate((n) => {
+            const feld = document.querySelector('[data-testid="render-dialog-name"]');
+            if (feld === null) return false;
+            const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+            setzeWert.call(feld, n);
+            feld.dispatchEvent(new Event("input", { bubbles: true }));
+            return true;
+          }, name4f5);
+          const ausloeser4f5 = await seite.evaluate(() => {
+            const knopf = document.querySelector('[data-testid="render-dialog-ausloeser"]');
+            if (knopf === null) return null;
+            const zustand = { da: true, gesperrt: knopf.disabled, befund: document.querySelector('[data-testid="render-dialog-befund"]')?.textContent ?? null };
+            knopf.click();
+            return zustand;
+          });
+          console.log(`[schritt-4f5] Ausloesen: nameGesetzt=${String(nameGesetzt4f5)}, ${JSON.stringify(ausloeser4f5)}.`);
+          await schlafe(5_000);
+          if (!fs.existsSync(ziel4f5)) {
+            const diag4f5 = await seite.evaluate(() => ({
+              dialogNoch: document.querySelector('[data-testid="render-dialog"]') !== null,
+              meldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+              ladefehler: document.querySelector('[data-testid="composer-ladefehler"]')?.textContent ?? null,
+              ablehnungen: window.__durchlauf?.ablehnungen ?? [],
+              fortschritte: (window.__durchlauf?.kanaele ?? []).filter((e) => e.kanal === "render:fortschritt").length,
+              queue: document.querySelector('[data-testid="queue-panel"]')?.textContent ?? null,
+            }));
+            console.log(`[schritt-4f5] Diagnose nach 5 s: ${JSON.stringify(diag4f5)}.`);
+          }
+          const ordner4f5 = path.dirname(ziel4f5);
+          const frist4f5 = Date.now() + 150_000;
+          while (Date.now() < frist4f5) {
+            const dateien4f5 = fs.existsSync(ordner4f5) ? fs.readdirSync(ordner4f5) : [];
+            if (dateien4f5.includes(`${name4f5}.mp4`)
+              && !dateien4f5.some((d) => d.endsWith(".part"))) break;
+            await schlafe(1_000);
+          }
+          const dateienEnde4f5 = fs.existsSync(ordner4f5) ? fs.readdirSync(ordner4f5) : [];
+          const mp4Ende4f5 = dateienEnde4f5.filter((d) => d.endsWith(".mp4"));
+          const partEnde4f5 = dateienEnde4f5.filter((d) => d.endsWith(".part"));
+          if (!fs.existsSync(ziel4f5)) {
+            fund("Dauer der MP4 (FA-08)", "der Render legt die Ausgabedatei an",
+              `nicht gefunden: ${name4f5}.mp4; Dateien=${JSON.stringify(dateienEnde4f5)}`,
+              "Befund", "render-service/ausgabe-platzieren.ts");
+          } else {
+            const dauer4f5 = await new Promise((f, r) => {
+              const proc = spawn(ffprobeStatic.path, [
+                "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", ziel4f5,
+              ]);
+              let aus = "";
+              proc.stdout.on("data", (d) => { aus += String(d); });
+              proc.on("exit", (c) => (c === 0 ? f(Number(aus.trim())) : r(new Error("ffprobe code " + c))));
+            });
+            console.log(`[schritt-4f5] ffprobe: ${name4f5}.mp4 = ${dauer4f5} s; Anzeige ${angezeigtSek4f5} s; mp4=${mp4Ende4f5.length}, part=${partEnde4f5.length}.`);
+            if (!Number.isFinite(dauer4f5) || dauer4f5 < angezeigtSek4f5 - 0.5 || dauer4f5 > angezeigtSek4f5 + 1.0) {
+              fund("Dauer der MP4 (FA-08)", "die Dauer der Datei entspricht der angezeigten Gesamtlaenge",
+                `ffprobe ${String(dauer4f5)} s, Anzeige ${angezeigtSek4f5} s`,
+                "Befund", "render-service/ausgabe-platzieren.ts");
+            } else if (partEnde4f5.length > 0) {
+              fund("Dauer der MP4 (FA-08)", "nach dem Erfolg liegt keine .part-Datei mehr",
+                JSON.stringify(partEnde4f5), "Befund", "render-service/ausgabe-platzieren.ts");
+            } else if (!mp4Ende4f5.includes(`${name4f5}.mp4`)) {
+              fund("Dauer der MP4 (FA-08)", "die geprueffte Datei ist die neue Ausgabe",
+                JSON.stringify(mp4Ende4f5), "Befund", "render-service/ausgabe-platzieren.ts");
+            } else {
+              console.log(`[schritt-4f5] Dauer GEMESSEN: ffprobe ${dauer4f5} s gegen Anzeige ${angezeigtSek4f5} s (FA-08).`);
+            }
+          }
+        }
+      }
+        // Probe wieder aus der Liste nehmen (EIN Undo-Schritt der Hinzufuegung).
+        await klick('[data-testid="undo-pfeil"]');
+        await schlafe(1_200);
+        const bloeckeNach4f5 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+        );
+        // Die Probe-Aktion wieder loeschen: Sie stammt aus 4f5 und wuerde sonst die
+        // Drag-Quelle der Schritte 4f/4f2 verschieben (gemessen 22.10.2026).
+        const weg4f5 = await seite.evaluate(async (id) => {
+          const antwort = await window.api.invoke("project:löscheAktion", { id });
+          return antwort && antwort.ok ? true : antwort;
+        }, saat4f5.aktionId);
+        console.log(`[schritt-4f5] Aufraeumen: Bloecke nach Undo=${bloeckeNach4f5}, Aktion geloescht=${JSON.stringify(weg4f5)}.`);
       }
     }
 
@@ -3031,6 +3595,69 @@ const main = async () => {
       }
     }
 
+    // Schritt 4g3 - FA-03: eine AKTION BEARBEITEN (Titel) und im Bestand nachlesen.
+    // Der Weg ist der Aktionen-Reiter (Klick auf die Zeile, Feld verlassen = speichern).
+    // Die Zahl der Aktionen darf sich dabei NICHT aendern (Bearbeiten, nicht Anlegen).
+    {
+      await klick('[data-testid="reiter-aktionen"]');
+      await schlafe(800);
+      const projektDatei4g3 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      const liesAktionen4g3 = () => JSON.parse(fs.readFileSync(projektDatei4g3, "utf-8")).aktionen;
+      const vorher4g3 = liesAktionen4g3();
+      const zeile4g3 = await seite.$('[data-testid="aktion-bibliothek"] li button');
+      if (zeile4g3 === null) {
+        fund("Aktion bearbeiten (FA-03)", "eine Aktionszeile im Aktionen-Reiter",
+          "aktion-bibliothek/li/button fehlt", "Befund", "action-editor/index.tsx");
+      } else {
+        await zeile4g3.click();
+        zeile4g3.dispose?.();
+        await schlafe(600);
+        const alt4g3 = await seite.evaluate(
+          () => document.querySelector('[data-testid="aktion-titel"]')?.value ?? null,
+        );
+        const neu4g3 = `${String(alt4g3)}-bearbeitet`;
+        const gesetzt4g3 = await seite.evaluate((wert) => {
+          const feld = document.querySelector('[data-testid="aktion-titel"]');
+          if (feld === null) return false;
+          const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+          setzeWert.call(feld, wert);
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+          feld.focus();
+          feld.blur();
+          return true;
+        }, neu4g3);
+        const frist4g3 = Date.now() + 8_000;
+        let nachher4g3 = vorher4g3;
+        while (Date.now() < frist4g3) {
+          try {
+            nachher4g3 = liesAktionen4g3();
+          } catch {
+            nachher4g3 = vorher4g3;
+          }
+          if (nachher4g3.some((a) => a.titel === neu4g3)) break;
+          await schlafe(250);
+        }
+        const geaendert4g3 = nachher4g3.find((a) => a.titel === neu4g3) ?? null;
+        console.log(`[schritt-4g3] Bearbeiten: gesetzt=${String(gesetzt4g3)}, "${String(alt4g3)}" -> "${neu4g3}", Aktionen ${vorher4g3.length} -> ${nachher4g3.length}, gefunden=${geaendert4g3 !== null}.`);
+        if (!gesetzt4g3 || alt4g3 === null) {
+          fund("Aktion bearbeiten (FA-03)", "das Titelfeld ist im Aktionen-Reiter bedienbar",
+            "aktion-titel fehlt", "Befund", "action-editor/index.tsx");
+        } else if (geaendert4g3 === null) {
+          fund("Aktion bearbeiten (FA-03)", "der geaenderte Titel landet im Bestand",
+            `Titel im project.json: ${JSON.stringify(nachher4g3.map((a) => a.titel))}`,
+            "Befund", "action-editor/index.tsx");
+        } else if (nachher4g3.length !== vorher4g3.length) {
+          fund("Aktion bearbeiten (FA-03)", "Bearbeiten legt KEINE zweite Aktion an",
+            `Aktionen ${vorher4g3.length} -> ${nachher4g3.length}`, "Befund", "action-editor/index.tsx");
+        } else if (geaendert4g3.id !== vorher4g3[0].id && !vorher4g3.some((a) => a.id === geaendert4g3.id)) {
+          fund("Aktion bearbeiten (FA-03)", "der geaenderte Titel gehoert zur bestehenden Aktion",
+            `id ${geaendert4g3.id}`, "Befund", "action-editor/index.tsx");
+        } else {
+          console.log("[schritt-4g3] Aktion bearbeiten GEMESSEN: Titel geaendert, Aktionszahl unveraendert (FA-03).");
+        }
+      }
+    }
+
     // Schritt 4i - VIERTER FALL (#438) am echten Fenster: Ein kaputter EINSCHUB (Aktion
     // mit fehlendem Bild) muss als `unterbrechung` im Reparatur-Panel stehen und den
     // Render sperren. Bisher hielt das nur der Unit-Test (TK 9.7.5 v3.27).
@@ -3150,7 +3777,14 @@ const main = async () => {
       const projektJson = JSON.parse(
         fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
       );
-      const videoAsset = (projektJson.assets ?? []).find((a) => a.typ === "video" && a.zustand === "ok");
+      // Das Video-Element der LISTE ist der Bezug - nach dem Ersetzen (4b7) liegt
+      // noch das alte Video als Asset im Bestand, aber nicht mehr in der Liste. Ein
+      // `find` ueber alle Assets loeschte dann die falsche Datei (gemessen 22.10.2026:
+      // "Stelle nach dem Oeffnen: null", weil das ungenutzte alte Asset kaputt war).
+      const videoRef = (projektJson.liste ?? []).find((e) => e.art === "video")?.ref ?? null;
+      const videoAsset = (projektJson.assets ?? []).find(
+        (a) => a.id === videoRef && a.typ === "video" && a.zustand === "ok",
+      );
       if (videoAsset !== undefined) {
         const datei = path.join(WURZEL, "projects", aktivesProjektId, "media", videoAsset.dateiname);
         if (fs.existsSync(datei)) { fs.unlinkSync(datei); kaputtGemacht = true; }

@@ -19,6 +19,7 @@ import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from 
 import { Zeitleiste } from './zeitleiste.tsx'
 import { EA_PX_PRO_SEKUNDE, ZOOM_STUFEN } from './zeitband'
 import { fuegeElementHinzu } from './element-hinzufuegen'
+import { entferneElementAusListe } from './element-entfernen'
 // NACHTRAG #248 (Variante A, 05.10.): Die ad-hoc-Wiedergabeliste dieser Wurzel
 // (DndContext/Zeile/Regler unten) ist hier durch die Issue-richtige
 // `Wiedergabeliste` aus liste-ansicht.tsx (#248) ERSETZT - dokumentierte Ausnahme
@@ -301,17 +302,35 @@ export function ComposerInterna({
     let zwischenstand: Listenelement[] | null = null
     void fuegeElementHinzu(assetId, undefined, (liste) => {
       zwischenstand = liste
-    }).then((ergebnis) => {
+    }).then(async (ergebnis) => {
       if (!ergebnis.ok) {
         meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
         return
       }
       if (zwischenstand === null) return
       const neuesElement = ergebnis.wert
-      const ohneAlte = zwischenstand.filter(
-        (element) => element.art !== 'video' || element.id === neuesElement.id,
+      // Das alte Video wird im BESTAND entfernt, nicht nur aus der Sicht gefiltert.
+      // Am echten Fenster gemessen 22.10.2026 (Treiber 4b7): Nach dem Ersetzen standen
+      // im project.json ZWEI Video-Elemente; die gefilterte Sicht verbarg das bis zum
+      // naechsten Oeffnen. `entferneElementAusListe` schreibt D1 und die Sicht; nach
+      // dem Einfuegen des neuen Elements ist "mindestens ein Video" erfuellt.
+      const alte = zwischenstand.filter(
+        (element) => element.art === 'video' && element.id !== neuesElement.id,
       )
-      projekt.setzeListe(ohneAlte)
+      if (alte.length === 0) {
+        // Erster Import: Die Sicht uebernimmt die neue Liste (der Sicht-Schreiber oben
+        // merkt sie nur; ohne diesen Aufruf bliebe die Ansicht leer, bis ein Ereignis
+        // sie neu laedt - gemessen am 22.10.2026: 0 Zeilen/0 Bloecke nach dem Seed).
+        projekt.setzeListe(zwischenstand)
+        return
+      }
+      for (const element of alte) {
+        const weg = await entferneElementAusListe(element.id, projekt.setzeListe)
+        if (!weg.ok) {
+          meldeWurzel(weg.fehler.code, weg.fehler.meldung)
+          return
+        }
+      }
     })
   }
   useEffect(() => {

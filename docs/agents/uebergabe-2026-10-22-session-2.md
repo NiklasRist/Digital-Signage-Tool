@@ -1,8 +1,9 @@
 # Uebergabe - Session 22.10.2026 (zweite Sitzung): Live-Vorschau montiert, drei Messbefunde
 
 > Auftrag des Users: „Reihenfolge 2 & 3 selbstaendig, bis der Kontext halb voll ist;
-> Designentscheidungen notieren." **Punkt 2 (Live-Vorschau) ist gebaut und gemessen.**
-> **Punkt 3 (Muss-Luecken) ist NICHT begonnen** - die Recherche steht in Abschnitt 5.
+> Designentscheidungen notieren." **Punkt 2 (Live-Vorschau) und Punkt 3 (Muss-Luecken)
+> sind gebaut und am echten Fenster gemessen.** Offen bleibt nur die Auftraggeber-
+> Entscheidung zu FA-13/„Einblendung" (Abschnitt 5).
 
 ---
 
@@ -109,8 +110,10 @@ Zwei Verbesserungen am Messweg, die bleiben:
 Siehe `/tmp/pruefung.log` dieser Sitzung; Ergebnis wird hier nachgetragen:
 - `npm run lint` → 0.
 - `npm run typecheck` → 0.
-- `npm run pruefung` → **Exit 0** - **5.622 Unit-Tests (334 Dateien)**, **49 Integrationstests
+- `npm run pruefung` → **Exit 0** - **5.623 Unit-Tests (334 Dateien)**, **49 Integrationstests
   (12 Dateien)**, Treiber ohne Befund. Vorher: `lint` 0, `typecheck` 0.
+  (Ein erster Volllauf fiel am bekannten Flaky `einzel-instanz.spec.ts`; einzeln und im
+  zweiten Volllauf gruen - kein Zusammenhang mit den Aenderungen dieser Sitzung.)
   Der Treiber meldet die Live-Vorschau als GEMESSEN, keine Fenster-Konsole-Meldung.
 
 ---
@@ -131,18 +134,36 @@ Siehe `/tmp/pruefung.log` dieser Sitzung; Ergebnis wird hier nachgetragen:
 
 ---
 
-## 5. Punkt 3 (Muss-Luecken) - Recherche, NICHT gebaut
+## 5. Punkt 3 (Muss-Luecken) - GEBAUT und GEMESSEN
 
-Reihenfolge laut Uebergabe: FA-01/03 (+ #442-Diagnose), FA-22, FA-13, FA-08.
-Recherchestand (jeweils belegt, aber **nicht** in dieser Sitzung umgesetzt):
+Neue Treiber-Schritte (alle in der Matrix, alle im Lauf `GEMESSEN`):
 
-| FA | Was fehlt | Was schon gebaut ist | Aufwand |
-|---|---|---|---|
-| **FA-01** | Ersetzen-Weg mit Bestaetigung ist am Fenster ungemessen (#422) | Rueckfrage + Ersetzen in `composer/index.tsx`, Unit `composer-ein-video.spec.ts` | 1 Treiber-Schritt |
-| **FA-03** | „Aktion bearbeiten" am Fenster ungemessen; Video-Ersetzen = FA-01 | `action-editor` (Klick auf Zeile, `speichereAktion`), `aktion-bearbeiten.spec.ts` | 1 Treiber-Schritt |
-| **FA-22** | zweite Ausgabe / Vorbelegung / Ersetzen ungemessen | `render-dialog.ts`, `ausgabe-platzieren.ts`, `auftrags-nachlauf.ts`, Tests | 1 Treiber-Schritt, 2 Render |
-| **FA-13** | Zonen aendern/speichern/verwerfen/neu anlegen ungemessen | `vorlagen-editor` + Tests; **Aufraeumen einer Testvorlage fehlt im Treiber** | 1 Treiber-Schritt + Cleanup + **Entscheidung** |
-| **FA-08** | Dauer/Framezahl der erzeugten MP4 nicht gegen die Liste geprueft | `ausgabe-platzieren.ts` prueft bereits per ffprobe (±0,5 s) | 1 Treiber-Schritt, richtig platziert (nach 4f, nicht nach 4c) |
+| FA | Schritt | Beleg |
+|---|---|---|
+| **FA-01** | **4b7** | Rueckfrage vor dem Ersetzen; „Abbrechen" ohne Wirkung; zweites Video ersetzt das alte -> **genau ein Video-Element** (zwei Video-Assets). Der native Dialog bleibt MANUELL. |
+| **FA-03** | **4g3** | Aktion im Aktionen-Reiter geoeffnet, Titel geaendert -> `project.json`, **Aktionszahl 1 -> 1**. |
+| **FA-22** | **4c2** | Feld traegt den letzten Namen; derselbe Name **ersetzt** (mtime neu, eine Datei, eine Zeile); neuer Name -> **zwei** Dateien/Zeilen. |
+| **FA-08** | **4f5** | Render Video + vollflaechige Aktion: `ffprobe 12,022 s` gegen Anzeige `12 s`, eine Datei, kein `.part`. |
+| **FA-13** | **4n** | Vorlage angelegt, Textzone -> Arbeitskopie 2 -> 3 (Parent 2), uebernehmen -> Parent 3, erneut aendern -> verwerfen -> Parent 3; Testvorlage geloescht. |
+
+**Zwei echte Produktbefunde dabei:**
+
+### B17 - „+ Textzone (titel)" tat NICHTS
+
+Der Knopf bestellte `{ sorte: 'text-formatiert' } as never` - eine Sorte, die
+`fuegeZoneHinzu` nicht kennt. Die reine Funktion und ihre Tests waren gruen; der Klick
+scheiterte still (nur `console.warn`). Fix: `{ sorte: 'text', bindung: 'titel' }`.
+Neuer Verhaltenstest in `vorlagen-editor-sitzung.spec.ts` (Klick -> Zone in der
+Arbeitskopie). Beleg: Treiber 4n (2 -> 3 Zonen).
+
+### B18 - Video-Ersetzen filterte nur die SICHT, nicht den Bestand
+
+`fuegeVideoAnsEndeEin` entfernte das alte Video nur aus der angezeigten Liste; im
+`project.json` standen danach **zwei** Video-Elemente (beim naechsten Oeffnen sichtbar).
+Fix: alte Video-Elemente gehen jetzt ueber `entferneElementAusListe` (schreibt D1 und die
+Sicht), der reine Erst-Import setzt die Sicht wie bisher. Test
+`composer-ein-video.spec.ts` angepasst (Bestand-Entfernen statt Sicht-Filter).
+Beleg: Treiber 4b7 (`Videos=1, alt weg=true`).
 
 **#442-Diagnose (Hypothesen, am Fenster noch nicht verifiziert):** Die Vorlagenart entscheidet
 still - `art === 'vollflaeche'` wird Unterbrechung, sonst Band (`unterbrechungs-aufnahme.ts`).
@@ -162,8 +183,10 @@ welcher Hoehe/Deckkraft? Oder bleibt „Einblendung" eingebaut-only?
 
 ## 6. Ehrlich offen
 
-1. **Punkt 3 ist nicht begonnen** (siehe Tabelle).
-2. **FA-13-Entscheidung** (Einblendung) steht aus.
+1. **FA-13-Entscheidung** (Einblendung) steht aus; darum bleibt FA-13 in der Matrix
+   **teilweise** (die belegten Wege: anlegen, Zone, uebernehmen, verwerfen).
+2. **#442-Diagnose** ist noch offen (Deutung entschieden, Ursache am Nutzerpfad nicht
+   reproduziert).
 3. Die drei Befunde B14-B16 sind behoben, aber **noch nicht auf GitHub** als Kommentar
    hinterlegt (in dieser Sitzung bewusst zuletzt, damit der Gate-Lauf nicht durch
    Netzzugriffe stoert).

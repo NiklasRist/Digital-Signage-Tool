@@ -126,6 +126,26 @@ describe('Vorlagen-Editor-Sitzung (#409)', () => {
     expect(kopf?.textContent ?? '').toContain('Name vorlage-test')
   })
 
+  it('"+ Textzone (titel)" legt eine Zone in der Arbeitskopie an (kein stiller Fehler)', async () => {
+    const parent = eigene('vorlage-test')
+    const aenderungen: EditorSitzung[] = []
+    const eigenschaften = baueEigenschaften(sitzungFest(parent))
+    ;(eigenschaften.sitzung as unknown as { uebernimmAenderung: (v: EditorSitzung) => void })
+      .uebernimmAenderung = (v) => aenderungen.push(v)
+    const behaelter = rendere(eigenschaften)
+    const knopf = [...behaelter.querySelectorAll<HTMLButtonElement>('[data-testid="zone-hinzufuegen"] button')]
+      .find((b) => (b.textContent ?? '').includes('Textzone'))
+    expect(knopf).toBeDefined()
+    await act(async () => {
+      knopf!.click()
+      await new Promise((fertig) => setTimeout(fertig, 0))
+    })
+    // Bis 22.10.2026 bestellte der Knopf die nicht existierende Sorte
+    // 'text-formatiert' - die reine Funktion warf sie ab, der Klick tat NICHTS.
+    expect(aenderungen.length).toBeGreaterThan(0)
+    expect(aenderungen[aenderungen.length - 1]!.arbeitskopie.zonen.length).toBe(parent.zonen.length + 1)
+  })
+
   it('Ohne Sitzung zeigt die Wurzel die Uebersicht und wirft NICHT', () => {
     const behaelter = rendere(baueEigenschaften(null))
     expect(behaelter.querySelector('[data-testid="vorlagen-uebersicht"]') !== null).toBe(true)

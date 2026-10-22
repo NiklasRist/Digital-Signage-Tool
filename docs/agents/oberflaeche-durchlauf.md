@@ -1566,3 +1566,98 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 38
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-22T16:12:04.594Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 68
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Vorlagen (FA-13): erwartet "eine Textzone landet in der ARBEITSKOPIE (nicht im Parent)", erkannt "Parent=2, Kopie=2" (Ort: vorlagen-editor/index.tsx)
+- **Befund** Video ersetzen (FA-01): erwartet "nach dem Import liegt weiterhin genau EIN Video in der Liste", erkannt "2 Video-Element(e)" (Ort: composer/index.tsx)
+- **Befund** Zweite Ausgabe (FA-22): erwartet "die vorhandene Datei wird neu geschrieben", erkannt "mtime 1792685407941.399 -> 1792685407941.399" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Spalt-Drop: erwartet "ein Drop auf die Kante fuegt an dieser Position ein (#411/#412)", erkannt "Bloecke davor/nachher: 3/3; Meldung: null; Ablehnungen: []" (Ort: composer/index.tsx)
+- **Untersuchung** Dauer der MP4 (FA-08): erwartet "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt", erkannt "Anzeige "null"" (Ort: composer/liste-ansicht.tsx)
+
+## Nachlauf vom 2026-10-22T16:20:48.462Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 59
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Sicht-Aktualitaet: erwartet "Liste zeigt das automatisch uebernommene Video (#422)", erkannt "kein Klick erfolgte, aber 0 Zeilen (Liste) und 0 Bloecke (Zeitleiste) in der Ansicht" (Ort: composer/index.tsx)
+- **Befund** Videostage: erwartet "Play bewegt die Vorschau (currentTime > 0 oder Uhr-Frame > 0)", erkannt "{"playLabel":"Play","currentTime":null,"paused":null,"frame":"0"}" (Ort: preview-player/vorschau.tsx)
+- **Befund** Frames-Anzeige: erwartet "der Video-Block zeigt Einzelbilder des Videos (#433)", erkannt "{"streifen":0,"bilder":0}" (Ort: composer/zeitleiste.tsx)
+- **Befund** Frames-Anzeige: erwartet "Hineinzoomen zeigt mehr Einzelbilder (#433)", erkannt "0 -> 0 (128 px/s)" (Ort: composer/zeitleiste.tsx)
+- **Befund** Video ersetzen (FA-01): erwartet "vor dem Ersetzen fragt die Wurzel nach (#422)", erkannt "Rueckfrage da=false" (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1792685845724.mp4; Dateien=["durchlauf-render-1792685774879.mp4","durchlauf-zweite-1792685782130.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+
+## Nachlauf vom 2026-10-22T16:25:48.451Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Unterbrechungs-Seed: erwartet "Unterbrechung per IPC gesetzt (#426)", erkannt "{"ok":false,"fehler":{"code":"ungueltige_eingabe","meldung":"Die Zeitstelle 1 s liegt nicht innerhalb des Videos (0 s bis 1 s)."}}" (Ort: project-store/setze-unterbrechungen.ts)
+- **Befund** Spalt-Drop: erwartet "das Element steigt an der Kante-POSITION 2 in die Liste", erkannt "Bloecke danach: ["3311290e-2ad4-4be3-912b-cef1ba7e3a6f","614da6b0-38ea-4700-a44c-782e037bab9e","614da6b0-38ea-4700-a44c-782e037bab9e"]" (Ort: composer/index.tsx)
+- **Befund** Band-Aufnahme: erwartet "ein Drop auf das Video wird ein Band-Abschnitt (#425)", erkannt "Abschnitte: null; Band-Zeilen: 0; Meldung: null" (Ort: composer/index.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert ("1,0 s")" (Ort: composer/element-zeile.tsx)
+- **Befund** Vierter Fall (#438): erwartet "Einschub per project:setzeUnterbrechungen", erkannt "{"ok":false,"fehler":{"code":"ungueltige_eingabe","meldung":"Die Zeitstelle 1 s liegt nicht innerhalb des Videos (0 s bis 1 s)."}}" (Ort: project-store/setze-unterbrechungen.ts)
+- **Befund** Reparatur-Fuehrung: erwartet "das Reparatur-Panel erscheint bei kaputter Stelle (#421)", erkannt "kein reparatur-panel im Fenster" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-22T16:32:24.144Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1792686532266.mp4; Dateien=["durchlauf-render-1792686461397.mp4","durchlauf-zweite-1792686468678.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Reparatur-Fuehrung: erwartet "das Reparatur-Panel erscheint bei kaputter Stelle (#421)", erkannt "kein reparatur-panel im Fenster" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-22T16:40:42.939Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1792687037861.mp4; Dateien=["durchlauf-render-1792686967004.mp4","durchlauf-zweite-1792686974283.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+
+## Nachlauf vom 2026-10-22T16:47:09.041Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1792687424211.mp4; Dateien=["durchlauf-render-1792687353320.mp4","durchlauf-zweite-1792687360593.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+
+## Nachlauf vom 2026-10-22T16:52:06.722Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Spalt-Drop: erwartet "das Element steigt an der Kante-POSITION 2 in die Liste", erkannt "Bloecke danach: ["a116a400-d5ff-4df5-91e1-e89b950abbad","fca59405-69b9-49a8-8cdd-0a9f644bc4cc","fca59405-69b9-49a8-8cdd-0a9f644bc4cc"]" (Ort: composer/index.tsx)
+- **Befund** Band-Aufnahme: erwartet "ein Drop auf das Video wird ein Band-Abschnitt (#425)", erkannt "Abschnitte: null; Band-Zeilen: 0; Meldung: null" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-22T16:56:22.094Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 77
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-22T17:07:58.384Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

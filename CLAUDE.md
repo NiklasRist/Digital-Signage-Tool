@@ -37,13 +37,22 @@
 - **Gate:** `npm run pruefung` **Exit 0**; `lint`/`typecheck` 0. Details in der Session-Datei.
 - **Widerspruch gemeldet:** #330 traegt seit 23.08. den Nachtrag „`stelleMarkeBereit`"; A1
   (22.10.) sagt das Gegenteil. Es gilt A1 (juenger, Auftraggeber).
-- **Reihenfolge Punkt 3 ist NICHT begonnen.** Die Recherche zu FA-01/03 (#442), FA-22, FA-13,
-  FA-08 steht in der Session-Datei (Tabelle + Rangfolge; FA-22 ist der billigste Abschluss).
+- **Reihenfolge Punkt 3 ist ebenfalls gebaut und gemessen** (Treiber 4b7, 4c2, 4f5, 4g3, 4n):
+  FA-01 (Ersetzen mit Rueckfrage, genau ein Video), FA-03 (Aktion bearbeiten), FA-22
+  (Vorbelegung/Ersetzen/zweite Ausgabe), FA-08 (`ffprobe 12,022 s` gegen Anzeige `12 s`),
+  FA-13 (Vorlage anlegen/Zone/uebernehmen/verwerfen). **Matrix: 10 gemessen, 11 teilweise,
+  0 Luecke, 3 manuell; Muss: 8 von 15.**
+- **Zwei weitere echte Befunde dabei behoben:**
+  - **B17:** „+ Textzone (titel)" bestellte eine nicht existierende Sorte (`text-formatiert`)
+    und tat NICHTS; jetzt `{ sorte: 'text', bindung: 'titel' }`, Verhaltenstest.
+  - **B18:** Video-Ersetzen filterte nur die SICHT; im `project.json` standen danach ZWEI
+    Video-Elemente. Jetzt wird das alte Element ueber `entferneElementAusListe` im Bestand
+    entfernt.
 - **Offene DESIGNENTSCHEIDUNG (User):** FA-13 – soll „Einblendung" ueber die Oberflaeche
   anlegbar sein, und mit welcher Hoehe/Deckkraft? `ANLEGBARE_ARTEN` bietet nur `vollflaeche`
-  und `split`; der Store kennt `einblendung`.
-- **Noch offen:** Issue-Kommentare zu #303/#330 (Montage belegt) und #290 (corsEnabled) sind
-  zu setzen; #442-Label `braucht-entscheidung` ist veraltet.
+  und `split`; der Store kennt `einblendung`. Deshalb bleibt FA-13 **teilweise**.
+- **Noch offen:** Issue-Kommentare zu #303/#330 und #290 sind gesetzt; die #442-Diagnose
+  (Ursache am Nutzerpfad) bleibt offen, das Label `braucht-entscheidung` ist veraltet.
 
 ## STAND HEUTE (22.10.2026, frueher: FA-24 am echten Fenster, B9/B10, Treiber-Flakiness) – historisiert durch den Abschnitt darueber – historisiert durch den Abschnitt darueber
 

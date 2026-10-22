@@ -699,7 +699,12 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
             <button
               type="button"
               onClick={() => {
-                const wunsch: ZonenWunsch = { sorte: 'text-formatiert' as never } as never
+                // GEMESSEN am 22.10.2026 im Treiber 4n: Hier stand
+                // `{ sorte: 'text-formatiert' } as never` - eine Sorte, die
+                // `fuegeZoneHinzu` nicht kennt. Der Knopf tat damit NICHTS (nur
+                // console.warn), waehrend die reine Funktion und ihre Tests gruen
+                // waren. Die Beschriftung sagt "(titel)"; genau das wird bestellt.
+                const wunsch: ZonenWunsch = { sorte: 'text', bindung: 'titel' }
                 const neu = fuegeZoneHinzu(vorlage, wunsch)
                 if (neu.ok) {
                   void uebernehme(neu.wert)

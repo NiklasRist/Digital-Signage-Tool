@@ -2,11 +2,14 @@
 //
 // User-Entscheidungen 15.10.2026: genau EIN Video pro Projekt; ein neu importiertes
 // Video landet AUTOMATISCH ans Ende der Wiedergabeliste; liegt schon ein Video vor,
-// fragt der Import VORHER nach und ERSETZT es dann - alles in EINEM Schreibvorgang
-// (EIN Undo-Schnappschuss).
+// fragt der Import VORHER nach und ERSETZT es dann: Das neue Element wird eingefuegt,
+// das alte im BESTAND entfernt (nicht nur aus der Sicht gefiltert - am echten Fenster
+// gemessen 22.10.2026, Treiber 4b7: sonst standen nach dem Neuoefnen ZWEI Videos in
+// project.json).
 //
 // Doppelt sind die schweren Ansichten (Wiedergabeliste, ElementBedienung, AssetGalerie),
-// der IPC-Ruf und der Einfuege-Baustein `fuegeElementHinzu`; die Wurzel-Logik laeuft echt.
+// der IPC-Ruf, der Einfuege-Baustein `fuegeElementHinzu` und `entferneElementAusListe`;
+// die Wurzel-Logik laeuft echt.
 // @vitest-environment jsdom
 import { createElement, act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,6 +22,7 @@ const d = vi.hoisted(() => ({
   setzeListe: vi.fn(),
   starteMedienImport: vi.fn(),
   fuegeElementHinzu: vi.fn(),
+  entferneElementAusListe: vi.fn(),
   // Was der Einfuege-Baustein als "aktuelle Liste" sieht und welches Element er liefert.
   quelle: [] as Listenelement[],
   neuesElement: { id: 'el-neu' } as unknown,
@@ -52,6 +56,9 @@ vi.mock('../../src/renderer/ipc-client/pfad-fuer-datei', () => ({
 }))
 vi.mock('../../src/renderer/composer/element-hinzufuegen', () => ({
   fuegeElementHinzu: d.fuegeElementHinzu,
+}))
+vi.mock('../../src/renderer/composer/element-entfernen', () => ({
+  entferneElementAusListe: d.entferneElementAusListe,
 }))
 
 function videoElement(id: string, ref: string): Listenelement {
@@ -139,6 +146,13 @@ beforeEach(() => {
   d.setzeListe.mockClear()
   d.starteMedienImport.mockReset()
   d.starteMedienImport.mockResolvedValue({ ok: false, fehler: { code: 'x', meldung: 'y' } })
+  d.entferneElementAusListe.mockReset()
+  d.entferneElementAusListe.mockImplementation(
+    async (_id: string, sichtSchreiber: (l: Listenelement[]) => void) => {
+      sichtSchreiber([d.neuesElement as Listenelement])
+      return { ok: true }
+    },
+  )
   d.fuegeElementHinzu.mockReset()
   d.fuegeElementHinzu.mockImplementation(
     async (_ref: string, _pos: number | undefined, sichtSchreiber: (l: Listenelement[]) => void) => {
@@ -227,7 +241,7 @@ describe('composer/index.tsx - ein Video (#422)', () => {
     expect((d.setzeListe.mock.calls[0]?.[0] as Listenelement[]).map((e) => e.id)).toEqual(['el-neu'])
   })
 
-  it('ERSETZEN: das alte Video-Element faellt weg, das neue kommt dazu - EIN setzeListe', async () => {
+  it('ERSETZEN: das alte Video wird im BESTAND entfernt, das neue kommt dazu', async () => {
     await zeichne(baueEigenschaften(baueProjekt({ liste: [videoElement('el-alt', 'asset-1')] })))
     d.quelle = [videoElement('el-alt', 'asset-1')]
     d.neuesElement = videoElement('el-neu', 'asset-neu')
@@ -246,6 +260,11 @@ describe('composer/index.tsx - ein Video (#422)', () => {
       })
     })
 
+    // Das alte Element geht ueber den echten Entfernen-Baustein (schreibt D1) - nicht
+    // nur ueber einen Sicht-Filter.
+    expect(d.entferneElementAusListe).toHaveBeenCalledTimes(1)
+    expect(d.entferneElementAusListe.mock.calls[0]?.[0]).toBe('el-alt')
+    // Der Sicht-Schreiber des Entfernens liefert die neue Liste (hier die Attrappe).
     expect(d.setzeListe).toHaveBeenCalledTimes(1)
     expect((d.setzeListe.mock.calls[0]?.[0] as Listenelement[]).map((e) => e.id)).toEqual(['el-neu'])
   })
