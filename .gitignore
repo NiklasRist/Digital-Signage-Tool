@@ -83,6 +83,13 @@ Desktop.ini
 /instanz.lock
 # Ergaenzt 02.10.2026: die .bak-Leichen der Dev-Starts (Dev-Datenort = Repo-Wurzel).
 /config.json.bak
+
+# Ergaenzt 22.10.2026: Marken-Bestand V2 und importierte Marken-Dateien liegen im
+# Dev-Datenort (Repo-Wurzel). Die .e2e-*-Ordner sind Testdaten aus E2E-Laeufen.
+/marken.json
+/marken.json.bak
+/marken-assets/
+/.e2e-*-datenort/
 /protokoll.json.bak
 /warteschlangen-journal.json.bak
 
