@@ -77,12 +77,18 @@ const main = async () => {
     defaultViewport: null,
   });
 
+  // Am Funktionsumfang, damit das finally ihn setzen kann.
+  let abschluss = false;
   try {
     const [seite] = await browser.pages();
     const erlebteFehler = [];
     seite.on("pageerror", (tu) => erlebteFehler.push(String(tu)));
     seite.on("error", (tu) => console.log("[fenster crash] " + String(tu)));
-    seite.on("close", () => console.log("[fenster zu]"));
+    seite.on("close", () => {
+      // Nur ein UNERWARTETES Schliessen ist ein Befund fuer das Log; der Abschluss
+      // schliesst den Browser selbst (finally).
+      if (!abschluss) console.log("[fenster zu] - vor dem Ende des Durchlaufs");
+    });
     seite.on("console", (meldung) => {
       if (meldung.type() === 'error' || meldung.type() === 'warning') {
         console.log(`[fenster ${meldung.type()}] ${meldung.text()}`);
@@ -3340,6 +3346,7 @@ const main = async () => {
     }
     if (erlebteFehler.length > 0 || befundZahl > 0) process.exitCode = 2;
   } finally {
+    abschluss = true;
     await browser.close().catch(() => {});
   }
 };
