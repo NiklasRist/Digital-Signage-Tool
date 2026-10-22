@@ -450,10 +450,10 @@ const main = async () => {
           "Befund", "app-shell/rahmen.tsx");
       } else {
         const vorher4a0 = await seite.evaluate(
-          () => document.querySelectorAll('[data-testid="marken-liste"] button').length,
+          () => document.querySelectorAll('[data-testid="marken-liste"] > div > div > button').length,
         );
         await seite.click('[data-testid="marken-liste"] input');
-        await seite.type('[data-testid="marken-liste"] input', neueMarkeName4a0);
+        await seite.type('[data-testid="marken-liste"] input', neueMarkeName4a0, { delay: 8 });
         await seite.evaluate(() => {
           const knopf = document.querySelector('[data-testid="erstelle-eigenstaendige-marken-namen"]');
           if (knopf !== null) knopf.click();
@@ -462,7 +462,7 @@ const main = async () => {
         let nachher4a0 = vorher4a0;
         while (Date.now() < frist4a0) {
           nachher4a0 = await seite.evaluate(
-            () => document.querySelectorAll('[data-testid="marken-liste"] button').length,
+            () => document.querySelectorAll('[data-testid="marken-liste"] > div > div > button').length,
           );
           if (nachher4a0 > vorher4a0) break;
           await schlafe(300);
@@ -749,6 +749,393 @@ const main = async () => {
               }
             }
           }
+        }
+      }
+      // Der Marken-Reiter bleibt offen; 4b wechselt selbst auf Zusammenstellen.
+    }
+
+    // Schritt 4m - FA-24 Marken-Editor: Der Reiter wird nicht mehr nur auf Vorhandensein
+    // geprueft. Gemessen wird der Kern der Anforderung am echten Fenster: eine Marke ueber
+    // die Oberflaeche anlegen und oeffnen, die Akzentfarbe frei setzen (sie landet im
+    // Bestand V2), die Kontrast-Warnung am Grenzwert ausloesen und wieder loeschen, eine
+    // Marke ableiten und die Herkunft ("geerbt") anzeigen. Dazu die beiden Felder, die
+    // eine Momentaufnahme der geoeffneten Marke sind (Sicherheitsabstand, Slogan): sie
+    // muessen den Wert der GEoeffneten Marke zeigen, nicht den des ersten Aufbaus.
+    //
+    // BEWUSST NICHT Teil dieses Schritts: die Live-Vorschau (rechte Spalte). #303/#330
+    // fuehren sie als offene Frage (Props-Vertrag, Beschaffung einer Vorlage, Schriften/
+    // Logo-Vorbereitung) - der Platz ist reserviert und zeigt bis zur Entscheidung nichts.
+    {
+      const stempel4m = Date.now();
+      const name4m = "DurchlaufMarke-FA24-" + stempel4m;
+      const kind4m = name4m + "-Kind";
+
+      const markenReiter4m = await seite.evaluate(() => {
+        const tab = document.querySelector('[data-testid="reiter-marken"]');
+        if (tab === null) return false;
+        tab.click();
+        return true;
+      });
+      await schlafe(1_200);
+      if (!markenReiter4m) {
+        fund("Marken-Editor (FA-24)", "der Reiter Marken ist erreichbar",
+          "reiter-marken fehlt", "Befund", "app-shell/reiter.ts");
+      } else {
+        const anzahlVorher4m = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid="marken-liste"] > div > div > button').length,
+        );
+
+        // (1) Anlegen ueber die echte Oberflaeche. Das Namensfeld ist kontrolliert und
+        // behaelt nach dem Anlegen seinen Text (4a0 hat es schon benutzt). Getippte
+        // Zeichen sind hier NICHT verlaesslich: In zwei Laeufen verschluckte die
+        // kontrollierte React-Eingabe Zeichen, und das Ergebnis war ein zusammengesetzter
+        // Name ("DurchlaufMarke-17DurchlaufMarke-FA24-…"). Der Fehler lag im MESSWEG,
+        // nicht in der App. Deshalb wird der Wert wie bei einem Einfuegen gesetzt: ueber
+        // den nativen Setter mit einem echten `input`-Ereignis - derselbe onChange-Pfad,
+        // den auch das Tippen ausloest, nur ohne Tastenrennen.
+        const setzeEingabe4m = async (index, wert) => seite.evaluate(({ i, w }) => {
+          const felder = [...document.querySelectorAll('[data-testid="marken-liste"] input')];
+          const feld = felder[i];
+          if (feld === undefined) return false;
+          const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+          setzeWert.call(feld, w);
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+          return true;
+        }, { i: index, w: wert });
+        await setzeEingabe4m(0, name4m);
+        const angelegt4m = await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="erstelle-eigenstaendige-marken-namen"]');
+          if (knopf === null) return false;
+          knopf.click();
+          return true;
+        });
+        const fristAnlegen4m = Date.now() + 15_000;
+        let anzahlNachher4m = anzahlVorher4m;
+        while (Date.now() < fristAnlegen4m) {
+          anzahlNachher4m = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid="marken-liste"] > div > div > button').length,
+          );
+          if (anzahlNachher4m > anzahlVorher4m) break;
+          await schlafe(200);
+        }
+        const neuFehler4m = await seite.evaluate(
+          () => document.querySelector('[data-testid="marken-neu-fehler"]')?.textContent ?? null,
+        );
+        console.log(`[schritt-4m] Anlegen: Marken ${anzahlVorher4m} -> ${anzahlNachher4m}, Fehler=${String(neuFehler4m)}.`);
+        if (!angelegt4m || anzahlNachher4m <= anzahlVorher4m) {
+          fund("Marken-Editor (FA-24)", "eine eigenstaendige Marke laesst sich ueber die Oberflaeche anlegen",
+            `Marken ${anzahlVorher4m}->${anzahlNachher4m}, Fehler: ${String(neuFehler4m)}`,
+            "Befund", "marken-editor/index.tsx");
+        } else {
+          // (2) Oeffnen.
+          const geoeffnet4m = await seite.evaluate((name) => {
+            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+            const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
+            if (knopf === undefined) return false;
+            knopf.click();
+            return true;
+          }, name4m);
+          const fristOeffnen4m = Date.now() + 10_000;
+          let kopf4m = null;
+          while (Date.now() < fristOeffnen4m) {
+            kopf4m = await seite.evaluate(
+              () => document.querySelector('[data-testid="marken-kopf"]')?.textContent ?? null,
+            );
+            if (kopf4m === name4m) break;
+            await schlafe(200);
+          }
+          if (!geoeffnet4m || kopf4m !== name4m) {
+            fund("Marken-Editor (FA-24)", "die angelegte Marke laesst sich oeffnen",
+              `geklickt=${String(geoeffnet4m)}, Kopf=${String(kopf4m)}`, "Befund", "marken-editor/index.tsx");
+          } else {
+            const markeId4m = await seite.evaluate(async (name) => {
+              const antwort = await window.api.invoke("marken:listeMarken");
+              if (!antwort || !antwort.ok) return null;
+              const treffer = antwort.wert.find((m) => m.name === name);
+              return treffer === undefined ? null : treffer.id;
+            }, name4m);
+
+            const leseFeld4m = (testid) => seite.evaluate(
+              (t) => document.querySelector(`[data-testid="${t}"]`)?.value ?? null, testid,
+            );
+            const liesStand4m = async () => seite.evaluate(async (name) => {
+              const antwort = await window.api.invoke("marken:listeMarken");
+              if (!antwort || !antwort.ok) return null;
+              const treffer = antwort.wert.find((m) => m.name === name);
+              return treffer === undefined ? null : {
+                akzent: treffer.farben.akzent,
+                sicherheit: treffer.sicherheit,
+                slogan: treffer.slogan,
+              };
+            }, name4m);
+            const warnung4m = () => seite.evaluate(() => {
+              const hinweis = document.querySelector('[data-testid="marken-offen"] [role="status"]');
+              return hinweis === null ? null : (hinweis.textContent ?? "").trim();
+            });
+
+            // (3) Ausgangslage: die Kopie der eingebauten Marke hat genug Kontrast.
+            const warnungVorher4m = await warnung4m();
+            const akzentVorher4m = await leseFeld4m("farbe-akzent");
+            console.log(`[schritt-4m] Ausgang: akzent=${String(akzentVorher4m)}, Warnung=${String(warnungVorher4m)}.`);
+            if (warnungVorher4m !== null) {
+              fund("Marken-Editor (FA-24)", "bei ausreichendem Kontrast zeigt der Editor KEINE Warnung",
+                `Warnung: ${warnungVorher4m}`, "Befund", "marken-editor/kontrast-warnung.tsx");
+            }
+
+            // (4) Akzentfarbe auf einen Wert setzen, der gegen BEIDE Textrollen unter 4,5:1
+            // liegt (#808080: gegen Weiss 3,95:1, gegen #202020 4,13:1). Das Feld ist
+            // unkontrolliert und schreibt beim Verlassen (onBlur).
+            const gesetzt4m = await seite.evaluate(() => {
+              const feld = document.querySelector('[data-testid="farbe-akzent"]');
+              if (feld === null) return false;
+              feld.focus();
+              feld.value = "#808080";
+              feld.dispatchEvent(new Event("input", { bubbles: true }));
+              feld.blur();
+              return true;
+            });
+            const fristWarnung4m = Date.now() + 10_000;
+            let warnungNachher4m = null;
+            while (Date.now() < fristWarnung4m) {
+              warnungNachher4m = await warnung4m();
+              if (warnungNachher4m !== null) break;
+              await schlafe(250);
+            }
+            const stand4m = await liesStand4m();
+            const blockiert4m = await seite.evaluate(() => ({
+              feldGesperrt: document.querySelector('[data-testid="farbe-akzent"]')?.disabled ?? null,
+              dialog: document.querySelector('[role="dialog"]') !== null,
+            }));
+            console.log(`[schritt-4m] Akzent #808080: Warnung=${String(warnungNachher4m)}, Store=${JSON.stringify(stand4m)}, blockiert=${JSON.stringify(blockiert4m)}.`);
+            if (!gesetzt4m) {
+              fund("Marken-Editor (FA-24)", "die Akzentfarbe ist im Editor bedienbar",
+                "farbe-akzent fehlt", "Befund", "marken-editor/index.tsx");
+            } else if (stand4m === null || stand4m.akzent !== "#808080") {
+              fund("Marken-Editor (FA-24)", "die gesetzte Akzentfarbe landet im Bestand (V2)",
+                JSON.stringify(stand4m), "Befund", "marken-editor/farben-bearbeiten.ts");
+            } else if (warnungNachher4m === null) {
+              fund("Marken-Editor (FA-24)", "bei zu geringem Kontrast warnt der Editor sichtbar (TK 9.15.2)",
+                "kein role=status im geoeffneten Bereich", "Befund", "marken-editor/kontrast-warnung.tsx");
+            } else if (blockiert4m.feldGesperrt === true || blockiert4m.dialog) {
+              fund("Marken-Editor (FA-24)", "die Warnung blockiert die Wahl NICHT (FA-24)",
+                JSON.stringify(blockiert4m), "Befund", "marken-editor/index.tsx");
+            } else {
+              console.log(`[schritt-4m] Kontrast-Warnung GEMESSEN: "${warnungNachher4m}" (Wahl bleibt moeglich).`);
+
+              // (5) Die Felder, die eine Momentaufnahme der geoeffneten Marke sind:
+              // Sicherheitsabstand und Slogan. Die neue Marke kopiert 96/54 aus der
+              // eingebauten - steht hier 0/0, zeigt der Editor den Stand des ERSTEN Aufbaus.
+              const standFelder4m = await liesStand4m();
+              const abstandH4m = await leseFeld4m("abstand-horizontal");
+              const abstandV4m = await leseFeld4m("abstand-vertikal");
+              const sloganFeld4m = await seite.evaluate(() => {
+                const abschnitt = document.querySelector('[data-testid="marken-slogan"]');
+                if (abschnitt === null) return null;
+                const felder = [...abschnitt.querySelectorAll('input')];
+                return { text: felder[0]?.value ?? null, aktiv: felder[1]?.checked ?? null };
+              });
+              console.log(`[schritt-4m] Felder: Abstand ${String(abstandH4m)}/${String(abstandV4m)} (Store ${JSON.stringify(standFelder4m?.sicherheit)}), Slogan=${JSON.stringify(sloganFeld4m)} (Store ${JSON.stringify(standFelder4m?.slogan)}).`);
+              if (standFelder4m === null) {
+                fund("Marken-Editor (FA-24)", "der Bestand ist nach dem Oeffnen lesbar",
+                  "marken:listeMarken liefert die Marke nicht", "Befund", "marken-store/liste.ts");
+              } else if (String(abstandH4m) !== String(standFelder4m.sicherheit.horizontal)
+                || String(abstandV4m) !== String(standFelder4m.sicherheit.vertikal)) {
+                fund("Marken-Editor (FA-24)", "die Abstands-Felder zeigen den Wert der GEOEFFNETEN Marke",
+                  `Felder ${String(abstandH4m)}/${String(abstandV4m)} statt ${standFelder4m.sicherheit.horizontal}/${standFelder4m.sicherheit.vertikal}`,
+                  "Befund", "marken-editor/index.tsx");
+              } else if (sloganFeld4m === null
+                || String(sloganFeld4m.text) !== String(standFelder4m.slogan.text)) {
+                fund("Marken-Editor (FA-24)", "das Slogan-Feld zeigt den Wert der GEOEFFNETEN Marke",
+                  JSON.stringify(sloganFeld4m), "Befund", "marken-editor/index.tsx");
+              } else {
+                console.log("[schritt-4m] Felder der geoeffneten Marke GEMESSEN (Abstand und Slogan stimmen mit dem Bestand).");
+              }
+
+              // (7) Ableiten ueber die echte Oberflaeche: Namensfeld (zweites Eingabefeld),
+              // Basis-Auswahl (der eine <select> der Liste), Knopf "Ableiten".
+              const eingabeFelder4m = await seite.$$('[data-testid="marken-liste"] input');
+              const auswahl4m = await seite.$('[data-testid="marken-liste"] select');
+              if (eingabeFelder4m.length < 2 || auswahl4m === null || markeId4m === null) {
+                fund("Marken-Editor (FA-24)", "Ableiten ist ueber die Oberflaeche bedienbar",
+                  `Eingaben=${eingabeFelder4m.length}, select=${auswahl4m !== null}, id=${String(markeId4m)}`,
+                  "Untersuchung", "marken-editor/index.tsx");
+              } else {
+                await setzeEingabe4m(1, kind4m);
+                await seite.evaluate((ziel) => {
+                  const auswahl = document.querySelector('[data-testid="marken-liste"] select');
+                  if (auswahl === null) return;
+                  const trage = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set;
+                  trage.call(auswahl, ziel);
+                  auswahl.dispatchEvent(new Event("change", { bubbles: true }));
+                }, markeId4m);
+                const abgeleitetKlick4m = await seite.evaluate(() => {
+                  const knopf = document.querySelector('[data-testid="marke-ableiten"]');
+                  if (knopf === null) return false;
+                  knopf.click();
+                  return true;
+                });
+                const fristKind4m = Date.now() + 15_000;
+                let kindDa4m = false;
+                while (Date.now() < fristKind4m) {
+                  kindDa4m = await seite.evaluate((name) => {
+                    const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+                    return knoepfe.some((k) => (k.textContent ?? "").trim() === name);
+                  }, kind4m);
+                  if (kindDa4m) break;
+                  await schlafe(250);
+                }
+                const ableitFehler4m = await seite.evaluate(
+                  () => document.querySelector('[data-testid="marken-ableiten-fehler"]')?.textContent ?? null,
+                );
+                console.log(`[schritt-4m] Ableiten: Knopf=${String(abgeleitetKlick4m)}, Kind=${String(kindDa4m)}, Fehler=${String(ableitFehler4m)}.`);
+                if (!abgeleitetKlick4m || !kindDa4m) {
+                  fund("Marken-Editor (FA-24)", "eine Marke laesst sich ueber die Oberflaeche ableiten",
+                    `Kind im Bestand=${String(kindDa4m)}, Fehler: ${String(ableitFehler4m)}`,
+                    "Befund", "marken-editor/marke-ableiten.ts");
+                } else {
+                  // (8) Das Kind oeffnen: es ist als abgeleitet gekennzeichnet und zeigt
+                  // mindestens eine Herkunftszeile mit "geerbt" (TK 9.15.2).
+                  await seite.evaluate((name) => {
+                    const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+                    const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
+                    if (knopf !== undefined) knopf.click();
+                  }, kind4m);
+                  const fristKindKopf4m = Date.now() + 10_000;
+                  let kindKopf4m = null;
+                  while (Date.now() < fristKindKopf4m) {
+                    kindKopf4m = await seite.evaluate(
+                      () => document.querySelector('[data-testid="marken-kopf"]')?.textContent ?? null,
+                    );
+                    if (kindKopf4m === kind4m) break;
+                    await schlafe(200);
+                  }
+                  const herkunft4m = await seite.evaluate(() => {
+                    const bereich = document.querySelector('[data-testid="marken-offen"]');
+                    const zeilen = [...document.querySelectorAll('[data-testid^="herkunft-"]')];
+                    const verbindlicherKnopf = document.querySelector('[data-testid^="herkunft-zurueck-"]');
+                    return {
+                      abgeleitetText: (bereich?.innerText ?? "").includes("abgeleitet"),
+                      zeilen: zeilen.length,
+                      erste: (zeilen[0]?.textContent ?? "").trim(),
+                      zurueckKnopf: verbindlicherKnopf !== null,
+                    };
+                  });
+                  console.log(`[schritt-4m] Kind geoeffnet: Kopf=${String(kindKopf4m)}, Herkunft=${JSON.stringify(herkunft4m)}.`);
+                  if (kindKopf4m !== kind4m) {
+                    fund("Marken-Editor (FA-24)", "das abgeleitete Kind laesst sich oeffnen",
+                      `Kopf=${String(kindKopf4m)}`, "Befund", "marken-editor/index.tsx");
+                  } else if (!herkunft4m.abgeleitetText || herkunft4m.zeilen === 0) {
+                    fund("Marken-Editor (FA-24)", "bei einer abgeleiteten Marke ist sichtbar, was geerbt ist (TK 9.15.2)",
+                      JSON.stringify(herkunft4m), "Befund", "marken-editor/herkunft-anzeigen.ts");
+                  } else {
+                    console.log(`[schritt-4m] Ableitung GEMESSEN: "${kind4m}" ist abgeleitet, ${herkunft4m.zeilen} Herkunftszeilen, erste "${herkunft4m.erste}".`);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // (8) Die Warnung und die Farbfelder haengen am WERT der GEOEFFNETEN Marke. Die
+        // eingebaute Marke hat wieder genug Kontrast (#FF4040 gegen #202020 = 4,71:1).
+        // Beim Wechsel muessen sich deshalb die unkontrollierten Felder (defaultValue)
+        // mitziehen - sonst schreibt der naechste onBlur den ALTEN Wert in die neue Marke.
+        const eingebaut4m = await seite.evaluate(async () => {
+          const antwort = await window.api.invoke("marken:listeMarken");
+          if (!antwort || !antwort.ok) return null;
+          return antwort.wert.find((m) => m.eingebaut)?.name ?? null;
+        });
+        if (eingebaut4m === null) {
+          fund("Marken-Editor (FA-24)", "der Bestand fuehrt eine eingebaute Marke",
+            "keine Marke mit eingebaut=true", "Untersuchung", "marken-store/liste.ts");
+        } else {
+          await seite.evaluate((name) => {
+            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+            const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
+            if (knopf !== undefined) knopf.click();
+          }, eingebaut4m);
+          const fristWechsel4m = Date.now() + 10_000;
+          let kopfWechsel4m = null;
+          while (Date.now() < fristWechsel4m) {
+            kopfWechsel4m = await seite.evaluate(
+              () => document.querySelector('[data-testid="marken-kopf"]')?.textContent ?? null,
+            );
+            if (kopfWechsel4m === eingebaut4m) break;
+            await schlafe(200);
+          }
+          const akzentFeld4m = await seite.evaluate(
+            () => document.querySelector('[data-testid="farbe-akzent"]')?.value ?? null,
+          );
+          const warnungEingebaut4m = await seite.evaluate(() => {
+            const hinweis = document.querySelector('[data-testid="marken-offen"] [role="status"]');
+            return hinweis === null ? null : (hinweis.textContent ?? "").trim();
+          });
+          const abstandEingebaut4m = await seite.evaluate(
+            () => document.querySelector('[data-testid="abstand-horizontal"]')?.value ?? null,
+          );
+          console.log(`[schritt-4m] Wechsel auf "${eingebaut4m}": Kopf=${String(kopfWechsel4m)}, akzentFeld=${String(akzentFeld4m)}, Warnung=${String(warnungEingebaut4m)}, AbstandFeld=${String(abstandEingebaut4m)}.`);
+          if (kopfWechsel4m !== eingebaut4m) {
+            fund("Marken-Editor (FA-24)", "die eingebaute Marke laesst sich oeffnen",
+              `Kopf=${String(kopfWechsel4m)}`, "Befund", "marken-editor/index.tsx");
+          } else {
+            if (akzentFeld4m !== "#FF4040") {
+              fund("Marken-Editor (FA-24)", "beim Wechsel der Marke zeigen die Farbfelder den Wert der NEUEN Marke",
+                `Feld ${String(akzentFeld4m)} statt #FF4040`, "Befund", "marken-editor/index.tsx");
+            }
+            if (warnungEingebaut4m !== null) {
+              fund("Marken-Editor (FA-24)", "die Kontrast-Warnung verschwindet bei ausreichendem Kontrast",
+                `Warnung bleibt: ${String(warnungEingebaut4m)}`, "Befund", "marken-editor/kontrast-warnung.tsx");
+            }
+          }
+        }
+
+        // (9) Aufraeumen IN diesem Schritt: das Kind zuerst (sonst ist die Basis noch
+        // referenziert), danach die Basis. Beide ueber die echte Oberflaeche.
+        const loescheUeberUi4m = async (name) => {
+          await seite.evaluate((n) => {
+            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
+            const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === n);
+            if (knopf !== undefined) knopf.click();
+          }, name);
+          await schlafe(700);
+          const gesucht4m = await seite.evaluate(() => {
+            const knopf = document.querySelector('[data-testid="loeschengesuch"]');
+            if (knopf === null) return false;
+            knopf.click();
+            return true;
+          });
+          if (!gesucht4m) return { name, gesucht: false, bestaetigt: false };
+          const frist4m = Date.now() + 10_000;
+          let bestaetigen4m = null;
+          while (Date.now() < frist4m) {
+            bestaetigen4m = await seite.evaluate(
+              () => [...document.querySelectorAll('[data-testid="marken-offen"] button')]
+                .find((b) => (b.textContent ?? "").trim() === "Löschen bestätigen") !== undefined,
+            );
+            if (bestaetigen4m) break;
+            await schlafe(250);
+          }
+          if (bestaetigen4m) {
+            await seite.evaluate(() => {
+              const knopf = [...document.querySelectorAll('[data-testid="marken-offen"] button')]
+                .find((b) => (b.textContent ?? "").trim() === "Löschen bestätigen");
+              if (knopf !== undefined) knopf.click();
+            });
+            await schlafe(1_200);
+          }
+          const nochDa4m = await seite.evaluate(async (n) => {
+            const antwort = await window.api.invoke("marken:listeMarken");
+            if (!antwort || !antwort.ok) return null;
+            return antwort.wert.some((m) => m.name === n);
+          }, name);
+          return { name, gesucht: true, bestaetigt: Boolean(bestaetigen4m), nochDa: nochDa4m };
+        };
+        const wegKind4m = await loescheUeberUi4m(kind4m);
+        const wegBasis4m = await loescheUeberUi4m(name4m);
+        console.log(`[schritt-4m] Aufraeumen: ${JSON.stringify([wegKind4m, wegBasis4m])}.`);
+        if (wegKind4m.nochDa === true || wegBasis4m.nochDa === true) {
+          fund("Marken-Editor (FA-24)", "die Messmarken lassen sich wieder loeschen",
+            JSON.stringify([wegKind4m, wegBasis4m]), "Untersuchung", "marken-editor/index.tsx");
         }
       }
       // Der Marken-Reiter bleibt offen; 4b wechselt selbst auf Zusammenstellen.
@@ -2897,8 +3284,12 @@ const main = async () => {
       const antwort = await window.api.invoke("marken:listeMarken");
       if (!antwort || !antwort.ok) return { fehler: 'listeMarken' };
       const eigene = antwort.wert.filter((m) => String(m.name).startsWith("DurchlaufMarke"));
+      // ABGELEITETE ZUERST: eine Basis mit noch existierendem Kind ist gesperrt
+      // (marke_referenziert). In Bestandsreihenfolge steht die Basis vorn - nach einem
+      // abgebrochenen Lauf bliebe sie sonst als Leiche liegen (gemessen 22.10.2026).
+      const reihenfolge = [...eigene].sort((a, b) => (a.parent === null ? 1 : 0) - (b.parent === null ? 1 : 0));
       const ergebnisse = [];
-      for (const marke of eigene) {
+      for (const marke of reihenfolge) {
         const weg = await window.api.invoke("marken:loescheMarke", { markeId: marke.id });
         ergebnisse.push({ name: marke.name, ok: weg && weg.ok, code: weg && !weg.ok ? weg.fehler.code : null });
       }
