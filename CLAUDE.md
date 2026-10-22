@@ -16,7 +16,7 @@
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-22-session.md`](docs/agents/uebergabe-2026-10-22-session.md) – LIES DIESE DATEI ZUERST.**
 
 - **FA-24 ist gemessen – die Matrix hat KEINE Luecke mehr.** Treiber-Schritte **4m/4m2**
-  (Branch `bau/treiber-fa24`): Marke ueber die Oberflaeche **anlegen und oeffnen**,
+  (Branches `bau/treiber-fa24` und `bau/treiber-fa24-rest`): Marke ueber die Oberflaeche **anlegen und oeffnen**,
   **Akzentfarbe frei** setzen (Wert im Bestand V2), **Kontrast-Warnung** am Grenzwert
   ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, **Ableiten** mit `abgeleitet` und
   Herkunftszeilen. **4m2:** **alle dreizehn Farbrollen** (13/13 im Bestand), **Slogan** und

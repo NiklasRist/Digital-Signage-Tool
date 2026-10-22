@@ -7,7 +7,7 @@
 
 Die letzte Luecke der Treiber-Matrix: **FA-24** (Marken-Editor). Der Auftrag war messen,
 nicht neu bauen - der Editor und seine Bausteine stehen seit der M8-Reihe. Branch:
-`bau/treiber-fa24`.
+`bau/treiber-fa24` (4m) und `bau/treiber-fa24-rest` (4m2).
 
 Ergebnis: **FA-24 ist gemessen** (anlegen, bearbeiten, ableiten, Import, Kontrastwarnung) und
 hat **zwei echte Produktbefunde** geliefert, beide behoben und gegengeprobt. Die Matrix hat
