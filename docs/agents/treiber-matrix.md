@@ -319,7 +319,8 @@ Reihenfolge nach MoSCoW: **Muss** zuerst. "Treiber" heisst: neuer oder erweitert
 | 8 | FA-06/14 | Standarddauer-Kette, Grenzen 10-45 s, Verlaengern | Treiber: Projekt-Standard setzen, Aktion ohne eigene Dauer platzieren -> Startwert; Grenze ziehen -> 10/45 s; Video-Trim gegen Quelllaenge. |
 
 **Nicht als Treiber-Szenario sinnvoll:** FA-09 (nativer Zielordner-Dialog, User-Entscheidung),
-FA-11/FA-12 (optische Abnahme am gerenderten Bild). Beide bleiben **manuell** - wie #433.
+FA-11/FA-12 (optische Abnahme am gerenderten Bild). Beide bleiben **manuell** - wie die
+optischen Abnahmen (#433, am 22.10.2026 abgenommen).
 
 ---
 

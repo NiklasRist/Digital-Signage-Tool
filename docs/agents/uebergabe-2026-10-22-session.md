@@ -170,13 +170,29 @@ Bestand hat **keine** `console.error`-Meldung (geprueft in den gruenen Laeufen).
   0 Luecke, 3 manuell** (Muss: 4 von 15 gemessen). Waechter `tests/unit/treiber-matrix.spec.ts` gruen.
 - **Nicht** gepusht; `main` bleibt hinter dem lokalen Stand.
 
+## 4b. #433 abgenommen (22.10.2026)
+
+Der User hat den Filmstreifen am echten Fenster geprueft und mit **„abgenommen"** bestaetigt –
+keine Aenderung an Dichte (40 px Zielbreite), Hoehe (64 px) oder Standard-Zoom. Belege:
+Treiber 4b4 (1 Bild bei 8 px/s, 6 bei 128 px/s), `video-filmstreifen.spec.ts`, Sichtpruefung.
+Das Issue ist geschlossen.
+
+**Zwei Wuensche aus der Abnahme sind als eigene Issues notiert** (nicht Teil von #433):
+- **#442** – „aktionen zwischen frames anlegen nicht geht": zu klaeren, welche Handlung
+  gemeint ist (Zeitstelle, Frame-Luecke, Frame-Grenze) und welches Ergebnis.
+- **#443** – „die videosteuerung wie bei yt funktionieren soll": Bedienelemente, Platzierung,
+  Tastatur und Verhaeltnis zur globalen Steuerung (#387).
+
 ## 5. Ehrlich offen
 
 1. **Live-Vorschau des Marken-Editors** (B11): braucht eine Entscheidung zu den Props
    (`VorlagenZugang`? `ZeichenZugang`? eigenes `stelleMarkeBereit`?) - #303/#330.
 2. **MANUELL:** der native Dateidialog beim Logo-/Schrift-Import (wie FA-09/Export).
-3. **#433** optische Abnahme beim User.
-4. **Mutations-Chargen** 138/92 Dateien offen.
+3. **#442** – „aktionen zwischen frames anlegen nicht geht" (aus der #433-Abnahme):
+   Bedienweg und Ergebnis sind offen, `braucht-entscheidung`.
+4. **#443** – „videosteuerung wie bei yt" (aus der #433-Abnahme): Umfang und Platzierung
+   offen, `braucht-entscheidung`.
+5. **Mutations-Chargen** 138/92 Dateien offen.
 
 ## 6. Regeln, die diese Session bestaetigt hat
 
