@@ -11,7 +11,52 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde, UI-Ausrichtung) – gilt vor ALLEM weiter unten
+## STAND HEUTE (22.10.2026: FA-24 am echten Fenster, B9/B10, Treiber-Flakiness) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-22-session.md`](docs/agents/uebergabe-2026-10-22-session.md) – LIES DIESE DATEI ZUERST.**
+
+- **FA-24 ist gemessen – die Matrix hat KEINE Luecke mehr.** Neuer Treiber-Schritt **4m**
+  (Branch `bau/treiber-fa24`): Marke ueber die Oberflaeche **anlegen und oeffnen**,
+  **Akzentfarbe frei** setzen (`#808080`; Wert im Bestand V2), **Kontrast-Warnung** am
+  Grenzwert ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, Warnung verschwindet beim Wechsel
+  auf eine Marke mit genug Kontrast, **Ableiten** mit Kennzeichnung `abgeleitet` und
+  20 Herkunftszeilen. Matrix jetzt **5 gemessen, 16 teilweise, 0 Luecke, 3 manuell**;
+  FA-24 ist **teilweise**, weil Live-Vorschau und Importe ungemessen sind.
+- **Zwei echte Produktbefunde, behoben und gegengeprobt:**
+  1. **B9 – Stand des ERSTEN Aufbaus:** Nach dem Oeffnen einer Marke mit 96/54 px standen im
+     Abstands-Feld **0/0**; ein Klick auf "Abstand uebernehmen" haette den Sicherheitsabstand
+     (TK 9.11.4) still zerstoert. `slogan`/`sicherheit` sind Momentaufnahmen und werden jetzt
+     im Abo auf die geoeffnete Marke gezogen.
+  2. **B10 – alter Farbwert nach dem Wechsel:** Nach dem Bearbeiten von Marke A zeigte das
+     Akzentfeld bei Marke B weiter `#808080` (unkontrolliertes `defaultValue`, React benutzt
+     dasselbe DOM-Element). Der naechste `onBlur` haette den Wert in B geschrieben. Jetzt
+     traegt `marken-offen` `key=<markeId>` und wird beim Wechsel neu aufgebaut.
+  Gegenproben: je **1 Test rot** (bzw. 2 bei B9), Ruecknahme byte-identisch
+  (Pruefsumme `8fbcda44…c123e6`).
+- **Treiber-Flakiness beendet** (eigener Commit): `scripts/durchlauf.mjs` startete Electron
+  **zweimal** (spawn + puppeteer.launch); die Einzelinstanz liess einen gewinnen, verlor der
+  gesteuerte Prozess, starb der Frame mitten im Lauf ("detached Frame", stummer Haenger –
+  am 22.10. dreimal an verschiedenen Stellen). Jetzt **EIN** Start, dazu Hoerer fuer
+  Fenster-Crash und Fenster-zu. Danach `npm run durchlauf` **Exit 0**.
+- **Drei Messweg-Korrekturen** (kein App-Fehler): 4a0 zaehlte die Knoepfe "Neue Marke"/
+  "Ableiten" als Marken (3/4 statt 1/2); getippte Zeichen im kontrollierten Namensfeld wurden
+  verschluckt (jetzt nativer Setter + `input`); das Aufraeumen loescht abgeleitete Marken
+  **vor** ihrer Basis.
+- **Gate:** `npm run pruefung` **Exit 0** – **5.604 Unit-Tests (333 Dateien)**,
+  **49 Integrationstests (12 Dateien)**, Treiber ohne Befund; Typecheck/Lint 0.
+- **Ehrlich offen:**
+  - **Live-Vorschau** des Marken-Editors (dritter Teil aus TK 9.14.1) ist gebaut, aber **nicht
+    montiert**: #303/#330 fuehren die Props-Frage als "NICHT selbst entscheiden" (Vorlage,
+    `ZeichenZugang`, Schriften/Logo). Bleibt offen, bis entschieden.
+  - **Rest von FA-24:** Import von Logo/Schriftdateien, Schreiben von Slogan/Abstand, uebrige
+    elf Farbrollen.
+  - **Gate-Blindstelle B5:** `console.error` wird nicht gewertet.
+  - **#433** optische Abnahme beim User; **Mutations-Chargen** 138/92 offen.
+- **Nicht gepusht.**
+- **Naechster Schritt:** **Live-Vorschau entscheiden** (#303/#330) oder **Rest von FA-24**
+  messen; alternativ die **Gate-Blindstelle B5** schliessen.
+
+## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde, UI-Ausrichtung) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-21-session.md`](docs/agents/uebergabe-2026-10-21-session.md) – LIES DIESE DATEI ZUERST.**
 

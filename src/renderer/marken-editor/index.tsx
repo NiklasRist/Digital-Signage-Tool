@@ -103,11 +103,22 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
       // der Zustand ueberlebte den Reiterwechsel, und der Ausweg "Wechsle die
       // Standardmarke" war damit eine Sackgasse: kein Loesch-Knopf mehr, keine neue
       // Pruefung. Das erneute Oeffnen der Marke ist der natuerliche Neustart der Pruefung.
+      //
+      // DASSELBE gilt fuer Slogan und Sicherheitsabstand - beide sind Momentaufnahmen
+      // EINER Marke, die im Zustand dieser Wurzel liegen. Am echten Fenster gemessen
+      // 22.10.2026 (Treiber 4m): Nach dem Oeffnen einer Marke mit 96/54 px standen im
+      // Abstands-Feld 0/0 - der Stand des ERSTEN Aufbaus, als noch keine Marke offen war.
+      // Ein Klick auf "Abstand uebernehmen" haette die Marke damit still auf 0/0 gesetzt
+      // und den Sicherheitsabstand (TK 9.11.4) zerstoert. Jede Momentaufnahme einer
+      // Auswahl wird deshalb beim Wechsel der Auswahl nachgezogen.
       setzeZustand((alt) => ({
         ...alt,
         markeOffen: marke !== null,
         loeschvorschau: null,
         meldeaktionFehler: null,
+        abstandHinweis: null,
+        slogan: marke?.slogan ?? { text: '', aktiv: false },
+        sicherheit: marke?.sicherheit ?? { horizontal: 0, vertikal: 0 },
       }))
     })
     return () => {
@@ -135,7 +146,14 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
   const spalteMarke = !zeigeMarke ? (
     <div data-testid="marken-offen-leer">Waehle links eine Marke.</div>
   ) : (
-    <div data-testid="marken-offen" style={{ overflowY: 'auto' }}>
+    // `key` = Kennung der geoeffneten Marke: Die Farbfelder sind unkontrolliert
+    // (defaultValue) und behalten nach einer Bearbeitung ihren sichtbaren Wert, wenn
+    // React dasselbe DOM-Element weiterbenutzt. Am echten Fenster gemessen 22.10.2026
+    // (Treiber 4m): Nach dem Wechsel auf die eingebaute Marke stand im Akzentfeld noch
+    // der Wert der vorigen Marke (#808080 statt #FF4040) - der naechste onBlur haette
+    // ihn in die NEUE Marke geschrieben. Der Wechsel der Marke baut den Bereich deshalb
+    // neu auf; innerhalb derselben Marke bleibt alles stehen (key unveraendert).
+    <div key={(marke as Marke).id} data-testid="marken-offen" style={{ overflowY: 'auto' }}>
       {offenAusbau(marke as Marke, zustand, setzeZustand, marken)}
     </div>
   )

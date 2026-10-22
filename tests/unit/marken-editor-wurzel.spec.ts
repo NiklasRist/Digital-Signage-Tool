@@ -436,6 +436,90 @@ describe('MarkenEditorWurzel (#330) - Herkunft, Loeschen, Ableiten', () => {
   });
 });
 
+describe('MarkenEditorWurzel (#330) - Momentaufnahmen beim Markenwechsel (Treiber 4m, 22.10.2026)', () => {
+  // Beide Proben bilden ab, was der Treiber am echten Fenster gefunden hat: Der Editor
+  // zeigte nach dem Oeffnen einer Marke den Stand des ERSTEN Aufbaus (Abstand 0/0 statt
+  // 96/54) und behielt im Akzentfeld den Wert der VORIGEN Marke.
+  it('beim Oeffnen einer Marke zeigen Abstand und Slogan deren Werte, nicht den Stand des ersten Aufbaus', async () => {
+    h.holeGeoeffnete.mockReturnValue(null);
+    let hoerer: ((marke: unknown) => void) | null = null;
+    h.aufGeoeffneteGeaendert.mockImplementation((cb: unknown) => {
+      hoerer = cb as (marke: unknown) => void;
+      return () => undefined;
+    });
+    h.setzeSicherheitsabstand.mockResolvedValue({ ok: true, wert: null });
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+
+    // Beim Aufbau ist keine Marke offen - der Bereich zeigt den Leerzustand.
+    expect(behaelterTest.querySelector('[data-testid="marken-offen-leer"]')).not.toBeNull();
+
+    // Jetzt wird eine Marke mit 96/54 px und einem Slogan geoeffnet.
+    h.holeGeoeffnete.mockReturnValue(markeFuerTest({
+      id: PARENT_ID,
+      sicherheit: { horizontal: 96, vertikal: 54 },
+      slogan: { text: 'Saisonstart', aktiv: true },
+    }));
+    await act(async () => {
+      hoerer?.(markeFuerTest({
+        id: PARENT_ID,
+        sicherheit: { horizontal: 96, vertikal: 54 },
+        slogan: { text: 'Saisonstart', aktiv: true },
+      }));
+    });
+
+    expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="abstand-horizontal"]')!.value).toBe('96');
+    expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="abstand-vertikal"]')!.value).toBe('54');
+    const sloganFelder = behaelterTest.querySelectorAll<HTMLInputElement>('[data-testid="marken-slogan"] input');
+    expect(sloganFelder[0]!.value).toBe('Saisonstart');
+    expect(sloganFelder[1]!.checked).toBe(true);
+
+    // Ein Klick auf "Abstand uebernehmen" schreibt jetzt den Wert DER MARK, nicht 0/0.
+    await act(async () => {
+      behaelterTest.querySelectorAll<HTMLButtonElement>('[data-testid="marken-sicherheit"] button')[0]!.click();
+    });
+    expect(h.setzeSicherheitsabstand).toHaveBeenCalledWith(PARENT_ID, { horizontal: 96, vertikal: 54 });
+
+    h.aufGeoeffneteGeaendert.mockImplementation(() => () => undefined);
+    h.holeGeoeffnete.mockReturnValue(null);
+  });
+
+  it('beim Wechsel der Marke zeigen die Farbfelder den Wert der NEUEN Marke', async () => {
+    h.holeGeoeffnete.mockReturnValue(
+      markeFuerTest({ id: DIE_ID, farben: { akzent: '#808080' } as never }),
+    );
+    let hoerer: ((marke: unknown) => void) | null = null;
+    h.aufGeoeffneteGeaendert.mockImplementation((cb: unknown) => {
+      hoerer = cb as (marke: unknown) => void;
+      return () => undefined;
+    });
+    h.setzeFarbe.mockResolvedValue({ ok: true, wert: markeFuerTest() });
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+
+    // Der Nutzer bearbeitet das Akzentfeld - dadurch ist der Wert "eigen" (dirty) und
+    // ein spaeteres defaultValue allein aendert die Anzeige nicht mehr.
+    const feld = behaelterTest.querySelector<HTMLInputElement>('[data-testid="farbe-akzent"]')!;
+    await act(async () => {
+      feld.focus();
+      fieldGetSetter(feld, '#123456');
+      feld.blur();
+    });
+
+    // Danach wird eine ANDERE Marke mit einem anderen Akzent geoeffnet.
+    const neueMarke = markeFuerTest({ id: PARENT_ID, farben: { akzent: '#FF4040' } as never });
+    h.holeGeoeffnete.mockReturnValue(neueMarke);
+    await act(async () => {
+      hoerer?.(neueMarke);
+    });
+
+    expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="farbe-akzent"]')!.value).toBe('#FF4040');
+
+    h.aufGeoeffneteGeaendert.mockImplementation(() => () => undefined);
+    h.holeGeoeffnete.mockReturnValue(null);
+  });
+});
+
 describe('Grep-Proben (#330)', () => {
   it('kein IPC-Fenster und kein Fallback im Bildschirm', async () => {
     const fs = await import('node:fs/promises');
