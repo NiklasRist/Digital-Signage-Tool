@@ -1,9 +1,13 @@
 // [marken-store] löscheMarke – blockierend löschen, eingebaute Marke unlöschbar
 
+import fs from 'node:fs/promises'
+import path from 'node:path'
+
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { MarkenFehlercode } from './fehlercodes'
 import { aendereBestand, ladeBestand } from './schreibe-marken'
 import { pruefeMarkenReferenzen } from './referenzpruefung'
+import { markenAssetsWurzel, markenOrdner } from './pfade'
 // Der Typ gehört #275 und wird hier NUR importiert, NIE neu deklariert: Er reist als fehler.daten
 // über die IPC-Grenze, und der Renderer darf nicht aus src/main/** importieren.
 
@@ -83,7 +87,7 @@ export async function löscheMarke(
   // (ENTSCHIEDEN: 'sofort' - das Loeschen ist unumkehrbar, es darf nach einem Absturz
   // nicht wiederkommen). Die Aenderungsfunktion enthaelt kein await und prueft die
   // Vorbedingungen ERNEUT: zwischen Schritt 2 und hier liegt das await auf #286.
-  return aendereBestand((bestandNun) => {
+  const entfernt = await aendereBestand((bestandNun) => {
     const aktuell = bestandNun.find((kandidat) => kandidat.id === markeId)
     if (aktuell === undefined) {
       return {
@@ -111,6 +115,28 @@ export async function löscheMarke(
       },
     }
   }, 'sofort')
+
+  if (!entfernt.ok) return entfernt
+
+  // SCHRITT 6 (#441, 22.10.2026): die importierten Dateien gehoeren der Marke
+  // (TK 9.15.3) - mit der Marke verschwindet `marken-assets/<markeId>/`. Bis hierher
+  // blieben die Kopien als Leichen im Datenort.
+  //
+  // REIHENFOLGE: ERST der Bestand, DANN die Dateien. Die Marke ist danach fachlich weg;
+  // ein Dateifehler darf das Loeschen nicht rueckgaengig machen und nicht als Fehler
+  // erscheinen (sonst saehe der Nutzer "nicht geloescht", obwohl sie weg ist). Deshalb
+  // best effort: `force` deckt die fehlende Datei, andere Fehler (etwa ein gesperrtes
+  // Handle unter Windows) bleiben stehen - der naechste Lauf kann sie aufraeumen.
+  const ordner = markenOrdner(markeId)
+  // Pfad-Schranke: `markeId` kommt aus dem Bestand, aber ein korrupter Bestand darf
+  // keinen rekursiven Loeschpfad ausserhalb von marken-assets/ oeffnen.
+  const innerhalb =
+    path.basename(ordner) === markeId &&
+    ordner.startsWith(markenAssetsWurzel() + path.sep)
+  if (innerhalb) {
+    await fs.rm(ordner, { recursive: true, force: true }).catch(() => undefined)
+  }
+  return entfernt
 }
 // - blockierend, NICHT kaskadierend: kein Projekt und keine andere Marke wird verändert
 // - eingebaute Marke -> fehler.code = 'marke_eingebaut'
@@ -119,4 +145,6 @@ export async function löscheMarke(
 //   abgeleiteteMarken: AbgeleiteteMarkenReferenz[], standardInProjekten: StandardmarkenReferenz[] })
 // - Referenzpruefung VOR der Schreib-Einheit (sie ist async), Entfernen in EINER
 //   aendereBestand(…, 'sofort')-Einheit (#277)
-// - kein fs, kein Lock, kein IPC-Kanal (den meldet #304 an)
+// - danach best effort `marken-assets/<markeId>/` entfernen (Schritt 6, #441) - erst nach
+//   dem Bestand, ein Dateifehler macht das Loeschen nicht rueckgaengig
+// - kein Lock, kein IPC-Kanal; fs ausschliesslich fuer diesen Ordner

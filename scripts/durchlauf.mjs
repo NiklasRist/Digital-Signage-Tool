@@ -1541,28 +1541,31 @@ const main = async () => {
             return antwort.wert.some((m) => m.name === name);
           }, n);
         };
-        // Die importierten Dateien der Messmarke VOR dem Loeschen ueber den echten Kanal
-        // entfernen. `löscheMarke` raeumt marken-assets/<markeId>/ nicht auf (B13) - ohne
-        // diesen Schritt hinterliesse jeder Lauf eine .woff2 im Datenort.
+        // Die Kennung VOR dem Loeschen merken: Danach ist die Marke weg, und der Ordner
+        // marken-assets/<markeId>/ muss mit ihr verschwunden sein (#441).
         const aufraeumId4m2 = await seite.evaluate(async (n) => {
           const antwort = await window.api.invoke("marken:listeMarken");
           if (!antwort || !antwort.ok) return null;
           return antwort.wert.find((m) => m.name === n)?.id ?? null;
         }, name4m2);
-        if (aufraeumId4m2 !== null) {
-          await seite.evaluate(async (id) => {
-            await window.api.invoke("marken:entferneMarkenDatei",
-              { markeId: id, art: "schrift", schriftRolle: "fliesstext" });
-            await window.api.invoke("marken:entferneMarkenDatei",
-              { markeId: id, art: "logo", schriftRolle: null });
-          }, aufraeumId4m2);
-        }
         const kindNochDa4m2 = await loesche4m2(kind4m2);
         const basisNochDa4m2 = await loesche4m2(name4m2);
         console.log(`[schritt-4m2] Aufraeumen: Kind noch da=${String(kindNochDa4m2)}, Basis noch da=${String(basisNochDa4m2)}.`);
         if (kindNochDa4m2 === true || basisNochDa4m2 === true) {
           fund("Marken-Rest (FA-24)", "die Messmarken lassen sich wieder loeschen",
             `Kind=${String(kindNochDa4m2)}, Basis=${String(basisNochDa4m2)}`, "Untersuchung", "marken-editor/index.tsx");
+        }
+        if (aufraeumId4m2 !== null) {
+          // #441: der Store raeumt den Ordner mit der Marke ab. Beleg am Dateisystem.
+          const ordner4m2 = path.join(WURZEL, "marken-assets", aufraeumId4m2);
+          const ordnerDa4m2 = fs.existsSync(ordner4m2);
+          console.log(`[schritt-4m2] marken-assets-Ordner nach dem Loeschen: ${String(ordnerDa4m2)} (${aufraeumId4m2}).`);
+          if (ordnerDa4m2) {
+            fund("Marken-Rest (FA-24)", "der Ordner marken-assets/<markeId>/ verschwindet mit der Marke (#441)",
+              `Ordner besteht weiter: ${aufraeumId4m2}`, "Befund", "marken-store/loesche-marke.ts");
+          } else {
+            console.log("[schritt-4m2] marken-assets-Aufraeumen GEMESSEN (Ordner mit der Marke weg, #441).");
+          }
         }
       }
     }
