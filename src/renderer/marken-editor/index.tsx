@@ -2,13 +2,15 @@
 // geoeffnete Marke in der Mitte, Live-Vorschau rechts. ORDNET AN und REICHT DURCH - kein IPC,
 // kein eigener fachlicher Zustand, keine Pixelentscheidung, kein Undo.
 //
-// IMPORTE: Die Importliste ist der VERTRAG - sie umfasst die einundzwanzig Funktionen, die
-// dieser Bildschirm ruft; alle anderen Bausteine ruft der eigene Baustein. DER EINE
-// zurueckgestellte Ruf zeichneMarkenVorschau (#303) steht NICHT in der Liste.
+// IMPORTE: Die Importliste ist der VERTRAG - sie umfasst die Funktionen, die dieser
+// Bildschirm ruft; alle anderen Bausteine ruft der eigene Baustein. Die Live-Vorschau
+// (#303) wird seit der Entscheidung A1 (22.10.2026) gerufen - aber in ihrem eigenen
+// Baustein `vorschau-flaeche.tsx`; diese Wurzel bleibt beim Anordnen.
 
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { MarkenZugang } from '../app-shell/marken-zugang' // #305, nur als TYP
+import type { VorlagenZugang } from '../app-shell/sichten' // #155, nur als TYP
 import { KONTRAST_SCHWELLE } from '../../shared/contracts/konstanten' // #21, TK 9.11.4
 import {
   oeffneMarke, holeGeoeffneteMarke, aufGeoeffneteMarkeGeaendert, erstelleEigenstaendigeMarke,
@@ -31,18 +33,23 @@ import {
   setzeSicherheitsabstand, baueVorlagenHinweis, type Sicherheitsabstand,
 } from './sicherheitsabstand-bearbeiten' // #308
 import { waehleUndImportiereSchrift, waehleUndImportiereLogo } from './datei-import' // #326
+import { MarkenVorschau } from './vorschau-flaeche' // #303, dritte Spalte
 
 import type { Marke } from '../../shared/contracts/marke'
 
 /**
  * ZEICHENGLEICHE Abschrift der Deklaration in `src/renderer/app-shell/inhalte.tsx` (#314, die
- * DEFINIERENDE Quelle). ZWEI Felder, kein drittes: KEIN `projekt`, KEIN `zeichnen`, KEIN `sitzung`.
+ * DEFINIERENDE Quelle). DREI Felder (drittes seit der Entscheidung A1 vom 22.10.2026):
+ * KEIN `projekt`, KEIN `zeichnen`, KEIN `sitzung`.
  * Weicht die tatsaechliche Fassung ab, ist das ein Vertragsfehler: melden, NICHT anpassen.
  */
 export interface MarkenEditorWurzelProps {
   sichtbar: boolean
   /** Zugang zum app-weiten Marken-Bestand (#305/#311). Wird hier BENUTZT, nicht weitergereicht. */
   marken: MarkenZugang
+  /** Zugang zur gemeinsamen Vorlagen-Sicht (#155): liefert die feste Vorschau-Vorlage
+   *  „Vollbild". Nur gelesen; kein `lade()` von hier. */
+  vorlagen: VorlagenZugang
 }
 
 /** Der EINE eigene Zustandswert: ob die zuletzt geoeffnete Marke noch gilt (ENTSCHIEDEN 6). */
@@ -69,7 +76,7 @@ type Zustand = {
  * Live-Vorschau rechts (TK 9.14.1). ORDNET AN und REICHT DURCH.
  */
 export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.Element {
-  const { marken } = eigenschaften
+  const { marken, vorlagen } = eigenschaften
   // ENTSCHIEDEN 3: nichts nachladen beim Auftauchen; die Marke kommt aus holeGeoeffneteMarke.
   const [zustand, setzeZustand] = useState<Zustand>(() => ({
     markenUebersicht: marken.hole(),
@@ -159,9 +166,9 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
   )
   const spalteVorschau = (
     <div data-testid="marken-vorschau" style={{ position: 'sticky', top: 0 }}>
-      {/* Live-Vorschau (TK 9.14.1) - zurueckgestellter Ruf zeichneMarkenVorschau (#303),
-        s. STOPP des Issues; bis zur Antwort bleibt hier eine neutrale Flaeche. */}
-      Live-Vorschau
+      {/* Live-Vorschau (TK 9.14.1/9.15.2, #303): eigener Baustein, damit diese Wurzel
+        weiterhin nur anordnet. Vorbereitung und Zeichnen liegen dort. */}
+      <MarkenVorschau marke={zeigeMarke ? (marke as Marke) : null} vorlagen={vorlagen} />
     </div>
   )
   return (

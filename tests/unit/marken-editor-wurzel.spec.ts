@@ -32,6 +32,7 @@ const h = vi.hoisted(() => ({
   baueVorlagenHinweis: vi.fn(() => null),
   waehleUndImportiereSchrift: vi.fn(),
   waehleUndImportiereLogo: vi.fn(),
+  MarkenVorschau: vi.fn(() => null),
 }));
 
 vi.mock('../../src/renderer/marken-editor/marken-uebersicht', () => ({
@@ -83,6 +84,11 @@ vi.mock('../../src/renderer/marken-editor/datei-import', () => ({
   waehleUndImportiereSchrift: h.waehleUndImportiereSchrift,
   waehleUndImportiereLogo: h.waehleUndImportiereLogo,
 }));
+// Die Live-Vorschau ist ein eigener Baustein (A1, 22.10.2026); hier wird nur geprueft,
+// dass die Wurzel ihn mit der geoeffneten Marke und dem Vorlagen-Zugang versorgt.
+vi.mock('../../src/renderer/marken-editor/vorschau-flaeche', () => ({
+  MarkenVorschau: h.MarkenVorschau,
+}));
 
 const { MarkenEditorWurzel } = await import('../../src/renderer/marken-editor/index.tsx');
 
@@ -105,6 +111,11 @@ const ZUGANG = (initial: unknown) => ({
   hole: vi.fn(() => initial),
   aufGeaendert: vi.fn(() => () => undefined),
 });
+const VORLAGEN = {
+  lade: vi.fn(() => Promise.resolve({ ok: true, wert: { nutzbare: [], verwaisteArbeitskopien: [] } })),
+  hole: vi.fn(() => ({ nutzbare: [], verwaisteArbeitskopien: [] })),
+  aufGeaendert: vi.fn(() => () => undefined),
+};
 
 let behaelter: HTMLDivElement | null = null;
 let wurzel: Root | null = null;
@@ -129,7 +140,7 @@ function zeige(props: Record<string, unknown>): HTMLElement {
   wurzel = createRoot(behaelter!);
   act(() => {
     wurzel!.render(
-      createElement(MarkenEditorWurzel, props as never) as ReactElement,
+      createElement(MarkenEditorWurzel, { vorlagen: VORLAGEN, ...props } as never) as ReactElement,
     );
   });
   return behaelter as unknown as HTMLElement;
@@ -148,6 +159,30 @@ describe('MarkenEditorWurzel (#330) - Anordnung und Liste', () => {
     );
     expect(zugang.lade).not.toHaveBeenCalled();
     expect(h.oeffneMarke).not.toHaveBeenCalled();
+  });
+
+  it('die Live-Vorschau bekommt die geoeffnete Marke und den Vorlagen-Zugang (A1, 22.10.2026)', () => {
+    h.holeGeoeffnete.mockReturnValue(markeFuerTest({ id: DIE_ID }));
+    const zugang = ZUGANG(UEBERSICHT);
+    zeige({ sichtbar: true, marken: zugang });
+    expect(h.MarkenVorschau).toHaveBeenCalled();
+    const ruf = h.MarkenVorschau.mock.calls[h.MarkenVorschau.mock.calls.length - 1] as unknown as [
+      { marke: Marke; vorlagen: unknown },
+    ];
+    expect(ruf[0].marke.id).toBe(DIE_ID);
+    expect(ruf[0].vorlagen).toBe(VORLAGEN);
+    h.holeGeoeffnete.mockReturnValue(null);
+  });
+
+  it('ohne geoeffnete Marke bekommt die Vorschau marke=null', () => {
+    h.holeGeoeffnete.mockReturnValue(null);
+    const zugang = ZUGANG(UEBERSICHT);
+    zeige({ sichtbar: true, marken: zugang });
+    expect(h.MarkenVorschau).toHaveBeenCalled();
+    const ruf = h.MarkenVorschau.mock.calls[h.MarkenVorschau.mock.calls.length - 1] as unknown as [
+      { marke: unknown },
+    ];
+    expect(ruf[0].marke).toBeNull();
   });
 
   it('Liste enthaelt ALLE Marken in Bestandsreihenfolge, ohne Sortierung', () => {

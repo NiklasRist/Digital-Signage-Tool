@@ -72,12 +72,19 @@ async function ladeLogo(marke: Marke): Promise<void> {
   const logo = marke.logo as { datei: string; herkunft: string }
   let objektUrl: string | undefined
   let quelle: string | undefined
+  // Bei GEERBTEM Logo liegt die importierte Datei im Ordner des Parents, die
+  // aufgeloeste Marke traegt aber ihre EIGENE id (am 22.10.2026 an der
+  // Live-Vorschau gemessen: 404 fuer marken://<kindId>/logo.png). Der Bestand
+  // wird weiterhin unter der EIGENEN id gefuehrt - `holeLogo(marke.id)` bleibt
+  // damit unveraendert.
+  const quelleId =
+    marke.herkunftJeFeld?.logo === 'geerbt' && marke.parent !== null ? marke.parent : marke.id
 
   try {
     if (logo.herkunft === 'importiert') {
       // Nachtrag II: Bytes holen (Speicherort-Vertrag #290) und als Blob-URL
       // binden - direkte marken://-URLs im `<img>` tainten das Canvas.
-      const antwort = await fetch(`marken://${marke.id}/${logo.datei}`)
+      const antwort = await fetch(`marken://${quelleId}/${logo.datei}`)
       const bytes = await antwort.blob()
       objektUrl = URL.createObjectURL(bytes)
       quelle = objektUrl

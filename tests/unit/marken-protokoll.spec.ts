@@ -117,17 +117,16 @@ describe("MARKEN_SCHEMA", () => {
     expect(MARKEN_SCHEMA.scheme).toBe("marken");
   });
 
-  it("traegt genau die vier Privilegien des media-Schemas", () => {
+  it("traegt die vier Privilegien des media-Schemas plus das gemessene corsEnabled", () => {
     expect(MARKEN_SCHEMA.privileges).toEqual({
       standard: true,
       secure: true,
       supportFetchAPI: true,
       stream: true,
+      // Gemessen 22.10.2026 (Marken-Live-Vorschau): ohne corsEnabled blockiert
+      // Chromium fetch auf marken:// und FontFace auf importierte Schriften.
+      corsEnabled: true,
     });
-  });
-
-  it("setzt corsEnabled NICHT (STOPP: Probe steht noch aus)", () => {
-    expect(MARKEN_SCHEMA.privileges?.corsEnabled).toBeUndefined();
   });
 });
 

@@ -99,7 +99,11 @@ const main = async () => {
         const text = meldung.text();
         if (!geseheneFensterFehler.has(text)) {
           geseheneFensterFehler.add(text);
-          fund("Fenster-Konsole", "kein console.error im Fenster", text, "Befund", "Renderer/React");
+          // Die QUELLE gehoert in den Befund: "Failed to load resource: 404" ohne URL
+          // laesst offen, ob ein Medium, eine Marke oder eine Schrift fehlt (22.10.2026).
+          const quelle = meldung.location?.()?.url ?? "";
+          fund("Fenster-Konsole", "kein console.error im Fenster",
+            quelle === "" ? text : `${text} [${quelle}]`, "Befund", "Renderer/React");
         }
       } else if (meldung.type() === 'warning') {
         console.log(`[fenster warning] ${meldung.text()}`);
@@ -780,9 +784,9 @@ const main = async () => {
     // eine Momentaufnahme der geoeffneten Marke sind (Sicherheitsabstand, Slogan): sie
     // muessen den Wert der GEoeffneten Marke zeigen, nicht den des ersten Aufbaus.
     //
-    // BEWUSST NICHT Teil dieses Schritts: die Live-Vorschau (rechte Spalte). #303/#330
-    // fuehren sie als offene Frage (Props-Vertrag, Beschaffung einer Vorlage, Schriften/
-    // Logo-Vorbereitung) - der Platz ist reserviert und zeigt bis zur Entscheidung nichts.
+    // Seit der Entscheidung A1 (22.10.2026) gehoert die Live-Vorschau dazu: Sie zeichnet
+    // ueber zeichneMarkenVorschau (#303, derselbe Zeichenweg) mit der festen Vorlage
+    // "Vollbild", nach eigener Vorbereitung von Schriften und Logo (#291/#315).
     {
       const stempel4m = Date.now();
       const name4m = "DurchlaufMarke-FA24-" + stempel4m;
@@ -967,6 +971,44 @@ const main = async () => {
                   JSON.stringify(sloganFeld4m), "Befund", "marken-editor/index.tsx");
               } else {
                 console.log("[schritt-4m] Felder der geoeffneten Marke GEMESSEN (Abstand und Slogan stimmen mit dem Bestand).");
+              }
+
+              // (6) Live-Vorschau (TK 9.14.1/9.15.2, A1): Die rechte Spalte zeichnet ein
+              // echtes Canvas ueber denselben Zeichenweg (#303) mit der festen Vorlage
+              // "Vollbild" (1920x1080). Die Vorbereitung ist asynchron - warten.
+              const fristVorschau4m = Date.now() + 10_000;
+              let vorschau4m = null;
+              while (Date.now() < fristVorschau4m) {
+                vorschau4m = await seite.evaluate(() => {
+                  const flaeche = document.querySelector('[data-testid="marken-vorschau"]');
+                  if (flaeche === null) return { da: false, canvas: false, text: null };
+                  const canvas = flaeche.querySelector('canvas');
+                  const hinweis = flaeche.querySelector('[data-testid="marken-vorschau-hinweis"]');
+                  return {
+                    da: true,
+                    canvas: canvas !== null,
+                    breite: canvas?.width ?? null,
+                    hoehe: canvas?.height ?? null,
+                    text: (hinweis?.textContent ?? "").trim(),
+                  };
+                });
+                if (vorschau4m?.canvas === true) break;
+                await schlafe(250);
+              }
+              console.log(`[schritt-4m] Live-Vorschau: ${JSON.stringify(vorschau4m)}.`);
+              if (vorschau4m === null || vorschau4m.da !== true) {
+                fund("Marken-Editor (FA-24)", "die dritte Spalte der Live-Vorschau existiert (TK 9.14.1)",
+                  JSON.stringify(vorschau4m), "Befund", "marken-editor/index.tsx");
+              } else if (vorschau4m.canvas !== true) {
+                fund("Marken-Editor (FA-24)", "die Live-Vorschau zeichnet die geoeffnete Marke (TK 9.15.2)",
+                  `kein Canvas; Hinweis: ${String(vorschau4m.text)}`,
+                  "Befund", "marken-editor/vorschau-flaeche.tsx");
+              } else if (vorschau4m.breite !== 1920 || vorschau4m.hoehe !== 1080) {
+                fund("Marken-Editor (FA-24)", "die Live-Vorschau nutzt die Vorlage Vollbild (1920x1080)",
+                  `${String(vorschau4m.breite)}x${String(vorschau4m.hoehe)}`,
+                  "Befund", "marken-editor/vorschau-flaeche.tsx");
+              } else {
+                console.log(`[schritt-4m] Live-Vorschau GEMESSEN: Canvas ${vorschau4m.breite}x${vorschau4m.hoehe} ueber den Zeichenweg (#303).`);
               }
 
               // (7) Ableiten ueber die echte Oberflaeche: Namensfeld (zweites Eingabefeld),
@@ -1389,6 +1431,15 @@ const main = async () => {
           const neuGeoeffnet4m2 = await oeffne4m2(name4m2);
           await schlafe(500);
           const standImport4m2 = await leseMarke4m2(id4m2);
+          // Der Speicherort der Kopien (TK 9.15.3): marken-assets/<markeId>/. Die Liste
+          // macht sichtbar, ob ein 404 der Vorschau aus einem FEHLENDEN Asset stammt.
+          let markenOrdnerInhalt4m2 = null;
+          try {
+            markenOrdnerInhalt4m2 = fs.readdirSync(path.join(WURZEL, "marken-assets", id4m2));
+          } catch {
+            markenOrdnerInhalt4m2 = null;
+          }
+          console.log(`[schritt-4m2] marken-assets/<id>: ${JSON.stringify(markenOrdnerInhalt4m2)}.`);
           const importAnzeige4m2 = await seite.evaluate(() => {
             const schriften = document.querySelector('[data-testid="marken-schriften"]');
             const logo = document.querySelector('[data-testid="marken-logo"]');

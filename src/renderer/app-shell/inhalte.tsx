@@ -108,6 +108,10 @@ export interface MarkenEditorWurzelProps {
   /** Zugang zum app-weiten Marken-Bestand (#305/#311). Wird UNVERAENDERT durchgereicht;
    *  diese Datei ruft keine seiner drei Funktionen auf. */
   marken: MarkenZugang
+  /** Zugang zur Vorlagen-Sicht (#155). Drittes Feld seit der Entscheidung A1 vom 22.10.2026:
+   *  die Live-Vorschau braucht die feste Vorlage „Vollbild". Wird UNVERAENDERT durchgereicht;
+   *  diese Datei ruft keine seiner drei Funktionen auf. */
+  vorlagen: VorlagenZugang
 }
 
 /** Eigenschaften der Wurzel-Komponente der `projekt-verwaltung` (Reiter Projekte).
@@ -356,6 +360,7 @@ export function baueReiterInhalte(
       wurzeln.markenEditor({
         sichtbar: reiterEigenschaften.sichtbar,
         marken: zugaenge.marken,
+        vorlagen: zugaenge.vorlagen,
       }),
     // Zusaetzlich zu #243 (entschieden): der ROHE Zugan (kein Projektwechsel
     // ist ein Bearbeitungsschritt). leereProjektHistorie wird nur GELEGT

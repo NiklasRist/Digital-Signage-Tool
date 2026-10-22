@@ -150,6 +150,25 @@ describe('stelleMarkenSchriftenBereit (#291)', () => {
     ])
   })
 
+  it('ein GEERBTES importiertes Feld laedt aus dem Ordner des Parents (KindId sonst 404)', async () => {
+    const m = marke('kind1', [importierte('Kopf.woff2', 'MarkenKopf', 700)])
+    m.parent = 'parent1'
+    // `marke()` legt die erste importierte Schrift in die erste Rolle.
+    m.herkunftJeFeld.schriften.headlineElegant = 'geerbt'
+    await stelleMarkenSchriftenBereit(m)
+    expect(konstruiert).toEqual([
+      { familie: 'MarkenKopf', quelle: 'url(marken://parent1/Kopf.woff2)', gewicht: '700' },
+    ])
+  })
+
+  it('ein EIGENES importiertes Feld laedt weiter aus dem eigenen Ordner', async () => {
+    const m = marke('kind2', [importierte('Kopf.woff2', 'MarkenKopf', 700)])
+    m.parent = 'parent2'
+    m.herkunftJeFeld.schriften.headlineElegant = 'eigen'
+    await stelleMarkenSchriftenBereit(m)
+    expect(konstruiert[0]?.quelle).toBe('url(marken://kind2/Kopf.woff2)')
+  })
+
   it('laesst gebuendelte Schriften unberuehrt - sie gehoeren zu #8/M4-16', async () => {
     const m = marke('m2', [gebuendelte('NurGebuendelt', 400)])
     await stelleMarkenSchriftenBereit(m)

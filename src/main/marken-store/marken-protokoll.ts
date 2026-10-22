@@ -30,11 +30,20 @@ export const MARKEN_SCHEMA: CustomScheme = {
     secure: true,
     supportFetchAPI: true,
     stream: true,
+    // GEMESSEN am 22.10.2026 beim Einbau der Marken-Live-Vorschau (A1): OHNE diese
+    // Eigenschaft blockiert Chromium JEDEN fetch auf marken:// ("Cross origin requests
+    // are only supported for protocol schemes: chrome, ..."), auch wenn die CSP das
+    // Schema in connect-src/font-src erlaubt. Das importierte Logo erscheint dann als
+    // `fehlt`, die importierte Schrift faellt auf die Ersatzschrift - beides still.
+    // Damit ist die in #290 als Experiment gefuehrte Probe entschieden (STOPP 1 unten).
+    corsEnabled: true,
   },
 };
 // scheme: 'marken'
-// privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
-//   - dieselben VIER wie beim gebauten 'media'-Schema (#9, src/main/media-protokoll.ts).
+// privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true,
+//               corsEnabled: true }
+//   - die vier des 'media'-Schemas (#9, src/main/media-protokoll.ts) plus die
+//     GEMESSENE fuenfte `corsEnabled` (s. Kommentar am Objekt und STOPP 1 unten).
 //     TK 9.15.3: "Gleiche Bauart und gleiche Schutzregeln wie `media://` (9.5.7)".
 //   - `standard`  : laesst marken://<markeId>/<dateiname> nach den ueblichen URL-Regeln in Host
 //                   und Pfad zerlegen - sonst gibt es kein verlaessliches Trennen von markeId
@@ -45,7 +54,8 @@ export const MARKEN_SCHEMA: CustomScheme = {
 //   - `stream`    : fuer Logos und Schriften ohne praktische Wirkung (Teilbereichs-Anfragen
 //                   braucht nur <video>); MITGEFUEHRT, damit beide Schemata zeichengleich
 //                   beschrieben sind und niemand je Schema neu abwaegen muss.
-// UEBER EINE MOEGLICHE FUENFTE EIGENSCHAFT s. STOPP - dort und NUR dort.
+// DIE FUENFTE EIGENSCHAFT `corsEnabled` ist seit 22.10.2026 GEMESSEN und gesetzt
+// (s. Kommentar am Objekt; Begruendung und Probe in STOPP 1 unten).
 
 /**
  * Registriert den eigentlichen Anfrage-Handler. Wird NACH app.whenReady(), vor dem Laden des
@@ -319,12 +329,13 @@ function fehlerAntwort(status: number, text: string): Response {
 
 // NICHT HIER, UND DEM ISSUE GEMELDET (STOPP-Block):
 //
-// 1. KEIN `corsEnabled`. Die fuenfte Eigenschaft ist ein EXPERIMENT (STOPP-Block des
-//    Issues): Ob `FontFace` eine importierte Schrift ohne `corsEnabled: true` ueberhaupt
-//    laedt, ist erst zu MESSEN. DoD: "`corsEnabled` ist nicht gesetzt, solange die im
-//    STOPP-Block benannte Probe nicht gelaufen und ihr Ergebnis nicht abgenommen ist."
-//    Diese Datei laesst die Eigenschaft weg; wer die Probe positiv abschliesst, traegt
-//    sie an der EINEN Stelle ein (#309, Bootstrap).
+// 1. ERLEDIGT am 22.10.2026: `corsEnabled: true` STEHT im Schema. Die Probe ist am
+//    echten Fenster gelaufen: Mit `marken:` in connect-src/font-src, aber OHNE
+//    `corsEnabled`, meldete Chromium "Cross origin requests are only supported for
+//    protocol schemes: chrome, ..." fuer logo.png und fliesstext.woff2 - das Logo
+//    wurde `fehlt`, die Schrift fiel still auf die Ersatzschrift zurueck. Mit der
+//    Eigenschaft laufen fetch (Logo-Bytes) und FontFace. Die DoD-Bedingung des Issues
+//    ("nicht gesetzt, solange die Probe nicht gelaufen ist") ist damit erfuellt.
 //
 // 2. KEINE PRUEFUNG, OB DIE MARKE EXISTIERT (STOPP-Punkt des Issues, unbeantwortet):
 //    "Gilt die Anfrage fuer jede markeId, oder nur fuer Marken, die tatsaechlich

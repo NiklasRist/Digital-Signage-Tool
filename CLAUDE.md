@@ -11,7 +11,41 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (22.10.2026: FA-24 am echten Fenster, B9/B10, Treiber-Flakiness) – gilt vor ALLEM weiter unten
+## STAND HEUTE (22.10.2026, zweite Sitzung: Live-Vorschau montiert, B14–B16) – gilt vor ALLEM weiter unten
+
+**Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-22-session-2.md`](docs/agents/uebergabe-2026-10-22-session-2.md) – LIES DIESE DATEI ZUERST.**
+
+- **Reihenfolge Punkt 2 ist erledigt: die Live-Vorschau des Marken-Editors ist MONTIERT**
+  (A1, #303/#330). Drittes Prop `vorlagen: VorlagenZugang`, neuer Baustein
+  `marken-editor/vorschau-flaeche.tsx`, fester Zeichenweg `zeichneMarkenVorschau` mit der
+  Vorlage **„Vollbild"**. Vorbereitung: `stelleSchriftenBereit()` →
+  `stelleMarkenSchriftenBereit(marke)` → `bereiteLogoVor(marke)`; **kein** `stelleMarkeBereit`,
+  **kein** `ZeichenZugang`, kein Projekt. Treiber **4m** misst
+  `Live-Vorschau GEMESSEN: Canvas 1920x1080`.
+- **Drei echte Befunde, die erst die Vorschau sichtbar machte – alle behoben:**
+  1. **B14:** Die CSP erlaubte `marken:` weder in `font-src` noch in `connect-src` –
+     importierte Schriften/Logos wurden blockiert. Jetzt `marken:` in beiden (Dev + Prod).
+  2. **B15:** `MARKEN_SCHEMA` fehlte `corsEnabled`; Chromium blockierte danach JEDEN
+     `fetch(marken://…)` per CORS. Die in #290 als Experiment gefuehrte Probe ist damit
+     entschieden; `corsEnabled: true` steht im Schema.
+  3. **B16:** Eine **abgeleitete** Marke mit importierter Schrift baute die URL mit der
+     **Kind-Kennung** → 404 (die Datei liegt beim Parent, TK 9.15.3). Beide Ladewege waehlen
+     die Quell-Kennung jetzt ueber `herkunftJeFeld` (`geerbt` → Parent); der Bestand bleibt
+     unter der eigenen id. Kein Kopieren, keine zweite Wertquelle.
+- **Messweg verbessert:** Fenster-Konsole-Befunde tragen die **Quell-URL**; 4m2 listet
+  `marken-assets/<id>` auf. Beides hat B16 erst zuordenbar gemacht.
+- **Gate:** `npm run pruefung` **Exit 0**; `lint`/`typecheck` 0. Details in der Session-Datei.
+- **Widerspruch gemeldet:** #330 traegt seit 23.08. den Nachtrag „`stelleMarkeBereit`"; A1
+  (22.10.) sagt das Gegenteil. Es gilt A1 (juenger, Auftraggeber).
+- **Reihenfolge Punkt 3 ist NICHT begonnen.** Die Recherche zu FA-01/03 (#442), FA-22, FA-13,
+  FA-08 steht in der Session-Datei (Tabelle + Rangfolge; FA-22 ist der billigste Abschluss).
+- **Offene DESIGNENTSCHEIDUNG (User):** FA-13 – soll „Einblendung" ueber die Oberflaeche
+  anlegbar sein, und mit welcher Hoehe/Deckkraft? `ANLEGBARE_ARTEN` bietet nur `vollflaeche`
+  und `split`; der Store kennt `einblendung`.
+- **Noch offen:** Issue-Kommentare zu #303/#330 (Montage belegt) und #290 (corsEnabled) sind
+  zu setzen; #442-Label `braucht-entscheidung` ist veraltet.
+
+## STAND HEUTE (22.10.2026, frueher: FA-24 am echten Fenster, B9/B10, Treiber-Flakiness) – historisiert durch den Abschnitt darueber – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-22-session.md`](docs/agents/uebergabe-2026-10-22-session.md) – LIES DIESE DATEI ZUERST.**
 

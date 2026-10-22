@@ -18,15 +18,28 @@ function importierteSchriften(marke: Marke): Schrift[] {
   return Object.values(marke.schriften).filter((schrift) => schrift.herkunft === 'importiert')
 }
 
+/**
+ * Die Kennung, unter der die IMPORTIERTE Datei liegt (TK 9.15.3: `marken-assets/<markeId>/`).
+ * Ist das Feld GEERBT, gehoert die Datei dem Parent; die aufgeloeste Marke traegt dessen
+ * `Schrift`-Objekt samt `datei`, aber ihre EIGENE id. Am 22.10.2026 an der Live-Vorschau
+ * gemessen: `marken://<kindId>/fliesstext.woff2` antwortete 404, weil die Datei nur im
+ * Ordner des Parents liegt. Ein EIGENES Feld importiert immer in den eigenen Ordner.
+ */
+function quellMarkeId(marke: Marke, rolle: string): string {
+  const herkunft = marke.herkunftJeFeld?.schriften?.[rolle as keyof Marke['schriften']]
+  return herkunft === 'geerbt' && marke.parent !== null ? marke.parent : marke.id
+}
+
 export async function stelleMarkenSchriftenBereit(marke: Marke): Promise<void> {
   const vorhandenes = bestand.get(marke.id)
   if (vorhandenes) return vorhandenes
 
   const laden = (async () => {
-    for (const schrift of importierteSchriften(marke)) {
+    for (const [rolle, schrift] of Object.entries(marke.schriften)) {
+      if (schrift.herkunft !== 'importiert') continue
       const gesicht = new FontFace(
         schrift.familie,
-        `url(marken://${marke.id}/${schrift.datei})`,
+        `url(marken://${quellMarkeId(marke, rolle)}/${schrift.datei})`,
         { weight: String(schrift.gewicht) },
       )
       document.fonts.add(gesicht)

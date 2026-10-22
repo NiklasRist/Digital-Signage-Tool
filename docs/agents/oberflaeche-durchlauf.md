@@ -1499,3 +1499,70 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 36
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-22T15:00:42.315Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 36
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Connecting to 'marken://4ed9da51-c13c-4738-ba0e-204b9b942003/logo.png' violates the following Content Security Policy directive: "connect-src 'self'". The action has been blocked." (Ort: Renderer/React)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Fetch API cannot load marken://4ed9da51-c13c-4738-ba0e-204b9b942003/logo.png. Refused to connect because it violates the document's Content Security Policy." (Ort: Renderer/React)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Loading the font 'marken://4ed9da51-c13c-4738-ba0e-204b9b942003/fliesstext.woff2' violates the following Content Security Policy directive: "font-src 'self' data:". The action has been blocked." (Ort: Renderer/React)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Loading the font 'marken://c71afaf1-8fa6-4250-a5bb-55593ed3c3a5/fliesstext.woff2' violates the following Content Security Policy directive: "font-src 'self' data:". The action has been blocked." (Ort: Renderer/React)
+
+## Nachlauf vom 2026-10-22T15:04:44.158Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 36
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Access to fetch at 'marken://25ae639d-b1fe-4cba-8c74-d0015c8cf655/logo.png' from origin 'file://' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https." (Ort: Renderer/React)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Failed to load resource: net::ERR_FAILED" (Ort: Renderer/React)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Access to font at 'marken://25ae639d-b1fe-4cba-8c74-d0015c8cf655/fliesstext.woff2' from origin 'file://' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https." (Ort: Renderer/React)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Access to font at 'marken://ce39b422-65d6-4e51-aa05-8f411159a29c/fliesstext.woff2' from origin 'file://' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https." (Ort: Renderer/React)
+
+## Nachlauf vom 2026-10-22T15:08:16.706Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 37
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Failed to load resource: the server responded with a status of 404 (Not Found)" (Ort: Renderer/React)
+
+## Nachlauf vom 2026-10-22T15:11:57.799Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 34
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Failed to load resource: the server responded with a status of 404 (Not Found) [marken://2b75e82a-2d28-46a6-872e-cfb4b05a704d/fliesstext.woff2]" (Ort: Renderer/React)
+
+## Nachlauf vom 2026-10-22T15:16:20.845Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 36
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Fenster-Konsole: erwartet "kein console.error im Fenster", erkannt "Failed to load resource: the server responded with a status of 404 (Not Found) [marken://78f0c112-58cb-412e-ae76-eb270c38d958/fliesstext.woff2]" (Ort: Renderer/React)
+
+## Nachlauf vom 2026-10-22T15:21:56.517Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 36
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-22T15:26:56.698Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 38
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

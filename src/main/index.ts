@@ -121,7 +121,10 @@ const CSP_GEMEINSAM = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: media:",
   "media-src 'self' blob: media:",
-  "font-src 'self' data:",
+  // `marken:` in font-src: importierte Marken-Schriften werden als
+  // FontFace(url(marken://...)) geladen (TK 9.15.3). Bis zum Einbau der
+  // Live-Vorschau (22.10.2026) war dieser Weg nie am Fenster ausgeloest.
+  "font-src 'self' data: marken:",
   "object-src 'none'",
   "base-uri 'none'",
   "form-action 'none'",
@@ -142,8 +145,17 @@ const CSP_GEMEINSAM = [
 // Zug dazu - vorher nicht. Der Ladeweg ueber <img>/<video> ist davon nicht betroffen:
 // er faellt unter img-src/media-src, erreicht den Handler und funktioniert (in beiden
 // Modi geprueft).
-const CSP_DEV = [...CSP_GEMEINSAM, "connect-src 'self' ws:"].join("; ");
-const CSP_PROD = [...CSP_GEMEINSAM, "connect-src 'self'"].join("; ");
+//
+// `marken:` in connect-src: Die importierten Logo-Bytes werden per
+// `fetch('marken://<markeId>/<datei>')` geholt und als Blob-URL ins <img>
+// gebunden (Nachtrag II zu #315; direkte marken://-URLs tainten das Canvas).
+// Gemessen am 22.10.2026 beim Einbau der Marken-Live-Vorschau: OHNE diesen
+// Eintrag meldet Chromium "Refused to connect" und das importierte Logo
+// erscheint als `fehlt` - die Vorschau zeigt dann den Ersatz-Pfad, obwohl der
+// Import geklappt hat. Ob zusaetzlich `corsEnabled` am Schema noetig ist, wird
+// mit genau dieser Erlaubnis gemessen (STOPP in #290).
+const CSP_DEV = [...CSP_GEMEINSAM, "connect-src 'self' marken: ws:"].join("; ");
+const CSP_PROD = [...CSP_GEMEINSAM, "connect-src 'self' marken:"].join("; ");
 
 /**
  * Haengt die CSP als Antwort-Header an jede geladene Ressource.

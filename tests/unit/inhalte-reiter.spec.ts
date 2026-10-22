@@ -394,6 +394,8 @@ describe('Der Projektstand (ENTSCHIEDEN 7/8)', () => {
       const eigenschaften = doppel.markenEditorProps[0]!
       expect(eigenschaften.sichtbar).toBe(true)
       expect(eigenschaften.marken).toBe(zugaenge.marken)
+      // Drittes Feld seit A1 (22.10.2026): die Live-Vorschau braucht die Vorlagen-Sicht.
+      expect(eigenschaften.vorlagen).toBe(zugaenge.vorlagen)
       // Keine andere Wurzel wurde gerufen (6 Spione):
       expect(doppel.composerProps).toHaveLength(0)
       expect(doppel.vorschauProps).toHaveLength(0)

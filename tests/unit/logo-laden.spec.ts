@@ -188,6 +188,20 @@ describe('logo-laden (#315)', () => {
       expect(holeLogo(id).zustand).toBe('geladen')
     })
 
+    it("GEERBTES importiertes Logo laedt aus dem Parent-Ordner, bleibt aber unter der KindId", async () => {
+      const kindId = krummeId(11)
+      const parentId = krummeId(12)
+      const datei = 'firmen-logo.png'
+      const kind = markeMitLogo(kindId, 'importiert', datei)
+      kind.parent = parentId
+      ;(kind as unknown as { herkunftJeFeld: { logo: string } }).herkunftJeFeld = { logo: 'geerbt' }
+      await bereiteLogoVor(kind)
+      expect(fetchAdressen).toEqual([`marken://${parentId}/${datei}`])
+      // holeLogo(marke.id) bleibt der Zugriffsschluessel des Zeichenpfads.
+      expect(holeLogo(kindId).zustand).toBe('geladen')
+      expect(holeLogo(parentId).zustand).toBe('fehlt')
+    })
+
     it("'gebuendelt': src aus der Registry, ohne marken:// und ohne media://", async () => {
       const id = krummeId(4)
       const datei = 'logo-fitnessworld24.png'

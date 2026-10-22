@@ -137,7 +137,10 @@ Dateiliste - kein Umbau ohne Plan (Lehre aus #432).
   und +-10 s sind ein spaeterer Schritt; Tastatur nur abgestimmt mit #387.
 - **Marken-Live-Vorschau (#303):** `vorlagen: VorlagenZugang` als drittes Prop, eigene
   Vorbereitung mit `stelleMarkenSchriftenBereit(marke)` und `bereiteLogoVor(marke)` - kein
-  `stelleMarkeBereit`, kein `ZeichenZugang`, kein Projekt.
+  `stelleMarkeBereit`, kein `ZeichenZugang`, kein Projekt. **Umgesetzt am 22.10.2026**
+  (Baustein `marken-editor/vorschau-flaeche.tsx`, feste Vorlage „Vollbild", Treiber 4m misst
+  das Canvas); drei dabei gefundene Befunde B14-B16 in
+  `docs/agents/uebergabe-2026-10-22-session-2.md`.
 
 **Naechster Schritt fuer diesen Schnitt:** AD/TK-Nachtrag (Banner, UI-Gewichtung), danach
 je Baustein ein Issue mit Signaturblock. Kein Umbau ohne Plan.
