@@ -1401,31 +1401,24 @@ const main = async () => {
           } else {
             console.log("[schritt-4m2] Import GEMESSEN: Schrift herkunft=importiert, Logo gesetzt, Anzeige folgt.");
 
-            // (6) "Logo entfernen" ueber den echten Knopf. #298 laesst ZWEI gueltige
-            // Ergebnisse zu: logo null (Ersatz-Logo) ODER einen geerbten/gebündelten Wert.
-            // Gebaut ist fuer eine EIGENSTAENDIGE Marke der gebuendelte Wert der eingebauten
-            // Marke. Das ist kein Fehler im Sinne von #298, steht aber im Widerspruch zum
-            // angezeigten HINWEIS ("stattdessen erscheint der Markenname") - deshalb eine
-            // Untersuchung, kein Befund.
+            // (6) "Logo entfernen" ueber den echten Knopf. ENTSCHEIDUNG #440 (22.10.2026):
+            // Bei einer EIGENSTAENDIGEN Marke faellt das Logo auf null zurueck (Ersatz-Logo
+            // mit dem Markennamen, TK 9.10.10) - nicht auf das gebuendelte Fremdlogo der
+            // eingebauten Marke. Der Hinweis HINWEIS_LOGO_ENTFERNT sagt genau das.
             await seite.evaluate(() => {
               document.querySelector('[data-testid="entferne-logo"]')?.click();
             });
-            const ohneLogo4m2 = await warteAuf4m2(id4m2,
-              (m) => m.logo === null || m.logo?.herkunft !== "importiert");
+            const ohneLogo4m2 = await warteAuf4m2(id4m2, (m) => m.logo === null);
             const logo4m2 = ohneLogo4m2?.logo ?? null;
             console.log(`[schritt-4m2] Nach Logo entfernen: ${JSON.stringify(logo4m2)}.`);
             if (ohneLogo4m2 === null) {
               fund("Marken-Rest (FA-24)", "der Bestand ist nach dem Logo-Entfernen lesbar",
                 "marken:listeMarken liefert die Marke nicht", "Befund", "marken-store/liste.ts");
-            } else if (logo4m2 !== null && logo4m2.herkunft === "importiert") {
-              fund("Marken-Rest (FA-24)", "Logo entfernen loest die importierte Datei ab",
-                JSON.stringify(logo4m2), "Befund", "marken-editor/logo-bearbeiten.ts");
-            } else if (logo4m2 === null) {
-              console.log("[schritt-4m2] Logo entfernen GEMESSEN (logo=null, Ersatz-Logo greift).");
+            } else if (logo4m2 !== null) {
+              fund("Marken-Rest (FA-24)", "Logo entfernen setzt bei einer eigenstaendigen Marke logo auf null (#440)",
+                JSON.stringify(logo4m2), "Befund", "marken-store/dateien.ts");
             } else {
-              fund("Marken-Rest (FA-24)", "der Hinweis verspricht das Ersatz-Logo, der Bestand liefert das gebuendelte Logo",
-                `logo=${JSON.stringify(logo4m2)} (durch #298 erlaubt; HINWEIS_LOGO_ENTFERNT nennt den Markennamen)`,
-                "Untersuchung", "marken-store/dateien.ts");
+              console.log("[schritt-4m2] Logo entfernen GEMESSEN (logo=null, Ersatz-Logo greift).");
             }
           }
 

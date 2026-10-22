@@ -100,18 +100,21 @@ FA-09/Export. Die Pipeline danach ist gemessen.
 - **Gegenprobe:** `key` entfernt -> **Test rot** (`expected '#123456' to be '#FF4040'`);
   Ruecknahme byte-identisch (dieselbe Pruefsumme, Datei unveraendert).
 
-### B12 - Logo entfernen liefert das gebündelte Fremdlogo (offen, Entscheidung)
+### B12 - Logo entfernen lieferte das gebündelte Fremdlogo (behoben am 22.10.2026, #440)
 
 - **Symptom:** Importiertes Logo (`herkunft: importiert`) auf einer eigenstaendigen Marke,
-  dann "Logo entfernen" -> im Bestand steht das **gebuendelte Logo der eingebauten Marke**
+  dann "Logo entfernen" -> im Bestand stand das **gebuendelte Logo der eingebauten Marke**
   (`logo-fitnessworld24.png`), nicht `logo: null` (Ersatz-Logo).
-- **Bewertung:** #298 laesst **beide** Ausgaenge ausdruecklich zu; der Code ist issue-konform.
-  Aber `HINWEIS_LOGO_ENTFERNT` verspricht den Markennamen, und `erstelle-marke.ts` kopiert das
-  fremde Logo bewusst nicht mit, damit der Ersatz-Logo-Pfad (#293) erreichbar bleibt. Nach
-  Import + Entfernen traegt eine Partner-Marke dauerhaft das Baller-Logo.
-- **Nicht geaendert** (gebauter Code gewinnt, Entscheidung gehoert dem Auftraggeber).
-  **Issue #440** mit `braucht-entscheidung` und drei Wegen; der Treiber meldet den Fall als
-  **Untersuchung**, nicht als Befund.
+- **Bewertung:** #298 liess **beide** Ausgaenge zu; der Code war issue-konform. Aber
+  `HINWEIS_LOGO_ENTFERNT` verspricht den Markennamen, und `erstelle-marke.ts` kopiert das
+  fremde Logo bewusst nicht mit, damit der Ersatz-Logo-Pfad (#293) erreichbar bleibt.
+- **Entschieden (Auftraggeber, 22.10.2026):** eigenstaendige Marke -> **`null`**
+  (Ersatz-Logo). Eingebaute Marke -> gebuendelter Wert; Schriften -> gebuendelter Rueckfall
+  (Pflichtfeld je Rolle).
+- **Gebaut:** `dateien.ts` Schritt 5 verzweigt jetzt `eintrag.eingebaut ? quelle.logo : null`.
+  Zwei Verhaltensproben in `marken-dateien.spec.ts`. Gegenprobe: alte Zeile -> **Test rot**
+  (`expected {…} to be null`), Ruecknahme byte-identisch (`b5305feb…dc13e`).
+  Treiber 4m2: `Nach Logo entfernen: null` -> GEMESSEN. Gate: **5.606 Unit-Tests**, Exit 0.
 
 ### B13 - `löscheMarke` raeumt `marken-assets/<markeId>/` nicht auf (offen)
 
@@ -140,9 +143,9 @@ steht statt still zu haengen. **Beleg:** `npm run durchlauf` danach **Exit 0**.
 
 ## 4. Belege
 
-- **Gate:** `npm run pruefung` **Exit 0** - **5.604 Unit-Tests (333 Dateien)**,
-  **49 Integrationstests (12 Dateien)**, Typecheck/Lint 0; Treiber ohne **Befund**
-  (eine `Untersuchung` zu B12, die #298 ausdruecklich erlaubt).
+- **Gate:** `npm run pruefung` **Exit 0** - **5.606 Unit-Tests (333 Dateien)**,
+  **49 Integrationstests (12 Dateien)**, Typecheck/Lint 0; Treiber ohne Befund **und ohne
+  Untersuchung**.
 - **Treiber 4m/4m2:** `GEMESSEN`-Zeilen im Lauf; Protokoll in `docs/agents/oberflaeche-durchlauf.md`.
 - **Matrix:** FA-24 von `Luecke` auf **`gemessen`**; Zaehlung **6 gemessen, 15 teilweise,
   0 Luecke, 3 manuell** (Muss: 4 von 15 gemessen). Waechter `tests/unit/treiber-matrix.spec.ts` gruen.
@@ -150,11 +153,9 @@ steht statt still zu haengen. **Beleg:** `npm run durchlauf` danach **Exit 0**.
 
 ## 5. Ehrlich offen
 
-1. **Logo entfernen (B12, #440):** Hinweis verspricht das Ersatz-Logo, der Bestand liefert das
-   gebuendelte Fremdlogo (durch #298 erlaubt). **Entscheidung noetig**, nicht eigenmaechtig
-   geaendert.
-2. **Live-Vorschau des Marken-Editors** (B11): braucht eine Entscheidung zu den Props
+1. **Live-Vorschau des Marken-Editors** (B11): braucht eine Entscheidung zu den Props
    (`VorlagenZugang`? `ZeichenZugang`? eigenes `stelleMarkeBereit`?) - #303/#330.
+2. **#441:** `löscheMarke` raeumt `marken-assets/<markeId>/` nicht auf.
 3. **MANUELL:** der native Dateidialog beim Logo-/Schrift-Import (wie FA-09/Export).
 4. **Gate-Blindstelle B5:** `console.error` wird weiterhin nicht gewertet.
 5. **#433** optische Abnahme beim User.

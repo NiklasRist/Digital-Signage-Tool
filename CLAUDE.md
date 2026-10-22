@@ -25,7 +25,7 @@
   (`herkunft: importiert`), **Logo entfernen**. Matrix jetzt **6 gemessen, 15 teilweise,
   0 Luecke, 3 manuell**; **Muss: 4 von 15** (FA-05/17/23/24). **MANUELL** bleibt nur der native
   Dateidialog beim Import (wie FA-09/Export).
-- **Zwei echte Produktbefunde, behoben und gegengeprobt:**
+- **Drei echte Produktbefunde, behoben und gegengeprobt:**
   1. **B9 – Stand des ERSTEN Aufbaus:** Nach dem Oeffnen einer Marke mit 96/54 px standen im
      Abstands-Feld **0/0**; ein Klick auf "Abstand uebernehmen" haette den Sicherheitsabstand
      (TK 9.11.4) still zerstoert. `slogan`/`sicherheit` sind Momentaufnahmen und werden jetzt
@@ -34,8 +34,12 @@
      Akzentfeld bei Marke B weiter `#808080` (unkontrolliertes `defaultValue`, React benutzt
      dasselbe DOM-Element). Der naechste `onBlur` haette den Wert in B geschrieben. Jetzt
      traegt `marken-offen` `key=<markeId>` und wird beim Wechsel neu aufgebaut.
+  3. **B12 – Logo entfernen lieferte das gebuendelte Fremdlogo:** Nach Import + Entfernen
+     stand bei einer eigenstaendigen Marke das **Baller-Logo** im Bestand, obwohl der Hinweis
+     den Markennamen verspricht. **Entschieden (#440, 22.10.):** eigenstaendig -> `null`
+     (Ersatz-Logo), eingebaut -> gebuendelt; Schriften bleiben gebuendelt (Pflichtfeld).
   Gegenproben: je **1 Test rot** (bzw. 2 bei B9), Ruecknahme byte-identisch
-  (Pruefsumme `8fbcda44…c123e6`).
+  (Pruefsummen `8fbcda44…c123e6`, `b5305feb…dc13e`).
 - **Treiber-Flakiness beendet** (eigener Commit): `scripts/durchlauf.mjs` startete Electron
   **zweimal** (spawn + puppeteer.launch); die Einzelinstanz liess einen gewinnen, verlor der
   gesteuerte Prozess, starb der Frame mitten im Lauf ("detached Frame", stummer Haenger –
@@ -45,14 +49,10 @@
   "Ableiten" als Marken (3/4 statt 1/2); getippte Zeichen im kontrollierten Namensfeld wurden
   verschluckt (jetzt nativer Setter + `input`); das Aufraeumen loescht abgeleitete Marken
   **vor** ihrer Basis.
-- **Gate:** `npm run pruefung` **Exit 0** – **5.604 Unit-Tests (333 Dateien)**,
-  **49 Integrationstests (12 Dateien)**, Treiber ohne Befund; Typecheck/Lint 0.
+- **Gate:** `npm run pruefung` **Exit 0** – **5.606 Unit-Tests (333 Dateien)**,
+  **49 Integrationstests (12 Dateien)**, Treiber ohne Befund **und ohne Untersuchung**;
+  Typecheck/Lint 0.
 - **Ehrlich offen:**
-  - **B12 / #440 – Logo entfernen:** Der Hinweis verspricht das Ersatz-Logo ("der Markenname
-    erscheint"), der Bestand liefert bei einer eigenstaendigen Marke aber das **gebuendelte
-    Logo der eingebauten Marke**. #298 laesst beide Ausgaenge zu; der gebaute Code gewinnt,
-    die **Entscheidung liegt beim Auftraggeber** (drei Wege im Issue). Der Treiber meldet den
-    Fall als `Untersuchung`, nicht als Befund.
   - **#441 – Loeschen raeumt `marken-assets/<markeId>/` nicht auf:** Importierte Dateien
     bleiben als Leichen im Datenort. Der Treiber entfernt seine eigenen vor dem Loeschen der
     Messmarke; die Store-Luecke ist offen.
@@ -62,8 +62,8 @@
   - **Gate-Blindstelle B5:** `console.error` wird nicht gewertet.
   - **#433** optische Abnahme beim User; **Mutations-Chargen** 138/92 offen.
 - **Nicht gepusht.**
-- **Naechster Schritt:** **#440 entscheiden** (Logo-Entfernen), **Live-Vorschau entscheiden**
-  (#303/#330) oder die **Gate-Blindstelle B5** schliessen.
+- **Naechster Schritt:** **Live-Vorschau entscheiden** (#303/#330), **#441** bauen
+  (`marken-assets` beim Loeschen aufraeumen) oder die **Gate-Blindstelle B5** schliessen.
 
 ## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde, UI-Ausrichtung) – historisiert durch den Abschnitt darueber
 
