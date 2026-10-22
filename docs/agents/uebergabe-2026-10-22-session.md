@@ -114,16 +114,23 @@ FA-09/Export. Die Pipeline danach ist gemessen.
 - **Gebaut:** `dateien.ts` Schritt 5 verzweigt jetzt `eintrag.eingebaut ? quelle.logo : null`.
   Zwei Verhaltensproben in `marken-dateien.spec.ts`. Gegenprobe: alte Zeile -> **Test rot**
   (`expected {…} to be null`), Ruecknahme byte-identisch (`b5305feb…dc13e`).
-  Treiber 4m2: `Nach Logo entfernen: null` -> GEMESSEN. Gate: **5.606 Unit-Tests**, Exit 0.
+  Treiber 4m2: `Nach Logo entfernen: null` -> GEMESSEN. Gate: **5.609 Unit-Tests**, Exit 0.
 
-### B13 - `löscheMarke` raeumt `marken-assets/<markeId>/` nicht auf (offen)
+### B13 - `löscheMarke` raeumt `marken-assets/<markeId>/` nicht auf (behoben am 22.10.2026, #441)
 
 Beim Aufraeumen von 4m2: Drei Laeufe importierten je eine Schrift und loeschten die Marke;
 danach lagen drei verwaiste `marken-assets/<id>/fliesstext.woff2` im Datenort, deren
-Kennungen nicht mehr in `marken.json` standen (geprueft). `loesche-marke.ts` hat keinen
-Datei-Zugriff; TK 9.15.3 sagt „die Kopie gehoert der Marke". **Issue #441** (rekursiv
-loeschen oder Waisen-Lauf; ein Dateifehler darf das Marken-Loeschen nicht blockieren).
-Der Treiber entfernt seine importierten Dateien jetzt **vor** dem Loeschen der Messmarke.
+Kennungen nicht mehr in `marken.json` standen (geprueft). `loesche-marke.ts` hatte keinen
+Datei-Zugriff; TK 9.15.3 sagt „die Kopie gehoert der Marke".
+
+- **Gebaut:** `löscheMarke` loescht nach dem erfolgreichen Bestands-Schreiben den Ordner
+  rekursiv (best effort, `force`). Reihenfolge bewusst **erst Bestand, dann Dateien**: ein
+  Dateifehler macht das Loeschen nicht rueckgaengig und erscheint nicht als Fehler. Eine
+  Pfad-Schranke haelt den rekursiven Loeschpfad innerhalb von `marken-assets/`.
+- **Belege:** drei Verhaltensproben in `loesche-marke.spec.ts`; Gegenprobe (Aufraeumblock
+  entfernt) -> **2 Tests rot**, Ruecknahme byte-identisch (`e6ed1934…d5d62b`).
+  Treiber 4m2: `marken-assets-Ordner nach dem Loeschen: false` -> GEMESSEN. Gate: **5.609
+  Unit-Tests**, Exit 0. Der Treiber-Workaround (Dateien vor dem Loeschen entfernen) ist weg.
 
 ---
 
@@ -143,7 +150,7 @@ steht statt still zu haengen. **Beleg:** `npm run durchlauf` danach **Exit 0**.
 
 ## 4. Belege
 
-- **Gate:** `npm run pruefung` **Exit 0** - **5.606 Unit-Tests (333 Dateien)**,
+- **Gate:** `npm run pruefung` **Exit 0** - **5.609 Unit-Tests (333 Dateien)**,
   **49 Integrationstests (12 Dateien)**, Typecheck/Lint 0; Treiber ohne Befund **und ohne
   Untersuchung**.
 - **Treiber 4m/4m2:** `GEMESSEN`-Zeilen im Lauf; Protokoll in `docs/agents/oberflaeche-durchlauf.md`.
@@ -155,11 +162,10 @@ steht statt still zu haengen. **Beleg:** `npm run durchlauf` danach **Exit 0**.
 
 1. **Live-Vorschau des Marken-Editors** (B11): braucht eine Entscheidung zu den Props
    (`VorlagenZugang`? `ZeichenZugang`? eigenes `stelleMarkeBereit`?) - #303/#330.
-2. **#441:** `löscheMarke` raeumt `marken-assets/<markeId>/` nicht auf.
-3. **MANUELL:** der native Dateidialog beim Logo-/Schrift-Import (wie FA-09/Export).
-4. **Gate-Blindstelle B5:** `console.error` wird weiterhin nicht gewertet.
-5. **#433** optische Abnahme beim User.
-6. **Mutations-Chargen** 138/92 Dateien offen.
+2. **MANUELL:** der native Dateidialog beim Logo-/Schrift-Import (wie FA-09/Export).
+3. **Gate-Blindstelle B5:** `console.error` wird weiterhin nicht gewertet.
+4. **#433** optische Abnahme beim User.
+5. **Mutations-Chargen** 138/92 Dateien offen.
 
 ## 6. Regeln, die diese Session bestaetigt hat
 

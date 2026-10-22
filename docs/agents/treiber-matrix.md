@@ -242,18 +242,28 @@ beim gebündelten Rückfall – eine Marke braucht je Rolle eine Schrift, `null`
 byte-identisch (`b5305feb…dc13e`). Treiber 4m2: `Nach Logo entfernen: null` ->
 `GEMESSEN`. Gate: **5.606 Unit-Tests**, Exit 0.
 
-### B13 - `löscheMarke` räumt `marken-assets/<markeId>/` nicht auf (offen, 22.10.2026)
+### B13 - `löscheMarke` räumt `marken-assets/<markeId>/` nicht auf (behoben 22.10.2026, #441)
 
 Beim Aufräumen von 4m2 gemessen: Drei Läufe importierten je eine Schrift und löschten die
 Marke über die Oberfläche; danach lagen drei verwaiste Ordner
 `marken-assets/<markeId>/fliesstext.woff2` im Datenort, deren Kennungen nicht mehr in
-`marken.json` standen. `loesche-marke.ts` enthält keinen Datei-/Ordner-Zugriff. TK 9.15.3
+`marken.json` standen. `loesche-marke.ts` hatte keinen Datei-/Ordner-Zugriff. TK 9.15.3
 sagt „die Kopie gehört der Marke" – mit dem Löschen gehört sie niemandem mehr.
 
-**Nicht gebaut** (eigene Entscheidung: rekursiv löschen im Store oder eigener Waisen-Lauf;
-ein Dateifehler darf das Löschen der Marke nicht verhindern). **Issue #441.** Der Treiber
-entfernt seine importierten Dateien jetzt vor dem Löschen der Messmarke, damit der Datenort
-zwischen den Läufen leer bleibt.
+**Gebaut (#441):** Nach dem erfolgreichen Entfernen aus dem Bestand löscht `löscheMarke`
+den Ordner `marken-assets/<markeId>/` rekursiv (best effort, `force`). **Reihenfolge:**
+erst der Bestand, dann die Dateien – ein Dateifehler (etwa ein gesperrtes Handle unter
+Windows) macht das Löschen **nicht** rückgängig und erscheint nicht als Fehler; der Ordner
+bleibt dann als Waise liegen. Eine Pfad-Schranke stellt sicher, dass nur ein Ordner
+**innerhalb** von `marken-assets/` und mit exakt dieser Kennung gelöscht wird.
+
+**Belege:** drei Verhaltensproben in `loesche-marke.spec.ts` (Ordner weg; fehlender Ordner
+kein Fehler; `rm` scheitert → Marke trotzdem weg). Gegenprobe: Aufräumblock entfernt →
+**2 Tests rot**, Rücknahme byte-identisch (`e6ed1934…d5d62b`). Treiber 4m2:
+`marken-assets-Ordner nach dem Loeschen: false` → GEMESSEN. Gate: **5.609 Unit-Tests**,
+Exit 0. Der frühere Treiber-Workaround (Dateien vor dem Löschen entfernen) ist entfallen –
+der Lauf beweist jetzt den Store-Weg.
+
 
 
 

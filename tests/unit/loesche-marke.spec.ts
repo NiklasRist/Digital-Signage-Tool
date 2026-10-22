@@ -68,6 +68,8 @@ vi.mock("../../src/main/marken-store/referenzpruefung", async (importOriginal) =
 
 let löscheMarke: typeof import("../../src/main/marken-store/loesche-marke").löscheMarke;
 let ladeBestand: typeof import("../../src/main/marken-store/schreibe-marken").ladeBestand;
+let erstelleMarke: typeof import("../../src/main/marken-store/erstelle-marke").erstelleMarke;
+let markenOrdner: typeof import("../../src/main/marken-store/pfade").markenOrdner;
 
 beforeEach(async () => {
   vi.resetModules();
@@ -84,6 +86,10 @@ beforeEach(async () => {
   löscheMarke = modul.löscheMarke;
   const fm = await import("../../src/main/marken-store/schreibe-marken");
   ladeBestand = fm.ladeBestand;
+  const em = await import("../../src/main/marken-store/erstelle-marke");
+  erstelleMarke = em.erstelleMarke;
+  const pm = await import("../../src/main/marken-store/pfade");
+  markenOrdner = pm.markenOrdner;
 });
 
 afterEach(async () => {
@@ -293,5 +299,57 @@ describe("löscheMarke (#287)", () => {
     expect(erg.ok).toBe(false);
     if (erg.ok) return;
     expect(erg.fehler.code).toBe("speicher_fehler");
+  });
+
+  it("#441: marken-assets/<markeId>/ verschwindet MIT der Marke", async () => {
+    const angelegt = await erstelleMarke("Mit Dateien", null);
+    expect(angelegt.ok).toBe(true);
+    if (!angelegt.ok) return;
+    const ordner = markenOrdner(angelegt.wert.id);
+    await fs.mkdir(ordner, { recursive: true });
+    await fs.writeFile(path.join(ordner, "fliesstext.woff2"), "WOFF2-DUMPF");
+    await fs.writeFile(path.join(ordner, "logo.png"), "PNG-DUMPF");
+    await expect(fs.access(ordner)).resolves.toBeUndefined();
+
+    const erg = await löscheMarke(angelegt.wert.id);
+
+    expect(erg.ok).toBe(true);
+    await expect(fs.access(ordner)).rejects.toThrow();
+    const bestand = await ladeBestand();
+    if (!bestand.ok) return;
+    expect(bestand.wert.some((m) => m.id === angelegt.wert.id)).toBe(false);
+  });
+
+  it("#441: ein FEHLENDER marken-assets-Ordner ist kein Fehler (force)", async () => {
+    const angelegt = await erstelleMarke("Ohne Dateien", null);
+    expect(angelegt.ok).toBe(true);
+    if (!angelegt.ok) return;
+    await expect(fs.access(markenOrdner(angelegt.wert.id))).rejects.toThrow();
+
+    const erg = await löscheMarke(angelegt.wert.id);
+
+    expect(erg.ok).toBe(true);
+  });
+
+  it("#441: ein Dateifehler beim Aufraeumen macht das Loeschen NICHT rueckgaengig", async () => {
+    const angelegt = await erstelleMarke("Gesperrte Datei", null);
+    expect(angelegt.ok).toBe(true);
+    if (!angelegt.ok) return;
+    const ordner = markenOrdner(angelegt.wert.id);
+    await fs.mkdir(ordner, { recursive: true });
+    await fs.writeFile(path.join(ordner, "logo.png"), "PNG-DUMPF");
+
+    // Windows-Fall: ein gesperrtes Handle laesst rm scheitern (EPERM/EBUSY).
+    const spion = vi.spyOn(fs, "rm").mockRejectedValueOnce(new Error("EPERM: gesperrt"));
+    const erg = await löscheMarke(angelegt.wert.id);
+    expect(spion).toHaveBeenCalledTimes(1);
+    spion.mockRestore();
+
+    // Die Marke ist fachlich geloescht; der Fehler bleibt beim Ordner (best effort).
+    expect(erg.ok).toBe(true);
+    const bestand = await ladeBestand();
+    if (!bestand.ok) return;
+    expect(bestand.wert.some((m) => m.id === angelegt.wert.id)).toBe(false);
+    await fs.rm(ordner, { recursive: true, force: true });
   });
 });

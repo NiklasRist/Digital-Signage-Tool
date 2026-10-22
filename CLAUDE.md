@@ -49,21 +49,22 @@
   "Ableiten" als Marken (3/4 statt 1/2); getippte Zeichen im kontrollierten Namensfeld wurden
   verschluckt (jetzt nativer Setter + `input`); das Aufraeumen loescht abgeleitete Marken
   **vor** ihrer Basis.
-- **Gate:** `npm run pruefung` **Exit 0** – **5.606 Unit-Tests (333 Dateien)**,
+- **#441 behoben (B13):** `löscheMarke` räumt jetzt `marken-assets/<markeId>/` mit ab
+  (rekursiv, best effort, erst nach dem Bestands-Schreiben; ein Dateifehler macht das
+  Löschen nicht rückgängig). Drei Verhaltensproben, Gegenprobe beißt; Treiber 4m2 belegt
+  `Ordner nach dem Loeschen: false`.
+- **Gate:** `npm run pruefung` **Exit 0** – **5.609 Unit-Tests (333 Dateien)**,
   **49 Integrationstests (12 Dateien)**, Treiber ohne Befund **und ohne Untersuchung**;
   Typecheck/Lint 0.
 - **Ehrlich offen:**
-  - **#441 – Loeschen raeumt `marken-assets/<markeId>/` nicht auf:** Importierte Dateien
-    bleiben als Leichen im Datenort. Der Treiber entfernt seine eigenen vor dem Loeschen der
-    Messmarke; die Store-Luecke ist offen.
   - **Live-Vorschau** des Marken-Editors (dritter Teil aus TK 9.14.1) ist gebaut, aber **nicht
     montiert**: #303/#330 fuehren die Props-Frage als "NICHT selbst entscheiden" (Vorlage,
     `ZeichenZugang`, Schriften/Logo). Sie ist nicht Teil des FA-24-Satzes.
   - **Gate-Blindstelle B5:** `console.error` wird nicht gewertet.
   - **#433** optische Abnahme beim User; **Mutations-Chargen** 138/92 offen.
 - **Nicht gepusht.**
-- **Naechster Schritt:** **Live-Vorschau entscheiden** (#303/#330), **#441** bauen
-  (`marken-assets` beim Loeschen aufraeumen) oder die **Gate-Blindstelle B5** schliessen.
+- **Naechster Schritt:** **Live-Vorschau entscheiden** (#303/#330) oder die
+  **Gate-Blindstelle B5** schliessen; danach die naechste Matrix-Luecke (FA-13, FA-22).
 
 ## STAND HEUTE (21.10.2026: FA-17/18/23 am echten Fenster, drei Produktbefunde, UI-Ausrichtung) – historisiert durch den Abschnitt darueber
 
