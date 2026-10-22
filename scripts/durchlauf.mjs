@@ -67,11 +67,10 @@ const main = async () => {
   pruefeVorbedingungen();
   raeumeSperren();
 
-  const elektron = spawn(ELEKTRON, [path.join(WURZEL, "dist", "main", "index.cjs")], {
-    cwd: WURZEL,
-    stdio: "ignore",
-  });
-
+  // EIN Start (22.10.2026): Bis hierher startete diese Datei Electron zweimal (spawn UND
+  // puppeteer.launch). Die Einzelinstanz liess einen der beiden gewinnen; verlor der
+  // gesteuerte Prozess, starb mitten im Lauf der Frame ("detached Frame",
+  // "Requesting main frame too early", stummer Haenger). Puppeteer besitzt ihn jetzt allein.
   const browser = await puppeteer.launch({
     executablePath: ELEKTRON,
     args: [path.join(WURZEL, "dist", "main", "index.cjs")],
@@ -82,6 +81,8 @@ const main = async () => {
     const [seite] = await browser.pages();
     const erlebteFehler = [];
     seite.on("pageerror", (tu) => erlebteFehler.push(String(tu)));
+    seite.on("error", (tu) => console.log("[fenster crash] " + String(tu)));
+    seite.on("close", () => console.log("[fenster zu]"));
     seite.on("console", (meldung) => {
       if (meldung.type() === 'error' || meldung.type() === 'warning') {
         console.log(`[fenster ${meldung.type()}] ${meldung.text()}`);
@@ -3340,7 +3341,6 @@ const main = async () => {
     if (erlebteFehler.length > 0 || befundZahl > 0) process.exitCode = 2;
   } finally {
     await browser.close().catch(() => {});
-    elektron.kill();
   }
 };
 
