@@ -32,9 +32,25 @@
 - **`python3 tools/bereitschaft.py` (23.10.2026):** M0–M6 komplett, **M7 68/71** (3 „bereit":
   #215, #240, #255 – vor dem Anfassen gegen den gebauten Code prüfen), **M8 60/60**. Deckt sich
   mit der Übergabe vom 22.10.
-- **Nächster Schritt:** **Backlog-Abgleich (Charge 1)** – 322 offene Issues, alte/gebaute
-  schließen, BK-01…06 als `not planned`, `.gitignore` für Laufzeitartefakte. Danach FA-13 bauen
-  (Nachtrag an #100/#155, dann Code + Treiber). **Push nur auf Anweisung.**
+- **Backlog-Abgleich (Charge 1) durchgeführt (23.10.2026):** von **322 offenen Issues** auf
+  **26** – **6 BK-Issues (#354–#359)** als `not planned` (verworfene Zwei-Screens-Ära), **290**
+  gebaute/überholte Issues mit Beleg-Kommentar als `completed` geschlossen, **3 nach Prüfung
+  wieder geöffnet** (#100/#155/#303). Grundlage war eine Messung (Signatur im Code definiert +
+  genannte Datei ohne Gerüst-Rumpf + Commit-Nennung + Aufrufer-Grep), keine bloße Altersschätzung.
+  **Grenze der Messung:** Sie erkennt einen offenen Teilzweig nicht – deshalb waren #100/#155
+  (FA-13 noch nicht gebaut) und #303 (Review reserviert) fälschlich dabei. Details:
+  [`docs/agents/uebergabe-2026-10-23-session.md`](docs/agents/uebergabe-2026-10-23-session.md).
+- **Drei Befunde aus dem Abgleich, die offen bleiben:** **#394** (Statistik-Dashboard gebaut, aber
+  nirgends gerendert – „fertige Funktion ohne Aufrufer"), **#339** (Body sagt „GEBAUT"; der sechste
+  Prüfpunkt `flaecheDunkel` fehlt in `validierung.ts` – Widerspruch gemeldet), **#338**
+  (`findeKaputteStellen` ohne Marken-Referenzprüfung). `.gitignore` deckt die Laufzeitartefakte
+  bereits seit 22.10. ab; #442-Label `braucht-entscheidung` entfernt.
+- **Die 26 offenen Issues:** FA-13-Bau #100/#155, Review #303, Banner-Familie #365–#376 (12),
+  echte Lücken #338/#339/#364, UI-2.0-Kandidaten #383/#388/#391/#392/#393/#394, beim Auftraggeber
+  #442/#443.
+- **Nächster Schritt:** **FA-13 bauen** – #100 (Main-Zweig `einblendung`/162 mit Scrim-Hintergrund),
+  dann #155 (`ANLEGBARE_ARTEN` dritter Eintrag), Tests, Treiber 4n erweitern. Danach Banner
+  (AD/TK-Nachtrag zuerst). **Push nur auf Anweisung.**
 
 ## STAND HEUTE (22.10.2026, zweite Sitzung: Live-Vorschau montiert, Muss-Luecken gemessen, B14–B18) – historisiert durch den Abschnitt darueber
 

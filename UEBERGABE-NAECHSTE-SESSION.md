@@ -9,15 +9,20 @@
   (TK 9.12.2) sind zurückgenommen. **AD v1.9 / TK v3.28**, beide `.docx` neu erzeugt.
 - **Code noch nicht gebaut:** `ANLEGBARE_ARTEN` unverändert (zwei Einträge), Main lehnt
   `einblendung` weiter ab. FA-13 bleibt in der Matrix **teilweise**.
-- **Nächster Schritt:** Backlog-Abgleich (Charge 1), danach FA-13 bauen (Nachtrag an #100/#155,
-  dann Code + Treiber).
+- **Backlog-Abgleich (Charge 1) durchgeführt:** **322 → 26 offene Issues**; 6 BK-Issues
+  (#354–#359) als `not planned`, 290 gebaute/überholte mit Beleg-Kommentar geschlossen,
+  3 nach Prüfung wieder geöffnet (#100/#155/#303).
+  Details in [`docs/agents/uebergabe-2026-10-23-session.md`](docs/agents/uebergabe-2026-10-23-session.md).
+- **Nächster Schritt:** **FA-13 bauen** (#100, dann #155), danach Banner (AD/TK-Nachtrag zuerst).
 
 ## ZUERST LESEN
 
 1. [`CLAUDE.md`](CLAUDE.md) vollständig (der Abschnitt **STAND HEUTE** ganz oben gilt; der
    Dateiname ist historisch).
-2. [`docs/agents/uebergabe-2026-10-22-session-2.md`](docs/agents/uebergabe-2026-10-22-session-2.md)
-   – der volle Stand dieser Sitzung (Punkt 2 und 3).
+2. [`docs/agents/uebergabe-2026-10-23-session.md`](docs/agents/uebergabe-2026-10-23-session.md)
+   – FA-13-Nachtrag und Backlog-Abgleich dieser Sitzung; davor
+   [`docs/agents/uebergabe-2026-10-22-session-2.md`](docs/agents/uebergabe-2026-10-22-session-2.md)
+   (Punkt 2 und 3 der Vorsession).
 3. `python3 tools/bereitschaft.py` (Fakten, keine Behauptungen; der Lauf braucht ~2–4 min).
 4. [`docs/agents/treiber-matrix.md`](docs/agents/treiber-matrix.md) – was am echten Fenster
    gemessen ist und was nicht.
@@ -26,10 +31,11 @@
 
 ## STAND HEUTE (gemessen)
 
-- **Drei Commits, `main` 141 Commits vor `origin/main`, NICHT gepusht.**
+- **Vier Commits, `main` 142 Commits vor `origin/main`, NICHT gepusht.**
   - `6746844` Live-Vorschau des Marken-Editors montiert (#303/#330) + B14–B16.
   - `d1566ba` Muss-Lücken FA-01/03/22/08/13 am Fenster gemessen + B17/B18.
   - FA-13 entschieden + AD v1.9/TK v3.28 (23.10.2026).
+  - Backlog-Abgleich Charge 1 + Session-Datei (23.10.2026).
 - **Gate: `npm run pruefung` Exit 0** – **5.623 Unit-Tests (334 Dateien)**,
   **49 Integrationstests (12 Dateien)**, Treiber ohne Befund. Lint/Typecheck 0.
   (Ein erster Volllauf fiel am bekannten Flaky `einzel-instanz.spec.ts`; einzeln und im
@@ -39,8 +45,9 @@
 - **`tools/bereitschaft.py`:** M0–M6 komplett, **M7 68/71** (3 „bereit": #215, #240, #255),
   **M8 60/60**. Die 3 M7-Treffer sind vor dem Anfassen gegen den gebauten Code zu prüfen –
   das Werkzeug sieht keine Vertragsdateien.
-- **Backlog: 322 offene Issues** (davon weiterhin ~295 aus der alten M-Ära ≤ #380 und
-  ~103 mit `braucht-entscheidung`).
+- **Backlog: 26 offene Issues** nach dem Abgleich vom 23.10.2026 (Banner-Familie 12,
+  echte Lücken 3, UI-2.0-Kandidaten 6, beim Auftraggeber 2, FA-13-Bau 2, Review 1).
+  Details in `docs/agents/uebergabe-2026-10-23-session.md`.
 
 ## Was diese Sitzung gebaut und gemessen hat
 
