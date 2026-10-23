@@ -106,7 +106,7 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
 
 ## 3. #310 gebaut, Gate-Befund als Messfehler entlarvt
 
-- **#310 ist gebaut** (Branch `bau/310-standardmarke-render`): `stelleMarkeBereit(projekt.standardMarkeId)`
+- **#310 ist gebaut und gemergt** (Merge `e3e8053`): `stelleMarkeBereit(projekt.standardMarkeId)`
   wird **nur bei Bandspur** und **genau einmal** je Aufruf gerufen; neuer Fehlercode
   `marke_nicht_ladbar`; die Band-Abschnitte rufen `zeichneSegment(..., marke, standardMarke)`.
   Verhaltenstests in `render-ausloesen.spec.ts` (16/16), Typecheck/Lint 0.
@@ -121,7 +121,8 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
 - **Fix** in `scripts/durchlauf.mjs` (4m und `setzeWert4m2`): nach dem Setzen
   `new FocusEvent("focusout", { bubbles: true })` dispatchen. Danach der Treiber allein:
   **13/13 Farbrollen**, Akzent `#808080` im Store, Eigenwert `eigen`, **0 Befunde**.
-- **Volle Gate-Bestätigung:** wird nach dem Fix erneut ausgeführt (Ergebnis im Commit/Log).
+- **Volle Gate-Bestätigung:** `npm run pruefung` **Exit 0** – 5.627 Unit-Tests (334 Dateien),
+  49 Integrationstests (12 Dateien), Treiber ohne Befund. Der Messweg-Fix ist damit belegt.
 
 ## 4. Naechster Schritt
 
