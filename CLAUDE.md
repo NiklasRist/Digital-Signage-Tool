@@ -43,8 +43,8 @@
   [`docs/agents/uebergabe-2026-10-23-session.md`](docs/agents/uebergabe-2026-10-23-session.md).
 - **Drei Befunde aus dem Abgleich, die offen bleiben:** **#394** (Statistik-Dashboard gebaut, aber
   nirgends gerendert – „fertige Funktion ohne Aufrufer"), **#338** (findeKaputteStellen ohne
-  Marken-Referenzprüfung; der neue Befund fällt im Reparatur-Modus in `default: []` – Entscheidung
-  nötig), **#316/#317/#339** (M8-Kette: `flaecheDunkel` fehlt im RenderRequest, der
+  Marken-Referenzprüfung; der neue Befund fällt im Reparatur-Modus in `default: []` – Entscheidung:
+  bestehende Optionen, „Marke wählen" als Folge-Issue), **#316/#317/#339** (M8-Kette: `flaecheDunkel` fehlt im RenderRequest, der
   `render-service` liest die Marke weiter zur Laufzeit, die Formprüfung fehlt). `.gitignore` deckt
   die Laufzeitartefakte bereits seit 22.10. ab; #442-Label `braucht-entscheidung` entfernt.
 - **#310 ist gebaut und gemergt** (`e3e8053`): `stelleMarkeBereit(projekt.standardMarkeId)` nur bei
@@ -60,7 +60,7 @@
   #383/#388/#391/#392/#393/#394, beim Auftraggeber #442/#443.
 - **Nächster Schritt:** **#316** (`flaecheDunkel` in den Request, Laufzeit-Lookup raus), dann
   **#317** (`config-store.leseMarke` + Kanal löschen), dann **#339** (Formprüfung), je mit Tests
-  und Gate. Danach #338 nach der Entscheidung zum Reparaturweg, dann **FA-13** (#100/#155).
+  und Gate. Danach #338 mit den bestehenden Optionen, dann **FA-13** (#100/#155).
   **Push nur auf Anweisung.**
 
 ## STAND HEUTE (22.10.2026, zweite Sitzung: Live-Vorschau montiert, Muss-Luecken gemessen, B14–B18) – historisiert durch den Abschnitt darueber
