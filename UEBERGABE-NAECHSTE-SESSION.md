@@ -33,7 +33,7 @@
 
 ## STAND HEUTE (gemessen)
 
-- **Sechs Commits, `main` 151 Commits vor `origin/main`, NICHT gepusht.**
+- **Nicht gepusht.** Abstand zu `origin/main`: `git rev-list --count origin/main..main`.
   - `6746844` Live-Vorschau des Marken-Editors montiert (#303/#330) + B14–B16.
   - `d1566ba` Muss-Lücken FA-01/03/22/08/13 am Fenster gemessen + B17/B18.
   - FA-13 entschieden + AD v1.9/TK v3.28 (23.10.2026).
