@@ -1,10 +1,10 @@
 # Technisches Konzept – Digital-Signage-Tool
 
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
-**Bezug:** Anforderungsdokument v1.6 (das „Was")
+**Bezug:** Anforderungsdokument v1.9 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.27 (Unterbrechungen sind eine vierte kaputte Stelle der Reparatur-Erkennung; s. 9.7.5, v3.26-Modell in 9.2.9)
-**Datum:** 19.10.2026
+**Version:** 3.28 (Bandhöhe eigener Vorlagen ist fest 162 px; die Einblendung ist über die Oberfläche anlegbar und trägt einen Scrim-Verlauf; s. 9.11.1, 9.12.2)
+**Datum:** 23.10.2026
 **Status:** In Planung
 
 ---
@@ -1779,6 +1779,13 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
    **Die Akzent-Rollen sind der eine Rollen-Satz, den die Aktion überschreibt.** Löst eine Zone eine der drei Akzent-Rollen **`akzent`**, **`akzentKraeftig`** oder **`akzentTief`** (9.11.2) auf, liefert die Auflösung **nicht** den Markenwert, sondern den Wert aus **`aktion.akzentfarbe`** (9.8.2). Alle übrigen Rollen – Text- und Flächen-Rollen einschließlich `flaecheDunkel` und `flaecheAkzentZart` – bleiben **unberührt**. **Die Vorlage bestimmt also, WO Akzentfarbe hingehört; die Aktion bestimmt, WELCHE Farbe der Markenpalette dort landet.** Ist `aktion.akzentfarbe` nicht gesetzt, gilt **der Markenwert** der jeweiligen Rolle – der Fall ist ausdrücklich vorgesehen und **kein** Fehler. Die Regeln der Auflösung stehen vollständig in 9.10.9; hier steht nur, dass die Rollen-Verweise der Vorlage davon betroffen sind.
 8. **`höhe` ist geradzahlig** – bei `art: "split"` und `"einblendung"` muss die Bandhöhe eine **gerade** Zahl sein (Wertebereich > 0 und < 1080, 9.12.1). Grund ist das Ausgabe-Profil `yuv420p` (9.2.4): Es verlangt gerade Höhen und gerade Versätze. Bei ungerader Höhe ist die Videofläche `1080 − höhe` (bei `split`) bzw. der Overlay-Versatz `y = 1080 − höhe` (bei `einblendung`) ungerade – **beide** Kompositionsarten aus 9.2.8 brechen. Geprüft wird schon im Editor (Sperre, 9.12.2), nicht erst beim Render.
 
+**Bandhöhe und Markenrahmen eigener Vorlagen (Entscheidung 23.10.2026, AD v1.9/4.5):**
+
+- **Angelegt wird ausschließlich mit 162 px** – für `split` **und** `einblendung`. Die Oberfläche bietet **kein Höhenfeld**; „Bandhöhe setzen" aus 9.12.2 ist damit zurückgenommen. Der allgemeine Wertebereich aus Punkt 8 bleibt als **Datenregel** des Stores bestehen (er prüft jeden Schreibweg), beschreibt aber nicht mehr, was die Oberfläche anbietet.
+- **Grund:** Der Markenrahmen (Logo, Sicherheitsabstand) ist auf 162 px zugeschnitten. Eine andere Höhe verlangte eine Skalierungs- oder Verschieberegel für das Logo, die der Vertrag nirgends festlegt – und jede erfundene Regel wäre das **automatische Umlayouten**, das Punkt 3 verbietet.
+- **Feste Zonen einer eigenen Einblendung:** dieselben zwei festen Zonen wie beim Band – `hintergrund` (0, 0, 1920, 162) und `logo` (96, 20, 240, 69), in dieser Zeichenreihenfolge. Es gibt **keine eingebaute Einblendungs-Vorlage**; der Rahmen wird aus „Band-Standard" übernommen.
+- **Hintergrund der Einblendung:** Die `hintergrund`-Zone trägt **keine deckende `flaecheDunkel`-Füllung**, sondern den **Scrim-Verlauf** `scrimStart` → `scrimEnde`, Richtung `unten` (durchsichtig → 70 % Schwarz). Nur so trägt das Band Alpha und überlagert das Video, wie es die Kompositionsart `einblendung` verlangt (Punkt 0, 9.2.8). Ein eigenes Deckkraft-Feld gibt es nicht – die Deckkraft folgt weiterhin der Vorlagenart.
+
 **Gemeinsame Basis der eingebauten Vorlagen**
 
 - Raster 1920×1080; Sicherheitsbereich 96/54 → **Inhaltsbox x 96–1824, y 54–1026** (9.10.5).
@@ -2108,7 +2115,7 @@ Vorlage X bearbeiten
 - **Arbeitskopien (`parent ≠ null`) sind nicht auswählbar.** `composer` und `action-editor` bekommen sie nicht angeboten – halbfertige Vorlagen können nicht in einen Render geraten.
 - **`uebernehmeInParent` ist gesperrt, wenn der Parent eingebaut ist.** Eingebaute Vorlagen bleiben unveränderlich (9.11.1.1); dort bleibt nur `alsEigenstaendige`. Der Editor macht das vorher sichtbar, statt beim Speichern zu scheitern.
 - **`art` ist nach dem Anlegen unveränderlich** – auch über die Arbeitskopie. Ein Wechsel würde alle Zonen-Rahmen ungültig machen (andere Fläche); stattdessen neu anlegen.
-- **`höhe` nur bei `split`/`einblendung`**, Wertebereich > 0 und < 1080 **und geradzahlig** (9.11.1 Punkt 8, Begründung `yuv420p` in 9.2.8). Bei `vollflaeche` immer `null`. Der Store weist eine ungerade Höhe ab – auf **jedem** Weg, der sie setzen kann (`erstelleVorlage`, `speichereArbeitskopie`, `uebernehmeInParent`); der Editor sperrt sie bereits vorher (9.12.2).
+- **`höhe` nur bei `split`/`einblendung`**, Wertebereich > 0 und < 1080 **und geradzahlig** (9.11.1 Punkt 8, Begründung `yuv420p` in 9.2.8). Bei `vollflaeche` immer `null`. **Angelegt wird über die Oberfläche ausschließlich mit 162 px** (Entscheidung 23.10.2026, 9.11.1); der Wertebereich bleibt als Prüfregel für jeden Schreibweg bestehen. Der Store weist eine ungerade Höhe ab – auf **jedem** Weg, der sie setzen kann (`erstelleVorlage`, `speichereArbeitskopie`, `uebernehmeInParent`); der Editor sperrt sie bereits vorher (9.12.2).
 - **Feste Zonen (`rolle: "fest"`) dürfen nie entfernt oder verschoben werden** – auch nicht in eigenen Vorlagen (Markenrahmen erzwungen, FA-11).
 - **Löschen nur, wenn die Vorlage in *keinem* Projekt mehr benutzt wird.** Die Prüfung muss **beide** Referenzarten erfassen – das ist die entscheidende Feinheit:
   1. **`aktion.vorlagenId`** – Aktionen, die die Vorlage als vollflächiges Segment nutzen.
@@ -2120,7 +2127,7 @@ Vorlage X bearbeiten
 
 #### 9.12.2 `vorlagen-editor` [Renderer]
 
-**Ist:** die UI zum Anlegen und Bearbeiten – **Art wählen** (vollflächig / Split-Screen / Einblendung), Bandhöhe setzen, freie und dekorative Zonen anlegen, verschieben, bemaßen, `bindung` und `wennLeer` wählen, Text-Parameter setzen (Schrift-/Farb-Rolle, Größenbereich, Max-Zeilen).
+**Ist:** die UI zum Anlegen und Bearbeiten – **Art wählen** (vollflächig / Split-Screen / Einblendung), die Bandhöhe ist für beide Bandarten **fest 162 px** (kein Höhenfeld; Entscheidung 23.10.2026, 9.11.1), freie und dekorative Zonen anlegen, verschieben, bemaßen, `bindung` und `wennLeer` wählen, Text-Parameter setzen (Schrift-/Farb-Rolle, Größenbereich, Max-Zeilen).
 **Ist NICHT:** bearbeitet **keine** Aktions-Inhalte (`action-editor`), platziert nichts in die Liste (`composer`), rendert **keine** Pixel selbst, **kein** Dateisystem/ffmpeg.
 
 **Bedienung – zwei Wege auf dieselben Werte:**

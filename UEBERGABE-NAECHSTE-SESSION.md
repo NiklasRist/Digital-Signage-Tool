@@ -1,4 +1,16 @@
-# ÜBERGABE – nächste Session (Stand: 22.10.2026, spät, Commit `d1566ba`)
+# ÜBERGABE – nächste Session (Stand: 23.10.2026, FA-13 entschieden)
+
+## NEU AM 23.10.2026
+
+- **FA-13 ist entschieden** (Auftraggeber): Einblendung ist über die Oberfläche **anlegbar**, mit
+  **fester Bandhöhe 162 px** und **Scrim-Verlauf** (`scrimStart` → `scrimEnde`) statt deckender
+  Füllung. Feste Zonen `hintergrund` + `logo` aus „Band-Standard".
+- **Anforderungsänderung dokumentiert:** „Höhere Bänder möglich" (AD 4.5) und „Bandhöhe setzen"
+  (TK 9.12.2) sind zurückgenommen. **AD v1.9 / TK v3.28**, beide `.docx` neu erzeugt.
+- **Code noch nicht gebaut:** `ANLEGBARE_ARTEN` unverändert (zwei Einträge), Main lehnt
+  `einblendung` weiter ab. FA-13 bleibt in der Matrix **teilweise**.
+- **Nächster Schritt:** Backlog-Abgleich (Charge 1), danach FA-13 bauen (Nachtrag an #100/#155,
+  dann Code + Treiber).
 
 ## ZUERST LESEN
 
@@ -14,9 +26,10 @@
 
 ## STAND HEUTE (gemessen)
 
-- **Zwei Commits, `main` 139 Commits vor `origin/main`, NICHT gepusht.**
+- **Drei Commits, `main` 141 Commits vor `origin/main`, NICHT gepusht.**
   - `6746844` Live-Vorschau des Marken-Editors montiert (#303/#330) + B14–B16.
   - `d1566ba` Muss-Lücken FA-01/03/22/08/13 am Fenster gemessen + B17/B18.
+  - FA-13 entschieden + AD v1.9/TK v3.28 (23.10.2026).
 - **Gate: `npm run pruefung` Exit 0** – **5.623 Unit-Tests (334 Dateien)**,
   **49 Integrationstests (12 Dateien)**, Treiber ohne Befund. Lint/Typecheck 0.
   (Ein erster Volllauf fiel am bekannten Flaky `einzel-instanz.spec.ts`; einzeln und im
@@ -56,22 +69,19 @@
 
 ## Offene Entscheidungen (beim Auftraggeber)
 
-1. **FA-13/„Einblendung":** Soll sie über die Oberfläche anlegbar sein – und mit welcher
-   Höhe/Deckkraft? `ANLEGBARE_ARTEN` bietet nur `vollflaeche`/`split`; der Store kennt
-   `einblendung`. Deshalb bleibt FA-13 in der Matrix **teilweise**.
-2. **#442-Diagnose:** Die Deutung ist entschieden (Aktion an einer Zeitstelle = Unterbrechung,
+1. **#442-Diagnose:** Die Deutung ist entschieden (Aktion an einer Zeitstelle = Unterbrechung,
    TK 9.2.9); offen ist, warum der Weg beim Nutzer nicht greift. Das Label
    `braucht-entscheidung` an #442 ist veraltet (Backlog-Hygiene).
-3. **Backlog-Abgleich (Charge 1):** 322 offene Issues; alte/gebaute schließen, BK-01…06
+2. **Backlog-Abgleich (Charge 1):** 322 offene Issues; alte/gebaute schließen, BK-01…06
    (#354–#359, verworfene Zwei-Screens-Ära) als `not planned`, Banner-Familie behalten.
    Dazu `.gitignore` für Laufzeitartefakte (`marken.json`, `marken-assets/`, `.e2e-*-datenort/`).
-4. **Mutations-Chargen** 138/92 Dateien offen; Q1.2 (wiederholte Begründungen) offen.
+3. **Mutations-Chargen** 138/92 Dateien offen; Q1.2 (wiederholte Begründungen) offen.
 
 ## Nächster Schritt
 
-**Backlog-Abgleich (Charge 1)**, danach die in `CLAUDE.md` vereinbarte Reihenfolge:
-Oberfläche 2.0 / Banner (zuerst AD/TK-Nachtrag), dann Aktions-Editor inline, #443
-(Hover-Overlay), Videobearbeitung. **Kein Umbau ohne Plan.**
+**Backlog-Abgleich (Charge 1)**, danach **FA-13 bauen** (Nachtrag an #100/#155, Code, Treiber).
+Danach die in `CLAUDE.md` vereinbarte Reihenfolge: Oberfläche 2.0 / Banner (zuerst AD/TK-Nachtrag),
+dann Aktions-Editor inline, #443 (Hover-Overlay), Videobearbeitung. **Kein Umbau ohne Plan.**
 
 ## Arbeitsweise (unverändert bindend)
 

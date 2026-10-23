@@ -11,7 +11,32 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (22.10.2026, zweite Sitzung: Live-Vorschau montiert, Muss-Luecken gemessen, B14–B18) – gilt vor ALLEM weiter unten
+## STAND HEUTE (23.10.2026, FA-13 entschieden: Einblendung anlegbar, Bandhöhe fest 162) – gilt vor ALLEM weiter unten
+
+- **FA-13 ist entschieden (Auftraggeber, 23.10.2026):** Eigene Vorlagen der Art **Einblendung** sind
+  über die Oberfläche **anlegbar**, mit **fester Bandhöhe 162 px**. Der Hintergrund ist ein
+  **Scrim-Verlauf** `scrimStart` → `scrimEnde` (durchsichtig → 70 % Schwarz), **nicht** die deckende
+  `flaecheDunkel`-Füllung. Feste Zonen: `hintergrund` + `logo` aus „Band-Standard"; es gibt keine
+  eingebaute Einblendungs-Vorlage. Ein Deckkraft-Feld gibt es nicht – die Deckkraft folgt der
+  Vorlagenart (TK 9.10.2).
+- **Bewusste Anforderungsänderung, dokumentiert:** „Höhere Bänder sind über eigene Vorlagen möglich"
+  (AD 4.5) und „Bandhöhe setzen" (TK 9.12.2) sind **zurückgenommen** – angelegt wird nur 162 px.
+  Grund: Der Markenrahmen ist auf 162 px zugeschnitten; eine freie Höhe bräuchte eine Logo-Regel,
+  die der Vertrag nicht festlegt (TK 9.11.1 Punkt 3: kein automatisches Umlayouten).
+- **Dokumente synchron:** **AD v1.9 / TK v3.28**, Datum 23.10.2026, beide `.docx` neu erzeugt
+  (`generate-docx.js`, ZIP geprüft, neuer Text im XML belegt). TK-Bezug auf AD v1.9 gezogen
+  (stand vorher fälschlich auf v1.6).
+- **Code-Stand:** **noch nicht gebaut.** `ANLEGBARE_ARTEN` hat weiterhin zwei Einträge; der
+  Main-Zweig in `erstelle-vorlage.ts` lehnt `einblendung` mit `unbekannter_fehler` ab. Die
+  Treiber-Matrix führt FA-13 deshalb weiter als **teilweise**.
+- **`python3 tools/bereitschaft.py` (23.10.2026):** M0–M6 komplett, **M7 68/71** (3 „bereit":
+  #215, #240, #255 – vor dem Anfassen gegen den gebauten Code prüfen), **M8 60/60**. Deckt sich
+  mit der Übergabe vom 22.10.
+- **Nächster Schritt:** **Backlog-Abgleich (Charge 1)** – 322 offene Issues, alte/gebaute
+  schließen, BK-01…06 als `not planned`, `.gitignore` für Laufzeitartefakte. Danach FA-13 bauen
+  (Nachtrag an #100/#155, dann Code + Treiber). **Push nur auf Anweisung.**
+
+## STAND HEUTE (22.10.2026, zweite Sitzung: Live-Vorschau montiert, Muss-Luecken gemessen, B14–B18) – historisiert durch den Abschnitt darueber
 
 **Der volle Session-Stand steht in [`docs/agents/uebergabe-2026-10-22-session-2.md`](docs/agents/uebergabe-2026-10-22-session-2.md) – LIES DIESE DATEI ZUERST.**
 

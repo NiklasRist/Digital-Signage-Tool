@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 17.10.2026
-**Version:** 1.8 (Aktion unterbricht das Video: entschiedenes Modell „Einschub am Video" – Video-Teil · Aktion · Video-Teil, frame-genau, das Video bleibt EIN Element; s. 4.5)
+**Datum:** 23.10.2026
+**Version:** 1.9 (Bandhöhe eigener Vorlagen ist fest 162 px – auch für die Einblendung; die frühere Zusage „höhere Bänder sind möglich" ist bewusst zurückgenommen, s. 4.5)
 **Status:** In Abstimmung
 
 ---
@@ -86,7 +86,7 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-10 | Projektverwaltung | Projekte werden in einer Übersicht geführt (Name, Erstell-/Änderungsdatum, Speicherort) und können angelegt, geöffnet, dupliziert und gelöscht werden – um Inhalte effizient zu aktualisieren statt neu anzulegen. Das Sichern selbst erfolgt automatisch (FA-15). | Soll |
 | FA-11 | Einheitliches Grundlayout | Aktions-Segmente verwenden ein einheitliches Grundlayout im Corporate Design der **zugewiesenen Marke** (Logo, Farbwelt, Typografie). **Eingebauter Standard ist Fitnessworld24**, abgeleitet aus dem Markenauftritt der Website fitnessworld24.li; weitere Marken sind möglich (FA-23). | Soll |
 | FA-12 | Gestalterischer Spielraum | Innerhalb des Grundlayouts sind definierte Bereiche frei gestaltbar (z. B. Überschrift, Motiv-/Produktbild, Preis bzw. Call-to-Action, Akzentfarbe), damit jede Werbung individuell und wirkungsvoll gestaltet werden kann. | Soll |
-| FA-13 | Vorlagen erstellen & bearbeiten | Über die eingebauten Vorlagen hinaus können **eigene Vorlagen angelegt und bearbeitet** werden – **bereits im Prototyp**. Dabei wird die **Art** der Vorlage gewählt: vollflächiges Segment, **Split-Screen-Band** oder **Einblendung** (s. 4.5). Eine eigene Vorlage arrangiert nur die **freien Zonen** (Position/Größe/Feldzuordnung) innerhalb des **festen Markenrahmens** (Logo, Sicherheitsabstände), der nicht abschaltbar ist. Datengetrieben – eine eigene Vorlage ist nur ein neuer Datensatz, kein Code-Umbau. | Muss |
+| FA-13 | Vorlagen erstellen & bearbeiten | Über die eingebauten Vorlagen hinaus können **eigene Vorlagen angelegt und bearbeitet** werden – **bereits im Prototyp**. Dabei wird die **Art** der Vorlage gewählt: vollflächiges Segment, **Split-Screen-Band** oder **Einblendung** (s. 4.5). Die **Bandhöhe ist für beide Bandarten fest 162 px** (Entscheidung 23.10.2026, s. 4.5). Eine eigene Vorlage arrangiert nur die **freien Zonen** (Position/Größe/Feldzuordnung) innerhalb des **festen Markenrahmens** (Logo, Sicherheitsabstände), der nicht abschaltbar ist. Datengetrieben – eine eigene Vorlage ist nur ein neuer Datensatz, kein Code-Umbau. | Muss |
 | FA-14 | Video trimmen | Ein Video-Element kann am Anfang und Ende beschnitten werden (Trim-Start/-Ende); nur der gewählte Ausschnitt wird wiedergegeben und gerendert. **Nicht-destruktiv** – die Originaldatei bleibt unverändert; der Trim liegt am Listenelement. Bedienung über denselben Dauer-/Trim-Regler wie FA-06 (s. 4.4). | Soll |
 | FA-15 | Automatisches Speichern & Sitzung | Änderungen (Liste, Reihenfolge, Trim, Aktionen) werden **fortlaufend automatisch** gesichert – **kein manuelles Speichern, kein Datenverlust** (Rückgrat von NFA-02). Beim Start öffnet die App automatisch das **zuletzt aktive Projekt** und stellt letztes Export-Ziel und UI-Voreinstellungen wieder her. | Soll |
 | FA-16 | Prozessübersicht (Auftrags-Queue) | Länger laufende oder dateiverändernde Vorgänge (Medien-Import, Löschen von Medien, finaler Render, USB-Export) werden als Aufträge in einer sichtbaren Warteschlange geführt; erkennbar ist jederzeit, welcher Auftrag läuft, welche anstehen und welche fehlgeschlagen sind. | Muss |
@@ -228,7 +228,7 @@ Liste vor sich sieht. Wer eine platzierte Dauer ändern will, zieht am Regler.
 Werbeinhalte erscheinen auf **drei** Wegen. **Hauptbetriebsart ist die parallele Anzeige während eines Videos**; die sequenzielle Werbepause ist die zusätzliche Möglichkeit:
 
 1. **Split-Screen (Hauptbetriebsart):** Während ein **Video läuft**, erscheint **darunter** ein durchgehendes **Werbeband**. Das Video wird dafür verkleinert, aber **nichts wird verdeckt**. Im Band können **mehrere Aktionen nacheinander rotieren**, solange das Video läuft.
-2. **Einblendung (parallel, überlagernd):** Das Video bleibt **vollflächig**; das Werbeband liegt **darüber** und verdeckt den unteren Bildbereich. Vorteil: das Video behält seine volle Größe, ohne Seitenbalken.
+2. **Einblendung (parallel, überlagernd):** Das Video bleibt **vollflächig**; das Werbeband liegt **darüber** und verdeckt den unteren Bildbereich. Vorteil: das Video behält seine volle Größe, ohne Seitenbalken. Das Band ist **halbtransparent** (Verlauf von durchsichtig zu 70 % Schwarz), damit das Video darunter sichtbar bleibt – deckend wäre es optisch ein Split-Screen.
 3. **Sequenziell (Werbepause):** Eine Aktion wird als **eigenes, vollflächiges Segment** zwischen den Videos gezeigt (FA-04).
 
 Welche Art eine Vorlage bedient, wird **bei der Vorlagenerstellung gewählt** (FA-13).
@@ -237,7 +237,9 @@ Welche Art eine Vorlage bedient, wird **bei der Vorlagenerstellung gewählt** (F
 
 **Bewusste Konsequenz beim Split-Screen:** Das Video erscheint kleiner (bei 162 px Band ca. 72 % der Fläche) — reine Geometrie bei festem 16:9-Rahmen, kein Fehler. Wer das Video in **voller** Größe behalten will, nutzt die **Einblendung** (Art 2), die dafür den unteren Bildbereich verdeckt.
 
-**Platz im Band:** In ein 162 px hohes Band passt eine **kompakte Zeile** (Logo, Titel, Preis/CTA); eine längere Beschreibung ist dort nicht vorgesehen. Höhere Bänder sind über eigene Vorlagen möglich — sie verkleinern beim Split-Screen entsprechend das Video.
+**Platz im Band:** In ein 162 px hohes Band passt eine **kompakte Zeile** (Logo, Titel, Preis/CTA); eine längere Beschreibung ist dort nicht vorgesehen.
+
+**Die Bandhöhe ist fest (Entscheidung 23.10.2026):** Eigene Band-Vorlagen – Split-Screen **und** Einblendung – werden mit **162 px** angelegt. Ein Höhenfeld bietet die Oberfläche nicht; **höhere Bänder sind nicht vorgesehen**. Grund: Der Markenrahmen (Logo, Sicherheitsabstand) ist auf 162 px zugeschnitten; eine freie Höhe verlangte eine Skalierungsregel für das Logo, die das Technische Konzept an keiner Stelle festlegt und die als automatisches Umlayouten ausdrücklich verboten ist (TK 9.11.1 Punkt 3). Diese Festlegung ersetzt die frühere Zusage „Höhere Bänder sind über eigene Vorlagen möglich".
 
 **Eine Aktion auf das Video legen (User-Entscheidung 15.10.2026).** In der Zusammenstellung zieht man
 eine Aktion **auf das Video** – sie wird dann **während** des Videos gezeigt, nicht davor oder danach.
@@ -479,7 +481,7 @@ Die erste Version gilt als erfolgreich, wenn:
 - **Demo-/Store-Modus:** Betriebsmodus des Fernsehers, der u. a. die automatische USB-Wiedergabe ermöglicht.
 - **Split-Screen:** Hauptbetriebsart – das Video läuft verkleinert oben, darunter ein Werbeband; nichts wird verdeckt (4.5).
 - **Einblendung:** Parallele Anzeige, bei der das Video vollflächig bleibt und das Werbeband darüber liegt (verdeckt den unteren Bildbereich).
-- **Werbeband (Band):** Der schmale Bereich mit Werbeinhalt bei Split-Screen bzw. Einblendung; seine Höhe legt die Vorlage fest.
+- **Werbeband (Band):** Der schmale Bereich mit Werbeinhalt bei Split-Screen bzw. Einblendung; seine Höhe ist fest **162 px** (4.5).
 - **Vorlage:** Datengetriebene Layout-Definition aus Zonen (feste Markenzonen + freie Zonen). Ihre *Art* bestimmt, ob sie ein vollflächiges Segment, ein Split-Screen-Band oder eine Einblendung beschreibt.
 - **Arbeitskopie:** Bearbeitungsstand einer Vorlage. Wird automatisch gesichert, verändert die genutzte Vorlage aber erst beim expliziten Speichern (4.6).
 - **Auftrag / Auftrags-Queue:** Ein länger laufender oder dateiverändernder Vorgang (Import, Löschen, Render, Export) wird als *Auftrag* in einer *Warteschlange* (Queue) geführt. Aufträge werden nacheinander abgearbeitet und sind für den Nutzer sichtbar (laufend, anstehend, fehlgeschlagen).
