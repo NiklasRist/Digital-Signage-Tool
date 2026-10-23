@@ -62,14 +62,16 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
   Uebergaeben vom 12./15./16.10. belegten Kernachse-Nachzuege und den Treiber #404.
 - **#381** (Zwei-Panel-Layout) als `not planned` geschlossen (verworfene Aera).
 
-**Fuenf Fehlschliessungen, sofort korrigiert (Lehre aus dem Abgleich):**
+**Sechs Fehlschliessungen, sofort korrigiert (Lehre aus dem Abgleich):**
 - **#100/#155** waren in den 223 und wurden mitgeschlossen. Sie sind aber **nicht** fertig:
   der `einblendung`-Zweig im Main und der dritte `ANLEGBARE_ARTEN`-Eintrag fehlen. Beide
   wieder **geoeffnet**, mit Kommentar.
 - **#303** (Live-Vorschau) wurde mitgeschlossen, obwohl die Uebergabe 22.10. die Schliessung
   ausdruecklich als **eigene Review-Entscheidung** reserviert. Wieder **geoeffnet**.
-- **#316/#317** (M8-Kette `flaecheDunkel`) wurden mitgeschlossen, weil die generischen
-  Typnamen im Code stehen. Die eigentliche Aenderung fehlt: `render-request.ts` hat kein
+- **#310/#316/#317** (M8-Kette) wurden mitgeschlossen, weil die generischen Typnamen im
+  Code stehen. Bei **#310** fehlt der `render-ausloesen.ts`-Teil: kein `stelleMarkeBereit`,
+  keine `standardMarke`-Bindung, kein `marke_nicht_ladbar`; der Band-Zweig uebergibt
+  weiterhin `marke` als viertes Argument. Die eigentliche Aenderung fehlt: `render-request.ts` hat kein
   `einblendung.flaecheDunkel`, `render-reel.ts` ruft weiter `leseMarke()` zur Laufzeit,
   `config-store/lese-marke.ts` und der Kanal `config:leseMarke` existieren. Beide wieder
   **geoeffnet**, mit Code-Belegen.
@@ -80,7 +82,7 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
 
 **Widersprueche / Befunde, die bleiben:**
 - **#394 Statistik-Dashboard:** Komponente gebaut, aber **nirgends gerendert** → offen.
-- **#316/#317/#339 (M8-Kette):** `flaecheDunkel` ist **nicht** im RenderRequest; der
+- **#310/#316/#317/#339 (M8-Kette):** `flaecheDunkel` ist **nicht** im RenderRequest; der
   `render-service` liest die Marke weiter zur Laufzeit (TK 9.2.2 verlangt Einfrieren beim
   Einreihen); die Formpruefung fehlt. **Zusammen bauen, in dieser Reihenfolge.**
 - **#338:** `findeKaputteStellen` enthaelt **keine** Marken-Referenzpruefung → offen.
@@ -91,9 +93,9 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
 - **#442:** `braucht-entscheidung` entfernt (Deutung A2 entschieden); offen bleibt die
   Diagnose.
 
-**Offen nach dem Abgleich: 28 Issues.**
+**Offen nach dem Abgleich: 29 Issues.**
 - **FA-13-Bau:** #100 (Main-Zweig), #155 (`ANLEGBARE_ARTEN`).
-- **M8-Kette:** #316, #317, #339 (in dieser Reihenfolge).
+- **M8-Kette:** #310, #316, #317, #339 (in dieser Reihenfolge).
 - **Review:** #303 (Live-Vorschau; Schliessung ist eine eigene Entscheidung).
 - **Banner-Familie #365–#376** (12): erst nach AD/TK-Nachtrag.
 - **Echte Luecken:** #338 (Marken in der Kaputt-Erkennung), #364 (media://-Canvas-Tainting).
@@ -104,9 +106,10 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
 
 ## 3. Naechster Schritt
 
-1. **M8-Kette bauen:** #316 (`flaecheDunkel` in den Request, Laufzeit-Lookup raus), dann
-   #317 (`config-store.leseMarke` + Kanal loeschen), dann #339 (Formpruefung) – je mit
-   Tests und Gate.
+1. **M8-Kette bauen:** #310 (`standardMarke` in `render-ausloesen.ts`), dann #316
+   (`flaecheDunkel` in den Request, Laufzeit-Lookup raus), dann #317
+   (`config-store.leseMarke` + Kanal loeschen), dann #339 (Formpruefung) – je mit Tests
+   und Gate.
 2. **#338** nach der Entscheidung zum Reparaturweg (Marke waehlen / Aktion ersetzen /
    nur Befund).
 3. **FA-13 bauen:** #100 (Main-Zweig `einblendung`/162 mit Scrim-Hintergrund), dann
