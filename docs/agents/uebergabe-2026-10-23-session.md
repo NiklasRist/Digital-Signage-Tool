@@ -104,12 +104,30 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
 
 ---
 
-## 3. Naechster Schritt
+## 3. #310 gebaut, Gate-Befund als Messfehler entlarvt
 
-1. **M8-Kette bauen:** #310 (`standardMarke` in `render-ausloesen.ts`), dann #316
-   (`flaecheDunkel` in den Request, Laufzeit-Lookup raus), dann #317
-   (`config-store.leseMarke` + Kanal loeschen), dann #339 (Formpruefung) – je mit Tests
-   und Gate.
+- **#310 ist gebaut** (Branch `bau/310-standardmarke-render`): `stelleMarkeBereit(projekt.standardMarkeId)`
+  wird **nur bei Bandspur** und **genau einmal** je Aufruf gerufen; neuer Fehlercode
+  `marke_nicht_ladbar`; die Band-Abschnitte rufen `zeichneSegment(..., marke, standardMarke)`.
+  Verhaltenstests in `render-ausloesen.spec.ts` (16/16), Typecheck/Lint 0.
+  **Gegenprobe:** viertes Argument zurück auf `marke` → 2 Tests rot; Rücknahme per SHA-256
+  byte-identisch.
+- **Der erste volle Gate-Lauf war rot (16 Befunde im Marken-Editor).** Diagnose mit einem
+  gezielten Electron-Skript:
+  - Direkter IPC-Aufruf `marken:bearbeiteMarke` setzt die Farbe korrekt (`#123456`).
+  - Der Editor schreibt ebenfalls korrekt, **sobald** ein echtes `focusout` ausgelöst wird.
+  - Der Treiber benutzte `feld.blur()`. Reacts `onBlur` hängt an `focusout`; in einem nicht
+    fokussierten Fenster feuert `blur()` nicht. **Kein App-Fehler, ein Messfehler.**
+- **Fix** in `scripts/durchlauf.mjs` (4m und `setzeWert4m2`): nach dem Setzen
+  `new FocusEvent("focusout", { bubbles: true })` dispatchen. Danach der Treiber allein:
+  **13/13 Farbrollen**, Akzent `#808080` im Store, Eigenwert `eigen`, **0 Befunde**.
+- **Volle Gate-Bestätigung:** wird nach dem Fix erneut ausgeführt (Ergebnis im Commit/Log).
+
+## 4. Naechster Schritt
+
+1. **#310 mergen** (nach dem grünen Gate), dann **#316** (`flaecheDunkel` in den Request,
+   Laufzeit-Lookup raus), dann **#317** (`config-store.leseMarke` + Kanal löschen), dann
+   **#339** (Formprüfung) – je mit Tests und Gate.
 2. **#338** nach der Entscheidung zum Reparaturweg (Marke waehlen / Aktion ersetzen /
    nur Befund).
 3. **FA-13 bauen:** #100 (Main-Zweig `einblendung`/162 mit Scrim-Hintergrund), dann
