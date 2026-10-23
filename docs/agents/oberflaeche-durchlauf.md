@@ -1661,3 +1661,43 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 72
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-23T10:08:17.260Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 74
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Marken-Editor (FA-24): erwartet "die gesetzte Akzentfarbe landet im Bestand (V2)", erkannt "{"akzent":"#FF4040","sicherheit":{"horizontal":96,"vertikal":54},"slogan":{"text":"","aktiv":false}}" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle akzent laesst sich schreiben", erkannt "Store: #FF4040" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle akzentKraeftig laesst sich schreiben", erkannt "Store: #DF3131" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle akzentTief laesst sich schreiben", erkannt "Store: #971316" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle flaecheDunkel laesst sich schreiben", erkannt "Store: #2F2E2E" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle flaecheSehrDunkel laesst sich schreiben", erkannt "Store: #4B090B" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle flaecheHell laesst sich schreiben", erkannt "Store: #FFFFFF" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle flaecheAkzentZart laesst sich schreiben", erkannt "Store: #F5AEAF" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle textAufDunkel laesst sich schreiben", erkannt "Store: #FFFFFF" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle textAufHell laesst sich schreiben", erkannt "Store: #202020" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle textSekundaer laesst sich schreiben", erkannt "Store: #8F8F8F" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle linie laesst sich schreiben", erkannt "Store: #CCCCCC" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle scrimStart laesst sich schreiben", erkannt "Store: #00000000" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle scrimEnde laesst sich schreiben", erkannt "Store: #000000B3" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "alle dreizehn Farbrollen landen im Bestand", erkannt "["akzent","akzentKraeftig","akzentTief","flaecheDunkel","flaecheSehrDunkel","flaecheHell","flaecheAkzentZart","textAufDunkel","textAufHell","textSekundaer","linie","scrimStart","scrimEnde"]" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "ein gesetzter Wert am Kind wird als EIGEN gefuehrt", erkannt "geerbt" (Ort: marken-store/vererbung.ts)
+
+## Nachlauf vom 2026-10-23T10:37:12.995Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 84
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-23T10:43:21.050Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 74
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

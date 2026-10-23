@@ -16,6 +16,11 @@ const doppel = vi.hoisted(() => ({
   antwort: null as unknown,
 }))
 
+const markenDoppel = vi.hoisted(() => ({
+  aufrufe: [] as string[],
+  antwort: null as unknown,
+}))
+
 vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
   rufeAuf: async (kanal: string, nutzlast?: unknown) => {
     doppel.aufrufe.push({ kanal, nutzlast })
@@ -34,10 +39,17 @@ vi.mock('../../src/renderer/template-canvas/zeichne-segment', () => ({
 vi.mock('../../src/renderer/template-canvas/als-png', () => ({
   alsPng: vi.fn(async () => ({ ok: true, wert: new Uint8Array([137, 80]) })),
 }))
+vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
+  stelleMarkeBereit: async (markeId: string) => {
+    markenDoppel.aufrufe.push(markeId)
+    return markenDoppel.antwort
+  },
+}))
 
 import { findeKaputteStellen } from '../../src/renderer/composer/kaputt-erkennung'
 import { pruefeAusgabeName } from '../../src/renderer/composer/render-dialog'
 import { alsPng } from '../../src/renderer/template-canvas/als-png'
+import { zeichneSegment } from '../../src/renderer/template-canvas/zeichne-segment'
 import { loeseExportAus, loeseRenderAus } from '../../src/renderer/composer/render-ausloesen'
 
 const QUELLE = readFileSync(
@@ -114,11 +126,18 @@ const AKTION_OK = {
 
 const VORLAGEN_OK = [{ id: 'vollbild', name: 'Vollbild', art: 'vollflaeche' as const, höhe: null, parent: null, eingebaut: true, zonen: [] }]
 
+let standardMarke: Marke
+
 beforeEach(() => {
   doppel.aufrufe.splice(0)
   doppel.antwort = { ok: true, wert: { auftragId: 'q-1' } }
+  standardMarke = { ...marke(), id: 'standard' }
+  markenDoppel.aufrufe.splice(0)
+  markenDoppel.antwort = { ok: true, wert: standardMarke }
   vi.mocked(pruefeAusgabeName).mockReturnValue('ok' as never)
   vi.mocked(findeKaputteStellen).mockReturnValue([] as never)
+  vi.mocked(zeichneSegment).mockClear()
+  vi.mocked(alsPng).mockClear()
 })
 
 describe('loeseRenderAus (#134) - Sperre und NamensvP', () => {
@@ -212,6 +231,46 @@ describe('loeseRenderAus (#134) - die Items', () => {
     const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK)
     expect(antwort.ok).toBe(false)
     if (!antwort.ok) expect(antwort.fehler.code).toBe('png_export_fehler')
+    expect(doppel.aufrufe).toHaveLength(0)
+  })
+})
+
+describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
+  const bandVorlage = { id: 'band-1', name: 'band', art: 'split' as const, höhe: 162, parent: null, eingebaut: true, zonen: [] }
+  const bildAsset = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const }
+  const band = (id: string) => video(id, 'bild-1', { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 5 }] }, 0, 10)
+
+  it('Band: stelleMarkeBereit genau einmal mit standardMarkeId; 4. Argument ist die Standardmarke, nicht die Inhaltsmarke', async () => {
+    const inhalt = marke()
+    const antwort = await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', inhalt, [...VORLAGEN_OK, bandVorlage])
+    expect(antwort.ok).toBe(true)
+    expect(markenDoppel.aufrufe).toEqual(['m1'])
+    const calls = vi.mocked(zeichneSegment).mock.calls
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.[2]).toBe(inhalt)
+    expect(calls[0]?.[3]).toBe(standardMarke)
+  })
+
+  it('ohne Band: stelleMarkeBereit null Mal', async () => {
+    await loeseRenderAus(projekt([segment('e1', 'a-1', 10)], [AKTION_OK], []), 'sommer', marke(), VORLAGEN_OK)
+    expect(markenDoppel.aufrufe).toEqual([])
+  })
+
+  it('drei Baender: EIN Aufruf, alle Abschnitte bekommen dieselbe Standardmarke', async () => {
+    const antwort = await loeseRenderAus(projekt([band('e1'), band('e2'), band('e3')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage])
+    expect(antwort.ok).toBe(true)
+    expect(markenDoppel.aufrufe).toEqual(['m1'])
+    const calls = vi.mocked(zeichneSegment).mock.calls
+    expect(calls).toHaveLength(3)
+    for (const call of calls) expect(call[3]).toBe(standardMarke)
+  })
+
+  it('stelleMarkeBereit scheitert -> marke_nicht_ladbar, kein PNG, kein Einreihen', async () => {
+    markenDoppel.antwort = { ok: false, fehler: { code: 'marke_nicht_gefunden', meldung: 'fehlt' } }
+    const antwort = await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage])
+    expect(antwort.ok).toBe(false)
+    if (!antwort.ok) expect(antwort.fehler.code).toBe('marke_nicht_ladbar')
+    expect(vi.mocked(alsPng)).not.toHaveBeenCalled()
     expect(doppel.aufrufe).toHaveLength(0)
   })
 })

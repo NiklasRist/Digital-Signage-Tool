@@ -41,6 +41,7 @@ import { findeKaputteStellen } from './kaputt-erkennung'
 import { pruefeAusgabeName } from './render-dialog'
 import { zeichneSegment } from '../template-canvas/zeichne-segment'
 import { alsPng } from '../template-canvas/als-png'
+import { stelleMarkeBereit } from '../gemeinsam/marken-bereitstellung'
 
 import type { Project, Listenelement } from '../../shared/contracts/project'
 import type { Marke } from '../../shared/contracts/marke'
@@ -49,7 +50,7 @@ import type { RenderRequest, RenderItem, RenderItemVideo } from '../../shared/co
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { zerlegeVideo, rotiereBand } from './unterbrechungs-zerlegung'
 
-export type AusloeseFehlercode = 'kaputte_elemente' | 'png_export_fehler'
+export type AusloeseFehlercode = 'kaputte_elemente' | 'png_export_fehler' | 'marke_nicht_ladbar'
 
 export async function loeseRenderAus(
   projekt: Project,
@@ -82,6 +83,35 @@ export async function loeseRenderAus(
         meldung: `Der Ausgabename "${ausgabeName}" ist nicht zugelassen (TK 9.2.6).`,
         daten: undefined,
       },
+    }
+  }
+
+  // #310 - die Rahmen-Marke EINMAL je Aufruf, NUR wenn ein Band gezeichnet wird.
+  // Der Renderer hat sie mit den Band-PNGs benutzt; der Render-Service bekommt sie
+  // nicht mehr zur Laufzeit (TK 9.2.2/9.15.4, #316).
+  const brauchtStandardMarke = projekt.liste.some(
+    (element) => element.art === 'video' && element.einblendung !== null,
+  )
+  let standardMarke: Marke | null = null
+  if (brauchtStandardMarke) {
+    try {
+      const bereit = await stelleMarkeBereit(projekt.standardMarkeId)
+      if (!bereit.ok) {
+        return {
+          ok: false,
+          fehler: { code: 'marke_nicht_ladbar', meldung: bereit.fehler.meldung, daten: undefined },
+        }
+      }
+      standardMarke = bereit.wert
+    } catch (ursache) {
+      return {
+        ok: false,
+        fehler: {
+          code: 'marke_nicht_ladbar',
+          meldung: ursache instanceof Error ? ursache.message : String(ursache),
+          daten: undefined,
+        },
+      }
     }
   }
 
@@ -143,7 +173,7 @@ export async function loeseRenderAus(
       }
 
       // Das Werbeband EINMAL bauen (falls vorhanden) - es wird auf JEDEN Video-Teil gelegt.
-      const band = await baueBand(element, projekt, vorlagen, marke)
+      const band = await baueBand(element, projekt, vorlagen, marke, standardMarke)
       if (!band.ok) return band
 
       // OHNE Unterbrechungen: EIN Video-Item, wie bisher.
@@ -222,8 +252,21 @@ async function baueBand(
   projekt: Project,
   vorlagen: readonly Vorlage[],
   marke: Marke,
+  standardMarke: Marke | null,
 ): Promise<Ergebnis<RenderItemVideo['einblendung'], AusloeseFehlercode>> {
   if (element.einblendung === null) return { ok: true, wert: null }
+  if (standardMarke === null) {
+    // Unerreichbar, wenn `brauchtStandardMarke` oben korrekt geprueft hat - aber
+    // TypScript braucht die Verengung, und ein stiller Fallback waere schlimmer.
+    return {
+      ok: false,
+      fehler: {
+        code: 'marke_nicht_ladbar',
+        meldung: `Die Projekt-Standardmarke "${projekt.standardMarkeId}" wurde nicht bereitgestellt.`,
+        daten: undefined,
+      },
+    }
+  }
   const eigenesBand = element.einblendung
   const bandVorlage = vorlagen.find((v) => v.id === eigenesBand.bandVorlageId)
   if (bandVorlage === undefined) {
@@ -247,8 +290,9 @@ async function baueBand(
         fehler: { code: 'png_export_fehler', meldung: `Band-Abschnitt von "${element.id}" zeigt auf eine unbekannte Aktion.`, daten: undefined },
       }
     }
-    // Der Wurf von zeichneSegment wird NICHT gefangen (E-7). rahmenMarke === marke.
-    const bandPng = await alsPng(zeichneSegment(absAktion, bandVorlage, marke, marke))
+    // Der Wurf von zeichneSegment wird NICHT gefangen (E-7). Drittes Argument =
+    // Inhaltsmarke, viertes = aufgeloeste Projekt-Standardmarke (#310).
+    const bandPng = await alsPng(zeichneSegment(absAktion, bandVorlage, marke, standardMarke))
     if (!bandPng.ok) {
       return { ok: false, fehler: { code: 'png_export_fehler', meldung: bandPng.fehler.meldung, daten: undefined } }
     }
