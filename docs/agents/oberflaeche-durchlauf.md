@@ -1685,3 +1685,11 @@ Ereignisse gesammelt: 74
 - **Befund** Marken-Rest (FA-24): erwartet "die Farbrolle scrimEnde laesst sich schreiben", erkannt "Store: #000000B3" (Ort: marken-editor/farben-bearbeiten.ts)
 - **Befund** Marken-Rest (FA-24): erwartet "alle dreizehn Farbrollen landen im Bestand", erkannt "["akzent","akzentKraeftig","akzentTief","flaecheDunkel","flaecheSehrDunkel","flaecheHell","flaecheAkzentZart","textAufDunkel","textAufHell","textSekundaer","linie","scrimStart","scrimEnde"]" (Ort: marken-editor/farben-bearbeiten.ts)
 - **Befund** Marken-Rest (FA-24): erwartet "ein gesetzter Wert am Kind wird als EIGEN gefuehrt", erkannt "geerbt" (Ort: marken-store/vererbung.ts)
+
+## Nachlauf vom 2026-10-23T10:37:12.995Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 84
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

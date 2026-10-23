@@ -914,6 +914,9 @@ const main = async () => {
               feld.focus();
               feld.value = "#808080";
               feld.dispatchEvent(new Event("input", { bubbles: true }));
+              // Reacts onBlur haengt an `focusout`; ein nacktes `blur()` feuert in
+              // einem nicht fokussierten Fenster nicht (23.10.2026 am Treiber belegt).
+              feld.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
               feld.blur();
               return true;
             });
@@ -1270,6 +1273,9 @@ const main = async () => {
         if (e === "blur") {
           feld.focus();
           feld.dispatchEvent(new Event("input", { bubbles: true }));
+          // `focusout` statt nur `blur`: Reacts onBlur haengt an `focusout`; in einem
+          // nicht fokussierten Fenster bleibt `blur()` sonst wirkungslos (23.10.2026).
+          feld.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
           feld.blur();
         } else {
           feld.dispatchEvent(new Event("input", { bubbles: true }));
