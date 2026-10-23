@@ -9,11 +9,11 @@
   (TK 9.12.2) sind zurückgenommen. **AD v1.9 / TK v3.28**, beide `.docx` neu erzeugt.
 - **Code noch nicht gebaut:** `ANLEGBARE_ARTEN` unverändert (zwei Einträge), Main lehnt
   `einblendung` weiter ab. FA-13 bleibt in der Matrix **teilweise**.
-- **Backlog-Abgleich (Charge 1) durchgeführt:** **322 → 29 offene Issues**; 6 BK-Issues
-  (#354–#359) als `not planned`, 287 gebaute/überholte mit Beleg-Kommentar geschlossen,
-  6 nach Prüfung wieder geöffnet (#100/#155/#303/#310/#316/#317).
+- **Backlog-Abgleich (Charge 1) durchgeführt:** **322 → 28 offene Issues**; 6 BK-Issues
+  (#354–#359) als `not planned`, 288 gebaute/überholte mit Beleg-Kommentar geschlossen,
+  6 nach Prüfung wieder geöffnet (#100/#155/#303/#310/#316/#317); #310 ist inzwischen gebaut und gemergt.
   Details in [`docs/agents/uebergabe-2026-10-23-session.md`](docs/agents/uebergabe-2026-10-23-session.md).
-- **Nächster Schritt:** **M8-Kette #310 → #316 → #317 → #339** bauen (Vertrag, Rückbau, Formprüfung),
+- **Nächster Schritt:** **M8-Kette #316 → #317 → #339** bauen (Vertrag, Rückbau, Formprüfung),
   dann #338 nach der Entscheidung zum Reparaturweg, dann **FA-13** (#100 → #155), danach Banner
   (AD/TK-Nachtrag zuerst).
 
@@ -33,11 +33,12 @@
 
 ## STAND HEUTE (gemessen)
 
-- **Fünf Commits, `main` 143 Commits vor `origin/main`, NICHT gepusht.**
+- **Sechs Commits, `main` 151 Commits vor `origin/main`, NICHT gepusht.**
   - `6746844` Live-Vorschau des Marken-Editors montiert (#303/#330) + B14–B16.
   - `d1566ba` Muss-Lücken FA-01/03/22/08/13 am Fenster gemessen + B17/B18.
   - FA-13 entschieden + AD v1.9/TK v3.28 (23.10.2026).
   - Backlog-Abgleich Charge 1 + Session-Datei (23.10.2026).
+  - #310 Standardmarke + Treiber-Messweg (focusout); Gate Exit 0 (23.10.2026).
   - Nachtrag: #316/#317 als nicht gebaut erkannt, M8-Kette vor FA-13.
 - **Gate: `npm run pruefung` Exit 0** – **5.623 Unit-Tests (334 Dateien)**,
   **49 Integrationstests (12 Dateien)**, Treiber ohne Befund. Lint/Typecheck 0.
@@ -48,7 +49,7 @@
 - **`tools/bereitschaft.py`:** M0–M6 komplett, **M7 68/71** (3 „bereit": #215, #240, #255),
   **M8 60/60**. Die 3 M7-Treffer sind vor dem Anfassen gegen den gebauten Code zu prüfen –
   das Werkzeug sieht keine Vertragsdateien.
-- **Backlog: 28 offene Issues** nach dem Abgleich vom 23.10.2026 (M8-Kette 4, FA-13-Bau 2,
+- **Backlog: 28 offene Issues** nach dem Abgleich vom 23.10.2026 (M8-Kette 3, FA-13-Bau 2,
   Review 1, Banner-Familie 12, echte Lücken 2, UI-2.0-Kandidaten 6, beim Auftraggeber 2).
   Details in `docs/agents/uebergabe-2026-10-23-session.md`.
 

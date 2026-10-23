@@ -33,9 +33,9 @@
   #215, #240, #255 – vor dem Anfassen gegen den gebauten Code prüfen), **M8 60/60**. Deckt sich
   mit der Übergabe vom 22.10.
 - **Backlog-Abgleich (Charge 1) durchgeführt (23.10.2026):** von **322 offenen Issues** auf
-  **29** – **6 BK-Issues (#354–#359)** als `not planned` (verworfene Zwei-Screens-Ära), **287**
+  **28** – **6 BK-Issues (#354–#359)** als `not planned` (verworfene Zwei-Screens-Ära), **288**
   gebaute/überholte Issues mit Beleg-Kommentar als `completed` geschlossen, **6 nach Prüfung
-  wieder geöffnet** (#100/#155/#303/#310/#316/#317). Grundlage war eine Messung (Signatur im Code
+  wieder geöffnet** (#100/#155/#303/#310/#316/#317); #310 ist inzwischen gebaut. Grundlage war eine Messung (Signatur im Code
   definiert + genannte Datei ohne Gerüst-Rumpf + Commit-Nennung + Aufrufer-Grep), keine bloße
   Altersschätzung. **Grenze der Messung:** Sie erkennt weder einen offenen Teilzweig (#100/#155)
   noch eine fehlende Einzel-Edit in einer sonst gebauten Datei (#316/#317) – die DoD muss gegen
@@ -44,15 +44,23 @@
 - **Drei Befunde aus dem Abgleich, die offen bleiben:** **#394** (Statistik-Dashboard gebaut, aber
   nirgends gerendert – „fertige Funktion ohne Aufrufer"), **#338** (findeKaputteStellen ohne
   Marken-Referenzprüfung; der neue Befund fällt im Reparatur-Modus in `default: []` – Entscheidung
-  nötig), **#310/#316/#317/#339** (M8-Kette: `flaecheDunkel` fehlt im RenderRequest, der
+  nötig), **#316/#317/#339** (M8-Kette: `flaecheDunkel` fehlt im RenderRequest, der
   `render-service` liest die Marke weiter zur Laufzeit, die Formprüfung fehlt). `.gitignore` deckt
   die Laufzeitartefakte bereits seit 22.10. ab; #442-Label `braucht-entscheidung` entfernt.
-- **Die 29 offenen Issues:** M8-Kette #310/#316/#317/#339, FA-13-Bau #100/#155, Review #303,
+- **#310 ist gebaut und gemergt** (`e3e8053`): `stelleMarkeBereit(projekt.standardMarkeId)` nur bei
+  Bandspur, genau einmal je Aufruf; `marke_nicht_ladbar`; Band-Abschnitte zeichnen mit der
+  Standardmarke als viertem Argument. **Der erste Gate-Lauf war rot (16 Befunde im Marken-Editor);
+  die Diagnose zeigte einen Messfehler, keinen App-Fehler:** Reacts `onBlur` hängt an `focusout`,
+  der Treiber nutzte `blur()`, das in einem nicht fokussierten Fenster nicht feuert. Der Fix im
+  Treiber (4m/4m2 dispatcht `focusout`) ist belegt; `npm run pruefung` **Exit 0** (5.627
+  Unit-Tests, 49 Integrationstests, Treiber ohne Befund). Gegenprobe #310: 2 Tests rot, Rücknahme
+  byte-identisch.
+- **Die 28 offenen Issues:** M8-Kette #316/#317/#339, FA-13-Bau #100/#155, Review #303,
   Banner-Familie #365–#376 (12), echte Lücken #338/#364, UI-2.0-Kandidaten
   #383/#388/#391/#392/#393/#394, beim Auftraggeber #442/#443.
-- **Nächster Schritt:** **M8-Kette bauen** – #310 (`standardMarke` in `render-ausloesen.ts`),
-  dann #316 (`flaecheDunkel` in den Request, Laufzeit-Lookup raus), dann #317
-  (`config-store.leseMarke` + Kanal löschen), dann #339 (Formprüfung), je mit Tests und Gate. Danach #338 nach der Entscheidung zum Reparaturweg, dann **FA-13** (#100/#155).
+- **Nächster Schritt:** **#316** (`flaecheDunkel` in den Request, Laufzeit-Lookup raus), dann
+  **#317** (`config-store.leseMarke` + Kanal löschen), dann **#339** (Formprüfung), je mit Tests
+  und Gate. Danach #338 nach der Entscheidung zum Reparaturweg, dann **FA-13** (#100/#155).
   **Push nur auf Anweisung.**
 
 ## STAND HEUTE (22.10.2026, zweite Sitzung: Live-Vorschau montiert, Muss-Luecken gemessen, B14–B18) – historisiert durch den Abschnitt darueber

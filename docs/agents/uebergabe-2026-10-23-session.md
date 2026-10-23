@@ -82,7 +82,7 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
 
 **Widersprueche / Befunde, die bleiben:**
 - **#394 Statistik-Dashboard:** Komponente gebaut, aber **nirgends gerendert** → offen.
-- **#310/#316/#317/#339 (M8-Kette):** `flaecheDunkel` ist **nicht** im RenderRequest; der
+- **#316/#317/#339 (M8-Kette):** `flaecheDunkel` ist **nicht** im RenderRequest; der
   `render-service` liest die Marke weiter zur Laufzeit (TK 9.2.2 verlangt Einfrieren beim
   Einreihen); die Formpruefung fehlt. **Zusammen bauen, in dieser Reihenfolge.**
 - **#338:** `findeKaputteStellen` enthaelt **keine** Marken-Referenzpruefung → offen.
@@ -93,9 +93,9 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
 - **#442:** `braucht-entscheidung` entfernt (Deutung A2 entschieden); offen bleibt die
   Diagnose.
 
-**Offen nach dem Abgleich: 29 Issues.**
+**Offen nach dem Abgleich: 28 Issues.**
 - **FA-13-Bau:** #100 (Main-Zweig), #155 (`ANLEGBARE_ARTEN`).
-- **M8-Kette:** #310, #316, #317, #339 (in dieser Reihenfolge).
+- **M8-Kette:** #316, #317, #339 (in dieser Reihenfolge; #310 ist gebaut).
 - **Review:** #303 (Live-Vorschau; Schliessung ist eine eigene Entscheidung).
 - **Banner-Familie #365–#376** (12): erst nach AD/TK-Nachtrag.
 - **Echte Luecken:** #338 (Marken in der Kaputt-Erkennung), #364 (media://-Canvas-Tainting).
