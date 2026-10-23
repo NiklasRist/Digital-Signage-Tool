@@ -62,33 +62,41 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
   Uebergaeben vom 12./15./16.10. belegten Kernachse-Nachzuege und den Treiber #404.
 - **#381** (Zwei-Panel-Layout) als `not planned` geschlossen (verworfene Aera).
 
-**Drei Fehlschliessungen, sofort korrigiert (Lehre aus dem Abgleich):**
+**Fuenf Fehlschliessungen, sofort korrigiert (Lehre aus dem Abgleich):**
 - **#100/#155** waren in den 223 und wurden mitgeschlossen. Sie sind aber **nicht** fertig:
   der `einblendung`-Zweig im Main und der dritte `ANLEGBARE_ARTEN`-Eintrag fehlen. Beide
   wieder **geoeffnet**, mit Kommentar.
 - **#303** (Live-Vorschau) wurde mitgeschlossen, obwohl die Uebergabe 22.10. die Schliessung
   ausdruecklich als **eigene Review-Entscheidung** reserviert. Wieder **geoeffnet**.
-- **Grenze der Messung:** „Signatur definiert + Datei ohne Rumpf + Commit" erkennt einen
-  offenen **Teilzweig** nicht. Wer die Methode wiederholt, muss Issues mit einem
-  entschiedenen, aber noch ungebauten Zweig vorher ausnehmen.
+- **#316/#317** (M8-Kette `flaecheDunkel`) wurden mitgeschlossen, weil die generischen
+  Typnamen im Code stehen. Die eigentliche Aenderung fehlt: `render-request.ts` hat kein
+  `einblendung.flaecheDunkel`, `render-reel.ts` ruft weiter `leseMarke()` zur Laufzeit,
+  `config-store/lese-marke.ts` und der Kanal `config:leseMarke` existieren. Beide wieder
+  **geoeffnet**, mit Code-Belegen.
+- **Grenze der Messung:** „Signatur definiert + Datei ohne Rumpf + Commit" erkennt weder
+  einen offenen **Teilzweig** noch eine **fehlende Einzel-Edits** in einer sonst gebauten
+  Datei. Wer die Methode wiederholt, muss Issues mit einem entschiedenen, aber noch
+  ungebauten Zweig vorher ausnehmen und die DoD gegen den Code lesen.
 
 **Widersprueche / Befunde, die bleiben:**
 - **#394 Statistik-Dashboard:** Komponente gebaut, aber **nirgends gerendert** → offen.
-- **#339:** Der Body sagt „GEBAUT"; `validierung.ts` hat den sechsten Pruefpunkt
-  `flaecheDunkel` **nicht**. Die Formpruefung liegt nur spaeter im ffmpeg-Adapter.
-  Offen, Widerspruch im Issue kommentiert.
+- **#316/#317/#339 (M8-Kette):** `flaecheDunkel` ist **nicht** im RenderRequest; der
+  `render-service` liest die Marke weiter zur Laufzeit (TK 9.2.2 verlangt Einfrieren beim
+  Einreihen); die Formpruefung fehlt. **Zusammen bauen, in dieser Reihenfolge.**
 - **#338:** `findeKaputteStellen` enthaelt **keine** Marken-Referenzpruefung → offen.
+  Achtung: Die neue Befund-Art faellt in `reparatur-optionen.ts` in `default: []`; ohne
+  Entscheidung zum Reparaturweg blockiert sie den Render ohne Ausweg.
 - **`.gitignore`:** Laufzeitartefakte (`marken.json`, `marken-assets/`,
   `.e2e-*-datenort/`) sind bereits seit 22.10. abgedeckt; keine Aenderung noetig.
 - **#442:** `braucht-entscheidung` entfernt (Deutung A2 entschieden); offen bleibt die
   Diagnose.
 
-**Offen nach dem Abgleich: 26 Issues.**
+**Offen nach dem Abgleich: 28 Issues.**
 - **FA-13-Bau:** #100 (Main-Zweig), #155 (`ANLEGBARE_ARTEN`).
+- **M8-Kette:** #316, #317, #339 (in dieser Reihenfolge).
 - **Review:** #303 (Live-Vorschau; Schliessung ist eine eigene Entscheidung).
 - **Banner-Familie #365–#376** (12): erst nach AD/TK-Nachtrag.
-- **Echte Luecken:** #338 (Marken in der Kaputt-Erkennung), #339 (sechster Pruefpunkt),
-  #364 (media://-Canvas-Tainting).
+- **Echte Luecken:** #338 (Marken in der Kaputt-Erkennung), #364 (media://-Canvas-Tainting).
 - **UI 2.0 / Komfort:** #383, #388, #391, #392, #393, #394.
 - **Beim Auftraggeber:** #442 (Diagnose), #443 (Videosteuerung).
 
@@ -96,9 +104,14 @@ wird (die Klasse „fertige Funktion ohne Aufrufer").
 
 ## 3. Naechster Schritt
 
-1. **FA-13 bauen:** #100 (Main-Zweig `einblendung`/162 mit Scrim-Hintergrund), dann
+1. **M8-Kette bauen:** #316 (`flaecheDunkel` in den Request, Laufzeit-Lookup raus), dann
+   #317 (`config-store.leseMarke` + Kanal loeschen), dann #339 (Formpruefung) – je mit
+   Tests und Gate.
+2. **#338** nach der Entscheidung zum Reparaturweg (Marke waehlen / Aktion ersetzen /
+   nur Befund).
+3. **FA-13 bauen:** #100 (Main-Zweig `einblendung`/162 mit Scrim-Hintergrund), dann
    #155 (`ANLEGBARE_ARTEN` dritter Eintrag), Tests, Treiber 4n erweitern.
-2. **Banner:** AD/TK-Nachtrag, dann #365–#376.
-3. Danach Oberflaeche 2.0 / Aktions-Editor inline / #443.
+4. **Banner:** AD/TK-Nachtrag, dann #365–#376.
+5. Danach Oberflaeche 2.0 / Aktions-Editor inline / #443.
 
 **Push nur auf Anweisung.** Stand: lokal auf `main`, nicht gepusht.
