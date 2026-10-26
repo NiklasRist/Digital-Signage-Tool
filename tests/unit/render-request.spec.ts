@@ -34,6 +34,13 @@ type T2 = Behaupte<Gleich<Einblendung["höhe"], number>>;
 // dieselbe Zahl und der Vertrag entschiede nicht mehr, welcher gilt.
 type T3 = Behaupte<Gleich<Extract<keyof Einblendung, "hoehe">, never>>;
 
+// --- #316 (TK 9.2.2): `flaecheDunkel` ist ein PFLICHTFELD mit einem FERTIGEN Wert --
+type T5 = Behaupte<Gleich<Einblendung["flaecheDunkel"], string>>;
+
+// Der Auftrag traegt einen WERT, keinen Rollen-Namen und keine Marken-Kennung
+// ("flaecheDunkel reist ... kein Rollen-Name, keine markeId", TK 9.2.2).
+type T6 = Behaupte<Gleich<Extract<keyof Einblendung, "markeId" | "flaecheDunkelRolle">, never>>;
+
 // --- DoD 4: das Segment traegt nur Pixel und Dauer ---------------------------
 type T4 = Behaupte<Gleich<keyof RenderItemSegment, "id" | "art" | "png" | "dauer">>;
 
@@ -58,6 +65,12 @@ function nurTypebene(basis: Einblendung, segment: RenderItemSegment): void {
   // @ts-expect-error 'vollflaeche' ist keine Kompositionsart (TK 9.2.8 kennt zwei).
   const falscheArt: Einblendung = { ...basis, art: "vollflaeche" };
 
+  // @ts-expect-error `flaecheDunkel` fehlt - Pflichtfeld seit #316 (TK 9.2.2).
+  const ohneFarbe: Einblendung = { art: "einblendung", höhe: 162, bandVorlageId: "b", abschnitte: [] };
+
+  // @ts-expect-error nullbar ist es nicht - sonst gaebe es "split ohne Farbe".
+  const nullFarbe: Einblendung = { ...basis, flaecheDunkel: null };
+
   // @ts-expect-error Im segment-Zweig gibt es keine Aktions-/Vorlagendaten.
   const mitAktion: RenderItemSegment = { ...segment, aktionRef: "a1" };
 
@@ -67,6 +80,8 @@ function nurTypebene(basis: Einblendung, segment: RenderItemSegment): void {
   void ohneArt;
   void ohneHoehe;
   void falscheArt;
+  void ohneFarbe;
+  void nullFarbe;
   void mitAktion;
   void blind;
 }
@@ -103,7 +118,7 @@ const anfrage: RenderRequest = {
   ausgabeName: "sommeraktion",
 };
 
-export type { T1, T2, T3, T4 };
+export type { T1, T2, T3, T4, T5, T6 };
 
 describe("RenderRequest / RenderItem (#17)", () => {
   it("verengt ueber `art` auf genau eine Variante", () => {

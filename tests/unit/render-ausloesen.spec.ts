@@ -52,6 +52,17 @@ import { alsPng } from '../../src/renderer/template-canvas/als-png'
 import { zeichneSegment } from '../../src/renderer/template-canvas/zeichne-segment'
 import { loeseExportAus, loeseRenderAus } from '../../src/renderer/composer/render-ausloesen'
 
+import type { AusloeseFehlercode } from '../../src/renderer/composer/render-ausloesen'
+import type { Behaupte, Gleich } from '../typ-gleich'
+
+// #316: Dieses Issue erweitert KEINE Signatur - `loeseRenderAus` behaelt vier
+// Parameter, `AusloeseFehlercode` behaelt genau die drei Werte aus #310.
+type SignaturProbe = Behaupte<Gleich<Parameters<typeof loeseRenderAus>['length'], 4>>;
+type CodeProbe = Behaupte<
+  Gleich<AusloeseFehlercode, 'kaputte_elemente' | 'png_export_fehler' | 'marke_nicht_ladbar'>
+>;
+export type { SignaturProbe, CodeProbe };
+
 const QUELLE = readFileSync(
   new URL('../../src/renderer/composer/render-ausloesen.ts', import.meta.url).pathname,
   'utf8',
@@ -70,6 +81,16 @@ describe('render-ausloesen – Quelldatei-Verbote (Grep)', () => {
     }
     expect(QUELLE_CODE).toContain("KANAELE.queue.reiheEin")
   })
+
+  it('kein zweiter Markenweg und keine Hexzahl im Code (#316)', () => {
+    // Den Aufruf legt #310 an; #316 BENUTZT ihn nur. Ein zweiter Aufruf, ein
+    // `marken:leseMarke` oder eine getippte Hexzahl waeren genau die Wege, die
+    // TK 9.2.2/9.15.4 ausschliessen.
+    expect(QUELLE_CODE).not.toContain('leseMarke')
+    expect(QUELLE_CODE).not.toContain('KANAELE.marken')
+    expect(QUELLE_CODE).not.toMatch(/#[0-9a-fA-F]{6}/)
+    expect(QUELLE_CODE.match(/stelleMarkeBereit\(/g)).toHaveLength(1)
+  })
 })
 
 const marke = (): Marke => ({
@@ -86,6 +107,11 @@ const marke = (): Marke => ({
   eingebaut: false,
   herkunftJeFeld: null as never,
 })
+
+/** Eine Marke mit EINEM unterscheidbaren Farbwert der Rolle `flaecheDunkel`. */
+function markeMit(farbe: string): Marke {
+  return { ...marke(), farben: { flaecheDunkel: farbe } as never }
+}
 
 function projekt(liste: Project['liste'], aktionen: Project['aktionen'] = [], assets: Project['assets'] = []): Project {
   return {
@@ -272,6 +298,56 @@ describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
     if (!antwort.ok) expect(antwort.fehler.code).toBe('marke_nicht_ladbar')
     expect(vi.mocked(alsPng)).not.toHaveBeenCalled()
     expect(doppel.aufrufe).toHaveLength(0)
+  })
+})
+
+describe('loeseRenderAus (#316) - die Farbe reist eingefroren im Auftrag', () => {
+  const bandVorlage = { id: 'band-1', name: 'band', art: 'split' as const, höhe: 162, parent: null, eingebaut: true, zonen: [] }
+  const bildAsset = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const }
+  const band = (id: string) => video(id, 'bild-1', { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 5 }] }, 0, 10)
+
+  /** Die `einblendung`-Objekte des EINGEREIHTEN Auftrags - ohne `null`-Elemente. */
+  function bandFarben(): Array<{ flaecheDunkel?: string }> {
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as {
+      payload: { elemente: Array<{ einblendung: { flaecheDunkel?: string } | null }> }
+    }
+    return nutzlast.payload.elemente.flatMap((element) => (element.einblendung === null ? [] : [element.einblendung]))
+  }
+
+  it('nimmt die Farbe der PROJEKT-Standardmarke - NICHT die der Inhaltsmarke', async () => {
+    markenDoppel.antwort = { ok: true, wert: markeMit('#010203') }
+    const antwort = await loeseRenderAus(
+      projekt([band('e1')], [AKTION_OK], [bildAsset]),
+      'sommer',
+      markeMit('#0A0B0C'),
+      [...VORLAGEN_OK, bandVorlage],
+    )
+    expect(antwort.ok).toBe(true)
+    // Zwei unterscheidbare Werte: Der Rahmen gewinnt (TK 9.15.4). Der Parameter
+    // `marke` traegt den INHALT und wechselt mit jeder rotierenden Aktion -
+    // ihn zu nehmen waere der stille Fehler, den der Typecheck nicht sieht.
+    expect(bandFarben()[0]?.flaecheDunkel).toBe('#010203')
+    expect(bandFarben()[0]?.flaecheDunkel).not.toBe('#0A0B0C')
+  })
+
+  it('drei Band-Elemente tragen DENSELBEN Wert; stelleMarkeBereit bleibt bei EINEM Aufruf', async () => {
+    markenDoppel.antwort = { ok: true, wert: markeMit('#112233') }
+    await loeseRenderAus(
+      projekt([band('e1'), band('e2'), band('e3')], [AKTION_OK], [bildAsset]),
+      'sommer',
+      markeMit('#445566'),
+      [...VORLAGEN_OK, bandVorlage],
+    )
+    expect(markenDoppel.aufrufe).toEqual(['m1'])
+    expect(bandFarben().map((e) => e.flaecheDunkel)).toEqual(['#112233', '#112233', '#112233'])
+  })
+
+  it('reicht den Wert ZEICHENGLEICH durch - kein Grossschreiben, kein Kuerzen, kein 0x', async () => {
+    markenDoppel.antwort = { ok: true, wert: markeMit('#2f2e2eAA') }
+    await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage])
+    // Die Umrechnung nach `0xRRGGBB` macht `markenFarbeZuFfmpeg` - die EINZIGE
+    // Umrechnung im Projekt. Hier wird nur durchgereicht (TK 9.2.8).
+    expect(bandFarben()[0]?.flaecheDunkel).toBe('#2f2e2eAA')
   })
 })
 

@@ -139,8 +139,11 @@ export interface NormalisierKontext {
   arbeitsbereich: string
   /** aus RenderRequest.profil; wird UNVERAENDERT durchgereicht */
   profil: RenderProfile
-  /** Hexwert '#RRGGBB' der Farb-Rolle flaecheDunkel, vom Aufrufer aus leseMarke() (#29) */
-  flaecheDunkel: string
+  // KEIN `flaecheDunkel` (mehr): Der Wert reist seit TK v3.7 im Auftrag mit
+  // (`element.einblendung.flaecheDunkel`, #17) und ist beim Einreihen eingefroren
+  // (TK 9.2.8). Ein Kontext-Feld waere je Lauf EIN Wert fuer ALLE Elemente - genau
+  // das ist der Fehler, den die Einfrier-Zusage aus TK 9.3.5 verhindert (#316).
+  // ES GIBT KEIN ERSATZFELD: kein `markeId`, kein `marke`, kein `farben`.
   /** DIESELBE Abbruch-Quelle wie istAbgebrochen() (#179) – KEIN zweites Flag */
   abbruchSignal: AbortSignal
   /** = merkeProzess (#159), von renderReel hereingereicht */
@@ -166,8 +169,9 @@ const NAMENS_STELLEN = 4
  * Der Hintergrund JEDER vollflaechigen Normalisierung.
  *
  * "9.2.4 schreibt SCHWARZE Balken vor." Die Markenfarbe kommt ausschliesslich in
- * der Split-Komposition vor und reist dort als `kontext.flaecheDunkel` herein - in
- * dieser Datei steht KEINE Hexzahl, auch nicht als Rueckfallwert.
+ * der Split-Komposition vor und reist dort als `einblendung.flaecheDunkel` IM ELEMENT
+ * herein (beim Einreihen eingefroren, #316) - in dieser Datei steht KEINE Hexzahl,
+ * auch nicht als Rueckfallwert.
  */
 const HINTERGRUND = 'black'
 
@@ -476,7 +480,19 @@ async function ausVideo(
   // 5. Filterkette. Erst JETZT - so verlangt es die verbindliche Reihenfolge.
   const kette =
     bandart === 'split'
-      ? baueSplitKette(geo.wert.videoBreite, geo.wert.videoVersatzX, hoeheBand, bezug, kontext)
+      ? baueSplitKette(
+          geo.wert.videoBreite,
+          geo.wert.videoVersatzX,
+          hoeheBand,
+          // SAFETY: #17 macht `flaecheDunkel` zum Pflichtfeld; der Wert reist ueber die
+          // IPC-Grenze und ist hier zur Laufzeit nur eine Zusage. Geprueft wird er HIER
+          // nicht (keine zweite Pruefstelle) - ein unbrauchbarer Wert faellt in
+          // `markenFarbeZuFfmpeg` mit einem Fehler auf, den diese Datei unveraendert
+          // uebernimmt. Der Cast benennt die vom Vertrag zugesicherte Form.
+          feld(einblendung, 'flaecheDunkel') as string,
+          bezug,
+          kontext,
+        )
       : // Art B: Band UEBER dem vollflaechigen Video. Keine Markenfarbe - die
         // Balken bleiben schwarz nach 9.2.4 (#165 setzt sie selbst).
         baueEinblendungFilter(hoeheBand, kontext.profil)
@@ -495,7 +511,7 @@ async function ausVideo(
  *
  * "Bewusste Abweichung vom Ausgabe-Profil - nur hier: 9.2.4 schreibt SCHWARZE Balken
  * vor. In der Split-Komposition werden die Restflaechen IN DER MARKENFARBE gefuellt."
- * (TK 9.2.8) Der Hexwert reist im Kontext ein (beim Einreihen eingefroren); diese
+ * (TK 9.2.8) Der Hexwert reist IM ELEMENT ein (beim Einreihen eingefroren, #316); diese
  * Datei schlaegt KEINE Marke nach und tippt keine Hexzahl.
  *
  * Gereicht werden `geo.videoBreite` (die tatsaechlich EINGEPASSTE Breite) und
@@ -507,10 +523,11 @@ function baueSplitKette(
   videoBreite: number,
   videoVersatzX: number,
   hoeheBand: number,
+  flaecheDunkel: string,
   bezug: Elementbezug,
   kontext: NormalisierKontext,
 ): Ergebnis<string> {
-  const farbe = markenFarbeZuFfmpeg(kontext.flaecheDunkel)
+  const farbe = markenFarbeZuFfmpeg(flaecheDunkel)
   if (!farbe.ok) {
     return {
       ok: false,

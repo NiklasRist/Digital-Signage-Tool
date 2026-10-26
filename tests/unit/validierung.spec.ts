@@ -110,6 +110,8 @@ function mitBand(
         { png: png(RENDER_PROFILE.breite, BANDHOEHE), dauer: 5 },
         { png: png(RENDER_PROFILE.breite, BANDHOEHE), dauer: 5 },
       ],
+      // #316: Pflichtfeld im Auftrag (TK 9.2.2); die Formpruefung ist #339.
+      flaecheDunkel: '#2F2E2E',
       ...ueber,
     },
   })

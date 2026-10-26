@@ -32,7 +32,6 @@ const attrappe = vi.hoisted(() => ({
   ausgabeOrdner: vi.fn(),
   pruefeMedienVorhanden: vi.fn(),
   normalisiereElement: vi.fn(),
-  leseMarke: vi.fn(),
   ermittleFfprobePfad: vi.fn(),
   erzeugeArbeitsbereich: vi.fn(),
   verwirfArbeitsbereich: vi.fn(),
@@ -57,9 +56,6 @@ vi.mock("../../src/main/project-store/pfade", () => ({
 vi.mock("../../src/main/render-service/normalisieren", () => ({
   pruefeMedienVorhanden: attrappe.pruefeMedienVorhanden,
   normalisiereElement: attrappe.normalisiereElement,
-}));
-vi.mock("../../src/main/config-store/lese-marke", () => ({
-  leseMarke: attrappe.leseMarke,
 }));
 vi.mock("../../src/main/ffmpeg-pfad", () => ({
   ermittleFfprobePfad: attrappe.ermittleFfprobePfad,
@@ -162,10 +158,6 @@ beforeEach(() => {
     wert: path.join(ausgabeVerzeichnis, `${name}.mp4`),
   }));
   attrappe.pruefeMedienVorhanden.mockResolvedValue({ ok: true, wert: undefined });
-  attrappe.leseMarke.mockResolvedValue({
-    ok: true,
-    wert: { farben: { flaecheDunkel: "#2F2E2E" } },
-  });
   attrappe.ermittleFfprobePfad.mockReturnValue("/gebuendelt/ffprobe");
   attrappe.erzeugeArbeitsbereich.mockImplementation(() => Promise.resolve({ ok: true, wert: t1 }));
   attrappe.verwirfArbeitsbereich.mockResolvedValue(undefined);
@@ -241,16 +233,47 @@ describe("renderReel - Erfolg", () => {
     expect(attrappe.verifiziereUndPlatziere.mock.calls[0]?.[4]).toBe("/gebuendelt/ffprobe");
   });
 
-  it("ruft leseMarke genau einmal und traegt flaecheDunkel unveraendert in den Kontext", async () => {
+  it("ein Lauf mit einem Split-Element endet mit erfolg - ein Marken-Doppel gibt es nicht mehr (#316)", async () => {
+    // Mit #316 entfaellt der letzte Marken-Zugriff des render-service: Der Hexwert
+    // reist im Auftrag (TK 9.2.2). Der Test haelt den Lauf mit einem Split-Element
+    // fest - ohne Marken-Attrappe, weil es keine Marken-Stelle mehr gibt.
+    const split: RenderItem = {
+      id: "e-split",
+      art: "video",
+      medienRef: "media/clip.mp4",
+      trimStart: 0,
+      trimEnde: 4,
+      einblendung: {
+        art: "split",
+        höhe: 162,
+        bandVorlageId: "band-1",
+        abschnitte: [{ png: new Uint8Array([1]), dauer: 4 }],
+        flaecheDunkel: "#2F2E2E",
+      },
+    };
+
+    const ergebnis = await renderReel(anfrage({ elemente: [split] }), () => undefined);
+
+    expect(ergebnis).toMatchObject({ status: "erfolg", ausgabeName: "Sommeraktion" });
+    expect(attrappe.normalisiereElement).toHaveBeenCalledTimes(1);
+  });
+
+  it("baut den Kontext OHNE Markenfarbe - sie reist im Auftrag (#316)", async () => {
     await renderReel(anfrage(), () => undefined);
 
-    expect(attrappe.leseMarke).toHaveBeenCalledTimes(1);
-    expect(attrappe.normalisiereElement.mock.calls[0]?.[3]).toMatchObject({
-      flaecheDunkel: "#2F2E2E",
-      projektId: "p-1",
-      arbeitsbereich: t1,
-      profil: RENDER_PROFILE,
-    });
+    const kontext = attrappe.normalisiereElement.mock.calls[0]?.[3] as Record<string, unknown>;
+    expect(Object.keys(kontext).sort()).toEqual([
+      "abbruchSignal",
+      "arbeitsbereich",
+      "aufElementFortschritt",
+      "gibProzessFrei",
+      "merkeProzess",
+      "profil",
+      "projektId",
+    ]);
+    expect(kontext.projektId).toBe("p-1");
+    expect(kontext.arbeitsbereich).toBe(t1);
+    expect(kontext.profil).toBe(RENDER_PROFILE);
   });
 
   it("reicht die PNG-Pfade index-parallel durch", async () => {
@@ -490,12 +513,6 @@ describe("renderReel - Fehlerpfade", () => {
         });
       },
       () => {
-        attrappe.leseMarke.mockResolvedValue({
-          ok: false,
-          fehler: { code: "unbekannter_fehler", meldung: "Paket" },
-        });
-      },
-      () => {
         attrappe.erzeugeArbeitsbereich.mockResolvedValue({
           ok: false,
           fehler: { code: "kein_platz", meldung: "voll" },
@@ -596,7 +613,6 @@ describe("renderReel - Fehlerpfade", () => {
       "pruefeRenderRequest",
       "loeseAusgabePfad",
       "pruefeMedienVorhanden",
-      "leseMarke",
       "ermittleFfprobePfad",
       "erzeugeArbeitsbereich",
       "ausgabeOrdner",
@@ -649,5 +665,14 @@ describe("renderReel - Formprobe an der Quelldatei", () => {
     expect(QUELLE).not.toContain('"projects"');
     expect(QUELLE).not.toContain("path.join");
     expect(QUELLE).not.toContain("ermittleFfmpegPfad");
+  });
+
+  it("hat keinen Marken-Zugriff mehr (#316)", () => {
+    // Auch die Kommentare werden geprueft: Nach #316 ist der einzige Marken-Bezug
+    // des render-service der eingefrorene Hex-Wert im Auftrag (TK 9.2.2) - eine
+    // Zeile wie "holt die Marke hier" waere die naechste Luecke.
+    expect(QUELLE).not.toContain("leseMarke");
+    expect(QUELLE).not.toContain("config-store");
+    expect(QUELLE).not.toContain("marken-store");
   });
 });
