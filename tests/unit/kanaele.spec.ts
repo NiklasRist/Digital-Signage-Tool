@@ -25,13 +25,34 @@ describe("Kanal-Registry (#25)", () => {
     expect(new Set(alle).size).toBe(alle.length);
   });
 
-  it("fuehrt die fuenf config-Kanaele", () => {
+  it("fuehrt die vier config-Kanaele (#317: leseMarke ist entfallen)", () => {
     expect(Object.keys(KANAELE.config).sort()).toEqual([
       "leseKonfig",
-      "leseMarke",
       "setzeAktivesProjekt",
       "setzeExportZiel",
       "setzeUIVoreinstellung",
     ]);
+  });
+
+  it("laesst die Schluesselmengen ALLER uebrigen Bloecke unveraendert (#317)", () => {
+    // #317 nimmt genau eine Zeile aus `config`. Der Test haelt die Schluesselmengen
+    // der uebrigen Bloecke fest - nicht ihre Werte (die prueft jeder Modultest
+    // selbst), sondern dass niemand beim Aufraeumen eine fremde Operation mitzieht
+    // oder eine hinzufuegt. Verglichen wird sortiert: Die Reihenfolge ist nur im
+    // `config`-Block Vertrag (der Test darueber prueft sie).
+    const bloecke = Object.fromEntries(
+      Object.entries(KANAELE).map(([modul, operationen]) => [modul, Object.keys(operationen).sort()]),
+    );
+    expect(bloecke).toEqual({
+      queue: ["entferne", "geaendert", "holeStand", "reiheEin", "stoerung", "wiederhole"],
+      project: ["autoSpeichernStatus", "bearbeiteAktion", "dupliziereProjekt", "entferneElement", "erstelleAktion", "erstelleProjekt", "fügeElementHinzu", "listeAusgaben", "listeProjekte", "löscheAktion", "löscheProjekt", "ordneNeu", "setzeBearbeitungsstand", "setzeDauer", "setzeEinblendung", "setzeElementReferenz", "setzeStandardMarke", "setzeStandardSegmentdauer", "setzeTrim", "setzeUnterbrechungen", "öffneProjekt", "öffneProjektordner"],
+      beenden: ["entscheidung", "status"],
+      config: ["leseKonfig", "setzeAktivesProjekt", "setzeExportZiel", "setzeUIVoreinstellung"],
+      media: ["öffneMedienDialog"],
+      export: ["wähleExportZiel"],
+      render: ["fortschritt"],
+      vorlagen: ["alsEigenstaendige", "autoSpeichernStatus", "erstelleVorlage", "listeArbeitskopien", "listeVorlagen", "löscheVorlage", "oeffneZurBearbeitung", "pruefeVorlagenReferenzen", "speichereArbeitskopie", "uebernehmeInParent", "verwerfeArbeitskopie"],
+      marken: ["autoSpeichernStatus", "bearbeiteMarke", "entferneMarkenDatei", "erstelleMarke", "importiereMarkenDatei", "leseMarke", "listeMarken", "loescheMarke", "pruefeMarkenReferenzen", "öffneMarkenDateiDialog"],
+    });
   });
 });

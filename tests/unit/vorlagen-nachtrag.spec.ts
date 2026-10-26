@@ -249,7 +249,7 @@ describe("Kanal-Registry nach #255", () => {
     // 16 -> 17 am 20.08.2026: #238 traegt das ERREIGNIS `autoSpeichernStatus` nach.
     // 17 -> 18 am 23.08.2026: #334 traegt den Kanal `setzeStandardSegmentdauer` nach.
     expect(Object.keys(KANAELE.project)).toHaveLength(22); // +1 durch #323, +1 durch #426
-    expect(Object.keys(KANAELE.config)).toHaveLength(5);
+    expect(Object.keys(KANAELE.config)).toHaveLength(4); // #317: leseMarke entfallen
     expect(Object.keys(KANAELE.media)).toEqual(["öffneMedienDialog"]);
     expect(Object.keys(KANAELE.export)).toEqual(["wähleExportZiel"]);
   });

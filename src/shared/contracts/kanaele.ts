@@ -106,11 +106,12 @@ export const KANAELE = {
     setzeUnterbrechungen: 'project:setzeUnterbrechungen',
   },
 
-  // config-store (#77). Die fünf Namen ENTSTEHEN hier und nirgends sonst; die
+  // config-store (#77). Die vier Namen ENTSTEHEN hier und nirgends sonst; die
   // Verdrahtung (src/main/ipc-gateway/config-store-verdrahtung.ts) und die
   // Renderer-Seite lesen sie beide von hier. Präfix `config:` nach dem Muster
   // `<modul>:<operation>`, Modulname `config-store` → `config`.
-  // KEIN Schreibkanal für die Marke: `leseMarke` ist nur lesend (TK 9.5.6).
+  // KEIN Marken-Kanal: Die Marke gehört dem `marken-store` (`marken:leseMarke`,
+  // TK 9.5.6/9.15.1) – hier stand bis #317 eine argumentlose Zweitquelle.
   beenden: {
     status:       'beenden:status',       // Ereignis Main -> Renderer (#336)
     entscheidung: 'beenden:entscheidung', // Instant-Kanal Renderer -> Main (#336)
@@ -119,7 +120,6 @@ export const KANAELE = {
     leseKonfig: 'config:leseKonfig',
     setzeAktivesProjekt: 'config:setzeAktivesProjekt',
     setzeExportZiel: 'config:setzeExportZiel',
-    leseMarke: 'config:leseMarke',
     setzeUIVoreinstellung: 'config:setzeUIVoreinstellung',
   },
 

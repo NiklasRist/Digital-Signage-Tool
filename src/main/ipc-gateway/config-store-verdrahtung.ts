@@ -3,7 +3,6 @@
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'                     // #25
 import { leseKonfig } from '../config-store/lese-konfig'                     // #26
-import { leseMarke } from '../config-store/lese-marke'                       // #29
 import { setzeAktivesProjekt } from '../config-store/setze-aktives-projekt'  // #27
 import { setzeExportZiel } from '../config-store/setze-export-ziel'          // #28
 import { setzeUIVoreinstellung } from '../config-store/setze-ui-voreinstellung' // #30
@@ -26,11 +25,10 @@ import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from './nutzlas
 //   #26: leseKonfig(): Promise<Ergebnis<AppKonfig, ConfigFehlercode>>
 //   #27: setzeAktivesProjekt(projektId: string | null): Promise<Ergebnis<void, ConfigFehlercode>>
 //   #28: setzeExportZiel(pfad: string): Promise<Ergebnis<void, ConfigFehlercode>>
-//   #29: leseMarke(): Promise<Ergebnis<Marke>>
 //   #30: setzeUIVoreinstellung(schlüssel: string, wert: unknown): Promise<Ergebnis<void, ConfigFehlercode>>
 
 export function verdrahteConfigStoreIPC(): void {
-  // Alle fuenf Namen kommen aus der Registry (#25); in dieser Datei steht kein einziger
+  // Alle vier Namen kommen aus der Registry (#25); in dieser Datei steht kein einziger
   // Kanalname als Zeichenkette - auch nicht in den Fehlermeldungen. Ein Tippfehler waere
   // sonst erst zur Laufzeit sichtbar, und zwar als Aufruf, der ins Leere laeuft, nicht
   // als Uebersetzungsfehler.
@@ -80,8 +78,6 @@ export function verdrahteConfigStoreIPC(): void {
     ({ pfad }) => setzeExportZiel(pfad),
   )
 
-  meldeAn(KANAELE.config.leseMarke, ohneNutzlast, () => leseMarke())
-
   meldeAn(
     KANAELE.config.setzeUIVoreinstellung,
     (nutzlast: unknown): Ergebnis<{ schlüssel: string; wert: unknown }, 'ungueltige_eingabe'> => {
@@ -112,5 +108,5 @@ export function verdrahteConfigStoreIPC(): void {
     ({ schlüssel, wert }) => setzeUIVoreinstellung(schlüssel, wert),
   )
 }
-// registriert die fünf unten aufgeführten Kanäle über den Wrapper aus #23 – je mit einer eigenen
+// registriert die vier unten aufgeführten Kanäle über den Wrapper aus #23 – je mit einer eigenen
 // Validierungsfunktion. Kein Ereignis, kein Zustand, keine Fachlogik.
