@@ -362,7 +362,7 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
     return { ...video('e1', 'v1', einblendung, 2, 12), unterbrechungen }
   }
 
-  function items(): Array<{ art: string; trimStart?: number; trimEnde?: number; dauer?: number; einblendung?: { abschnitte: Array<{ dauer: number }> } | null }> {
+  function items(): Array<{ art: string; trimStart?: number; trimEnde?: number; dauer?: number; einblendung?: { abschnitte: Array<{ dauer: number }>; flaecheDunkel?: string } | null }> {
     const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: never } }
     return nutzlast.payload.elemente as never
   }
@@ -392,6 +392,24 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
     // Teil 1 beginnt bei Phase 0 -> [4]; Teil 2 beginnt 3 s spaeter -> [1,3].
     expect(elemente[0]?.einblendung?.abschnitte.map((a) => a.dauer)).toEqual([4])
     expect(elemente[2]?.einblendung?.abschnitte.map((a) => a.dauer)).toEqual([1, 3])
+  })
+
+  it('jedes Video-Teilstueck traegt DENSELBEN eingefrorenen flaecheDunkel-Wert (#316)', async () => {
+    // Das Band wird EINMAL gebaut (`baueBand`) und per Spread auf die Teilstuecke
+    // verteilt. Der Wert muss deshalb an JEDEM Teil stehen - und der der
+    // Projekt-Standardmarke sein, nicht der der Inhaltsmarke (TK 9.15.4).
+    markenDoppel.antwort = { ok: true, wert: markeMit('#0f1e2d') }
+    const einblendung = { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 4 }] }
+    const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 5 }], einblendung)], [AKTION_OK], [videoAsset])
+    const antwort = await loeseRenderAus(p, 'sommer', markeMit('#778899'), [...VORLAGEN_OK, bandVorlage])
+    expect(antwort.ok).toBe(true)
+
+    const elemente = items()
+    expect(elemente.map((i) => i.art)).toEqual(['video', 'segment', 'video'])
+    expect(elemente[0]?.einblendung?.flaecheDunkel).toBe('#0f1e2d')
+    expect(elemente[2]?.einblendung?.flaecheDunkel).toBe('#0f1e2d')
+    // Das Segment-Teilstueck (Einschub) traegt kein Band.
+    expect(elemente[1]?.einblendung ?? null).toBeNull()
   })
 })
 
