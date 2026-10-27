@@ -3664,6 +3664,18 @@ const main = async () => {
           fund("Aktion bearbeiten (FA-03)", "das Titelfeld ist im Aktionen-Reiter bedienbar",
             "aktion-titel fehlt", "Befund", "action-editor/index.tsx");
         } else if (geaendert4g3 === null) {
+          // Diagnose (FA-03, 27.10.2026): Der Befund vom 26.10. war nicht zuordenbar, weil
+          // weder Meldung noch Zeilentext festgehalten wurden. Beides wird jetzt gemessen,
+          // BEVOR der Fund geschrieben wird: die Meldung nennt den Zweig (Formular-Meldung
+          // vs. Wurzel-Meldung vs. gar keine), der Zeilentext die Sicht.
+          const lageFehlschlag4g3 = await seite.evaluate(() => ({
+            titelfeld: document.querySelector('[data-testid="aktion-titel"]')?.value ?? null,
+            zeilen: [...document.querySelectorAll('[data-testid="aktion-bibliothek"] li button')]
+              .map((knopf) => knopf.textContent),
+            formularMeldung: document.querySelector('[data-testid="aktion-speicher-meldung"]')?.textContent ?? null,
+            wurzelMeldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+          }));
+          console.log(`[schritt-4g3] Diagnose Fehlschlag: Titelfeld="${String(lageFehlschlag4g3.titelfeld)}", Zeilen=${JSON.stringify(lageFehlschlag4g3.zeilen)}, FormularMeldung=${JSON.stringify(lageFehlschlag4g3.formularMeldung)}, WurzelMeldung=${JSON.stringify(lageFehlschlag4g3.wurzelMeldung)}.`);
           fund("Aktion bearbeiten (FA-03)", "der geaenderte Titel landet im Bestand",
             `Titel im project.json: ${JSON.stringify(nachher4g3.map((a) => a.titel))}`,
             "Befund", "action-editor/index.tsx");

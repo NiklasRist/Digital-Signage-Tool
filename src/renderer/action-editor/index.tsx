@@ -37,6 +37,7 @@
 import { useEffect, useState, type JSX } from 'react'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
+import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { ZeichenZugang, VorlagenZugang, ProjektZugang, MarkenZugang } from '../app-shell/sichten'
@@ -178,7 +179,9 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
   const gewaehlt = findeGewaehlte(lage, projekt.aktionen)
 
   // Die Write-nach der Sicht - DER Weg des ganzen Moduls (ENTSCHIEDEN 1).
-  function einspeisen(antwort: { ok: true; wert: { aktion: Aktion } | Aktion } | { ok: false }): void {
+  function einspeisen(antwort: Ergebnis<Aktion> | { ok: true; wert: { aktion: Aktion } }): void {
+    // Der Fehlerfall wird NICHT mehr still verschluckt: `FormularFelder` meldet ihn am
+    // Feld. Hier bleibt nur der Erfolgsweg - die Sicht schreibt die neue Aktion.
     if (!antwort.ok) {
       return
     }
@@ -361,17 +364,34 @@ function FormularFelder({
   formular: AktionsEntwurf
   waehlbare: Vorlage[] | null
   gewaehlt: Aktion | null
-  onEinspeisen: (antwort: { ok: true; wert: { aktion: Aktion } | Aktion } | { ok: false }) => void
+  /** Der Fehlerfall traegt seine Meldung mit - `{ ok: false }` allein machte ein
+   *  gescheitertes Speichern unsichtbar (FA-03-Nachlauf). */
+  onEinspeisen: (antwort: Ergebnis<Aktion> | { ok: true; wert: { aktion: Aktion } }) => void
   onSetzeFormular: (entwurf: AktionsEntwurf | null) => void
 }): JSX.Element {
   const [befunde, setzeBefunde] = useState<EntwurfBefund[]>([])
+  // FA-03-Nachlauf: Ein verlorener Edit war bisher UNSICHTBAR - es gab keinen Weg,
+  // auf dem der Nutzer von einem gescheiterten Speichern erfaehrt. Diese Zeile ist
+  // dieser Weg (die Wurzel-Meldung steht dem action-editor nicht zur Verfuegung).
+  const [speicherMeldung, setzeSpeicherMeldung] = useState<string | null>(null)
   const projekt = p.projekt.hole().projekt
   const assets: Asset[] = projekt?.assets ?? []
 
   // Feld verlassen -> speichereAktion (ENTSCHEIDEN-FRAG: gemeldet).
   async function feldVerlassen(feld: keyof AktionsEntwurf, wert: string | null): Promise<void> {
-    const entwurf = p.projekt.hole().projekt?.aktionen.find((e) => e.id === gewaehlt?.id)
-    if (entwurf === undefined || gewaehlt === null) {
+    if (gewaehlt === null) {
+      // Modus "neu": `formular` ist der Entwurf, `gewaehlt` gibt es noch nicht. Der
+      // stille Rueckweg bleibt hier - offener Folge-Befund "Neue Aktion: getippte Werte
+      // erreichen das Formular nie" (nicht in diesem Fix behoben).
+      return
+    }
+    const entwurf = p.projekt.hole().projekt?.aktionen.find((e) => e.id === gewaehlt.id)
+    if (entwurf === undefined) {
+      // Die Auswahl zeigt auf eine Aktion, die im aktuellen Stand nicht mehr existiert.
+      // Frueher: stilles `return` - der getippte Wert war weg, ohne jede Spur.
+      setzeSpeicherMeldung(
+        'Die Aktion ist im aktuellen Projektstand nicht mehr vorhanden - die Änderung wurde NICHT gespeichert.',
+      )
       return
     }
     const geaenderteFelder: Partial<AktionsEntwurf> = { [feld]: wert } as Partial<AktionsEntwurf>
@@ -383,7 +403,14 @@ function FormularFelder({
     setzeBefunde([])
     const antwort = await speichereAktion(gewaehlt.id, geaenderteFelder)
     onEinspeisen(antwort)
-    if (antwort.ok) onSetzeFormular({ ...antwort.wert })
+    if (antwort.ok) {
+      setzeSpeicherMeldung(null)
+      onSetzeFormular({ ...antwort.wert })
+    } else {
+      // Der Grund kommt aus `speichereAktion` (Validierung oder Main-Antwort) und ist
+      // ein Bediener-Satz - er wird woertlich gezeigt, nicht neu formuliert.
+      setzeSpeicherMeldung(`Nicht gespeichert: ${antwort.fehler.meldung}`)
+    }
   }
 
   return (
@@ -428,6 +455,11 @@ function FormularFelder({
           onBlur={(e) => void feldVerlassen('standardDauer', e.target.value === '' ? null : Number(e.target.value) as unknown as string | null)}
         />
       </label>
+      {speicherMeldung !== null && (
+        <p data-testid="aktion-speicher-meldung" style={{ color: '#e5634d', fontSize: 12 }}>
+          {speicherMeldung}
+        </p>
+      )}
       {befunde.map((befund, i) => (
         <BefundAnzeige key={i} befund={befund} />
       ))}
@@ -528,7 +560,9 @@ function KaputtAnzeige({
 }: {
   aktionId: string
   projekt: Project
-  onEinspeisen: (antwort: { ok: true; wert: { aktion: Aktion } | Aktion } | { ok: false }) => void
+  /** Der Fehlerfall traegt seine Meldung mit - `{ ok: false }` allein machte ein
+   *  gescheitertes Speichern unsichtbar (FA-03-Nachlauf). */
+  onEinspeisen: (antwort: Ergebnis<Aktion> | { ok: true; wert: { aktion: Aktion } }) => void
 }): JSX.Element {
   const stellen = betroffeneStellen(aktionId, projekt.liste)
   if (anzahlStellen(stellen) === 0) {
