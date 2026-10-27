@@ -106,6 +106,21 @@ function istNichtLeereZeichenkette(wert: unknown): wert is string {
   return typeof wert === 'string' && wert.length > 0
 }
 
+/**
+ * Die Form eines Hex-Farbwerts: `#RRGGBB` oder `#RRGGBBAA` (#339).
+ *
+ * Geprueft wird NUR die Form - nicht, ob die Farbe in einer Marke existiert und nicht, ob
+ * sie dunkel genug ist. Das Muster traegt kein `g`: Mit `lastIndex`-Zustand koennte dasselbe
+ * Muster beim zweiten Aufruf an einer verschobenen Stelle suchen und einen gueltigen Wert
+ * abweisen. Diese Pruefung ist die EINZIGE ihrer Art (Verbot aus #339) - ein zweiter
+ * Hex-Test anderswo waere eine zweite Wahrheit, die milder ausfallen koennte.
+ */
+const HEX_FARBE = /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+
+function istHexFarbe(wert: unknown): wert is string {
+  return typeof wert === 'string' && HEX_FARBE.test(wert)
+}
+
 /** Ein Wert fuer eine Meldung, ohne `JSON.stringify` (dessen Ausgabe an der Schluesselreihenfolge haengt). */
 function beschreibe(wert: unknown): string {
   return typeof wert === 'string' ? `"${wert}"` : String(wert)
@@ -294,7 +309,8 @@ function pruefeDauerBereich(elementId: string, dauer: unknown): Ergebnis<void, R
 }
 
 /**
- * Die Einblendung eines `video`-Elements pruefen - Band-Geometrie, Abschnitte, PNG-Masse.
+ * Die Einblendung eines `video`-Elements pruefen - Band-Geometrie, Abschnitte, PNG-Masse,
+ * Abschnittsdauer und (seit #339) die Form von `flaecheDunkel`.
  *
  * ZUR BANDBREITE: Sie ist IMMER `RENDER_PROFILE.breite`. Sie stammt NICHT aus der
  * Geometrie - `BandGeometrie.videoBreite` ist die EINGEPASSTE Videobreite (bei H = 162
@@ -394,6 +410,21 @@ function pruefeEinblendung(
           'auf 0 Frames. Die Mindestdauer ist ein Frame.',
       )
     }
+  }
+
+  // SECHSTER PRUEFPUNKT (#339): `flaecheDunkel` traegt den FERTIGEN Hex-Wert der Farb-Rolle
+  // `flaecheDunkel` fuer die Restflaechen (TK 9.2.2, Pflichtfeld seit #17). Bis hierher fiel
+  // ein kaputter Wert erst in `markenFarbeZuFfmpeg` (M6-09/#167) durch - NACH dem Anlegen
+  // von T1 und dem Schreiben der Segment-PNGs, mit einer Meldung, die die Ursache nicht
+  // nennt. Die Grenzkontrolle prueft ihn deshalb VOR dem ersten ffmpeg-Aufruf (TK 9.1.1
+  // Punkt 6). Nur die Form: ob die Farbe zur Marke passt, prueft niemand hier.
+  const flaecheDunkel = lies(einblendung, 'flaecheDunkel')
+  if (!istHexFarbe(flaecheDunkel)) {
+    return elementFehler(
+      elementId,
+      'Die Restflaeche der Einblendung ("flaecheDunkel") ist kein Hex-Wert der Form ' +
+        `#RRGGBB oder #RRGGBBAA, vorgefunden: ${beschreibe(flaecheDunkel)}.`,
+    )
   }
 
   return { ok: true, wert: undefined }
