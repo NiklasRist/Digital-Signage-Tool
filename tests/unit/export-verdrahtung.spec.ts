@@ -389,9 +389,9 @@ describe("Kanal-Registry (#25) nach der Ergaenzung durch #191", () => {
     expect(KANAELE.project.setzeBearbeitungsstand).toBe("project:setzeBearbeitungsstand");
     expect(KANAELE.project.öffneProjektordner).toBe("project:öffneProjektordner");
     expect(KANAELE.project.listeAusgaben).toBe("project:listeAusgaben");
+    // #317: `config:leseMarke` ist entfallen - vier Kanaele.
     expect(Object.keys(KANAELE.config).sort()).toEqual([
       "leseKonfig",
-      "leseMarke",
       "setzeAktivesProjekt",
       "setzeExportZiel",
       "setzeUIVoreinstellung",

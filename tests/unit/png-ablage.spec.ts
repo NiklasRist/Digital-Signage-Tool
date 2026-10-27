@@ -68,6 +68,8 @@ function video(id: string, abschnitte: Uint8Array[] | null): RenderItem {
             höhe: 162,
             bandVorlageId: "band-1",
             abschnitte: abschnitte.map((png) => ({ png, dauer: 5 })),
+            // #316: Pflichtfeld im Auftrag; #175 legt nur die PNGs ab.
+            flaecheDunkel: "#2F2E2E",
           },
   };
 }

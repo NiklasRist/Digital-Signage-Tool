@@ -28,6 +28,24 @@ import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
 import type { ChildProcess } from "node:child_process";
 import type { RenderItem } from "../../src/shared/contracts/render-request";
 import type { NormalisierKontext } from "../../src/main/render-service/normalisieren";
+import type { Behaupte, Gleich } from "../typ-gleich";
+
+// #316 / ENTSCHIEDEN 4: Der Kontext traegt GENAU sieben Felder und KEIN Ersatzfeld
+// fuer die Markenfarbe - kein `flaecheDunkel`, kein `markeId`, kein `marke`, kein
+// `farben`. Der Wert reist im Auftrag (`element.einblendung.flaecheDunkel`).
+type KontextFelder = Behaupte<
+  Gleich<
+    keyof NormalisierKontext,
+    | "projektId"
+    | "arbeitsbereich"
+    | "profil"
+    | "abbruchSignal"
+    | "merkeProzess"
+    | "gibProzessFrei"
+    | "aufElementFortschritt"
+  >
+>;
+export type { KontextFelder };
 
 // ---------------------------------------------------------------------------
 // Attrappen. Nur die Bausteine, die einen Prozess starten oder eine Zeichenkette
@@ -133,7 +151,6 @@ function kontext(ueberschreibung: Partial<NormalisierKontext> = {}): Normalisier
     projektId: "p-1",
     arbeitsbereich: T1,
     profil: RENDER_PROFILE,
-    flaecheDunkel: FLAECHE_DUNKEL,
     abbruchSignal: abbruch.signal,
     merkeProzess: merkeProzess as unknown as (kindProzess: ChildProcess) => void,
     gibProzessFrei: gibProzessFrei as unknown as (kindProzess: ChildProcess) => void,
@@ -157,10 +174,19 @@ const VIDEO_OHNE_BAND: RenderItem = {
   einblendung: null,
 } as RenderItem;
 
-/** Ein Videoelement mit Band. `höhe` traegt den Umlaut wie im Vertrag (#17). */
-function videoMitBand(art: "split" | "einblendung", höhe = 162): RenderItem {
+/**
+ * Ein Videoelement mit Band. `höhe` traegt den Umlaut wie im Vertrag (#17).
+ * `flaecheDunkel` ist seit #316 ein Pflichtfeld IM ELEMENT - der Wert ist Testdatum,
+ * kein Vertragswissen (er kommt im Betrieb aus der Projekt-Standardmarke).
+ */
+function videoMitBand(
+  art: "split" | "einblendung",
+  höhe = 162,
+  flaecheDunkel = FLAECHE_DUNKEL,
+  id = "e-band",
+): RenderItem {
   return {
-    id: "e-band",
+    id,
     art: "video",
     medienRef: "video.mp4",
     trimStart: 0,
@@ -172,6 +198,7 @@ function videoMitBand(art: "split" | "einblendung", höhe = 162): RenderItem {
         { png: new Uint8Array(), dauer: 2 },
         { png: new Uint8Array(), dauer: 1 },
       ],
+      flaecheDunkel,
     },
   } as unknown as RenderItem;
 }
@@ -242,6 +269,14 @@ describe("Grep-Proben der Definition of Done", () => {
     const zeilen = CODEZEILEN.split("\n").filter((z) => z.includes("child_process"));
     expect(zeilen).toHaveLength(1);
     expect(zeilen[0]).toContain("import type");
+  });
+
+  it("hat keinen Marken-Zugriff mehr (#316)", () => {
+    // Nach #316 ist der einzige Marken-Bezug des render-service der eingefrorene
+    // Hex-Wert im Auftrag (TK 9.2.2): kein Nachschlag, keine zweite Quelle.
+    for (const verbot of ["leseMarke", "config-store", "marken-store"]) {
+      expect(CODEZEILEN).not.toContain(verbot);
+    }
   });
 });
 
@@ -346,6 +381,26 @@ describe("Die fuenf Faelle der Weiche", () => {
       bandSpurPfad: path.join(T1, "band_0003.mp4"),
       filterkette: SPLIT_KETTE,
     });
+  });
+
+  it("Fall 4: zwei Elemente mit VERSCHIEDENER flaecheDunkel im SELBEN Lauf bekommen JEDES seinen Wert", async () => {
+    // Der schaerfste Nachweis der Umstellung von #316: Mit EINEM Kontext-Feld haetten
+    // beide denselben Wert - genau das war der Fehler (TK 9.2.2/9.3.5).
+    const erstes = await normalisiereElement(videoMitBand("split", 162, "#112233", "e-a"), 0, BAND_PNGS, kontext());
+    const zweites = await normalisiereElement(videoMitBand("split", 162, "#445566", "e-b"), 1, BAND_PNGS, kontext());
+    expect(erstes.ok && zweites.ok).toBe(true);
+
+    expect(attrappe.baueSplitFilter.mock.calls[0]?.[3]).toBe("0x112233");
+    expect(attrappe.baueSplitFilter.mock.calls[1]?.[3]).toBe("0x445566");
+  });
+
+  it("Fall 5 liest flaecheDunkel NICHT - ein unbrauchbarer Wert faellt nicht auf", async () => {
+    // Waere das Feld hier gelesen, ergaebe die Umrechnung von "kaputt" einen Fehler und
+    // der Lauf endete mit ungueltige_eingabe. TK 9.2.2: bei `einblendung` wird nichts
+    // gefuellt, das Band ueberlagert mit Alpha.
+    const ergebnis = await normalisiereElement(videoMitBand("einblendung", 162, "kaputt"), 5, BAND_PNGS, kontext());
+    expect(ergebnis.ok).toBe(true);
+    expect(attrappe.baueSplitFilter).not.toHaveBeenCalled();
   });
 
   it("Fall 5 - einblendung: Band-Kette, kein Split, keine Markenfarbe", async () => {
@@ -775,13 +830,23 @@ describe("Fehlerpfade - daten NUR bei medium_fehlt und ungueltiges_element", () 
 
 // ===========================================================================
 describe("Der Kontext wird nicht veraendert", () => {
-  it("laesst profil und flaecheDunkel unberuehrt", async () => {
+  it("laesst das Profil unberuehrt und traegt KEINE Markenfarbe (#316)", async () => {
     const k = kontext();
     const vorher = JSON.stringify(k.profil);
     await normalisiereElement(videoMitBand("split"), 0, BAND_PNGS, k);
 
     expect(JSON.stringify(k.profil)).toBe(vorher);
     expect(k.profil).toBe(RENDER_PROFILE);
-    expect(k.flaecheDunkel).toBe(FLAECHE_DUNKEL);
+    // Ein Kontext-Feld waere je Lauf EIN Wert fuer ALLE Elemente; die Farbe reist
+    // stattdessen im Auftrag (element.einblendung.flaecheDunkel).
+    expect(Object.keys(k).sort()).toEqual([
+      "abbruchSignal",
+      "arbeitsbereich",
+      "aufElementFortschritt",
+      "gibProzessFrei",
+      "merkeProzess",
+      "profil",
+      "projektId",
+    ]);
   });
 });

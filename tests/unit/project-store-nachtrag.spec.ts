@@ -264,7 +264,7 @@ describe("Kanal-Registry nach #153", () => {
       "listeAusgaben",
     ]);
     expect(Object.keys(KANAELE.queue)).toHaveLength(6);
-    expect(Object.keys(KANAELE.config)).toHaveLength(5);
+    expect(Object.keys(KANAELE.config)).toHaveLength(4); // #317: leseMarke entfallen
     expect(Object.keys(KANAELE.media)).toEqual(["öffneMedienDialog"]);
     expect(Object.keys(KANAELE.export)).toEqual(["wähleExportZiel"]);
   });

@@ -110,7 +110,8 @@ describe("verdrahteMedienIPC (#93) - Anmeldung", () => {
       "stoerung",
       "wiederhole",
     ]);
-    expect(Object.keys(KANAELE.config)).toHaveLength(5);
+    // #317: `config:leseMarke` ist entfallen - aus fuenf werden vier.
+    expect(Object.keys(KANAELE.config)).toHaveLength(4);
   });
 });
 

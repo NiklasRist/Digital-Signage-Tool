@@ -43,7 +43,6 @@ import { mkdir, rm } from 'node:fs/promises'
 import { fuehreConcatAus } from '../ffmpeg-adapter/concat'                     // #169
 import { gibProzessFrei, merkeProzess } from '../ffmpeg-adapter/abbruch'       // #159
 import { pruefeUniformitaet } from '../ffmpeg-adapter/uniformitaet'            // #170
-import { leseMarke } from '../config-store/lese-marke'                         // #29
 import { ermittleFfprobePfad } from '../ffmpeg-pfad'                           // #6
 import { ausgabeOrdner, loeseAusgabePfad } from '../project-store/pfade'       // #49
 
@@ -134,21 +133,15 @@ export async function renderReel(
         break ablauf
       }
 
-      // Schritt 5: Marke und ffprobe-Pfad. `ermittleFfprobePfad()` wird im GANZEN
-      // Lauf GENAU EINMAL gerufen - hier - und danach nur noch durchgereicht
-      // (Schritte 11 und 13). Ein zweiter Aufruf tiefer im ffmpeg-adapter waere eine
-      // zweite Stelle, die entscheidet, WELCHES ffprobe benutzt wird.
-      const marke = await leseMarke()
-      if (!marke.ok) {
-        ergebnis = scheitere(
-          renderId,
-          'unbekannter_fehler',
-          null,
-          `Die Markendaten liessen sich nicht lesen (Verdacht auf einen Verpackungsfehler): ${marke.fehler.meldung}`,
-        )
-        break ablauf
-      }
-      const flaecheDunkel = marke.wert.farben.flaecheDunkel
+      // Schritt 5: ffprobe-Pfad. `ermittleFfprobePfad()` wird im GANZEN Lauf GENAU
+      // EINMAL gerufen - hier - und danach nur noch durchgereicht (Schritte 11 und
+      // 13). Ein zweiter Aufruf tiefer im ffmpeg-adapter waere eine zweite Stelle,
+      // die entscheidet, WELCHES ffprobe benutzt wird.
+      //
+      // KEINE Marke mehr (#316): Der einzige Marken-Bezug des render-service ist der
+      // eingefrorene Hex-Wert `einblendung.flaecheDunkel` im Auftrag (TK 9.2.2) - er
+      // wird beim Einreihen aufgeloest, nicht hier. Die Schrittnummer bleibt trotzdem
+      // 5: die Ablauftabelle von #181 zitiert sie an sechs weiteren Stellen.
       const ffprobePfad = ermittleFfprobePfad()
 
       // Schritt 6: T1. AB HIER ist das Verwerfen im finally Pflicht.
@@ -209,7 +202,6 @@ export async function renderReel(
         projektId: request.projektId,
         arbeitsbereich,
         profil: request.profil,
-        flaecheDunkel,
         abbruchSignal: registrierung.signal,
         merkeProzess,
         gibProzessFrei,

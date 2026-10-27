@@ -130,6 +130,7 @@ function alsAppKonfig(wert: unknown): AppKonfig | null {
 
 // AppKonfig: { aktivesProjektId: string | null, letztesExportZiel: string | null,
 //              uiVoreinstellungen: Record<string, unknown> }   // #265 - OHNE marke;
-//              die Marke kommt ausschliesslich ueber leseMarke() (#29)
+//              die Marke gehoert dem marken-store (#283, TK 9.15.1) und wird dort mit
+//              einer markeId gelesen - der config-store fuehrt sie seit #317 nicht mehr.
 // existiert config.json nicht (erster Start) → liefert Ergebnis<AppKonfig> mit sinnvollen
 // Defaults (aktivesProjektId: null, ...), OHNE Fehler

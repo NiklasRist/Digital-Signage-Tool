@@ -306,6 +306,9 @@ async function baueBand(
       höhe: bandVorlage.höhe,
       bandVorlageId: eigenesBand.bandVorlageId,
       abschnitte,
+      // #316: die Farb-Rolle der PROJEKT-Standardmarke (TK 9.15.4), zeichengleich und
+      // unveraendert - der Render-Service rechnet sie erst in `0xRRGGBB` um (TK 9.2.8).
+      flaecheDunkel: standardMarke.farben.flaecheDunkel,
     },
   }
 }

@@ -3624,13 +3624,27 @@ const main = async () => {
         const neu4g3 = `${String(alt4g3)}-bearbeitet`;
         const gesetzt4g3 = await seite.evaluate((wert) => {
           const feld = document.querySelector('[data-testid="aktion-titel"]');
-          if (feld === null) return false;
+          if (feld === null) return { gesetzt: false, fensterFokus: document.hasFocus(), aktiv: null, feldFokus: null };
           const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
           setzeWert.call(feld, wert);
-          feld.dispatchEvent(new Event("input", { bubbles: true }));
           feld.focus();
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+          // `focusout` wie an den beiden Stellen vom 23.10. (#310): Reacts onBlur haengt an
+          // `focusout`; ein nacktes `blur()` ist wirkungslos, wenn das Feld keinen Fokus
+          // bekommt. EHRLICH: Die Gegenprobe am 27.10. hat das fuer DIESEN Schritt NICHT
+          // bestaetigt - der alte Stand (nur `blur()`) war im selben Lauf gruen. Die
+          // Ursache des FA-03-Befunds vom 26.10. ist offen; die drei Felder unten sind
+          // dafuer die Diagnose. Sie messen die Umgebung, nicht das Produkt.
+          const feldFokus = document.activeElement === feld;
+          feld.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
           feld.blur();
-          return true;
+          const aktiv = document.activeElement;
+          return {
+            gesetzt: true,
+            fensterFokus: document.hasFocus(),
+            aktiv: aktiv === null ? null : (aktiv.getAttribute("data-testid") ?? aktiv.tagName),
+            feldFokus,
+          };
         }, neu4g3);
         const frist4g3 = Date.now() + 8_000;
         let nachher4g3 = vorher4g3;
@@ -3644,8 +3658,9 @@ const main = async () => {
           await schlafe(250);
         }
         const geaendert4g3 = nachher4g3.find((a) => a.titel === neu4g3) ?? null;
-        console.log(`[schritt-4g3] Bearbeiten: gesetzt=${String(gesetzt4g3)}, "${String(alt4g3)}" -> "${neu4g3}", Aktionen ${vorher4g3.length} -> ${nachher4g3.length}, gefunden=${geaendert4g3 !== null}.`);
-        if (!gesetzt4g3 || alt4g3 === null) {
+        console.log(`[schritt-4g3] Bearbeiten: gesetzt=${String(gesetzt4g3.gesetzt)}, "${String(alt4g3)}" -> "${neu4g3}", Aktionen ${vorher4g3.length} -> ${nachher4g3.length}, gefunden=${geaendert4g3 !== null}.`);
+        console.log(`[schritt-4g3] Diagnose: Fensterfokus=${String(gesetzt4g3.fensterFokus)}, Feld hatte Fokus=${String(gesetzt4g3.feldFokus)}, aktives Element danach=${String(gesetzt4g3.aktiv)}.`);
+        if (!gesetzt4g3.gesetzt || alt4g3 === null) {
           fund("Aktion bearbeiten (FA-03)", "das Titelfeld ist im Aktionen-Reiter bedienbar",
             "aktion-titel fehlt", "Befund", "action-editor/index.tsx");
         } else if (geaendert4g3 === null) {

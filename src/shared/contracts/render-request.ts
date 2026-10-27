@@ -31,6 +31,12 @@ export interface RenderItemVideo {
     // Uint8Array (nicht ArrayBuffer/Buffer): überlebt Electrons structured clone
     // verlustfrei und ist der kleinste gemeinsame Nenner zwischen Renderer und Main.
     // Feldname MIT Umlaut ("höhe") wie im Vertrag und wie in Vorlage (#95) – nicht "hoehe".
+    /** PFLICHT (TK 9.2.2): FERTIGER Hex-Wert der Farb-Rolle `flaecheDunkel` für die Restflächen
+     *  der Split-Komposition – KEIN Rollen-Name, KEINE Marken-Kennung. Beim EINREIHEN aus
+     *  `Project.standardMarkeId` aufgelöst und eingefroren (TK 9.2.8, 9.15.4). Pflicht auch bei
+     *  `art: 'einblendung'`, wo er nicht benutzt wird: ein optionales Feld hätte „split ohne
+     *  Farbe" zugelassen, und der Render-Service dürfte keine Hexzahl tippen (TK 9.11.1 Punkt 7). */
+    flaecheDunkel: string
   } | null
 }
 

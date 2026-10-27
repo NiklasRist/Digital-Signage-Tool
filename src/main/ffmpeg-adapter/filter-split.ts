@@ -56,8 +56,9 @@
 // DIESE DATEI IST REIN: kein Dateizugriff, kein Prozessstart, kein ffprobe,
 // keine Pfadaufloesung, kein Import aus dem `config-store`, kein `leseMarke`,
 // kein Zufall, kein Datum. Und sie enthaelt KEINE Hexzahl: Die Farbe der Rolle
-// `flaecheDunkel` holt der `render-service` ueber `leseMarke()` (#29) und reicht
-// sie herein. „Der `render-service` schlaegt keine Marke nach; er nimmt den
+// `flaecheDunkel` reist als fertiger Wert IM AUFTRAG mit - beim Einreihen aus der
+// Projekt-Standardmarke aufgeloest und eingefroren (#316) - und wird hereingereicht.
+// „Der `render-service` schlaegt keine Marke nach; er nimmt den
 // eingefrorenen Wert und tippt nie eine Hexzahl selbst in eine Filterkette
 // (9.11.1, Punkt 7)." (TK 9.2.8)
 
@@ -115,8 +116,9 @@ const VIERER_RASTER = 4
  *                       immer ganzzahlig und gerade.
  * @param fuellFarbe     die Fläche für die seitlichen Restflächen, als ffmpeg-Farbausdruck der
  *                       Form `0xRRGGBB`. Der Wert stammt aus der Farb-Rolle `flaecheDunkel` der
- *                       `Marke` und wird vom `render-service` über `leseMarke()` (#29) geholt und
- *                       hierher durchgereicht. Diese Datei enthält KEINE Hexzahl.
+ *                       Projekt-Standardmarke, reist als fertiger Hexwert im RenderRequest mit
+ *                       (beim Einreihen eingefroren, #316) und wird hierher durchgereicht.
+ *                       Diese Datei enthält KEINE Hexzahl.
  * @param profil         RENDER_PROFILE (#18) – die Quelle aller übrigen Zahlen
  */
 export function baueSplitFilter(

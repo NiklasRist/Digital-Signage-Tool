@@ -1,6 +1,6 @@
-// Verhaltenstest zu #77 - die Anmeldung der fuenf config-store-Kanaele.
+// Verhaltenstest zu #77 - die Anmeldung der vier config-store-Kanaele (#317).
 //
-// Gemockt wird `electron` (wie in registriere-handler.spec.ts) und die fuenf
+// Gemockt wird `electron` (wie in registriere-handler.spec.ts) und die vier
 // Fachoperationen. Der Wrapper #23 laeuft dagegen ECHT mit: Er ist der Weg, den die
 // Nutzlast im Betrieb nimmt, und genau an ihm haengt die Zusage "bei ungueltiger
 // Eingabe laeuft die Operation gar nicht erst an".
@@ -24,12 +24,10 @@ const ops = vi.hoisted(() => ({
   leseKonfig: vi.fn(),
   setzeAktivesProjekt: vi.fn(),
   setzeExportZiel: vi.fn(),
-  leseMarke: vi.fn(),
   setzeUIVoreinstellung: vi.fn(),
 }));
 
 vi.mock("../../src/main/config-store/lese-konfig", () => ({ leseKonfig: ops.leseKonfig }));
-vi.mock("../../src/main/config-store/lese-marke", () => ({ leseMarke: ops.leseMarke }));
 vi.mock("../../src/main/config-store/setze-aktives-projekt", () => ({
   setzeAktivesProjekt: ops.setzeAktivesProjekt,
 }));
@@ -63,14 +61,13 @@ beforeEach(() => {
     ok: true,
     wert: { aktivesProjektId: null, letztesExportZiel: null, uiVoreinstellungen: {} },
   });
-  ops.leseMarke.mockResolvedValue({ ok: true, wert: { farben: {} } });
   ops.setzeAktivesProjekt.mockResolvedValue(OK);
   ops.setzeExportZiel.mockResolvedValue(OK);
   ops.setzeUIVoreinstellung.mockResolvedValue(OK);
 });
 
 describe("verdrahteConfigStoreIPC (#77)", () => {
-  it("meldet genau die fuenf Kanaele aus KANAELE.config an", () => {
+  it("meldet genau die vier Kanaele aus KANAELE.config an", () => {
     expect([...angemeldet.keys()].sort()).toEqual(Object.values(KANAELE.config).sort());
   });
 
@@ -117,22 +114,12 @@ describe("verdrahteConfigStoreIPC (#77)", () => {
     expect(ops.setzeExportZiel).toHaveBeenCalledWith("E:\\usb");
   });
 
-  it("laesst die Lese-Kanaele ohne Nutzlast arbeiten und ignoriert eine uebergebene", async () => {
+  it("laesst den Lese-Kanal ohne Nutzlast arbeiten und ignoriert eine uebergebene", async () => {
     await expect(rufe(KANAELE.config.leseKonfig)).resolves.toMatchObject({ ok: true });
-    await expect(rufe(KANAELE.config.leseMarke)).resolves.toMatchObject({ ok: true });
-    await expect(rufe(KANAELE.config.leseMarke, { unerwartet: 1 })).resolves.toMatchObject({
+    await expect(rufe(KANAELE.config.leseKonfig, { unerwartet: 1 })).resolves.toMatchObject({
       ok: true,
     });
-    expect(ops.leseMarke).toHaveBeenCalledWith();
-  });
-
-  it("reicht das Ergebnis von leseMarke unveraendert durch", async () => {
-    // toBe: keine Umformung, keine berechneten Zusatzfelder - template-canvas (M4)
-    // erwartet genau die Rollen aus #52.
-    const marke = { ok: true as const, wert: { farben: { akzent: "#FF4040" } } };
-    ops.leseMarke.mockResolvedValue(marke);
-
-    await expect(rufe(KANAELE.config.leseMarke)).resolves.toBe(marke);
+    expect(ops.leseKonfig).toHaveBeenCalledWith();
   });
 
   it("reicht Fachcode und daten eines Fehlschlags unveraendert durch", async () => {
