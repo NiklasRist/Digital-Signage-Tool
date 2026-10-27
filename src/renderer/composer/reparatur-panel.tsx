@@ -56,7 +56,11 @@ export function ReparaturPanel(p: ReparaturPanelEigenschaften): JSX.Element {
             data-testid={`reparatur-option-${option}`}
             onClick={() => p.aufFix(option)}
           >
-            {BESCHRIFTUNG[option]}
+            {/* #338: Bei einer Marken-Stelle oeffnet dieselbe Option den action-editor –
+                dort wird `aktion.markeId` gesetzt, nicht das Bild. Die Beschriftung sagt
+                deshalb, was der Nutzer dort tun soll; die Option selbst bleibt dieselbe
+                ("Marke waehlen" als eigener Waehler ist ein Folge-Issue). */}
+            {stelle.art === 'aktion_marke' ? 'Marke der Aktion wählen' : BESCHRIFTUNG[option]}
           </button>
         ))}
       </div>

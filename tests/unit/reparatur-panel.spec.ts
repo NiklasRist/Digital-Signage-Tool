@@ -34,6 +34,18 @@ afterAll(() => {
 })
 
 describe('ReparaturPanel (#421)', () => {
+  // #338: Bei einer Marken-Stelle oeffnet dieselbe Option den action-editor, wo die
+  // Marke gesetzt wird - die Beschriftung muss das sagen, nicht "Bild reparieren".
+  it('nennt bei einer Marken-Stelle die Marke, nicht das Bild (#338)', () => {
+    const stelle: KaputteStelle = { art: 'aktion_marke', aktionId: 'a1', markeId: 'weg' }
+    const behaelter = montiere(createElement(ReparaturPanel, { stand: stand(stelle), aufFix: () => {} }))
+
+    const knopf = behaelter.querySelector('[data-testid="reparatur-option-aktionsbild_reparieren"]')
+    expect(knopf?.textContent).toBe('Marke der Aktion wählen')
+    // Die fehlende Marke steht in der Stellen-Zeile, damit der Nutzer sie erkennt.
+    expect(behaelter.querySelector('[data-testid="reparatur-stelle"]')?.textContent).toContain('weg')
+  })
+
   it('zeigt Fortschritt, Stelle und die Fix-Optionen der Stelle', () => {
     const stelle: KaputteStelle = { art: 'element_asset', elementId: 'el-1', assetId: 'a', grund: 'asset_fehlt' }
     const behaelter = montiere(createElement(ReparaturPanel, { stand: stand(stelle, 3, 1), aufFix: () => {} }))
