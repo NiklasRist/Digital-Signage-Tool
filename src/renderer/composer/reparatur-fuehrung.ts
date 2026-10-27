@@ -19,6 +19,7 @@
 // verschwindet eine Stelle wieder, wenn der Nutzer die Datei zurueckkopiert hat
 // (TK 9.4.7 setzt `zustand` dann auf 'ok').
 
+import type { Marke } from '../../shared/contracts/marke'
 import type { Project } from '../../shared/contracts/project'
 import { findeKaputteStellen } from './kaputt-erkennung'
 import type { KaputteStelle } from './kaputt-erkennung'
@@ -56,8 +57,11 @@ function klemmeZeiger(index: number, laenge: number): number {
 }
 
 /** Startet den geführten Modus für den aktuellen Projektstand. */
-export function starteReparatur(projekt: Project): ReparaturStand {
-  const offen = findeKaputteStellen(projekt)
+export function starteReparatur(
+  projekt: Project,
+  marken: readonly Marke[] | null,
+): ReparaturStand {
+  const offen = findeKaputteStellen(projekt, marken)
 
   // Der EINZIGE Uebergang `aktiv: false -> true` im ganzen Modul (s.
   // `aktualisiereReparatur`). Ist nichts kaputt, gibt es nichts zu fuehren.
@@ -77,8 +81,12 @@ export function starteReparatur(projekt: Project): ReparaturStand {
 }
 
 /** Rechnet nach jeder Änderung neu – aus DEM Projektstand, nicht aus vermuteten Wirkungen. */
-export function aktualisiereReparatur(stand: ReparaturStand, projekt: Project): ReparaturStand {
-  const neuOffen = findeKaputteStellen(projekt)
+export function aktualisiereReparatur(
+  stand: ReparaturStand,
+  projekt: Project,
+  marken: readonly Marke[] | null,
+): ReparaturStand {
+  const neuOffen = findeKaputteStellen(projekt, marken)
 
   // N waechst, schrumpft aber nie. `stand.gesamt - stand.offen.length` ist das
   // bisher Behobene; kommt eine NEUE kaputte Stelle hinzu, steigt N auf die neue
@@ -144,7 +152,7 @@ export function beendeReparatur(stand: ReparaturStand): ReparaturStand {
 }
 
 /** Die einzige Freigabe-Auskunft des composer. */
-export function istRenderFreigegeben(projekt: Project): boolean {
+export function istRenderFreigegeben(projekt: Project, marken: readonly Marke[] | null): boolean {
   // Bewusst aus dem PROJEKT, nicht aus dem `ReparaturStand`: "Erst wenn KEIN
   // kaputtes Element mehr existiert, ist der Render wieder frei. So kann ein Lauf
   // nicht an einem uebersehenen kaputten Element scheitern." (TK 9.7.5)
@@ -153,5 +161,5 @@ export function istRenderFreigegeben(projekt: Project): boolean {
   // oder einen veralteten Stand aushebeln; es gaebe zwei Wahrheiten darueber, ob
   // das Projekt renderbar ist - und die eine davon gaebe den Render faelschlich
   // frei.
-  return findeKaputteStellen(projekt).length === 0
+  return findeKaputteStellen(projekt, marken).length === 0
 }

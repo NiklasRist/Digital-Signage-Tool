@@ -19,7 +19,7 @@ import type { Project, Listenelement } from '../../shared/contracts/project'
 import type { Asset } from '../../shared/contracts/asset'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { InlineMeldung } from './optimistisch'
-import type { KaputteStelle } from './kaputt-erkennung'
+import { haengtAmElement, type KaputteStelle } from './kaputt-erkennung'
 import type { ReparaturStand } from './reparatur-fuehrung'
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 import {
@@ -79,6 +79,9 @@ export function baueListenZeilen(
   const kaputteBaender = new Map<string, number[]>()
   const kaputteEinschuebe = new Map<string, number[]>()
   for (const stelle of stellen) {
+    // #338: Die Marken-Stelle haengt an einer AKTION, nicht an einer Zeile - sie
+    // markiert keine Zeile und traegt keinen Index.
+    if (!haengtAmElement(stelle)) continue
     if (stelle.art === 'element_asset' || stelle.art === 'element_aktion') {
       kaputtElemente.add(stelle.elementId)
     } else if (stelle.art === 'band_abschnitt') {
@@ -97,7 +100,8 @@ export function baueListenZeilen(
     }
   }
 
-  const aktuelleElementId = aktuelleStelle === null ? null : aktuelleStelle.elementId
+  const aktuelleElementId =
+    aktuelleStelle !== null && haengtAmElement(aktuelleStelle) ? aktuelleStelle.elementId : null
 
   return projekt.liste.map((element, abIndex) => {
     const asset =

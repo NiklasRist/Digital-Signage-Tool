@@ -66,6 +66,9 @@ export interface ComposerWurzelProps {
    *  unvollstaendig: kein Medien-Import (FA-03) und kein Anschluss an die Reparatur-Fuehrung
    *  (FA-19). Wird UNVERAENDERT aus `umgebung.composerVerdrahtung` durchgereicht. */
   verdrahtung: ComposerVerdrahtung
+  /** NEU (#338): der Marken-Bestand fuer die Kaputt-Erkennung. Wird UNVERAENDERT
+   *  durchgereicht; diese Datei ruft keine seiner drei Funktionen auf. */
+  marken: MarkenZugang
 }
 
 /** Eigenschaften der Wurzel-Komponente des `action-editor` (Reiter Aktionen). */
@@ -302,6 +305,7 @@ export function baueReiterInhalte(
             projekt: zugaenge.projektBearbeitung,
             zeichnen: zugaenge.zeichnen,
             vorlagen: zugaenge.vorlagen,
+            marken: zugaenge.marken,
             verdrahtung: umgebung.composerVerdrahtung,
           })}
         </div>

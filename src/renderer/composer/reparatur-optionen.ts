@@ -25,7 +25,7 @@ import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { entferneElementAusListe } from './element-entfernen'
 import { holeSicht, type SichtSchreiber } from './projektzustand'
-import type { KaputteStelle } from './kaputt-erkennung'
+import { haengtAmElement, type KaputteStelle } from './kaputt-erkennung'
 
 export type FixOptionId =
   | 'medium_neu_verknuepfen'   // Fall 1: fehlende Datei neu importieren
@@ -67,6 +67,14 @@ export function optionenFuer(stelle: KaputteStelle): FixOptionId[] {
     // `setzeUnterbrechungen` geschrieben, nicht ueber das Band.
     case 'unterbrechung':
       return ['aktionsbild_reparieren', 'unterbrechung_ersetzen', 'unterbrechung_entfernen']
+
+    // FUENFTE ART (#338): die Marke der Aktion zeigt ins Leere. Es gibt hier NUR den
+    // Weg in den action-editor - dort wird `aktion.markeId` gesetzt (FA-23). Bewusst
+    // KEINE neue Option "Marke waehlen": Was ein eigener Marken-Waehler anbietet, ist
+    // ein eigenes Oberflaechen-Issue (Verbot im Issue). `element_entfernen` fehlt
+    // ebenfalls - der Defekt haengt an der Aktion, nicht an einer Zeile.
+    case 'aktion_marke':
+      return ['aktionsbild_reparieren']
 
     default:
       // Der Vertrag wurde erweitert, diese Datei nicht. Eine leere Liste ist hier
@@ -205,15 +213,25 @@ export async function fuehreFixAus(
     // NICHTS am Projekt geaendert; der Rueckgabewert ist eine Anweisung an die
     // Oberflaeche. Den Rueckweg loest sie spaeter als EIGENEN Aufruf aus - diese
     // Funktion wartet auf nichts.
-    case 'medium_neu_verknuepfen':
+    case 'medium_neu_verknuepfen': {
+      // #338: Diese Option gibt es nur fuer Stellen MIT Listenelement; die
+      // Marken-Stelle haengt an einer Aktion. Erzwungen statt angenommen.
+      if (!haengtAmElement(stelle)) {
+        return fehler('ungueltige_eingabe', 'Diese Stelle haengt an keinem Listenelement.')
+      }
       // Die `elementId` reist MIT. Ohne sie wuesste nach dem Import niemand, welches
       // Listenelement auf das neue Medium zeigen soll: Ein Import legt ein NEUES
       // Asset mit NEUER UUID an, das Element zeigt weiter auf die alte, fehlende ID
       // - und `schliesseMediumFixAb` haette keinen ersten Parameter.
       return { ok: true, wert: { art: 'uebergabe', an: { ziel: 'medien-import', elementId: stelle.elementId } } }
+    }
 
-    case 'medium_ersetzen':
+    case 'medium_ersetzen': {
+      if (!haengtAmElement(stelle)) {
+        return fehler('ungueltige_eingabe', 'Diese Stelle haengt an keinem Listenelement.')
+      }
       return { ok: true, wert: { art: 'uebergabe', an: { ziel: 'asset-auswahl', elementId: stelle.elementId } } }
+    }
 
     case 'aktionsbild_reparieren': {
       // Nur die beiden Aktions-Faelle tragen eine `aktionId`; die Tabelle oben bietet
@@ -222,7 +240,8 @@ export async function fuehreFixAus(
       if (
         stelle.art !== 'element_aktion' &&
         stelle.art !== 'band_abschnitt' &&
-        stelle.art !== 'unterbrechung'
+        stelle.art !== 'unterbrechung' &&
+        stelle.art !== 'aktion_marke'
       ) {
         return fehler('ungueltige_eingabe', 'Diese Stelle haengt an keiner Aktion.')
       }
@@ -233,6 +252,9 @@ export async function fuehreFixAus(
       // `abschnittIndex: null` sagt der Auswahl-Oberflaeche, dass ein LISTENELEMENT
       // gemeint ist. Damit bedient sie beide Ersetzen-Faelle mit einer Umsetzung,
       // ohne dass hier die Ebene verlorengeht.
+      if (!haengtAmElement(stelle)) {
+        return fehler('ungueltige_eingabe', 'Diese Stelle haengt an keinem Listenelement.')
+      }
       return {
         ok: true,
         wert: { art: 'uebergabe', an: { ziel: 'aktions-auswahl', elementId: stelle.elementId, abschnittIndex: null } },
@@ -277,6 +299,9 @@ export async function fuehreFixAus(
       // sonst zwei Aufrufer, und nur #124 zieht die Sicht nach. Bliebe das entfernte
       // Element in der Sicht stehen, zaehlte "X von N" die behobene Stelle weiter mit
       // und `istRenderFreigegeben` bliebe dauerhaft false.
+      if (!haengtAmElement(stelle)) {
+        return fehler('ungueltige_eingabe', 'Diese Stelle haengt an keinem Listenelement.')
+      }
       const antwort = await entferneElementAusListe(stelle.elementId, sichtSchreiber)
       if (!antwort.ok) return antwort
       return { ok: true, wert: { art: 'erledigt' } }

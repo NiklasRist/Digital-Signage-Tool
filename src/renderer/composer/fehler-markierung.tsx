@@ -1,7 +1,8 @@
 import type { JSX } from "react";
 
+import type { Marke } from "../../shared/contracts/marke";
 import type { Project } from "../../shared/contracts/project";
-import { findeKaputteStellen, type KaputteStelle } from "./kaputt-erkennung";
+import { findeKaputteStellen, haengtAmElement, type KaputteStelle } from "./kaputt-erkennung";
 
 const FEHLERFARBE = '#e5634d'
 
@@ -10,9 +11,15 @@ const FEHLERFARBE = '#e5634d'
  * oder an einem Band-Abschnitt - markiert das zugehoerige Listenelement rot: Es ist die
  * Zeile, an der der Nutzer ansetzen muss (TK 9.7.5, Reparatur-Ebene).
  */
-export function ordneFehlerZu(projekt: Project): Map<string, KaputteStelle[]> {
+export function ordneFehlerZu(
+  projekt: Project,
+  marken: readonly Marke[] | null,
+): Map<string, KaputteStelle[]> {
   const jeElement = new Map<string, KaputteStelle[]>()
-  for (const stelle of findeKaputteStellen(projekt)) {
+  for (const stelle of findeKaputteStellen(projekt, marken)) {
+    // Die Marken-Stelle (#338) haengt an einer AKTION, nicht an einer Zeile - sie wird
+    // hier uebersprungen, statt einer beliebigen Zeile zugeordnet zu werden.
+    if (!haengtAmElement(stelle)) continue
     const bisher = jeElement.get(stelle.elementId)
     if (bisher === undefined) {
       jeElement.set(stelle.elementId, [stelle])
@@ -24,8 +31,11 @@ export function ordneFehlerZu(projekt: Project): Map<string, KaputteStelle[]> {
 }
 
 /** Die kaputten Stellen als Hinweiszeile über der Liste. */
-export function FehlerMarkierung({ projekt }: { projekt: Project }): JSX.Element | null {
-  const stellen = findeKaputteStellen(projekt)
+export function FehlerMarkierung({ projekt, marken }: {
+  projekt: Project
+  marken: readonly Marke[] | null
+}): JSX.Element | null {
+  const stellen = findeKaputteStellen(projekt, marken)
   if (stellen.length === 0) return null
 
   return (

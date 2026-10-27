@@ -170,7 +170,11 @@ export function App(): JSX.Element {
       holeProjekt: () => zugaengeRef.current?.projektRoh.hole().projekt ?? null,
       holeReiter: () => holeReiter(),
       wechsleReiter: (ziel: ReiterId) => wechsleReiter(ziel),
-      rechneStandNeu: (stand: ReparaturStand, projekt: Project) => aktualisiereReparatur(stand, projekt),
+      // #338: Den Marken-Bestand bei JEDEM Aufruf frisch aus dem ref lesen - derselbe
+      // Weg wie `holeProjekt` daneben. Ein eingefrorener Wert beim Aufbau waere die
+      // zweite Wahrheit ueber den Bestand (der Zugang steht erst nach dem Bootstrap).
+      rechneStandNeu: (stand: ReparaturStand, projekt: Project) =>
+        aktualisiereReparatur(stand, projekt, zugaengeRef.current?.marken.hole()?.marken ?? null),
       starteMedienImport,
       // #421: Der Rueckweg schreibt ueber den WRAPPED-Zugang (#244-Huelle) - so nimmt
       // die Reparatur-Reihe einen Undo-Schritt. reparaturSchreiber liest die Sicht bei

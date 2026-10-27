@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, type JSX } from 'react'
 import type { Listenelement, Project, Bearbeitungsstand } from '../../shared/contracts/project'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import type { ProjektZugang, VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
+import type { MarkenZugang, ProjektZugang, VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
 import type { ReparaturStand } from './reparatur-fuehrung'
 import type { ListenZeileModell } from './liste-ansicht'
 import type { Uebergabe } from './reparatur-optionen'
@@ -165,6 +165,9 @@ export interface ComposerWurzelProps {
   projekt: ProjektZugang
   zeichnen: ZeichenZugang
   vorlagen: VorlagenZugang
+  /** NEU (#338): der Marken-Bestand fuer die Kaputt-Erkennung. Ohne ihn kann eine Aktion
+   *  auf eine geloeschte Marke zeigen, ohne dass der Render es merkt. */
+  marken: MarkenZugang
   verdrahtung: ComposerVerdrahtung
 }
 
@@ -180,6 +183,7 @@ export function ComposerWurzel(p: ComposerWurzelProps): JSX.Element {
       verdrahtung={p.verdrahtung}
       zeichnen={p.zeichnen}
       vorlagen={p.vorlagen}
+      marken={p.marken}
     />
   )
 }
@@ -198,6 +202,7 @@ export function ComposerInterna({
   verdrahtung,
   zeichnen,
   vorlagen,
+  marken,
 }: {
   projekt: ProjektZugang
   verdrahtung: ComposerVerdrahtung
@@ -205,8 +210,21 @@ export function ComposerInterna({
   zeichnen: ZeichenZugang
   /** Vorlagen fr den Band-Namen in #249 (ENTSCHIEDEN 8). */
   vorlagen: VorlagenZugang
+  /** Marken-Bestand fuer die Kaputt-Erkennung (#338). */
+  marken: MarkenZugang
 }): JSX.Element {
   const [sicht, setzeSicht] = useState<Projektsicht>(() => projekt.hole())
+  // #338: EINE Sammelstelle fuer den Marken-Bestand (Verbot im Issue: kein zweiter
+  // Kanal, keine zweite Abfrage). `null` heisst "noch nicht geladen" - dann prueft die
+  // Kaputt-Erkennung die Marken-Referenzen NICHT. Mit `[]` waere JEDE Aktion kaputt und
+  // der Render dauerhaft gesperrt, obwohl der fehlende Bestand kein Projektdefekt ist.
+  const [markenListe, setzeMarkenListe] = useState<readonly Marke[] | null>(
+    () => marken.hole()?.marken ?? null,
+  )
+  useEffect(
+    () => marken.aufGeaendert((uebersicht) => setzeMarkenListe(uebersicht.marken)),
+    [marken],
+  )
   // #425: Die Band-Bearbeitung ist jetzt montiert. `bandElementId` haelt das Video-
   // Element, dessen Werbeband gerade bearbeitet wird (null = Ansicht zu). Fehler der
   // Band-Bearbeitung reisen ueber die stehende Wurzel-Meldung (lage.meldung).
@@ -390,11 +408,11 @@ export function ComposerInterna({
     if (standQuelle.current === inhalt) return
     standQuelle.current = inhalt
     const bisher = verdrahtung.reparatur
-    if (findeKaputteStellen(inhalt).length === 0) {
+    if (findeKaputteStellen(inhalt, markenListe).length === 0) {
       // Ist nichts mehr offen, MUSS eine laufende Anzeige enden - sonst bliebe eine
       // bereits behobene Stelle als letzte sichtbar (dieselbe Ursache wie oben).
       if (bisher !== null && bisher.aktiv) {
-        verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
+        verdrahtung.meldeReparaturStand(starteReparatur(inhalt, markenListe))
       }
       return
     }
@@ -402,10 +420,10 @@ export function ComposerInterna({
     standProjektId.current = inhalt.id
     verdrahtung.meldeReparaturStand(
       projektwechsel || bisher === null || !bisher.aktiv
-        ? starteReparatur(inhalt)
-        : aktualisiereReparatur(bisher, inhalt),
+        ? starteReparatur(inhalt, markenListe)
+        : aktualisiereReparatur(bisher, inhalt, markenListe),
     )
-  }, [inhalt, verdrahtung])
+  }, [inhalt, verdrahtung, markenListe])
 
   const repariere = (option: FixOptionId): void => {
     const stand = verdrahtung.reparatur
@@ -424,7 +442,7 @@ export function ComposerInterna({
       // erledigt: Stand aus dem FRISCHEN Projektstand neu rechnen (nie vorhersagen).
       const frisch = projekt.hole().projekt
       if (frisch !== null && stand !== null) {
-        verdrahtung.meldeReparaturStand(aktualisiereReparatur(stand, frisch))
+        verdrahtung.meldeReparaturStand(aktualisiereReparatur(stand, frisch, markenListe))
       }
     })
   }
@@ -482,7 +500,7 @@ export function ComposerInterna({
     // holeBereiteMarke. Bis #134 nachzieht, geht die Standardmarke hinein -
     // dasselbe Muster wie der Rahmen im preview-player (#312/#313).
     holeBereiteMarke(inhalt.standardMarkeId) !== null &&
-    istRenderKnopfFrei(istRenderFreigegeben(inhalt), lage.laeuft)
+    istRenderKnopfFrei(istRenderFreigegeben(inhalt, markenListe), lage.laeuft)
 
   // ENTSCHIEDEN 8 (#249): Das Asset kommt aufgelst - hier in der Wurzel, nicht in
   // der Zeile. ENTSCHIEDEN 6a: kaputteBandAbschnitte UNVERNDERT aus dem Modell.
@@ -645,11 +663,11 @@ export function ComposerInterna({
     setzeLage((alt) => setzeLaeuft(alt, true))
     const wirkungen: RenderDialogWirkungen = {
       loeseRenderAus: (projekt, ausgabeName, marke, vorlagenListe) =>
-        loeseRenderAus(projekt, ausgabeName, marke, vorlagenListe),
+        loeseRenderAus(projekt, ausgabeName, marke, vorlagenListe, markenListe),
       starteReparaturModus: () => {
         // M7-60, ENTSCHIEDEN 4 (b): derselbe Ablauf wie beim Klick -
         // Stand rechnen (#132) und der Shell melden, die ihn haelt.
-        verdrahtung.meldeReparaturStand(starteReparatur(inhalt))
+        verdrahtung.meldeReparaturStand(starteReparatur(inhalt, markenListe))
       },
       meldeFehler: meldeWurzel,
     }
@@ -861,7 +879,7 @@ export function ComposerInterna({
                   <Wiedergabeliste
                     projekt={inhalt}
                     sichtSchreiber={projekt.setzeListe}
-                    stellen={findeKaputteStellen(inhalt)}
+                    stellen={findeKaputteStellen(inhalt, markenListe)}
                     reparatur={verdrahtung.reparatur}
                     voraussetzungen={zeichnen.hole()}
                     zeichneBedienung={zeichneBedienung}
@@ -937,7 +955,7 @@ export function ComposerInterna({
           element={bandElement}
           aktionen={inhalt.aktionen}
           vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
-          stellen={findeKaputteStellen(inhalt)}
+          stellen={findeKaputteStellen(inhalt, markenListe)}
           aufUebernommen={uebernehmeBandElement}
           aufAbbrechen={() => setzeBandElementId(null)}
           aufFehler={meldeWurzel}

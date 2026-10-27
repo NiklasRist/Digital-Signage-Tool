@@ -136,7 +136,7 @@ describe('starteReparatur', () => {
   it('liefert bei heilem Projekt aktiv: false und eine leere offen-Liste', () => {
     const p = projekt({ assets: [asset('v1', 'ok')], liste: [element('e1', 'video', 'v1')] })
 
-    expect(starteReparatur(p)).toEqual({
+    expect(starteReparatur(p, null)).toEqual({
       aktiv: false,
       offen: [],
       gesamt: 0,
@@ -150,9 +150,9 @@ describe('starteReparatur', () => {
     // „Das erste kaputte Element wird hervorgehoben" (TK 9.7.5). Die Reihenfolge
     // ist die aus findeKaputteStellen - keine eigene Sortierung.
     const p = projektMitDreifachVerwendeterAktion()
-    const stellen = findeKaputteStellen(p)
+    const stellen = findeKaputteStellen(p, null)
 
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
 
     expect(stand.aktiv).toBe(true)
     expect(stand.offen).toEqual(stellen)
@@ -165,7 +165,7 @@ describe('starteReparatur', () => {
   it('zählt alle DREI Arten kaputter Stellen mit, auch den Band-Abschnitt', () => {
     // Fall 3 ist der leicht zu übersehende: Das Video ist einwandfrei, nur ein
     // Abschnitt seines Bandes zeigt auf eine Aktion mit fehlendem Bild (TK 9.7.5).
-    const stand = starteReparatur(projektMitDreifachVerwendeterAktion())
+    const stand = starteReparatur(projektMitDreifachVerwendeterAktion(), null)
 
     expect(stand.offen.map((s) => s.art)).toEqual([
       'element_aktion',
@@ -183,7 +183,7 @@ describe('ein Fix an EINER Aktion senkt „X von N" um MEHR als eins (TK 9.7.5)'
     // Band-Abschnitte. Der Fortschritt „X von N" kann dadurch um mehr als eins
     // sinken." (TK 9.7.5)
     const p = projektMitDreifachVerwendeterAktion()
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
 
     // Die drei Stellen hängen nachweislich an derselben Aktion - genau die, die
     // ein einziger Fix im action-editor mitnimmt.
@@ -192,7 +192,7 @@ describe('ein Fix an EINER Aktion senkt „X von N" um MEHR als eins (TK 9.7.5)'
 
     // EIN Fix: das Bild der Aktion ist wieder da.
     repariere(p, 'b-weg')
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     expect(nachher.behoben).toBe(3)
     expect(nachher.behoben - stand.behoben).toBe(3)
@@ -204,10 +204,10 @@ describe('ein Fix an EINER Aktion senkt „X von N" um MEHR als eins (TK 9.7.5)'
 
   it('der Zeiger steht danach auf der übrig gebliebenen, unabhängigen Stelle', () => {
     const p = projektMitDreifachVerwendeterAktion()
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
 
     repariere(p, 'b-weg')
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     expect(nachher.aktuelle).toEqual({
       art: 'element_asset',
@@ -225,11 +225,11 @@ describe('ein Fix an EINER Aktion senkt „X von N" um MEHR als eins (TK 9.7.5)'
       aktionen: [aktion('a1', 'b-weg')],
       liste: [element('e1', 'video', 'v-ok', band('a1', 'a1'))],
     })
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
     expect(stand.offen.map((s) => s.art)).toEqual(['band_abschnitt', 'band_abschnitt'])
 
     repariere(p, 'b-weg')
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     expect(nachher.offen).toEqual([])
     expect(nachher.behoben).toBe(2)
@@ -238,11 +238,11 @@ describe('ein Fix an EINER Aktion senkt „X von N" um MEHR als eins (TK 9.7.5)'
 
   it('letzte Stelle behoben: aktiv false, aktuelle null, behoben === gesamt', () => {
     const p = projektMitDreifachVerwendeterAktion()
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
 
     repariere(p, 'b-weg')
     repariere(p, 'v-weg')
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     expect(nachher.aktiv).toBe(false)
     expect(nachher.aktuelle).toBeNull()
@@ -251,7 +251,7 @@ describe('ein Fix an EINER Aktion senkt „X von N" um MEHR als eins (TK 9.7.5)'
     expect(nachher.behoben).toBe(nachher.gesamt)
     expect(nachher.behoben).toBe(4)
     // Und das ist der Moment der Freigabe.
-    expect(istRenderFreigegeben(p)).toBe(true)
+    expect(istRenderFreigegeben(p, null)).toBe(true)
   })
 })
 
@@ -265,33 +265,33 @@ describe('Fall 4 (v3.27): der kaputte EINSCHUB sperrt den Render', () => {
 
     // Ohne Fall 4 gälte das Video als heil, der Auftrag würde eingereiht und die
     // MP4 liefe mit einem Platzhalter im Einschub (TK 9.10.7).
-    expect(istRenderFreigegeben(p)).toBe(false)
-    const stand = starteReparatur(p)
+    expect(istRenderFreigegeben(p, null)).toBe(false)
+    const stand = starteReparatur(p, null)
     expect(stand.gesamt).toBe(1)
     expect(stand.aktuelle?.art).toBe('unterbrechung')
 
     // Ein Fix an der Aktion behebt den Einschub - und gibt den Render frei.
     p.aktionen[0]!.bildRef = null
-    expect(istRenderFreigegeben(p)).toBe(true)
+    expect(istRenderFreigegeben(p, null)).toBe(true)
   })
 })
 
 describe('gesamt wächst, schrumpft nie - „X von N" läuft nicht rückwärts', () => {
   it('eine neu hinzukommende kaputte Stelle hebt gesamt, ohne behoben zu senken', () => {
     const p = projektMitDreiUnabhaengigenStellen()
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
     expect(stand.gesamt).toBe(3)
     expect(stand.behoben).toBe(0)
 
     // Eine Stelle behoben: 1 von 3.
     repariere(p, 'v2')
-    const nachFix = aktualisiereReparatur(stand, p)
+    const nachFix = aktualisiereReparatur(stand, p, null)
     expect(nachFix.gesamt).toBe(3)
     expect(nachFix.behoben).toBe(1)
 
     // Jetzt fügt der Nutzer ein weiteres, ebenfalls kaputtes Element hinzu.
     p.liste.push(element('e4', 'video', 'gibt-es-nicht'))
-    const nachZugang = aktualisiereReparatur(nachFix, p)
+    const nachZugang = aktualisiereReparatur(nachFix, p, null)
 
     expect(nachZugang.offen).toHaveLength(3)
     expect(nachZugang.gesamt).toBe(4) // gestiegen
@@ -304,10 +304,10 @@ describe('gesamt wächst, schrumpft nie - „X von N" läuft nicht rückwärts',
     // Entfernen ist eine der Fix-Optionen (TK 9.7.5). Es ist ein Fix, kein
     // Schrumpfen von N.
     const p = projektMitDreiUnabhaengigenStellen()
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
 
     p.liste.splice(0, 2)
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     expect(nachher.gesamt).toBe(3)
     expect(nachher.behoben).toBe(2)
@@ -319,17 +319,17 @@ describe('gesamt wächst, schrumpft nie - „X von N" läuft nicht rückwärts',
     // die einzige Kombination, die die verbindliche Formel aus Ablauf 3 wirklich
     // ausreizt: `gesamt = max(stand.gesamt, neuOffen.length + bisher behoben)`.
     const p = projektMitDreiUnabhaengigenStellen()
-    let stand = starteReparatur(p)
+    let stand = starteReparatur(p, null)
 
     repariere(p, 'v1')
     repariere(p, 'v2')
-    stand = aktualisiereReparatur(stand, p)
+    stand = aktualisiereReparatur(stand, p, null)
     expect([stand.gesamt, stand.behoben, stand.offen.length]).toEqual([3, 2, 1])
 
     // Ein Zug: die letzte alte Stelle wird behoben, zwei neue kommen hinzu.
     repariere(p, 'v3')
     p.liste.push(element('e4', 'video', 'neu-1'), element('e5', 'segment', 'neu-2'))
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     // gesamt = max(3, 2 + 2) = 4, behoben = 4 - 2 = 2. Der im selben Zug
     // erledigte Fix schlägt sich NICHT als eigener Zähl-Schritt nieder: Die
@@ -344,31 +344,31 @@ describe('gesamt wächst, schrumpft nie - „X von N" läuft nicht rückwärts',
     expect(nachher.behoben).toBeGreaterThanOrEqual(stand.behoben)
     expect(nachher.gesamt).toBeGreaterThanOrEqual(stand.gesamt)
     // Und die Freigabe folgt dem Projekt, nicht dem Fortschritt.
-    expect(istRenderFreigegeben(p)).toBe(false)
+    expect(istRenderFreigegeben(p, null)).toBe(false)
   })
 
   it('über eine ganze Folge von Schritten sinkt behoben nie und gesamt nie', () => {
     // Die Invariante gesamt >= offen.length ist es, die behoben >= 0 garantiert.
     // Sie wird hier über eine gemischte Folge aus Fixes und Zugängen mitgeführt.
     const p = projektMitDreiUnabhaengigenStellen()
-    let stand = starteReparatur(p)
+    let stand = starteReparatur(p, null)
     const verlauf = [stand]
 
     repariere(p, 'v1')
-    stand = aktualisiereReparatur(stand, p)
+    stand = aktualisiereReparatur(stand, p, null)
     verlauf.push(stand)
 
     p.liste.push(element('e4', 'video', 'unbekannt-1'), element('e5', 'segment', 'unbekannt-2'))
-    stand = aktualisiereReparatur(stand, p)
+    stand = aktualisiereReparatur(stand, p, null)
     verlauf.push(stand)
 
     repariere(p, 'v2')
     repariere(p, 'v3')
-    stand = aktualisiereReparatur(stand, p)
+    stand = aktualisiereReparatur(stand, p, null)
     verlauf.push(stand)
 
     p.liste.length = 0
-    stand = aktualisiereReparatur(stand, p)
+    stand = aktualisiereReparatur(stand, p, null)
     verlauf.push(stand)
 
     for (const [i, s] of verlauf.entries()) {
@@ -392,7 +392,7 @@ describe('der Zeiger bleibt stehen - dadurch springt die UI automatisch weiter',
     // Der Zeiger steht auf 1, NICHT auf 0: Ein Aufbau mit Zeiger 0 könnte ein
     // Zurücksetzen auf 0 nicht von der Wahrheit unterscheiden.
     const p = projektMitDreiUnabhaengigenStellen()
-    const stand = springeZu(starteReparatur(p), 1)
+    const stand = springeZu(starteReparatur(p, null), 1)
     expect(stand.aktuelle).toEqual({
       art: 'element_asset',
       elementId: 'e2',
@@ -402,7 +402,7 @@ describe('der Zeiger bleibt stehen - dadurch springt die UI automatisch weiter',
 
     // Genau die Stelle unter dem Zeiger wird behoben.
     repariere(p, 'v2')
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     expect(nachher.zeigerIndex).toBe(1)
     expect(nachher.aktuelle).toEqual({
@@ -415,11 +415,11 @@ describe('der Zeiger bleibt stehen - dadurch springt die UI automatisch weiter',
 
   it('wird die LETZTE Stelle behoben, klemmt der Zeiger auf die verbliebene', () => {
     const p = projektMitDreiUnabhaengigenStellen()
-    const stand = springeZu(starteReparatur(p), 2)
+    const stand = springeZu(starteReparatur(p, null), 2)
 
     repariere(p, 'v2')
     repariere(p, 'v3')
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     expect(nachher.offen).toHaveLength(1)
     expect(nachher.zeigerIndex).toBe(0)
@@ -433,10 +433,10 @@ describe('der Zeiger bleibt stehen - dadurch springt die UI automatisch weiter',
 
   it('aktualisiereReparatur bei leerer Liste: zeigerIndex 0, aktuelle null', () => {
     const p = projektMitDreiUnabhaengigenStellen()
-    const stand = springeZu(starteReparatur(p), 2)
+    const stand = springeZu(starteReparatur(p, null), 2)
 
     p.liste.length = 0
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     expect(nachher.zeigerIndex).toBe(0)
     expect(nachher.aktuelle).toBeNull()
@@ -445,10 +445,10 @@ describe('der Zeiger bleibt stehen - dadurch springt die UI automatisch weiter',
   it('aktuelle ist immer offen[zeigerIndex] - kein zweiter Zeiger', () => {
     const p = projektMitDreifachVerwendeterAktion()
     const staende = [
-      starteReparatur(p),
-      springeZu(starteReparatur(p), 2),
-      beendeReparatur(springeZu(starteReparatur(p), 3)),
-      aktualisiereReparatur(springeZu(starteReparatur(p), 1), p),
+      starteReparatur(p, null),
+      springeZu(starteReparatur(p, null), 2),
+      beendeReparatur(springeZu(starteReparatur(p, null), 3)),
+      aktualisiereReparatur(springeZu(starteReparatur(p, null), 1), p, null),
     ]
 
     for (const s of staende) {
@@ -459,7 +459,7 @@ describe('der Zeiger bleibt stehen - dadurch springt die UI automatisch weiter',
 
 describe('springeZu - überspringen ist erlaubt, freigeben nicht', () => {
   it('klemmt einen zu grossen und einen negativen Index, ohne zu werfen', () => {
-    const stand = starteReparatur(projektMitDreiUnabhaengigenStellen())
+    const stand = starteReparatur(projektMitDreiUnabhaengigenStellen(), null)
 
     expect(springeZu(stand, 99).zeigerIndex).toBe(2)
     expect(springeZu(stand, -5).zeigerIndex).toBe(0)
@@ -470,7 +470,7 @@ describe('springeZu - überspringen ist erlaubt, freigeben nicht', () => {
     // offen[NaN] und offen[1.5] sind beide undefined - ungeklemmt stünde
     // `aktuelle: null` bei NICHT leerer Liste, und die Führung bliebe still
     // stehen, obwohl der Fortschritt offene Stellen zeigt.
-    const stand = starteReparatur(projektMitDreiUnabhaengigenStellen())
+    const stand = starteReparatur(projektMitDreiUnabhaengigenStellen(), null)
 
     for (const index of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 1.5]) {
       const gesprungen = springeZu(stand, index)
@@ -488,7 +488,7 @@ describe('springeZu - überspringen ist erlaubt, freigeben nicht', () => {
   })
 
   it('bei leerer Liste: zeigerIndex 0, aktuelle null', () => {
-    const stand = starteReparatur(projekt({}))
+    const stand = starteReparatur(projekt({}), null)
 
     expect(springeZu(stand, 7)).toEqual({
       aktiv: false,
@@ -502,9 +502,9 @@ describe('springeZu - überspringen ist erlaubt, freigeben nicht', () => {
 
   it('ändert an gesamt, behoben und aktiv nichts - die Sperre bleibt', () => {
     const p = projektMitDreiUnabhaengigenStellen()
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
     repariere(p, 'v1')
-    const nachFix = aktualisiereReparatur(stand, p)
+    const nachFix = aktualisiereReparatur(stand, p, null)
 
     const gesprungen = springeZu(nachFix, 1)
 
@@ -512,14 +512,14 @@ describe('springeZu - überspringen ist erlaubt, freigeben nicht', () => {
     expect(gesprungen.behoben).toBe(nachFix.behoben)
     expect(gesprungen.aktiv).toBe(nachFix.aktiv)
     expect(gesprungen.offen).toEqual(nachFix.offen)
-    expect(istRenderFreigegeben(p)).toBe(false)
+    expect(istRenderFreigegeben(p, null)).toBe(false)
   })
 })
 
 describe('beendeReparatur - der Modus endet, die Sperre nicht', () => {
   it('setzt aktiv false und lässt offen, gesamt, behoben und den Zeiger unangetastet', () => {
     const p = projektMitDreiUnabhaengigenStellen()
-    const stand = springeZu(starteReparatur(p), 1)
+    const stand = springeZu(starteReparatur(p, null), 1)
 
     const beendet = beendeReparatur(stand)
 
@@ -531,11 +531,11 @@ describe('beendeReparatur - der Modus endet, die Sperre nicht', () => {
     expect(beendet.zeigerIndex).toBe(1)
     expect(beendet.aktuelle).toBe(stand.aktuelle)
     // Der Render bleibt gesperrt - die Auskunft kommt aus dem Projekt.
-    expect(istRenderFreigegeben(p)).toBe(false)
+    expect(istRenderFreigegeben(p, null)).toBe(false)
   })
 
   it('auf einem bereits beendeten Stand ist es folgenlos', () => {
-    const stand = beendeReparatur(starteReparatur(projektMitDreiUnabhaengigenStellen()))
+    const stand = beendeReparatur(starteReparatur(projektMitDreiUnabhaengigenStellen(), null))
 
     expect(beendeReparatur(stand)).toEqual(stand)
   })
@@ -546,11 +546,11 @@ describe('aktiv wird nie eingeschaltet - nur starteReparatur schaltet ein', () =
     // Sonst risse die nächste beliebige Änderung den Nutzer in den Modus zurück,
     // den er gerade verlassen hat - bei jeder Änderung aufs Neue.
     const p = projektMitDreiUnabhaengigenStellen()
-    const beendet = beendeReparatur(starteReparatur(p))
+    const beendet = beendeReparatur(starteReparatur(p, null))
     expect(beendet.aktiv).toBe(false)
 
     p.liste.push(element('e4', 'video', 'noch-eine-kaputte'))
-    const nachher = aktualisiereReparatur(beendet, p)
+    const nachher = aktualisiereReparatur(beendet, p, null)
 
     expect(nachher.aktiv).toBe(false)
     expect(nachher.offen).toHaveLength(4)
@@ -559,32 +559,32 @@ describe('aktiv wird nie eingeschaltet - nur starteReparatur schaltet ein', () =
 
   it('auch ein heiles Projekt, das wieder kaputt wird, schaltet nicht ein', () => {
     const p = projekt({ assets: [asset('v1', 'ok')], liste: [element('e1', 'video', 'v1')] })
-    const stand = starteReparatur(p) // aktiv: false, weil nichts kaputt war
+    const stand = starteReparatur(p, null) // aktiv: false, weil nichts kaputt war
     expect(stand.aktiv).toBe(false)
 
     const gefunden = p.assets.find((a) => a.id === 'v1')
     if (gefunden === undefined) throw new Error('Testaufbau kaputt')
     gefunden.zustand = 'fehlt'
-    const nachher = aktualisiereReparatur(stand, p)
+    const nachher = aktualisiereReparatur(stand, p, null)
 
     expect(nachher.aktiv).toBe(false)
     expect(nachher.offen).toHaveLength(1)
     // Wer den Modus wieder betreten will, ruft starteReparatur.
-    expect(starteReparatur(p).aktiv).toBe(true)
+    expect(starteReparatur(p, null).aktiv).toBe(true)
   })
 
   it('während der Modus läuft, bleibt aktiv true, bis nichts mehr offen ist', () => {
     const p = projektMitDreiUnabhaengigenStellen()
-    let stand = starteReparatur(p)
+    let stand = starteReparatur(p, null)
     expect(stand.aktiv).toBe(true)
 
     repariere(p, 'v1')
-    stand = aktualisiereReparatur(stand, p)
+    stand = aktualisiereReparatur(stand, p, null)
     expect(stand.aktiv).toBe(true)
 
     repariere(p, 'v2')
     repariere(p, 'v3')
-    stand = aktualisiereReparatur(stand, p)
+    stand = aktualisiereReparatur(stand, p, null)
     expect(stand.aktiv).toBe(false)
   })
 })
@@ -594,40 +594,40 @@ describe('istRenderFreigegeben - die einzige Freigabe-Auskunft, aus dem Projekt'
     const heil = projekt({ assets: [asset('v1', 'ok')], liste: [element('e1', 'video', 'v1')] })
     const kaputt = projektMitDreifachVerwendeterAktion()
 
-    expect(findeKaputteStellen(heil)).toEqual([])
-    expect(istRenderFreigegeben(heil)).toBe(true)
+    expect(findeKaputteStellen(heil, null)).toEqual([])
+    expect(istRenderFreigegeben(heil, null)).toBe(true)
 
-    expect(findeKaputteStellen(kaputt).length).toBeGreaterThan(0)
-    expect(istRenderFreigegeben(kaputt)).toBe(false)
+    expect(findeKaputteStellen(kaputt, null).length).toBeGreaterThan(0)
+    expect(istRenderFreigegeben(kaputt, null)).toBe(false)
   })
 
   it('bleibt false nach beendeReparatur mit noch offenen Stellen', () => {
     // Der Weg, auf dem eine aus dem Stand abgeleitete Freigabe kippen würde.
     const p = projektMitDreiUnabhaengigenStellen()
-    beendeReparatur(starteReparatur(p))
+    beendeReparatur(starteReparatur(p, null))
 
-    expect(istRenderFreigegeben(p)).toBe(false)
+    expect(istRenderFreigegeben(p, null)).toBe(false)
   })
 
   it('folgt dem Projekt, nicht einem veralteten Stand - in beide Richtungen', () => {
     const p = projektMitDreiUnabhaengigenStellen()
-    const veraltet = starteReparatur(p)
+    const veraltet = starteReparatur(p, null)
 
     repariere(p, 'v1')
     repariere(p, 'v2')
     repariere(p, 'v3')
     expect(veraltet.offen).toHaveLength(3) // der Stand weiss nichts davon
-    expect(istRenderFreigegeben(p)).toBe(true)
+    expect(istRenderFreigegeben(p, null)).toBe(true)
 
     // ... und wieder zurück (TK 9.4.7 kennt beide Richtungen).
     const gefunden = p.assets.find((a) => a.id === 'v2')
     if (gefunden === undefined) throw new Error('Testaufbau kaputt')
     gefunden.zustand = 'fehlt'
-    expect(istRenderFreigegeben(p)).toBe(false)
+    expect(istRenderFreigegeben(p, null)).toBe(false)
   })
 
   it('ein leeres Projekt ist freigegeben', () => {
-    expect(istRenderFreigegeben(projekt({}))).toBe(true)
+    expect(istRenderFreigegeben(projekt({}), null)).toBe(true)
   })
 
   it('auch ein einzelner kaputter Band-Abschnitt sperrt - Fall 3 zählt mit', () => {
@@ -639,18 +639,18 @@ describe('istRenderFreigegeben - die einzige Freigabe-Auskunft, aus dem Projekt'
       liste: [element('e1', 'video', 'v-ok', band('a1'))],
     })
 
-    expect(istRenderFreigegeben(p)).toBe(false)
+    expect(istRenderFreigegeben(p, null)).toBe(false)
   })
 })
 
 describe('reine Werte - keine Funktion mutiert Eingabe oder Projekt', () => {
   it('keine der vier Funktionen verändert den übergebenen Stand', () => {
     const p = projektMitDreifachVerwendeterAktion()
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
     const vorher = structuredClone(stand)
 
     const ergebnisse = [
-      aktualisiereReparatur(stand, p),
+      aktualisiereReparatur(stand, p, null),
       springeZu(stand, 2),
       springeZu(stand, -1),
       beendeReparatur(stand),
@@ -667,9 +667,9 @@ describe('reine Werte - keine Funktion mutiert Eingabe oder Projekt', () => {
     const p = projektMitDreifachVerwendeterAktion()
     const vorher = structuredClone(p)
 
-    const stand = starteReparatur(p)
-    aktualisiereReparatur(stand, p)
-    istRenderFreigegeben(p)
+    const stand = starteReparatur(p, null)
+    aktualisiereReparatur(stand, p, null)
+    istRenderFreigegeben(p, null)
 
     expect(p).toEqual(vorher)
   })
@@ -679,7 +679,7 @@ describe('reine Werte - keine Funktion mutiert Eingabe oder Projekt', () => {
     // app-shell gehalten; `offen` ist ein schreibbares Array. Teilten sich zwei
     // Stände eines, änderte ein Sortieren rückwirkend den alten mit.
     const p = projektMitDreiUnabhaengigenStellen()
-    const stand = starteReparatur(p)
+    const stand = starteReparatur(p, null)
     const kopie = beendeReparatur(stand)
 
     kopie.offen.reverse()
@@ -694,8 +694,8 @@ describe('reine Werte - keine Funktion mutiert Eingabe oder Projekt', () => {
   it('zwei Läufe mit gleicher Eingabe liefern gleiche Stände', () => {
     const p = projektMitDreifachVerwendeterAktion()
 
-    expect(starteReparatur(p)).toEqual(starteReparatur(p))
-    expect(starteReparatur(p)).not.toBe(starteReparatur(p))
+    expect(starteReparatur(p, null)).toEqual(starteReparatur(p, null))
+    expect(starteReparatur(p, null)).not.toBe(starteReparatur(p, null))
   })
 })
 
@@ -728,6 +728,9 @@ describe('Modulgrenze - reine Zustandsführung, kein Zustand im Modul', () => {
 
   it('importiert nur den Projekt-Vertrag und die Erkennung aus #131', () => {
     expect(CODEZEILEN.filter((z) => z.startsWith('import'))).toEqual([
+      // #338: der Marken-Vertrag reist als LISTE durch (Typ) - die Fuehrung selbst
+      // bleibt reine Zustandsrechnung, kein IPC, kein Zugang.
+      "import type { Marke } from '../../shared/contracts/marke'",
       "import type { Project } from '../../shared/contracts/project'",
       "import { findeKaputteStellen } from './kaputt-erkennung'",
       "import type { KaputteStelle } from './kaputt-erkennung'",

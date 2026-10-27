@@ -46,7 +46,7 @@ export function ReparaturPanel(p: ReparaturPanelEigenschaften): JSX.Element {
         {`${p.stand.behoben} von ${p.stand.gesamt} behoben`}
       </div>
       <div data-testid="reparatur-stelle">
-        {`Defekte Stelle: ${stelle.art} · ${stelle.grund}`}
+        {`Defekte Stelle: ${stelle.art} · ${'grund' in stelle ? stelle.grund : stelle.markeId}`}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
         {optionenFuer(stelle).map((option) => (
