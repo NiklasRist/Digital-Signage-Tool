@@ -57,10 +57,11 @@ export async function loeseRenderAus(
   ausgabeName: string,
   marke: Marke,
   vorlagen: readonly Vorlage[],
+  marken: readonly Marke[] | null,
 ): Promise<Ergebnis<{ auftragId: string }, AusloeseFehlercode>> {
   // SCHRITT 1 - Sperre. Kein PNG, kein Einreihen: EIN Platzhalter im Endvideo wäre
   //ipiential, und die Führung (9.7.5) muss absehen.
-  const stellen = findeKaputteStellen(projekt)
+  const stellen = findeKaputteStellen(projekt, marken)
   if (stellen.length > 0) {
     return {
       ok: false,

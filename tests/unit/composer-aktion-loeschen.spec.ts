@@ -82,6 +82,9 @@ function baueEigenschaften(projekt: Project) {
     },
     zeichnen: { bereiteVor: vi.fn(), hole: vi.fn(() => null), verwirfMotivBestand: vi.fn() },
     vorlagen: { lade: vi.fn(), hole: vi.fn(() => null), aufGeaendert: vi.fn(() => () => {}) },
+    // #338: `hole() === null` heisst "Bestand nicht geladen" - die Kaputt-Erkennung
+    // prueft dann KEINE Marken-Referenzen (das Verhalten dieser Tests bleibt damit gleich).
+    marken: { lade: vi.fn(), hole: vi.fn(() => null), aufGeaendert: vi.fn(() => () => {}) },
     verdrahtung: {
       starteMedienImport: vi.fn(),
       legeAktionAn: vi.fn(),

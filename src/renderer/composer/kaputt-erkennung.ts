@@ -15,6 +15,7 @@
 
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
+import type { Marke } from '../../shared/contracts/marke'
 import type { Project } from '../../shared/contracts/project'
 
 export type KaputtGrund =
@@ -34,6 +35,19 @@ export type KaputteStelle =
   // ein ANDERES Array als das Band (#131: verschiedene Ebenen, verschiedene Indizes).
   | { art: 'unterbrechung'; elementId: string; unterbrechungIndex: number; aktionId: string;
       assetId: string | null; grund: KaputtGrund }
+  // FUENFTE ART (#338): die Marken-Referenz EINER Aktion zeigt ins Leere. Bewusst OHNE
+  // `elementId` - der Defekt haengt an der Aktion, nicht an einer Verwendung. Deshalb
+  // entsteht JE AKTION genau EINE Stelle, auch wenn sie in drei Segmenten steckt (#338
+  // verlangt genau das; die Entdopplungs-Regel der Element-Faelle gilt hier nicht).
+  | { art: 'aktion_marke'; aktionId: string; markeId: string }
+
+/** Eine Stelle, die an EINEM Listenelement haengt - die Marken-Stelle tut das nicht. */
+export type StelleMitElement = Extract<KaputteStelle, { elementId: string }>
+
+/** Engt eine Stelle auf die Element-Faelle ein (Typwache, kein Umbau des Werts). */
+export function haengtAmElement(stelle: KaputteStelle): stelle is StelleMitElement {
+  return 'elementId' in stelle
+}
 
 /**
  * Das Urteil ueber EINE Referenz: `null` heisst heil, sonst der Grund samt der
@@ -83,8 +97,23 @@ function pruefeAktionsBild(
   return { grund, assetId: aktion.bildRef }
 }
 
+/**
+ * Die Marken-Referenz EINER Aktion (#338): existiert `aktion.markeId` im Marken-Bestand?
+ *
+ * `marken === null` heisst AUSDRUECKLICH "Bestand (noch) nicht geladen" - dann wird NICHT
+ * geprueft. Mit `[]` an dieser Stelle waere JEDE Aktion kaputt und der Render dauerhaft
+ * gesperrt; ein fehlender Bestand ist aber kein Defekt des Projekts.
+ */
+function pruefeAktionsMarke(aktion: Aktion, marken: readonly Marke[] | null): string | null {
+  if (marken === null) return null
+  return marken.some((marke) => marke.id === aktion.markeId) ? null : aktion.markeId
+}
+
 /** Alle kaputten Stellen des Projekts, in stabiler Reihenfolge. Rein, ohne Seiteneffekt. */
-export function findeKaputteStellen(projekt: Project): KaputteStelle[] {
+export function findeKaputteStellen(
+  projekt: Project,
+  marken: readonly Marke[] | null,
+): KaputteStelle[] {
   // Nachschlagetabellen statt linearer Suche je Referenz: Diese Funktion laeuft
   // nach JEDER Mutation erneut, und ein Projekt kann Hunderte Elemente und
   // Abschnitte haben - lineare Suche machte daraus quadratischen Aufwand.
@@ -191,6 +220,19 @@ export function findeKaputteStellen(projekt: Project): KaputteStelle[] {
     }
   }
 
+  // FUENFTE ART (#338): die Marken-Referenz, JE AKTION GENAU EINMAL - nicht je Verwendung.
+  // Die Schleife steht NACH der Element-Schleife, damit die bestehenden Arten und ihre
+  // Reihenfolge unveraendert bleiben (#338 Punkt 2: "die neue kommt hinzu, sie ersetzt
+  // nichts"). Gezaehlt werden ALLE Aktionen des Projekts, auch die in keinem Element
+  // haengende: Eine ins Leere zeigende Marke ist ein Defekt der Aktion (TK 9.15.1), und
+  // wer nur die Verwendungen prueft, uebersieht die Aktion, die gerade niemand zeigt.
+  for (const aktion of projekt.aktionen) {
+    const fehlendeMarkeId = pruefeAktionsMarke(aktion, marken)
+    if (fehlendeMarkeId !== null) {
+      stellen.push({ art: 'aktion_marke', aktionId: aktion.id, markeId: fehlendeMarkeId })
+    }
+  }
+
   // KEINE Entduplizierung: Verwenden drei Listenelemente dieselbe kaputte
   // Aktion, sind das DREI Stellen - jede ist eine eigene Position, die der
   // Nutzer sieht. Eine entduplizierte Liste koennte den Fortschritt nie um mehr
@@ -213,13 +255,18 @@ export function stellenZuAktion(
   // `element_asset` bleibt aussen vor: Diese Stellen haengen an keiner Aktion und
   // werden auf Listenelement-Ebene repariert (TK 9.7.5, Zeile 1 der Tabelle).
   //
+  // Die Marken-Stelle (#338) GEHOERT dazu: Sie haengt an genau dieser Aktion, und ein
+  // Fix an der Aktion behebt sie mit - sie ist der Grund, warum die Aktion ueberhaupt
+  // als kaputt gilt.
+  //
   // Die Eingabeliste wird nur gelesen; das Ergebnis ist ein neues Array mit
   // denselben Eintraegen in unveraenderter Reihenfolge.
   return stellen.filter(
     (stelle) =>
       (stelle.art === 'element_aktion' ||
         stelle.art === 'band_abschnitt' ||
-        stelle.art === 'unterbrechung') &&
+        stelle.art === 'unterbrechung' ||
+        stelle.art === 'aktion_marke') &&
       stelle.aktionId === aktionId,
   )
 }

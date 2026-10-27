@@ -14,15 +14,22 @@ const projektzugang = { hole: () => ({ projekt: null, ladefehler: null }) } as u
 const zeichenzugang = {} as ComposerWurzelProps['zeichnen']
 const vorlagenzugang = {} as ComposerWurzelProps['vorlagen']
 
-it('der composer traegt KEIN marken-Feld (Expect-Error wird akzeptiert)', () => {
+// #338 (27.10.2026) HEBT DIE FRUEHERE PROBE AUF: Bis hierher galt "der composer traegt
+// KEIN marken-Feld" (#313, ENTSCHIEDEN 2 - das Feld gehoert an den action-editor, damit
+// der composer die Marke nicht zum ZEICHNEN nimmt). #338 braucht den Bestand an einer
+// zweiten Stelle: Die Kaputt-Erkennung muss wissen, ob `aktion.markeId` noch existiert.
+// Das Feld reist als LISTE herein und wird ausschliesslich dafuer gelesen - gezeichnet
+// wird weiter ueber holeBereiteMarke. Ein versehentliches Zuruecknehmen faellt jetzt hier auf.
+it('der composer traegt seit #338 den Marken-Zugang fuer die Kaputt-Erkennung', () => {
   const basis: Omit<ComposerWurzelProps, 'verdrahtung'> = {
     sichtbar: true,
     projekt: projektzugang,
     zeichnen: zeichenzugang,
     vorlagen: vorlagenzugang,
+    marken: zugang,
   }
   expect(basis.sichtbar).toBe(true)
-  type Fehlerprobe = ComposerWurzelProps extends { marken: unknown } ? never : true
+  type Fehlerprobe = ComposerWurzelProps extends { marken: unknown } ? true : never
   const probe: Fehlerprobe = true
   expect(probe).toBe(true)
   expect(zugang.hole()).toBeNull()

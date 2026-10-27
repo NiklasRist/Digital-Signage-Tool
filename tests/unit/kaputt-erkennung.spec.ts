@@ -18,11 +18,13 @@ import { describe, expect, it } from 'vitest'
 
 import {
   findeKaputteStellen,
+  haengtAmElement,
   stellenZuAktion,
 } from '../../src/renderer/composer/kaputt-erkennung'
 
 import type { Aktion } from '../../src/shared/contracts/aktion'
 import type { Asset } from '../../src/shared/contracts/asset'
+import type { Marke } from '../../src/shared/contracts/marke'
 import type { Einblendung, Listenelement, Project } from '../../src/shared/contracts/project'
 
 // ---------------------------------------------------------------------------
@@ -43,7 +45,7 @@ function asset(id: string, zustand: Asset['zustand'], typ: Asset['typ'] = 'video
   }
 }
 
-function aktion(id: string, bildRef: string | null): Aktion {
+function aktion(id: string, bildRef: string | null, markeId = 'marke-test'): Aktion {
   return {
     id,
     titel: `Aktion ${id}`,
@@ -53,9 +55,20 @@ function aktion(id: string, bildRef: string | null): Aktion {
     cta: null,
     standardDauer: null,
     vorlagenId: 'vollbild',
-    markeId: "marke-test",
+    markeId,
     akzentfarbe: null,
   }
+}
+
+/**
+ * Ein Marken-Bestand fuer die Referenzpruefung (#338).
+ *
+ * SAFETY: Die Kaputt-Erkennung liest ausschliesslich `id` - der Cast benennt nur die
+ * Form, die sie braucht. Ein vollstaendiges `Marke`-Objekt (dreizehn Farbrollen, Logo,
+ * Herkunft je Feld) waere hier Beiwerk, das keine Aussage traegt.
+ */
+function marken(...ids: string[]): Marke[] {
+  return ids.map((id) => ({ id }) as unknown as Marke)
 }
 
 function band(...aktionRefs: string[]): Einblendung {
@@ -109,7 +122,7 @@ describe('Fall 3 - Band-Abschnitt eines einwandfreien Videos (TK 9.7.5)', () => 
       liste: [element('e1', 'video', 'v1', band('a1'))],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       {
         art: 'band_abschnitt',
         elementId: 'e1',
@@ -129,7 +142,7 @@ describe('Fall 3 - Band-Abschnitt eines einwandfreien Videos (TK 9.7.5)', () => 
       liste: [element('e1', 'video', 'v1', band('a1'))],
     })
 
-    expect(findeKaputteStellen(p).map((s) => s.art)).toEqual(['band_abschnitt'])
+    expect(findeKaputteStellen(p, null).map((s) => s.art)).toEqual(['band_abschnitt'])
   })
 
   it('trifft den richtigen Abschnitt, wenn nur der mittlere von dreien kaputt ist', () => {
@@ -142,7 +155,7 @@ describe('Fall 3 - Band-Abschnitt eines einwandfreien Videos (TK 9.7.5)', () => 
       liste: [element('e1', 'video', 'v1', band('a-heil', 'a-kaputt', 'a-heil'))],
     })
 
-    const stellen = findeKaputteStellen(p)
+    const stellen = findeKaputteStellen(p, null)
     expect(stellen).toHaveLength(1)
     expect(stellen[0]).toEqual({
       art: 'band_abschnitt',
@@ -161,7 +174,7 @@ describe('Fall 3 - Band-Abschnitt eines einwandfreien Videos (TK 9.7.5)', () => 
       liste: [element('e1', 'video', 'v1', band('a1', 'a1', 'a1'))],
     })
 
-    expect(findeKaputteStellen(p).map((s) => (s.art === 'band_abschnitt' ? s.abschnittIndex : -1)))
+    expect(findeKaputteStellen(p, null).map((s) => (s.art === 'band_abschnitt' ? s.abschnittIndex : -1)))
       .toEqual([0, 1, 2])
   })
 })
@@ -182,7 +195,7 @@ describe('alle drei Arten in EINEM Projekt (Prüfumfang TK 9.7.5)', () => {
   })
 
   it('findet alle drei, jede mit ihrer eigenen Art', () => {
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       { art: 'element_asset', elementId: 'e1', assetId: 'v-weg', grund: 'asset_fehlt' },
       {
         art: 'element_aktion',
@@ -211,7 +224,7 @@ describe('Fall 4 - Unterbrechung eines einwandfreien Videos (TK 9.7.5 v3.27)', (
       liste: [element('e1', 'video', 'v1', null, einschub('a1'))],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       {
         art: 'unterbrechung',
         elementId: 'e1',
@@ -230,7 +243,7 @@ describe('Fall 4 - Unterbrechung eines einwandfreien Videos (TK 9.7.5 v3.27)', (
       liste: [element('e1', 'video', 'v1', null, einschub('a1'))],
     })
 
-    expect(findeKaputteStellen(p).map((s) => s.art)).toEqual(['unterbrechung'])
+    expect(findeKaputteStellen(p, null).map((s) => s.art)).toEqual(['unterbrechung'])
   })
 
   it('trifft den richtigen Einschub, wenn nur der mittlere von dreien kaputt ist', () => {
@@ -240,7 +253,7 @@ describe('Fall 4 - Unterbrechung eines einwandfreien Videos (TK 9.7.5 v3.27)', (
       liste: [element('e1', 'video', 'v1', null, einschub('a-heil', 'a-kaputt', 'a-heil'))],
     })
 
-    const stellen = findeKaputteStellen(p)
+    const stellen = findeKaputteStellen(p, null)
     expect(stellen).toHaveLength(1)
     expect(stellen[0]).toEqual({
       art: 'unterbrechung',
@@ -260,7 +273,7 @@ describe('Fall 4 - Unterbrechung eines einwandfreien Videos (TK 9.7.5 v3.27)', (
     })
 
     expect(
-      findeKaputteStellen(p).map((s) => (s.art === 'unterbrechung' ? s.unterbrechungIndex : -1)),
+      findeKaputteStellen(p, null).map((s) => (s.art === 'unterbrechung' ? s.unterbrechungIndex : -1)),
     ).toEqual([0, 1, 2])
   })
 
@@ -271,7 +284,7 @@ describe('Fall 4 - Unterbrechung eines einwandfreien Videos (TK 9.7.5 v3.27)', (
       liste: [element('e1', 'video', 'v1', null, einschub('a-ohne-bild'))],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([])
+    expect(findeKaputteStellen(p, null)).toEqual([])
   })
 
   it('unbekannte Aktions-ID im Einschub -> aktion_unbekannt, assetId null', () => {
@@ -281,7 +294,7 @@ describe('Fall 4 - Unterbrechung eines einwandfreien Videos (TK 9.7.5 v3.27)', (
       liste: [element('e1', 'video', 'v1', null, einschub('a-weg'))],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       {
         art: 'unterbrechung',
         elementId: 'e1',
@@ -300,7 +313,7 @@ describe('Fall 4 - Unterbrechung eines einwandfreien Videos (TK 9.7.5 v3.27)', (
       liste: [element('e1', 'video', 'v1')],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([])
+    expect(findeKaputteStellen(p, null)).toEqual([])
   })
 
   it('stellenZuAktion behebt den Einschub mit (ein Fix an der Aktion heilt alle Verwendungen)', () => {
@@ -314,7 +327,7 @@ describe('Fall 4 - Unterbrechung eines einwandfreien Videos (TK 9.7.5 v3.27)', (
       ],
     })
 
-    const stellen = findeKaputteStellen(p)
+    const stellen = findeKaputteStellen(p, null)
     expect(stellen.map((s) => s.art)).toEqual(['element_aktion', 'band_abschnitt', 'unterbrechung'])
     expect(stellenZuAktion(stellen, 'a-kaputt').map((s) => s.art)).toEqual([
       'element_aktion',
@@ -334,7 +347,7 @@ describe('ein Element kann MEHRERE Stellen liefern', () => {
       liste: [element('e1', 'video', 'v-weg', null, einschub('a1'))],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       { art: 'element_asset', elementId: 'e1', assetId: 'v-weg', grund: 'asset_fehlt' },
       {
         art: 'unterbrechung',
@@ -354,7 +367,7 @@ describe('ein Element kann MEHRERE Stellen liefern', () => {
       liste: [element('e1', 'video', 'v1', band('a1'), einschub('a1'))],
     })
 
-    expect(findeKaputteStellen(p).map((s) => s.art)).toEqual([
+    expect(findeKaputteStellen(p, null).map((s) => s.art)).toEqual([
       'band_abschnitt',
       'unterbrechung',
     ])
@@ -371,7 +384,7 @@ describe('ein Element kann MEHRERE Stellen liefern', () => {
       liste: [element('e1', 'video', 'v-weg', band('a1'))],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       { art: 'element_asset', elementId: 'e1', assetId: 'v-weg', grund: 'asset_fehlt' },
       {
         art: 'band_abschnitt',
@@ -393,7 +406,7 @@ describe('ein Element kann MEHRERE Stellen liefern', () => {
       liste: [element('e1', 'video', 'v-weg', band('a1'))],
     })
 
-    expect(findeKaputteStellen(p).map((s) => s.art)).toEqual(['band_abschnitt'])
+    expect(findeKaputteStellen(p, null).map((s) => s.art)).toEqual(['band_abschnitt'])
   })
 })
 
@@ -413,8 +426,9 @@ describe('Reihenfolge - Listenreihenfolge, Element vor seinen Band-Abschnitten',
     })
 
     expect(
-      findeKaputteStellen(p).map((s) =>
-        s.art === 'band_abschnitt' ? `${s.elementId}#${String(s.abschnittIndex)}` : `${s.elementId}/${s.art}`,
+      findeKaputteStellen(p, null).map((s) =>
+        !haengtAmElement(s) ? s.art
+          : s.art === 'band_abschnitt' ? `${s.elementId}#${String(s.abschnittIndex)}` : `${s.elementId}/${s.art}`,
       ),
     ).toEqual(['e1#0', 'e1#1', 'e2/element_aktion', 'e3/element_asset', 'e3#0'])
   })
@@ -434,7 +448,7 @@ describe('nicht kaputt - was NICHT gezählt werden darf', () => {
       ],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([])
+    expect(findeKaputteStellen(p, null)).toEqual([])
   })
 
   it('Asset mit zustand ok erzeugt keine Stelle', () => {
@@ -444,7 +458,7 @@ describe('nicht kaputt - was NICHT gezählt werden darf', () => {
       liste: [element('e1', 'video', 'v1', band('a1')), element('e2', 'segment', 'a1')],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([])
+    expect(findeKaputteStellen(p, null)).toEqual([])
   })
 
   it('einblendung an einem segment-Element wird ignoriert, nicht gemeldet', () => {
@@ -457,7 +471,7 @@ describe('nicht kaputt - was NICHT gezählt werden darf', () => {
       liste: [element('e1', 'segment', 'a-heil', band('a-kaputt'))],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([])
+    expect(findeKaputteStellen(p, null)).toEqual([])
   })
 
   it('Video ohne einblendung liefert keine Band-Stellen', () => {
@@ -467,7 +481,7 @@ describe('nicht kaputt - was NICHT gezählt werden darf', () => {
       liste: [element('e1', 'video', 'v1', null)],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([])
+    expect(findeKaputteStellen(p, null)).toEqual([])
   })
 
   it('leeres abschnitte-Array liefert keine Band-Stellen', () => {
@@ -477,11 +491,11 @@ describe('nicht kaputt - was NICHT gezählt werden darf', () => {
       liste: [element('e1', 'video', 'v1', band())],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([])
+    expect(findeKaputteStellen(p, null)).toEqual([])
   })
 
   it('leere Liste liefert eine leere Ergebnisliste - die Freigabe für den Render', () => {
-    expect(findeKaputteStellen(projekt({}))).toEqual([])
+    expect(findeKaputteStellen(projekt({}), null)).toEqual([])
   })
 })
 
@@ -492,7 +506,7 @@ describe('die drei Gründe (Fehlerpfad-Tabelle des Issues)', () => {
       liste: [element('e1', 'video', 'gibt-es-nicht'), element('e2', 'video', 'auch-nicht')],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       { art: 'element_asset', elementId: 'e1', assetId: 'gibt-es-nicht', grund: 'asset_unbekannt' },
       { art: 'element_asset', elementId: 'e2', assetId: 'auch-nicht', grund: 'asset_unbekannt' },
     ])
@@ -501,7 +515,7 @@ describe('die drei Gründe (Fehlerpfad-Tabelle des Issues)', () => {
   it('segment mit unbekannter Aktions-ID -> aktion_unbekannt, assetId null', () => {
     const p = projekt({ aktionen: [], liste: [element('e1', 'segment', 'a-weg')] })
 
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       {
         art: 'element_aktion',
         elementId: 'e1',
@@ -519,7 +533,7 @@ describe('die drei Gründe (Fehlerpfad-Tabelle des Issues)', () => {
       liste: [element('e1', 'video', 'v1', band('a-weg'))],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       {
         art: 'band_abschnitt',
         elementId: 'e1',
@@ -538,7 +552,7 @@ describe('die drei Gründe (Fehlerpfad-Tabelle des Issues)', () => {
       liste: [element('e1', 'segment', 'a1'), element('e2', 'video', 'v1', band('a1'))],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       {
         art: 'element_aktion',
         elementId: 'e1',
@@ -566,7 +580,7 @@ describe('die drei Gründe (Fehlerpfad-Tabelle des Issues)', () => {
       ],
     })
 
-    expect(findeKaputteStellen(p).map((s) => s.grund)).toEqual([
+    expect(findeKaputteStellen(p, null).map((s) => ('grund' in s ? s.grund : s.markeId))).toEqual([
       'asset_unbekannt',
       'asset_unbekannt',
       'aktion_unbekannt',
@@ -584,20 +598,20 @@ describe('kein Gedächtnis - die Rückrichtung aus TK 9.4.7', () => {
       liste: [element('e1', 'video', 'v1')],
     })
 
-    expect(findeKaputteStellen(p)).toEqual([])
+    expect(findeKaputteStellen(p, null)).toEqual([])
 
     // Dasselbe Objekt, nur der Zustand kippt - wie nach einem Reconcile.
     const gefunden = p.assets[0]
     expect(gefunden).toBeDefined()
     if (gefunden === undefined) throw new Error('Testaufbau kaputt')
     gefunden.zustand = 'fehlt'
-    expect(findeKaputteStellen(p)).toEqual([
+    expect(findeKaputteStellen(p, null)).toEqual([
       { art: 'element_asset', elementId: 'e1', assetId: 'v1', grund: 'asset_fehlt' },
     ])
 
     // ... und zurück. Ein Zwischenspeicher fiele spätestens hier auf.
     gefunden.zustand = 'ok'
-    expect(findeKaputteStellen(p)).toEqual([])
+    expect(findeKaputteStellen(p, null)).toEqual([])
   })
 
   it('gleiche Eingabe, gleiche Ausgabe - zwei Läufe hintereinander sind deckungsgleich', () => {
@@ -607,9 +621,9 @@ describe('kein Gedächtnis - die Rückrichtung aus TK 9.4.7', () => {
       liste: [element('e1', 'video', 'v1', band('a1')), element('e2', 'segment', 'a1')],
     })
 
-    expect(findeKaputteStellen(p)).toEqual(findeKaputteStellen(p))
+    expect(findeKaputteStellen(p, null)).toEqual(findeKaputteStellen(p, null))
     // ... und es ist jedes Mal ein NEUES Array, kein wiederverwendetes.
-    expect(findeKaputteStellen(p)).not.toBe(findeKaputteStellen(p))
+    expect(findeKaputteStellen(p, null)).not.toBe(findeKaputteStellen(p, null))
   })
 })
 
@@ -626,7 +640,7 @@ describe('ohne Seiteneffekt - das Projekt bleibt unangetastet', () => {
     })
     const vorher = structuredClone(p)
 
-    const stellen = findeKaputteStellen(p)
+    const stellen = findeKaputteStellen(p, null)
     expect(stellen.length).toBeGreaterThan(0) // sonst prüfte der Vergleich nichts
 
     expect(p).toEqual(vorher)
@@ -638,7 +652,7 @@ describe('ohne Seiteneffekt - das Projekt bleibt unangetastet', () => {
       liste: [element('e1', 'video', 'v-weg')],
     })
 
-    const stelle = findeKaputteStellen(p)[0]
+    const stelle = findeKaputteStellen(p, null)[0]
     expect(stelle).toEqual({
       art: 'element_asset',
       elementId: 'e1',
@@ -663,9 +677,9 @@ describe('stellenZuAktion - ein Fix an der Aktion behebt alle Verwendungen', () 
       ],
     })
 
-    const stellen = findeKaputteStellen(p)
+    const stellen = findeKaputteStellen(p, null)
     expect(stellen).toHaveLength(3)
-    expect(stellen.map((s) => s.elementId)).toEqual(['e1', 'e2', 'e3'])
+    expect(stellen.flatMap((s) => (haengtAmElement(s) ? [s.elementId] : []))).toEqual(['e1', 'e2', 'e3'])
     expect(stellenZuAktion(stellen, 'a1')).toEqual(stellen)
   })
 
@@ -681,7 +695,7 @@ describe('stellenZuAktion - ein Fix an der Aktion behebt alle Verwendungen', () 
       ],
     })
 
-    const stellen = findeKaputteStellen(p)
+    const stellen = findeKaputteStellen(p, null)
     expect(stellen).toHaveLength(3)
 
     const betroffen = stellenZuAktion(stellen, 'a1')
@@ -702,7 +716,7 @@ describe('stellenZuAktion - ein Fix an der Aktion behebt alle Verwendungen', () 
       liste: [element('e1', 'video', 'v-weg', band('a1')), element('e2', 'segment', 'a1')],
     })
 
-    const stellen = findeKaputteStellen(p)
+    const stellen = findeKaputteStellen(p, null)
     expect(stellen).toHaveLength(3)
     expect(stellenZuAktion(stellen, 'a1').map((s) => s.art)).toEqual([
       'band_abschnitt',
@@ -717,9 +731,9 @@ describe('stellenZuAktion - ein Fix an der Aktion behebt alle Verwendungen', () 
       liste: [element('e1', 'segment', 'a1'), element('e2', 'video', 'v1', band('a2'))],
     })
 
-    const stellen = findeKaputteStellen(p)
-    expect(stellenZuAktion(stellen, 'a1').map((s) => s.elementId)).toEqual(['e1'])
-    expect(stellenZuAktion(stellen, 'a2').map((s) => s.elementId)).toEqual(['e2'])
+    const stellen = findeKaputteStellen(p, null)
+    expect(stellenZuAktion(stellen, 'a1').flatMap((s) => (haengtAmElement(s) ? [s.elementId] : []))).toEqual(['e1'])
+    expect(stellenZuAktion(stellen, 'a2').flatMap((s) => (haengtAmElement(s) ? [s.elementId] : []))).toEqual(['e2'])
     expect(stellenZuAktion(stellen, 'a3')).toEqual([])
   })
 
@@ -730,7 +744,7 @@ describe('stellenZuAktion - ein Fix an der Aktion behebt alle Verwendungen', () 
       liste: [element('e1', 'video', 'v1', band('a1', 'a1', 'a1'))],
     })
 
-    const stellen = findeKaputteStellen(p)
+    const stellen = findeKaputteStellen(p, null)
     const vorher = structuredClone(stellen)
 
     const betroffen = stellenZuAktion(stellen, 'a1')
@@ -743,6 +757,88 @@ describe('stellenZuAktion - ein Fix an der Aktion behebt alle Verwendungen', () 
 
   it('leere Eingabe liefert eine leere Ausgabe', () => {
     expect(stellenZuAktion([], 'a1')).toEqual([])
+  })
+})
+
+describe('#338 - die Marken-Referenz einer Aktion', () => {
+  it('existiert die Marke, entsteht KEIN Befund', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok')],
+      aktionen: [aktion('a1', null), aktion('a2', null)],
+      liste: [element('e1', 'segment', 'a1'), element('e2', 'segment', 'a2')],
+    })
+    expect(findeKaputteStellen(p, marken('marke-test'))).toEqual([])
+  })
+
+  it('eine ins Leere zeigende markeId trifft GENAU diese Aktion - die anderen bleiben heil', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok')],
+      aktionen: [aktion('a1', null, 'geloeschte-marke'), aktion('a2', null)],
+      liste: [element('e1', 'segment', 'a1'), element('e2', 'segment', 'a2')],
+    })
+    const stellen = findeKaputteStellen(p, marken('marke-test'))
+    expect(stellen).toEqual([{ art: 'aktion_marke', aktionId: 'a1', markeId: 'geloeschte-marke' }])
+    // Die Stelle haengt an der AKTION, nicht an der Zeile - deshalb KEIN `elementId`.
+    expect(haengtAmElement(stellen[0] as (typeof stellen)[number])).toBe(false)
+  })
+
+  it('JE AKTION genau EINE Stelle - auch wenn sie in drei Elementen steckt', () => {
+    // Die Entdopplungs-Regel der Element-Faelle gilt hier ausdruecklich NICHT (#338).
+    const p = projekt({
+      assets: [asset('v1', 'ok')],
+      aktionen: [aktion('a1', null, 'weg')],
+      liste: [
+        element('e1', 'segment', 'a1'),
+        element('e2', 'segment', 'a1'),
+        element('e3', 'video', 'v1', band('a1')),
+      ],
+    })
+    const markenStellen = findeKaputteStellen(p, marken('marke-test')).filter(
+      (stelle) => stelle.art === 'aktion_marke',
+    )
+    expect(markenStellen).toEqual([{ art: 'aktion_marke', aktionId: 'a1', markeId: 'weg' }])
+  })
+
+  it('eine leere/fehlende markeId wird gleich behandelt', () => {
+    // `Aktion.markeId` ist laut Vertrag Pflicht und nie leer - kommt der Wert trotzdem
+    // an (von Hand bearbeitete Datei, alter Schnappschuss), ist er eine kaputte Stelle.
+    const p = projekt({
+      assets: [asset('v1', 'ok')],
+      aktionen: [aktion('a1', null, '')],
+      liste: [element('e1', 'segment', 'a1')],
+    })
+    expect(findeKaputteStellen(p, marken('marke-test'))).toEqual([
+      { art: 'aktion_marke', aktionId: 'a1', markeId: '' },
+    ])
+    const ohneFeld = projekt({
+      assets: [asset('v1', 'ok')],
+      aktionen: [{ ...aktion('a1', null), markeId: undefined as unknown as string }],
+      liste: [element('e1', 'segment', 'a1')],
+    })
+    expect(findeKaputteStellen(ohneFeld, marken('marke-test'))).toEqual([
+      { art: 'aktion_marke', aktionId: 'a1', markeId: undefined },
+    ])
+  })
+
+  it('OHNE geladenen Bestand (null) prueft sie die Marken NICHT - ein fehlender Bestand ist kein Defekt', () => {
+    const p = projekt({
+      assets: [asset('v1', 'ok')],
+      aktionen: [aktion('a1', null, 'irgendwas')],
+      liste: [element('e1', 'segment', 'a1')],
+    })
+    expect(findeKaputteStellen(p, null)).toEqual([])
+  })
+
+  it('die Reihenfolge der bestehenden Arten bleibt - die Marken-Stellen kommen HINTEN', () => {
+    const p = projekt({
+      assets: [asset('v1', 'fehlt')],
+      aktionen: [aktion('a1', null, 'weg')],
+      liste: [element('e1', 'video', 'v1')],
+    })
+    expect(findeKaputteStellen(p, marken()).map((stelle) => stelle.art)).toEqual([
+      'element_asset',
+      'aktion_marke',
+    ])
   })
 })
 
@@ -775,6 +871,9 @@ describe('Modulgrenze - Renderer-Datei ohne Node und ohne IPC', () => {
     expect(importe).toEqual([
       "import type { Aktion } from '../../shared/contracts/aktion'",
       "import type { Asset } from '../../shared/contracts/asset'",
+      // #338: der Marken-Vertrag - die Marken-Referenz wird gegen den Bestand geprueft.
+      // Weiterhin NUR Typen: kein IPC, kein Dateisystem, kein Zustand.
+      "import type { Marke } from '../../shared/contracts/marke'",
       "import type { Project } from '../../shared/contracts/project'",
     ])
   })

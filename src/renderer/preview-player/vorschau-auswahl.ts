@@ -32,7 +32,7 @@
 import type { Project } from '../../shared/contracts/project'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Vorlage } from '../../shared/contracts/vorlage'
-import type { KaputtGrund, KaputteStelle } from '../composer/kaputt-erkennung'
+import { haengtAmElement, type KaputtGrund, type KaputteStelle } from '../composer/kaputt-erkennung'
 import type { Achsenabschnitt } from './zeitachse'
 import { sekundenZuFrame } from './zeitachse'
 import { findeSegmentquelle } from './segment-quelle'
@@ -117,11 +117,12 @@ export function waehleVorschaubild(
   // (ENTSCHIEDEN 3, die Tabelle aus #221).
   const kaputt = kaputteStellen.find(
     (stelle) =>
+      haengtAmElement(stelle) &&
       stelle.elementId === element.id &&
       (stelle.art === 'element_asset' ||
         (stelle.art === 'element_aktion' && stelle.grund === 'aktion_unbekannt')),
   )
-  if (kaputt !== undefined) {
+  if (kaputt !== undefined && kaputt.art !== 'aktion_marke') {
     // Schritt 4: der Titel; ist nichts auffindbar, bleibt der Titel WEG (kein
     // Ersatzname). Bei element_asset der Asset-Originalname, bei einer
     // unbekannten Aktion ihr Titel.

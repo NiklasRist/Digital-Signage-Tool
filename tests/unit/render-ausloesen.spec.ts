@@ -55,9 +55,10 @@ import { loeseExportAus, loeseRenderAus } from '../../src/renderer/composer/rend
 import type { AusloeseFehlercode } from '../../src/renderer/composer/render-ausloesen'
 import type { Behaupte, Gleich } from '../typ-gleich'
 
-// #316: Dieses Issue erweitert KEINE Signatur - `loeseRenderAus` behaelt vier
-// Parameter, `AusloeseFehlercode` behaelt genau die drei Werte aus #310.
-type SignaturProbe = Behaupte<Gleich<Parameters<typeof loeseRenderAus>['length'], 4>>;
+// #316 hielt die Signatur bei vier Parametern. #338 (27.10.2026) erweitert sie um den
+// Marken-Bestand - die Kaputt-Erkennung muss die Marken-Referenzen mitpruefen. Der
+// Vertrag ist damit FUENF Parameter; die Probe haelt die Zahl fest, nicht die Namen.
+type SignaturProbe = Behaupte<Gleich<Parameters<typeof loeseRenderAus>['length'], 5>>;
 type CodeProbe = Behaupte<
   Gleich<AusloeseFehlercode, 'kaputte_elemente' | 'png_export_fehler' | 'marke_nicht_ladbar'>
 >;
@@ -169,7 +170,7 @@ beforeEach(() => {
 describe('loeseRenderAus (#134) - Sperre und NamensvP', () => {
   it("kaputte Stellen -> kaputte_code mit daten.stellen; nichts eingereiht", async () => {
     vi.mocked(findeKaputteStellen).mockReturnValue([{ art: 'asset_fehlt', kreis: null } as never])
-    const antwort = await loeseRenderAus(projekt([]), 'sommer', marke(), VORLAGEN_OK)
+    const antwort = await loeseRenderAus(projekt([]), 'sommer', marke(), VORLAGEN_OK, null)
     expect(antwort.ok).toBe(false)
     if (!antwort.ok) {
       expect(antwort.fehler.code).toBe('kaputte_elemente')
@@ -180,7 +181,7 @@ describe('loeseRenderAus (#134) - Sperre und NamensvP', () => {
 
   it("NamensvP verhindert -> ungueltige_eingabe, kein Einreihen", async () => {
     vi.mocked(pruefeAusgabeName).mockReturnValue('punkt_punkt' as never)
-    const antwort = await loeseRenderAus(projekt([]), '../../config', marke(), VORLAGEN_OK)
+    const antwort = await loeseRenderAus(projekt([]), '../../config', marke(), VORLAGEN_OK, null)
     expect(antwort.ok).toBe(false)
     if (!antwort.ok) expect(antwort.fehler.code).toBe('ungueltige_eingabe')
     expect(doppel.aufrufe).toHaveLength(0)
@@ -190,7 +191,7 @@ describe('loeseRenderAus (#134) - Sperre und NamensvP', () => {
 describe('loeseRenderAus (#134) - die Items', () => {
   it("segment -> RenderItemSegment mit PNG, dauer aus dem Element; die VORLAGE über aktion.vorlagenId", async () => {
     const p = projekt([segment('e1', 'a-1', 10)], [AKTION_OK], [])
-    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK)
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
     expect(antwort.ok).toBe(true)
     const ruf = doppel.aufrufe[0]
     expect(ruf?.kanal).toBe(KANAELE.queue.reiheEin)
@@ -204,7 +205,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
   it("video ohne einblendung -> RenderItemVideo mit einblendung null; trimStart aus null -> 0; trimEnde aus null / asset.dauer", async () => {
     const asset = { id: 'v1', typ: 'video', dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 10, höhe: 10 }, dauer: 12.5, importdatum: 'x', zustand: 'ok' } as never as Project['assets'][number]
     const p = projekt([video('e1', 'v1', null)], [], [asset])
-    await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK)
+    await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
     const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: Array<{ art: string; medienRef: string; trimStart: number; trimEnde: number; einblendung: unknown }> } }
     const item = nutzlast.payload.elemente[0]
     expect(item).toBeDefined()
@@ -225,7 +226,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
       [AKTION_OK],
       [bild],
     )
-    const antwortProbe = await loeseRenderAus(p, 'sommer', marke(), [...VORLAGEN_OK, band])
+    const antwortProbe = await loeseRenderAus(p, 'sommer', marke(), [...VORLAGEN_OK, band], null)
     if (!antwortProbe.ok) {
       throw new Error(`Probe fehlgeschlagen: ${antwortProbe.fehler.code} – ${antwortProbe.fehler.meldung}`)
     }
@@ -242,7 +243,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
       [AKTION_OK],
       [bild],
     )
-    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK)
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
     expect(antwort.ok).toBe(false)
     if (!antwort.ok) {
       expect(antwort.fehler.code).toBe('ungueltige_eingabe')
@@ -254,7 +255,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
   it('alsPng ok:false -> png_export_fehler, ohne einzureihen (kein halbestücktes Array)', async () => {
     vi.mocked(alsPng).mockResolvedValueOnce({ ok: false, fehler: { code: 'png_export_fehler', meldung: 'leer', daten: undefined } } as never)
     const p = projekt([segment('e1', 'a-1', 10)], [AKTION_OK], [])
-    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK)
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
     expect(antwort.ok).toBe(false)
     if (!antwort.ok) expect(antwort.fehler.code).toBe('png_export_fehler')
     expect(doppel.aufrufe).toHaveLength(0)
@@ -268,7 +269,7 @@ describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
 
   it('Band: stelleMarkeBereit genau einmal mit standardMarkeId; 4. Argument ist die Standardmarke, nicht die Inhaltsmarke', async () => {
     const inhalt = marke()
-    const antwort = await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', inhalt, [...VORLAGEN_OK, bandVorlage])
+    const antwort = await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', inhalt, [...VORLAGEN_OK, bandVorlage], null)
     expect(antwort.ok).toBe(true)
     expect(markenDoppel.aufrufe).toEqual(['m1'])
     const calls = vi.mocked(zeichneSegment).mock.calls
@@ -278,12 +279,12 @@ describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
   })
 
   it('ohne Band: stelleMarkeBereit null Mal', async () => {
-    await loeseRenderAus(projekt([segment('e1', 'a-1', 10)], [AKTION_OK], []), 'sommer', marke(), VORLAGEN_OK)
+    await loeseRenderAus(projekt([segment('e1', 'a-1', 10)], [AKTION_OK], []), 'sommer', marke(), VORLAGEN_OK, null)
     expect(markenDoppel.aufrufe).toEqual([])
   })
 
   it('drei Baender: EIN Aufruf, alle Abschnitte bekommen dieselbe Standardmarke', async () => {
-    const antwort = await loeseRenderAus(projekt([band('e1'), band('e2'), band('e3')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage])
+    const antwort = await loeseRenderAus(projekt([band('e1'), band('e2'), band('e3')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage], null)
     expect(antwort.ok).toBe(true)
     expect(markenDoppel.aufrufe).toEqual(['m1'])
     const calls = vi.mocked(zeichneSegment).mock.calls
@@ -293,7 +294,7 @@ describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
 
   it('stelleMarkeBereit scheitert -> marke_nicht_ladbar, kein PNG, kein Einreihen', async () => {
     markenDoppel.antwort = { ok: false, fehler: { code: 'marke_nicht_gefunden', meldung: 'fehlt' } }
-    const antwort = await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage])
+    const antwort = await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage], null)
     expect(antwort.ok).toBe(false)
     if (!antwort.ok) expect(antwort.fehler.code).toBe('marke_nicht_ladbar')
     expect(vi.mocked(alsPng)).not.toHaveBeenCalled()
@@ -321,7 +322,7 @@ describe('loeseRenderAus (#316) - die Farbe reist eingefroren im Auftrag', () =>
       'sommer',
       markeMit('#0A0B0C'),
       [...VORLAGEN_OK, bandVorlage],
-    )
+    null)
     expect(antwort.ok).toBe(true)
     // Zwei unterscheidbare Werte: Der Rahmen gewinnt (TK 9.15.4). Der Parameter
     // `marke` traegt den INHALT und wechselt mit jeder rotierenden Aktion -
@@ -337,14 +338,14 @@ describe('loeseRenderAus (#316) - die Farbe reist eingefroren im Auftrag', () =>
       'sommer',
       markeMit('#445566'),
       [...VORLAGEN_OK, bandVorlage],
-    )
+    null)
     expect(markenDoppel.aufrufe).toEqual(['m1'])
     expect(bandFarben().map((e) => e.flaecheDunkel)).toEqual(['#112233', '#112233', '#112233'])
   })
 
   it('reicht den Wert ZEICHENGLEICH durch - kein Grossschreiben, kein Kuerzen, kein 0x', async () => {
     markenDoppel.antwort = { ok: true, wert: markeMit('#2f2e2eAA') }
-    await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage])
+    await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage], null)
     // Die Umrechnung nach `0xRRGGBB` macht `markenFarbeZuFfmpeg` - die EINZIGE
     // Umrechnung im Projekt. Hier wird nur durchgereicht (TK 9.2.8).
     expect(bandFarben()[0]?.flaecheDunkel).toBe('#2f2e2eAA')
@@ -368,13 +369,13 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
   }
 
   it('ohne Unterbrechungen bleibt EIN Video-Item', async () => {
-    await loeseRenderAus(projekt([unterbrochen([])], [AKTION_OK], [videoAsset]), 'sommer', marke(), VORLAGEN_OK)
+    await loeseRenderAus(projekt([unterbrochen([])], [AKTION_OK], [videoAsset]), 'sommer', marke(), VORLAGEN_OK, null)
     expect(items().map((i) => i.art)).toEqual(['video'])
   })
 
   it('zerlegt in Video-Teil · Aktion · Video-Teil an der Zeitstelle', async () => {
     const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 5 }])], [AKTION_OK], [videoAsset])
-    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK)
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
     expect(antwort.ok).toBe(true)
     const elemente = items()
     expect(elemente.map((i) => i.art)).toEqual(['video', 'segment', 'video'])
@@ -386,7 +387,7 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
   it('jeder Video-Teil traegt das Band in der zum Zeitpunkt gedrehten Phase', async () => {
     const einblendung = { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 4 }] }
     const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 5 }], einblendung)], [AKTION_OK], [videoAsset])
-    const antwort = await loeseRenderAus(p, 'sommer', marke(), [...VORLAGEN_OK, bandVorlage])
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), [...VORLAGEN_OK, bandVorlage], null)
     expect(antwort.ok).toBe(true)
     const elemente = items()
     // Teil 1 beginnt bei Phase 0 -> [4]; Teil 2 beginnt 3 s spaeter -> [1,3].
@@ -401,7 +402,7 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
     markenDoppel.antwort = { ok: true, wert: markeMit('#0f1e2d') }
     const einblendung = { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 4 }] }
     const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 5 }], einblendung)], [AKTION_OK], [videoAsset])
-    const antwort = await loeseRenderAus(p, 'sommer', markeMit('#778899'), [...VORLAGEN_OK, bandVorlage])
+    const antwort = await loeseRenderAus(p, 'sommer', markeMit('#778899'), [...VORLAGEN_OK, bandVorlage], null)
     expect(antwort.ok).toBe(true)
 
     const elemente = items()

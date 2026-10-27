@@ -85,7 +85,11 @@ export function Vorschau(props: VorschauProps): JSX.Element {
 
   const kaputteStellen = useMemo(() => {
     if (props.projekt === null) return []
-    return findeKaputteStellen(props.projekt)
+    // #338: Der Vorschau fehlt der Marken-Bestand - sie prueft die Marken-Referenzen
+    // deshalb NICHT (null = unbekannt). Fuer das Zeichnen ist das folgenlos: Eine
+    // fehlende Marke aendert die Pixel nicht, sondern nur die Zeichenbarkeit des
+    // Segments, und die entscheidet der composer.
+    return findeKaputteStellen(props.projekt, null)
   }, [props.projekt])
 
   const achse = achseErgebnis !== null && achseErgebnis.ok ? achseErgebnis.wert : null
