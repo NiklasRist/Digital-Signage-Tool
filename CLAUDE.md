@@ -11,7 +11,51 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (23.10.2026, FA-13 entschieden: Einblendung anlegbar, Bandhöhe fest 162) – gilt vor ALLEM weiter unten
+## STAND HEUTE (27.10.2026, M8-Kette geschlossen: #316/#317/#339 gebaut, gemergt, belegt) – gilt vor ALLEM weiter unten
+
+- **Die M8-Kette aus der 23.10.-Übergabe ist DURCH.** Alle drei gebaut, auf `main` gemergt und
+  mit Beleg-Kommentar als `completed` geschlossen:
+  - **#316** (`8cbb5f9`, Test `86b4745`, Kommentar-Nachzug `c6becb1`): `einblendung.flaecheDunkel`
+    ist **Pflichtfeld** im `RenderRequest`; `baueBand` füllt es zeichengleich aus
+    `standardMarke.farben.flaecheDunkel` (Bindung aus #310, nicht der Parameter `marke`).
+    `NormalisierKontext.flaecheDunkel` und `leseMarke()` im `render-service` entfallen – der
+    `render-service` hat **keinen** Marken-Zugriff mehr. Merge `500c591`.
+  - **#317** (`4671f8d`): `config-store/lese-marke.ts` samt Spec **gelöscht** (ENTSCHIEDEN 2:
+    löschen statt leeren), `KANAELE.config` auf **vier** Einträge, Verdrahtung entlastet;
+    `verdrahteConfigStoreIPC` behält Name und Signatur, `main/index.ts` unberührt. Merge `500c591`.
+  - **#339** (`4cd6336`): **sechster** Prüfpunkt in `pruefeRenderRequest` – `flaecheDunkel` als
+    `#RRGGBB`/`#RRGGBBAA`, **nur Form** (Muster ohne `g`-Flag, kein `lastIndex`-Zustand),
+    Ablehnung über `ungueltiges_element` mit `daten.elementId`, gleicher Weg wie die fünf
+    bestehenden Punkte. Merge `861632e`. **Kein Dokument-Nachtrag** – begründet: die DoD
+    verbietet Änderungen außerhalb der #173-Datei (+ Test), und die TK führt für
+    `ungueltiges_element` eine Beispielliste, keine abschließende Prüfpunkt-Zählung.
+- **Gate: `npm run pruefung` Exit 0** – **5.636 Unit-Tests (333 Dateien)**, **49
+  Integrationstests (12 Dateien)**, Treiber **0 Befunde**. Je Issue eine Gegenprobe belegt und
+  byte-identisch zurückgenommen (#316 3 bzw. 4 Tests rot, #317 7 bzw. 4, #339 1); Prüfsummen
+  und Zahlen stehen in den Issue-Kommentaren. Dokumente unverändert (AD v1.9 / TK v3.28).
+- **Messweg 4g3 nachgezogen – die Gegenprobe hat NICHT gebissen** (`9bb8093`). Der Schritt
+  „Aktion bearbeiten" (FA-03) scheiterte am **26.10.** in drei von vier Läufen („Titel im
+  project.json: ["Durchlauf-Aktion"]"); Verdacht war derselbe `blur()`-statt-`focusout`-Fehler
+  wie am 23.10. (#310). Ein voller Lauf gegen den **alten** Stand war am 27.10. aber ebenfalls
+  grün (`gefunden=true`, 0 Befunde, Prüfsumme `54eb697a…`). Die Änderung ist damit **nicht als
+  Ursache belegt**; sie bleibt als Angleichung an die zwei Stellen vom 23.10. drin. Neu loggt
+  der Schritt `Fensterfokus`, `Feld hatte Fokus` und das aktive Element danach (Gate-Lauf:
+  `true / true / BODY`). **FA-03 bleibt unerklärt intermittierend – offener Punkt.**
+- **`python3 tools/bereitschaft.py` (27.10.2026):** M0–M6 komplett, **M7 68/71** (bereit:
+  #215, #240, #255 – vor dem Anfassen gegen den gebauten Code prüfen), **M8 59/60**, dort wird
+  **#317 als „bereit" geführt**. Das ist eine **Werkzeuggrenze**, kein Baufehler: #317 bestand
+  im **Löschen** der Datei, das Werkzeug misst „Datei existiert ohne Gerüst-Rumpf" und kann
+  einen Lösch-Bauzustand grundsätzlich nicht sehen.
+- **25 offene Issues** (Stand 27.10.2026): echte Lücken **#338** (Marken-Referenzprüfung) und
+  **#364** (media://-Tainting); M8-Nachlauf **#303** (Live-Vorschau); **#394**
+  (Statistik-Dashboard gebaut, aber nirgends gerendert – „fertige Funktion ohne Aufrufer");
+  Banner-Familie **#365–#376** (12); UI-2.0-Kandidaten **#383/#388/#391/#392/#393**; beim
+  Auftraggeber **#442/#443**; aus der alten Ära **#100/#155** (FA-13).
+- **Nächster Schritt:** **#338** mit den bestehenden Optionen („Marke wählen" als Folge-Issue),
+  danach **FA-13** (#100/#155). **Push nur auf Anweisung** – `main` liegt vor `origin/main`,
+  **nichts gepusht** (Abstand bewusst nicht als feste Zahl geführt).
+
+## STAND HEUTE (23.10.2026, FA-13 entschieden: Einblendung anlegbar, Bandhöhe fest 162) – historisiert durch den Abschnitt darueber
 
 - **FA-13 ist entschieden (Auftraggeber, 23.10.2026):** Eigene Vorlagen der Art **Einblendung** sind
   über die Oberfläche **anlegbar**, mit **fester Bandhöhe 162 px**. Der Hintergrund ist ein
