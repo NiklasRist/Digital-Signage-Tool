@@ -11,7 +11,7 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (27.10.2026, M8-Kette geschlossen: #316/#317/#339 gebaut, gemergt, belegt) – gilt vor ALLEM weiter unten
+## STAND HEUTE (27.10.2026, #316/#317/#338/#339 gebaut, gemergt, belegt – Gate Exit 0) – gilt vor ALLEM weiter unten
 
 - **Die M8-Kette aus der 23.10.-Übergabe ist DURCH.** Alle drei gebaut, auf `main` gemergt und
   mit Beleg-Kommentar als `completed` geschlossen:
@@ -29,9 +29,23 @@
     bestehenden Punkte. Merge `861632e`. **Kein Dokument-Nachtrag** – begründet: die DoD
     verbietet Änderungen außerhalb der #173-Datei (+ Test), und die TK führt für
     `ungueltiges_element` eine Beispielliste, keine abschließende Prüfpunkt-Zählung.
-- **Gate: `npm run pruefung` Exit 0** – **5.636 Unit-Tests (333 Dateien)**, **49
+- **#338 ist ebenfalls gebaut und gemergt** (`a2cbf3d`, Beschriftung `4bd3289`, Merge
+  `8154082`): `findeKaputteStellen` prüft die **fünfte** Art `aktion_marke` – eine
+  `aktion.markeId` ohne Marke im Bestand ist **je Aktion genau eine** Stelle, **ohne**
+  `elementId` (der Defekt hängt an der Aktion, nicht an der Zeile), hinten in der Liste.
+  `null` als Bestand heißt „nicht geladen" und schaltet die Prüfung ab (`[]` hätte jede
+  Aktion kaputt gemacht). **Der Shell-Vertrag `rechneStandNeu(stand, projekt)` blieb
+  unverändert** – `App.tsx` liest den Bestand frisch aus dem ref.
+  **Zwei gemeldete Widersprüche:** (a) Die DoD-Zeile „keine Datei außerhalb der
+  #131-Datei" war nicht haltbar – ohne Prop und 9 Aufrufstellen hätte die Prüfung nie
+  gelaufen; 13 Produktions- und 8 Testdateien geändert. (b) `naht-typen-313.spec.ts`
+  prüfte bis dahin das **Gegenteil** („der composer trägt KEIN `marken`-Feld", #313
+  ENTSCHIEDEN 2); die Probe ist mit Begründung umgedreht. Reparatur: nur
+  `aktionsbild_reparieren` (öffnet den action-editor), Beschriftung dort „Marke der
+  Aktion wählen"; ein eigener Marken-Wähler bleibt Folge-Issue.
+- **Gate: `npm run pruefung` Exit 0** – **5.643 Unit-Tests (333 Dateien)**, **49
   Integrationstests (12 Dateien)**, Treiber **0 Befunde**. Je Issue eine Gegenprobe belegt und
-  byte-identisch zurückgenommen (#316 3 bzw. 4 Tests rot, #317 7 bzw. 4, #339 1); Prüfsummen
+  byte-identisch zurückgenommen (#316 3 bzw. 4 Tests rot, #317 7 bzw. 4, #339 1, #338 4); Prüfsummen
   und Zahlen stehen in den Issue-Kommentaren. Dokumente unverändert (AD v1.9 / TK v3.28).
 - **Messweg 4g3 nachgezogen – die Gegenprobe hat NICHT gebissen** (`9bb8093`). Der Schritt
   „Aktion bearbeiten" (FA-03) scheiterte am **26.10.** in drei von vier Läufen („Titel im
@@ -46,13 +60,14 @@
   **#317 als „bereit" geführt**. Das ist eine **Werkzeuggrenze**, kein Baufehler: #317 bestand
   im **Löschen** der Datei, das Werkzeug misst „Datei existiert ohne Gerüst-Rumpf" und kann
   einen Lösch-Bauzustand grundsätzlich nicht sehen.
-- **25 offene Issues** (Stand 27.10.2026): echte Lücken **#338** (Marken-Referenzprüfung) und
-  **#364** (media://-Tainting); M8-Nachlauf **#303** (Live-Vorschau); **#394**
+- **24 offene Issues** (Stand 27.10.2026): echte Lücke **#364** (media://-Tainting);
+  M8-Nachlauf **#303** (Live-Vorschau); **#394**
   (Statistik-Dashboard gebaut, aber nirgends gerendert – „fertige Funktion ohne Aufrufer");
   Banner-Familie **#365–#376** (12); UI-2.0-Kandidaten **#383/#388/#391/#392/#393**; beim
   Auftraggeber **#442/#443**; aus der alten Ära **#100/#155** (FA-13).
-- **Nächster Schritt:** **#338** mit den bestehenden Optionen („Marke wählen" als Folge-Issue),
-  danach **FA-13** (#100/#155). **Push nur auf Anweisung** – `main` liegt vor `origin/main`,
+- **Nächster Schritt:** **FA-13** (#100/#155 – `ANLEGBARE_ARTEN` um `einblendung` mit fester
+  Bandhöhe 162 erweitern, AD v1.9/TK v3.28), dann **#364** oder **#303**. Ein Folge-Issue
+  „eigener Marken-Wähler für eine kaputte Marken-Stelle" ist **nicht** angelegt. **Push nur auf Anweisung** – `main` liegt vor `origin/main`,
   **nichts gepusht** (Abstand bewusst nicht als feste Zahl geführt).
 
 ## STAND HEUTE (23.10.2026, FA-13 entschieden: Einblendung anlegbar, Bandhöhe fest 162) – historisiert durch den Abschnitt darueber
