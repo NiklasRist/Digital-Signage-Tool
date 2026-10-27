@@ -652,6 +652,45 @@ describe('Die Einblendung - Band-Geometrie, Abschnitte, PNG-Masse', () => {
     }
   })
 
+  it('#339: flaecheDunkel ist ein Hex-Wert der Form #RRGGBB oder #RRGGBBAA', () => {
+    for (const gueltig of ['#2F2E2E', '#2F2E2EFF', '#abcdef', '#ABCDEF80']) {
+      expect(
+        pruefeRenderRequest(anfrage({ elemente: [mitBand({ flaecheDunkel: gueltig })] })).ok,
+      ).toBe(true)
+    }
+    for (const ungueltig of ['', 'RRGGBB', '#RGB', '#RRGGBBB', '#GGGGGG', '#2F2E2E0', '#2F2E2E000']) {
+      const meldung = elementFehler(
+        pruefeRenderRequest(
+          anfrage({ elemente: [{ ...mitBand({ flaecheDunkel: ungueltig }), id: 'v-x' }] }),
+        ),
+        'v-x',
+      )
+      // Die Meldung benennt das Feld - sonst muesste der Nutzer raten, was gemeint ist.
+      expect(meldung).toContain('flaecheDunkel')
+    }
+    // Kein String, kein Wert: derselbe ELEMENT-Fehler, kein Wurf (TK 9.1.1).
+    for (const kaputt of [42, null, undefined, {}]) {
+      elementFehler(
+        pruefeRenderRequest(
+          anfrage({
+            elemente: [{ ...mitBand({ flaecheDunkel: kaputt as unknown as string }), id: 'v-x' }],
+          }),
+        ),
+        'v-x',
+      )
+    }
+  })
+
+  it('#339: ohne Einblendung laeuft die Formpruefung NICHT', () => {
+    // Ein `flaecheDunkel` AM ELEMENT (nicht in der Einblendung) ist kein Band und geht die
+    // Pruefung nichts an: Sie liest ausschliesslich `einblendung.flaecheDunkel`.
+    const ohneBand = {
+      ...video({ id: 'v-x', einblendung: null }),
+      flaecheDunkel: 'Quatsch',
+    } as unknown as RenderItemVideo
+    expect(pruefeRenderRequest(anfrage({ elemente: [ohneBand] })).ok).toBe(true)
+  })
+
   it('einblendung: genau null heisst „kein Band" - alles andere wird geprueft', () => {
     expect(pruefeRenderRequest(anfrage({ elemente: [video({ einblendung: null })] })).ok).toBe(true)
     elementFehler(
