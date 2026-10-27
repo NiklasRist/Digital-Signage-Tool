@@ -32,10 +32,13 @@ aufzulösen.
 python tools/bereitschaft.py     # welche Issues sind JETZT baubar
 ```
 
-**Zwei Anforderungsänderungen sind entschieden und dokumentiert** (AD v1.6, TK v3.18): die
-**projektweite Standarddauer** (je Aktion überschreibbar) und die **Streichung der Elementart
-`bild`**. Details im Abschnitt „STAND HEUTE" von `CLAUDE.md`. Der Code-Umbau läuft; wogenau
-wann ein Folge-Issue baubar ist, sagt `python tools/bereitschaft.py`.
+**Die Anforderungsänderungen sind entschieden und dokumentiert** (Stand 27.10.2026:
+**AD v1.9 / TK v3.28**): die **projektweite Standarddauer** (je Aktion überschreibbar) und die
+**Streichung der Elementart `bild`** (AD v1.6/TK v3.18), **ein Projekt – ein Video**
+(AD v1.7/TK v3.22), die **kurze Unterbrechung des Videos** (AD v1.8/TK v3.26) und die **über die
+Oberfläche anlegbare Einblendung mit fester Bandhöhe 162** (AD v1.9/TK v3.28). Details im
+Abschnitt „STAND HEUTE" von `CLAUDE.md`; wo genau wann ein Folge-Issue baubar ist, sagt
+`python tools/bereitschaft.py`.
 
 **Regeln, die dieses Projekt teuer gelernt hat** – ausführlich in `CLAUDE.md`:
 
