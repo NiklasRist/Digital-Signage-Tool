@@ -16,8 +16,6 @@
 // Test, der nur sie kennt, ist gruen, egal ob die Vierer-Regel verstanden wurde.
 // Deshalb laeuft die Pruefung ueber JEDE zulaessige Bandhoehe und benutzt dabei
 // die ECHTE Rechenfunktion als Lieferant - nicht selbst gerechnete Zahlen.
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { baueSplitFilter, markenFarbeZuFfmpeg } from "../../src/main/ffmpeg-adapter/filter-split";
@@ -26,23 +24,6 @@ import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
 
 import type { RenderProfile } from "../../src/shared/contracts/render-profile";
 
-const QUELLE = readFileSync(
-  new URL("../../src/main/ffmpeg-adapter/filter-split.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur die CODE-Zeilen. Die Begruendungen in den Kommentaren zitieren das TK
-// woertlich (Regel D) und nennen dabei die Masse des Ausgabe-Profils und die
-// nachgemessenen Bildgroessen - das ist erwuenscht und darf die Literal-Probe
-// nicht ausloesen. Dieselbe Trennung benutzen die Tests zu #161 und #163 im
-// selben Modul. Fuer die HEXFARBE gilt sie NICHT: die wird unten gegen die
-// ganze Datei geprueft, Kommentare eingeschlossen.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((zeile) => {
-    const t = zeile.trim();
-    return t !== "" && !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 /** Der Wert der Rolle `flaecheDunkel`, umgerechnet - so, wie #177 ihn hereinreicht. */
 const FUELLFARBE = "0x2F2E2E";
@@ -225,6 +206,18 @@ describe("die Einpass-Werte werden GEPRUEFT, nicht ersetzt", () => {
     expect(f.meldung).toContain("1557");
   });
 
+  it("weist auch eine GERADE Breite ab, die kein Vielfaches von 4 ist (1558)", () => {
+    // 1558 ist gerade - eine Pruefung auf "nur gerade" liesse sie durch. Die
+    // Vierer-Regel verlangt mehr: Mit 1558 waere der mittige Versatz 181 und damit
+    // ungerade; yuv420p braucht beides gerade.
+    const f = fehler(204, 1558, 182, FUELLFARBE, RENDER_PROFILE);
+    expect(f.code).toBe("ungueltige_eingabe");
+    expect(f.meldung).toContain("1558");
+    // Der GRUND muss die Vierer-Regel sein - sonst koennte derselbe Fall auch erst
+    // am schiefen Versatz scheitern und die Regel selbst bliebe ungeprueft.
+    expect(f.meldung).toContain("Vielfaches von 4");
+  });
+
   it("weist einen Versatz ab, der nicht mittig ist", () => {
     // 181 ist weder gerade noch mittig zu 1556 (mittig waere 182).
     expect(fehler(204, 1556, 181, FUELLFARBE, RENDER_PROFILE).code).toBe("ungueltige_eingabe");
@@ -261,12 +254,6 @@ describe("die Einpass-Werte werden GEPRUEFT, nicht ersetzt", () => {
     const m = masse(kette(200, 1560, 180));
     expect(m.scale[0]).toBe(1560);
     expect(m.overlayX).toBe(180);
-  });
-
-  it("enthaelt keine eigene Breitenrechnung im ausfuehrbaren Teil", () => {
-    for (const verboten of ["16/9", "16 / 9", "1.777", "Math.floor", "Math.round", "Math.ceil"]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
   });
 
   it("laesst ffmpeg die Breite nicht selbst waehlen", () => {
@@ -354,20 +341,6 @@ describe("jede Zahl stammt aus Profil und Parametern", () => {
     }
   });
 
-  it("schreibt kein Mass als Literal in den ausfuehrbaren Teil", () => {
-    for (const literal of ["1920", "1080", "162", "1632", "144", "30"]) {
-      expect(CODEZEILEN).not.toContain(literal);
-    }
-  });
-
-  it("enthaelt in der GANZEN Datei keine Hexfarbe - auch nicht als Beispiel im Kommentar", () => {
-    // "Hier steht keine Hexzahl. Auch nicht als Vorgabewert, auch nicht als
-    // Kommentar-Beispiel im Code, auch nicht als 'Fallback, falls die Marke mal
-    // fehlt'." Eine zweite Quelle fuer eine Markenfarbe laesst den Split lautlos
-    // vom Rest des Systems abweichen, sobald sich die Marke aendert.
-    expect(QUELLE).not.toMatch(/#[0-9a-fA-F]{6}/);
-    expect(QUELLE.toLowerCase()).not.toContain("2f2e2e");
-  });
 });
 
 describe("die Fuellfarbe reist durch, ohne den Graphen zu oeffnen", () => {
@@ -518,30 +491,10 @@ describe("Fehlerpfade - immer ungueltige_eingabe, nie ein Wurf", () => {
 });
 
 describe("die Funktion ist rein", () => {
-  it("importiert nichts, was Wirkung haette", () => {
-    for (const verboten of [
-      "node:fs", "node:path", "node:child_process", "./prozess", "ffprobe",
-      "config-store", "leseMarke", "band-geometrie", "vorlagen",
-    ]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
-    // Nur TYP-Importe. Insbesondere KEIN Import der Bandgeometrie: Der
-    // ffmpeg-adapter kennt keine Typen des render-service und nimmt blanke Zahlen.
-    expect(CODEZEILEN.match(/^import .*$/gm)).toEqual([
-      "import type { RenderProfile } from '../../shared/contracts/render-profile'",
-      "import type { Ergebnis } from '../../shared/contracts/ergebnis'",
-    ]);
-  });
-
   it("veraendert das uebergebene Profil nicht", () => {
     const vorher = structuredClone(RENDER_PROFILE);
     baueSplitFilter(162, 1632, 144, FUELLFARBE, RENDER_PROFILE);
     expect(RENDER_PROFILE).toEqual(vorher);
   });
 
-  it("kennt keine Fachbegriffe", () => {
-    for (const verboten of ["Projekt", "Aktion", "Listenelement", "Asset", "Auftrag"]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
-  });
 });

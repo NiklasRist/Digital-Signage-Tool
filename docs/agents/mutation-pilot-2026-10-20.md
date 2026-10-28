@@ -461,3 +461,86 @@ steht nach dieser Charge bei **116**. Die naechste Charge beginnt wieder mit ein
 Inventur – `filter-split` (41 Tests in einem Block, der Quelldatei liest) und
 `reparatur-fuehrung` (23) sind die naechsten Kandidaten, aber der Name allein ist
 kein Befund.
+
+---
+
+## 15. Charge 3 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `filter-split` (ffmpeg-adapter), `reparatur-fuehrung` (composer),
+`inspektor` (vorlagen-editor), `bild-laden` (template-canvas),
+`zone-deko` (template-canvas).
+
+**Ausgangsmessung:** 25 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **23**. Gruen: **F2** (echte Luecke) und **I3** (aequivalent, s. u.).
+Alle fuenf Refactorings gruen. Jede Mutation byte-identisch zurueckgenommen.
+
+### Die Luecke (geschlossen – in zwei Schritten)
+
+- **F2 – „durch 4 teilbar" war nur als „gerade" geprueft.** Die Mutation
+  `% VIERER_RASTER !== 0` → `% 2 !== 0` blieb gruen: Der bestehende Test nutzt
+  **1557** (ungerade), `% 2` faengt ihn ebenfalls. Eine **gerade** Breite, die kein
+  Vielfaches von 4 ist (1558), kam durch. Der erste neue Test prueft nur die Zahl
+  **1558** in der Meldung – und blieb gruen, weil die spaetere „nicht mittig"-Meldung
+  dieselbe Zahl enthaelt. Erst mit `expect(meldung).toContain("Vielfaches von 4")`
+  beisst die Probe. **Lehre:** Eine Meldung mit der richtigen Zahl ist kein Beleg
+  fuer den richtigen Grund.
+
+### Die eine aequivalente Mutation
+
+- **I3 – die Zwischenklammer fuer `x` ist redundant.** `begrenze(wert, 0,
+  flaeche.breite - rahmen.breite)` auf `begrenze(wert, 0, flaeche.breite)` geaendert
+  blieb gruen: `begrenzeAufFlaeche` klemmt den fertigen Rahmen anschliessend in die
+  Flaeche. Die Klammer bleibt als defensive Absicherung stehen; sie braucht keinen
+  eigenen Test (dieselbe Klasse wie Z8 im zweiten Piloten).
+
+### Gegenprobe
+
+- **F2** nach dem geschaerften Test: erkannt (1 Test rot). **I3** erneut: gruen,
+  damit als aequivalent belegt.
+
+### Entfernt (25 Tests, 1 ergaenzt – netto −24)
+
+- **5** in `filter-split`: keine Breitenrechnung, kein Mass-Literal, keine Hexfarbe,
+  keine wirkungsvollen Importe, keine Fachbegriffe. Ersatz: das abgewandelte Profil
+  schlaegt an allen Stellen durch; die Fuellfarbe-Tests nutzen `0xFF4040` (nicht den
+  Vorgabewert) und belegen beide Stellen; die Kette ist reine Zeichenkette.
+  **Korrektur zur Inventur:** Die „41 Tests" dieses Blocks waren ein Artefakt der
+  Blockzaehlung – der Describe „die nachgemessene Kette" hat vier Tests; die Proben
+  sassen verteilt in vier anderen Describes.
+- **5** in `reparatur-fuehrung` (Modulgrenze: keine Modulvariable, keine
+  React/fs/electron-Importe, kein IPC, exakte Importliste, kein async/Timer).
+  Ersatz: 40 Verhaltenstests; `starteReparatur` liefert nachweislich neue, gleiche
+  Staende, und `istRenderFreigegeben` fragt das Projekt.
+- **5** in `inspektor` (keine Abschaltzeile/Geruest-Kopf, kein Einrasten, Geometrie
+  aus #144, kein `daten:`). Ersatz: die 16 Verhaltenstests zu Sperre, Parsen und
+  Klemmen; die „rastet nicht ein"-Zusage ist der Test mit 1056/1050.
+- **5** in `bild-laden` (nur `media://`, kein `onload`, genau ein Speicher, Feld
+  heisst `zustand`, kein Timeout). Ersatz: `decode()`-Warten, `clear()` und
+  Generationszaehler sind Verhaltenstests; ein zweiter Cache waere an den
+  `fehlt`-Faellen sichtbar.
+- **5** in `zone-deko` (kein Akzent-Selbstlesen, keine Farb-/Radius-Literale, kein
+  `radien`/Zeit-API, kein `fillText`). Ersatz: Gradient-Koordinaten, Deckelung 36,
+  Bindung und Schatten sind Verhaltenstests; der FillStyle kommt ueber `loeseFarbe`.
+
+**Ehrlich offen:** Wie in den Charges 1/2 haben die entfernten Architektur-Verbote
+keinen Waechter bis zu einer Lint-Regel. Neu ist die Erkenntnis aus F2: Wo eine
+Meldung nur eine Zahl traegt, muss der **Grund** geprueft werden, sonst ist die
+Probe zufaellig gruen.
+
+### Stand nach Charge 3
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **26**: 25 + 1 Gegenprobe – 25 erkannt, 1 aequivalent |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **25** |
+| Verhaltens-Tests ergaenzt | – | **1** |
+| Echte Luecken geschlossen | – | **1** |
+| Suite | 5.645 | **5.621** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 131 / 91 | **126** Dateien mit `readFileSync`, **88** mit Grep-/Bauvorschriften-`describe` |
+
+Verfeinert lesen nach dieser Charge **110** Describe-Bloecke wirklich eine Quelldatei.
+Die naechste Charge beginnt wieder mit einer Inventur; Kandidaten mit vielen Proben
+sind jetzt `akzentfarbe`-Nachbarn im Marken-Editor, `zonen-canvas` und
+`video-anzeige` – der Name allein bleibt kein Befund.

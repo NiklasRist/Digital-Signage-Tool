@@ -3,10 +3,7 @@
 // Die Datei ist reine Umrechnung ohne Prozessgrenze (P7, kein Speicher). Die DoD
 // verlangt ausdruecklich, dass der Inspektor NICHT einrastet (sonst wae re 1056
 // unerreichbar), dass er nur ganze Zahlen annimmt und dass ausserhalb liegende Werte
-// begrenzt statt abgewiesen werden. Ein Teil der DoD ist deshalb eine Grep-Probe auf
-// den Code (nur Rumpf, ohne Kommentare), nicht nur auf das Verhalten.
-import { readFileSync } from 'node:fs'
-
+// begrenzt statt abgewiesen werden.
 import { describe, expect, it } from 'vitest'
 
 import { setzeRahmenWert, type RahmenFeld } from '../../src/renderer/vorlagen-editor/inspektor'
@@ -14,18 +11,6 @@ import { MINDEST_ZONEN_KANTE_PX, type Flaeche } from '../../src/renderer/vorlage
 import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 import type { Zone } from '../../src/shared/contracts/vorlage'
 
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/vorlagen-editor/inspektor.ts', import.meta.url),
-  'utf8',
-)
-
-// Nur der Code, ohne Kommentarzeilen - die Grep-Proben der DoD pruefen den Rumpf.
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
 
 function zone(
   id: string,
@@ -258,35 +243,5 @@ describe('setzeRahmenWert – keine Exceptions (DoD)', () => {
       if (ergebnis.ok) continue
       expect(ergebnis.fehler.code).toBe('ungueltige_eingabe')
     }
-  })
-})
-
-describe('Bauvorschriften dieser Datei (DoD-Grep-Proben)', () => {
-  it('keine Abschaltzeile in Zeile 1 und kein Geruest-Kopf (Q1, 16.10.2026)', () => {
-    expect(QUELLE.split('\n')[0]!.startsWith('// [')).toBe(true)
-    expect(QUELLE.split('\n')[0]).not.toContain('eslint-disable')
-  })
-
-  it('traegt keinen Geruest-Kopf mehr', () => {
-    expect(QUELLE).not.toContain('GERUEST-PRUEFSUMME')
-  })
-
-  it('ruft keine Einrast-Funktion aus #144 auf - der Inspektor rastet nicht ein', () => {
-    expect(CODEZEILEN).not.toMatch(/raste/)
-    expect(CODEZEILEN).not.toMatch(/EINRAST/)
-    expect(CODEZEILEN).not.toMatch(/sammleEinrastlinien/)
-    expect(CODEZEILEN).not.toMatch(/verschiebeZone/)
-    expect(CODEZEILEN).not.toMatch(/bemasseZone/)
-  })
-
-  it('uebernimmt die Geometrie aus #144 statt sie neu zu erfinden', () => {
-    expect(CODEZEILEN).not.toMatch(/function begrenzeAufFlaeche/)
-    expect(CODEZEILEN).not.toMatch(/const MINDEST_ZONEN_KANTE_PX/)
-    expect(CODEZEILEN).toMatch(/begrenzeAufFlaeche\(/)
-    expect(CODEZEILEN).toMatch(/MINDEST_ZONEN_KANTE_PX/)
-  })
-
-  it('setzt fehler.daten nie - der Ausgang ist ok mit Zone oder ungueltige_eingabe', () => {
-    expect(CODEZEILEN).not.toMatch(/daten:/)
   })
 })

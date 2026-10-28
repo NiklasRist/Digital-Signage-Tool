@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -340,41 +339,5 @@ describe("leereMotivBestand", () => {
     await bereiteMotiveVor("p2", [{ schluessel: "b1", dateiname: "x.jpg" }]);
 
     expect(geladen(holeMotiv("b1")).breite).toBe(9);
-  });
-});
-
-describe("Bauvorschriften dieser Datei", () => {
-  const QUELLE = readFileSync(
-    new URL("../../src/renderer/template-canvas/bild-laden.ts", import.meta.url),
-    "utf8",
-  );
-  const CODEZEILEN = QUELLE.split("\n")
-    .filter((z) => {
-      const t = z.trim();
-      return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-    })
-    .join("\n");
-
-  it("kennt keinen anderen Ladeweg als media://", () => {
-    expect(CODEZEILEN).toMatch(/media:\/\/\$\{projektId\}\/\$\{dateiname\}/);
-    expect(CODEZEILEN).not.toMatch(/\bfile:\/\/|\bfetch\(|createObjectURL|require\(|from ["']node:/);
-  });
-
-  it("benutzt weder onload noch img.complete", () => {
-    expect(CODEZEILEN).not.toMatch(/onload|addEventListener|\.complete\b/);
-    expect(CODEZEILEN).toMatch(/await\s+\w+\.decode\(\)/);
-  });
-
-  it("führt genau einen Speicher und keinen zweiten Cache", () => {
-    expect([...CODEZEILEN.matchAll(/new Map</g)]).toHaveLength(1);
-    expect(CODEZEILEN).not.toMatch(/WeakMap|localStorage|sessionStorage|indexedDB/i);
-  });
-
-  it("nennt das unterscheidende Feld überall zustand", () => {
-    expect(QUELLE).not.toMatch(/status:/);
-  });
-
-  it("setzt keinen eigenen Timeout", () => {
-    expect(CODEZEILEN).not.toMatch(/setTimeout|AbortController|Date\.now|Math\.random/);
   });
 });

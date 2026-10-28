@@ -12,8 +12,6 @@
 //     Zeiger in diesen Tests auf Position 1, nicht auf 0.
 //  4. Die Freigabe kommt aus dem PROJEKT, nicht aus dem Stand - ein beendeter
 //     oder veralteter Stand darf den Render nicht freigeben.
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
 import { findeKaputteStellen, stellenZuAktion } from '../../src/renderer/composer/kaputt-erkennung'
@@ -696,50 +694,5 @@ describe('reine Werte - keine Funktion mutiert Eingabe oder Projekt', () => {
 
     expect(starteReparatur(p, null)).toEqual(starteReparatur(p, null))
     expect(starteReparatur(p, null)).not.toBe(starteReparatur(p, null))
-  })
-})
-
-describe('Modulgrenze - reine Zustandsführung, kein Zustand im Modul', () => {
-  const QUELLE = readFileSync(
-    new URL('../../src/renderer/composer/reparatur-fuehrung.ts', import.meta.url),
-    'utf8',
-  ).replace(/\r\n/g, '\n')
-  // Die Kommentare nennen „IPC", „Reiter" und „app-shell" in der Begründung.
-  // Geprüft werden deshalb nur echte Code-Zeilen, sonst schlüge die Regel an
-  // ihrer eigenen Erklärung an.
-  const CODEZEILEN = QUELLE.split('\n').filter(
-    (z) => !z.trimStart().startsWith('//') && !z.trimStart().startsWith('*'),
-  )
-
-  it('hält keine Modulvariable - es gibt keine Deklaration auf Modulebene', () => {
-    // Der Stand darf nicht an der Lebensdauer dieses Moduls hängen (TK 9.14.2).
-    expect(CODEZEILEN.filter((z) => /^(?:export\s+)?(?:const|let|var)\s/.test(z))).toEqual([])
-  })
-
-  it('importiert weder React noch fs/path/electron', () => {
-    for (const verboten of ['react', 'react-dom', 'fs', 'node:fs', 'path', 'node:path', 'electron']) {
-      expect(CODEZEILEN.filter((z) => new RegExp(`from ['"]${verboten}['"]`).test(z))).toEqual([])
-    }
-  })
-
-  it('ruft keinen ipc-client auf und rührt window.api nicht an', () => {
-    expect(CODEZEILEN.filter((z) => /ipc-client|window\.api|rufeAuf|abonniere/.test(z))).toEqual([])
-  })
-
-  it('importiert nur den Projekt-Vertrag und die Erkennung aus #131', () => {
-    expect(CODEZEILEN.filter((z) => z.startsWith('import'))).toEqual([
-      // #338: der Marken-Vertrag reist als LISTE durch (Typ) - die Fuehrung selbst
-      // bleibt reine Zustandsrechnung, kein IPC, kein Zugang.
-      "import type { Marke } from '../../shared/contracts/marke'",
-      "import type { Project } from '../../shared/contracts/project'",
-      "import { findeKaputteStellen } from './kaputt-erkennung'",
-      "import type { KaputteStelle } from './kaputt-erkennung'",
-    ])
-  })
-
-  it('enthält kein async, keine Ergebnis-Hülle und keinen Timer', () => {
-    expect(CODEZEILEN.filter((z) => /\basync\b|Ergebnis<|setTimeout|setInterval/.test(z))).toEqual(
-      [],
-    )
   })
 })

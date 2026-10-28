@@ -4,8 +4,6 @@
 // seine addColorStop-Aufrufe mitschreibt. Die DoD-Punkte sind an den ECHTEN Daten
 // der eingebauten Vorlagen (hintergrund, scrim, preis von Vollbild und Band)
 // abgerechnet.
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SICHERHEITSABSTAND_PX } from '../../src/shared/contracts/konstanten'
@@ -30,50 +28,6 @@ vi.mock('../../src/renderer/template-canvas/zone-text', () => ({
 
 import { loeseFarbe } from '../../src/renderer/template-canvas/farben'
 import { zeichneTextZone } from '../../src/renderer/template-canvas/zone-text'
-
-// ---------------- Quelldatei-Verbote (Grep) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/template-canvas/zone-deko.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('zone-deko – Verbote in der Quelldatei (Grep)', () => {
-  it("liest aktion.akzentfarbe nicht und nennt keine Akzent-Rollen in einer Bedingung", () => {
-    expect(CODEZEILEN).not.toContain('akzentfarbe')
-    expect(CODEZEILEN).not.toMatch(/akzent(Kraeftig|Tief)?\s*(===|!==|==|!=)/)
-  })
-
-  it("enthaelt keine eigene Liste der Akzent-Rollen", () => {
-    expect(CODEZEILEN).not.toContain("['akzent'")
-  })
-
-  it('enthaelt kein Farb-, rgb/rgba- und kein Radius-Literal', () => {
-    expect(CODEZEILEN).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
-    expect(CODEZEILEN).not.toMatch(/\brgba?\(/)
-    expect(CODEZEILEN).not.toMatch(/radius\s*[:=]\s*\d/)
-  })
-
-  it('liest marke.radien nicht und enthaelt keine Zeit-/Zufalls-APIs', () => {
-    expect(CODEZEILEN).not.toMatch(/\bradien\b/)
-    expect(CODEZEILEN).not.toContain('await ')
-    expect(CODEZEILEN).not.toContain('async ')
-    expect(CODEZEILEN).not.toContain('Math.random')
-    expect(CODEZEILEN).not.toContain('new Date')
-    expect(CODEZEILEN).not.toContain('Date.')
-    expect(CODEZEILEN).not.toContain('devicePixelRatio')
-  })
-
-  it('ruft fillText NICHT selbst auf (Textpfad ist #114)', () => {
-    expect(CODEZEILEN).not.toContain('fillText')
-  })
-})
 
 // ---------------- Aufzeichnungs-Doppel ----------------
 
