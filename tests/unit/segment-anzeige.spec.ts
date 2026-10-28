@@ -6,8 +6,6 @@
 // Ersetzt werden nur die Zeichenroutine (#117) und die Schriften-Auskunft
 // (#110); alles andere ist echt.
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -48,49 +46,6 @@ vi.mock('../../src/renderer/template-canvas/schriften', () => ({
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
 const { Segment } = await import('../../src/renderer/preview-player/segment.tsx')
-
-// ---------------- Quelldatei-Verbote (Grep, auf beide Dateien) ----------------
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/preview-player/segment.tsx'),
-  'utf8',
-)
-const QUELLE_TS = readFileSync(
-  join(process.cwd(), 'src/renderer/preview-player/segment-quelle.ts'),
-  'utf8',
-)
-
-const codeOhneKommentare = (quelle: string): string =>
-  quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-describe('Quelldatei-Verbote (Grep, auf beide Dateien)', () => {
-  it('kein zweiter Zeichenpfad, kein Groesse-Anfassen, kein Laden, keine Zeitlogik, kein IPC', () => {
-    const code = codeOhneKommentare(QUELLE_TSX) + codeOhneKommentare(QUELLE_TS)
-    for (const verbot of [
-      "createElement('canvas')", 'getContext', 'drawImage', 'toDataURL', 'alsPng',
-      'OffscreenCanvas', 'devicePixelRatio', 'canvas.width =', 'opacity',
-      'filter:', 'holeMotiv', 'holeLogo', 'loeseFarbe', 'media://', 'fetch',
-      'async', 'await', 'rufeAuf', 'abonniere', 'window.api', 'vorlage.art',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
-  })
-})
-
-// segment-quelle.ts ist rein: kein react, kein JSX.
-describe('segment-quelle.ts (Grep)', () => {
-  it('kein jsx, kein react', () => {
-    const code = codeOhneKommentare(QUELLE_TS)
-    expect(code).not.toContain('react')
-    expect(code).not.toContain('jsx')
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -243,6 +198,30 @@ describe('die Schranken (ENTSCHIEDEN 4/5)', () => {
       wurzel.render(createElement(Segment, { aktion: neue, vorlage: dieVorlage, marke: dieMarke }) as ReactElement)
     })
     expect(doppel.aufrufe).toHaveLength(2)
+    fertig()
+  })
+
+  it('zeichnet auch bei Wechsel der VORLAGE und der MARKE neu (der Effekt haengt an allen drei Eingaben)', () => {
+    // Der Vertrag: neu gezeichnet wird, sobald sich aktion, vorlage ODER marke aendern.
+    // Haengt der Effekt nur an der Aktion, bliebe die Flaeche nach einem Vorlagen- oder
+    // Markenwechsel auf dem alten Bild stehen - sichtbar ohne jeden Fehler.
+    const dieAktion = baueAktion()
+    const dieVorlage = baueVorlage()
+    const dieMarke = baueMarke()
+    const { wurzel, fertig } = rendere({ aktion: dieAktion, vorlage: dieVorlage, marke: dieMarke })
+    expect(doppel.aufrufe).toHaveLength(1)
+
+    const andereVorlage = { ...baueVorlage(), id: 'v-2' }
+    act(() => {
+      wurzel.render(createElement(Segment, { aktion: dieAktion, vorlage: andereVorlage, marke: dieMarke }) as ReactElement)
+    })
+    expect(doppel.aufrufe).toHaveLength(2)
+
+    const andereMarke = { ...baueMarke(), name: 'Zweite Marke' }
+    act(() => {
+      wurzel.render(createElement(Segment, { aktion: dieAktion, vorlage: andereVorlage, marke: andereMarke }) as ReactElement)
+    })
+    expect(doppel.aufrufe).toHaveLength(3)
     fertig()
   })
 

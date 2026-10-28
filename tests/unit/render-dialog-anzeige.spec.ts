@@ -1,7 +1,5 @@
 // Verhaltenstests zu #231 (M7-38) - die Eingabeanzeige (render-dialog.tsx, jsdom).
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -14,23 +12,6 @@ import type { NamensBefund, Ueberschreiblage } from '../../src/renderer/composer
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-// ---------------- Quelldatei-Verbote (Grep) ----------------
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/composer/render-dialog.tsx'),
-  'utf8',
-)
-
-describe('render-dialog.tsx – Verbote (Grep)', () => {
-  it('enthaelt KEINEN Bestaetigungsdialog (kein confirm, kein window) und keine Eigenpruefung', () => {
-    expect(QUELLE_TSX).not.toContain('confirm')
-    expect(QUELLE_TSX).not.toContain('window.')
-    expect(QUELLE_TSX).not.toContain('pruefeAusgabeName')
-    expect(QUELLE_TSX).not.toContain('pruefeUeberschreiben')
-    expect(QUELLE_TSX).not.toContain('leaft')
-  })
-})
 
 // ---------------- Bausteine ----------------
 

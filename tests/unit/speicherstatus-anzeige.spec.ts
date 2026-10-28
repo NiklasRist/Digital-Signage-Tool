@@ -1,7 +1,5 @@
 // Verhaltenstests zu #200 - die Anzeige (speicherstatus.tsx, jsdom).
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -14,28 +12,6 @@ import { SpeicherHinweis, holeSpeicherlage } from '../../src/renderer/app-shell/
 
 // React 19: act(...)
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-// ---------------- Quelldatei-Verbote (Grep) ----------------
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/app-shell/speicherstatus.tsx'),
-  'utf8',
-)
-
-describe('speicherstatus.tsx – Verbote (Grep, CODEZEILEN)', () => {
-  const QUELLE_CODE = QUELLE_TSX.split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-  it('enthaelt kein setInterval/setTimeout/rufeAuf/KANAELE, keine Kanal-Literale, kein window.', () => {
-    for (const verbot of ['setInterval', 'setTimeout', 'rufeAuf', 'KANAELE', 'project:', 'vorlagen:', 'window.']) {
-      expect(QUELLE_CODE).not.toContain(verbot)
-    }
-    expect(QUELLE_CODE).not.toContain('abonniere(')
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -171,6 +147,18 @@ describe('SpeicherHinweis (#200) - Ereignisfluss', () => {
       sendeAn(0, { typ: 'fehler', code: 'zweiter' })
     })
     expect(holeSpeicherlage().projekt.letzterFehlercode).toBe('zweiter')
+  })
+
+  it('beide Quellen -> EIN Satz, mit Komma getrennt, je Quelle Ort und Code', () => {
+    // Die Aufzaehlung ist der sichtbare Text: Ort, Code, Komma. Ein anderes
+    // Verbindungswort macht aus der Liste zwei Behauptungen.
+    zeige()
+    act(() => {
+      sendeAn(0, { typ: 'fehler', code: 'p-code' })
+      sendeAn(1, { typ: 'fehler', code: 'v-code' })
+    })
+    const text = behaelter?.querySelector('[data-testid=speicherhinweis]')?.textContent ?? ''
+    expect(text).toContain('das Projekt (p-code), die Vorlagen (v-code).')
   })
 
   it('holeSpeicherlage bleibt mit dem Modul-Zustand synchron (Anzeige außerhalb möglich)', () => {

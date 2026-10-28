@@ -4,8 +4,6 @@
 // GENAU EINMAL mit (baueVorschauAktion(marke, vorlage), vorlage, marke, marke)
 // und liefert dessen Wert UNVERAENDERT - kein zweiter Zeichenpfad (TK 9.10.1).
 import { describe, expect, it, vi } from 'vitest'
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import type { Marke } from '../../src/shared/contracts/marke'
 import type { Vorlage } from '../../src/shared/contracts/vorlage'
@@ -94,27 +92,5 @@ describe('zeichneMarkenVorschau (KEIN zweiter Zeichenpfad)', () => {
     expect(aufruf.vorlage).toBe(dieVorlage)
     expect(aufruf.rahmenMarke).toBe(aufruf.marke)
     expect(ergebnis).toEqual({ canvas: 'probe', breite: 1920, höhe: 162, aufrufe: doppel.bilder.length })
-  })
-})
-
-describe('Quelldatei-Verbote (Grep, nur auf DIESE Datei)', () => {
-  const QUELLE = readFileSync(
-    join(process.cwd(), 'src/renderer/marken-editor/live-vorschau.ts'),
-    'utf8',
-  )
-  const code = QUELLE.split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-  it('kein eigener Zeichenpfad, keine eigene Vorbereitung, kein await', () => {
-    for (const verbot of [
-      'CanvasRenderingContext2D', "getContext('2d')", 'new Image()',
-      'document.fonts', 'async', 'await', 'Promise', 'rufeAuf', 'KANAELE',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
   })
 })

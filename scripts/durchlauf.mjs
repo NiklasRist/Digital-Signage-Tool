@@ -1735,9 +1735,19 @@ const main = async () => {
             } else {
               await seite.evaluate(() => document.querySelector('[data-testid="vorlage-uebernehmen"]')?.click());
               const gespeichert4n = await warteVorlage4n(id4n, (v) => v.zonen.length === zonenVor4n + 1);
-              const sitzungNach4n = await seite.evaluate(
-                () => document.querySelector('[data-testid="arbeitskopie-kopf"]') !== null,
-              );
+              // Die Sitzung schliesst NACH dem Schreibvorgang: Der Bestand ist schon
+              // aktualisiert, waehrend React noch rendert. Deshalb MIT FRIST warten statt
+              // EINMAL zu lesen - der Einmal-Leser war am 28.10.2026 in 2 von 3 Laeufen rot,
+              // ohne dass sich am Produktcode etwas geaendert hatte (Messfehler, kein Befund).
+              const fristSitzungZu4n = Date.now() + 5_000;
+              let sitzungNach4n = true;
+              while (Date.now() < fristSitzungZu4n) {
+                sitzungNach4n = await seite.evaluate(
+                  () => document.querySelector('[data-testid="arbeitskopie-kopf"]') !== null,
+                );
+                if (!sitzungNach4n) break;
+                await schlafe(250);
+              }
               console.log(`[schritt-4n] Speichern: Zonen Parent=${String(gespeichert4n?.zonen.length)} (erwartet ${String(zonenVor4n + 1)}), Sitzung noch offen=${String(sitzungNach4n)}.`);
               if (gespeichert4n === null || gespeichert4n.zonen.length !== zonenVor4n + 1) {
                 fund("Vorlagen (FA-13)", "„Vorlage uebernehmen' schreibt die Zone in den Parent",

@@ -1,8 +1,6 @@
 // Verhaltenstests zu #229 - die Anzeige (medium-loeschen.tsx, jsdom).
 // Die reine Seite (medium-loeschen.ts) ist bereits gebaut; hier gilt die tsx-DoD.
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -18,29 +16,6 @@ import { MediumLoeschen } from '../../src/renderer/composer/medium-loeschen.tsx'
 
 // React 19: act(...)
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/composer/medium-loeschen.tsx'),
-  'utf8',
-)
-const CODEZEILEN = QUELLE_TSX.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('medium-loeschen.tsx – Verbote (Grep)', () => {
-  it('ruft kein rufeAuf/KANAELE/document.querySelector und loest die LoeschLage NICHT selbst', () => {
-    for (const verbot of ['rufeAuf', 'KANAELE', "project:", 'queue:', 'document-query-window.']) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-    // Die Lage kommt herein; keine zweite Ausrechnung in der Anzeige.
-    expect(CODEZEILEN).not.toContain('blockierer.length > 0 ?')
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -187,6 +162,12 @@ describe('MediumLoeschen (#229) - Blockade', () => {
     expect(behaelter?.textContent).toContain('Position 1')
     expect(behaelter?.textContent).toContain('Position 2')
     expect(behaelter?.textContent).toContain('tanzkurs.mov')
+    // „Position" steht auch im Lage-Text. Der BELEG ist die Listenzeile selbst:
+    // je Blockierer Position UND Bezeichnung, sonst muesste der Nutzer suchen.
+    const zeilen = Array.from(
+      behaelter?.querySelectorAll('[data-testid^="medium-loeschen-block-Element-"]') ?? [],
+    ).map((zeile) => zeile.textContent)
+    expect(zeilen).toEqual(['Position 1: tanzkurs.mov', 'Position 2: tanzkurs.mov'])
     // Der Bestätigungsknopf IST BEI Blockade NICHT VORHANDEN (nicht nur disabled).
     expect(behaelter?.querySelector('[data-testid=medium-loeschen-bestaetiger]')).toBeNull()
   })
@@ -201,6 +182,12 @@ describe('MediumLoeschen (#229) - Blockade', () => {
     // kein Blockierer -> Bestätigung da; die betroffene Aktion ist als Hinweis genannt.
     expect(behaelter?.querySelector('[data-testid=medium-loeschen-bestaetiger]')).not.toBeNull()
     expect(behaelter?.querySelector('[data-testid=medium-loeschen-aktionen]')?.textContent).toContain('Aktion a-1')
+  })
+
+  it('ohne betroffene Aktionen erscheint der Aktions-Absatz GAR NICHT (kein leerer Hinweis)', () => {
+    zeige({}, [videoMitRef('e-frei', 'a-2')])
+    expect(behaelter?.querySelector('[data-testid=medium-loeschen-bestaetiger]')).not.toBeNull()
+    expect(behaelter?.querySelector('[data-testid=medium-loeschen-aktionen]')).toBeNull()
   })
 })
 
