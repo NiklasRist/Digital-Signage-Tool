@@ -544,3 +544,91 @@ Verfeinert lesen nach dieser Charge **110** Describe-Bloecke wirklich eine Quell
 Die naechste Charge beginnt wieder mit einer Inventur; Kandidaten mit vielen Proben
 sind jetzt `akzentfarbe`-Nachbarn im Marken-Editor, `zonen-canvas` und
 `video-anzeige` – der Name allein bleibt kein Befund.
+
+---
+
+## 16. Charge 4 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `zonen-canvas` (vorlagen-editor), `zone-bild` (template-canvas),
+`video-anzeige` (preview-player), `kontrast` (gemeinsam), `export-dialog` (composer).
+Dazu zwei Gegenproben gegen `video-zeit.spec.ts` (die Proben dazu sassen in
+`video-anzeige`).
+
+**Ausgangsmessung:** 25 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **18**. Gruen: **6 echte Luecken** (ZC6, ZC7, V1, E1, VZ1, VZ2) und
+**K4** (aequivalent). Alle Refactorings gruen. Jede Mutation byte-identisch
+zurueckgenommen.
+
+### Die sechs Luecken (alle geschlossen)
+
+- **ZC6 – die Mindestkante war selbstbezueglich geprueft.** Der Test verglich die
+  Breite mit `MINDEST_ZONEN_KANTE_PX`; die Konstante auf 0 gesetzt blieb er gruen.
+  Neu: `expect(MINDEST_ZONEN_KANTE_PX).toBe(8)` – die ZAHL steht fest.
+- **ZC7 – der Gleichstand beim Einrasten war ungeprueft.** `<=` auf `<` geaendert
+  blieb gruen. Neu: Linien 45/155, roher Wert 50, beide Kanten 5 px entfernt – die
+  fuehrende Kante gewinnt.
+- **V1 – die Endgrenze war nicht gemessen.** Der Test nutzte `trimEnde: 0` und
+  `soll = 0`; `>=` auf `>` geaendert blieb er gruen, weil jsdom ohnehin `paused`
+  meldet. Neu: `soll = trimEnde = 1` mit `pause`-Spion – mit `>` wuerde
+  `currentTime` auf 1 gesetzt und das letzte Bild ginge verloren.
+- **E1 – der Gross-/Kleinschreibungs-Test testete den falschen Fall.** Er suchte
+  `Sommer.mp4` in einem Bestand, der `sommeraktion.mp4` enthaelt – also gar keine
+  Fallvariante. Ein `toLowerCase()` auf beiden Seiten blieb gruen. Neu: Bestand
+  `sommer.mp4`, Suche `Sommer.mp4` ⇒ `null`.
+- **VZ1 – die Toleranzgrenze war nicht getroffen.** Der Test prueft 0,2 und 0,3,
+  nie 0,25. `>` auf `>=` blieb gruen. Neu: 5 ↔ 5,25 in beide Richtungen ⇒ kein
+  Sprung.
+- **VZ2 – NaN nur auf der Ist-Seite geprueft.** `Number.isFinite(sollZeit)` aus der
+  Bedingung entfernt blieb gruen: `NaN` als Soll liess die Differenz zu `NaN`
+  werden, der Vergleich still falsch, das Video stehen. Neu: NaN/Infinity auch als
+  Soll ⇒ Sprung.
+
+**Muster dieser Runde:** Fuenf der sechs Luecken waren **selbstbezuegliche oder
+randlose Tests** – sie verglichen gegen dieselbe Konstante, nutzten einen nicht
+vorhandenen Namen oder lagen neben der Grenze. Die Mutation hat sie sichtbar
+gemacht, nicht der Testname.
+
+### Die eine aequivalente Mutation
+
+- **K4 – die Klammer auf [1, 21] ist fuer gueltige Hex-Werte redundant.** Die
+  WCAG-Formel liefert fuer `#RRGGBB`/`#RRGGBBAA` von selbst Werte in diesem
+  Bereich. Die Klammer bleibt als defensive Absicherung; sie braucht keinen Test.
+
+### Gegenproben
+
+ZC6, ZC7, V1, E1, VZ1, VZ2 nach den Korrekturen: **alle erkannt**.
+K4 erneut: **gruen** – damit als aequivalent belegt.
+
+### Entfernt (22 Tests, 1 ergaenzt, 4 geschaerft – netto −21)
+
+- **6** in `zonen-canvas` (Abschaltzeile/Geruest-Kopf, `raste` nicht exportiert,
+  zwei Literal-Proben in den Verhaltens-Describes, 1920/1080/96/54).
+- **4** in `zone-bild` (kein Akzent-Selbstlesen, kein zweiter Dekodierweg,
+  Bildmaße nicht am Objekt, kein `clip`/keine Literale).
+- **3** in `video-anzeige` (kein Rueckkanal/Ton/controls, keine eigene
+  Bildraten-Division, kein JSX/react in `video-zeit`). Die zwei `video-zeit`-Proben
+  sind durch `video-zeit.spec.ts` gedeckt (Gegenproben VZ1/VZ2).
+- **5** in `kontrast` (Kommentar-Probe zum Alphakanal, keine Vertragsimporte, kein
+  Canvas, kein Schwellenwert-Literal, keine eigene Schwellen-Konstante).
+- **4** in `export-dialog` (zwei Grep-Describes: kein JSX/react/queue/window/fs,
+  genau ein `rufeAuf`, keine Zielpfad-Pruefung, kein `rufeAuf` in der Anzeige).
+
+**Ehrlich offen:** Die entfernten Architektur- und Kommentar-Proben haben keinen
+Waechter bis zu einer Lint-Regel. Die Einzelquellen-Regeln (RENDER_PROFILE,
+SICHERHEITSABSTAND, Kanal-Registry) sind jetzt nur noch durch Verhalten bzw. den
+gebauten Code gedeckt; ein Literal mit demselben Wert bliebe unsichtbar.
+
+### Stand nach Charge 4
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **25**: 24 erkannt, 1 aequivalent (+ 2 Gegenproben video-zeit) |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **22** |
+| Verhaltens-Tests ergaenzt/geschaerft | – | **1 + 4** |
+| Echte Luecken geschlossen | – | **6** |
+| Suite | 5.621 | **5.600** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 126 / 88 | **121** Dateien mit `readFileSync`, **84** mit Grep-/Bauvorschriften-`describe` |
+
+Verfeinert lesen nach dieser Charge **106** Describe-Bloecke wirklich eine Quelldatei.

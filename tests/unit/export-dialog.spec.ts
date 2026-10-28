@@ -1,7 +1,6 @@
 // Tests zu #232 (M7-39) - export-dialog.ts und export-dialog.tsx.
 // Die reine Seite laeuft ohne jsdom; die Anzeige folgt als jsdom-Test in
 // derselben Datei (createRoot-Muster wie in tests/unit/leiste-zeile.spec.ts).
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -14,59 +13,6 @@ import {
 } from '../../src/renderer/composer/export-dialog'
 
 import type { AusgabeDatei } from '../../src/renderer/composer/ausgabe-liste'
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/composer/export-dialog.ts', import.meta.url),
-  'utf8',
-)
-const QUELLE_TSX = readFileSync(
-  new URL('../../src/renderer/composer/export-dialog.tsx', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-const CODEZEILEN_TSX = QUELLE_TSX.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('export-dialog.ts – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('enthaelt kein JSX, kein react, kein reiheEin/abonniere, kein queue:-Literal, kein listeAusgaben, kein loop.mp4, kein window./fs/path', () => {
-    for (const verbot of ['react', 'reiheEin', 'abonniere', "'queue:'", 'listeAusgaben', 'loop.mp4', 'window.', 'node:path', 'node:fs']) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-    expect(CODEZEILEN).not.toMatch(/<[a-z][a-z]*[ >]/)
-  })
-
-  it('enthaelt GENAU EINEN rufeAuf - den für export:wähleExportZiel (KANAELE, kein Kanal-Literal)', () => {
-    // GENAU EIN Aufruf (Import-Zeile zaehlt nicht): rufeAuf< mit Typparameter.
-    expect((CODEZEILEN.match(/await rufeAuf</g) ?? []).length).toBe(1)
-    expect(QUELLE).toContain("KANAELE.export.wähleExportZiel")
-    expect(CODEZEILEN).not.toContain("'export:wähleExportZiel'")
-  })
-
-  it('prueft den Zielpfad NICHT (keine Existenz-/Schreibbarkeits-/FAT32-Pruefung)', () => {
-    for (const verbot of ['existsSync', 'acces', 'fat32', 'FAT32', ' kann nicht', 'pflichtfeld']) {
-      expect(CODEZEILEN.toLowerCase()).not.toContain(verbot.toLowerCase())
-    }
-  })
-})
-
-describe('export-dialog.tsx – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('enthaelt kein rufeAuf, kein KANAELE, keine eigene Groessen-/Zeitformatierung, keinen eigenen Ladevorgang', () => {
-    for (const verbot of ['rufeAuf(', 'KANAELE', 'toLocaleString', 'new Date(', 'fetch(', 'readFile']) {
-      expect(CODEZEILEN_TSX).not.toContain(verbot)
-    }
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -100,7 +46,9 @@ describe('waehleDatei (#232)', () => {
   })
 
   it('buchstabengleich: Sommer.mp4 findet sommer.mp4 NICHT', () => {
-    expect(waehleDatei(LEERE_EXPORTAUSWAHL, 'Sommer.mp4', BESTAND).datei).toBeNull()
+    // Der Bestand enthaelt die KLEINGESCHRIEBENE Fassung - nur so unterscheidet
+    // der Test eine echte Gross-/Kleinschreibungs-Regel von "Name nicht gefunden".
+    expect(waehleDatei(LEERE_EXPORTAUSWAHL, 'Sommer.mp4', [d('sommer.mp4')]).datei).toBeNull()
   })
 
   it('veraendert die Eingabe NICHT (Feldgleichheit zu einer vorher genommenen Kopie)', () => {

@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -20,63 +19,6 @@ vi.mock("../../src/renderer/template-canvas/farben", async (importOriginal) => {
     loeseFarbe: vi.fn(echt.loeseFarbe),
     loeseSchrift: vi.fn(echt.loeseSchrift),
   };
-});
-
-// ---------------- Quelldatei-Verbote (Grep als Test) ----------------
-
-const QUELLE = readFileSync(
-  new URL("../../src/renderer/template-canvas/zone-bild.ts", import.meta.url),
-  "utf8",
-);
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((z) => {
-    const t = z.trim();
-    return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
-
-describe("zone-bild – Verbote in der Quelldatei (Grep)", () => {
-  it("liest aktion.akzentfarbe nicht und wertet Akzent-Rollen nicht bedingend aus", () => {
-    expect(CODEZEILEN).not.toContain("akzentfarbe");
-    // 'akzent' als ARGUMENT der drei Platzhalter-Aufrufe ist erlaubt und gemeint;
-    // eine Bedingung auf Akzent-Rollen waere die zweite Aufloesungsstelle.
-    expect(CODEZEILEN).not.toMatch(/akzent(Kraeftig|Tief)?\s*(===|!==|==|!=)/);
-  });
-
-  it("laedt nichts und kennt keinen zweiten Dekodierweg", () => {
-    for (const verbot of [
-      "await ",
-      "async ",
-      "new Image",
-      "decode",
-      "fetch",
-      "media://",
-      "devicePixelRatio",
-      "Math.random",
-      "new Date",
-      "Date.",
-      "naturalWidth",
-      "naturalHeight",
-      "status:",
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot);
-    }
-  });
-
-  it("liest die Bildmaesse nicht am Bildobjekt", () => {
-    expect(CODEZEILEN).not.toContain(".width");
-    expect(CODEZEILEN).not.toContain(".height");
-  });
-
-  it("verwendet kein clip und keine Farb-/Font-Literale", () => {
-    expect(CODEZEILEN).not.toContain("clip");
-    expect(CODEZEILEN).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(CODEZEILEN).not.toMatch(/\brgba?\(/);
-    expect(CODEZEILEN).not.toContain('px "');
-    expect(CODEZEILEN).not.toContain("sans-serif");
-    expect(CODEZEILEN).not.toContain("schriften[");
-    expect(CODEZEILEN).not.toContain("farben[");
-  });
 });
 
 // ---------------- Aufzeichnungs-Doppel ----------------

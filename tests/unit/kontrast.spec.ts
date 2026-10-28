@@ -3,7 +3,6 @@
 // Die Datei ist eine reine Rechenfunktion (keine IPC-Grenze, kein Ergebnis<T>,
 // kein Browser, kein Vertragsimport). Deshalb laesst sich ein Teil der DoD direkt
 // als Grep-Probe auf den Code abziehen – auf den Rumpf, nicht auf Kommentare.
-import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -12,17 +11,6 @@ import {
   kontrastVerhaeltnis,
   waehleBesserenKontrast,
 } from "../../src/renderer/gemeinsam/kontrast";
-
-const QUELLE = readFileSync(
-  new URL("../../src/renderer/gemeinsam/kontrast.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur der Code, ohne Kommentarzeilen – die Grep-Proben der DoD pruefen den Rumpf.
-const CODEZEILEN = QUELLE.split("\n").filter((z) => {
-  const t = z.trim();
-  return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-}).join("\n");
 
 describe("kontrastVerhaeltnis – WCAG-Rechenkern", () => {
   it("liefert fuer Schwarz auf Weiss den Maximalwert 21 (DoD)", () => {
@@ -177,39 +165,5 @@ describe("erreichtKontrastSchwelle", () => {
 
   it("wirft bei gleichem Schwellenwert auch bei ungueltigen Farben zuerst wegen der Farbe", () => {
     expect(() => erreichtKontrastSchwelle("#FFF", "#000000", 4.5)).toThrow();
-  });
-});
-
-describe("Bauvorschriften dieser Datei (DoD-Grep-Proben)", () => {
-  it("nennt im Kommentar von kontrastVerhaeltnis, dass der Alphakanal ignoriert wird, und die Begruendung", () => {
-    const kommentar = QUELLE.slice(0, QUELLE.indexOf("export function kontrastVerhaeltnis"));
-    expect(kommentar).toMatch(/Alphakanal/);
-    expect(kommentar).toMatch(/[Ii]gnor/);
-    expect(kommentar).toMatch(/deckend/);
-    expect(kommentar).toMatch(/scrimStart/);
-    expect(kommentar).toMatch(/scrimEnde/);
-  });
-
-  it("importiert weder Typen aus Marke/Aktion/Vorlage noch aus src/shared/contracts (Grep-Probe)", () => {
-    expect(CODEZEILEN).not.toMatch(/\bimport\b/);
-    expect(CODEZEILEN).not.toMatch(/contracts/);
-    expect(CODEZEILEN).not.toMatch(/KONTRAST_SCHWELLE/);
-  });
-
-  it("greift auf keinen Canvas-Zugriff zu (Grep-Probe)", () => {
-    expect(CODEZEILEN).not.toMatch(/canvas|getContext|fillStyle|ctx\b/i);
-  });
-
-  it("fuehrt keine zweite Schwellenwert-Quelle (kein eigenstaendiges 4.5/3.0/7.0-Literal)", () => {
-    // Die Zahl 4,5 steht seit TK v3.10 als KONTRAST_SCHWELLE in konstanten.ts
-    // (#320) und hoechstens in Tests – die DoD-Grep-Probe laeuft ueber die Datei,
-    // ohne Kommentare, und darf nichts finden.
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])4\.5([^0-9]|$)/);
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])3\.0([^0-9]|$)/);
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])7\.0([^0-9]|$)/);
-  });
-
-  it("exportiert keine eigene Schwellenwert-Konstante", () => {
-    expect(CODEZEILEN).not.toMatch(/export const (KONTRAST|SCHWELLENWERT)/);
   });
 });

@@ -37,12 +37,19 @@ describe('brauchtSprung - die Grenze liegt BEI der Toleranz, nicht an ihr vorbei
   it('identity und Toleranz-Rand', () => {
     expect(brauchtSprung(5, 5)).toBe(false)
     expect(brauchtSprung(5, 5.2)).toBe(false)
+    // GENAU die Toleranz (0,25) springt NICHT - die Grenze liegt einschliessend.
+    expect(brauchtSprung(5, 5.25)).toBe(false)
+    expect(brauchtSprung(5.25, 5)).toBe(false)
     expect(brauchtSprung(5, 5.3)).toBe(true)
   })
 
   it('unbrauchbare Werte brauchen einen Sprung (NaN und Infinity)', () => {
     expect(brauchtSprung(Number.NaN, 5)).toBe(true)
     expect(brauchtSprung(Number.POSITIVE_INFINITY, 5)).toBe(true)
+    // Auch auf der SOLL-Seite: Ein NaN dort liesse die Differenz zu NaN werden,
+    // und der Vergleich waere still falsch - das Video bliebe stehen.
+    expect(brauchtSprung(5, Number.NaN)).toBe(true)
+    expect(brauchtSprung(5, Number.POSITIVE_INFINITY)).toBe(true)
   })
 
   it('symmetrisch: (a, b) === (b, a) fuer VELE endliche Paare (Eigenschafts-Test)', () => {

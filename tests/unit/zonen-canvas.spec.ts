@@ -8,7 +8,6 @@
 // Die Zahlen sind von Hand nachgerechnet; die eingebaute Band-Hoehe 162 ist eine
 // der wenigen "glatten" Werte und steht deshalb nur DOPPELT im Test (DoD (f)),
 // die Einrast-Faelle benutzen krumme Bewegungen, die nicht von selber aufgehen.
-import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -26,18 +25,6 @@ import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 import { SICHERHEITSABSTAND_PX } from '../../src/shared/contracts/konstanten'
 import type { Vorlage, Zone } from '../../src/shared/contracts/vorlage'
 
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/vorlagen-editor/zonen-canvas.ts', import.meta.url),
-  'utf8',
-)
-
-// Nur der Code, ohne Kommentarzeilen - die Grep-Proben der DoD pruefen den Rumpf.
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
 
 function zone(
   id: string,
@@ -111,10 +98,6 @@ describe('flaecheDerVorlage', () => {
     }
   })
 
-  it('liest die Zahlen aus RENDER_PROFILE statt aus Literalen (Grep-Probe)', () => {
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])1920([^0-9]|$)/)
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])1080([^0-9]|$)/)
-  })
 })
 
 describe('sicherheitsBox', () => {
@@ -140,10 +123,6 @@ describe('sicherheitsBox', () => {
     expect(sicherheitsBox(band(54, []))).toEqual({ x: 96, y: 0, breite: 1728, höhe: 0 })
   })
 
-  it('liest 96/54 aus SICHERHEITSABSTAND_PX statt aus Literalen (Grep-Probe)', () => {
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])96([^0-9]|$)/)
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])54([^0-9]|$)/)
-  })
 })
 
 describe('begrenzeAufFlaeche', () => {
@@ -297,11 +276,30 @@ describe('bemasseZone', () => {
     const bemasst = bemasseZone(zone('a', 'frei', 500, 500, 200, 100), 'e', -300, 0, FLASCHE, LINIEN)
     expect(bemasst.rahmen.x).toBe(500)
     expect(bemasst.rahmen.breite).toBe(MINDEST_ZONEN_KANTE_PX)
+    // Die ZAHL steht fest. Ohne diese Zeile waere die Probe selbstbezueglich:
+    // Eine Konstante 0 liesse "Breite === MINDEST_ZONEN_KANTE_PX" weiter gruen.
+    expect(MINDEST_ZONEN_KANTE_PX).toBe(8)
 
     // Vertikal analog: Griff s, dy = -250 -> Hoehe geklemmt auf 8, obere Kante fest.
     const s = bemasseZone(zone('a', 'frei', 500, 500, 200, 100), 's', 0, -250, FLASCHE, LINIEN)
     expect(s.rahmen.y).toBe(500)
     expect(s.rahmen.höhe).toBe(MINDEST_ZONEN_KANTE_PX)
+  })
+
+  it('bei Gleichstand zwischen fuehrender und nachlaufender Kante gewinnt die fuehrende', () => {
+    // x=0, Breite 100, dx=50 -> roh 50; die rechte Kante steht bei 150.
+    // Linien bei 45 und 155: Die fuehrende Kante rastet auf 45 (5 px), die
+    // nachlaufende auf 155 und damit als linke Kante auf 55 (5 px). Beide
+    // Kandidaten sind exakt gleich weit entfernt - die fuehrende muss gewinnen,
+    // sonst springt die Zone um 10 px nach rechts.
+    const verschoben = verschiebeZone(
+      zone('a', 'frei', 0, 500, 100, 100),
+      50,
+      0,
+      FLASCHE,
+      { x: [45, 155], y: [0, 1000] },
+    )
+    expect(verschoben.rahmen.x).toBe(45)
   })
 
   it('produziert fuer alle Griffformen einen ganzzahligen, flaechenkonformen Rahmen (DoD)', () => {
@@ -326,28 +324,5 @@ describe('bemasseZone', () => {
         expect(rahmen.y + rahmen.höhe).toBeLessThanOrEqual(FLASCHE.höhe)
       }
     }
-  })
-})
-
-describe('Bauvorschriften dieser Datei (DoD-Grep-Proben)', () => {
-  it('keine Abschaltzeile in Zeile 1 und kein Geruest-Kopf (Q1, 16.10.2026)', () => {
-    expect(QUELLE.split('\n')[0]!.startsWith('// [')).toBe(true)
-    expect(QUELLE.split('\n')[0]).not.toContain('eslint-disable')
-  })
-
-  it('traegt keinen Geruest-Kopf mehr', () => {
-    expect(QUELLE).not.toContain('GERUEST-PRUEFSUMME')
-  })
-
-  it('exportiert raste NICHT - geprueft wird ueber die exportierten Funktionen (DoD)', () => {
-    expect(CODEZEILEN).toMatch(/function raste\(/)
-    expect(CODEZEILEN).not.toMatch(/export function raste\b/)
-  })
-
-  it('schreibt die Zahlen 1920, 1080, 96 und 54 nirgends als Literale', () => {
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])1920([^0-9]|$)/)
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])1080([^0-9]|$)/)
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])96([^0-9]|$)/)
-    expect(CODEZEILEN).not.toMatch(/(^|[^0-9])54([^0-9]|$)/)
   })
 })

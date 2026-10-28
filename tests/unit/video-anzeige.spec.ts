@@ -5,8 +5,6 @@
 // NUR bei Projekt-/Dateiwechsel gesetzt, die Position NUR ausserhalb der
 // Toleranz, und am Ende des Ausschnitts wird pausiert statt gesprungen.
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -35,49 +33,6 @@ vi.mock('../../src/renderer/gemeinsam/video-handles', () => ({
 const { Video } = await import('../../src/renderer/preview-player/video.tsx')
 type VideoProps = import('../../src/renderer/preview-player/video.tsx').VideoProps
 const { quellZeit } = await import('../../src/renderer/preview-player/video-zeit')
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/preview-player/video.tsx'),
-  'utf8',
-)
-const QUELLE_TS = readFileSync(
-  join(process.cwd(), 'src/renderer/preview-player/video-zeit.ts'),
-  'utf8',
-)
-
-const codeOhneKommentare = (quelle: string): string =>
-  quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-describe('Quelldatei-Verbote (Grep, auf beide Dateien)', () => {
-  it('kein Rueckkanal, kein Ton, keine Bedienelemente, keine zweite Quelle, kein IPC', () => {
-    const code = codeOhneKommentare(QUELLE_TSX) + codeOhneKommentare(QUELLE_TS)
-    for (const verbot of [
-      'timeupdate', 'onEnded', 'loop', 'controls', 'autoplay', 'volume',
-      'cover', 'file:', 'fetch', 'media://', '#t=', 'rufeAuf', 'abonniere',
-      'window.api', 'Marke', 'composer/video-handles',
-      'preview-player/video-handles',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
-  })
-
-  it('keine eigene Division durch die Bildrate in video-zeit.ts', () => {
-    const code = codeOhneKommentare(QUELLE_TS)
-    expect(code).not.toMatch(/\/ *30\b/)
-  })
-
-  it('video-zeit.ts: kein JSX, kein react', () => {
-    const code = codeOhneKommentare(QUELLE_TS)
-    expect(code).not.toContain('react')
-    expect(code).not.toContain('jsx')
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -228,13 +183,24 @@ describe('Abspielen und Anhalten (die Uhr steuert, das Video nicht)', () => {
   })
 
   it('am ENDE des Ausschnitts: pause, und currentTime wird NICHT gesetzt', () => {
-    // soll = 0, trimEnde = 0 -> soll >= trimEnde sofort.
-    const { behaelter, fertig } = rendere(eigenschaften({ trimStart: 0, trimEnde: 0, laeuft: true }))
+    // soll = quellZeit(0, 30) = 1.0, trimEnde = 1: GENAU die Grenze, nicht dahinter.
+    const { behaelter, wurzel, fertig } = rendere(
+      eigenschaften({ trimStart: 0, trimEnde: 1, lokalerFrame: 30 }),
+    )
     const video = behaelter.querySelector('video') as HTMLVideoElement
+    const pauseSpion = vi.spyOn(video, 'pause')
+    act(() => {
+      wurzel.render(
+        createElement(
+          Video,
+          eigenschaften({ trimStart: 0, trimEnde: 1, lokalerFrame: 30 }),
+        ) as ReactElement,
+      )
+    })
+    // `>=` haelt an; mit `>` wuerde die Grenze als "noch nicht am Ende" gelten
+    // und currentTime auf 1 gesetzt - das letzte Bild ginge verloren.
+    expect(pauseSpion).toHaveBeenCalledTimes(1)
     expect(video.currentTime).toBe(0)
-    // pause() wurde gerufen: jsdom-Pause bedeutet paused true (default).
-    // DIREKT beweisen: play nach diesem Zustand ist nie nach dem Abgleiten gerufen.
-    expect(video.paused).toBe(true)
     fertig()
   })
 
