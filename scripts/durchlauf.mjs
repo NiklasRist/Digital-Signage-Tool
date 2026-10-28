@@ -2043,6 +2043,111 @@ const main = async () => {
           console.log(`[schritt-4b4] Zoom GEMESSEN: ${filmDiag.bilder} -> ${filmZoom.bilder} Einzelbilder bei ${String(filmZoom.wert)}.`);
         }
 
+        // Schritt 4o - #394: Die Statistik war gebaut, aber ohne Aufrufer; seit 28.10. sitzt
+        // sie als flache Leiste in der Kopfzeile des Composers. Gemessen wird, dass sie DA
+        // ist und dass ihre Zahlen zum Bestand passen. Die Gesamtdauer wird NICHT im
+        // Treiber nachgerechnet - eine zweite Rechnung waere eine zweite Quelle (TK 9.7.4);
+        // geprueft wird die Form der Anzeige und die Zaehler gegen project.json.
+        {
+          const projektDatei4o = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+          const stand4o = JSON.parse(fs.readFileSync(projektDatei4o, "utf-8"));
+          const statistik4o = await seite.evaluate(() => {
+            const wert = (name) => document.querySelector(`[data-testid="statistik-${name}"]`)?.textContent ?? null;
+            const leiste = document.querySelector('[data-testid="statistik"]');
+            const wurzel = document.querySelector('[data-testid="composer-wurzel"]');
+            return {
+              da: leiste !== null,
+              inKopfzeile: leiste !== null && wurzel !== null && wurzel.contains(leiste),
+              text: leiste === null ? null : leiste.innerText,
+              gesamt: wert('Gesamtdauer'),
+              elemente: wert('Elemente'),
+              videos: wert('Videos'),
+              segmente: wert('Aktions-Segmente'),
+              warnung: document.querySelector('[data-testid^="statistik-30-Minuten"]')?.textContent ?? null,
+            };
+          });
+          const liste4o = stand4o.liste ?? [];
+          const erwartet4o = {
+            elemente: String(liste4o.length),
+            videos: String(liste4o.filter((e) => e.art === 'video').length),
+            segmente: String(liste4o.filter((e) => e.art === 'segment').length),
+          };
+          console.log(`[schritt-4o] Statistik: ${JSON.stringify(statistik4o)}; Bestand=${JSON.stringify(erwartet4o)}.`);
+          if (!statistik4o.da || !statistik4o.inKopfzeile) {
+            fund("Statistik (#394)", "die Statistik-Leiste steht im Composer (Kopfzeile)",
+              `da=${String(statistik4o.da)}, inKopfzeile=${String(statistik4o.inKopfzeile)}`,
+              "Befund", "composer/index.tsx");
+          } else if (statistik4o.gesamt === null || !/^\d+(:\d{2}){1,2}$/.test(statistik4o.gesamt)) {
+            fund("Statistik (#394)", "die Gesamtdauer wird angezeigt (m:ss)",
+              `Gesamtdauer=${JSON.stringify(statistik4o.gesamt)}`, "Befund", "composer/statistik.tsx");
+          } else if (statistik4o.elemente !== erwartet4o.elemente
+            || statistik4o.videos !== erwartet4o.videos
+            || statistik4o.segmente !== erwartet4o.segmente) {
+            fund("Statistik (#394)", "Elemente/Videos/Segmente stimmen mit dem Bestand",
+              `Anzeige=${JSON.stringify({ elemente: statistik4o.elemente, videos: statistik4o.videos, segmente: statistik4o.segmente })} Bestand=${JSON.stringify(erwartet4o)}`,
+              "Befund", "composer/statistik.tsx");
+          } else if (statistik4o.warnung !== 'unter der Schwelle') {
+            fund("Statistik (#394)", "die 30-Minuten-Warnung steht auf 'unter der Schwelle'",
+              `Warnung=${JSON.stringify(statistik4o.warnung)}`, "Untersuchung", "composer/statistik.tsx");
+          } else {
+            console.log(`[schritt-4o] Statistik GEMESSEN: Gesamtdauer "${String(statistik4o.gesamt)}", ${erwartet4o.elemente} Element(e) / ${erwartet4o.videos} Video(s) / ${erwartet4o.segmente} Segment(e) (#394).`);
+          }
+        }
+
+        // Schritt 4p - #364: PIXEL-BELEG am echten Fenster. Der Filmstreifen holt die
+        // Videobytes als Blob-URL; nur dann ist die Aufnahme ungetaintet. Der Gegenbeweis
+        // waere ein SecurityError bei `getImageData` - genau der Befund, der #364 ausgeloest
+        // hat. Zusaetzlich: die BUEHNE muss weiterhin direkt media:// binden (DoD).
+        {
+          const pixel4p = await seite.evaluate(() => {
+            const kacheln = [...document.querySelectorAll('[data-testid="zeitleiste-filmstreifen-bild"]')];
+            const buehne = document.querySelector('[data-testid="preview-video"] video');
+            const gelesen = kacheln.map((kachel) => {
+              const lage = { breite: kachel.width, hoehe: kachel.height };
+              try {
+                const kontext = kachel.getContext('2d');
+                if (kontext === null) return { ...lage, fehler: 'kein 2d-Kontext' };
+                const daten = kontext.getImageData(0, 0, kachel.width, kachel.height).data;
+                const farben = new Set();
+                // Jede 37. Pixelprobe reicht: ein leeres Bild hat EINE Farbe, ein echtes
+                // Videoframe viele.
+                for (let i = 0; i + 2 < daten.length; i += 4 * 37) {
+                  farben.add(`${daten[i]},${daten[i + 1]},${daten[i + 2]}`);
+                }
+                return { ...lage, farben: farben.size };
+              } catch (tu) {
+                return { ...lage, fehler: String(tu) };
+              }
+            });
+            return {
+              kacheln: kacheln.length,
+              gelesen,
+              buehneQuelle: buehne === null ? null : String(buehne.currentSrc || buehne.src || ''),
+            };
+          });
+          console.log('[schritt-4p] Pixel-Beleg: ' + JSON.stringify(pixel4p));
+          const fehler4p = pixel4p.gelesen.filter((e) => typeof e.fehler === 'string');
+          const leer4p = pixel4p.gelesen.filter((e) => typeof e.farben === 'number' && e.farben <= 1);
+          if (pixel4p.kacheln === 0) {
+            fund("Canvas-Tainting (#364)", "der Filmstreifen traegt Kacheln mit lesbaren Pixeln",
+              "keine Kachel im Fenster", "Befund", "composer/video-filmstreifen.tsx");
+          } else if (fehler4p.length > 0) {
+            fund("Canvas-Tainting (#364)", "getImageData auf einer Kachel wirft KEINEN SecurityError",
+              JSON.stringify(fehler4p), "Befund", "composer/video-filmstreifen.tsx");
+          } else if (leer4p.length > 0) {
+            fund("Canvas-Tainting (#364)", "die gelesenen Kachel-Pixel tragen Bildinhalt (mehr als eine Farbe)",
+              JSON.stringify(leer4p), "Befund", "composer/video-filmstreifen.tsx");
+          } else {
+            console.log(`[schritt-4p] Pixel-Beleg GEMESSEN: ${pixel4p.kacheln} Kachel(n), Farben je Kachel ${JSON.stringify(pixel4p.gelesen.map((e) => e.farben))} - kein SecurityError (#364).`);
+          }
+          if (pixel4p.buehneQuelle === null || !pixel4p.buehneQuelle.startsWith('media://')) {
+            fund("Canvas-Tainting (#364)", "die Buehne bleibt bei der direkten media://-Quelle",
+              `Buehnen-Quelle: ${String(pixel4p.buehneQuelle)}`, "Befund", "preview-player/video.tsx");
+          } else {
+            console.log(`[schritt-4p] Buehne GEMESSEN: ${pixel4p.buehneQuelle} (kein Blob, #364).`);
+          }
+        }
+
         // Schritt 4b7 - FA-01: EIN Video, ERSETZEN mit Rueckfrage. Der natuerliche Weg
         // (Dateidialog) ist nativ und nicht steuerbar; gemessen werden (a) die Rueckfrage
         // VOR dem Import, (b) Abbrechen aendert nichts, (c) die ERSETZEN-Wirkung, indem ein
@@ -3688,6 +3793,117 @@ const main = async () => {
         } else {
           console.log("[schritt-4g3] Aktion bearbeiten GEMESSEN: Titel geaendert, Aktionszahl unveraendert (FA-03).");
         }
+      }
+    }
+
+    // Schritt 4q - #445: Im Modus "Neue Aktion" erreichte der getippte Titel den Entwurf
+    // nie (das Feld war ungesteuert, `feldVerlassen` kehrte bei `gewaehlt === null` zurueck);
+    // "Anlegen" schickte `titel: ''`. Gemessen wird der ECHTE Bedienweg: Neue Aktion ->
+    // Titel tippen -> Feld verlassen -> Anlegen -> Aktion im Bestand. Dazu die Gegenprobe:
+    // ein leerer Titel wird AM FORMULAR sichtbar abgelehnt und legt nichts an.
+    {
+      const projektDatei4q = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      const liesAktionen4q = () => JSON.parse(fs.readFileSync(projektDatei4q, "utf-8")).aktionen;
+      const vorher4q = liesAktionen4q();
+      const titel4q = `Durchlauf-Neu-${Date.now()}`;
+      const neuGeklickt4q = await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="aktion-neu"]');
+        if (knopf === null) return false;
+        knopf.click();
+        return true;
+      });
+      await schlafe(400);
+      const getippt4q = await seite.evaluate((wert) => {
+        const feld = document.querySelector('[data-testid="aktion-titel"]');
+        if (feld === null) return false;
+        const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setzeWert.call(feld, wert);
+        feld.focus();
+        feld.dispatchEvent(new Event("input", { bubbles: true }));
+        // `focusout` wie in 4g3: Reacts onBlur haengt daran (#310).
+        feld.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+        feld.blur();
+        return true;
+      }, titel4q);
+      await schlafe(300);
+      const angelegt4q = await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="aktion-anlegen-bestaetigen"]');
+        if (knopf === null) return false;
+        knopf.click();
+        return true;
+      });
+      const frist4q = Date.now() + 8_000;
+      let nachher4q = vorher4q;
+      while (Date.now() < frist4q) {
+        try {
+          nachher4q = liesAktionen4q();
+        } catch {
+          nachher4q = vorher4q;
+        }
+        if (nachher4q.some((a) => a.titel === titel4q)) break;
+        await schlafe(250);
+      }
+      const neu4q = nachher4q.find((a) => a.titel === titel4q) ?? null;
+      const sicht4q = await seite.evaluate(() => ({
+        titelfeld: document.querySelector('[data-testid="aktion-titel"]')?.value ?? null,
+        zeilen: [...document.querySelectorAll('[data-testid="aktion-bibliothek"] li button')]
+          .map((knopf) => knopf.textContent),
+        befund: document.querySelector('[data-testid="aktion-befund"]')?.textContent ?? null,
+        speicherMeldung: document.querySelector('[data-testid="aktion-speicher-meldung"]')?.textContent ?? null,
+      }));
+      console.log(`[schritt-4q] Neue Aktion: Knopf=${String(neuGeklickt4q)}, getippt=${String(getippt4q)}, Anlegen=${String(angelegt4q)}, Aktionen ${vorher4q.length} -> ${nachher4q.length}, gefunden=${neu4q !== null}.`);
+      console.log(`[schritt-4q] Diagnose: Titelfeld="${String(sicht4q.titelfeld)}", Zeilen=${JSON.stringify(sicht4q.zeilen)}, FormularMeldung=${JSON.stringify(sicht4q.speicherMeldung)}, Befund=${JSON.stringify(sicht4q.befund)}.`);
+      if (!neuGeklickt4q || !getippt4q || !angelegt4q) {
+        fund("Aktion anlegen (#445)", "der Weg 'Neue Aktion' ist im Aktionen-Reiter bedienbar",
+          `neu=${String(neuGeklickt4q)}, titel=${String(getippt4q)}, anlegen=${String(angelegt4q)}`,
+          "Befund", "action-editor/index.tsx");
+      } else if (neu4q === null) {
+        fund("Aktion anlegen (#445)", "der getippte Titel landet beim Anlegen im project.json",
+          `Aktionen ${vorher4q.length} -> ${nachher4q.length}; Titelfeld=${JSON.stringify(sicht4q.titelfeld)}; Befund=${JSON.stringify(sicht4q.befund)}; Meldung=${JSON.stringify(sicht4q.speicherMeldung)}`,
+          "Befund", "action-editor/index.tsx");
+      } else if (nachher4q.length !== vorher4q.length + 1) {
+        fund("Aktion anlegen (#445)", "genau EINE neue Aktion",
+          `Aktionen ${vorher4q.length} -> ${nachher4q.length}`, "Befund", "action-editor/index.tsx");
+      } else if (!sicht4q.zeilen.some((zeile) => String(zeile).includes(titel4q))) {
+        fund("Aktion anlegen (#445)", "die neue Aktion steht in der Bibliothek",
+          JSON.stringify(sicht4q.zeilen), "Befund", "action-editor/index.tsx");
+      } else {
+        console.log(`[schritt-4q] Anlegen GEMESSEN: "${titel4q}" im project.json und in der Bibliothek (#445).`);
+      }
+      // Gegenprobe: leerer Titel -> Befund am Formular, KEIN neuer Eintrag.
+      const vorLeer4q = liesAktionen4q().length;
+      const leerNeu4q = await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="aktion-neu"]');
+        if (knopf === null) return false;
+        knopf.click();
+        return true;
+      });
+      await schlafe(400);
+      const leerGeklickt4q = await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="aktion-anlegen-bestaetigen"]');
+        if (knopf === null) return false;
+        knopf.click();
+        return true;
+      });
+      await schlafe(600);
+      const leerLage4q = await seite.evaluate(() => ({
+        befund: document.querySelector('[data-testid="aktion-befund"]')?.textContent ?? null,
+        anlegenKnopf: document.querySelector('[data-testid="aktion-anlegen-bestaetigen"]') !== null,
+      }));
+      const nachLeer4q = liesAktionen4q().length;
+      console.log(`[schritt-4q] Leerer Titel: neu=${String(leerNeu4q)}, Anlegen=${String(leerGeklickt4q)}, Befund=${JSON.stringify(leerLage4q.befund)}, Aktionen ${vorLeer4q} -> ${nachLeer4q}.`);
+      if (!leerNeu4q || !leerGeklickt4q || !leerLage4q.anlegenKnopf) {
+        fund("Aktion anlegen (#445)", "der Anlegen-Knopf steht im Modus 'Neue Aktion' am Formular",
+          `neu=${String(leerNeu4q)}, anlegen=${String(leerGeklickt4q)}, knopf=${String(leerLage4q.anlegenKnopf)}`,
+          "Befund", "action-editor/index.tsx");
+      } else if (nachLeer4q !== vorLeer4q) {
+        fund("Aktion anlegen (#445)", "ein leerer Titel legt KEINE Aktion an",
+          `Aktionen ${vorLeer4q} -> ${nachLeer4q}`, "Befund", "action-editor/index.tsx");
+      } else if (leerLage4q.befund === null) {
+        fund("Aktion anlegen (#445)", "der abgelehnte Anlege-Versuch steht am Formular (aktion-befund)",
+          "kein Befund sichtbar", "Befund", "action-editor/index.tsx");
+      } else {
+        console.log("[schritt-4q] Leerer Titel AM FORMULAR abgelehnt (#445 belegt).");
       }
     }
 
