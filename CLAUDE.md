@@ -11,7 +11,33 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, achte Sitzung: Mutations-Charge 5) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, neunte Sitzung: Mutations-Charge 6) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 18.**
+
+- **Charge 6 GEBAUT (`82ce9b9`):** fuenf Testdateien – `vorlage-waehlen`, `band-takt`,
+  `undo-vorlage`, `aktions-auswahl-anzeige`, `vorlagen-nachtrag`. **25 Verhaltens-Mutationen**,
+  **5 Refactorings**; **24 erkannt, 1 aequivalent, keine Luecke** – der erste Durchgang ohne
+  Nachbesserung seit Beginn der Chargen; **0/5 Refactorings rot**; jede Mutation
+  byte-identisch zurueckgenommen.
+- **Aequivalent:** **B5** – die Endlichkeitspruefung fuer `lokalerFrame` ist redundant
+  (`NaN % rundeFrames` ist NaN, `Infinity` faengt `>= elementFrames`, Negative faengt `< 0`);
+  bleibt als defensive Absicherung.
+- **Entfernt:** **17** Quelltext-/Meta-Tests (4 + 4 + 3 + 3 + 3), **0** ergaenzt; Suite
+  **5.589 → 5.572** (netto −17). **Geblieben:** der Spion-Test „Projekt-Historie bleibt
+  unberuehrt (#234)" und der Registry-Test „Kanal-Registry nach #255" – beide pruefen
+  Verhalten bzw. Werte, keinen Quelltext.
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.572 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **111** Testdateien mit `readFileSync` (vorher 116), **74** mit
+  Grep-/Bauvorschriften-`describe` (vorher 79); verfeinert lesen **95** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote haben keinen Waechter bis zu einer
+  Lint-Regel.
+- **Nicht gepusht:** `82ce9b9` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 7** – Inventur, dann fuenf Dateien.
+
+## STAND HEUTE (28.10.2026, achte Sitzung: Mutations-Charge 5) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 17.**
 
