@@ -241,30 +241,6 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
 
       {/* = rechts unten: die BEARBEITUNGSFELDER = */}
       <div data-testid="aktion-formular" style={{ width: 320, overflow: 'auto' }}>
-        {lage.modus === 'neu' && formular !== null && (
-          <button
-            type="button"
-            data-testid="aktion-anlegen-bestaetigen"
-            onClick={() => {
-              // Anlegen: die PRUEFUNG läuft hier NICHT selbst - legeAktionAn prüft
-              // die Vollständigkeit #136- Does. Der entwurf ist geworden..
-              void legeAktionAn(formular as AktionsEntwurf).then((antwort) => {
-                if (antwort.ok) {
-                  einspeisen(antwort)
-                  // Der Editor steht danach auf der SOEBEN entstandenen Aktion
-                  // (nachAnlegen, aktiv-mit-Definition der Lage).
-                  setzeLage(nachAnlegen(antwort.wert))
-                  setzeFormular({ ...antwort.wert })
-                  setzeTakt((t) => t + 1)
-                } else {
-                  console.warn('[aktion-editor] legeAktionAn lehnt ab:', antwort.fehler.code)
-                }
-              })
-            }}
-          >
-            Anlegen
-          </button>
-        )}
         {formular === null && lage.modus === 'keine' ? (
           <p data-testid="aktion-formular-leer">Nichts gewählt.</p>
         ) : (
@@ -273,6 +249,22 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
             formular={formular as AktionsEntwurf}
             waehlbare={waehlbare}
             gewaehlt={gewaehlt}
+            anlegeModus={lage.modus === 'neu'}
+            onAnlegen={async () => {
+              // #445: Der Knopf gehoert in das Formular, damit ein abgelehnter
+              // Anlege-Versuch AM FELD sichtbar wird statt nur in `console.warn`.
+              // Die Vollstaendigkeit prueft weiterhin allein `legeAktionAn` (#136).
+              const antwort = await legeAktionAn(formular as AktionsEntwurf)
+              if (antwort.ok) {
+                einspeisen(antwort)
+                // Der Editor steht danach auf der SOEBEN entstandenen Aktion
+                // (nachAnlegen, aktiv-mit-Definition der Lage).
+                setzeLage(nachAnlegen(antwort.wert))
+                setzeFormular({ ...antwort.wert })
+                setzeTakt((t) => t + 1)
+              }
+              return antwort
+            }}
             onEinspeisen={einspeisen}
             onSetzeFormular={setzeFormular}
           />
@@ -357,6 +349,8 @@ function FormularFelder({
   formular,
   waehlbare,
   gewaehlt,
+  anlegeModus,
+  onAnlegen,
   onEinspeisen,
   onSetzeFormular,
 }: {
@@ -364,6 +358,10 @@ function FormularFelder({
   formular: AktionsEntwurf
   waehlbare: Vorlage[] | null
   gewaehlt: Aktion | null
+  /** true im Modus „Neue Aktion": dann steht hier der Anlegen-Knopf mit seinen Befunden. */
+  anlegeModus: boolean
+  /** Legt den Entwurf an; der Befund bleibt am Formular. */
+  onAnlegen: () => Promise<Ergebnis<Aktion>>
   /** Der Fehlerfall traegt seine Meldung mit - `{ ok: false }` allein machte ein
    *  gescheitertes Speichern unsichtbar (FA-03-Nachlauf). */
   onEinspeisen: (antwort: Ergebnis<Aktion> | { ok: true; wert: { aktion: Aktion } }) => void
@@ -377,12 +375,33 @@ function FormularFelder({
   const projekt = p.projekt.hole().projekt
   const assets: Asset[] = projekt?.assets ?? []
 
+  // #445: Anlegen im Modus „neu". Die Vollstaendigkeit prueft `legeAktionAn` (#136) -
+  // aber ein abgelehnter Versuch endete bisher in `console.warn` und war fuer den
+  // Nutzer unsichtbar. Hier laeuft dieselbe Feldpruefung wie beim Verlassen und
+  // schreibt ihren Befund in die Anzeige; kein IPC-Aufruf bei leerem Pflichtfeld.
+  async function anlegen(): Promise<void> {
+    const befundeJetzt = pruefeEntwurf(formular)
+    if (befundeJetzt.length > 0) {
+      setzeBefunde(befundeJetzt)
+      setzeSpeicherMeldung(null)
+      return
+    }
+    setzeBefunde([])
+    const antwort = await onAnlegen()
+    setzeSpeicherMeldung(antwort.ok ? null : `Nicht angelegt: ${antwort.fehler.meldung}`)
+  }
+
   // Feld verlassen -> speichereAktion (ENTSCHEIDEN-FRAG: gemeldet).
   async function feldVerlassen(feld: keyof AktionsEntwurf, wert: string | null): Promise<void> {
     if (gewaehlt === null) {
-      // Modus "neu": `formular` ist der Entwurf, `gewaehlt` gibt es noch nicht. Der
-      // stille Rueckweg bleibt hier - offener Folge-Befund "Neue Aktion: getippte Werte
-      // erreichen das Formular nie" (nicht in diesem Fix behoben).
+      // Modus "neu" (#445): Es gibt noch keine Aktion im Bestand, in die geschrieben
+      // werden koennte - der getippte Wert gehoert in den ENTWURF. Vorher kehrte
+      // diese Stelle still zurueck, `formular` blieb `leererEntwurf` mit `titel: ''`,
+      // und „Anlegen" schickte einen leeren Titel an `project:erstelleAktion`.
+      const aenderung = { [feld]: wert } as Partial<AktionsEntwurf>
+      setzeBefunde(pruefeEntwurf(aenderung))
+      setzeSpeicherMeldung(null)
+      onSetzeFormular({ ...formular, ...aenderung })
       return
     }
     const entwurf = p.projekt.hole().projekt?.aktionen.find((e) => e.id === gewaehlt.id)
@@ -415,6 +434,17 @@ function FormularFelder({
 
   return (
     <div>
+      {anlegeModus && (
+        <button
+          type="button"
+          data-testid="aktion-anlegen-bestaetigen"
+          onClick={() => {
+            void anlegen()
+          }}
+        >
+          Anlegen
+        </button>
+      )}
       <label>Titel{' '}
         <input
           type="text"
