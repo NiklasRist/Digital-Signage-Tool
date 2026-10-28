@@ -11,7 +11,44 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, fünfzehnte Sitzung: Mutations-Charge 12) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, sechzehnte Sitzung: Lint-Gate #447) – gilt vor ALLEM weiter unten
+
+**Volltext dieser Übergabe: [`docs/agents/uebergabe-2026-10-28-lint-gate.md`](docs/agents/uebergabe-2026-10-28-lint-gate.md).**
+Issue: **#447** (gebaut), **#448** (neu, Schuld).
+
+- **LINT-GATE GEBAUT (#447):** `npm run lint` = `eslint . && oxlint -c oxlint.config.ts`;
+  `npm run pruefung` = `typecheck && lint && build && test && test:integration && durchlauf`.
+  Vorher enthielt das Gate **weder Typecheck noch Lint**.
+- **BEFUND VOR DEM BAU (gemessen):** `oxlint.config.ts` existierte mit den anti-slop-Regeln,
+  aber **nichts rief Oxlint auf** – kein Skript, kein Workflow. Oxlint stand bei **196 Fehlern**
+  (192 × `SAFETY`-Kommentar in `src`), die Kopfzeile des Konfigfiles behauptete „src-Fälle sind
+  abgearbeitet". Diese Aussage ist **falsch**; sie steht jetzt richtig im File.
+- **Oxlint auf 0 Fehler:** vier Test-Funde repariert (2 × `no-object-parameters` in
+  `bootstrap-verdrahtung`, 2 × `no-conditional-empty-object-spread` in
+  `marken-referenzpruefung`/`migriere-projekt-auf-marke`). Die 192 SAFETY-Funde gehen **nicht**
+  in diesem Issue: die Regel steht auf `warn`, die Zahl steht im Kommentar, die Arbeit ist
+  **#448**. Lauf heute: **0 Fehler, 258 Warnungen**.
+- **Drei neue Schranken:** (1) `src/renderer/**` importiert nichts aus `src/main/**` (TK 9.1);
+  (2) `window.api` nur in `src/renderer/ipc-client/**`; (3) **Sperrklinke** `lokal/quelltext-proben`:
+  `readFileSync` auf `src/` in `tests/unit` ist nur in den **70** gelisteten Dateien erlaubt
+  (`tools/eslint/quelltext-proben-ausnahmen.json`). Die Liste **darf nur schrumpfen** – jede
+  Mutations-Charge streicht ihre fünf Dateien.
+- **Vier Gegenproben, alle belegt und byte-identisch zurueckgenommen:** Renderer-Import aus
+  `main` ⇒ rot; `window.api` in `composer/index.tsx` ⇒ rot; neue Probe in ungelisteter Datei ⇒
+  rot; gelistete Datei aus der Liste gestrichen ⇒ rot.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.517 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**. Die Testzahlen sind
+  unveraendert: dieser Bau aendert **keinen** Produktcode in `src/`.
+- **Nicht gebaut, gemeldet:** `no-restricted-syntax` fuer `rufeAuf`/`KANAELE` in „reinen
+  Modulen" ist **nicht** sauber ausdrueckbar – 46 `.ts`-Dateien im Renderer rufen legitim
+  `rufeAuf`, `KANAELE` steht in 54 Dateien ueber neun Ordner. Eine Liste „reine Module" waere
+  eine zweite Wahrheit; die Zusage bleibt bei den Verhaltens-Tests.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 13** – fuenf Dateien; **neu im Rezept:** die fünf
+  Dateien danach aus `tools/eslint/quelltext-proben-ausnahmen.json` streichen (die Sperrklinke
+  beweist dann, dass ihre Proben wirklich weg sind).
+
+## STAND HEUTE (28.10.2026, fünfzehnte Sitzung: Mutations-Charge 12) – historisiert durch den Abschnitt darueber
 
 **Volltext dieser Übergabe: [`docs/agents/uebergabe-2026-10-28-charge-12.md`](docs/agents/uebergabe-2026-10-28-charge-12.md).**
 Die Einzelbefunde stehen in [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 24.

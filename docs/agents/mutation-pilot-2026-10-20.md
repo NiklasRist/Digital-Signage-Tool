@@ -1165,3 +1165,22 @@ die Einzelquellen-Regel `bandBreite` ist nur durch den Wert gedeckt.
 | Suite | 5.523 | **5.517** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Verbleibend | 87 Dateien mit `readFileSync` | **83** Dateien mit `readFileSync`; **61** mit Grep-/Bauvorschriften-`describe` (breite Namenssuche – die 56 der Vorcharge stammen aus einer engeren Definition und sind damit nicht direkt vergleichbar) |
+
+## 25. Werkzeug seit 28.10.2026: die Sperrklinke (#447)
+
+Ab Charge 13 ist der Fortschritt nicht mehr `grep -rl readFileSync`, sondern eine Liste:
+
+`tools/eslint/quelltext-proben-ausnahmen.json` nennt die **70** Testdateien, die noch `src/`
+lesen. Die ESLint-Regel `lokal/quelltext-proben` meldet jede Probe in einer **nicht** gelisteten
+Datei.
+
+**Rezept-Ergaenzung je Charge:** die fuenf bearbeiteten Dateien aus der Liste **streichen** und
+den Lint-Lauf als Beleg nehmen. Bleibt ein Eintrag stehen, obwohl die Probe weg ist, faellt das
+nicht auf – wird eine Probe wieder eingebaut, ist der Lauf rot. Die Liste ist damit der einzige
+zaehlbare Fortschrittsmassstab; die Messung „Describe-Bloecke, die eine Quelldatei lesen" ist
+abgeloest.
+
+Stand nach dem Bau: 70 Dateien, 80 Einzelproben. Die Regel erkennt direkte Literale, Templates,
+`new URL(...)` und einfache Konstanten (`const QUELLE = path.join(...)`); ein Pfad, der erst aus
+einem Funktionsparameter entsteht, bleibt unsichtbar – die Sperrklinke ist eine Bremse gegen
+Nachwuchs, kein Sandkasten.
