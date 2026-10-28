@@ -1,7 +1,6 @@
 // Tests zu #248 (M7-55) - die reine Ableitung (liste-ansicht.ts, ohne Browser).
 // `frameDauer`/`berechneGesamtlaenge` (#127) und `formatiereReglerDauer` (#249)
 // werden NICHT ersetzt, sondern echt benutzt. Die Anzeige folgt als jsdom-Test.
-import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -25,59 +24,6 @@ import {
   zeilenIds,
 } from '../../src/renderer/composer/liste-ansicht'
 import { formatiereReglerDauer } from '../../src/renderer/composer/element-zeile'
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/composer/liste-ansicht.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('liste-ansicht.ts – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('kein JSX, kein react, kein dnd-kit, kein IPC, keine eigene Rundung/Schwelle', () => {
-    for (const verbot of [
-      'react', '@dnd-kit', 'rufeAuf', 'abonniere', 'KANAELE', 'window.', '1800',
-      'Math.round', 'setTimeout',
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-    // JSX-Muster: ein Tag in einer Codezeile (Generika wie Set<string> sind erlaubt).
-    expect(CODEZEILEN).not.toMatch(/<(div|span|ul|li|p|img|canvas|button)\b/)
-  })
-
-  it('EIN Format je Zeile: formatiereLaenge wird NUR in baueLaengenAnzeige GERUFEN, formatiereReglerDauer nur in baueListenZeilen', () => {
-    const aufrufe = QUELLE.split('\n').map((zeile, index) => ({ zeile, index })).filter(({ zeile }) => {
-      const t = zeile.trim()
-      if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return false
-      return /formatiere(Laenge|ReglerDauer)\(/.test(zeile)
-    })
-    expect(aufrufe.length).toBeGreaterThan(0)
-    const definitionen = QUELLE.split('\n').filter((z) => z.startsWith('export function '))
-    const letzteFunktionVor = (index: number): string => {
-      const zeilen = QUELLE.split('\n')
-      let letzte = ''
-      for (let i = 0; i < index; i += 1) {
-        if (zeilen[i]?.startsWith('export function ')) letzte = (zeilen[i] as string).replace(/\(.*/, '')
-      }
-      return letzte
-    }
-    for (const { zeile, index } of aufrufe) {
-      const istLaengeAufruf = zeile.includes('formatiereLaenge(')
-      const funktion = letzteFunktionVor(index)
-      if (istLaengeAufruf) {
-        expect(funktion).toBe('export function baueLaengenAnzeige')
-      } else {
-        expect(funktion).toBe('export function baueListenZeilen')
-      }
-    }
-  })
-})
 
 // ---------------- Bausteine ----------------
 

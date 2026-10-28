@@ -965,3 +965,60 @@ Typ-Import in `undo-aufzeichnung-vorlage` ist nur noch durch die Import-Zeile ge
 | Verbleibend | 101 / 69 | **96** Dateien mit `readFileSync`, **66** mit Grep-/Bauvorschriften-`describe` |
 
 Verfeinert lesen nach dieser Charge **77** Describe-Bloecke wirklich eine Quelldatei.
+
+---
+
+## 22. Charge 10 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `liste-ansicht` (composer), `listen-zeilen` (queue-panel),
+`leerzustand` (app-shell), `leerzustand-regel` (app-shell),
+`dauer-regler` (composer).
+
+**Ausgangsmessung:** 23 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **19**. Gruen: **LE3, LE4, LZ3** (echte Luecken); `LZ4` traf zunaechst
+einen fehlenden Kommentar im Suchtext (Harness, kein Befund). Alle Refactorings
+gruen. Jede Mutation byte-identisch zurueckgenommen.
+
+### Die drei Luecken (geschlossen)
+
+- **LE3 – `role="status"` war ungeprueft.** Auf `alert` geaendert blieb gruen; kein
+  Test las das Attribut. Neu: der Hinweis traegt `role="status"`.
+- **LE4 – die Knopf-Beschriftung war nur „enthaelt Projekte".** Auf „Projekte"
+  verkuerzt blieb gruen. Neu: exakt „Zum Reiter Projekte".
+- **LZ3 – ein Status ausserhalb der Union war ungeprueft.** `?? 'unbekannt'` statt
+  `?? auftrag.status` blieb gruen. Neu: `'quatsch'` (Cast) ⇒ `zustandText` ist der
+  Rohwert.
+
+### Harness-Korrektur (kein Befund)
+
+- **LZ4:** Der Suchtext liess den Kommentar zwischen `{` und `return` aus. Mit dem
+  vollstaendigen Block nachgeholt; die vorhandene Leerlisten-Probe fing die Mutation.
+
+### Entfernt (10 Tests, 1 ergaenzt – netto −9)
+
+- **2** in `liste-ansicht` (kein JSX/react/dnd-kit/IPC/Rundung; „ein Format je
+  Zeile" als Quelltext-Probe). Die Formatregel ist als Verhaltens-Test vorhanden
+  („12,5 s" statt „0:12").
+- **2** in `listen-zeilen` (kein `sort`/`reverse`/`filter`/`slice`; kein Kanal/IPC).
+- **2** in `leerzustand` (kein IPC/Fremd-Modul-Import; kein Projekt-Datenimport).
+- **2** in `leerzustand-regel` (kein JSX/react; kein IPC/Fremd-Import).
+- **2** in `dauer-regler` (keine Bereichsgrenzen als Zahl/kein Raster; kein Kanal/
+  JSX/react/window/fs).
+
+**Ehrlich offen:** Die entfernten Verbote sind Architekturregeln (Lint-Kandidat);
+die „ein Format je Zeile"-Regel ist nur noch durch den Verhaltens-Test gedeckt.
+
+### Stand nach Charge 10
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **23**: 19 im ersten Lauf, 3 Luecken + 1 Harness-Fehler – **23 erkannt** |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **10** |
+| Verhaltens-Tests ergaenzt/geschaerft | – | **1 + 2** |
+| Echte Luecken geschlossen | – | **3** |
+| Suite | 5.541 | **5.532** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 96 / 66 | **91** Dateien mit `readFileSync`, **61** mit Grep-/Bauvorschriften-`describe` |
+
+Verfeinert lesen nach dieser Charge **72** Describe-Bloecke wirklich eine Quelldatei.

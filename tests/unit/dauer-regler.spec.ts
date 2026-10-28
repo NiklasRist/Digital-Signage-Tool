@@ -19,7 +19,6 @@
 // aus #126 nach (anwenden -> bestätigen -> bei Ablehnung zurücknehmen), sonst wäre
 // der Rollback-Test wirkungslos, und die Sicht speichert wirklich, sonst könnte
 // "steht es wieder auf dem alten Stand?" niemand beantworten.
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -473,26 +472,3 @@ describe('uebernehmeGrenzen', () => {
 // ---------------------------------------------------------------------------
 // Grep-Proben aus der Definition of Done - am Dateiinhalt, nicht am Verhalten.
 // ---------------------------------------------------------------------------
-
-describe('Grep-Proben an der Quelldatei', () => {
-  const quelle = readFileSync('src/renderer/composer/dauer-regler.ts', 'utf8')
-
-  it('enthaelt die Bereichsgrenzen nicht als Zahl und nichts Frame-Bezogenes', () => {
-    expect(quelle).not.toMatch(/10/)
-    expect(quelle).not.toMatch(/45/)
-    expect(quelle).not.toMatch(/30/)
-    expect(quelle).not.toMatch(/Math\.(round|floor|ceil)/)
-    expect(quelle).toMatch(/DAUER_BEREICH/)
-  })
-
-  it('enthaelt keinen Kanal als Textliteral, kein JSX, kein react, kein window.api, kein fs', () => {
-    expect(quelle).not.toMatch(/'project:/)
-    expect(quelle).not.toMatch(/"project:/)
-    expect(quelle).not.toMatch(/from 'react'/)
-    expect(quelle).not.toMatch(/window\.api/)
-    expect(quelle).not.toMatch(/from 'node:fs'/)
-    expect(quelle).not.toMatch(/from 'fs'/)
-    // Kein Import aus src/main/** (Modulgrenze, TK 2).
-    expect(quelle).not.toMatch(/\.\.\/\.\.\/main\//)
-  })
-})

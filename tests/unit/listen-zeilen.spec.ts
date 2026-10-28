@@ -5,7 +5,6 @@
 // Reihenfolge ist Vertrag von #64; ein zweiter Sortierweg hier waere der teuerste
 // lokale Fehlgriff des Issues.
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
 
 import { baueListenInhalt } from '../../src/renderer/queue-panel/listen-zeilen'
 import type { Auftrag, AuftragStatus } from '../../src/shared/contracts/auftrag'
@@ -161,20 +160,17 @@ describe('baueListenInhalt – Zeilenfelder (DoD)', () => {
       ])
     }
   })
-})
 
-describe('DoD-Grep-Proben (Quelltext)', () => {
-  const CODE = readFileSync('src/renderer/queue-panel/listen-zeilen.ts', 'utf8')
+  it('ein Status ausserhalb der Union bleibt der ROHWERT - kein Ersatztext', () => {
+    // Zur Laufzeit kann ein Stand aus einer aelteren Fassung stammen. Der Text
+    // darf dann nicht "unbekannt" heissen, sondern zeigt den Wert selbst.
+    const inhalt = baueListenInhalt(
+      geladen(auftrag({ auftragId: 'x', status: 'quatsch' as unknown as AuftragStatus })),
+    )
 
-  it('enthaelt kein Sortieren, kein reverse, kein Filter, kein slice (DoD)', () => {
-    for (const verboten of ['.sort(', '.reverse(', '.filter(', '.slice(']) {
-      expect(CODE, verboten).not.toContain(verboten)
-    }
-  })
-
-  it('enthaelt kein queue:-Literal, kein rufeAuf, kein abonniere, kein window.api (DoD)', () => {
-    for (const verboten of ["'queue:", 'rufeAuf', 'abonniere', 'window.api']) {
-      expect(CODE, verboten).not.toContain(verboten)
+    expect(inhalt.zustand).toBe('zeilen')
+    if (inhalt.zustand === 'zeilen') {
+      expect(inhalt.zeilen[0]?.zustandText).toBe('quatsch')
     }
   })
 })

@@ -6,7 +6,6 @@
 // ruft `aufProjekteWechseln` genau einmal (ENTSCHIEDEN 2).
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { readFileSync } from 'node:fs'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { createElement, type ReactElement } from 'react'
@@ -58,7 +57,9 @@ describe('Leerzustand', () => {
 
     const knopf = behaelter.querySelector('button')
     expect(knopf).not.toBeNull()
-    expect(knopf?.textContent).toContain('Projekte')
+    expect(knopf?.textContent).toBe('Zum Reiter Projekte')
+    // Der Block ist ein Hinweis, keine Warnung: role="status" ist Teil der Zusage.
+    expect(behaelter.querySelector('[role="status"]')).not.toBeNull()
 
     fertig()
   })
@@ -104,31 +105,5 @@ describe('Leerzustand', () => {
     expect(behaelter.querySelector('dialog')).toBeNull()
 
     fertig()
-  })
-})
-
-describe('DoD-Grep-Proben (Quelltext)', () => {
-  const CODE = readFileSync('src/renderer/app-shell/leerzustand.tsx', 'utf8')
-
-  it('enthaelt kein rufeAuf, kein abonniere, kein window. und keinen Fremd-Modul-Import (DoD)', () => {
-    for (const verboten of [
-      'rufeAuf',
-      'abonniere',
-      'window.',
-      'composer/',
-      'action-editor/',
-      'vorlagen-editor/',
-      'KANAELE',
-    ]) {
-      expect(CODE, verboten).not.toContain(verboten)
-    }
-  })
-
-  it('ist die eine ausdruecklich vorgesehene Anzeige der Shell - kein Projekt-Datenimport', () => {
-    // Der Hinweis nennt den Reiter Projekte (das ist Text); importiert wird aber
-    // NICHTS aus der Projekt-Sicht - weder sichten.ts noch ein Project-Zugang.
-    expect(CODE).not.toContain('sichten')
-    expect(CODE).not.toContain('Project')
-    expect(CODE).not.toContain('projektOffen')
   })
 })
