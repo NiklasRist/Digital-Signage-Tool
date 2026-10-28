@@ -8,10 +8,9 @@ import type { FarbRolle, SchriftRolle, Schrift, Herkunft } from '../../shared/co
 import type { MarkenFehlercode } from './fehlercodes'
 import { eingebauteMarke } from './anfangsbestand'
 import { ermittleDatenOrt } from '../datenort'
-// Q2/A: die domain-freie Schreib-Mechanik liegt jetzt an EINER Stelle
-// (docs/agents/schreib-mechanik-plan.md). Die Zahl WARTEZEITEN_MS bleibt hier.
+// Q2/A: geteilte Schreib-Mechanik und Systemfehler-Helfer, WARTEZEITEN_MS lokal
+// (docs/agents/schreib-mechanik-plan.md).
 import { mitWiederholung, taugtAlsSicherung } from '../gemeinsam/schreib-mechanik'
-// Die generischen Systemfehler-Helfer liegen neutral (Q2/A S7).
 import { istCode, text } from '../gemeinsam/systemfehler'
 
 /**

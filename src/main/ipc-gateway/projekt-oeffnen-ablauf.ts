@@ -39,9 +39,7 @@ type Schritt1Fehler = Extract<Awaited<ReturnType<typeof öffneProjekt>>, { ok: f
 /**
  * Zeichen, die aus der `projektId` einen Pfad statt eines Segments machen wuerden.
  *
- * Beide Trenner, unabhaengig vom Betriebssystem - dieselbe Ueberlegung wie in allen drei
- * Schritten (#34, #67, #91): Ein unter Windows geschriebener Wert wandert per USB-Stick auf einen
- * Mac, und eine Pruefung, die nur den heimischen Trenner kennt, laesst ihn genau dort durch.
+ * Beide Trenner, weil ein unter Windows geschriebener Wert auf einem Mac ankommt (#34/#67/#91).
  */
 const PFAD_TRENNER = ['/', '\\']
 

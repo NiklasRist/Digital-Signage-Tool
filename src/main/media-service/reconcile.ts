@@ -32,9 +32,7 @@ import type { ReconcileFehlercode } from './fehlercodes'
 /**
  * Zeichen, die aus der `projektId` einen Pfad statt eines Segments machen wuerden.
  *
- * Beide Trenner, unabhaengig vom Betriebssystem - dieselbe Ueberlegung wie in `pfade.ts` (#49)
- * und in allen drei Schritten: Ein unter Windows geschriebener Wert wandert per USB-Stick auf
- * einen Mac, und eine Pruefung, die nur den heimischen Trenner kennt, laesst ihn genau dort durch.
+ * Beide Trenner, weil ein unter Windows geschriebener Wert auf einem Mac ankommt (#49, `pfade.ts`).
  */
 const PFAD_TRENNER = ['/', '\\']
 

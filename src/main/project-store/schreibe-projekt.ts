@@ -6,10 +6,9 @@ import path from 'node:path'
 import { AKTUELLE_SCHEMA_VERSION } from '../../shared/contracts/konstanten'
 
 import { PROJEKT_DATEI as DATEI, projektOrdner } from './pfade'
-// Q2/A: die domain-freie Schreib-Mechanik liegt jetzt an EINER Stelle
-// (docs/agents/schreib-mechanik-plan.md). Die Zahl WARTEZEITEN_MS bleibt hier.
+// Q2/A: geteilte Schreib-Mechanik und Systemfehler-Helfer, WARTEZEITEN_MS lokal
+// (docs/agents/schreib-mechanik-plan.md).
 import { mitWiederholung, taugtAlsSicherung } from '../gemeinsam/schreib-mechanik'
-// Die generischen Systemfehler-Helfer liegen neutral (Q2/A S7).
 import { istCode, text } from '../gemeinsam/systemfehler'
 /**
  * Wartezeiten in Millisekunden VOR dem 2., 3., 4. und 5. Versuch; der erste laeuft sofort.
