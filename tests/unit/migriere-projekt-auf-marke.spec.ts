@@ -23,13 +23,8 @@ function projekt(ueber: Record<string, unknown> = {}): Project {
 }
 
 function aktion(id: string, markeId?: string): Aktion {
-  return {
-    id,
-    name: "Aktion " + id,
-    defaultDauer: 10,
-    elements: [],
-    ...(markeId === undefined ? {} : { markeId }),
-  } as unknown as Aktion;
+  const basis = { id, name: "Aktion " + id, defaultDauer: 10, elements: [] };
+  return (markeId === undefined ? basis : { ...basis, markeId }) as unknown as Aktion;
 }
 
 describe("migriereProjektAufMarke (#281)", () => {

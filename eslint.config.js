@@ -1,6 +1,8 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
+import quelltextProben from "./tools/eslint/quelltext-proben.mjs";
+
 // Lint-Regeln (#193).
 //
 // Dieses Setup fuehrt bewusst NUR die zwei Schranken ein, die im Issue stehen. Beide
@@ -104,8 +106,60 @@ export default [
               "Nur der Main-Prozess beruehrt ffmpeg und Dateisystem (TK 2). " +
               "Im Renderer fuehrt der Weg ueber einen IPC-Aufruf (TK 9.1.1).",
           })),
+          // #447: die Grenze aus TK 9.1, die #193 ausdruecklich als spaeteren Schritt nannte.
+          // Sie stand bis dahin in keiner Regel - nur in der Aufmerksamkeit.
+          patterns: [
+            {
+              group: ["**/main/**"],
+              message:
+                "Der Renderer importiert nichts aus src/main/ (TK 9.1). " +
+                "Der Weg fuehrt ueber den IPC-Kanal, nicht ueber den Import.",
+            },
+          ],
         },
       ],
+      // #447: `window.api` ist die IPC-Bruecke und gehoert in die eine Schicht, die sie
+      // kapselt (`src/renderer/ipc-client/`). Ueberall sonst waere es ein zweiter Weg.
+      // Die Ausnahme steht im Block darunter - eine Ausnahme, benannt, nicht still.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MemberExpression[object.name='window'][property.name='api']",
+          message:
+            "window.api gehoert in src/renderer/ipc-client/ (#447). " +
+            "Module rufen rufeAuf/abonniere, nicht die Bruecke selbst.",
+        },
+      ],
+    },
+  },
+
+  {
+    // Die eine Ausnahme zur Regel darueber: Hier WIRD die Bruecke gekapselt.
+    files: ["src/renderer/ipc-client/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": "off",
+    },
+  },
+
+  {
+    // #447: Die Sperrklinke braucht den TS-Parser auch fuer die Testdateien. Bis hierhin
+    // lief `eslint .` ueber `tests/` mit dem Standard-Parser (espree) - jede Regel fuer
+    // tests/ waere schon an Typ-Syntax gescheitert. Hier wird NUR der Parser gesetzt,
+    // keine zusaetzliche Regel: die Teststrategie (Mocks, kaputte Werte) bleibt unangetastet.
+    files: ["tests/**/*.ts", "tests/**/*.tsx"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+  },
+
+  {
+    // Sperrklinke (#447): Quelltext-Proben in tests/unit sind nur noch in den gelisteten
+    // Dateien erlaubt; die Liste darf nur schrumpfen. Neue Proben fallen hier auf.
+    files: ["tests/unit/**/*.ts"],
+    plugins: { lokal: quelltextProben },
+    rules: {
+      "lokal/quelltext-proben": "error",
     },
   },
 ];

@@ -45,7 +45,7 @@ const h = vi.hoisted(() => {
     verdrahteVorlagenNachtragIPC: vi.fn((): void => {
       protokoll.push("verdrahteVorlagenNachtragIPC");
     }),
-    verdrahteSpeicherstatusIPC: vi.fn((_: object): void => {
+    verdrahteSpeicherstatusIPC: vi.fn((): void => {
       protokoll.push("verdrahteSpeicherstatusIPC");
     }),
     verdrahteProjectStoreNachtrag4IPC: vi.fn(() => {
@@ -60,7 +60,7 @@ const h = vi.hoisted(() => {
     verdrahteMarkenIPC: vi.fn(() => {
       protokoll.push("verdrahteMarkenIPC");
     }),
-    verdrahteMarkenSpeicherstatusIPC: vi.fn((_: object): void => {
+    verdrahteMarkenSpeicherstatusIPC: vi.fn((): void => {
       protokoll.push("verdrahteMarkenSpeicherstatusIPC");
     }),
     meldeRenderHandlerAn: vi.fn(() => {

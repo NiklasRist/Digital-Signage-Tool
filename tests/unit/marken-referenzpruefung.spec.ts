@@ -95,15 +95,19 @@ async function legeProjektAn(felder: { name: string; standardMarkeId?: unknown; 
   const id = `proj-${String(projektZaehler)}`;
   const ordner = path.join(zustand.ordner, "projects", id);
   await fs.mkdir(ordner, { recursive: true });
+  const eintrag = {
+    id,
+    name: felder.name + "-DATEI",
+    aktionen: felder.aktionen ?? [],
+    schemaVersion: 1,
+  };
   const inhalt =
     felder.roh ??
-    JSON.stringify({
-      id,
-      name: felder.name + "-DATEI",
-      aktionen: felder.aktionen ?? [],
-      schemaVersion: 1,
-      ...(felder.standardMarkeId === undefined ? {} : { standardMarkeId: felder.standardMarkeId }),
-    });
+    JSON.stringify(
+      felder.standardMarkeId === undefined
+        ? eintrag
+        : { ...eintrag, standardMarkeId: felder.standardMarkeId },
+    );
   await fs.writeFile(path.join(ordner, "project.json"), inhalt, "utf8");
   return {
     id,
