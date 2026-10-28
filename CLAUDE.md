@@ -11,7 +11,39 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, vierte Sitzung: Mutations-Charge 1) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, fuenfte Sitzung: Mutations-Charge 2) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 14.**
+
+- **Charge 2 GEBAUT (`250f28d`):** fuenf Testdateien – `liste-reorder`, `reiter`,
+  `kontrast-warnung`, `akzentfarbe`, `zone-text`. **26 Verhaltens-Mutationen**, **5 harmlose
+  Refactorings**; im ersten Lauf 24 erkannt, **A2 gruen** (echte Luecke), **R2** traf die
+  Zeichenkette des Harness nicht (kein Code-Befund, nachgeholt). Endstand **26/26 erkannt**,
+  **0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+- **Die Luecke:** `istAkzentfarbe` prueft `/^#[0-9a-fA-F]{6}$/`; ohne `^` akzeptierte die
+  Funktion auch `x#FF4040`, und kein Test fiel. Neu steht `x#FF4040` in der
+  Ablehnungstabelle – die Pruefung ist GANZSTRINGIG.
+- **Gegenproben:** **A2** und **R2** (die im Kommentar verbotene „Korrektur um eins")
+  erkannt; **Z6** (`fillStyle = "#202020"` statt `loeseFarbe`) und **R7** (`return
+  kopie.sort()`) belegen, dass die entfernten Grep-Proben „kein Farb-Literal" und
+  „sortiert nirgends" durch Verhaltenstests ersetzt sind.
+- **Entfernt:** **29** Quelltext-/Meta-Tests (7 + 5 + 6 + 4 + 7), **1** Fall ergaenzt,
+  **1** Test geschaerft; Suite **5.673 → 5.645** (netto −28).
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.645 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **131** Testdateien mit `readFileSync` (vorher 136), **91** mit
+  Grep-/Bauvorschriften-`describe` (vorher 95); verfeinert lesen **116** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote (kein IPC, kein eigener Zustand,
+  kein zweiter Import, kein try/catch) haben weiterhin **keinen Waechter**, bis eine
+  Lint-Regel steht. Das Schwellenwert-Literal ist verhaltensseitig abgedeckt
+  („verschiedene Werte" kann ein eingebauter Wert nicht bestehen).
+- **Nicht gepusht:** `250f28d` liegt lokal; **Push nur auf Anweisung.** **Naechster
+  Schritt: Charge 3** – Inventur, dann fuenf Dateien; die naechsten Kandidaten sind
+  `filter-split` (41 Tests in einem quelltextlesenden Block) und `reparatur-fuehrung` (23),
+  der Name allein ist aber kein Befund.
+
+## STAND HEUTE (28.10.2026, vierte Sitzung: Mutations-Charge 1) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 13.**
 
