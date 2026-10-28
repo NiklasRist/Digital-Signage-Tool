@@ -2,15 +2,12 @@
 //
 // Die teuerste Eigenschaft dieser Datei ist eine Abwesenheit: Es darf NIRGENDS eine
 // zweite Quelle fuer die Reihenfolge entstehen (TK 9.11.3, kein `position`-Feld).
-// Geprueft wird das zweifach - am Verhalten (die Elemente gehen objektgleich durch,
-// kein Feld kommt hinzu; die Nutzlast traegt genau `reihenfolge`) und am Quelltext
-// (kein Index wandert in ein Element oder in die Nutzlast).
+// Geprueft wird das am Verhalten (die Elemente gehen objektgleich durch,
+// kein Feld kommt hinzu; die Nutzlast traegt genau `reihenfolge`).
 //
 // Die Doppel sind echte kleine Attrappen: Ein `setzeListe`, das nichts speichert,
 // koennte "steht es noch richtig da?" gar nicht beantworten, und ein
 // `fuehreOptimistischAus`, das nur durchreicht, verdeckte den Rollback-Pfad.
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Ergebnis } from '../../src/shared/contracts/ergebnis'
@@ -417,80 +414,5 @@ describe('ordneNeuOptimistisch - abgewiesene Eingaben', () => {
 
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// Quelltext-Proben. Sie pruefen nicht Verhalten, sondern ABWESENHEIT - und genau
-// die ist mit Doppeln nicht messbar.
-// ---------------------------------------------------------------------------
-
-// `\r\n` wird ZUERST vereinheitlicht (core.autocrlf=true; s. #123/#191).
-const QUELLE = readFileSync('src/renderer/composer/liste-reorder.ts', 'utf8').replace(/\r\n/g, '\n')
-// Gefiltert werden Zeilenkommentare UND die Zeilen der Doku-Bloecke. Die
-// JSDoc-Erstzeilen (`/**`) gehoeren dazu: Sie stammen woertlich aus dem
-// Signaturblock des Issues und sind unveraenderlich - eine Abwesenheits-Probe, die
-// auf ihren Text trifft, misst das Issue, nicht den Rumpf.
-const CODEZEILEN = QUELLE.split('\n').filter((zeile) => {
-  const z = zeile.trimStart()
-  return !z.startsWith('//') && !z.startsWith('*') && !z.startsWith('/*')
-})
-const CODE = CODEZEILEN.join('\n')
-
-describe('liste-reorder - was die Datei NICHT enthaelt', () => {
-  it('der Kommentar-Filter greift ueberhaupt', () => {
-    expect(CODEZEILEN.length).toBeLessThan(QUELLE.split('\n').length)
-    expect(CODE).not.toContain('TK 9.11.3')
-    expect(CODE).toContain('export function berechneNeueReihenfolge')
-    expect(CODE).toContain('export async function ordneNeuOptimistisch')
-  })
-
-  it('enthaelt kein Kanal-Literal, kein JSX, keinen react-Import, kein window.api, kein fs', () => {
-    // Absichtlich auf der UNGEFILTERTEN Quelle: Die DoD verlangt die Zeichenketten
-    // nirgends in der Datei, auch nicht in einer Begruendung.
-    expect(QUELLE).not.toContain('project:')
-    expect(CODE).not.toMatch(/from '(react|@dnd-kit\/[^']+)'/)
-    expect(CODE).not.toContain('window.api')
-    expect(CODE).not.toMatch(/from '(node:)?fs'/)
-    // JSX: weder ein schliessendes noch ein selbstschliessendes Tag. Auf einen
-    // Tag-ANFANG zu pruefen ginge nicht - `rufeAuf<void>` sieht genauso aus.
-    expect(CODE).not.toContain('</')
-    expect(CODE).not.toContain('/>')
-  })
-
-  it('ruft genau einen Kanal auf und kennt keinen zweiten', () => {
-    expect(CODE.match(/rufeAuf\s*</g) ?? []).toHaveLength(1)
-    expect(CODE.match(/KANAELE\./g) ?? []).toHaveLength(1)
-    expect(CODE).toContain('KANAELE.project.ordneNeu')
-  })
-
-  it('schreibt keinen Index und kein Ordnungsfeld an ein Element (TK 9.11.3)', () => {
-    // Die zentrale Abwesenheit dieses Issues. Weder ein Feld am Listenelement noch
-    // ein Index in der Nutzlast - die Ordnung ist ausschliesslich die Array-Folge.
-    expect(CODE).not.toMatch(/\bposition\b/i)
-    expect(CODE).not.toMatch(/\b(index|reihenfolgeNr|sortIndex|rang|ord)\s*:/i)
-    // Die Nutzlast traegt genau ein Feld.
-    expect(CODE).toContain('{ reihenfolge: neueIds }')
-    expect(CODE).not.toMatch(/zielIndex|vonIndex|nachIndex/)
-  })
-
-  it('baut keine eigene Rollback-Regel und keinen zweiten Speicher', () => {
-    expect(CODE).toContain("from './optimistisch'")
-    expect(CODE).toContain('fuehreOptimistischAus')
-    // Kein Modul-Zustand: alle Bindungen liegen in den Funktionen.
-    expect(CODE).not.toMatch(/^\s*(let|var)\s/m)
-    expect(CODE).not.toMatch(/\bundo\b/i)
-  })
-
-  it('sortiert nirgends', () => {
-    expect(CODE).not.toMatch(/\.sort\s*\(/)
-    expect(CODE).not.toMatch(/\.reverse\s*\(/)
-  })
-
-  it('veraendert kein fremdes Array an Ort und Stelle', () => {
-    // `splice` kommt vor - aber ausschliesslich auf der lokalen Kopie `kopie`.
-    for (const treffer of CODE.match(/[A-Za-z_$][\w$]*\.splice\s*\(/g) ?? []) {
-      expect(treffer).toMatch(/^kopie\.splice/)
-    }
   })
 })

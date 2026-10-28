@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SICHERHEITSABSTAND_PX } from "../../src/shared/contracts/konstanten";
@@ -32,65 +30,6 @@ vi.mock("../../src/renderer/template-canvas/text-kaskade", async (importOriginal
     ZEILENHOEHE_FAKTOR: echt.ZEILENHOEHE_FAKTOR,
     passeTextEin: vi.fn(echt.passeTextEin),
   };
-});
-
-// ---------------- Quell-Pruefungen (Grep als Test) ----------------
-
-const QUELLE = readFileSync(
-  new URL("../../src/renderer/template-canvas/zone-text.ts", import.meta.url),
-  "utf8",
-);
-
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((z) => {
-    const t = z.trim();
-    return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
-
-describe("zone-text – Verbote in der Quelldatei (Grep)", () => {
-  it("enthaelt das Kaskaden-Literal 1.2 nicht (Faktor kommt aus #113)", () => {
-    expect(CODEZEILEN).not.toMatch(/\b1\.2\b/);
-  });
-
-  it("baut kein font-Literal selbst (kein 'px \"' und kein 'sans-serif')", () => {
-    expect(CODEZEILEN).not.toContain('px "');
-    expect(CODEZEILEN).not.toContain("sans-serif");
-  });
-
-  it("enthaelt kein Farb-Literal (kein '#RRGGBB', kein rgb/rgba)", () => {
-    expect(CODEZEILEN).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(CODEZEILEN).not.toMatch(/\brgba?\(/);
-  });
-
-  it("liest marke.schriften nicht selbst und liest aktion.akzentfarbe nicht", () => {
-    expect(CODEZEILEN).not.toContain("schriften[");
-    expect(CODEZEILEN).not.toContain("akzentfarbe");
-  });
-
-  it("liest marke.sicherheit nicht (kein erneuter Abzug des Sicherheitsabstands)", () => {
-    expect(CODEZEILEN).not.toContain("sicherheit");
-  });
-
-  it("enthaelt kein await/async/Math.random/Date/devicePixelRatio/document/window", () => {
-    for (const verbot of [
-      "await ",
-      "async ",
-      "Math.random",
-      "new Date",
-      "Date.",
-      "devicePixelRatio",
-      "document",
-      "window",
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot);
-    }
-  });
-
-  it("greift nicht auf k.zeilenhoehe zu (das Feld existiert nicht)", () => {
-    expect(CODEZEILEN).not.toContain(".zeilenhöhe");
-    expect(CODEZEILEN).not.toContain(".zeilenhoehe");
-  });
 });
 
 // ---------------- Aufzeichnungs-Doppel ----------------
@@ -484,12 +423,14 @@ describe("zeichneTextZone (#114) - Farbe und Schrift nur über #112/#110", () =>
     expect(ruf?.[1]).toBe("headlinePlakativ");
   });
 
-  it("setzt fillStyle auf den Wert von loeseFarbe", () => {
+  it("setzt fillStyle auf den Wert von loeseFarbe - der Wert kommt aus der Marke, kein Literal", () => {
     const { kontext, ereignisse } = baueKontextDoppel();
-    zeichneTextZone(kontext, zone(), "Beispiel", marke(), aktion(null));
+    const m = marke();
+    m.farben.textAufHell = "#123456";
+    zeichneTextZone(kontext, zone({}, { farbRolle: "textAufHell" }), "Beispiel", m, aktion(null));
     const fillStyle = ereignisse.filter((e) => e.art === "set" && e.name === "fillStyle");
     expect(fillStyle).toHaveLength(1);
-    expect(fillStyle[0]?.wert).toBe("#202020"); // textAufHell aus der Probe-Marke
+    expect(fillStyle[0]?.wert).toBe("#123456");
   });
 
   it("setzt keinen Schatten und keine andere Baseline als top", () => {

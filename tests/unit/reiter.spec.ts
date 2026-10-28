@@ -5,8 +5,6 @@
 // pruefbar. Der Modul-Zustand lebt zwischen den Tests weiter; deshalb setzt
 // `beforeEach` ihn ueber `setzeReiterZustandZurueck()` zurueck. Genau dafuer
 // existiert diese Funktion (ENTSCHIEDEN: NUR fuer Tests).
-import { readFileSync } from "node:fs";
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -19,19 +17,6 @@ import {
   setzeReiterZustandZurueck,
   wechsleReiter,
 } from "../../src/renderer/app-shell/reiter";
-
-const QUELLE = readFileSync(
-  new URL("../../src/renderer/app-shell/reiter.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur der Code, ohne Kommentarzeilen – die Grep-Proben der DoD pruefen den Rumpf.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((z) => {
-    const t = z.trim();
-    return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 beforeEach(() => {
   setzeReiterZustandZurueck();
@@ -221,28 +206,6 @@ describe("setzeReiterZustandZurueck (NUR fuer Tests)", () => {
   });
 });
 
-describe("Bauvorschriften dieser Datei (DoD-Grep-Proben)", () => {
-  it("enthaelt kein JSX und kein JSX-Element-Muster", () => {
-    expect(QUELLE).not.toMatch(/\bJSX\b/);
-    expect(CODEZEILEN).not.toMatch(/<[a-z][a-z0-9]*[\s/>]/i);
-  });
-
-  it("importiert nichts aus react", () => {
-    expect(CODEZEILEN).not.toMatch(/from\s+['"]react['"]/);
-  });
-
-  it("enthaelt kein rufeAuf", () => {
-    expect(CODEZEILEN).not.toMatch(/rufeAuf/);
-  });
-
-  it("enthaelt kein window.", () => {
-    expect(CODEZEILEN).not.toMatch(/window\./);
-  });
-
-  it("enthaelt kein localStorage", () => {
-    expect(CODEZEILEN).not.toMatch(/localStorage/);
-  });
-});
 // ---------------- #314: der fuenfte Reiter ----------------
 
 describe("#314: der Reiter 'marken'", () => {

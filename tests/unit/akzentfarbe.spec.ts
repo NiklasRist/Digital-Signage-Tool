@@ -3,48 +3,12 @@
 // Die alte Fassung (akzentAuswahl, istAkzentRolle, AKZENT_STANDARD = 'akzent') ist
 // ERSATZLOS gestrichen - der Test belegt auch das: Die Bezeichner duerfen nicht mehr
 // vorkommen, und es gibt keinen Alias und keinen Re-Export.
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SICHERHEITSABSTAND_PX } from '../../src/shared/contracts/konstanten'
 
 import type { FarbRolle, Marke } from '../../src/shared/contracts/marke'
 import type { Aktion } from '../../src/shared/contracts/aktion'
-
-// ---------------- Quelldatei-Verbote (Grep, NUR auf diese eine Datei) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/action-editor/akzentfarbe.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('akzentfarbe – Verbote in der Quelldatei (Grep)', () => {
-  it('enthaelt die gestrichenen Bezeichner nicht mehr - kein Alias, kein Re-Export', () => {
-    expect(CODEZEILEN).not.toContain('akzentAuswahl')
-    expect(CODEZEILEN).not.toContain('istAkzentRolle')
-  })
-
-  it('enthaelt kein Zeichen # in einem String-Literal und keinen loeseFarbe-Aufruf', () => {
-    expect(CODEZEILEN).not.toMatch(/['"`]#[^'"`]*['"`]/)
-    expect(CODEZEILEN).not.toContain('loeseFarbe')
-  })
-
-  it('importiert keine Kontrast-Rechnung', () => {
-    expect(QUELLE).not.toContain('kontrast')
-  })
-
-  it('schreibt die akzentfarbe ausschliesslich ueber speichereAktion (kein Kanal-Literal, kein window.api)', () => {
-    expect(CODEZEILEN).not.toContain('project:')
-    expect(CODEZEILEN).not.toContain('window.api')
-  })
-})
 
 // ---------------- Typ-Pruefung: AKZENT_ROLLEN ist Teilmenge von FarbRolle ----------------
 
@@ -171,6 +135,7 @@ describe('istAkzentfarbe (#318) – genau # + SECHS Hex-Ziffern', () => {
     '#FF404080', // achtstellig - hier NICHT speicherbar
     '#FFF',
     'FF4040',
+    'x#FF4040', // Praefix: die Pruefung ist GANZSTRINGIG, nicht "irgendwo ein Hex"
     'akzent',
     'akzentTief',
     'rot',

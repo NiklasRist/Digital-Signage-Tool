@@ -12,8 +12,6 @@
 // in zeitachse.spec.ts. `erreichtKontrastSchwelle` wird dabei mit einer
 // Ersatz-Implementierung belegt, damit ihr interner (echter) Aufruf von
 // `kontrastVerhaeltnis` den Zaehler der "genau zweimal"-Probe nicht verfaelscht.
-import { readFileSync } from "node:fs";
-
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as kontrastModul from "../../src/renderer/gemeinsam/kontrast";
@@ -23,32 +21,6 @@ import {
 } from "../../src/renderer/marken-editor/kontrast-warnung";
 import { SICHERHEITSABSTAND_PX } from "../../src/shared/contracts/konstanten";
 import type { FarbRolle, Marke } from "../../src/shared/contracts/marke";
-
-const QUELLE = readFileSync(
-  new URL("../../src/renderer/marken-editor/kontrast-warnung.tsx", import.meta.url),
-  "utf8",
-);
-
-// Nur der Code, ohne Kommentarzeilen – die Grep-Proben der DoD pruefen den Rumpf.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((z) => {
-    const t = z.trim();
-    return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
-
-// Trailing-Kommentare auf Codzeilen entfernen: Die VERBINDLICHEN Signatur-Kommentare
-// stehen AUF Codzeilen (z. B. `schwellenwert: number   // KONTRAST_SCHWELLE (4.5) ...`).
-// Die DoD-Grep-Proben pruefen die ZWEITE QUELLE (eigenes Literal, eigener Import) –
-// ein Kommentar der Signatur ist keine. Ohne diesen Filter wuerde eine Probe den
-// eigenen verbindlichen Signaturblock falsch anzeigen (siehe CLAUDE.md: "Grep-Proben
-// unterscheiden nicht zwischen Code und Prosa").
-const CODE_OHNE_TRAILING_KOMMENTARE = CODEZEILEN.split("\n")
-  .map((z) => z.split("//")[0])
-  .join("\n");
-const IMPORTE = CODEZEILEN.split("\n")
-  .filter((z) => z.trim().startsWith("import "))
-  .join("\n");
 
 // Die dreizehn Farb-Rollen mit den Werten aus TK 9.11.2 (wie farben.spec.ts).
 const FARBEN: Record<FarbRolle, string> = {
@@ -267,41 +239,5 @@ describe("8-stellige Markenwerte (Alpha, in #292 entschieden)", () => {
     const m = marke({ ...WEISSE_TEXTE, akzent: "#FF4040CC" });
     expect(() => KontrastWarnung({ marke: m, schwellenwert: 4.5 })).not.toThrow();
     expect(KontrastWarnung({ marke: m, schwellenwert: 4.5 })).not.toBeNull();
-  });
-});
-
-describe("Bauvorschriften dieser Datei (DoD-Grep-Proben)", () => {
-  it("rechnet keine Helligkeit/Luminanz/Kontrast selbst – nur Math.max als Vergleich (DoD)", () => {
-    const ohneMathMax = CODEZEILEN.replace(/Math\.max/g, "");
-    expect(ohneMathMax).not.toMatch(/Math\./);
-  });
-
-  it("fuehrt keinen Schwellenwert als Zahlen-Literal (3.0/4.5/7.0/7.1) – zweite Quelle verboten (DoD)", () => {
-    expect(CODE_OHNE_TRAILING_KOMMENTARE).not.toMatch(/(^|[^0-9])4\.5([^0-9]|$)/);
-    expect(CODE_OHNE_TRAILING_KOMMENTARE).not.toMatch(/(^|[^0-9])3\.0([^0-9]|$)/);
-    expect(CODE_OHNE_TRAILING_KOMMENTARE).not.toMatch(/(^|[^0-9])7\.0([^0-9]|$)/);
-    expect(CODE_OHNE_TRAILING_KOMMENTARE).not.toMatch(/(^|[^0-9])7\.1([^0-9]|$)/);
-  });
-
-  it("importiert nichts aus shared/contracts/konstanten, insbesondere nicht KONTRAST_SCHWELLE (DoD)", () => {
-    expect(IMPORTE).not.toMatch(/shared\/contracts\/konstanten/);
-    expect(IMPORTE).not.toMatch(/KONTRAST_SCHWELLE/);
-  });
-
-  it("exportiert keine eigene Schwellenwert-Konstante (DoD)", () => {
-    expect(CODEZEILEN).not.toMatch(/export const (KONTRAST|SCHWELLENWERT)/);
-  });
-
-  it("enthaelt kein try/catch und keine Zeichenketten-Operation auf einem Farbwert (DoD)", () => {
-    expect(CODEZEILEN).not.toMatch(/\btry\b|\bcatch\b/);
-    expect(CODEZEILEN).not.toMatch(/\.(slice|substring|replace)\(/);
-    expect(CODEZEILEN).not.toMatch(/length\s*===\s*9/);
-  });
-
-  it("enthaelt kein rufeAuf, keinen IPC-Kanal, kein fs, kein BrowserWindow (DoD)", () => {
-    expect(CODEZEILEN).not.toMatch(/rufeAuf/);
-    expect(CODEZEILEN).not.toMatch(/\bipc\b/i);
-    expect(CODEZEILEN).not.toMatch(/\bfs\b/);
-    expect(CODEZEILEN).not.toMatch(/BrowserWindow/);
   });
 });

@@ -382,3 +382,82 @@ empfohlen haben. Sie sind hier bewusst nicht durch Schein-Tests ersetzt.
 Die 136 sind keine Zielliste: `fehlertexte` bleibt trotz `readFileSync` stehen, weil
 ihre Probe einen Modul-Vertrag prueft. Die naechste Charge beginnt wieder mit einer
 Inventur der 95 Describe-Bloecke, nicht mit einer Zahl.
+
+---
+
+## 14. Charge 2 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `liste-reorder` (composer), `reiter` (app-shell),
+`kontrast-warnung` (marken-editor), `akzentfarbe` (action-editor),
+`zone-text` (template-canvas).
+
+**Ausgangsmessung:** 26 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Im ersten Lauf: **24 erkannt**, **A2 gruen** (echte Luecke), **R2** traf die
+Zeichenkette des Harness nicht (kein Code-Befund, im zweiten Lauf nachgeholt und
+erkannt). Endstand: **26/26 erkannt**, **0/5 Refactorings rot**. Jede Mutation
+gesichert und byte-identisch zurueckgenommen.
+
+### Die eine Luecke (geschlossen mit Verhaltens-Test)
+
+- **A2 – der Anker fehlte ungeprueft.** `istAkzentfarbe` prueft mit
+  `/^#[0-9a-fA-F]{6}$/`; ohne das `^` akzeptiert die Funktion auch `x#FF4040`.
+  Kein Test fiel. Neu: `x#FF4040` steht in der Ablehnungstabelle – die Pruefung ist
+  GANZSTRINGIG, nicht „irgendwo ein Hex".
+
+### Gegenproben nach den Korrekturen
+
+- **A2** erneut: erkannt.
+- **R2** (`nach + (von < nach ? -1 : 0)` – die im Kommentar ausdruecklich verbotene
+  „Korrektur um eins"): erkannt, 7 Tests rot.
+- **Z6** (`ctx.fillStyle = "#202020"` statt `loeseFarbe(...)`): erkannt – der
+  FillStyle-Test nutzt jetzt `#123456` aus der Marke; ein Literal faellt auf.
+- **R7** (`return kopie.sort()`): erkannt – belegt, dass der entfernte
+  „sortiert nirgends"-Grep durch den Verhaltenstest „sortiert nichts" gedeckt ist.
+
+### Entfernt (29 Tests, 1 Fall ergaenzt – netto −28)
+
+- **7** in `liste-reorder` (Kommentar-Filter, Kanal-Literal/JSX/react/fs, ein Kanal,
+  kein Index, keine eigene Rollback-Regel, kein `sort`/`reverse`, kein fremdes
+  `splice`). Ersatz: die Nutzlast-Schluesselmenge, die Rollback-Sequenz und
+  „sortiert nichts" sind Verhaltenstests; R6/R7 belegen es.
+- **5** in `reiter` (kein JSX, kein react, kein `rufeAuf`, kein `window.`, kein
+  `localStorage`). Der Modul-Zustand ist mit 32 Verhaltenstests abgedeckt; die
+  Verbote sind Architektur (Lint-Kandidat).
+- **6** in `kontrast-warnung` (keine eigene Helligkeitsrechnung, kein
+  Schwellenwert-Literal, kein Import aus `konstanten`, keine eigene
+  Schwellen-Konstante, kein try/catch, kein IPC/fs). Ersatz: die zwei Spy-Tests
+  (genau zwei Aufrufe), der Test „verschiedene `schwellenwert`-Werte" und die echte
+  Rechnung aus #292.
+- **4** in `akzentfarbe` (gestrichene Bezeichner, kein Hex-Literal/`loeseFarbe`,
+  keine Kontrast-Rechnung, kein Kanal-Literal/`window.api`). Ersatz: A2-Test und
+  „eine veraenderte Marke aendert das Ergebnis mit".
+- **7** in `zone-text` (kein 1.2-Literal, kein font-Literal, kein Farb-Literal,
+  kein Selbstlesen von `schriften`/`akzentfarbe`/`sicherheit`, kein
+  await/random/document/window, kein `.zeilenhoehe`). Ersatz: der FillStyle-Test
+  mit markenfremdem Wert; Zeilenhoehe, Schriftweg und `x=96` sind bereits
+  Verhaltenstests.
+
+**Ehrlich offen:** Wie in Charge 1 haben die entfernten Architektur-Verbote
+(kein IPC, kein eigener Zustand, kein zweiter Import, kein try/catch) **keinen
+Waechter**, bis eine Lint-Regel steht. Der einzige Fall mit echter Zweitquellen-
+Gefahr – das Schwellenwert-Literal – ist durch „verschiedene Werte" verhaltens-
+seitig abgedeckt: Ein eingebauter Wert kann den Test nicht bestehen.
+
+### Stand nach Charge 2
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **28**: 26 + 2 Gegenproben – **28 erkannt** |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **29** |
+| Verhaltens-Tests ergaenzt/geschaerft | – | **1 Fall + 1 Test** |
+| Echte Luecken geschlossen | – | **1** |
+| Suite | 5.673 | **5.645** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 136 / 95 | **131** Dateien mit `readFileSync`, **91** mit Grep-/Bauvorschriften-`describe` |
+
+Die verfeinerte Zaehlung (nur Describe-Bloecke, die wirklich eine Quelldatei lesen)
+steht nach dieser Charge bei **116**. Die naechste Charge beginnt wieder mit einer
+Inventur – `filter-split` (41 Tests in einem Block, der Quelldatei liest) und
+`reparatur-fuehrung` (23) sind die naechsten Kandidaten, aber der Name allein ist
+kein Befund.
