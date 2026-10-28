@@ -66,25 +66,38 @@
   Aktion 1→2 mit getipptem Titel, leerer Titel am Formular abgelehnt). Matrix-Kopf auf 28.10.
   gezogen. **Beleg-Kommentare an #445/#394/#364 gesetzt** (28.10.2026); **#445 und #364 geschlossen**
   (DoD erfüllt, bei #364 sinngemäß statt über die nicht existierende E2E-Datei), **#394/#446 offen**.
-- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.659 (338 Dateien)**, Integration **49
-  (12 Dateien)**, Treiber **0 Befunde**, Typecheck/Lint 0. Zwei Läufe davor waren rot mit
-  **denselben drei** Treiber-Befunden (Band-Aufnahme 4f2 ×2, Aktion löschen 4g4) - und der
+- **FA-13 GEBAUT (28.10.2026, #100/#155):** `erstelleVorlage` legt auch die **Einblendung** an –
+  `art: 'einblendung'`, `höhe: 162`, feste Zonen `hintergrund` + `logo` aus `band-standard`;
+  `hintergrund` trägt den **Scrim-Verlauf** `scrimStart → scrimEnde` (unten) statt
+  `flaecheDunkel` (TK 9.11.1, Entscheidung 23.10.). `ANLEGBARE_ARTEN` hat den dritten Eintrag
+  („Neu: einblendung (162)"); andere Bandhöhen bleiben `unbekannter_fehler` (Logo-Regel fehlt).
+  **#155-DoD nachgeholt:** `vorlagen-uebersicht.spec.ts` (26 Tests) und
+  `vorlagen-anlegen-einblendung.spec.ts` (4) – dabei eine echte Lücke geschlossen:
+  `entferneVorlage` wies eingebaute Vorlagen **per IPC** ab, jetzt vorher gegen die geladene
+  Übersicht (DoD: „rufeAuf null Mal"). Treiber **4r** legt eine Einblendung am Fenster an
+  (Zonen, Scrim, Logo 96/20/240/69). Gegenproben 3/1/2/1, byte-identisch (`4a46ed…`, `82ea7a…`).
+  Matrix FA-13 bleibt **teilweise** (freie Zonen verschieben/bemaßen ungemessen).
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.692 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**, Typecheck/Lint 0 (Nachtrag nach FA-13 und den drei
+  Treiber-Schritten 4o/4p/4q; der erste Lauf davor: 5.659/338). Die zwei Läufe **vor** dem
+  5.659er-Stand waren rot mit **denselben drei** Treiber-Befunden (Band-Aufnahme 4f2 ×2, Aktion löschen 4g4) - und der
   Lauf **08:56 heute**, also **vor** diesen Änderungen, zeigt sie ebenfalls. Sie sind damit
   **nicht** von dieser Sitzung verursacht; im grünen Lauf sind `bandZiel=true` und
   `Aktion loeschen: 1 -> 0 -> Undo 1` belegt. (Die erste Montage von #394 als eigenes Panel
   über der Zeitleiste ist trotzdem verworfen - sie kostete genau die Höhe, an der die
   Zieh-Schritte hängen.)
 - **GEPUSHT (28.10.2026, auf Anweisung):** `a53e64d..fd563b4` → `origin/main`, **180 Commits**,
-  431 Dateien (+17.368/−7.685); `main` = `origin/main`, Arbeitsbaum sauber. Der Gate-Lauf oben
-  liegt **vor** den drei Doku-Commits; danach nachgeprüft wurde nur `treiber-matrix.spec.ts`
+  431 Dateien (+17.368/−7.685); `main` = `origin/main`, Arbeitsbaum sauber. Der Gate-Lauf **zum
+  Push-Zeitpunkt** lag **vor** den drei Doku-Commits; danach nachgeprüft wurde nur `treiber-matrix.spec.ts`
   (**3/3 grün**), **kein** voller Gate-Lauf. Das Remote meldet beim Push **45 Dependabot-Findings**
   (22 high/16 moderate/7 low) – **nicht geprüft**, auf Anweisung zurückgestellt („Funktionen vor
   Sicherheit"). Auf GitHub wurden die Beleg-Kommentare an **#445/#394/#364** gesetzt (28.10.2026).
   **Danach geschlossen:** **#445** und **#364** (je mit Beleg-Kommentar, `completed`);
   **#394** bleibt offen (Platzierung), **#446** bleibt offen (Ursache unbenannt; Kommentar mit
   den zehn Läufen gesetzt). Kein Label geändert.
-- **Nicht gepusht nach dem Push:** `main` liegt wieder **drei Commits vor `origin/main`**
-  (`4f990b5` Treiber-Schritte, `3418add` zehn Läufe/Handover, dieser Handover-Nachtrag).
+- **Nicht gepusht nach dem Push:** `main` liegt wieder **fünf Commits vor `origin/main`**
+  (`7f5896c` Push-Status, `4f990b5` Treiber-Schritte, `3418add` zehn Läufe/Handover,
+  `f05acef` #445/#364 geschlossen, dazu der FA-13-Commit mit diesem Nachtrag).
 
 ## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – historisiert durch den Abschnitt darueber
 

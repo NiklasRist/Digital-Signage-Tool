@@ -53,7 +53,7 @@ beforeEach(() => {
 });
 
 /** Legt an und besteht auf Erfolg - fuer die Tests, in denen der Fehlerfall nicht das Thema ist. */
-async function angelegt(art: "vollflaeche" | "split", höhe: number | null, name: string) {
+async function angelegt(art: "vollflaeche" | "split" | "einblendung", höhe: number | null, name: string) {
   const ergebnis = await erstelleVorlage(art, höhe, name);
   if (!ergebnis.ok) {
     throw new Error(`unerwartet fehlgeschlagen: ${ergebnis.fehler.code} ${ergebnis.fehler.meldung}`);
@@ -172,10 +172,56 @@ describe("erstelleVorlage – Band", () => {
     expect(zustand.bestand).toEqual([]);
   });
 
-  it("legt fuer eine einblendung NICHTS an", async () => {
-    const ergebnis = await erstelleVorlage("einblendung", 162, "Einblendung");
+  it("legt eine einblendung mit den festen Zonen des Bandes an", async () => {
+    // Entscheidung 23.10.2026 (AD v1.9 / TK 9.11.1): Angelegt wird ausschliesslich mit 162 px;
+    // die festen Zonen kommen aus "Band-Standard" - hintergrund (0,0,1920,162) und logo
+    // (96,20,240,69), in dieser Zeichenreihenfolge.
+    const quelle = eingebaute("band-standard");
+    const neu = await angelegt("einblendung", 162, "Meine Einblendung");
+
+    expect(neu.art).toBe("einblendung");
+    expect(neu.höhe).toBe(162);
+    expect(neu.parent).toBeNull();
+    expect(neu.eingebaut).toBe(false);
+    expect(neu.zonen.map((z) => z.id)).toEqual(["hintergrund", "logo"]);
+    expect(zone(neu, "hintergrund").rahmen).toEqual(zone(quelle, "hintergrund").rahmen);
+    expect(zone(neu, "logo")).toEqual(zone(quelle, "logo"));
+    expect(zone(neu, "hintergrund").rolle).toBe("fest");
+  });
+
+  it("gibt der einblendung den Scrim-Verlauf statt der deckenden Fuellung", async () => {
+    // TK 9.11.1 (Entscheidung 23.10.2026), woertlich: "Die hintergrund-Zone traegt keine deckende
+    // flaecheDunkel-Fuellung, sondern den Scrim-Verlauf scrimStart -> scrimEnde, Richtung unten
+    // (durchsichtig -> 70 % Schwarz)." Deckkraft folgt der Vorlagenart (TK 9.2.8) - eine deckende
+    // Fuellung hoebe den Sinn der Einblendung auf.
+    const neu = await angelegt("einblendung", 162, "Meine Einblendung");
+    const hintergrund = zone(neu, "hintergrund");
+
+    expect(hintergrund.deko).toEqual({
+      verlauf: { vonFarbRolle: "scrimStart", bisFarbRolle: "scrimEnde", richtung: "unten" },
+    });
+    expect(hintergrund.deko?.füllungFarbRolle).toBeUndefined();
+    expect(hintergrund.deko?.radius).toBeUndefined();
+    expect(hintergrund.deko?.statischerText).toBeUndefined();
+  });
+
+  it("die einblendung aendert die QUELLE nicht - der Scrim entsteht als Kopie", async () => {
+    const quelldeko = zone(eingebaute("band-standard"), "hintergrund").deko;
+
+    await angelegt("einblendung", 162, "Meine Einblendung");
+
+    // Die eingebaute Band-Vorlage bleibt deckend; nur die neue Vorlage traegt den Verlauf.
+    expect(zone(eingebaute("band-standard"), "hintergrund").deko).toEqual(quelldeko);
+    expect(quelldeko?.verlauf).toBeUndefined();
+  });
+
+  it("legt eine einblendung mit anderer Hoehe NICHTS an", async () => {
+    // Nur 162 ist entschieden (AD v1.9 / TK 9.11.1). Fuer andere Hoehen fehlt die Logo-Regel -
+    // nicht raten, keine Vorlage ohne festgelegten Markenrahmen.
+    const ergebnis = await erstelleVorlage("einblendung", 120, "Schmale Einblendung");
 
     expect(ergebnis.ok).toBe(false);
+    if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe("unbekannter_fehler");
     expect(zustand.aufrufe).toEqual([]);
     expect(zustand.bestand).toEqual([]);
   });

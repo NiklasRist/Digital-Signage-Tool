@@ -1796,6 +1796,101 @@ const main = async () => {
       }
     }
 
+    // Schritt 4r - FA-13 / #100: Die EINBLENDUNG ist seit der Entscheidung vom 23.10.2026
+    // anlegbar (AD v1.9 / TK 9.11.1) - mit den festen Zonen des Bandes, aber dem
+    // Scrim-Verlauf als Hintergrund statt der deckenden Fuellung. Gemessen wird am echten
+    // Editor; der Bestand kommt aus `vorlagen:listeVorlagen`.
+    {
+      const name4r = "DurchlaufEinblendung-" + Date.now();
+      const leseVorlagen4r = () => seite.evaluate(async () => {
+        const antwort = await window.api.invoke("vorlagen:listeVorlagen");
+        return antwort && antwort.ok ? antwort.wert : null;
+      });
+      let id4r = null;
+      try {
+        await klick('[data-testid="reiter-vorlagen"]');
+        await schlafe(800);
+        const sitzungOffen4r = await seite.evaluate(
+          () => document.querySelector('[data-testid="arbeitskopie-kopf"]') !== null,
+        );
+        if (sitzungOffen4r) {
+          await seite.evaluate(() => document.querySelector('[data-testid="vorlage-verwerfen"]')?.click());
+          await schlafe(1_200);
+        }
+        const neuKnopf4r = await seite.$('[data-testid="vorlagen-neu-einblendung"]');
+        if (neuKnopf4r === null) {
+          fund("Einblendung anlegen (FA-13)", "der Weg 'Neu: einblendung' steht in der Uebersicht",
+            "vorlagen-neu-einblendung fehlt", "Befund", "vorlagen-editor/index.tsx");
+        } else {
+          await neuKnopf4r.click();
+          neuKnopf4r.dispose?.();
+          await schlafe(300);
+          const nameGesetzt4r = await seite.evaluate((n) => {
+            const feld = document.querySelector('[data-testid="vorlage-name"]');
+            if (feld === null) return false;
+            const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+            setzeWert.call(feld, n);
+            feld.dispatchEvent(new Event("input", { bubbles: true }));
+            return true;
+          }, name4r);
+          await seite.evaluate(() => {
+            document.querySelector('[data-testid="vorlage-anlegen-bestaetigen"]')?.click();
+          });
+          const frist4r = Date.now() + 15_000;
+          let neu4r = null;
+          while (Date.now() < frist4r) {
+            const liste = await leseVorlagen4r();
+            neu4r = liste === null ? null : liste.find((v) => v.name === name4r) ?? null;
+            if (neu4r !== null) break;
+            await schlafe(250);
+          }
+          id4r = neu4r === null ? null : neu4r.id;
+          const zonen4r = neu4r === null ? [] : neu4r.zonen;
+          const zoneHintergrund4r = zonen4r.find((z) => z.id === 'hintergrund') ?? null;
+          const zoneLogo4r = zonen4r.find((z) => z.id === 'logo') ?? null;
+          const verlauf4r = zoneHintergrund4r?.deko?.verlauf ?? null;
+          console.log(`[schritt-4r] Einblendung: nameGesetzt=${String(nameGesetzt4r)}, gefunden=${String(neu4r !== null)}, art=${String(neu4r?.art)}, hoehe=${String(neu4r?.höhe)}, zonen=${JSON.stringify(zonen4r.map((z) => z.id))}, hintergrund=${JSON.stringify(zoneHintergrund4r?.deko)}, logo=${JSON.stringify(zoneLogo4r?.rahmen)}.`);
+          if (!nameGesetzt4r || neu4r === null) {
+            fund("Einblendung anlegen (FA-13)", "eine eigene Einblendung laesst sich anlegen",
+              `gefunden=${String(neu4r !== null)}`, "Befund", "vorlagen-editor/index.tsx");
+          } else if (neu4r.art !== 'einblendung' || neu4r.höhe !== 162) {
+            fund("Einblendung anlegen (FA-13)", "die Einblendung traegt art=einblendung und hoehe=162",
+              `art=${String(neu4r.art)}, hoehe=${String(neu4r.höhe)}`, "Befund", "vorlagen-store/erstelle-vorlage.ts");
+          } else if (zonen4r.map((z) => z.id).join(',') !== 'hintergrund,logo') {
+            fund("Einblendung anlegen (FA-13)", "die festen Zonen sind hintergrund und logo (Reihenfolge)",
+              JSON.stringify(zonen4r.map((z) => z.id)), "Befund", "vorlagen-store/erstelle-vorlage.ts");
+          } else if (verlauf4r === null
+            || verlauf4r.vonFarbRolle !== 'scrimStart'
+            || verlauf4r.bisFarbRolle !== 'scrimEnde'
+            || verlauf4r.richtung !== 'unten'
+            || zoneHintergrund4r?.deko?.füllungFarbRolle !== undefined) {
+            fund("Einblendung anlegen (FA-13)", "der Hintergrund traegt den Scrim-Verlauf scrimStart -> scrimEnde (unten), keine deckende Fuellung",
+              JSON.stringify(zoneHintergrund4r?.deko), "Befund", "vorlagen-store/erstelle-vorlage.ts");
+          } else if (zoneLogo4r === null
+            || zoneLogo4r.rahmen.x !== 96 || zoneLogo4r.rahmen.y !== 20
+            || zoneLogo4r.rahmen.breite !== 240 || zoneLogo4r.rahmen.höhe !== 69) {
+            fund("Einblendung anlegen (FA-13)", "das Logo steht auf dem Band-Rahmen (96, 20, 240, 69)",
+              JSON.stringify(zoneLogo4r?.rahmen), "Befund", "vorlagen-store/erstelle-vorlage.ts");
+          } else {
+            console.log("[schritt-4r] Einblendung GEMESSEN: art=einblendung, hoehe=162, Zonen [hintergrund, logo], Scrim-Verlauf, Logo (96, 20, 240, 69) (#100/FA-13).");
+          }
+        }
+      } finally {
+        // Aufraeumen: Sitzung beenden, dann die Testvorlage entfernen (sonst bleibt sie in vorlagen.json).
+        await seite.evaluate(() => document.querySelector('[data-testid="vorlage-verwerfen"]')?.click());
+        await schlafe(800);
+        if (id4r !== null) {
+          const weg4r = await seite.evaluate(async (id) => {
+            const antwort = await window.api.invoke("vorlagen:löscheVorlage", { id });
+            return antwort && antwort.ok ? true : JSON.stringify(antwort?.fehler ?? antwort);
+          }, id4r);
+          console.log(`[schritt-4r] Aufraeumen: loeschen=${JSON.stringify(weg4r)}.`);
+        }
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await schlafe(300);
+      }
+    }
+
     // Schritt 4b - Medien-Seed: Ein mit dem mitgebundelten ffmpeg erzeugtes Testvideo
     // wird ueber queue:reiheEin importiert (derselbe Weg wie die native Import-Quelle -
     // der Dialog selbst bleibt nativ und wird nicht bedienbar gemockt). Messpartner: der

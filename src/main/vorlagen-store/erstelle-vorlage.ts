@@ -281,23 +281,23 @@ function festeZonen(art: VorlagenArt, höhe: number | null): Ergebnis<Zone[], Vo
   const quelle = quelleFuer(art, höhe, mitgelieferte)
 
   if (quelle === null) {
-    // DIE EINE ECHTE LUECKE DIESES ISSUES, ausdruecklich NICHT geraten (STOPP-Block):
+    // DIE VERBLIEBENE LUECKE, ausdruecklich NICHT geraten (STOPP-Block):
     //
-    //   1. Logo-Geometrie bei beliebiger Bandhoehe. Die Werte der eingebauten Band-Vorlage sind auf
-    //      ihre Hoehe zugeschnitten; sicher nutzbar sind nur die oberen 108 px des Bandes
-    //      (TK 9.11.1). Bei einem niedrigeren Band passt das Logo nicht mehr hinein. Ob es
-    //      mitskaliert (und wie), ob es an eine andere Position rutscht oder ob es eine
-    //      Mindest-Bandhoehe gibt, sagt der Vertrag NIRGENDS - eine erfundene Skalierungsregel waere
-    //      genau das "automatische Umlayouten", das TK 9.11.1 Punkt 3 verbietet.
-    //   2. Hintergrund einer `einblendung`. Einblendungs-Baender tragen Alpha, sie ueberlagern das
-    //      Video (TK 9.2.8); ein deckender `hintergrund` hoebe den Sinn der Einblendung auf. Welche
-    //      Farbrolle oder welcher Verlauf stattdessen gilt - oder ob es gar keine Hintergrundzone
-    //      gibt -, legt der Vertrag nicht fest, und es gibt keine eingebaute `einblendung`-Vorlage,
-    //      aus der sich die Antwort ablesen liesse.
+    // Logo-Geometrie bei beliebiger Bandhoehe. Die Werte der eingebauten Band-Vorlage sind auf ihre
+    // Hoehe zugeschnitten; sicher nutzbar sind nur die oberen 108 px des Bandes (TK 9.11.1). Bei
+    // einem niedrigeren Band passt das Logo nicht mehr hinein. Ob es mitskaliert (und wie), ob es an
+    // eine andere Position rutscht oder ob es eine Mindest-Bandhoehe gibt, sagt der Vertrag
+    // NIRGENDS - eine erfundene Skalierungsregel waere genau das "automatische Umlayouten", das
+    // TK 9.11.1 Punkt 3 verbietet.
+    //
+    // Die frueher hier stehende zweite Luecke - der Hintergrund einer `einblendung` - ist mit der
+    // Entscheidung vom 23.10.2026 geschlossen (AD v1.9 / TK 9.11.1): Angelegt wird ausschliesslich
+    // mit 162 px, die festen Zonen kommen aus `band-standard`, und die `hintergrund`-Zone traegt den
+    // Scrim-Verlauf statt der deckenden Fuellung (s. `festeZonen` unten).
     //
     // Deshalb entsteht hier KEINE Vorlage. Der Ausgang ist eine Huelle (kein Wurf, nichts
     // geschrieben) und ausdruecklich KEIN `ungueltige_eingabe`: Die Eingabe ist gueltig, die
-    // FESTLEGUNG fehlt. Sobald sie da ist, gehoert dieser Zweig gefuellt - nicht vorher.
+    // FESTLEGUNG fehlt.
     return fehler(
       'unbekannter_fehler',
       `Fuer eine Vorlage der Art ${art} mit der Hoehe ${String(höhe)} ist noch nicht festgelegt, ` +
@@ -309,7 +309,9 @@ function festeZonen(art: VorlagenArt, höhe: number | null): Ergebnis<Zone[], Vo
   // Die Reihenfolge kommt aus der Quell-Vorlage und wird NICHT umsortiert: Zeichenreihenfolge =
   // Array-Reihenfolge (TK 9.11.1 Punkt 2), und `hintergrund` steht dort zuerst - ans Ende sortiert
   // deckte er alles zu.
-  const zonen = quelle.zonen.filter((zone) => MARKENRAHMEN_ZONEN.includes(zone.id))
+  const zonen = quelle.zonen
+    .filter((zone) => MARKENRAHMEN_ZONEN.includes(zone.id))
+    .map((zone) => (art === 'einblendung' && zone.id === 'hintergrund' ? mitScrimVerlauf(zone) : zone))
   if (zonen.length !== MARKENRAHMEN_ZONEN.length) {
     // Kann nur eintreten, wenn sich #96 aendert. Dann lieber ein sichtbarer Fehlschlag als eine
     // Vorlage ohne Markenrahmen: Die liesse sich spaeter nicht mehr reparieren, weil der Editor
@@ -321,6 +323,24 @@ function festeZonen(art: VorlagenArt, höhe: number | null): Ergebnis<Zone[], Vo
     )
   }
   return { ok: true, wert: zonen }
+}
+
+/**
+ * Ersetzt die deckende Fuellung der `hintergrund`-Zone durch den Scrim-Verlauf.
+ *
+ * WOERTLICH (TK 9.11.1, Entscheidung 23.10.2026): "Die `hintergrund`-Zone traegt **keine** deckende
+ * `flaecheDunkel`-Fuellung, sondern den **Scrim-Verlauf** `scrimStart` -> `scrimEnde`, Richtung
+ * `unten` (durchsichtig -> 70 % Schwarz). Nur so traegt das Band Alpha und ueberlagert das Video."
+ * (Deckkraft folgt der Vorlagenart, TK 9.2.8.)
+ *
+ * Geaendert wird NUR die Deko. Rahmen, `id`, `rolle`, `bindung`, `ausrichtung` und `wennLeer`
+ * bleiben die der Band-Vorlage - sonst waere der Markenrahmen eine zweite Festlegung.
+ */
+function mitScrimVerlauf(zone: Zone): Zone {
+  return {
+    ...zone,
+    deko: { verlauf: { vonFarbRolle: 'scrimStart', bisFarbRolle: 'scrimEnde', richtung: 'unten' } },
+  }
 }
 
 /**
@@ -339,7 +359,11 @@ function quelleFuer(
   if (art === 'vollflaeche') {
     return mitgelieferte.find((vorlage) => vorlage.id === QUELLE_VOLLFLAECHE) ?? null
   }
-  if (art === 'split') {
+  if (art === 'split' || art === 'einblendung') {
+    // BEIDE Bandarten holen ihren Markenrahmen aus derselben Vorlage: Angelegt wird nach der
+    // Entscheidung vom 23.10.2026 ausschliesslich mit 162 px (TK 9.11.1), und `band-standard` ist
+    // genau darauf zugeschnitten. Andere Hoehen bleiben unentschieden (s. `festeZonen`) - die
+    // Oberflaeche bietet sie nicht an, der Store weist sie ab.
     const band = mitgelieferte.find((vorlage) => vorlage.id === QUELLE_BAND)
     return band !== undefined && band.höhe === höhe ? band : null
   }

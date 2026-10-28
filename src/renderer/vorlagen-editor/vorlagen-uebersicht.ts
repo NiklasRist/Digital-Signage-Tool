@@ -30,10 +30,17 @@ export interface VorlagenUebersicht {
   verwaisteArbeitskopien: readonly Vorlage[]
 }
 
-/** Die Kombinationen aus `art` und `höhe`, die der Main heute anlegen kann (s. STOPP). */
+/**
+ * Die Kombinationen aus `art` und `höhe`, die der Main heute anlegen kann.
+ *
+ * Die Bandhöhe ist für BEIDE Bandarten fest 162 (Entscheidung 23.10.2026, AD v1.9 / TK 9.11.1):
+ * Es gibt kein Höhenfeld, andere Höhen bietet die Oberfläche nicht an. Der Store führt den
+ * allgemeinen Wertebereich weiter als Datenregel - hier steht, was der Nutzer wählen kann.
+ */
 export const ANLEGBARE_ARTEN: ReadonlyArray<{ art: VorlagenArt; höhe: number | null }> = [
   { art: 'vollflaeche', höhe: null },
   { art: 'split', höhe: 162 },
+  { art: 'einblendung', höhe: 162 },
 ] as const;
 
 /** Lädt beide Listen und macht sie zur gemeinsamen Vorlagen-Sicht. */
@@ -212,6 +219,21 @@ export function beendeLoeschbestaetigung(): void {
 export async function entferneVorlage(
   vorlagenId: string,
 ): Promise<Ergebnis<void, string>> {
+  // Eingebaute Vorlagen sind eingefroren (TK 9.11.1.1). Der Store weist sie ohnehin ab - ist der
+  // Zustand aber schon geladen, weiß die Übersicht es vorher, und ein IPC-Aufruf, dessen Ausgang
+  // feststeht, ist unnötig (#155, DoD). Ohne geladene Übersicht entscheidet weiterhin der Main.
+  const bekannt = aktuelleUebersicht?.nutzbare.find(
+    (eintrag) => eintrag.vorlage.id === vorlagenId,
+  )
+  if (bekannt?.eingebaut === true) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: `Die Vorlage "${vorlagenId}" ist eingebaut und kann nicht geloescht werden.`,
+      },
+    }
+  }
   // Es gibt keine Vorprüfung auf die Arbeitskopie hier, weil die Sperre im vorlagen-store sitzt
   const ergebnis = await rufeAuf<void>(
     KANAELE.vorlagen.löscheVorlage,

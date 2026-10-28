@@ -1,8 +1,9 @@
 # Treiber-Matrix: Anforderung -> Szenario
 
 **Stand:** 28.10.2026. Letzte Messung am Fenster: Lauf vom **28.10.2026** - neu darin sind
-**4o** (Statistik-Leiste, #394), **4p** (Canvas-Pixel/Blob-URL, #364) und **4q** ("Neue Aktion"
-anlegen, #445); alle uebrigen Messungen stammen vom 22.10.2026.
+**4o** (Statistik-Leiste, #394), **4p** (Canvas-Pixel/Blob-URL, #364), **4q** ("Neue Aktion"
+anlegen, #445) und **4r** (Einblendung anlegen, #100); alle uebrigen Messungen stammen vom
+22.10.2026.
 **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
 **Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-24),
 `scripts/durchlauf.mjs` (Treiber, echter Fensterlauf), `docs/agents/q4-test-audit.md` (Q4-3).
@@ -53,7 +54,7 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-10 | Projekt anlegen, oeffnen, duplizieren, loeschen | 2, 4, 5 | Anlegen ueber IPC-Seed, Zeile in der Liste, Oeffnen ueber die Liste, Start-Hinweis verschwindet. **Duplizieren** und **Loeschen** ueber die Oberflaeche sind ungemessen (Loeschen nur als Aufraeum-IPC). | teilweise |
 | FA-11 | Einheitliches Grundlayout im Markenrahmen | - | Nicht im DOM pruefbar. Der Render erzeugt Pixel; ohne Bildvergleich sagt der DOM nichts ueber Logo, Abstaende und Typografie. | manuell |
 | FA-12 | Gestalterischer Spielraum je Aktion | - | Wie FA-11: eine Aussage ueber das **Ergebnis** braucht einen Bildbeleg, keine Test-Kennung. | manuell |
-| FA-13 | Eigene Vorlagen anlegen/bearbeiten; Arbeitskopie + explizites Speichern | 4, 4n | **4n:** eigene Vorlage ueber die Uebersicht anlegen (Sitzung offen), Textzone hinzufuegen -> **Arbeitskopie** 2 -> 3 Zonen (Parent bleibt 2), "Vorlage uebernehmen" -> Parent 3, Sitzung endet; erneut bearbeiten, Zone hinzufuegen, "Verwerfen" -> Parent bleibt 3, keine Arbeitskopie; Testvorlage geloescht. **OFFEN:** "Einblendung" ist nicht anlegbar (`ANLEGBARE_ARTEN` nur vollflaeche/split) - Auftraggeber-Entscheidung. **Seit 22.10.2026.** | teilweise |
+| FA-13 | Eigene Vorlagen anlegen/bearbeiten; Arbeitskopie + explizites Speichern | 4, 4n, 4r | **4n:** eigene Vorlage ueber die Uebersicht anlegen (Sitzung offen), Textzone hinzufuegen -> **Arbeitskopie** 2 -> 3 Zonen (Parent bleibt 2), "Vorlage uebernehmen" -> Parent 3, Sitzung endet; erneut bearbeiten, Zone hinzufuegen, "Verwerfen" -> Parent bleibt 3, keine Arbeitskopie; Testvorlage geloescht. **4r (#100):** "Neu: einblendung" legt eine Vorlage mit `art: einblendung`, `hoehe: 162`, den zwei festen Zonen `[hintergrund, logo]` und dem **Scrim-Verlauf** `scrimStart -> scrimEnde` (unten) statt der deckenden Fuellung an; Logo (96, 20, 240, 69). **Nicht gemessen:** freie Zonen verschieben/bemaßen/umbinden; Anlegen ueber einen anderen Weg als die Uebersicht. **Seit 22.10.2026, 4r seit 28.10.2026.** | teilweise |
 | FA-14 | Video nicht-destruktiv trimmen | 4f4 | Derselbe Regler-Schritt wie FA-06 (Wert + Undo). Ob der **Trim** am Video-Element liegt und die Originaldatei unveraendert bleibt, wird nicht geprueft. | teilweise |
 | FA-15 | Fortlaufend automatisch speichern; letztes Projekt beim Start | 4f2, 4h | Nach dem Band-Drop wird `project.json` nach dem entprellten Speichern gelesen (Auto-Speichern implizit). Das **Wiederherstellen beim Start** (letztes Projekt, letztes Export-Ziel) ist ungemessen. | teilweise |
 | FA-16 | Sichtbare Warteschlange (Muss) | 4j | Die Leiste ist im Fenster, startet eingeklappt, zeigt einen **geholten** Stand (nicht "wird geladen"), bleibt beim Reiterwechsel sichtbar und laesst sich ueber den echten Schalter aufklappen (danach 1 Auftragszeile). **Seit #257 (20.10.2026).** | teilweise |
