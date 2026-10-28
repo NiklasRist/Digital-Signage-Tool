@@ -12,26 +12,6 @@ import { holeAktivesProjekt, merkeAktivesProjekt } from './aktives-projekt'  // 
 import { verwirfGeplanteSpeicherung } from './auto-speichern'      // #47
 import { mitD1Lock } from './d1-lock'                             // #32
 import { projektOrdner } from './pfade'                           // #49
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #49: projektOrdner(projektId: string): string
-//        // absoluter Pfad des Projektordners, z. B. <Datenort>/projects/<projektId>;
-//        // reine String-Operation, kein Dateisystemzugriff, keine Existenzpruefung -
-//        // und KEINE Pruefung der projektId (Signatur ohne Fehlerkanal). S. `istLoeschbareId`.
-//   #32: mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//        // fuehrt aktion() garantiert seriell aus; aktion darf selbst NICHT erneut
-//        // mitD1Lock aufrufen (Deadlock-Gefahr).
-//   #26: leseKonfig(): Promise<Ergebnis<AppKonfig, ConfigFehlercode>>
-//        // fehlende config.json ist KEIN Fehler (erster Start) -> Vorbelegungen
-//        // { aktivesProjektId: null, letztesExportZiel: null, uiVoreinstellungen: {} }.
-//   #31: aendereKonfig<T>(
-//          aenderung: (konfig: AppKonfig) => Ergebnis<{ konfig: AppKonfig; wert: T }, ConfigFehlercode>,
-//        ): Promise<Ergebnis<T, ConfigFehlercode>>
-//        // Lesen - Aendern - Schreiben als EINE ununterbrechbare Einheit; `aenderung` ist SYNCHRON.
-//   #265: interface AppKonfig { aktivesProjektId: string | null
-//                               letztesExportZiel: string | null
-//                               uiVoreinstellungen: Record<string, unknown> }
-
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
 import { istCode, text } from '../gemeinsam/systemfehler'

@@ -11,36 +11,6 @@ import { sofortFlush } from './auto-speichern'                                //
 import { mitD1Lock } from './d1-lock'                                         // #32
 import { migriereProjekt } from './migriere-projekt'                          // #48
 import { PROJEKT_DATEI as DATEI, PROJEKT_DATEI_SICHERUNG as SICHERUNG, projektOrdner } from './pfade'
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #32:  mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//         // fuehrt aktion() garantiert seriell aus (FIFO, prozessintern); die Aktion darf
-//         // mitD1Lock NICHT erneut aufrufen (Deadlock). Das Lock wird hier SELBST genommen.
-//   #47:  sofortFlush(projekt: Project): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//         // bricht den Entprellungstimer ab und schreibt projekt sofort; "MUSS von der
-//         // aufrufenden Stelle innerhalb von mitD1Lock (#32) ausgefuehrt werden" und wird
-//         // ausdruecklich "(2) bei Projektwechsel (öffneProjekt, #34)" gerufen.
-//   #48:  migriereProjekt(rohdaten: Record<string, unknown> & { schemaVersion: number },
-//                         kette?: ReadonlyMap<number, MigrationsSchritt>): Ergebnis<Project>
-//         // reine Umformung IM SPEICHER, schreibt nichts; prueft nach der Kette die neun
-//         // Pflichtfelder aus TK 9.11.3. Der zweite Parameter ist Testwerkzeug und wird von
-//         // hier NIE mitgegeben.
-//   #49:  projektOrdner(projektId: string): string
-//         // absoluter Pfad <Datenort>/projects/<projektId>; reine String-Operation, kein
-//         // Dateisystemzugriff, KEINE Pruefung der projektId (s. `istLesbareId`).
-//   #27:  setzeAktivesProjekt(projektId: string | null): Promise<Ergebnis<void, ConfigFehlercode>>
-//         // schreibt die Kennung nach config.json (abgewartet, atomar). Prueft NICHT, ob es
-//         // das Projekt gibt - "das ist laut Issue Sache des Aufrufers (i. d. R. direkt nach
-//         // erfolgreichem oeffneProjekt, #34)".
-//   #192: holeAktivesProjekt(): Project | null
-//         merkeAktivesProjekt(projekt: Project | null): void
-//         // der Halter des aktiven Projekts; haelt die LEBENDE Referenz, keine Kopie.
-//         // SYNCHRON, nimmt KEIN Lock, wirft nie.
-//   #21:  const AKTUELLE_SCHEMA_VERSION = 1
-//         // "wird von öffneProjekt, schreibeProjekt und der Migration gelesen (9.5.5) - eine
-//         // Stelle, sonst laufen drei Kopien auseinander" (TK 9.11.4). Deshalb steht die Zahl
-//         // hier nicht noch einmal.
-
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { Project } from '../../shared/contracts/project'
 import type { ProjectStoreFehlercode } from './assets'            // #72

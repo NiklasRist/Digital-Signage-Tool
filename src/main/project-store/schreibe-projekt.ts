@@ -11,23 +11,6 @@ import { PROJEKT_DATEI as DATEI, projektOrdner } from './pfade'
 import { mitWiederholung, taugtAlsSicherung } from '../gemeinsam/schreib-mechanik'
 // Die generischen Systemfehler-Helfer liegen neutral (Q2/A S7).
 import { istCode, text } from '../gemeinsam/systemfehler'
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #49: projektOrdner(projektId: string): string
-//        // absoluter Pfad des Projektordners, z. B. <Datenort>/projects/<projektId>;
-//        // reine String-Operation, kein Dateisystemzugriff, keine Existenzpruefung.
-//        // Die Pfad-Autoritaet ist die EINE Stelle, die das Datei-Layout kennt (TK 9.5.7) -
-//        // deshalb wird hier NICHTS aus ermittleDatenOrt() und "projects" selbst zusammengesetzt.
-//   #21: const AKTUELLE_SCHEMA_VERSION = 1
-//        // "Die Schema-Version, auf die `project.json` und `config.json` beim Schreiben
-//        // gebracht werden" (konstanten.ts, woertlich) - project.json ist dort ausdruecklich
-//        // genannt. Eine eigene Zahl hier waere die zweite von drei Kopien, die TK 9.11.4
-//        // gerade verhindern will.
-//   #32: mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//        // WIRD HIER NICHT GERUFEN - s. "ZUM D1-LOCK" unten. Der Vertrag dieses Issues
-//        // verbietet es ausdruecklich; #32 verbietet Verschachtelung ("darf selbst nicht
-//        // erneut mitD1Lock aufrufen (Deadlock-Gefahr)").
-
 /**
  * Wartezeiten in Millisekunden VOR dem 2., 3., 4. und 5. Versuch; der erste laeuft sofort.
  * Insgesamt also fuenf Versuche.

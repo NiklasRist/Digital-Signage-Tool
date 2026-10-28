@@ -14,25 +14,6 @@ import { merkeAktivesProjekt } from './aktives-projekt'          // #192
 import { mitD1Lock } from './d1-lock'
 import { medienOrdner, projektOrdner } from './pfade'
 import { schreibeProjekt } from './schreibe-projekt'
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #32: mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//        // fuehrt aktion() garantiert seriell aus (FIFO, prozessintern);
-//        // "darf selbst nicht erneut mitD1Lock aufrufen (Deadlock-Gefahr)".
-//   #46: schreibeProjekt(projekt: Project): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//        // schreibt <Datenort>/projects/<projekt.id>/project.json atomar (.tmp + Rename,
-//        // .bak-Sicherung, schemaVersion wird beim Schreiben gesetzt) und nimmt SELBST
-//        // KEIN Lock: "Wer schreibeProjekt AUSSERHALB von mitD1Lock ruft, hat keine
-//        // Serialisierung." Deshalb steht der Aufruf unten INNERHALB des Lock-Abschnitts.
-//   #49: projektOrdner(projektId: string): string
-//        medienOrdner(projektId: string): string
-//        // absolute Pfade, reine String-Operation, kein Dateisystemzugriff. Die
-//        // Pfad-Autoritaet ist die EINE Stelle, die das Datei-Layout kennt (TK 9.5.7) -
-//        // hier wird nichts aus ermittleDatenOrt() und "projects" zusammengesetzt.
-//   #20: erzeugeId(): string
-//        // UUID v4, "die EINE Stelle, an der IDs entstehen" (TK 9.11.4).
-//   #21: const AKTUELLE_SCHEMA_VERSION = 1
-
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Project } from '../../shared/contracts/project'

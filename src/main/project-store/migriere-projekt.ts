@@ -2,21 +2,9 @@
 
 import { AKTUELLE_SCHEMA_VERSION } from '../../shared/contracts/konstanten'
 
-// Fremde Aufrufe/Werte - vollstaendig genannt, damit hier nichts geraten wird:
-//   #21: const AKTUELLE_SCHEMA_VERSION = 1
-//        // "Aktuelle `schemaVersion` | 1 | wird von `öffneProjekt`, `schreibeProjekt` und der
-//        // Migration gelesen (9.5.5) - eine Stelle, sonst laufen drei Kopien auseinander"
-//        // (TK 9.11.4, woertlich). Deshalb steht die Zahl hier NICHT noch einmal.
-//   #46: schreibeProjekt(projekt: Project): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//        // WIRD HIER NICHT GERUFEN. Diese Funktion schreibt NICHTS auf die Platte (s.
-//        // "KEIN SCHREIBEN" unten). #46 setzt die schemaVersion beim Schreiben ZULETZT
-//        // (`{ ...projekt, schemaVersion: AKTUELLE_SCHEMA_VERSION }`) - genau deshalb darf das
-//        // hier zurueckgelieferte, migrierte Objekt seine neue Version behalten, ohne dass ein
-//        // spaeteres Speichern sie wieder auf die alte zurueckdreht.
-//   #34: öffneProjekt(id: string): Promise<Ergebnis<Project>>
-//        // DER EINZIGE Aufrufer. Es entscheidet BEIDE Faelle aus TK 9.5.5 - hoehere Version =>
-//        // Fehler, aeltere => Migration - und ruft diese Funktion nur im zweiten Fall. Die
-//        // Pruefung "ist die Version zu hoch" wird hier deshalb NICHT wiederholt (s. unten).
+// `schreibeProjekt` (#46) wird hier nicht gerufen (s. "KEIN SCHREIBEN" unten) und setzt die
+// schemaVersion beim Schreiben ZULETZT - deshalb darf das migrierte Objekt seine Version behalten.
+// Den Fall "Version zu hoch" entscheidet #34 als einziger Aufrufer (TK 9.5.5), nicht diese Datei.
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Project } from '../../shared/contracts/project'

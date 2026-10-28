@@ -3,20 +3,6 @@
 import { holeAktivesProjekt } from './aktives-projekt'
 import { planeAutoSpeicherung } from './auto-speichern'
 import { mitD1Lock } from './d1-lock'
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #32:  mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//         // fuehrt aktion() garantiert seriell aus (FIFO, prozessintern, KEINE Datei-Sperre).
-//         // Der kritische Abschnitt darf selbst NICHT erneut mitD1Lock aufrufen
-//         // (Deadlock-Gefahr) - deshalb wird hier nichts gerufen, das seinerseits sperrt.
-//   #47:  planeAutoSpeicherung(projekt: Project): void
-//         // merkt projekt als zu speichernde, aktuelle Version vor und (re-)startet den
-//         // Entprellungstimer. SYNCHRON, kein Rueckgabewert, nimmt KEIN Lock.
-//   #192: holeAktivesProjekt(): Project | null
-//         // das aktuell geoeffnete Projekt als LEBENDEN Stand (dieselbe Objektreferenz, die
-//         // die Instant-Operationen mutieren), kein Projekt offen -> null. SYNCHRON, NIMMT
-//         // KEIN LOCK, WIRFT NIE.
-
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Listenelement } from '../../shared/contracts/project'

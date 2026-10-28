@@ -22,18 +22,6 @@ import { istCode, text } from '../gemeinsam/systemfehler'
 // weggelassen (bindend)." (TK 9.5.2) Die Medien des Nutzers liegen weiter im Ordner;
 // ein fehlender Eintrag saehe fuer ihn aus wie ein verlorenes Projekt.
 //
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #32: mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//        // fuehrt aktion() garantiert seriell aus; die Aktion darf mitD1Lock NICHT
-//        // erneut aufrufen (Deadlock). Deshalb wird das Lock hier GENAU EINMAL um den
-//        // ganzen Scan gelegt und in keiner Hilfsfunktion ein zweites Mal.
-//   #49: projektOrdner(projektId: string): string
-//        medienOrdner(projektId: string): string
-//        ausgabeOrdner(projektId: string): string
-//        // reine String-Operationen, kein Dateisystemzugriff, keine Existenzpruefung.
-//        // Die Pfad-Autoritaet ist die EINE Stelle, die das Datei-Layout kennt
-//        // (TK 9.5.7) - hier wird deshalb kein Unterordnername selbst angehaengt.
-
 /** Dateiname im Projektordner - gleichlautend mit dem Schreiber (#46). */
 
 /** Die letzte heile Fassung, die #46 vor jedem Schreiben anlegt (TK 9.5.4). */

@@ -6,27 +6,6 @@ import { DAUER_BEREICH, STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../shared/cont
 import { holeAktivesProjekt } from './aktives-projekt'                             // #192
 import { planeAutoSpeicherung } from './auto-speichern'                            // #47
 import { mitD1Lock } from './d1-lock'                                              // #32
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #20:  erzeugeId(): string
-//         // UUID v4, "die EINE Stelle, an der IDs entstehen" (TK 9.11.4). Kann nicht
-//         // regulaer fehlschlagen; hier wird nichts nachgebaut und nichts abgefangen.
-//   #21:  STANDARD_ANZEIGEDAUER_SEKUNDEN: number   // 10
-//         DAUER_BEREICH: { readonly min: number; readonly max: number }   // 10 / 45
-//         // "Konstanten in contracts/types (an *einer* Stelle, nicht verstreut)" (TK 9.11.4).
-//   #32:  mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//         // fuehrt aktion() garantiert seriell aus (FIFO, prozessintern, KEINE Datei-Sperre);
-//         // der kritische Abschnitt darf selbst NICHT erneut mitD1Lock aufrufen
-//         // (Deadlock-Gefahr).
-//   #47:  planeAutoSpeicherung(projekt: Project): void
-//         // merkt projekt als zu speichernde, aktuelle Version vor und (re-)startet den
-//         // 3-5s-Entprellungstimer; SYNCHRON, nimmt KEIN Lock, kann nicht fehlschlagen.
-//         // Setzt seit dem 12.08.2026 ausserdem Project.geaendertAm - DIESE Datei also nicht.
-//   #192: holeAktivesProjekt(): Project | null
-//         // das aktuell geoeffnete Projekt als LEBENDEN Stand (dieselbe Objektreferenz, die
-//         // die Instant-Operationen mutieren) - KEINE Kopie; kein Projekt offen -> null.
-//         // SYNCHRON, NIMMT KEIN LOCK, WIRFT NIE.
-
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'

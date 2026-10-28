@@ -4,22 +4,13 @@ import { holeAktivesProjekt } from './aktives-projekt'
 import { planeAutoSpeicherung, sofortFlush } from './auto-speichern'
 import { mitD1Lock } from './d1-lock'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #32:  mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//         // fuehrt aktion() garantiert seriell aus (FIFO, prozessintern, KEINE Datei-Sperre);
-//         // `aktion` darf selbst NICHT erneut mitD1Lock aufrufen (Deadlock); eine Exception in
-//         // aktion() gibt das Lock trotzdem frei.
-//   #47:  sofortFlush(projekt: Project): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//         // bricht einen laufenden Entprellungstimer ab und schreibt `projekt` SOFORT via
-//         // schreibeProjekt (#46); MUSS von der aufrufenden Stelle INNERHALB von mitD1Lock
-//         // ausgefuehrt werden - genau das ist hier der Fall. Feuert im Fehlerfall sein eigenes
-//         // Ereignis und plant einen Wiederholversuch; das ersetzt den Rueckgabewert NICHT.
-//   #192: holeAktivesProjekt(): Project | null
-//         // das aktuell geoeffnete Projekt als LEBENDEN Stand (dieselbe Objektreferenz, die die
-//         // Instant-Operationen mutieren), kein Projekt offen -> null. SYNCHRON, NIMMT KEIN
-//         // LOCK, WIRFT NIE.
-//
 // ZUM STOPP-BLOCK DES ISSUES ("kein holeAktivesProjekt(), kein exportierter Zustand"): Das Verbot
+// richtet sich gegen eine ZWEITE TUER, die DIESE Datei aufmacht - es untersagt, hier einen eigenen
+// Zugang zum geladenen Projekt zu ERFINDEN. Genau das geschieht nicht: #192 ist seit dem
+// 12.08.2026 gebaut, main-intern (kein IPC-Kanal, kein Eintrag in kanaele.ts) und ist der EINE
+// Halter des Standes; `auto-speichern.ts` (#47) und `loesche-projekt.ts` (#37) lesen ihn bereits
+// ueber dieselbe Funktion. Ein modul-lokaler Zwischenspeicher waere hier die zweite Wahrheit, die
+// das Issue ausschliesst - er entsteht nicht. GEMELDET, nicht eigenmaechtig umgedeutet.
 // richtet sich gegen eine ZWEITE TUER, die DIESE Datei aufmacht - es untersagt, hier einen eigenen
 // Zugang zum geladenen Projekt zu ERFINDEN. Genau das geschieht nicht: #192 ist seit dem
 // 12.08.2026 gebaut, main-intern (kein IPC-Kanal, kein Eintrag in kanaele.ts) und ist der EINE

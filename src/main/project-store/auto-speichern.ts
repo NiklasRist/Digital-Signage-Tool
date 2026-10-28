@@ -3,22 +3,6 @@
 import { holeAktivesProjekt } from './aktives-projekt'
 import { mitD1Lock } from './d1-lock'
 import { schreibeProjekt } from './schreibe-projekt'
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #32:  mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//         // fuehrt aktion() garantiert seriell aus (FIFO, prozessintern, KEINE Datei-Sperre).
-//         // Der kritische Abschnitt darf selbst NICHT erneut mitD1Lock aufrufen
-//         // (Deadlock-Gefahr) - deshalb nimmt sofortFlush das Lock NICHT.
-//   #46:  schreibeProjekt(projekt: Project): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//         // schreibt project.json atomar (Temp + Rename) mit .bak und schemaVersion.
-//         // "Wer schreibeProjekt AUSSERHALB von mitD1Lock ruft, hat keine Serialisierung"
-//         // (#46, woertlich) - die Datei nimmt selbst KEIN Lock.
-//   #192: holeAktivesProjekt(): Project | null
-//         // das aktuell geoeffnete Projekt als LEBENDEN Stand (dieselbe Objektreferenz, die
-//         // die Instant-Operationen mutieren), kein Projekt offen -> null. SYNCHRON, NIMMT
-//         // KEIN LOCK, WIRFT NIE. Heute noch ein werfender Rumpf (M6) - dagegen zu bauen ist
-//         // Absicht des Geruests, nachgebaut wird hier nichts.
-
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
 import type { Project } from '../../shared/contracts/project'

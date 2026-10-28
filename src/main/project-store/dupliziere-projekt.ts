@@ -12,30 +12,6 @@ import { migriereProjekt } from './migriere-projekt'                         // 
 import { PROJEKT_DATEI as DATEI, medienOrdner, projektOrdner } from './pfade'
 import { schreibeProjekt } from './schreibe-projekt'                         // #46
 import { istCode, text } from '../gemeinsam/systemfehler'
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #32:  mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//         // fuehrt aktion() garantiert seriell aus (FIFO, prozessintern); "darf selbst nicht
-//         // erneut mitD1Lock aufrufen (Deadlock-Gefahr)". Das Lock wird HIER genommen.
-//   #46:  schreibeProjekt(projekt: Project): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//         // schreibt <Datenort>/projects/<projekt.id>/project.json atomar (.tmp + Rename,
-//         // .bak-Sicherung, schemaVersion wird beim Schreiben gesetzt) und nimmt SELBST KEIN
-//         // Lock: "Wer schreibeProjekt AUSSERHALB von mitD1Lock ruft, hat keine Serialisierung."
-//   #48:  migriereProjekt(rohdaten: Record<string, unknown> & { schemaVersion: number },
-//                         kette?: ReadonlyMap<number, MigrationsSchritt>): Ergebnis<Project>
-//         // reine Umformung IM SPEICHER, schreibt nichts; prueft am Ende die neun Pflichtfelder
-//         // aus TK 9.11.3. Der zweite Parameter ist Testwerkzeug und wird von hier NIE mitgegeben.
-//   #49:  projektOrdner(projektId: string): string
-//         medienOrdner(projektId: string): string
-//         // absolute Pfade, reine String-Operation, kein Dateisystemzugriff und KEINE Pruefung
-//         // der projektId (s. `istKopierbareId`). Die Pfad-Autoritaet ist die EINE Stelle, die
-//         // das Datei-Layout kennt (TK 9.5.7) - hier wird nichts zusammengesetzt.
-//   #20:  erzeugeId(): string
-//         // UUID v4, "die EINE Stelle, an der IDs entstehen" (TK 9.11.4).
-//   #192: holeAktivesProjekt(): Project | null
-//         // der LEBENDE Stand des offenen Projekts, keine Kopie. SYNCHRON, kein Lock, wirft nie.
-//   #21:  const AKTUELLE_SCHEMA_VERSION = 1
-
 /** Dateiname im Projektordner - gleichlautend mit #46, #34 und #35. */
 
 /**
