@@ -33,7 +33,7 @@ const SCHEMA = "media";
  * wird schlicht nicht mehr beruecksichtigt, und zwar ohne Fehlermeldung - die URLs verhielten
  * sich dann im Renderer unzuverlaessig, ohne dass irgendwo etwas protokolliert wuerde.
  *
- * Zu den vier Privilegien:
+ * Zu den fuenf Privilegien:
  * - `standard`: laesst `media://projektId/dateiname` nach den ueblichen URL-Regeln
  *   zerlegen (Host + Pfad). Ohne das gaebe es kein verlaessliches Trennen von
  *   Projektkennung und Dateiname.
@@ -45,6 +45,9 @@ const SCHEMA = "media";
  *   Studio-Laenge der Unterschied zwischen benutzbar und unbenutzbar.
  * - `supportFetchAPI`: erlaubt `fetch()` auf solche URLs. Das template-canvas laedt
  *   Motive vor dem Zeichnen (TK 9.10.3).
+ * - `corsEnabled` (#364): macht den `fetch` aus der Seite ueberhaupt erst moeglich -
+ *   ohne es blockiert Chromium jedes `fetch('media://…')` als Fremdursprung, bevor der
+ *   Handler erreicht wird (gemessen an `marken://`, #315/Nachtrag II).
  */
 export const MEDIA_SCHEMA: CustomScheme = {
   scheme: SCHEMA,
@@ -53,6 +56,13 @@ export const MEDIA_SCHEMA: CustomScheme = {
     supportFetchAPI: true,
     stream: true,
     standard: true,
+    // #364: `supportFetchAPI` allein genuegt NICHT. Chromium wertet ein eigenes Schema
+    // als fremden Ursprung und blockiert `fetch('media://…')` VOR dem Handler
+    // ("Cross origin requests are only supported for protocol schemes: …").
+    // GEMESSEN beim Bau von #315/Nachtrag II fuer `marken://` (B15, 22.10.2026) und
+    // hier uebernommen; ohne diese Zeile liefert der Blob-Weg still eine leere
+    // Zeichenkette, und der Filmstreifen bliebe ohne Bilder.
+    corsEnabled: true,
   },
 };
 

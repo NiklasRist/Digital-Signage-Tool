@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.9 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.28 (Bandhöhe eigener Vorlagen ist fest 162 px; die Einblendung ist über die Oberfläche anlegbar und trägt einen Scrim-Verlauf; s. 9.11.1, 9.12.2)
-**Datum:** 23.10.2026
+**Version:** 3.29 (Nachtrag zu 9.5.7: `media://`-Bytes werden für Canvas-Nutzer als Blob-URL gebunden – Muster #315/Nachtrag II)
+**Datum:** 28.10.2026
 **Status:** In Planung
 
 ---
@@ -1293,6 +1293,7 @@ Besitzt `config.json` (app-weit): aktives Projekt, letztes Export-Ziel, UI-Vorei
 - **`project-store` ist die eine Pfad-Autorität.** Er löst `(projektId, dateiname) → absoluter Pfad` auf – die **einzige** Quelle der Wahrheit für das Datei-Layout eines Projekts (`projects/<id>/media/<datei>`). Jeder Main-Dienst, der eine Mediendatei anfassen muss, **resolved den Pfad über den `project-store`**, statt das Layout selbst zu kennen: `media-service` (kopieren/löschen), `render-service` (lesen beim Normalisieren), `export-service` (Quelle: die gewählte Datei aus `projects/<id>/output/`). Er löst ebenso `(projektId, ausgabeName) → projects/<id>/output/<name>.mp4` auf und **listet diesen Ordner** (`listeAusgaben`, 9.5.2). So kann eine Layout-Änderung nirgends auseinanderlaufen.
 - **`media://`-Protokoll (Renderer-Lesezugriff).** Für die Vorschau (P5) und Thumbnails (`composer`, `action-editor`) muss der **Renderer** Medien anzeigen. Dafür registriert der Main ein eigenes Protokoll **`media://<projektId>/<dateiname>`**, dessen Handler die Auflösung des `project-store` nutzt und die Datei **nur lesend** ausliefert. Der Renderer verwendet diese URLs direkt in `<video>`/`<img>`.
 - **Sicherheits-Invarianten:** Der Renderer sieht **nur relative** Referenzen (`dateiname`), **nie** absolute Pfade. Der Resolver stellt sicher, dass das Ziel **innerhalb** des `media/`-Ordners des Projekts bleibt (kein `..`-Ausbruch, keine Symlink-Flucht); Zugriff strikt **read-only**. Die Regel „**nur der Main berührt das Dateisystem**" bleibt gewahrt: der Main löst auf und liefert die Bytes; der Renderer erhält eine URL, keinen direkten Dateizugriff.
+- **Blob-Bindung für Canvas-Nutzer** *(Nachtrag 28.10.2026, #364)*: Wer die Bytes eines Mediums in ein Canvas **zeichnet und Pixel ausliest** (Filmstreifen, künftige Thumbnail-/Frame-Exporte), bindet die Datei **nicht** direkt als `media://`-URL, sondern holt sie über denselben Speicherort-Vertrag als Bytes und bindet eine **Objekt-URL** (`URL.createObjectURL`, Freigabe nach Gebrauch). Grund: `drawImage` aus einem `media://`-`<video>` **taintet** das Canvas; `getImageData`/`toDataURL`/`toBlob` scheitern dann mit `SecurityError`. Das ist derselbe Weg, den Nachtrag II zu #315 für `marken://` festgelegt hat. Der **Protokoll-Vertrag bleibt unverändert** – `media://` liefert weiterhin die Bytes; die Bindung ist eine **Renderer-Angelegenheit**. Damit der `fetch` den Handler überhaupt erreicht, trägt das Schema `media` das Privileg **`corsEnabled`**, und die CSP führt `media:` in **`connect-src`** *(beides gemessen: ohne das Privileg blockiert Chromium den `fetch` als Fremdursprung vor dem Handler; ohne den CSP-Eintrag meldet es „Refused to connect" – derselbe Doppelbefund B14/B15 wie bei `marken://`)*. Die **Bühne** (`preview-player/video.tsx`) bleibt bei der direkten `media://`-URL: reine Anzeige braucht kein ungetaintetes Canvas, und eine Byte-Kopie des ganzen Videos wäre dort Verschwendung.
 
 ---
 

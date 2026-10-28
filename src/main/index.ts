@@ -130,21 +130,16 @@ const CSP_GEMEINSAM = [
   "form-action 'none'",
 ];
 
-// `media:` steht ABSICHTLICH NICHT in connect-src, obwohl #9 das Schema mit dem
-// Privileg `supportFetchAPI: true` anmeldet.
-//
-// Gemessen beim Bauen von #9: `fetch('media://...')` scheitert auch dann, wenn
-// connect-src es erlaubt - und der Protokoll-Handler wird dabei NICHT EINMAL ERREICHT
-// (nachgewiesen mit einer Protokollzeile im Handler selbst). Die Ursache liegt also
-// nicht in der CSP, sondern davor: `media://` ist gegenueber der Seite ein fremder
-// Ursprung, und Electron kennt dafuer ein eigenes Schema-Privileg (`corsEnabled`), das
-// in der verbindlichen Signatur von #9 nicht steht.
-//
-// Ein `media:` in connect-src waere daher heute eine Erlaubnis, die nichts
-// freischaltet. Wird `corsEnabled` spaeter ergaenzt, gehoert dieser Eintrag im selben
-// Zug dazu - vorher nicht. Der Ladeweg ueber <img>/<video> ist davon nicht betroffen:
-// er faellt unter img-src/media-src, erreicht den Handler und funktioniert (in beiden
-// Modi geprueft).
+// GESCHICHTE zu `media:` in connect-src (bleibt als Beleg, gilt aber nicht mehr):
+// Beim Bau von #9 stand der Eintrag ABSICHTLICH NICHT in connect-src, obwohl #9 das
+// Schema mit `supportFetchAPI: true` anmeldet. Gemessen damals: `fetch('media://...')`
+// scheitert auch MIT CSP-Eintrag, und der Protokoll-Handler wird NICHT EINMAL ERREICHT
+// - die Ursache lag davor: `media://` ist gegenueber der Seite ein fremder Ursprung,
+// und Electron kennt dafuer das eigene Schema-Privileg `corsEnabled`. Der Kommentar
+// sagte damals schon: "Wird `corsEnabled` spaeter ergaenzt, gehoert dieser Eintrag im
+// selben Zug dazu." Genau das passiert mit #364 (s. Block darunter). Der Ladeweg ueber
+// <img>/<video> war davon nie betroffen: er faellt unter img-src/media-src, erreicht
+// den Handler und funktioniert (in beiden Modi geprueft).
 //
 // `marken:` in connect-src: Die importierten Logo-Bytes werden per
 // `fetch('marken://<markeId>/<datei>')` geholt und als Blob-URL ins <img>
@@ -154,8 +149,20 @@ const CSP_GEMEINSAM = [
 // erscheint als `fehlt` - die Vorschau zeigt dann den Ersatz-Pfad, obwohl der
 // Import geklappt hat. Ob zusaetzlich `corsEnabled` am Schema noetig ist, wird
 // mit genau dieser Erlaubnis gemessen (STOPP in #290).
-const CSP_DEV = [...CSP_GEMEINSAM, "connect-src 'self' marken: ws:"].join("; ");
-const CSP_PROD = [...CSP_GEMEINSAM, "connect-src 'self' marken:"].join("; ");
+// `media:` in connect-src (Nachtrag #364): Der Filmstreifen holt die Video-Bytes per
+// `fetch('media://…')`, um sie als Blob-URL zu binden (drawImage aus einer direkten
+// media://-URL taintet das Canvas). Dafuer braucht es ZWEI Dinge im selben Zug:
+// diesen CSP-Eintrag UND `corsEnabled: true` am Schema (src/main/media-protokoll.ts) -
+// ohne das Privileg blockiert Chromium den fetch vor dem Handler, ohne den CSP-Eintrag
+// meldet es "Refused to connect". Genau diese Doppelung war der Befund B14/B15 am
+// 22.10.2026 fuer `marken:`.
+//
+// Die frueher hier begruendete Enthaltung ("media: waere eine Erlaubnis, die nichts
+// freischaltet") gilt nicht mehr: Mit `corsEnabled` schaltet der Eintrag den Weg frei.
+// Die Buehne (`preview-player/video.tsx`) bleibt trotzdem bei der direkten URL - sie
+// zeigt nur an und braucht kein ungetaintetes Canvas.
+const CSP_DEV = [...CSP_GEMEINSAM, "connect-src 'self' media: marken: ws:"].join("; ");
+const CSP_PROD = [...CSP_GEMEINSAM, "connect-src 'self' media: marken:"].join("; ");
 
 /**
  * Haengt die CSP als Antwort-Header an jede geladene Ressource.

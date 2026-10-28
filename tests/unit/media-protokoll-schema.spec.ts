@@ -9,7 +9,9 @@ import { describe, expect, it } from "vitest";
 import { MEDIA_SCHEMA, registriereMediaProtokollHandler } from "../../src/main/media-protokoll";
 
 describe("MEDIA_SCHEMA (#321, aus #9)", () => {
-  it("traegt scheme 'media' und GENAU die vier Privilegien des gebauten Standes", () => {
+  it("traegt scheme 'media' und GENAU die fuenf Privilegien des gebauten Standes", () => {
+    // #364: `corsEnabled` ist die fuenfte Eigenschaft - ohne sie blockiert Chromium
+    // jedes `fetch('media://…')` vor dem Handler (gemessen an `marken://`, B15).
     expect(MEDIA_SCHEMA).toEqual({
       scheme: "media",
       privileges: {
@@ -17,12 +19,14 @@ describe("MEDIA_SCHEMA (#321, aus #9)", () => {
         supportFetchAPI: true,
         stream: true,
         standard: true,
+        corsEnabled: true,
       },
     });
-    // GENAU VIER Privilegien: Feldschlüsselmenge, nicht nur Werte - toEqual schlaegt
+    // GENAU FUENF Privilegien: Feldschluesselmenge, nicht nur Werte - toEqual schlaegt
     // bei einem zuvor Kumulierten nur dann zu, wenn ein Wert abweicht, nicht bei einem
     // zusaetzlichen Feld mit "falschem" Wert; die Schluesselmenge schliesst beides aus.
     expect(Object.keys(MEDIA_SCHEMA.privileges ?? {}).sort()).toEqual([
+      "corsEnabled",
       "secure",
       "standard",
       "stream",

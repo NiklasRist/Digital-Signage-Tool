@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type JSX } from 'react'
 
 import type { Listenelement, Project } from '../../shared/contracts/project'
 import type { Asset } from '../../shared/contracts/asset'
+import { mediaBlobUrl, gibMediaBlobUrlFrei } from '../gemeinsam/media-blob-url'
 import { fangeBild, warteAufMetadaten } from './thumbnails'
 
 /** Zielbreite EINES Einzelbilds. Bestimmt, wie viele in die Blockbreite passen. */
@@ -37,8 +38,13 @@ export function bildZeitpunkte(start: number, ende: number, anzahl: number): num
   return Array.from({ length: anzahl }, (_, i) => start + (spanne * (i + 0.5)) / anzahl)
 }
 
-/** Die `media://`-Quelle des Video-Elements; null, wenn kein brauchbares Video-Asset. */
-function videoQuelle(projekt: Project, element: Listenelement): { url: string; dauer: number } | null {
+/** Die Quelle des Video-Elements; null, wenn kein brauchbares Video-Asset.
+ *  Seit #364 sind das die BESTANDTEILE (Projekt-Kennung + Dateiname), nicht die
+ *  fertige `media://`-URL: der Filmstreifen bindet eine Blob-URL (s. `ladeFilmstreifen`). */
+function videoQuelle(
+  projekt: Project,
+  element: Listenelement,
+): { projektId: string; dateiname: string; dauer: number } | null {
   if (element.art !== 'video') return null
   const asset = projekt.assets.find((eintrag) => eintrag.id === element.ref) as
     | (Asset & { dateiname?: unknown; dauer?: unknown })
@@ -48,7 +54,7 @@ function videoQuelle(projekt: Project, element: Listenelement): { url: string; d
   }
   const dauer = typeof asset.dauer === 'number' && Number.isFinite(asset.dauer) ? asset.dauer : null
   if (dauer === null) return null
-  return { url: `media://${projekt.id}/${asset.dateiname}`, dauer }
+  return { projektId: projekt.id, dateiname: asset.dateiname, dauer }
 }
 
 /** Setzt den Suchkopf und liefert das Bild, sobald `seeked` eintritt (mit Zeitgrenze). */
@@ -73,25 +79,34 @@ function sucheUndFange(video: HTMLVideoElement, zeit: number): Promise<HTMLCanva
 
 /** Laedt die Einzelbilder EINMAL je Quelle/Dauer/Anzahl. Fehler ergeben einen leeren Streifen. */
 async function ladeFilmstreifen(
-  url: string,
+  projektId: string,
+  dateiname: string,
   zeiten: number[],
 ): Promise<HTMLCanvasElement[]> {
   if (zeiten.length === 0) return []
+  // #364: NICHT die media://-URL direkt binden - drawImage daraus taintet das
+  // Canvas. Die Bytes kommen ueber denselben Speicherort-Vertrag als Blob-URL.
+  const objektUrl = await mediaBlobUrl(projektId, dateiname)
+  if (objektUrl === '') return []
   const video = document.createElement('video')
   video.muted = true
   video.preload = 'auto'
-  video.src = url
+  video.src = objektUrl
   try {
     await warteAufMetadaten(video)
+    const bilder: HTMLCanvasElement[] = []
+    for (const zeit of zeiten) {
+      const bild = await sucheUndFange(video, zeit)
+      if (bild !== null) bilder.push(bild)
+    }
+    return bilder
   } catch {
     return []
+  } finally {
+    // Der Blob haelt die GANZE Datei im Speicher (akzeptierte Ausnahme, ein Video
+    // je Projekt) - nach dem letzten Bild bzw. beim Fehlschlag wieder freigeben.
+    gibMediaBlobUrlFrei(objektUrl)
   }
-  const bilder: HTMLCanvasElement[] = []
-  for (const zeit of zeiten) {
-    const bild = await sucheUndFange(video, zeit)
-    if (bild !== null) bilder.push(bild)
-  }
-  return bilder
 }
 
 /** Ein einzelnes Einzelbild - zeichnet die Aufnahme in ein Anzeige-Canvas. */
@@ -136,13 +151,13 @@ export function VideoFilmstreifen({ projekt, element, breitePx, hoehePx }: Films
     }
     let abgebrochen = false
     const zeiten = bildZeitpunkte(start, ende, anzahlBilder(breitePx))
-    void ladeFilmstreifen(quelle.url, zeiten).then((ergebnis) => {
+    void ladeFilmstreifen(quelle.projektId, quelle.dateiname, zeiten).then((ergebnis) => {
       if (!abgebrochen) setzeBilder(ergebnis)
     })
     return () => {
       abgebrochen = true
     }
-  }, [quelle?.url, start, ende, anzahl])
+  }, [quelle?.projektId, quelle?.dateiname, start, ende, anzahl])
 
   if (quelle === null || bilder.length === 0) return null
   const je = breitePx / bilder.length
