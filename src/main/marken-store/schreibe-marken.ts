@@ -68,21 +68,6 @@ let entprelltimer: ReturnType<typeof setTimeout> | null = null
  * ihn gerade rettete, WENN der neue Stand scheitert (Begruendung wie in #34/#46).
  */
 let ausBakGerettet = false
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #5:    ermittleDatenOrt(): string
-//   #276: type MarkenFehlercode =
-//            'marke_referenziert' | 'marke_eingebaut' | 'marke_nicht_gefunden'
-//            | 'marken_datei_fehlt' | 'speicher_fehler'
-//   #280: eingebauteMarke(): MarkenEintrag
-//          // frische TIEFE Kopie der VOLLSTAENDIG befuellten Fitnessworld24-Marke (eingebaut: true,
-//          // parent: null, alle Rollen/Logo/Sicherheit/Radien/Schatten/Slogan gesetzt) – wird NUR
-//          // aufgerufen, wenn marken.json noch nicht existiert (Schritt 2 unten)
-//   #12/#22: type Ergebnis<T, F extends string = GenerischerFehlercode> =
-//              | { ok: true; wert: T }
-//              | { ok: false; fehler: { code: F | GenerischerFehlercode
-//                                       meldung: string; daten?: unknown } }
-
 /**
  * ROHE, gespeicherte Form einer Marke in marken.json, BEVOR die Vererbung aufgeloest ist (#279).
  * Bei einer eigenstaendigen Marke (parent === null) sind farben/schriften VOLLSTAENDIG befuellt und

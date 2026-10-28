@@ -11,24 +11,8 @@ import { mitWiederholung, taugtAlsSicherung } from '../gemeinsam/schreib-mechani
 // Die generischen Systemfehler-Helfer liegen neutral (Q2/A S7).
 import { istCode, text } from '../gemeinsam/systemfehler'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #5:  ermittleDatenOrt(): string
-//        // absoluter Pfad des Ordners, der config.json, vorlagen.json, protokoll.json,
-//        // warteschlangen-journal.json und projects/ enthaelt bzw. enthalten wird.
-//        // REINE Pfadberechnung - der Ordner wird dort NICHT angelegt und NICHT geprueft
-//        // ("das tun die Store-Module beim ersten Schreiben"), deshalb das mkdir unten.
-//   #21: const AKTUELLE_SCHEMA_VERSION = 1
-//        // "Die Schema-Version, auf die `project.json` und `config.json` beim Schreiben
-//        // gebracht werden" (konstanten.ts, woertlich) - config.json ist dort ausdruecklich
-//        // genannt, die Zahl wird hier also nicht zweckentfremdet. Eine
-//        // eigene Zahl waere eine zweite Quelle der Wahrheit (vgl. #69, #98, die aus
-//        // demselben Grund je eine EIGENE Zahl fuehren, weil sie NICHT zu D1/D3 gehoeren).
-//   #265: interface AppKonfig { aktivesProjektId: string | null
-//                               letztesExportZiel: string | null
-//                               uiVoreinstellungen: Record<string, unknown> }
-//        // OHNE schemaVersion - und das ist kein Widerspruch zu diesem Issue, sondern
-//        // die Arbeitsteilung: Der TYP beschreibt den Stand im Speicher, die DATEI traegt
-//        // die Version (TK 9.5.5). Sie entsteht genau hier, beim Schreiben.
+// `AKTUELLE_SCHEMA_VERSION` (#21): config.json traegt die Version, der Typ `AppKonfig` (#265)
+// nicht - dieselbe Zahl wie project.json, keine eigene (TK 9.5.5).
 
 /**
  * Wartezeiten in Millisekunden VOR dem 2., 3., 4. und 5. Versuch; der erste laeuft sofort.

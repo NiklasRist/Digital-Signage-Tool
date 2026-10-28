@@ -13,21 +13,6 @@ import { ermittleDatenOrt } from '../datenort'
 import { mitWiederholung, taugtAlsSicherung } from '../gemeinsam/schreib-mechanik'
 // Die generischen Systemfehler-Helfer liegen neutral (Q2/A S7).
 import { istCode, text } from '../gemeinsam/systemfehler'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #5:     ermittleDatenOrt(): string
-//           // absoluter Pfad zum Ordner, der projects/, config.json, vorlagen.json,
-//           // protokoll.json, warteschlangen-journal.json enthaelt bzw. enthalten wird
-//   #96:  eingebauteVorlagen(): Vorlage[]      // frische TIEFE Kopie der drei Mitgelieferten
-//   #96:  const EINGEBAUTE_VORLAGEN_IDS = ['vollbild', 'split', 'band-standard'] as const
-//   #97:  type VorlagenFehlercode = 'vorlage_referenziert' | 'parent_eingebaut' | 'speicher_fehler'
-//   #12/#22: type Ergebnis<T, F extends string = GenerischerFehlercode> =
-//              | { ok: true; wert: T }
-//              | { ok: false; fehler: { code: F | GenerischerFehlercode
-//                                       meldung: string; daten?: unknown } }
-//   #22:    type GenerischerFehlercode =
-//              'ungueltige_eingabe' | 'nicht_gefunden' | 'unbekannter_fehler'
-
 /**
  * Schema-Version von vorlagen.json. Modul-lokal und hier deklariert.
  * NICHT die AKTUELLE_SCHEMA_VERSION aus #21 verwenden – die gehoert zu project.json/config.json;

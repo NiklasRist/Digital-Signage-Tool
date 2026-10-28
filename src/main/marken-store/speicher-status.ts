@@ -3,14 +3,6 @@
 import type { MarkenFehlercode } from './fehlercodes'
 import type { GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import { aufSchreibversuch } from './schreibe-marken'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #277: aufSchreibversuch(
-//            hoerer: (ergebnis: { erfolgreich: true }
-//                             | { erfolgreich: false; code: MarkenFehlercode }) => void,
-//          ): () => void
-//          // main-interner Hoerer, fuer JEDEN abgeschlossenen Schreibversuch (sofort/entprellt/Flush)
-
 /**
  * Ereignisform des Speicherstatus dieses Stores. Gleichartig zu `AutoSpeichernEreignis` des
  * project-store (#47) und `VorlagenSpeichernEreignis` (M4-04) – TK 9.15.1: "gleichartig zu

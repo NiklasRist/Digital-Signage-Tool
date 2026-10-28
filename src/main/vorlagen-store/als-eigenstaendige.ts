@@ -4,18 +4,6 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { VorlagenFehlercode } from './fehlercodes'
 import { aendereBestand } from './schreibe-vorlagen'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #98: aendereBestand<T>(
-//            aenderung: (bestand: Vorlage[]) =>
-//              Ergebnis<{ bestand: Vorlage[]; wert: T }, VorlagenFehlercode>,
-//            schreibart: 'sofort' | 'entprellt',
-//          ): Promise<Ergebnis<T, VorlagenFehlercode>>
-//          // `aenderung` ist SYNCHRON und bekommt eine tiefe Kopie des Bestands.
-//   #97: type VorlagenFehlercode = 'vorlage_referenziert' | 'parent_eingebaut' | 'speicher_fehler'
-//   #95: interface Vorlage { id: string; name: string; art: VorlagenArt; höhe: number | null
-//                              parent: string | null; eingebaut: boolean; zonen: Zone[] }
-
 export async function alsEigenstaendige(
   arbeitsId: string,
   name: string,

@@ -5,15 +5,6 @@ import path from "node:path";
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { MarkenFehlercode } from './fehlercodes'
 import { ermittleDatenOrt } from '../datenort'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #5:    ermittleDatenOrt(): string
-//          // absoluter Pfad zum app-weiten Datenort (enthaelt u. a. projects/, marken.json,
-//          // vorlagen.json); reine Pfad-Berechnung ohne I/O
-//   #276: type MarkenFehlercode =
-//            'marke_referenziert' | 'marke_eingebaut' | 'marke_nicht_gefunden'
-//            | 'marken_datei_fehlt' | 'speicher_fehler'
-
 export function markenAssetsWurzel(): string {
   // Abgeleitet, nicht gebaut: Ausgangspunkt jeder Aufloesung ist ermittleDatenOrt()
   // (#5) - "`marken-assets/` liegt im Datenort (Abschnitt 6)" (TK 9.15.3).

@@ -7,16 +7,6 @@ import type { VorlagenFehlercode } from './fehlercodes'
 import { aendereBestand, ladeBestand } from './schreibe-vorlagen'
 import { pruefeVorlagenReferenzen } from './referenzpruefung'
 import { löseArbeitskopienVomParent } from './verwaiste-arbeitskopien'
-
-// Fremde Aufrufe – vollstaendige Signaturen (aus dem Issue abgeschrieben, gegen die
-// gebauten Dateien #98/#106/#108 geprueft):
-//   #98: ladeBestand(): Promise<Ergebnis<Vorlage[], VorlagenFehlercode>>   // tiefe Kopie
-//        aendereBestand<T>(aenderung, schreibart: 'sofort' | 'entprellt')
-//          : Promise<Ergebnis<T, VorlagenFehlercode>>   // aenderung ist SYNCHRON, kein await
-//   #106: pruefeVorlagenReferenzen(vorlagenId): Promise<Ergebnis<Vorlagennutzung, VorlagenFehlercode>>
-//   #108: löseArbeitskopienVomParent(bestand: Vorlage[], parentId: string): Vorlage[]
-//   #95:  type Vorlagennutzung = { aktionen: VorlagenReferenz[]; listenelemente: VorlagenReferenz[] }
-
 export async function löscheVorlage(
   id: string,
 ): Promise<Ergebnis<void, VorlagenFehlercode>> {

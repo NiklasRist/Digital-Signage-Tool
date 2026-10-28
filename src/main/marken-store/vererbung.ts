@@ -4,22 +4,6 @@ import type { Marke, FarbRolle, SchriftRolle, Schrift } from '../../shared/contr
 import type { MarkenEintrag } from './schreibe-marken'
 import type { MarkenFehlercode } from './fehlercodes'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #277: interface MarkenEintrag {
-//            id: string; name: string; parent: string | null; eingebaut: boolean
-//            farben: Partial<Record<FarbRolle, string>>
-//            schriften: Partial<Record<SchriftRolle, Schrift>>
-//            logo?: { datei: string; herkunft: Herkunft; seitenverhaeltnis: number } | null
-//            sicherheit?: { horizontal: number; vertikal: number }
-//            radien?: { pille: number; karte: number; klein: number }
-//            schatten?: { versatzY: number; weichzeichnen: number; farbe: string }
-//            slogan?: { text: string; aktiv: boolean }
-//          }
-//   #276: type MarkenFehlercode =
-//            'marke_referenziert' | 'marke_eingebaut' | 'marke_nicht_gefunden'
-//            | 'marken_datei_fehlt' | 'speicher_fehler'
-
 /**
  * Loest die Vererbung eines EINZELNEN Eintrags auf. `bestand` ist der VOLLSTAENDIGE, bereits
  * geladene Bestand (aus dem der Parent bei Bedarf gesucht wird) – NICHT nur der bereits gefundene

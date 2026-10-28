@@ -8,31 +8,6 @@ import { eingebauteVorlagen } from './eingebaute-vorlagen'
 import { erzeugeId } from '../../shared/contracts/id'
 import { berechneBandGeometrie } from '../../shared/band-geometrie'
 import { text } from '../gemeinsam/systemfehler'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #98: aendereBestand<T>(
-//            aenderung: (bestand: Vorlage[]) =>
-//              Ergebnis<{ bestand: Vorlage[]; wert: T }, VorlagenFehlercode>,
-//            schreibart: 'sofort' | 'entprellt',
-//          ): Promise<Ergebnis<T, VorlagenFehlercode>>
-//          // `aenderung` ist SYNCHRON und bekommt eine tiefe Kopie des Bestands.
-//   #96: eingebauteVorlagen(): Vorlage[]   // frische TIEFE Kopie der drei Mitgelieferten
-//   #20:   erzeugeId(): string               // UUID v4
-//   #239: berechneBandGeometrie(höhe: number): BandGeometrie
-//          // REINE, TOTALE Rechnung im geteilten Bereich - wirft nie, prueft nichts.
-//          // Sie ist die EINZIGE Stelle, an der die Bandgeometrie gerechnet wird; hier
-//          // wird sie fuer die Obergrenzen-Pruefung befragt, nicht nachgebaut.
-//   #97: type VorlagenFehlercode = 'vorlage_referenziert' | 'parent_eingebaut' | 'speicher_fehler'
-//   #95: type VorlagenArt = 'vollflaeche' | 'split' | 'einblendung'
-//          interface Zone { id: string; rolle: 'fest'|'frei'; bindung: Bindung | null
-//                           rahmen: { x: number; y: number; breite: number; höhe: number }
-//                           ausrichtung: { horizontal: 'links'|'mitte'|'rechts'
-//                                          vertikal: 'oben'|'mitte'|'unten' }
-//                           wennLeer: 'leer'|'ausblenden'
-//                           text?: ZonenText; bild?: ZonenBild; deko?: ZonenDeko }
-//          interface Vorlage { id: string; name: string; art: VorlagenArt; höhe: number | null
-//                              parent: string | null; eingebaut: boolean; zonen: Zone[] }
-
 /**
  * Die drei zulaessigen Werte, hier als LAUFZEIT-Liste.
  *

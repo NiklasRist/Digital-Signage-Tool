@@ -6,30 +6,6 @@ import { isDeepStrictEqual } from 'node:util'
 import type { VorlagenFehlercode } from './fehlercodes'
 import { aendereBestand } from './schreibe-vorlagen'
 import { text } from '../gemeinsam/systemfehler'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #98: aendereBestand<T>(
-//            aenderung: (bestand: Vorlage[]) =>
-//              Ergebnis<{ bestand: Vorlage[]; wert: T }, VorlagenFehlercode>,
-//            schreibart: 'sofort' | 'entprellt',
-//          ): Promise<Ergebnis<T, VorlagenFehlercode>>
-//          // 'entprellt': der Bestand ist im Speicher uebernommen und das Promise wird erfuellt;
-//          //             die Datei wird 4000 ms nach der LETZTEN entprellten Aenderung geschrieben.
-//          //             Ein Fehler der SYNCHRONEN `aenderung` kommt sofort im Ergebnis zurueck.
-//   #97: type VorlagenFehlercode = 'vorlage_referenziert' | 'parent_eingebaut' | 'speicher_fehler'
-//   #95: interface Vorlage { id: string; name: string; art: VorlagenArt; höhe: number | null
-//                              parent: string | null; eingebaut: boolean; zonen: Zone[] }
-//          interface Zone { id: string; rolle: 'fest'|'frei'; bindung: Bindung | null
-//                           rahmen: { x: number; y: number; breite: number; höhe: number }
-//                           ausrichtung: { horizontal: 'links'|'mitte'|'rechts'
-//                                          vertikal: 'oben'|'mitte'|'unten' }
-//                           wennLeer: 'leer'|'ausblenden'
-//                           text?: { schriftRolle: SchriftRolle; farbRolle: FarbRolle
-//                                    größeMax: number; größeMin: number; maxZeilen: number }
-//                           bild?: { einpassung: 'contain'|'cover' }
-//                           deko?: { füllungFarbRolle?: FarbRolle; radius?: number
-//                                    statischerText?: string; verlauf?: { … } } }
-
 /** Gleiche Namensgrenze wie beim Anlegen (#100, TK 9.12.1). */
 const NAME_MAX_ZEICHEN = 80
 

@@ -2,19 +2,6 @@
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { aendereKonfig, type ConfigFehlercode } from './schreibe-config'   // #31
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #31: aendereKonfig<T>(
-//          aenderung: (konfig: AppKonfig) => Ergebnis<{ konfig: AppKonfig; wert: T }, ConfigFehlercode>,
-//        ): Promise<Ergebnis<T, ConfigFehlercode>>
-//        // Lesen - Aendern - Schreiben als EINE ununterbrechbare Einheit; `aenderung` ist
-//        // SYNCHRON, und genau das ist die Zusage: ohne `await` im Rueckruf kann zwischen
-//        // Lesen und Schreiben nichts anderes laufen.
-//   #31: type ConfigFehlercode = 'speicher_fehler'
-//   #265: interface AppKonfig { aktivesProjektId: string | null
-//                               letztesExportZiel: string | null
-//                               uiVoreinstellungen: Record<string, unknown> }
-
 /**
  * Merkt sich das zuletzt geoeffnete Projekt (TK 9.5.6, FA-15).
  *

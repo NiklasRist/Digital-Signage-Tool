@@ -7,30 +7,8 @@ import { SICHERHEITSABSTAND_BEREICH } from '../../shared/contracts/konstanten'
 import { aendereBestand } from './schreibe-marken'
 import { loeseMarkeAuf } from './vererbung'
 
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #21 (M1-09, in M8 ergaenzt): src/shared/contracts/konstanten.ts – DEFINIERENDE QUELLE der
-//        Grenzen des Sicherheitsabstands. DIESELBE Konstante prueft der marken-editor (#308);
-//        hier NICHT lokal neu definieren und die Zahlen nicht als Literal hinschreiben.
-//          export const SICHERHEITSABSTAND_BEREICH = {
-//            horizontal: { min: 0, max: 480 },
-//            vertikal:   { min: 0, max: 270 },
-//          } as const
-//        Ebenfalls in dieser Datei, hier aber NICHT verwendet: SICHERHEITSABSTAND_PX
-//        = { horizontal: 96, vertikal: 54 } – die Vorbelegung der eingebauten Marke (TK 9.11.4).
-//   #277: interface MarkenEintrag { id: string; name: string; parent: string | null
-//                                    eingebaut: boolean; farben: Partial<Record<FarbRolle, string>>
-//                                    schriften: Partial<Record<SchriftRolle, Schrift>>
-//                                    logo?: {...} | null; sicherheit?: {...}; radien?: {...}
-//                                    schatten?: {...}; slogan?: {...} }
-//          aendereBestand<T>(
-//            aenderung: (bestand: MarkenEintrag[]) =>
-//              Ergebnis<{ bestand: MarkenEintrag[]; wert: T }, MarkenFehlercode>,
-//            schreibart: 'sofort' | 'entprellt',
-//          ): Promise<Ergebnis<T, MarkenFehlercode>>
-//   #279: loeseMarkeAuf(eintrag: MarkenEintrag, bestand: MarkenEintrag[]): Ergebnis<Marke, MarkenFehlercode>
-//   #276: type MarkenFehlercode =
-//            'marke_referenziert' | 'marke_eingebaut' | 'marke_nicht_gefunden'
-//            | 'marken_datei_fehlt' | 'speicher_fehler'
+// Die Grenzen des Sicherheitsabstands stehen NUR in `SICHERHEITSABSTAND_BEREICH` (#21) -
+// dieselbe Konstante prueft der marken-editor (#308); hier keine Literale.
 
 /**
  * Sentinel für „diesen Wert an den Parent zurückgeben". Nur zulässig, wenn die bearbeitete Marke

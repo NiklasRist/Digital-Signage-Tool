@@ -16,25 +16,6 @@ import { loeseMarkeAuf } from './vererbung'
 import { leseRohMetadaten } from '../media-service/ffprobe'
 import { werteMetadatenAus } from '../media-service/metadaten'
 import { istCode, text } from '../gemeinsam/systemfehler'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #13:   export const FORMAT_WHITELIST = {
-//            video: ['mp4'] as const,
-//            bild: ['jpg', 'jpeg', 'png', 'webp'] as const,
-//          } as const                                    // src/shared/contracts/asset.ts
-//   #277: ladeBestand(): Promise<Ergebnis<MarkenEintrag[], MarkenFehlercode>>
-//   #285: bearbeiteMarke(markeId: string, teilwerte: MarkenTeilwerte): Promise<Ergebnis<Marke, MarkenFehlercode>>
-//          // MarkenTeilwerte.logo: MarkenFeld<{datei,herkunft,seitenverhaeltnis} | null>
-//          // MarkenTeilwerte.schriften: Partial<Record<SchriftRolle, MarkenFeld<Schrift>>>
-//          // MarkenFeld<T> = T | { geerbt: true }
-//   #288: markenOrdner(markeId: string): string
-//          loeseMarkenDateiPfad(markeId: string, dateiname: string): Ergebnis<string, MarkenFehlercode>
-//   #280: eingebauteMarke(): MarkenEintrag   // liefert die GEBÜNDELTEN Standardwerte (vier
-//          // OFL-Schriften, Fitnessworld24-Logo), aus denen der gebündelte Rückfall entnommen wird
-//   #276: type MarkenFehlercode =
-//            'marke_referenziert' | 'marke_eingebaut' | 'marke_nicht_gefunden'
-//            | 'marken_datei_fehlt' | 'speicher_fehler'
-
 /** Nur .woff2 – "ein Ladepfad statt zwei" (TK 9.15.3). Modul-lokal: KEINE Bild-/Video-Endung, also
  *  keine Erweiterung von FORMAT_WHITELIST (#13), die ausschließlich Projekt-Assets beschreibt. */
 export const MARKEN_SCHRIFT_ENDUNG = 'woff2'

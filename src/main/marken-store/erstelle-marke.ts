@@ -8,27 +8,6 @@ import { aendereBestand } from './schreibe-marken'
 import { eingebauteMarke } from './anfangsbestand'
 import { loeseMarkeAuf } from './vererbung'
 import { erzeugeId } from '../../shared/contracts/id'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #277: interface MarkenEintrag { id: string; name: string; parent: string | null
-//                                    eingebaut: boolean; farben: Partial<Record<FarbRolle, string>>
-//                                    schriften: Partial<Record<SchriftRolle, Schrift>>
-//                                    logo?: {...} | null; sicherheit?: {...}; radien?: {...}
-//                                    schatten?: {...}; slogan?: {...} }
-//          aendereBestand<T>(
-//            aenderung: (bestand: MarkenEintrag[]) =>
-//              Ergebnis<{ bestand: MarkenEintrag[]; wert: T }, MarkenFehlercode>,
-//            schreibart: 'sofort' | 'entprellt',
-//          ): Promise<Ergebnis<T, MarkenFehlercode>>
-//          // `aenderung` ist SYNCHRON und bekommt eine tiefe Kopie des Bestands
-//   #280: eingebauteMarke(): MarkenEintrag   // frische TIEFE Kopie der Fitnessworld24-Marke,
-//          // VOLLSTÄNDIG befüllt (alle Rollen, Logo, Sicherheit, Radien, Schatten, Slogan)
-//   #279: loeseMarkeAuf(eintrag: MarkenEintrag, bestand: MarkenEintrag[]): Ergebnis<Marke, MarkenFehlercode>
-//   #20:   erzeugeId(): string   // UUID v4
-//   #276: type MarkenFehlercode =
-//            'marke_referenziert' | 'marke_eingebaut' | 'marke_nicht_gefunden'
-//            | 'marken_datei_fehlt' | 'speicher_fehler'
-
 export async function erstelleMarke(
   name: string,
   parentId: string | null,

@@ -2,18 +2,6 @@
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { aendereKonfig, type ConfigFehlercode } from './schreibe-config'   // #31
-
-// Fremde Aufrufe - vollstaendige Signatur, damit hier nichts geraten wird:
-//   #31: aendereKonfig<T>(
-//          aenderung: (konfig: AppKonfig) => Ergebnis<{ konfig: AppKonfig; wert: T }, ConfigFehlercode>,
-//        ): Promise<Ergebnis<T, ConfigFehlercode>>
-//        // Lesen - Aendern - Schreiben als EINE ununterbrechbare Einheit; der Rueckruf ist
-//        // SYNCHRON und darf nicht awaiten (schreibe-config.ts, woertlich: "Ohne `await` im
-//        // Rueckruf kann zwischen dem Lesen und dem Schreiben nichts anderes laufen").
-//   #265: interface AppKonfig { aktivesProjektId: string | null
-//                               letztesExportZiel: string | null
-//                               uiVoreinstellungen: Record<string, unknown> }
-
 /**
  * Merkt sich den zuletzt gewaehlten Export-Zielpfad (TK 9.5.6).
  *

@@ -3,17 +3,6 @@
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import { aendereKonfig, type ConfigFehlercode } from './schreibe-config'   // #31
 import { text } from '../gemeinsam/systemfehler'
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #31: aendereKonfig<T>(
-//          aenderung: (konfig: AppKonfig) => Ergebnis<{ konfig: AppKonfig; wert: T }, ConfigFehlercode>,
-//        ): Promise<Ergebnis<T, ConfigFehlercode>>
-//        // Lesen - Aendern - Schreiben als EINE ununterbrechbare Einheit; der Rueckruf ist
-//        // SYNCHRON und darf nicht awaiten. type ConfigFehlercode = 'speicher_fehler'
-//   #265: interface AppKonfig { aktivesProjektId: string | null
-//                               letztesExportZiel: string | null
-//                               uiVoreinstellungen: Record<string, unknown> }
-
 /**
  * Speichert EINEN Oberflaechen-Schluessel in `config.json` (TK 9.5.6, FA-15).
  *

@@ -18,22 +18,6 @@ import { oeffneZurBearbeitung } from './oeffne-zur-bearbeitung' // #101
 import { speichereArbeitskopie } from './speichere-arbeitskopie' // #102
 import { uebernehmeInParent } from './uebernehme-in-parent' // #103
 import { verwerfeArbeitskopie } from './verwerfe-arbeitskopie' // #105
-
-// Fremde Aufrufe - die Signaturen sind gegen die GEBAUTEN Dateien geprueft und
-// decken sich mit dem Issue:
-//   #99: listeVorlagen(): Promise<Ergebnis<Vorlage[], VorlagenFehlercode>>
-//        listeArbeitskopien(): Promise<Ergebnis<Vorlage[], VorlagenFehlercode>>
-//   #100: erstelleVorlage(art: VorlagenArt, höhe: number | null, name: string)
-//          : Promise<Ergebnis<Vorlage, VorlagenFehlercode>>
-//   #101: oeffneZurBearbeitung(id: string): Promise<Ergebnis<Vorlage, VorlagenFehlercode>>
-//   #102: speichereArbeitskopie(arbeitsId: string, vorlage: Vorlage)
-//          : Promise<Ergebnis<Vorlage, VorlagenFehlercode>>
-//   #103: uebernehmeInParent(arbeitsId: string): Promise<Ergebnis<Vorlage, VorlagenFehlercode>>
-//   #104: alsEigenstaendige(arbeitsId: string, name: string)
-//          : Promise<Ergebnis<Vorlage, VorlagenFehlercode>>
-//   #105: verwerfeArbeitskopie(arbeitsId: string): Promise<Ergebnis<void, VorlagenFehlercode>>
-//   #107: löscheVorlage(id: string): Promise<Ergebnis<void, VorlagenFehlercode>>
-
 /** "endliche Zahl" - `Number.isFinite` und NICHT `typeof === 'number'` (gleiche Regel wie #76). */
 function istEndlicheZahl(wert: unknown): wert is number {
   return typeof wert === 'number' && Number.isFinite(wert)

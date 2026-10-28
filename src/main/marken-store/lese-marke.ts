@@ -5,20 +5,6 @@ import type { Marke } from '../../shared/contracts/marke'
 import type { MarkenFehlercode } from './fehlercodes'
 import { ladeBestand } from './schreibe-marken'
 import { loeseMarkeAuf } from './vererbung'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #277: interface MarkenEintrag { id: string; name: string; parent: string | null
-//                                    eingebaut: boolean; farben: Partial<Record<FarbRolle, string>>
-//                                    schriften: Partial<Record<SchriftRolle, Schrift>>
-//                                    logo?: {...} | null; sicherheit?: {...}; radien?: {...}
-//                                    schatten?: {...}; slogan?: {...} }
-//          ladeBestand(): Promise<Ergebnis<MarkenEintrag[], MarkenFehlercode>>
-//          // vollstaendiger, ROHER Bestand als TIEFE Kopie
-//   #279: loeseMarkeAuf(eintrag: MarkenEintrag, bestand: MarkenEintrag[]): Ergebnis<Marke, MarkenFehlercode>
-//   #276: type MarkenFehlercode =
-//            'marke_referenziert' | 'marke_eingebaut' | 'marke_nicht_gefunden'
-//            | 'marken_datei_fehlt' | 'speicher_fehler'
-
 /** Liefert die AUFGELÖSTE Marke zu markeId. Kein Filtern, keine Vererbung außerhalb von loeseMarkeAuf. */
 export async function leseMarke(markeId: string): Promise<Ergebnis<Marke, MarkenFehlercode>> {
   // SCHRITT 1: die Form - ohne jede Wirkung auf die Daten (TK 9.1.1 Punkt 6). Der Vergleich
