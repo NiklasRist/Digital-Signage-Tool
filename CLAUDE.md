@@ -11,7 +11,40 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, dritte Sitzung: Q1.1-Rest 74 Blöcke, Q1.2 Batch 1) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, vierte Sitzung: Mutations-Charge 1) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 13.**
+
+- **Charge 1 GEBAUT (`3eeb9a4`):** fuenf Testdateien – `fehlertexte`, `liste-ansicht-anzeige`,
+  `uebergabe-anzeige`, `speichern`, `element-hinzufuegen`. **26 Verhaltens-Mutationen** und
+  **5 harmlose Refactorings**; **22 erkannt**, vier gruen = echte Luecken, **0/5 Refactorings
+  rot**. Jede Mutation vor dem Lauf gesichert und nach dem Lauf **byte-identisch** zurueckgenommen
+  (Pruefsumme je Datei; Harness ausserhalb des Repos).
+- **Vier Luecken geschlossen:** **L2** – der Abbruch-Merker der Thumbnails war ungeprueft (der
+  Test endete mit `toBeDefined`/`void`); jetzt erscheint das zweite Bild und das veraltete erste
+  ersetzt es nicht. **L3** – `data-kaputt` war nie geprueft; ein reiner `band_abschnitt`-Defekt
+  markiert die Zeile jetzt belegt. **S2** – die Sperren-Zahl zaehlte Warnungen mit; neu: eine
+  Sperre + eine Warnung ⇒ „1 Sperre(n)". **E3** – die Positions-Klammer war ungeprueft; `-1`
+  fuegt jetzt belegt an Index 0 ein (fuer `> laenge` ist die Klammer aequivalent zu `slice`).
+- **Gegenproben:** fuenf Mutationen, **alle erkannt** – L2/L3/S2/E3 erneut und **F6**
+  (`TABELLE.get(fehler.code.toLowerCase())`) als Beleg, dass der neue Exakt-Vergleichs-Test die
+  entfernte `toLowerCase`-Grep-Probe ersetzt.
+- **Entfernt:** **23** Quelltext-/Meta-Tests (9 + 1 + 2 + 6 + 5), **4** Verhaltens-Tests
+  ergaenzt, **1** umgeschrieben; Suite **5.692 → 5.673** (netto −19). **Bewusst geblieben:**
+  der Block „Vollstaendigkeit gegen den GEBAUTEN Main-Code" in `fehlertexte` – er liest die drei
+  Fehlercode-Unionen aus `src/main/**` und prueft einen Vertrag ueber zwei Module, keine Codeform.
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.673 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu (28.10.):** **136** Testdateien mit `readFileSync` (vorher 140 in `tests/unit`;
+  3 in `tests/integration` unveraendert), **95** mit Grep-/Bauvorschriften-`describe` (vorher 98).
+  Die 136 sind **keine Zielliste** – `fehlertexte` bleibt trotz `readFileSync`.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote (kein IPC, kein zweiter Schreibweg, kein
+  eigener Zustand, kein Kanal-Literal, kein Canvas-Export) haben **keinen Waechter**, bis eine
+  Lint-Regel steht – bewusst **kein** Schein-Test als Ersatz.
+- **Nicht gepusht:** `3eeb9a4` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 2** – erst Inventur der 95 Describe-Bloecke, dann fuenf Dateien nach demselben Rezept.
+
+## STAND HEUTE (28.10.2026, dritte Sitzung: Q1.1-Rest 74 Blöcke, Q1.2 Batch 1) – historisiert durch den Abschnitt darueber
 
 **Volltext dieser Sitzung: [`docs/agents/uebergabe-2026-10-28-session-3.md`](docs/agents/uebergabe-2026-10-28-session-3.md).**
 
