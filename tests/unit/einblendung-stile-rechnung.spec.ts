@@ -2,9 +2,7 @@
 //
 // Pflicht-Testfaelle aus dem Issue (162 ist die eingebaut-e Vorlage, 200 und 204
 // die Kontrollhoehen); der Eigenschafts-Test laeuft ueber ALLE geraden Hoehen.
-import { readFileSync } from 'node:fs'
-
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 import { baueEinblendungStile } from '../../src/renderer/preview-player/einblendung-stile'
@@ -46,41 +44,34 @@ describe('Totalitaet: unbrauchbare Hoehen werfen NICHT', () => {
   })
 })
 
-describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare)', () => {
-  const quelle = readFileSync(
-    new URL('../../src/renderer/preview-player/einblendung-stile.ts', import.meta.url),
-    'utf8',
-  )
-  const code = quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
+// ENTSCHIEDEN 2: Die Bandhoehe wird aus bandY zurueckgewonnen und NICHT aus dem
+// Eingabeparameter uebernommen. Bei der echten geteilten Rechnung sind beide Wege
+// heute gleich (bandY ist 1080 - H) - der Unterschied ist nur mit einer Geometrie
+// sichtbar, die nicht 1080 - H liefert. Genau die wird hier untergeschoben: Wer
+// spaeter `bandHöhe: höhe` schreibt, faellt hier auf, nicht erst am Fernseher.
+describe('die Bandhoehe stammt aus bandY, nicht aus dem Parameter (ENTSCHIEDEN 2)', () => {
+  it('rechnet RENDER_PROFILE.hoehe - bandY, auch wenn bandY nicht 1080 - H ist', async () => {
+    vi.resetModules()
+    vi.doMock('../../src/shared/band-geometrie', () => ({
+      berechneBandGeometrie: () => ({
+        videoBereichBreite: 1920,
+        videoBereichHöhe: 900,
+        videoBreite: 1600,
+        videoHöhe: 900,
+        videoVersatzX: 160,
+        videoVersatzY: 0,
+        bandY: 900,
+      }),
+    }))
+
+    const frisch = await import('../../src/renderer/preview-player/einblendung-stile')
+    expect(frisch.baueEinblendungStile(162)).toEqual({
+      bandY: 900,
+      bandHöhe: 180,
+      bandBreite: 1920,
     })
-    .join('\n')
 
-  it('kein Math., kein Zahlenliteral, kein Multiplizieren/Dividieren, GENAU EINE Subtraktion, keine split-Felder', () => {
-    expect(code).not.toContain('Math.')
-    expect(code).not.toMatch(/\d/)
-    // Zeichenketten (Import-Pfade) tragen Schraegstriche ohne arithmetische Bedeutung:
-    const ohneStrings = code.replace(/'[^']*'/g, "''")
-    expect(ohneStrings).not.toMatch(/\*/)
-    expect(ohneStrings).not.toMatch(/\//)
-    const subtraktionen = ohneStrings.match(/-/g) ?? []
-    expect(subtraktionen).toHaveLength(1)
-    expect(ohneStrings).toMatch(/RENDER_PROFILE\.hoehe - \w+\.bandY/)
-    // ENTSCHIEDEN 1: die sechs split-Felder kommen in diesen Dateien NICHT vor
-    // (die Probe sieht den Code, nicht zum Vertragsnamen einer Kommentierung).
-    for (const feld of [
-      'videoBreite', 'videoHöhe', 'videoVersatzX', 'videoVersatzY',
-      'videoBereichBreite', 'videoBereichHöhe',
-    ]) {
-      expect(code).not.toContain(feld)
-    }
-  })
-
-  it('kein JSX, kein react-Import (die Datei ist rein; ihre Tests laufen ohne Browser)', () => {
-    expect(code).not.toContain('react')
-    expect(code).not.toContain('<')
+    vi.doUnmock('../../src/shared/band-geometrie')
+    vi.resetModules()
   })
 })

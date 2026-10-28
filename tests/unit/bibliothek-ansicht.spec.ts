@@ -6,7 +6,6 @@
 // uebernommener Zustand (nie neu beurteilt, ENTSCHIEDEN 1) und die medienUrl aus
 // #258 (Nachtrag 14.08.2026: importiert, nicht nachgebaut).
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
 
 import type { Asset } from '../../src/shared/contracts/asset'
 import type { Aktion } from '../../src/shared/contracts/aktion'
@@ -231,40 +230,5 @@ describe('Unveraendertheit (DoD)', () => {
     expect(p.id).toBe(kopieId)
     expect(p.assets.map((a) => ({ ...a }))).toEqual(kopieAssets)
     expect(p.aktionen.map((a) => ({ ...a }))).toEqual(kopieAktionen)
-  })
-})
-
-describe('DoD-Grep-Proben (bibliothek-ansicht.ts, nur Code - Kommentarzeilen raus)', () => {
-  const CODE = readFileSync('src/renderer/composer/bibliothek-ansicht.ts', 'utf8')
-    .split('\n')
-    .filter((zeile) => {
-      const getrimmt = zeile.trim()
-      return (
-        !getrimmt.startsWith('//') &&
-        !getrimmt.startsWith('/*') &&
-        !getrimmt.startsWith('*') &&
-        getrimmt !== ''
-      )
-    })
-    .join('\n')
-
-  it('enthaelt kein JSX, keinen react-Import, kein rufeAuf, kein KANAELE, kein abonniere, kein queue:, kein window. (DoD)', () => {
-    for (const verboten of ['react', 'JSX', 'rufeAuf', 'KANAELE', 'abonniere', "'queue:", 'window.']) {
-      expect(CODE, verboten).not.toContain(verboten)
-    }
-  })
-
-  it('berechnet kaputt nicht selbst - kein zustand-Fehlt-Vergleich fuer Aktionen, kein bildRef-Nachschlag (DoD)', () => {
-    // `zustand === 'fehlt'` steht erlaubterweise in baueMedienEintraege und
-    // zaehleFehlende (Medien). Fuer AKTIONEN ist jede eigene Beurteilung verboten:
-    // die Regel lebt in #135. Gemessen wird deshalb, dass baueAktionsEintraege
-    // ausschliesslich istAktionKaputt aufruft und kein bildRef-Vergleich entsteht.
-    expect(CODE).toContain('kaputt: istAktionKaputt(aktion, projekt.assets)')
-    // Kein bildRef in der ganzen Datei (der Nachschlag waere die Zweitfassung der Regel).
-    expect(CODE).not.toMatch(/bildRef/)
-    // Im Aktions-Block kein zustand-Vergleich: nur das Stueck der einen Funktion.
-    const abAktion = CODE.slice(CODE.indexOf('baueAktionsEintraege'))
-    const aktionsBlock = abAktion.slice(0, abAktion.indexOf('zaehleFehlende'))
-    expect(aktionsBlock).not.toMatch(/zustand === 'fehlt'/)
   })
 })

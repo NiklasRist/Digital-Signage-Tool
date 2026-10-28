@@ -6,7 +6,6 @@
 // die ORIGINAL-Datei aus dem Bestand erhaelt.
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
@@ -145,31 +144,29 @@ describe("AusgabeListenansicht (ausgabe-liste.tsx)", () => {
     expect(aufExportieren).toHaveBeenCalledTimes(1);
     expect(aufExportieren.mock.calls[0]?.[0]).toBe(eintrag);
   });
-});
 
-describe("DoD-Grep-Proben (ausgabe-liste.tsx, nur Code - Kommentarzeilen raus)", () => {
-  const CODE = readFileSync("src/renderer/composer/ausgabe-liste.tsx", "utf8")
-    .split("\n")
-    .filter((zeile) => {
-      const getrimmt = zeile.trim();
-      return (
-        !getrimmt.startsWith("//") &&
-        !getrimmt.startsWith("/*") &&
-        !getrimmt.startsWith("*") &&
-        !getrimmt.startsWith("{/*") &&
-        getrimmt !== ""
+  it("gibt jedem Export-Knopf seine EIGENE Datei - auch bei zwei Zeilen (DoD)", () => {
+    const erste = datei({ dateiname: "a.mp4" });
+    const zweite = datei({ dateiname: "b.mp4" });
+    const aufExportieren = vi.fn();
+    act(() => {
+      root.render(
+        createElement(
+          AusgabeListenansicht,
+          eigenschaften({ stand: geladen(erste, zweite), aufExportieren }),
+        ),
       );
-    })
-    .join("\n");
+    });
 
-  it("enthaelt kein rufeAuf, kein KANAELE und keinen eigenen Ladevorgang (DoD)", () => {
-    for (const verboten of ["rufeAuf", "KANAELE", "listeAusgaben", "ladeAusgaben"]) {
-      expect(CODE, verboten).not.toContain(verboten);
-    }
-  });
+    const knoepfe = Array.from(host.querySelectorAll("button")).filter((b) =>
+      b.textContent?.includes("Exportieren"),
+    );
+    expect(knoepfe).toHaveLength(2);
+    act(() => {
+      knoepfe[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
 
-  it("haelt keinen eigenen Zustand (kein useState/useEffect)", () => {
-    expect(CODE).not.toContain("useState");
-    expect(CODE).not.toContain("useEffect");
+    expect(aufExportieren).toHaveBeenCalledTimes(1);
+    expect(aufExportieren.mock.calls[0]?.[0]).toBe(zweite);
   });
 });

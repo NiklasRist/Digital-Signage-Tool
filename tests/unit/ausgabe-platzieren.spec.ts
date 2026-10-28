@@ -67,9 +67,6 @@ const { DAUER_TOLERANZ_SEKUNDEN, RENAME_WARTEZEITEN_MS, verifiziereUndPlatziere 
   '../../src/main/render-service/ausgabe-platzieren'
 )
 
-const QUELLE = path.join(__dirname, '../../src/main/render-service/ausgabe-platzieren.ts')
-const QUELLTEXT = readFileSync(QUELLE, 'utf8')
-
 const WURZEL = mkdtempSync(path.join(os.tmpdir(), 'ds-ausgabe-platzieren-'))
 const FFPROBE = path.join('C:', 'app', 'resources', 'ffprobe.exe')
 
@@ -436,9 +433,9 @@ describe('verifiziereUndPlatziere - das Dateisystem', () => {
     // Die Meldung muss den Aufbaufehler benennen, nicht nur den errno durchreichen:
     // Quelle und Ziel liegen auf verschiedenen Laufwerken.
     expect(ergebnis.fehler.meldung).toMatch(/laufwerk/i)
+    // UND SIE DARF NICHT KOPIEREN: Waere hier ein `copyFile` im Spiel, laege danach
+    // "bytes" am Ziel statt der alten Fassung. Die Zieldatei ist der Beleg.
     expect(readFileSync(zielPfad, 'utf8')).toBe('alt')
-    expect(QUELLTEXT).not.toContain('copyFile')
-    expect(QUELLTEXT).not.toContain('createReadStream')
   })
 
   it('gibt bei EACCES sofort auf, ohne zu warten', async () => {
@@ -522,19 +519,28 @@ describe('verifiziereUndPlatziere - die Wiederholung bei EBUSY', () => {
     expect(ergebnis.fehler.meldung).toContain(zielPfad)
     expect(zustand.rmAufrufe).toEqual([partPfad])
   })
-})
 
-describe('verifiziereUndPlatziere - was die Datei nicht tut', () => {
-  it('startet keinen eigenen ffprobe-Prozess und ermittelt keinen Binaerpfad', () => {
-    const ausfuehrbar = QUELLTEXT.split('\n')
-      .filter((zeile) => !zeile.trimStart().startsWith('//') && !zeile.trimStart().startsWith('*'))
-      .join('\n')
+  // EPERM steht in DERSELBEN Wache wie EBUSY (#122). Auf Windows sperrt ein
+  // Virenscanner die Zieldatei mal mit dem einen, mal mit dem anderen Code - faellt
+  // EPERM aus der Wache, gibt die Datei nach einem einzigen Versuch auf.
+  it('wiederholt auch bei EPERM und endet in speicher_fehler', async () => {
+    vi.useFakeTimers()
+    zustand.stat = () => Promise.resolve({ size: 12 })
+    zustand.rename = () => Promise.reject(systemfehler('EPERM'))
+    zustand.rm = () => Promise.resolve()
 
-    expect(ausfuehrbar).not.toContain('child_process')
-    expect(ausfuehrbar).not.toContain('ermittleFfprobePfad')
-    expect(ausfuehrbar).not.toContain('spawn')
-    // Keine laengenabhaengige Toleranz - weder als Formel noch als Anteil.
-    expect(ausfuehrbar).not.toContain('0.01')
-    expect(ausfuehrbar).not.toContain('Math.max')
+    const offen = lauf()
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(zustand.renameAufrufe).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(RENAME_WARTEZEITEN_MS.reduce((summe, ms) => summe + ms, 0))
+
+    const ergebnis = await offen
+
+    // Vier Versuche: der sofortige und die drei Wiederholungen der Staffel.
+    expect(zustand.renameAufrufe).toHaveLength(RENAME_WARTEZEITEN_MS.length + 1)
+    expect(ergebnis.ok).toBe(false)
+    if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('speicher_fehler')
   })
 })

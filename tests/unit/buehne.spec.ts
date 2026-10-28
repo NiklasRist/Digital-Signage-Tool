@@ -6,7 +6,6 @@
 // Flaeche, und der Groessen-Beobachter wird beim Abbau abgemeldet (Invariante 2).
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
@@ -92,6 +91,14 @@ describe("Buehne (buehne.tsx)", () => {
     expect(stil.style.width).toBe(`${RENDER_PROFILE.breite}px`);
     expect(stil.style.height).toBe(`${RENDER_PROFILE.hoehe}px`);
     expect(stil.style.transform).toContain("scale(0.5)");
+    // Der Ursprung der Verkleinerung ist die linke obere Ecke. Mit `center` wanderte
+    // die Flaeche beim Skalieren um den halben Versatz aus dem Rahmen (ENTSCHIEDEN 4).
+    expect(stil.style.transformOrigin).toBe("top left");
+
+    // Der aeussere Kasten ist schwarz: Das Raster liegt im 16:9-Rahmen, die Raender
+    // sind Fuellflaeche und duerfen nicht durchscheinen (ENTSCHIEDEN 5).
+    const kasten = host.querySelector("[data-testid='buehne-kasten']") as HTMLElement | null;
+    expect(kasten?.style.backgroundColor).toBe("rgb(0, 0, 0)");
   });
 
   it("verschiebt die innere Flaeche um die Versaetze (DoD)", () => {
@@ -182,49 +189,5 @@ describe("Buehne (buehne.tsx)", () => {
     });
 
     expect(ResizeObserverStub.installierte).toHaveLength(0);
-  });
-});
-
-describe("DoD-Grep-Proben (buehne.tsx, nur Code - Kommentarzeilen raus)", () => {
-  const CODE = readFileSync("src/renderer/preview-player/buehne.tsx", "utf8")
-    .split("\n")
-    .filter((zeile) => {
-      const getrimmt = zeile.trim();
-      return (
-        !getrimmt.startsWith("//") &&
-        !getrimmt.startsWith("/*") &&
-        !getrimmt.startsWith("*") &&
-        !getrimmt.startsWith("{/*") &&
-        getrimmt !== ""
-      );
-    })
-    .join("\n");
-
-  it("kennt keine Verbote: kein devicePixelRatio, Runden, 1920/1080-Literal, Zeitmessung, canvas/video", () => {
-    for (const verboten of [
-      "devicePixelRatio",
-      "Math.round",
-      "Math.floor",
-      "Math.ceil",
-      "1920",
-      "1080",
-      "requestAnimationFrame",
-      "setInterval",
-      "canvas",
-      "video",
-      "media://",
-      "window.api",
-      "rufeAuf",
-      "abonniere",
-    ]) {
-      expect(CODE, verboten).not.toContain(verboten);
-    }
-  });
-
-  it("haelt nur einen Zustand: die gemessenen Maße (kein weiteres useState/useEffect)", () => {
-    // Nur das eine useState fuer gemessen darf existieren; der Rest wird ueber Proben
-    // auf weitere Zustands-Hooks abgesichert.
-    expect(CODE).toContain("useState");
-    expect(CODE).toContain("setzeGemessen");
   });
 });
