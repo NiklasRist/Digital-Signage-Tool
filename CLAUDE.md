@@ -11,7 +11,38 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, sechzehnte Sitzung: Lint-Gate #447) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, siebzehnte Sitzung: Mutations-Charge 13) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-28-charge-13.md`](docs/agents/uebergabe-2026-10-28-charge-13.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 26.
+
+- **CHARGE 13 GEBAUT:** fuenf Testdateien – `bibliothek-ansicht-ansicht`, `asset-auswahl-anzeige`,
+  `einblendung-ansicht-anzeige` (`einblendung-ansicht.ts` + `.tsx`), `sicherheitsabstand-bearbeiten`,
+  `speicherstatus-lage`. **26 Verhaltens-Mutationen**, **5 Refactorings**; 15 erkannt,
+  **7 echte Luecken** geschlossen, **EI1/AS3 aequivalent**; **0/5 Refactorings rot**; jede
+  Mutation byte-identisch zurueckgenommen.
+- **Die Luecken:** **BI2** – der Hinweis „N Medien fehlen" war nur im Fall > 0 geprueft (immer
+  sichtbar bei `>= 0`). **BI3/BI4** – Auswahl-Markierung (#418) und „· defekt" waren ungeprueft.
+  **AS4** – nach einem Wurf blieb die Auswahl **dauerhaft gesperrt** (zwei Ruecksetzungen im
+  `catch` fehlten im Test). **EX1** – erste Zeile „nach oben" war klickbar. **EI6** – eine
+  Vorlagen-ID aus Leerzeichen galt als gueltig. **SL3** – die feste Reihenfolge
+  `['projekt', 'vorlagen']` war ungeprueft.
+- **Harness-Korrektur (transparent):** die sieben Mutationen an `einblendung-ansicht.ts` liefen
+  zuerst gegen die **tsx**-Spec (`einblendung-ansicht-anzeige.spec.ts`) – alle 7 gruen. Die
+  zugehoerige Spec ist `einblendung-ansicht.spec.ts`; nach der Korrektur 5 erkannt.
+- **Entfernt:** **7** Quelltext-/Meta-Tests, **6** Verhaltens-Tests ergaenzt; Suite **5.517 →
+  5.516** (netto −1). **Sperrklinke:** 70 → **65** Dateien.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.516 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Ehrlich offen:** Architektur-Verbote ohne Waechter (Lint-Kandidat); Einzelquellen-Regeln nur
+  durch Werte gedeckt; #448 (192 SAFETY-Kommentare) steht.
+- **Nicht gepusht:** `main` liegt **29 Commits** vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 14** – fuenf Dateien von den verbleibenden **65**;
+  Kandidaten mit mehreren Proben: `einblendung-anzeige`, `marken-speicherstatus`,
+  `speicherstatus-verdrahtung`, `split-anzeige`, `video-ausschnitt`, `einblendung-ansicht-anzeige`
+  ist erledigt. Je Charge die fuenf Dateien aus der Sperrklinken-Liste streichen.
+
+## STAND HEUTE (28.10.2026, sechzehnte Sitzung: Lint-Gate #447) – historisiert durch den Abschnitt darueber
 
 **Volltext dieser Übergabe: [`docs/agents/uebergabe-2026-10-28-lint-gate.md`](docs/agents/uebergabe-2026-10-28-lint-gate.md).**
 Issue: **#447** (gebaut), **#448** (neu, Schuld).

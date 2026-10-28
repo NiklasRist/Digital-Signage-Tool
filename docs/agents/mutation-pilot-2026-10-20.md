@@ -1184,3 +1184,70 @@ Stand nach dem Bau: 70 Dateien, 80 Einzelproben. Die Regel erkennt direkte Liter
 `new URL(...)` und einfache Konstanten (`const QUELLE = path.join(...)`); ein Pfad, der erst aus
 einem Funktionsparameter entsteht, bleibt unsichtbar – die Sperrklinke ist eine Bremse gegen
 Nachwuchs, kein Sandkasten.
+
+## 26. Charge 13 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `bibliothek-ansicht-ansicht` (`bibliothek-ansicht.tsx`), `asset-auswahl-anzeige`
+(`asset-auswahl.tsx`), `einblendung-ansicht-anzeige` (`einblendung-ansicht.ts` + `.tsx`),
+`sicherheitsabstand-bearbeiten` (`sicherheitsabstand-bearbeiten.ts`), `speicherstatus-lage`
+(`speicherstatus-lage.ts`). Alle fünf standen auf der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 26 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **15**.
+Gruen: **BI2, BI3, BI4, AS3, AS4, EI1, EI6, EX1, SL3**. **0/5 Refactorings rot**; jede
+Mutation byte-identisch zurueckgenommen.
+
+### Harness-Korrektur (kein Code-Befund)
+
+Die sieben Mutationen an `einblendung-ansicht.ts` liefen zuerst gegen
+`einblendung-ansicht-anzeige.spec.ts` – **alle 7 gruen**. Die zugehoerige Spezifikation ist
+aber `einblendung-ansicht.spec.ts` (die tsx-Spec importiert nur die Ansicht). Nach der
+Korrektur: **5 erkannt**, 2 gruen. Wer die falsche Spec laufen laesst, misst nichts.
+
+### Die sieben Luecken (geschlossen)
+
+- **BI2 – der Hinweis „N Medien fehlen" war nur im Fall > 0 geprueft.** `>= 0` zeigte ihn
+  immer („0 Medien fehlen"). Neu: kein Hinweis, wenn nichts fehlt.
+- **BI3 – die Auswahl-Markierung (#418) war ungeprueft.** `data-ausgewaehlt` und der Klick
+  auf die Zeile haben jetzt einen Test (zwei Videos, eines ausgewaehlt).
+- **BI4 – „· defekt" war ungeprueft.** `{kaputt && null}` liess die Kennzeichnung verschwinden;
+  neu: Text **und** der Hinzufuegen-Weg bleibt offen (gekennzeichnet, nicht gesperrt).
+- **AS4 – nach einem Wurf blieb die Auswahl dauerhaft gesperrt.** Die zwei Ruecksetzungen im
+  `catch` waren ungeprueft; neu: zweiter Klick nach einem Wurf ruft erneut und schliesst ab.
+- **EX1 – die Pfeil-Knoepfe waren am Rand nicht geprueft.** `disabled={false}` machte „nach
+  oben" in der ersten Zeile klickbar; neu: erste/letzte Zeile je ein Rand.
+- **EI6 – `trim()` in `istUebernehmbar` war ungeprueft.** Eine Vorlagen-ID aus Leerzeichen galt
+  als gueltig; neu: `'   '` ist false.
+- **SL3 – die feste Reihenfolge von `betroffeneQuellen` war ungeprueft.** Der einzige Test
+  hatte nur EINE Quelle; neu: beide Quellen ⇒ `['projekt', 'vorlagen']`.
+
+### Als aequivalent belegt (Wachen bleiben)
+
+- **EI1 – `element.art !== 'video'` gegen `=== 'segment'`.** Der gebaute Vertrag kennt nur
+  diese zwei Arten; die `!==`-Form ist die defensive Fassung fuer eine etwaige Bestandszeile.
+- **AS3 – der `laeuft`-Ref neben `disabled`.** In jsdom ist der zweite Klick durch den
+  gesperrten Knopf schon blockiert; der Ref schliesst das Fenster zwischen Render und Klick
+  im ECHTEN Fenster. Als defensive Absicherung stehen gelassen.
+
+### Entfernt (7 Tests, 6 ergaenzt – netto −1) und die Sperrklinke
+
+- **1** in `bibliothek-ansicht-ansicht` (kein `<video`/`file://`/`rufeAuf`/`reiheEin`).
+- **2** in `asset-auswahl-anzeige` (kein Kanal; kein Import aus `src/main/`) – die zweite
+  Zusage traegt jetzt die ESLint-Regel aus #447.
+- **2** in `einblendung-ansicht-anzeige` (Verbotslisten fuer `.ts` und `.tsx`).
+- **1** in `sicherheitsabstand-bearbeiten` („keine Magier-Zahlen", `node:fs`).
+- **1** in `speicherstatus-lage` (kein JSX/react).
+
+**Sperrklinke:** 70 → **65** Dateien (`tools/eslint/quelltext-proben-ausnahmen.json`).
+
+### Stand nach Charge 13
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **26**: 15 erkannt, 9 aequivalent (2) / Luecke (7) |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **7** |
+| Verhaltens-Tests ergaenzt | – | **6** |
+| Echte Luecken geschlossen | – | **7** |
+| Suite | 5.517 | **5.516** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 70 | **65** Dateien |
