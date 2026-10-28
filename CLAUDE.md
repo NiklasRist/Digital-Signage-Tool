@@ -11,7 +11,37 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, dreizehnte Sitzung: Mutations-Charge 10) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, vierzehnte Sitzung: Mutations-Charge 11) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 23.**
+
+- **Charge 11 GEBAUT (`60a0a1f`):** fuenf Testdateien – `vorschau-anzeige`, `split-stile-rechnung`,
+  `png-ablage`, `nutzung-anzeigen-ansicht`, `inhalte-reiter`. **21 Verhaltens-Mutationen**,
+  **5 Refactorings**; 17 erkannt, **NA4/IN4** als Luecken geschlossen, **VV3/IN2 aequivalent**;
+  **0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+- **Die Luecken:** **NA4** – die Umschalter-Beschriftung im aufgeklappten Zustand war
+  ungeprueft (jetzt exakt „Trefferliste ausblenden"). **IN4** – `hervorgehobeneAktionId`
+  war nur mit `null` geprueft (`null === null` ist auch bei einer Konstante gruen); jetzt mit
+  gesetztem Wert.
+- **Aequivalent:** **VV3** – `schriftenBereit = true` wirkt nur im Zweig, in dem der Wert
+  ohnehin `true` ist. **IN2** – `ProjektStandReiter` wird nur fuer `zusammenstellen`/`aktionen`
+  benutzt, dort ist der Leerzustand ohne Projekt immer richtig.
+- **Transparent:** Drei Refactoring-Versuche (`stand`, `gruppe`, `geometrie`) brachen die
+  Suiten (trafen `setStand`-nahe Bezeichner, `anzeige.gruppen`, Importnamen) – ersetzt durch
+  Kommentar-Umformulierungen.
+- **Entfernt:** **10** Quelltext-/Meta-Tests (2 + 2 + 2 + 2 + 2), **1** Verhaltenstest
+  ergaenzt, **2** geschaerft; Suite **5.532 → 5.523** (netto −9).
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.523 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **87** Testdateien mit `readFileSync` (vorher 91), **56** mit
+  Grep-/Bauvorschriften-`describe` (vorher 61); verfeinert lesen **67** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote haben keinen Waechter bis zu einer
+  Lint-Regel.
+- **Nicht gepusht:** `60a0a1f` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 12** – Inventur, dann fuenf Dateien.
+
+## STAND HEUTE (28.10.2026, dreizehnte Sitzung: Mutations-Charge 10) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 22.**
 
