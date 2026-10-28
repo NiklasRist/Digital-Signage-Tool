@@ -11,7 +11,36 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, zehnte Sitzung: Mutations-Charge 7) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, elfte Sitzung: Mutations-Charge 8) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 20.**
+
+- **Charge 8 GEBAUT (`8ffa008`):** fuenf Testdateien – `kaputt-erkennung`, `validierung`,
+  `torwaechter`, `eingebaute-vorlagen`, `beende-auftrag`. **24 Verhaltens-Mutationen**,
+  **5 Refactorings**; **22 erkannt, 2 aequivalent, keine Luecke**; **0/5 Refactorings rot**;
+  jede Mutation byte-identisch zurueckgenommen.
+- **Aequivalent:** **T5** – der abgelehnte Uebergang ist ueber die oeffentliche Q1-Schnittstelle
+  nicht erreichbar (`naechsterAnstehender` liefert nur `anstehend`, der Uebergang ist erlaubt).
+  **BA2** – ein unbekannter Handler-Status wird ohnehin von der Uebergangstabelle abgewiesen,
+  BEVOR `status` geschrieben wird; die Wache verbessert nur die Meldung.
+- **Trotzdem ergaenzt:** ein Test „Ausgang ohne bekannten Status veraendert nichts" – er
+  dokumentiert die Zusage, faengt die aequivalente Mutation aber nicht.
+- **Harness-Korrekturen (keine Code-Befunde):** `T3`/`EV3`/`EV6` trafen mehrere Stellen;
+  mit eindeutigem Kontext nachgeholt, `EV6` entfiel (24 statt 25 Mutationen).
+- **Entfernt:** **13** Quelltext-/Meta-Tests (4 + 4 + 2 + 2 + 1), **1** Verhaltenstest
+  ergaenzt; Suite **5.560 → 5.548** (netto −12).
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.548 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **101** Testdateien mit `readFileSync` (vorher 106), **69** mit
+  Grep-/Bauvorschriften-`describe` (vorher 70); verfeinert lesen **82** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote haben keinen Waechter bis zu einer
+  Lint-Regel; die `await`-Freiheit zwischen Pruefung und Statuswechsel ist nur noch mittelbar
+  gedeckt.
+- **Nicht gepusht:** `8ffa008` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 9** – Inventur, dann fuenf Dateien.
+
+## STAND HEUTE (28.10.2026, zehnte Sitzung: Mutations-Charge 7) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 19.**
 
