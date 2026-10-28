@@ -7,8 +7,6 @@
 // ENTSCHIEDEN 7 (genau ein Taktgeber, Pause beim Verschwinden, kein Autofortsetz-
 // en, Delta 0 nach Wiederaufnahme), ENTSCHIEDEN 9 (neutrale Zeile), ENTSCHIEDEN 10.
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, createElement, type ReactNode } from 'react'
@@ -106,45 +104,6 @@ vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
 
 const { Vorschau } = await import('../../src/renderer/preview-player/vorschau.tsx')
 type VorschauProps = import('../../src/renderer/preview-player/vorschau.tsx').VorschauProps
-
-const QUELLE = readFileSync(
-  join(process.cwd(), 'src/renderer/preview-player/vorschau.tsx'),
-  'utf8',
-)
-
-const codeOhneKommentare = (quelle: string): string =>
-  quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare)', () => {
-  it('genau ein requestAnimationFrame; kein zweiter Taktgeber; die Lauf-Regel liegt in taktSollLaufen', () => {
-    const code = codeOhneKommentare(QUELLE)
-    expect(code.match(/requestAnimationFrame/g) ?? []).toHaveLength(1)
-    for (const verbot of [
-      'setInterval', 'setTimeout', 'timeupdate',
-      'rufeAuf', 'abonniere', 'KANAELE', 'window.api', 'media://',
-      'Math.round', 'app-shell/', 'template-canvas/', 'src/main/',
-      'padStart', 'toFixed',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
-    // Die Lauf-Regel liegt AUSSCHLIESSLICH in taktSollLaufen: Keine eigene
-    // Verknuepfung von laeuft und sichtbar im JSX-Code - die Probe sucht das
-    // Muster nicht wörtlich, sondern in JEDER Schreibweise.
-    const eigeneRegel = code.match(/laeuft[^\n]*&&|&&[^\n]*sichtbar/)
-    expect(eigeneRegel).toBeNull()
-  })
-
-  it('die Gesamtdauer kommt aus formatiereLaenge (#127); keine eigene Formatierung', () => {
-    expect(QUELLE).toContain("../composer/gesamtlaenge'")
-    expect(codeOhneKommentare(QUELLE)).toMatch(/formatiereLaenge/)
-  })
-})
 
 // ---------------- Bausteine ----------------
 

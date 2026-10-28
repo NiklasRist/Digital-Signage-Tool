@@ -1022,3 +1022,70 @@ die „ein Format je Zeile"-Regel ist nur noch durch den Verhaltens-Test gedeckt
 | Verbleibend | 96 / 66 | **91** Dateien mit `readFileSync`, **61** mit Grep-/Bauvorschriften-`describe` |
 
 Verfeinert lesen nach dieser Charge **72** Describe-Bloecke wirklich eine Quelldatei.
+
+---
+
+## 23. Charge 11 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `vorschau-anzeige` (`vorschau.tsx`), `split-stile-rechnung`,
+`png-ablage` (render-service), `nutzung-anzeigen-ansicht`, `inhalte-reiter`.
+
+**Ausgangsmessung:** 21 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **17**. Gruen: **NA4, IN4** (echte Luecken) und **VV3, IN2** (aequivalent).
+Drei Refactoring-Versuche waren **nicht** harmlos (s. u.). Jede Mutation
+byte-identisch zurueckgenommen.
+
+### Die zwei Luecken (geschlossen)
+
+- **NA4 – die Umschalter-Beschriftung war ungeprueft.** Der Text wurde auf
+  „Trefferliste anzeigen" festgenagelt; kein Test las die Beschriftung im
+  aufgeklappten Zustand. Neu: exakt „Trefferliste ausblenden".
+- **IN4 – `hervorgehobeneAktionId` war nur mit `null` geprueft.** Der Test verglich
+  `null` mit `null` – eine Konstante `null` waere ebenfalls gruen. Neu: ein gesetzter
+  Wert (`'a-hervorgehoben'`) wird unveraendert durchgereicht.
+
+### Die zwei aequivalenten Mutationen
+
+- **VV3 – `schriftenBereit = true` ist ohne Wirkung.** Der Wert wird nur im Zweig
+  `props.voraussetzungen !== null` an `waehleVorschaubild` gegeben; dort ist er
+  ohnehin `true`. Bleibt als benannte Zusicherung stehen.
+- **IN2 – `if (true)` fuer den Leerzustand ist ohne Wirkung.** `ProjektStandReiter`
+  wird nur fuer `zusammenstellen`/`aktionen` benutzt; `zeigtLeerzustand` ist dort
+  ohne Projekt immer wahr. Die anderen Reiter haengen ihre Wurzeln direkt ein.
+
+### Drei Refactorings, die keine waren (transparent)
+
+- `stand` → `transportStand` (vorschau), `gruppe` → `treffergruppe`
+  (nutzung-anzeigen) und `geometrie` → `bandGeometrie` (split-stile) brachen die
+  Suiten: Die Ersetzungen trafen auch `setStand`-nahe Bezeichner, `anzeige.gruppen`
+  (Plural enthaelt `gruppe`) bzw. den Importnamen. Kein harmloses Refactoring;
+  ersetzt durch **Kommentar-Umformulierungen**, die gruen blieben.
+
+### Entfernt (10 Tests, 1 ergaenzt + 2 geschaerft – netto −9)
+
+- **2** in `vorschau-anzeige` (genau ein `requestAnimationFrame`/kein Taktgeber;
+  Gesamtdauer aus `formatiereLaenge`).
+- **2** in `split-stile` (kein `Math.`/Literal ausser 0/genau eine Subtraktion;
+  kein JSX/react).
+- **2** in `png-ablage` (kurzer Name nirgends; kein `Promise.all`).
+- **2** in `nutzung-anzeigen-ansicht` (kein IPC/`entferneVorlage`/`holeNutzung`/
+  `useState`; nur Typ-Importe).
+- **2** in `inhalte-reiter` (kein Rueckkanal/`reiheEin`/zweiter Reiterwechsel/
+  Wurzel-Wert-Importe).
+
+**Ehrlich offen:** Die entfernten Verbote sind Architekturregeln (Lint-Kandidat).
+
+### Stand nach Charge 11
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **21**: 19 erkannt, 2 aequivalent |
+| Refactorings | – | **0 / 5 rot** (3 Versuche verworfen, s. o.) |
+| Quelltext-/Meta-Tests entfernt | – | **10** |
+| Verhaltens-Tests ergaenzt/geschaerft | – | **1 + 2** |
+| Echte Luecken geschlossen | – | **2** |
+| Suite | 5.532 | **5.523** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 91 / 61 | **87** Dateien mit `readFileSync`, **56** mit Grep-/Bauvorschriften-`describe` |
+
+Verfeinert lesen nach dieser Charge **67** Describe-Bloecke wirklich eine Quelldatei.

@@ -34,7 +34,6 @@ vi.mock("node:fs/promises", async (echtLaden) => {
 });
 
 const { writeFile } = await import("node:fs/promises");
-const QUELLE = path.join(__dirname, "../../src/main/render-service/png-ablage.ts");
 const { bandDateiname, legePngsAb, segmentPngDateiname } = await import(
   "../../src/main/render-service/png-ablage"
 );
@@ -225,20 +224,6 @@ describe("segmentPngDateiname / bandDateiname (#175) bilden Namen allein aus Ind
 
   it("kollidiert nicht mit den Zwischenclips seg_*.mp4 (ENTSCHIEDEN 5)", () => {
     expect(segmentPngDateiname(7).startsWith("seg_")).toBe(false);
-  });
-});
-
-describe("die Quelldatei haelt die Grep-Proben der DoD ein", () => {
-  const quelltext = readFileSync(QUELLE, "utf8");
-
-  it("nennt den kurzen, kollidierenden Namen an keiner Stelle", () => {
-    // ENTSCHIEDEN 10: #177 exportiert im SELBEN Ordner eine Funktion gleicher
-    // Signatur mit anderem Ergebnis. Der lange Name ist der Kollisionsschutz.
-    expect(quelltext.includes(`segment${"Dateiname"}`)).toBe(false);
-  });
-
-  it("feuert die Schreibvorgaenge nicht gebuendelt ab", () => {
-    expect(quelltext.includes(`Promise${".all"}`)).toBe(false);
   });
 });
 

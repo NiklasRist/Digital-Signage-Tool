@@ -5,7 +5,6 @@
 // 204 ist der Fall, in dem die Vierer-Regel BEISST (1557 -> 1556, x gerade).
 // Der Eigenschafts-Test laeuft ueber ALLE geraden Hoehen 2..1078 - nicht nur
 // ueber die Beispiele.
-import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -86,41 +85,5 @@ describe('Totalitaet: unbrauchbare Hoehen werfen NICHT (der preview-player pruef
     expect(() => baueSplitStile(-4)).not.toThrow()
     expect(() => baueSplitStile(1080)).not.toThrow()
     expect(Number.isNaN(baueSplitStile(Number.NaN).band.höhe)).toBe(true)
-  })
-})
-
-describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare)', () => {
-  const quelle = readFileSync(
-    new URL('../../src/renderer/preview-player/split-stile.ts', import.meta.url),
-    'utf8',
-  )
-  const code = quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-  it('kein Math., kein Zahlenliteral ausser 0, kein Multiplizieren/Dividieren, GENAU EINE Subtraktion', () => {
-    expect(code).not.toContain('Math.')
-    const literale = code.match(/\d+/g) ?? []
-    for (const literal of literale) {
-      expect(Number(literal)).toBe(0)
-    }
-    // Zeichenketten (Import-Pfade wie '../../shared/...') tragen Schraegstriche
-    // ohne arithmetische Bedeutung; die Probe zielt auf Operatoren in Code-Zeilen.
-    const ohneStrings = code.replace(/'[^']*'/g, "''")
-    expect(ohneStrings).not.toMatch(/\*/)
-    expect(ohneStrings).not.toMatch(/\//)
-    // GENAU EINE Subtraktion, und zwar RENDER_PROFILE.hoehe - <geometrie>.bandY:
-    const subtraktionen = ohneStrings.match(/-/g) ?? []
-    expect(subtraktionen).toHaveLength(1)
-    expect(ohneStrings).toMatch(/RENDER_PROFILE\.hoehe - \w+\.bandY/)
-  })
-
-  it('kein JSX, kein react-Import (die Datei ist rein; ihre Tests laufen ohne Browser)', () => {
-    expect(code).not.toContain('react')
-    expect(code).not.toContain('<')
   })
 })

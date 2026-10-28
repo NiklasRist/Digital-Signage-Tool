@@ -6,7 +6,6 @@
 // Zahl und nie "frei" zeigt (der gefaehrlichste Fehler dieses Issues).
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { createElement, type ReactElement } from "react";
@@ -139,7 +138,7 @@ describe("Zustaende der Anzeige", () => {
     expect(behaelter.textContent).toContain(anzeige.text);
     const knopf = behaelter.querySelector("button");
     expect(knopf).not.toBeNull();
-    expect(knopf?.textContent).toContain("anzeigen");
+    expect(knopf?.textContent).toBe("Trefferliste anzeigen");
     expect(behaelter.querySelectorAll("li").length).toBe(0);
 
     fertig();
@@ -156,6 +155,8 @@ describe("Zustaende der Anzeige", () => {
 
     expect(behaelter.querySelectorAll("li li").length).toBe(1);
     expect(behaelter.textContent).toContain("Aktion a-1");
+    // Die Beschriftung nennt die GEGENrichtung: bei aufgeklappter Liste "ausblenden".
+    expect(behaelter.querySelector("button")?.textContent).toBe("Trefferliste ausblenden");
 
     fertig();
   });
@@ -230,33 +231,5 @@ describe("Zustaende der Anzeige", () => {
     expect(leseSpion).not.toHaveBeenCalled();
 
     fertig();
-  });
-});
-
-describe("DoD-Grep-Proben (Quelltext)", () => {
-  const CODE = readFileSync("src/renderer/vorlagen-editor/nutzung-anzeigen.tsx", "utf8");
-
-  it("enthaelt kein rufeAuf, kein abonniere, kein KANAELE, kein window.api, kein Literal 'queue:', kein entferneVorlage und kein holeNutzung", () => {
-    for (const verboten of [
-      "rufeAuf",
-      "abonniere",
-      "KANAELE",
-      "window.api",
-      "'queue:",
-      "entferneVorlage",
-      "holeNutzung",
-      "useState",
-    ]) {
-      expect(CODE, verboten).not.toContain(verboten);
-    }
-  });
-
-  it("importiert nur Typen aus nutzung-anzeigen (keine Werte)", () => {
-    // Die Anzeige rechnet nichts: sie importiert ausschliesslich Typen von hier.
-    const importe = CODE.split("\n").filter((z) => z.includes("nutzung-anzeigen'"));
-    expect(importe.length).toBe(1);
-    for (const zeile of importe) {
-      expect(zeile).toContain("import type");
-    }
   });
 });

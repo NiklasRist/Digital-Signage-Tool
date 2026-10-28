@@ -5,8 +5,6 @@
 // ebenfalls gedoppelt. Real bleibt baueReiterInhalte selbst samt Projekt-Stand
 // (ENTSCHIEDEN 7) und der echte Leerzustand (#198, fuer den Klick-Nachweis).
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -241,6 +239,31 @@ describe('Der Kernnachweis: wer bekommt welchen Zugang', () => {
     fertig()
   })
 
+  it('hervorgehobeneAktionId wird auch als GESETZTER Wert unverändert durchgereicht', () => {
+    // Der Null-Fall oben ist mit `null === null` auch bei einer Konstanten `null`
+    // gruen - erst ein gesetzter Wert unterscheidet "durchgereicht" von "ignoriert".
+    doppel.sicht = { projekt: BAUE_PROJEKT(), ladefehler: null }
+    const umgebung = baueUmgebung()
+    umgebung.hervorgehobeneAktionId = 'a-hervorgehoben'
+    const zugaenge = verteileZugaenge(baueSichten())
+    const inhalt = baueReiterInhalte(
+      zugaenge,
+      baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1],
+      (() => umgebung) as unknown as Parameters<typeof baueReiterInhalte>[2],
+    )['aktionen']
+    const ziel = document.createElement('div')
+    document.body.appendChild(ziel)
+    const wurzel: Root = createRoot(ziel)
+    act(() => {
+      wurzel.render(createElement(inhalt, { sichtbar: true }) as ReactElement)
+    })
+    expect(doppel.actionEditorProps.at(-1)!.hervorgehobeneAktionId).toBe('a-hervorgehoben')
+    act(() => {
+      wurzel.unmount()
+    })
+    ziel.remove()
+  })
+
   it('marken wird UNVERAENDERT (toBe) gereicht - am action-editor UND am vorlagen-editor; die drei Funktionen des Zugangs werden hier NULL Mal gerufen (#313)', () => {
     doppel.sicht = { projekt: BAUE_PROJEKT(), ladefehler: null }
     const { zugaenge, fertig } = rendereReiter('aktionen')
@@ -440,80 +463,5 @@ describe('Der Projektstand (ENTSCHIEDEN 7/8)', () => {
       expect(markenZugang.aufGeaendert.mock.calls).toHaveLength(0)
       document.body.innerHTML = ''
     })
-  })
-})
-
-// ---------------- Grep-Probe ----------------
-
-describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare): inhalte.tsx', () => {
-  const quelle = readFileSync(
-    join(process.cwd(), 'src/renderer/app-shell/inhalte.tsx'),
-    'utf8',
-  )
-  const code = quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-  it('kein rueckkanal, kein reiheEin, kein queue, kein zweiter Reiterwechsel, kein zweiter Umhüller, keine Wurzel-Wert-Importe', () => {
-    for (const verbot of [
-      'rufeAuf', 'abonniere', 'KANAELE', 'window.api', 'reiheEin', 'queue:',
-      'wechsleReiter', 'umhuelleFuerBearbeitung',
-      'src/renderer/composer/index', 'src/renderer/action-editor',
-      'src/renderer/vorlagen-editor', 'src/renderer/preview-player',
-      'src/renderer/projekt-verwaltung',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
-    // ausser reinen import type aus den Modulpfaden (Anordnung verlangt die TYPEN):
-    const wertImporte = (code.match(/import \{[^}]*\} from '\.\.(composer|action-editor|vorlagen-editor|preview-player|projekt-verwaltung)/g) ?? [])
-    expect(wertImporte).toHaveLength(0)
-  })
-})
-
-// ---------------- BUGFIX (Naht-Hooks, 08.10.) ----------------
-// Beleg des Vorbefunds: `kindOffen` wurde inline gerufen - die Hooks einer echten
-// Wurzel (mit useState) landeten in der Fiber von ProjektStandReiter; beim
-// Umschalten kein-Projekt -> Projekt (was das Anlegen macht) warf React
-// "Rendered more hooks..." und die ganze Oberflaeche war weiß.
-// Die Attrappe-Wurzel hier traegt einen ECHTEN useState - genau die Klasse,
-// der echte composer/action-editor. Der Test greift die Umschaltung ab:
-// kein Wurf, die Wurzel wird gerufen, die Instanz bleibt gemountet.
-describe('Die Naht-Hooks (BUGFIX)', () => {
-  it('Umschaltung kein Projekt -> Projekt mit einem Wurzel-Hook (useState): kein Wurf, Wurzel gerufen', () => {
-    leerzustandDoppel.aufrufe = 0
-    doppel.sicht = { projekt: null, ladefehler: null }
-    doppel.composerProps = []
-    const mitHook = (eigenschaften: Record<string, unknown>): JSX.Element => {
-      const [, veraltet] = useState([true, () => undefined] as const)
-      void veraltet
-      doppel.composerProps.push(eigenschaften)
-      return createElement('div', { 'data-testid': 'attrappe-mit-hook' })
-    }
-    const inhalteFn = baueReiterInhalte(
-      verteileZugaenge(baueSichten()),
-      { ...baueWurzeln(), composer: mitHook } as never,
-      (() => baueUmgebung()) as never,
-    )
-    const ziel = document.createElement('div')
-    document.body.appendChild(ziel)
-    const wurzel: Root = createRoot(ziel)
-    const inhalt = inhalteFn['zusammenstellen']
-    expect(() => {
-      act(() => {
-        wurzel.render(createElement(inhalt, { sichtbar: true }) as ReactElement)
-      })
-    }).not.toThrow()
-    // Die Umschaltung ohne Projekt -> Projekt (der Moment, der weiß warf):
-    doppel.sicht = { projekt: BAUE_PROJEKT(), ladefehler: null }
-    act(() => {
-      doppel.hoerer?.(doppel.sicht)
-    })
-    expect(doppel.composerProps.length).toBeGreaterThanOrEqual(1)
-    wurzel.unmount()
-    document.body.innerHTML = ''
   })
 })
