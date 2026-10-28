@@ -54,6 +54,17 @@
   kein neuer Szenario-Schritt.
 - **#446 angelegt** (FA-03 als Issue, wie in der Backlog-Analyse gefordert): Befund 26.10.
   (3 von 4 Läufen), Abgrenzung zu #445, DoD über zehn grüne Läufe bzw. belegte Ursache.
+- **#446 GEMESSEN (28.10.2026, Nachlauf):** **zehn aufeinanderfolgende Treiber-Läufe**
+  (10:17–10:56 UTC) alle **Exit 0**, 4g3 jedes Mal `gefunden=true`, **keine Befunde**; dazu die
+  zwei Gate-Läufe vom Vormittag (12 Läufe ohne roten 4g3). Die DoD-Zeile „zehn aufeinanderfolgende
+  Läufe grün" ist damit erfüllt – die **Ursache** des 26.10.-Befunds ist **nicht benannt** (es gab
+  keinen roten Lauf mit den neuen Protokollwerten). Logs: `$TMPDIR/fa03/`; alle zehn Läufe
+  protokolliert in `docs/agents/oberflaeche-durchlauf.md`. Die Schritte **4o/4p/4q** liefen mit.
+- **Drei neue Treiber-Schritte (`4f990b5`):** **4o** Statistik-Leiste (#394: Gesamtdauer `0:02`,
+  1/1/0 gegen `project.json`), **4p** Canvas-Pixel (#364: `getImageData` auf 6 Kacheln ohne
+  SecurityError, 74–82 Farben je Kachel, Bühne bleibt `media://`), **4q** „Neue Aktion" (#445:
+  Aktion 1→2 mit getipptem Titel, leerer Titel am Formular abgelehnt). Matrix-Kopf auf 28.10.
+  gezogen. **Beleg-Kommentare an #445/#394/#364 gesetzt** (28.10.2026); **kein** Issue geschlossen.
 - **Gate:** `npm run pruefung` **Exit 0** – Unit **5.659 (338 Dateien)**, Integration **49
   (12 Dateien)**, Treiber **0 Befunde**, Typecheck/Lint 0. Zwei Läufe davor waren rot mit
   **denselben drei** Treiber-Befunden (Band-Aufnahme 4f2 ×2, Aktion löschen 4g4) - und der
