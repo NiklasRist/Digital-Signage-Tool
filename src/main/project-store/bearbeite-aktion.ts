@@ -46,9 +46,7 @@ export async function bearbeiteAktion(
   // project.json truege dann einen Stand, den es im Speicher nie gab. TK 9.5.1 verlangt
   // ausdruecklich das eine D1-Lock, "durch das ALLE project.json-Mutationen laufen".
   //
-  // Der Rueckgabetyp des Abschnitts steht ausgeschrieben da, statt sich ableiten zu lassen:
-  // Ohne ihn wuerde `ok: false` in einem Objektliteral zu `boolean` verbreitert, und die
-  // Ergebnis-Huelle waere nicht mehr diskriminierbar.
+  // Rueckgabetyp ausgeschrieben, sonst verbreitert sich `ok` zu `boolean` (s. `Ergebnis`, #12/#22).
   return mitD1Lock(async (): Promise<Ergebnis<Aktion, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
     if (projekt === null) {

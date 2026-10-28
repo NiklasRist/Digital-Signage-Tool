@@ -22,9 +22,7 @@ export async function setzeDauer(
   // project.json truege dann einen Stand, den es im Speicher nie gab. TK 9.5.1 verlangt
   // ausdruecklich das eine D1-Lock, "durch das ALLE project.json-Mutationen laufen".
   //
-  // Die Rueckgabeangabe am Rueckruf ist nicht Zierde: Ohne sie hat `return { ok: true, ... }`
-  // keinen Zieltyp, `ok` weitete sich zu `boolean`, und die unterschiedene Union `Ergebnis`
-  // waere nicht mehr diskriminierbar.
+  // Rueckgabetyp ausgeschrieben, sonst verbreitert sich `ok` zu `boolean` (s. `Ergebnis`, #12/#22).
   return mitD1Lock(async (): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
     if (projekt === null) {

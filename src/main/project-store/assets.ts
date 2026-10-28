@@ -68,9 +68,7 @@ export async function fuegeAssetHinzu(
   // einwickeln: mitD1Lock (#32) ist nicht reentrant, ein geschachtelter Aufruf wartet auf sich
   // selbst.
   //
-  // Die Rueckgabeangabe am Rueckruf ist nicht Zierde: Ohne sie hat `return { ok: true, ... }`
-  // keinen Zieltyp, `ok` weitete sich zu `boolean` - und die unterschiedene Union `Ergebnis`
-  // passte nicht mehr.
+  // Rueckgabetyp ausgeschrieben, sonst verbreitert sich `ok` zu `boolean` (s. `Ergebnis`, #12/#22).
   return mitD1Lock(async (): Promise<Ergebnis<Asset, ProjectStoreFehlercode>> => {
     // ---------------------------------------------------------------------
     // Schritt 1: validieren. Bei jedem Verstoss Abbruch OHNE Wirkung und OHNE Flush.

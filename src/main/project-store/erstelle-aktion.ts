@@ -88,9 +88,7 @@ export async function erstelleAktion(
   // mitD1Lock eingewickelt werden - der innere Aufruf wartete auf den aeusseren, der auf
   // ihn wartet (#32, "Deadlock-Gefahr").
   //
-  // Der Rueckgabetyp des Abschnitts steht ausgeschrieben da, statt sich ableiten zu lassen:
-  // Ohne ihn wuerde `ok: false` in einem Objektliteral zu `boolean` verbreitert, und die
-  // Ergebnis-Huelle waere nicht mehr diskriminierbar.
+  // Rueckgabetyp ausgeschrieben, sonst verbreitert sich `ok` zu `boolean` (s. `Ergebnis`, #12/#22).
   return mitD1Lock(async (): Promise<Ergebnis<Aktion, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
     if (projekt === null) {

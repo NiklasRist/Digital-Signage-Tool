@@ -11,20 +11,8 @@ import { PROJEKT_DATEI as DATEI, projektOrdner } from './pfade'
 import { mitWiederholung, taugtAlsSicherung } from '../gemeinsam/schreib-mechanik'
 import { istCode, text } from '../gemeinsam/systemfehler'
 /**
- * Wartezeiten in Millisekunden VOR dem 2., 3., 4. und 5. Versuch; der erste laeuft sofort.
- * Insgesamt also fuenf Versuche.
- *
- * WARUM WIEDERHOLT WIRD (gemessen, Issue #31, dort fuer config.json): Ein Rename-mit-Ersetzen
- * gelingt auf Windows - es scheitert aber mit EPERM, sobald irgendjemand das ZIEL offen haelt,
- * und ein reines LESE-Handle genuegt dafuer. Das trifft Virenscanner, Sicherungswerkzeuge und
- * Editoren. Ein solcher Fehler ist voruebergehend: Wer sofort aufgibt, meldet "nicht
- * gespeichert", obwohl 100 ms spaeter alles funktioniert haette.
- *
- * Dieselben Zahlen wie in #31 (config-store) und #187 (export-service) - der STOPP-Block des
- * Issues verlangt genau das ("falls dort bereits eine Loesung feststeht, dieselbe hier
- * wiederverwenden, sonst gemeinsam klaeren statt drei unterschiedliche Workarounds"). BEWUSST
- * NICHT von dort importiert: Das waere eine Modulgrenze fuer eine Zahl, und die Faelle duerfen
- * sich unabhaengig aendern.
+ * Wartezeiten je Speicher - die Zahl reist als Parameter in `mitWiederholung`; der
+ * Wiederholungsgrund (EPERM/EBUSY) steht dort (#31).
  */
 const WARTEZEITEN_MS = [100, 200, 400, 800] as const
 

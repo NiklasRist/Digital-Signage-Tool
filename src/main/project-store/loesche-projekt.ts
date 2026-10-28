@@ -56,9 +56,7 @@ export async function löscheProjekt(id: string): Promise<Ergebnis<void, Project
   // config.json hat eine EIGENE Serialisierung (#31), die nie zurueck in D1 greift - es gibt also
   // keine zweite Sperre, die auf diese warten koennte.
   //
-  // Die Rueckgabeangabe am Rueckruf ist nicht Zierde: Ohne sie hat `return { ok: true, ... }`
-  // keinen Zieltyp, `ok` weitete sich zu `boolean` - und die unterschiedene Union `Ergebnis`
-  // passte nicht mehr. Der Fehler traefe erst die Zuweisung ganz aussen.
+  // Rueckgabetyp ausgeschrieben, sonst verbreitert sich `ok` zu `boolean` (s. `Ergebnis`, #12/#22).
   return mitD1Lock(async (): Promise<Ergebnis<void, ProjectStoreFehlercode>> => {
     // ZUERST: Laeuft oder wartet fuer dieses Projekt ein Auftrag? (nachgetragen 12.08.2026)
     //

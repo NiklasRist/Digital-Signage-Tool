@@ -63,9 +63,7 @@ export async function dupliziereProjekt(id: string, neuerName: string): Promise<
   // NICHT noch einmal in mitD1Lock eingewickelt werden - der innere Aufruf wartete auf den
   // aeusseren, der auf ihn wartet (#32, "Deadlock-Gefahr").
   //
-  // Die Rueckgabeangabe am Rueckruf ist nicht Zierde: Ohne sie hat `return { ok: true, ... }`
-  // keinen Zieltyp, `ok` weitete sich zu `boolean`, und die unterschiedene Union `Ergebnis`
-  // waere nicht mehr diskriminierbar.
+  // Rueckgabetyp ausgeschrieben, sonst verbreitert sich `ok` zu `boolean` (s. `Ergebnis`, #12/#22).
   return mitD1Lock(async (): Promise<Ergebnis<Project, ProjectStoreFehlercode>> => {
     const quelle = await leseQuelle(id, quellOrdner)
     if (!quelle.ok) {

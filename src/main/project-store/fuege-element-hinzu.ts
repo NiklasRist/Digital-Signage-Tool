@@ -33,9 +33,7 @@ export async function fügeElementHinzu(
   // ohnehin das eine D1-Lock, "durch das ALLE project.json-Mutationen laufen"; eine Ausnahme
   // "das hier ist ja nur Speicher" waere der Anfang eines zweiten Regelwerks.
   //
-  // Der Rueckgabetyp des Abschnitts steht ausgeschrieben da, statt sich ableiten zu lassen:
-  // Ohne ihn wuerde `ok: false` in einem Objektliteral zu `boolean` verbreitert, und die
-  // Ergebnis-Huelle waere nicht mehr diskriminierbar.
+  // Rueckgabetyp ausgeschrieben, sonst verbreitert sich `ok` zu `boolean` (s. `Ergebnis`, #12/#22).
   return mitD1Lock(async (): Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>> => {
     const projekt = holeAktivesProjekt()
     if (projekt === null) {

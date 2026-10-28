@@ -86,6 +86,11 @@ export type Fehlercode = GenerischerFehlercode;
  *
  * Der Vorgabewert haelt `Ergebnis<T>` einparametrig gueltig - jede Signatur aus #12
  * kompiliert unveraendert weiter.
+ *
+ * WARUM DER RUECKGABETYP AM `mitD1Lock`-RUECKRUF AUSGESCHRIEBEN WIRD (project-store):
+ * Ohne ihn hat `return { ok: true, ... }` keinen Zieltyp; `ok` verbreitert sich zu
+ * `boolean`, und die Union ist nicht mehr diskriminierbar. Deshalb tragen die Aufrufer
+ * `async (): Promise<Ergebnis<...>>` (#12/#22).
  */
 export type Ergebnis<T, F extends string = GenerischerFehlercode> =
   | { ok: true; wert: T }

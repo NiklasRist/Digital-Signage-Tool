@@ -60,19 +60,8 @@ const ENTPRELLUNG_MS = 4000
 const WIEDERHOLUNG_MS = 5000
 
 /**
- * Wartezeiten in Millisekunden VOR dem 2., 3., 4. und 5. Versuch; der erste laeuft sofort.
- * Insgesamt also fuenf Versuche.
- *
- * WARUM WIEDERHOLT WIRD (gemessen, Issue #31): Ein Rename-mit-Ersetzen gelingt auf Windows - es
- * scheitert aber mit EPERM, sobald irgendjemand das ZIEL offen haelt, und ein reines LESE-Handle
- * genuegt dafuer. Das trifft Virenscanner, Sicherungswerkzeuge und Editoren. Ein solcher Fehler ist
- * voruebergehend: Wer sofort aufgibt, meldet "nicht gespeichert", obwohl 100 ms spaeter alles
- * funktioniert haette.
- *
- * Dieselben Zahlen wie in #31 (config-store), #46 (project-store), #69 (Queue-Dateien) und #187
- * (export-service). Der STOPP-Block dieses Issues verlangt genau das ("Falls dort bereits eine
- * Loesung feststeht: exakt dieselbe verwenden"). BEWUSST NICHT von dort importiert: Das waere eine
- * Modulgrenze fuer eine Zahl, und die Faelle duerfen sich unabhaengig aendern.
+ * Wartezeiten je Speicher - die Zahl reist als Parameter in `mitWiederholung`; der
+ * Wiederholungsgrund (EPERM/EBUSY) steht dort (#31).
  */
 const WARTEZEITEN_MS = [100, 200, 400, 800] as const
 

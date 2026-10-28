@@ -85,9 +85,7 @@ export async function öffneProjekt(
   // NICHT noch einmal in mitD1Lock eingewickelt werden - der innere Aufruf wartete auf den
   // aeusseren, der auf ihn wartet (#32, "Deadlock-Gefahr").
   //
-  // Die Rueckgabeangabe am Rueckruf ist nicht Zierde: Ohne sie hat `return { ok: true, ... }`
-  // keinen Zieltyp, `ok` weitete sich zu `boolean`, und die unterschiedene Union `Ergebnis`
-  // waere nicht mehr diskriminierbar.
+  // Rueckgabetyp ausgeschrieben, sonst verbreitert sich `ok` zu `boolean` (s. `Ergebnis`, #12/#22).
   return mitD1Lock(async (): Promise<Ergebnis<Project, OeffneProjektFehlergrund>> => {
     // SCHRITT 1: Gibt es den Ordner? Diese Frage steht VOR dem Sofort-Flush, damit ein Tippfehler
     // in der Kennung nicht das offene Projekt anfasst ("keine Wirkung", Fehlerpfad-Tabelle).

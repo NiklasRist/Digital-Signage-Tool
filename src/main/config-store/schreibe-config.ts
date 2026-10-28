@@ -14,17 +14,8 @@ import { istCode, text } from '../gemeinsam/systemfehler'
 // nicht - dieselbe Zahl wie project.json, keine eigene (TK 9.5.5).
 
 /**
- * Wartezeiten in Millisekunden VOR dem 2., 3., 4. und 5. Versuch; der erste laeuft sofort.
- * Insgesamt also fuenf Versuche.
- *
- * WARUM WIEDERHOLT WIRD (gemessen am 10.08.2026, Issue #31): Ein Rename-mit-Ersetzen gelingt
- * auf Windows - es scheitert aber mit EPERM, sobald irgendjemand das ZIEL offen haelt, und ein
- * reines LESE-Handle genuegt dafuer. Das trifft Virenscanner, Sicherungswerkzeuge und Editoren.
- * Ein solcher Fehler ist voruebergehend: Wer sofort aufgibt, meldet "nicht gespeichert", obwohl
- * 100 ms spaeter alles funktioniert haette.
- *
- * Dieselben Zahlen wie in #187 (export-service). BEWUSST NICHT von dort importiert: Das waere
- * eine Modulgrenze fuer eine Zahl, und die beiden Faelle duerfen sich unabhaengig aendern.
+ * Wartezeiten je Speicher - die Zahl reist als Parameter in `mitWiederholung`; der
+ * Wiederholungsgrund (EPERM/EBUSY) steht dort (#31).
  */
 const WARTEZEITEN_MS = [100, 200, 400, 800] as const
 
