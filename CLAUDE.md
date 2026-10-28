@@ -11,7 +11,9 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, zweite Sitzung: #445/#394/#364 gebaut, Treiber-Matrix-Kopf, #446 angelegt) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, zweite Sitzung: Push, Treiber 4o/4p/4q/4r, #446 zehn Läufe, FA-13 #100/#155) – gilt vor ALLEM weiter unten
+
+**Volltext dieser Sitzung: [`docs/agents/uebergabe-2026-10-28-session-2.md`](docs/agents/uebergabe-2026-10-28-session-2.md).**
 
 - **#445 GEBAUT:** Im Modus „Neue Aktion" schreibt `feldVerlassen` den getippten Wert jetzt in
   den **Entwurf** (vorher kehrte es bei `gewaehlt === null` still zurueck); der Anlegen-Knopf
@@ -95,9 +97,18 @@
   **Danach geschlossen:** **#445**, **#364**, **#100** und **#155** (je mit Beleg-Kommentar,
   `completed`); **#394** bleibt offen (Platzierung), **#446** bleibt offen (Ursache unbenannt;
   Kommentar mit den zehn Läufen gesetzt). **26 offene Issues → 22.** Kein Label geändert.
-- **Nicht gepusht nach dem Push:** `main` liegt wieder **sechs Commits vor `origin/main`**
+- **Q1.2 vermessen (28.10.2026, nicht gebaut):** **3.519** Kommentarzeilen mit Issue-Referenz
+  in 373 Dateien; **188** Cluster in ≥ 5 Dateien (308 Dateien); **197** wiederholte
+  Prosa-Gruppen. Größte Cluster: #49 (42 Dateien), #47 (29), #32 (27), #46 (25), #21 (24).
+  **Nebenbefund:** **74 Dateien** tragen noch einen Block „Fremde Aufrufe – vollständige
+  Signaturen" – ein **Q1.1-Rest** und eine zweite Vertragsquelle, mechanisch entfernbar.
+- **Nächster Schritt (Vorschlag):** zuerst diese **74 Blöcke** als eigene Charge (Gate je Modul),
+  danach Q1.2 bewusst nur über die **Top-10-Cluster**, mit Bilanz nach dem ersten Batch.
+  Alternativen, die allein gehen: Mutations-Chargen, **#393** (Vorlagen-Live-Vorschau).
+- **Nicht gepusht nach dem Push:** `main` liegt wieder **sieben Commits vor `origin/main`**
   (`7f5896c` Push-Status, `4f990b5` Treiber-Schritte, `3418add` zehn Läufe/Handover,
-  `f05acef` #445/#364 geschlossen, `01f696d` FA-13, dazu der Handover-Nachtrag zu #100/#155).
+  `f05acef` #445/#364 geschlossen, `01f696d` FA-13, `09bd8e2` #100/#155 geschlossen,
+  dieser Übergabe-Commit).
 
 ## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – historisiert durch den Abschnitt darueber
 
