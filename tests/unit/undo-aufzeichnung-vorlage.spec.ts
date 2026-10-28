@@ -5,7 +5,6 @@
 // ueber #236 ausloest und die Historie ueber #234 leert - nicht selbst baut und nicht
 // selbst bedient. Der abgelegte Stand wird im merke-Doppel ueber `holeSitzung()` gelesen.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 import type { Vorlage } from "../../src/shared/contracts/vorlage";
 import type { EditorSitzung } from "../../src/renderer/vorlagen-editor/arbeitskopie";
@@ -325,45 +324,5 @@ describe("aufSitzungGeaendert", () => {
     expect(mittlerer).toHaveBeenCalledTimes(1);
     expect(erster).toHaveBeenCalledTimes(2);
     expect(dritter).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe("DoD-Grep-Proben (Quelltext)", () => {
-  const CODE = readFileSync("src/renderer/app-shell/undo-aufzeichnung-vorlage.ts", "utf8");
-
-  it("enthaelt kein JSX, kein react, kein rufeAuf, kein abonniere, kein KANAELE, kein window, kein localStorage/sessionStorage, kein Timer, kein JSON.stringify/structuredClone, keine Projekt-Historie, kein vorlagenHistorie, kein .ablegen(, kein vollziehe, kein .leere(, kein macheVorlageRueckgaengig und kein Literal 'vorlagen:'", () => {
-    for (const verboten of [
-      "<div",
-      "react",
-      "rufeAuf",
-      "abonniere",
-      "KANAELE",
-      "window.",
-      "localStorage",
-      "sessionStorage",
-      "setTimeout",
-      "setInterval",
-      "JSON.stringify",
-      "structuredClone",
-      "projektHistorie",
-      "leereProjektHistorie",
-      "vorlagenHistorie",
-      ".ablegen(",
-      "vollziehe",
-      ".leere(",
-      "macheVorlageRueckgaengig",
-      "'vorlagen:",
-    ]) {
-      expect(CODE, verboten).not.toContain(verboten);
-    }
-  });
-
-  it("importiert aus ../vorlagen-editor/arbeitskopie ausschliesslich einen Typ", () => {
-    expect(CODE).toContain(
-      "import type { EditorSitzung } from '../vorlagen-editor/arbeitskopie'",
-    );
-    const importe = CODE.split("\n").filter((z) => z.includes("vorlagen-editor/arbeitskopie"));
-    expect(importe.length).toBe(1);
-    expect(importe[0]).toContain("import type");
   });
 });

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -176,17 +175,6 @@ describe('loeseExportQuelle (#185) - Aufloesung ueber die Pfad-Autoritaet', () =
 
     expect(zustand.ordnerAufrufe).toBe(0)
 
-    const quelltext = readFileSync(
-      new URL('../../src/main/export-service/quelle.ts', import.meta.url),
-      'utf8',
-    )
-    const code = quelltext
-      .split('\n')
-      .filter((zeile) => !zeile.trimStart().startsWith('//'))
-      .join('\n')
-    expect(code).not.toMatch(/path\.(join|resolve)/)
-    expect(code).not.toMatch(/["']node:path["']/)
-    expect(code).not.toMatch(/ausgabeOrdner/)
   })
 })
 

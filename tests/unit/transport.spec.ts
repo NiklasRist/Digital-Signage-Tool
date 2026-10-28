@@ -12,8 +12,6 @@
 //
 // Diese Suite braucht KEINE Browser-Umgebung: sie importiert nur die reine Rechnung
 // (vitest.config: environment "node").
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
@@ -116,6 +114,13 @@ describe('tick - die verbindliche Rechnung', () => {
 
   it('tick mit 1000 ms auf einer Achse mit gesamtFrames = 20 liefert frame: 20 und laeuft: false', () => {
     const stand = tick(spieleAb(baueTransport(), achse(20)), achse(20), 1000)
+    expect(stand).toEqual({ laeuft: false, frame: 20, restMs: 0 })
+  })
+
+  it('tick, der GENAU am Ende landet, haelt an - ohne einen Frame Ueberschuss', () => {
+    // frame 19 + genau eine Frame-Dauer = 20 = gesamtFrames. Mit `>` statt `>=`
+    // liefe die Uhr bei frame 20 weiter und zeigte "laeuft" am Ende der Achse.
+    const stand = tick(laufend(19), achse(20), msProFrame)
     expect(stand).toEqual({ laeuft: false, frame: 20, restMs: 0 })
   })
 
@@ -292,40 +297,5 @@ describe('frame ist nach jeder Funktion ganzzahlig', () => {
     for (const wert of ergebnisse) {
       expect(Number.isInteger(wert)).toBe(true)
     }
-  })
-})
-
-describe('Grep-Proben aus der DoD', () => {
-  const pfad = fileURLToPath(new URL('../../src/renderer/preview-player/transport.ts', import.meta.url))
-  const quelltext = readFileSync(pfad, 'utf8')
-  // Zuerst die Zeilen-, dann die Blockkommentare - wie in zeitachse.spec (#213):
-  // Der Dateikopf zitiert "<video>", was eine rohe Suche stoeren wuerde.
-  const code = quelltext.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
-
-  it('das Entfernen der Kommentare hat den Code nicht mit weggeschnitten', () => {
-    expect(code).toContain('export function baueTransport')
-    expect(code).toContain('export function spieleAb')
-    expect(code).toContain('export function pausiere')
-    expect(code).toContain('export function springeZuFrame')
-    expect(code).toContain('export function springeZuElement')
-    expect(code).toContain('export function tick')
-    expect(code).toContain('export function markierterIndex')
-  })
-
-  it('kein Taktgeber, keine Systemzeit, kein video, kein react, kein JSX, kein IPC, kein let auf Modulebene', () => {
-    expect(code).not.toMatch(/requestAnimationFrame/)
-    expect(code).not.toMatch(/setInterval/)
-    expect(code).not.toMatch(/setTimeout/)
-    expect(code).not.toMatch(/performance\.now/)
-    expect(code).not.toMatch(/Date\.now/)
-    expect(code).not.toMatch(/currentTime/)
-    expect(code).not.toMatch(/timeupdate/)
-    expect(code).not.toMatch(/video/)
-    expect(code).not.toMatch(/react/)
-    expect(code).not.toMatch(/<\/[A-Za-z]/)
-    expect(code).not.toMatch(/rufeAuf/)
-    expect(code).not.toMatch(/abonniere/)
-    expect(code).not.toMatch(/window\.api/)
-    expect(code).not.toMatch(/^\s*let\s/m)
   })
 })

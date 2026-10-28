@@ -6,7 +6,6 @@
 // unten. Diese Datei rechnet den Fortschritt NICHT; sie hält den Stand und reicht ihn
 // durch. Deshalb prüfen die Tests durchgehend, dass `uebernimmStand` die Felder
 // identisch übernimmt und dass KEINE Funktion die übergebene `lage` verändert.
-import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -339,35 +338,3 @@ describe('reine Werte - keine Funktion mutiert die Lage', () => {
 // ---------------------------------------------------------------------------
 // Modulgrenze - reiner Zustandsautomat, kein Aufruf nach außen
 // ---------------------------------------------------------------------------
-
-describe('Modulgrenze - reiner Zustandsautomat', () => {
-  const QUELLE = readFileSync(
-    new URL('../../src/renderer/app-shell/reparatur-fuehrung-shell.ts', import.meta.url),
-    'utf8',
-  )
-  // Kommentare nennen "Reiter", "starteReparatur" und "aktualisiereReparatur" in der
-  // Begründung. Geprüft werden deshalb nur echte Code-Zeilen, sonst schlüge die Regel
-  // an ihrer eigenen Erklärung an.
-  const CODEZEILEN = QUELLE.split('\n').filter(
-    (z) =>
-      !z.trimStart().startsWith('//') &&
-      !z.trimStart().startsWith('*') &&
-      !z.trimStart().startsWith('/**'),
-  )
-
-  it('enthält kein JSX, keinen react-Import, kein rufeAuf und kein abonniere', () => {
-    expect(CODEZEILEN.filter((z) => /react|rufeAuf|abonniere|JSX/.test(z))).toEqual([])
-  })
-
-  it('ruft weder wechsleReiter noch die Rechnung aus #131/#132', () => {
-    expect(
-      CODEZEILEN.filter((z) =>
-        /wechsleReiter|findeKaputteStellen|starteReparatur|aktualisiereReparatur/.test(z),
-      ),
-    ).toEqual([])
-  })
-
-  it('exportiert kein starteFuehrung - der Modus beginnt über uebernimmStand (ENTSCHIEDEN 8)', () => {
-    expect(CODEZEILEN.filter((z) => /starteFuehrung/.test(z))).toEqual([])
-  })
-})

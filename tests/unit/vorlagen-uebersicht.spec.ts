@@ -3,8 +3,6 @@
 // Lösch-Nutzungsstand. `rufeAuf` und `starteBearbeitung` sind Doppelgänger - kein Browser.
 //
 // Die letzten Tests sind Grep-Proben: Sie stehen WÖRTLICH in der DoD dieses Issues.
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -175,6 +173,24 @@ describe('ladeUebersicht – Fehler und Hörer', () => {
     expect(zweiter).toEqual({ ok: false, fehler: { code: 'speicher_fehler', meldung: 'kaputt' } })
     expect(m.holeUebersicht()).toBe(vorher)
     expect(gehoert).toEqual([])
+  })
+
+  it('lehnt auch ab, wenn schon listeVorlagen scheitert - ohne Wurf und ohne Standaenderung', async () => {
+    // Die erste der beiden Listen: Ohne die Wache liefe der Aufbau mit `undefined`
+    // weiter und wuerfe beim `map` - ein Absturz statt einer Ergebnis-Huelle.
+    setzeListen([vorlage({ id: 'p1' })])
+    const erster = await m.ladeUebersicht()
+    expect(erster.ok).toBe(true)
+    const vorher = m.holeUebersicht()
+
+    antworte('vorlagen:listeVorlagen', { ok: false, fehler: { code: 'speicher_fehler', meldung: 'erste Liste kaputt' } })
+    const zweiter = await m.ladeUebersicht()
+
+    expect(zweiter).toEqual({
+      ok: false,
+      fehler: { code: 'speicher_fehler', meldung: 'erste Liste kaputt' },
+    })
+    expect(m.holeUebersicht()).toBe(vorher)
   })
 
   it('meldet nach erfolgreichem Laden jeden Hörer genau einmal; Abmelden wirkt', async () => {
@@ -379,30 +395,5 @@ describe('Lösch-Nutzungsstand', () => {
     await expect(m.starteLoeschbestaetigung('v2')).resolves.toBeUndefined()
     expect(Object.isFrozen(stand)).toBe(true)
     expect(stand.vorlagenId).toBe('v1')
-  })
-})
-
-describe('Grep-Proben der DoD (wörtlich aus #155)', () => {
-  const CODE = readFileSync(
-    path.join(process.cwd(), 'src', 'renderer', 'vorlagen-editor', 'vorlagen-uebersicht.ts'),
-    'utf8',
-  )
-
-  it('bildet keinen Anzeigetext und keine Zahl', () => {
-    expect(CODE).not.toContain('baueNutzungsAnzeige')
-    expect(CODE).not.toContain('zaehleProjekte')
-    expect(CODE).not.toContain('LEERE_NUTZUNG')
-    expect(CODE).not.toContain('NutzungAnzeige')
-  })
-
-  it('enthaelt kein Kanal-Literal, keinen Main-Import, kein fs/path und kein sort', () => {
-    expect(CODE).not.toContain("'vorlagen:")
-    expect(CODE).not.toContain('"vorlagen:')
-    expect(CODE).not.toContain('../../main/')
-    expect(CODE).not.toContain('src/main/')
-    expect(CODE).not.toContain("'node:fs'")
-    expect(CODE).not.toContain('"node:fs"')
-    expect(CODE).not.toContain("'node:path'")
-    expect(CODE).not.toContain('.sort(')
   })
 })

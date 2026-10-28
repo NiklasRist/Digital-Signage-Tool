@@ -898,3 +898,70 @@ nur noch mittelbar (Reihenfolge-Test) gedeckt, nicht mehr statisch.
 | Verbleibend | 106 / 70 | **101** Dateien mit `readFileSync`, **69** mit Grep-/Bauvorschriften-`describe` |
 
 Verfeinert lesen nach dieser Charge **82** Describe-Bloecke wirklich eine Quelldatei.
+
+---
+
+## 21. Charge 9 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `quelle` (export-service, Main), `reparatur-fuehrung-shell` (app-shell),
+`undo-aufzeichnung-vorlage` (app-shell), `transport` (preview-player),
+`vorlagen-uebersicht` (vorlagen-editor).
+
+**Ausgangsmessung:** 25 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **23**. Gruen: **T4, VU1** (echte Luecken) und **Q2** (aequivalent); ein
+Refactoring war **nicht** harmlos (RR, s. u.). Jede Mutation byte-identisch
+zurueckgenommen.
+
+### Die zwei Luecken (geschlossen)
+
+- **T4 – die Tick-Grenze war nur mit Ueberschuss geprueft.** Der bestehende Test
+  schickt 1000 ms auf eine 20-Frame-Achse (30 Frames) – das stoppt auch mit `>`.
+  Neu: frame 19 + GENAU eine Frame-Dauer ⇒ frame 20, `laeuft: false`. Mit `>` liefe
+  die Uhr am Achsenende weiter.
+- **VU1 – nur der Fehler der ZWEITEN Liste war geprueft.** `if ('fehler' in ergebnis1)`
+  auf `false` geaendert blieb gruen; `ergebnis1.wert` ist dann `undefined`, und der
+  Aufbau wuerfe beim `map` (Absturz statt Ergebnis-Huelle). Neu: `listeVorlagen`
+  scheitert ⇒ `ok: false`, Stand unveraendert, kein Wurf.
+
+### Die eine aequivalente Mutation
+
+- **Q2 – `dateiname.length === ".mp4".length` kann nicht anders greifen.** Nach
+  `endsWith(".mp4")` hat jeder zulaessige Name mindestens 4 Zeichen; ein Name der
+  Laenge 4 ist genau ".mp4". `<=` und `===` sind damit gleichbedeutend.
+
+### Ein Refactoring, das keines war (transparent)
+
+- **RR:** `wechselZu` → `zielReiter` (alle Vorkommen) benennt versehentlich die
+  PROPERTY `FuehrungsSchritt.wechselZu` um – 9 Tests rot. Ersetzt durch die lokale
+  Umbenennung `neueLage` → `naechsteLage`; die blieb gruen.
+
+### Entfernt (9 Tests + 1 eingebetteter Quelltext-Block, 2 ergaenzt – netto −7)
+
+- **1 Block** in `quelle` (kein `path.join/resolve`, kein `ausgabeOrdner` im
+  Quelltext) – die Verhaltenszeile `ordnerAufrufe === 0` bleibt.
+- **3** in `reparatur-fuehrung-shell` (kein JSX/react/IPC, kein Reiter-/Rechnungs-
+  Aufruf, kein `starteFuehrung`).
+- **2** in `undo-aufzeichnung-vorlage` (kein JSX/react/IPC/Timer/JSON/Historie-Zugriff;
+  nur der Typ-Import aus `arbeitskopie`).
+- **2** in `transport` (Kommentar-Filter-Gegenprobe; kein Taktgeber/Systemzeit/video/
+  react/IPC/`let` auf Modulebene).
+- **2** in `vorlagen-uebersicht` (kein Anzeigetext/keine Zahl; kein Kanal-Literal/
+  Main-Import/fs/path/`sort`).
+
+**Ehrlich offen:** Die entfernten Verbote sind Architekturregeln (Lint-Kandidat). Der
+Typ-Import in `undo-aufzeichnung-vorlage` ist nur noch durch die Import-Zeile gedeckt.
+
+### Stand nach Charge 9
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **25**: 24 erkannt, 1 aequivalent |
+| Refactorings | – | **0 / 5 rot** (1 Versuch verworfen, s. o.) |
+| Quelltext-/Meta-Tests entfernt | – | **9** (+1 Block) |
+| Verhaltens-Tests ergaenzt | – | **2** |
+| Echte Luecken geschlossen | – | **2** |
+| Suite | 5.548 | **5.541** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 101 / 69 | **96** Dateien mit `readFileSync`, **66** mit Grep-/Bauvorschriften-`describe` |
+
+Verfeinert lesen nach dieser Charge **77** Describe-Bloecke wirklich eine Quelldatei.
