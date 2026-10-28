@@ -17,15 +17,9 @@ import type { ChildProcess, ExecFileException } from 'node:child_process'
 import type { RenderProfile } from '../../shared/contracts/render-profile'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 
-// Fremde Aufrufe - hier wird NICHTS geraten:
-//
-//   #6 - src/main/ffmpeg-pfad.ts
-//   export function ermittleFfprobePfad(): string
-//     WIRD IN DIESER DATEI ABSICHTLICH NICHT GERUFEN und deshalb auch nicht
-//     importiert. Der Binaerpfad reist als PARAMETER herein; gerufen wird #6 einmal
-//     je Lauf vom render-service (#181), der den Pfad an pruefeUniformitaet UND an
-//     #180 durchreicht. Ein zweiter Aufrufer waere eine zweite Stelle mit eigener
-//     Zeitgrenze, eigener Puffergrenze und eigener Fehlerbehandlung.
+// `ermittleFfprobePfad` (#6) wird hier ABSICHTLICH nicht gerufen und nicht importiert: Der
+// Binaerpfad reist als Parameter herein (ein Aufrufer je Lauf, #181) - ein zweiter haette eigene
+// Zeitgrenze, Puffergrenze und Fehlerbehandlung.
 
 /**
  * Zeitgrenze EINES ffprobe-Laufs.

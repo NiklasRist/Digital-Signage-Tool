@@ -3,25 +3,6 @@
 import { registriereAuftragsHandler } from '../auftrags-manager/dispatcher'
 
 import { exportiereAusgabe } from './export'
-
-// Fremde Aufrufe - vollstaendige Signaturen, am 14.08.2026 in der GEBAUTEN Datei nachgelesen,
-// nicht aus dem Issue abgeschrieben:
-//   #60 (src/main/auftrags-manager/dispatcher.ts):
-//         registriereAuftragsHandler<A extends AuftragArt>(
-//           art: A, handler: HandlerFuer<A>, brichAb?: (auftrag: Auftrag) => void,
-//         ): void
-//         // genau EIN Handler je Art; ein zweiter Aufruf ERSETZT den Eintrag als Ganzes.
-//         // Fehlt brichAb, ist die Art NICHT abbrechbar - kannAbbrechen('export') liefert false.
-//   #188 (src/main/export-service/export.ts):
-//         exportiereAusgabe(
-//           auftrag: Extract<Auftrag, { art: 'export' }>, kontext: AusfuehrungsKontext,
-//         ): Promise<HandlerErgebnis<ExportFehlercode>>
-//         // "Sie wirft NIE." und liefert nie { status: 'abgebrochen' } (eigener Vertrag, #188).
-//
-// Die Fachfunktion TRAEGT die Handler-Signatur bereits: `HandlerErgebnis<ExportFehlercode>` ist
-// auf `HandlerErgebnis<string>` zuweisbar, das `HandlerFuer<'export'>` verlangt. Ein Adapter ist
-// deshalb nicht noetig - und waere verboten.
-
 /**
  * Meldet die vierte und letzte Auftragsart beim Dispatcher an (TK 9.3.2: `export` ->
  * `export-service`, Nutzlast `ExportRequest`).

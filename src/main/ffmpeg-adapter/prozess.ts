@@ -7,19 +7,9 @@ import { ermittleFfmpegPfad } from '../ffmpeg-pfad'
 import type { ChildProcess } from 'node:child_process'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 
-// Fremde Aufrufe - vollstaendig ausgeschrieben, damit hier nichts geraten wird:
-//
-//   #6 - src/main/ffmpeg-pfad.ts
-//   export function ermittleFfmpegPfad(): string
-//     Absoluter Pfad zum ausfuehrbaren ffmpeg-Binary (Dev: das Paket im
-//     Abhaengigkeitsordner; gepackt: der entpackte Zwilling neben dem Programmarchiv).
-//     DIESE FUNKTION IST DIE EINZIGE QUELLE DES PFADES. Hier wird er nicht
-//     zusammengesetzt, nicht aus der Umgebung gelesen und es gibt keinen Rueckfall auf
-//     ein ffmpeg aus dem System. Ein hier gebauter Pfad funktioniert im
-//     Entwicklungsmodus und scheitert in der portablen EXE - also beim Kunden, beim
-//     ersten Render.
-//     Die Verfuegbarkeit prueft diese Datei NICHT: Das hat der Start-Selbsttest
-//     (pruefeFfmpegVerfuegbar, #3) bereits getan.
+// Der Binaerpfad kommt ausschliesslich aus `ermittleFfmpegPfad()` (#6) - hier wird er nicht
+// zusammengesetzt, nicht aus der Umgebung gelesen, kein System-PATH-Rueckfall. Die Verfuegbarkeit
+// prueft der Start-Selbsttest (#3).
 
 /**
  * Geschlossener Fehlercode-Satz des ffmpeg-adapter. Modul-lokal (nicht im geteilten Vertrag):

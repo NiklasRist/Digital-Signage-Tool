@@ -5,26 +5,6 @@ import { registriereRenderHandler } from '../auftrags-manager/render-verzahnung'
 import { cancelRender } from './abbruch'
 import { renderReel } from './render-reel'
 
-// Fremde Aufrufe - vollstaendige Signaturen, am 15.08.2026 in den GEBAUTEN Dateien nachgelesen,
-// nicht aus dem Issue abgeschrieben:
-//   #68 (src/main/auftrags-manager/render-verzahnung.ts):
-//         registriereRenderHandler(
-//           renderReel: (request: RenderRequest,
-//                        aufFortschritt: (fortschritt: RenderProgress) => void)
-//                        => Promise<RenderResult>,
-//           cancelRender: (renderId: string) => void,
-//         ): void
-//         // registriert intern ueber registriereAuftragsHandler('render', handler, brichAb) (#60)
-//         // und leistet die GESAMTE Uebersetzung: Fortschritt -> Auftrag.fortschritt (begrenzt),
-//         // RenderResult -> HandlerErgebnis, Pruefung des Fehlercodes gegen TK 9.2.3, Abbrecher,
-//         // der die renderId aus auftrag.payload zieht, sowie den Sofort-Flush von D1.
-//   #181 (src/main/render-service/render-reel.ts):
-//         renderReel(request: RenderRequest,
-//                    aufFortschritt: (fortschritt: RenderProgress) => void): Promise<RenderResult>
-//   #179 (src/main/render-service/abbruch.ts):
-//         cancelRender(renderId: string): void
-//         // kehrt SOFORT zurueck und wartet NICHT auf das Prozessende.
-//
 // Beide Fachfunktionen TRAGEN die von #68 verlangte Form bereits - Parameterzahl, -reihenfolge und
 // Rueckgabetyp stimmen zeichengenau. Ein Adapter ist deshalb nicht noetig und waere verboten.
 
