@@ -38,13 +38,22 @@
   `export-service/ersetzen.ts` bewusst unberührt.
 - **Gate:** `npm run pruefung` **Exit 0** (nach Batch 2) – Unit **5.692 (340 Dateien)**,
   Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
-- **Offen:** Q1.2 ist für die zwei Adressen abgeschlossen; weitere Wiederholungen sind
-  `SAFETY:`-Casts (Nicht-Ziel) oder `systemCode` als **Code**-Kopie (Q3-Fall). Dazu #394,
-  #446, Mutations-Chargen, #393.
+- **Nächster Schritt: Mutations-Chargen.** Verbleibend **138** Testdateien mit `readFileSync`,
+  **92** mit Grep-/Bauvorschriften-`describe` (Stand 20.10.,
+  `docs/agents/mutation-pilot-2026-10-20.md`). Rezept wie die vier Piloten: Charge für Charge,
+  jede Mutation mit Prüfsumme gesichert und byte-identisch zurückgenommen, harmlose
+  Refactorings müssen grün bleiben, Gate je Charge – **nie pauschal**. Belegt: 18 Dateien,
+  **130** Mutationen (124 erkannt/6 äquivalent), **0/20** Refactorings rot, **109**
+  Quelltext-/Meta-Tests entfernt, 7 echte Lücken geschlossen. Die Verhaltens-Tests tragen;
+  der Ballast ist die Quelltext-/Meta-Probe.
+- **Offen daneben:** Q1.2 ist für die zwei Adressen abgeschlossen; weitere Wiederholungen sind
+  `SAFETY:`-Casts (Nicht-Ziel) oder `systemCode` als **Code**-Kopie (Q3-Fall). #394, #446, #393.
 - **GEPUSHT (28.10.2026, vierter Push, auf Anweisung):** `d998802..adf6b3a` → `origin/main`,
-  **9 Commits** (Q1.1-Rest, Q1.2 Batch 1/2, Session-3-Übergabe); dieser Doku-Nachtrag folgt
-  als eigener Commit. Remote meldet unverändert **72** Dependabot-Findings (34 high/25
+  **9 Commits** (Q1.1-Rest, Q1.2 Batch 1/2, Session-3-Übergabe), danach `adf6b3a..94a7fa2`
+  (Doku-Nachtrag). Remote meldet unverändert **72** Dependabot-Findings (34 high/25
   moderate/13 low) – nicht geprüft, weiter zurückgestellt.
+- **Nicht gepusht:** dieser Nachtrag („Nächster Schritt: Mutations-Chargen") – `main` liegt
+  wieder **einen Commit** vor `origin/main`. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (28.10.2026, zweite Sitzung: Push, Treiber 4o/4p/4q/4r, #446 zehn Läufe, FA-13 #100/#155) – historisiert durch den Abschnitt darueber
 

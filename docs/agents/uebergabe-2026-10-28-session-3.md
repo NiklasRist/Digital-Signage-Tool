@@ -80,11 +80,34 @@ vorhanden – das ist ein Q3-Fall, kein Q1.2-Fall.
 Treiber **0 Befunde**. (Die Gate-Läufe nach Q1.1 und nach Batch 1 waren ebenfalls Exit 0 mit
 denselben Zahlen.)
 
-## 6. Offen / nächste Sitzung
+## 6. Nächster Schritt: Mutations-Chargen
+
+**Auftrag (28.10.2026):** Die nächste Sitzung beginnt mit den **Mutations-Chargen** – nicht mit
+Q1.2 oder einem neuen Feature.
+
+- **Ausgangsbasis (gemessen 20.10.2026, `mutation-pilot-2026-10-20.md`):** **138** Testdateien
+  lesen eine Quelldatei (`readFileSync`), **92** tragen einen Grep-/Bauvorschriften-`describe`.
+  Geschätzt **200–300** Tests der Kategorie Quelltext-/Meta-Probe.
+- **Rezept (aus den vier Piloten):** Datei für Datei, **nie pauschal**; je Mutation
+  Quelldatei sichern + Prüfsumme, genau eine semantische Änderung, Testdatei laufen lassen,
+  byte-identisch zurücknehmen; harmlose Refactorings müssen grün bleiben; Gate je Charge.
+  Eine gefundene Lücke wird mit einem **Verhaltens-Test** geschlossen, nicht mit einer
+  Quelltext-Probe.
+- **Beleg der Methode:** 18 Dateien, **130** Mutationen (124 erkannt, 6 äquivalent),
+  **0/20** Refactorings rot, **109** Quelltext-/Meta-Tests entfernt, 7 echte Lücken geschlossen.
+- **Grenze:** Die Charge beginnt mit einer Inventur der 92 Dateien (welche Proben prüfen
+  wirklich nur Quelltext?) – der Pilotbefund ist keine Pauschalfreigabe.
+
+## 7. Offen daneben
 
 - **Q1.2 für die zwei Adressen abgeschlossen.** Weitere Wiederholungen sind `SAFETY:`-Casts
   (Nicht-Ziel) oder `systemCode` als **Code**-Kopie (Q3-Kandidat, kein Kommentar-Umbau).
 - **Nicht anfassen:** `SAFETY:`-Kommentare (Nicht-Ziel des Kommentar-Plans).
-- **Weiter offen:** #394 (Platzierung), #446 (Ursache), Mutations-Chargen, #393.
-- **GEPUSHT (28.10.2026, auf Anweisung):** `d998802..adf6b3a` → `origin/main` (9 Commits);
-  dieser Dokumentations-Nachtrag folgt als eigener Commit.
+- **Weiter offen:** #394 (Platzierung), #446 (Ursache), #393.
+
+## 8. Push
+
+- **GEPUSHT (28.10.2026, auf Anweisung):** `d998802..adf6b3a` (9 Commits) und
+  `adf6b3a..94a7fa2` (Doku-Nachtrag) → `origin/main`.
+- **Nicht gepusht:** dieser Nachtrag („Nächster Schritt: Mutations-Chargen"); `main` liegt
+  einen Commit vor `origin/main`. Push nur auf Anweisung.
