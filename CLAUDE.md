@@ -11,7 +11,35 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, elfte Sitzung: Mutations-Charge 8) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, zwoelfte Sitzung: Mutations-Charge 9) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 21.**
+
+- **Charge 9 GEBAUT (`1c339a8`):** fuenf Testdateien – `quelle`, `reparatur-fuehrung-shell`,
+  `undo-aufzeichnung-vorlage`, `transport`, `vorlagen-uebersicht`. **25 Verhaltens-Mutationen**,
+  **5 Refactorings**; 23 erkannt, **T4/VU1** als Luecken geschlossen, **Q2 aequivalent**;
+  **0/5 Refactorings rot** (RR verworfen, s. u.); jede Mutation byte-identisch zurueckgenommen.
+- **Die Luecken:** **T4** – die Tick-Grenze war nur mit Ueberschuss geprueft (1000 ms auf eine
+  20-Frame-Achse = 30 Frames); neu: frame 19 + GENAU eine Frame-Dauer ⇒ frame 20, `laeuft: false`.
+  **VU1** – nur der Fehler der ZWEITEN Liste war geprueft; `listeVorlagen` scheitert nun belegt
+  mit `ok: false` statt Absturz beim `map`.
+- **Aequivalent:** **Q2** – nach `endsWith(".mp4")` ist `length <= 4` gleichbedeutend mit `=== 4`.
+- **Transparent:** Der Refactoring-Versuch `wechselZu` → `zielReiter` benannte die PROPERTY
+  `FuehrungsSchritt.wechselZu` um (9 Tests rot) – kein harmloses Refactoring; ersetzt durch
+  `neueLage` → `naechsteLage`, gruen.
+- **Entfernt:** **9** Quelltext-/Meta-Tests + **1** eingebetteter Quelltext-Block, **2**
+  Verhaltenstests ergaenzt; Suite **5.548 → 5.541** (netto −7).
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.541 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **96** Testdateien mit `readFileSync` (vorher 101), **66** mit
+  Grep-/Bauvorschriften-`describe` (vorher 69); verfeinert lesen **77** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote haben keinen Waechter bis zu einer
+  Lint-Regel.
+- **Nicht gepusht:** `1c339a8` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 10** – Inventur, dann fuenf Dateien.
+
+## STAND HEUTE (28.10.2026, elfte Sitzung: Mutations-Charge 8) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 20.**
 
