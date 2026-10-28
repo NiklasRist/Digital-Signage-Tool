@@ -30,6 +30,9 @@
   eine Montage unerfüllbar (eine Datei kann sich nicht selbst rendern) - geändert wurden
   `composer/index.tsx` und `statistik.tsx`. Der Bau nimmt `readonly Listenelement[]` (breiter
   als die Signatur im Issue); gebauter Code gewinnt.
+  **OFFEN (Auftraggeber, 28.10.2026): die Platzierung.** Aktuell flache Leiste in der
+  Kopfzeile; Alternativen laut Issue-STOPP: eigenes Panel oder Teil der Liste. Ein Umzug ist
+  ein einzelner JSX-Block - **nicht** entschieden, hier festgehalten.
 - **#364 GEBAUT:** `src/renderer/gemeinsam/media-blob-url.ts` (`mediaBlobUrl` /
   `gibMediaBlobUrlFrei`, wirft nie, Fehler → `''` + `console.warn`); `video-filmstreifen.tsx`
   bindet die **Blob-URL** und gibt sie im `finally` frei (auch beim Fehlschlag); die **Bühne**
@@ -59,7 +62,8 @@
   `Aktion loeschen: 1 -> 0 -> Undo 1` belegt. (Die erste Montage von #394 als eigenes Panel
   über der Zeitleiste ist trotzdem verworfen - sie kostete genau die Höhe, an der die
   Zieh-Schritte hängen.)
-- **Nicht gepusht.** Auf GitHub wurde **nur** #446 angelegt.
+- **Nicht gepusht.** Auf GitHub wurden **nur** die Beleg-Kommentare an **#445/#394/#364**
+  gesetzt (28.10.2026) und **#446** angelegt; **kein** Issue geschlossen, kein Label geändert.
 
 ## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – historisiert durch den Abschnitt darueber
 
