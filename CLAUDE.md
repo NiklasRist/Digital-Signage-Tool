@@ -11,7 +11,34 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, siebte Sitzung: Mutations-Charge 4) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, achte Sitzung: Mutations-Charge 5) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 17.**
+
+- **Charge 5 GEBAUT (`9a804eb`):** fuenf Testdateien – `liste`, `ausgabe-liste`,
+  `leiste-zeile`, `buehne-skalierung`, `nutzung-anzeigen`. **25 Verhaltens-Mutationen**,
+  **5 Refactorings**; 21 erkannt, **vier Fixture-Luecken** (Z3, Z4, B4, N3) mit
+  Verhaltens-Tests geschlossen, **0/5 Refactorings rot**; jede Mutation byte-identisch
+  zurueckgenommen.
+- **Das Muster:** Drei der vier Luecken waren **zufaellig deckende Fixtures** – ein
+  0×0-Kasten (bei dem auch der Normalpfad Nullen liefert), ein Projekt in BEIDEN Listen
+  (der zweite Zaehl-Durchlauf war unsichtbar), ein einzelner laufender Auftrag („der
+  ERSTE gewinnt" ungeprueft). Dazu die ungepruefte Fortschritts-Klammer (150/-10).
+- **Gegenproben:** Z3, Z4, B4, N3 nach den Korrekturen **alle erkannt**.
+- **Entfernt:** **14** Quelltext-/Meta-Tests (3 + 2 + 3 + 3 + 3), **3** Verhaltenstests
+  ergaenzt; Suite **5.600 → 5.589** (netto −11).
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.589 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **116** Testdateien mit `readFileSync` (vorher 121), **79** mit
+  Grep-/Bauvorschriften-`describe` (vorher 84); verfeinert lesen **101** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote haben keinen Waechter bis zu einer
+  Lint-Regel; die Re-Export-Regel (`ProjektMeta`/`AusgabeDatei`) ist nur noch durch die
+  importierenden Stellen gedeckt.
+- **Nicht gepusht:** `9a804eb` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 6** – Inventur, dann fuenf Dateien.
+
+## STAND HEUTE (28.10.2026, siebte Sitzung: Mutations-Charge 4) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 16.**
 
