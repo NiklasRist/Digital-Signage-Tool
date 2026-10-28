@@ -7,7 +7,6 @@
 // eingebauten Vorlagen" im Issue #148. Schlaegt der Test fehl, ist die Pruefung falsch,
 // NICHT die Pruefdaten.
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 
 import type { FarbRolle, SchriftRolle } from "../../src/shared/contracts/marke";
 import type { Zone, Vorlage } from "../../src/shared/contracts/vorlage";
@@ -564,13 +563,6 @@ describe("bandSicherheitsLinie", () => {
     expect(bandSicherheitsLinie(band(40, []))).toBeNull();
   });
 
-  it("leitet den Wert aus sicherheitsBox ab - KEINE eigene Subtraktion mit der Konstante", () => {
-    const CODE = readFileSync("src/renderer/vorlagen-editor/pruefungen.ts", "utf-8");
-    const ab = CODE.indexOf("export function bandSicherheitsLinie");
-    const rumpf = CODE.slice(ab, CODE.indexOf("Hilfsfunktionen"));
-    expect(rumpf).not.toMatch(/SICHERHEITSABSTAND_PX/);
-    expect(rumpf).toMatch(/sicherheitsBox/);
-  });
 });
 
 describe("Determinismus und Nicht-Verbote", () => {
@@ -580,10 +572,6 @@ describe("Determinismus und Nicht-Verbote", () => {
     expect(pruefeVorlage(vorlage, soll)).toEqual(pruefeVorlage(vorlage, soll));
   });
 
-  it("enthaelt kein sort im Quelltext", () => {
-    const CODE = readFileSync("src/renderer/vorlagen-editor/pruefungen.ts", "utf-8");
-    expect(CODE).not.toMatch(/\.sort\(/);
-  });
 
   it("verändert weder die Vorlage noch eine Zone", () => {
     const vorlage = vollbild();

@@ -762,3 +762,75 @@ gedeckt.
 | Verbleibend | 116 / 79 | **111** Dateien mit `readFileSync`, **74** mit Grep-/Bauvorschriften-`describe` |
 
 Verfeinert lesen nach dieser Charge **95** Describe-Bloecke wirklich eine Quelldatei.
+
+---
+
+## 19. Charge 7 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `start` (app-shell), `sichten` (app-shell),
+`projektzustand` (composer), `pruefungen` (vorlagen-editor),
+`project-store-nachtrag` (ipc-gateway, Main).
+
+**Ausgangsmessung:** 25 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **21**. Gruen: **ST5, S2, S3, S4** – vier echte Luecken. Alle
+Refactorings gruen (nach einer Korrektur, s. u.). Jede Mutation byte-identisch
+zurueckgenommen.
+
+### Die vier Luecken (alle geschlossen)
+
+- **ST5 – der Rueckgabewert wurde geprueft, der WECHSEL nicht.** `wechsleReiter(reiter)`
+  auf `wechsleReiter(START_REITER_OHNE_PROJEKT)` geaendert blieb gruen, weil die Tests
+  nur `ergebnis.reiter` lesen. Neu: `holeReiter()` muss nach dem Oeffnen wirklich
+  `'vorlagen'` sein.
+- **S2 – der Abbruch bei gescheiterter Vorlagen-Uebersicht war ungeprueft.** Die
+  Mutation `if (!uebersicht.ok)` → `false` blieb gruen; `uebersicht.wert` wird im
+  Erfolgsfall gar nicht gelesen. Neu: `ladeUebersicht` lehnt ab ⇒ `ok: false`,
+  `holeSichten()` bleibt auf dem vorherigen Stand.
+- **S3/S4 – der Zeichnen-Stand war ungeprueft.** `zeichen.hole()` nach `bereiteVor`
+  sowie das Zuruecksetzen beim Verwerfen hatten keinen Test. Neu (mit gemockter
+  `zeichen-vorbereitung`): `hole()` liefert den hergestellten Stand, Verwerfen setzt
+  ihn auf `null` und ruft die Verwerf-Regel genau einmal.
+
+### Ein Refactoring, das keines war (transparent)
+
+- Der erste harmlose Refactoring-Versuch in `project-store-nachtrag` (alle `nutzlast`
+  → `eingang`) brach die Testdatei schon beim Sammeln ab (0 Tests). Ein Refactoring,
+  das die Suite nicht mehr laufen laesst, ist **nicht** harmlos – ersetzt durch eine
+  reine Kommentar-Umformulierung; die blieb gruen.
+
+### Gegenproben
+
+ST5, S2, S3, S4 nach den Korrekturen: **alle erkannt** (je 1 Test rot). Die
+Kommentar-Umformulierung: gruen.
+
+### Entfernt (14 Tests, 2 ergaenzt – netto −12)
+
+- **3** in `start` (kein JSX/react, kein `config:`/`project:`-Literal, kein
+  `window.api`).
+- **3** in `sichten` (kein `rufeAuf`/`config:`-Literal/`KANAELE`/Marke-Import;
+  `inhalte-zugaenge` und `bootstrap` ohne Marke-Treffer).
+- **3** in `projektzustand` (kein Kanal-Literal/window.api/Node-Import, kein `sort`,
+  kein selbstgebautes Projekt).
+- **2** in `pruefungen` (kein `sort`; `bandSicherheitsLinie` leitet aus
+  `sicherheitsBox` ab, statt die Konstante zu subtrahieren).
+- **3** in `project-store-nachtrag` (kein Kanal-Literal, kein fs/Fenster/Lock/#76,
+  Nutzlast-Pruefer importiert statt kopiert). Der Registry-Test ist **geblieben**.
+
+**Ehrlich offen:** Die entfernten Verbote sind Architekturregeln (Lint-Kandidat);
+die Ableitung „aus `sicherheitsBox`, nicht aus der Konstante" ist jetzt nur noch
+durch das Verhalten (108 bei 162) gedeckt.
+
+### Stand nach Charge 7
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **25**: 21 im ersten Lauf, 4 nach Korrektur – **25 erkannt** |
+| Refactorings | – | **0 / 5 rot** (1 Versuch verworfen, s. o.) |
+| Quelltext-/Meta-Tests entfernt | – | **14** |
+| Verhaltens-Tests ergaenzt | – | **2** |
+| Echte Luecken geschlossen | – | **4** |
+| Suite | 5.572 | **5.560** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 111 / 74 | **106** Dateien mit `readFileSync`, **70** mit Grep-/Bauvorschriften-`describe` |
+
+Verfeinert lesen nach dieser Charge **89** Describe-Bloecke wirklich eine Quelldatei.

@@ -8,7 +8,6 @@
 // im Testlauf nicht. Der Ersatz ist zugleich der Beweis: Wuerde die Datei den Main auf
 // einem anderen Weg anfassen, faende der Spion nichts und die Zaehl-Tests fielen um.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 import type { Listenelement, Project } from "../../src/shared/contracts/project";
 import { KANAELE } from "../../src/shared/contracts/kanaele";
@@ -420,36 +419,5 @@ describe("aufSichtGeaendert", () => {
     expect(danach).toHaveBeenCalledTimes(1);
     expect(modul.holeSicht().projekt?.liste.map((e) => e.id)).toEqual(["a"]);
     expect(console.error).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("Bauform der Datei (Grep-Proben der DoD)", () => {
-  const quelle = readFileSync(
-    new URL("../../src/renderer/composer/projektzustand.ts", import.meta.url),
-    "utf8",
-  );
-
-  it("bildet keinen Kanalnamen selbst und umgeht den ipc-client nicht", () => {
-    // Kanalnamen kommen aus KANAELE (#25) - nie als Literal. Der gesuchte Text wird
-    // ZUSAMMENGESETZT, damit diese Testdatei nicht selbst zum Treffer wird, wenn
-    // jemand die Probe von aussen als Grep ueber das Repo wiederholt.
-    expect(quelle).not.toContain(`${"project"}:`);
-    for (const verboten of ["window.api", "ipcRenderer"]) {
-      expect(quelle).not.toContain(verboten);
-    }
-    // Node-Bausteine: geprueft wird der Import, nicht das blosse Vorkommen der zwei
-    // Buchstaben "fs" - sonst schlaegt die Probe auf jedem Wort an, das sie enthaelt.
-    expect(quelle).not.toMatch(/from\s+['"](node:)?(fs|path|os|child_process)['"]/);
-    expect(quelle).not.toMatch(/require\(\s*['"](node:)?(fs|path|os|child_process)['"]/);
-  });
-
-  it("sortiert nirgends", () => {
-    // "Angezeigte Reihenfolge = gerenderte Reihenfolge" (TK 9.7.4).
-    expect(quelle).not.toContain(".sort(");
-  });
-
-  it("baut nirgends selbst ein Projekt zusammen", () => {
-    expect(quelle).not.toContain("crypto.randomUUID");
-    expect(quelle).not.toContain("aktionen: []");
   });
 });

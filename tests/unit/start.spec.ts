@@ -9,8 +9,6 @@
 // Die Reiter-Seite (#194) laeuft ECHT ueber demselben Modul; `setzeReiterZustandZurueck`
 // setzt ihren Zustand zwischen den Tests zurueck. Die DoD verlangt fuer einzelne Punkte
 // einen Spion auf `wechsleReiter` - deshalb importiert diese Datei den Reiter-Namensraum.
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AppKonfig } from '../../src/shared/contracts/app-konfig'
@@ -160,6 +158,9 @@ describe('starteSitzung (DoD)', () => {
       projekt: projekt('projekt-1'),
       reiter: 'vorlagen',
     })
+    // Der GEMERKTE Reiter muss auch WIRKLICH gesetzt sein - der Rueckgabewert
+    // allein belegt nur die Rechnung, nicht den Wechsel.
+    expect(reiterModul.holeReiter()).toBe('vorlagen')
   })
 
   it('uebergeht ein gemerktes projekte und landet in zusammenstellen', async () => {
@@ -363,38 +364,5 @@ describe('Konstanten (DoD)', () => {
   it('exportiert die beiden UI-Schluessel mit den verbindlichen Werten', () => {
     expect(UI_SCHLUESSEL_REITER).toBe('app-shell.aktiverReiter')
     expect(UI_SCHLUESSEL_QUEUE_AUFGEKLAPPT).toBe('queue-panel.aufgeklappt')
-  })
-})
-
-describe('Bauvorschriften der Datei (DoD-Grep-Proben)', () => {
-  const QUELLE = readFileSync(
-    new URL('../../src/renderer/app-shell/start.ts', import.meta.url),
-    'utf8',
-  )
-
-  // Nur der Code, ohne Kommentarzeilen - die Grep-Proben der DoD pruefen den Rumpf.
-  const CODEZEILEN = QUELLE.split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-  it('enthaelt kein JSX und keinen react-Import', () => {
-    expect(QUELLE).not.toMatch(/\bJSX\b/)
-    // JSX: weder ein schliessendes noch ein selbstschliessendes Tag. Auf einen
-    // Tag-ANFANG zu pruefen ginge nicht - `rufeAuf<void>` sieht genauso aus.
-    expect(CODEZEILEN).not.toContain('</')
-    expect(CODEZEILEN).not.toContain('/>')
-    expect(CODEZEILEN).not.toMatch(/from\s+['"]react['"]/)
-  })
-
-  it('enthaelt kein String-Literal mit config: oder project: (die Namen kommen aus KANAELE)', () => {
-    expect(CODEZEILEN).not.toContain('config:')
-    expect(CODEZEILEN).not.toContain('project:')
-  })
-
-  it('enthaelt kein window.api', () => {
-    expect(CODEZEILEN).not.toMatch(/window\.api/)
   })
 })

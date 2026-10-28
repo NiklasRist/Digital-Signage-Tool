@@ -3,8 +3,6 @@
 // Gemockt wird `electron` und die zwei Fachoperationen. Der Wrapper #23 laeuft dagegen ECHT
 // mit: Er ist der Weg, den die Nutzlast im Betrieb nimmt, und an ihm haengt die Zusage
 // "bei ungueltiger Eingabe laeuft die Operation gar nicht erst an" (TK 9.1.1 Punkt 6).
-import { readFileSync } from "node:fs";
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { KANAELE } from "../../src/shared/contracts/kanaele";
@@ -199,43 +197,6 @@ describe("verdrahteProjectStoreNachtragIPC (#153)", () => {
     await expect(
       rufe(KANAELE.project.setzeEinblendung, { elementId: "e1", einblendung: null }),
     ).resolves.toMatchObject({ ok: false, fehler: { code: "unbekannter_fehler" } });
-  });
-});
-
-describe("Quelltext-Proben zu #153", () => {
-  const CODE = readFileSync(
-    new URL("../../src/main/ipc-gateway/project-store-nachtrag.ts", import.meta.url),
-    "utf8",
-  );
-  // Der Kommentarteil traegt Kanalnamen und Modulnamen als Prosa; geprueft wird der Code.
-  const OHNE_KOMMENTARE = CODE.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
-
-  it("bildet keinen Kanalnamen als Zeichenkette, sondern liest ihn aus KANAELE", () => {
-    expect(OHNE_KOMMENTARE).not.toMatch(/['"`]project:/);
-    expect(OHNE_KOMMENTARE).toContain("KANAELE.project.setzeEinblendung");
-    expect(OHNE_KOMMENTARE).toContain("KANAELE.project.setzeElementReferenz");
-  });
-
-  it("fasst weder Dateisystem noch Fenster noch Lock an und importiert nicht aus #76", () => {
-    for (const verboten of [
-      "child_process",
-      "BrowserWindow",
-      "webContents",
-      "mitD1Lock",
-      "project-store-verdrahtung",
-      "node:fs",
-    ]) {
-      expect(OHNE_KOMMENTARE, verboten).not.toContain(verboten);
-    }
-    // `fs` nur als eigenstaendiger Bezeichner/Modulname - "fs" steckt sonst in Woertern.
-    expect(OHNE_KOMMENTARE).not.toMatch(/\bfrom ['"](node:)?fs['"]/);
-  });
-
-  it("importiert die Nutzlast-Pruefer aus #332, statt sie ein fuenftes Mal zu kopieren", () => {
-    expect(OHNE_KOMMENTARE).toContain("from './nutzlast-pruefer'");
-    expect(OHNE_KOMMENTARE).not.toContain("function istObjekt");
-    expect(OHNE_KOMMENTARE).not.toContain("function istGefuellterText");
-    expect(OHNE_KOMMENTARE).not.toContain("function abgelehnt");
   });
 });
 

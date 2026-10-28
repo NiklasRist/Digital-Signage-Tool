@@ -2,8 +2,6 @@
 // Schritt 1 = baueMarkenZugang() (genau einmal, ZUERST), Schritt 2 = ladeUebersicht()
 // (genau einmal). Die früheren rufeAuf-Aufrufe (config:leseMarke) sind ENTFALLEN.
 // Grep-Proben pruefen die Quelldateien ohne Kommentarfasern.
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const doppel = vi.hoisted(() => ({
@@ -12,6 +10,8 @@ const doppel = vi.hoisted(() => ({
   markenZugangAntwort: null as unknown,
   ladeUebersichtAufrufe: 0,
   ladeUebersichtAntwort: null as unknown,
+  bereiteAntwort: null as unknown,
+  verwirfAufrufe: 0,
 }))
 
 vi.mock('../../src/renderer/app-shell/marken-zugang', () => ({
@@ -30,6 +30,16 @@ vi.mock('../../src/renderer/vorlagen-editor/vorlagen-uebersicht', () => ({
   },
   holeUebersicht: () => null,
   aufUebersichtGeaendert: () => () => {},
+}))
+
+// Die Zeichenvorbereitung wird ersetzt: `bereiteVor`/`hole`/`verwirfMotivBestand`
+// sind der Halter, den diese Datei fuehrt - der echte Ladeweg (Schriften, Motive)
+// gehoert nicht in diesen Test.
+vi.mock('../../src/renderer/composer/zeichen-vorbereitung', () => ({
+  bereiteZeichnenVor: async () => doppel.bereiteAntwort as never,
+  verwirfMotivBestand: () => {
+    doppel.verwirfAufrufe += 1
+  },
 }))
 
 import { baueSichten, holeSichten, type Sichten, type MarkenZugang } from '../../src/renderer/app-shell/sichten'
@@ -56,6 +66,8 @@ beforeEach(() => {
   doppel.markenZugangAntwort = null
   doppel.ladeUebersichtAufrufe = 0
   doppel.ladeUebersichtAntwort = null
+  doppel.bereiteAntwort = null
+  doppel.verwirfAufrufe = 0
 })
 
 // ---------------- Die Reihenfolge und das Aufrufverhalten ----------------
@@ -107,45 +119,41 @@ describe('baueSichten (#311)', () => {
     expect(doppel.markenZugangAufrufe).toBe(2)
   })
 
+  it('scheitert ladeUebersicht, wird abgebrochen; holeSichten bleibt auf dem VORHERIGEN Stand', async () => {
+    stelleErfolgEin()
+    const erster = await baueSichten()
+    expect(erster.ok).toBe(true)
+    doppel.markenZugangAntwort = { ok: true, wert: baueZugangAttrappe() }
+    doppel.ladeUebersichtAntwort = {
+      ok: false,
+      fehler: { code: 'vorlagen_unlesbar', meldung: 'Bestand weg.' },
+    }
+    const zweiter = await baueSichten()
+    expect(zweiter.ok).toBe(false)
+    if (!zweiter.ok) expect(zweiter.fehler.code).toBe('vorlagen_unlesbar')
+    expect(holeSichten()).toBe((erster as { ok: true; wert: Sichten }).wert)
+  })
+
+  it('zeichen.hole liefert den zuletzt hergestellten Stand; Verwerfen setzt ihn auf null', async () => {
+    stelleErfolgEin()
+    const ergebnis = await baueSichten()
+    const sichten = (ergebnis as { ok: true; wert: Sichten }).wert
+    const stand = { vorlagen: [] }
+    doppel.bereiteAntwort = { ok: true, wert: stand }
+
+    await sichten.zeichnen.bereiteVor({} as never)
+    expect(sichten.zeichnen.hole()).toBe(stand)
+
+    sichten.zeichnen.verwirfMotivBestand()
+    expect(doppel.verwirfAufrufe).toBe(1)
+    expect(sichten.zeichnen.hole()).toBeNull()
+  })
+
   it('verteileZugaenge(sichten).marken ist toBe-gleich zu sichten.marken (keine Umhuellung)', async () => {
     stelleErfolgEin()
     const ergebnis = await baueSichten()
     const sichten = (ergebnis as { ok: true; wert: Sichten }).wert
     const verteilt = verteileZugaenge(sichten)
     expect(verteilt.marken).toBe(sichten.marken)
-  })
-})
-
-// ---------------- Grep-Proben (ohne Kommentarfasern) ----------------
-
-describe('Quelldatei-Verbote (Grep-Proben, ohne Kommentare): #311', () => {
-  function ladeOhneKommentare(pfad: string): string {
-    return readFileSync(new URL(pfad, import.meta.url), 'utf8')
-      .split('\n')
-      .map((z) => z.trim())
-      .filter((z) => !z.startsWith('//') && !z.startsWith('*') && !z.startsWith('/*'))
-      .join('\n')
-  }
-
-  it('sichten.ts: kein rufeAuf, kein String-Literal config:, kein KANAELE, kein Marke-Import', () => {
-    const code = ladeOhneKommentare('../../src/renderer/app-shell/sichten.ts')
-    expect(code).not.toContain('rufeAuf')
-    expect(code).not.toContain("'config:")
-    expect(code).not.toContain('KANAELE')
-    expect(code).not.toContain("from '../../shared/contracts/marke'")
-    const einzelMarke = code.match(/\.marke\b(?!n)/)
-    expect(einzelMarke).toBeNull()
-  })
-
-  it('inhalte-zugaenge.ts: kein .marke (Einzahl), kein KANAELE.config.leseMarke, kein Marke-Import', () => {
-    const code = ladeOhneKommentare('../../src/renderer/app-shell/inhalte-zugaenge.ts')
-    expect(code).not.toContain('KANAELE')
-    expect(code).not.toContain("from '../../shared/contracts/marke'")
-    expect(code).not.toMatch(/\.marke\b(?!n)/)
-  })
-
-  it('bootstrap.ts: keine marke-Treffer im Code (der Datei ist heute NICHTS zu aendern)', () => {
-    const quelle = readFileSync(new URL('../../src/renderer/app-shell/bootstrap.ts', import.meta.url), 'utf8')
-    expect(quelle).not.toMatch(/marke|Marke/)
   })
 })
