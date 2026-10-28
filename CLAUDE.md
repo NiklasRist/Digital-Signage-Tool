@@ -62,8 +62,13 @@
   `Aktion loeschen: 1 -> 0 -> Undo 1` belegt. (Die erste Montage von #394 als eigenes Panel
   über der Zeitleiste ist trotzdem verworfen - sie kostete genau die Höhe, an der die
   Zieh-Schritte hängen.)
-- **Nicht gepusht.** Auf GitHub wurden **nur** die Beleg-Kommentare an **#445/#394/#364**
-  gesetzt (28.10.2026) und **#446** angelegt; **kein** Issue geschlossen, kein Label geändert.
+- **GEPUSHT (28.10.2026, auf Anweisung):** `a53e64d..fd563b4` → `origin/main`, **180 Commits**,
+  431 Dateien (+17.368/−7.685); `main` = `origin/main`, Arbeitsbaum sauber. Der Gate-Lauf oben
+  liegt **vor** den drei Doku-Commits; danach nachgeprüft wurde nur `treiber-matrix.spec.ts`
+  (**3/3 grün**), **kein** voller Gate-Lauf. Das Remote meldet beim Push **45 Dependabot-Findings**
+  (22 high/16 moderate/7 low) – **nicht geprüft**, auf Anweisung zurückgestellt („Funktionen vor
+  Sicherheit"). Auf GitHub wurden **nur** die Beleg-Kommentare an **#445/#394/#364** gesetzt
+  (28.10.2026) und **#446** angelegt; **kein** Issue geschlossen, kein Label geändert.
 
 ## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – historisiert durch den Abschnitt darueber
 
