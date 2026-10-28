@@ -59,20 +59,32 @@ vorhanden – das ist ein Q3-Fall, kein Q1.2-Fall.
 - Bilanz nach Batch 1: Prosa-Gruppen (≥ 3 Dateien) **70 → 67**; Issue-Kommentarzeilen
   **3.351 → 3.348** (Q1.1-Stand 3.351 vor Batch 1).
 
-## 5. Gate (nach Q1.2 Batch 1)
+### Batch 2 (`adf6b3a`, 15 Dateien, +23/−81)
+
+- **Rückgabetyp am `mitD1Lock`-Rückruf:** Die Erklärung steht jetzt **einmal** in
+  `src/shared/contracts/ergebnis.ts` (`Ergebnis`-Doc, #12/#22). Die **zehn** Aufrufstellen
+  (`assets`, `dupliziere-`, `loesche-projekt`, `oeffne-projekt`, `setze-dauer`, `bearbeite-`,
+  `erstelle-aktion`, `erstelle-projekt`, `entferne-element`, `fuege-element-hinzu`) tragen nur
+  noch eine Zeile mit Verweis.
+- **Wartezeiten:** Die EPERM/EBUSY-Begründung steht **einmal** bei `mitWiederholung`
+  (`gemeinsam/schreib-mechanik.ts`, #31). Vier Stores (`project-`, `config-`, `vorlagen-store`,
+  `auftrags-manager`) tragen nur noch „Wartezeiten je Speicher, Zahl reist als Parameter".
+  **Bewusst unberührt:** `media-service/datei-entfernen.ts` (eigener STOPP-Punkt-Vermerk) und
+  `export-service/ersetzen.ts` (war schon eine Zeile).
+- Beleg: `git diff` nur Kommentarzeilen, Typecheck 0, Lint 0; beide alten Formulierungen
+  **0×** im Baum, „WARUM WIEDERHOLT WIRD" nur noch **1×** (bei `mitWiederholung`).
+
+## 5. Gate (nach Q1.2 Batch 2)
 
 `npm run pruefung` **Exit 0** – Unit **5.692 (340 Dateien)**, Integration **49 (12 Dateien)**,
-Treiber **0 Befunde**. (Der Gate-Lauf nach Q1.1 allein war ebenfalls Exit 0 mit denselben
-Zahlen.)
+Treiber **0 Befunde**. (Die Gate-Läufe nach Q1.1 und nach Batch 1 waren ebenfalls Exit 0 mit
+denselben Zahlen.)
 
 ## 6. Offen / nächste Sitzung
 
-- **Q1.2 ist nicht abgeschlossen.** Nächste Batch-Kandidaten: „Rückgabeangabe am Rückruf"
-  (5 Dateien, `Ergebnis`-Diskriminierung) und „Wartezeiten in Millisekunden" (4 Dateien).
-  Beide brauchen eine **eine Adresse** (z. B. `shared/contracts/ergebnis.ts` bzw.
-  `schreib-mechanik-plan.md`), bevor die lokalen Fassungen gekürzt werden.
+- **Q1.2 für die zwei Adressen abgeschlossen.** Weitere Wiederholungen sind `SAFETY:`-Casts
+  (Nicht-Ziel) oder `systemCode` als **Code**-Kopie (Q3-Kandidat, kein Kommentar-Umbau).
 - **Nicht anfassen:** `SAFETY:`-Kommentare (Nicht-Ziel des Kommentar-Plans).
-- **Separat:** `systemCode` 12× als Code-Kopie (Q3-Kandidat, kein Kommentar-Umbau).
 - **Weiter offen:** #394 (Platzierung), #446 (Ursache), Mutations-Chargen, #393.
-- **Push:** `main` liegt nach diesem Doku-Commit wieder vor `origin/main` – **nicht gepusht**;
-  Push nur auf Anweisung.
+- **GEPUSHT (28.10.2026, auf Anweisung):** `d998802..adf6b3a` → `origin/main` (9 Commits);
+  dieser Dokumentations-Nachtrag folgt als eigener Commit.

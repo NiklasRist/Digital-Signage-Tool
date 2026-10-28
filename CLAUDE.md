@@ -30,12 +30,21 @@
   Adresse `docs/agents/schreib-mechanik-plan.md`) und `PFAD_TRENNER`-Doku in fünf Dateien
   (4–5 Zeilen → ein Satz mit Quelle). **10 Dateien, +15/−31**; Prosa-Gruppen 70 → 67;
   Typecheck/Lint 0.
-- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.692 (340 Dateien)**, Integration **49
-  (12 Dateien)**, Treiber **0 Befunde**.
-- **Offen:** Q1.2 Batch 2 („Rückgabeangabe am Rückruf" 5 Dateien, „Wartezeiten" 4 Dateien –
-  je erst eine Adresse festlegen); #394, #446, Mutations-Chargen, #393. `SAFETY:` bleibt.
-- **Nicht gepusht:** `main` liegt nach diesem Doku-Commit **acht Commits** vor `origin/main`
-  (sieben Q1.1/Q1.2-Commits + diese Übergabe samt Push-Status). **Push nur auf Anweisung.**
+- **Q1.2 Batch 2 GEBAUT (`adf6b3a`):** Rückgabetyp-Erklärung einmal in
+  `shared/contracts/ergebnis.ts` (#12/#22), **zehn** Aufrufstellen nur noch Verweis;
+  EPERM/EBUSY-Begründung einmal bei `mitWiederholung` (#31), **vier** Stores nur noch
+  „Wartezeiten je Speicher". **15 Dateien, +23/−81**; beide alten Formulierungen **0×**,
+  „WARUM WIEDERHOLT WIRD" **1×**; Typecheck/Lint 0. `datei-entfernen.ts` (STOPP-Vermerk) und
+  `export-service/ersetzen.ts` bewusst unberührt.
+- **Gate:** `npm run pruefung` **Exit 0** (nach Batch 2) – Unit **5.692 (340 Dateien)**,
+  Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Offen:** Q1.2 ist für die zwei Adressen abgeschlossen; weitere Wiederholungen sind
+  `SAFETY:`-Casts (Nicht-Ziel) oder `systemCode` als **Code**-Kopie (Q3-Fall). Dazu #394,
+  #446, Mutations-Chargen, #393.
+- **GEPUSHT (28.10.2026, vierter Push, auf Anweisung):** `d998802..adf6b3a` → `origin/main`,
+  **9 Commits** (Q1.1-Rest, Q1.2 Batch 1/2, Session-3-Übergabe); dieser Doku-Nachtrag folgt
+  als eigener Commit. Remote meldet unverändert **72** Dependabot-Findings (34 high/25
+  moderate/13 low) – nicht geprüft, weiter zurückgestellt.
 
 ## STAND HEUTE (28.10.2026, zweite Sitzung: Push, Treiber 4o/4p/4q/4r, #446 zehn Läufe, FA-13 #100/#155) – historisiert durch den Abschnitt darueber
 
