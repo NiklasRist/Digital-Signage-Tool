@@ -1,6 +1,7 @@
 # Treiber-Matrix: Anforderung -> Szenario
 
-**Stand:** 21.10.2026. **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
+**Stand:** 28.10.2026 (Kopf nachgezogen; die letzte Messung am Fenster ist der Lauf vom
+**22.10.2026**). **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
 **Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-24),
 `scripts/durchlauf.mjs` (Treiber, echter Fensterlauf), `docs/agents/q4-test-audit.md` (Q4-3).
 
@@ -374,4 +375,12 @@ der Statusspalte. Ob "teilweise" noch stimmt, entscheidet nur das Lesen des Schr
   `wiederholeAuftrag`, `darfWiederholen` ueber `src/` - ausserhalb `queue-panel/` kein
   Aufrufer.
 - Markenbestand B2: `marken.json` traegt eine Marke.
+- **Kopf nachgezogen am 28.10.2026:** Der Kopf stand noch auf 21.10., obwohl der Inhalt die
+  Messungen vom 22.10. trug (4b7, 4c2, 4f5, 4g3, 4n; Zaehlung 10/11/0/3, Muss 8 von 15). Der
+  Waechter `tests/unit/treiber-matrix.spec.ts` ist gruen: jeder Szenario-Schritt `[schritt-4*]`
+  aus `scripts/durchlauf.mjs` ist genau einmal zugeordnet. **Seit dem 22.10. ist kein neuer
+  Szenario-Schritt dazugekommen**; #445 (getippte Werte im Modus „Neue Aktion"), #394
+  (Statistik-Panel montiert) und #364 (Blob-URL gegen Canvas-Tainting) aendern **keine**
+  FA-Zusage dieser Matrix. Die Statusspalte bleibt damit der Stand des Fensterlaufs vom
+  22.10.2026 - „gemessen" heisst weiterhin: im letzten Lauf belegt, nicht „im Code vorhanden".
 
