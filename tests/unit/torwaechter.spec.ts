@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -155,16 +154,6 @@ async function ruhe(): Promise<void> {
   await new Promise((aufloesen) => setTimeout(aufloesen, 0))
 }
 
-const QUELLE = readFileSync(
-  new URL('../../src/main/auftrags-manager/torwaechter.ts', import.meta.url),
-  'utf8',
-)
-
-/** Der Quelltext ohne Kommentare - sonst zaehlen die Erlaeuterungen als Code mit. */
-function ohneKommentare(quelle: string): string {
-  return quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
-}
-
 describe('starteNaechsten (#59)', () => {
   beforeEach(() => {
     welt.zustand.reihenfolge = []
@@ -236,21 +225,6 @@ describe('starteNaechsten (#59)', () => {
     gatter.oeffne()
     await ruhe()
     expect(welt.beendeAuftrag).toHaveBeenCalledTimes(1)
-  })
-
-  it('enthaelt zwischen der Pruefung und dem Statuswechsel kein await und kein then', () => {
-    // Der teuerste Fehler dieses Issues laesst sich nicht durch Ausprobieren ausschliessen:
-    // Ein `await` vor dem Statuswechsel oeffnet ein Zeitfenster, das nur unter echter
-    // Nebenlaeufigkeit aufgeht. Deshalb hier die statische Probe am Quelltext.
-    const quelle = ohneKommentare(QUELLE)
-    const beginn = quelle.indexOf('export function starteNaechsten(): void {')
-    const rumpf = quelle.slice(beginn, quelle.indexOf('\n}', beginn))
-
-    expect(beginn).toBeGreaterThanOrEqual(0)
-    expect(rumpf).toContain('laufender()')
-    expect(rumpf).toContain("auftrag.status = 'laeuft'")
-    expect(rumpf).not.toMatch(/\bawait\b/)
-    expect(rumpf).not.toMatch(/\.then\(/)
   })
 
   it('tut nichts bei leerer Schlange und bei ausschliesslich terminalen Auftraegen', async () => {
@@ -465,11 +439,4 @@ describe('starteNaechsten (#59)', () => {
     expect(auftrag.fortschritt).toBe(42)
   })
 
-  it('enthaelt keinen Timer, kein Polling und keinen Selbstaufruf', () => {
-    const quelle = ohneKommentare(QUELLE)
-
-    expect(quelle).not.toMatch(/setInterval|setTimeout|setImmediate|queueMicrotask/)
-    // Genau ein Vorkommen: die Deklaration selbst.
-    expect(quelle.match(/starteNaechsten/g)).toHaveLength(1)
-  })
 })

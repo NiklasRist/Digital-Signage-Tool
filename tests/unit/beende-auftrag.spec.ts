@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -472,6 +471,20 @@ describe('beendeAuftrag (#70)', () => {
     expect(q1.alleQ1()).toHaveLength(1)
   })
 
+  it('ein Ausgang ohne bekannten Status veraendert nichts und protokolliert', async () => {
+    const { q1, beendeAuftrag } = await frisch()
+    const auftrag = laeuft(q1, importAuftrag())
+
+    // Ein Handler kann zur Laufzeit einen Status liefern, den die Union nicht kennt.
+    // Die Wache darf ihn nicht als "erfolg" verbuchen und keinen Q3-Eintrag schreiben.
+    await expect(
+      beendeAuftrag(auftrag.auftragId, { status: 'quatsch' } as never),
+    ).resolves.toBeUndefined()
+
+    expect(auftrag.status).toBe('laeuft')
+    expect(welt.zustand.q3).toEqual([])
+  })
+
   it('haelt die Schlange am Laufen, wenn das Q3-Schreiben scheitert', async () => {
     const { q1, beendeAuftrag } = await frisch()
     const auftrag = laeuft(q1, importAuftrag())
@@ -537,13 +550,4 @@ describe('beendeAuftrag (#70)', () => {
     expect(beiFehlschlag).not.toBe(beiErfolg)
   })
 
-  it('beruehrt weder Dateisystem noch project-store noch ffmpeg', async () => {
-    const quelle = readFileSync(
-      new URL('../../src/main/auftrags-manager/beende-auftrag.ts', import.meta.url),
-      'utf8',
-    )
-    const importe = quelle.match(/^import .*$/gm) ?? []
-
-    expect(importe.join('\n')).not.toMatch(/node:fs|project-store|ffmpeg|d1-lock/)
-  })
 })

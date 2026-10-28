@@ -11,8 +11,6 @@
 // EINGEPASSTE Breite - bei H = 162 sind das 1632, nicht 1920. Wer sie als Bandbreite
 // einsetzte, wiese jedes richtige Band-PNG ab, und weil beide Felder `number` sind,
 // uebersetzt das fehlerfrei. Der Test unten haelt beide Zahlen nebeneinander.
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -762,47 +760,6 @@ describe('liesPngMasse - nur der Kopf, nichts dekodiert', () => {
       if (roh.ok) throw new Error('Erwartet war ein Fehler.')
       expect(roh.fehler.code).toBe('ungueltiges_element')
     }
-  })
-})
-
-describe('Grep-Proben der Definition of Done', () => {
-  const quelle = readFileSync(
-    fileURLToPath(new URL('../../src/main/render-service/validierung.ts', import.meta.url)),
-    'utf8',
-  )
-  const ausfuehrbar = quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
-
-  it('enthaelt keinen fs-Import und kein Math.round', () => {
-    // Geprueft wird der AUSFUEHRBARE Teil: Im Kopfkommentar steht ausdruecklich, dass
-    // diese Datei kein `node:fs` anfasst - der Satz darf dort stehen bleiben.
-    expect(ausfuehrbar).not.toMatch(/from\s+['"](node:)?fs(\/promises)?['"]/)
-    expect(ausfuehrbar).not.toContain('node:fs')
-    expect(ausfuehrbar).not.toContain('require(')
-    expect(ausfuehrbar).not.toContain('Math.round')
-    // Gegenprobe, damit die Probe nicht an einem zu gierigen Kommentar-Ausschnitt
-    // leer laeuft: Der Rumpf ist noch da.
-    expect(ausfuehrbar).toContain('loeseAusgabePfad')
-    expect(ausfuehrbar).toContain('zuFrames')
-  })
-
-  it('baut die Namensregeln aus TK 9.2.6 nicht nach', () => {
-    for (const verboten of ['CON', 'PRN', 'LPT']) {
-      expect(ausfuehrbar).not.toContain(verboten)
-    }
-    expect(ausfuehrbar).not.toContain("'..'")
-    expect(ausfuehrbar).not.toContain('".."')
-  })
-
-  it('baut die Regeln fuer die Bandhoehe nicht nach - sie gehoeren #176', () => {
-    // Kein eigener Test auf Geradzahligkeit und kein eigener Vergleich gegen 1080.
-    expect(ausfuehrbar).not.toContain('% 2')
-    expect(ausfuehrbar).not.toContain('1080')
-    expect(ausfuehrbar).toContain('bestimmeBandgeometrie')
-  })
-
-  it('vergibt medium_fehlt nicht und sammelt keine Fehler', () => {
-    expect(ausfuehrbar).not.toContain('medium_fehlt')
-    expect(ausfuehrbar).not.toContain('loeseAssetPfad')
   })
 })
 

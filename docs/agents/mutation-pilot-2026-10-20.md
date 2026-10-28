@@ -834,3 +834,67 @@ durch das Verhalten (108 bei 162) gedeckt.
 | Verbleibend | 111 / 74 | **106** Dateien mit `readFileSync`, **70** mit Grep-/Bauvorschriften-`describe` |
 
 Verfeinert lesen nach dieser Charge **89** Describe-Bloecke wirklich eine Quelldatei.
+
+---
+
+## 20. Charge 8 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `kaputt-erkennung` (composer), `validierung` (render-service, Main),
+`torwaechter` (auftrags-manager, Main), `eingebaute-vorlagen` (vorlagen-store, Main),
+`beende-auftrag` (auftrags-manager, Main).
+
+**Ausgangsmessung:** 24 Verhaltens-Mutationen, 5 harmlose Refactorings (eine geplante
+Mutation fiel weg, weil ihr Zieltext dreimal vorkam und nicht eindeutig war).
+Erkannt: **22**, **zwei aequivalente** (T5, BA2). **Keine Luecke.** Alle Refactorings
+gruen. Jede Mutation byte-identisch zurueckgenommen.
+
+### Die zwei aequivalenten Mutationen
+
+- **T5 – der abgelehnte Uebergang ist ueber die oeffentliche Q1-Schnittstelle nicht
+  erreichbar.** `naechsterAnstehender()` liefert ausschliesslich `anstehend`-Auftraege,
+  und `anstehend -> laeuft` ist erlaubt. Der Zweig bleibt als Programmierfehler-Wache
+  stehen; ein Test muesste Q1 an der Schnittstelle vorbei praeparieren.
+- **BA2 – ein unbekannter Handler-Status wird ohnehin von der Uebergangstabelle
+  abgewiesen.** Mit entfernter `zielStatus === null`-Wache liefe der Code mit `null` in
+  `pruefeUebergang`, das ablehnt, BEVOR `auftrag.status` geschrieben wird – der Zustand
+  bleibt gleich. Die Wache verbessert nur die Meldung. Neu ist trotzdem ein Test
+  „Ausgang ohne bekannten Status veraendert nichts": Er dokumentiert die Zusage, faengt
+  die Mutation aber nicht (aequivalent).
+
+### Harness-Korrekturen (keine Code-Befunde)
+
+- `T3`, `EV3` und ein geplantes `EV6` trafen zunaechst mehrere Stellen (Kommentar bzw.
+  drei gleiche `rahmen`-Zeilen). Mit eindeutigem Kontext nachgeholt; `EV6` entfiel.
+
+### Entfernt (13 Tests, 1 ergaenzt – netto −12)
+
+- **4** in `kaputt-erkennung` (Modulgrenze: kein fs/path/electron, kein ipc-client,
+  exakte Typ-Importliste, kein async/Ergebnis).
+- **4** in `validierung` (kein fs/`Math.round`, keine Namensregeln, keine
+  Bandhoehen-Regeln, kein `medium_fehlt`). Die Verhaltens-Tests pruefen die
+  PNG-Masse, das Profil Feld fuer Feld und die Dauer-Grenzen.
+- **2** in `torwaechter` (kein `await`/`then` zwischen Pruefung und Statuswechsel –
+  als statische Probe; kein Timer/Polling/Selbstaufruf). Die Reihenfolge ist als
+  Verhaltens-Test „Journal und Ereignis erst NACH dem Statuswechsel" vorhanden.
+- **2** in `eingebaute-vorlagen` (nur Rollen, keine Farben/Schriftnamen; kein
+  Dateisystem). Die Frische/Tiefe der Kopie ist Verhaltens-Test.
+- **1** in `beende-auftrag` (keine Imports aus fs/project-store/ffmpeg).
+
+**Ehrlich offen:** Die entfernten Architektur-Verbote haben keinen Waechter bis zu
+einer Lint-Regel. Die `await`-Freiheit zwischen Pruefung und Statuswechsel ist jetzt
+nur noch mittelbar (Reihenfolge-Test) gedeckt, nicht mehr statisch.
+
+### Stand nach Charge 8
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **24**: 22 erkannt, 2 aequivalent |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **13** |
+| Verhaltens-Tests ergaenzt | – | **1** |
+| Echte Luecken geschlossen | – | **0** |
+| Suite | 5.560 | **5.548** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 106 / 70 | **101** Dateien mit `readFileSync`, **69** mit Grep-/Bauvorschriften-`describe` |
+
+Verfeinert lesen nach dieser Charge **82** Describe-Bloecke wirklich eine Quelldatei.

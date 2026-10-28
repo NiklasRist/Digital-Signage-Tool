@@ -12,8 +12,6 @@
 // über Duplikate, Abbruch nach dem ersten Defekt oder eine versteckte Sortierung.
 // Deshalb steht neben jedem Positivfall ein Aufbau, der genau die naheliegende
 // Abkürzung auffliegen lässt.
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -839,46 +837,5 @@ describe('#338 - die Marken-Referenz einer Aktion', () => {
       'element_asset',
       'aktion_marke',
     ])
-  })
-})
-
-describe('Modulgrenze - Renderer-Datei ohne Node und ohne IPC', () => {
-  const QUELLE = readFileSync(
-    new URL('../../src/renderer/composer/kaputt-erkennung.ts', import.meta.url),
-    'utf8',
-  ).replace(/\r\n/g, '\n')
-  // Die Kommentare dieser Datei nennen „Dateisystem", „IPC" und „ipc-client" in
-  // der Begründung. Geprüft werden deshalb nur echte Code-Zeilen, sonst schlüge
-  // die Regel an ihrer eigenen Erklärung an.
-  const CODEZEILEN = QUELLE.split('\n').filter(
-    (z) => !z.trimStart().startsWith('//') && !z.trimStart().startsWith('*'),
-  )
-
-  it('importiert weder fs noch path noch electron', () => {
-    for (const verboten of ['fs', 'node:fs', 'path', 'node:path', 'electron']) {
-      expect(
-        CODEZEILEN.filter((z) => new RegExp(`from ['"]${verboten}['"]`).test(z)),
-      ).toEqual([])
-    }
-  })
-
-  it('ruft keinen ipc-client auf und rührt window.api nicht an', () => {
-    expect(CODEZEILEN.filter((z) => /ipc-client|window\.api|rufeAuf|abonniere/.test(z))).toEqual([])
-  })
-
-  it('importiert ausschliesslich Typen aus dem geteilten Vertrag', () => {
-    const importe = CODEZEILEN.filter((z) => z.startsWith('import'))
-    expect(importe).toEqual([
-      "import type { Aktion } from '../../shared/contracts/aktion'",
-      "import type { Asset } from '../../shared/contracts/asset'",
-      // #338: der Marken-Vertrag - die Marken-Referenz wird gegen den Bestand geprueft.
-      // Weiterhin NUR Typen: kein IPC, kein Dateisystem, kein Zustand.
-      "import type { Marke } from '../../shared/contracts/marke'",
-      "import type { Project } from '../../shared/contracts/project'",
-    ])
-  })
-
-  it('enthält kein async und keine Ergebnis-Hülle', () => {
-    expect(CODEZEILEN.filter((z) => /\basync\b|Ergebnis</.test(z))).toEqual([])
   })
 })

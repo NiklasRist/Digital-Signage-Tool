@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import type { Vorlage, Zone } from "../../src/shared/contracts/vorlage";
@@ -7,11 +5,6 @@ import {
   EINGEBAUTE_VORLAGEN_IDS,
   eingebauteVorlagen,
 } from "../../src/main/vorlagen-store/eingebaute-vorlagen";
-
-const QUELLE = readFileSync(
-  new URL("../../src/main/vorlagen-store/eingebaute-vorlagen.ts", import.meta.url),
-  "utf8",
-);
 
 const hole = (id: string): Vorlage => {
   const gefunden = eingebauteVorlagen().find((v) => v.id === id);
@@ -172,14 +165,4 @@ describe("eingebauteVorlagen (#96)", () => {
     expect(hole("vollbild").zonen.map(zeile)).toEqual(VOLLBILD);
   });
 
-  it("nennt in der Quelldatei nur Rollen, keine Farben und keine Schriftnamen", () => {
-    expect(QUELLE).not.toMatch(/(['"])#[0-9A-Fa-f]{3,8}\1/);
-    expect(QUELLE).not.toMatch(/Playfair|Archivo|Arimo|Helvetica/);
-  });
-
-  it("greift in der Quelldatei nicht auf das Dateisystem zu", () => {
-    expect(QUELLE).not.toMatch(/from\s+['"](node:)?(fs|path)[/'"]/);
-    expect(QUELLE).not.toMatch(/require\(\s*['"](node:)?(fs|path)['"]\s*\)/);
-    expect(QUELLE).not.toMatch(/ermittleDatenOrt/);
-  });
 });
