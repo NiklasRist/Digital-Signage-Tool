@@ -24,24 +24,8 @@ import { aufRenderFortschritt } from '../render-service/fortschritt'     // #178
 import { ohneNutzlast } from './nutzlast-pruefer'                        // #332
 import { registriereHandler } from './registriere-handler'               // #23
 
-// Fremde Aufrufe - alle gegen die GEBAUTEN Dateien geprueft (14.08.2026), nicht gegen
-// die Zitate im Issue:
-//   #23: registriereHandler<T, F extends string>(
-//          kanal: string,
-//          validiere: (nutzlast: unknown) => Ergebnis<unknown, 'ungueltige_eingabe'>
-//                                          | { ok: true; wert: unknown },
-//          ausfuehren: (validierteNutzlast: unknown) => Promise<Ergebnis<T, F>>,
-//        ): void
-//   #183: wähleExportZiel(): Promise<Ergebnis<{ pfad: string | null }>>
-//         // `pfad === null` heisst "abgebrochen" und ist ok:true, KEIN Fehler.
-//   #178: aufRenderFortschritt(hoerer: (fortschritt: RenderProgress) => void): () => void
-//         // MAIN-INTERN; der Rueckgabewert ist die Abmelde-Funktion. #178 sendet NICHT
-//         // selbst - nachgelesen in src/main/render-service/fortschritt.ts: die Datei
-//         // importiert weder `electron` noch die Kanal-Registry. Es gibt also genau
-//         // EINEN Ereignisweg, und das ist dieser hier.
-//   #332: ohneNutzlast(): { ok: true; wert: undefined }
-//         // Der gemeinsame Validierer der argumentlosen Kanaele. Eine trotzdem
-//         // uebergebene Nutzlast wird IGNORIERT, nicht abgelehnt.
+// #178 sendet nicht selbst (weder `electron` noch Kanal-Registry) - es gibt genau EINEN
+// Ereignisweg, und das ist dieser hier (MELDE-KLAUSEL Punkt 1).
 
 /**
  * Der EINE Sendeweg an das EINE Fenster (TK 9.1.1 Punkt 10).

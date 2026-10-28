@@ -11,22 +11,6 @@ import { setzeUIVoreinstellung } from '../config-store/setze-ui-voreinstellung' 
 // massgebliche; sie ist unveraendert umgezogen, nicht umgeschrieben.
 import { meldeAn } from './melde-an'                                         // #333
 import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from './nutzlast-pruefer' // #332
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #23: registriereHandler<T, F extends string>(
-//          kanal: string,
-//          validiere: (nutzlast: unknown) => Ergebnis<unknown, 'ungueltige_eingabe'>
-//                                          | { ok: true; wert: unknown },
-//          ausfuehren: (validierteNutzlast: unknown) => Promise<Ergebnis<T, F>>,
-//        ): void
-//        // validiert zuerst; bei ok:false laeuft `ausfuehren` GAR NICHT an. Faengt jede
-//        // Ausnahme und uebersetzt sie in 'unbekannter_fehler'. Reicht das Ergebnis von
-//        // `ausfuehren` UNVERAENDERT zurueck.
-//   #26: leseKonfig(): Promise<Ergebnis<AppKonfig, ConfigFehlercode>>
-//   #27: setzeAktivesProjekt(projektId: string | null): Promise<Ergebnis<void, ConfigFehlercode>>
-//   #28: setzeExportZiel(pfad: string): Promise<Ergebnis<void, ConfigFehlercode>>
-//   #30: setzeUIVoreinstellung(schlüssel: string, wert: unknown): Promise<Ergebnis<void, ConfigFehlercode>>
-
 export function verdrahteConfigStoreIPC(): void {
   // Alle vier Namen kommen aus der Registry (#25); in dieser Datei steht kein einziger
   // Kanalname als Zeichenkette - auch nicht in den Fehlermeldungen. Ein Tippfehler waere

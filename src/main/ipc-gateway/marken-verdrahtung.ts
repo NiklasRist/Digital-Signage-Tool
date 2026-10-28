@@ -34,35 +34,6 @@ import { pruefeMarkenReferenzen } from '../marken-store/referenzpruefung' // #28
 import { löscheMarke } from '../marken-store/loesche-marke' // #287
 import { entferneMarkenDatei, importiereMarkenDatei } from '../marken-store/dateien' // #289
 import { öffneMarkenDateiDialog } from '../marken-store/dialog' // #306
-
-// Fremde Aufrufe - GEPRUEFT AN DEN GEBAUTEN DATEIEN (07.10.2026), nicht nur aus dem Issue
-// abgeschrieben. Nur die Form ist abweichungslos, MELDE, wenn der Bau anders lautet:
-//   #282: listeMarken(): Promise<Ergebnis<Marke[], MarkenFehlercode>>
-//   #283: leseMarke(markeId: string): Promise<Ergebnis<Marke, MarkenFehlercode>>
-//   #284: erstelleMarke(name: string, parentId: string | null)
-//          : Promise<Ergebnis<Marke, MarkenFehlercode>> - parentId ist PFLICHT-Parameter
-//          mit "| null", NICHT optional (ein echtes Argument-Loch zwischen 'fehlend' und
-//          'null' waere nicht unterscheidbar).
-//   #285: bearbeiteMarke(markeId: string, teilwerte: MarkenTeilwerte)
-//          : Promise<Ergebnis<Marke, MarkenFehlercode>> - die feldweise Pruefung der
-//          MarkenFeld-Sentinel (eigen gesetzt / geerbt / unveraendert) macht #285, hier
-//          prueft nur die FORM.
-//   #286: pruefeMarkenReferenzen(markeId: string)
-//          : Promise<Ergebnis<Markennutzung, MarkenFehlercode>>
-//   #287: löscheMarke(markeId: string): Promise<Ergebnis<void, MarkenFehlercode>>
-//   #289: importiereMarkenDatei(markeId, art, schriftRolle, quellPfad)
-//          : Promise<Ergebnis<Marke, MarkenFehlercode>> - art MUSS exakt 'logo' oder
-//          'schrift' sein; schriftRolle ist PFLICHT mit "| null"; bei 'logo' NULL,
-//          bei 'schrift' ueberlaesst die Pruefung der Rolle #289 (nur "vorhanden und
-//          String|null", nicht die zulaessigen Rollenwerte - die Fachpruefung ist dort).
-//          entferneMarkenDatei(markeId, art, schriftRolle) - dieselbe Form-Pruefung.
-//   #306: öffneMarkenDateiDialog(art: 'logo' | 'schrift')
-//          : Promise<Ergebnis<{ pfade: string[] }>> - KEIN zweites Typargument; diese
-//          Operation erzeugt keinen fachlichen MarkenFehlercode. Ein Abbruch des Nutzers
-//          ist ERFOLG mit leerer Liste und wird hier NICHT in einen Fehler umgedeutet
-//          und die Pfade werden NICHT nachgefiltert.
-//   #278: aufMarkenSpeichernEreignis(hoerer): () => void - siehe Eigen-Datei.
-
 /**
  * Die neun Instant-Kanäle - jede mit eigener Form-Pruefung, VOR jeder Wirkung.
  *

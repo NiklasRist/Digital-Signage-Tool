@@ -18,26 +18,9 @@ import { meldeAn } from './melde-an'                                          //
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Bearbeitungsstand, Einblendung, Project, Unterbrechung } from '../../shared/contracts/project'
 
-// Fremde Aufrufe - vollstaendige Signaturen, GEPRUEFT AN DEN GEBAUTEN DATEIEN und NICHT
-// aus dem Issue abgeschrieben. An ZWEI Stellen weichen sie vom Issue-Text ab (Vermerk 1
-// am Dateiende): Das Issue fuehrt beide Operationen mit der einparametrigen Huelle
-// `Ergebnis<Listenelement>`; gebaut sind sie mit `ProjectStoreFehlercode` als zweitem
-// Parameter. Fuer diese Datei ist der Unterschied folgenlos - sie reicht die Huelle durch
-// und `F` wird aus dem Rueckruf abgeleitet -, nachgeschlagen werden muss er trotzdem, weil
-// ein hier ausgeschriebener falscher Rueckgabetyp die Codes beschnitte.
-//   #23:  registriereHandler<T, F extends string>(
-//           kanal: string,
-//           validiere: (nutzlast: unknown) => Ergebnis<unknown, 'ungueltige_eingabe'>
-//                                           | { ok: true; wert: unknown },
-//           ausfuehren: (validierteNutzlast: unknown) => Promise<Ergebnis<T, F>>,
-//         ): void
-//         // validiert zuerst; bei ok:false laeuft `ausfuehren` GAR NICHT an. Faengt jede
-//         // Ausnahme und uebersetzt sie in 'unbekannter_fehler'. Reicht das Ergebnis von
-//         // `ausfuehren` UNVERAENDERT zurueck.
-//   #120: setzeEinblendung(elementId: string, einblendung: Einblendung | null)
-//           : Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>>
-//   #152: setzeElementReferenz(elementId: string, referenz: string)
-//           : Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>>
+// Signaturen weichen an ZWEI Stellen vom Issue-Text ab (Vermerk 1 am Dateiende):
+// `Ergebnis<Listenelement>` im Issue, gebaut mit `ProjectStoreFehlercode`. Fuer diese Datei
+// folgenlos - sie reicht die Huelle durch und leitet `F` aus dem Rueckruf ab.
 
 export function verdrahteProjectStoreNachtragIPC(): void {
   // Beide Namen kommen aus der Registry (#25); in dieser Datei steht kein einziger

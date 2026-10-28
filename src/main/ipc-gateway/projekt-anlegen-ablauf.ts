@@ -6,12 +6,6 @@ import type { ProjectStoreFehlercode } from '../project-store/assets'
 import type { MarkenFehlercode } from '../marken-store/fehlercodes'
 import { erstelleProjekt } from '../project-store/erstelle-projekt'
 import { listeMarken } from '../marken-store/liste'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #282: listeMarken(): Promise<Ergebnis<Marke[], MarkenFehlercode>>
-//         // alle Marken des Bestands, jede AUFGELOEST, in BESTANDSREIHENFOLGE
-//   #33:  erstelleProjekt(name: string, standardMarkeId: string): Promise<Ergebnis<Project, ProjectStoreFehlercode>>
-
 /**
  * Holt die EINGEBAUTE Marke und legt damit das Projekt an. KEIN Zustand, KEIN Lock, KEIN fs,
  * KEIN ipcMain, KEINE eigene Namenspruefung, KEIN Zwischenspeicher.

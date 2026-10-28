@@ -18,19 +18,7 @@ import type { Project } from '../../shared/contracts/project'
 import type { ProjectStoreFehlercode } from '../project-store/assets'
 import type { ReconcileFehlercode } from '../media-service/fehlercodes'
 
-// Fremde Aufrufe - vollstaendige Signaturen, GEPRUEFT AN DEN GEBAUTEN DATEIEN
-// (nicht aus dem Issue abgeschrieben; an einer Stelle weichen sie ab, s. Vermerk 1):
-//   #34: öffneProjekt(id: string): Promise<Ergebnis<Project, OeffneProjektFehlergrund>>
-//        // OeffneProjektFehlergrund = ProjectStoreFehlercode | 'schema_zu_neu'
-//        // laedt project.json (mit .bak-Rueckfall und Migration) in den Speicher, nimmt das
-//        // EINE D1-Lock selbst und setzt das aktive Projekt ueber den config-store.
-//   #67: stelleBeiProjektOeffnungHer(projektId: string): Promise<Ergebnis<void, QueueFehlercode>>
-//        // laedt projects/<id>/queue-retry.json nach Q2. QueueFehlercode = 'speicher_fehler'.
-//        // Eine fehlende Datei ist KEIN Fehler; es wird nichts eingereiht und nichts gestartet.
-//   #91: reconcile(projektId: string, assets: Asset[])
-//          : Promise<Ergebnis<{ entfernt: number; markiert: number; erledigt: number;
-//                               offen: number }, ReconcileFehlercode>>
-//        // ReconcileFehlercode = 'speicher_fehler' | 'datei_fehler' | 'kein_projekt'
+// Eine Signatur weicht vom Issue-Text ab - s. Vermerk 1 am Dateiende.
 
 /**
  * Der Ausgang dieses Ablaufs - genau der verbindliche Rueckgabetyp, einmal benannt, damit die

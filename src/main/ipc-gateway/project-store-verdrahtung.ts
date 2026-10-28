@@ -22,46 +22,9 @@ import { abgelehnt, istGefuellterText, istObjekt, ohneNutzlast } from './nutzlas
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 
-// Fremde Aufrufe - vollstaendige Signaturen, GEPRUEFT AN DEN GEBAUTEN DATEIEN und
-// NICHT aus dem Issue abgeschrieben. An ELF Stellen weichen sie vom Issue-Text ab
-// (s. Vermerk 3 am Dateiende): Der Issue-Text fuehrt die meisten Operationen mit der
-// einparametrigen Huelle `Ergebnis<T>`; gebaut sind sie mit `ProjectStoreFehlercode`
-// als zweitem Parameter. Fuer diese Datei ist der Unterschied folgenlos - sie reicht
-// die Huelle durch und `F` wird aus dem Rueckruf abgeleitet -, aber nachgeschlagen
-// werden muss er, weil ein hier ausgeschriebener falscher Rueckgabetyp die Codes
-// beschnitte.
-//   #23: registriereHandler<T, F extends string>(
-//          kanal: string,
-//          validiere: (nutzlast: unknown) => Ergebnis<unknown, 'ungueltige_eingabe'>
-//                                          | { ok: true; wert: unknown },
-//          ausfuehren: (validierteNutzlast: unknown) => Promise<Ergebnis<T, F>>,
-//        ): void
-//        // validiert zuerst; bei ok:false laeuft `ausfuehren` GAR NICHT an. Faengt jede
-//        // Ausnahme und uebersetzt sie in 'unbekannter_fehler'. Reicht das Ergebnis von
-//        // `ausfuehren` UNVERAENDERT zurueck.
-//   #33: erstelleProjekt(name: string): Promise<Ergebnis<Project, ProjectStoreFehlercode>>
-//   #94: oeffneProjektAblauf(projektId: string)
-//          : Promise<Ergebnis<Project, ProjectStoreFehlercode | ReconcileFehlercode | 'schema_zu_neu'>>
-//   #35: listeProjekte(): Promise<Ergebnis<ProjektMeta[], ProjectStoreFehlercode>>
-//   #36: dupliziereProjekt(id: string, neuerName: string)
-//          : Promise<Ergebnis<Project, ProjectStoreFehlercode>>
-//   #37: löscheProjekt(id: string): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//   #38: erstelleAktion(aktionsdaten: Omit<Aktion, 'id'>)
-//          : Promise<Ergebnis<Aktion, ProjectStoreFehlercode>>
-//   #39: bearbeiteAktion(id: string, aktionsdaten: Partial<Omit<Aktion, 'id'>>)
-//          : Promise<Ergebnis<Aktion, ProjectStoreFehlercode>>
-//   #40: löscheAktion(id: string): Promise<Ergebnis<{ stand: Bearbeitungsstand
-//          entfernteElementIds: string[]; geaenderteElementIds: string[] }, ProjectStoreFehlercode>>
-//   #41: fügeElementHinzu(referenz: string, position?: number)   /* position: #411 */
-//          : Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>>
-//   #42: entferneElement(elementId: string): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//   #43: ordneNeu(reihenfolge: string[]): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//   #44: setzeTrim(elementId: string, trimStart: number, trimEnde: number)
-//          : Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>>
-//   #45: setzeDauer(elementId: string, dauer: number)
-//          : Promise<Ergebnis<Listenelement, ProjectStoreFehlercode>>
-//   #75: listeAusgaben(projektId: string)
-//          : Promise<Ergebnis<AusgabeDatei[], ProjectStoreFehlercode>>
+// Signaturen weichen an ELF Stellen vom Issue-Text ab (Vermerk 3 am Dateiende):
+// `Ergebnis<T>` im Issue, gebaut mit `ProjectStoreFehlercode`. Fuer diese Datei folgenlos -
+// sie reicht die Huelle durch und leitet `F` aus dem Rueckruf ab.
 
 /**
  * Die Anmelde-Huelle ist seit #333 nach `./melde-an.ts` umgezogen (dort der volle

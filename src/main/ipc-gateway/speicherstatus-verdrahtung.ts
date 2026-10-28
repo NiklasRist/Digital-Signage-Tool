@@ -21,17 +21,8 @@ import { aufAutoSpeichernEreignis } from '../project-store/auto-speichern'   // 
 import type { VorlagenSpeichernEreignis } from '../vorlagen-store/schreibe-vorlagen' // #98
 import { aufVorlagenSpeichernEreignis } from '../vorlagen-store/schreibe-vorlagen'   // #98
 
-// Fremde Aufrufe - alle gegen die GEBAUTEN Dateien geprueft (20.08.2026), nicht
-// gegen die Zitate im Issue:
-//   #47: aufAutoSpeichernEreignis(hoerer: (ereignis: AutoSpeichernEreignis) => void): () => void
-//        // MAIN-INTERN. Nachgelesen in src/main/project-store/auto-speichern.ts: Die Datei
-//        // importiert weder `electron` noch die Kanal-Registry - sie sendet NICHT selbst.
-//        // Es gibt also genau EINEN Ereignisweg auf `project:autoSpeichernStatus`, und der
-//        // ist dieser hier (MELDE-KLAUSEL Punkt 1 ist damit erfuellt).
-//   #98: aufVorlagenSpeichernEreignis(hoerer: (ereignis: VorlagenSpeichernEreignis) => void): () => void
-//        // MAIN-INTERN; dieselbe Bauform wie #47, absichtlich anderer Name.
-//        // Nachgelesen in src/main/vorlagen-store/schreibe-vorlagen.ts: auch diese Datei
-//        // kennt weder `electron` noch die Registry. EIN Weg, und der ist dieser hier.
+// #47/#98 senden nicht selbst (weder `electron` noch Registry) - es gibt je genau EINEN
+// Ereignisweg, und das ist dieser hier (MELDE-KLAUSEL Punkt 1).
 
 /**
  * Der EINE Sendeweg an das EINE Fenster (TK 9.1.1 Punkt 10).
