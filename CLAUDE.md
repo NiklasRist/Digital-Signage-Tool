@@ -33,9 +33,14 @@ Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation
 - **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.479 (340
   Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
 - **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
-- **Naechster Schritt: Mutations-Charge 17** – fuenf der verbleibenden **50**; Kandidaten:
-  `medien-bibliothek`, `kaputt-handling`, `bild-zuweisen`, `slogan-bearbeiten`,
-  `video-filmstreifen-blob`.
+- **Naechster Schritt: Mutations-Charge 17** – fuenf der verbleibenden **50**:
+  `bandspur`, `encoder-argumente`, `filter-einblendung`, `filter-vollbild`, `standbild`
+  (alle `src/main/ffmpeg-adapter/`). **Der Plan fuer alle restlichen Chargen 17–26 steht in
+  [`docs/agents/charge-17-26-plan.md`](docs/agents/charge-17-26-plan.md)**; die Uebergabe fuer
+  die naechste Sitzung in
+  [`docs/agents/uebergabe-2026-10-28-charge-17.md`](docs/agents/uebergabe-2026-10-28-charge-17.md).
+  Sonderfall in Charge 26: `marke.spec.ts` liest den Vertrag – **vorher lesen**, ob es ein
+  Vertragstest ist (dann bleibt er).
 
 ## STAND HEUTE (28.10.2026, neunzehnte Sitzung: Mutations-Charge 15) – historisiert durch den Abschnitt darueber
 
