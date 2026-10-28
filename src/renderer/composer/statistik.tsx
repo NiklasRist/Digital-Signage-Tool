@@ -56,17 +56,20 @@ export function baueStatistik(liste: readonly Listenelement[]): StatistikAusgabe
   }
 
   return (
-    <div data-testid="statistik" style={{ fontSize: 12 }}>
+    <div
+      data-testid="statistik"
+      style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', alignItems: 'center', fontSize: 12 }}
+    >
       {ausgabe.zeilen.map((zeile) => (
-        <div key={zeile.bezeichnung} style={{ display: 'flex', gap: 8 }}>
+        <span key={zeile.bezeichnung} style={{ display: 'inline-flex', gap: 6 }}>
           <span style={{ color: '#8f8f8f' }}>{zeile.bezeichnung}</span>
           <span data-testid={`statistik-${zeile.bezeichnung}`}>{zeile.wert}</span>
-        </div>
+        </span>
       ))}
       {ausgabe.warnung && (
-        <div data-testid="statistik-warnung" style={{ color: '#d9a441', marginTop: 4 }}>
+        <span data-testid="statistik-warnung" style={{ color: '#d9a441' }}>
           Die Wiedergabeliste überschreitet 30 Minuten.
-        </div>
+        </span>
       )}
     </div>
   );

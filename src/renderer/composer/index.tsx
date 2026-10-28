@@ -65,6 +65,10 @@ import {
 } from './ausgabe-liste'
 // S4 (Naht N4): die Ausgaben-Region als eigener Baustein.
 import { AusgabenBereich } from './ausgaben-bereich.tsx'
+// #394: Das Statistik-Panel war gebaut, aber ohne Aufrufer ("fertige Funktion ohne
+// Aufrufer"). Es steht als eigene Region ueber der Zeitleiste - die Zahlen gehoeren
+// zur Zusammenstellung, nicht in die Bibliothek oder die Galerie.
+import { Statistik } from './statistik.tsx'
 import { starteReparatur, istRenderFreigegeben, aktualisiereReparatur } from './reparatur-fuehrung'
 import { fuehreFixAus, type FixOptionId } from './reparatur-optionen'
 import { ReparaturPanel } from './reparatur-panel.tsx'
@@ -739,6 +743,10 @@ export function ComposerInterna({
       <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
         {/* Die Gesamtlnge zeichnet Wiedergabeliste (#248) selbst ber baueLaengenAnzeige. */}
         <span style={{ flex: 1 }} />
+        {/* #394: Gesamtdauer, Anzahl der Elemente und das Verhaeltnis Video/Segment.
+            Bewusst als FLACHE Leiste in der Kopfzeile: ein eigenes Panel ueber der
+            Zeitleiste kostete die Hoehe, die die Zeitleiste zum Ziehen braucht. */}
+        {inhalt !== null && <Statistik liste={inhalt.liste} />}
         <button
           type="button"
           data-testid="composer-medien-import"
