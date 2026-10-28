@@ -11,7 +11,33 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, zwoelfte Sitzung: Mutations-Charge 9) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, dreizehnte Sitzung: Mutations-Charge 10) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 22.**
+
+- **Charge 10 GEBAUT (`b3fcb19`):** fuenf Testdateien – `liste-ansicht`, `listen-zeilen`,
+  `leerzustand`, `leerzustand-regel`, `dauer-regler`. **23 Verhaltens-Mutationen**,
+  **5 Refactorings**; 19 erkannt, **drei Darstellungs-Luecken** (LE3, LE4, LZ3) geschlossen;
+  **0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+- **Die Luecken:** **LE3** – `role="status"` war ungeprueft. **LE4** – die
+  Knopf-Beschriftung war nur „enthaelt Projekte" (jetzt exakt „Zum Reiter Projekte").
+  **LZ3** – ein Status ausserhalb der Union war ungeprueft; neu: Rohwert statt
+  Ersatztext („quatsch" ⇒ „quatsch").
+- **Harness-Korrektur:** `LZ4` liess einen Kommentar im Suchtext aus (kein Befund);
+  nachgeholt, die vorhandene Leerlisten-Probe fing die Mutation.
+- **Entfernt:** **10** Quelltext-/Meta-Tests (2 + 2 + 2 + 2 + 2), **1** Verhaltenstest
+  ergaenzt, **2** geschaerft; Suite **5.541 → 5.532** (netto −9).
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.532 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **91** Testdateien mit `readFileSync` (vorher 96), **61** mit
+  Grep-/Bauvorschriften-`describe` (vorher 66); verfeinert lesen **72** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote haben keinen Waechter bis zu einer
+  Lint-Regel; die „ein Format je Zeile"-Regel ist nur noch durch Verhalten gedeckt.
+- **Nicht gepusht:** `b3fcb19` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 11** – Inventur, dann fuenf Dateien.
+
+## STAND HEUTE (28.10.2026, zwoelfte Sitzung: Mutations-Charge 9) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 21.**
 
