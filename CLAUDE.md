@@ -11,7 +11,39 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, sechste Sitzung: Mutations-Charge 3) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, siebte Sitzung: Mutations-Charge 4) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 16.**
+
+- **Charge 4 GEBAUT (`2e80e4c`):** fuenf Testdateien – `zonen-canvas`, `zone-bild`,
+  `video-anzeige`, `kontrast`, `export-dialog`; dazu zwei Gegenproben gegen `video-zeit.spec.ts`.
+  **25 Verhaltens-Mutationen**, **5 Refactorings**; 18 erkannt, **6 echte Luecken** (ZC6, ZC7,
+  V1, E1, VZ1, VZ2), **K4 aequivalent**; **0/5 Refactorings rot**; jede Mutation byte-identisch
+  zurueckgenommen.
+- **Das Muster:** Fuenf der sechs Luecken waren **selbstbezuegliche oder randlose Tests** – die
+  Mindestkante wurde gegen ihre eigene Konstante geprueft (0 blieb gruen), der
+  Gross-/Kleinschreibungs-Test suchte einen Namen, den der Bestand gar nicht enthielt, die
+  End- und Toleranzgrenzen lagen neben dem Rand, NaN war nur auf der Ist-Seite geprueft.
+  Alle sechs mit Verhaltens-Tests geschlossen (Zahl 8 fest, Gleichstand 45/155, `soll =
+  trimEnde`, echter Fallvariante, 5 ↔ 5,25, NaN als Soll).
+- **Aequivalent:** **K4** – die [1, 21]-Klammer ist fuer gueltige Hex-Werte redundant (die
+  WCAG-Formel liefert den Bereich selbst); bleibt als defensive Absicherung.
+- **Gegenproben:** ZC6/ZC7/V1/E1/VZ1/VZ2 nach den Korrekturen **alle erkannt**, K4 erneut
+  gruen – damit als aequivalent belegt.
+- **Entfernt:** **22** Quelltext-/Meta-Tests (6 + 4 + 3 + 5 + 4), **1** Verhaltenstest ergaenzt,
+  **4** geschaerft; Suite **5.621 → 5.600** (netto −21).
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.600 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **121** Testdateien mit `readFileSync` (vorher 126), **84** mit
+  Grep-/Bauvorschriften-`describe` (vorher 88); verfeinert lesen **106** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur- und Kommentar-Proben haben keinen Waechter
+  bis zu einer Lint-Regel; die Einzelquellen-Regeln (RENDER_PROFILE, SICHERHEITSABSTAND,
+  Kanal-Registry) sind nur noch durch Verhalten gedeckt.
+- **Nicht gepusht:** `2e80e4c` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 5** – Inventur, dann fuenf Dateien.
+
+## STAND HEUTE (28.10.2026, sechste Sitzung: Mutations-Charge 3) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 15.**
 
