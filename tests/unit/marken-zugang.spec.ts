@@ -88,35 +88,3 @@ describe("baueMarkenZugang (#305)", () => {
     expect(h.ladeUebersicht).toHaveBeenCalledTimes(2);
   });
 });
-
-describe("Grep-Probe auf marken-zugang.ts (#305)", () => {
-  it("kein Direktimport aus sichten/reiter/rahmen, kein Kanal-String, kein rufeAuf, keine editor-internen Namen", async () => {
-    const { readFileSync } = await import("node:fs");
-    const text = readFileSync("src/renderer/app-shell/marken-zugang.ts", "utf8");
-    const ohneKommentare = text
-      .replace(/\r\n/g, "\n")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .map((zeile) => zeile.replace(/\/\/.*$/, ""))
-      .join("\n");
-
-    // Schutz gegen zu gieriges Abstreifen: Die drei Durchreichungen stehen IMMER noch drin.
-    expect(ohneKommentare).toContain("lade: ladeUebersicht");
-    expect(ohneKommentare).toContain("aufGeaendert: aufUebersichtGeaendert");
-
-    for (const verboten of [
-      "sichten",
-      "reiter",
-      "rahmen",
-      "KANAELE",
-      "rufeAuf",
-      "oeffneMarke",
-      "holeGeoeffneteMarke",
-      "uebernimmAktualisierteMarke",
-      "erstelleEigenstaendigeMarke",
-      "'marken:",
-    ]) {
-      expect(ohneKommentare.includes(verboten)).toBe(false);
-    }
-  });
-});

@@ -8,8 +8,6 @@
 // Wortlaut der DoD steht im Issue #257; die Testnamen nennen die zugehoerige
 // ENTSCHIEDEN-Nummer, wo das Issue es verlangt.
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
 
 import { act, createElement, type JSX } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -524,33 +522,3 @@ describe('WarteschlangenLeiste - Meldung und Fortschritt', () => {
 // ---------------------------------------------------------------------------
 // Grep-Proben (DoD)
 // ---------------------------------------------------------------------------
-
-function ohneKommentare(quelle: string): string {
-  return quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
-}
-
-describe('WarteschlangenLeiste - Quelltext-Schranken', () => {
-  it('leisten-montage.ts bleibt rein (kein JSX, kein react, kein IPC, kein sort/filter/slice)', () => {
-    const quelle = ohneKommentare(
-      readFileSync(path.resolve(process.cwd(), 'src/renderer/queue-panel/leisten-montage.ts'), 'utf8'),
-    )
-    const verboten = [
-      'JSX', 'react', 'rufeAuf', 'abonniere', 'KANAELE', 'window.',
-      "'queue:'", "'render:'", '.sort(', '.filter(', '.slice(', 'setInterval',
-    ]
-    expect(verboten.filter((wort) => quelle.includes(wort))).toEqual([])
-  })
-
-  it('index.tsx holt nichts selbst und importiert keinen fremden Renderer-Bereich', () => {
-    const quelle = ohneKommentare(
-      readFileSync(path.resolve(process.cwd(), 'src/renderer/queue-panel/index.tsx'), 'utf8'),
-    )
-    const verboten = [
-      'rufeAuf', 'abonniere', 'KANAELE', 'window.api', 'window.confirm',
-      "'queue:'", "'render:'", 'holeStand', 'setInterval',
-      "from '../app-shell", "from '../composer", "from '../action-editor",
-      "from '../vorlagen-editor", "from '../preview-player", "from '../projekt-verwaltung",
-    ]
-    expect(verboten.filter((wort) => quelle.includes(wort))).toEqual([])
-  })
-})

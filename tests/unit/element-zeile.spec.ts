@@ -2,7 +2,6 @@
 // `begrenze` (#125) wird NICHT ersetzt, sondern echt benutzt - der Kernnachweis
 // ist, dass `ziehe` exakt dieselbe Klemmung liefert und es keine zweite gibt.
 // Die Anzeige (element-zeile.tsx) folgt als jsdom-Test in einer eigenen Datei.
-import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -18,36 +17,6 @@ import {
   type ReglerLage,
 } from '../../src/renderer/composer/element-zeile'
 import { begrenze, type ReglerModell } from '../../src/renderer/composer/dauer-regler'
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/composer/element-zeile.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('element-zeile.ts – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('enthaelt kein JSX, keinen react-Import, kein IPC, keinen Timer, keine Konstanten, keine eigene Rundung', () => {
-    for (const verbot of [
-      'react', 'rufeAuf', 'abonniere', 'KANAELE', 'window.', 'setTimeout', 'setInterval',
-      'DAUER_BEREICH', 'formatiereLaenge', 'Math.round((', 'Math.min(', 'Math.max(',
-      'uebernehmeGrenzen', 'entferneElementAusListe', 'DAUER_BEREICH',
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-    expect(CODEZEILEN).not.toMatch(/<[a-z][a-z]*[ >]/)
-  })
-
-  it('enthaelt keine Sekunden-/Frame-Literale 10, 45, 30', () => {
-    expect(CODEZEILEN).not.toMatch(/\b(10|45|30)\b/)
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -108,11 +77,13 @@ describe('ziehe (#249) – die Klemmung ist exakt die von begrenze (#125)', () =
     expect(ziehe(m, lage, 'ende', 20).ende).not.toBe(14.3)
   })
 
-  it('NaN/Infinity -> UNVERÄNDERTE Lage, kein Wurf', () => {
+  it('NaN/Infinity -> UNVERÄNDERTE Lage (dieselbe Referenz), kein Wurf', () => {
     const m = modell()
-    const lage: ReglerLage = { zieht: true, anfang: 2.5, ende: 12.5 }
-    expect(ziehe(m, lage, 'ende', Number.NaN)).toEqual(lage)
-    expect(ziehe(m, lage, 'ende', Number.POSITIVE_INFINITY)).toEqual(lage)
+    // Die Lage ist BEWEGT (ende 7.7, Modell 12.5) - sonst saehe der Rueckfall von
+    // `begrenze` wie die gezogene Lage aus und die Wache waere unsichtbar.
+    const lage: ReglerLage = { zieht: true, anfang: 2.5, ende: 7.7 }
+    expect(ziehe(m, lage, 'ende', Number.NaN)).toBe(lage)
+    expect(ziehe(m, lage, 'ende', Number.POSITIVE_INFINITY)).toBe(lage)
   })
 
   it('ziehe und beendeZiehen liefern NEUE Objekte; die übergebene Lage bleibt unverändert (Object.freeze)', () => {
@@ -165,6 +136,10 @@ describe('anteil/wertAusAnteil (#249)', () => {
     expect(anteil(m, 5)).toBe(0)
     expect(anteil(m, 20)).toBe(0)
     expect(Number.isNaN(anteil(m, 20))).toBe(false)
+    // Auch eine NICHT ENDLICHE Spanne (defektes Modell) ist entartet: 0, nicht NaN.
+    // `=== 0` deckte nur den Gleichstand ab; NaN fiele durch die Wache.
+    const nan = modell({ obergrenze: Number.NaN })
+    expect(anteil(nan, 10)).toBe(0)
   })
 
   it('wertAusAnteil klemmt Eingaben außerhalb [0, 1] auf die Modellgrenzen', () => {

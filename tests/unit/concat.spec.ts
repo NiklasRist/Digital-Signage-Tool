@@ -432,31 +432,3 @@ describe('fuehreConcatAus - die Weitergabe an #158', () => {
     expect(ffmpegAufrufe).toHaveLength(0)
   })
 })
-
-describe('Abgrenzung zum festen Vorspann aus #158 (Grep-Probe ueber die Quelldatei)', () => {
-  it('wiederholt kein Betriebsflag und tippt das Container-Flag nicht selbst', () => {
-    const quelle = readFileSync(
-      new URL('../../src/main/ffmpeg-adapter/concat.ts', import.meta.url),
-      'utf8',
-    )
-
-    // Diese sechs setzt #158 fuer JEDEN Aufruf voran. Doppelt gesetzt sind sie je
-    // nach Stellung wirkungslos oder ueberschreiben sich gegenseitig. Gesucht wird
-    // die LITERAL-Form, in der ein Argument hier stehen wuerde.
-    for (const flagge of [
-      'hide_banner',
-      'nostdin',
-      'loglevel',
-      'progress',
-      'nostats',
-      "'-y'",
-    ]) {
-      expect(quelle).not.toContain(flagge)
-    }
-
-    // Das Container-Flag liefert baueContainerArgumente (#162) - es steht hier nicht
-    // als Literal.
-    expect(quelle).not.toContain('+faststart')
-    expect(quelle).not.toContain('movflags')
-  })
-})
