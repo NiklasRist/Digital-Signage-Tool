@@ -11,7 +11,36 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, neunte Sitzung: Mutations-Charge 6) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, zehnte Sitzung: Mutations-Charge 7) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 19.**
+
+- **Charge 7 GEBAUT (`c0531b6`):** fuenf Testdateien – `start`, `sichten`, `projektzustand`,
+  `pruefungen`, `project-store-nachtrag`. **25 Verhaltens-Mutationen**, **5 Refactorings**;
+  21 erkannt, **vier Zustands-Luecken** (ST5, S2, S3, S4) mit Verhaltens-Tests geschlossen;
+  **0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+- **Die Luecken:** **ST5** – der Rueckgabewert `reiter` war geprueft, der tatsaechliche
+  `wechsleReiter`-Aufruf nicht (jetzt `holeReiter()`). **S2** – der Abbruch bei gescheiterter
+  Vorlagen-Uebersicht war ungeprueft. **S3/S4** – der Zeichnen-Stand (`hole()` nach
+  `bereiteVor`, Zuruecksetzen beim Verwerfen) hatte keinen Test; neu mit gemockter
+  `zeichen-vorbereitung`.
+- **Transparent:** Der erste Refactoring-Versuch in `project-store-nachtrag` (alle
+  `nutzlast` → `eingang`) brach die Suite beim Sammeln ab (0 Tests) – **kein** harmloses
+  Refactoring; ersetzt durch eine Kommentar-Umformulierung, die gruen blieb.
+- **Entfernt:** **14** Quelltext-/Meta-Tests (3 + 3 + 3 + 2 + 3), **2** Verhaltenstests
+  ergaenzt; Suite **5.572 → 5.560** (netto −12). Der Registry-Test in
+  `project-store-nachtrag` ist **geblieben** (prueft Werte).
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.560 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **106** Testdateien mit `readFileSync` (vorher 111), **70** mit
+  Grep-/Bauvorschriften-`describe` (vorher 74); verfeinert lesen **89** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote haben keinen Waechter bis zu einer
+  Lint-Regel.
+- **Nicht gepusht:** `c0531b6` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 8** – Inventur, dann fuenf Dateien.
+
+## STAND HEUTE (28.10.2026, neunte Sitzung: Mutations-Charge 6) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 18.**
 
