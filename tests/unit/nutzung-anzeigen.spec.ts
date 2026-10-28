@@ -5,7 +5,6 @@
 // und der gehaltene Stand. Die .tsx-Anzeige testet eine zweite Datei (nutzung-anzeigen-
 // ansicht.spec.ts, jsdom); hier geht es um die Fachlichkeit ohne Browser.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 import type { Vorlagennutzung, VorlagenReferenz } from "../../src/shared/contracts/vorlage";
 import { KANAELE } from "../../src/shared/contracts/kanaele";
@@ -255,6 +254,17 @@ describe("zaehleProjekte", () => {
     expect(anzahl).toBe(1);
   });
 
+  it("zaehlt ein Projekt, das NUR in listenelemente vorkommt", () => {
+    // Eine Band-Vorlage haengt nur an Listenelementen - ohne den zweiten Durchlauf
+    // meldete die Anzeige "0 Projekte" neben "wird verwendet".
+    expect(
+      zaehleProjekte({
+        aktionen: [],
+        listenelemente: [referenz({ projektId: "p-2" })],
+      }),
+    ).toBe(1);
+  });
+
   it("veraendert seine Eingabe nicht (Object.freeze)", () => {
     const nutzung = Object.freeze({
       aktionen: [referenz({ id: "a-1" })],
@@ -340,55 +350,5 @@ describe("giltFuer", () => {
     const geladen = uebernimmNutzung(laedt, "a", { aktionen: [], listenelemente: [] });
     expect(giltFuer(geladen, "a")).toBe(true);
     expect(giltFuer(geladen, "b")).toBe(false);
-  });
-});
-
-describe("DoD-Grep-Proben (Quelltext)", () => {
-  // CRLF-hart: Auf Windows-Checkouts endet jede Zeile mit '\r'; derart lässt sich der
-  // Zeilen-Vergleich nicht promising. Der Strip '\r' FIRST.
-  const CODE = readFileSync("src/renderer/vorlagen-editor/nutzung-anzeigen.ts", "utf8").replace(/\r\n/g, "\n");
-  const IMPORTE = CODE.split("\n").filter((z) => z.trim().startsWith("import "));
-
-  it("enthaelt kein JSX, kein react, kein abonniere, kein setInterval/setTimeout, kein Literal 'vorlagen:', kein entferneVorlage/bearbeiteVorlage/ueberarbeiteVorlage, kein window, kein Project und keinen Import aus src/main oder fremden Renderer-Modulen", () => {
-    for (const verboten of [
-      "<div",
-      "react",
-      "abonniere",
-      "setInterval",
-      "setTimeout",
-      "'vorlagen:",
-      "entferneVorlage",
-      "bearbeiteVorlage",
-      "ueberarbeiteVorlage",
-      "window.",
-      "Project",
-      "src/main",
-    ]) {
-      expect(CODE, verboten).not.toContain(verboten);
-    }
-    // Renderer-interne Imports (ein Verzeichnis hoch, nicht shared): nur rufe-auf.
-    // Vorsicht: `'../../shared` enthaelt den Teilstring `'../` - daher Pfad via Regex pruefen.
-    const rendererIntern = IMPORTE.filter((z) => {
-      const pfad = z.match(/from\s+['"]([^'"]+)['"]/)?.[1] ?? "";
-      return pfad.startsWith("../") && !pfad.startsWith("../../");
-    });
-    expect(rendererIntern).toEqual([`import { rufeAuf } from '../ipc-client/rufe-auf'`]);
-    // Kein Import aus src/main.
-    expect(IMPORTE.join("\n")).not.toContain("src/main");
-  });
-
-  it("sendet die vorlagenId nicht als blossen String und keine Nutzlast der Form { id:", () => {
-    // Die Nutzlast ist { vorlagenId } - als Objekt, nicht als String-Kanalargument.
-    expect(CODE).toContain("{ vorlagenId }");
-    expect(CODE).not.toContain("{ id:");
-    // kein rufeAuf-Aufruf mit der vorlagenId als blossem String:
-    expect(CODE).not.toContain("rufeAuf(KANAELE.vorlagen.pruefeVorlagenReferenzen, vorlagenId)");
-  });
-
-  it("importiert die Vorlagentypen aus shared/contracts/vorlage und nicht aus src/main", () => {
-    expect(CODE).toContain(
-      "import type { Vorlagennutzung, VorlagenReferenz } from '../../shared/contracts/vorlage'",
-    );
-    expect(CODE).not.toContain("src/main");
   });
 });

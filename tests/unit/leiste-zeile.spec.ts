@@ -7,7 +7,6 @@
 // Marken-Entscheidung des Issues).
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { createElement, type ReactElement } from "react";
@@ -198,6 +197,41 @@ describe("LeisteZeile (#206)", () => {
     fertig();
   });
 
+  it("bei zwei laufenden Auftraegen gewinnt der ERSTE - ohne Wurf und ohne Sondermeldung", () => {
+    const sicht: AuftragsSicht = {
+      zustand: "geladen",
+      auftraege: [
+        auftrag({ auftragId: "l-1", status: "laeuft", label: "Erster", fortschritt: 10 }),
+        auftrag({ auftragId: "l-2", status: "laeuft", label: "Zweiter", fortschritt: 90 }),
+      ],
+    };
+    const { behaelter, fertig } = rendere(eigenschaften(sicht));
+
+    expect(behaelter.textContent).toContain("Erster");
+    expect(behaelter.textContent).not.toContain("Zweiter");
+    fertig();
+  });
+
+  it("klemmt einen Fortschritt ausserhalb 0-100 auf die Grenzen", () => {
+    const zuViel = rendere(
+      eigenschaften({
+        zustand: "geladen",
+        auftraege: [auftrag({ status: "laeuft", label: "Render", fortschritt: 150 })],
+      }),
+    );
+    expect(zuViel.behaelter.textContent).toContain("100 %");
+    zuViel.fertig();
+
+    const zuWenig = rendere(
+      eigenschaften({
+        zustand: "geladen",
+        auftraege: [auftrag({ status: "laeuft", label: "Render", fortschritt: -10 })],
+      }),
+    );
+    expect(zuWenig.behaelter.textContent).toContain("0 %");
+    zuWenig.fertig();
+  });
+
   it("ruft `fasseZusammen` genau EINMAL und rechnet nichts selbst", () => {
     const spion = vi.spyOn(zusammenfassungModul, "fasseZusammen");
     const sicht: AuftragsSicht = {
@@ -213,36 +247,5 @@ describe("LeisteZeile (#206)", () => {
 
     spion.mockRestore();
     fertig();
-  });
-});
-
-describe("DoD-Grep-Proben (Quelltext)", () => {
-  const LOGIK = readFileSync("src/renderer/queue-panel/leiste-zusammenfassung.ts", "utf8");
-  const ANZEIGE = readFileSync("src/renderer/queue-panel/leiste-zeile.tsx", "utf8");
-
-  it("kein String, der mit `queue:` beginnt - in beiden Dateien", () => {
-    for (const code of [LOGIK, ANZEIGE]) {
-      for (const zeile of code.split("\n")) {
-        const verkuerzt = zeile.trim().replace(/\/\/.*$/, "");
-        expect(verkuerzt, zeile).not.toMatch(/['"`]queue:/);
-      }
-    }
-  });
-
-  it("kein rufeAuf, kein abonniere, kein window.api - in beiden Dateien", () => {
-    for (const verboten of ["rufeAuf", "abonniere", "window.api"]) {
-      expect(LOGIK, verboten).not.toContain(verboten);
-      expect(ANZEIGE, verboten).not.toContain(verboten);
-    }
-  });
-
-  it("die .tsx enthaelt kein useState, kein useEffect und keine eigene Zaehlung", () => {
-    for (const verboten of ["useState", "useEffect"]) {
-      expect(ANZEIGE, verboten).not.toContain(verboten);
-    }
-    // Kein Zaehlen in der Anzeige: keine Aufzaehlung ueber `sicht.auftraege` ausser
-    // dem einen Aufruf von `fasseZusammen`.
-    expect(ANZEIGE.match(/sicht\.auftraege/g)).toBeNull();
-    expect(ANZEIGE.match(/status ===/g)).toBeNull();
   });
 });

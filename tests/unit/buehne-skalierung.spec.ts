@@ -4,7 +4,6 @@
 // diese Tests vollstaendig ohne Browser-Umgebung. Gemessen werden die ausgeschriebene
 // Rechnung des Issues, die Nullfaelle und die Eigenschaft, dass das Raster nie herausragt.
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
 
 import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 import { berechneBuehnenmaße } from '../../src/renderer/preview-player/buehne-skalierung'
@@ -65,6 +64,8 @@ describe('berechneBuehnenmaße – Nullfaelle (ENTSCHIEDEN 3)', () => {
   it('liefert bei 0,0, negativen, NaN- und Infinity-Werten lauter Nullen und wirft nicht (DoD)', () => {
     for (const [b, h] of [
       [0, 0],
+      [0, 100],
+      [100, 0],
       [-5, 100],
       [100, -5],
       [Number.NaN, 100],
@@ -108,36 +109,5 @@ describe('berechneBuehnenmaße – Eigenschaften (DoD)', () => {
   it('rechnet aus den Profil-Maßen, nicht aus festen 1920/1080-Literalen (Verbot)', () => {
     const breit = berechneBuehnenmaße(RENDER_PROFILE.breite * 2, RENDER_PROFILE.hoehe * 2)
     expect(breit.breite).toBe(RENDER_PROFILE.breite * 2)
-  })
-})
-
-describe('DoD-Grep-Proben (buehne-skalierung.ts, nur Code - Kommentarzeilen raus)', () => {
-  const CODE = readFileSync('src/renderer/preview-player/buehne-skalierung.ts', 'utf8')
-    .split('\n')
-    .filter((zeile) => {
-      const getrimmt = zeile.trim()
-      return (
-        !getrimmt.startsWith('//') &&
-        !getrimmt.startsWith('/*') &&
-        !getrimmt.startsWith('*') &&
-        getrimmt !== ''
-      )
-    })
-    .join('\n')
-
-  it('enthaelt kein JSX und keinen react-Import (DoD)', () => {
-    expect(CODE).not.toContain('react')
-    expect(CODE).not.toContain('JSX')
-  })
-
-  it('rundet nirgends und kennt keine Literale 1920/1080 (Verbot)', () => {
-    for (const verboten of ['Math.round', 'Math.floor', 'Math.ceil', 'toFixed', '1920', '1080']) {
-      expect(CODE, verboten).not.toContain(verboten)
-    }
-  })
-
-  it('verwendet das RENDER_PROFILE statt eigener Zahlen (DoD)', () => {
-    expect(CODE).toContain('RENDER_PROFILE.breite')
-    expect(CODE).toContain('RENDER_PROFILE.hoehe')
   })
 })

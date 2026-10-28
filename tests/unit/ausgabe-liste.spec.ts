@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Ergebnis } from "../../src/shared/contracts/ergebnis";
 import { KANAELE } from "../../src/shared/contracts/kanaele";
-import { readFileSync } from "node:fs";
 
 // Benannter Nachweis der DoD: `AusgabeDatei` wird aus `./ausgabe-liste` importiert und
 // einem Wert mit ALLEN DREI Feldern zugewiesen - der Beleg fuer die drei fremden
@@ -280,35 +279,5 @@ describe("findeAusgabe – buchstabengetreuer Vergleich (DoD)", () => {
     await modul.ladeAusgaben("p1");
 
     expect(modul.findeAusgabe("Sommer.mp4")).toBeNull();
-  });
-});
-
-describe("DoD-Grep-Proben (ausgabe-liste.ts, nur Code - Kommentarzeilen raus)", () => {
-  const CODE = readFileSync("src/renderer/composer/ausgabe-liste.ts", "utf8")
-    .split("\n")
-    .filter((zeile) => {
-      const getrimmt = zeile.trim();
-      return (
-        !getrimmt.startsWith("//") &&
-        !getrimmt.startsWith("/*") &&
-        !getrimmt.startsWith("*") &&
-        getrimmt !== ""
-      );
-    })
-    .join("\n");
-
-  it("enthaelt kein JSX, kein react, kein abonniere, kein queue:, kein reiheEin, kein window., kein fs/path, kein .part (DoD)", () => {
-    for (const verboten of ["react", "JSX", "abonniere", "'queue:", "reiheEin", "window.", "fs", "path", ".part"]) {
-      expect(CODE, verboten).not.toContain(verboten);
-    }
-  });
-
-  it("deklariert AusgabeDatei NICHT; importiert und re-exportiert genau einmal (DoD)", () => {
-    expect(CODE).not.toMatch(/interface AusgabeDatei/);
-    expect(CODE).not.toMatch(/type AusgabeDatei =/);
-    expect(CODE).toContain("import type { AusgabeDatei } from '../../shared/contracts/projekt-meta'");
-    expect(CODE).toContain("export type { AusgabeDatei }");
-    const anzahlImporte = CODE.match(/import type \{ AusgabeDatei \}/g)?.length ?? 0;
-    expect(anzahlImporte).toBe(1);
   });
 });

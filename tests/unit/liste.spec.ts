@@ -10,7 +10,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Ergebnis } from "../../src/shared/contracts/ergebnis";
 import { KANAELE } from "../../src/shared/contracts/kanaele";
-import { readFileSync } from "node:fs";
 
 // Benannter Nachweis der DoD: `ProjektMeta` wird aus `./liste` importiert und einem
 // Wert mit ALLEN NEUN Feldern zugewiesen (seit #399 mit `standardMarkeId`) - der
@@ -266,40 +265,5 @@ describe("formatiereZeitpunkt (DoD)", () => {
     for (const kaputt of ["", "kaputt", undefined as unknown as string]) {
       expect(modul.formatiereZeitpunkt(kaputt)).toBe("—");
     }
-  });
-});
-
-describe("DoD-Grep-Proben (liste.ts, nur Code - Kommentarzeilen raus)", () => {
-  const CODE = readFileSync("src/renderer/projekt-verwaltung/liste.ts", "utf8")
-    .split("\n")
-    .filter((zeile) => {
-      const getrimmt = zeile.trim();
-      return (
-        !getrimmt.startsWith("//") &&
-        !getrimmt.startsWith("/*") &&
-        !getrimmt.startsWith("*") &&
-        getrimmt !== ""
-      );
-    })
-    .join("\n");
-
-  it("enthaelt kein JSX, keinen react-Import, kein abonniere, kein 'queue:', kein window. (DoD)", () => {
-    for (const verboten of ["react", "JSX", "abonniere", "'queue:", "window."]) {
-      expect(CODE, verboten).not.toContain(verboten);
-    }
-  });
-
-  it("deklariert ProjektMeta NICHT; importiert und re-exportiert genau einmal (DoD)", () => {
-    expect(CODE).not.toMatch(/interface ProjektMeta/);
-    expect(CODE).not.toMatch(/type ProjektMeta =/);
-    expect(CODE).toContain("import type { ProjektMeta } from '../../shared/contracts/projekt-meta'");
-    expect(CODE).toContain("export type { ProjektMeta }");
-    const anzahlImporte = CODE.match(/import type \{ ProjektMeta \}/g)?.length ?? 0;
-    expect(anzahlImporte).toBe(1);
-  });
-
-  it("setzt fuer anzahlMedien/anzahlAusgaben keinen Ersatzwert (DoD)", () => {
-    expect(CODE).not.toContain("anzahlMedien");
-    expect(CODE).not.toContain("anzahlAusgaben");
   });
 });

@@ -632,3 +632,71 @@ gebauten Code gedeckt; ein Literal mit demselben Wert bliebe unsichtbar.
 | Verbleibend | 126 / 88 | **121** Dateien mit `readFileSync`, **84** mit Grep-/Bauvorschriften-`describe` |
 
 Verfeinert lesen nach dieser Charge **106** Describe-Bloecke wirklich eine Quelldatei.
+
+---
+
+## 17. Charge 5 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `liste` (projekt-verwaltung), `ausgabe-liste` (composer),
+`leiste-zeile` (queue-panel), `buehne-skalierung` (preview-player),
+`nutzung-anzeigen` (vorlagen-editor).
+
+**Ausgangsmessung:** 25 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **21**. Gruen: **Z3, Z4, B4, N3** – vier echte Luecken. Alle fuenf
+Refactorings gruen. Jede Mutation byte-identisch zurueckgenommen.
+
+### Die vier Luecken (alle geschlossen)
+
+- **Z3 – „der ERSTE laufende Auftrag gewinnt" war ungeprueft.** Ohne
+  `&& laufender === null` gewann der letzte; kein Test hatte zwei `laeuft`-Auftraege.
+  Neu: zwei laufende Auftraege mit den Labels „Erster"/„Zweiter" – die Zeile zeigt
+  „Erster".
+- **Z4 – die Fortschritts-Klammer war ungeprueft.** Ohne
+  `Math.max(0, Math.min(100, …))` blieb die Suite gruen. Neu: 150 ⇒ „100 %",
+  -10 ⇒ „0 %".
+- **B4 – `<= 0` war nur mit 0×0 abgedeckt.** Bei 0×0 liefert auch der Normalpfad
+  lauter Nullen (0/1920 = 0, Versatz 0) – die Mutation war dort unsichtbar. Bei
+  **0×100** waere `versatzY` 50 statt 0. Neu: 0×100 und 100×0 in der Nullfall-Liste.
+- **N3 – Projekte NUR in `listenelemente` wurden nicht gezaehlt.** Der bestehende
+  Test hatte `p-2` in BEIDEN Listen; der zweite Durchlauf war damit unsichtbar. Neu:
+  ein Projekt ausschliesslich in `listenelemente` ⇒ 1.
+
+**Muster:** Drei der vier Luecken waren **zufaellig deckende Fixtures** – 0×0, ein
+Projekt in beiden Listen, ein einzelner laufender Auftrag. Die Mutation zeigt, was
+der Test NICHT unterscheidet.
+
+### Gegenproben
+
+Z3, Z4, B4, N3 nach den Korrekturen: **alle erkannt** (je 1 Test rot).
+
+### Entfernt (14 Tests, 3 ergaenzt – netto −11)
+
+- **3** in `liste` (kein JSX/react/abonniere/queue\:/window; `ProjektMeta` nicht
+  deklariert, genau einmal re-exportiert; keine zweite Typquelle).
+- **2** in `ausgabe-liste` (kein JSX/react/abonniere/queue\:/reiheEin/window/fs/path/
+  `.part`; `AusgabeDatei` genau einmal re-exportiert).
+- **3** in `leiste-zeile` (kein `queue:`-Literal, kein `rufeAuf`/`abonniere`/
+  `window.api`, kein `useState`/`useEffect` in der .tsx).
+- **3** in `buehne-skalierung` (kein JSX/react, kein Runden, keine Literale
+  1920/1080).
+- **3** in `nutzung-anzeigen` (kein JSX/react/Timer/`vorlagen:`-Literal, keine
+  Store-Aufrufe, kein `window`/`Project`/`src/main`).
+
+**Ehrlich offen:** Die entfernten Verbote sind Architekturregeln (Lint-Kandidat).
+Die Re-Export-Regel (`ProjektMeta`/`AusgabeDatei`) ist jetzt nur noch durch die
+importierenden Stellen gedeckt – ein zweiter Typ in der Datei bliebe unbemerkt.
+
+### Stand nach Charge 5
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **25**: 21 im ersten Lauf, 4 nach Korrektur – **25 erkannt** |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **14** |
+| Verhaltens-Tests ergaenzt | – | **3** |
+| Echte Luecken geschlossen | – | **4** |
+| Suite | 5.600 | **5.589** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 121 / 84 | **116** Dateien mit `readFileSync`, **79** mit Grep-/Bauvorschriften-`describe` |
+
+Verfeinert lesen nach dieser Charge **101** Describe-Bloecke wirklich eine Quelldatei.
