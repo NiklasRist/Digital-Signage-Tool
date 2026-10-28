@@ -11,7 +11,39 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, vierzehnte Sitzung: Mutations-Charge 11) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, Übergabe nach Mutations-Chargen 1–11) – gilt vor ALLEM weiter unten
+
+**Volltext dieser Übergabe: [`docs/agents/uebergabe-2026-10-28-mutationen.md`](docs/agents/uebergabe-2026-10-28-mutationen.md).**
+Die Einzelbefunde stehen in [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitte 13–23.
+
+- **ELF MUTATIONS-CHARGEN GEBAUT (28.10.2026):** **55 Testdateien**, **271 Mutationen**,
+  **27 echte Lücken** mit Verhaltens-Tests geschlossen, **186 Quelltext-/Meta-Tests entfernt**,
+  **17 Verhaltens-Tests ergaenzt**. Suite **5.692 → 5.523** (340 Dateien).
+- **Gate am Ende:** `npm run pruefung` **Exit 0** – Unit **5.523 (340 Dateien)**,
+  Integration **49 (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0.
+- **Werkzeug neu im Repo:** `tools/mutationen.py` (JSON-Fallliste, Mutation, Testlauf,
+  byte-identische Ruecknahme mit Pruefsumme). Aufruf:
+  `python3 tools/mutationen.py faelle.json`.
+- **Methode unveraendert:** Datei fuer Datei, **nie pauschal**; eine gruene Mutation ist
+  entweder eine Luecke (Verhaltens-Test) oder **aequivalent** (begruenden, Wache stehen
+  lassen). Drei Refactoring-Versuche brachen die Suite (Property-Namen/Plural/Importe) und
+  wurden verworfen – **nur lokale Namen oder Kommentare** umbenennen.
+- **Inventar nach Charge 11:** **87** Testdateien mit `readFileSync` (Start 140), **56** mit
+  Grep-/Bauvorschriften-`describe` (Namenssuche, Obergrenze), **67** Describe-Bloecke, die
+  wirklich eine Quelldatei lesen.
+- **Bewusst stehen geblieben:** die Union-Vollstaendigkeit in `fehlertexte`, der
+  Projekt-Historie-Spion in `undo-vorlage`, die Kanal-Registry-Tests in
+  `project-store-nachtrag`/`vorlagen-nachtrag` (Werte, kein Quelltext).
+- **Ehrlich offen:** Architektur-Verbote (kein IPC, kein zweiter Schreibweg, kein eigener
+  Zustand, kein Kanal-Literal) haben **keinen Waechter** bis zu einer Lint-Regel;
+  Einzelquellen-Regeln sind nur noch durch Verhalten gedeckt.
+- **Nicht gepusht:** `main` liegt **23 Commits** vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 12** – Inventur, dann fuenf Dateien nach dem Rezept;
+  naheliegende Kandidaten: `ausgabe-platzieren` (7 Proben, teils eingebettet),
+  `einblendung-ansicht-anzeige`, `einblendung-stile-rechnung`, `asset-auswahl-anzeige`,
+  `buehne`, `bibliothek-ansicht`, `ausgabe-liste-ansicht`.
+
+## STAND HEUTE (28.10.2026, vierzehnte Sitzung: Mutations-Charge 11) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 23.**
 
