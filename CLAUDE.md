@@ -64,7 +64,8 @@
   1/1/0 gegen `project.json`), **4p** Canvas-Pixel (#364: `getImageData` auf 6 Kacheln ohne
   SecurityError, 74–82 Farben je Kachel, Bühne bleibt `media://`), **4q** „Neue Aktion" (#445:
   Aktion 1→2 mit getipptem Titel, leerer Titel am Formular abgelehnt). Matrix-Kopf auf 28.10.
-  gezogen. **Beleg-Kommentare an #445/#394/#364 gesetzt** (28.10.2026); **kein** Issue geschlossen.
+  gezogen. **Beleg-Kommentare an #445/#394/#364 gesetzt** (28.10.2026); **#445 und #364 geschlossen**
+  (DoD erfüllt, bei #364 sinngemäß statt über die nicht existierende E2E-Datei), **#394/#446 offen**.
 - **Gate:** `npm run pruefung` **Exit 0** – Unit **5.659 (338 Dateien)**, Integration **49
   (12 Dateien)**, Treiber **0 Befunde**, Typecheck/Lint 0. Zwei Läufe davor waren rot mit
   **denselben drei** Treiber-Befunden (Band-Aufnahme 4f2 ×2, Aktion löschen 4g4) - und der
@@ -78,8 +79,12 @@
   liegt **vor** den drei Doku-Commits; danach nachgeprüft wurde nur `treiber-matrix.spec.ts`
   (**3/3 grün**), **kein** voller Gate-Lauf. Das Remote meldet beim Push **45 Dependabot-Findings**
   (22 high/16 moderate/7 low) – **nicht geprüft**, auf Anweisung zurückgestellt („Funktionen vor
-  Sicherheit"). Auf GitHub wurden **nur** die Beleg-Kommentare an **#445/#394/#364** gesetzt
-  (28.10.2026) und **#446** angelegt; **kein** Issue geschlossen, kein Label geändert.
+  Sicherheit"). Auf GitHub wurden die Beleg-Kommentare an **#445/#394/#364** gesetzt (28.10.2026).
+  **Danach geschlossen:** **#445** und **#364** (je mit Beleg-Kommentar, `completed`);
+  **#394** bleibt offen (Platzierung), **#446** bleibt offen (Ursache unbenannt; Kommentar mit
+  den zehn Läufen gesetzt). Kein Label geändert.
+- **Nicht gepusht nach dem Push:** `main` liegt wieder **drei Commits vor `origin/main`**
+  (`4f990b5` Treiber-Schritte, `3418add` zehn Läufe/Handover, dieser Handover-Nachtrag).
 
 ## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – historisiert durch den Abschnitt darueber
 
