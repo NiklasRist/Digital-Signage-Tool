@@ -6,7 +6,6 @@
 // Doppel ersetzt; die Spione belegen zugleich, dass diese Datei den Main nur ueber den
 // einen Kanal erreicht und die Sicht nur ueber den Parameter anstoesst.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 import type { Vorlage } from "../../src/shared/contracts/vorlage";
 import { KANAELE } from "../../src/shared/contracts/kanaele";
@@ -121,6 +120,23 @@ describe("ueberarbeiteVorlage", () => {
       expect(ergebnis.fehler.daten).toEqual({
         befunde: [{ schwere: "sperre", code: "zone_ausserhalb", zonenId: "x", meldung: "m" }],
       });
+    }
+    expect(attrappen.rufeAuf).not.toHaveBeenCalled();
+  });
+
+  it("zaehlt in der Meldung NUR Sperren, nicht Warnungen", async () => {
+    attrappen.pruefeVorlage.mockReturnValue([
+      { schwere: "sperre", code: "zone_ausserhalb", zonenId: "x", meldung: "m" },
+      { schwere: "warnung", code: "kontrast", zonenId: "y", meldung: "w" },
+    ]);
+    attrappen.istSpeicherbar.mockReturnValue(false);
+    const s = sitzung();
+    const ergebnis = await ueberarbeiteVorlage(s, s.arbeitskopie, vi.fn());
+    expect(ergebnis.ok).toBe(false);
+    if (!ergebnis.ok) {
+      // Eine Warnung blockiert nie (TK 9.12.2) - sie darf in der Zahl nicht auftauchen,
+      // sonst liest der Nutzer "2 Sperre(n)" und sucht eine Sperre, die es nicht gibt.
+      expect(ergebnis.fehler.meldung).toBe("1 Sperre(n) blockieren das Speichern.");
     }
     expect(attrappen.rufeAuf).not.toHaveBeenCalled();
   });
@@ -423,36 +439,5 @@ describe("verwerfeBearbeitung", () => {
       fehler: { code: "nicht_gefunden", meldung: "weg" },
     });
     expect(sichtNeuLaden).not.toHaveBeenCalled();
-  });
-});
-
-describe("DoD-Grep-Proben (Quelltext)", () => {
-  const CODE = readFileSync("src/renderer/vorlagen-editor/speichern.ts", "utf-8");
-
-  it("enthaelt kein zweites Text-Literal der eingebaut-Sperre (mitgeliefert)", () => {
-    expect(CODE).not.toContain("mitgeliefert");
-  });
-
-  it("enthaelt keine Nutzungsanzeige und keinen Kanal dafuer", () => {
-    expect(CODE).not.toContain("pruefeVorlagenReferenzen");
-  });
-
-  it("enthaelt kein vorlagen:geaendert und kein Abonnement", () => {
-    expect(CODE).not.toContain("vorlagen:geaendert");
-    expect(CODE).not.toMatch(/abonniere|\.on\(/);
-  });
-
-  it("importiert nichts aus vorlagen-uebersicht.ts (#155)", () => {
-    expect(CODE).not.toContain("vorlagen-uebersicht");
-  });
-
-  it("enthaelt kein Kanal-Literal 'vorlagen:'", () => {
-    expect(CODE).not.toContain("'vorlagen:");
-  });
-
-  it("enthaelt weder window.api noch fs noch ipcRenderer", () => {
-    expect(CODE).not.toMatch(/window\.api/);
-    expect(CODE).not.toMatch(/\bfs\b/);
-    expect(CODE).not.toContain("ipcRenderer");
   });
 });

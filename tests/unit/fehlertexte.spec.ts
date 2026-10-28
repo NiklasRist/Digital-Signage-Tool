@@ -261,6 +261,16 @@ describe("unbekannte und boesartige Codes", () => {
     expect(typeof text.wiederholenSinnvoll).toBe("boolean");
   });
 
+  it("vergleicht den Code EXAKT - Grossschreibung und Teilzeichenketten treffen keinen Eintrag", () => {
+    // Der Ersatz fuer die frueheren Quelltext-Proben (kein includes/startsWith/
+    // toLowerCase in der Datei): Ein Nachbartreffer oder eine andere Schreibweise
+    // darf nicht denselben Eintrag liefern - sonst bekaeme der Nutzer einen Text
+    // fuer einen Code, den der Main nie geschickt hat.
+    for (const code of ["KEIN_PLATZ", "kein_pla", "ein_platz", "kein_platz "]) {
+      expect(uebersetze(code).titel).toBe("Unerwarteter Fehler");
+    }
+  });
+
   it("schreibt den Rohcode NICHT in die Anzeige", () => {
     const text = uebersetze("streng_geheimer_interner_code");
     expect(text.titel).not.toContain("streng_geheimer_interner_code");
@@ -334,33 +344,6 @@ describe("einzelne Zusagen der Tabelle", () => {
     "%s darf wiederholt werden (FA-17)",
     (code) => {
       expect(uebersetze(code).wiederholenSinnvoll).toBe(true);
-    },
-  );
-});
-
-describe("Grenzen der Datei", () => {
-  const quelle = readFileSync(
-    new URL("../../src/renderer/queue-panel/fehlertexte.ts", import.meta.url),
-    "utf8",
-  );
-
-  it.each(["includes(", "startsWith(", "match(", "toLowerCase("])(
-    "vergleicht keine Texte: %s kommt nicht vor",
-    (verboten) => {
-      expect(quelle).not.toContain(verboten);
-    },
-  );
-
-  it("liest den technischen Text aus dem Main an keiner Stelle", () => {
-    // Genau EIN Vorkommen ist erlaubt: die Parametertypangabe der Signatur.
-    const treffer = quelle.split("meldung").length - 1;
-    expect(treffer).toBe(1);
-  });
-
-  it.each(["rufeAuf", "abonniere", "window.api", "queue:"])(
-    "spricht nicht mit dem Main: %s kommt nicht vor",
-    (verboten) => {
-      expect(quelle).not.toContain(verboten);
     },
   );
 });

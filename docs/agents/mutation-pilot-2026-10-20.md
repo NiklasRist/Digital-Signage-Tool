@@ -298,3 +298,87 @@ Das Ergebnis ist ueber vier Runden stabil: **Die Verhaltens-Tests tragen, die
 Quelltext-/Meta-Proben sind der Ballast.** In 18 Dateien wurden 109 solche Tests entfernt,
 ohne eine einzige nicht-aequivalente Mutation zu verlieren. Die verbleibenden 92 Dateien
 enthalten schaetzungsweise noch 200–300 Tests dieser Kategorie.
+
+---
+
+## 13. Charge 1 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `fehlertexte` (queue-panel), `liste-ansicht-anzeige` (composer),
+`uebergabe-anzeige` (app-shell), `speichern` (vorlagen-editor),
+`element-hinzufuegen` (composer).
+
+**Ausgangsmessung:** 26 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **22**. Gruen: **L2, L3, S2, E3** – vier echte Luecken. Alle fuenf
+Refactorings blieben gruen (0 falsch positive). Jede Mutation wurde vor dem Lauf
+byte-identisch gesichert und nach dem Lauf byte-identisch zurueckgenommen
+(Pruefsumme je Datei, Harness ausserhalb des Repos).
+
+### Die vier Luecken (geschlossen mit Verhaltens-Tests)
+
+- **L2 – der Abbruch-Merker war ungeprueft.** Der Test „ein verzoegertes Bild,
+  dessen Quelle wechselte, wird VERWORFEN" endete mit `expect(...).toBeDefined()`
+  und `void textVon` – er konnte nicht fehlschlagen. Ohne den `if (abgebrochen)`-Zweig
+  blieb die Suite gruen. Neu: das zweite Bild wird aufgeloest und erscheint; danach
+  trifft das veraltete erste ein und darf es nicht ersetzen (`src` bleibt `zweites`).
+- **L3 – `data-kaputt` war nie geprueft.** Die Anzeige markiert eine Zeile auch dann,
+  wenn nur ein Band-Abschnitt kaputt ist (`modell.kaputt || kaputteBandAbschnitte`).
+  Die Mutation auf `modell.kaputt` allein blieb gruen. Neu: eine Zeile mit reinem
+  `band_abschnitt`-Defekt traegt `data-kaputt="ja"`.
+- **S2 – die Sperren-Zahl in der Meldung zaehlte Warnungen mit.** `befunde.length`
+  statt der gefilterten Sperren blieb gruen. Neu: eine Sperre plus eine Warnung
+  ergibt „1 Sperre(n) blockieren das Speichern." (Warnungen blockieren nie, TK 9.12.2).
+- **E3 – die Klammer der Position war ungeprueft.** `Math.max(0, Math.min(position,
+  liste.length))` auf `position` reduziert blieb gruen. Fuer `position > laenge` ist
+  die Klammer tatsaechlich aequivalent (`slice` klemmt selbst); fuer **negative**
+  Werte nicht – `slice(0, -1)` setzt vor das letzte Element. Neu: `-1` fuegt an
+  Index 0 ein.
+
+### Gegenproben nach den Korrekturen
+
+Fuenf Mutationen, alle erkannt: L2, L3, S2, E3 erneut – und **F6**
+(`TABELLE.get(fehler.code.toLowerCase())`), der Beleg, dass der neue
+Exakt-Vergleichs-Test die fruehere `toLowerCase`-Grep-Probe ersetzt.
+
+### Entfernt (23 Tests, 4 ergaenzt – netto −19)
+
+- **9** in `fehlertexte` („Grenzen der Datei": includes/startsWith/match/toLowerCase,
+  `meldung`-Zaehlung, rufeAuf/abonniere/window.api/queue:). Ersatz: ein Verhaltens-Test
+  „vergleicht den Code EXAKT" (Grossschreibung, Praefix, Suffix, Leerzeichen).
+  **Bewusst geblieben:** „Vollstaendigkeit gegen den GEBAUTEN Main-Code" – sie liest die
+  drei Fehlercode-Unionen aus `src/main/**` und haelt Tabelle und Union zusammen. Das ist
+  ein Vertrag ueber zwei Module, keine Codeform; zur Laufzeit gibt es keine Union.
+- **1** in `liste-ansicht-anzeige` (16 Verbote in einem Grep-Test: IPC, zweiter
+  Schreibweg, Reparatur-Ausfuehrung, Canvas-Export). Ersatz: die zwei neuen
+  Verhaltens-Tests L2/L3; die uebrigen Verbote sind Architekturregeln (Lint-Kandidat).
+- **2** in `uebergabe-anzeige` (Grep-Block + ein Test, der ihn nur wiederholte).
+  Die neun Verhaltens-Tests decken alle Zweige (keins, null-Projekt, drei Auswahlarten,
+  Index-Durchreichung, Rueckrufe).
+- **6** in `speichern` (DoD-Grep-Proben: mitgeliefert-Literal, Nutzungsanzeige,
+  `vorlagen:geaendert`, Import aus `vorlagen-uebersicht`, Kanal-Literal, window.api/fs).
+  Die 29 Verhaltens-Tests pruefen jeden Kanalaufruf, jede Reihenfolge und jeden
+  Fehlerpfad.
+- **5** in `element-hinzufuegen` (Kommentar-Filter, `standardDauer`, Dauer-Zahlen,
+  Kanal-Literal, Registry-Import). Ersatz: der bestehende Test „haengt EXAKT das
+  zurueckgegebene Objekt an" plus der neue Negativ-Positions-Test.
+
+**Ehrlich offen:** Die entfernten Architektur-Verbote (kein IPC im Renderer-Modul,
+kein zweiter Schreibweg, kein eigener Zustand, kein Kanal-Literal) haben bis auf
+Weiteres **keinen Waechter** – genau die Luecke, fuer die die Piloten eine Lint-Regel
+empfohlen haben. Sie sind hier bewusst nicht durch Schein-Tests ersetzt.
+
+### Stand nach Charge 1
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **31**: 22 im ersten Lauf, 4 nach Korrektur, 5 Gegenproben – **31 erkannt** |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **23** |
+| Verhaltens-Tests ergaenzt | – | **4** (+1 umgeschrieben) |
+| Echte Luecken geschlossen | – | **4** |
+| Suite | 5.692 | **5.673** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 138 / 92 (20.10.) | **136** Dateien mit `readFileSync`, **95** mit Grep-/Bauvorschriften-`describe` |
+
+Die 136 sind keine Zielliste: `fehlertexte` bleibt trotz `readFileSync` stehen, weil
+ihre Probe einen Modul-Vertrag prueft. Die naechste Charge beginnt wieder mit einer
+Inventur der 95 Describe-Bloecke, nicht mit einer Zahl.

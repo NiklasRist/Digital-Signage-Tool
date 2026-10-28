@@ -8,11 +8,8 @@
 // Fall, dass zwischen Aufruf und Antwort etwas an der Liste passiert ist.
 //
 // Die teuersten Fälle stehen unten: dieselbe Aktion zweimal (die Mehrfachnutzung ist
-// die Betriebsart, für die das Datenmodell gebaut wurde) und der Blick in den
-// Quelltext auf die verbotenen Vorbelegungen - eine `dauer`, die der Renderer selbst
-// setzt, fällt in keinem Verhaltenstest auf, solange das Doppel sie zurückgibt.
-import { readFileSync } from 'node:fs'
-
+// die Betriebsart, für die das Datenmodell gebaut wurde) und die Position (#411) -
+// inklusive der Klammer, die eine negative Stelle auf 0 zieht.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Listenelement, Project } from '../../src/shared/contracts/project'
@@ -175,6 +172,18 @@ describe('fuegeElementHinzu - Erfolg', () => {
     expect(doppel.gesetzteListen).toHaveLength(1)
   })
 
+  it('#411: eine NEGATIVE Position wird auf 0 geklemmt - kein Einschub vor dem letzten Element', async () => {
+    // Die Klammer im Rumpf ist kein Zierrat: `slice(0, -1)` wuerde das Element VOR
+    // dem letzten einsetzen, also an einer Stelle, die niemand angefordert hat.
+    doppel.projekt = projekt([element('e0', 'a0'), element('e1', 'a1')])
+    const neu = element('e-neu', 'a-neu')
+    doppel.antwort = { ok: true, wert: neu }
+
+    await fuegeElementHinzu('a-neu', -1, schreiber)
+
+    expect(aktuelleListe().map((e) => e.id)).toEqual(['e-neu', 'e0', 'e1'])
+  })
+
   it('liest den Stand der Sicht NACH der Antwort, nicht davor', async () => {
     // Zwischen Aufruf und Antwort entfernt jemand anders ein Element. Wer sich die
     // Liste vor dem `await` merkt, schreibt sie hier zurück und macht das Entfernen
@@ -276,58 +285,5 @@ describe('fuegeElementHinzu - Fehlerpfade', () => {
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
     if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('ungueltige_eingabe')
-  })
-})
-
-// ---------------------------------------------------------------------------
-// Quelltext-Proben. Sie prüfen nicht Verhalten, sondern ABWESENHEIT - und genau die
-// ist mit Doppeln nicht messbar: Ein Renderer, der `standardDauer` mitschickt, wäre
-// in jedem Verhaltenstest oben unauffällig, solange das Doppel antwortet.
-// ---------------------------------------------------------------------------
-
-// `\r\n` wird ZUERST vereinheitlicht. Das Repo laeuft mit core.autocrlf=true; ein
-// frischer Checkout liefert die Datei mit CRLF, ein hier geschriebener Stand mit LF.
-// Ohne die Vereinheitlichung haengt jede zeilenweise Probe davon ab, wie die Datei
-// gerade auf die Platte gekommen ist - der Test waere auf einem Rechner streng und
-// auf dem naechsten lautlos wertlos (die Fehlerklasse aus #191).
-const QUELLE = readFileSync('src/renderer/composer/element-hinzufuegen.ts', 'utf8').replace(
-  /\r\n/g,
-  '\n',
-)
-const CODEZEILEN = QUELLE.split('\n').filter(
-  (zeile) => !zeile.trimStart().startsWith('//') && !zeile.trimStart().startsWith('*'),
-)
-const CODE = CODEZEILEN.join('\n')
-
-describe('fuegeElementHinzu - keine zweite Fachlogik in der Datei', () => {
-  it('der Kommentar-Filter greift ueberhaupt', () => {
-    // Gegenprobe zum Filter selbst: Ein Filter, der nichts entfernt, macht jede
-    // Abwesenheits-Probe darunter strenger als noetig - und einer, der zu viel
-    // entfernt, macht sie wertlos. Beide Enden sind hier festgenagelt.
-    expect(CODEZEILEN.length).toBeLessThan(QUELLE.split('\n').length)
-    expect(CODE).not.toContain('TK 9.11.3')
-    expect(CODE).toContain('export async function fuegeElementHinzu')
-  })
-
-  it('liest nirgends standardDauer', () => {
-    // Absichtlich auf der UNGEFILTERTEN Quelle: Die DoD verlangt die Zeichenkette
-    // nirgends in der Datei, auch nicht in einer Begruendung.
-    expect(QUELLE).not.toContain('standardDauer')
-  })
-
-  it('enthält keine Dauer-Zahlen und kein art-Literal', () => {
-    expect(CODE).not.toMatch(/\b(10|45)\b/)
-    expect(CODE).not.toMatch(/'(video|bild|segment)'/)
-  })
-
-  it('enthält kein Kanal-Literal, kein window.api, kein fs', () => {
-    expect(QUELLE).not.toContain('project:')
-    expect(CODE).not.toContain('window.api')
-    expect(CODE).not.toMatch(/from '(node:)?fs'/)
-  })
-
-  it('holt den Kanalnamen aus der Registry und ruft über den ipc-client', () => {
-    expect(CODE).toContain('KANAELE.project.fügeElementHinzu')
-    expect(CODE).toContain("from '../ipc-client/rufe-auf'")
   })
 })

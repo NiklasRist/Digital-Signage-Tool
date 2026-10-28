@@ -2,9 +2,6 @@
 // Die beiden Overlays (M7-09, M7-10) werden als Attrappen ersetzt; die reine
 // Seite (uebergabe.ts) läuft ECHT mit.
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -45,28 +42,6 @@ import { UebergabeOverlay, type UebergabeOverlayEigenschaften } from '../../src/
 
 
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(join(process.cwd(), 'src/renderer/app-shell/uebergabe.tsx'), 'utf8')
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('uebergabe.tsx – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('kein IPC, kein kanal, kein eigenes Handeln, kein eigener Zustand', () => {
-    for (const verbot of [
-      'rufeAuf', 'abonniere', 'KANAELE', 'window.api', "'queue:'", 'wechsleReiter',
-      'reparaturhalter', 'useState', 'useEffect', 'nimmUebergabeEntgegen',
-      'beendeLaufende', 'schliesseFixAb', 'fuehreMedienImportAus',
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -233,11 +208,5 @@ describe('UebergabeOverlay (#256)', () => {
     expect(e.aufAbgebrochen).not.toHaveBeenCalled()
     expect(e.aufFehler).not.toHaveBeenCalled()
     fertig()
-  })
-
-  it('Die Anzeige hält KEINEN eigenen Zustand: kein react-Zustands-Hook in der Datei (Grep oben)', () => {
-    // Grep-Probe deckt useState/useEffect ab.
-    expect(CODEZEILEN).not.toContain('useState')
-    expect(CODEZEILEN).not.toContain('useEffect')
   })
 })

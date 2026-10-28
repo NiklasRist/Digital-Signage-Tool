@@ -4,9 +4,6 @@
 // AUSSCHNITT gemockt, der die echten props auffängt: damit ist onDragEnd
 // direktionierbar (KEINE Maus-/Drag-Interaktion, wie im DoD gefordert).
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -93,29 +90,6 @@ import { Wiedergabeliste, type WiedergabelisteEigenschaften } from '../../src/re
 
 // React 19: act(...)-Umgebung (Muster wie leiste-zeile.spec.ts).
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(join(process.cwd(), 'src/renderer/composer/liste-ansicht.tsx'), 'utf8')
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('liste-ansicht.tsx – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('kein IPC, kein zweiter Rollback/Schreibweg, keine Reparatur-Ausfuehrung, kein Canvas-Export', () => {
-    for (const verbot of [
-      'rufeAuf', 'abonniere(', 'KANAELE', 'window.api', "'queue:'", 'setzeListe',
-      'setzeProjekt', 'holeSicht', 'findeKaputteStellen', 'aktualisiereReparatur',
-      'fuehreFixAus', 'toDataURL', 'toBlob', 'getImageData', 'berechneNeueReihenfolge',
-      "from './element-zeile'",
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -249,6 +223,32 @@ describe('Wiedergabeliste (#248) – Zeilen', () => {
     expect(behaelter.querySelector('[data-testid="wiedergabeliste-leer"]')).not.toBeNull()
     fertig()
   })
+
+  it('ein kaputter Band-Abschnitt markiert die Zeile als kaputt, auch wenn das Modell selbst nicht kaputt ist', () => {
+    // `baueListenZeilen` setzt `kaputt` bei einem reinen band_abschnitt NICHT (Fall 3,
+    // liste-ansicht.spec.ts). Die ANZEIGE muss die Stelle trotzdem sichtbar machen -
+    // sonst steht eine defekte Bandecke wie eine heile Zeile da.
+    const liste = [
+      element('v-2', 'video', 'a-1', {
+        trimStart: 0.13,
+        trimEnde: 5.87,
+        einblendung: {
+          bandVorlageId: 'b',
+          abschnitte: [
+            { aktionRef: 'x-1', dauer: 3.13 },
+            { aktionRef: 'x-2', dauer: 7.17 },
+          ],
+        },
+      }),
+    ]
+    const stellen: KaputteStelle[] = [
+      { art: 'band_abschnitt', elementId: 'v-2', abschnittIndex: 0, aktionId: 'x-1', assetId: null, grund: 'asset_fehlt' },
+    ]
+    const { behaelter, fertig } = rendere(eigenschaften(projekt(liste), { stellen }))
+    const zeile = behaelter.querySelector('[data-testid="wiedergabeliste-zeile"]')
+    expect(zeile?.getAttribute('data-kaputt')).toBe('ja')
+    fertig()
+  })
 })
 
 // ---------------- Reorder (ENTSCHIEDEN 3, direkt über aufgefängtes onDragEnd) ----------------
@@ -346,15 +346,21 @@ describe('Thumbnails (#248)', () => {
       wurzel.render(createElement(Wiedergabeliste, eigenschaften(p2, { voraussetzungen: VORAUSSETZUNGEN })) as ReactElement)
     })
     expect(doppel.thumbnails.length).toBe(2)
-    // Zuerst das SPÄTER angeforderte Bild (zweites) auflsen - dann das erste:
+    // Zuerst das SPÄTER angeforderte Bild (zweites) auflsen - es erscheint.
     await act(async () => {
-      doppel.loeser[1]?.({ quelle: 'zweites' })
+      doppel.loeser[1]?.({ quelle: 'url', url: 'zweites' })
       await Promise.resolve()
     })
-    expect(textVon(behaelter, 'wiedergabeliste-thumbnail')).toBeDefined()
-    // Das veraltete erste Bild wird nicht mehr angewendet: Es bleibt das zweite.
-    // Der Beweis ist referentiell: die Abbruch-Merker lieen nur das zweite durch.
-    void textVon
+    const bild = () =>
+      behaelter.querySelector('[data-testid="wiedergabeliste-thumbnail"] img')?.getAttribute('src')
+    expect(bild()).toBe('zweites')
+    // Jetzt trifft das VERALTETE erste Bild ein. Es darf das zweite NICHT ersetzen -
+    // sonst zeigte die Zeile ein Bild der alten Aktion.
+    await act(async () => {
+      doppel.loeser[0]?.({ quelle: 'url', url: 'erstes' })
+      await Promise.resolve()
+    })
+    expect(bild()).toBe('zweites')
     fertig()
   })
 
