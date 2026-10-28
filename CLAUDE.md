@@ -92,12 +92,12 @@
   (**3/3 grün**), **kein** voller Gate-Lauf. Das Remote meldet beim Push **45 Dependabot-Findings**
   (22 high/16 moderate/7 low) – **nicht geprüft**, auf Anweisung zurückgestellt („Funktionen vor
   Sicherheit"). Auf GitHub wurden die Beleg-Kommentare an **#445/#394/#364** gesetzt (28.10.2026).
-  **Danach geschlossen:** **#445** und **#364** (je mit Beleg-Kommentar, `completed`);
-  **#394** bleibt offen (Platzierung), **#446** bleibt offen (Ursache unbenannt; Kommentar mit
-  den zehn Läufen gesetzt). Kein Label geändert.
-- **Nicht gepusht nach dem Push:** `main` liegt wieder **fünf Commits vor `origin/main`**
+  **Danach geschlossen:** **#445**, **#364**, **#100** und **#155** (je mit Beleg-Kommentar,
+  `completed`); **#394** bleibt offen (Platzierung), **#446** bleibt offen (Ursache unbenannt;
+  Kommentar mit den zehn Läufen gesetzt). **26 offene Issues → 22.** Kein Label geändert.
+- **Nicht gepusht nach dem Push:** `main` liegt wieder **sechs Commits vor `origin/main`**
   (`7f5896c` Push-Status, `4f990b5` Treiber-Schritte, `3418add` zehn Läufe/Handover,
-  `f05acef` #445/#364 geschlossen, dazu der FA-13-Commit mit diesem Nachtrag).
+  `f05acef` #445/#364 geschlossen, `01f696d` FA-13, dazu der Handover-Nachtrag zu #100/#155).
 
 ## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – historisiert durch den Abschnitt darueber
 
