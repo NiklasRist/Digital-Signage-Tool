@@ -11,7 +11,57 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, zweite Sitzung: #445/#394/#364 gebaut, Treiber-Matrix-Kopf, #446 angelegt) – gilt vor ALLEM weiter unten
+
+- **#445 GEBAUT:** Im Modus „Neue Aktion" schreibt `feldVerlassen` den getippten Wert jetzt in
+  den **Entwurf** (vorher kehrte es bei `gewaehlt === null` still zurueck); der Anlegen-Knopf
+  sitzt in `FormularFelder`, prüft vor dem Kanal mit `pruefeEntwurf` und zeigt den Befund
+  **am Formular** (`BefundAnzeige` bzw. `Nicht angelegt: <Meldung>` statt nur `console.warn`).
+  4 jsdom-Tests (`tests/unit/action-editor-neue-aktion.spec.ts`); Gegenprobe (Rückschreiben
+  entfernt) → **2 Tests rot**, Rücknahme byte-identisch (`c9e3055…`). **Nicht** am Fenster
+  gemessen. Der bestehende Speichermeldungs-Spec (`ea2c3ea`) bleibt grün.
+- **#394 GEBAUT (Montage):** `Statistik` hatte **keinen Aufrufer**. Sie hängt jetzt als **flache
+  Leiste** in der Kopfzeile des Composers (neben "Video importieren"), nicht als eigenes Panel
+  über der Zeitleiste - ein Panel kostete die Höhe, die die Zeitleiste zum Ziehen braucht.
+  Dafür ist die Darstellung in `statistik.tsx` auf eine Zeile umgestellt (`flex` + `wrap`).
+  2 jsdom-Tests (`tests/unit/composer-statistik.spec.ts`, krumme Werte 12,51 s + 7,37 s →
+  `0:19`); Gegenprobe (Montage entfernt) → **2 Tests rot**, byte-identisch.
+  **Widerspruch gemeldet:** Die DoD-Zeile „Keine Datei außerhalb von `statistik.tsx`" ist für
+  eine Montage unerfüllbar (eine Datei kann sich nicht selbst rendern) - geändert wurden
+  `composer/index.tsx` und `statistik.tsx`. Der Bau nimmt `readonly Listenelement[]` (breiter
+  als die Signatur im Issue); gebauter Code gewinnt.
+- **#364 GEBAUT:** `src/renderer/gemeinsam/media-blob-url.ts` (`mediaBlobUrl` /
+  `gibMediaBlobUrlFrei`, wirft nie, Fehler → `''` + `console.warn`); `video-filmstreifen.tsx`
+  bindet die **Blob-URL** und gibt sie im `finally` frei (auch beim Fehlschlag); die **Bühne**
+  (`preview-player/video.tsx`) bleibt bei `media://` - Grep-Test. 8 jsdom-Tests.
+  **Zwei Änderungen außerhalb der Issue-Dateiliste, gemessen begründet:** `fetch('media://…')`
+  erreicht den Handler **nur** mit `corsEnabled: true` am Schema (wie B15 bei `marken://`) und
+  `media:` in `connect-src` (wie B14) - beides gesetzt (`media-protokoll.ts`, `index.ts`),
+  `media-protokoll-schema.spec.ts` auf **fünf** Privilegien. Gegenprobe: `corsEnabled: false`
+  und die Freigabe durch `void objektUrl` ersetzt → **2 Tests rot**, Rücknahme byte-identisch
+  (`52b3228…`, `9755635…`). **TK 9.5.7** hat den Nachtrag
+  (**v3.29 / 28.10.2026**, `.docx` mit `--dfd` neu erzeugt); `zitate-pruefen.py`:
+  **0 veraltete** Zitate. **Ehrlich offen:** der Pixel-Beleg am echten Fenster fehlt - die im
+  Issue genannte Datei `tests/integration/e2e-echtes-video.spec.ts` **existiert nicht** (auch
+  nicht in der Git-Historie), und jsdom hat keinen Videodecoder. Belegt ist der Bindungsweg,
+  nicht "kein SecurityError" am echten Fenster.
+- **Treiber-Matrix:** Der **Kopf** stand auf 21.10., der Inhalt trug längst die 22.10.-Messungen
+  (4b7/4c2/4f5/4g3/4n, 10 gemessen / 11 teilweise / 0 Lücke / 3 manuell, Muss 8 von 15).
+  Kopf auf 28.10. gezogen, Beleg-Absatz ergänzt; `treiber-matrix.spec.ts` grün, seit 22.10.
+  kein neuer Szenario-Schritt.
+- **#446 angelegt** (FA-03 als Issue, wie in der Backlog-Analyse gefordert): Befund 26.10.
+  (3 von 4 Läufen), Abgrenzung zu #445, DoD über zehn grüne Läufe bzw. belegte Ursache.
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.659 (338 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**, Typecheck/Lint 0. Zwei Läufe davor waren rot mit
+  **denselben drei** Treiber-Befunden (Band-Aufnahme 4f2 ×2, Aktion löschen 4g4) - und der
+  Lauf **08:56 heute**, also **vor** diesen Änderungen, zeigt sie ebenfalls. Sie sind damit
+  **nicht** von dieser Sitzung verursacht; im grünen Lauf sind `bandZiel=true` und
+  `Aktion loeschen: 1 -> 0 -> Undo 1` belegt. (Die erste Montage von #394 als eigenes Panel
+  über der Zeitleiste ist trotzdem verworfen - sie kostete genau die Höhe, an der die
+  Zieh-Schritte hängen.)
+- **Nicht gepusht.** Auf GitHub wurde **nur** #446 angelegt.
+
+## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – historisiert durch den Abschnitt darueber
 
 **Volltext dieser Sitzung: [`docs/agents/uebergabe-2026-10-28-session.md`](docs/agents/uebergabe-2026-10-28-session.md).**
 
