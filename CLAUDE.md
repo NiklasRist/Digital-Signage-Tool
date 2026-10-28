@@ -11,7 +11,33 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, zweite Sitzung: Push, Treiber 4o/4p/4q/4r, #446 zehn Läufe, FA-13 #100/#155) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, dritte Sitzung: Q1.1-Rest 74 Blöcke, Q1.2 Batch 1) – gilt vor ALLEM weiter unten
+
+**Volltext dieser Sitzung: [`docs/agents/uebergabe-2026-10-28-session-3.md`](docs/agents/uebergabe-2026-10-28-session-3.md).**
+
+- **Q1.1-Rest GEBAUT:** alle **74** „Fremde Aufrufe – vollständige Signaturen"-Blöcke aus `src`
+  entfernt (Gerüst-Artefakt, zweite Vertragsquelle). Signatur-Kopien weg; echte lokale
+  Begründungen blieben als Kurzkommentar, wo sie nicht schon an anderer Stelle standen.
+  Sechs Modul-Commits (`7c35553`, `4f46bf8`, `f2becc6`, `6faf703`, `44d7fff`, `ec5ac2f`),
+  **74 Dateien, +45/−1.187**; je Commit `git diff` nur Kommentar-/Leerzeilen, Typecheck/Lint 0;
+  Inventar danach **0 Blöcke**.
+- **Q1.2 NEU VERMESSEN:** nach Q1.1 **3.348** Kommentarzeilen mit Issue-Referenz, **188**
+  Cluster ≥ 5 Dateien, **70** Prosa-Gruppen ≥ 3 Dateien. **Befund:** Die Top-10-Issue-Cluster
+  sind überwiegend Einzelnennungen, keine Duplikate; die größten echten Wiederholungen sind
+  `SAFETY:`-Casts (12/11/8 Dateien, laut Plan **nicht** entfernen) und `systemCode` (12× als
+  **Code**-Kopie – Q3-Fall, kein Q1.2).
+- **Q1.2 Batch 1 GEBAUT (`8ba9508`):** Schreib-Mechanik-Kopf in fünf Stores (5 → 2 Zeilen,
+  Adresse `docs/agents/schreib-mechanik-plan.md`) und `PFAD_TRENNER`-Doku in fünf Dateien
+  (4–5 Zeilen → ein Satz mit Quelle). **10 Dateien, +15/−31**; Prosa-Gruppen 70 → 67;
+  Typecheck/Lint 0.
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.692 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**.
+- **Offen:** Q1.2 Batch 2 („Rückgabeangabe am Rückruf" 5 Dateien, „Wartezeiten" 4 Dateien –
+  je erst eine Adresse festlegen); #394, #446, Mutations-Chargen, #393. `SAFETY:` bleibt.
+- **Nicht gepusht:** `main` liegt nach diesem Doku-Commit **acht Commits** vor `origin/main`
+  (sieben Q1.1/Q1.2-Commits + diese Übergabe samt Push-Status). **Push nur auf Anweisung.**
+
+## STAND HEUTE (28.10.2026, zweite Sitzung: Push, Treiber 4o/4p/4q/4r, #446 zehn Läufe, FA-13 #100/#155) – historisiert durch den Abschnitt darueber
 
 **Volltext dieser Sitzung: [`docs/agents/uebergabe-2026-10-28-session-2.md`](docs/agents/uebergabe-2026-10-28-session-2.md).**
 
@@ -105,10 +131,13 @@
 - **Nächster Schritt (Vorschlag):** zuerst diese **74 Blöcke** als eigene Charge (Gate je Modul),
   danach Q1.2 bewusst nur über die **Top-10-Cluster**, mit Bilanz nach dem ersten Batch.
   Alternativen, die allein gehen: Mutations-Chargen, **#393** (Vorlagen-Live-Vorschau).
-- **Nicht gepusht nach dem Push:** `main` liegt wieder **sieben Commits vor `origin/main`**
-  (`7f5896c` Push-Status, `4f990b5` Treiber-Schritte, `3418add` zehn Läufe/Handover,
-  `f05acef` #445/#364 geschlossen, `01f696d` FA-13, `09bd8e2` #100/#155 geschlossen,
-  dieser Übergabe-Commit).
+- **GEPUSHT (28.10.2026, dritter Push, auf Anweisung):** `fd563b4..d998802` → `origin/main`,
+  **7 Commits**; `main` = `origin/main`, Arbeitsbaum sauber. Vor dem Push geprüft: die drei
+  Commits nach dem grünen Gate-Lauf (5.692 Unit-Tests) ändern **nur** `CLAUDE.md` und
+  `docs/agents/uebergabe-2026-10-28-session-2.md` – der gepushte Code ist der Stand des
+  Gate-Laufs, **kein** neuer voller Gate-Lauf. Das Remote meldet jetzt **72**
+  Dependabot-Findings (34 high/25 moderate/13 low; beim Push davor 45) – **nicht geprüft**,
+  weiter zurückgestellt („Funktionen vor Sicherheit").
 
 ## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – historisiert durch den Abschnitt darueber
 
