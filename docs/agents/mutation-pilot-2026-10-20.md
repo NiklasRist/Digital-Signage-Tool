@@ -1309,3 +1309,76 @@ gebaut hat). Nicht stillschweigend: der Kopf der Quelldatei nennt weiterhin, wer
 | Suite | 5.516 | **5.490** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 65 | **60** Dateien |
+
+## 28. Charge 15 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `marken-vorschau` (`live-vorschau.ts`), `medium-loeschen-anzeige`
+(`medium-loeschen.tsx`), `segment-anzeige` (`segment.tsx`), `render-dialog-anzeige`
+(`render-dialog.tsx`), `speicherstatus-anzeige` (`speicherstatus.tsx`). Alle von der
+Sperrklinken-Liste (#447); die Charge war vorab als
+[`charge-15-vorbereitung.md`](charge-15-vorbereitung.md) dokumentiert und **trocken geprueft**
+(30 Faelle, jeder Suchtext genau einmal).
+
+**Ausgangsmessung:** 25 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **20**.
+Gruen: **ML5, ML7, SG5, SS2** (echte Luecken) und **ML2** (aequivalent). **0/5 Refactorings rot**;
+jede Mutation byte-identisch zurueckgenommen.
+
+### Die vier Luecken (geschlossen)
+
+- **ML5 – der Aktions-Absatz erschien auch ohne betroffene Aktionen.** `length > -1` zeigte den
+  Block mit leerer Liste. Neu: ohne betroffene Aktionen ist `medium-loeschen-aktionen` **nicht im DOM**.
+- **ML7 – die Blockade-Zeile war nicht woertlich geprueft.** Der Test las „Position 1/2" nur aus
+  `lage.text` – die **Listenzeile** konnte die Positionsangabe verlieren, ohne dass etwas rot
+  wurde (dieselbe Falle wie „eine Meldung mit der richtigen Zahl ist kein Beleg"). Neu: die
+  Zeilen selbst, exakt `['Position 1: tanzkurs.mov', 'Position 2: tanzkurs.mov']`.
+- **SG5 – der Zeichen-Effekt hing nur an `[aktion]`.** Ein Wechsel von **Vorlage oder Marke**
+  liess die Flaeche auf dem alten Bild stehen. Neu: Wechsel beider Eingaben ⇒ je ein weiterer
+  Aufruf.
+- **SS2 – das Verbindungswort des Hinweistexts war ungeprueft.** `join(' und ')` statt `', '`
+  blieb gruen. Neu: beide Quellen ⇒ `das Projekt (p-code), die Vorlagen (v-code).`
+
+### Als aequivalent belegt
+
+- **ML2 – die Wache `if (blockiert) return` ist ueber die Oberflaeche unerreichbar.** Im
+  Blockade-Zweig wird gar kein Bestaetiger gerendert (der Test prueft das bereits); die Wache
+  bleibt als zweite Absicherung.
+
+### Treiber-Befund und -Korrektur (nicht vom Produktcode)
+
+Der Gate-Lauf war **rot**: `[Befund] Vorlagen (FA-13) :: nach dem Uebernehmen ist die Sitzung
+beendet -> arbeitskopie-kopf steht noch`. **Gemessen statt vermutet** (Produktcode nachweislich
+unveraendert, `git diff -- src/` leer):
+
+| Stand | Laeufe | Ergebnis |
+|---|---|---|
+| vor der Korrektur | 3 | **2 rot, 1 gruen** |
+| nach der Korrektur | 3 | **3 gruen** |
+
+**Ursache:** Der Schritt las den DOM **einmal** direkt nach dem Store-Schreiben – der Bestand war
+aktualisiert, React hatte noch nicht gerendert. **Korrektur in `scripts/durchlauf.mjs`:** auf das
+Verschwinden des `arbeitskopie-kopf` wird jetzt mit **5 s Frist** gewartet (dieselbe Bauform wie
+die 15-s-Fristen daneben). Das ist eine Messkorrektur; die Zusage „die Sitzung ist nach dem
+Uebernehmen zu" gilt unveraendert und wird weiter geprueft.
+
+### Entfernt (6 Tests, 3 ergaenzt – netto −3)
+
+- **1** in `marken-vorschau` (kein zweiter Zeichenpfad, kein `await`),
+  **1** in `medium-loeschen-anzeige` (kein `rufeAuf`/`KANAELE`/`querySelector`),
+  **2** in `segment-anzeige` (Verbotsliste; `segment-quelle` ohne jsx/react),
+  **1** in `render-dialog-anzeige` (kein `confirm`/`window.`/Eigenpruefung),
+  **1** in `speicherstatus-anzeige` (kein Timer/Kanal-Literal/`window.`).
+
+**Ehrlich offen:** Diese Architekturregeln sind nach dem Entfernen **ohne Waechter** – Lint-Kandidat.
+
+### Stand nach Charge 15
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **25**: 20 erkannt, 4 Luecken, 1 aequivalent |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **6** |
+| Verhaltens-Tests ergaenzt | – | **3** |
+| Echte Luecken geschlossen | – | **4** |
+| Suite | 5.490 | **5.487** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 60 | **55** Dateien |

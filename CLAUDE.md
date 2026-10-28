@@ -11,7 +11,37 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, achtzehnte Sitzung: Mutations-Charge 14) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, neunzehnte Sitzung: Mutations-Charge 15) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-28-charge-15.md`](docs/agents/uebergabe-2026-10-28-charge-15.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 28.
+
+- **CHARGE 15 GEBAUT:** fuenf Testdateien – `marken-vorschau`, `medium-loeschen-anzeige`,
+  `segment-anzeige`, `render-dialog-anzeige`, `speicherstatus-anzeige`. **25 Verhaltens-Mutationen**,
+  **5 Refactorings**; 20 erkannt, **4 echte Luecken** geschlossen, **ML2 aequivalent**; **0/5
+  Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+- **Die Luecken:** **ML5** – der Aktions-Absatz erschien auch **ohne** betroffene Aktionen.
+  **ML7** – „Position 1/2" wurde nur aus `lage.text` gelesen, die **Listenzeile** war ungeprueft.
+  **SG5** – der Zeichen-Effekt hing nur an `[aktion]`: Wechsel von **Vorlage oder Marke** liess
+  das alte Bild stehen. **SS2** – `join(' und ')` statt `', '` blieb gruen.
+- **TREIBER-BEFUND, GEMESSEN UND KORRIGIERT:** Der erste Gate-Lauf war **rot**
+  (`Vorlagen (FA-13) :: nach dem Uebernehmen ist die Sitzung beendet`). Produktcode war
+  nachweislich unveraendert (`git diff -- src/` leer). Vor der Korrektur **2 von 3 Laeufen rot**,
+  danach **3 von 3 gruen**. Ursache: der Schritt las den DOM **einmal** direkt nach dem
+  Store-Schreiben. **Korrektur in `scripts/durchlauf.mjs`:** Warten auf das Verschwinden des
+  `arbeitskopie-kopf` mit **5 s Frist**. Messkorrektur, keine Produktaenderung.
+- **Entfernt:** **6** Quelltext-/Meta-Tests, **3** Verhaltens-Tests ergaenzt; Suite **5.490 →
+  5.487** (netto −3).
+- **Sperrklinke:** 60 → **55** Dateien; ESLint gruen.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.487 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Ehrlich offen:** Architektur-Verbote ohne Waechter (Lint-Kandidat); #448 (192 SAFETY).
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 16** – fuenf der verbleibenden **55**; Kandidaten:
+  `queue-panel-wurzel` (556 Zeilen, mehrere Proben), `marken-uebersicht`, `marken-zugang`,
+  `element-zeile`, `concat`.
+
+## STAND HEUTE (28.10.2026, achtzehnte Sitzung: Mutations-Charge 14) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-28-charge-14.md`](docs/agents/uebergabe-2026-10-28-charge-14.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 27.
