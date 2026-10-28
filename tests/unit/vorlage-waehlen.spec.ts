@@ -5,7 +5,6 @@
 // im Testlauf nicht. Der Ersatz ist zugleich der Beweis: Der einzige Weg in den Main
 // fuehrt ueber diesen Kanal, und die Tests zaehlen die Aufrufe.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 import type { Vorlage } from "../../src/shared/contracts/vorlage";
 import { KANAELE } from "../../src/shared/contracts/kanaele";
@@ -163,28 +162,5 @@ describe("findeZugewiesene", () => {
 
   it("liefert null fuer einen leeren String (neue, noch nicht zugewiesene Aktion)", () => {
     expect(modul.findeZugewiesene("", [vorlage({ id: "v-1" })])).toBeNull();
-  });
-});
-
-describe("DoD-Grep-Proben (Quelltext)", () => {
-  const CODE = readFileSync("src/renderer/action-editor/vorlage-waehlen.ts", "utf-8");
-
-  it("enthaelt keinen sort-Aufruf", () => {
-    expect(CODE).not.toMatch(/\.sort\(/);
-  });
-
-  it("enthaelt keinen Kanal-Literal-String 'vorlagen:'", () => {
-    expect(CODE).not.toContain("'vorlagen:");
-  });
-
-  it("enthaelt weder window.api noch fs", () => {
-    expect(CODE).not.toMatch(/window\.api/);
-    expect(CODE).not.toMatch(/\bfs\b/);
-  });
-
-  it("importiert nichts aus src/main/ und definiert die Fachunion nicht selbst", () => {
-    expect(CODE).not.toMatch(/src\/main\//);
-    expect(CODE).not.toContain("'vorlage_referenziert'");
-    expect(CODE).not.toContain("VorlagenFehlercode");
   });
 });

@@ -5,8 +5,6 @@
 // mit: Er ist der Weg, den die Nutzlast im Betrieb nimmt, und an ihm haengt die Zusage
 // "bei ungueltiger Eingabe laeuft die Operation gar nicht erst an" (TK 9.1.1 Punkt 6)
 // sowie "jede unerwartete Ausnahme wird zu unbekannter_fehler" (TK 9.1.1 Punkt 8).
-import { readFileSync } from "node:fs";
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { KANAELE } from "../../src/shared/contracts/kanaele";
@@ -183,46 +181,6 @@ describe("verdrahteVorlagenNachtragIPC (#255)", () => {
     await expect(
       rufe(KANAELE.vorlagen.pruefeVorlagenReferenzen, { vorlagenId: "v1" }),
     ).resolves.toMatchObject({ ok: false, fehler: { code: "unbekannter_fehler" } });
-  });
-});
-
-describe("Quelltext-Proben zu #255", () => {
-  // Q3/B (19.10.2026): Der Kanal liegt jetzt in der gemeinsamen vorlagen-Verdrahtung.
-  const CODE = readFileSync(
-    new URL("../../src/main/vorlagen-store/ipc-verdrahtung.ts", import.meta.url),
-    "utf8",
-  );
-  // Der Kommentarteil traegt Kanalnamen und Modulnamen als Prosa; geprueft wird der Code.
-  const OHNE_KOMMENTARE = CODE.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
-
-  it("bildet keinen Kanalnamen als Zeichenkette, sondern liest ihn aus KANAELE", () => {
-    expect(OHNE_KOMMENTARE).not.toMatch(/['"`]vorlagen:/);
-    expect(OHNE_KOMMENTARE).toContain("KANAELE.vorlagen.pruefeVorlagenReferenzen");
-  });
-
-  it("fasst weder Dateisystem noch Fenster noch Lock an und importiert nicht aus den Nachbar-Verdrahtungen", () => {
-    for (const verboten of [
-      "child_process",
-      "BrowserWindow",
-      "webContents",
-      "mitD1Lock",
-      "listeProjekte",
-      "ladeBestand",
-      "aendereBestand",
-      "flushBestand",
-      "ipcMain",
-      "ipc-verdrahtung",
-      "project-store-nachtrag",
-      "node:fs",
-    ]) {
-      expect(OHNE_KOMMENTARE, verboten).not.toContain(verboten);
-    }
-    expect(OHNE_KOMMENTARE).not.toMatch(/\bfrom ['"](node:)?fs['"]/);
-  });
-
-  it("baut kein eigenes try/catch - das gehoert dem Wrapper aus #23", () => {
-    expect(OHNE_KOMMENTARE).not.toMatch(/\btry\s*{/);
-    expect(OHNE_KOMMENTARE).not.toMatch(/\bcatch\s*\(/);
   });
 });
 

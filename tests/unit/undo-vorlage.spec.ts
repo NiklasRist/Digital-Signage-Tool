@@ -5,7 +5,6 @@
 // projekt-Historie nie anfasst. `zugang.sichereStand` wird als Doppel ersetzt; die
 // uebrigen Zugriffe (`holeSitzung`, `setzeSitzung`) sind Spione in einem Zugang-Objekt.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 import type { Vorlage } from "../../src/shared/contracts/vorlage";
 import type { EditorSitzung } from "../../src/renderer/vorlagen-editor/arbeitskopie";
@@ -319,45 +318,12 @@ describe("kannVorlageRueckgaengig / kannVorlageWiederherstellen", () => {
   });
 });
 
-describe("DoD-Grep-Proben (Quelltext) und Historie", () => {
-  const CODE = readFileSync("src/renderer/app-shell/undo-vorlage.ts", "utf8");
-
-  it("fasst die Projekt-Historie nicht an (Grep-Probe)", () => {
-    expect(CODE).not.toContain("projektHistorie");
-    expect(CODE).not.toContain("leereProjektHistorie");
-  });
-
-  it("laesst die Projekt-Historie unberuehrt (Spion-Test ueber #234)", () => {
+describe("Projekt-Historie bleibt unberuehrt (#234)", () => {
+  it("laesst den Projekt-Stapel beim Vorlagen-Undo auf 0/0", () => {
     merkeVorlageVorAenderung(fabrikZugang().zugang);
     macheVorlageRueckgaengig(fabrikZugang().zugang);
     // Der projekt-Stapel ist ein ANDERER als der vorlagen-Stapel (#234).
     expect(projektHistorie().stand()).toEqual({ zurueck: 0, vor: 0 });
     expect(vorlagenHistorie().stand().zurueck).toBeGreaterThanOrEqual(1);
-  });
-
-  it("enthaelt kein JSX, kein react, kein rufeAuf, kein KANAELE, kein abonniere, kein Literal, kein window, kein setTimeout", () => {
-    for (const verboten of [
-      "<div",
-      "react",
-      "rufeAuf",
-      "KANAELE",
-      "abonniere",
-      "'vorlagen:",
-      "'queue:",
-      "window.",
-      "setTimeout",
-    ]) {
-      expect(CODE, verboten).not.toContain(verboten);
-    }
-  });
-
-  it("importiert aus ../vorlagen-editor/arbeitskopie ausschliesslich einen Typ", () => {
-    expect(CODE).toContain(
-      "import type { EditorSitzung } from '../vorlagen-editor/arbeitskopie'",
-    );
-    // Kein WERT-Import aus dem fremden Modul (nur der Typ darf von dort kommen).
-    const importe = CODE.split("\n").filter((z) => z.includes("vorlagen-editor/arbeitskopie"));
-    expect(importe.length).toBe(1);
-    expect(importe[0]).toContain("import type");
   });
 });

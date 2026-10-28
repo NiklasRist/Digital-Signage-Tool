@@ -700,3 +700,65 @@ importierenden Stellen gedeckt – ein zweiter Typ in der Datei bliebe unbemerkt
 | Verbleibend | 121 / 84 | **116** Dateien mit `readFileSync`, **79** mit Grep-/Bauvorschriften-`describe` |
 
 Verfeinert lesen nach dieser Charge **101** Describe-Bloecke wirklich eine Quelldatei.
+
+---
+
+## 18. Charge 6 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `vorlage-waehlen` (action-editor), `band-takt` (preview-player),
+`undo-vorlage` (app-shell), `aktions-auswahl-anzeige` (app-shell),
+`vorlagen-nachtrag` (vorlagen-store, Main).
+
+**Ausgangsmessung:** 25 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **24**, **eine aequivalente** (B5, s. u.), **keine Luecke**. Alle fuenf
+Refactorings gruen. Jede Mutation byte-identisch zurueckgenommen.
+
+### Die eine aequivalente Mutation
+
+- **B5 – die Endlichkeitspruefung fuer `lokalerFrame` ist redundant.** Ohne
+  `Number.isFinite(lokalerFrame)` bleibt das Verhalten gleich: `NaN % rundeFrames`
+  ist `NaN`, jeder Bereichsvergleich damit falsch (→ `null`); `Infinity` faengt
+  bereits `lokalerFrame >= elementFrames`; Negative faengt `lokalerFrame < 0`.
+  Die Pruefung bleibt als defensive Absicherung stehen (Klasse Z8/I3/K4).
+
+**Befund:** Diese Runde fand **keine** neue Testluecke. Die 24 nicht-aequivalenten
+Mutationen wurden alle von bestehenden Verhaltens-Tests gefangen – der erste
+Durchgang ohne Nachbesserung seit Beginn der Chargen.
+
+### Entfernt (17 Tests, 0 ergaenzt – netto −17)
+
+- **4** in `vorlage-waehlen` (kein `sort`, kein `'vorlagen:'`-Literal, kein
+  `window.api`/fs, kein `src/main`/Fachunion).
+- **4** in `band-takt` (keine eigene Rundung/`RENDER_PROFILE`/Literal 30, keine
+  Vorlagen/Trim/Geometrie/Zustand, kein JSX/IPC, kein `let` auf Modulebene).
+- **3** in `undo-vorlage` (Grep-Probe auf `projektHistorie`, kein
+  JSX/react/IPC/Kanal-Literal/window/setTimeout, nur ein Typ-Import). **Der
+  Spion-Test „Projekt-Historie bleibt unberuehrt (#234)" ist geblieben** – er ist
+  Verhalten, keine Quelltext-Probe.
+- **3** in `aktions-auswahl` (kein Kanal, kein selbstgebautes
+  Einblendung-Objekt, kein `src/main`); dazu eine eingebettete
+  `QUELLE_TSX`-Behauptung aus einem Verhaltens-Test entfernt (die
+  Verhaltenszeile „genau zwei Radios" bleibt).
+- **3** in `vorlagen-nachtrag` (kein Kanal-Literal, kein fs/Fenster/Lock/
+  Nachbar-Verdrahtung, kein eigenes try/catch). Der Registry-Test
+  („Kanal-Registry nach #255") ist **geblieben** – er importiert `KANAELE` und
+  prueft Werte, keinen Quelltext.
+
+**Ehrlich offen:** Die entfernten Verbote sind Architekturregeln (Lint-Kandidat).
+Der Typ-Import in `undo-vorlage` ist jetzt nur noch durch die Import-Zeile selbst
+gedeckt.
+
+### Stand nach Charge 6
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **25**: 24 erkannt, 1 aequivalent |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **17** |
+| Verhaltens-Tests ergaenzt | – | **0** |
+| Echte Luecken geschlossen | – | **0** |
+| Suite | 5.589 | **5.572** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 116 / 79 | **111** Dateien mit `readFileSync`, **74** mit Grep-/Bauvorschriften-`describe` |
+
+Verfeinert lesen nach dieser Charge **95** Describe-Bloecke wirklich eine Quelldatei.

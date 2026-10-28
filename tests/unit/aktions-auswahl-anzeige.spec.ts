@@ -1,8 +1,5 @@
 // Verhaltenstests zu #203 - die Auswahlanzeige (aktions-auswahl.tsx, jsdom).
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -18,31 +15,6 @@ import { AktionsAuswahl } from '../../src/renderer/app-shell/aktions-auswahl.tsx
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-// ---------------- Quelldatei-Verbote (Grep) ----------------
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/app-shell/aktions-auswahl.tsx'),
-  'utf8',
-)
-
-describe('aktions-auswahl.tsx – Verbote (Grep)', () => {
-  it('ruft KEINEN Kanal: kein rufeAuf, kein KANAELE, kein abonniere, kein window.api', () => {
-    for (const verbot of ['rufeAuf', 'KANAELE', 'abonniere', 'window.api']) {
-      expect(QUELLE_TSX).not.toContain(verbot)
-    }
-  })
-
-  it('bildet KEIN Einblendung-Objekt selbst (bandVorlageId/abschnitte: als Zuweisung verboten)', () => {
-    expect(QUELLE_TSX).not.toContain('bandVorlageId:')
-    expect(QUELLE_TSX).not.toContain('abschnitte:')
-  })
-
-  it('importiert nichts aus src/main/', () => {
-    expect(QUELLE_TSX).not.toContain('src/main')
-    expect(QUELLE_TSX).not.toContain('../../main')
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -220,7 +192,6 @@ describe('AktionsAuswahl (#203) - Fall 2 (Segment, abschnittIndex null)', () => 
   it('die aktuell referenzierte Aktion steht NICHT in der Liste (a-kaputt ausgeschlossen)', () => {
     zeige()
     expect(radios()).toHaveLength(2) // a-leer und a-ok; a-kaputt und a-unbekannt[out] nicht
-    expect(QUELLE_TSX).not.toContain('a-kaputt')
   })
 
   it('Klick ruft NUR schliesseAktionsFixAb(elementId, aktionId)', async () => {

@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Einblendung } from '../../src/shared/contracts/project'
@@ -198,40 +195,5 @@ describe('waehleAbschnitt (#220) – Fehlerpfade', () => {
     // Frame 0 faellt in [0,150) -> b. a ist [0,0), leer.
     expect(waehleAbschnitt(takt, 0, 300)?.aktionRef).toBe('b')
     expect(waehleAbschnitt(takt, 149, 300)?.aktionRef).toBe('b')
-  })
-})
-
-describe('band-takt.ts (#220) – Grep-Proben der DoD', () => {
-  const quelle = readFileSync(
-    fileURLToPath(new URL('../../src/renderer/preview-player/band-takt.ts', import.meta.url)),
-    'utf8',
-  )
-  // Nur der Code, ohne Kommentare - die Proben pruefen den Rumpf.
-  const code = quelle.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
-
-  it('enthält weder eigene Rundung noch RENDER_PROFILE noch ein Literal 30', () => {
-    expect(code).not.toMatch(/Math\.(round|floor|ceil)/)
-    expect(code).not.toMatch(/RENDER_PROFILE/)
-    expect(code).not.toMatch(/\b30\b/)
-    expect(code).not.toMatch(/toFixed/)
-  })
-
-  it('kennt keine Vorlagen, Geometrie, Trim oder Zustand', () => {
-    expect(code).not.toMatch(/bandVorlageId/)
-    expect(code).not.toMatch(/trimStart/)
-    expect(code).not.toMatch(/trimEnde/)
-    expect(code).not.toMatch(/berechneBandGeometrie/)
-    expect(code).not.toMatch(/\bVorlage\b/)
-    expect(code).not.toMatch(/Date\.now|performance\.now|requestAnimationFrame|setInterval/)
-  })
-
-  it('ist kein JSX und spricht keinen IPC-Kanal an', () => {
-    expect(code).not.toMatch(/react/)
-    expect(code).not.toMatch(/rufeAuf|abonniere/)
-    expect(code).not.toMatch(/window\.api/)
-  })
-
-  it('hat kein `let` auf Modulebene', () => {
-    expect(code).not.toMatch(/^let /m)
   })
 })
