@@ -295,6 +295,8 @@ describe('istUebernehmbar', () => {
 
   it('false bei leerer bandVorlageId, dauer === 0, NaN, Infinity, negativer dauer und leerer aktionRef', () => {
     expect(istUebernehmbar({ bandVorlageId: '', abschnitte: [{ aktionRef: 'a', dauer: 1 }] })).toBe(false)
+    // Reine Leerzeichen sind leer - dieselbe trim()-Konvention wie in dauer-regler.
+    expect(istUebernehmbar({ bandVorlageId: '   ', abschnitte: [{ aktionRef: 'a', dauer: 1 }] })).toBe(false)
     expect(istUebernehmbar({ bandVorlageId: 'b', abschnitte: [{ aktionRef: 'a', dauer: 0 }] })).toBe(false)
     expect(istUebernehmbar({ bandVorlageId: 'b', abschnitte: [{ aktionRef: 'a', dauer: Number.NaN }] })).toBe(false)
     expect(istUebernehmbar({ bandVorlageId: 'b', abschnitte: [{ aktionRef: 'a', dauer: Number.POSITIVE_INFINITY }] })).toBe(false)

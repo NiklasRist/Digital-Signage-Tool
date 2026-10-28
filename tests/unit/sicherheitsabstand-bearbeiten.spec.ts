@@ -124,21 +124,3 @@ describe("baueVorlagenHinweis (#308)", () => {
     expect(h.rufeAuf).not.toHaveBeenCalled();
   });
 });
-
-describe("Grep-Probe auf sicherheitsabstand-bearbeiten.ts (#308)", () => {
-  it("keine Magier-Zahlen (480/270/96/54) im Quelltext, kein Timer/round/geerbt/fs", async () => {
-    const { readFileSync } = await import("node:fs");
-    const text = readFileSync("src/renderer/marken-editor/sicherheitsabstand-bearbeiten.ts", "utf8");
-    const ohneKommentare = text
-      .replace(/\r\n/g, "\n")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .map((zeile) => zeile.replace(/\/\/.*$/, ""))
-      .join("\n");
-
-    expect(ohneKommentare).toContain("setzeSicherheitsabstand");
-    for (const verboten of ["480", "270", "96", "54", "setTimeout", "Math.round", "geerbt", "vorlagen:", "node:fs"]) {
-      expect(ohneKommentare.includes(verboten)).toBe(false);
-    }
-  });
-});

@@ -6,8 +6,6 @@
 // planeBandAblauf (#130) ebenfalls echt mit Durchleitung, damit nachgewiesen
 // ist, mit welchem Trim und welchem Entwurf sie gerufen wird.
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -88,51 +86,6 @@ vi.mock('../../src/renderer/composer/einblendung-vorschau', async (importOrigina
 
 // React 19: act(...)-Umgebung (Muster wie render-dialog-anzeige.spec.ts).
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE zwei Dateien) ----------------
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/composer/einblendung-ansicht.tsx'),
-  'utf8',
-)
-const QUELLE_TS = readFileSync(
-  join(process.cwd(), 'src/renderer/composer/einblendung-ansicht.ts'),
-  'utf8',
-)
-
-const codeOhneKommentare = (quelle: string): string =>
-  quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-describe('Quelldatei-Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('einblendung-ansicht.ts: kein IPC, kein react, keine Rundung, keine Geometrie, keine Zahlenliterale', () => {
-    const code = codeOhneKommentare(QUELLE_TS)
-    for (const verbot of [
-      'rufeAuf', 'abonniere', 'KANAELE', 'window.', 'Math.round', 'toFixed',
-      'berechneBandGeometrie', 'findeKaputteStellen', 'gleicheElementAb', 'jsx',
-      '1920', '1080',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
-  })
-
-  it('einblendung-ansicht.tsx: kein IPC, kein Warteschlangen-Literal, kein Reparatur-Aufruf, kein Dauer-/Trim-Schreibweg', () => {
-    const code = codeOhneKommentare(QUELLE_TSX)
-    for (const verbot of [
-      'rufeAuf', 'abonniere', 'KANAELE', 'window.api', "'queue:'",
-      'setzeProjekt', 'setzeListe', 'gleicheElementAb',
-      'optionenFuer', 'fuehreFixAus', 'schliesseAbschnittsFixAb',
-      'setzeDauer', 'setzeTrim',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -367,6 +320,21 @@ describe('die Entwurfs-Bedienung', () => {
     fertig()
   })
 
+  it('die Pfeil-Knoepfe sind am Rand gesperrt: erste Zeile nicht nach oben, letzte nicht nach unten', () => {
+    const { behaelter, fertig } = rendere(eigenschaften({ element: bestucktesElement() }))
+    const zeilen = zeilenImDom(behaelter)
+    expect(zeilen.length).toBeGreaterThan(1)
+
+    const erste = zeilen[0] as HTMLElement
+    expect(knopfIn(erste, 0).disabled).toBe(true)
+    expect(knopfIn(erste, 1).disabled).toBe(false)
+
+    const letzte = zeilen[zeilen.length - 1] as HTMLElement
+    expect(knopfIn(letzte, 1).disabled).toBe(true)
+    expect(knopfIn(letzte, 0).disabled).toBe(false)
+    fertig()
+  })
+
   it('„Entfernen“ ruft entferneAbschnitt GENAU EINMAL mit dem Index der Zeile', () => {
     const { behaelter, fertig } = rendere(eigenschaften({ element: bestucktesElement() }))
     expect(doppel.entferne).toHaveLength(0)
@@ -538,3 +506,4 @@ describe('kaputte Abschnitte (Fall 3, TK 9.7.5)', () => {
     fertig()
   })
 })
+

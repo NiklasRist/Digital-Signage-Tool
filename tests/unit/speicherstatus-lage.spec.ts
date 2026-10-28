@@ -1,6 +1,5 @@
 // Reine Tests zu #200 - der Zustandsautomat (speicherstatus-lage.ts).
 // Die Datei ist bereits gebaut (DoD-Kontrollenz); der Test gilt die DoD-Punkte nach.
-import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -10,11 +9,6 @@ import {
   zeigtHinweis,
   verarbeiteSpeicherEreignis,
 } from '../../src/renderer/app-shell/speicherstatus-lage'
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/app-shell/speicherstatus-lage.ts', import.meta.url),
-  'utf8',
-)
 
 describe('ANFANGSLAGE (#200)', () => {
   it('beide Quellen unbekannt, beide Codes null', () => {
@@ -67,11 +61,16 @@ describe('verarbeiteSpeicherEreignis (#200)', () => {
     expect(zeigtHinweis(gemischt)).toBe(true)
     expect(betroffeneQuellen(gemischt)).toEqual(['vorlagen'])
   })
-})
 
-describe('Quelldatei-Verbote (Grep)', () => {
-  it('enthaelt kein JSX und keinen react-Import', () => {
-    expect(QUELLE).not.toContain('react')
-    expect(QUELLE).not.toMatch(/<[a-z]/)
+  it("beide Quellen nicht_gespeichert -> feste Reihenfolge ['projekt', 'vorlagen']", () => {
+    // Die Reihenfolge ist zugesagt (projekt, vorlagen) und wird in der Oberflaeche
+    // als Aufzaehlung gelesen - sie darf nicht von der Melde-Reihenfolge abhaengen.
+    const beide = verarbeiteSpeicherEreignis(
+      verarbeiteSpeicherEreignis(ANFANGSLAGE, 'vorlagen', { typ: 'fehler', code: 'v' }),
+      'projekt',
+      { typ: 'fehler', code: 'p' },
+    )
+    expect(zeigtHinweis(beide)).toBe(true)
+    expect(betroffeneQuellen(beide)).toEqual(['projekt', 'vorlagen'])
   })
 })

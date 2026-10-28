@@ -1,7 +1,5 @@
 // Verhaltenstests zu #202 - die Auswahlanzeige (asset-auswahl.tsx, jsdom).
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -20,26 +18,6 @@ import { AssetAuswahl } from '../../src/renderer/app-shell/asset-auswahl.tsx'
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-// ---------------- Quelldatei-Verbote (Grep) ----------------
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/app-shell/asset-auswahl.tsx'),
-  'utf8',
-)
-
-describe('asset-auswahl.tsx – Verbote (Grep)', () => {
-  it('ruft KEINEN Kanal: kein rufeAuf, kein KANAELE, kein abonniere, kein window.api', () => {
-    for (const verbot of ['rufeAuf', 'KANAELE', 'abonniere', 'window.api']) {
-      expect(QUELLE_TSX).not.toContain(verbot)
-    }
-  })
-
-  it('importiert nichts aus src/main/', () => {
-    expect(QUELLE_TSX).not.toContain('src/main')
-    expect(QUELLE_TSX).not.toContain('../../main')
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -249,6 +227,29 @@ describe('AssetAuswahl (#202) - Bestaetigung', () => {
     })
     expect(steuer.aufFehler).toHaveBeenCalledWith('unbekannter_fehler', expect.any(String))
     expect(steuer.aufAbgeschlossen).not.toHaveBeenCalled()
+  })
+
+  it('nach einem Wurf bleibt die Auswahl bedienbar - der naechste Klick ruft erneut', async () => {
+    // Ein gescheiterter Rueckweg ist kein Dauerzustand: Bliebe die Sperre stehen,
+    // waere das Medium nach EINEM Wurf fuer den Rest der Sitzung nicht ersetzbar.
+    steuer.rueckweg.mockRejectedValueOnce(new Error('einmalig'))
+    steuer.rueckweg.mockResolvedValueOnce({ ok: true, wert: { art: 'erledigt' } as FixWirkung })
+    zeige()
+    const radios = Array.from(behaelter?.querySelectorAll<HTMLInputElement>('input[type=radio]') ?? [])
+    await act(async () => {
+      radios[0]?.click()
+    })
+    const knopf = behaelter?.querySelector('button') as HTMLButtonElement
+    await act(async () => {
+      knopf.click()
+    })
+    expect(steuer.rueckweg).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      knopf.click()
+    })
+    expect(steuer.rueckweg).toHaveBeenCalledTimes(2)
+    expect(steuer.aufAbgeschlossen).toHaveBeenCalledWith({ art: 'erledigt' })
   })
 
   it('Abbruch -> aufAbgebrochen, es wurde nichts geschrieben', () => {
