@@ -1089,3 +1089,79 @@ byte-identisch zurueckgenommen.
 | Verbleibend | 91 / 61 | **87** Dateien mit `readFileSync`, **56** mit Grep-/Bauvorschriften-`describe` |
 
 Verfeinert lesen nach dieser Charge **67** Describe-Bloecke wirklich eine Quelldatei.
+
+## 24. Charge 12 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `bibliothek-ansicht` (`bibliothek-ansicht.ts`), `ausgabe-liste-ansicht`
+(`ausgabe-liste.tsx`), `buehne` (`buehne.tsx`), `einblendung-stile-rechnung`
+(`einblendung-stile.ts`), `ausgabe-platzieren` (render-service). Auswahl nach
+Probezahl und Lesen; `bibliothek-ansicht-ansicht`, `asset-auswahl-anzeige` und
+`einblendung-ansicht-anzeige` bleiben fuer die naechste Charge liegen.
+
+**Ausgangsmessung:** 30 Verhaltens-Mutationen, 5 harmlose Refactorings.
+Erkannt: **25**. Gruen: **AL3, AL4, BU4, BU5, AP3**. **0/5 Refactorings rot**;
+jede Mutation byte-identisch zurueckgenommen (`tools/mutationen.py`).
+
+### Die vier Luecken (geschlossen)
+
+- **AL4 – der Export-Knopf gab bei mehreren Zeilen die falsche Datei.** Der Test
+  hatte genau EINE Zeile; `p.aufExportieren(p.stand.dateien[0])` waere dort gruen.
+  Neu: zwei Zeilen, der zweite Knopf muss die zweite Datei liefern.
+- **BU4/BU5 – `transformOrigin` und die schwarze Buehnenflaeche waren ungeprueft.**
+  `transformOrigin: 'center'` verschiebt die skalierte Flaeche sichtbar; `#FFFFFF`
+  als Kastenfarbe ebenso. Beides steht jetzt im bestehenden Raster-Test.
+- **AP3 – `EPERM` fehlte in der Wiederholungs-Wache.** Der Spec prueft nur `EBUSY`;
+  `['EBUSY']` statt `['EBUSY', 'EPERM']` blieb 32/32 gruen. Neu: ein EPERM-Lauf
+  wiederholt viermal und endet in `speicher_fehler`.
+
+### Als aequivalent belegt (Wachen/Testids bleiben)
+
+- **AL3 – `data-testid="ausgaben-fehler"` hat keinen Verbraucher.** Kein Test, kein
+  Treiber-Schritt liest die Kennung; sichtbar ist der Text, und der ist geprueft.
+- **ES4 – `bandBreite: 1920` statt `RENDER_PROFILE.breite`.** Heute derselbe Wert;
+  unterscheidbar erst bei einer Profilaenderung (Einzelquellen-Regel, s. u.).
+- **AP4 – `>=` statt `>` vor dem ersten Versuch.** Ein zusaetzliches `await` auf 0 ms
+  ist nicht beobachtbar.
+- **AP6 – `rm` ohne `force`.** Der Fehler wird geschluckt; die Idempotenz-Zusage ist
+  von aussen nicht unterscheidbar. Bleibt als defensive Absicherung stehen.
+
+### Zwei Faelle, die NUR die Grep-Probe fing (wichtig fuer die Entfernung)
+
+- **ES1 (`bandHöhe: höhe`)** war nur ueber die Zeile „GENAU EINE Subtraktion" rot.
+  Der Eigenschafts-Test kann ihn nicht sehen: Bei der echten `berechneBandGeometrie`
+  ist `1080 − bandY` immer gleich `höhe`. **Ersatz:** eine Attrappe der geteilten
+  Rechnung (`vi.doMock`, `bandY: 900` bei `H = 162`) verlangt `bandHöhe: 180`.
+  Gegenprobe danach: **erkannt**.
+- **ES4** war ebenfalls nur ueber „kein Zahlenliteral" rot – und bleibt nach dem
+  Entfernen gruen. Das ist die ehrliche Einzelquellen-Luecke, kein Testfehler.
+
+### Entfernt (9 Tests, 3 ergaenzt – netto −6)
+
+- **2** in `bibliothek-ansicht` (kein JSX/react/IPC; `kaputt` nicht selbst gerechnet).
+  Die Zusage „keine zweite Regel" traegt der Verhaltens-Test gegen `istAktionKaputt`.
+- **2** in `ausgabe-liste-ansicht` (kein `rufeAuf`/`KANAELE`/eigener Ladevorgang;
+  kein `useState`/`useEffect`).
+- **2** in `buehne` (kein `devicePixelRatio`/Runden/Literal/canvas/video; nur ein
+  Zustand).
+- **2** in `einblendung-stile-rechnung` (kein `Math.`/Literal/genau eine Subtraktion;
+  kein JSX/react).
+- **1** in `ausgabe-platzieren` („was die Datei nicht tut": kein `child_process`/
+  `spawn`/`ermittleFfprobePfad`, keine 1-%-Formel) plus die zwei eingebetteten
+  `QUELLTEXT`-Zeilen im EXDEV-Test. **Ersatz fuer „kopiert nichts":** die Zieldatei
+  ist nach dem EXDEV-Lauf noch die alte – ein `copyFile` laege dort als „bytes".
+
+**Ehrlich offen:** Die entfernten Verbote sind Architekturregeln (Lint-Kandidat);
+die Einzelquellen-Regel `bandBreite` ist nur durch den Wert gedeckt.
+
+### Stand nach Charge 12
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **30**: 25 erkannt, 5 aequivalent/ohne Verbraucher |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **9** |
+| Verhaltens-Tests ergaenzt | – | **3** |
+| Echte Luecken geschlossen | – | **4** (AL4, BU4, BU5, AP3) |
+| Suite | 5.523 | **5.517** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Verbleibend | 87 Dateien mit `readFileSync` | **83** Dateien mit `readFileSync`; **61** mit Grep-/Bauvorschriften-`describe` (breite Namenssuche – die 56 der Vorcharge stammen aus einer engeren Definition und sind damit nicht direkt vergleichbar) |

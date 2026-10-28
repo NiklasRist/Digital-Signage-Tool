@@ -11,7 +11,47 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, Übergabe nach Mutations-Chargen 1–11) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, fünfzehnte Sitzung: Mutations-Charge 12) – gilt vor ALLEM weiter unten
+
+**Volltext dieser Übergabe: [`docs/agents/uebergabe-2026-10-28-charge-12.md`](docs/agents/uebergabe-2026-10-28-charge-12.md).**
+Die Einzelbefunde stehen in [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 24.
+
+- **CHARGE 12 GEBAUT:** fünf Testdateien – `bibliothek-ansicht`, `ausgabe-liste-ansicht`,
+  `buehne`, `einblendung-stile-rechnung`, `ausgabe-platzieren`. **30 Verhaltens-Mutationen**,
+  **5 Refactorings**; 25 erkannt, **4 echte Luecken** geschlossen (**AL4, BU4, BU5, AP3**),
+  **AL3/ES4/AP4/AP6 aequivalent**; **0/5 Refactorings rot**; jede Mutation byte-identisch
+  zurueckgenommen.
+- **Die Luecken:** **AL4** – der Export-Knopf gab bei mehreren Zeilen `dateien[0]` statt der
+  eigenen Datei (mit einer Testzeile unsichtbar); neu: zwei Zeilen, zweiter Knopf ⇒ zweite
+  Datei. **BU4/BU5** – `transformOrigin: 'center'` und `backgroundColor: '#FFFFFF'` blieben
+  gruen; jetzt im Raster-Test festgenagelt. **AP3** – `EPERM` fehlte in der
+  Wiederholungs-Wache (`['EBUSY']` war 32/32 gruen); neu: EPERM wiederholt viermal und endet
+  in `speicher_fehler`.
+- **Zwei Faelle fing NUR die Grep-Probe:** **ES1** (`bandHöhe: höhe`) – bei der echten
+  `berechneBandGeometrie` ist `1080 − bandY` immer `höhe`; **Ersatz** ist eine Attrappe der
+  geteilten Rechnung (`vi.doMock`, `bandY: 900` bei `H = 162` ⇒ `bandHöhe: 180`), Gegenprobe
+  erkannt. **ES4** (`bandBreite: 1920` statt `RENDER_PROFILE.breite`) bleibt nach dem
+  Entfernen gruen = ehrliche Einzelquellen-Luecke.
+- **Entfernt:** **9** Quelltext-/Meta-Tests, **3** Verhaltens-Tests ergaenzt; Suite
+  **5.523 → 5.517** (netto −6). Die zwei eingebetteten `QUELLTEXT`-Zeilen in
+  `ausgabe-platzieren` („kein `copyFile`/`createReadStream`") sind durch die Zieldatei
+  ersetzt: nach EXDEV liegt dort noch „alt", ein `copyFile` laege als „bytes".
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.517 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar nach Charge 12:** **83** Testdateien mit `readFileSync` (vorher 87), **61** mit
+  Grep-/Bauvorschriften-`describe` (breite Namenssuche; die 56 der Vorcharge stammen aus einer
+  engeren Definition und sind nicht direkt vergleichbar).
+- **Ehrlich offen:** Architektur-Verbote (kein IPC, kein zweiter Schreibweg, kein eigener
+  Zustand, kein Kanal-Literal, kein JSX in reinen Modulen) haben **keinen Waechter** bis zu
+  einer Lint-Regel; Einzelquellen-Regeln sind nur noch durch Werte gedeckt (belegt durch ES4).
+- **Nicht gepusht:** `main` liegt **25 Commits** vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 13** – Inventur, dann fuenf Dateien; naheliegende
+  Kandidaten: `bibliothek-ansicht-ansicht`, `asset-auswahl-anzeige`,
+  `einblendung-ansicht-anzeige` sowie die Einzelproben in `speicherstatus-*`,
+  `sicherheitsabstand-bearbeiten`, `vorschau-auswahl-rechnung`, `video-filmstreifen-blob`,
+  `split-anzeige`.
+
+## STAND HEUTE (28.10.2026, Übergabe nach Mutations-Chargen 1–11) – historisiert durch den Abschnitt darueber
 
 **Volltext dieser Übergabe: [`docs/agents/uebergabe-2026-10-28-mutationen.md`](docs/agents/uebergabe-2026-10-28-mutationen.md).**
 Die Einzelbefunde stehen in [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitte 13–23.
