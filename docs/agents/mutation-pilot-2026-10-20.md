@@ -1382,3 +1382,54 @@ Uebernehmen zu" gilt unveraendert und wird weiter geprueft.
 | Suite | 5.490 | **5.487** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 60 | **55** Dateien |
+
+## 29. Charge 16 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `queue-panel-wurzel` (`queue-panel/leisten-montage.ts`), `marken-uebersicht`
+(`marken-uebersicht.ts`), `marken-zugang` (`marken-zugang.ts`), `element-zeile`
+(`element-zeile.ts`), `concat` (`concat.ts`). Alle von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 23 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **21**.
+Gruen: **EZ2, EZ4** (echte Luecken) und **QP3** (aequivalent). **0/5 Refactorings rot**; jede
+Mutation byte-identisch zurueckgenommen.
+
+### Die zwei Luecken (geschlossen)
+
+- **EZ2 – die Wache gegen nicht endliche Zieh-Werte war unsichtbar.** Der Test nahm eine Lage,
+  die **dem Modell entsprach** – der Rueckfall von `begrenze` sah dann genauso aus, und
+  `toEqual` blieb gruen. Neu: eine BEWEGTE Lage (ende 7.7 gegen Modell 12.5) und `toBe(lage)`;
+  ohne die Wache springt die Lage auf den Modellstand zurueck.
+- **EZ4 – `!(spanne > 0)` deckte auch NaN, `=== 0` nicht.** Der Test kannte nur den Gleichstand.
+  Neu: `obergrenze: NaN` ⇒ `anteil` liefert 0, nicht NaN.
+
+### Als aequivalent belegt
+
+- **QP3 – `schliesseRueckfrage` raeumt die Meldung mit ab, aber der Zustand ist unerreichbar.**
+  `meldeLeistenFehler` setzt `rueckfrage: null`; `schliesseRueckfrage` wird nur aus den beiden
+  Knoepfen der offenen Rueckfrage gerufen. Meldung und Rueckfrage sind nie gleichzeitig gesetzt.
+
+### Entfernt (8 Tests, 0 ergaenzt – netto −8, zwei Tests geschaerft)
+
+- **2** in `queue-panel-wurzel` (`leisten-montage.ts` rein; `index.tsx` holt nichts selbst).
+- **2** in `marken-uebersicht` (kein verbotenes Muster; kein zweiter Parameter).
+- **1** in `marken-zugang` (kein Direktimport/kein Kanal/keine editor-internen Namen).
+- **2** in `element-zeile` (Verbotsliste; keine Literale 10/45/30).
+- **1** in `concat` (kein Betriebsflag, kein Container-Literal).
+
+**Ehrlich offen:** Die entfernten Architekturregeln (kein `sort`/`filter`/`slice`, keine
+Direktimporte zwischen Renderer-Bereichen, kein Timer) sind **ohne Waechter** – Lint-Kandidat.
+Die Rangfolge-Zusage in `concat` („kein Betriebsflag") bleibt durch die Integrationstests
+gedeckt, die echtes ffmpeg fahren.
+
+### Stand nach Charge 16
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **23**: 21 erkannt, 2 Luecken, 1 aequivalent |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **8** |
+| Verhaltens-Tests ergaenzt | – | **0** (2 geschaerft) |
+| Echte Luecken geschlossen | – | **2** |
+| Suite | 5.487 | **5.479** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 55 | **50** Dateien |

@@ -11,7 +11,33 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, neunzehnte Sitzung: Mutations-Charge 15) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, zwanzigste Sitzung: Mutations-Charge 16) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-28-charge-16.md`](docs/agents/uebergabe-2026-10-28-charge-16.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 29.
+
+- **CHARGE 16 GEBAUT:** fuenf Testdateien – `queue-panel-wurzel`, `marken-uebersicht`,
+  `marken-zugang`, `element-zeile`, `concat`. **23 Verhaltens-Mutationen**, **5 Refactorings**;
+  21 erkannt, **2 echte Luecken** geschlossen, **QP3 aequivalent**; **0/5 Refactorings rot**;
+  jede Mutation byte-identisch zurueckgenommen.
+- **Die Luecken:** **EZ2** – der Test nahm eine Lage, die dem **Modell** entsprach; der Rueckfall
+  von `begrenze` sah genauso aus, die Wache gegen NaN/Infinity war unsichtbar. Neu: bewegte Lage
+  (ende 7.7) und `toBe(lage)`. **EZ4** – `!(spanne > 0)` deckte auch NaN, `=== 0` nicht; neu:
+  `obergrenze: NaN` ⇒ `anteil` liefert 0.
+- **Aequivalent:** **QP3** – `schliesseRueckfrage` raeumt die Meldung mit ab, aber Meldung und
+  Rueckfrage sind nie gleichzeitig gesetzt (`meldeLeistenFehler` nullt die Rueckfrage).
+- **Entfernt:** **8** Quelltext-/Meta-Tests, **0** ergaenzt, **2** geschaerft; Suite **5.487 →
+  5.479** (netto −8). **Sperrklinke:** 55 → **50** Dateien.
+- **Ehrlich offen:** Architektur-Verbote ohne Waechter (kein `sort`/`filter`/`slice`, keine
+  Direktimporte zwischen Renderer-Bereichen, kein Timer) – Lint-Kandidat. #448 (192 SAFETY) steht.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.479 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 17** – fuenf der verbleibenden **50**; Kandidaten:
+  `medien-bibliothek`, `kaputt-handling`, `bild-zuweisen`, `slogan-bearbeiten`,
+  `video-filmstreifen-blob`.
+
+## STAND HEUTE (28.10.2026, neunzehnte Sitzung: Mutations-Charge 15) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-28-charge-15.md`](docs/agents/uebergabe-2026-10-28-charge-15.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 28.
