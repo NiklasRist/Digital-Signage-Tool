@@ -7,21 +7,8 @@ import { ermittleFfprobePfad } from '../ffmpeg-pfad'
 import type { ChildProcess, ExecFileException } from 'node:child_process'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//
-//   #6 - src/main/ffmpeg-pfad.ts
-//   export function ermittleFfprobePfad(): string
-//     Absoluter Pfad zum ausfuehrbaren ffprobe-Binary. Dev: node_modules/ffprobe-static;
-//     gepackt: der ausgepackte Zwilling neben dem Programmarchiv, den #6 ermittelt.
-//
-//   DIESE FUNKTION IST DIE EINZIGE QUELLE DES PFADES. Hier wird er nicht gebaut, nicht
-//   aus ermittleFfmpegPfad() abgeleitet, nicht aus einer Umgebungsvariablen gelesen und
-//   es gibt keinen Rueckfall auf ein ffprobe aus dem System-PATH. Ein hier
-//   zusammengebauter Pfad funktioniert im Entwicklungsmodus und scheitert in der
-//   portablen EXE - also beim Kunden, beim ersten Import.
-//
-//   Die Verfuegbarkeit prueft diese Datei NICHT: Das hat der Start-Selbsttest
-//   (pruefeFfprobeVerfuegbar, #3) bereits getan.
+// Der Pfad kommt ausschliesslich aus `ermittleFfprobePfad()` (#6) - hier wird er nicht gebaut,
+// abgeleitet oder aus dem System-PATH genommen. Die Verfuegbarkeit prueft der Start-Selbsttest (#3).
 
 /**
  * Zeitgrenze fuer einen ffprobe-Lauf.

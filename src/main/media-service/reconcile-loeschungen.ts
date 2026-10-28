@@ -8,24 +8,6 @@ import { entferneDatei } from './datei-entfernen'
 import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/ergebnis'
 import type { ReconcileFehlercode } from './fehlercodes'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #66:  holePendingDeletions(projektId: string)
-//           : Promise<Ergebnis<PendingDeletion[], QueueFehlercode>>
-//         // leere Liste ist ein gueltiges Ergebnis; eine fehlende queue-retry.json ist KEIN
-//         // Fehler. `PendingDeletion = { dateiname: string; vermerktAm: string }` (#55) -
-//         // `dateiname` ist `<uuid>.<ext>` OHNE Verzeichnisanteil (TK 9.4.8 Punkt 1).
-//   #66:  streichePendingDeletion(projektId: string, dateiname: string)
-//           : Promise<Ergebnis<void, QueueFehlercode>>
-//         // IDEMPOTENT: ist der dateiname nicht vorgemerkt, lautet das Ergebnis
-//         // { ok: true, wert: undefined } - NICHT nicht_gefunden.
-//   #49:  loeseAssetPfad(projektId: string, dateiname: string): Ergebnis<string>
-//         // absoluter Pfad zur Datei im Medienordner; liefert NUR einen Pfad, wenn dieser nach
-//         // Normalisierung nachweislich innerhalb von medienOrdner(projektId) liegt, sonst
-//         // `ungueltige_eingabe`; reine String-/Pfad-Operation, KEINE Existenzpruefung.
-//   #86:  entferneDatei(pfad: string): Promise<Ergebnis<void, 'datei_fehler'>>
-//         // EIN Parameter: der fertig aufgeloeste absolute Pfad. Windows-Retry mit Backoff bei
-//         // EBUSY/EPERM steckt DORT; eine bereits fehlende Datei (ENOENT) gilt als ERFOLG.
-//
 // DIESE DATEI FUEHRT AUS, SIE VERWAHRT NICHT: "`pendingDeletions` sind ausdruecklich KEINE
 // Auftraege: Sie werden in Q2 nur verwahrt; nachgeholt werden sie vom Reconcile des
 // `media-service` beim Oeffnen des Projekts (9.4.7)" (TK 9.3, Punkt 3). Deshalb kein `reiheEin`,

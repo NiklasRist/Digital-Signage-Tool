@@ -11,25 +11,6 @@ import { KANAELE } from '../../shared/contracts/kanaele'                // #25
 import { abgelehnt, istObjekt } from '../ipc-gateway/nutzlast-pruefer'  // #332
 import { registriereHandler } from '../ipc-gateway/registriere-handler' // #23
 import { öffneMedienDialog, type MedienDialogOptionen } from './dialog' // #81/#418
-
-// Fremde Aufrufe - vollstaendige Signaturen, beide gegen die GEBAUTEN Dateien geprueft,
-// nicht gegen das Zitat im Issue:
-//   #23: registriereHandler<T, F extends string>(
-//          kanal: string,
-//          validiere: (nutzlast: unknown) => Ergebnis<unknown, 'ungueltige_eingabe'>
-//                                          | { ok: true; wert: unknown },
-//          ausfuehren: (validierteNutzlast: unknown) => Promise<Ergebnis<T, F>>,
-//        ): void
-//        // validiert zuerst; bei ok:false laeuft `ausfuehren` GAR NICHT an. Faengt jede
-//        // Ausnahme und uebersetzt sie in 'unbekannter_fehler'. Reicht das Ergebnis von
-//        // `ausfuehren` unveraendert zurueck.
-//   #81: öffneMedienDialog(): Promise<Ergebnis<{ pfade: string[] }>>
-//        // Auswahl -> pfade = absolute Quellpfade; Abbruch -> ok: true mit pfade = [].
-//   #418: öffneMedienDialog(optionen?: MedienDialogOptionen)
-//        // NEU: optionaler Parameter ({ nurTyp?: 'video'|'bild'; einzel?: boolean }).
-//        // Ohne Optionen byte-identisch zum #81-Verhalten (Mehrfachauswahl, beide Typen).
-//        // Nachtrag an #81 (rueckwaertskompatibel) - der Bild-Weg ruft ohne Optionen.
-
 /**
  * Prueft die OPTIONALE Nutzlast des Dialog-Kanals (#418).
  *

@@ -4,24 +4,6 @@ import { registriereAuftragsHandler } from '../auftrags-manager/dispatcher';
 
 import { importMedium } from './import-medium';
 import { löscheMedium } from './loesche-medium';
-
-// Fremde Aufrufe - vollstaendige Signaturen, am 13.08.2026 in der GEBAUTEN Datei nachgelesen,
-// nicht aus dem Issue abgeschrieben:
-//   #60 (src/main/auftrags-manager/dispatcher.ts):
-//         registriereAuftragsHandler<A extends AuftragArt>(
-//           art: A, handler: HandlerFuer<A>, brichAb?: (auftrag: Auftrag) => void,
-//         ): void
-//         // genau EIN Handler je Art; fehlt brichAb, ist die Art NICHT abbrechbar
-//         // (kannAbbrechen(art) liefert dann false)
-//   #85:  importMedium(auftrag: Extract<Auftrag, { art: 'import' }>, kontext: AusfuehrungsKontext)
-//           : Promise<HandlerErgebnis<ImportFehlercode>>
-//   #87:  löscheMedium(auftrag: Extract<Auftrag, { art: 'loeschen' }>, kontext: AusfuehrungsKontext)
-//           : Promise<HandlerErgebnis<LoeschFehlercode>>
-//
-// Beide Fachfunktionen TRAGEN die Handler-Signatur bereits: `HandlerErgebnis<ImportFehlercode>`
-// bzw. `HandlerErgebnis<LoeschFehlercode>` sind auf `HandlerErgebnis<string>` zuweisbar, das
-// `HandlerFuer<A>` verlangt. Ein Adapter ist deshalb nicht noetig - und waere verboten.
-
 /**
  * Meldet die beiden Medien-Auftragsarten beim Dispatcher an (TK 9.3.2).
  *

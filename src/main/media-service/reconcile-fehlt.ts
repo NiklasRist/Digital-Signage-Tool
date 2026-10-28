@@ -10,17 +10,6 @@ import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/erg
 import type { Asset } from '../../shared/contracts/asset'
 import type { ReconcileFehlercode } from './fehlercodes'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #49:  loeseAssetPfad(projektId: string, dateiname: string): Ergebnis<string>
-//         // absoluter Pfad zur Asset-Datei; liefert NUR einen Pfad, wenn dieser nach
-//         // Normalisierung nachweislich innerhalb von medienOrdner(projektId) liegt, sonst
-//         // `ungueltige_eingabe`; reine String-/Pfad-Operation, KEINE Existenzpruefung.
-//   #74:  setzeAssetZustand(projektId: string, assetId: string, zustand: 'ok' | 'fehlt')
-//           : Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//         // setzt Asset.zustand im geladenen Projekt, nimmt das D1-Lock (#32) SELBST und
-//         // stoesst danach die entprellte Auto-Speicherung an. Erfolg heisst "gueltig
-//         // uebernommen", NICHT "schon auf Platte" (TK 9.5.4).
-//
 // Der EINZIGE Dateisystemzugriff dieser Datei ist das `fs.stat` in `ermittleBefund`. Sie
 // schreibt nichts, loescht nichts und fasst das uebergebene `Asset`-Objekt nicht an: Jede
 // D1-Aenderung laeuft ueber `setzeAssetZustand` ("Alle D1-Schreibvorgaenge delegiert er an den

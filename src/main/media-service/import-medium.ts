@@ -18,24 +18,6 @@ import type { GenerischerFehlercode } from '../../shared/contracts/ergebnis';
 import type { AusfuehrungsKontext, HandlerErgebnis } from '../auftrags-manager/dispatcher';
 import type { ImportFehlercode } from './fehlercodes';
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird (alle am 13.08.2026
-// in der gebauten Datei nachgelesen, nicht aus dem Issue abgeschrieben):
-//   #20:  erzeugeId(): string                                    // UUID v4
-//   #49:  medienOrdner(projektId: string): string                // reine String-Operation
-//         loeseAssetPfad(projektId: string, dateiname: string): Ergebnis<string>
-//   #80:  pruefeFormat(dateiname: string)
-//           : Ergebnis<{ typ: 'video' | 'bild'; endung: string }, 'format_nicht_unterstuetzt'>
-//         // nimmt selbst das letzte Pfadsegment, vertraegt also den ganzen quellPfad
-//   #84:  kopiereInsStaging(quellPfad, zielOrdner, dateiname, meldeFortschritt?)
-//           : Promise<Ergebnis<{ partPfad: string }, 'datei_nicht_gefunden' | 'kopier_fehler'>>
-//         macheEndgueltig(partPfad, endPfad): Promise<Ergebnis<void, 'kopier_fehler'>>
-//   #82:  leseRohMetadaten(dateiPfad: string): Promise<Ergebnis<unknown, 'probe_fehler'>>
-//   #83:  werteMetadatenAus(roh: unknown, typ: 'video' | 'bild')
-//           : Ergebnis<{ maße: {breite, höhe}; dauer: number | null }, 'probe_fehler'>
-//   #86:  entferneDatei(pfad: string): Promise<Ergebnis<void, 'datei_fehler'>>
-//   #72:  fuegeAssetHinzu(projektId: string, asset: Asset): Promise<Ergebnis<Asset,
-//           ProjectStoreFehlercode>>   // nimmt das D1-Lock SELBST und flusht sofort
-//
 // DIE REIHENFOLGE IST DER GANZE INHALT DIESER DATEI. Jeder einzelne Baustein ist harmlos; ihre
 // Anordnung ist es, die garantiert, dass nie ein Asset-Eintrag auf eine unvollstaendige oder gar
 // nicht vorhandene Datei zeigt:

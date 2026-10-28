@@ -11,26 +11,6 @@ import type { GenerischerFehlercode } from '../../shared/contracts/ergebnis';
 import type { AusfuehrungsKontext, HandlerErgebnis } from '../auftrags-manager/dispatcher';
 import type { LoeschFehlercode } from './fehlercodes';
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #73:  entferneAsset(projektId: string, assetId: string)
-//           : Promise<Ergebnis<Asset, 'asset_referenziert' | 'asset_nicht_gefunden'
-//                                     | ProjectStoreFehlercode>>
-//         // prueft die Referenzen UND entfernt den Eintrag im SELBEN kritischen Abschnitt unter
-//         // dem EINEN D1-Schreib-Lock, schreibt per SOFORT-FLUSH (TK 9.5.4) und liefert den
-//         // ENTFERNTEN Asset zurueck. `ok: true` heisst: der Eintrag ist DAUERHAFT weg.
-//         // Referenziert -> `asset_referenziert` mit `daten: { referenzenIds: string[] }`,
-//         // NICHTS ist veraendert. Nimmt das Lock SELBST - hier wird nichts eingewickelt.
-//   #49:  loeseAssetPfad(projektId: string, dateiname: string): Ergebnis<string>
-//         // absoluter Pfad der Asset-Datei; `ungueltige_eingabe`, wenn der Pfad nach
-//         // Normalisierung nicht innerhalb von medienOrdner(projektId) liegt. Reine
-//         // String-Operation, kein Dateisystemzugriff.
-//   #86:  entferneDatei(pfad: string): Promise<Ergebnis<void, 'datei_fehler'>>
-//         // loescht GENAU EINE Datei, mit Retry+Backoff bei EBUSY/EPERM; eine bereits
-//         // fehlende Datei ist ERFOLG (idempotent).
-//   #66:  merkePendingDeletion(projektId: string, dateiname: string)
-//           : Promise<Ergebnis<void, QueueFehlercode>>
-//         // idempotent; nimmt den DATEINAMEN ohne Verzeichnisanteil, NICHT den absoluten Pfad.
-//
 // DIE REIHENFOLGE IST DER GANZE INHALT DIESER DATEI: D1 zuerst, danach die Datei.
 // "Atomizitaet Loeschen: Reihenfolge D1 -> Datei. Kein ListItem zeigt je auf eine bereits
 // geloeschte Datei." (TK 9.4.8, Punkt 6) Umgedreht entstuende - zwischen den Schritten oder fuer

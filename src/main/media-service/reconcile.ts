@@ -22,19 +22,6 @@ import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/erg
 import type { Asset } from '../../shared/contracts/asset'
 import type { ReconcileFehlercode } from './fehlercodes'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird
-// (GEPRUEFT an den gebauten Dateien, nicht aus dem Issue abgeschrieben):
-//   #90:  holeLoeschungenNach(projektId: string)
-//           : Promise<Ergebnis<{ erledigt: number; offen: number }, ReconcileFehlercode>>
-//         // erledigt = Datei weg UND Vermerk gestrichen; offen = Eintraege, die danach noch in
-//         // Q2 stehen. Ein einzelner gescheiterter Loeschversuch ist KEIN Fehler.
-//   #88:  entferneWaisen(projektId: string, bekannteDateinamen: Set<string>)
-//           : Promise<Ergebnis<{ entfernt: number }, ReconcileFehlercode>>
-//         // leere Menge bedeutet: jede Datei im Medienordner ist eine Waise.
-//   #89:  markiereFehlende(projektId: string, assets: Asset[])
-//           : Promise<Ergebnis<{ markiert: number }, ReconcileFehlercode>>
-//         // markiert zaehlt NUR die in diesem Lauf neu auf 'fehlt' gesetzten Assets.
-//
 // MEHR BRAUCHT DIESE DATEI NICHT - insbesondere KEINE Pfad-Aufloesung. Sie fasst keinen Pfad an:
 // `medienOrdner` und `loeseAssetPfad` (#49) rufen die drei Schritte selbst. Ein Aufruf hier waere
 // ein ungenutzter Import und die erste Zeile Fachlogik in einer Datei, die keine haben darf.

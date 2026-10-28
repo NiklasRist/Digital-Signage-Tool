@@ -53,12 +53,6 @@ import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/erg
 import type { ReconcileFehlercode } from './fehlercodes'
 import type { Dirent } from 'node:fs'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #49:  medienOrdner(projektId: string): string
-//         // absoluter Pfad `<Datenort>/projects/<projektId>/media`; reine String-Operation,
-//         // KEIN Dateisystemzugriff, KEINE Existenzpruefung, kann nicht fehlschlagen.
-//   #84:  export const STAGING_ORDNER = '.staging'  // Ordnername INNERHALB des Medienordners
-//
 // Mehr braucht diese Datei nicht. Insbesondere NICHT `loeseAssetPfad` (#49): Es prueft einen
 // `dateiname` gegen die Regeln des Datenmodells und lieferte fuer genau die Namen, um die es
 // hier geht (`<uuid>.<ext>.part`, Reste beliebiger Herkunft), teils `ok: false`. Der Pfad einer
