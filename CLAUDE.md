@@ -11,7 +11,51 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (27.10.2026, #316/#317/#338/#339 gebaut, gemergt, belegt – Gate Exit 0) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, vier Bau-Issues geschlossen, FA-03 messbar, Backlog-Analyse) – gilt vor ALLEM weiter unten
+
+**Volltext dieser Sitzung: [`docs/agents/uebergabe-2026-10-28-session.md`](docs/agents/uebergabe-2026-10-28-session.md).**
+
+- **Die M8-Kette der 23.10.-Übergabe ist DURCH:** **#316** (`8cbb5f9`, Merge `500c591`) –
+  `einblendung.flaecheDunkel` als Pflichtfeld, kein Marken-Zugriff im `render-service`;
+  **#317** (`4671f8d`, Merge `500c591`) – `config-store.leseMarke` samt Kanal **gelöscht**;
+  **#339** (`4cd6336`, Merge `861632e`) – sechster Prüfpunkt, `flaecheDunkel` nur auf Form;
+  **#338** (`a2cbf3d`, `4bd3289`, Merge `8154082`) – fünfte kaputte Art `aktion_marke`.
+  Alle vier mit Beleg-Kommentar als `completed` geschlossen.
+- **Gate: `npm run pruefung` Exit 0** – **5.645 Unit-Tests (334 Dateien)**, **49
+  Integrationstests (12 Dateien)**, Treiber **0 Befunde**. Je Issue eine Gegenprobe belegt und
+  byte-identisch zurückgenommen (#316 3/4, #317 7/4, #339 1, #338 4, FA-03 1). Dokumente
+  unverändert (AD v1.9 / TK v3.28); `AGENTS.md` auf diesen Stand gezogen (`10adaba`).
+- **Gemeldete Widersprüche:** bei #316/#317 fremde Fixtures/Specs mechanisch mitgezogen; bei
+  #339 **kein** TK-Nachtrag (DoD verbietet Dateien außerhalb); bei #338 war die DoD-Zeile
+  „keine Datei außerhalb der #131-Datei" **nicht haltbar** (13 Produktions-, 8 Testdateien), und
+  `naht-typen-313.spec.ts` prüfte bis dahin das **Gegenteil** („composer trägt KEIN
+  `marken`-Feld") – Probe mit Begründung umgedreht.
+- **Messweg 4g3: die Gegenprobe hat NICHT gebissen** (`9bb8093`). Der FA-03-Befund vom 26.10.
+  (3 von 4 Läufen rot) ließ sich durch `focusout` **nicht** erklären – ein Lauf gegen den alten
+  Stand war am 27.10. ebenfalls grün. Die Änderung bleibt als Angleichung an #310, **nicht als
+  Ursache belegt**; neu loggt 4g3 Fensterfokus, Feldfokus und aktives Element.
+- **FA-03-Nachlauf: ein gescheitertes Speichern war unsichtbar – behoben** (`ea2c3ea`, Merge
+  `fe27f5e`). `einspeisen` verwarf `{ ok: false }` vollständig (der Typ trug nicht einmal
+  `fehler`); `feldVerlassen` kehrte still zurück, wenn die Auswahl auf eine verschwundene Aktion
+  zeigte. Jetzt: `Nicht gespeichert: <Meldung des Mains>`. **FA-03 ist damit nicht gelöst,
+  sondern messbar** – 4g3 protokolliert bei Fehlschlag Titelfeld, Zeilen, Formular- und
+  Wurzel-Meldung.
+- **Nebenbefund als #445 angelegt:** Im Modus „Neue Aktion" erreichen getippte Werte das Formular
+  nie (`gewaehlt === null` → `feldVerlassen` kehrt vor dem Schreiben zurück; `formular.titel`
+  bleibt `''`). Code-belegt, **nicht** am Fenster gemessen.
+- **Backlog-Analyse (28.10., 25 offene Issues):** baubar ohne Rückfrage sind **#445**,
+  **#394** (Dashboard ohne Aufrufer – montieren oder löschen), **#364** (Tainting), das
+  Nachziehen der **Treiber-Matrix** (steht auf 21.10.), ein **FA-03-Issue** sowie Q1.2 und die
+  Mutations-Chargen. **Nur der Auftraggeber** kann: **FA-13** freigeben (#100/#155 – die einzige
+  zugesagte Funktion ohne Code), **#303** abnehmen, **#442** reproduzieren, **#443** und
+  **#394** entscheiden, **FA-11/FA-12** optisch abnehmen, **pushen**.
+- **Banner-Familie #365–#376 (12 Issues) ist blockiert**, bis der AD/TK-Nachtrag steht –
+  #366/#367/#371 sind `braucht-entscheidung`. Ohne Nachtrag endet sie wie die Zwei-Screens-Ära.
+- **Nächster Schritt (Vorschlag):** erst #445, #394, Matrix, FA-03-Issue (alle klein, machen den
+  Backlog ehrlich), dann **FA-13** (#100/#155). **Push nur auf Anweisung** – `main` liegt vor
+  `origin/main`, nichts gepusht.
+
+## STAND HEUTE (27.10.2026, #316/#317/#338/#339 gebaut, gemergt, belegt – Gate Exit 0) – historisiert durch den Abschnitt darueber
 
 - **Die M8-Kette aus der 23.10.-Übergabe ist DURCH.** Alle drei gebaut, auf `main` gemergt und
   mit Beleg-Kommentar als `completed` geschlossen:
