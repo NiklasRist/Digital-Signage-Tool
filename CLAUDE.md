@@ -11,7 +11,37 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, fuenfte Sitzung: Mutations-Charge 2) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, sechste Sitzung: Mutations-Charge 3) – gilt vor ALLEM weiter unten
+
+**Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 15.**
+
+- **Charge 3 GEBAUT (`a8e2e32`):** fuenf Testdateien – `filter-split`, `reparatur-fuehrung`,
+  `inspektor`, `bild-laden`, `zone-deko`. **25 Verhaltens-Mutationen**, **5 harmlose
+  Refactorings**; 23 erkannt, **F2 gruen** (echte Luecke), **I3 gruen** (aequivalent),
+  **0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+- **Die Luecke:** Die Vierer-Regel war nur als „gerade" geprueft – der bestehende Test nutzt
+  1557 (ungerade), eine **gerade** Breite ohne 4er-Teilbarkeit (1558) kam durch. Der erste
+  neue Test prueft nur die Zahl in der Meldung und blieb gruen, weil die spaetere
+  „nicht mittig"-Meldung dieselbe Zahl traegt; erst `toContain("Vielfaches von 4")` beisst.
+  **Lehre: eine Meldung mit der richtigen Zahl ist kein Beleg fuer den richtigen Grund.**
+- **Aequivalent:** **I3** – die Zwischenklammer fuer `x` ist redundant, weil
+  `begrenzeAufFlaeche` den fertigen Rahmen ohnehin in die Flaeche klemmt. Bleibt als
+  defensive Absicherung stehen (Klasse Z8 aus Pilot 2).
+- **Entfernt:** **25** Quelltext-/Meta-Tests (je 5 in den fuenf Dateien), **1** Verhaltenstest
+  ergaenzt; Suite **5.645 → 5.621** (netto −24). Die „41 Tests" bei `filter-split` waren ein
+  Artefakt der Blockzaehlung – der Describe hat vier Tests, die Proben sassen verteilt.
+- **Gate:** `npm run pruefung` **Exit 0** – Unit **5.621 (340 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**; Typecheck/Lint 0 davor.
+- **Inventar neu:** **126** Testdateien mit `readFileSync` (vorher 131), **88** mit
+  Grep-/Bauvorschriften-`describe` (vorher 91); verfeinert lesen **110** Describe-Bloecke
+  wirklich eine Quelldatei.
+- **Ehrlich offen:** Die entfernten Architektur-Verbote haben weiterhin **keinen Waechter**
+  bis zu einer Lint-Regel.
+- **Nicht gepusht:** `a8e2e32` liegt lokal; **Push nur auf Anweisung.** **Naechster Schritt:
+  Charge 4** – Inventur, dann fuenf Dateien; Kandidaten sind `zonen-canvas`,
+  `video-anzeige` und die Marken-Editor-Nachbarn von `akzentfarbe`.
+
+## STAND HEUTE (28.10.2026, fuenfte Sitzung: Mutations-Charge 2) – historisiert durch den Abschnitt darueber
 
 **Volltext der Charge: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 14.**
 
