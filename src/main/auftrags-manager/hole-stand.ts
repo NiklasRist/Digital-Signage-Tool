@@ -7,23 +7,8 @@ import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { text } from '../gemeinsam/systemfehler'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #54: alleQ1(): Auftrag[]
-//        Neues Array mit denselben Auftrag-REFERENZEN, bereits in der Panel-Reihenfolge:
-//        der laufende zuerst, danach die anstehenden in FIFO-, also Einfuegereihenfolge,
-//        zuletzt die nur kurzzeitig vorhandenen terminalen Eintraege (zwischen
-//        Statuswechsel und Entfernen in #70).
-//   #55: holeQ2Stand(): { projektId: string; datei: Q2Datei } | null
-//        Der zuletzt geladene Q2-Stand aus dem Arbeitsspeicher, OHNE Dateizugriff;
-//        null, solange in dieser Sitzung noch kein Projekt geladen wurde. Herausgegeben
-//        wird bereits eine flache Kopie der beiden Listen.
-//
-// WARUM laufender() (#54) HIER NICHT AUFGERUFEN WIRD, obwohl das Issue es als verfuegbar
-// nennt: `alleQ1()` stellt den laufenden Auftrag SELBST an die erste Stelle - das ist
-// keine Zufaelligkeit der Einfuegereihenfolge, sondern in #54 ausdruecklich so gebaut und
-// dort begruendet. Wer ihn hier zusaetzlich ueber `laufender()` holte und vorne
-// anhaengte, haette ihn ZWEIMAL in der Liste: einmal aus `laufender()`, einmal aus
-// `alleQ1()`. Die geforderte Reihenfolge entsteht also aus `alleQ1()` allein.
+// `laufender()` (#54) wird hier bewusst NICHT gerufen: `alleQ1()` stellt den laufenden
+// Auftrag selbst an die erste Stelle - zusaetzlich geholt stuende er ZWEIMAL in der Liste.
 
 /**
  * Momentaufnahme der Warteschlange fuer die Oberflaeche (TK 9.3.4, FA-16).

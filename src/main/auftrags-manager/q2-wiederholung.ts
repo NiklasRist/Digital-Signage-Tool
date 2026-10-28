@@ -19,14 +19,6 @@ import type { Ergebnis, GenerischerFehlercode } from '../../shared/contracts/erg
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { QueueFehlercode } from './schreibe-queue-json'   // = 'speicher_fehler' (#69)
 import { text } from '../gemeinsam/systemfehler'
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #69: leseQueueDatei<T>(pfad: string, fallback: T): Promise<Ergebnis<T, QueueFehlercode>>
-//   #69: schreibeQueueDatei(pfad: string, inhalt: unknown): Promise<Ergebnis<void, QueueFehlercode>>
-//   #69: const QUEUE_SCHEMA_VERSION = 1   // gilt fuer Q2, Q3 und Q4 – KEINE eigene Zahl erfinden
-//   #49:   projektOrdner(projektId: string): string   // reine Berechnung, kann nicht fehlschlagen
-// Dateipfad (verbindlich): path.join(projektOrdner(projektId), 'queue-retry.json')
-
 export interface PendingDeletion {
   dateiname: string        // <uuid>.<ext>, OHNE Verzeichnisanteil (TK 9.4.8 Punkt 1)
   vermerktAm: string       // ISO-8601 UTC

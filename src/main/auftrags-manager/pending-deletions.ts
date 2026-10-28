@@ -18,19 +18,8 @@ import { text } from '../gemeinsam/systemfehler'
                                                               // NUR als Typ – #69 wird aus dieser
                                                               // Datei NICHT aufgerufen
 
-// Fremde Aufrufe – vollstaendige Signaturen. #55 ist der EINZIGE Kenner der Q2-Dateiform;
-// der Zugriff auf queue-retry.json laeuft ausschliesslich ueber diese Funktionen:
-//   #55: ladeQ2(projektId: string): Promise<Ergebnis<Q2Datei, QueueFehlercode>>
-//   #55: holeQ2Stand(): { projektId: string; datei: Q2Datei } | null   // synchron, nur RAM
-//   #55: interface Q2Datei { schemaVersion: number; auftraege: Auftrag[];
-//                              pendingDeletions: PendingDeletion[] }
-//   #55: interface PendingDeletion { dateiname: string; vermerktAm: string }
-//   #55: aenderePendingDeletions(
-//              projektId: string,
-//              aendere: (liste: PendingDeletion[]) => PendingDeletion[],
-//          ): Promise<Ergebnis<void, QueueFehlercode>>
-//          // die EINZIGE Schreib-Tuer fuer pendingDeletions: wendet `aendere` nur auf diese Liste
-//          // an, laesst `auftraege` unveraendert und schreibt die Datei
+// #55 ist der EINZIGE Kenner der Q2-Dateiform; `queue-retry.json` laeuft ausschliesslich
+// ueber `q2-wiederholung`.
 
 export async function holePendingDeletions(projektId: string): Promise<Ergebnis<PendingDeletion[], QueueFehlercode>> {
   if (!istGefuellterText(projektId)) {

@@ -13,25 +13,7 @@ import type { HandlerErgebnis } from './dispatcher'
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { ProtokollEintrag, ProtokollErgebnis } from '../../shared/contracts/protokoll'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #54: findeQ1(auftragId: string): Q1Eintrag | undefined
-//        liefert den INTERNEN, LEBENDEN Eintrag { auftrag, begonnenAm } - keine Kopie.
-//        Genau darauf beruht Schritt 2: Was hier an `auftrag` gesetzt wird, steht danach
-//        in Q1.
-//   #54: entferneAusQ1(auftragId: string): boolean   - entfernt unabhaengig vom Status
-//   #58: pruefeUebergang(von: AuftragStatus, nach: AuftragStatus): Ergebnis<void>
-//   #56: haengeProtokollEintragAn(eintrag: ProtokollEintrag): Promise<Ergebnis<void, QueueFehlercode>>
-//   #55: merkeFehlschlag(projektId: string, auftrag: Auftrag): Promise<Ergebnis<void, QueueFehlercode>>
-//   #55: streicheAusQ2(projektId: string, auftragId: string): Promise<Ergebnis<void, QueueFehlercode>>
-//        IDEMPOTENT: ohne Treffer { ok: true, wert: undefined } - kein Fehlerpfad.
-//   #65: sendeQueueGeaendert(): Promise<void>   - ohne Huelle, wird ABGEWARTET
-//   #59: starteNaechsten(): void                - heute noch ein werfender Rumpf
-//   #20: erzeugeId(): string                    - UUID v4
-//
-// ZUM IMPORT VON #59: Die Abhaengigkeit ist gegenseitig (der Torwaechter ruft diese
-// Funktion, wenn ein Handler aufloest). Das ist kein Versehen, sondern die im Issue
-// ausdruecklich gewollte Richtung - #70 wird VOR #59 gebaut. Beide Module benutzen
-// einander erst zur LAUFZEIT, nicht beim Laden; ein Modulzyklus entsteht dadurch nicht.
+// Modulzyklus mit #59: siehe `torwaechter.ts` - dort begruendet.
 
 /**
  * Der terminale Zielstatus zum Ausgang des Fachdienstes - die eindeutige Abbildung aus

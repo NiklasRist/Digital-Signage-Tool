@@ -2,23 +2,8 @@
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #55 (Q2): holeQ2Stand(): { projektId: string; datei: Q2Datei } | null
-//             synchron, nur RAM - der Stand des ZULETZT GELADENEN Projekts. Heraus kommt
-//             eine Kopie der beiden LISTEN, aber DIESELBEN Auftrags-Objekte; genau darauf
-//             beruht Schritt 2 (Wertkopie statt Objektreferenz).
-//   #54 (Q1): fuegeAnsEndeAn(auftrag: Auftrag): number   - die Position in der Schlange
-//             findeQ1(auftragId: string): Q1Eintrag | undefined
-//   #57 (Q4-Journal): haengeJournalEintragAn(eintrag: JournalEintrag)
-//                       : Promise<Ergebnis<void, QueueFehlercode>>
-//   #65 (Ereignis): sendeQueueGeaendert(): Promise<void>
-//   #59 (Torwaechter): starteNaechsten(): void
-//
-// ZU findeQ1: Es steht NICHT in der Funktionsliste des Issues, ist fuer die dort
-// verbindlich verlangte Idempotenz aber unverzichtbar - "steht der Auftrag bereits in Q1"
-// ist eine Frage an Q1, und `fuegeAnsEndeAn` beantwortet sie nicht: Sein Rueckgabewert ist
-// in beiden Faellen eine Position und unterscheidet "angehaengt" nicht von "war schon da".
-// Gemeldet am Dateiende, Punkt 1.
+// `findeQ1` (#54) steht nicht in der Funktionsliste des Issues, ist fuer die verlangte
+// Idempotenz aber unverzichtbar - s. Vermerk am Dateiende.
 
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { JournalEintrag } from '../../shared/contracts/protokoll'

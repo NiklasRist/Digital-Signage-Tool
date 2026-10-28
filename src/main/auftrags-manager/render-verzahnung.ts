@@ -4,23 +4,6 @@ import { registriereAuftragsHandler } from './dispatcher';
 import { holeAktivesProjekt } from '../project-store/aktives-projekt';
 import { sofortFlush } from '../project-store/auto-speichern';
 import { mitD1Lock } from '../project-store/d1-lock';
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #60:  registriereAuftragsHandler<A extends AuftragArt>(art, handler: HandlerFuer<A>,
-//           brichAb?: (auftrag: Auftrag) => void): void
-//         // EIN Handler je Art; ein zweiter Aufruf ERSETZT den Eintrag als Ganzes.
-//         // `fuehreAus` faengt jede Ausnahme des Handlers, prueft die FORM der Antwort und
-//         // huellt `meldeFortschritt` in einen eigenen Schutz. Nichts davon wird hier nachgebaut.
-//   #192: holeAktivesProjekt(): Project | null
-//         // der LEBENDE Stand des geoeffneten Projekts (dieselbe Objektreferenz, die die
-//         // Instant-Operationen mutieren). SYNCHRON, NIMMT KEIN LOCK, WIRFT NIE.
-//   #47:  sofortFlush(projekt: Project): Promise<Ergebnis<void, ProjectStoreFehlercode>>
-//         // schreibt `projekt` sofort und bricht den Entprellungstimer ab; MUSS vom Aufrufer
-//         // INNERHALB von mitD1Lock ausgefuehrt werden - die Funktion nimmt das Lock nicht selbst.
-//   #32:  mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//         // serialisiert alle D1-Schreibvorgaenge (FIFO, prozessintern); `aktion` darf nicht
-//         // erneut mitD1Lock rufen (Deadlock).
-
 import type { AusfuehrungsKontext, HandlerErgebnis } from './dispatcher';
 import type { Auftrag } from '../../shared/contracts/auftrag';
 import type { RenderRequest } from '../../shared/contracts/render-request'

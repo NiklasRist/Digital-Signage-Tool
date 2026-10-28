@@ -2,17 +2,6 @@
 
 import type { Auftrag, AuftragArt } from '../../shared/contracts/auftrag'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #20  (IDs):        erzeugeId(): string
-//   #54  (Q1):         fuegeAnsEndeAn(auftrag: Auftrag): number   - liefert die Position (1-basiert)
-//   #57  (Q4-Journal): haengeJournalEintragAn(eintrag: JournalEintrag)
-//                        : Promise<Ergebnis<void, QueueFehlercode>>
-//   #65  (Ereignis):   sendeQueueGeaendert(): Promise<void>
-//   #59  (Torwaechter):starteNaechsten(): void
-//   #192 (project-store): holeAktivesProjekt(): Project | null
-//                        synchron, nimmt kein Lock, wirft nie; liefert den LEBENDEN Stand.
-
 import type { JournalEintrag } from '../../shared/contracts/protokoll'
 import { erzeugeId } from '../../shared/contracts/id'
 import { holeAktivesProjekt } from '../project-store/aktives-projekt'

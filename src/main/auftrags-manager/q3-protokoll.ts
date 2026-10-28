@@ -12,13 +12,6 @@ import {
 } from './schreibe-queue-json'
 import { text } from '../gemeinsam/systemfehler'
 import type { QueueFehlercode } from './schreibe-queue-json'   // = 'speicher_fehler' (#69)
-
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #69: leseQueueDatei<T>(pfad: string, fallback: T): Promise<Ergebnis<T, QueueFehlercode>>
-//   #69: schreibeQueueDatei(pfad: string, inhalt: unknown): Promise<Ergebnis<void, QueueFehlercode>>
-//   #69: const QUEUE_SCHEMA_VERSION = 1   // gilt fuer Q2, Q3 und Q4 – KEINE eigene Zahl erfinden
-//   #5:    ermittleDatenOrt(): string       // app-weiter Datenort der portablen App
-
 /**
  * Der Dateiname von Q3. Zusammengesetzt wird der Pfad HIER, weil #69 das Datei-Layout
  * ausdruecklich nicht kennt ("Q3 = <ermittleDatenOrt()>/protokoll.json (#56); zusammengesetzt

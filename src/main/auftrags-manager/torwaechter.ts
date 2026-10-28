@@ -11,27 +11,8 @@ import type { AusfuehrungsKontext, HandlerErgebnis } from './dispatcher'
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { JournalEintrag } from '../../shared/contracts/protokoll'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #54: laufender(): Q1Eintrag | undefined
-//        naechsterAnstehender(): Q1Eintrag | undefined
-//        Beide liefern den INTERNEN, LEBENDEN Eintrag { auftrag, begonnenAm } - keine
-//        Kopie. Genau darauf beruhen die Schritte 4 bis 6: Was hier gesetzt wird, steht
-//        danach in Q1, und `laufender()` sieht es beim naechsten Aufruf.
-//        `naechsterAnstehender` liefert den ERSTEN Eintrag in Einfuegereihenfolge, also
-//        FIFO (TK 9.3.3) - diese Datei sortiert und waehlt nicht selbst aus.
-//   #58: pruefeUebergang(von: AuftragStatus, nach: AuftragStatus): Ergebnis<void>
-//   #57: haengeJournalEintragAn(eintrag: JournalEintrag)
-//          : Promise<Ergebnis<void, QueueFehlercode>>
-//   #65: sendeQueueGeaendert(): Promise<void>
-//   #60: fuehreAus(auftrag: Auftrag, kontext: AusfuehrungsKontext)
-//          : Promise<HandlerErgebnis<string>>
-//   #70: beendeAuftrag(auftragId: string, ergebnis: HandlerErgebnis): Promise<void>
-//
-// ZUM IMPORT VON #70: Die Abhaengigkeit ist gegenseitig - der Torwaechter ruft
-// `beendeAuftrag`, wenn ein Handler aufloest, und `beendeAuftrag` ruft am Ende
-// `starteNaechsten`. Das ist die im Issue gewollte Richtung, kein Versehen. Beide Module
-// benutzen einander erst zur LAUFZEIT, nicht beim Laden; ein Modulzyklus entsteht dadurch
-// nicht. #70 vermerkt dasselbe an Ort und Stelle.
+// Modulzyklus mit #70: Die Abhaengigkeit ist gegenseitig - beide rufen einander erst zur
+// LAUFZEIT, nicht beim Laden. Das ist die im Issue gewollte Richtung, kein Versehen.
 
 export function starteNaechsten(): void {
   // ---------------------------------------------------------------------------------

@@ -4,14 +4,6 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { JournalEintrag } from '../../shared/contracts/protokoll'
 import type { QueueFehlercode } from './schreibe-queue-json'   // = 'speicher_fehler' (#69)
 
-// Fremde Aufrufe – vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #69: leseQueueDatei<T>(pfad: string, fallback: T): Promise<Ergebnis<T, QueueFehlercode>>
-//   #69: schreibeQueueDatei(pfad: string, inhalt: unknown): Promise<Ergebnis<void, QueueFehlercode>>
-//   #69: const QUEUE_SCHEMA_VERSION = 1   // gilt fuer Q2, Q3 und Q4 – KEINE eigene Zahl erfinden
-//   #5:    ermittleDatenOrt(): string       // app-weiter Datenort der portablen App
-
-// Die Wert-Importe zu den drei Zeilen darueber. Sie stehen bewusst UNTER dem
-// Vertragsblock, damit die vom Generator gesetzten Zeilen unveraendert bleiben.
 import path from 'node:path'
 
 import type { Bewegung } from '../../shared/contracts/protokoll'

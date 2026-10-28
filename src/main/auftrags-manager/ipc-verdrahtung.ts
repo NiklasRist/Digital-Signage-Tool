@@ -15,27 +15,6 @@ import { holeStand } from './hole-stand'                          // #64
 import { aufQueueGeaendert, aufQueueStoerung } from './queue-ereignis' // #65
 import { reiheEin, type NutzlastVon } from './reihe-ein'          // #61
 import { wiederhole } from './wiederhole'                         // #63
-
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird. Alle sechs
-// sind gegen die GEBAUTEN Dateien geprueft, nicht gegen das Zitat im Issue:
-//   #23: registriereHandler<T, F extends string>(
-//          kanal: string,
-//          validiere: (nutzlast: unknown) => Ergebnis<unknown, 'ungueltige_eingabe'>
-//                                          | { ok: true; wert: unknown },
-//          ausfuehren: (validierteNutzlast: unknown) => Promise<Ergebnis<T, F>>,
-//        ): void
-//        // validiert zuerst; bei ok:false laeuft `ausfuehren` GAR NICHT an. Faengt jede
-//        // Ausnahme und uebersetzt sie in 'unbekannter_fehler'. Reicht das Ergebnis von
-//        // `ausfuehren` unveraendert zurueck.
-//   #61: reiheEin<A extends AuftragArt>(art: A, payload: NutzlastVon<A>)
-//          : Promise<Ergebnis<{ auftragId: string }>>
-//   #62: entferne(auftragId: string): Promise<Ergebnis<void>>
-//   #63: wiederhole(auftragId: string): Promise<Ergebnis<void>>
-//   #64: holeStand(): Promise<Ergebnis<Auftrag[]>>
-//   #65: aufQueueGeaendert(hoerer: (auftraege: Auftrag[]) => void): () => void
-//        aufQueueStoerung(hoerer: (meldung: string) => void): () => void
-//        // beide MAIN-INTERN; der Rueckgabewert ist die Abmelde-Funktion.
-
 /**
  * Die Anmelde-Huelle ist seit #333 nach `../ipc-gateway/melde-an.ts` umgezogen (dort der
  * volle Kommentarapparat). Sie steht hier nicht mehr.

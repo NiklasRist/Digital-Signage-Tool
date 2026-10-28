@@ -2,18 +2,7 @@
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #54 (Q1): findeQ1(auftragId: string): Q1Eintrag | undefined
-//             entferneAusQ1(auftragId: string): boolean
-//             alleQ1(): Auftrag[]
-//   #60 (Handler-Registry): kannAbbrechen(art: AuftragArt): boolean
-//                           brich(auftrag: Auftrag): boolean
-//                             - true, wenn ein Abbrecher registriert war und gerufen wurde;
-//                               er bekommt den GANZEN Auftrag und zieht die renderId selbst
-//                               aus auftrag.payload (#68). DIESE DATEI KENNT DIE renderId NICHT.
-//   #57 (Q4-Journal): haengeJournalEintragAn(eintrag: JournalEintrag)
-//                       : Promise<Ergebnis<void, QueueFehlercode>>
-//   #65 (Ereignis): sendeQueueGeaendert(): Promise<void>
+// Die renderId zieht der Abbrecher selbst aus `auftrag.payload` (#68) - diese Datei kennt sie nicht.
 
 import type { JournalEintrag } from '../../shared/contracts/protokoll'
 import { brich, kannAbbrechen } from './dispatcher'

@@ -10,19 +10,9 @@ import { mitWiederholung, taugtAlsSicherung } from '../gemeinsam/schreib-mechani
 // Die generischen Systemfehler-Helfer liegen neutral (Q2/A S7).
 import { istCode, text } from '../gemeinsam/systemfehler'
 
-// Fremde Aufrufe - vollstaendige Signaturen, damit hier nichts geraten wird:
-//   #49: projektOrdner(projektId: string): string
-//        // WIRD HIER NICHT GERUFEN. Diese Datei kennt das Datei-Layout ausdruecklich NICHT -
-//        // sie bekommt fertige Pfade. Q2 = <projektOrdner(id)>/queue-retry.json (#55),
-//        // Q3 = <ermittleDatenOrt()>/protokoll.json (#56),
-//        // Q4 = <ermittleDatenOrt()>/warteschlangen-journal.json (#57); zusammengesetzt wird
-//        // das beim AUFRUFER, denn die Pfad-Autoritaet ist die eine Stelle, die das darf
-//        // (TK 9.5.7).
-//   #32: mitD1Lock<T>(aktion: () => Promise<T>): Promise<T>
-//        // WIRD HIER NICHT GERUFEN und darf es nicht: "Das D1-Lock schuetzt nur project.json.
-//        // Die Auftragsverwaltungs-Speicher Q2/Q3 (eigene Dateien, 9.3) haben ihre eigene
-//        // Serialisierung - der auftrags-manager haengt nicht am project-store-Lock."
-//        // (TK 9.5.4) Die Kette weiter unten IST diese eigene Serialisierung.
+// Kein eigenes Pfad-Layout und kein D1-Lock: Diese Datei bekommt fertige Pfade, und Q2/Q3/Q4
+// haben ihre eigene Serialisierung - der auftrags-manager haengt nicht am project-store-Lock
+// (TK 9.5.4, 9.5.7).
 
 // Die modul-eigene Fehlercode-Union der Auftragsverwaltungs-Speicher. #12 liefert NUR die drei
 // generischen Codes (ungueltige_eingabe, nicht_gefunden, unbekannter_fehler); #22 fuegt Ergebnis
