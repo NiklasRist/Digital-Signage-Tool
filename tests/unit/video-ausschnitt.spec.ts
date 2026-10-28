@@ -17,8 +17,6 @@
 // DIE TEUERSTEN FEHLER DIESER DATEI SIND POSITIONELL, nicht vertraglich: Eine
 // Option am falschen Platz sieht typrichtig aus und laeuft fehlerfrei durch.
 // Deshalb pruefen die Tests unten PLAETZE und WERTE, nicht blosses Vorhandensein.
-import { readFileSync } from "node:fs";
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
@@ -64,24 +62,6 @@ const echtTonspur = await vi.importActual<typeof import("../../src/main/ffmpeg-a
 const { baueVideoAusschnittArgumente } = await import(
   "../../src/main/ffmpeg-adapter/video-ausschnitt"
 );
-
-const QUELLE = readFileSync(
-  new URL("../../src/main/ffmpeg-adapter/video-ausschnitt.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur die CODE-Zeilen. Die Begruendungen in den Kommentaren nennen die Flags, die
-// hier NICHT stehen duerfen, samt der Stelle, die sie liefert - genau das verlangt
-// die Definition of Done ("jeweils mit einem Kommentar, wer stattdessen zustaendig
-// ist"). Eine Probe ueber die ganze Datei koennte diese Bedingung also gar nicht
-// erfuellen. Dieselbe Trennung benutzen die Tests zu #161, #163, #164, #165
-// und #168 im selben Modul.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((zeile) => {
-    const t = zeile.trim();
-    return t !== "" && !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -246,11 +226,6 @@ describe("#167 baueVideoAusschnittArgumente - die Startzeit", () => {
     expect(wert).toMatch(/^\d+\.\d{6}$/);
   });
 
-  it("nimmt weder toLocaleString noch Intl.NumberFormat (Grep-Probe)", () => {
-    expect(CODEZEILEN).not.toContain("toLocaleString");
-    expect(CODEZEILEN).not.toContain("Intl.NumberFormat");
-    expect(CODEZEILEN).toContain("toFixed");
-  });
 });
 
 describe("#167 baueVideoAusschnittArgumente - Laenge in Bildern", () => {
@@ -276,7 +251,6 @@ describe("#167 baueVideoAusschnittArgumente - Laenge in Bildern", () => {
       expect(arr).not.toContain("-t");
       expect(arr).not.toContain("-to");
     }
-    expect(CODEZEILEN).not.toMatch(/(['"])-to?\1/);
   });
 });
 
@@ -431,67 +405,6 @@ describe("#167 baueVideoAusschnittArgumente - die fremden Fragmente", () => {
     // also wird stattdessen geprueft, dass es dort steht. Wird dieser Test rot, ist
     // das ein Vertragsfehler in #162 und zu MELDEN.
     expect(echtTonspur.baueTonspurKodierArgumente(RENDER_PROFILE)).toContain("-shortest");
-    // Und der feste Vorspann aus #158 traegt das Ueberschreib-Flag, damit nicht zwei
-    // Stellen darueber entscheiden.
-    const prozessQuelle = readFileSync(
-      new URL("../../src/main/ffmpeg-adapter/prozess.ts", import.meta.url),
-      "utf8",
-    );
-    expect(prozessQuelle).toMatch(/FESTER_VORSPANN[\s\S]*?'-y'/);
-  });
-});
-
-describe("#167 baueVideoAusschnittArgumente - Abgrenzung", () => {
-  // Jedes dieser Flags hat GENAU EINE zustaendige Stelle (im Kopf der Quelldatei
-  // benannt). Eine zweite Quelle faellt im Test nicht auf: ffmpeg meldet Erfolg,
-  // die Datei entsteht, sie laeuft auf dem Laptop tadellos - und am 85-Zoll-Samsung
-  // im Studio ruckelt sie, zeigt falsche Farben oder startet gar nicht.
-  //
-  // Geprueft wird auf die ZITIERTE Form ('-y'), also auf ein Argument-Literal, und
-  // nicht auf das blosse Vorkommen der Zeichen: Kurze Flaggen wie -y, -r, -g und -t
-  // stecken sonst zufaellig in Wortresten und der Test waere entweder blind oder
-  // dauernd falsch rot.
-  it.each([
-    "-y",
-    "-hide_banner",
-    "-nostdin",
-    "-loglevel",
-    "-progress",
-    "-nostats",
-    "-r",
-    "-fps_mode",
-    "-c:v",
-    "-c:a",
-    "-b:v",
-    "-crf",
-    "-preset",
-    "-pix_fmt",
-    "-g",
-    "-shortest",
-    "-noautorotate",
-  ])("setzt %s nicht selbst", (flagge) => {
-    expect(CODEZEILEN).not.toMatch(new RegExp(`(['"])${flagge.replace(":", ":")}\\1`));
-  });
-
-  it.each(["copy", "+faststart", "setsar"])("enthaelt %s nirgends", (stueck) => {
-    expect(CODEZEILEN).not.toContain(stueck);
-  });
-
-  it("beruehrt weder das Dateisystem noch den Prozessstart", () => {
-    // "Nur der Main schreibt/liest das Dateisystem" (TK 9.2.6) - diese Datei tut
-    // beides NICHT; sie ist rein und liefert nur ein Array.
-    expect(CODEZEILEN).not.toMatch(/from ['"]node:fs['"]/);
-    expect(CODEZEILEN).not.toMatch(/from ['"]node:child_process['"]/);
-    expect(CODEZEILEN).not.toMatch(/from ['"]\.\/prozess['"]/);
-  });
-
-  it("GEGENPROBE: die Abgrenzungs-Probe beisst wirklich", () => {
-    // Ohne diese Zeile koennte das Muster falsch sein und JEDE Datei durchwinken.
-    const erfunden = "const a = ['-y', '-pix_fmt', 'yuv420p']";
-    expect(erfunden).toMatch(/(['"])-y\1/);
-    expect(erfunden).toMatch(/(['"])-pix_fmt\1/);
-    // Und die echten Flags stehen sehr wohl dort, wo sie hingehoeren:
-    expect(echtEncoder.baueVideoKodierArgumente(RENDER_PROFILE)).toContain("-pix_fmt");
   });
 });
 

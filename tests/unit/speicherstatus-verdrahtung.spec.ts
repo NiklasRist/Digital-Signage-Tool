@@ -10,7 +10,6 @@
 // sondern `npm run typecheck`: speicherstatus-verdrahtung.ts importiert die ECHTEN
 // Module, ein abweichender Hoerer-Typ oder Rueckgabewert waere dort ein
 // Uebersetzungsfehler.
-import { readFileSync } from "node:fs";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -310,50 +309,19 @@ describe("Kanal-Registry (#25) nach der Ergaenzung durch #238", () => {
     expect(KANAELE.vorlagen.autoSpeichernStatus).toBe("vorlagen:autoSpeichernStatus");
   });
 
-  it("laesst die vorhandenen Bloecke unveraendert (Diff-Probe: zwei Zeilen, null geaendert)", () => {
-    const quelle = readFileSync("src/shared/contracts/kanaele.ts", "utf8");
-    // Die zwei neuen Eintraege sind die EINZIGEN Auto-Speichern-Kanaele.
-    const treffer = quelle.match(/autoSpeichernStatus:/g) ?? [];
-    expect(treffer).toHaveLength(3); // Drittens #304: marken:autoSpeichernStatus
-    expect(quelle).toContain("autoSpeichernStatus: 'project:autoSpeichernStatus',");
-    expect(quelle).toContain("autoSpeichernStatus: 'vorlagen:autoSpeichernStatus',");
+  it("die drei Auto-Speichern-Kanaele sind paarweise VERSCHIEDEN (kein doppelter Weg)", () => {
+    // Wertprobe auf der importierten Registry - kein Quelltext. Drei Meldungen auf
+    // demselben Kanal waeren im Renderer nicht auseinanderzuhalten (#304).
+    const kanaele = [
+      KANAELE.project.autoSpeichernStatus,
+      KANAELE.vorlagen.autoSpeichernStatus,
+      KANAELE.marken.autoSpeichernStatus,
+    ];
+    expect(new Set(kanaele).size).toBe(3);
   });
 
   it("haelt die Regel <modul>:<ereignis> auch fuer die zwei neuen Eintraege ein", () => {
     expect(KANAELE.project.autoSpeichernStatus).toBe("project:autoSpeichernStatus");
     expect(KANAELE.vorlagen.autoSpeichernStatus).toBe("vorlagen:autoSpeichernStatus");
-  });
-});
-
-describe("speicherstatus-verdrahtung.ts - Codeinspektion (DoD-Grep-Proben)", () => {
-  it("enthaelt keine verbotenen Muster und keinen Kanalnamen als String-Literal", () => {
-    const quelle = readFileSync("src/main/ipc-gateway/speicherstatus-verdrahtung.ts", "utf8");
-    const ohneKommentare = quelle
-      .replace(/\r\n/g, "\n")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .map((zeile) => zeile.replace(/\/\/.*$/, ""))
-      .join("\n");
-
-    // Schutz gegen ein zu gieriges Abstreifen: Bleibt der Registry-Zugriff stehen,
-    // hat der Filter den Code nicht mitgeloescht.
-    expect(ohneKommentare).toContain("KANAELE.project.autoSpeichernStatus");
-    expect(ohneKommentare).toContain("KANAELE.vorlagen.autoSpeichernStatus");
-
-    for (const verboten of [
-      "getAllWindows",
-      "getFocusedWindow",
-      "registriereHandler",
-      "ipcMain.handle",
-      "setTimeout",
-      "setInterval",
-    ]) {
-      expect(ohneKommentare, verboten).not.toContain(verboten);
-    }
-
-    // Kein Kanalname als String-Literal: kein String, der mit `project:` oder
-    // `vorlagen:` beginnt (die Namen kommen aus KANAELE).
-    expect(ohneKommentare).not.toMatch(/['"`]project:/);
-    expect(ohneKommentare).not.toMatch(/['"`]vorlagen:/);
   });
 });

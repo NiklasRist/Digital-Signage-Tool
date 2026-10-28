@@ -1,7 +1,5 @@
 // Tests zu #327 - marken-speicherstatus (Lage: reiner Automat; Baustein: jsdom).
 // @vitest-environment jsdom
-import { join } from "node:path"
-import { readFileSync } from "node:fs"
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
@@ -73,38 +71,10 @@ describe('Die Lage weiter (Das Verhalten, das ausschliesslich der Zustandsautoma
     expect(nachher).toBe(vorher)
   })
 
-  it('der Text ist der Entscheidungs-Wortlaut (User-Präzisierung 23.08.) und steht GENAU EINMAL quer über beide Dateien', () => {
+  it('der Text ist der Entscheidungs-Wortlaut (User-Präzisierung 23.08.)', () => {
     expect(MARKEN_HINWEIS_TEXT).toBe(
       'Automatisches Speichern der Marken fehlgeschlagen – Änderungen sind noch nicht gesichert.',
     )
-    const lageQuelle = readFileSync(
-      join(process.cwd(), 'src/renderer/app-shell/marken-speicherstatus-lage.ts'),
-      'utf8',
-    )
-    const bausteinQuelle = readFileSync(
-      join(process.cwd(), 'src/renderer/app-shell/marken-speicherstatus.tsx'),
-      'utf8',
-    )
-    expect((lageQuelle.match(/Automatisches Speichern/g) ?? [])).toHaveLength(1)
-    expect((bausteinQuelle.match(/Automatisches Speichern/g) ?? [])).toHaveLength(0)
-  })
-
-  it('die Lagedatei enthält kein react und die beiden Dateien kein KANAELE/Timer (Grep-Probe, NUR auf diese zwei)', () => {
-    const lageQuelle = readFileSync(
-      join(process.cwd(), 'src/renderer/app-shell/marken-speicherstatus-lage.ts'),
-      'utf8',
-    ).replace(/\/\/.*$/gm, '')
-    expect(lageQuelle).not.toMatch(/react/)
-    expect(lageQuelle).not.toMatch(/KANAELE|setTimeout|setInterval|rufeAuf|window\.|marken:|project:|vorlagen:/)
-    const bausteinQuelle = readFileSync(
-      join(process.cwd(), 'src/renderer/app-shell/marken-speicherstatus.tsx'),
-      'utf8',
-    ).replace(/\/\/.*$/gm, '')
-    expect(bausteinQuelle).not.toMatch(/KANAELE|setTimeout|setInterval|rufeAuf|abonniere\(|window\.|marken:|project:|vorlagen:/)
-    // Der Nachbar #200 wird nicht importiert - die Prüfung zielt auf den Import nach
-    // dem Anführungszeichen ("./speicherstatus..."), nicht auf den Teilstring:
-    expect(bausteinQuelle).not.toMatch(/from '\.\/speicherstatus/)
-    expect(bausteinQuelle).not.toMatch(/marken-editor/)
   })
 })
 

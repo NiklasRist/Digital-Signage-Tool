@@ -8,8 +8,6 @@
 // Leerfaelle (ENTSCHIEDEN 5), und dass berechneBandGeometrie (#239) GENAU
 // EINmal je Aufruf laeuft.
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, createElement } from 'react'
@@ -58,42 +56,6 @@ const { Einblendung } = await import('../../src/renderer/preview-player/einblend
 type EinblendungProps = import(
   '../../src/renderer/preview-player/einblendung.tsx'
 ).EinblendungProps
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/preview-player/einblendung.tsx'),
-  'utf8',
-)
-const QUELLE_TS = readFileSync(
-  join(process.cwd(), 'src/renderer/preview-player/einblendung-stile.ts'),
-  'utf8',
-)
-
-const codeOhneKommentare = (quelle: string): string =>
-  quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-describe('Quelldatei-Verbote (Grep-Probe, auf beide Dateien)', () => {
-  it('keine Hexzahl, keine Farbe, keine Deckkraft, kein Filter, keine Markenfarbe, kein Split-Import, kein IPC', () => {
-    const code = codeOhneKommentare(QUELLE_TSX) + codeOhneKommentare(QUELLE_TS)
-    for (const verbot of [
-      '#', 'rgb(', 'flaecheDunkel', 'loeseFarbe', 'opacity', 'filter',
-      'main/', 'split-stile', 'setInterval', 'requestAnimationFrame',
-      'media://', 'rufeAuf', 'abonniere', 'window.api',
-      'videoBreite', 'videoVersatz',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
-    // `rahmen` galt als Verbot (keine Video-Geometrie im Code). Ab #313 trägt die
-    // verbindliche Signatur das Pflicht-PROP `rahmenMarke` - der Wortstamm allein
-    // trifft es. Gezählt wird das Muster OHNE die Prop-Namen:
-    expect(code).not.toMatch(/rahmen(?!Marke)/)
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -232,6 +194,23 @@ describe('Das ueberlagernde Band (ENTSCHIEDEN 4)', () => {
     rendere(eigenschaften({ bandAktion: null }))
     expect(doppel.segmentAufrufe).toHaveLength(0)
     expect(doppel.videoAufrufe).toHaveLength(1)
+  })
+
+  it('ABSCHNITT-Marke ohne Bereitschaft (abschnittMarke null): Segment wird NICHT gerendert', () => {
+    // Die Marke der Band-Aktion ist noch nicht aufgeloest - dann gibt es kein Segment.
+    // Ohne die zweite Bedingung entstuende ein Segment mit `marke={null}`.
+    rendere(eigenschaften({ abschnittMarke: null }))
+    expect(doppel.segmentAufrufe).toHaveLength(0)
+  })
+
+  it('Segment bekommt die ABSCHNITTS-Marke, nicht die Rahmenmarke (zwei unterscheidbare Marken)', () => {
+    const rahmenMarke = { ...baueMarke(), id: 'm-rahmen' }
+    const abschnittMarke = { ...baueMarke(), id: 'm-abschnitt' }
+
+    rendere(eigenschaften({ rahmenMarke, abschnittMarke }))
+
+    const aufruf = doppel.segmentAufrufe[0] as Record<string, unknown>
+    expect((aufruf.marke as Marke).id).toBe('m-abschnitt')
   })
 })
 

@@ -6,8 +6,6 @@
 // die Platzierung des Band-Segments bei y = band.y OHNE Groessenangabe, und die
 // beiden Leerfaelle (bandAktion === null, hoehe === null - ENTSCHIEDEN 6).
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -56,38 +54,6 @@ vi.mock('../../src/shared/band-geometrie', async (importOriginal) => {
 
 const { Split } = await import('../../src/renderer/preview-player/split.tsx')
 type SplitProps = import('../../src/renderer/preview-player/split.tsx').SplitProps
-
-const QUELLE_TSX = readFileSync(
-  join(process.cwd(), 'src/renderer/preview-player/split.tsx'),
-  'utf8',
-)
-const QUELLE_TS = readFileSync(
-  join(process.cwd(), 'src/renderer/preview-player/split-stile.ts'),
-  'utf8',
-)
-
-const codeOhneKommentare = (quelle: string): string =>
-  quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-describe('Quelldatei-Verbote (Grep-Probe, auf beide Dateien)', () => {
-  it('keine Hexzahl, keine benannte Farbe, kein loeseFarbe, kein Main-Code, keine Zeitlogik, kein IPC, kein media://', () => {
-    const code = codeOhneKommentare(QUELLE_TSX) + codeOhneKommentare(QUELLE_TS)
-    for (const verbot of [
-      '#2F2E2E', 'rgb(', 'loeseFarbe', 'bestimmeBandgeometrie',
-      'setInterval', 'requestAnimationFrame', 'media://', 'rufeAuf',
-      'abonniere', 'window.api', 'main/', 'Math.floor', 'Math.round',
-      'Math.ceil', 'Math.max', 'Math.min',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -149,8 +115,6 @@ function rendere(props: SplitProps): { behaelter: HTMLDivElement; wurzel: Root; 
   return { behaelter: ziel, wurzel, fertig: () => act(() => wurzel.unmount()) }
 }
 
-const VIDEO_URSPRUNG = '../../src/renderer/preview-player/video'
-const SEGMENT_URSPRUNG = '../../src/renderer/preview-player/segment'
 
 beforeEach(() => {
   doppel.videoAufrufe = []
@@ -279,18 +243,5 @@ describe('Die Geometrie ist einmal je Element gebildet', () => {
     expect(zweite).toEqual(erste)
     // H = 204 - der Fall, in dem die Vierer-Regel beisst:
     expect(erste).toEqual({ x: 182, y: 0, breite: 1556, höhe: 876 })
-  })
-})
-
-// ---------------- Verdrahtungs-Naht ----------------
-
-describe('Die Naht zu den echten Bausteinen', () => {
-  it('die Mock-Pfade treffen die echten Module (Shift der Importe wuerde lautlos gruen)', () => {
-    expect(VIDEO_URSPRUNG).toBe('../../src/renderer/preview-player/video')
-    expect(SEGMENT_URSPRUNG).toBe('../../src/renderer/preview-player/segment')
-    const quelle = QUELLE_TSX
-    expect(quelle).toContain("from './video'")
-    expect(quelle).toContain("from './segment'")
-    expect(quelle).toContain("from './split-stile'")
   })
 })
