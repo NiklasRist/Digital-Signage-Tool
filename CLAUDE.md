@@ -43,9 +43,23 @@
   ENTSCHIEDEN 2); die Probe ist mit Begründung umgedreht. Reparatur: nur
   `aktionsbild_reparieren` (öffnet den action-editor), Beschriftung dort „Marke der
   Aktion wählen"; ein eigener Marken-Wähler bleibt Folge-Issue.
-- **Gate: `npm run pruefung` Exit 0** – **5.643 Unit-Tests (333 Dateien)**, **49
+- **FA-03-Nachlauf: ein gescheitertes Speichern war unsichtbar – behoben** (`ea2c3ea`, Merge
+  `fe27f5e`). Nicht der Messweg war die Ursache, sondern der Code: `einspeisen` verwarf
+  `{ ok: false }` **vollständig** (der Typ trug nicht einmal `fehler`), und `feldVerlassen`
+  kehrte still zurück, wenn die Auswahl auf eine verschwundene Aktion zeigte. Jetzt zeigt das
+  Formular `Nicht gespeichert: <Meldung des Mains>`; Erfolg löscht sie. 2 jsdom-Tests,
+  Gegenprobe 1 Test rot, byte-identisch. **Der Treiber-Schritt 4g3 protokolliert bei einem
+  Fehlschlag jetzt Titelfeld, Bibliothekszeilen, Formular- und Wurzel-Meldung** – der
+  26.10.-Befund war unzuordenbar, weil keine dieser vier Angaben gemessen wurde.
+  **FA-03 ist damit nicht „gelöst", sondern messbar** – der nächste rote Lauf nennt den Zweig.
+- **Offener Nebenbefund als #445 angelegt:** Im Modus „Neue Aktion" erreichen getippte Werte
+  das Formular nie (`gewaehlt === null` → `feldVerlassen` kehrt vor dem Schreiben zurück;
+  `formular.titel` bleibt `''`, „Anlegen" scheitert). Code-belegt, **nicht** am Fenster gemessen;
+  der stille Rückweg im Modus `bestehend` ist mit `ea2c3ea` zu.
+- **Gate: `npm run pruefung` Exit 0** – **5.645 Unit-Tests (334 Dateien)**, **49
   Integrationstests (12 Dateien)**, Treiber **0 Befunde**. Je Issue eine Gegenprobe belegt und
-  byte-identisch zurückgenommen (#316 3 bzw. 4 Tests rot, #317 7 bzw. 4, #339 1, #338 4); Prüfsummen
+  byte-identisch zurückgenommen (#316 3 bzw. 4 Tests rot, #317 7 bzw. 4, #339 1, #338 4,
+  FA-03 1); Prüfsummen
   und Zahlen stehen in den Issue-Kommentaren. Dokumente unverändert (AD v1.9 / TK v3.28).
 - **Messweg 4g3 nachgezogen – die Gegenprobe hat NICHT gebissen** (`9bb8093`). Der Schritt
   „Aktion bearbeiten" (FA-03) scheiterte am **26.10.** in drei von vier Läufen („Titel im
@@ -60,7 +74,8 @@
   **#317 als „bereit" geführt**. Das ist eine **Werkzeuggrenze**, kein Baufehler: #317 bestand
   im **Löschen** der Datei, das Werkzeug misst „Datei existiert ohne Gerüst-Rumpf" und kann
   einen Lösch-Bauzustand grundsätzlich nicht sehen.
-- **24 offene Issues** (Stand 27.10.2026): echte Lücke **#364** (media://-Tainting);
+- **25 offene Issues** (Stand 28.10.2026): echte Lücke **#364** (media://-Tainting), neuer
+  Befund **#445** („Neue Aktion" speichert nichts);
   M8-Nachlauf **#303** (Live-Vorschau); **#394**
   (Statistik-Dashboard gebaut, aber nirgends gerendert – „fertige Funktion ohne Aufrufer");
   Banner-Familie **#365–#376** (12); UI-2.0-Kandidaten **#383/#388/#391/#392/#393**; beim
