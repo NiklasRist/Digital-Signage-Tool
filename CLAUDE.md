@@ -11,7 +11,36 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, siebzehnte Sitzung: Mutations-Charge 13) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, achtzehnte Sitzung: Mutations-Charge 14) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-28-charge-14.md`](docs/agents/uebergabe-2026-10-28-charge-14.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 27.
+
+- **CHARGE 14 GEBAUT:** fuenf Testdateien – `einblendung-anzeige`, `marken-speicherstatus`,
+  `speicherstatus-verdrahtung`, `split-anzeige`, `video-ausschnitt`. **26 Verhaltens-Mutationen**,
+  **5 Refactorings**; 23 erkannt, **2 echte Luecken** geschlossen (EN3, EN4); **0/5 Refactorings
+  rot**; jede Mutation byte-identisch zurueckgenommen.
+- **Die Luecken:** **EN3** – `abschnittMarke === null` war ungeprueft (Segment mit
+  `marke={null}`). **EN4** – beide Marken im Test hatten dieselbe `id`, deshalb blieb
+  `marke={props.rahmenMarke}` gruen; neu: zwei unterscheidbare Marken, das Segment traegt die
+  **Abschnitts**marke.
+- **Harness-Korrektur:** SV4 (`once('closed')` → `on('close')`) meldete „0 bestanden, 0 rot" –
+  das Fenster-Doppel kennt nur `once`, die Suite lud nicht. Mit `once('close')` **erkannt**.
+- **Entfernt:** **28** Testfaelle, **2** ergaenzt; Suite **5.516 → 5.490** (netto −26; die 18
+  Flaggen-Proben in `video-ausschnitt` zaehlten einzeln). In `speicherstatus-verdrahtung` ist die
+  Quelltext-Diff-Probe durch eine **Wertprobe** ersetzt (drei Kanaele paarweise verschieden).
+- **Sperrklinke:** 65 → **60** Dateien; ESLint gruen, damit sind die Streichungen belegt.
+- **Ehrlich offen:** Die 18 Flaggen-Verbote und „kein `node:fs`" in `video-ausschnitt` sind jetzt
+  **ungeschuetzt** – Kandidat fuer eine dateibezogene Lint-Regel (wie #447 fuer den Renderer).
+  Ebenso weiter offen: #448 (192 SAFETY-Kommentare).
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.490 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 15** – fuenf der verbleibenden **60**; Kandidaten mit
+  mehreren Proben: `marken-vorschau`, `medium-loeschen-anzeige`, `segment-anzeige`,
+  `render-dialog-anzeige`, `queue-panel-wurzel`, `speicherstatus-anzeige`.
+
+## STAND HEUTE (28.10.2026, siebzehnte Sitzung: Mutations-Charge 13) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-28-charge-13.md`](docs/agents/uebergabe-2026-10-28-charge-13.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 26.

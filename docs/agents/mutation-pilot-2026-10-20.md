@@ -1251,3 +1251,61 @@ Korrektur: **5 erkannt**, 2 gruen. Wer die falsche Spec laufen laesst, misst nic
 | Suite | 5.517 | **5.516** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 70 | **65** Dateien |
+
+## 27. Charge 14 (28.10.2026): fuenf weitere Dateien
+
+**Dateien:** `einblendung-anzeige` (`einblendung.tsx`), `marken-speicherstatus`
+(`marken-speicherstatus-lage.ts` + `.tsx`), `speicherstatus-verdrahtung`
+(`speicherstatus-verdrahtung.ts`), `split-anzeige` (`split.tsx`), `video-ausschnitt`
+(`video-ausschnitt.ts`). Alle fünf von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 26 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **23**.
+Gruen: **EN3, EN4** (echte Luecken), **EN1/EN2** rot; **0/5 Refactorings rot**; jede
+Mutation byte-identisch zurueckgenommen.
+
+### Harness-Korrektur (kein Code-Befund)
+
+**SV4** (`once('closed')` → `on('close')`) meldete „0 bestanden, 0 rot" – das ist **keine
+Erkennung**: Das Fenster-Doppel kennt nur `once`, `fenster.on` ist `undefined`, die Suite laedt
+nicht. Ersetzt durch `once('close')` (der Doppel merkt sich den Ereignisnamen), danach **erkannt**.
+**VA-R** traf den Kommentartext nicht (0 Treffer) – mit der richtigen Zeile gruen.
+
+### Die zwei Luecken (geschlossen)
+
+- **EN3 – `abschnittMarke === null` war ungeprueft.** Ohne die zweite Bedingung entstuende ein
+  Segment mit `marke={null}`. Neu: eigenes Element ohne Abschnittsmarke ⇒ kein Segment.
+- **EN4 – welche Marke das Segment bekommt, war unsichtbar.** `eigenschaften()` gab beiden
+  Marken dieselbe `id` ('m1'); `marke={props.rahmenMarke}` blieb gruen. Neu: zwei unterscheidbare
+  Marken, das Segment traegt die **Abschnitts**marke.
+
+### Entfernt (28 Testfaelle, 2 ergaenzt – netto −26)
+
+- **1** in `einblendung-anzeige` (Verbotsliste ueber beide Dateien).
+- **1** in `marken-speicherstatus` (react/KANAELE/Timer); der Wortlaut-Test **bleibt**, nur die
+  Quelltext-Haelfte („GENAU EINMAL quer ueber beide Dateien") ist weg.
+- **1** in `speicherstatus-verdrahtung` (Codeinspektion); die **Diff-Probe** in der
+  Kanal-Registry ist durch eine **Wertprobe** ersetzt (drei Kanaele paarweise verschieden,
+  importierte Registry statt Quelltext).
+- **2** in `split-anzeige` (gemeinsame Verbotsliste; „Naht"-Probe, die zwei Konstanten mit sich
+  selbst verglich).
+- **24** in `video-ausschnitt`: die **18** Flaggen-Proben (`it.each`), die drei
+  Fragment-Verbote (`copy`, `+faststart`, `setsar`), `toLocaleString`/`Intl.NumberFormat`,
+  die `node:fs`/`child_process`-Abgrenzung, deren Gegenprobe sowie die `-y`-Zeile aus #158.
+  Die `-shortest`-Naht aus #162 **bleibt** (Verhalten am echten Fragment).
+
+**Ehrlich offen:** Die 18 Flaggen-Verbote und „kein `node:fs` in dieser Datei" sind jetzt
+**ungeschuetzt** – Kandidat fuer eine dateibezogene Lint-Regel (wie #447 sie fuer den Renderer
+gebaut hat). Nicht stillschweigend: der Kopf der Quelldatei nennt weiterhin, wer zustaendig ist.
+
+### Stand nach Charge 14
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **26**: 23 erkannt, 2 Luecken, 1 Harness-Fall |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **28** |
+| Verhaltens-Tests ergaenzt | – | **2** |
+| Echte Luecken geschlossen | – | **2** |
+| Suite | 5.516 | **5.490** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 65 | **60** Dateien |
