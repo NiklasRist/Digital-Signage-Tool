@@ -1,4 +1,4 @@
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 
 import {
   useDroppable,
@@ -288,6 +288,26 @@ function ZeilenBlock({
   // #442: welcher Kasten gerade am Zeiger haengt (nur Bild) - der Schreibvorgang
   // passiert EINMAL beim Loslassen.
   const [zug, setzeZug] = useState<{ index: number; startX: number; versatz: number } | null>(null)
+  // #442: Nach dem Loslassen bleibt der Kasten an der NEUEN Stelle, bis der Main den
+  // neuen Stand liefert. Ohne das springt er fuer einen Frame auf die alte Zeitstelle
+  // zurueck ("glitcht kurz") - der Schreibweg ist asynchron.
+  const [schwebend, setzeSchwebend] = useState<{ index: number; versatz: number; alteZeit: number } | null>(null)
+  // Das Schweben endet, sobald der GESPEICHERTE Wert sich bewegt hat (Erfolg, auch
+  // geklemmt) oder der Eintrag weg ist - nicht schon bei jedem neuen Projektobjekt.
+  useEffect(() => {
+    if (schwebend === null) return
+    const gespeichert = element?.unterbrechungen?.[schwebend.index]
+    if (gespeichert === undefined || gespeichert.zeitstelle !== schwebend.alteZeit) {
+      setzeSchwebend(null)
+    }
+  }, [element?.unterbrechungen, schwebend])
+  // Rueckfall: Schreibt der Main gar nicht (Fehler), darf der Kasten nicht ewig
+  // neben seiner echten Stelle stehen.
+  useEffect(() => {
+    if (schwebend === null) return
+    const frist = setTimeout(() => setzeSchwebend(null), 3000)
+    return () => clearTimeout(frist)
+  }, [schwebend])
   // #442 (Entscheidung 29.10.2026): ein Drop im Video-Koerper legt IMMER eine
   // Unterbrechung an - das Ziel traegt deshalb nur noch dieses eine Label (violett).
   const zielArt = istBandZiel ? 'Unterbrechung' : null
@@ -361,6 +381,7 @@ function ZeilenBlock({
               ereignis.stopPropagation()
               if (aufUnterbrechungVerschieben === undefined) return
               ereignis.currentTarget.setPointerCapture?.(ereignis.pointerId)
+              setzeSchwebend(null)
               setzeZug({ index: marke.index, startX: ereignis.clientX, versatz: 0 })
             }}
             onPointerMove={(ereignis) => {
@@ -375,6 +396,7 @@ function ZeilenBlock({
               setzeZug(null)
               // Ein Klick ist kein Zug: unter 2 px passiert nichts.
               if (Math.abs(versatz) < 2) return
+              setzeSchwebend({ index: marke.index, versatz, alteZeit: marke.zeitstelle })
               aufUnterbrechungVerschieben?.(zeile.elementId, marke.index, marke.zeitstelle + versatz / pxProSekunde)
             }}
             onPointerCancel={() => setzeZug(null)}
@@ -394,7 +416,12 @@ function ZeilenBlock({
               background: 'rgba(58, 42, 77, 0.96)',
               zIndex: 2,
               cursor: zug?.index === marke.index ? 'grabbing' : 'grab',
-              transform: zug?.index === marke.index ? `translateX(${zug.versatz}px)` : undefined,
+              transform:
+                zug?.index === marke.index
+                  ? `translateX(${zug.versatz}px)`
+                  : schwebend?.index === marke.index
+                    ? `translateX(${schwebend.versatz}px)`
+                    : undefined,
             }}
           >
             <span style={{ fontSize: 9, color: '#efe6fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

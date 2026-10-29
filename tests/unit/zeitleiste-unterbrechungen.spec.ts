@@ -79,6 +79,14 @@ function ZeitleistenTest(richtung: Eigenschaften): JSX.Element {
   return createElement(DndContext, null, kinder)
 }
 
+function neuRendern(richtung: Eigenschaften): void {
+  const geraet = GERAETE[GERAETE.length - 1]
+  if (geraet === undefined) throw new Error('nichts montiert')
+  act(() => {
+    geraet.wurzel.render(createElement(ZeitleistenTest, richtung))
+  })
+}
+
 function montiere(richtung: Eigenschaften): HTMLDivElement {
   const behaelter = document.createElement('div')
   document.body.appendChild(behaelter)
@@ -140,6 +148,25 @@ describe('Die Zeitleiste zeigt die Unterbrechungen (#437)', () => {
     zeiger(kasten!, 'pointerup', 140)
     // gespeicherte Zeitstelle 1 s + 40 px / 8 px je Sekunde = 6 s
     expect(aufVerschieben).toHaveBeenCalledWith('v0', 0, 6)
+  })
+
+  it('nach dem Loslassen springt der Kasten NICHT zurueck - erst der neue Stand loest ihn', () => {
+    const aufVerschieben = vi.fn()
+    const behaelter = montiere({ projekt: projektMitEinschub(), aufVerschieben })
+    const kasten = (): HTMLElement | null =>
+      behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-unterbrechung-0-0"]')
+    zeiger(kasten()!, 'pointerdown', 100)
+    zeiger(kasten()!, 'pointermove', 140)
+    zeiger(kasten()!, 'pointerup', 140)
+    expect(aufVerschieben).toHaveBeenCalledWith('v0', 0, 6)
+    // Der Main hat noch nicht geantwortet: der ALTE Stand (Zeitstelle 1) steht noch da.
+    neuRendern({ projekt: projektMitEinschub(), aufVerschieben })
+    expect(kasten()?.style.transform).toContain('translateX(40px)')
+    // Jetzt kommt der neue Stand (Zeitstelle 6): das Schweben endet.
+    const nachher = projektMitEinschub()
+    nachher.liste[0]!.unterbrechungen = [{ zeitstelle: 6, aktionRef: 'akt1', dauer: 2 }]
+    neuRendern({ projekt: nachher, aufVerschieben })
+    expect(kasten()?.style.transform ?? '').toBe('')
   })
 
   it('ein Klick ohne Zug verschiebt nichts', () => {
