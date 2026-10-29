@@ -1,5 +1,4 @@
 // Reine Tests zu #203 - die Auswahlregel (aktions-auswahl-filter.ts).
-import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -9,11 +8,6 @@ import {
   istAktionBrauchbar,
   waehlbareAktionen,
 } from '../../src/renderer/app-shell/aktions-auswahl-filter'
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/app-shell/aktions-auswahl-filter.ts', import.meta.url),
-  'utf8',
-)
 
 function asset(id: string, zustand: 'ok' | 'fehlt' = 'ok'): Asset {
   return {
@@ -84,12 +78,5 @@ describe('waehlbareAktionen (#203)', () => {
     expect(
       waehlbareAktionen(aktionen, assets, null).map((a) => a.id),
     ).toEqual(['a-leer', 'a-ok'])
-  })
-})
-
-describe('Quelldatei-Verbote (Grep)', () => {
-  it('enthaelt kein JSX und keinen react-Import', () => {
-    expect(QUELLE).not.toContain('react')
-    expect(QUELLE).not.toMatch(/<[a-z]/)
   })
 })

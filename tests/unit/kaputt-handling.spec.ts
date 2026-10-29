@@ -1,7 +1,6 @@
 // Verhaltenstests zu #141 - kaputt-handling.ts.
 // speichereAktion (#136) als Doppel (der Fokus dieser Datei sind die Stellen
 // und der Fix-Ablauf); der Schreibweg selbst ist #136.
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -25,20 +24,6 @@ import {
   behebeAktionsBild,
   betroffeneStellen,
 } from '../../src/renderer/action-editor/kaputt-handling'
-
-// Quelldatei-Verbote
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/action-editor/kaputt-handling.ts', import.meta.url).pathname,
-  'utf8',
-)
-
-describe('kaputt-handling – Quelldatei-Verbote (Grep)', () => {
-  it('ruft kein rufeAuf/window.api/fs/zeichneSegment', () => {
-    for (const verbot of ['rufeAuf', 'window.api', "node:fs", 'zeichneSegment']) {
-      expect(QUELLE).not.toContain(verbot)
-    }
-  })
-})
 
 function asset(id: string, typ: 'video' | 'bild', zustand: 'ok' | 'fehlt' = 'ok'): Asset {
   return {

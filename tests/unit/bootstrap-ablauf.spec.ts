@@ -2,7 +2,6 @@
 // Vollstaendig ohne Browser: alle Bausteine sind Attrappen, es wird KEINE
 // Bridge gebraucht. Der Kern sind ZWEI benannte Tests: die Aufruf-Reihenfolge
 // und die Verdraheit aller acht Wirkungen.
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -494,41 +493,5 @@ describe('Alle acht Wirkungen sind verdrahtet (Kernnachweis 2)', () => {
     expect(importSpion).toHaveBeenCalledTimes(0)
     const wirkungen = (mitSpion.nachlaufAufrufe[0] as [unknown, NachlaufWirkungen])[1]
     expect(wirkungen.meldeImportErgebnis).toBe(importSpion)
-  })
-})
-
-// ---------------- Grep-Probe ----------------
-
-describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare): bootstrap.ts', () => {
-  const quelle = readFileSync(new URL('../../src/renderer/app-shell/bootstrap.ts', import.meta.url).pathname, 'utf8')
-  const code = quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-  it('kein react/JSX, kein Rueckkanal, kein Kanalname, kein Timer, kein Modul-Import ausfuehrenden Ordners', () => {
-    // JSX-Verbot: `<` allein ist unbrauchbar (generische Typen wie
-    // Promise<Ergebnis<Sichten, string>> tragen es zu Recht) - geprueft wird
-    // der JSX-Baustoff selbst:
-    expect(code).not.toContain('<div')
-    expect(code).not.toContain('/>')
-    for (const verbot of [
-      'react', 'rufeAuf', 'KANAELE', 'window.',
-      "'queue:'", "'project:'", "'vorlagen:'", 'umhuelleFuerBearbeitung',
-      'setTimeout', 'setInterval',
-      'src/renderer/composer/', 'src/renderer/action-editor/',
-      'src/renderer/vorlagen-editor/', 'src/renderer/preview-player/',
-      'src/renderer/projekt-verwaltung/', 'src/renderer/queue-panel/',
-      'src/renderer/ipc-client/', 'src/main/',
-    ]) {
-      expect(code).not.toContain(verbot)
-    }
-    // Der Feldname `abonniereQueue` ist TEIL des Vertrags; verboten ist der
-    // importierte Aufruf IPC-clientk aus `abonniere` (#151) hier:
-    expect(code).not.toMatch(/\babonniere(?!Queue)/)
-    expect(code).not.toContain('ipc-client')
   })
 })

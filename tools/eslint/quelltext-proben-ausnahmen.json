@@ -1,13 +1,8 @@
 [
-  "tests/unit/aktions-auswahl.spec.ts",
   "tests/unit/als-png.spec.ts",
-  "tests/unit/asset-auswahl.spec.ts",
-  "tests/unit/bootstrap-ablauf.spec.ts",
   "tests/unit/element-entfernen.spec.ts",
   "tests/unit/element-zeile-anzeige.spec.ts",
   "tests/unit/inhalte-zugaenge-rechnung.spec.ts",
-  "tests/unit/kaputt-handling.spec.ts",
-  "tests/unit/live-vorschau.spec.ts",
   "tests/unit/marke.spec.ts",
   "tests/unit/medien-bibliothek.spec.ts",
   "tests/unit/optimistisch.spec.ts",

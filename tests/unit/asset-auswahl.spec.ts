@@ -1,6 +1,5 @@
 // Reine Tests zu #202 - die Auswahlregel (asset-auswahl-filter.ts).
 // Keine Browser-Umgebung noetig: Die Datei enthaelt kein JSX und keinen React-Import.
-import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -10,11 +9,6 @@ import {
   benoetigterAssetTyp,
   waehlbareAssets,
 } from '../../src/renderer/app-shell/asset-auswahl-filter'
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/app-shell/asset-auswahl-filter.ts', import.meta.url),
-  'utf8',
-)
 
 function asset(id: string, typ: 'video' | 'bild', zustand: 'ok' | 'fehlt' = 'ok'): Asset {
   return {
@@ -71,12 +65,5 @@ describe('waehlbareAssets (#202)', () => {
 
   it('leere Eingabe -> leeres Array, kein Wurf', () => {
     expect(waehlbareAssets([], 'video')).toEqual([])
-  })
-})
-
-describe('Quelldatei-Verbote (Grep)', () => {
-  it('enthaelt kein JSX und keinen react-Import', () => {
-    expect(QUELLE).not.toContain('react')
-    expect(QUELLE).not.toMatch(/<[A-Za-z]/)
   })
 })
