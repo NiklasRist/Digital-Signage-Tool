@@ -54,6 +54,11 @@ function berichtVon(
   }
 }
 
+/** Frist fuer die Entscheidung des Renderers ("wiederholen"/"verwerfen"), danach gilt
+ *  "verwerfen". 15 s sind lang genug fuer einen Blick auf den Dialog und kurz genug,
+ *  dass ein abgestuerzter Renderer die App nicht am Leben haelt. */
+export const ENTSCHEIDUNG_FRIST_MS = 15_000
+
 /**
  * Wird vom before-quit-Hoerer gerufen. Liefert true, wenn das Beenden fortgesetzt
  * werden darf. "Erneut versuchen" wiederholt NUR die zuvor gescheiterten Flushs;
@@ -143,7 +148,16 @@ function fragRenderer(): Promise<'wiederholen' | 'verwerfen'> {
     // GENAU EINE Registrierung; eine zweite wirft durch ipcMain.handle bewusst.
     hoererBestand = (): Promise<'wiederholen' | 'verwerfen'> => {
       return new Promise((loesen) => {
+        // EIN toter Renderer antwortet NIE. Ohne Frist bliebe die App im Beenden
+        // stehen und liefe als Waise weiter (am 27.10.2026 stand genau so ein Prozess
+        // zwei Tage ohne Fenster). Der letzte Ausweg ist hier die einzige Wahl -
+        // dieselbe Begruendung wie bei unbekannter Nutzlast: ein Stillstand waere schlimmer.
+        const frist = setTimeout(() => {
+          console.warn('[beenden] keine Entscheidung des Renderers - es gilt "verwerfen".')
+          loesen('verwerfen')
+        }, ENTSCHEIDUNG_FRIST_MS)
         ipcMain.handleOnce(KANAELE.beenden.entscheidung, (_ereignis, nutzlast) => {
+          clearTimeout(frist)
           const wert = nutzlast?.entscheidung
           if (wert === 'verwerfen' || wert === 'wiederholen') {
             loesen(wert)

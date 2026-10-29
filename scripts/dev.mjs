@@ -64,20 +64,62 @@ let server = null;
  * @param {number} code
  * @returns {Promise<never>}
  */
+/** Wartet auf das Ende eines Kindprozesses, hoechstens `ms`. */
+function warteAufEnde(kind, ms) {
+  if (kind.exitCode !== null || kind.signalCode !== null) return Promise.resolve();
+  return new Promise((loese) => {
+    const frist = setTimeout(loese, ms);
+    kind.once("exit", () => {
+      clearTimeout(frist);
+      loese();
+    });
+  });
+}
+
 async function beende(code) {
   herunterfahren = true;
   if (entprellung) clearTimeout(entprellung);
   if (elektron) {
     neustartLaeuft = true;
     elektron.kill();
+    // NACHDECKEN (Befund 29.10.2026): Der Main beendet sich ueber `before-quit` und
+    // wartet dort auf die Entscheidung des Renderers (Flush-Dialog). Bleibt die aus,
+    // steht er - am 27.10.2026 blieb so eine Electron-Waise zwei Tage ohne Fenster
+    // stehen. Ein abgebrochener Dev-Lauf muss enden: nach der Frist hart nachhelfen.
+    // Die Frist ist bewusst laenger als der regulaere Flush; die App bekommt ihre Zeit.
+
+    try {
+      elektron.kill("SIGKILL");
+    } catch {
+      // Schon beendet - Aufraeumen ist eine Hoeflichkeit.
+    }
   }
   if (stoppeBeobachtung) await stoppeBeobachtung();
   if (server) await server.close();
   process.exit(code);
 }
 
+// SIGHUP ist der Fall, der am 27.10.2026 eine Electron-Waise hinterliess: Wird das
+// Terminal geschlossen (oder die SSH-Sitzung getrennt), bekommt dieser Prozess SIGHUP -
+// ohne Handler stirbt er SOFORT, ohne `beende()` zu erreichen, und das gestartete
+// Electron laeuft ohne Devserver weiter (PPID 1, kein Fensterbezug mehr, haelt die
+// Einzelinstanz-Sperre). SIGINT/SIGTERM allein deckten das nicht ab.
 process.on("SIGINT", () => void beende(0));
 process.on("SIGTERM", () => void beende(0));
+process.on("SIGHUP", () => void beende(0));
+
+// Letzte Rueckversicherung: Auch auf einem Weg, der `beende()` nicht erreicht (harter
+// Abbruch des Node-Prozesses), wird das Kind mitgenommen. `kill()` ist synchron genug
+// fuer den exit-Handler; mehr ist hier nicht erlaubt.
+process.on("exit", () => {
+  if (elektron) {
+    try {
+      elektron.kill();
+    } catch {
+      // Beim Herunterfahren ist Aufraeumen eine Hoeflichkeit, kein Fachschritt.
+    }
+  }
+});
 
 server = await createServer();
 await server.listen();

@@ -33,7 +33,7 @@ vi.mock('electron', () => ({
   protocol: {},
 }))
 
-const { pruefeBeendenUndFlush, flushesBeimBeendenOhneDialogAus } = await import('../../src/main/beenden-ablauf');
+const { pruefeBeendenUndFlush, flushesBeimBeendenOhneDialogAus, ENTSCHEIDUNG_FRIST_MS } = await import('../../src/main/beenden-ablauf');
 const { KANAELE } = await import('../../src/shared/contracts/kanaele');
 
 function fenster(): never {
@@ -101,6 +101,22 @@ describe('pruefeBeendenUndFlush (#336)', () => {
     expect(h.flushBeimBeenden).toHaveBeenCalledTimes(1);
     // VERWERFEN: nichts wird erneut geschrieben
     expect(h.flushVorlagenBestand).toHaveBeenCalledTimes(1);
+  });
+
+  it('antwortet der Renderer NICHT, gilt nach der Frist "verwerfen" - kein Stillstand', async () => {
+    // Ein toter Renderer antwortet nie. Ohne Frist bliebe die App im Beenden stehen
+    // (Waisen-Prozess vom 27.10.2026) - hier wird die Frist belegt.
+    h.registriereEntscheidung.mockImplementation(() => undefined);
+    h.flushVorlagenBestand.mockResolvedValue(fehler('speicher_fehler', 'Platte zu voll'));
+    vi.useFakeTimers();
+    try {
+      const lauf = pruefeBeendenUndFlush(fesFenster() as never);
+      await vi.advanceTimersByTimeAsync(ENTSCHEIDUNG_FRIST_MS + 1);
+      await expect(lauf).resolves.toBe(true);
+      expect(h.flushVorlagenBestand).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('wiederholen wiederholt NUR die GESCHEITERTEN; Erfolg dabei -> danach true', async () => {
