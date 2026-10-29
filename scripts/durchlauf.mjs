@@ -897,6 +897,9 @@ const main = async () => {
             });
 
             // (3) Ausgangslage: die Kopie der eingebauten Marke hat genug Kontrast.
+            // #449: Das Akzentfeld liegt in der Box des Preis-Elements.
+            await seite.evaluate(() => document.querySelector('[data-testid="marken-element-preis"]')?.click());
+            await schlafe(300);
             const warnungVorher4m = await warnung4m();
             const akzentVorher4m = await leseFeld4m("farbe-akzent");
             console.log(`[schritt-4m] Ausgang: akzent=${String(akzentVorher4m)}, Warnung=${String(warnungVorher4m)}.`);
@@ -952,13 +955,18 @@ const main = async () => {
               // Sicherheitsabstand und Slogan. Die neue Marke kopiert 96/54 aus der
               // eingebauten - steht hier 0/0, zeigt der Editor den Stand des ERSTEN Aufbaus.
               const standFelder4m = await liesStand4m();
+              // #449: Abstand liegt in der Palette, der Slogan in der Logo-Box.
+              await seite.evaluate(() => document.querySelector('[data-testid="palette-abstand"]')?.click());
+              await schlafe(250);
               const abstandH4m = await leseFeld4m("abstand-horizontal");
               const abstandV4m = await leseFeld4m("abstand-vertikal");
+              await seite.evaluate(() => document.querySelector('[data-testid="marken-element-logo"]')?.click());
+              await schlafe(250);
               const sloganFeld4m = await seite.evaluate(() => {
-                const abschnitt = document.querySelector('[data-testid="marken-slogan"]');
-                if (abschnitt === null) return null;
-                const felder = [...abschnitt.querySelectorAll('input')];
-                return { text: felder[0]?.value ?? null, aktiv: felder[1]?.checked ?? null };
+                const text = document.querySelector('[data-testid="slogan-text"]');
+                const schalter = document.querySelector('[data-testid="slogan-aktiv"]');
+                if (text === null || schalter === null) return null;
+                return { text: text.value ?? null, aktiv: schalter.checked ?? null };
               });
               console.log(`[schritt-4m] Felder: Abstand ${String(abstandH4m)}/${String(abstandV4m)} (Store ${JSON.stringify(standFelder4m?.sicherheit)}), Slogan=${JSON.stringify(sloganFeld4m)} (Store ${JSON.stringify(standFelder4m?.slogan)}).`);
               if (standFelder4m === null) {
@@ -1073,6 +1081,9 @@ const main = async () => {
                     if (kindKopf4m === kind4m) break;
                     await schlafe(200);
                   }
+                  // #449: Herkunftszeilen stehen in der Box eines Elements - Preis oeffnen.
+                  await seite.evaluate(() => document.querySelector('[data-testid="marken-element-preis"]')?.click());
+                  await schlafe(300);
                   const herkunft4m = await seite.evaluate(() => {
                     const bereich = document.querySelector('[data-testid="marken-offen"]');
                     const zeilen = [...document.querySelectorAll('[data-testid^="herkunft-"]')];
@@ -1127,6 +1138,9 @@ const main = async () => {
             if (kopfWechsel4m === eingebaut4m) break;
             await schlafe(200);
           }
+          // #449: Nach dem Markenwechsel ist die Box zu - fuer die Anzeige neu oeffnen.
+          await seite.evaluate(() => document.querySelector('[data-testid="marken-element-preis"]')?.click());
+          await schlafe(300);
           const akzentFeld4m = await seite.evaluate(
             () => document.querySelector('[data-testid="farbe-akzent"]')?.value ?? null,
           );
@@ -1329,12 +1343,40 @@ const main = async () => {
             `angelegt=${String(angelegt4m2)}, geoeffnet=${String(geoeffnet4m2)}, id=${String(id4m2)}`,
             "Befund", "marken-editor/index.tsx");
         } else {
+          // #449: Farben, Schrift, Slogan und Abstand liegen in BOXEN. Vor jedem Zugriff
+          // wird das tragende Element (Zone) oder der Paletten-Eintrag geoeffnet.
+          const oeffneZiel4m2 = async (ziel) => {
+            if (ziel === "palette:abstand") {
+              await seite.evaluate(() => document.querySelector('[data-testid="palette-abstand"]')?.click());
+              await schlafe(250);
+              return;
+            }
+            await seite.evaluate((z) => {
+              const [art, id] = z.split(":");
+              const selektor = art === "element"
+                ? `[data-testid="marken-element-${id}"]`
+                : `[data-testid="palette-farbe-${id}"]`;
+              document.querySelector(selektor)?.click();
+            }, ziel);
+            await schlafe(250);
+          };
+          const OEFFNER4M2 = {
+            akzent: "element:preis",
+            textAufDunkel: "element:preis",
+            flaecheDunkel: "element:hintergrund",
+            scrimStart: "element:scrim",
+            scrimEnde: "element:scrim",
+            textAufHell: "element:cta",
+            flaecheHell: "element:cta",
+          };
+
           // (1) ALLE dreizehn Farbrollen ueber die Oberflaeche schreiben.
           const erwartet4m2 = {};
           for (let i = 0; i < rollen4m2.length; i += 1) {
             const rolle = rollen4m2[i];
             const wert = "#" + (i + 1).toString(16).padStart(2, "0").repeat(3);
             erwartet4m2[rolle] = wert;
+            await oeffneZiel4m2(OEFFNER4M2[rolle] ?? `farbe:${rolle}`);
             const gesetzt = await setzeWert4m2(`farbe-${rolle}`, wert, "blur");
             if (!gesetzt) {
               fund("Marken-Rest (FA-24)", `Farbfeld ${rolle} ist vorhanden`,
@@ -1357,25 +1399,21 @@ const main = async () => {
             console.log("[schritt-4m2] Alle dreizehn Farbrollen GEMESSEN (je ein eigener Wert im Bestand).");
           }
 
-          // (2) Slogan schreiben: Text + Schalter, dann "Slogan uebernehmen".
+          // (2) Slogan schreiben - er liegt in der Box des Logo-Elements (#449).
           const sloganText4m2 = "Saisonstart 2026";
-          await seite.evaluate(() => {
-            const abschnitt = document.querySelector('[data-testid="marken-slogan"]');
-            if (abschnitt === null) return;
-            const felder = [...abschnitt.querySelectorAll('input')];
-            const text = felder[0];
-            const schalter = felder[1];
-            if (text !== undefined) {
+          await oeffneZiel4m2("element:logo");
+          await seite.evaluate((text4m2) => {
+            const text = document.querySelector('[data-testid="slogan-text"]');
+            if (text !== null) {
               const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-              setzeWert.call(text, "Saisonstart 2026");
+              setzeWert.call(text, text4m2);
               text.dispatchEvent(new Event("input", { bubbles: true }));
             }
-            if (schalter !== undefined && !schalter.checked) schalter.click();
-          });
+            const schalter = document.querySelector('[data-testid="slogan-aktiv"]');
+            if (schalter !== null && !schalter.checked) schalter.click();
+          }, sloganText4m2);
           await seite.evaluate(() => {
-            const abschnitt = document.querySelector('[data-testid="marken-slogan"]');
-            const knopf = abschnitt === null ? null : abschnitt.querySelector("button");
-            if (knopf !== null) knopf.click();
+            document.querySelector('[data-testid="slogan-uebernehmen"]')?.click();
           });
           const standSlogan4m2 = await warteAuf4m2(id4m2,
             (m) => m.slogan.text === sloganText4m2 && m.slogan.aktiv === true);
@@ -1388,13 +1426,12 @@ const main = async () => {
             console.log("[schritt-4m2] Slogan GEMESSEN (Text und Schalter im Bestand).");
           }
 
-          // (3) Sicherheitsabstand schreiben: 80/40.
+          // (3) Sicherheitsabstand schreiben: 80/40 - er liegt in der Palette (#449).
+          await oeffneZiel4m2("palette:abstand");
           await setzeWert4m2("abstand-horizontal", "80", "input");
           await setzeWert4m2("abstand-vertikal", "40", "input");
           await seite.evaluate(() => {
-            const abschnitt = document.querySelector('[data-testid="marken-sicherheit"]');
-            const knopf = abschnitt === null ? null : abschnitt.querySelector("button");
-            if (knopf !== null) knopf.click();
+            document.querySelector('[data-testid="abstand-uebernehmen"]')?.click();
           });
           const standAbstand4m2 = await warteAuf4m2(id4m2,
             (m) => m.sicherheit.horizontal === 80 && m.sicherheit.vertikal === 40);
@@ -1447,14 +1484,16 @@ const main = async () => {
             markenOrdnerInhalt4m2 = null;
           }
           console.log(`[schritt-4m2] marken-assets/<id>: ${JSON.stringify(markenOrdnerInhalt4m2)}.`);
-          const importAnzeige4m2 = await seite.evaluate(() => {
-            const schriften = document.querySelector('[data-testid="marken-schriften"]');
-            const logo = document.querySelector('[data-testid="marken-logo"]');
-            return {
-              schriftText: (schriften?.innerText ?? ""),
-              logoKnopf: logo?.querySelector('[data-testid="entferne-logo"]') !== null,
-            };
-          });
+          await oeffneZiel4m2("element:beschreibung");
+          const schriftAnzeige4m2 = await seite.evaluate(
+            () => (document.querySelector('[data-testid="feld-schrift-fliesstext"]')?.innerText ?? ""),
+          );
+          await oeffneZiel4m2("element:logo");
+          const importAnzeige4m2 = await seite.evaluate(() => ({
+            schriftText: "",
+            logoKnopf: document.querySelector('[data-testid="entferne-logo"]') !== null,
+          }));
+          importAnzeige4m2.schriftText = schriftAnzeige4m2;
           console.log(`[schritt-4m2] Import: schrift=${importSchrift4m2}, logo=${importLogo4m2}, wieder geoeffnet=${String(neuGeoeffnet4m2)}, Store=${JSON.stringify({ schrift: standImport4m2?.schriften?.fliesstext, logo: standImport4m2?.logo })}, Anzeige=${JSON.stringify(importAnzeige4m2)}.`);
           if (importSchrift4m2 !== "ok" || importLogo4m2 !== "ok") {
             fund("Marken-Rest (FA-24)", "Schrift- und Logo-Import nehmen eine echte Datei an",
@@ -1474,6 +1513,7 @@ const main = async () => {
             // Bei einer EIGENSTAENDIGEN Marke faellt das Logo auf null zurueck (Ersatz-Logo
             // mit dem Markennamen, TK 9.10.10) - nicht auf das gebuendelte Fremdlogo der
             // eingebauten Marke. Der Hinweis HINWEIS_LOGO_ENTFERNT sagt genau das.
+            await oeffneZiel4m2("element:logo");
             await seite.evaluate(() => {
               document.querySelector('[data-testid="entferne-logo"]')?.click();
             });
@@ -1537,12 +1577,14 @@ const main = async () => {
               fund("Marken-Rest (FA-24)", "eine abgeleitete Marke laesst sich oeffnen",
                 `Kind=${String(kind4m2Da)}, id=${String(kindId4m2)}`, "Befund", "marken-editor/marke-ableiten.ts");
             } else {
+              // #449: Das Akzentfeld liegt in der Box des Preis-Elements.
+              await oeffneZiel4m2("element:preis");
               await setzeWert4m2("farbe-akzent", "#0e0e0e", "blur");
               const eigenStand4m2 = await warteAuf4m2(kindId4m2,
                 (m) => m.herkunftJeFeld.farben.akzent === "eigen");
               const eigenAnzeige4m2 = await seite.evaluate(() => ({
-                text: (document.querySelector('[data-testid="herkunft-farbe"]')?.textContent ?? "").trim(),
-                knopf: document.querySelector('[data-testid="herkunft-zurueck-farbe"]') !== null,
+                text: (document.querySelector('[data-testid="herkunft-farbe"][data-rolle="akzent"]')?.textContent ?? "").trim(),
+                knopf: document.querySelector('[data-testid="herkunft-zurueck-farbe"][data-rolle="akzent"]') !== null,
               }));
               console.log(`[schritt-4m2] Eigenwert am Kind: Store=${String(eigenStand4m2?.herkunftJeFeld?.farben?.akzent)}, Anzeige=${JSON.stringify(eigenAnzeige4m2)}.`);
               if (eigenStand4m2 === null || eigenStand4m2.herkunftJeFeld.farben.akzent !== "eigen") {
@@ -1554,12 +1596,12 @@ const main = async () => {
               } else {
                 console.log("[schritt-4m2] Eigenwert-Anzeige GEMESSEN ('Eigener Wert' + Rueckweg).");
                 await seite.evaluate(() => {
-                  document.querySelector('[data-testid="herkunft-zurueck-farbe"]')?.click();
+                  document.querySelector('[data-testid="herkunft-zurueck-farbe"][data-rolle="akzent"]')?.click();
                 });
                 const geerbt4m2 = await warteAuf4m2(kindId4m2,
                   (m) => m.herkunftJeFeld.farben.akzent === "geerbt");
                 const zurueckText4m2 = await seite.evaluate(
-                  () => (document.querySelector('[data-testid="herkunft-farbe"]')?.textContent ?? "").trim(),
+                  () => (document.querySelector('[data-testid="herkunft-farbe"][data-rolle="akzent"]')?.textContent ?? "").trim(),
                 );
                 console.log(`[schritt-4m2] Vererbung zurueck: Store=${String(geerbt4m2?.herkunftJeFeld?.farben?.akzent)}, Anzeige="${zurueckText4m2}".`);
                 if (geerbt4m2 === null || geerbt4m2.herkunftJeFeld.farben.akzent !== "geerbt"

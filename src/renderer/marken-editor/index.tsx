@@ -16,7 +16,7 @@ import {
   oeffneMarke, holeGeoeffneteMarke, aufGeoeffneteMarkeGeaendert, erstelleEigenstaendigeMarke,
 } from './marken-uebersicht' // #295
 import { FARB_ROLLEN, setzeFarbe } from './farben-bearbeiten' // #296
-import { baueSchriftAnzeige, LIZENZHINWEIS_IMPORT } from './schriften-bearbeiten' // #297
+import { baueSchriftAnzeige, LIZENZHINWEIS_IMPORT, SCHRIFT_ROLLEN } from './schriften-bearbeiten' // #297
 import { HINWEIS_LOGO_ENTFERNT, entferneLogo } from './logo-bearbeiten' // #298
 import {
   setzeFeldAufGeerbt, leseHerkunft, baueHerkunftText, type HerkunftPfad,
@@ -33,9 +33,15 @@ import {
   setzeSicherheitsabstand, baueVorlagenHinweis, type Sicherheitsabstand,
 } from './sicherheitsabstand-bearbeiten' // #308
 import { waehleUndImportiereSchrift, waehleUndImportiereLogo } from './datei-import' // #326
-import { MarkenVorschau } from './vorschau-flaeche' // #303, dritte Spalte
+import { MarkenVorschau, findeVorschauVorlage } from './vorschau-flaeche' // #303
+import {
+  baueMarkenElemente,
+  nichtGezeigteFarbRollen,
+  nichtGezeigteSchriftRollen,
+  type MarkenElement,
+} from './marken-elemente' // #449
 
-import type { Marke } from '../../shared/contracts/marke'
+import type { FarbRolle, Marke, SchriftRolle } from '../../shared/contracts/marke'
 
 /**
  * ZEICHENGLEICHE Abschrift der Deklaration in `src/renderer/app-shell/inhalte.tsx` (#314, die
@@ -51,6 +57,13 @@ export interface MarkenEditorWurzelProps {
    *  „Vollbild". Nur gelesen; kein `lade()` von hier. */
   vorlagen: VorlagenZugang
 }
+
+/** Was die kleine Box unter der Vorschau gerade zeigt (#449). */
+type BoxZiel =
+  | { art: 'element'; element: MarkenElement }
+  | { art: 'farbe'; rolle: FarbRolle }
+  | { art: 'schrift'; rolle: SchriftRolle }
+  | { art: 'abstand' }
 
 /** Der EINE eigene Zustandswert: ob die zuletzt geoeffnete Marke noch gilt (ENTSCHIEDEN 6). */
 type Zustand = {
@@ -69,6 +82,9 @@ type Zustand = {
   loeschDialog: boolean
   slogan: { text: string; aktiv: boolean }
   sicherheit: Sicherheitsabstand
+  boxZiel: BoxZiel | null
+  /** Zu welcher Marke die offene Box gehoert - ein Speichern derselben Marke laesst sie offen. */
+  boxMarkeId: string | null
 }
 
 /**
@@ -94,6 +110,8 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
     loeschDialog: false,
     slogan: holeGeoeffneteMarke()?.slogan ?? { text: '', aktiv: false },
     sicherheit: holeGeoeffneteMarke()?.sicherheit ?? { horizontal: 0, vertikal: 0 },
+    boxZiel: null,
+    boxMarkeId: null,
   }))
 
   // JE EINEN ABO beim Aufbau, beides wieder abgemeldet beim Abbau (DoD).
@@ -126,6 +144,10 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
         abstandHinweis: null,
         slogan: marke?.slogan ?? { text: '', aktiv: false },
         sicherheit: marke?.sicherheit ?? { horizontal: 0, vertikal: 0 },
+        // Die Box bleibt offen, solange DIESELBE Marke offen ist: Ein Speichern schickt
+        // einen neuen Markenstand, und der Nutzer will weiterarbeiten.
+        boxZiel: marke?.id === alt.boxMarkeId ? alt.boxZiel : null,
+        boxMarkeId: marke?.id === alt.boxMarkeId ? alt.boxMarkeId : null,
       }))
     })
     return () => {
@@ -150,9 +172,10 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
       )}
     </div>
   )
-  const spalteMarke = !zeigeMarke ? (
-    <div data-testid="marken-offen-leer">Waehle links eine Marke.</div>
-  ) : (
+  // #449: Die Elemente kommen aus der Vorschau-Vorlage selbst (Zonen -> Rollen).
+  const vorlage = findeVorschauVorlage(vorlagen)
+  const elemente = vorlage === null ? [] : baueMarkenElemente(vorlage)
+  const spalteMarke = (
     // `key` = Kennung der geoeffneten Marke: Die Farbfelder sind unkontrolliert
     // (defaultValue) und behalten nach einer Bearbeitung ihren sichtbaren Wert, wenn
     // React dasselbe DOM-Element weiterbenutzt. Am echten Fenster gemessen 22.10.2026
@@ -160,22 +183,48 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
     // der Wert der vorigen Marke (#808080 statt #FF4040) - der naechste onBlur haette
     // ihn in die NEUE Marke geschrieben. Der Wechsel der Marke baut den Bereich deshalb
     // neu auf; innerhalb derselben Marke bleibt alles stehen (key unveraendert).
-    <div key={(marke as Marke).id} data-testid="marken-offen" style={{ overflowY: 'auto' }}>
-      {offenAusbau(marke as Marke, zustand, setzeZustand, marken)}
-    </div>
-  )
-  const spalteVorschau = (
-    <div data-testid="marken-vorschau" style={{ position: 'sticky', top: 0 }}>
-      {/* Live-Vorschau (TK 9.14.1/9.15.2, #303): eigener Baustein, damit diese Wurzel
-        weiterhin nur anordnet. Vorbereitung und Zeichnen liegen dort. */}
-      <MarkenVorschau marke={zeigeMarke ? (marke as Marke) : null} vorlagen={vorlagen} />
+    <div key={zeigeMarke ? (marke as Marke).id : 'leer'} data-testid="marken-offen" style={{ flex: 1, minWidth: 0 }}>
+      {zeigeMarke && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <h3 data-testid="marken-kopf" style={{ margin: 0 }}>{(marke as Marke).name}</h3>
+          {(marke as Marke).parent !== null && <span style={{ opacity: 0.8 }}>abgeleitet</span>}
+          <div style={{ marginLeft: 'auto' }}>{loeschStamm(marke as Marke, zustand, setzeZustand, marken)}</div>
+        </div>
+      )}
+      {/* #303/#449: die EINE Zeichenroutine; die Klickflaechen liegen als Rechtecke darueber. */}
+      <div data-testid="marken-vorschau">
+        <MarkenVorschau
+          marke={zeigeMarke ? (marke as Marke) : null}
+          vorlagen={vorlagen}
+          elemente={elemente}
+          offenesElement={zustand.boxZiel?.art === 'element' ? zustand.boxZiel.element.id : null}
+          aufElement={(id) => {
+            const element = id === null ? undefined : elemente.find((kandidat) => kandidat.id === id)
+            setzeZustand((alt) => ({
+              ...alt,
+              boxZiel: element === undefined ? null : { art: 'element', element },
+              boxMarkeId: element === undefined ? null : ((marke as Marke | null)?.id ?? null),
+            }))
+          }}
+        />
+      </div>
+      {!zeigeMarke && <div data-testid="marken-offen-leer">Waehle links eine Marke.</div>}
+      {zeigeMarke && palette(marke as Marke, elemente, setzeZustand)}
+      {zeigeMarke &&
+        zustand.boxZiel !== null &&
+        elementBox(
+          marke as Marke,
+          zustand.boxZiel,
+          zustand,
+          setzeZustand,
+          umstaendeParentName(marke as Marke, zustand.markenUebersicht),
+        )}
     </div>
   )
   return (
     <div style={{ display: 'flex', gap: 8, minHeight: 0 }}>
       {spalteListe}
       {spalteMarke}
-      {spalteVorschau}
     </div>
   )
 }
@@ -298,10 +347,20 @@ function herkunftZeile(
     void setzeFeldAufGeerbt(marke.id, pfad as HerkunftPfad)
   }
   return (
-    <div data-testid={`herkunft-${pfad.art}`} key={pfad.art}>
+    <div
+      data-testid={`herkunft-${pfad.art}`}
+      // #449: Die Rolle gehoert an die Zeile - eine Box zeigt mehrere Farben, und ein
+      // Selektor ohne Rolle traefe sonst die erste statt der gemeinten.
+      data-rolle={'rolle' in pfad ? pfad.rolle : undefined}
+      key={pfad.art}
+    >
       <span>{zeile}</span>
       {lies === 'eigen' && (
-        <button data-testid={`herkunft-zurueck-${pfad.art}`} onClick={zuruecksetzen}>
+        <button
+          data-testid={`herkunft-zurueck-${pfad.art}`}
+          data-rolle={'rolle' in pfad ? pfad.rolle : undefined}
+          onClick={zuruecksetzen}
+        >
           Vererbung wiederherstellen
         </button>
       )}
@@ -387,158 +446,293 @@ function loeschStamm(
   )
 }
 
-function offenAusbau(
+/** Deutsche Namen der Farb-Rollen fuer die Box (#449) - Anzeige, kein Vertrag. */
+const ROLLE_TEXT: Record<FarbRolle, string> = {
+  akzent: 'Akzent (Preis-Pille)',
+  akzentKraeftig: 'Akzent kräftig',
+  akzentTief: 'Akzent tief',
+  flaecheDunkel: 'Dunkle Fläche (Hintergrund, Band)',
+  flaecheSehrDunkel: 'Sehr dunkle Fläche',
+  flaecheHell: 'Helle Fläche (Button)',
+  flaecheAkzentZart: 'Akzent zart',
+  textAufDunkel: 'Text auf dunklem Grund',
+  textAufHell: 'Text auf heller Fläche',
+  textSekundaer: 'Text sekundär',
+  linie: 'Linie',
+  scrimStart: 'Verlauf oben',
+  scrimEnde: 'Verlauf unten',
+}
+
+/** Deutsche Namen der Schrift-Rollen fuer die Box (#449). */
+const SCHRIFT_TEXT: Record<SchriftRolle, string> = {
+  headlineElegant: 'Überschrift elegant',
+  headlinePlakativ: 'Überschrift plakativ',
+  fliesstext: 'Fließtext',
+  fliesstextFett: 'Fließtext fett',
+}
+
+/** EIN Farbfeld. Geschrieben wird ausschliesslich ueber `setzeFarbe` (#296). */
+function farbFeld(marke: Marke, rolle: FarbRolle, parentName: string | null): JSX.Element {
+  return (
+    <div data-testid={`feld-farbe-${rolle}`}>
+      <label>
+        {ROLLE_TEXT[rolle]}{' '}
+        <input
+          data-testid={`farbe-${rolle}`}
+          defaultValue={marke.farben[rolle]}
+          onBlur={(e) => {
+            void setzeFarbe(marke.id, rolle, e.target.value)
+          }}
+        />
+      </label>
+      {herkunftZeile(marke, { art: 'farbe', rolle }, parentName)}
+      {rolle === 'akzent' && <KontrastWarnung marke={marke} schwellenwert={KONTRAST_SCHWELLE} />}
+    </div>
+  )
+}
+
+/** EINE Schriftzeile mit Import (#326 als EINZIGER Weg). */
+function schriftFeld(
+  marke: Marke,
+  rolle: SchriftRolle,
+  zustand: Zustand,
+  setzeZustand: (aktualisiere: (alt: Zustand) => Zustand) => void,
+  parentName: string | null,
+): JSX.Element {
+  const anzeige = baueSchriftAnzeige(marke).find((kandidat) => kandidat.rolle === rolle)
+  return (
+    <div data-testid={`feld-schrift-${rolle}`}>
+      <span>
+        {SCHRIFT_TEXT[rolle]}: {anzeige?.schrift.familie ?? '–'}
+        {anzeige?.importiert === true ? ' (importiert)' : ' (gebündelt)'}
+      </span>
+      {herkunftZeile(marke, { art: 'schrift', rolle }, parentName)}
+      <p>{LIZENZHINWEIS_IMPORT}</p>
+      <button
+        disabled={zustand.importierLaueft > 0}
+        data-testid={`import-schrift-${rolle}`}
+        onClick={() => {
+          void waehleUndImportiereSchrift(marke.id, rolle).then((ergebnis) => {
+            setzeZustand((alt) => ({
+              ...alt,
+              importierLaueft: alt.importierLaueft - 1,
+              meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung,
+            }))
+          })
+          setzeZustand((alt) => ({ ...alt, importierLaueft: alt.importierLaueft + 1 }))
+        }}
+      >
+        Eigene Schrift wählen
+      </button>
+      {zustand.meldeaktionFehler !== null && <p data-testid="import-fehler">{zustand.meldeaktionFehler}</p>}
+    </div>
+  )
+}
+
+/** Logo importieren/entfernen (#326/#298). */
+function logoFelder(
   marke: Marke,
   zustand: Zustand,
   setzeZustand: (aktualisiere: (alt: Zustand) => Zustand) => void,
-  marken: MarkenZugang,
+  parentName: string | null,
 ): JSX.Element {
-  const parentName = umstaendeParentName(marke, zustand.markenUebersicht)
-  const abstandAlt: Sicherheitsabstand = marke.sicherheit
   return (
-    <div>
-      <h3 data-testid="marken-kopf">{marke.name}</h3>
-      {marke.parent !== null && <p>abgeleitet</p>}
-      {/* 1 Farben: über FARB_ROLLEN iterieren, NIE über Object.keys (#296). */}
-      <section data-testid="marken-farben">
-        {FARB_ROLLEN.map((rolle) => (
-          <div key={rolle}>
-            <label>
-              {rolle}
-              <input
-                data-testid={`farbe-${rolle}`}
-                defaultValue={marke.farben[rolle]}
-                onBlur={(e) => {
-                  void setzeFarbe(marke.id, rolle, e.target.value)
-                }}
-              />
-            </label>
-            {herkunftZeile(marke, { art: 'farbe', rolle }, parentName)}
-            {/* Kontrast-Warnung unmittelbar unter `akzent` (ENTSCHIEDEN 7 / 8). */}
-            {rolle === 'akzent' && (
-              <KontrastWarnung marke={marke} schwellenwert={KONTRAST_SCHWELLE} />
-            )}
-          </div>
-        ))}
-      </section>
-      {/* 2 Schriften: über SCHRIFT_ROLLEN iterieren. Der Import läuft AUSSCHLIESSLICH über #326. */}
-      <section data-testid="marken-schriften">
-        {baueSchriftAnzeige(marke).map((anzeige) => (
-          <div key={anzeige.rolle}>
-            <span>
-              {anzeige.rolle}: {anzeige.schrift.familie}
-              {anzeige.importiert ? ' (importiert)' : ' (gebündelt)'}
-            </span>
-            {herkunftZeile(marke, { art: 'schrift', rolle: anzeige.rolle }, parentName)}
-            {/* Lizenzhinweis VOR dem Auslöser (R-07); nichts nachgeliefert. */}
-            <p>{LIZENZHINWEIS_IMPORT}</p>
-            <button
-              disabled={zustand.importierLaueft > 0}
-              data-testid={`import-schrift-${anzeige.rolle}`}
-              onClick={() => {
-                void waehleUndImportiereSchrift(marke.id, anzeige.rolle).then((ergebnis) => {
-                  // Abbruch ({ ok: true, wert: null }) ist KEIN Fehler (ENTSCHIEDEN 14):
-                  // nichts anzeigen, nichts zurücksetzen, kein zweiter Versuch.
-                  setzeZustand((alt) => ({
-                    ...alt,
-                    importierLaueft: alt.importierLaueft - 1,
-                    meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung,
-                  }))
-                })
-                setzeZustand((alt) => ({ ...alt, importierLaueft: alt.importierLaueft + 1 }))
-              }}
-            >
-              Eigene Schrift wählen
-            </button>
-            {zustand.meldeaktionFehler !== null && (
-              <p data-testid="import-fehler">{zustand.meldeaktionFehler}</p>
-            )}
-          </div>
-        ))}
-      </section>
-      {/* 3 Logo: Import über #326, Entfernen als reguläre Handlung das entferntes Logo */}
-      <section data-testid="marken-logo">
-        <button
-          disabled={zustand.importierLaueft > 0}
-          onClick={() => {
-            void waehleUndImportiereLogo(marke.id).then((ergebnis) => {
-              setzeZustand((alt) => ({
-                ...alt,
-                importierLaueft: alt.importierLaueft - 1,
-                meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung,
-              }))
-            })
-            setzeZustand((alt) => ({ ...alt, importierLaueft: alt.importierLaueft + 1 }))
-          }}
-        >
-          Eigenes Logo wählen
-        </button>
-        <button
-          data-testid="entferne-logo"
-          onClick={() => {
-            void entferneLogo(marke.id).then((ergebnis) => {
-              setzeZustand((alt) => ({ ...alt, meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung }))
-            })
-          }}
-        >
-          Logo entfernen
-        </button>
-        <p>{HINWEIS_LOGO_ENTFERNT}</p>
-        {herkunftZeile(marke, { art: 'logo' }, parentName)}
-      </section>
-      {/* 4 Slogan: beide Schlüssel ZUSAMMEN (#307) - auch wenn nur der Schalter sich ändert. */}
-      <section data-testid="marken-slogan">
+    <div data-testid="feld-logo">
+      <button
+        data-testid="import-logo"
+        disabled={zustand.importierLaueft > 0}
+        onClick={() => {
+          void waehleUndImportiereLogo(marke.id).then((ergebnis) => {
+            setzeZustand((alt) => ({
+              ...alt,
+              importierLaueft: alt.importierLaueft - 1,
+              meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung,
+            }))
+          })
+          setzeZustand((alt) => ({ ...alt, importierLaueft: alt.importierLaueft + 1 }))
+        }}
+      >
+        Eigenes Logo wählen
+      </button>
+      <button
+        data-testid="entferne-logo"
+        onClick={() => {
+          void entferneLogo(marke.id).then((ergebnis) => {
+            setzeZustand((alt) => ({ ...alt, meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung }))
+          })
+        }}
+      >
+        Logo entfernen
+      </button>
+      <p>{HINWEIS_LOGO_ENTFERNT}</p>
+      {herkunftZeile(marke, { art: 'logo' }, parentName)}
+    </div>
+  )
+}
+
+/** Slogan (Ersatz-Logo): beide Schluessel ZUSAMMEN (#307). */
+function sloganFelder(
+  marke: Marke,
+  zustand: Zustand,
+  setzeZustand: (aktualisiere: (alt: Zustand) => Zustand) => void,
+  parentName: string | null,
+): JSX.Element {
+  return (
+    <div data-testid="feld-slogan">
+      <input
+        data-testid="slogan-text"
+        value={zustand.slogan.text}
+        onChange={(e) => setzeZustand((alt) => ({ ...alt, slogan: { ...alt.slogan, text: e.target.value } }))}
+      />
+      <label>
         <input
-          value={zustand.slogan.text}
-          onChange={(e) =>
-            setzeZustand((alt) => ({ ...alt, slogan: { ...alt.slogan, text: e.target.value } }))
-          }
-        />
-        <input
+          data-testid="slogan-aktiv"
           type="checkbox"
           checked={zustand.slogan.aktiv}
-          onChange={(e) =>
-            setzeZustand((alt) => ({ ...alt, slogan: { ...alt.slogan, aktiv: e.target.checked } }))
-          }
-        />
-        <button
-          onClick={() => {
-            void setzeSlogan(marke.id, zustand.slogan).then((ergebnis) => {
-              setzeZustand((alt) => ({ ...alt, meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung }))
-            })
-          }}
-        >
-          Slogan übernehmen
+          onChange={(e) => setzeZustand((alt) => ({ ...alt, slogan: { ...alt.slogan, aktiv: e.target.checked } }))}
+        />{' '}
+        Ersatz-Logo zeigen
+      </label>
+      <button
+        data-testid="slogan-uebernehmen"
+        onClick={() => {
+          void setzeSlogan(marke.id, zustand.slogan).then((ergebnis) => {
+            setzeZustand((alt) => ({ ...alt, meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung }))
+          })
+        }}
+      >
+        Slogan übernehmen
+      </button>
+      {herkunftZeile(marke, { art: 'slogan' }, parentName)}
+    </div>
+  )
+}
+
+/** Sicherheitsabstand (#308) - gehoert nicht zu einer Zone, liegt in der Palette. */
+function abstandFelder(
+  marke: Marke,
+  zustand: Zustand,
+  setzeZustand: (aktualisiere: (alt: Zustand) => Zustand) => void,
+  parentName: string | null,
+): JSX.Element {
+  return (
+    <div data-testid="feld-abstand">
+      <input
+        data-testid="abstand-horizontal"
+        value={zustand.sicherheit.horizontal}
+        onChange={(e) => angeleitetAbstand(e, zustand, setzeZustand, marke, true)}
+      />
+      <input
+        data-testid="abstand-vertikal"
+        value={zustand.sicherheit.vertikal}
+        onChange={(e) => angeleitetAbstand(e, zustand, setzeZustand, marke, false)}
+      />
+      {zustand.abstandHinweis !== null && <p data-testid="abstand-hinweis">{zustand.abstandHinweis}</p>}
+      <button
+        data-testid="abstand-uebernehmen"
+        onClick={() => {
+          void setzeSicherheitsabstand(marke.id, zustand.sicherheit).then((ergebnis) => {
+            setzeZustand((alt) => ({ ...alt, meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung }))
+          })
+        }}
+      >
+        Abstand übernehmen
+      </button>
+      {herkunftZeile(marke, { art: 'sicherheit' }, parentName)}
+    </div>
+  )
+}
+
+/** Die kleine Box (#449): genau das Element, das angeklickt wurde. */
+function elementBox(
+  marke: Marke,
+  ziel: BoxZiel,
+  zustand: Zustand,
+  setzeZustand: (aktualisiere: (alt: Zustand) => Zustand) => void,
+  parentName: string | null,
+): JSX.Element {
+  const titel =
+    ziel.art === 'element'
+      ? ziel.element.titel
+      : ziel.art === 'farbe'
+        ? ROLLE_TEXT[ziel.rolle]
+        : ziel.art === 'schrift'
+          ? SCHRIFT_TEXT[ziel.rolle]
+          : 'Sicherheitsabstand'
+  const schliessen = (): void => setzeZustand((alt) => ({ ...alt, boxZiel: null }))
+  let inhalt: JSX.Element
+  if (ziel.art === 'farbe') {
+    inhalt = farbFeld(marke, ziel.rolle, parentName)
+  } else if (ziel.art === 'schrift') {
+    inhalt = schriftFeld(marke, ziel.rolle, zustand, setzeZustand, parentName)
+  } else if (ziel.art === 'abstand') {
+    inhalt = abstandFelder(marke, zustand, setzeZustand, parentName)
+  } else if (ziel.element.art === 'logo') {
+    inhalt = (
+      <>
+        {logoFelder(marke, zustand, setzeZustand, parentName)}
+        {sloganFelder(marke, zustand, setzeZustand, parentName)}
+      </>
+    )
+  } else {
+    inhalt = (
+      <>
+        {ziel.element.schriftRollen.map((rolle) => (
+          <div key={`schrift-${rolle}`}>{schriftFeld(marke, rolle, zustand, setzeZustand, parentName)}</div>
+        ))}
+        {ziel.element.farbRollen.map((rolle) => (
+          <div key={`farbe-${rolle}`}>{farbFeld(marke, rolle, parentName)}</div>
+        ))}
+      </>
+    )
+  }
+  return (
+    <div
+      data-testid="marken-box"
+      style={{ border: '1px solid #4da6ff', borderRadius: 6, padding: 8, marginTop: 8, maxWidth: 420 }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <strong data-testid="marken-box-titel">{titel}</strong>
+        <button data-testid="marken-box-schliessen" style={{ marginLeft: 'auto' }} onClick={schliessen}>
+          ×
         </button>
-        {herkunftZeile(marke, { art: 'slogan' }, parentName)}
-      </section>
-      {/* 5 Sicherheitsabstand: vor dem Schreiben baueVorlagenHinweis (beim WACHSEN warnen). */}
-      <section data-testid="marken-sicherheit">
-        <input
-          data-testid="abstand-horizontal"
-          value={zustand.sicherheit.horizontal}
-          onChange={(e) => angeleitetAbstand(e, zustand, setzeZustand, marke, true)}
-        />
-        <input
-          data-testid="abstand-vertikal"
-          value={zustand.sicherheit.vertikal}
-          onChange={(e) => angeleitetAbstand(e, zustand, setzeZustand, marke, false)}
-        />
-        {zustand.abstandHinweis !== null && <p data-testid="abstand-hinweis">{zustand.abstandHinweis}</p>}
+      </div>
+      {inhalt}
+    </div>
+  )
+}
+
+/** Die Palette unter der Vorschau: alles, was die feste Vorlage nicht zeigt. */
+function palette(
+  marke: Marke,
+  elemente: readonly MarkenElement[],
+  setzeZustand: (aktualisiere: (alt: Zustand) => Zustand) => void,
+): JSX.Element {
+  const farben = nichtGezeigteFarbRollen(FARB_ROLLEN, elemente)
+  const schriften = nichtGezeigteSchriftRollen(SCHRIFT_ROLLEN, elemente)
+  const waehle = (ziel: BoxZiel): void =>
+    setzeZustand((alt) => ({ ...alt, boxZiel: ziel, boxMarkeId: marke.id }))
+  return (
+    <div data-testid="marken-palette" style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+      <span style={{ opacity: 0.75 }}>Nicht in dieser Vorschau:</span>
+      {farben.map((rolle) => (
         <button
-          onClick={() => {
-            void setzeSicherheitsabstand(marke.id, zustand.sicherheit).then((ergebnis) => {
-              setzeZustand((alt) => ({ ...alt, meldeaktionFehler: ergebnis.ok ? null : ergebnis.fehler.meldung }))
-            })
-          }}
-        >
-          Abstand übernehmen
+          key={rolle}
+          data-testid={`palette-farbe-${rolle}`}
+          title={ROLLE_TEXT[rolle]}
+          aria-label={ROLLE_TEXT[rolle]}
+          onClick={() => waehle({ art: 'farbe', rolle })}
+          style={{ width: 20, height: 20, padding: 0, background: marke.farben[rolle], border: '1px solid #888', borderRadius: 3 }}
+        />
+      ))}
+      {schriften.map((rolle) => (
+        <button key={rolle} data-testid={`palette-schrift-${rolle}`} onClick={() => waehle({ art: 'schrift', rolle })}>
+          {SCHRIFT_TEXT[rolle]}
         </button>
-        {herkunftZeile(marke, { art: 'sicherheit' }, parentName)}
-        <p>{JSON.stringify(abstandAlt)}</p>
-      </section>
-      {/* Fuß: Löschen mit Vorwarnung (#302) - gefährliche Handlung, NICHT zwischen harmlose. */}
-      {loeschStamm(marke, zustand, setzeZustand, marken)}
+      ))}
+      <button data-testid="palette-abstand" onClick={() => waehle({ art: 'abstand' })}>
+        Sicherheitsabstand {marke.sicherheit.horizontal}/{marke.sicherheit.vertikal}
+      </button>
     </div>
   )
 }

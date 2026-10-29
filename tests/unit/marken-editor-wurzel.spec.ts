@@ -33,6 +33,7 @@ const h = vi.hoisted(() => ({
   waehleUndImportiereSchrift: vi.fn(),
   waehleUndImportiereLogo: vi.fn(),
   MarkenVorschau: vi.fn(() => null),
+  findeVorschauVorlage: vi.fn((): unknown => null),
 }));
 
 vi.mock('../../src/renderer/marken-editor/marken-uebersicht', () => ({
@@ -50,6 +51,7 @@ vi.mock('../../src/renderer/marken-editor/farben-bearbeiten', () => ({
 vi.mock('../../src/renderer/marken-editor/schriften-bearbeiten', () => ({
   baueSchriftAnzeige: h.baueSchriftAnzeige,
   LIZENZHINWEIS_IMPORT: 'LIZENZ',
+  SCHRIFT_ROLLEN: ['headlineElegant', 'headlinePlakativ', 'fliesstext', 'fliesstextFett'],
 }));
 vi.mock('../../src/renderer/marken-editor/logo-bearbeiten', () => ({
   HINWEIS_LOGO_ENTFERNT: 'HINWEIS',
@@ -88,6 +90,7 @@ vi.mock('../../src/renderer/marken-editor/datei-import', () => ({
 // dass die Wurzel ihn mit der geoeffneten Marke und dem Vorlagen-Zugang versorgt.
 vi.mock('../../src/renderer/marken-editor/vorschau-flaeche', () => ({
   MarkenVorschau: h.MarkenVorschau,
+  findeVorschauVorlage: h.findeVorschauVorlage,
 }));
 
 const { MarkenEditorWurzel } = await import('../../src/renderer/marken-editor/index.tsx');
@@ -111,9 +114,24 @@ const ZUGANG = (initial: unknown) => ({
   hole: vi.fn(() => initial),
   aufGeaendert: vi.fn(() => () => undefined),
 });
+// #449: Die Elemente kommen aus der VORSCHAU-VORLAGE. Ohne sie gaebe es nichts zu klicken -
+// deshalb liefert die Vorlagen-Sicht hier die eingebaute „Vollbild" (Ausschnitt).
+const VORLAGE_VOLLBILD = {
+  id: 'vollbild', name: 'Vollbild', art: 'vollflaeche', höhe: null, parent: null, eingebaut: true,
+  zonen: [
+    { id: 'hintergrund', rolle: 'fest', bindung: null, rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 }, ausrichtung: { horizontal: 'links', vertikal: 'oben' }, wennLeer: 'leer', deko: { füllungFarbRolle: 'flaecheDunkel' } },
+    { id: 'motiv', rolle: 'frei', bindung: 'bild', rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 }, ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' }, wennLeer: 'leer', bild: { einpassung: 'cover' } },
+    { id: 'scrim', rolle: 'fest', bindung: null, rahmen: { x: 0, y: 432, breite: 1920, höhe: 648 }, ausrichtung: { horizontal: 'links', vertikal: 'oben' }, wennLeer: 'leer', deko: { verlauf: { vonFarbRolle: 'scrimStart', bisFarbRolle: 'scrimEnde', richtung: 'unten' } } },
+    { id: 'logo', rolle: 'fest', bindung: 'logo', rahmen: { x: 96, y: 54, breite: 420, höhe: 120 }, ausrichtung: { horizontal: 'links', vertikal: 'mitte' }, wennLeer: 'leer', bild: { einpassung: 'contain' } },
+    { id: 'ueberschrift', rolle: 'frei', bindung: 'titel', rahmen: { x: 96, y: 640, breite: 1150, höhe: 190 }, ausrichtung: { horizontal: 'links', vertikal: 'unten' }, wennLeer: 'leer', text: { schriftRolle: 'headlinePlakativ', farbRolle: 'textAufDunkel', größeMax: 96, größeMin: 56, maxZeilen: 2 } },
+    { id: 'preis', rolle: 'frei', bindung: 'preis', rahmen: { x: 1300, y: 660, breite: 524, höhe: 150 }, ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' }, wennLeer: 'ausblenden', text: { schriftRolle: 'headlinePlakativ', farbRolle: 'textAufDunkel', größeMax: 84, größeMin: 48, maxZeilen: 1 }, deko: { füllungFarbRolle: 'akzent', radius: 40 } },
+    { id: 'cta', rolle: 'frei', bindung: 'cta', rahmen: { x: 1300, y: 830, breite: 524, höhe: 120 }, ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' }, wennLeer: 'ausblenden', text: { schriftRolle: 'headlinePlakativ', farbRolle: 'textAufHell', größeMax: 56, größeMin: 36, maxZeilen: 1 }, deko: { füllungFarbRolle: 'flaecheHell', radius: 40 } },
+  ],
+};
+
 const VORLAGEN = {
   lade: vi.fn(() => Promise.resolve({ ok: true, wert: { nutzbare: [], verwaisteArbeitskopien: [] } })),
-  hole: vi.fn(() => ({ nutzbare: [], verwaisteArbeitskopien: [] })),
+  hole: vi.fn(() => ({ nutzbare: [{ vorlage: VORLAGE_VOLLBILD }], verwaisteArbeitskopien: [] })),
   aufGeaendert: vi.fn(() => () => undefined),
 };
 
@@ -125,7 +143,30 @@ beforeEach(() => {
   document.body.appendChild(behaelter);
   // Aufrufzählungen isolieren - jede Testprobe zählt nur ihre eigenen Rufe.
   h.oeffneMarke.mockClear();
+  // #449: Das Vorschau-Doppel zeigt die Elemente als Knoepfe; der Klick oeffnet die Box,
+  // die die WURZEL rendert (deshalb genuegt ein Doppel ohne Zeichenweg).
+  h.findeVorschauVorlage.mockReturnValue(VORLAGE_VOLLBILD);
+  (h.MarkenVorschau as unknown as { mockImplementation: (f: unknown) => void }).mockImplementation((p: { elemente?: Array<{ id: string; titel: string }>; aufElement?: (id: string) => void }) =>
+    createElement(
+      'div',
+      { 'data-testid': 'vorschau-doppel' },
+      ...(p.elemente ?? []).map((element) =>
+        createElement(
+          'button',
+          { key: element.id, 'data-testid': `element-${element.id}`, onClick: () => p.aufElement?.(element.id) },
+          element.titel,
+        ),
+      ),
+    ),
+  );
 });
+
+/** Oeffnet die Box eines Elements ueber das Vorschau-Doppel (#449). */
+function oeffne(behaelterTest: HTMLElement, id: string): void {
+  const knopf = behaelterTest.querySelector<HTMLButtonElement>(`[data-testid="element-${id}"]`);
+  if (knopf === null) throw new Error(`Element ${id} nicht im Doppel`);
+  act(() => knopf.click());
+}
 
 afterEach(() => {
   if (wurzel !== null && behaelter !== null) {
@@ -222,17 +263,22 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     h.holeGeoeffnete.mockImplementation(() => markeFuerTest({ id: DIE_ID }));
   });
 
-  it('dreizehn Farbfelder in FARB_ROLLEN-Reihenfolge und kein Object.keys auf farben', () => {
+  it('alle 13 Farb-Rollen sind erreichbar: 7 an Elementen, 6 in der Palette (#449)', () => {
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
-    expect(
-      behaelterTest.querySelectorAll('[data-testid^="farbe-"]'),
-    ).toHaveLength(13);
+    // Die Elemente der festen Vorlage decken 7 Rollen ab; die Palette traegt die uebrigen 6.
+    const palette = Array.from(behaelterTest.querySelectorAll('[data-testid^="palette-farbe-"]'));
+    expect(palette).toHaveLength(6);
+    // Eine der sichtbaren Rollen liegt im Preis-Element (akzent) - Box oeffnen und pruefen.
+    oeffne(behaelterTest, 'preis');
+    expect(behaelterTest.querySelector('[data-testid="farbe-akzent"]')).not.toBeNull();
   });
 
   it('KontrastWarnung mit der geöffneten Marke und schwellenwert KONTRAST_SCHWELLE (4.5)', () => {
     const zugang = ZUGANG(UEBERSICHT);
-    zeige({ sichtbar: true, marken: zugang });
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    // Die Akzent-Rolle liegt am Preis-Element (#449).
+    oeffne(behaelterTest, 'preis');
     expect(h.KontrastWarnung).toHaveBeenCalled();
     const ruf = h.KontrastWarnung.mock.calls[h.KontrastWarnung.mock.calls.length - 1] as unknown as [
       { marke: Marke; schwellenwert: number },
@@ -245,6 +291,7 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
   it(' Farbänderung: setzeFarbe GENAU EINMAL mit (marke.id, rolle, wert UNVERAENDERT)', async () => {
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    oeffne(behaelterTest, 'preis');
     const feld = behaelterTest.querySelector<HTMLInputElement>('[data-testid="farbe-akzent"]')!;
     await act(async () => {
       feld.focus();
@@ -262,13 +309,15 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     h.setzeSlogan.mockResolvedValue({ ok: true, wert: null });
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
-    // Nur den Schalter umbenennen
-    const schalter = behaelterTest.querySelector<HTMLInputElement>('[data-testid="marken-slogan"] input[type="checkbox"]')!;
+    // Der Slogan (Ersatz-Logo) liegt in der Box des Logo-Elements (#449).
+    oeffne(behaelterTest, 'logo');
+    const schalter = behaelterTest.querySelector<HTMLInputElement>('[data-testid="slogan-aktiv"]')!;
     await act(async () => {
       schalter.click();
     });
-    const schaltflaechen = behaelterTest.querySelectorAll<HTMLButtonElement>('[data-testid="marken-slogan"] button');
-    schaltflaechen[0]!.click();
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="slogan-uebernehmen"]')!.click();
+    });
     expect(h.setzeSlogan).toHaveBeenCalledTimes(1);
     expect(h.setzeSlogan).toHaveBeenCalledWith(DIE_ID, { text: 'BESTTEXT', aktiv: true });
   });
@@ -277,42 +326,49 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     h.setzeSicherheitsabstand.mockResolvedValue({ ok: true, wert: null });
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    // Der Sicherheitsabstand gehoert zu keiner Zone - er liegt in der Palette (#449).
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="palette-abstand"]')!.click();
+    });
     const feld = behaelterTest.querySelector<HTMLInputElement>('[data-testid="abstand-horizontal"]')!;
     fieldGetSetter(feld, '10');
     await act(async () => {
       feld.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    const schalteSehrKlein = behaelterTest.querySelectorAll<HTMLButtonElement>('[data-testid="marken-sicherheit"] button');
-    schalteSehrKlein[0]!.click();
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="abstand-uebernehmen"]')!.click();
+    });
     expect(h.baueVorlagenHinweis).toHaveBeenCalledTimes(1);
     expect(h.setzeSicherheitsabstand).toHaveBeenCalledWith(DIE_ID, { horizontal: 10, vertikal: 0 });
   });
 
   it('Import Schrift: Schaltfläche ruft waehleUndImportiereSchrift GENAU EINMAL mit (marke.id, rolle)', async () => {
     h.baueSchriftAnzeige.mockReturnValue([
-      { rolle: 'fliesstext', schrift: {}, importiert: false },
+      { rolle: 'headlinePlakativ', schrift: {}, importiert: false },
     ] as never);
     h.waehleUndImportiereSchrift.mockResolvedValue({ ok: true, wert: null });
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    oeffne(behaelterTest, 'ueberschrift');
     expect((document.body.textContent as string).includes('LIZENZ')).toBe(true);
     await act(async () => {
-      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="import-schrift-fliesstext"]')!.click();
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="import-schrift-headlinePlakativ"]')!.click();
     });
     expect(h.waehleUndImportiereSchrift).toHaveBeenCalledTimes(1);
-    expect(h.waehleUndImportiereSchrift).toHaveBeenCalledWith(DIE_ID, 'fliesstext');
+    expect(h.waehleUndImportiereSchrift).toHaveBeenCalledWith(DIE_ID, 'headlinePlakativ');
   });
 
   it('der Abbruch des Imports ({ ok: true, wert: null }) macht NICHTS', async () => {
     h.baueSchriftAnzeige.mockReturnValue([
-      { rolle: 'fliesstext', schrift: {}, importiert: false },
+      { rolle: 'headlinePlakativ', schrift: {}, importiert: false },
     ] as never);
     h.waehleUndImportiereSchrift.mockResolvedValue({ ok: true, wert: null });
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    oeffne(behaelterTest, 'ueberschrift');
     const davor = behaelterTest.innerHTML;
     await act(async () => {
-      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="import-schrift-fliesstext"]')!.click();
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="import-schrift-headlinePlakativ"]')!.click();
     });
     expect(behaelterTest.querySelector('[data-testid="import-fehler"]')).toBeNull();
     expect((behaelterTest.innerHTML === davor).valueOf()).toBe(true);
@@ -322,6 +378,7 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     h.entferneLogo.mockResolvedValue({ ok: true, wert: null });
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    oeffne(behaelterTest, 'logo');
     expect((document.body.textContent as string).includes('HINWEIS')).toBe(true);
     await act(async () => {
       behaelterTest.querySelector<HTMLButtonElement>('[data-testid="entferne-logo"]')!.click();
@@ -337,7 +394,7 @@ function fieldGetSetter(feld: HTMLInputElement, wert: string): void {
 }
 
 describe('MarkenEditorWurzel (#330) - Herkunft, Loeschen, Ableiten', () => {
-  it('abgeleitete Marke: JEDES Feld traegt eine Herkunft-Zeile aus baueHerkunftText', () => {
+  it('abgeleitete Marke: JEDES Feld traegt eine Herkunft-Zeile aus baueHerkunftText', async () => {
     h.holeGeoeffnete.mockReturnValue(
       markeFuerTest({ id: DIE_ID, parent: PARENT_ID }),
     );
@@ -345,13 +402,22 @@ describe('MarkenEditorWurzel (#330) - Herkunft, Loeschen, Ableiten', () => {
 
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
-    // Eine Zeile je Fachbegriff-art; die hauptdouzieme Fields (13 Farben etc.) zeigen je their Zeilen.
-    const zeilen = Array.from(behaelterTest.querySelectorAll('[data-testid^="herkunft-"]')).map(
-      (e) => e.getAttribute('data-testid'),
-    );
-    expect(zeilen.length).toBeGreaterThan(5);
+    // #449: Jede Box zeigt die Herkunft ihrer Felder - hier nacheinander alle Arten.
+    const arten = new Set<string>();
+    for (const id of ['preis', 'ueberschrift', 'logo']) {
+      oeffne(behaelterTest, id);
+      for (const zeile of Array.from(behaelterTest.querySelectorAll('[data-testid^="herkunft-"]'))) {
+        arten.add(zeile.getAttribute('data-testid') ?? '');
+      }
+    }
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="palette-abstand"]')!.click();
+    });
+    for (const zeile of Array.from(behaelterTest.querySelectorAll('[data-testid^="herkunft-"]'))) {
+      arten.add(zeile.getAttribute('data-testid') ?? '');
+    }
     for (const art of ['herkunft-farbe', 'herkunft-schrift', 'herkunft-logo', 'herkunft-slogan', 'herkunft-sicherheit']) {
-      expect(Array.from(behaelterTest.querySelectorAll(`[data-testid="${art}"]`)).length).toBeGreaterThan(0);
+      expect(arten.has(art)).toBe(true);
     }
     expect((document.body.textContent as string).includes('Eigenwert')).toBe(true);
     h.holeGeoeffnete.mockReturnValue(markeFuerTest({ id: DIE_ID }));
@@ -503,15 +569,28 @@ describe('MarkenEditorWurzel (#330) - Momentaufnahmen beim Markenwechsel (Treibe
       }));
     });
 
+    // #449: Abstand liegt in der Palette, Slogan in der Logo-Box.
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="palette-abstand"]')!.click();
+    });
     expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="abstand-horizontal"]')!.value).toBe('96');
     expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="abstand-vertikal"]')!.value).toBe('54');
-    const sloganFelder = behaelterTest.querySelectorAll<HTMLInputElement>('[data-testid="marken-slogan"] input');
-    expect(sloganFelder[0]!.value).toBe('Saisonstart');
-    expect(sloganFelder[1]!.checked).toBe(true);
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-box-schliessen"]')!.click();
+    });
+    oeffne(behaelterTest, 'logo');
+    expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="slogan-text"]')!.value).toBe('Saisonstart');
+    expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="slogan-aktiv"]')!.checked).toBe(true);
 
     // Ein Klick auf "Abstand uebernehmen" schreibt jetzt den Wert DER MARK, nicht 0/0.
     await act(async () => {
-      behaelterTest.querySelectorAll<HTMLButtonElement>('[data-testid="marken-sicherheit"] button')[0]!.click();
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-box-schliessen"]')!.click();
+    });
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="palette-abstand"]')!.click();
+    });
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="abstand-uebernehmen"]')!.click();
     });
     expect(h.setzeSicherheitsabstand).toHaveBeenCalledWith(PARENT_ID, { horizontal: 96, vertikal: 54 });
 
@@ -534,6 +613,7 @@ describe('MarkenEditorWurzel (#330) - Momentaufnahmen beim Markenwechsel (Treibe
 
     // Der Nutzer bearbeitet das Akzentfeld - dadurch ist der Wert "eigen" (dirty) und
     // ein spaeteres defaultValue allein aendert die Anzeige nicht mehr.
+    oeffne(behaelterTest, 'preis');
     const feld = behaelterTest.querySelector<HTMLInputElement>('[data-testid="farbe-akzent"]')!;
     await act(async () => {
       feld.focus();
@@ -548,6 +628,8 @@ describe('MarkenEditorWurzel (#330) - Momentaufnahmen beim Markenwechsel (Treibe
       hoerer?.(neueMarke);
     });
 
+    // Der Markenwechsel schliesst die Box (boxZiel wird zurueckgesetzt) - neu oeffnen.
+    oeffne(behaelterTest, 'preis');
     expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="farbe-akzent"]')!.value).toBe('#FF4040');
 
     h.aufGeoeffneteGeaendert.mockImplementation(() => () => undefined);

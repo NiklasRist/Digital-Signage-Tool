@@ -27,6 +27,7 @@ import { stelleSchriftenBereit } from '../template-canvas/schriften'
 import { stelleMarkenSchriftenBereit } from '../template-canvas/marken-schriften'
 import { bereiteLogoVor } from '../template-canvas/logo-laden'
 import { zeichneMarkenVorschau } from './live-vorschau'
+import type { MarkenElement } from './marken-elemente'
 
 /** Die feste Vorschau-Vorlage (A1, 22.10.2026). Anzeigename der eingebauten Vorlage. */
 export const VORSCHAU_VORLAGE_NAME = 'Vollbild'
@@ -63,6 +64,12 @@ export interface MarkenVorschauProps {
   /** Die geoeffnete Marke oder null (keine offen). */
   marke: Marke | null
   vorlagen: VorlagenZugang
+  /** #449: die anklickbaren Elemente (Zonen der Vorlage) - Rechtecke ueber dem Canvas. */
+  elemente?: readonly MarkenElement[]
+  /** #449: das Element, dessen Box gerade offen ist (Rahmen hervorgehoben). */
+  offenesElement?: string | null
+  /** #449: Klick auf ein Element (id) oder daneben (null). */
+  aufElement?: (id: string | null) => void
 }
 
 /**
@@ -71,7 +78,13 @@ export interface MarkenVorschauProps {
  * und `bereiteLogoVor` merken sich ihre Vorgaenge je `markeId` und sind damit
  * wirkungsgleich bei Mehrfachaufruf.
  */
-export function MarkenVorschau({ marke, vorlagen }: MarkenVorschauProps): JSX.Element {
+export function MarkenVorschau({
+  marke,
+  vorlagen,
+  elemente = [],
+  offenesElement = null,
+  aufElement,
+}: MarkenVorschauProps): JSX.Element {
   const flaeche = useRef<HTMLDivElement | null>(null)
   const [hinweis, setHinweis] = useState<string | null>(null)
 
@@ -116,13 +129,51 @@ export function MarkenVorschau({ marke, vorlagen }: MarkenVorschauProps): JSX.El
     }
   }, [marke, vorlagen])
 
+  // GROESSTE Flaeche zuerst zeichnen, kleinste zuletzt: sonst liegt der
+  // Vollflaechen-Hintergrund ueber dem Logo und faengt jeden Klick ab (#449).
+  const klickflaechen = [...elemente].sort((a, b) => b.flaeche - a.flaeche)
   return (
-    <div>
+    <div
+      style={{ position: 'relative' }}
+      onClick={() => {
+        // Klick neben ein Element schliesst die Box.
+        aufElement?.(null)
+      }}
+    >
       <div
         ref={flaeche}
         data-testid="marken-vorschau-flaeche"
         style={{ border: '1px solid #444', minHeight: 120 }}
       />
+      {marke !== null &&
+        klickflaechen.map((element) => {
+          const offen = offenesElement === element.id
+          return (
+            <button
+              key={element.id}
+              type="button"
+              data-testid={`marken-element-${element.id}`}
+              title={element.titel}
+              aria-label={element.titel}
+              onClick={(ereignis) => {
+                ereignis.stopPropagation()
+                aufElement?.(element.id)
+              }}
+              style={{
+                position: 'absolute',
+                left: `${(element.rahmen.x / 1920) * 100}%`,
+                top: `${(element.rahmen.y / 1080) * 100}%`,
+                width: `${(element.rahmen.breite / 1920) * 100}%`,
+                height: `${(element.rahmen.höhe / 1080) * 100}%`,
+                padding: 0,
+                background: 'transparent',
+                border: offen ? '2px solid #4da6ff' : '1px dashed rgba(255,255,255,0.35)',
+                borderRadius: 3,
+                cursor: 'pointer',
+              }}
+            />
+          )
+        })}
       {hinweis !== null && <p data-testid="marken-vorschau-hinweis">{hinweis}</p>}
     </div>
   )
