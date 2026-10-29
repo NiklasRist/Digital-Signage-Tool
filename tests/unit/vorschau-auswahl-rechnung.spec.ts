@@ -4,8 +4,6 @@
 // #217, Bandtakt #220) durch kontrollierte Doppel; Prüfobjekt ist die
 // ABLAUFSORDNUNG der Auswahl selbst. taktDelta/taktSollLaufen (ENTSCHIEDEN 7)
 // sind ebenfalls Faelle der reinen Datei.
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const doppel = vi.hoisted(() => ({
@@ -119,6 +117,14 @@ describe('Schritt 1/2: die Leerfaelle schlagen alles', () => {
 
   it('passt die elementId nicht zum Element am Index, entsteht eine LEERE Flaeche - die Vorschau luegt nicht (ENTSCHIEDEN 8)', () => {
     const projekt = baueProjekt({ liste: [baueElement()] })
+    const fremd: Achsenabschnitt = { ...ABSCHNITT, elementId: 'e-FREMD' }
+    expect(waehleVorschaubild(projekt, fremd, 0, [], [], true)).toEqual({ art: 'leer' })
+  })
+
+  it('fremde elementId bei einem SONST zeichenbaren Video: trotzdem LEER (nicht das Video)', () => {
+    // Die erste Fixture endet ohne Asset ohnehin in `leer` - der Identitaets-Nachweis
+    // war dort unsichtbar. Hier waere der normale Weg ein Video.
+    const projekt = baueProjekt({ liste: [baueElement()], assets: [baueAsset()] })
     const fremd: Achsenabschnitt = { ...ABSCHNITT, elementId: 'e-FREMD' }
     expect(waehleVorschaubild(projekt, fremd, 0, [], [], true)).toEqual({ art: 'leer' })
   })
@@ -386,35 +392,5 @@ describe('taktDelta und taktSollLaufen', () => {
     expect(taktSollLaufen(true, false)).toBe(false)
     expect(taktSollLaufen(false, true)).toBe(false)
     expect(taktSollLaufen(false, false)).toBe(false)
-  })
-})
-
-// ---------------- Grep-Probe ----------------
-
-describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare)', () => {
-  const quelle = readFileSync(
-    new URL('../../src/renderer/preview-player/vorschau-auswahl.ts', import.meta.url),
-    'utf8',
-  )
-  const code = quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-  it('kein JSX, kein react, kein Math., kein RENDER_PROFILE, kein Rueckkanal, kein media://, kein app-shell/template-canvas/main', () => {
-    expect(code).not.toContain('react')
-    expect(code).not.toContain('<')
-    expect(code).not.toContain('Math.')
-    expect(code).not.toContain('RENDER_PROFILE')
-    expect(code).not.toContain('rufeAuf')
-    expect(code).not.toContain('abonniere')
-    expect(code).not.toContain('window.')
-    expect(code).not.toContain('media://')
-    expect(code).not.toContain('app-shell/')
-    expect(code).not.toContain('template-canvas/')
-    expect(code).not.toContain('src/main/')
   })
 })

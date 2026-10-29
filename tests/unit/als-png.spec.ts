@@ -1,32 +1,8 @@
 // Verhaltenstests zu #118 - alsPng.ts (je Pattern aus #118 DoD).
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it, vi } from 'vitest'
 
 import { alsPng } from '../../src/renderer/template-canvas/als-png'
 import type { SegmentBild } from '../../src/renderer/template-canvas/zeichne-segment'
-
-const QUELLE_HTML = readFileSync(
-  new URL('../../src/renderer/template-canvas/als-png.ts', import.meta.url).pathname,
-  'utf8',
-)
-
-const QUELLE = QUELLE_HTML.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('als-png – Quelldatei-Verbote (Grep)', () => {
-  it('kein toDataURL, kein GET_CONTEXT, kein zweiter Zeichenpfad, kein Dateizugriff, kein Farbprofil', () => {
-    for (const verbot of ['toDataURL', 'getContext', 'node:fs', 'colorSpace', 'Display-P3', 'srgbExaktkolorSpace']) {
-      expect(QUELLE).not.toContain(verbot)
-    }
-    expect(QUELLE).not.toContain('zeichneSegment(')  // ein zweiter Aufruf wäre zweiter Zeichenpfad
-    expect(QUELLE).toContain("'image/png'")  // der MIME-Typ steht ausdrücklich
-  })
-})
 
 // Doppel: toBlob am Canvas, plus ein zu große Bildkoordinaten.
 function bild(aufrufEinstellung: { nullRufen?: boolean; falscheMaße?: boolean; wirft?: Error } = {}): SegmentBild & { toBlob: ReturnType<typeof vi.fn> } {
@@ -82,6 +58,27 @@ describe('alsPng (#118)', () => {
       expect(antwort.fehler.meldung).toContain('2×2')
     }
     expect(b.toBlob).not.toHaveBeenCalled()
+  })
+
+  it('NUR die Breite weicht ab -> png_export_fehler, kein toBlob (beide Masse zaehlen einzeln)', async () => {
+    const b = bild()
+    ;(b.canvas as unknown as { width: number }).width = 3 // bild.breite ist 2
+    const antwort = await alsPng(b)
+    expect(antwort.ok).toBe(false)
+    if (!antwort.ok) expect(antwort.fehler.code).toBe('png_export_fehler')
+    expect(b.toBlob).not.toHaveBeenCalled()
+  })
+
+  it('nicht-quadratisch mit passenden Massen -> ok (Breite und Hoehe werden NICHT vertauscht)', async () => {
+    const bytes = new Uint8Array([137, 80, 78, 71])
+    const toBlob = vi.fn((callback: (blob: Blob | null) => void) => {
+      callback(new Blob([bytes], { type: 'image/png' }))
+    })
+    const canvas = { width: 4, height: 2, toBlob } as unknown as HTMLCanvasElement
+    const b = { canvas, breite: 4, höhe: 2 } as unknown as SegmentBild
+    const antwort = await alsPng(b)
+    expect(antwort.ok).toBe(true)
+    expect(toBlob).toHaveBeenCalledTimes(1)
   })
 
   it("toBlob ruft mit null zurück -> png_export_fehler, keine Wirkung am Puffer", async () => {

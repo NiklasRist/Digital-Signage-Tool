@@ -167,6 +167,32 @@ describe('Abspielen und Anhalten (die Uhr steuert, das Video nicht)', () => {
     fertig()
   })
 
+  it('laeuft true, aber das Video laeuft SCHON: play wird NICHT erneut gerufen', () => {
+    const { behaelter, wurzel, fertig } = rendere(eigenschaften({ laeuft: true }))
+    const video = behaelter.querySelector('video') as HTMLVideoElement
+    const playSpion = vi.spyOn(video, 'play')
+    Object.defineProperty(video, 'paused', { get: () => false })
+    act(() => {
+      wurzel.render(createElement(Video, eigenschaften({ laeuft: true })) as ReactElement)
+    })
+    expect(playSpion).not.toHaveBeenCalled()
+    fertig()
+  })
+
+  it('der Aufbau haengt ein catch an das play()-Promise (abgelehnte Zusage wird gefangen)', () => {
+    const { behaelter, wurzel, fertig } = rendere(eigenschaften({ laeuft: false }))
+    const video = behaelter.querySelector('video') as HTMLVideoElement
+    const catchSpion = vi.fn()
+    vi.spyOn(video, 'play').mockImplementation(
+      () => ({ catch: catchSpion }) as unknown as Promise<void>,
+    )
+    act(() => {
+      wurzel.render(createElement(Video, eigenschaften({ laeuft: true })) as ReactElement)
+    })
+    expect(catchSpion).toHaveBeenCalledTimes(1)
+    fertig()
+  })
+
   it('innerhalb der Toleranz wird currentTime NICHT gesetzt', () => {
     // soll = quellZeit(0, 3) = 0.1; ist = 0: Abweichung 0.1 <= 0.25 -> kein Setzen.
     const { behaelter, fertig } = rendere(eigenschaften({ trimStart: 0, lokalerFrame: 3 }))
@@ -216,6 +242,22 @@ describe('Abspielen und Anhalten (die Uhr steuert, das Video nicht)', () => {
     expect(
       (HTMLMediaElement.prototype.load as ReturnType<typeof vi.fn>).mock.calls.length,
     ).toBe(vorwartend)
+    erste.fertig()
+  })
+
+  it('aendert sich der dateiname bei gleicher projektId, wird die Quelle NEU gesetzt und geladen', () => {
+    const erste = rendere(eigenschaften({ dateiname: 'a.mp4' }))
+    const video = erste.behaelter.querySelector('video') as HTMLVideoElement
+    const vorwartend = (HTMLMediaElement.prototype.load as ReturnType<typeof vi.fn>).mock.calls.length
+    act(() => {
+      erste.wurzel.render(
+        createElement(Video, eigenschaften({ dateiname: 'b.mp4' })) as ReactElement,
+      )
+    })
+    expect(video.getAttribute('src')).toBe(medienUrl('p-1', 'b.mp4'))
+    expect(
+      (HTMLMediaElement.prototype.load as ReturnType<typeof vi.fn>).mock.calls.length,
+    ).toBe(vorwartend + 1)
     erste.fertig()
   })
 })

@@ -11,8 +11,6 @@
 // BINDUNGSWEG: welche Quelle das <video> bekommt und dass die Objekt-URL wieder
 // freigegeben wird.
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs'
-
 import { act } from 'react'
 import { createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -133,17 +131,5 @@ describe('Filmstreifen bindet media:// als Blob-URL (#364)', () => {
     await act(async () => {})
 
     expect(doppel.mediaBlobUrl).not.toHaveBeenCalled()
-  })
-})
-
-describe('die Buehne bleibt bei der direkten media://-URL (#364, Grep)', () => {
-  // jsdom-Environment: `new URL(relativ, import.meta.url)` loest hier nicht auf -
-  // der Pfad ist relativ zur Projektwurzel (vitest startet dort).
-  const quelle = readFileSync('src/renderer/preview-player/video.tsx', 'utf8')
-
-  it('preview-player/video.tsx ruft mediaBlobUrl NICHT auf', () => {
-    expect(quelle).not.toContain('mediaBlobUrl')
-    expect(quelle).not.toContain('media-blob-url')
-    expect(quelle).toContain('medienUrl(')
   })
 })

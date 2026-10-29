@@ -6,27 +6,14 @@
 // Vertragsquelle neben dem Code. Die Mutations-Chargen haben 186 solcher Proben entfernt;
 // ohne diese Regel wachsen neue nach, sobald jemand eine Zusage "schnell" absichern will.
 //
-// DIE REGEL IST EINE SPERRKLINKE, KEIN VERBOT: Der Bestand vom 28.10.2026 steht in
-// `quelltext-proben-ausnahmen.json` (71 Dateien). Diese Liste darf NUR schrumpfen - jede
-// Mutations-Charge streicht ihre fuenf Dateien. Neue Proben in nicht gelisteten Dateien sind
-// ein Fehler.
+// DIE REGEL IST SEIT CHARGE 26 (29.10.2026) EIN VERBOT: Die Sperrklinke stand auf 0, die
+// Ausnahmen-Datei ist geloescht. Jede neue Quelltext-Probe in `tests/unit` ist ein Fehler -
+// die Zusage gehoert in einen Verhaltens-Test.
 //
 // Was als Probe gilt: ein `readFileSync(...)`, dessen Pfad auf `src/` zeigt - direkt als
 // Literal, als Template ohne Ausdruck, ueber eine Konstante (`const QUELLE = path.join(...)`)
 // oder ueber `new URL(...)`. Gelesen werden Temp-Dateien, Fixtures usw. weiterhin ohne
 // Meldung; die Regel prueft den Pfad, nicht den Aufruf.
-
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const HIER = path.dirname(fileURLToPath(import.meta.url))
-const WURZEL = path.resolve(HIER, '..', '..')
-
-/** Repo-relative Pfade (POSIX), deren Quelltext-Proben bewusst stehen bleiben. */
-const AUSNAHMEN = new Set(
-  JSON.parse(readFileSync(path.join(HIER, 'quelltext-proben-ausnahmen.json'), 'utf8')),
-)
 
 /** Sammelt alle Zeichenketten-Literale eines Ausdrucks (auch verschachtelt). */
 function literale(knoten, sammlung = [], gesehen = new WeakSet()) {
@@ -73,22 +60,28 @@ const regel = {
     type: 'problem',
     docs: {
       description:
-        'Quelltext-Proben in tests/unit: readFileSync auf src/ ist nur in gelisteten Dateien erlaubt.',
+        'Quelltext-Proben in tests/unit: readFileSync auf src/ ist verboten.',
     },
     schema: [],
     messages: {
       probe:
         'Quelltext-Probe: diese Testdatei liest "{{pfad}}" aus src/. Die Zusage gehoert in ' +
-        'einen Verhaltens-Test; Ausnahmen stehen in tools/eslint/quelltext-proben-ausnahmen.json (#447).',
+        'einen Verhaltens-Test (#447).',
     },
   },
   create(rahmen) {
-    const datei = path.relative(WURZEL, rahmen.filename).split(path.sep).join('/')
-    if (AUSNAHMEN.has(datei)) return {}
-
     return {
       CallExpression(knoten) {
-        if (knoten.callee.type !== 'Identifier' || knoten.callee.name !== 'readFileSync') return
+        const kallee = knoten.callee
+        const istReadFileSync =
+          (kallee.type === 'Identifier' && kallee.name === 'readFileSync') ||
+          // Auch `fs.readFileSync(...)` / `(await import('node:fs')).readFileSync(...)`:
+          // sonst waere die Regel mit einer Importzeile umgangen.
+          (kallee.type === 'MemberExpression' &&
+            !kallee.computed &&
+            kallee.property.type === 'Identifier' &&
+            kallee.property.name === 'readFileSync')
+        if (!istReadFileSync) return
         const argument = knoten.arguments[0]
         if (!argument) return
 

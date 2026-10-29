@@ -277,39 +277,3 @@ describe("leereMarkenBestand (#312)", () => {
     expect(h.leereLogoBestand).toHaveBeenCalledTimes(2);
   });
 });
-
-describe("Grep-Proben auf die Datei (#312)", () => {
-  it("kein fs, kein path, kein window.api, kein verbotenes Wort im CODE", async () => {
-    const quelle = await import("node:fs");
-    const text = (quelle as typeof import("node:fs")).readFileSync(
-      "src/renderer/gemeinsam/marken-bereitstellung.ts",
-      "utf8",
-    );
-    const ohneKommentare = text
-      .replace(/\r\n/g, "\n")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .map((zeile) => zeile.replace(/\/\/.*$/, ""))
-      .join("\n");
-
-    // Schutz gegen zu gieriges Abstreifen: Der Kern steht NIEMALS in Kommentaren.
-    expect(ohneKommentare).toContain("stelleMarkeBereit");
-    expect(ohneKommentare).toContain("leereLogoBestand");
-
-    for (const verboten of [
-      "node:fs",
-      "from 'path'",
-      "window.api",
-      "document.",
-      "zeichneSegment",
-      "marken://",
-      "marke.parent",
-      "listeMarken",
-      "setTimeout",
-      "setInterval",
-      "ctx.",
-    ]) {
-      expect(ohneKommentare.includes(verboten)).toBe(false);
-    }
-  });
-});

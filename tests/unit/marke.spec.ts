@@ -9,8 +9,6 @@
 // template-canvas eine Rolle abfragen, die keine Marke fuehrt; der Wert waere
 // `undefined`, und die Zeichenroutine malte mit "undefined" als Farbe - im Canvas
 // ein stiller Fehlgriff, der erst im fertigen Video sichtbar wird.
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import type {
@@ -22,11 +20,6 @@ import type {
   SchriftRolle,
 } from "../../src/shared/contracts/marke";
 import type { Behaupte, Gleich } from "../typ-gleich";
-
-const QUELLE = readFileSync(
-  new URL("../../src/shared/contracts/marke.ts", import.meta.url),
-  "utf8",
-);
 
 // --- DoD 2: geschlossene Unionen ---------------------------------------------
 type T1 = Behaupte<Gleich<Gleich<FarbRolle, string>, false>>;
@@ -223,22 +216,5 @@ describe("Marke als identifizierbarer Datensatz (#320, TK 9.11.2)", () => {
       "slogan",
     ]);
     expect(vollstaendig.herkunftJeFeld.logo).toBe("keins");
-  });
-
-  it("enthaelt keinen Laufzeit-Code", () => {
-    const zeilen = QUELLE.split("\n").filter((z) => !z.trim().startsWith("//"));
-    expect(zeilen.join("\n")).not.toMatch(/\bconst\s|\bfunction\s|\bclass\s/);
-  });
-
-  // ANPASSUNG 06.10.2026 (Issue #275): Die vier Nutzungs-Typen von #275 gehoeren
-  // ausdruecklich in DIESE Datei (Verbot 'keine dritte Datei', DoD von #275) - nur der
-  // MarkenEintrag von #277 und die Speicherform 'Partial' bleiben ausgeschlossen.
-  it("fuehrt MarkenEintrag von #277 NICHT selbst - die Nutzungs-Typen von #275 gehoeren HIEHER", () => {
-    for (const verboten of [
-      "MarkenEintrag",
-      "Partial",
-    ]) {
-      expect(QUELLE).not.toContain(verboten);
-    }
   });
 });

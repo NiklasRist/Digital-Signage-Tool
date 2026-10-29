@@ -86,31 +86,19 @@ describe("setzeSlogan (#307)", () => {
     expect(h.rufeAuf).not.toHaveBeenCalled();
     expect(h.uebernimme).not.toHaveBeenCalled();
   });
-});
 
-describe("Grep-Probe auf slogan-bearbeiten.ts (#307)", () => {
-  it("kein Timer, kein { geerbt }, keine Zwillings-Fassung, kein fs", async () => {
-    const { readFileSync } = await import("node:fs");
-    const text = (readFileSync("src/renderer/marken-editor/slogan-bearbeiten.ts", "utf8") as string)
-      .replace(/\r\n/g, "\n")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .map((zeile) => zeile.replace(/\/\/.*$/, ""))
-      .join("\n");
+  it("nur Leerzeichen in der markeId: ungueltige_eingabe OHNE IPC", async () => {
+    const antwort = (await setzeSlogan("   ", { text: "x", aktiv: true })) as { fehler: { code: string } };
+    expect(antwort.fehler.code).toBe("ungueltige_eingabe");
+    expect(h.rufeAuf).not.toHaveBeenCalled();
+    expect(h.uebernimme).not.toHaveBeenCalled();
+  });
 
-    expect(text).toContain("setzeSlogan");
-    for (const verboten of [
-      "setTimeout",
-      "setInterval",
-      "debounce",
-      "geerbt",
-      "setzeSloganText",
-      "setzeSloganAktiv",
-      "node:fs",
-    ]) {
-      expect(text.includes(verboten)).toBe(false);
-    }
-    // Das trimen des TEXTS ist verboten (ENTSCHIEDEN 2) - die Pruefung hier trifft allein den Gesendeten Text:
-    expect((text.match(/text\.trim\(\)/g) ?? [])).toEqual([]);
+  it("nicht-String als markeId: ungueltige_eingabe OHNE IPC und ohne Wurf", async () => {
+    const antwort = (await setzeSlogan(undefined as unknown as string, { text: "x", aktiv: true })) as {
+      fehler: { code: string };
+    };
+    expect(antwort.fehler.code).toBe("ungueltige_eingabe");
+    expect(h.rufeAuf).not.toHaveBeenCalled();
   });
 });
