@@ -13,8 +13,6 @@
 //   - GENAU EIN Meldeweg; GENAU EINE aktuelle Meldung; kein Ausblend-Timer
 //   - der Import-Rueckweg (`meldeImportErgebnis`) verdrahtet #256/#133
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
 import { createElement, act, type JSX, type ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -456,14 +454,6 @@ function fangeUmgebung(): Record<string, unknown> {
   return aufnahme![0]
 }
 
-function quelleVonApp(): string {
-  const importurl = import.meta.url as string
-  return readFileSync(
-    fileURLToPath(importurl.slice(0, importurl.lastIndexOf('tests/')) + 'src/renderer/App.tsx'),
-    'utf8',
-  )
-}
-
 beforeEach(() => {
   halterDoppel.zurueck()
   d.schritte.length = 0
@@ -597,7 +587,6 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     })
     expect(d.leisteRufe).toHaveLength(1)
     expect(behaelter.querySelector('[data-testid="rahmen-leiste"] [data-testid="leiste-marke"]')).not.toBeNull()
-    expect(quelleVonApp()).not.toMatch(/baueAuftragsSichtAuf/)
   })
 
   it('Die Meldungsflaeche zeigt SpeicherHinweis mit ZWEI Abo-Funktionen fuer die beiden autoSpeichernStatus-Kanaele (benannter Test)', async () => {
@@ -642,8 +631,6 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       ;(hinweisEigenschaften.abonniereProjekt as (h: unknown) => () => void)(vi.fn())
     })
     expect(d.abonniereKanaele.at(-1)).toBe(KANAELE.project.autoSpeichernStatus)
-    // Der Kanalname steht NUR in der Registry (#304): App.tsx hat KEIN Zeichenketten-Literal:
-    expect(quelleVonApp().match(/marken:autoSpeichernStatus/g) ?? []).toHaveLength(0)
   })
 
   it("Der Melde-Nachweis, benannter Test 'eine Meldung wird gezeigt': Code und Meldung landen in der meldungsFlaeche, NICHT im speicherHinweis", async () => {
@@ -1023,6 +1010,20 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(vi.mocked(uebergabeModul.beendeLaufende)).toHaveBeenLastCalledWith(umgebung)
   })
 
+  it('holeProjekt() der UebergabeUmgebung liest zur LAUFZEIT aus dem Zugangs-Spiegel', async () => {
+    // Der Spiegel (zugaengeRef) wird in `setzeLage` gefuellt, NICHT beim Aufbau: Die
+    // Umgebung entsteht VOR der Lage. Ohne ihn liefert holeProjekt() fuer immer null,
+    // und jede Reparatur verliert ihr Projekt (Mutation A4, Charge 22).
+    stelleBereitMitProjekt()
+    rendere()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const umgebung = fangeUmgebung()
+    expect((umgebung.holeProjekt as () => unknown)()).toEqual({ id: 'p1' })
+  })
+
   it('App ruft KEINE der drei Abschluss-Funktionen aus #133 selbst (drei Spione, Null nach einem vollstaendigen Lauf; ENTSCHIEDEN 6)', async () => {
     stelleBereitMitProjekt()
     const { behaelter } = rendere()
@@ -1142,22 +1143,4 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(() => halterDoppel.setzeLage({ stand: null, laufendeUebergabe: null, hervorgehobeneAktionId: null, rueckkehrReiter: null })).not.toThrow()
   })
 
-  it('DoD-Grep-Probe: App.tsx enthaelt keine verbotenen Bausteine (Reiter-Zustand, Queue-Auswertung, Kanal-Literal, window.api, Timer, Historie)', () => {
-    const quelle = quelleVonApp()
-    expect(quelle).not.toMatch(/\bholeStand\b/)
-    expect(quelle).not.toMatch(/\breiheEin\b/)
-    expect(quelle).not.toMatch(/\brufeAuf\b/)
-    expect(quelle).not.toMatch(/'queue:'/)
-    expect(quelle).not.toMatch(/window\.api/)
-    expect(quelle).not.toMatch(/baueAuftragsSichtAuf/)
-    expect(quelle).not.toMatch(/setTimeout|setInterval/)
-    expect(quelle).not.toMatch(/type ReiterId =/)
-    expect(quelle).not.toMatch(/alert\(/)
-    // Die erlaubten und erforderlichen Bausteine SIND drin:
-    expect(quelle).toMatch(/abonniere/)
-    expect(quelle).toMatch(/KANAELE/)
-    expect(quelle).toMatch(/UebergabeOverlay/)
-    expect(quelle).toMatch(/schliesseMedienImportAb/)
-    expect(quelle).toMatch(/schliesseMediumFixAb/)
-  })
 })

@@ -12,7 +12,6 @@
 // und gibt zurueck, was die vorher gesetzte Antwort ist. Referenzgleichheit wird
 // direkt am `wert`-Objekt gemessen - ob die Datei die Antwort unveraendert
 // weiterreicht, laesst sich nur so nachweisen.
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -351,52 +350,5 @@ describe('loescheAktion - die Antwort wird unveraendert weitergereicht', () => {
     if (!ergebnis.ok) {
       expect(ergebnis.fehler).toBe(fehler)
     }
-  })
-})
-
-// ---------------------------------------------------------------------------
-// Quelltext-Proben - Abwesenheit, nicht Verhalten (auch mit einem Doppel nicht
-// messbar).
-// ---------------------------------------------------------------------------
-
-// `\r\n` wird ZUERST vereinheitlicht (core.autocrlf=true; s. #123/#191).
-const QUELLE = readFileSync('src/renderer/action-editor/aktion-loeschen.ts', 'utf8').replace(/\r\n/g, '\n')
-const CODEZEILEN = QUELLE.split('\n').filter(
-  (zeile) => !zeile.trimStart().startsWith('//') && !zeile.trimStart().startsWith('*'),
-)
-const CODE = CODEZEILEN.join('\n')
-
-describe('aktion-loeschen.ts - was die Datei NICHT enthaelt', () => {
-  it('der Kommentar-Filter greift ueberhaupt', () => {
-    expect(CODEZEILEN.length).toBeLessThan(QUELLE.split('\n').length)
-    expect(CODE).not.toContain('TK 9.5.3')
-    expect(CODE).toContain('export async function loescheAktion')
-  })
-
-  it('kein Kanal-Literal, kein window.api, kein fs', () => {
-    // Absichtlich auf der UNGEFILTERTEN Quelle: Die DoD verlangt die Zeichenketten
-    // nirgends in der Datei, auch nicht in einer Begruendung.
-    expect(QUELLE).not.toContain('project:')
-    expect(CODE).not.toContain('window.api')
-    expect(CODE).not.toMatch(/from '(node:)?fs'/)
-  })
-
-  it('kein reiheEin - Medien bleiben unangetastet (TK 9.5.3)', () => {
-    expect(CODE).not.toContain('reiheEin')
-  })
-
-  it('nutzt genau den einen Kanal aus der Registry und ruft KEINE Projekt-Mutation', () => {
-    // Ein einziges `rufeAuf` im ganzen Rumpf; der Kanal kommt aus KANAELE.
-    expect(CODE.match(/rufeAuf\s*</g) ?? []).toHaveLength(1)
-    expect(CODE).toContain('KANAELE.project.löscheAktion')
-    expect(CODE).not.toMatch(/KANAELE\.media\b/)
-    // Die Kaskade wird hier nicht selbst ausgefuehrt.
-    expect(CODE).not.toContain('entferneElement')
-    expect(CODE).not.toContain('setzeEinblendung')
-    expect(CODE).not.toContain('ordneNeu')
-  })
-
-  it('kein throw im Rumpf - die Antwort wird nicht "ausgepackt"', () => {
-    expect(CODE).not.toMatch(/\bthrow\b/)
   })
 })

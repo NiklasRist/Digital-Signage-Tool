@@ -6,53 +6,12 @@
 // unverändert: Titel ist Pflicht, pruefeEntwurf prueft nur vorhandene Felder,
 // die Vollstaendigkeit sitzt allein in legeAktionAn, und gesendet wird
 // ausschliesslich ueber rufeAuf (#24) mit den Kanaelen aus KANAELE (#25).
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../src/shared/contracts/konstanten'
 import { KANAELE } from '../../src/shared/contracts/kanaele'
 
 import type { Aktion } from '../../src/shared/contracts/aktion'
-
-// ---------------- Quelldatei-Verbote (Grep) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/action-editor/aktion-bearbeiten.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('aktion-bearbeiten – Verbote in der Quelldatei (Grep)', () => {
-  it('enthaelt weder das Kanal-Literal "project:" noch window.api noch fs', () => {
-    expect(CODEZEILEN).not.toContain('project:')
-    expect(CODEZEILEN).not.toContain('window.api')
-    expect(CODEZEILEN).not.toMatch(/(^|[^a-zA-Z])fs([.\s'";,)\]]|$)/)
-  })
-
-  it('enthaelt die Zahlen 10 und 45 nicht als Literal', () => {
-    expect(CODEZEILEN).not.toMatch(/\b10\b/)
-    expect(CODEZEILEN).not.toMatch(/\b45\b/)
-  })
-
-  it('enthaelt die ueberholten Bezeichner istAkzentRolle / AkzentRolle / keine_rolle nicht', () => {
-    expect(CODEZEILEN).not.toContain('istAkzentRolle')
-    expect(CODEZEILEN).not.toContain('AkzentRolle')
-    expect(CODEZEILEN).not.toContain('keine_rolle')
-  })
-
-  it('NACHZUG M8 (#320/#319-Signatur): der Bezeichner markeId TRAEGT im Entwurf', () => {
-    // Vorher (bis #136/#318, Stand auf main ohne M8-Kette): Negative-Grep
-    // 'markeId' duerfte nicht auftreten (Naht zu #319). Mit #319-Form liefert
-    // leererEntwurf(vorlagenId, markeId, akzentfarbe) den verbindlichen Stand.
-    expect(CODEZEILEN).toContain('markeId')
-  })
-})
 
 // ---------------- rufeAuf-Doppel ----------------
 
@@ -314,11 +273,6 @@ describe('pruefeEntwurf (#319) - markeId', () => {
     expect(pruefeEntwurf({})).toEqual([])
   })
 
-  it('die Akzentfarb-Zeilen sind unveraendert (Naht zu #318)', () => {
-    expect(CODEZEILEN).toContain('kein_hex')
-    expect(CODEZEILEN).not.toContain('keine_rolle')
-    expect(CODEZEILEN).not.toContain('istAkzentRolle')
-  })
 })
 
 describe('legeAktionAn (#319) - vier Pflichtfelder', () => {
@@ -347,5 +301,26 @@ describe('speichereAktion (#319) - die Nutzlast eines Marken-Wechsels', () => {
     expect(nutzlast.id).toBe('a1')
     expect(Object.keys(nutzlast.aktionsdaten)).toEqual(['markeId'])
     expect(nutzlast.aktionsdaten.markeId).toBe('m2')
+  })
+})
+
+// Die Meldungstabelle hatte bis Charge 22 KEINEN Test: Ein geloeschter `case` in
+// `meldungZuBefunden` blieb gruen (Mutation B6). Geprueft wird je Befund, dass die
+// Meldung FELD und GRUND nennt - nicht der genaue Satzbau.
+describe('meldungZuBefunden - jeder Befund nennt Feld und Grund', () => {
+  it.each([
+    ['titel', { titel: '   ' }, 'titel: Der Titel ist Pflicht'],
+    ['vorlagenId', { vorlagenId: '  ' }, 'vorlagenId: Es muss eine Vorlage gewählt sein.'],
+    ['standardDauer', { standardDauer: 5 }, 'standardDauer: Der Wert liegt außerhalb'],
+    ['akzentfarbe', { akzentfarbe: 'rot' }, 'akzentfarbe: Der Wert ist kein gültiger Hex-Wert'],
+  ])('nennt %s und den Grund, ohne zu senden', async (_feld, aenderungen, erwartet) => {
+    doppel.aufrufe = []
+    doppel.antwort = { ok: true, wert: AKTION_OK }
+    const antwort = await speichereAktion('a1', aenderungen as Partial<AktionsEntwurf>)
+
+    expect(antwort.ok).toBe(false)
+    if (antwort.ok) return
+    expect(antwort.fehler.meldung).toContain(erwartet)
+    expect(doppel.aufrufe).toHaveLength(0)
   })
 })

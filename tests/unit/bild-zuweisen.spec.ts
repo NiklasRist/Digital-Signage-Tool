@@ -1,7 +1,6 @@
 // Verhaltenstests zu #138 - bild-zuweisen.ts.
 // rufeAuf (#24) und speichereAktion (#136) als Doppel; der Fokus sind Auswahlregel,
 // Nutzlasten und die Teilerfolg-Logik der Einreih-Schleife.
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -41,33 +40,6 @@ import {
   waehlbareBilder,
   weiseBildZu,
 } from '../../src/renderer/action-editor/bild-zuweisen'
-
-// ---------------- Quelldatei-Verbote (Grep) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/action-editor/bild-zuweisen.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('bild-zuweisen – Verbote in der Quelldatei (Grep)', () => {
-  it('enthaelt weder Kanal-Literale noch window.api noch fs noch Endungs-Filter', () => {
-    expect(CODEZEILEN).not.toContain("'media:'")
-    expect(CODEZEILEN).not.toContain("'queue:'")
-    expect(CODEZEILEN).not.toContain('window.api')
-    expect(CODEZEILEN).not.toMatch(/(endsWith|\.extname|splitPath)/)
-  })
-
-  it('traegt den leeren String als bildRef-Wert nirgends (nur null) und kein fehler.daten-Feld', () => {
-    expect(CODEZEILEN).not.toContain("bildRef: ''")
-    expect(CODEZEILEN).not.toContain('fehler.daten ')
-  })
-})
 
 // ---------------- Bausteine ----------------
 

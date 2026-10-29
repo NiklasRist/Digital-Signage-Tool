@@ -1,11 +1,7 @@
 [
-  "tests/unit/aktion-bearbeiten.spec.ts",
-  "tests/unit/aktion-loeschen.spec.ts",
   "tests/unit/aktions-auswahl.spec.ts",
   "tests/unit/als-png.spec.ts",
-  "tests/unit/app-einhaengung.spec.ts",
   "tests/unit/asset-auswahl.spec.ts",
-  "tests/unit/bild-zuweisen.spec.ts",
   "tests/unit/bootstrap-ablauf.spec.ts",
   "tests/unit/element-entfernen.spec.ts",
   "tests/unit/element-zeile-anzeige.spec.ts",
@@ -21,7 +17,6 @@
   "tests/unit/slogan-bearbeiten.spec.ts",
   "tests/unit/uebergabe.spec.ts",
   "tests/unit/undo-projekt.spec.ts",
-  "tests/unit/verwerfe-arbeitskopie.spec.ts",
   "tests/unit/video-filmstreifen-blob.spec.ts",
   "tests/unit/vorschau-auswahl-rechnung.spec.ts"
 ]
