@@ -1900,3 +1900,73 @@ Verhaltens-Tests belegen nur den Weg, der gegangen wird. Ebenso in `App.tsx`: �
 | Suite | 5.323 | **5.307** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 25 | **20** Dateien |
+
+## 36. Charge 23 (29.10.2026): Zwei Filter, drei Renderer-Dateien, Bootstrap
+
+**Dateien:** `kaputt-handling`, `live-vorschau` (`renderer/action-editor/`),
+`aktions-auswahl-filter`, `asset-auswahl-filter`, `bootstrap-ablauf`
+(`renderer/app-shell/`). Alle von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 29 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **26**.
+**0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+
+### Die drei Luecken (geschlossen, vier neue Verhaltens-Tests)
+
+Alle drei in `live-vorschau` – die Datei hatte **keinen** Test fuer ihre dritte Funktion:
+
+- **V5/V6 – `haengeVorschauEin` war ungetestet.** Die Zusage „skaliert AUSSCHLIESSLICH per
+  CSS, `canvas.width/height` bleiben nativ" hatte **keine** Pruefung: `aspectRatio`
+  vertauscht (V5) und das `parentElement`-Tor entfernt (V6) blieben beide gruen. Neu: drei
+  Tests (CSS-Werte, Einhaengen, kein zweites `replaceChildren`).
+- **V4 – „bildRef gesetzt, aber nicht auflösbar".** Der Test hiess „bilRef null **oder ein
+  unresolviertes Asset**", fuehrte aber nur `bildRef: null` vor; der `asset === null`-Zweig
+  war unerreicht (Fixture-Falle). Neu: eigener Fall mit gesetztem `bildRef` und
+  `findeBildAsset -> null`.
+
+### Ein Harness-Aussetzer, offen benannt
+
+- **K6 meldete `0 bestanden, 0 rot`** – der Harness wertet `code != 0` als erkannt, die
+  JSON-Bilanz war aber leer. Die **Direktausfuehrung** mit `--reporter=json` zeigt
+  `numFailedTests: 2` (die beiden `speichereAktion`-Erwartungen). Der Fall ist also
+  erkannt; der `0/0`-Wert ist ein Artefakt des Harness-Laufs, kein Befund ueber den Code.
+  **Lehre:** Bei `0/0` nicht auf die Tabelle hoeren, sondern den Fall direkt fahren.
+
+### Was die Verhaltens-Tests je Datei tragen (Auszug)
+
+- **K** – 6/6 rot: `ref`-Pruefung, invertierter Abschnittsvergleich, halbe Zaehlung,
+  `typ`-Pruefung invertiert, `zustand`-Pruefung entfernt, vertauschte Schreibwege.
+- **V** – 6/6 rot (nach den Ergaenzungen): Schriften/Logo nicht vorbereitet, falsches
+  Motiv, fehlender Null-Schutz, `aspectRatio` vertauscht, `parentElement`-Tor entfernt.
+- **X** – 6/6 rot: `bildRef === null` invertiert, `zustand` invertiert, Ausschluss
+  invertiert, falsches Suchkriterium, fehlender `undefined`-Zweig, umgekehrte Reihenfolge.
+- **Y** – 5/5 rot: `video` -> `bild`, `segment` -> `video`, Rueckfall `null`,
+  `zustand`-Filter, `typ`-Filter.
+- **B** – 6/6 rot: vertauschte Schritte 3/4, Abbau-Pruefung entfernt, fremder Fehlercode,
+  `setzeProjekt` entfernt, `meldeFehler` bei `bereiteVor` entfernt, `holeProjekt` entkernt.
+  Die Reihenfolge wird ueber das **vollstaendige `log`-Array** gemessen, nicht ueber
+  „alle Schritte kamen vor".
+
+### Entfernt (4 Testfaelle, 4 ergaenzt, 0 gekuerzt)
+
+- **1** in `kaputt-handling` (4 Verbote), **1** in `aktions-auswahl` (kein JSX/react),
+  **1** in `asset-auswahl` (dito), **1** in `bootstrap-ablauf` (17 Verbote + JSX).
+- **0** in `live-vorschau` – dort war die „Probe" **toter Code**: `QUELLE` wurde gelesen
+  und nie benutzt. Die Datei verlaesst die Sperrklinke allein deshalb.
+
+**Ehrlich offen:** Die Abwesenheits-Zusagen sind ohne Waechter (kein `react`/JSX in den
+reinen Modulen, kein `rufeAuf`/`KANAELE`/`window.`/Timer in `bootstrap.ts`, keine Importe
+aus fremden Renderer-Ordnern). Bei `bootstrap` ist das die Architekturgrenze selbst – ein
+Lint-Kandidat mit hohem Wert (`import/no-restricted-paths`-Form). #448 steht.
+
+### Stand nach Charge 23
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **29**: 26 erkannt, 3 Luecken; nach der Schliessung 29/29 |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **4** (+1 tote Probe ohne Test) |
+| Verhaltens-Tests ergaenzt | – | **4** |
+| Echte Luecken geschlossen | – | **3** (V4, V5, V6) |
+| Suite | 5.308 | **5.308** (340 Dateien, netto 0) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 20 | **15** Dateien |

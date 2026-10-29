@@ -11,7 +11,39 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, sechsundzwanzigste Sitzung: Mutations-Charge 22) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, siebenundzwanzigste Sitzung: Mutations-Charge 23) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-29-charge-24.md`](docs/agents/uebergabe-2026-10-29-charge-24.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 36.
+
+- **CHARGE 23 GEBAUT:** fuenf Testdateien – `kaputt-handling`, `live-vorschau`
+  (`action-editor/`), `aktions-auswahl-filter`, `asset-auswahl-filter`, `bootstrap-ablauf`
+  (`app-shell/`). **29 Verhaltens-Mutationen**, **5 Refactorings**; 26 erkannt, **3 Luecken**
+  (V4, V5, V6) geschlossen, **0 aequivalent**; **0/5 Refactorings rot**.
+- **Die Luecken (alle in `live-vorschau`):** `haengeVorschauEin` war **ungetestet**
+  (`aspectRatio` vertauscht und `parentElement`-Tor entfernt blieben gruen); der Test
+  „bildRef null **oder unresolviertes Asset**" fuehrte nur `bildRef: null` vor. Neu: vier
+  Tests.
+- **`live-vorschau` hatte gar keine Probe:** `QUELLE` wurde gelesen und **nie benutzt** –
+  toter Code. Die Datei verlaesst die Sperrklinke allein deshalb.
+- **Harness-Aussetzer, offen benannt:** **K6** meldete `0 bestanden, 0 rot`; die
+  Direktausfuehrung mit `--reporter=json` zeigt **2 rote Tests** (`numFailedTests: 2`). Bei
+  `0/0` nicht auf die Tabelle hoeren, sondern den Fall direkt fahren.
+- **Entfernt:** **4** Quelltext-/Meta-Tests, **4** Verhaltens-Tests ergaenzt; Suite
+  **5.308 → 5.308** (netto 0). **Sperrklinke:** 20 → **15** Dateien.
+- **Ehrlich offen:** Abwesenheits-Zusagen ohne Waechter – kein `react`/JSX in den reinen
+  Modulen, kein `rufeAuf`/`KANAELE`/`window.`/Timer und keine Importe aus fremden
+  Renderer-Ordnern in `bootstrap.ts` (die Architekturgrenze selbst). Lint-Kandidat
+  `import/no-restricted-paths`; #448 (192 SAFETY) steht.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.308 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 24** – fuenf der verbleibenden **15**:
+  `inhalte-zugaenge-rechnung`, `rahmen-montage`, `uebergabe`, `undo-projekt` (`app-shell/`),
+  `element-entfernen` (`composer/`). `undo-projekt` liest evtl. den Projekt-Historien-Spion –
+  der ist **bewusst geblieben** (Verhalten); nur die Quelltext-Probe zaehlt.
+
+## STAND HEUTE (29.10.2026, sechsundzwanzigste Sitzung: Mutations-Charge 22) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-charge-23.md`](docs/agents/uebergabe-2026-10-29-charge-23.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 35.
