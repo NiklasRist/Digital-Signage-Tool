@@ -50,6 +50,14 @@ Ausbau erneut gemessen**. Und eine Meldung mit dem richtigen **Text** ist kein B
 richtigen Grund (Charge 18: `toContain` blieb bei `"Error: …"` grün; erst der exakte
 Vergleich biss).
 
+**Stand nach Charge 24 (29.10.2026):** Chargen 17–24 gebaut – Suite **5.301** (340 Dateien,
+−7 netto), Sperrklinke **10** Dateien, Gate `npm run pruefung` **Exit 0**. Offen sind die
+Chargen **25–26** (zwei). Charge 24 fand **fuenf** Luecken: `meldeStand` verlor die laufende
+Uebergabe (UE18), die Hoerer-**Reihenfolge** war ungeprueft (UE20), `kannWiederherstellen`
+prüfte die Projekt-Kennung nicht (UP5), die Wurfmeldung war nur ueber den Code geprüft (UP11,
+dieselbe Klasse wie IM8) und `standardSegmentdauer` war ein Literal **10**, weil alle
+Fixtures 10 tragen (UP2, Fixture-Falle). Nach dem Ausbau: 27/27 rot.
+
 ## Das Rezept (unverändert, verbindlich)
 
 1. Eine semantische Änderung an der Quelldatei, nichts daneben.
@@ -79,7 +87,7 @@ Vergleich biss).
 | **21** (gebaut) | `render-abbruch` → `render-service/abbruch.ts`; `normalisieren` → `render-service/normalisieren.ts`; `als-eigenstaendige` → `vorlagen-store/als-eigenstaendige.ts`; `vorlagen-ipc-verdrahtung` → `vorlagen-store/ipc-verdrahtung.ts`; `loesche-vorlage` → `vorlagen-store/loesche-vorlage.ts` | Render-Abbruch und Vorlagen-Store. Achtung: `verwerfe-arbeitskopie` liegt in Charge 22 – die beiden hängen zusammen, Specs getrennt lesen. |
 | **22** (gebaut) | `verwerfe-arbeitskopie` → `vorlagen-store/verwerfe-arbeitskopie.ts`; `app-einhaengung` → `App.tsx`; `aktion-bearbeiten` → `action-editor/aktion-bearbeiten.ts`; `aktion-loeschen` → `action-editor/aktion-loeschen.ts`; `bild-zuweisen` → `action-editor/bild-zuweisen.ts` | Erste Renderer-Charge mit tsx. `app-einhaengung` liest `App.tsx` – dort ist „kein zweiter Zustand" die Zusage; **vor dem Entfernen** prüfen, ob der Verhaltens-Test die Montage wirklich trägt. |
 | **23** (gebaut) | `kaputt-handling` → `action-editor/kaputt-handling.ts`; `live-vorschau` → `action-editor/live-vorschau.ts`; `aktions-auswahl` → `app-shell/aktions-auswahl-filter.ts`; `asset-auswahl` → `app-shell/asset-auswahl-filter.ts`; `bootstrap-ablauf` → `app-shell/bootstrap.ts` | Zwei Filter-Paare + Bootstrap. Die Filter sind rein und gut verhaltensgetestet; `bootstrap-ablauf` ist der riskanteste (Startreihenfolge). |
-| **24** | `inhalte-zugaenge-rechnung` → `app-shell/inhalte-zugaenge.ts`; `rahmen-montage` → `app-shell/rahmen-montage.ts`; `uebergabe` → `app-shell/uebergabe.ts`; `undo-projekt` → `app-shell/undo-projekt.ts`; `element-entfernen` → `composer/element-entfernen.ts` | Montage/Zugänge. `undo-projekt` liest evtl. den Projekt-Historien-Spion – der ist **bewusst geblieben** (Verhalten); nur die Quelltext-Probe zählt. |
+| **24** (gebaut) | `inhalte-zugaenge-rechnung` → `app-shell/inhalte-zugaenge.ts`; `rahmen-montage` → `app-shell/rahmen-montage.ts`; `uebergabe` → `app-shell/uebergabe.ts`; `undo-projekt` → `app-shell/undo-projekt.ts`; `element-entfernen` → `composer/element-entfernen.ts` | Montage/Zugänge. `undo-projekt` liest evtl. den Projekt-Historien-Spion – der ist **bewusst geblieben** (Verhalten); nur die Quelltext-Probe zählt. |
 | **25** | `element-zeile-anzeige` → `composer/element-zeile.tsx`; `medien-bibliothek` → `composer/medien-bibliothek.ts`; `optimistisch` → `composer/optimistisch.ts`; `render-ausloesen` → `composer/render-ausloesen.ts`; `render-dialog` → `composer/render-dialog.ts` | Composer-Kern. `optimistisch` trägt die Undo-Zusage – Verhaltens-Tests prüfen die Reihenfolge; Proben dort besonders genau lesen. |
 | **26** | `slogan-bearbeiten` → `marken-editor/slogan-bearbeiten.ts`; `video-filmstreifen-blob` → `preview-player/video.tsx`; `vorschau-auswahl-rechnung` → `preview-player/vorschau-auswahl.ts`; `als-png` → `template-canvas/als-png.ts`; `marke` → `shared/contracts/marke.ts` | Letzte Charge. **`marke.spec.ts` ist der Sonderfall:** liest den Vertrag – wenn es ein Vollständigkeits-/Vertragstest ist (wie `fehlertexte`), **bleibt er** und die Datei wird aus der Sperrklinke gestrichen, ohne Probe zu entfernen. Vorher lesen, nicht nach Namen urteilen. |
 

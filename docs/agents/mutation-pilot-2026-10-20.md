@@ -1970,3 +1970,84 @@ Lint-Kandidat mit hohem Wert (`import/no-restricted-paths`-Form). #448 steht.
 | Suite | 5.308 | **5.308** (340 Dateien, netto 0) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 20 | **15** Dateien |
+
+## 37. Charge 24 (29.10.2026): Montage, Zugaenge, Undo und Element-Entfernen
+
+**Dateien:** `inhalte-zugaenge-rechnung` (`inhalte-zugaenge.ts`), `rahmen-montage`
+(`rahmen-montage.ts`), `uebergabe` (`uebergabe.ts`), `undo-projekt` (`undo-projekt.ts`)
+– alle `renderer/app-shell/` – und `element-entfernen` (`renderer/composer/`).
+Alle fuenf von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 27 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **22**.
+**0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+
+**Ein Messfehler, offen benannt:** **UP2** lief zuerst als `EDIT-PROBLEM: 0 Treffer` – der
+Suchtext sprang ueber fuenf Kommentarzeilen zwischen `projektId` und `stand`. Der Harness
+wertet einen Fall mit 0 Treffern **nicht** als gruen; die Fallliste wurde korrigiert und
+UP2 danach **gegen die Spec aus HEAD** gefahren: 24 bestanden, 0 rot. Damit war die Luecke
+gemessen, nicht vermutet.
+
+### Die fuenf Luecken (geschlossen, vier neue Tests, einer geschaerft)
+
+- **UE18 – `meldeStand` setzte auf `LEERE_SHELL_REPARATUR` auf.** Der Test prueft nur
+  `stand` und „keine Fremdaufrufe"; die laufende Uebergabe, die Hervorhebung und der
+  Rueckkehr-Reiter gingen dabei verloren – genau die Werte, die ein Stand **waehrend** der
+  Fuehrung tragen muss (TK 9.14.2). Neu: ein Test mit laufender Uebergabe.
+- **UE20 – `push` → `unshift` blieb gruen.** Die Quelle sagt „Hoerer werden ueber die KOPIE
+  der Liste in **Anmeldereihenfolge** gerufen" (ENTSCHIEDEN 10); kein Test mass die
+  Reihenfolge. Neu: ein Test mit zwei Hoerern und einer Reihenfolge-Liste.
+- **UP5 – `kannWiederherstellen` ignorierte die Projekt-Kennung.** Der Zwillingsfall
+  (`kannRueckgaengig`, „false bei fremder projektId") existierte, das Gegenstueck nicht.
+  Neu: Vor-Zweig fuellen, anderes Projekt oeffnen, `false` erwarten.
+- **UP11 – Wurfmeldung nur ueber den Code geprueft.** `String(error)` liefert
+  `"Error: Bridge fehlt"`; die Zusage ist die **Meldung des Fehlers**. Dieselbe Klasse wie
+  IM8 (Charge 18). Der vorhandene Test vergleicht jetzt **exakt** `"Bridge fehlt"`.
+- **UP2 – `standardSegmentdauer: 10` als Literal.** Alle Projekt-Fixtures tragen 10 – der
+  Wert, den das Literal ebenfalls liefert (Fixture-Falle). Neu: ein Projekt mit **4.7**;
+  der Schnappschuss muss ihn tragen.
+
+### Was die Verhaltens-Tests je Datei tragen (Auszug)
+
+- **inhalte-zugaenge** – 4/4 rot: umhuellter Zugang durch den rohen ersetzt,
+  `ohneAufzeichnung` nicht gerufen, `vorlagen` bekommt `zeichnen`, `marken` kopiert statt
+  durchgereicht. Die Identitaets-Zusagen (`toBe`) tragen die Verteilung.
+- **rahmen-montage** – 5/5 rot: neuer Reiter nicht angehaengt, Dublette angehaengt,
+  Dubletten-Fall liefert die Eingabe selbst, `indexOf > 0`, jede nichtleere Menge montiert.
+  Das „IMMER ein neues Array" ist damit in beiden Zweigen belegt.
+- **uebergabe** – 6/6 rot (nach den Ergaenzungen): falsche Overlay-Zuordnung,
+  `elementIdFuer` vergisst `unterbrechungs-auswahl`, Hoererliste live statt Kopie,
+  Reiterwechsel **vor** der Lage, `meldeStand` auf leerer Basis, `unshift` statt `push`.
+- **undo-projekt** – 6/6 rot (nach den Ergaenzungen): Literal als Segmentdauer,
+  Kennungspruefung in beiden Richtungen entfernt, Fehlschlag nicht abgefangen, Sicht vor
+  dem Stapel vollzogen, Wurfmeldung mit Praefix.
+- **element-entfernen** – 6/6 rot: Leerzeichen als leer, Projekt-Wache entfernt, gekuerzte
+  Kennung gesendet, Fehlschlag nicht abgefangen, Liste vor dem Warten gemerkt, Erfolg auch
+  bei geschlossenem Projekt.
+
+### Entfernt (11 Testfaelle, 4 ergaenzt, 1 geschaerft)
+
+- **1** in `inhalte-zugaenge-rechnung`, **1** in `rahmen-montage`, **1** in `uebergabe`,
+  **3** in `undo-projekt`, **5** in `element-entfernen` – zusammen **11** Quelltext-Tests.
+- **4** Verhaltens-Tests ergaenzt (UE18, UE20, UP5, UP2), **1** geschaerft (UP11).
+
+**Nachmessung nach dem Ausbau:** **27 von 27 rot**, die fuenf Refactorings gruen. Keine
+Mutation war allein von einer Probe getragen – der Ausbau hat keine Zusage mitgenommen.
+
+**Ehrlich offen:** Die Abwesenheits-Zusagen dieser fuenf Dateien sind jetzt ohne Waechter –
+kein JSX/react in `inhalte-zugaenge`/`rahmen-montage`, kein IPC/Timer/`queue:`-Literal in
+`uebergabe`, keine feingranulare Operation und kein `assets`/`letzterAusgabeName` in
+`undo-projekt`, genau ein Kanal und kein `fs`/`window.api` in `element-entfernen`.
+Lint-Kandidat; #448 (192 SAFETY) steht.
+
+### Stand nach Charge 24
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **27**: 22 erkannt, 5 Luecken; nach der Schliessung 27/27 |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **11** |
+| Verhaltens-Tests ergaenzt | – | **4** (+1 geschaerft) |
+| Echte Luecken geschlossen | – | **5** (UE18, UE20, UP2, UP5, UP11) |
+| Suite | 5.308 | **5.301** (340 Dateien, netto −7) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 15 | **10** Dateien |

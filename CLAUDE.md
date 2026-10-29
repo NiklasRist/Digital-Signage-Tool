@@ -11,7 +11,40 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, siebenundzwanzigste Sitzung: Mutations-Charge 23) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, achtundzwanzigste Sitzung: Mutations-Charge 24) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-29-charge-25.md`](docs/agents/uebergabe-2026-10-29-charge-25.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 37.
+
+- **CHARGE 24 GEBAUT:** fuenf Testdateien – `inhalte-zugaenge-rechnung`, `rahmen-montage`,
+  `uebergabe`, `undo-projekt` (`app-shell/`), `element-entfernen` (`composer/`).
+  **27 Verhaltens-Mutationen**, **5 Refactorings**; erste Messung 22 erkannt, **5 Luecken**
+  (UE18, UE20, UP2, UP5, UP11) geschlossen, **0 aequivalent**; **0/5 Refactorings rot**.
+- **Die Luecken:** **UE18** – `meldeStand` auf `LEERE_SHELL_REPARATUR` verlor laufende
+  Uebergabe, Hervorhebung und Rueckkehr. **UE20** – `push` → `unshift`: die
+  **Anmeldereihenfolge** der Hoerer war ungeprueft. **UP5** – `kannWiederherstellen` pruefte
+  die Projekt-Kennung nicht (der Zwilling tat es). **UP11** – Wurfmeldung nur ueber den Code
+  geprueft (`String(error)` = „Error: …", dieselbe Klasse wie IM8). **UP2** –
+  `standardSegmentdauer` als Literal **10**, weil alle Fixtures 10 tragen (Fixture-Falle).
+- **Messfehler, offen benannt:** UP2 lief zuerst als `EDIT-PROBLEM: 0 Treffer` (Suchtext
+  sprang ueber fuenf Kommentarzeilen). Gegen die Spec aus HEAD gemessen: 24 bestanden –
+  die Luecke war real, nicht vermutet.
+- **Entfernt:** **11** Quelltext-Tests, **4** Verhaltens-Tests ergaenzt, **1** geschaerft;
+  Suite **5.308 → 5.301** (netto −7). **Sperrklinke:** 15 → **10** Dateien.
+- **Nachmessung nach dem Ausbau:** **27 von 27 rot**, 0/5 Refactorings rot – keine Mutation
+  hing an einer Probe.
+- **Ehrlich offen:** Abwesenheits-Zusagen ohne Waechter (kein JSX/react in den reinen
+  Modulen, kein IPC/Timer in `uebergabe`, keine feingranulare Operation in `undo-projekt`,
+  genau ein Kanal in `element-entfernen`). Lint-Kandidat; #448 (192 SAFETY) steht.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.301 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 25** – fuenf der verbleibenden **10**:
+  `element-zeile-anzeige`, `medien-bibliothek`, `optimistisch`, `render-ausloesen`,
+  `render-dialog` (alle `composer/`). `optimistisch` traegt die Undo-Zusage – die
+  Reihenfolge pruefen, Proben genau lesen.
+
+## STAND HEUTE (29.10.2026, siebenundzwanzigste Sitzung: Mutations-Charge 23) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-charge-24.md`](docs/agents/uebergabe-2026-10-29-charge-24.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 36.
