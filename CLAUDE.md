@@ -11,7 +11,43 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, zwanzigste Sitzung: Mutations-Charge 16) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, einundzwanzigste Sitzung: Mutations-Charge 17) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-28-charge-18.md`](docs/agents/uebergabe-2026-10-28-charge-18.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 30.
+
+- **CHARGE 17 GEBAUT:** fuenf Testdateien, alle `src/main/ffmpeg-adapter/` – `bandspur`,
+  `encoder-argumente`, `filter-einblendung`, `filter-vollbild`, `standbild`.
+  **30 Verhaltens-Mutationen**, **5 Refactorings**; 25 erkannt, **3 echte Luecken**
+  (BA4, ST3, ST5) geschlossen; **0/5 Refactorings rot**; jede Mutation byte-identisch
+  zurueckgenommen.
+- **Die Luecken:** **BA4** – die Bildrate von Schritt 1 war ein Literal (`String(30)`),
+  weil jede gueltige Profil-Bildrate im Test 30 ist; neu: Profil mit **25 fps**. **ST3** –
+  `-framerate` als `'30'`; **ST5** – `-f` als `'mp4'`; beide jetzt ueber ein abgewandeltes
+  Profil (`25`, `mov`). Dazu war die **Container-Wache** (leer, `-`-Praefix, kein Text)
+  ungeprueft; ST7/ST8 belegen den neuen Test.
+- **Erst nach dem Ausbau sichtbar:** **EN2/EN3/EN4** (Profil, Pixelformat, Transfer als
+  Literale) wurden zuvor **nur** von der entfernten Literal-Probe gefangen. Nachmessung
+  ueber alle 41 Faelle: **40 erkannt, EN7 aequivalent** (Tabelle hat genau einen Schluessel;
+  ein zweites Format erzwingt der `Record`-Typ, nicht ein Laufzeit-Test).
+- **Entfernt:** **33** Quelltext-/Meta-Tests (davon **23 generiert** im `standbild`-Block
+  „Abgrenzung"), **4** Verhaltens-Tests ergaenzt, **3** gekuerzt; Suite **5.479 → 5.450**
+  (netto −29). **Sperrklinke:** 50 → **45** Dateien.
+- **Ehrlich offen:** Die entfernten Architekturregeln sind ohne Waechter – kein Fremdimport
+  in `bandspur`, nur Typ-Importe in den Filter-Adaptern, keine Fachbegriffe, kein
+  Hardware-Encoder, Codec/Container als je eine Konstante. Lint-Kandidat. #448 (192 SAFETY)
+  steht; die ffmpeg-Flaggen sind jetzt allein durch die Argument-Arrays gedeckt.
+  **Treiber:** vier Laeufe waren zwischenzeitlich rot (CDP-Abriss/Timeouts), ohne
+  Codeaenderung und ohne benannte Ursache; der naechste Lauf war gruen (Pilot Abschnitt 30).
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.450 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 18** – fuenf der verbleibenden **45**: `tonspur`,
+  `media-protokoll-schema`, `dialog`, `handler-registrierung`, `import-medium`.
+  **Achtung:** `media-protokoll-schema` prueft die **fuenf Privilegien** (seit #364) –
+  **Werte**, nicht Form: vor dem Entfernen genau lesen.
+
+## STAND HEUTE (28.10.2026, zwanzigste Sitzung: Mutations-Charge 16) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-28-charge-16.md`](docs/agents/uebergabe-2026-10-28-charge-16.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 29.

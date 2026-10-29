@@ -1433,3 +1433,83 @@ gedeckt, die echtes ffmpeg fahren.
 | Suite | 5.487 | **5.479** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 55 | **50** Dateien |
+
+## 30. Charge 17 (28.10.2026): die fuenf ffmpeg-Adapter
+
+**Dateien:** `bandspur` (`src/main/ffmpeg-adapter/bandspur.ts`), `encoder-argumente`
+(`encoder-argumente.ts`), `filter-einblendung` (`filter-einblendung.ts`), `filter-vollbild`
+(`filter-vollbild.ts`), `standbild` (`standbild.ts`). Alle von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 30 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **25**.
+Gruen: **BA4, ST3, ST5** (echte Luecken). **0/5 Refactorings rot**; jede Mutation
+byte-identisch zurueckgenommen.
+
+**Besonderheit dieser Charge:** Drei weitere Mutationen (**EN2, EN3, EN4**) waren im ersten
+Lauf nur von der Quelltext-Probe „schreibt keinen Profilwert als Literal" gefangen worden -
+also von genau der Probe, die diese Charge entfernt. Nach der Entfernung waren sie gruen.
+Die Charge hat deshalb **nach** dem Ausbau erneut gemessen (41 Faelle): **40 erkannt, 1
+aequivalent**.
+
+### Die Luecken (geschlossen, vier neue Verhaltens-Tests)
+
+- **BA4 – die Bildrate von Schritt 1 war ein Literal.** `String(30)` statt `String(fps)`
+  blieb bei allen 33 Tests gruen, weil jede gueltige Profil-Bildrate im Test 30 ist. Neu:
+  ein Profil mit **25 fps**; `-framerate`, `-r` und `fps=25,` in der Kette muessen wandern.
+  Dieselbe Zeile in Schritt 2 (**BA7**, nach dem Ausbau gemessen) faengt derselbe Test.
+- **EN2/EN3/EN4 – Profil, Pixelformat und Transfer-Metadatum als Literale.** `'high'`,
+  `'yuv420p'`, `'bt709'` sind fuer RENDER_PROFILE die richtigen Werte; nur ein abgewandeltes
+  Profil trennt „gelesen" von „abgeschrieben". Neu: ein Profil mit `main`, `4.1`,
+  `yuv422p`, `bt2020`/`smpte2084`/`bt2020nc`.
+- **ST3 – `-framerate` als Literal `'30'`.** Neu: dasselbe Profil-Wandern fuer `standbild`;
+  `-framerate` muss `25` sein.
+- **ST5 – `-f` als Literal `'mp4'`.** `profil.container` ist `mp4`; der Unterschied zeigt
+  sich erst mit `mov`. Derselbe Test.
+- **Ohne Test war auch die Container-Wache** (`-`-Praefix, leerer Name, kein Text): neu ein
+  Fall mit `''`, `'-mp4'` und `7`; **ST7/ST8** belegen, dass die Wache beisst.
+
+### Als aequivalent belegt
+
+- **EN7 – `ENCODER_JE_CODEC[profil.videoCodec]` gegen `ENCODER_JE_CODEC['h264']`.** Die
+  Tabelle hat genau einen Schluessel; fuer jedes zulaessige Profil ist der Ausdruck gleich.
+  Kaeme ein zweites Format hinzu, erzwingt der `Record`-Typ einen Eintrag - das faengt der
+  Compiler, kein Laufzeit-Test.
+
+### Entfernt (33 Testfaelle, 4 ergaenzt – netto −29; drei Tests gekuerzt)
+
+- **2** in `bandspur` (kein Fremdimport; Codec/Container als benannte Konstanten) + **1**
+  gekuerzt (die `QUELLE`-Zeile der Betriebsflag-Probe; die Argument-Pruefung bleibt).
+- **2** in `encoder-argumente` (Profilwert-Literale; Hardware-Encoder/Stellschraube).
+- **3** in `filter-einblendung` (Mass-Literale; Importliste; Fachbegriffe) + **2** gekuerzt
+  (Hexfarbe in der `QUELLE`; Vierer-Rundung als `CODEZEILEN`-Verbot).
+- **3** in `filter-vollbild` (Mass-Literale; Importliste; Fachbegriffe).
+- **23** in `standbild` – der ganze Block „Abgrenzung": **17** generierte Flag-Proben,
+  **3** Folgen (`+faststart`, `setsar`, `copy`), die Gegenprobe zur Probe und zwei
+  Einzelproben. Die Zusage traegt der `toEqual` auf das vollstaendige Array.
+
+**Ehrlich offen:** Die entfernten Architekturregeln sind **ohne Waechter** – kein Import aus
+`encoder-argumente`/`tonspur` in `bandspur`, nur Typ-Importe in den Filter-Adaptern, keine
+Fachbegriffe, kein Hardware-Encoder, Codec/Container als je eine Konstante. Lint-Kandidat;
+die Flaggen-Verbote sind jetzt allein durch die Argument-Arrays gedeckt.
+
+### Stand nach Charge 17
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **30**: 25 erkannt, 3 Luecken; Nachmessung 41: 40 erkannt, 1 aequivalent |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **33** (davon 23 generiert) |
+| Verhaltens-Tests ergaenzt | – | **4** (3 gekuerzt) |
+| Echte Luecken geschlossen | – | **3** + 3 nach dem Ausbau sichtbare Literal-Luecken |
+| Suite | 5.479 | **5.450** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 50 | **45** Dateien |
+
+**Treiber-Messung, transparent:** Zwischen 22:45 und 05:00 waren **vier** aufeinanderfolgende
+Treiber-Laeufe rot – zweimal `detached Frame` (Schritt 4 bzw. 4f3), einmal
+`Target.setDiscoverTargets`-Timeout beim Start, einmal `socket hang up` (1006). Der
+Produktcode war nachweislich unveraendert (`git status` ohne `src/` und `scripts/`), ein
+Direktstart der App lief und blieb stehen, ein Minimallaunch mit `dumpio` verband in
+**711 ms**. Ohne jede Codeaenderung war der naechste Lauf **Exit 0, 0 Befunde**. Die
+Ursache ist **nicht benannt**; die Messung fiel in eine Phase hoher Systemlast (Docker-VM
+~100 %, Load 2,4–5,5). Kein Produktbefund – aber ein Kandidat fuer die Treiber-Haertung
+(`dumpio`, Frist, ein Wiederholversuch), dieselbe Klasse wie FA-13.
