@@ -6,7 +6,7 @@
 
 import type { JSX } from 'react'
 import type { ListenZeile, Projektliste, ProjektMeta } from './liste'
-import { baueListenZeilen } from './liste'
+import { baueListenZeilen, filtereProjekte } from './liste'
 
 export interface ProjektlisteEigenschaften {
   /** Der gehaltene Stand aus `holeProjektliste()`; die Ansicht hält ihn NICHT selbst. */
@@ -28,6 +28,10 @@ export interface ProjektlisteEigenschaften {
    *  `zeichneBeschaedigteZeile` ÜBERGEBEN, nicht importiert; die Zeile ruft ihn hinter
    *  den Metadaten und vor den Knöpfen auf. */
   zeichneStandardmarke: (meta: ProjektMeta) => JSX.Element
+  /** Der Suchtext der Suchleiste (Wunsch 29.10.2026). Die Ansicht hält ihn NICHT selbst. */
+  suchtext: string
+  /** Meldet jede Änderung am Suchfeld zurück; das Filtern macht die Ansicht. */
+  aufSuche: (wert: string) => void
 }
 
 /**
@@ -74,32 +78,56 @@ export function Projektlisteansicht(p: ProjektlisteEigenschaften): JSX.Element {
   }
 
   // Zeilen genau einmal ableiten; Reihenfolge wie geliefert (ENTSCHIEDEN 4).
-  const zeilenVonId = new Map(baueListenZeilen(p.liste.eintraege).map((zeile) => [zeile.id, zeile]))
+  // Seit dem 29.10.2026 zuerst GEFILTERT: Filtern aendert nur, welche Zeilen erscheinen,
+  // nie ihre Reihenfolge (`filtereProjekte` behaelt sie).
+  const gefiltert = filtereProjekte(p.liste.eintraege, p.suchtext)
+  const zeilenVonId = new Map(baueListenZeilen(gefiltert).map((zeile) => [zeile.id, zeile]))
   return (
-    <ul data-testid="projektliste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-      {p.liste.eintraege.map((meta) => {
-        const zeile = zeilenVonId.get(meta.id)
-        if (!zeile) {
-          // Kann nicht eintreten (die Zeilen stammen aus genau diesen eintraege) - der
-          // Compiler erzwingt den Umgang; ein Wurf waere hier ein Programmierfehler.
-          return null
-        }
-        return (
-          <li key={meta.id} data-testid={`projekt-${meta.id}`}>
-            <Projektzeile
-              zeile={zeile}
-              meta={meta}
-              offenesProjektId={p.offenesProjektId}
-              aufOeffnen={p.aufOeffnen}
-              aufDuplizieren={p.aufDuplizieren}
-              aufLoeschen={p.aufLoeschen}
-              zeichneBeschaedigteZeile={p.zeichneBeschaedigteZeile}
-              zeichneStandardmarke={p.zeichneStandardmarke}
-            />
-          </li>
-        )
-      })}
-    </ul>
+    <div>
+      {/* Die Suchleiste steht UEBER der Liste und nur, wenn es etwas zu suchen gibt
+          (bei "Noch keine Projekte" waere sie ein Bedienelement ohne Wirkung). */}
+      <input
+        data-testid="projektliste-suche"
+        type="search"
+        value={p.suchtext}
+        onChange={(ereignis) => p.aufSuche(ereignis.target.value)}
+        placeholder="Projekt suchen"
+        aria-label="Projekt suchen"
+        style={{ width: '100%', maxWidth: 320, marginBottom: 6 }}
+      />
+      {gefiltert.length === 0 ? (
+        // Eigener Zustand: "kein Treffer" ist NIE dasselbe wie "noch keine Projekte"
+        // (dieselbe Regel wie bei `unbekannt` vs. leer, ENTSCHIEDEN 3).
+        <div data-ton="ruhig" data-testid="projektliste-kein-treffer">
+          Kein Projekt passt zu „{p.suchtext.trim()}“
+        </div>
+      ) : (
+        <ul data-testid="projektliste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {gefiltert.map((meta) => {
+            const zeile = zeilenVonId.get(meta.id)
+            if (!zeile) {
+              // Kann nicht eintreten (die Zeilen stammen aus genau diesen eintraege) - der
+              // Compiler erzwingt den Umgang; ein Wurf waere hier ein Programmierfehler.
+              return null
+            }
+            return (
+              <li key={meta.id} data-testid={`projekt-${meta.id}`}>
+                <Projektzeile
+                  zeile={zeile}
+                  meta={meta}
+                  offenesProjektId={p.offenesProjektId}
+                  aufOeffnen={p.aufOeffnen}
+                  aufDuplizieren={p.aufDuplizieren}
+                  aufLoeschen={p.aufLoeschen}
+                  zeichneBeschaedigteZeile={p.zeichneBeschaedigteZeile}
+                  zeichneStandardmarke={p.zeichneStandardmarke}
+                />
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
   )
 }
 

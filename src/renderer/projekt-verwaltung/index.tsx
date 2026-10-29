@@ -86,6 +86,9 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
   const [anlegenName, setzeAnlegenName] = useState('')
   const [duplikatName, setzeDuplikatName] = useState('')
   const [meldungsText, setzeMeldung] = useState<string | null>(null)
+  // Suchleiste (Wunsch 29.10.2026): Der Text gehoert dem Aufrufer, nicht der Ansicht -
+  // dieselbe Regel wie beim uebrigen Stand dieser Wurzel.
+  const [suche, setzeSuche] = useState('')
   const meldeFehler = (code: string, meldung: string): void => {
     // Der EINE Meldeplatz; eine neue Meldung ersetzt die alte (ENTSCHIEDEN 10).
     setzeMeldung(`${meldung} (${code})`)
@@ -222,6 +225,8 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
             }
           />
         )}
+        suchtext={suche}
+        aufSuche={setzeSuche}
       />
 
       {dialog.art === 'anlegen' && (

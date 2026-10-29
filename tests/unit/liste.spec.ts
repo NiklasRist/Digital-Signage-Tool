@@ -267,3 +267,56 @@ describe("formatiereZeitpunkt (DoD)", () => {
     }
   });
 });
+
+// ---------------- Suchleiste (Wunsch 29.10.2026) ----------------
+
+describe("filtereProjekte – die Suchleiste", () => {
+  const bestand = [
+    { ...VOLLER_EINTRAG, id: "a", name: "Fitnessworld24 Herbst", ordner: "p-a" },
+    { ...VOLLER_EINTRAG, id: "b", name: "Frühjahr", ordner: "p-b" },
+    { ...VOLLER_EINTRAG, id: "c", name: "Kaputt", ordner: "beschaedigt-1", beschaedigt: true },
+  ];
+
+  it("ein leerer Suchtext liefert den Bestand UNVERAENDERT - dieselbe Referenz, dieselbe Reihenfolge", async () => {
+    const modul = await import("../../src/renderer/projekt-verwaltung/liste");
+    expect(modul.filtereProjekte(bestand, "")).toBe(bestand);
+    // Nur Leerzeichen ist ebenfalls "keine Suche" - ein getipptes Leerzeichen darf die
+    // Liste nicht leeren.
+    expect(modul.filtereProjekte(bestand, "   ")).toBe(bestand);
+  });
+
+  it("sucht im Namen, Gross und Klein sind gleich", async () => {
+    const modul = await import("../../src/renderer/projekt-verwaltung/liste");
+    expect(modul.filtereProjekte(bestand, "fitnessWORLD").map((e) => e.id)).toEqual(["a"]);
+  });
+
+  it("sucht auch im Ordnernamen - bei beschaedigten Projekten ist er der einzige Name", async () => {
+    const modul = await import("../../src/renderer/projekt-verwaltung/liste");
+    expect(modul.filtereProjekte(bestand, "beschaedigt").map((e) => e.id)).toEqual(["c"]);
+  });
+
+  it("schneidet umschliessende Leerzeichen ab", async () => {
+    const modul = await import("../../src/renderer/projekt-verwaltung/liste");
+    expect(modul.filtereProjekte(bestand, "  kaputt  ").map((e) => e.id)).toEqual(["c"]);
+  });
+
+  it("kein Treffer ergibt eine LEERE Liste - kein Ersatzwert, kein Alles-Zurueckfallen", async () => {
+    const modul = await import("../../src/renderer/projekt-verwaltung/liste");
+    expect(modul.filtereProjekte(bestand, "gibtesnicht")).toEqual([]);
+  });
+
+  it("Umlaute werden NICHT gefaltet: 'fruh' findet 'Frühjahr' nicht (ehrlicher Nichttreffer)", async () => {
+    const modul = await import("../../src/renderer/projekt-verwaltung/liste");
+    expect(modul.filtereProjekte(bestand, "fruh")).toEqual([]);
+    expect(modul.filtereProjekte(bestand, "früh").map((e) => e.id)).toEqual(["b"]);
+  });
+
+  it("behaelt die Reihenfolge der Treffer wie im Bestand (nicht sortiert)", async () => {
+    const modul = await import("../../src/renderer/projekt-verwaltung/liste");
+    const alle = [
+      { ...VOLLER_EINTRAG, id: "z", name: "Treffer Z", ordner: "p-z" },
+      { ...VOLLER_EINTRAG, id: "a", name: "Treffer A", ordner: "p-a" },
+    ];
+    expect(modul.filtereProjekte(alle, "Treffer").map((e) => e.id)).toEqual(["z", "a"]);
+  });
+});

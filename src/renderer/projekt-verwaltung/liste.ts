@@ -145,8 +145,35 @@ export interface ListenZeile {
   oeffnenErlaubt: boolean    // === !beschaedigt
 }
 
-/** Die anzeigbaren Zeilen, in der Reihenfolge, die der Main geliefert hat (s. ENTSCHIEDEN 4). */
-export function baueListenZeilen(eintraege: readonly ProjektMeta[]): ListenZeile[] {
+/**
+ * Suchleiste (User-Wunsch 29.10.2026): filtert den Bestand nach einem Suchtext. REIN -
+ * kein IPC, kein Zustand, keine Aenderung der Reihenfolge.
+ *
+ * Verglichen werden `name` UND `ordner`: Der Ordner steht in der Zeile, und bei einem
+ * beschaedigten Projekt ist er der einzige Name, den es gibt (dann traegt `name` den
+ * Ordnernamen). Gross/Klein zaehlt nicht; umschliessende Leerzeichen zaehlen nicht.
+ * Umlaute werden NICHT gefaltet ("ue" findet "ü" nicht) - eine stille Zweitregel waere
+ * hier teurer als die ehrliche: der Treffer bleibt aus und ist sofort erklaerbar.
+ *
+ * Ein leerer Suchtext liefert den Bestand UNVERAENDERT (dieselbe Referenz): Die Liste
+ * ist ohne Suche genau das, was `holeProjektliste()` geliefert hat (ENTSCHIEDEN 4).
+ */
+export function filtereProjekte(
+  eintraege: readonly ProjektMeta[],
+  suchtext: string,
+): readonly ProjektMeta[] {
+  const gesucht = suchtext.trim().toLocaleLowerCase()
+  if (gesucht === '') {
+    return eintraege
+  }
+  return eintraege.filter(
+    (eintrag) =>
+      eintrag.name.toLocaleLowerCase().includes(gesucht) ||
+      eintrag.ordner.toLocaleLowerCase().includes(gesucht),
+  )
+}
+
+/** Die anzeigbaren Zeilen, in der Reihenfolge, die der Main geliefert hat (s. ENTSCHIEDEN 4). */export function baueListenZeilen(eintraege: readonly ProjektMeta[]): ListenZeile[] {
   // ENTSCHIEDEN 4: Es wird NICHT sortiert. Die Reihenfolge ist die des Main; ein
   // Sortieren nach geaendertAm verschöbe Zeilen unter dem Zeiger des Nutzers und
   // waere fuer beschaedigte Projekte (Ordner-Zeitstempel) ohnehin nicht vergleichbar.
