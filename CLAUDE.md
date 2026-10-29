@@ -11,7 +11,42 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, vierundzwanzigste Sitzung: Mutations-Charge 20) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, fuenfundzwanzigste Sitzung: Mutations-Charge 21) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-29-charge-22.md`](docs/agents/uebergabe-2026-10-29-charge-22.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 34.
+
+- **CHARGE 21 GEBAUT:** fuenf Testdateien – `render-abbruch`, `normalisieren`
+  (939 Zeilen, `render-service/`), `als-eigenstaendige`, `vorlagen-ipc-verdrahtung`,
+  `loesche-vorlage` (`vorlagen-store/`). **30 Verhaltens-Mutationen**, **5 Refactorings**;
+  29 erkannt, **1 echte Luecke** (L4) geschlossen, **0 aequivalent**; **0/5 Refactorings
+  rot**.
+- **Die Luecke:** **L4** – `daten: { aktionen, listenelemente: [] }` in `löscheVorlage`
+  blieb gruen, weil der einzige Tiefenvergleich eine Fixture mit **leerer** zweiter Liste
+  nutzte (Fixture-Falle). Neu: ein Fall mit **zwei gefuellten** Listen.
+- **Messaufbau-Befund:** Das harmlose Refactoring **V7** (`nutzlast` → `eingang`) traf den
+  **Importpfad** `nutzlast-pruefer`; die Suite lud nicht (`0/0`). Ersetzt durch
+  `ARTEN` → `VORLAGEN_ARTEN`. Neue Variante der Falle 2: **`all`-Renames treffen auch
+  Modulpfade.**
+- **Nachmessung nach dem Ausbau:** **30 von 30** rot, kein Fall kippt – hier war keine
+  Probe die einzige Waechterin.
+- **Entfernt:** **35** Quelltext-/Meta-Tests, **1** Verhaltens-Test ergaenzt; Suite
+  **5.357 → 5.323** (340 Dateien). **Sperrklinke:** 30 → **25** Dateien.
+- **Ehrlich offen:** Die **Abwesenheits**-Zusagen haben keinen Waechter mehr – kein
+  `fs`/`kill`/`unlink` im Abbruch, kein zweites Lock, kein Marken-/`config-store`-Zugriff
+  in `normalisieren`, kein `fs`/IPC in den drei Vorlagen-Dateien, `child_process` nur als
+  Typ. Verhalten kann sie nicht tragen (Spione sehen nur Aufrufe, die es gibt).
+  Lint-Kandidat `no-restricted-imports`; #448 (192 SAFETY) steht.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.323 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 22** – fuenf der verbleibenden **25**:
+  `verwerfe-arbeitskopie` (`vorlagen-store/`), `app-einhaengung` (`App.tsx`),
+  `aktion-bearbeiten`, `aktion-loeschen`, `bild-zuweisen` (`action-editor/`). Erste
+  Renderer-Charge mit `.tsx`: bei `app-einhaengung` vor dem Entfernen pruefen, ob der
+  Verhaltens-Test die Montage wirklich traegt.
+
+## STAND HEUTE (29.10.2026, vierundzwanzigste Sitzung: Mutations-Charge 20) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-charge-21.md`](docs/agents/uebergabe-2026-10-29-charge-21.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 33.

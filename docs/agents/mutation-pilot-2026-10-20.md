@@ -1737,3 +1737,88 @@ je Datei, wie in Charge 18/19 notiert. #448 steht.
 | Suite | 5.382 | **5.357** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 35 | **30** Dateien |
+
+## 34. Charge 21 (29.10.2026): Render-Abbruch und Vorlagen-Store
+
+**Dateien:** `render-abbruch` (`render-service/abbruch.ts`), `normalisieren`
+(`render-service/normalisieren.ts`, 939 Zeilen), `als-eigenstaendige`,
+`vorlagen-ipc-verdrahtung` und `loesche-vorlage` (alle `vorlagen-store/`). Alle von der
+Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 30 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **29**.
+**0 Refactorings rot** (vier gruen, das fuenfte – V7 – war defekt gebaut und wurde ersetzt);
+jede Mutation byte-identisch zurueckgenommen.
+
+### Die Luecke (geschlossen, ein neuer Verhaltens-Test)
+
+- **L4 – `daten: nutzung` gegen `{ aktionen, listenelemente: [] }` blieb gruen.** Der
+  einzige Tiefenvergleich von `fehler.daten` nutzte eine Fixture mit **leerer** zweiter
+  Liste – genau der Wert, den die Mutation auf `[]` setzte. Die Fixture-Falle (Nr. 3 des
+  Rezepts) in Reinform. Neu: ein Fall mit **zwei gefuellten** Listen, `daten` deep-gleich
+  zum Pruefergebnis. Danach ist L4 rot.
+
+### Ein defekter Fall, offen benannt
+
+- **V7 (harmloses Refactoring) war zunaechst falsch gebaut:** Der Rename `nutzlast` →
+  `eingang` traf auch den **Importpfad** `../ipc-gateway/nutzlast-pruefer`; die Suite lud
+  nicht mehr (`0 bestanden, 0 rot`). Ersetzt durch `ARTEN` → `VORLAGEN_ARTEN` (gruen).
+  Das ist eine neue Variante der Falle 2: Ein `all`-Rename trifft jede Zeichenkette,
+  auch in Modulpfaden und Bezeichnern, die nur zufaellig passen.
+
+### Kein einziger aequivalenter Fall
+
+Nach dem Ausbau blieben **alle 30** Verhaltens-Mutationen rot; die fuenf Refactorings
+gruen. Anders als in Charge 19/20 war hier **keine** Probe die einzige Waechterin einer
+der gebauten Mutationen. Das heisst nicht, dass jede gestrichene Zusage nun
+verhaltensgedeckt ist – die Abwesenheits-Zusagen (unten) konnten mit Verhalten
+grundsaetzlich nicht geprueft werden.
+
+### Was die Verhaltens-Tests je Datei tragen (Auszug)
+
+- **R** – 6/6 rot: zweites Kennzeichen (R1), fehlender Null-Guard (R2), vertauschter
+  renderId-Vergleich (R3), fehlendes `abort()` (R4), fehlende Identitaetspruefung beim
+  Freigeben (R5), fehlender Adapter-Stopp (R6). Der Test, der den Abbruch **nicht** abwartet,
+  haengt bei einem `await` in der Quelle in den Zeitablauf – das ist der Beleg fuer
+  „kehrt SOFORT zurueck".
+- **N** – 6/6 rot: Hintergrundfarbe, Einheiten-Bruch 0..100 → 0..1, `art !== 'video'`
+  in der Vorpruefung, `daten`-Regel (nur zwei Codes), Zwischenclip-Name, fehlende
+  Lesbarkeitspruefung (`medium_fehlt`).
+- **E** – 6/6 rot: `eingebaut: true`, `parent` behalten, invertierter Standalone-Check,
+  leere `arbeitsId`, 800 statt 80 Zeichen, alle Eintraege ersetzt.
+- **V** – 6/6 rot: fehlende Art `split`, `höhe` undefined statt null, `NaN`/`Infinity`
+  durchgelassen, falsche Operation am Kanal, falscher Loeschbaustein, fehlende
+  id-Pruefung.
+- **L** – 6/6 rot: invertierte Eingebaut-/Arbeitskopie-Pruefung, `&&` statt `||` bei den
+  Trefferlisten, gekuerztes `daten` (die Luecke), kein Loesen der Arbeitskopien, fehlender
+  Fehlerdurchgriff der Referenzpruefung.
+
+### Entfernt (35 Testfaelle, 1 ergaenzt, 0 gekuerzt)
+
+- **11** in `render-abbruch` (5 Prozess-/Datei-Verbote, 4 Lock-Woerter, Controller-Zaehlung,
+  `await`-Verbot).
+- **3** in `normalisieren` (Pfad-/Hex-/Encoder-Verbote, `child_process` nur als Typ,
+  Marken-Zugriff).
+- **9** in `als-eigenstaendige` (`eslint-disable`, 6 Verbote, `'vorlagen:'`, `await`).
+- **3** in `vorlagen-ipc-verdrahtung` (`'vorlagen:'`-Literal, `fs`/`ipcMain`/Fenster,
+  Schreibbausteine).
+- **9** in `loesche-vorlage` (`eslint-disable`, 5 Verbote, `project.json`, `'vorlagen:'`,
+  `await`).
+
+**Ehrlich offen:** Die Abwesenheits-Zusagen haben **keinen** Waechter mehr – kein
+`fs`/`kill`/`unlink` im Abbruch, kein zweites Lock, kein Marken-/`config-store`-Zugriff in
+`normalisieren`, kein `fs`/IPC in den drei Vorlagen-Dateien, `child_process` nur als Typ.
+Die Verhaltens-Tests koennen sie nicht tragen (Attrappen und Spione sehen nur Aufrufe, die
+es gibt). Lint-Kandidaten: `no-restricted-imports` je Datei. #448 steht.
+
+### Stand nach Charge 21
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **30**: 29 erkannt, 1 Luecke, 0 aequivalent; Nachmessung 30/30 |
+| Refactorings | – | **0 / 5 rot** (V7 neu gebaut) |
+| Quelltext-/Meta-Tests entfernt | – | **35** |
+| Verhaltens-Tests ergaenzt | – | **1** |
+| Echte Luecken geschlossen | – | **1** (L4) |
+| Suite | 5.357 | **5.323** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 30 | **25** Dateien |
