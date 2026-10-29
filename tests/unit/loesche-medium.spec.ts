@@ -1,6 +1,4 @@
-import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -335,34 +333,6 @@ describe('löscheMedium – Nutzlast und Ausnahmen', () => {
     ]
 
     expect(ergebnisse.map((e) => e.status)).toEqual(['fehlgeschlagen', 'fehlgeschlagen'])
-  })
-})
-
-describe('löscheMedium – was die Datei nicht anfasst', () => {
-  const quelle = readFileSync(
-    path.join(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '../../src/main/media-service/loesche-medium.ts',
-    ),
-    'utf8',
-  )
-
-  it.each(['node:fs', 'node:path', 'electron', 'child_process'])(
-    'importiert %s nicht',
-    (modul) => {
-      expect(quelle).not.toMatch(new RegExp(`from ['"]${modul}`))
-      expect(quelle).not.toMatch(new RegExp(`require\\(['"]${modul}`))
-    },
-  )
-
-  it.each(['media', 'projects', 'project.json'])('enthaelt kein Literal %s', (wort) => {
-    expect(quelle).not.toMatch(new RegExp(`['"\`]${wort.replace('.', '\\.')}['"\`]`))
-  })
-
-  it('fordert kein Lock an', () => {
-    expect(quelle).not.toContain('mitD1Lock')
-    expect(quelle).not.toContain('sofortFlush')
-    expect(quelle).not.toContain('planeAutoSpeicherung')
   })
 })
 

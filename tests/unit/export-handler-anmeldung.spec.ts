@@ -9,10 +9,6 @@
 // anfassen. Fuer den Identitaetsvergleich aendert das nichts: Testdatei und Quelldatei bekommen
 // dieselbe Attrappe, und ein umhuellendes Lambda in der Quelldatei liesse den Vergleich weiterhin
 // scheitern. Genau darum geht es.
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -154,50 +150,6 @@ describe('meldeExportHandlerAn (#190) - die Naht zum Dispatcher', () => {
     const ergebnis = await fuehreAus(baueExportAuftrag(), baueKontext('a7'))
 
     expect(ergebnis).toBe(fehlschlag)
-  })
-})
-
-describe('meldeExportHandlerAn (#190) - keine Uebersetzungsschicht', () => {
-  const quelle = readFileSync(
-    path.join(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '../../src/main/export-service/handler-anmeldung.ts',
-    ),
-    'utf8',
-  )
-
-  // Die Grep-Proben gelten dem CODE, nicht der Begruendung daneben: Die Kommentare dieser Datei
-  // benennen die verbotenen Konstrukte ausdruecklich.
-  const code = quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '')
-
-  it.each(['try', 'catch', 'async', 'await', '=>'])('enthaelt kein %s', (wort) => {
-    expect(code).not.toContain(wort)
-  })
-
-  it('registriert weder render noch import noch loeschen', () => {
-    for (const fremd of ["'render'", "'import'", "'loeschen'"]) {
-      expect(code).not.toContain(fremd)
-    }
-  })
-
-  it('fasst weder Dateisystem noch IPC noch D1 an', () => {
-    for (const verboten of [
-      'node:fs',
-      'child_process',
-      'kanaele',
-      'registriereHandler',
-      'mitD1Lock',
-      'sofortFlush',
-      'holeAktivesProjekt',
-    ]) {
-      expect(code).not.toContain(verboten)
-    }
-  })
-
-  it('verdrahtet sich nicht selbst - kein Aufruf als Nebeneffekt des Ladens', () => {
-    expect(code).not.toContain('whenReady')
-    // Ein Selbstaufruf am Modulende stuende ganz links, ohne Einrueckung.
-    expect(code).not.toMatch(/^meldeExportHandlerAn\(\)/m)
   })
 })
 

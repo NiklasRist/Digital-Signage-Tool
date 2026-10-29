@@ -16,8 +16,6 @@
 // sondern `npm run typecheck`: src/main/ipc-gateway/export-verdrahtung.ts importiert die
 // ECHTEN Module, ein abweichender Hoerer-Typ oder Rueckgabewert waere dort ein
 // Uebersetzungsfehler.
-import { readFileSync } from "node:fs";
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BrowserWindow } from "electron";
@@ -405,44 +403,5 @@ describe("Kanal-Registry (#25) nach der Ergaenzung durch #191", () => {
         expect(kanal).toBe(`${modul}:${operation}`);
       }
     }
-  });
-});
-
-describe("export-verdrahtung.ts - Codeinspektion", () => {
-  it("enthaelt keinen Kanalnamen als String-Literal", () => {
-    const quelle = readFileSync("src/main/ipc-gateway/export-verdrahtung.ts", "utf8");
-    const ohneKommentare = quelle
-      // ZUERST die Zeilenenden vereinheitlichen, und das ist NICHT kosmetisch:
-      // `core.autocrlf` steht in diesem Repo auf `true`, git checkt diese Datei also mit
-      // CRLF aus (`git ls-files --eol` -> `i/lf w/crlf`). Nach `split("\n")` endet dann
-      // jede Zeile auf `\r`; `/\/\/.*$/` trifft sie NICHT MEHR, weil `.` ein `\r` nicht
-      // mitnimmt und `$` ohne `m`-Flag das Ende der Zeichenkette meint. Ohne diese Zeile
-      // streift der Filter also GAR KEINEN Zeilenkommentar ab, die Pruefung unten
-      // scheitert an den Kommentaren - und behauptet dabei einen Fehler, den der Code
-      // nicht hat.
-      .replace(/\r\n/g, "\n")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .map((zeile) => zeile.replace(/\/\/.*$/, ""))
-      .join("\n");
-
-    // Schutz gegen ein zu gieriges Abstreifen: Bleibt der Zugriff ueber die Registry
-    // stehen, hat der Filter den Code nicht mitgeloescht - sonst waere die Pruefung
-    // unten wertlos, weil sie auf einer leeren Zeichenkette trivial gruen ist.
-    expect(ohneKommentare).toContain("KANAELE.export.wähleExportZiel");
-    expect(ohneKommentare).toContain("KANAELE.render.fortschritt");
-
-    // Und die Gegenrichtung: Der Filter muss tatsaechlich abgestreift HABEN - je eine
-    // Probe aus einem `//`-Kommentar und aus dem `/** */`-Block. Ohne diese zwei Zeilen
-    // ist ein blinder Filter (wie der CRLF-Fall oben) von einem sauberen nicht zu
-    // unterscheiden: Er faellt dann nur auf, solange zufaellig ein Kanalname im
-    // Kommentar steht, und wird lautlos wertlos, sobald keiner mehr dort steht.
-    expect(quelle).toContain("WAS DIESE DATEI IST");
-    expect(ohneKommentare).not.toContain("WAS DIESE DATEI IST");
-    expect(quelle).toContain("VERWORFEN WIRD STILL");
-    expect(ohneKommentare).not.toContain("VERWORFEN WIRD STILL");
-
-    expect(ohneKommentare).not.toContain("export:");
-    expect(ohneKommentare).not.toContain("render:");
   });
 });

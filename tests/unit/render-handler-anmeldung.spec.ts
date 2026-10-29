@@ -13,10 +13,6 @@
 //
 // `holeAktivesProjekt` ist auf `null` festgelegt: Der Sofort-Flush in #68 ist NICHT Gegenstand
 // dieses Issues, und ohne geoeffnetes Projekt gibt es nichts zu schreiben.
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AusfuehrungsKontext } from '../../src/main/auftrags-manager/dispatcher'
@@ -217,55 +213,5 @@ describe('meldeRenderHandlerAn (#189) - die Naht zum Dispatcher', () => {
     expect(brich(baueRenderAuftrag('r7'))).toBe(true)
 
     expect(fach.cancelRender.mock.calls).toEqual([['r7']])
-  })
-})
-
-describe('meldeRenderHandlerAn (#189) - keine Uebersetzungsschicht', () => {
-  const quelle = readFileSync(
-    path.join(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '../../src/main/render-service/handler-anmeldung.ts',
-    ),
-    'utf8',
-  )
-
-  // Die Grep-Proben gelten dem CODE, nicht der Begruendung daneben: Die Kommentare dieser Datei
-  // benennen die verbotenen Konstrukte ausdruecklich.
-  const code = quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '')
-
-  it.each(['try', 'catch', 'async', 'await', '=>'])('enthaelt kein %s', (wort) => {
-    expect(code).not.toContain(wort)
-  })
-
-  it('geht NICHT direkt an den Dispatcher (#60) und meldet keine zweite Auftragsart an', () => {
-    for (const fremd of [
-      'registriereAuftragsHandler',
-      "'export'",
-      "'import'",
-      "'loeschen'",
-      "'render'",
-    ]) {
-      expect(code).not.toContain(fremd)
-    }
-  })
-
-  it('fasst weder Dateisystem noch IPC noch D1 an', () => {
-    for (const verboten of [
-      'node:fs',
-      'child_process',
-      'kanaele',
-      'registriereHandler',
-      'mitD1Lock',
-      'sofortFlush',
-      'holeAktivesProjekt',
-    ]) {
-      expect(code).not.toContain(verboten)
-    }
-  })
-
-  it('verdrahtet sich nicht selbst - kein Aufruf als Nebeneffekt des Ladens', () => {
-    expect(code).not.toContain('whenReady')
-    // Ein Selbstaufruf am Modulende stuende ganz links, ohne Einrueckung.
-    expect(code).not.toMatch(/^meldeRenderHandlerAn\(\)/m)
   })
 })

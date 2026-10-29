@@ -11,13 +11,10 @@
   "tests/unit/bootstrap-ablauf.spec.ts",
   "tests/unit/element-entfernen.spec.ts",
   "tests/unit/element-zeile-anzeige.spec.ts",
-  "tests/unit/export-handler-anmeldung.spec.ts",
-  "tests/unit/export-verdrahtung.spec.ts",
   "tests/unit/inhalte-zugaenge-rechnung.spec.ts",
   "tests/unit/kaputt-handling.spec.ts",
   "tests/unit/liste-projekte.spec.ts",
   "tests/unit/live-vorschau.spec.ts",
-  "tests/unit/loesche-medium.spec.ts",
   "tests/unit/loesche-vorlage.spec.ts",
   "tests/unit/marke.spec.ts",
   "tests/unit/marken-store-pfade.spec.ts",
@@ -30,13 +27,11 @@
   "tests/unit/render-abbruch.spec.ts",
   "tests/unit/render-ausloesen.spec.ts",
   "tests/unit/render-dialog.spec.ts",
-  "tests/unit/render-handler-anmeldung.spec.ts",
   "tests/unit/slogan-bearbeiten.spec.ts",
   "tests/unit/uebergabe.spec.ts",
   "tests/unit/undo-projekt.spec.ts",
   "tests/unit/verwerfe-arbeitskopie.spec.ts",
   "tests/unit/video-filmstreifen-blob.spec.ts",
   "tests/unit/vorlagen-ipc-verdrahtung.spec.ts",
-  "tests/unit/vorschau-auswahl-rechnung.spec.ts",
-  "tests/unit/ziel-dialog.spec.ts"
+  "tests/unit/vorschau-auswahl-rechnung.spec.ts"
 ]

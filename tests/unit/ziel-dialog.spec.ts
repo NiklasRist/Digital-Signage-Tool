@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Unit-Test zu #183.
@@ -260,31 +258,5 @@ describe('Grenzen der Datei', () => {
     showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['E:\\Werbung'] })
     await wähleExportZiel()
     for (const spy of Object.values(fsSpies)) expect(spy).not.toHaveBeenCalled()
-  })
-
-  const quelle = readFileSync(
-    new URL('../../src/main/export-service/ziel-dialog.ts', import.meta.url),
-    'utf8',
-  )
-
-  // Ohne Kommentarzeilen, sonst schlagen die Verbots-Vermerke im Kopf der Datei an.
-  const code = quelle
-    .split('\n')
-    .filter((zeile) => !/^\s*(\/\/|\/?\*)/.test(zeile))
-    .join('\n')
-
-  it.each([
-    'node:fs',
-    'existsSync',
-    'statfs',
-    'setzeExportZiel',
-    'schreibeConfig',
-    'reiheEin',
-    'BrowserWindow',
-    'ipcMain',
-    'loeseAusgabePfad',
-    'homedir',
-  ])('benutzt %s nicht', (verboten) => {
-    expect(code).not.toContain(verboten)
   })
 })
