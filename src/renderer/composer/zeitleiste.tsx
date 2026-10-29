@@ -334,36 +334,69 @@ function ZeilenBlock({
           hoehePx={ZEILE_HOEHE_PX}
         />
       )}
-      {/* #437: die Unterbrechungen als Marken ueber dem Filmstreifen. Ein Klick entfernt
-          sie (EIN Schreibvorgang, EIN Undo-Schritt). */}
-      {marken.map((marke) => (
-        <button
-          key={marke.index}
-          type="button"
-          data-testid={`zeitleiste-unterbrechung-${index}-${marke.index}`}
-          data-zeitstelle={marke.zeitstelle}
-          title={`Unterbrechung bei ${marke.zeitstelle.toFixed(2)} s entfernen`}
-          aria-label={`Unterbrechung bei ${marke.zeitstelle.toFixed(2)} s entfernen`}
-          onPointerDown={(ereignis) => ereignis.stopPropagation()}
-          onClick={(ereignis) => {
-            ereignis.stopPropagation()
-            aufUnterbrechungEntfernen?.(zeile.elementId, marke.index)
-          }}
-          style={{
-            position: 'absolute',
-            left: Math.max(0, Math.round(marke.startSekunden * pxProSekunde)),
-            top: 0,
-            width: Math.max(6, Math.round(marke.dauerSekunden * pxProSekunde)),
-            height: '100%',
-            padding: 0,
-            border: '1px solid #f2f2f2',
-            borderRadius: 2,
-            background: 'rgba(229, 169, 77, 0.55)',
-            cursor: 'pointer',
-            zIndex: 2,
-          }}
-        />
-      ))}
+      {/* #437/#442: die Unterbrechungen als sichtbare Aktions-Kaesten ueber dem
+          Filmstreifen - Video | Aktion | Video. Der Kasten selbst startet keinen Drag
+          (stopPropagation); entfernt wird NUR ueber sein × (ein Fehlklick auf den
+          Kasten loescht nichts mehr). */}
+      {marken.map((marke) => {
+        const titel = projekt?.aktionen.find((eintrag) => eintrag.id === marke.aktionRef)?.titel ?? 'Aktion'
+        return (
+          <span
+            key={marke.index}
+            data-testid={`zeitleiste-unterbrechung-${index}-${marke.index}`}
+            data-zeitstelle={marke.zeitstelle}
+            title={`Unterbrechung: ${titel} · ${marke.dauerSekunden.toFixed(1)} s ab ${marke.zeitstelle.toFixed(2)} s`}
+            onPointerDown={(ereignis) => ereignis.stopPropagation()}
+            style={{
+              position: 'absolute',
+              left: Math.max(0, Math.round(marke.startSekunden * pxProSekunde)),
+              top: 0,
+              width: Math.max(48, Math.round(marke.dauerSekunden * pxProSekunde)),
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              padding: '0 2px',
+              overflow: 'hidden',
+              borderLeft: '2px solid #b07ae5',
+              borderRight: '2px solid #b07ae5',
+              background: 'rgba(58, 42, 77, 0.96)',
+              zIndex: 2,
+            }}
+          >
+            <span style={{ fontSize: 9, color: '#efe6fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {titel}
+            </span>
+            <button
+              type="button"
+              data-testid={`unterbrechung-entfernen-${index}-${marke.index}`}
+              title={`Unterbrechung „${titel}" entfernen`}
+              aria-label={`Unterbrechung „${titel}" entfernen`}
+              onPointerDown={(ereignis) => ereignis.stopPropagation()}
+              onClick={(ereignis) => {
+                ereignis.stopPropagation()
+                aufUnterbrechungEntfernen?.(zeile.elementId, marke.index)
+              }}
+              style={{
+                marginLeft: 'auto',
+                flex: '0 0 auto',
+                width: 14,
+                height: 14,
+                lineHeight: '12px',
+                fontSize: 10,
+                padding: 0,
+                border: '1px solid #b07ae5',
+                borderRadius: 2,
+                background: '#241832',
+                color: '#efe6fb',
+                cursor: 'pointer',
+              }}
+            >
+              ×
+            </button>
+          </span>
+        )
+      })}
       <span style={{ position: 'relative', zIndex: 1, textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}>
         {beschriftung.dauerText}
         {zeile.art === 'video' && zeile.dauerSekunden !== null

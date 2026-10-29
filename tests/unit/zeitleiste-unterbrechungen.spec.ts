@@ -25,7 +25,20 @@ function projektMitEinschub(): Project {
     geaendertAm: '2026-10-14T00:00:00.000Z',
     schemaVersion: 1,
     assets: [],
-    aktionen: [],
+    aktionen: [
+      {
+        id: 'akt1',
+        titel: 'Sonderangebot',
+        beschreibung: null,
+        preis: null,
+        bildRef: null,
+        cta: null,
+        standardDauer: 2,
+        markeId: 'marke-x',
+        vorlagenId: 'vollbild',
+        akzentfarbe: null,
+      },
+    ],
     liste: [
       {
         id: 'v0',
@@ -83,20 +96,27 @@ afterAll(() => {
 })
 
 describe('Die Zeitleiste zeigt die Unterbrechungen (#437)', () => {
-  it('eine Unterbrechung wird als Marke im Video-Block gezeichnet', () => {
+  it('eine Unterbrechung wird als Aktions-Kasten im Video-Block gezeichnet', () => {
     const behaelter = montiere({ projekt: projektMitEinschub() })
     const marke = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-unterbrechung-0-0"]')
     expect(marke).not.toBeNull()
     // Die Marke traegt ihre Zeitstelle (gespielte Videozeit) fuer die Nachvollziehbarkeit.
     expect(marke?.getAttribute('data-zeitstelle')).toBe('1')
+    // #442: der Kasten nennt die Aktion - "Video | Aktion | Video" ist damit lesbar.
+    expect(marke?.textContent).toContain('Sonderangebot')
   })
 
-  it('ein Klick auf die Marke meldet (elementId, index) an die Wurzel', () => {
+  it('ein Klick auf das × entfernt die Unterbrechung, ein Klick auf den Kasten nicht', () => {
     const aufEntfernen = vi.fn()
     const behaelter = montiere({ projekt: projektMitEinschub(), aufEntfernen })
-    const marke = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-unterbrechung-0-0"]')
-    expect(marke).not.toBeNull()
-    act(() => marke!.click())
+    const kasten = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-unterbrechung-0-0"]')
+    expect(kasten).not.toBeNull()
+    // #442: der Kasten selbst loescht NICHT (ein Fehlklick hat die Unterbrechung zuvor entfernt).
+    act(() => kasten!.click())
+    expect(aufEntfernen).not.toHaveBeenCalled()
+    const entfernen = behaelter.querySelector<HTMLElement>('[data-testid="unterbrechung-entfernen-0-0"]')
+    expect(entfernen).not.toBeNull()
+    act(() => entfernen!.click())
     expect(aufEntfernen).toHaveBeenCalledWith('v0', 0)
   })
 

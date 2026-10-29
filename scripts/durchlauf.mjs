@@ -2476,8 +2476,9 @@ const main = async () => {
     // VIDEO-Koerper gezogen. Seit der Entscheidung zu #442 (29.10.2026) legt JEDER Drop
     // auf den Koerper eine Unterbrechung an; die Vorlagenart entscheidet NICHTS mehr.
     // Deshalb wird hier bewusst eine Aktion mit BAND-Vorlage gezogen (frueher waere sie
-    // ein Band-Abschnitt geworden). Erwartet: EINE Marke im Video-Block; ein Klick
-    // entfernt sie; Aufnahme UND Entfernen sind je EIN Undo.
+    // ein Band-Abschnitt geworden). Erwartet: EIN Unterbrechungs-Kasten im Video-Block
+    // (Video | Aktion | Video, #442); sein × entfernt ihn; Aufnahme UND Entfernen sind
+    // je EIN Undo.
     await klick('[data-testid="reiter-zusammenstellen"]');
     await schlafe(700);
     const projektDatei4b6 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
@@ -2602,14 +2603,15 @@ const main = async () => {
             } else {
               console.log("[schritt-4b6] Unterbrechungs-Drop GEMESSEN: der Video-Block traegt EINE Marke (#437 belegt).");
             }
-            // Entfernen: Klick auf die Marke (EIN Undo-Schritt). Danach 0 Marken.
+            // Entfernen: Klick auf das × des Kastens (#442 - der Kasten selbst loescht nicht
+            // mehr). EIN Undo-Schritt. Danach 0 Unterbrechungen.
             const markeSelektor = await seite.evaluate(() => {
-              const marke = document.querySelector('[data-testid^="zeitleiste-unterbrechung-"]');
-              return marke ? marke.getAttribute("data-testid") : null;
+              const entfernen = document.querySelector('[data-testid^="unterbrechung-entfernen-"]');
+              return entfernen ? entfernen.getAttribute("data-testid") : null;
             });
             if (markeSelektor === null) {
-              fund("Unterbrechung Drag", "die Unterbrechungs-Marke ist im Fenster anklickbar",
-                "keine Marke gefunden", "Befund", "composer/zeitleiste.tsx");
+              fund("Unterbrechung Drag", "der Unterbrechungs-Kasten traegt einen Entfernen-Knopf (#442)",
+                "kein Entfernen-Knopf gefunden", "Befund", "composer/zeitleiste.tsx");
             } else {
               await klick(`[data-testid="${markeSelektor}"]`);
               await schlafe(1_500);
