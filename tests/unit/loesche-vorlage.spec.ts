@@ -1,7 +1,3 @@
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Ergebnis } from '../../src/shared/contracts/ergebnis'
@@ -222,6 +218,23 @@ describe('löscheVorlage – Sperre durch Treffer', () => {
     expect(daten.listenelemente).toEqual([])
   })
 
+  it('traegt daten ungekuerzt, wenn BEIDE Listen Treffer haben', async () => {
+    // Der Vergleich darueber hat eine LEERE zweite Liste - dort faellt ein
+    // `listenelemente: []` im Fehlerobjekt nicht auf (Mutation L4, Charge 21). Erst mit
+    // zwei gefuellten Listen ist "nichts kuerzen" wirklich geprueft.
+    const treffer: Vorlagennutzung = {
+      aktionen: [referenz('a-1')],
+      listenelemente: [referenz('el-9')],
+    }
+    zustand.bestand = [vorlage('v1')]
+    zustand.nutzung = { ok: true, wert: structuredClone(treffer) }
+
+    const fehler = await fehlschlag('v1')
+
+    expect(fehler.code).toBe('vorlage_referenziert')
+    expect(fehler.daten).toEqual(treffer)
+  })
+
   it('schreibt die Treffer-IDs nicht in die Meldung - sie gehoeren in daten', async () => {
     zustand.bestand = [vorlage('v1')]
     zustand.nutzung = {
@@ -337,41 +350,5 @@ describe('löscheVorlage – die Aenderungsfunktion ist synchron', () => {
 
     expect(ergebnis instanceof Promise).toBe(false)
     expect(ergebnis.then).toBeUndefined()
-  })
-})
-
-describe('loesche-vorlage.ts – was die Datei nicht anfasst', () => {
-  const quelle = readFileSync(
-    path.join(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '../../src/main/vorlagen-store/loesche-vorlage.ts',
-    ),
-    'utf8',
-  )
-
-  it('hat die eslint-Abschaltzeile aus Zeile 1 nicht mehr', () => {
-    expect(quelle).not.toContain('eslint-disable')
-  })
-
-  it.each(['node:fs', 'node:fs/promises', 'ipcMain', 'BrowserWindow', 'mitD1Lock'])(
-    'enthaelt %s nicht',
-    (verboten) => {
-      expect(quelle).not.toContain(verboten)
-    },
-  )
-
-  it('greift nicht auf project.json zu', () => {
-    expect(quelle).not.toContain('project.json')
-  })
-
-  it("enthaelt kein String-Literal 'vorlagen:'", () => {
-    expect(quelle).not.toMatch(/'vorlagen:'/)
-  })
-
-  it('die Aenderungsfunktion enthaelt kein await (Quelltext ab dem aendereBestand-Aufruf)', () => {
-    const ab = quelle.indexOf('return aendereBestand')
-    expect(ab).toBeGreaterThan(-1)
-    const rumpf = quelle.slice(ab)
-    expect(rumpf).not.toMatch(/\bawait\b/)
   })
 })

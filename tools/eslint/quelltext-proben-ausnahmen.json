@@ -2,7 +2,6 @@
   "tests/unit/aktion-bearbeiten.spec.ts",
   "tests/unit/aktion-loeschen.spec.ts",
   "tests/unit/aktions-auswahl.spec.ts",
-  "tests/unit/als-eigenstaendige.spec.ts",
   "tests/unit/als-png.spec.ts",
   "tests/unit/app-einhaengung.spec.ts",
   "tests/unit/asset-auswahl.spec.ts",
@@ -13,13 +12,10 @@
   "tests/unit/inhalte-zugaenge-rechnung.spec.ts",
   "tests/unit/kaputt-handling.spec.ts",
   "tests/unit/live-vorschau.spec.ts",
-  "tests/unit/loesche-vorlage.spec.ts",
   "tests/unit/marke.spec.ts",
   "tests/unit/medien-bibliothek.spec.ts",
-  "tests/unit/normalisieren.spec.ts",
   "tests/unit/optimistisch.spec.ts",
   "tests/unit/rahmen-montage.spec.ts",
-  "tests/unit/render-abbruch.spec.ts",
   "tests/unit/render-ausloesen.spec.ts",
   "tests/unit/render-dialog.spec.ts",
   "tests/unit/slogan-bearbeiten.spec.ts",
@@ -27,6 +23,5 @@
   "tests/unit/undo-projekt.spec.ts",
   "tests/unit/verwerfe-arbeitskopie.spec.ts",
   "tests/unit/video-filmstreifen-blob.spec.ts",
-  "tests/unit/vorlagen-ipc-verdrahtung.spec.ts",
   "tests/unit/vorschau-auswahl-rechnung.spec.ts"
 ]

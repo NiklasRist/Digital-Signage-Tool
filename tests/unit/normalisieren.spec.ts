@@ -19,7 +19,6 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { readFileSync } from "node:fs";
 
 import { beforeEach, afterAll, describe, expect, it, vi } from "vitest";
 
@@ -100,19 +99,6 @@ vi.mock("../../src/main/ffmpeg-adapter/bandspur", () => ({
 const { normalisiereElement, pruefeMedienVorhanden, zwischenclipDateiname } = await import(
   "../../src/main/render-service/normalisieren"
 );
-
-const QUELLE = readFileSync(
-  new URL("../../src/main/render-service/normalisieren.ts", import.meta.url),
-  "utf8",
-);
-
-/** Nur die CODE-Zeilen - die Begruendungen zitieren das Issue und duerfen die Proben nicht ausloesen. */
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((zeile) => {
-    const t = zeile.trim();
-    return t !== "" && !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 // ---------------------------------------------------------------------------
 // Echte Dateien fuer die Existenzpruefung (`fs.access`, nicht `fs.stat`).
@@ -254,29 +240,6 @@ describe("zwischenclipDateiname (#177, ENTSCHIEDEN)", () => {
   it("schneidet einen Index ab 10000 NIE ab - sonst fielen 10000 und 0000 zusammen", () => {
     expect(zwischenclipDateiname(10000)).toBe("seg_10000.mp4");
     expect(zwischenclipDateiname(12345)).toBe("seg_12345.mp4");
-  });
-});
-
-describe("Grep-Proben der Definition of Done", () => {
-  it("baut keinen Pfad selbst und startet keinen Prozess", () => {
-    expect(CODEZEILEN).not.toContain("projects");
-    expect(CODEZEILEN).not.toMatch(/#[0-9a-fA-F]{6}/);
-    expect(CODEZEILEN).not.toContain("-c:v");
-    expect(CODEZEILEN).not.toMatch(/\bspawn\b|\bexec\b|require\(/);
-  });
-
-  it("importiert aus node:child_process ausschliesslich den TYP (Signaturblock)", () => {
-    const zeilen = CODEZEILEN.split("\n").filter((z) => z.includes("child_process"));
-    expect(zeilen).toHaveLength(1);
-    expect(zeilen[0]).toContain("import type");
-  });
-
-  it("hat keinen Marken-Zugriff mehr (#316)", () => {
-    // Nach #316 ist der einzige Marken-Bezug des render-service der eingefrorene
-    // Hex-Wert im Auftrag (TK 9.2.2): kein Nachschlag, keine zweite Quelle.
-    for (const verbot of ["leseMarke", "config-store", "marken-store"]) {
-      expect(CODEZEILEN).not.toContain(verbot);
-    }
   });
 });
 

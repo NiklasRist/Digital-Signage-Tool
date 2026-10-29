@@ -1,7 +1,3 @@
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Ergebnis } from '../../src/shared/contracts/ergebnis'
@@ -308,37 +304,5 @@ describe('alsEigenstaendige (#104) – die Aenderungsfunktion ist synchron', () 
 
     expect(ergebnis instanceof Promise).toBe(false)
     expect(ergebnis.then).toBeUndefined()
-  })
-})
-
-describe('als-eigenstaendige.ts – was die Datei nicht anfasst', () => {
-  const quelle = readFileSync(
-    path.join(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '../../src/main/vorlagen-store/als-eigenstaendige.ts',
-    ),
-    'utf8',
-  )
-
-  it('hat die eslint-Abschaltzeile aus Zeile 1 nicht mehr', () => {
-    expect(quelle).not.toContain('eslint-disable')
-  })
-
-  it.each(['node:fs', 'node:fs/promises', 'ipcMain', 'BrowserWindow', 'erzeugeId', 'mitD1Lock'])(
-    'enthaelt %s nicht',
-    (verboten) => {
-      expect(quelle).not.toContain(verboten)
-    },
-  )
-
-  it("enthaelt kein String-Literal 'vorlagen:'", () => {
-    expect(quelle).not.toMatch(/'vorlagen:'/)
-  })
-
-  it('die Aenderungsfunktion enthaelt kein await (Quelltext ab dem aendereBestand-Aufruf)', () => {
-    const ab = quelle.indexOf('return aendereBestand')
-    expect(ab).toBeGreaterThan(-1)
-    const rumpf = quelle.slice(ab)
-    expect(rumpf).not.toMatch(/\bawait\b/)
   })
 })

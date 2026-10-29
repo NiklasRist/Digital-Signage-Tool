@@ -11,7 +11,6 @@
 // also zeichengleiche Schluessel. Der Konflikt ist zugunsten des GEBAUTEN Codes entschieden
 // (wie bei `media`/`export` seit 13.08.2026): der Schluessel heisst `löscheVorlage`. Der
 // Widerspruch zum Issue wird im Abschlussbericht gemeldet.
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -97,13 +96,6 @@ function vorlage(id = 'v1'): {
 } {
   return { id, name: 'Sommer', art: 'vollflaeche', höhe: null, parent: null, eingebaut: false, zonen: [] }
 }
-
-const QUELLE = readFileSync(
-  new URL('../../src/main/vorlagen-store/ipc-verdrahtung.ts', import.meta.url),
-  'utf8',
-)
-// Kommentare zuerst zeilen-, dann blockweise entfernen - die Grep-Proben gelten dem Code.
-const CODETEIL = QUELLE.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -336,27 +328,5 @@ describe('verdrahteVorlagenIPC (#109) – Nutzlasten, Aufrufe und Durchreichen',
 
     expect(ergebnis.ok).toBe(false)
     expect(ergebnis.fehler.code).toBe('unbekannter_fehler')
-  })
-})
-
-describe('verdrahteVorlagenIPC (#109) – Grep-Proben der DoD', () => {
-  it('enthaelt kein String-Literal mit dem Praefix vorlagen:', () => {
-    // Alle neun Namen kommen aus KANAELE - ein Tippfehler waere sonst erst zur Laufzeit
-    // sichtbar. (In kanaele.ts stehen die Namen als Literale und muessen dort stehen.)
-    expect(CODETEIL).not.toMatch(/['"`]vorlagen:/)
-  })
-
-  it('enthaelt kein fs, kein child_process, kein ipcMain und keine Fensterreferenz', () => {
-    expect(CODETEIL).not.toMatch(/\b(fs|child_process)\b/)
-    expect(CODETEIL).not.toMatch(/ipcMain/)
-    expect(CODETEIL).not.toMatch(/BrowserWindow|webContents/)
-  })
-
-  it('ruft weder die Schreibbausteine noch den Bestand auf', () => {
-    expect(CODETEIL).not.toMatch(/ladeBestand|aendereBestand|flushBestand/)
-    // Die Trennung "Basis-Einstieg meldet den #255-Kanal NICHT an" ist seit Q3/B keine
-    // Datei-Grenze mehr; sie wird oben am ECHTEN Lauf gemessen (`angemeldet` enthaelt
-    // nach `verdrahteVorlagenIPC()` genau neun Kanaele). Ein Quelltext-Grep auf den
-    // Funktionsnamen koennte diese Zusage nicht mehr tragen.
   })
 })

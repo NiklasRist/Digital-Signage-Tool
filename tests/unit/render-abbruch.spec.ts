@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Verhaltenstest zu #179 (Abbruch entgegennehmen).
@@ -261,45 +259,5 @@ describe('freigeben - idempotent und nur fuer den eigenen Platz', () => {
     cancelRender('r-2')
     expect(beideSichten(zweiter)).toBe(true)
     expect(adapter.aufrufe).toBe(1)
-  })
-})
-
-describe('Grenzen der Datei', () => {
-  // Ohne Kommentarzeilen, sonst schlagen die Verbots-Vermerke im Kopf der Datei an -
-  // und der einzeilige Doc-Kommentar "Am terminalen Ausgang ...", in dem "rm" steckt.
-  // Die drei Anfaenge decken alle Kommentarformen dieser Datei ab: "//", die
-  // Folgezeilen eines Blocks ("*") und seine Eroeffnung ("/*", auch "/**").
-  const quelle = readFileSync(
-    new URL('../../src/main/render-service/abbruch.ts', import.meta.url),
-    'utf8',
-  )
-    .split('\n')
-    .filter((zeile) => !/^(\/\/|\*|\/\*)/.test(zeile.trimStart()))
-    .join('\n')
-
-  // Die Grep-Probe aus der Definition of Done, mechanisch statt von Hand: Wer hier
-  // aufraeumt, loescht unter einem noch laufenden Prozess (Windows: EBUSY; macOS:
-  // stiller unlink bei offener Datei), und wer selbst einen Prozess anfasst, macht
-  // diese Datei zur zweiten Stelle im Projekt, die ffmpeg-Prozesse kennt.
-  it.each(['fs.', 'child_process', 'kill', 'unlink', 'rm'])('enthaelt kein %s', (verboten) => {
-    expect(quelle).not.toContain(verboten)
-  })
-
-  // Kein zweites Lock: "Das ist der einzige Sperr-Mechanismus des Systems; ein
-  // zweites Lock ist nicht noetig und darf nicht eingefuehrt werden." (TK 9.3.5)
-  it.each(['lock', 'mutex', 'semaphor', 'sperre'])('baut kein %s', (verboten) => {
-    expect(quelle.toLowerCase()).not.toContain(verboten)
-  })
-
-  it('haelt genau EINEN Controller je Lauf - kein zweites Kennzeichen', () => {
-    // Ein boolean neben dem Controller waere der Fehler, gegen den das ganze Issue
-    // gebaut ist. Es gibt genau ein `new AbortController()`, und die Frage-Sicht
-    // liest den Controller, statt einen eigenen Wert zu fuehren.
-    expect(quelle.match(/new AbortController\(\)/g)).toHaveLength(1)
-    expect(quelle).toContain('istAbgebrochen: () => controller.signal.aborted')
-  })
-
-  it('wartet nirgends: kein await in dieser Datei', () => {
-    expect(quelle).not.toMatch(/\bawait\b/)
   })
 })
