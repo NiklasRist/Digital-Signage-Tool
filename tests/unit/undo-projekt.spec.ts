@@ -2,8 +2,6 @@
 // Die Historie laeuft ECHT mit (#234, `setzeHistorienZurueck` frisch pro Test);
 // `rufeAuf` (#24) wird als Doppel ersetzt (vi.hoisted-Muster wie in
 // aktion-loeschen.spec.ts), `zugang` sind Spione.
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Bearbeitungsstand, Listenelement, Project } from '../../src/shared/contracts/project'
@@ -36,42 +34,6 @@ vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
     return doppel.antwort
   },
 }))
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/app-shell/undo-projekt.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('undo-projekt.ts – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('ruft KEINE feingranulare Operation und kennt kein project:-/queue:-Literal', () => {
-    for (const verbot of [
-      'fügeElementHinzu', 'entferneElement', 'ordneNeu', 'setzeTrim', 'setzeDauer',
-      'setzeEinblendung', 'setzeElementReferenz', 'erstelleAktion', 'bearbeiteAktion',
-      'löscheAktion', "'project:'", "'queue:'", 'abonniere', 'window.', 'localStorage',
-      'setTimeout', 'addEventListener',
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-  })
-
-  it('enthaelt kein JSX und keinen react-Import', () => {
-    expect(CODEZEILEN).not.toContain('react')
-    expect(CODEZEILEN).not.toMatch(/<[a-z][a-z]*[ >]/)
-  })
-
-  it('fasst assets und letzterAusgabeName nie an (nicht im Schnappschuss)', () => {
-    expect(CODEZEILEN).not.toContain('assets')
-    expect(CODEZEILEN).not.toContain('letzterAusgabeName')
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -175,6 +137,14 @@ describe('merkeVorAenderung (#235)', () => {
     const { zugang } = zugangFuer(null)
     expect(() => merkeVorAenderung(zugang)).not.toThrow()
     expect(projektHistorie().stand()).toEqual({ zurueck: 0, vor: 0 })
+  })
+
+  it('traegt die STANDARD-Segmentdauer des Projekts in den Schnappschuss (kein Literal 10)', () => {
+    // Ein Testwert, der zufaellig glatt aufgeht, belegt nichts: alle uebrigen
+    // Fixtures tragen 10 - genau der Wert, den ein Literal ebenfalls lieferte.
+    const p = { ...projekt('p-1', [aktion('a-1')], []), standardSegmentdauer: 4.7 }
+    merkeVorAenderung(zugangFuer(p).zugang)
+    expect(projektHistorie().vorschauZurueck()?.stand.standardSegmentdauer).toBe(4.7)
   })
 })
 
@@ -300,7 +270,11 @@ describe('macheRueckgaengig (#235)', () => {
     const erg = await macheRueckgaengig(zugang)
 
     expect(erg.ok).toBe(false)
-    if (!erg.ok) expect(erg.fehler.code).toBe('unbekannter_fehler')
+    if (!erg.ok) {
+      expect(erg.fehler.code).toBe('unbekannter_fehler')
+      // EXAKT, nicht "enthaelt": String(error) lieferte "Error: Bridge fehlt".
+      expect(erg.fehler.meldung).toBe('Bridge fehlt')
+    }
     expect(projektHistorie().stand()).toEqual(vorher)
   })
 
@@ -430,5 +404,16 @@ describe('kannWiederherstellen (#235)', () => {
   it('false ohne Projekt', () => {
     const { zugang } = zugangFuer(null)
     expect(kannWiederherstellen(zugang)).toBe(false)
+  })
+
+  it('false, wenn der Vor-Stand zu einem anderen Projekt gehoert', async () => {
+    const alt = projekt('p-A', [aktion('a-1')], [])
+    const neu = projekt('p-A', [], [])
+    const { zugang } = zugangFuer(neu)
+    merkeVorAenderung(zugang)
+    doppel.antwort = antwortMit(alt)
+    await macheRueckgaengig(zugang)
+    // Der Vor-Zweig ist gefuellt - aber fuer p-A. Offen ist jetzt p-B.
+    expect(kannWiederherstellen(zugangFuer(projekt('p-B', [], [])).zugang)).toBe(false)
   })
 })

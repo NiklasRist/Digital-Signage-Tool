@@ -1,8 +1,6 @@
 // Tests zu #256 (M7-64) - die reine Seite (uebergabe.ts, ohne Browser).
 // M7-08 wird ECHT benutzt; `rechneStandNeu`, `wechsleReiter`, `holeReiter`,
 // `starteMedienImport`, `schliesseMediumFixAb` und `meldeFehler` sind Doppel.
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { KaputteStelle } from '../../src/renderer/composer/kaputt-erkennung'
@@ -29,32 +27,6 @@ import {
   unterbrechungsIndexFuer,
   type UebergabeUmgebung,
 } from '../../src/renderer/app-shell/uebergabe'
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/app-shell/uebergabe.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('uebergabe.ts – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('kein JSX, kein react, kein IPC, kein Timer, kein fremder Fachaufruf, kein starteFuehrung', () => {
-    for (const verbot of [
-      'react', 'rufeAuf', 'abonniere', 'KANAELE', 'window.', 'setTimeout', 'setInterval',
-      "'queue:'", 'istRenderFreigegeben', 'findeKaputteStellen', 'starteReparatur',
-      'beendeFuehrung', 'starteFuehrung', 'reiterFuerUebergabe',
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-    expect(CODEZEILEN).not.toMatch(/<(div|span|ul|li|p|img|canvas|button)\b/)
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -239,6 +211,15 @@ describe('reparaturhalter (#256)', () => {
     halter.setzeLage(LEERE_SHELL_REPARATUR)
     expect(selbst).toHaveBeenCalledTimes(1)
     expect(zweiter).toHaveBeenCalledTimes(1)
+  })
+
+  it('ruft die Hoerer in Anmeldereihenfolge (ENTSCHIEDEN 10)', () => {
+    const halter = reparaturhalter()
+    const reihenfolge: string[] = []
+    halter.aufLageGeaendert(() => reihenfolge.push('erster'))
+    halter.aufLageGeaendert(() => reihenfolge.push('zweiter'))
+    halter.setzeLage({ ...LEERE_SHELL_REPARATUR, hervorgehobeneAktionId: 'x' })
+    expect(reihenfolge).toEqual(['erster', 'zweiter'])
   })
 })
 
@@ -606,6 +587,23 @@ describe('meldeStand (#256)', () => {
     expect(u.halter.holeLage().stand).toBe(s)
     expect(rechneStandNeu).not.toHaveBeenCalled()
     expect(wechsleReiter).not.toHaveBeenCalled()
+  })
+
+  it('behaelt die laufende Uebergabe, Hervorhebung und Rueckkehr (Stand kommt WAEHREND der Fuehrung)', () => {
+    const laufende: Uebergabe = { ziel: 'asset-auswahl', elementId: 'e1' }
+    const startLage: ShellReparatur = {
+      stand: stand(),
+      laufendeUebergabe: laufende,
+      hervorgehobeneAktionId: 'a-1',
+      rueckkehrReiter: 'zusammenstellen',
+    }
+    const { u } = umgebung({ startLage })
+    meldeStand(u, stand({ behoben: 2 }))
+    const lage = u.halter.holeLage()
+    expect(lage.stand?.behoben).toBe(2)
+    expect(lage.laufendeUebergabe).toBe(laufende)
+    expect(lage.hervorgehobeneAktionId).toBe('a-1')
+    expect(lage.rueckkehrReiter).toBe('zusammenstellen')
   })
 
   it('KEINE Funktion verändert die eingefrorene Lage', () => {

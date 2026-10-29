@@ -10,8 +10,6 @@
 // speichert, könnte "steht es noch da?" gar nicht beantworten, und ein `holeSicht`,
 // das immer dasselbe liefert, verdeckte den Fall, dass zwischen Aufruf und Antwort
 // etwas an der Liste passiert ist.
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Aktion } from '../../src/shared/contracts/aktion'
@@ -332,65 +330,5 @@ describe('entferneElementAusListe - Fehlerpfade', () => {
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
     if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('ungueltige_eingabe')
-  })
-})
-
-// ---------------------------------------------------------------------------
-// Quelltext-Proben. Sie prüfen nicht Verhalten, sondern ABWESENHEIT - und genau die
-// ist mit Doppeln nicht messbar.
-// ---------------------------------------------------------------------------
-
-// `\r\n` wird ZUERST vereinheitlicht (core.autocrlf=true; s. #123/#191).
-const QUELLE = readFileSync('src/renderer/composer/element-entfernen.ts', 'utf8').replace(
-  /\r\n/g,
-  '\n',
-)
-const CODEZEILEN = QUELLE.split('\n').filter(
-  (zeile) => !zeile.trimStart().startsWith('//') && !zeile.trimStart().startsWith('*'),
-)
-const CODE = CODEZEILEN.join('\n')
-
-describe('entferneElementAusListe - was die Datei NICHT enthält', () => {
-  it('der Kommentar-Filter greift überhaupt', () => {
-    // Gegenprobe zum Filter selbst: Ein Filter, der nichts entfernt, macht jede
-    // Abwesenheits-Probe darunter strenger als nötig - einer, der zu viel entfernt,
-    // macht sie wertlos. Beide Enden sind hier festgenagelt.
-    expect(CODEZEILEN.length).toBeLessThan(QUELLE.split('\n').length)
-    expect(CODE).not.toContain('TK 9.5.3')
-    expect(CODE).toContain('export async function entferneElementAusListe')
-  })
-
-  it('exportiert NICHT den Main-Namen entferneElement', () => {
-    // Zwei gleichnamige Exporte auf beiden Seiten der Prozessgrenze laden dazu ein,
-    // in einer Importzeile die falsche zu erwischen - und der Fehler fiele erst zur
-    // Laufzeit auf, weil beide dieselbe Signatur haben.
-    expect(CODE).not.toMatch(/export\s+(async\s+)?function\s+entferneElement\s*\(/)
-    expect(CODE).not.toMatch(/export\s*\{[^}]*\bentferneElement\b[^}]*\}/)
-  })
-
-  it('enthält kein Kanal-Literal, kein window.api, kein fs', () => {
-    // Absichtlich auf der UNGEFILTERTEN Quelle: Die DoD verlangt die Zeichenketten
-    // nirgends in der Datei, auch nicht in einer Begründung.
-    expect(QUELLE).not.toContain('project:')
-    expect(QUELLE).not.toContain('media:')
-    expect(CODE).not.toContain('window.api')
-    expect(CODE).not.toMatch(/from '(node:)?fs'/)
-  })
-
-  it('ruft keinen zweiten Kanal und keine zweite Operation auf', () => {
-    // Ein einziges `rufeAuf` im ganzen Rumpf, und ein einziger KANAELE-Zugriff.
-    expect(CODE.match(/rufeAuf\s*</g) ?? []).toHaveLength(1)
-    expect(CODE.match(/KANAELE\./g) ?? []).toHaveLength(1)
-    expect(CODE).toContain('KANAELE.project.entferneElement')
-    expect(CODE).not.toMatch(/KANAELE\.media\b/)
-    expect(CODE).not.toContain('loescheAktion')
-    expect(CODE).not.toContain('löscheAktion')
-  })
-
-  it('führt keinen eigenen Speicher und keinen Undo-Puffer', () => {
-    expect(CODE).toContain("from './projektzustand'")
-    // Kein Modul-Zustand: die einzigen Bindungen im Rumpf sind `antwort` und
-    // `projekt`, beide `const` innerhalb der Funktion.
-    expect(CODE).not.toMatch(/^\s*(let|var)\s/m)
   })
 })

@@ -1,17 +1,12 @@
 [
   "tests/unit/als-png.spec.ts",
-  "tests/unit/element-entfernen.spec.ts",
   "tests/unit/element-zeile-anzeige.spec.ts",
-  "tests/unit/inhalte-zugaenge-rechnung.spec.ts",
   "tests/unit/marke.spec.ts",
   "tests/unit/medien-bibliothek.spec.ts",
   "tests/unit/optimistisch.spec.ts",
-  "tests/unit/rahmen-montage.spec.ts",
   "tests/unit/render-ausloesen.spec.ts",
   "tests/unit/render-dialog.spec.ts",
   "tests/unit/slogan-bearbeiten.spec.ts",
-  "tests/unit/uebergabe.spec.ts",
-  "tests/unit/undo-projekt.spec.ts",
   "tests/unit/video-filmstreifen-blob.spec.ts",
   "tests/unit/vorschau-auswahl-rechnung.spec.ts"
 ]

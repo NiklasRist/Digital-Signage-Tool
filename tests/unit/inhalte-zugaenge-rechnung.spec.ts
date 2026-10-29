@@ -3,8 +3,6 @@
 // Was hier Entscheidend passt: GENAU EIN Umhüller und GENAU EIN Ent-Hüller,
 // die Frage „welcher Zugang gilt hier?“ wird an GENAU EINER Stelle beantwortet
 // (ENTSCHIEDEN 3). Ersetzt wird #243 durch Doppel - reine Signartests.
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const doppel = vi.hoisted(() => ({
@@ -108,28 +106,5 @@ describe('verteileZugaenge (ENTSCHIEDEN 3 - die kritische Aussagestelle)', () =>
     const sichten = baueSichten()
     Object.freeze(sichten)
     expect(() => verteileZugaenge(sichten)).not.toThrow()
-  })
-})
-
-describe('Quelldatei-Verbote (Grep-Probe, code ohne Kommentare)', () => {
-  const quelle = readFileSync(
-    new URL('../../src/renderer/app-shell/inhalte-zugaenge.ts', import.meta.url),
-    'utf8',
-  )
-  const code = quelle
-    .split('\n')
-    .filter((z) => {
-      const t = z.trim()
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-    })
-    .join('\n')
-
-  it('kein JSX, kein react, kein Rueckkanal, kein window', () => {
-    expect(code).not.toContain('react')
-    expect(code).not.toContain('<')
-    expect(code).not.toContain('rufeAuf')
-    expect(code).not.toContain('abonniere')
-    expect(code).not.toContain('KANAELE')
-    expect(code).not.toContain('window.')
   })
 })
