@@ -43,6 +43,10 @@ export interface SplitProps {
   /** Position INNERHALB dieses Elements, in Frames – wird an Video durchgereicht. */
   lokalerFrame: number
   laeuft: boolean
+  /** #443: true = kein Ton (Normalfall). Wird UNVERAENDERT an Video durchgereicht. */
+  stumm: boolean
+  /** #443: 0..1. Wird UNVERAENDERT an Video durchgereicht. */
+  lautstaerke: number
   /** Die PROJEKT-Standardmarke (TK 9.15.4, #313). Quelle der Farb-Rolle `flaecheDunkel`
    *  fuer die Restflaechen. Wird als `rahmenMarke` an `Segment` (#310) gereicht. */
   rahmenMarke: Marke
@@ -74,6 +78,8 @@ export function Split(props: SplitProps): JSX.Element {
           trimEnde={props.trimEnde}
           lokalerFrame={props.lokalerFrame}
           laeuft={props.laeuft}
+          stumm={props.stumm}
+          lautstaerke={props.lautstaerke}
         />
       </div>
     )
@@ -93,6 +99,8 @@ export function Split(props: SplitProps): JSX.Element {
         trimEnde={props.trimEnde}
         lokalerFrame={props.lokalerFrame}
         laeuft={props.laeuft}
+        stumm={props.stumm}
+        lautstaerke={props.lautstaerke}
         rahmen={stile.videoRahmen}
         hintergrund={dunkel}
       />

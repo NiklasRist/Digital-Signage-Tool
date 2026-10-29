@@ -7,8 +7,12 @@
 // ob ein Sprung noetig ist, und schreibt es N I E irgendwo hin
 // (ENTSCHIEDEN 1, TK 9.9.3 Einbahnstrasse).
 //
-// STUMM (TK 9.2.4): Die Ausgabedatei ist stumm; eine Vorschau mit Ton erweckt
-// einen falschen Eindruck. muted ist gesetzt und bleibt gesetzt.
+// TON (TK 9.2.4, #443): Die Ausgabedatei ist stumm. Der Ton dieser Vorschau ist
+// deshalb KEINE Wiedergabe des Ergebnisses, sondern ein Hoer-Behelf auf die QUELLE -
+// man hoert, wo die Schnittstelle liegen soll. Der Startwert bleibt STUMM (gesetztes
+// `muted`-Attribut); eingeschaltet wird nur ueber die Leiste (#443), und dort steht
+// der Hinweis "Ausgabe bleibt stumm". Der Zustand kommt als Prop - dieses Bauteil
+// merkt sich nichts (der Aufrufer haelt den Stand, #214).
 //
 // HANDLE-REGISTER (#246): Das <video> ist der gefaehrlichste offene Handle im
 // Renderer - TK 9.4.6 macht das Freigeben zur VORBEDINGUNG des Loeschens
@@ -49,6 +53,13 @@ export interface VideoProps {
   lokalerFrame: number
   /** Der Stand der Vorschau-Uhr (TransportStand.laeuft aus #214). */
   laeuft: boolean
+  /**
+   * true = KEIN Ton (der Normalfall, #443/Entscheidung 29.10.2026). Die AUSGABE ist
+   * still (TK 9.2.4); eingeschaltet wird der Quellton nur bewusst in der Leiste.
+   */
+  stumm: boolean
+  /** 0..1. Wirkt nur, wenn `stumm` false ist; `setzeLautstaerke` klemmt (#443). */
+  lautstaerke: number
   /** Anzeigeflaeche im Raster. Fehlt sie, nimmt das Video die GANZE Buehne ein. */
   rahmen?: VideoRahmen
   /** Fuellfarbe der Einpassungsraender. Voreinstellung Schwarz (TK 9.2.4); #218 reicht
@@ -57,7 +68,7 @@ export interface VideoProps {
 }
 
 export function Video(props: VideoProps): JSX.Element {
-  const { projektId, dateiname, assetId, trimStart, trimEnde, lokalerFrame, laeuft, rahmen, hintergrund } = props
+  const { projektId, dateiname, assetId, trimStart, trimEnde, lokalerFrame, laeuft, stumm, lautstaerke, rahmen, hintergrund } = props
   const medien = useRef<HTMLVideoElement>(null)
 
   // DIE QUELLE nur, wenn sich projektId oder dateiname aendern (Fehlerpfade:
@@ -85,6 +96,10 @@ export function Video(props: VideoProps): JSX.Element {
   useEffect(() => {
     const element = medien.current
     if (element === null) return
+    // #443: Ton als PROP, nicht als eigener Zustand. Beide Werte werden bei jedem
+    // Rendervorgang gesetzt (wie Position und Laufen darunter) - das ist idempotent.
+    element.muted = stumm
+    element.volume = lautstaerke
     const soll = quellZeit(trimStart, lokalerFrame)
     // ENTSCHIEDEN 5: am Ende anhalten, nicht springen. Das letzte Bild bleibt
     // stehen; der Wechsel zum naechsten Element entscheidet die Uhr.

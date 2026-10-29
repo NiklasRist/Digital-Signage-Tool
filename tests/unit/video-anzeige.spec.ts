@@ -45,6 +45,9 @@ function eigenschaften(teil: Partial<VideoProps> = {}): VideoProps {
     trimEnde: 12,
     lokalerFrame: 0,
     laeuft: false,
+    // #443: Die Vorschau startet stumm - wie die gebaute Vorschau (TON_STAND).
+    stumm: true,
+    lautstaerke: 1,
     ...teil,
   }
 }

@@ -97,6 +97,8 @@ function eigenschaften(teil: Partial<SplitProps> = {}): SplitProps {
     trimEnde: 12,
     lokalerFrame: 45,
     laeuft: true,
+    stumm: true,
+    lautstaerke: 1,
     rahmenMarke: baueMarke(),
     abschnittMarke: baueMarke(),
     bandVorlage: baueVorlage(162),

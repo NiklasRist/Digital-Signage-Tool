@@ -92,6 +92,8 @@ function eigenschaften(teil: Partial<EinblendungProps> = {}): EinblendungProps {
     trimEnde: 11,
     lokalerFrame: 60,
     laeuft: true,
+    stumm: true,
+    lautstaerke: 1,
     rahmenMarke: baueMarke(),
     abschnittMarke: baueMarke(),
     bandVorlage: baueVorlage(162),

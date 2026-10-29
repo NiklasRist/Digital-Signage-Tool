@@ -429,3 +429,137 @@ describe('Unterbrechung (#426, TK 9.2.9)', () => {
     fertig()
   })
 })
+
+// ---------------- #443: die Bedienleiste ueber dem Bild ----------------
+
+function finde(behaelter: HTMLElement, pruefKennung: string): HTMLElement {
+  const element = behaelter.querySelector(`[data-testid="${pruefKennung}"]`)
+  expect(element, pruefKennung).not.toBeNull()
+  return element as HTMLElement
+}
+
+/** Ein Druck mit anschliessendem Klick auf DEMSELBEN Element (wie ein echter Klick). */
+function klicke(behaelter: HTMLElement, element: HTMLElement): void {
+  act(() => {
+    element.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
+    element.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+}
+
+describe('#443 die Leiste liegt ueber dem Bild', () => {
+  it('sie ist Kind der Bildflaeche - es gibt keine feste Zeile mehr unter der Buehne', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    const flaeche = finde(behaelter, 'vorschau-bildflaeche')
+    const leiste = finde(behaelter, 'vorschau-transport')
+    expect(flaeche.contains(leiste)).toBe(true)
+    // Die Wurzel hat genau ein Kind: die Bildflaeche. Eine Geschwisterzeile darunter
+    // waere die alte Leiste.
+    expect(finde(behaelter, 'vorschau').children).toHaveLength(1)
+    fertig()
+  })
+})
+
+describe('#443 Klick aufs Bild (YouTube-Muster)', () => {
+  it('ein Klick auf das Bild schaltet Play/Pause', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    klicke(behaelter, finde(behaelter, 'vorschau-bildflaeche'))
+    expect(finde(behaelter, 'vorschau-play-pause').getAttribute('aria-label')).toBe('Pause')
+    klicke(behaelter, finde(behaelter, 'vorschau-bildflaeche'))
+    expect(finde(behaelter, 'vorschau-play-pause').getAttribute('aria-label')).toBe('Play')
+    fertig()
+  })
+
+  it('ein Druck, der in der LEISTE beginnt, schaltet beim Loslassen ueber dem Bild NICHT um', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    act(() => {
+      // Der Druck beginnt auf dem Lautstaerke-Regler; der Klick landet danach auf dem
+      // gemeinsamen Vorfahren (der Bildflaeche) - der klassische Zieh-Klick.
+      finde(behaelter, 'vorschau-lautstaerke').dispatchEvent(
+        new MouseEvent('pointerdown', { bubbles: true }),
+      )
+      finde(behaelter, 'vorschau-bildflaeche').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(finde(behaelter, 'vorschau-play-pause').getAttribute('aria-label')).toBe('Play')
+    fertig()
+  })
+
+  it('ein Knopf der Leiste schaltet die Wiedergabe nicht mit um (stopPropagation)', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    klicke(behaelter, finde(behaelter, 'vorschau-ton'))
+    expect(finde(behaelter, 'vorschau-play-pause').getAttribute('aria-label')).toBe('Play')
+    fertig()
+  })
+})
+
+describe('#443 die Leiste blendet aus (nur waehrend des Abspielens)', () => {
+  it('nach 3 s Ruhe verschwindet sie; eine Mausbewegung holt sie zurueck', () => {
+    // Nur setTimeout faelschen: Der Bildtakt laeuft ueber requestAnimationFrame
+    // (im beforeEach gestellt) und darf davon unberuehrt bleiben.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { behaelter, fertig } = rendere(eigenschaften())
+    druecke(behaelter, 'vorschau-play-pause')
+    expect(finde(behaelter, 'vorschau-transport').getAttribute('data-sichtbar')).toBe('true')
+
+    act(() => {
+      vi.advanceTimersByTime(3000)
+    })
+    expect(finde(behaelter, 'vorschau-transport').getAttribute('data-sichtbar')).toBe('false')
+
+    act(() => {
+      finde(behaelter, 'vorschau').dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
+    })
+    expect(finde(behaelter, 'vorschau-transport').getAttribute('data-sichtbar')).toBe('true')
+
+    vi.useRealTimers()
+    fertig()
+  })
+
+  it('in der Pause bleibt sie stehen (kein Ausblenden ohne laufende Uhr)', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { behaelter, fertig } = rendere(eigenschaften())
+    act(() => {
+      vi.advanceTimersByTime(10_000)
+    })
+    expect(finde(behaelter, 'vorschau-transport').getAttribute('data-sichtbar')).toBe('true')
+    vi.useRealTimers()
+    fertig()
+  })
+
+  it('verlaesst der Zeiger das Bild, ist die Leiste sofort weg - auch in der Pause', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    act(() => {
+      // React bildet onMouseLeave aus mouseout + relatedTarget.
+      finde(behaelter, 'vorschau').dispatchEvent(
+        new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }),
+      )
+    })
+    expect(finde(behaelter, 'vorschau-transport').getAttribute('data-sichtbar')).toBe('false')
+    fertig()
+  })
+})
+
+describe('#443 Ton (Standard aus)', () => {
+  it('die Vorschau startet stumm und gibt stumm an das Video weiter', () => {
+    const { fertig } = rendere(eigenschaften())
+    const letzter = doppel.videoAufrufe.at(-1) as { stumm: boolean; lautstaerke: number }
+    expect(letzter.stumm).toBe(true)
+    expect(letzter.lautstaerke).toBe(1)
+    fertig()
+  })
+
+  it('der Schalter in der Leiste macht hoerbar - das Video bekommt stumm = false', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    druecke(behaelter, 'vorschau-ton')
+    const letzter = doppel.videoAufrufe.at(-1) as { stumm: boolean }
+    expect(letzter.stumm).toBe(false)
+    fertig()
+  })
+})
+
+describe('#443 Vollbild', () => {
+  it('ohne requestFullscreen in der Umgebung ist der Knopf abgeschaltet (jsdom)', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    expect((finde(behaelter, 'vorschau-vollbild') as HTMLButtonElement).disabled).toBe(true)
+    fertig()
+  })
+})

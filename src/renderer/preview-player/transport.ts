@@ -1,7 +1,7 @@
 // [preview-player] Transport – Abspielen, Pause, Springen und die Markierung des aktuellen Elements
 
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
-import { findeAbschnitt, type Zeitachse } from './zeitachse'
+import { findeAbschnitt, sekundenZuFrame, type Zeitachse } from './zeitachse'
 // RENDER_PROFILE.fps braucht `tick` fuer `msProFrame` und die Schranke von `restMs`;
 // findeAbschnitt braucht `markierterIndex`. Beides sind WERT-Importe, kein `import type`.
 // Fuer eine Sekunden-Umrechnung gaebe es `frameZuSekunden`/`sekundenZuFrame` aus derselben
@@ -47,6 +47,19 @@ export function springeZuFrame(stand: TransportStand, achse: Zeitachse, frame: n
   const ziel = Number.isNaN(frame) ? 0 : Math.round(frame)
   const geklemmt = Math.min(Math.max(ziel, 0), achse.gesamtFrames)
   return { laeuft: stand.laeuft, frame: geklemmt, restMs: 0 }
+}
+
+/**
+ * #443: Springt um `sekunden` vor (+) oder zurueck (-) - die +-5-s-Tasten der Leiste.
+ * Die Umrechnung Sekunden -> Frames ist `sekundenZuFrame` (#213, EINE Rundung); danach
+ * gilt `springeZuFrame` mit seiner Klemme auf [0, gesamtFrames].
+ * `laeuft` bleibt unveraendert - ein Sprung haelt die Uhr nicht an und startet sie nicht.
+ * Ein unbrauchbarer Wert (NaN, Infinity) laesst den Stand UNVERAENDERT: kein Sprung,
+ * kein Ersatzwert (der Knopf tut dann nichts, statt an den Anfang zu springen).
+ */
+export function springeUmSekunden(stand: TransportStand, achse: Zeitachse, sekunden: number): TransportStand {
+  if (!Number.isFinite(sekunden)) return stand
+  return springeZuFrame(stand, achse, stand.frame + sekundenZuFrame(sekunden))
 }
 
 /** Springt an den Anfang des Elements mit diesem Listen-Index; klemmt auf gueltige Indizes. */

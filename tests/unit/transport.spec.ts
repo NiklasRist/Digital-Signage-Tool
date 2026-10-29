@@ -20,6 +20,7 @@ import {
   markierterIndex,
   pausiere,
   spieleAb,
+  springeUmSekunden,
   springeZuElement,
   springeZuFrame,
   tick,
@@ -297,5 +298,51 @@ describe('frame ist nach jeder Funktion ganzzahlig', () => {
     for (const wert of ergebnisse) {
       expect(Number.isInteger(wert)).toBe(true)
     }
+  })
+})
+
+// ---------------- #443: die +-5-s-Tasten der Leiste ----------------
+
+// Die Weite steht in der Entscheidung vom 22.10.2026 (+-5 s). Der Test rechnet sie
+// NICHT als 150 nach, sondern ueber RENDER_PROFILE.fps - eine andere Bildrate ist
+// eine Aenderung des Profils, kein Testfehler.
+describe('#443 springeUmSekunden (die +-5-s-Tasten)', () => {
+  const fuenfSekunden = 5
+  const fuenfSekundenFrames = fuenfSekunden * fps
+
+  it('vorwaerts: 5 s sind 5 x fps Frames; laeuft bleibt, wie es war', () => {
+    const vorher = spieleAb(baueTransport(), achse(300))
+    const nachher = springeUmSekunden(vorher, achse(300), fuenfSekunden)
+    expect(nachher.frame).toBe(fuenfSekundenFrames)
+    expect(nachher.laeuft).toBe(true)
+  })
+
+  it('rueckwaerts und die Klemme am Anfang: aus Frame 100 fuehrt -5 s auf 0', () => {
+    const start = springeZuFrame(baueTransport(), achse(300), 100)
+    const nachher = springeUmSekunden(start, achse(300), -fuenfSekunden)
+    expect(nachher.frame).toBe(0)
+  })
+
+  it('die Klemme am Ende: aus Frame 280 fuehrt +5 s auf gesamtFrames, nicht darueber', () => {
+    const start = springeZuFrame(baueTransport(), achse(300), 280)
+    const nachher = springeUmSekunden(start, achse(300), fuenfSekunden)
+    expect(nachher.frame).toBe(300)
+  })
+
+  it('der Bruchteil eines Frames faellt weg (jeder Sprung setzt restMs auf 0)', () => {
+    const stand: TransportStand = { laeuft: true, frame: 10, restMs: msProFrame / 2 }
+    const nachher = springeUmSekunden(stand, achse(300), fuenfSekunden)
+    expect(nachher.restMs).toBe(0)
+  })
+
+  it('ein unbrauchbarer Wert aendert NICHTS (kein Sprung an den Anfang, kein Ersatzwert)', () => {
+    const stand = springeZuFrame(baueTransport(), achse(300), 100)
+    expect(springeUmSekunden(stand, achse(300), Number.NaN)).toBe(stand)
+    expect(springeUmSekunden(stand, achse(300), Number.POSITIVE_INFINITY)).toBe(stand)
+  })
+
+  it('eine leere Achse bleibt bei 0', () => {
+    const nachher = springeUmSekunden(baueTransport(), achse(), fuenfSekunden)
+    expect(nachher.frame).toBe(0)
   })
 })

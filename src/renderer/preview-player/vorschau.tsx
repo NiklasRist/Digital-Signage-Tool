@@ -25,8 +25,16 @@
 // mit der alten Position), sie setzen nicht zurueck.
 //
 // ENTSCHIEDEN 1/13: Hier wird NICHTS gerechnet (Achse #213, Bandtakt #220,
-// Geometrie #218/#219, Dauer #127); der Transport zeigt genau Play/Pause,
-// Zeitleiste, Markierung, Gesamtdauer - keine Geschwindigkeit, kein Ton.
+// Geometrie #218/#219, Dauer #127). Die Bedienung zeigt Play/Pause, +-5 s,
+// Position/Gesamt, Ton, Vollbild, Kapitelmarken und die Element-Nummern - keine
+// Geschwindigkeit, kein Autoplay (Entscheidung 22.10.2026).
+//
+// #443 (Entscheidung 29.10.2026): Die Bedienung liegt als OVERLAY ueber dem Bild und
+// blendet aus; die feste Leiste darunter ist entfallen - das Bild bekommt ihre Hoehe.
+// Der TON ist ein Hoer-Behelf auf die QUELLE und startet STUMM; die Ausgabe bleibt
+// still (TK 9.2.4, AD R-06), der Hinweis steht dauerhaft in der Leiste. Ton und
+// Leiste sind Oberflaeche, keine Fachlichkeit: Die Regeln liegen in `bedienung.ts`
+// und `transport.ts`, hier steht nur der Zustand (wie ENTSCHIEDEN 11).
 //
 // #426 (TK 9.2.9): Laeuft ein Einschub, bleibt dasselbe <video> MONTIERT (an der
 // Zeitstelle pausiert) und die AKTION liegt als eigene Flaeche darueber - kein
@@ -46,15 +54,16 @@ import { Platzhalter } from './platzhalter'
 import { baueZeitachse, findeAbschnitt, lokalerFrame } from './zeitachse'
 import {
   baueTransport,
-  markierterIndex,
   pausiere,
   spieleAb,
+  springeUmSekunden,
   springeZuElement,
   springeZuFrame,
   tick,
 } from './transport'
+import { Transportleiste } from './transportleiste'
+import { TON_STAND, schalteTonUm, setzeLautstaerke } from './bedienung'
 import { findeKaputteStellen } from '../composer/kaputt-erkennung'
-import { formatiereLaenge } from '../composer/gesamtlaenge'
 import { taktDelta, taktSollLaufen, waehleVorschaubild } from './vorschau-auswahl'
 
 export interface VorschauProps {
@@ -72,10 +81,23 @@ export interface VorschauProps {
   sichtbar: boolean
 }
 
+/** #443: Ruhe, nach der die Bedienleiste WAEHREND des Abspielens ausblendet. */
+const AUSBLENDE_MS = 3000
+
 export function Vorschau(props: VorschauProps): JSX.Element {
   const [stand, setStand] = useState(() => baueTransport())
   const letzterMsRef = useRef<number | null>(null)
   const anlaufRef = useRef<number | null>(null)
+
+  // #443: Ton und Leiste. Der Ton startet STUMM (Entscheidung 29.10.2026) - `TON_STAND`
+  // ist die einzige Quelle dieses Anfangswerts.
+  const [ton, setTon] = useState(TON_STAND)
+  const [bedienungSichtbar, setBedienungSichtbar] = useState(true)
+  const [istVollbild, setIstVollbild] = useState(false)
+  const [vollbildMoeglich, setVollbildMoeglich] = useState(false)
+  const wurzelRef = useRef<HTMLDivElement>(null)
+  const ausblendeRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const bildGedruecktRef = useRef(false)
 
   // ENTSCHIEDEN 1: die Achse kommt als WERT aus dem Einzigen Rechenort (#213).
   const achseErgebnis = useMemo(() => {
@@ -136,6 +158,45 @@ export function Vorschau(props: VorschauProps): JSX.Element {
     }
   }, [stand.laeuft, props.sichtbar, achse])
 
+  // #443: Die Leiste verschwindet nach kurzer Ruhe WAEHREND des Abspielens. Das ist
+  // KEIN zweiter Taktgeber (ENTSCHIEDEN 7 verbietet einen zweiten Takt fuer die UHR):
+  // Der Zeitgeber blendet nur die Bedienung aus und liest nie die Zeit.
+  useEffect(() => {
+    if (ausblendeRef.current !== null) {
+      clearTimeout(ausblendeRef.current)
+      ausblendeRef.current = null
+    }
+    if (!stand.laeuft) {
+      // In der Pause wird wieder eingeblendet (der Knopf war ja gerade da); ob sie
+      // stehen bleibt, entscheidet erst die Mausbewegung - das Bild ist die Arbeit.
+      setBedienungSichtbar(true)
+      return
+    }
+    ausblendeRef.current = setTimeout(() => {
+      ausblendeRef.current = null
+      setBedienungSichtbar(false)
+    }, AUSBLENDE_MS)
+    return () => {
+      if (ausblendeRef.current !== null) {
+        clearTimeout(ausblendeRef.current)
+        ausblendeRef.current = null
+      }
+    }
+  }, [stand.laeuft])
+
+  // #443: Vollbild kann nur die UMGEBUNG sagen, nicht das Bauteil - jsdom kennt
+  // `requestFullscreen` gar nicht, Electron kennt es. Fehlt es, ist der Knopf
+  // ABGESCHALTET (nicht unsichtbar): Ein Knopf, der nichts tut, waere eine Luege.
+  useEffect(() => {
+    setVollbildMoeglich(typeof wurzelRef.current?.requestFullscreen === 'function')
+  }, [])
+
+  useEffect(() => {
+    const wechsel = (): void => setIstVollbild(document.fullscreenElement === wurzelRef.current)
+    document.addEventListener('fullscreenchange', wechsel)
+    return () => document.removeEventListener('fullscreenchange', wechsel)
+  }, [])
+
   // ENTSCHIEDEN 10: ohne offenes Projekt NICHTS - kein Hinweis (#198).
   if (props.projekt === null) {
     return <div data-testid="vorschau-leer" />
@@ -150,6 +211,29 @@ export function Vorschau(props: VorschauProps): JSX.Element {
   // Zweige oberhalb kehren vorher zurueck).
   if (achse === null) {
     return <div data-testid="vorschau-leer" />
+  }
+
+  // #443: Die Leiste meldet nur ABSICHTEN; zu Uebergaengen werden sie hier - dem
+  // EINEN Ort des Stands (ENTSCHIEDEN 11). `achse` ist ab hier belegt (die Zweige
+  // oberhalb kehren vorher zurueck).
+  const spieleOderPausiere = (): void => {
+    setStand((bisher) => (bisher.laeuft ? pausiere(bisher) : spieleAb(bisher, achse)))
+  }
+
+  const schalteVollbild = (): void => {
+    const element = wurzelRef.current
+    if (element === null) return
+    if (document.fullscreenElement !== null) {
+      if (typeof document.exitFullscreen !== 'function') return
+      const struktur = document.exitFullscreen()
+      if (struktur && typeof struktur.catch === 'function') struktur.catch(() => undefined)
+      return
+    }
+    // Fehlt die Faehigkeit, ist der Knopf abgeschaltet (s. Effekt oben) - hier steht
+    // nur der zweite Riegel fuer eine Umgebung, die sich anders verhaelt.
+    if (typeof element.requestFullscreen !== 'function') return
+    const struktur = element.requestFullscreen()
+    if (struktur && typeof struktur.catch === 'function') struktur.catch(() => undefined)
   }
 
   const abschnitt = findeAbschnitt(achse, stand.frame)
@@ -196,6 +280,8 @@ export function Vorschau(props: VorschauProps): JSX.Element {
             trimEnde={bild.trimEnde}
             lokalerFrame={lokalerBildFrame}
             laeuft={videoLaeuft}
+            stumm={ton.stumm}
+            lautstaerke={ton.lautstaerke}
           />
         )
         break
@@ -228,6 +314,8 @@ export function Vorschau(props: VorschauProps): JSX.Element {
               trimEnde={bild.trimEnde}
               lokalerFrame={lokalerBildFrame}
               laeuft={videoLaeuft}
+              stumm={ton.stumm}
+              lautstaerke={ton.lautstaerke}
               rahmenMarke={rahmenMarke}
               abschnittMarke={abschnittMarke}
               bandVorlage={bild.bandVorlage}
@@ -248,6 +336,8 @@ export function Vorschau(props: VorschauProps): JSX.Element {
               trimEnde={bild.trimEnde}
               lokalerFrame={lokalerBildFrame}
               laeuft={videoLaeuft}
+              stumm={ton.stumm}
+              lautstaerke={ton.lautstaerke}
               rahmenMarke={rahmenMarke}
               abschnittMarke={abschnittMarke}
               bandVorlage={bild.bandVorlage}
@@ -283,57 +373,82 @@ export function Vorschau(props: VorschauProps): JSX.Element {
     }
   }
 
-  const markiert = markierterIndex(stand, achse)
+  // #443: Die Leiste erscheint bei Mausbewegung und blendet nur WAEHREND des
+  // Abspielens nach AUSBLENDE_MS aus. Verlaesst der Zeiger das Bild, ist sie sofort
+  // weg - anders als bei YouTube: Dort ist das Video das Ergebnis, hier ist das BILD
+  // die Arbeit, und eine stehende Leiste verdeckt sie. Der Zeitgeber ist KEIN
+  // Taktgeber (ENTSCHIEDEN 7) - er liest die Zeit nicht, er blendet nur.
+  const zeigeBedienung = (): void => {
+    if (!bedienungSichtbar) setBedienungSichtbar(true)
+    if (ausblendeRef.current !== null) {
+      clearTimeout(ausblendeRef.current)
+      ausblendeRef.current = null
+    }
+    if (stand.laeuft) {
+      ausblendeRef.current = setTimeout(() => {
+        ausblendeRef.current = null
+        setBedienungSichtbar(false)
+      }, AUSBLENDE_MS)
+    }
+  }
+
+  const verlasseBild = (): void => {
+    if (ausblendeRef.current !== null) {
+      clearTimeout(ausblendeRef.current)
+      ausblendeRef.current = null
+    }
+    setBedienungSichtbar(false)
+  }
 
   return (
     // #419: Die Wurzel FUeLLT den ihr gegebenen Buehnenplatz (in #244 ist das BUEHNE_OBEN
     // mit 38 % Hoehe). Ohne definite Hoehe kollabierte die Buehne (height:100%) auf 0 -
-    // das Video war da, aber unsichtbar. Deshalb: Flex-Spalte, Buehne waechst, Transport
-    // nimmt seine Eigenhoehe.
+    // das Video war da, aber unsichtbar. Deshalb: Flex-Spalte, die Bildflaeche waechst.
     <div
+      ref={wurzelRef}
       data-testid="vorschau"
-      style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, gap: 4 }}
+      onMouseMove={zeigeBedienung}
+      onMouseLeave={verlasseBild}
+      onPointerDown={(ereignis) => {
+        // #443: Der Bildklick zaehlt nur, wenn der Druck AUF DEM BILD begann. Zieht man
+        // am Balken und laesst ueber dem Bild los, feuert der Klick auf dem gemeinsamen
+        // Vorfahren - ohne diese Merkung schaltete die Wiedergabe dabei um.
+        // SAFETY: React liefert als target ein Element des Dokuments oder null; beide
+        // Faelle behandelt die naechste Zeile, und `closest` gibt es auf jedem Element.
+        const ziel = ereignis.target as Element | null
+        bildGedruecktRef.current =
+          ziel === null || ziel.closest('[data-testid="vorschau-transport"]') === null
+      }}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}
     >
-      <div style={{ flex: '1 1 auto', minHeight: 0 }}>
+      <div
+        data-testid="vorschau-bildflaeche"
+        onClick={() => {
+          if (bildGedruecktRef.current) spieleOderPausiere()
+        }}
+        style={{ flex: '1 1 auto', minHeight: 0, position: 'relative' }}
+      >
         <Buehne>
           {buehneninhalt}
           {einschubBild}
         </Buehne>
-      </div>
-      <div data-testid="vorschau-transport" style={{ flex: '0 0 auto' }}>
-        <button
-          data-testid="vorschau-play-pause"
-          onClick={() => {
-            setStand((bisher) => (bisher.laeuft ? pausiere(bisher) : spieleAb(bisher, achse)))
-          }}
-        >
-          {stand.laeuft ? 'Pause' : 'Play'}
-        </button>
-        <input
-          data-testid="vorschau-zeitleiste"
-          type="range"
-          min={0}
-          max={achse.gesamtFrames}
-          value={stand.frame}
-          onChange={(ereignis) => {
-            setStand((bisher) =>
-              springeZuFrame(bisher, achse, Number(ereignis.target.value)),
-            )
-          }}
+        <Transportleiste
+          stand={stand}
+          achse={achse}
+          sichtbar={bedienungSichtbar}
+          ton={ton}
+          vollbildMoeglich={vollbildMoeglich}
+          istVollbild={istVollbild}
+          aufPlayPause={spieleOderPausiere}
+          aufSpringen={(frame) => setStand((bisher) => springeZuFrame(bisher, achse, frame))}
+          aufSpringeUmSekunden={(sekunden) =>
+            setStand((bisher) => springeUmSekunden(bisher, achse, sekunden))
+          }
+          aufElement={(index) => setStand((bisher) => springeZuElement(bisher, achse, index))}
+          aufTonUmschalten={() => setTon((bisher) => schalteTonUm(bisher))}
+          aufLautstaerke={(wert) => setTon((bisher) => setzeLautstaerke(bisher, wert))}
+          aufVollbild={schalteVollbild}
         />
-        <span data-testid="vorschau-gesamt">{formatiereLaenge(achse.gesamtSekunden)}</span>
-        <div data-testid="vorschau-elemente">
-          {achse.abschnitte.map((stellenabschnitt) => (
-            <button
-              key={stellenabschnitt.elementId}
-              data-testid={`vorschau-element-${stellenabschnitt.index}`}
-              data-markiert={markiert === stellenabschnitt.index ? 'true' : 'false'}
-              onClick={() => setStand((bisher) => springeZuElement(bisher, achse, stellenabschnitt.index))}
-            >
-              {stellenabschnitt.index}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   )
