@@ -11,7 +11,41 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, einundzwanzigste Sitzung: Mutations-Charge 17) – gilt vor ALLEM weiter unten
+## STAND HEUTE (28.10.2026, zweiundzwanzigste Sitzung: Mutations-Charge 18) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-28-charge-19.md`](docs/agents/uebergabe-2026-10-28-charge-19.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 31.
+
+- **CHARGE 18 GEBAUT:** fuenf Testdateien – `tonspur` (`ffmpeg-adapter/`), `media-protokoll-schema`
+  (`media-protokoll.ts`), `dialog`, `handler-registrierung`, `import-medium` (alle
+  `media-service/`). **29 Verhaltens-Mutationen**, **5 Refactorings**; 27 erkannt, **1 echte
+  Luecke** (IM8) geschlossen, **MP5 aequivalent**; **0/5 Refactorings rot**; jede Mutation
+  byte-identisch zurueckgenommen.
+- **Die Luecke:** **IM8** – `String(error)` liefert `"Error: <meldung>"`; „enthaelt den Text"
+  und „kein Stacktrace" blieben beide gruen. Neu: die Meldung ist **exakt** geprueft.
+- **Nachmessung nach dem Ausbau (37 Faelle):** 28 von 32 erkannt. Weitere gruene Stellen sind
+  **keine Verhaltensluecken**: **TO7** (Encoder-Tabelle mit einem Schluessel, aequivalent),
+  **DI7** (Endungs-Literal – gedeckt durch die aus der Whitelist **abgeleiteten**
+  Filter-Tests), **MP6** (zweiter `protocol.`-Griff, ohne Electron nicht beobachtbar –
+  Lint-Kandidat).
+- **Besonderheit:** `media-protokoll-schema` **bleibt als Test** – der Werte-Test (scheme +
+  **fuenf** Privilegien, #364) ist kein Quelltext-Test. Entfernt wurden nur die Grep-Teile;
+  die Datei verlaesst die Sperrklinke, weil sie nichts mehr liest.
+- **Entfernt:** **34** Quelltext-/Meta-Tests (16 davon generiert), **1** Verhaltens-Test
+  ergaenzt, **1** gekuerzt; Suite **5.450 → 5.417** (netto −33). **Sperrklinke:** 45 → **40**
+  Dateien.
+- **Ehrlich offen:** Architekturregeln ohne Waechter – Pfadfreiheit des Protokolls, kein
+  `fs`/IPC in Dialog und Handler, „keine Uebersetzungsschicht", `new Date` genau einmal,
+  kein eigenes Lock/Flush im Import. Lint-Kandidat; #448 (192 SAFETY) steht.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.417 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 19** – fuenf der verbleibenden **40**: `loesche-medium`,
+  `export-handler-anmeldung`, `ziel-dialog`, `export-verdrahtung`, `render-handler-anmeldung`.
+  Proben dort: „kein Kanal-Literal, kein `ipcMain.handle` doppelt" – die Verhaltens-Tests
+  decken das Senden.
+
+## STAND HEUTE (28.10.2026, einundzwanzigste Sitzung: Mutations-Charge 17) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-28-charge-18.md`](docs/agents/uebergabe-2026-10-28-charge-18.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 30.

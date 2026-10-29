@@ -10,11 +10,13 @@ Alias-aware). Die **Inhalte** der Ziele sind in dieser Sitzung **nicht** gelesen
 Erwartungen sind aus Modulnähe und Probe-Art abgeleitet; jede Charge beginnt mit dem Lesen der
 fünf Specs und Quellen.
 
-**Stand nach Charge 17 (28.10.2026):** Charge 17 gebaut – Suite **5.450** (340 Dateien),
-Sperrklinke **45** Dateien, Gate `npm run pruefung` **Exit 0**. Offen sind die Chargen
-**18–26** (neun). Befund aus 17: Die Probe kann die Zusage tragen, **bevor** sie fällt –
-dort war sie der einzige Wächter für drei Literale. Deshalb gehört seit Charge 17 eine
-**zweite Messung nach dem Ausbau** zum Rezept.
+**Stand nach Charge 18 (28.10.2026):** Chargen 17 und 18 gebaut – Suite **5.417**
+(340 Dateien), Sperrklinke **40** Dateien, Gate `npm run pruefung` **Exit 0**. Offen sind die
+Chargen **19–26** (acht). Zwei Befunde gehören seitdem zum Rezept: Die Probe kann die
+**einzige** Wächterin einer Zusage sein (Charge 17: drei Literale) – deshalb wird **nach dem
+Ausbau erneut gemessen**. Und eine Meldung mit dem richtigen **Text** ist kein Beleg für den
+richtigen Grund (Charge 18: `toContain` blieb bei `"Error: …"` grün; erst der exakte
+Vergleich biss).
 
 ## Das Rezept (unverändert, verbindlich)
 
@@ -39,7 +41,7 @@ dort war sie der einzige Wächter für drei Literale. Deshalb gehört seit Charg
 | Charge | Dateien (Spec → Quelle) | Erwartung |
 |---|---|---|
 | **17** (gebaut) | `bandspur` → `ffmpeg-adapter/bandspur.ts`; `encoder-argumente` → `encoder-argumente.ts`; `filter-einblendung` → `filter-einblendung.ts`; `filter-vollbild` → `filter-vollbild.ts`; `standbild` → `standbild.ts` | Fünf Adapter-Dateien, alle „setzt seine Flags selbst / keine zweite Quelle". Verhaltens-Tests prüfen die Argument-Arrays; **erwartete Lücken**: fehlende Verbote für neue Flags. |
-| **18** | `tonspur` → `ffmpeg-adapter/tonspur.ts`; `media-protokoll-schema` → `media-protokoll.ts`; `dialog` → `media-service/dialog.ts`; `handler-registrierung` → `media-service/handler-registrierung.ts`; `import-medium` → `media-service/import-medium.ts` | Tonspur + Media-Service. `media-protokoll-schema` prüft Privilegien (fünf, seit #364) – **Werte**, nicht Form: vor dem Entfernen genau lesen. |
+| **18** (gebaut) | `tonspur` → `ffmpeg-adapter/tonspur.ts`; `media-protokoll-schema` → `media-protokoll.ts`; `dialog` → `media-service/dialog.ts`; `handler-registrierung` → `media-service/handler-registrierung.ts`; `import-medium` → `media-service/import-medium.ts` | Tonspur + Media-Service. `media-protokoll-schema` prüft Privilegien (fünf, seit #364) – **Werte**, nicht Form: vor dem Entfernen genau lesen. |
 | **19** | `loesche-medium` → `media-service/loesche-medium.ts`; `export-handler-anmeldung` → `export-service/handler-anmeldung.ts`; `ziel-dialog` → `export-service/ziel-dialog.ts`; `export-verdrahtung` → `ipc-gateway/export-verdrahtung.ts`; `render-handler-anmeldung` → `render-service/handler-anmeldung.ts` | Handler-Anmeldungen und Verdrahtung. Proben: „kein Kanal-Literal, kein `ipcMain.handle` doppelt". Verhaltens-Tests decken das Senden. |
 | **20** | `marken-store-pfade` → `marken-store/pfade.ts`; `ausgaben` → `project-store/ausgaben.ts`; `liste-projekte` → `project-store/liste-projekte.ts`; `oeffne-projektordner` → `project-store/oeffne-projektordner.ts`; `pfade` → `project-store/pfade.ts` | Pfad-Autoritäten und Store-Listen. Proben oft „kein `path.join` mit Projekt-ID". Die **Pfad-Autorität** ist Vertrag (TK 9.5.7) – Verhaltens-Tests müssen die Pfadbildung tragen. |
 | **21** | `render-abbruch` → `render-service/abbruch.ts`; `normalisieren` → `render-service/normalisieren.ts`; `als-eigenstaendige` → `vorlagen-store/als-eigenstaendige.ts`; `vorlagen-ipc-verdrahtung` → `vorlagen-store/ipc-verdrahtung.ts`; `loesche-vorlage` → `vorlagen-store/loesche-vorlage.ts` | Render-Abbruch und Vorlagen-Store. Achtung: `verwerfe-arbeitskopie` liegt in Charge 22 – die beiden hängen zusammen, Specs getrennt lesen. |

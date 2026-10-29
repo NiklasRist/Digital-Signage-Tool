@@ -1513,3 +1513,75 @@ Direktstart der App lief und blieb stehen, ein Minimallaunch mit `dumpio` verban
 Ursache ist **nicht benannt**; die Messung fiel in eine Phase hoher Systemlast (Docker-VM
 ~100 %, Load 2,4–5,5). Kein Produktbefund – aber ein Kandidat fuer die Treiber-Haertung
 (`dumpio`, Frist, ein Wiederholversuch), dieselbe Klasse wie FA-13.
+
+## 31. Charge 18 (28.10.2026): Tonspur und Media-Service
+
+**Dateien:** `tonspur` (`src/main/ffmpeg-adapter/tonspur.ts`), `media-protokoll-schema`
+(`src/main/media-protokoll.ts`), `dialog` (`src/main/media-service/dialog.ts`),
+`handler-registrierung` (`handler-registrierung.ts`), `import-medium`
+(`import-medium.ts`). Alle von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 29 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **27**.
+Gruen: **MP5** (aequivalent) und **IM8** (echte Luecke). **0/5 Refactorings rot**; jede
+Mutation byte-identisch zurueckgenommen.
+
+### Die Luecke (geschlossen, ein neuer Verhaltens-Test)
+
+- **IM8 – `String(error)` blieb gruen.** `textVon` liefert die Meldung, `String(err)`
+  liefert `"Error: <meldung>"`. Beide erfuellen „enthaelt den Text" und „kein Stacktrace"
+  – der Praefix war unsichtbar. Neu: die Meldung ist **exakt** geprueft.
+
+### Als aequivalent belegt
+
+- **MP5 – `scheme: SCHEMA` gegen `scheme: "media"`.** `SCHEMA` IST `"media"`; die
+  Indirektion ist eine Lesbarkeitsfrage, kein Verhalten.
+- **TO7 (Nachmessung) – `AUDIO_ENCODER_JE_CODEC[profil.audio.codec]` gegen `['aac']`.**
+  Die Tabelle hat genau einen Schluessel. Ein zweites Tonformat erzwingt der
+  `Record`-Typ, nicht ein Laufzeit-Test.
+
+### Nach dem Ausbau nachgemessen (37 Faelle)
+
+Erkannt **28 von 32**; neu gruen sind nur noch:
+
+- **DI7 – `extensions: ['mp4']` statt `[...FORMAT_WHITELIST.video]`.** Heute identisch.
+  Die Zusage „eine Quelle" tragen die **abgeleiteten** Filter-Tests: Waechst die Whitelist,
+  werden sie rot. Ein Verbot im Quelltext gibt es dafuer nicht mehr – ehrlich offen.
+- **MP6 – ein zweiter `protocol.`-Griff.** Ohne Electron nicht beobachtbar; die
+  „genau einmal"-Zusage ist Architektur, kein Verhalten. Lint-Kandidat.
+- Dazu unveraendert **MP5** und **TO7** (aequivalent, s. o.).
+
+### Besonderheit: `media-protokoll-schema` bleibt als Test
+
+Der **Werte**-Test (scheme + genau fuenf Privilegien, seit #364) ist kein Quelltext-Test
+und **bleibt stehen**. Entfernt wurden nur die drei Grep-Teile (obsoleter Funktionsname,
+`registerSchemesAsPrivileged`, `path.join`/`node:fs`/`protocol.`-Zaehlung). Die Datei
+verlaesst die Sperrklinke, weil sie nichts mehr liest.
+
+### Entfernt (34 Testfaelle, 1 ergaenzt – netto −33; ein Test gekuerzt)
+
+- **3** in `tonspur` (Quellton-, Flag- und Literal-Probe).
+- **1** in `media-protokoll-schema` (obsoleter Funktionsname) + **1** gekuerzt (die
+  Registrierungs-Probe behaelt `typeof`).
+- **12** in `dialog` (5 generierte Endungs-Proben, `ipcMain`, 6 generierte Verbote).
+- **8** in `handler-registrierung` (5 generierte Syntax-Verbote, render/export,
+  fs/ipc, Selbstverdrahtung); der `void`-Test bleibt.
+- **10** in `import-medium` (5 Modul-Importe, 3 Pfad-Literale, `new Date`-Zahl,
+  Lock/Flush).
+
+**Ehrlich offen:** Die entfernten Architekturregeln sind **ohne Waechter** – Pfadfreiheit
+des Protokolls, kein `fs`/IPC im Dialog und im Handler-Paket, „keine
+Uebersetzungsschicht" (nur mittelbar ueber die Identitaets-Probe), `new Date` genau
+einmal, kein eigenes Lock/Flush im Import. Lint-Kandidat; #448 steht.
+
+### Stand nach Charge 18
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **29**: 27 erkannt, 1 Luecke, 1 aequivalent; Nachmessung 37: 28/32, 2 aequivalent, 2 offen |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **34** (davon 16 generiert) |
+| Verhaltens-Tests ergaenzt | – | **1** (1 gekuerzt) |
+| Echte Luecken geschlossen | – | **1** |
+| Suite | 5.450 | **5.417** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 45 | **40** Dateien |
