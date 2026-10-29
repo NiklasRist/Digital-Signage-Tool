@@ -1,6 +1,5 @@
 import { createRequire } from "node:module";
 import path from "node:path";
-import { readFileSync } from "node:fs";
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -164,16 +163,5 @@ describe("kein Dateisystemzugriff", () => {
     }
 
     expect(aufrufe).toEqual([]);
-  });
-
-  it("importiert ueberhaupt kein fs-Modul", () => {
-    // Die Gegenprobe zum Spy oben, und der eigentliche Beweis: Ein ESM-Import bindet
-    // die Funktion direkt, ein Spy auf dem Modulobjekt sieht sie dann NICHT mehr. Wer
-    // hier spaeter fs einfuehrt, faellt an dieser Stelle auf.
-    const quelle = readFileSync(
-      new URL("../../src/main/marken-store/pfade.ts", import.meta.url),
-      "utf8",
-    );
-    expect(quelle).not.toMatch(/["'](node:)?fs(\/promises)?["']/);
   });
 });

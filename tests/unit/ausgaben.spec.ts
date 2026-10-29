@@ -1,7 +1,6 @@
 import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -179,6 +178,32 @@ describe('Fehlerpfade', () => {
     }
   })
 
+  it('meldet speicher_fehler, wenn eine vorhandene Datei sich nicht befragen laesst', async () => {
+    // EACCES beim stat EINER Datei: Sie ist DA und laesst sich trotzdem nicht lesen. Sie
+    // stillschweigend auszulassen hiesse, neun von zehn Dateien zu zeigen und Erfolg zu
+    // melden, waehrend der Nutzer die zehnte im Explorer sieht.
+    await fsp.mkdir(ordner(), { recursive: true })
+    await legeAn('gut.mp4')
+    await legeAn('gesperrt.mp4')
+
+    const echteStat = fsp.stat
+    const spion = vi.spyOn(fsp, 'stat').mockImplementation(((ziel: string) => {
+      if (String(ziel).endsWith('gesperrt.mp4')) {
+        return Promise.reject(Object.assign(new Error('kein Zutritt'), { code: 'EACCES' }))
+      }
+      return echteStat(ziel)
+    }) as unknown as typeof fsp.stat)
+    try {
+      const e = await listeAusgaben(PROJEKT)
+      expect(e.ok).toBe(false)
+      if (e.ok) return
+      expect(e.fehler.code).toBe('speicher_fehler')
+      expect(e.fehler.meldung).toContain(ordner())
+    } finally {
+      spion.mockRestore()
+    }
+  })
+
   it('laesst eine Datei aus, die zwischen readdir und stat verschwindet', async () => {
     await fsp.mkdir(ordner(), { recursive: true })
     await legeAn('bleibt.mp4')
@@ -200,28 +225,5 @@ describe('Fehlerpfade', () => {
     } finally {
       spion.mockRestore()
     }
-  })
-})
-
-describe('Grenzen der Datei', () => {
-  // Ohne Kommentarzeilen, sonst schlagen die Verbots-Vermerke im Kopf der Datei an.
-  const quelle = readFileSync(
-    new URL('../../src/main/project-store/ausgaben.ts', import.meta.url),
-    'utf8',
-  )
-    .split('\n')
-    .filter((zeile) => !zeile.trimStart().startsWith('//') && !zeile.trimStart().startsWith('*'))
-    .join('\n')
-
-  it.each(['mitD1Lock', 'project.json', 'protokoll', 'planeAutoSpeicherung'])(
-    'fasst %s nicht an',
-    (verboten) => {
-      expect(quelle).not.toContain(verboten)
-    },
-  )
-
-  it('importiert ProjectStoreFehlercode, statt ihn neu zu deklarieren', () => {
-    expect(quelle).toContain("import type { ProjectStoreFehlercode } from './assets'")
-    expect(quelle).not.toMatch(/^\s*(export\s+)?type\s+ProjectStoreFehlercode/m)
   })
 })

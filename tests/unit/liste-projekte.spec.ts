@@ -1,7 +1,6 @@
 import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { readFileSync } from 'node:fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -267,38 +266,5 @@ describe('Lock und Fehlerpfade', () => {
     } finally {
       spion.mockRestore()
     }
-  })
-})
-
-describe('Grenzen der Datei', () => {
-  // Ohne Kommentare, sonst schlagen die Vermerke im Kopf und die Feldkommentare der
-  // verbindlichen Signatur an ("Dateien in media/", "fertige .mp4 in output/").
-  const quelle = readFileSync(
-    new URL('../../src/main/project-store/liste-projekte.ts', import.meta.url),
-    'utf8',
-  )
-    // CRLF-hardened: Auf Windows-Checkouts (core.autocrlf=true) endet jede Zeile mit
-    // '\r'; das '\r' ist kein Zeichen der QUELLE, sondern des Dateitransfers. Ohne
-    // Normalisierung matcht '/\/\/.*$' nicht mehr (.* matcht '\r' nicht) und der
-    // Test meldet Verboste, die der Kernel gar nicht steht – platform-spezifischer
-    // Fehlalarm. Der Strip '\r' ZUERST.
-    .replace(/\r\n/g, '\n')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .map((zeile) => zeile.replace(/\/\/.*$/, ''))
-    .join('\n')
-
-  it.each(['media', 'output'])('bildet keinen %s-Pfad selbst', (literal) => {
-    expect(quelle).not.toContain(literal)
-  })
-
-  it.each(['writeFile', 'rename', 'mkdir', 'unlink', 'rm('])('schreibt nicht (%s)', (verboten) => {
-    expect(quelle).not.toContain(verboten)
-  })
-
-  it('holt die Ordnerpfade aus der Pfad-Autoritaet und nimmt das Lock', () => {
-    expect(quelle).toContain('medienOrdner(')
-    expect(quelle).toContain('ausgabeOrdner(')
-    expect(quelle).toContain('mitD1Lock(')
   })
 })

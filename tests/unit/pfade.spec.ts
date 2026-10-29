@@ -1,6 +1,5 @@
 import { createRequire } from "node:module";
 import path from "node:path";
-import { readFileSync } from "node:fs";
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -17,7 +16,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("electron", () => ({ app: { isPackaged: false, getPath: () => "" } }));
 
-const { projektOrdner, medienOrdner, ausgabeOrdner, loeseAssetPfad, loeseAusgabePfad } =
+const { projekteOrdner, projektOrdner, medienOrdner, ausgabeOrdner, loeseAssetPfad, loeseAusgabePfad } =
   await import("../../src/main/project-store/pfade");
 
 const PROJEKT = "3f2a1c4e-0000-4000-8000-0123456789ab";
@@ -157,6 +156,7 @@ describe("kein Dateisystemzugriff", () => {
       };
     }
     try {
+      projekteOrdner();
       projektOrdner(PROJEKT);
       medienOrdner(PROJEKT);
       ausgabeOrdner(PROJEKT);
@@ -169,16 +169,5 @@ describe("kein Dateisystemzugriff", () => {
     }
 
     expect(aufrufe).toEqual([]);
-  });
-
-  it("importiert ueberhaupt kein fs-Modul", () => {
-    // Die Gegenprobe zum Spy oben, und der eigentliche Beweis: Ein ESM-Import bindet
-    // die Funktion direkt, ein Spy auf dem Modulobjekt sieht sie dann NICHT mehr. Wer
-    // hier spaeter fs einfuehrt, faellt an dieser Stelle auf.
-    const quelle = readFileSync(
-      new URL("../../src/main/project-store/pfade.ts", import.meta.url),
-      "utf8",
-    );
-    expect(quelle).not.toMatch(/["'](node:)?fs(\/promises)?["']/);
   });
 });

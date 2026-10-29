@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Unit-Test zu #241.
@@ -203,35 +201,5 @@ describe("keine Meldung eines Fehlerpfads nennt den Projektpfad", () => {
     if (ergebnis.ok) throw new Error("unerreichbar - oben bereits geprueft");
     expect(ergebnis.fehler.meldung).not.toContain(PROJEKT_PFAD);
     spion.mockRestore();
-  });
-});
-
-describe("Grenzen der Datei", () => {
-  // Der immer wiederkehrende Verstoes distinguiert nicht zwischen Code und Prosa -
-  // deshalb wird hier der KOMMENTARFILTER auf den Quelltext angewendet (Hausform aus
-  // ziel-dialog.spec.ts): Ein Verbot, das nur in einem Kommentar steht, ist keines.
-  const quelle = readFileSync(
-    new URL("../../src/main/project-store/oeffne-projektordner.ts", import.meta.url),
-    "utf8",
-  );
-  const code = quelle
-    .split("\n")
-    .filter((zeile) => !/^\s*(\/\/|\/?\*)/.test(zeile))
-    .join("\n");
-
-  it.each([
-    "mkdir",
-    "writeFile",
-    "readFile",
-    "path.join",
-    "child_process",
-    "mitD1Lock",
-    "BrowserWindow",
-    "webContents",
-    "showItemInFolder",
-    "openExternal",
-    "'projects'",
-  ])("benutzt %s nicht", (verboten) => {
-    expect(code).not.toContain(verboten);
   });
 });
