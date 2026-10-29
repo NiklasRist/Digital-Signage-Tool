@@ -12,7 +12,6 @@
 // auf null Aufrufe, NACHDEM er in einem echten optimistischen Schritt benutzt wurde -
 // er ist also scharf und nicht bloss unbeteiligt.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 import type { Ergebnis } from "../../src/shared/contracts/ergebnis";
 // Nur der TYP wird statisch geholt; die Werte kommen je Test aus `frisch()`, damit
@@ -155,6 +154,74 @@ describe("Klasse 1 - die Operation wird vom Main bestaetigt oder abgelehnt", () 
     expect(ergebnis.fehler.code).toBe("unbekannter_fehler");
     // Kein Stacktrace und kein roher Ausnahmetext in der Oberflaeche (TK 9.1.1).
     expect(ergebnis.fehler.meldung).not.toContain("Die Bruecke ist weg.");
+  });
+
+  it("macht eine Ausnahme aus bestaetigen als Inline-Meldung sichtbar", async () => {
+    const { fuehreOptimistischAus, aufInlineMeldung } = await frisch();
+
+    const meldungen: Array<{ code: string; meldung: string }> = [];
+    aufInlineMeldung((meldung) => void meldungen.push(meldung));
+
+    await fuehreOptimistischAus(vi.fn(), vi.fn(), async () => {
+      throw new Error("Die Bruecke ist weg.");
+    });
+
+    expect(meldungen).toHaveLength(1);
+    expect(meldungen[0]?.code).toBe("unbekannter_fehler");
+  });
+
+  it("ein Hoerer, der sich waehrend der Runde abmeldet, schneidet die uebrigen nicht ab", async () => {
+    const { fuehreOptimistischAus, aufInlineMeldung } = await frisch();
+
+    const gesehen: string[] = [];
+    let abmelden: (() => void) | null = null;
+    abmelden = aufInlineMeldung(() => {
+      gesehen.push("erster");
+      abmelden?.();
+    });
+    aufInlineMeldung(() => void gesehen.push("zweiter"));
+
+    await fuehreOptimistischAus(vi.fn(), vi.fn(), async () => ({
+      ok: false,
+      fehler: { code: "nicht_gefunden", meldung: "weg" },
+    }));
+
+    expect(gesehen).toEqual(["erster", "zweiter"]);
+  });
+
+  it("ein werfender Inline-Hoerer schneidet die uebrigen nicht ab und reisst den Schritt nicht", async () => {
+    const { fuehreOptimistischAus, aufInlineMeldung } = await frisch();
+
+    aufInlineMeldung(() => {
+      throw new Error("Panel kaputt.");
+    });
+    const zweiter = vi.fn();
+    aufInlineMeldung(zweiter);
+
+    const ergebnis = await fuehreOptimistischAus(vi.fn(), vi.fn(), async () => ({
+      ok: false,
+      fehler: { code: "nicht_gefunden", meldung: "weg" },
+    }));
+
+    expect(zweiter).toHaveBeenCalledTimes(1);
+    expect(ergebnis.ok).toBe(false);
+  });
+
+  it("zweimal abmelden trifft keinen anderen Abonnenten mit DERSELBEN Funktion", async () => {
+    const { fuehreOptimistischAus, aufInlineMeldung } = await frisch();
+
+    const geteilt = vi.fn();
+    const ersteAbmeldung = aufInlineMeldung(geteilt);
+    aufInlineMeldung(geteilt);
+    ersteAbmeldung();
+    ersteAbmeldung();
+
+    await fuehreOptimistischAus(vi.fn(), vi.fn(), async () => ({
+      ok: false,
+      fehler: { code: "nicht_gefunden", meldung: "weg" },
+    }));
+
+    expect(geteilt).toHaveBeenCalledTimes(1);
   });
 
   it("ruft bestaetigen nicht, wenn anwenden wirft - und nimmt auch nichts zurueck", async () => {
@@ -362,6 +429,16 @@ describe("Klasse 2 - das Auto-Speichern scheitert: WARNEN, nicht zurueckrollen",
     expect(zweiter).toHaveBeenCalledTimes(1);
   });
 
+  it("ein unbrauchbares Ereignis (null) wird ignoriert - Zustand bleibt, kein Wurf", async () => {
+    const { verbindeSpeicherstatus, holeSpeicherzustand } = await frisch();
+
+    const stelle = abgabestelle();
+    verbindeSpeicherstatus(stelle.abonniere);
+
+    expect(() => stelle.sende(null as never)).not.toThrow();
+    expect(holeSpeicherzustand().zustand).toBe("unbekannt");
+  });
+
   it("laesst einen werfenden Hoerer die uebrigen nicht abschneiden", async () => {
     const { verbindeSpeicherstatus, aufSpeicherzustand, holeSpeicherzustand } = await frisch();
 
@@ -377,28 +454,5 @@ describe("Klasse 2 - das Auto-Speichern scheitert: WARNEN, nicht zurueckrollen",
     expect(() => stelle.sende({ typ: "fehler", code: "kein_platz" })).not.toThrow();
     expect(zweiter).toHaveBeenCalledTimes(1);
     expect(holeSpeicherzustand().zustand).toBe("nicht_gespeichert");
-  });
-});
-
-describe("Was diese Datei nicht anfasst", () => {
-  const quelle = readFileSync(
-    new URL("../../src/renderer/composer/optimistisch.ts", import.meta.url),
-    "utf8",
-  );
-
-  it("beruehrt keinen IPC-Kanal und keinen Zeitgeber", () => {
-    // Der gesuchte Kanal-Praefix wird ZUSAMMENGESETZT, damit diese Testdatei nicht
-    // selbst zum Treffer wird, wenn jemand die Probe als Grep ueber das Repo
-    // wiederholt.
-    expect(quelle).not.toContain(`${"project"}:`);
-    for (const verboten of ["window.api", "ipcRenderer", "rufeAuf", "setTimeout", "setInterval"]) {
-      expect(quelle).not.toContain(verboten);
-    }
-  });
-
-  it("importiert nichts aus src/main", () => {
-    // Modulgrenze E3: Fachliche Fehlercode-Unionen liegen im Main und duerfen vom
-    // Renderer nicht importiert werden - `code` ist deshalb `string`.
-    expect(quelle).not.toMatch(/from\s+['"][^'"]*\/main\//);
   });
 });

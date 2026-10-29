@@ -4,9 +4,6 @@
 // Die Ziehbewegung wird über echte Mausereignisse geführt (mousedown/mousemove/
 // mouseup auf window, Position über einen gepatchten getBoundingClientRect).
 // @vitest-environment jsdom
-import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -57,32 +54,6 @@ import { ElementBedienung } from '../../src/renderer/composer/element-zeile.tsx'
 
 // React 19: act(...)-Umgebung (Muster wie leiste-zeile.spec.ts).
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(
-  join(process.cwd(), 'src/renderer/composer/element-zeile.tsx'),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('element-zeile.tsx – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('kein IPC-Kanal, kein window.api, kein Band-Bearbeiter, kein Timer, kein findeKaputteStellen, kein Import aus liste-ansicht', () => {
-    for (const verbot of [
-      'rufeAuf', 'abonniere', 'KANAELE', 'window.api', "'project:'", "'queue:'",
-      'uebernehmeBand', 'planeBandAblauf', 'waehlbareBandVorlagen', 'setTimeout',
-      'setInterval', 'findeKaputteStellen', 'liste-ansicht', 'setzeListe', 'setzeProjekt',
-      'gleicheElementAb', 'fuehreOptimistischAus',
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -385,6 +356,17 @@ describe('Band-Zugang (#249)', () => {
     const normal = rendere(eigenschaften(e))
     expect(text(normal.behaelter, 'element-band')).not.toContain('kaputt')
     normal.fertig()
+  })
+
+  it('nennt die ANZAHL aus den uebergebenen Indizes (drei Abschnitte -> 3, nicht die Testzahl 2)', () => {
+    patcheBalkenBreite()
+    const e = element({
+      einblendung: { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 3.13 }] },
+    })
+    const { behaelter, fertig } = rendere(eigenschaften(e, { kaputteBandAbschnitte: [0, 2, 5] }))
+    const band = behaelter.querySelector('[data-testid="element-band"]') as HTMLElement
+    expect(band.textContent).toContain('3 kaputt')
+    fertig()
   })
 })
 

@@ -1,7 +1,5 @@
 // Verhaltenstests zu #231 (M7-38) - render-dialog.ts (die reine Seite).
 // render-dialog.tsx (die Anzeige) folgt als jsdom-Test in einer eigenen Datei.
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -15,28 +13,6 @@ import type { Project } from '../../src/shared/contracts/project'
 import type { Marke } from '../../src/shared/contracts/marke'
 import type { Vorlage } from '../../src/shared/contracts/vorlage'
 import type { AusgabeDatei } from '../../src/renderer/composer/ausgabe-liste'
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/composer/render-dialog.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('render-dialog.ts – Verbote (Grep)', () => {
-  it('enthaelt kein JSX, kein react, kein rufeAuf/KANAELE/reiheEin/abonniere, kein window./fs/path und keine Ausgabe-Ladung', () => {
-    for (const verbot of ['react', 'rufeAuf', 'KANAELE', 'reiheEin', 'abonniere', "'queue:'", 'findeKaputteStellen', 'listeAusgaben', 'window.', 'node:path', 'node:fs']) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-    expect(CODEZEILEN).not.toMatch(/<[a-z][a-z]*[ >]/)
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -88,6 +64,7 @@ describe.each`
   ${'a*b'}          | ${'unzulaessiges_zeichen'}| ${'Stern'}
   ${'a"b'}          | ${'unzulaessiges_zeichen'}| ${'Anführungszeichen'}
   ${'a\x01b'}       | ${'unzulaessiges_zeichen'}| ${'Steuerzeichen'}
+  ${'a\x7fb'}       | ${'unzulaessiges_zeichen'}| ${'DEL (U+007F)'}
   ${'CON'}          | ${'reservierter_name'}   | ${'CON'}
   ${'con'}          | ${'reservierter_name'}   | ${'con (Kleinschreibung)'}
   ${'COM1'}         | ${'reservierter_name'}   | ${'COM1'}

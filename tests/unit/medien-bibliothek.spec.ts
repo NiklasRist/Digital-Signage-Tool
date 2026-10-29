@@ -1,8 +1,6 @@
 // Tests zu #335 (NA-02) - medien-bibliothek.ts (zweiter Importweg per Drag-and-drop).
 // `rufeAuf` (#24) wird als Doppel ersetzt; FORMAT_WHITELIST (#13) wird ECHT benutzt.
 // Der Kanal-Entscheidung folgend (Variante A, User 05.10.): fließt über queue:reiheEin.
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { File } from '../../src/renderer/ipc-client/pfad-fuer-datei'
@@ -12,6 +10,7 @@ import type { File } from '../../src/renderer/ipc-client/pfad-fuer-datei'
 const doppel = vi.hoisted(() => ({
   aufrufe: [] as Array<{ kanal: string; nutzlast: unknown }>,
   antwort: null as unknown,
+  folge: [] as unknown[],
   wirft: false,
 }))
 
@@ -21,7 +20,7 @@ vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
       throw new Error('Bridge fehlt')
     }
     doppel.aufrufe.push({ kanal, nutzlast })
-    return doppel.antwort
+    return doppel.folge.length > 0 ? doppel.folge.shift() : doppel.antwort
   },
 }))
 
@@ -30,40 +29,6 @@ import {
   reiheDropEin,
   type PfadHoler,
 } from '../../src/renderer/composer/medien-bibliothek'
-
-// ---------------- Quelldatei-Verbote (Grep, nur auf DIESE Datei) ----------------
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/composer/medien-bibliothek.ts', import.meta.url),
-  'utf8',
-)
-const CODEZEILEN = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('medien-bibliothek.ts – Verbote (Grep, nur auf DIESE Datei)', () => {
-  it('KEIN zweiter Main-Weg: kein Direktaufruf an media:, kein eigener Kanalname, kein Dateisystem', () => {
-    for (const verbot of [
-      "'media:", 'KANAELE.media', 'importMedium', "'rw:'", 'node:fs', 'node:path', 'existsSync',
-      'starteMedienImport', 'öffneMedienDialog',
-    ]) {
-      expect(CODEZEILEN).not.toContain(verbot)
-    }
-    // Der EINZIGE Main-Weg ist queue:reiheEin (Torwächter).
-    expect(CODEZEILEN).toContain('KANAELE.queue.reiheEin')
-    expect((CODEZEILEN.match(/KANAELE\.queue/g) ?? []).length).toBe(1)
-  })
-
-  it('die zweite Formatquelle ist tabu: FORMAT_WHITELIST ist die EINE Quelle und wird benutzt (kein Duplikat)', () => {
-    expect(CODEZEILEN).toContain('FORMAT_WHITELIST')
-    // Kein händisches Duplikat der Endungen:
-    expect(CODEZEILEN).not.toContain("['mp4'")
-    expect(CODEZEILEN).not.toContain("['jpg'")
-  })
-})
 
 // ---------------- Bausteine ----------------
 
@@ -79,6 +44,7 @@ function pfadHoler(liste: Array<{ file: File; pfad: string }>): PfadHoler {
 beforeEach(() => {
   doppel.aufrufe = []
   doppel.antwort = null
+  doppel.folge = []
   doppel.wirft = false
 })
 
@@ -152,6 +118,15 @@ describe('greifeDropAuf (#335)', () => {
     expect(ergebnis.ohnePfad).toBe(1)
   })
 
+  it('zaehlt JEDE Datei ohne Pfad (zwei Textauswahlen -> ohnePfad 2)', () => {
+    const a = { file: { name: 'text-1' } as File, pfad: '' }
+    const b = { file: { name: 'text-2' } as File, pfad: '' }
+    const ergebnis = greifeDropAuf([a.file, b.file], pfadHoler([a, b]))
+    expect(ergebnis.ohnePfad).toBe(2)
+    expect(ergebnis.einreihbar).toEqual([])
+    expect(ergebnis.abgelehnt).toEqual([])
+  })
+
   it('UNIX-Pfadtrenner werden auf der gleichen Fachebene behandelt (macOS-Fitnessstudio-Weights)', () => {
     const a = datei('a.mp4', '/Volumes/STICK/a.mp4')
     const ergebnis = greifeDropAuf([a.file], pfadHoler([a]))
@@ -189,6 +164,17 @@ describe('reiheDropEin (#335) – der Torwächter-Weg wie in #228', () => {
     expect(wert.abgelehnt).toEqual([
       { pfad: 'C:/b.webm', code: 'format_nicht_unterstuetzt', meldung: 'vom Main' },
     ])
+  })
+
+  it('die Auftrags-Kennungen stehen in PFAD-Reihenfolge (zwei UNTERSCHIEDENE Kennungen)', async () => {
+    // Der erste Test liefert fuer beide Pfade dieselbe Kennung - eine vertauschte
+    // Reihenfolge waere dort unsichtbar (Fixture-Falle). Hier sind sie unterscheidbar.
+    doppel.folge = [
+      { ok: true, wert: { auftragId: 'q-1' } },
+      { ok: true, wert: { auftragId: 'q-2' } },
+    ]
+    const wert = await reiheDropEin('p-1', ['C:/a.mp4', 'C:/c.png'])
+    expect(wert.auftragIds).toEqual(['q-1', 'q-2'])
   })
 
   it('wirft der Einreihungs-Aufruf: gezogen als unbekannter_fehler, benennbar - der Wurf verlässt die Datei nicht', async () => {

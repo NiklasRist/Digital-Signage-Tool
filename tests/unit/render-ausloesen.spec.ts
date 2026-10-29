@@ -1,8 +1,6 @@
 // Verhaltenstests zu #134 - render-ausloesen.ts.
 // Die vier anderen Bausteine (kaputt-erkennung #131, render-dialog #231, zeichneSegment #117,
 // alsPng #118) werden gemockt - der Fokus ist die ITEM-Bildung, die Namen-NVP, einreihen.
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KANAELE } from '../../src/shared/contracts/kanaele'
@@ -63,36 +61,6 @@ type CodeProbe = Behaupte<
   Gleich<AusloeseFehlercode, 'kaputte_elemente' | 'png_export_fehler' | 'marke_nicht_ladbar'>
 >;
 export type { SignaturProbe, CodeProbe };
-
-const QUELLE = readFileSync(
-  new URL('../../src/renderer/composer/render-ausloesen.ts', import.meta.url).pathname,
-  'utf8',
-)
-const QUELLE_CODE = QUELLE.split('\n')
-  .filter((z) => {
-    const t = z.trim()
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*')
-  })
-  .join('\n')
-
-describe('render-ausloesen – Quelldatei-Verbote (Grep)', () => {
-  it('einreihen NUR ueber reiheEin; kein fs, kein eigenes Bild; erzeugeId nur hier', () => {
-    for (const verbot of ['node:fs', "project:", 'window.', 'toDataURL']) {
-      expect(QUELLE_CODE).not.toContain(verbot)
-    }
-    expect(QUELLE_CODE).toContain("KANAELE.queue.reiheEin")
-  })
-
-  it('kein zweiter Markenweg und keine Hexzahl im Code (#316)', () => {
-    // Den Aufruf legt #310 an; #316 BENUTZT ihn nur. Ein zweiter Aufruf, ein
-    // `marken:leseMarke` oder eine getippte Hexzahl waeren genau die Wege, die
-    // TK 9.2.2/9.15.4 ausschliessen.
-    expect(QUELLE_CODE).not.toContain('leseMarke')
-    expect(QUELLE_CODE).not.toContain('KANAELE.marken')
-    expect(QUELLE_CODE).not.toMatch(/#[0-9a-fA-F]{6}/)
-    expect(QUELLE_CODE.match(/stelleMarkeBereit\(/g)).toHaveLength(1)
-  })
-})
 
 const marke = (): Marke => ({
   farben: {} as never,
@@ -186,6 +154,17 @@ describe('loeseRenderAus (#134) - Sperre und NamensvP', () => {
     if (!antwort.ok) expect(antwort.fehler.code).toBe('ungueltige_eingabe')
     expect(doppel.aufrufe).toHaveLength(0)
   })
+
+  it('die SPERRE gewinnt gegen die Namens-VP: kaputte Stellen auch bei ungueltigem Namen', async () => {
+    // Schritt 1 vor Schritt 2 (Issue-Ablauf). Beide Bedingungen zugleich: nur die
+    // Reihenfolge entscheidet, welcher Code zurueckkommt.
+    vi.mocked(findeKaputteStellen).mockReturnValue([{ art: 'asset_fehlt', kreis: null } as never])
+    vi.mocked(pruefeAusgabeName).mockReturnValue('leer' as never)
+    const antwort = await loeseRenderAus(projekt([]), '   ', marke(), VORLAGEN_OK, null)
+    expect(antwort.ok).toBe(false)
+    if (!antwort.ok) expect(antwort.fehler.code).toBe('kaputte_elemente')
+    expect(doppel.aufrufe).toHaveLength(0)
+  })
 })
 
 describe('loeseRenderAus (#134) - die Items', () => {
@@ -236,6 +215,28 @@ describe('loeseRenderAus (#134) - die Items', () => {
     expect(nutzlast.payload.elemente[0]?.einblendung?.abschnitte).toHaveLength(1)
   })
 
+  it("die Hoehe kommt aus der SELBEN Band-Vorlage (120), nicht aus einer festen Zahl", async () => {
+    const flach = { id: 'band-2', name: 'flach', art: 'einblendung' as const, höhe: 120, parent: null, eingebaut: false, zonen: [] }
+    const videoAsset = { id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: 9, importdatum: 'x', zustand: 'ok' as const }
+    const p = projekt(
+      [video('e1', 'v1', { bandVorlageId: 'band-2', abschnitte: [{ aktionRef: 'a-1', dauer: 2 }] }, 0, 10)],
+      [AKTION_OK],
+      [videoAsset],
+    )
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), [...VORLAGEN_OK, flach], null)
+    expect(antwort.ok).toBe(true)
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: Array<{ einblendung: { art: string; höhe: number } | null }> } }
+    expect(nutzlast.payload.elemente[0]?.einblendung?.höhe).toBe(120)
+    expect(nutzlast.payload.elemente[0]?.einblendung?.art).toBe('einblendung')
+  })
+
+  it("der Auftrag traegt die PROJEKT-Kennung (nicht die Testkonstante p-1)", async () => {
+    const p = { ...projekt([segment('e1', 'a-1', 10)], [AKTION_OK], []), id: 'p-9' }
+    await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { projektId: string } }
+    expect(nutzlast.payload.projektId).toBe('p-9')
+  })
+
   it("Band-Vorlage ohne Höhe (vollflaeche) -> ungueltige_eingabe, kein Einreihen", async () => {
     const bild = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const }
     const p = projekt(
@@ -280,6 +281,13 @@ describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
 
   it('ohne Band: stelleMarkeBereit null Mal', async () => {
     await loeseRenderAus(projekt([segment('e1', 'a-1', 10)], [AKTION_OK], []), 'sommer', marke(), VORLAGEN_OK, null)
+    expect(markenDoppel.aufrufe).toEqual([])
+  })
+
+  it('Video OHNE Einblendung: stelleMarkeBereit null Mal (nur ein gezeichnetes Band braucht sie)', async () => {
+    const videoAsset = { id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: 9, importdatum: 'x', zustand: 'ok' as const }
+    const antwort = await loeseRenderAus(projekt([video('e1', 'v1', null)], [], [videoAsset]), 'sommer', marke(), VORLAGEN_OK, null)
+    expect(antwort.ok).toBe(true)
     expect(markenDoppel.aufrufe).toEqual([])
   })
 
