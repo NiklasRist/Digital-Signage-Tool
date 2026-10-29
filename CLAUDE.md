@@ -11,7 +11,42 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, zweiundzwanzigste Sitzung: Mutations-Charge 18) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, dreiundzwanzigste Sitzung: Mutations-Charge 19) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-29-charge-20.md`](docs/agents/uebergabe-2026-10-29-charge-20.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 32.
+
+- **CHARGE 19 GEBAUT:** fuenf Testdateien – `loesche-medium` (`media-service/`),
+  `export-handler-anmeldung` und `ziel-dialog` (`export-service/`), `export-verdrahtung`
+  (`ipc-gateway/`), `render-handler-anmeldung` (`render-service/`). **27
+  Verhaltens-Mutationen**, **5 Refactorings**; **27 erkannt**, **0 Luecken**, **0/5
+  Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+- **EV6 ist aequivalent, mit Gegenprobe belegt:** `registriereHandler('export:wähleExportZiel', …)`
+  statt der Registry-Konstante wurde **nur von der Quelltextprobe** gefangen – der Wert ist
+  derselbe. **EV8** (Literal mit falschem Wert) ist rot (11 Tests), also faellt ein Tippfehler
+  weiter auf; ungeschuetzt ist allein die **Schreibweise**.
+- **Nachmessung nach dem Ausbau (32 Faelle):** 26 von 27 erkannt (EV6 gruen), die fuenf
+  Refactorings gruen.
+- **Entfernt:** **35** Quelltext-/Meta-Tests, **0** ergaenzt, **0** gekuerzt; Suite
+  **5.417 → 5.382** (340 Dateien, allein die Testzahl sinkt). **Sperrklinke:** 40 → **35**
+  Dateien.
+- **Ehrlich offen:** Ohne Waechter sind `try/catch`-Verbot in beiden Anmeldungen,
+  `whenReady`-Anhaenge, Lock/Flush in `loesche-medium` sowie in `ziel-dialog`
+  `existsSync`/`homedir`/`loeseAusgabePfad`/`BrowserWindow`/`ipcMain`. Gedeckt bleiben
+  Identitaet der Fachfunktionen, `setzeExportZiel` (Spion), `node:fs/promises` samt `statfs`
+  (Spies), Selbstaufruf beim Import und der Kanal-**Wert**. Lint-Kandidat; #448 (192 SAFETY)
+  steht.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.382 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 20** – fuenf der verbleibenden **35**:
+  `marken-store-pfade`, `ausgaben`, `liste-projekte`, `oeffne-projektordner`, `pfade`
+  (Pfad-Autoritaeten und Store-Listen;
+  [`charge-17-26-plan.md`](docs/agents/charge-17-26-plan.md)). Proben dort oft „kein
+  `path.join` mit Projekt-ID" – die Pfad-Autoritaet (TK 9.5.7) muessen die
+  Verhaltens-Tests tragen.
+
+## STAND HEUTE (29.10.2026, zweiundzwanzigste Sitzung: Mutations-Charge 18) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-charge-19.md`](docs/agents/uebergabe-2026-10-29-charge-19.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 31.

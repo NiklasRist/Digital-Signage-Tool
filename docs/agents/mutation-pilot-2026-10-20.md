@@ -1585,3 +1585,81 @@ einmal, kein eigenes Lock/Flush im Import. Lint-Kandidat; #448 steht.
 | Suite | 5.450 | **5.417** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 45 | **40** Dateien |
+
+## 32. Charge 19 (29.10.2026): Handler-Anmeldungen und Verdrahtung
+
+**Dateien:** `loesche-medium` (`src/main/media-service/loesche-medium.ts`),
+`export-handler-anmeldung` (`export-service/handler-anmeldung.ts`), `ziel-dialog`
+(`export-service/ziel-dialog.ts`), `export-verdrahtung`
+(`ipc-gateway/export-verdrahtung.ts`), `render-handler-anmeldung`
+(`render-service/handler-anmeldung.ts`). Alle von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 27 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **27**.
+**0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+
+Bemerkenswert war schon hier **EV6**: `registriereHandler(KANAELE…)` gegen
+`registriereHandler('export:wähleExportZiel', …)` wurde **allein von der Quelltextprobe**
+gefangen. Das Verhalten sieht denselben Wert und schweigt.
+
+### Nach dem Ausbau nachgemessen (32 Faelle)
+
+Erkannt **26 von 27**; neu gruen ist nur:
+
+- **EV6 – Kanalname als Literal.** **Aequivalent**, nicht Luecke: Der Wert ist derselbe,
+  die Verdrahtung also identisch. Die **Form** („kein Literal, immer die Registry") ist
+  danach ungedeckt; den **Wert** traegt weiter ein Verhaltens-Test.
+
+**Gegenprobe EV8** (Literal mit **falschem** Wert, `export:waehleExportZiel`): rot,
+**11 Tests**, darunter „meldet GENAU EINEN Kanal an, und zwar den aus der Registry".
+Damit ist belegt, dass nach dem Ausbau ein Tippfehler auffaellt und nur die
+Schreibweise ungeschuetzt ist.
+
+### Was die Verhaltens-Tests je Datei tragen (Auszug)
+
+- **LM** – 5/5 rot. Die Reihenfolge (`reihenfolge`), der Dateiname aus Schritt 1
+  (`pfadArgumente`), das Vormerken des **Dateinamens** statt des absoluten Pfads
+  (`merkeArgumente`), `daten`-Durchreichung (`referenzenIds`) und die leere ID
+  (`reihenfolge` bleibt leer) sind zeichengenau geprueft.
+- **EH** – 5/5 rot, auch die **Doppelanmeldung** (`toHaveLength(1)`) und der IPC-Kanal
+  (Zaehlwert vor `beforeEach`, nicht der lebende Spion). Die dritte Stelle
+  (Abbrecher) faengt zusaetzlich `kannAbbrechen('export') === false`.
+- **ZD** – 6/6 rot: `openFile` statt `openDirectory`, der Abbruch als `''` statt `null`,
+  das **letzte** statt des ersten Pfads, ein immer gesetztes `defaultPath`, ein falscher
+  Titel, ein fremder Fehlercode.
+- **EV** – 5/5 rot: falscher Kanal, Funktion ohne Wrapper (Nutzlast als Argument), fehlender
+  `isDestroyed`-Waechter, fehlendes `try/catch`, `close` statt `closed`.
+- **RH** – 5/5 rot: `cancelRender` durch `renderReel` ersetzt, Argumente vertauscht,
+  Wrapper-Lambda, **direkter Dispatcher-Eintrag** (`registriereAuftragsHandler('render', …)`:
+  8 Tests rot, weil `kannAbbrechen('render')` faellt), Doppelanmeldung.
+
+### Entfernt (35 Testfaelle, 0 ergaenzt, 0 gekuerzt)
+
+- **8** in `loesche-medium` (4 Modul-Importe, 3 Pfad-Literale, Lock/Flush).
+- **8** in `export-handler-anmeldung` (5 Syntax-Verbote, Fremdarten, `fs`/IPC/D1,
+  Selbstverdrahtung).
+- **10** in `ziel-dialog` (`node:fs`, `existsSync`, `statfs`, `setzeExportZiel`,
+  `schreibeConfig`, `reiheEin`, `BrowserWindow`, `ipcMain`, `loeseAusgabePfad`, `homedir`).
+- **1** in `export-verdrahtung` (Kanal-Literal) – der Registry-Block bleibt, er prueft
+  `kanaele.ts`-Werte, nicht diese Datei.
+- **8** in `render-handler-anmeldung` (5 Syntax-Verbote, Dispatcher/Fremdarten, `fs`/IPC/D1,
+  Selbstverdrahtung).
+
+**Ehrlich offen:** Ohne Waechter sind jetzt das `try/catch`-Verbot in beiden Anmeldungen,
+`whenReady`-Anhaenge, Lock/Flush in `loesche-medium`, und in `ziel-dialog`
+`existsSync`/`homedir`/`loeseAusgabePfad`/`BrowserWindow`/`ipcMain`. Gedeckt bleiben:
+`setzeExportZiel` (Spion), `node:fs/promises` samt `statfs` (Spies), der Selbstaufruf beim
+Import (`registriert beim blossen Import nichts`), die Identitaet der Fachfunktionen und
+deren unveraenderte Durchreichung. Lint-Kandidat; #448 steht.
+
+### Stand nach Charge 19
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **27**: 27 erkannt; Nachmessung 32: 26/27, 1 aequivalent |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **35** |
+| Verhaltens-Tests ergaenzt | – | **0** |
+| Echte Luecken geschlossen | – | **0** (EV6 aequivalent, mit Gegenprobe EV8 belegt) |
+| Suite | 5.417 | **5.382** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 40 | **35** Dateien |
