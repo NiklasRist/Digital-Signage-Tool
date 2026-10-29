@@ -1663,3 +1663,77 @@ deren unveraenderte Durchreichung. Lint-Kandidat; #448 steht.
 | Suite | 5.417 | **5.382** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 40 | **35** Dateien |
+
+## 33. Charge 20 (29.10.2026): Pfad-Autoritaeten und Store-Listen
+
+**Dateien:** `marken-store-pfade` (`src/main/marken-store/pfade.ts`), `ausgaben`
+(`project-store/ausgaben.ts`), `liste-projekte` (`project-store/liste-projekte.ts`),
+`oeffne-projektordner` (`project-store/oeffne-projektordner.ts`), `pfade`
+(`project-store/pfade.ts`). Alle von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 31 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **28**.
+**0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+
+### Die Luecke (geschlossen, ein neuer Verhaltens-Test)
+
+- **A6 – der Zweig `unlesbar` in `listeAusgaben` war ungetestet.** Eine Datei, die DA ist
+  und deren `stat` mit EACCES/EIO scheitert, muss `speicher_fehler` ergeben (sonst zeigt
+  die Oberflaeche neun von zehn Dateien und meldet Erfolg). Ersetzte man den `return`
+  durch `continue`, blieb die Suite gruen. Neu: `stat` scheitert fuer **eine** Datei mit
+  EACCES -> `speicher_fehler`, Meldung nennt den Ordner. Danach ist A6 rot.
+
+### Als aequivalent belegt
+
+- **M2 – `liegtInnerhalb` durch `kandidat.startsWith(ordner)` ersetzt.** Bleibt gruen: Der
+  Kandidat wird IMMER aus genau diesem Ordner gebaut (`path.join(ordner, dateiname)`), ein
+  Namens-Ausbruch scheitert vorher an `istUnbedenklichesSegment`. Die zweite Schranke ist
+  mit gueltiger Eingabe nicht erreichbar – genau wie der Dateikommentar sagt. **Ehrlich:**
+  Der Test „trennt 'a' und 'ab' an der Grenze" prueft die **Ausgaben**, nicht diese
+  Funktion; er faellt bei einem naiven `startsWith` in der Quelle nicht um.
+- **A1 – `eintrag.isFile()` aus dem Filter entfernt.** Bleibt gruen, weil `beschreibe`
+  anschliessend `stat.isFile()` prueft und den Ordner `ordner.mp4` als „verschwunden"
+  verwirft. Zweite Schranke, gleiches Muster wie M2.
+- **L8 – `medienOrdner(ordnername)` durch `path.join(projektOrdner(ordnername), 'media')`
+  ersetzt.** War in der Ausgangsmessung rot – **nur** ueber die positive Probe
+  `toContain('medienOrdner(')`. Nach dem Ausbau gruen: derselbe Wert. Die Zusage
+  „eine Pfad-Autoritaet" ist damit **unbewacht** (Lint-Kandidat).
+
+### Zwei Befunde am Messaufbau selbst
+
+- **P7 war zunaechst falsch gebaut.** Die `fs`-Mutation lag in `projekteOrdner()` – einer
+  Funktion, die der Spy-Test gar nicht aufrief. Grün war also ein Messfehler, kein Befund.
+  Korrigiert als **P7b/P7c**: eine benutzte `fs`-Funktion in `medienOrdner` bzw.
+  `projekteOrdner` ist **rot** (Spy).
+- **Dabei aufgefallen:** `projekteOrdner()` fehlte in der Aufrufliste des Spy-Tests.
+  Nachgetragen (eine Zeile, kein neuer Test) und mit P7c belegt.
+- **Die fs-Probe trug nur den ungenutzten Import.** Ein *benutzter* `fs`-Zugriff wird vom
+  Spy gefangen; ein *ungenutzter* Import von `npx eslint` (`no-unused-vars`, geprueft).
+  Damit ist die Zusage „kein `fs` in der Pfad-Autoritaet" weiter gedeckt – ohne Quelltextprobe.
+
+### Entfernt (26 Testfaelle, 1 ergaenzt, 0 gekuerzt)
+
+- **1** in `pfade` (kein fs-Modul), **1** in `marken-store-pfade` (dito).
+- **5** in `ausgaben` (4 Verbote + „Fehlercode importiert statt deklariert").
+- **11** in `oeffne-projektordner` (`mkdir`, `writeFile`, `readFile`, `path.join`,
+  `child_process`, `mitD1Lock`, `BrowserWindow`, `webContents`, `showItemInFolder`,
+  `openExternal`, `'projects'`).
+- **8** in `liste-projekte` (2 Pfad-Literale, 5 Schreib-Verbote, 1 positive Autoritaets-Probe).
+
+**Ehrlich offen:** „eine Pfad-Autoritaet" ist nach L8 unbewacht; ebenso in
+`oeffne-projektordner` die Verbote `path.join`/`BrowserWindow`/`webContents`/
+`showItemInFolder`/`openExternal` (der Verhaltens-Test deckt Aufruf und Pfad-Durchreichung,
+nicht die Abwesenheit dieser Aufrufe). Lint-Kandidaten: `no-restricted-imports`/`no-restricted-syntax`
+je Datei, wie in Charge 18/19 notiert. #448 steht.
+
+### Stand nach Charge 20
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **31**: 28 erkannt, 1 Luecke, 3 aequivalent |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **26** |
+| Verhaltens-Tests ergaenzt | – | **1** (+1 Aufruf im fs-Spy) |
+| Echte Luecken geschlossen | – | **1** (A6) |
+| Suite | 5.382 | **5.357** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 35 | **30** Dateien |

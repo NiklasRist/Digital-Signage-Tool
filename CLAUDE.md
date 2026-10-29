@@ -11,7 +11,42 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, dreiundzwanzigste Sitzung: Mutations-Charge 19) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, vierundzwanzigste Sitzung: Mutations-Charge 20) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-29-charge-21.md`](docs/agents/uebergabe-2026-10-29-charge-21.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 33.
+
+- **CHARGE 20 GEBAUT:** fuenf Testdateien – `marken-store-pfade` (`marken-store/pfade.ts`),
+  `ausgaben`, `liste-projekte`, `oeffne-projektordner`, `pfade` (alle `project-store/`).
+  **31 Verhaltens-Mutationen**, **5 Refactorings**; 28 erkannt, **1 echte Luecke** (A6)
+  geschlossen, **3 aequivalent** (M2, A1, L8); **0/5 Refactorings rot**.
+- **Die Luecke:** **A6** – der Zweig „Datei da, aber `stat` scheitert (EACCES/EIO)" in
+  `listeAusgaben` war ungetestet; `continue` statt `speicher_fehler` blieb gruen. Neu: eine
+  Datei, `stat` mit EACCES -> `speicher_fehler`, Meldung nennt den Ordner.
+- **Aequivalent:** **M2** (naives `startsWith` statt `path.relative` – Kandidat stammt immer
+  aus demselben Ordner, zweite Schranke unerreichbar), **A1** (`isFile()` im Filter – `stat`
+  prueft nach), **L8** (`media` inline – derselbe Wert; die Zusage „eine Pfad-Autoritaet"
+  ist damit **unbewacht**).
+- **Messaufbau-Befund:** **P7** lag zuerst in `projekteOrdner()` – einer Funktion, die der
+  Spy-Test nicht aufrief; grün war ein Messfehler. Als P7b/P7c korrigiert (rot) und
+  `projekteOrdner()` in die Aufrufliste des fs-Spy nachgetragen.
+- **Die fs-Probe trug nur den ungenutzten Import:** benutzter `fs`-Zugriff -> Spy (P7b/P7c
+  rot), ungenutzter Import -> `no-unused-vars` (geprueft). Zusage bleibt gedeckt.
+- **Entfernt:** **26** Quelltext-/Meta-Tests, **1** Verhaltens-Test ergaenzt; Suite
+  **5.382 → 5.357** (340 Dateien). **Sperrklinke:** 35 → **30** Dateien.
+- **Ehrlich offen:** „eine Pfad-Autoritaet" (L8) und in `oeffne-projektordner` die Verbote
+  `path.join`/`BrowserWindow`/`webContents`/`showItemInFolder`/`openExternal`. Lint-Kandidat;
+  #448 (192 SAFETY) steht.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.357 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 21** – fuenf der verbleibenden **30**:
+  `render-abbruch`, `normalisieren`, `als-eigenstaendige`, `vorlagen-ipc-verdrahtung`,
+  `loesche-vorlage` (Render-Abbruch und Vorlagen-Store;
+  [`charge-17-26-plan.md`](docs/agents/charge-17-26-plan.md)). Achtung: `verwerfe-arbeitskopie`
+  liegt in Charge 22 und haengt mit `loesche-vorlage` zusammen – Specs getrennt lesen.
+
+## STAND HEUTE (29.10.2026, dreiundzwanzigste Sitzung: Mutations-Charge 19) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-charge-20.md`](docs/agents/uebergabe-2026-10-29-charge-20.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 32.
