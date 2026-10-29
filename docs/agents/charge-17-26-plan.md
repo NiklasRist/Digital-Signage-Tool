@@ -58,6 +58,15 @@ prüfte die Projekt-Kennung nicht (UP5), die Wurfmeldung war nur ueber den Code 
 dieselbe Klasse wie IM8) und `standardSegmentdauer` war ein Literal **10**, weil alle
 Fixtures 10 tragen (UP2, Fixture-Falle). Nach dem Ausbau: 27/27 rot.
 
+**Stand nach Charge 25 (29.10.2026):** Chargen 17–25 gebaut – Suite **5.306** (340 Dateien,
++5 netto), Sperrklinke **5** Dateien, Gate `npm run pruefung` **Exit 0**. Offen ist nur noch
+**Charge 26**. Charge 25 fand **dreizehn** Luecken: zwei in `medien-bibliothek` (Zaehlung,
+Reihenfolge der Auftrags-Kennungen), eine in `element-zeile` (Band-Text mit Testzahl), vier in
+`render-ausloesen` (Reihenfolge Sperre/Namens-VP, Marke fuer Videos ohne Band, Hoehe 162,
+`projektId` `p-1`), eine in `render-dialog` (DEL U+007F) und fuenf in `optimistisch`
+(Inline-Meldung bei Wurf, Kopie der Hoererliste, try/catch, Abmelde-Sperre, Null-Ereignis).
+Ausserdem: `berichteDrop` ist exportiert, aber nirgends gerufen (toter Export, gemeldet).
+
 ## Das Rezept (unverändert, verbindlich)
 
 1. Eine semantische Änderung an der Quelldatei, nichts daneben.
@@ -88,7 +97,7 @@ Fixtures 10 tragen (UP2, Fixture-Falle). Nach dem Ausbau: 27/27 rot.
 | **22** (gebaut) | `verwerfe-arbeitskopie` → `vorlagen-store/verwerfe-arbeitskopie.ts`; `app-einhaengung` → `App.tsx`; `aktion-bearbeiten` → `action-editor/aktion-bearbeiten.ts`; `aktion-loeschen` → `action-editor/aktion-loeschen.ts`; `bild-zuweisen` → `action-editor/bild-zuweisen.ts` | Erste Renderer-Charge mit tsx. `app-einhaengung` liest `App.tsx` – dort ist „kein zweiter Zustand" die Zusage; **vor dem Entfernen** prüfen, ob der Verhaltens-Test die Montage wirklich trägt. |
 | **23** (gebaut) | `kaputt-handling` → `action-editor/kaputt-handling.ts`; `live-vorschau` → `action-editor/live-vorschau.ts`; `aktions-auswahl` → `app-shell/aktions-auswahl-filter.ts`; `asset-auswahl` → `app-shell/asset-auswahl-filter.ts`; `bootstrap-ablauf` → `app-shell/bootstrap.ts` | Zwei Filter-Paare + Bootstrap. Die Filter sind rein und gut verhaltensgetestet; `bootstrap-ablauf` ist der riskanteste (Startreihenfolge). |
 | **24** (gebaut) | `inhalte-zugaenge-rechnung` → `app-shell/inhalte-zugaenge.ts`; `rahmen-montage` → `app-shell/rahmen-montage.ts`; `uebergabe` → `app-shell/uebergabe.ts`; `undo-projekt` → `app-shell/undo-projekt.ts`; `element-entfernen` → `composer/element-entfernen.ts` | Montage/Zugänge. `undo-projekt` liest evtl. den Projekt-Historien-Spion – der ist **bewusst geblieben** (Verhalten); nur die Quelltext-Probe zählt. |
-| **25** | `element-zeile-anzeige` → `composer/element-zeile.tsx`; `medien-bibliothek` → `composer/medien-bibliothek.ts`; `optimistisch` → `composer/optimistisch.ts`; `render-ausloesen` → `composer/render-ausloesen.ts`; `render-dialog` → `composer/render-dialog.ts` | Composer-Kern. `optimistisch` trägt die Undo-Zusage – Verhaltens-Tests prüfen die Reihenfolge; Proben dort besonders genau lesen. |
+| **25** (gebaut) | `element-zeile-anzeige` → `composer/element-zeile.tsx`; `medien-bibliothek` → `composer/medien-bibliothek.ts`; `optimistisch` → `composer/optimistisch.ts`; `render-ausloesen` → `composer/render-ausloesen.ts`; `render-dialog` → `composer/render-dialog.ts` | Composer-Kern. `optimistisch` trägt die Undo-Zusage – Verhaltens-Tests prüfen die Reihenfolge; Proben dort besonders genau lesen. |
 | **26** | `slogan-bearbeiten` → `marken-editor/slogan-bearbeiten.ts`; `video-filmstreifen-blob` → `preview-player/video.tsx`; `vorschau-auswahl-rechnung` → `preview-player/vorschau-auswahl.ts`; `als-png` → `template-canvas/als-png.ts`; `marke` → `shared/contracts/marke.ts` | Letzte Charge. **`marke.spec.ts` ist der Sonderfall:** liest den Vertrag – wenn es ein Vollständigkeits-/Vertragstest ist (wie `fehlertexte`), **bleibt er** und die Datei wird aus der Sperrklinke gestrichen, ohne Probe zu entfernen. Vorher lesen, nicht nach Namen urteilen. |
 
 ## Erwartete Bilanz (Schätzung, keine Zusage)

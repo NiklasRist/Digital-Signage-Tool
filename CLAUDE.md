@@ -11,7 +11,42 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, achtundzwanzigste Sitzung: Mutations-Charge 24) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, neunundzwanzigste Sitzung: Mutations-Charge 25) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-29-charge-26.md`](docs/agents/uebergabe-2026-10-29-charge-26.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 38.
+
+- **CHARGE 25 GEBAUT:** fuenf Testdateien – `element-zeile-anzeige`, `medien-bibliothek`,
+  `optimistisch`, `render-ausloesen`, `render-dialog` (alle `composer/`). **30
+  Verhaltens-Mutationen**, **5 Refactorings**; erste Messung 17 erkannt, **13 Luecken**
+  geschlossen, **0 aequivalent**; **0/5 Refactorings rot**.
+- **Die Luecken (13):** `medien-bibliothek` x2 (ohnePfad-Zaehlung, Reihenfolge der
+  auftragIds bei gleicher Kennung), `element-zeile` x1 (Band-Text mit Testzahl 2),
+  `render-ausloesen` x4 (Reihenfolge Sperre/Namens-VP, Marke fuer Videos ohne Band,
+  Hoehe-Literal 162, `projektId`-Literal `p-1`), `render-dialog` x1 (DEL U+007F),
+  `optimistisch` x5 (Inline-Meldung bei Wurf, Kopie der Hoererliste, try/catch,
+  Abmelde-Sperre, Null-Ereignis).
+- **Zusatzbefund:** `berichteDrop` ist exportiert, aber **nirgends gerufen** – toter Export;
+  gemeldet, nicht entfernt (Produktcode ausserhalb der Charge).
+- **Entfernt:** **8** Quelltext-Tests, **13** Verhaltens-Tests ergaenzt; Suite
+  **5.301 → 5.306** (netto +5). **Sperrklinke:** 10 → **5** Dateien.
+- **Nachmessung nach dem Ausbau:** **30 von 30 rot**, 0/5 Refactorings rot – keine Mutation
+  hing an einer Probe.
+- **Ehrlich offen:** Abwesenheits-Zusagen ohne Waechter (kein IPC/Timer in `optimistisch`,
+  kein zweiter Main-Weg/keine zweite Formatquelle in `medien-bibliothek`, kein
+  `toDataURL`/keine Hexzahl in `render-ausloesen`, kein JSX/IPC in `render-dialog`, kein
+  `window.api`/kein Band-Bearbeiter in `element-zeile`). Lint-Kandidat; #448 (192 SAFETY).
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.306 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 26 (die letzte)** – fuenf Dateien:
+  `slogan-bearbeiten` (`marken-editor/`), `video-filmstreifen-blob` (`preview-player/`),
+  `vorschau-auswahl-rechnung` (`preview-player/`), `als-png` (`template-canvas/`),
+  `marke` (`shared/contracts/`). **Sonderfall `marke.spec.ts`:** erst lesen, ob es ein
+  Vertragstest ist (dann bleibt er; nur aus der Sperrklinke streichen). Danach steht die
+  Sperrklinke auf 0 und die Regel wird von „Sperrklinke" auf „Verbot" gestellt.
+
+## STAND HEUTE (29.10.2026, achtundzwanzigste Sitzung: Mutations-Charge 24) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-charge-25.md`](docs/agents/uebergabe-2026-10-29-charge-25.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 37.

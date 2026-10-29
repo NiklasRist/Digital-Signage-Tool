@@ -2051,3 +2051,94 @@ Lint-Kandidat; #448 (192 SAFETY) steht.
 | Suite | 5.308 | **5.301** (340 Dateien, netto −7) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 15 | **10** Dateien |
+
+## 38. Charge 25 (29.10.2026): Composer-Kern - dreizehn Luecken
+
+**Dateien:** `element-zeile-anzeige` (`element-zeile.tsx`), `medien-bibliothek`
+(`medien-bibliothek.ts`), `optimistisch` (`optimistisch.ts`), `render-ausloesen`
+(`render-ausloesen.ts`), `render-dialog` (`render-dialog.ts`) - alle `renderer/composer/`
+und alle von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 30 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **17**.
+**13 gruene Mutationen = 13 echte Luecken**, **0 aequivalent**; **0/5 Refactorings rot**;
+jede Mutation byte-identisch zurueckgenommen.
+
+### Die dreizehn Luecken (alle geschlossen, 13 neue Tests)
+
+**medien-bibliothek (2)**
+
+- **MB1 - `ohnePfad` zaehlte nur eins.** `+= 1` gegen `= 1` blieb gruen, weil jede Fixture
+  nur EINE pfadlose Datei fuehrte. Neu: zwei Textauswahlen -> `ohnePfad: 2`.
+- **MB5 - die Reihenfolge der `auftragIds` war unsichtbar.** `push` gegen `unshift` blieb
+  gruen, weil beide Antworten dieselbe Kennung `q-1` trugen (Fixture-Falle). Neu: eine
+  Antwortfolge `q-1`, `q-2`; die Liste muss in Pfad-Reihenfolge stehen.
+
+**element-zeile (1)**
+
+- **EZ5 - die Zahl im Band-Text war die Testzahl.** `${laenge} kaputt` gegen das Literal
+  `2 kaputt` blieb gruen: die einzige Fixture hatte `[1, 4]` = zwei Abschnitte. Neu:
+  `[0, 2, 5]` -> „3 kaputt".
+
+**render-ausloesen (4)**
+
+- **RA1 - die Reihenfolge Sperre/Namens-VP war ungeprueft.** Kein Test fuehrte beide
+  Fehlerbedingungen zugleich; die Sperre muss gewinnen (Issue-Ablauf Schritt 1 vor 2).
+- **RA2 - die Standardmarke wurde fuer JEDES Video geholt.** Der Test „ohne Band" benutzte
+  ein Segment; ein Video ohne Einblendung war ungeprueft (#310: nur ein gezeichnetes Band
+  braucht sie).
+- **RA6 - die Bandhoehe war ein Literal 162.** Alle Vorlagen-Fixtures tragen 162 (der
+  AD-Wert). Neu: eine Vorlage mit Hoehe **120**.
+- **RA7 - `projektId` war ein Literal `'p-1'`.** Alle Projekt-Fixtures tragen `p-1`. Neu:
+  Projekt `p-9`, und der Auftrag muss `p-9` tragen.
+
+**render-dialog (1)**
+
+- **RD4 - DEL (U+007F) war ungeprueft.** Die Steuerzeichen-Wache deckt `< 0x20` UND
+  `0x7f`; der Test fuehrte nur `\x01` vor. Neu: ein Tabellenfall `a\x7fb`.
+
+**optimistisch (5)**
+
+- **OP3 - eine Ausnahme aus `bestaetigen` war unsichtbar.** Der Test prueft Rollback und
+  fehlenden Stacktrace, nicht die Inline-Meldung. Neu: der Hoerer bekommt
+  `unbekannter_fehler`.
+- **OP4 - die Inline-Hoererliste wurde live durchlaufen.** Kein Test liess einen Hoerer
+  sich WAEHREND der Runde abmelden (die Kopie ist die Zusage).
+- **OP5 - ein werfender Inline-Hoerer riss den Schritt.** Das try/catch in `meldeInline`
+  hatte keinen Test; der werfende Hoerer war nur fuer den Speicherzustand geprueft.
+- **OP6 - die Abmelde-Sperre war ungeprueft.** Zweimal abmelden traf bei DERSELBEN
+  uebergebenen Funktion die zweite Anmeldung (der Grund, aus dem die Sperre existiert).
+- **OP7 - das Null-Ereignis fuhr in `ereignis.typ`.** Die Wache „unbrauchbare Form wird
+  ignoriert" hatte keinen Test.
+
+**Zusatzbefund (nicht gebaut):** `berichteDrop` in `medien-bibliothek.ts` ist **exportiert,
+aber nirgends gerufen** - weder in `src` noch in Tests. Ein toter Export wie die
+`live-vorschau`-Probe aus Charge 23; kein Test kann ihn beissen. Gemeldet, nicht entfernt
+(`src` gehoert nicht zu dieser Charge).
+
+### Entfernt (8 Testfaelle, 13 ergaenzt)
+
+- **1** in `element-zeile-anzeige`, **2** in `medien-bibliothek`, **2** in `optimistisch`,
+  **2** in `render-ausloesen`, **1** in `render-dialog` - zusammen **8** Quelltext-Tests.
+- **13** Verhaltens-Tests ergaenzt (einer davon als Tabellenzeile).
+
+**Nachmessung nach dem Ausbau:** **30 von 30 rot**, die fuenf Refactorings gruen. Keine
+Mutation war allein von einer Probe getragen.
+
+**Ehrlich offen:** Die Abwesenheits-Zusagen dieser fuenf Dateien sind ohne Waechter - kein
+IPC/Timer in `optimistisch`, kein zweiter Main-Weg und keine zweite Formatquelle in
+`medien-bibliothek`, kein `toDataURL`/keine Hexzahl in `render-ausloesen`, kein JSX/IPC in
+`render-dialog`, kein `window.api`/kein Band-Bearbeiter in `element-zeile`. Lint-Kandidat;
+#448 (192 SAFETY) steht.
+
+### Stand nach Charge 25
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **30**: 17 erkannt, 13 Luecken; nach der Schliessung 30/30 |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **8** |
+| Verhaltens-Tests ergaenzt | – | **13** |
+| Echte Luecken geschlossen | – | **13** (MB1, MB5, EZ5, RA1, RA2, RA6, RA7, RD4, OP3-OP7) |
+| Suite | 5.301 | **5.306** (340 Dateien, netto +5) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 10 | **5** Dateien |
