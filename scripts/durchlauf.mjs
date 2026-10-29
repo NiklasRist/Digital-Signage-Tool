@@ -265,6 +265,43 @@ const main = async () => {
           fund("Projekt anlegen", "Start-Hinweis weg, sobald ein Projekt steht",
             "Start-Hinweis bleibt stehen (#346)", "Befund", "bootstrap/start lage");
         }
+
+        // Suchleiste der Projektuebersicht (Wunsch 29.10.2026): Tippen filtert, Leeren
+        // stellt her - gemessen am ECHTEN Feld, nicht am Zustand. Der Wert wird ueber
+        // den nativen Setter plus 'input' gesetzt; ein direktes `.value = ...` erreicht
+        // React nicht.
+        const sucheSetzen = async (wert) =>
+          seite.evaluate((w) => {
+            const feld = document.querySelector('[data-testid="projektliste-suche"]');
+            if (feld === null) return false;
+            const setzen = Object.getOwnPropertyDescriptor(
+              window.HTMLInputElement.prototype, "value",
+            )?.set;
+            setzen?.call(feld, w);
+            feld.dispatchEvent(new Event("input", { bubbles: true }));
+            return true;
+          }, wert);
+        const sucheZeilen = () =>
+          seite.evaluate(() => document.querySelectorAll('[data-testid="projektliste"] li').length);
+
+        const sucheZeilenVorher = await sucheZeilen();
+        const sucheFeldDa = await sucheSetzen("zzz-kein-treffer");
+        await schlafe(250);
+        const ohneTreffer = await sucheZeilen();
+        const hinweisDa = await stehtDa('[data-testid="projektliste-kein-treffer"]');
+        await sucheSetzen("");
+        await schlafe(250);
+        const wiederAlle = await sucheZeilen();
+        if (!sucheFeldDa) {
+          fund("Projektsuche", "die Suchleiste steht in der Projektuebersicht",
+            "projektliste-suche fehlt", "Befund", "projekt-verwaltung/liste-ansicht.tsx");
+        } else if (ohneTreffer !== 0 || !hinweisDa || wiederAlle !== sucheZeilenVorher) {
+          fund("Projektsuche", "Tippen filtert und Leeren stellt her",
+            `vorher=${sucheZeilenVorher}, ohne Treffer=${ohneTreffer}, Hinweis=${hinweisDa}, zurueck=${wiederAlle}`,
+            "Befund", "projekt-verwaltung/liste-ansicht.tsx");
+        } else {
+          console.log(`[schritt-2] Projektsuche GEMESSEN: ${sucheZeilenVorher} -> 0 -> ${wiederAlle} Zeilen.`);
+        }
       }
       }
     } else {
@@ -2088,7 +2125,7 @@ const main = async () => {
             flaeche: fv === null ? null : { w: Math.round(fv.width), h: Math.round(fv.height) },
             videoDa: video !== null,
             video: vv === null ? null : { w: Math.round(vv.width), h: Math.round(vv.height) },
-            playLabel: document.querySelector('[data-testid="vorschau-play-pause"]')?.textContent ?? null,
+            playLabel: document.querySelector('[data-testid="vorschau-play-pause"]')?.getAttribute('aria-label') ?? null,
             // #418: das nach dem Import standardmaessig ausgewaehlte Video.
             auswahlMedium: medium === null ? null : medium.getAttribute('data-ausgewaehlt'),
             auswahlGalerie: galerie === null ? null : galerie.getAttribute('data-ausgewaehlt'),
@@ -2109,12 +2146,29 @@ const main = async () => {
         } else {
           console.log(`[schritt-4b3] Buehne hat Hoehe ${buehneDiag.kasten.h} px; Video-Box ${JSON.stringify(buehneDiag.video)}.`);
         }
+        // #443: Die Bedienleiste liegt als Overlay ueber dem Bild und blendet aus.
+        // Vor jedem Klick auf ihre Knoepfe muss der Zeiger ueber die Buehne: Sonst
+        // traefe der Klick (pointer-events: none) das BILD, und die Wiedergabe
+        // schaltete statt des gemeinten Knopfes um. Das Einblenden ist ein
+        // Zustandswechsel im Renderer - daher die kurze Frist nach der Bewegung.
+        const zeigeBedienleiste = async () => {
+          const mitte = await seite.evaluate(() => {
+            const kasten = document.querySelector('[data-testid="buehne-kasten"]');
+            if (kasten === null) return null;
+            const r = kasten.getBoundingClientRect();
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+          });
+          if (mitte === null) return;
+          await seite.mouse.move(mitte.x, mitte.y);
+          await schlafe(150);
+        };
+        await zeigeBedienleiste();
         await klick('[data-testid="vorschau-play-pause"]');
         await schlafe(1_200);
         const playDiag = await seite.evaluate(() => {
           const video = document.querySelector('[data-testid="preview-video"] video');
           return {
-            playLabel: document.querySelector('[data-testid="vorschau-play-pause"]')?.textContent ?? null,
+            playLabel: document.querySelector('[data-testid="vorschau-play-pause"]')?.getAttribute('aria-label') ?? null,
             currentTime: video === null ? null : Math.round((video.currentTime ?? 0) * 100) / 100,
             paused: video === null ? null : video.paused,
             frame: document.querySelector('[data-testid="vorschau-zeitleiste"]')?.value ?? null,
@@ -2129,6 +2183,7 @@ const main = async () => {
         } else {
           console.log(`[schritt-4b3] Play GEMESSEN: currentTime=${playDiag.currentTime}, Uhr-Frame=${playDiag.frame}.`);
         }
+        await zeigeBedienleiste();
         await klick('[data-testid="vorschau-play-pause"]');
         await schlafe(300);
         // #340-Gegenprobe (media-Antworten werden an der Kopf-Messstelle beobachtet): Ein
