@@ -67,6 +67,14 @@ Reihenfolge der Auftrags-Kennungen), eine in `element-zeile` (Band-Text mit Test
 (Inline-Meldung bei Wurf, Kopie der Hoererliste, try/catch, Abmelde-Sperre, Null-Ereignis).
 Ausserdem: `berichteDrop` ist exportiert, aber nirgends gerufen (toter Export, gemeldet).
 
+**Stand nach Charge 26 (29.10.2026):** **Alle zehn Chargen 17–26 gebaut.** Suite **5.307**
+(340 Dateien), Sperrklinke **0**, Gate `npm run pruefung` **Exit 0**. Charge 26 fand **acht**
+Luecken (SL1, SL6, VI4, VI6, VI8, VA1, AP1, AP2) und den Sonderfall `marke.spec.ts`
+(Vertragstest bleibt; nur die zwei Quelltext-Leser entfernt). Die Regel
+`lokal/quelltext-proben` ist jetzt ein **Verbot**: Ausnahmen-Datei geloescht. Die
+Verschaerfung des Callee-Checks (Member-Ausdruecke) fand eine **bisher unsichtbare Probe**
+in `marken-bereitstellung.spec.ts`; sie ist entfernt. **#447 ist damit abgeschlossen.**
+
 ## Das Rezept (unverändert, verbindlich)
 
 1. Eine semantische Änderung an der Quelldatei, nichts daneben.
@@ -98,7 +106,7 @@ Ausserdem: `berichteDrop` ist exportiert, aber nirgends gerufen (toter Export, g
 | **23** (gebaut) | `kaputt-handling` → `action-editor/kaputt-handling.ts`; `live-vorschau` → `action-editor/live-vorschau.ts`; `aktions-auswahl` → `app-shell/aktions-auswahl-filter.ts`; `asset-auswahl` → `app-shell/asset-auswahl-filter.ts`; `bootstrap-ablauf` → `app-shell/bootstrap.ts` | Zwei Filter-Paare + Bootstrap. Die Filter sind rein und gut verhaltensgetestet; `bootstrap-ablauf` ist der riskanteste (Startreihenfolge). |
 | **24** (gebaut) | `inhalte-zugaenge-rechnung` → `app-shell/inhalte-zugaenge.ts`; `rahmen-montage` → `app-shell/rahmen-montage.ts`; `uebergabe` → `app-shell/uebergabe.ts`; `undo-projekt` → `app-shell/undo-projekt.ts`; `element-entfernen` → `composer/element-entfernen.ts` | Montage/Zugänge. `undo-projekt` liest evtl. den Projekt-Historien-Spion – der ist **bewusst geblieben** (Verhalten); nur die Quelltext-Probe zählt. |
 | **25** (gebaut) | `element-zeile-anzeige` → `composer/element-zeile.tsx`; `medien-bibliothek` → `composer/medien-bibliothek.ts`; `optimistisch` → `composer/optimistisch.ts`; `render-ausloesen` → `composer/render-ausloesen.ts`; `render-dialog` → `composer/render-dialog.ts` | Composer-Kern. `optimistisch` trägt die Undo-Zusage – Verhaltens-Tests prüfen die Reihenfolge; Proben dort besonders genau lesen. |
-| **26** | `slogan-bearbeiten` → `marken-editor/slogan-bearbeiten.ts`; `video-filmstreifen-blob` → `preview-player/video.tsx`; `vorschau-auswahl-rechnung` → `preview-player/vorschau-auswahl.ts`; `als-png` → `template-canvas/als-png.ts`; `marke` → `shared/contracts/marke.ts` | Letzte Charge. **`marke.spec.ts` ist der Sonderfall:** liest den Vertrag – wenn es ein Vollständigkeits-/Vertragstest ist (wie `fehlertexte`), **bleibt er** und die Datei wird aus der Sperrklinke gestrichen, ohne Probe zu entfernen. Vorher lesen, nicht nach Namen urteilen. |
+| **26** (gebaut) | `slogan-bearbeiten` → `marken-editor/slogan-bearbeiten.ts`; `video-filmstreifen-blob` → `preview-player/video.tsx`; `vorschau-auswahl-rechnung` → `preview-player/vorschau-auswahl.ts`; `als-png` → `template-canvas/als-png.ts`; `marke` → `shared/contracts/marke.ts` | Letzte Charge. **`marke.spec.ts` ist der Sonderfall:** liest den Vertrag – wenn es ein Vollständigkeits-/Vertragstest ist (wie `fehlertexte`), **bleibt er** und die Datei wird aus der Sperrklinke gestrichen, ohne Probe zu entfernen. Vorher lesen, nicht nach Namen urteilen. |
 
 ## Erwartete Bilanz (Schätzung, keine Zusage)
 

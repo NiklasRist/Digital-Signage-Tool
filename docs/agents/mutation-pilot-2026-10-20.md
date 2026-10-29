@@ -2142,3 +2142,96 @@ IPC/Timer in `optimistisch`, kein zweiter Main-Weg und keine zweite Formatquelle
 | Suite | 5.301 | **5.306** (340 Dateien, netto +5) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 10 | **5** Dateien |
+
+## 39. Charge 26 (29.10.2026): Die letzte Charge - Composer-Rest, Vorschau, PNG und das Verbot
+
+**Dateien:** `slogan-bearbeiten` (`marken-editor/slogan-bearbeiten.ts`),
+`video-filmstreifen-blob` (`preview-player/video.tsx`), `vorschau-auswahl-rechnung`
+(`preview-player/vorschau-auswahl.ts`), `als-png` (`template-canvas/als-png.ts`) und der
+Sonderfall `marke` (`shared/contracts/marke.ts`). Alle von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 24 Verhaltens-Mutationen, 4 harmlose Refactorings. Erkannt: **16**.
+**8 Luecken**, **0 aequivalent**; **0/4 Refactorings rot**; jede Mutation byte-identisch
+zurueckgenommen.
+
+**Zuordnungs-Befund (Falle 1, korrigiert):** `video-filmstreifen-blob.spec.ts` testet den
+**Filmstreifen** (`composer/video-filmstreifen.tsx`); die Probe darin las
+`preview-player/video.tsx`. Der Verhaltenstest dieser Quelle ist **`video-anzeige.spec.ts`**
+(nicht in der Sperrklinke). Die Mutationen an `video.tsx` liefen deshalb gegen
+`video-anzeige.spec.ts` – gegen die Filmstreifen-Spec waeren alle gruen gewesen.
+
+### Die acht Luecken (alle geschlossen, acht neue Tests)
+
+- **SL1 - nur `''` war als leere markeId geprueft.** `trim()` gegen `length` blieb gruen;
+  `"   "` ging durch. Neu: eine Marke-ID aus Leerzeichen -> `ungueltige_eingabe`.
+- **SL6 - die `typeof`-Wache war ungeprueft.** Ein `undefined` haette geworfen. Neu:
+  nicht-String -> `ungueltige_eingabe`, ohne IPC und ohne Wurf.
+- **VI4 - `play` lief auch bei bereits spielendem Video.** `laeuft && element.paused` gegen
+  `laeuft` blieb gruen. Neu: `paused: false`, `laeuft: true` -> kein zweites `play()`.
+- **VI6 - die abgelehnte `play()`-Zusage war NICHT gefangen.** Der vorhandene Test
+  „keine unbehandelte Ablehnung" bemerkte den fehlenden `catch` nicht (Vitest schlug die
+  Ablehnung nicht zu). Neu: ein Thenable mit `catch`-Spion; der Aufbau muss ihn rufen.
+- **VI8 - der Quelldeps-Vergleich war ungeprueft.** `[projektId, dateiname]` gegen
+  `[projektId]` blieb gruen; ein Dateiwechsel bei gleicher Projekt-ID lud nicht neu. Neu:
+  `dateiname` wechselt -> `src` neu und `load` genau einmal mehr.
+- **VA1 - der Identitaets-Nachweis war unsichtbar.** Die Fremd-ID-Fixture endete ohne Asset
+  ohnehin in `leer`; ohne den Nachweis kam dasselbe heraus. Neu: ein sonst zeichenbares
+  Video mit fremder `elementId` -> trotzdem `leer`.
+- **AP1 - `||` gegen `&&` blieb gruen.** Die Fixture liess BEIDE Masse abweichen. Neu: nur
+  die Breite weicht ab -> `png_export_fehler`, kein `toBlob`.
+- **AP2 - Breite/Hoehe vertauscht blieb gruen.** Beide Fixtures waren quadratisch (1×1,
+  2×2). Neu: 4×2 mit passenden Massen -> `ok`.
+
+### Sonderfall `marke.spec.ts` - Vertragstest bleibt
+
+Der Test prueft die **Vertragsform** (`FarbRolle`/`SchriftRolle` geschlossen,
+`Record`-Vollstaendigkeit, zwoelf Felder in Reihenfolge, sieben Stempel-Schluessel). Er
+**bleibt**. Entfernt wurden nur die zwei Quelltext-Leser: „enthaelt keinen Laufzeit-Code"
+und „fuehrt MarkenEintrag NICHT selbst". Damit verlaesst die Datei die Sperrklinke, ohne
+dass ein Vertragstest verloren geht. **Ehrlich offen:** Die zwei Abwesenheits-Zusagen sind
+jetzt ungeprueft.
+
+### Das Verbot (Abschluss von #447)
+
+- Sperrklinke **5 -> 0**, `npx eslint .` gruen. Ausnahmen-Datei geloescht; die Regel
+  `lokal/quelltext-proben` ist jetzt ein **Verbot** ohne Liste.
+- **Gegenproben, alle belegt und zurueckgenommen:** Literal `readFileSync('src/…')` rot;
+  `readFileSync(new URL('../../src/…'))` rot; `fs.readFileSync('src/…')` rot;
+  `fs.readFileSync('tests/fixtures/…')` gruen.
+- **Dabei gefunden und geschlossen:** Die alte Regel prueft nur den **Bezeichner**
+  `readFileSync`; ein Member-Ausdruck (`fs.readFileSync`, `(await import(...)).readFileSync`)
+  kam an ihr vorbei. Der Callee-Check deckt jetzt beide Formen. Diese Verschaerfung fand
+  eine **bisher unsichtbare Probe** in `marken-bereitstellung.spec.ts` (las
+  `gemeinsam/marken-bereitstellung.ts`); der Block ist entfernt.
+- **Der Befund gehoert zum Rezept:** Die Sperrklinke war nie vollstaendig – sie zaehlte nur
+  Identifier-Aufrufe. Die harte Regel schliesst die Luecke, und die Gegenprobe hat es
+  gezeigt, nicht die Annahme.
+
+### Entfernt (7 Testfaelle, 8 ergaenzt)
+
+- **1** in `slogan-bearbeiten`, **1** in `video-filmstreifen-blob`, **1** in
+  `vorschau-auswahl-rechnung`, **1** in `als-png`, **2** in `marke`,
+  **1** in `marken-bereitstellung` (von der Verschaerfung gefunden) - zusammen **7**.
+- **8** Verhaltens-Tests ergaenzt.
+
+**Nachmessung nach dem Ausbau:** **24 von 24 rot**, die vier Refactorings gruen.
+
+**Ehrlich offen:** Die Abwesenheits-Zusagen der fuenf Chargen-Dateien (kein Timer in
+`slogan-bearbeiten`, kein `mediaBlobUrl` in `video.tsx`, kein `Math.`/`RENDER_PROFILE` in
+`vorschau-auswahl`, kein `toDataURL`/`getContext` in `als-png`, kein Laufzeit-Code/
+`MarkenEintrag`/`Partial` in `marke.ts`) und der gefundenen Probe
+(`marken-bereitstellung`: kein `fs`/`path`/`window.api`/`setTimeout`) sind jetzt ohne
+Waechter. Lint-Kandidat; #448 (192 SAFETY) steht.
+
+### Stand nach Charge 26
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **24**: 16 erkannt, 8 Luecken; nach der Schliessung 24/24 |
+| Refactorings | – | **0 / 4 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **7** |
+| Verhaltens-Tests ergaenzt | – | **8** |
+| Echte Luecken geschlossen | – | **8** (SL1, SL6, VI4, VI6, VI8, VA1, AP1, AP2) |
+| Suite | 5.306 | **5.307** (340 Dateien, netto +1) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 5 | **0 – Verbot** (Ausnahmen-Datei geloescht) |

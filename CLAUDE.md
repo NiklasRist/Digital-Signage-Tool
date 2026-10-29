@@ -11,7 +11,39 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, neunundzwanzigste Sitzung: Mutations-Charge 25) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, dreissigste Sitzung: Mutations-Charge 26 und das Verbot) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-29-nach-charge-26.md`](docs/agents/uebergabe-2026-10-29-nach-charge-26.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 39.
+
+- **CHARGE 26 GEBAUT (die letzte):** `slogan-bearbeiten`, `video-filmstreifen-blob`
+  (`preview-player/video.tsx`), `vorschau-auswahl-rechnung`, `als-png` und der Sonderfall
+  `marke`. **24 Verhaltens-Mutationen**, **4 Refactorings**; erste Messung 16 erkannt,
+  **8 Luecken** (SL1, SL6, VI4, VI6, VI8, VA1, AP1, AP2) geschlossen, **0 aequivalent**;
+  **0/4 Refactorings rot**.
+- **Sonderfall `marke.spec.ts`:** Vertragstest (Unionen, `Record`-Vollstaendigkeit,
+  Feldreihenfolge) **bleibt**; entfernt wurden nur die zwei Quelltext-Leser. **Die
+  Zuordnung `video-filmstreifen-blob` → `video.tsx` war falsch:** die Spec testet den
+  Filmstreifen; die Mutationen liefen gegen `video-anzeige.spec.ts`.
+- **DAS VERBOT (Abschluss #447):** Sperrklinke **5 → 0**, Ausnahmen-Datei geloescht, die
+  Regel `lokal/quelltext-proben` ist ein **Verbot**. Gegenproben: Literal rot,
+  `readFileSync(new URL(…src/…))` rot, `fs.readFileSync('src/…')` rot,
+  `fs.readFileSync('tests/fixtures/…')` gruen.
+- **Dabei gefunden:** Die alte Regel pruefte nur den **Bezeichner** `readFileSync`;
+  `fs.readFileSync` kam vorbei. Der verschaerfte Callee-Check fand eine **bisher
+  unsichtbare Probe** in `marken-bereitstellung.spec.ts` (entfernt).
+- **Entfernt:** **7** Quelltext-Tests, **8** Verhaltens-Tests ergaenzt; Suite
+  **5.306 → 5.307** (netto +1).
+- **Nachmessung nach dem Ausbau:** **24 von 24 rot**, 0/4 Refactorings rot.
+- **Ehrlich offen:** Die Abwesenheits-Zusagen der fuenf Dateien und der gefundenen Probe
+  sind ohne Waechter; #448 (192 SAFETY); `berichteDrop` ist toter Export.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.307 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt:** keine Mutations-Charge mehr. Offen sind #448, die
+  Abwesenheits-Zusagen als Lint-Regeln, `berichteDrop` (Produktentscheidung) und der Push.
+
+## STAND HEUTE (29.10.2026, neunundzwanzigste Sitzung: Mutations-Charge 25) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-charge-26.md`](docs/agents/uebergabe-2026-10-29-charge-26.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 38.
