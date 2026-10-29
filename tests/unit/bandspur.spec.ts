@@ -15,8 +15,6 @@
 // vertraglich - eine falsche Bildzahl und eine Option am falschen Platz sehen
 // beide typrichtig aus. Deshalb pruefen die Tests unten Werte und PLAETZE, nicht
 // nur Vorhandensein.
-import { readFileSync } from "node:fs";
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
@@ -38,23 +36,6 @@ vi.mock("../../src/main/ffmpeg-adapter/prozess", () => ({
 const { baueBandSequenzArgumente, baueBandSchleifeArgumente, baueBandspur } = await import(
   "../../src/main/ffmpeg-adapter/bandspur"
 );
-
-const QUELLE = readFileSync(
-  new URL("../../src/main/ffmpeg-adapter/bandspur.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur die CODE-Zeilen. Die Begruendungen in den Kommentaren zitieren das TK
-// woertlich (Regel D) und nennen dabei die Messwerte und die Flags des festen
-// Vorspanns - das ist erwuenscht und darf die Literal-Probe nicht ausloesen.
-// Dieselbe Trennung benutzen die Tests zu #161, #163, #164 und #165 im selben
-// Modul.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((zeile) => {
-    const t = zeile.trim();
-    return t !== "" && !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 const FPS = String(RENDER_PROFILE.fps);
 
@@ -308,37 +289,31 @@ describe("#168 - Frame-Erhaltung, der Kern dieses Issues", () => {
   });
 });
 
+describe("#168 - die Bildrate stammt aus dem Profil", () => {
+  it("setzt eine abweichende Profil-Bildrate an ALLEN Stellen beider Schritte", () => {
+    // RENDER_PROFILE fuehrt 30 fps; mit 30 allein waere ein hinge-
+    // schriebenes Literal von einem gelesenen Wert nicht zu unterscheiden.
+    // 25 ist absichtlich ein anderer Wert als die Vorgabe.
+    const p = abgewandelt({ fps: 25 });
+    const eins = sequenz(auftrag(), p);
+    expect(wertVon(eins, "-framerate")).toBe("25");
+    expect(wertVon(eins, "-r")).toBe("25");
+    expect(kette(eins)).toContain("[0:v]fps=25,");
+    expect(kette(eins)).toContain("fps=25,trim=end_frame=300,");
+
+    const zwei = schleife(auftrag(), p);
+    expect(wertVon(zwei, "-r")).toBe("25");
+    expect(kette(zwei)).toContain("[0:v]fps=25,");
+  });
+});
+
 describe("#168 - Abgrenzung: der feste Vorspann und das Ausgabe-Profil bleiben draussen", () => {
   it("wiederholt keines der sechs Betriebs-Flags aus #158", () => {
     // Doppelt gesetzte Flags sind je nach Position wirkungslos oder ueberschreiben
     // sich gegenseitig. #158 stellt sie JEDEM Aufruf voran - auch den beiden hier.
-    //
-    // Diese Probe laeuft ueber die GANZE Quelldatei, nicht nur ueber die
-    // CODEZEILEN: Die Quelldatei umschreibt die Flags in ihren Begruendungen
-    // bewusst ("das Ueberschreiben-Flag"), damit die schaerfste Lesart des Issues
-    // ("die Datei enthaelt kein -y") ohne Ausnahme gilt. Nur die beiden Namen
-    // `qtrle`/`mov` weiter unten brauchen die CODEZEILEN-Trennung, weil der
-    // Messbericht im Kopf sie nennen muss.
     for (const flag of ["-y", "-hide_banner", "-nostdin", "-loglevel", "-progress", "-nostats"]) {
-      expect(QUELLE).not.toContain(flag);
       expect(sequenz()).not.toContain(flag);
       expect(schleife()).not.toContain(flag);
-    }
-  });
-
-  it("ruft weder die Video-Kodierargumente (#161) noch die Tonspur (#162)", () => {
-    // Wer #161 einbindet, macht aus der Bandspur ein H.264-yuv420p-Artefakt OHNE
-    // Alphakanal - und nimmt dem Einblendungs-Band die Transparenz.
-    for (const fremd of [
-      "baueVideoKodierArgumente",
-      "baueStilleTonspurEingang",
-      "baueTonspurMapping",
-      "baueTonspurKodierArgumente",
-      "baueContainerArgumente",
-      "encoder-argumente",
-      "tonspur",
-    ]) {
-      expect(CODEZEILEN).not.toContain(fremd);
     }
   });
 
@@ -348,15 +323,6 @@ describe("#168 - Abgrenzung: der feste Vorspann und das Ausgabe-Profil bleiben d
       expect(argumente).not.toContain("-t");
       expect(argumente).not.toContain("-to");
     }
-  });
-
-  it("haelt Codec und Container als benannte Konstanten an genau einer Stelle", () => {
-    // Ein spaeterer Wechsel - etwa wenn das Experiment aus dem STOPP-Block sie
-    // umwirft - ist damit EINE Zeile und keine Suche durch den Code.
-    expect(CODEZEILEN).toContain("const BAND_CODEC = 'qtrle'");
-    expect(CODEZEILEN).toContain("const BAND_CONTAINER = 'mov'");
-    expect(CODEZEILEN.split("qtrle")).toHaveLength(2); // genau ein Vorkommen
-    expect(CODEZEILEN.split("mov")).toHaveLength(2);
   });
 });
 

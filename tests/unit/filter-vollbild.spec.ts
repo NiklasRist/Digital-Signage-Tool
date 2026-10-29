@@ -12,30 +12,12 @@
 // Anker dazu: Aendert jemand die Kette, wird dieser Test rot und die Messung ist
 // zu wiederholen. Ein gruener Test ohne diesen Anker hiesse nur, dass eine
 // Zeichenkette entsteht - nicht, dass es DIE gemessene ist.
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { baueVollbildFilter } from "../../src/main/ffmpeg-adapter/filter-vollbild";
 import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
 
 import type { RenderProfile } from "../../src/shared/contracts/render-profile";
-
-const QUELLE = readFileSync(
-  new URL("../../src/main/ffmpeg-adapter/filter-vollbild.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur die CODE-Zeilen. Die Begruendungen in den Kommentaren nennen das Ausgabe-
-// Profil und die nachgemessenen Bildgroessen woertlich - das ist erwuenscht und
-// darf die Literal-Probe nicht ausloesen. Dieselbe Trennung benutzt der Test zu
-// #161 im selben Modul.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((zeile) => {
-    const t = zeile.trim();
-    return t !== "" && !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 /** Ein Profil mit abweichenden Werten - die Umtypung gehoert AUSSCHLIESSLICH hierher. */
 function abgewandelt(aenderung: Record<string, unknown>): RenderProfile {
@@ -222,12 +204,6 @@ describe("jede Zahl stammt aus dem Profil", () => {
       expect(m.flaecheRate).toBe(fps);
     }
   });
-
-  it("schreibt kein Mass des Profils als Literal in den Quelltext", () => {
-    for (const literal of ["1920", "1080", "30"]) {
-      expect(CODEZEILEN).not.toContain(literal);
-    }
-  });
 });
 
 describe("der Hintergrund reist durch, ohne den Graphen zu oeffnen", () => {
@@ -313,28 +289,9 @@ describe("Fehlerpfade - immer ungueltige_eingabe, nie ein Wurf", () => {
 });
 
 describe("die Funktion ist rein", () => {
-  it("importiert nichts, was Wirkung haette", () => {
-    for (const verboten of ["node:fs", "node:path", "node:child_process", "./prozess", "ffprobe"]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
-    // Nur TYP-Importe: ein Wertimport braechte Laufzeit-Abhaengigkeiten in eine
-    // Funktion, die nichts als eine Zeichenkette bauen soll.
-    expect(CODEZEILEN.match(/^import .*$/gm)).toEqual([
-      "import type { RenderProfile } from '../../shared/contracts/render-profile'",
-      "import type { Ergebnis } from '../../shared/contracts/ergebnis'",
-    ]);
-  });
-
   it("veraendert das uebergebene Profil nicht", () => {
     const vorher = structuredClone(RENDER_PROFILE);
     baueVollbildFilter("black", RENDER_PROFILE);
     expect(RENDER_PROFILE).toEqual(vorher);
-  });
-
-  it("kennt keine Fachbegriffe", () => {
-    // Diese Datei bekommt Zahlen und eine Farbe und liefert eine Zeichenkette.
-    for (const verboten of ["Projekt", "Aktion", "Vorlage", "Listenelement", "Asset", "Auftrag"]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
   });
 });

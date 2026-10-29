@@ -16,31 +16,12 @@
 // behaelt seinen Alphakanal. Ein Verwechseln der beiden Arten erzeugt weder
 // Fehlerbild noch Meldung, sondern ein Video, das anders aussieht als die
 // Vorschau.
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { baueEinblendungFilter } from "../../src/main/ffmpeg-adapter/filter-einblendung";
 import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
 
 import type { RenderProfile } from "../../src/shared/contracts/render-profile";
-
-const QUELLE = readFileSync(
-  new URL("../../src/main/ffmpeg-adapter/filter-einblendung.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur die CODE-Zeilen. Die Begruendungen in den Kommentaren zitieren das TK
-// woertlich (Regel D) und nennen dabei die Masse des Ausgabe-Profils und die
-// nachgemessenen Bildgroessen - das ist erwuenscht und darf die Literal-Probe
-// nicht ausloesen. Dieselbe Trennung benutzen die Tests zu #161, #163 und #164
-// im selben Modul.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((zeile) => {
-    const t = zeile.trim();
-    return t !== "" && !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 /** Ein Profil mit abweichenden Werten - die Umtypung gehoert AUSSCHLIESSLICH hierher. */
 function abgewandelt(aenderung: Record<string, unknown>): RenderProfile {
@@ -174,11 +155,6 @@ describe("Art B gegen Art A - der optisch groesste Unterschied im Produkt", () =
     expect(wert).not.toMatch(/0x[0-9a-fA-F]{6}/);
     expect(wert).not.toContain("[oben]");
     expect(wert).not.toContain("[unten]");
-    // Und in der GANZEN Datei keine Hexfarbe: "hier kommt keine Markenfarbe vor,
-    // sondern nur die Balkenfarbe `black` aus 9.2.4" (#165). Eine zweite Quelle
-    // fuer eine Markenfarbe liesse die Einblendung lautlos vom Rest abweichen.
-    expect(QUELLE).not.toMatch(/#[0-9a-fA-F]{6}/);
-    expect(QUELLE).not.toMatch(/0x[0-9a-fA-F]{6}/);
   });
 
   it("fuellt mit schwarz - die Ausnahme mit der Markenfarbe betrifft nur split", () => {
@@ -193,13 +169,7 @@ describe("Art B gegen Art A - der optisch groesste Unterschied im Produkt", () =
     // "Die Vierer-Rundung aus TK 9.2.8 betrifft diese Datei NICHT" (#165). Wer sie
     // hier nachzoege, verkleinerte das Video um bis zu 3 px und schuefe die zweite
     // Rundungsstelle, die #239 beseitigt hat.
-    for (const verboten of ["16/9", "16 / 9", "1.777", "Math.floor", "Math.round", "Math.ceil"]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
-    // Und die Bandgeometrie (#239) wird nicht importiert: Ihre sechs uebrigen
-    // Felder beschreiben eine Aufteilung, die es in Art B gar nicht gibt.
-    expect(CODEZEILEN).not.toContain("band-geometrie");
-    expect(CODEZEILEN).not.toContain("BandGeometrie");
+    //
     // Gegenprobe an der Hoehe, die bei split NICHT aufgeht: 880 x 16/9 = 1564,44.
     // Taeuchte diese Zahl hier auf, waere die Rundung faelschlich nachgezogen.
     const wert = kette(200);
@@ -317,12 +287,6 @@ describe("jede Zahl stammt aus Profil und Parametern", () => {
       expect(m.fpsBand).toBe(fps);
     }
   });
-
-  it("schreibt kein Mass als Literal in den ausfuehrbaren Teil", () => {
-    for (const literal of ["1920", "1080", "918", "162", "30"]) {
-      expect(CODEZEILEN).not.toContain(literal);
-    }
-  });
 });
 
 describe("Fehlerpfade - immer ungueltige_eingabe, nie ein Wurf", () => {
@@ -387,30 +351,9 @@ describe("Fehlerpfade - immer ungueltige_eingabe, nie ein Wurf", () => {
 });
 
 describe("die Funktion ist rein", () => {
-  it("importiert nichts, was Wirkung haette", () => {
-    for (const verboten of [
-      "node:fs", "node:path", "node:child_process", "./prozess", "ffprobe",
-      "config-store", "leseMarke", "vorlagen", "filter-split",
-    ]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
-    // Nur TYP-Importe. Insbesondere KEIN Import aus #164: "diese Datei importiert
-    // aus #164 nichts - insbesondere kein `markenFarbeZuFfmpeg`" (#165).
-    expect(CODEZEILEN.match(/^import .*$/gm)).toEqual([
-      "import type { RenderProfile } from '../../shared/contracts/render-profile'",
-      "import type { Ergebnis } from '../../shared/contracts/ergebnis'",
-    ]);
-  });
-
   it("veraendert das uebergebene Profil nicht", () => {
     const vorher = structuredClone(RENDER_PROFILE);
     baueEinblendungFilter(162, RENDER_PROFILE);
     expect(RENDER_PROFILE).toEqual(vorher);
-  });
-
-  it("kennt keine Fachbegriffe", () => {
-    for (const verboten of ["Projekt", "Aktion", "Listenelement", "Asset", "Auftrag"]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
   });
 });

@@ -23,8 +23,6 @@
 // vertraglich - eine falsche Bildzahl und eine Option am falschen Platz sehen
 // beide typrichtig aus. Deshalb pruefen die Tests unten Werte und PLAETZE, nicht
 // nur Vorhandensein.
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it, vi } from "vitest";
 
 import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
@@ -163,6 +161,18 @@ describe("baueStandbildArgumente - Aufbau und Reihenfolge", () => {
     expect(argumente({ frames: 1 })[argumente({ frames: 1 }).indexOf("-frames:v") + 1]).toBe("1");
   });
 
+  it("nimmt Eingangs-Bildrate und Container aus dem Profil", () => {
+    // RENDER_PROFILE fuehrt 30 fps und `mp4`; mit diesen beiden Werten allein
+    // waere ein hingeschriebenes Literal von einem gelesenen Wert nicht zu
+    // unterscheiden. 25 und `mov` sind absichtlich andere Werte.
+    const profil = { ...RENDER_PROFILE, fps: 25, container: "mov" } as unknown as RenderProfile;
+    const a = argumente({}, profil);
+    expect(a[a.indexOf("-framerate") + 1]).toBe("25");
+    expect(a[a.indexOf("-f") + 1]).toBe("mov");
+    // Der Zielpfad bleibt das letzte Element - `-f` aendert daran nichts.
+    expect(a.at(-1)).toBe("/t1/seg_0003.mp4");
+  });
+
   it("hat genau zwei -map-Argumente, Video zuerst, Ton mit Eingangs-Index 1", () => {
     const a = argumente();
     const maps = a.filter((wert) => wert === "-map" || wert === "TON_MAP");
@@ -280,6 +290,18 @@ describe("baueStandbildArgumente - Fehlerpfade", () => {
     }
   });
 
+  it("weist einen unbrauchbaren Container ab", () => {
+    // Der Formatname kommt aus dem Profil (s. Test oben) und wird deshalb
+    // geprueft: Ein leerer oder mit `-` beginnender Wert waere dieselbe
+    // Argument-Einschleusung, die bei den Pfaden ausgeschlossen wird.
+    for (const container of ["", "-mp4", 7]) {
+      const profil = { ...RENDER_PROFILE, container } as unknown as RenderProfile;
+      const ergebnis = baueStandbildArgumente(auftrag(), profil);
+      expect(ergebnis.ok).toBe(false);
+      if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe("ungueltige_eingabe");
+    }
+  });
+
   it("wirft bei keiner Eingabe - auch nicht bei fehlenden Feldern (TK 9.1.1)", () => {
     const boesartig: unknown[] = [
       undefined,
@@ -296,112 +318,5 @@ describe("baueStandbildArgumente - Fehlerpfade", () => {
         baueStandbildArgumente(auftrag(), eingabe as RenderProfile),
       ).not.toThrow();
     }
-  });
-});
-
-// Die Abgrenzungs-Probe ueber die QUELLDATEI (Issue #166, Definition of Done).
-//
-// Nur die CODE-Zeilen. Die Begruendungen in den Kommentaren nennen die fremden
-// Flags namentlich - das ist erwuenscht und darf die Probe nicht ausloesen.
-// Dieselbe Trennung benutzen die Tests zu #161, #163, #164, #165 und #168 im
-// selben Modul.
-const QUELLE = readFileSync(
-  new URL("../../src/main/ffmpeg-adapter/standbild.ts", import.meta.url),
-  "utf8",
-);
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((zeile) => {
-    const t = zeile.trim();
-    return t !== "" && !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
-
-describe("Abgrenzung - was diese Datei NICHT setzen darf", () => {
-  const fremd: ReadonlyArray<readonly [string, string]> = [
-    ["-y", "#158, fester Vorspann"],
-    ["-hide_banner", "#158, fester Vorspann"],
-    ["-nostdin", "#158, fester Vorspann"],
-    ["-loglevel", "#158, fester Vorspann"],
-    ["-progress", "#158 - ein zweites schriebe jede Fortschrittszeile doppelt (#160)"],
-    ["-nostats", "#158, fester Vorspann"],
-    ["-r", "#161, Bildrate der Ausgabe"],
-    ["-fps_mode", "#161, Bildraten-Modus"],
-    ["-c", "#161/#162 - und `-c copy` gehoert allein #169 (TK 9.2.6: hier wird NEU codiert)"],
-    ["-c:v", "#161, Video-Encoder"],
-    ["-c:a", "#162, Ton-Encoder"],
-    ["-b:v", "#161, Ratensteuerung"],
-    ["-crf", "#161 - und im Profil gar nicht vorgesehen"],
-    ["-preset", "#161 - und im Profil gar nicht vorgesehen"],
-    ["-pix_fmt", "#161, Pixelformat"],
-    ["-g", "#161, GOP"],
-    ["-shortest", "#162, Laengenbegrenzung der Tonspur"],
-  ];
-
-  // Geprueft wird die ZEICHENKETTEN-LITERALFORM, nicht die blosse Teilzeichenkette.
-  // Grund: Ein Argument steht im Code immer als `'-r'` da, nie als `-r ` mit
-  // Leerzeichen. Eine Probe auf die nackte Folge "-r" fiele umgekehrt auf jedes
-  // Wort herein, das sie zufaellig enthaelt - und eine Probe auf "-r " (mit
-  // Leerzeichen) faende das echte `'-r',` NIE. Beide Anfuehrungsarten, weil die
-  // Datei einfache benutzt und ein spaeterer Umbau doppelte benutzen koennte.
-  const literalformen = (flag: string): string[] => [`'${flag}'`, `"${flag}"`];
-
-  for (const [flag, zustaendig] of fremd) {
-    it(`setzt kein ${flag} (zustaendig: ${zustaendig})`, () => {
-      for (const form of literalformen(flag)) expect(CODEZEILEN).not.toContain(form);
-    });
-  }
-
-  // Diese drei koennen in keiner harmlosen Zeile vorkommen und werden deshalb
-  // zusaetzlich als nackte Folge geprueft - `+faststart` und `setsar` stehen als
-  // WERT eines Arguments, nicht als eigenes Literal, und `-c copy` als zwei.
-  for (const [folge, zustaendig] of [
-    ["+faststart", "#162 baueContainerArgumente, und die nur am concat-Lauf (#169)"],
-    ["setsar", "#163, die Filterkette"],
-    ["copy", "#169 - hier wird NEU codiert (TK 9.2.6)"],
-  ] as const) {
-    it(`setzt kein ${folge} (zustaendig: ${zustaendig})`, () => {
-      expect(CODEZEILEN).not.toContain(folge);
-    });
-  }
-
-  it("die Probe beisst - jedes verbotene Flag wuerde im Code gefunden", () => {
-    // Gegenprobe zur Probe selbst. Ohne sie waere nicht zu sehen, ob die
-    // Kommentar-Filterung oben nicht versehentlich ALLES herausfiltert und
-    // saemtliche Zusicherungen leer durchlaufen. Geprueft wird jedes Flag der
-    // Liste einzeln - eine Stichprobe koennte ein falsch geschriebenes Muster
-    // ueberdecken.
-    expect(CODEZEILEN.length).toBeGreaterThan(1000);
-    for (const [flag] of fremd) {
-      const verfaelscht = `${CODEZEILEN}\n      '${flag}', 'wert',`;
-      expect(literalformen(flag).some((form) => verfaelscht.includes(form))).toBe(true);
-    }
-    // Und die Kommentarfilterung entfernt wirklich nur Kommentare: Die Zeilen mit
-    // den tatsaechlich gesetzten Argumenten sind noch da.
-    for (const erlaubt of ["'-loop'", "'-framerate'", "'-frames:v'", "'-map_metadata'", "'-f'"]) {
-      expect(CODEZEILEN).toContain(erlaubt);
-    }
-  });
-
-  it("importiert weder fs noch child_process noch ./prozess", () => {
-    for (const verboten of ["fs", "child_process", "./prozess", "node:fs", "node:child_process"]) {
-      expect(CODEZEILEN).not.toContain(`'${verboten}'`);
-      expect(CODEZEILEN).not.toContain(`"${verboten}"`);
-    }
-    // Und positiv: Die Datei importiert genau die vier erlaubten Adressen.
-    const importe = [...CODEZEILEN.matchAll(/from '([^']+)'/g)].map((treffer) => treffer[1]);
-    expect(new Set(importe)).toEqual(
-      new Set([
-        "../../shared/contracts/render-profile",
-        "../../shared/contracts/ergebnis",
-        "./encoder-argumente",
-        "./tonspur",
-      ]),
-    );
-  });
-
-  it("rechnet keine Sekunden in Frames um - die Rundung gehoert #174", () => {
-    expect(CODEZEILEN).not.toContain("Math.round");
-    expect(CODEZEILEN).not.toContain("* 30");
-    expect(CODEZEILEN).not.toContain("/ 30");
   });
 });

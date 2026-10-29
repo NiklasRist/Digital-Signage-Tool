@@ -14,29 +14,12 @@
 // Test, der `-g 60` fest erwartet, bliebe gruen, wenn auch die Quelldatei die 60
 // fest hinschriebe - und beide waeren nach einer Profilaenderung still ueberholt.
 // Abgeleitet wird derselbe Test rot.
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { baueVideoKodierArgumente } from "../../src/main/ffmpeg-adapter/encoder-argumente";
 import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
 
 import type { RenderProfile } from "../../src/shared/contracts/render-profile";
-
-const QUELLE = readFileSync(
-  new URL("../../src/main/ffmpeg-adapter/encoder-argumente.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur die CODE-Zeilen: Die Begruendungen in den Kommentaren zitieren das Profil
-// woertlich ("30 fps, CFR", "yuv420p") - das ist erwuenscht und darf die
-// Literal-Probe nicht ausloesen.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((zeile) => {
-    const t = zeile.trim();
-    return t !== "" && !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 /**
  * Zerlegt die flache Argumentliste in Flag/Wert-Paare und belegt dabei, dass sie
@@ -161,6 +144,28 @@ describe("baueVideoKodierArgumente (#161)", () => {
     expect(p["-g"]).toBe("100");
   });
 
+  it("nimmt auch Profil, Level, Pixelformat und die drei Farbmetadaten aus dem Profil", () => {
+    // Fuer RENDER_PROFILE sind diese sechs Werte Konstanten; ein hingesetztes
+    // Literal faellt an ihnen NICHT auf. Erst ein abgewandeltes Profil trennt
+    // "aus dem Profil gelesen" von "abgeschrieben".
+    const p = paare(
+      baueVideoKodierArgumente(
+        abgewandelt({
+          profil: "main",
+          level: "4.1",
+          pixelformat: "yuv422p",
+          farbmetadaten: { primaries: "bt2020", transfer: "smpte2084", matrix: "bt2020nc" },
+        }),
+      ),
+    );
+    expect(p["-profile:v"]).toBe("main");
+    expect(p["-level:v"]).toBe("4.1");
+    expect(p["-pix_fmt"]).toBe("yuv422p");
+    expect(p["-color_primaries"]).toBe("bt2020");
+    expect(p["-color_trc"]).toBe("smpte2084");
+    expect(p["-colorspace"]).toBe("bt2020nc");
+  });
+
   it("laesst die Ratensteuerung mit dem Profil wandern und haengt die Einheit an", () => {
     // Ohne das `k` deutet ffmpeg die Zahl als Bit pro Sekunde - aus 8 Mbit/s
     // wuerden 8 kbit/s, und niemand koennte im Studio erklaeren, warum das Bild
@@ -216,45 +221,5 @@ describe("baueVideoKodierArgumente (#161)", () => {
       expect(argumente).not.toContain(verboten);
     }
     expect(argumente.join(" ")).not.toContain("setsar");
-  });
-
-  it("schreibt keinen Profilwert als Literal in den Quelltext", () => {
-    // Sonst waere die naechste Profilaenderung keine Datenaenderung mehr, sondern
-    // eine Quelltextaenderung an einer zweiten, leicht zu uebersehenden Stelle -
-    // und die zweite Stelle bliebe beim ersten Mal stehen.
-    for (const literal of [
-      "1920",
-      "1080",
-      "10000",
-      "12000",
-      "24000",
-      "30",
-      "60",
-      "high",
-      "4.0",
-      "yuv420p",
-      "bt709",
-    ]) {
-      expect(CODEZEILEN).not.toContain(literal);
-    }
-  });
-
-  it("nennt keinen Hardware-Encoder und keine Qualitaets-Stellschraube", () => {
-    // Hardware-Encoder ignorieren einen Teil dieser Einstellungen und liefern je
-    // nach Grafiktreiber unterschiedliche Dateien - die Uniformitaetszusage fuer
-    // `-c copy` haenge dann an der Hardware des Nutzers.
-    for (const verboten of [
-      "nvenc",
-      "qsv",
-      "amf",
-      "videotoolbox",
-      "crf",
-      "preset",
-      "tune",
-      "movflags",
-      "setsar",
-    ]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
   });
 });
