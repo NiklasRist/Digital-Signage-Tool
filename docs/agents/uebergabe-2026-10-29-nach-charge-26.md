@@ -10,13 +10,13 @@ Einzelbefunde: [`mutation-pilot-2026-10-20.md`](mutation-pilot-2026-10-20.md), A
 
 | | Wert |
 |---|---|
-| Gebaute Chargen | **26** – **126 Testdateien** (je fünf, Charge 26 mit Sonderfall `marke`) |
+| Gebaute Chargen | **26** – **130 Testdateien** (je fünf, Charge 26 mit Sonderfall `marke`) |
 | Suite | **5.307** Unit-Tests in **340** Dateien, **49** Integrationstests in 12 Dateien |
 | Gate | `npm run pruefung` **Exit 0** (Typecheck + Lint + Build + Tests + Integration + Treiber) |
 | Treiber | **0 Befunde**; der CDP-Abriss aus Charge 17 trat in 18–26 **nicht** auf |
 | Sperrklinke | **0** – `tools/eslint/quelltext-proben-ausnahmen.json` ist **geloescht** |
 | Lint | 0 Fehler (Warnungen unverändert: 192 × `SAFETY` aus #448) |
-| Push | **nicht gepusht** – `main` liegt vor `origin/main`; **Push nur auf Anweisung** |
+| Push | **nicht gepusht** – `main` liegt **21 Commits** vor `origin/main` (inkl. dieser Doku); **Push nur auf Anweisung** |
 
 ## 2. Was Charge 26 ergeben hat (kurz)
 
