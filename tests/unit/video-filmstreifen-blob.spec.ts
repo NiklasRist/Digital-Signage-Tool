@@ -23,6 +23,7 @@ import type { Listenelement, Project } from '../../src/shared/contracts/project'
 const doppel = vi.hoisted(() => ({
   mediaBlobUrl: vi.fn(async () => 'blob:testquelle'),
   freigeben: vi.fn(),
+  fangeBild: vi.fn(() => null as HTMLCanvasElement | null),
 }))
 
 vi.mock('../../src/renderer/gemeinsam/media-blob-url', () => ({
@@ -34,7 +35,7 @@ vi.mock('../../src/renderer/gemeinsam/media-blob-url', () => ({
 // laeuft trotzdem vollstaendig durch (inkl. Freigabe im finally).
 vi.mock('../../src/renderer/composer/thumbnails', () => ({
   warteAufMetadaten: async () => undefined,
-  fangeBild: () => null,
+  fangeBild: doppel.fangeBild,
 }))
 
 import { VideoFilmstreifen } from '../../src/renderer/composer/video-filmstreifen'
@@ -74,6 +75,8 @@ afterEach(() => {
   wurzel = null
   doppel.mediaBlobUrl.mockClear()
   doppel.freigeben.mockClear()
+  doppel.fangeBild.mockReset()
+  doppel.fangeBild.mockReturnValue(null)
   vi.useRealTimers()
 })
 
@@ -96,16 +99,23 @@ async function montiere(): Promise<void> {
 }
 
 describe('Filmstreifen bindet media:// als Blob-URL (#364)', () => {
-  it('holt die Bytes ueber mediaBlobUrl und gibt die Objekt-URL danach frei', async () => {
+  it('holt die Bytes entprellt ueber mediaBlobUrl und gibt die Objekt-URL danach frei', async () => {
     vi.useFakeTimers()
     await montiere()
 
+    // Seit dem Ladezeit-Umbau (29.10.2026) wartet der Streifen 120 ms: schnelles
+    // Zoomen loest nicht fuer jede Zwischenbreite einen eigenen Lauf aus.
+    expect(doppel.mediaBlobUrl).not.toHaveBeenCalled()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(130)
+    })
+    await act(async () => {})
     expect(doppel.mediaBlobUrl).toHaveBeenCalledWith('p1', 'a.mp4')
 
     // Der Suchlauf wartet auf `seeked` oder die Zeitgrenze (3000 ms) - danach
     // ist das letzte Bild durch und der finally-Zweig gibt frei.
     await act(async () => {
-      vi.advanceTimersByTime(3100)
+      await vi.advanceTimersByTimeAsync(3100)
     })
     await act(async () => {})
 

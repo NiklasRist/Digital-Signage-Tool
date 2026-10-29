@@ -95,7 +95,7 @@ import { BibliothekDock } from './bibliothek-dock.tsx'
 import { verwendeZeitleistenZug } from './verwende-zeitleisten-zug'
 // #437: Unterbrechungen entfernen - die reine Listen-Bildung liegt in unterbrechungs-aufnahme.ts,
 // geschrieben wird ueber den EINEN Weg setzeElementUnterbrechungen (#426).
-import { entferneUnterbrechung } from './unterbrechungs-aufnahme'
+import { entferneUnterbrechung, verschiebeUnterbrechung, videoSekunden } from './unterbrechungs-aufnahme'
 import { setzeElementUnterbrechungen } from './unterbrechungs-bearbeiten'
 // #408: Das KontextMenue (#133-Familie, Duplikat/Entfernen) wird in DIESE Wurzel
 // montiert - sein Zustand wandert siehtbarseitig in die ComposerLage (menueAdresse,
@@ -296,6 +296,36 @@ export function ComposerInterna({
     if (element === undefined || element.art !== 'video') return
     const neu = entferneUnterbrechung(element.unterbrechungen ?? [], index)
     void setzeElementUnterbrechungen(element.id, neu).then((antwort) => {
+      if (!antwort.ok) {
+        meldeWurzel(antwort.fehler.code, antwort.fehler.meldung)
+        return
+      }
+      const aktuell = projekt.hole().projekt
+      if (aktuell === null) return
+      const wert = antwort.wert
+      projekt.setzeListe(aktuell.liste.map((eintrag) => (eintrag.id === wert.id ? wert : eintrag)))
+    })
+  }
+
+  // #442: EINE Unterbrechung an eine neue GESPIELTE Zeitstelle schieben. Geklemmt und
+  // sortiert wird rein in `verschiebeUnterbrechung`; geschrieben ueber den EINEN Weg
+  // `setzeElementUnterbrechungen` (#426), die Sicht-Korrektur ist EIN Undo-Schritt (#243).
+  const verschiebeUnterbrechungAmVideo = (elementId: string, index: number, zeitstelle: number): void => {
+    const frisch = projekt.hole().projekt
+    if (frisch === null) return
+    const element = frisch.liste.find((eintrag) => eintrag.id === elementId)
+    if (element === undefined || element.art !== 'video') return
+    const gesamt = videoSekunden(element)
+    if (gesamt === null) {
+      meldeWurzel('ungueltige_eingabe', 'Ohne brauchbare Videodauer laesst sich nichts verschieben.')
+      return
+    }
+    const ergebnis = verschiebeUnterbrechung(element.unterbrechungen ?? [], index, zeitstelle, gesamt)
+    if (!ergebnis.ok) {
+      meldeWurzel('ungueltige_eingabe', ergebnis.meldung)
+      return
+    }
+    void setzeElementUnterbrechungen(element.id, ergebnis.unterbrechungen).then((antwort) => {
       if (!antwort.ok) {
         meldeWurzel(antwort.fehler.code, antwort.fehler.meldung)
         return
@@ -921,6 +951,7 @@ export function ComposerInterna({
             pxProSekunde={pxProSekunde}
             aufZoom={zoome}
             aufUnterbrechungEntfernen={entferneUnterbrechungAmVideo}
+            aufUnterbrechungVerschieben={verschiebeUnterbrechungAmVideo}
           />
 
           {/* S4 (Naht N4): die Ausgaben-Region als eigener Baustein (#230/#232-Oeffnungsweg).

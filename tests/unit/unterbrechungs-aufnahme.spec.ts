@@ -8,6 +8,7 @@ import {
   istVollflaechigeAktion,
   spieleZeitBeiSequenzzeit,
   unterbrechungsMarken,
+  verschiebeUnterbrechung,
   videoSekunden,
 } from '../../src/renderer/composer/unterbrechungs-aufnahme'
 import type { Listenelement, Unterbrechung } from '../../src/shared/contracts/project'
@@ -125,5 +126,58 @@ describe('entferneUnterbrechung (#437)', () => {
     const r = entferneUnterbrechung(liste, 9)
     expect(r).toEqual(liste)
     expect(r).not.toBe(liste)
+  })
+})
+
+describe('verschiebeUnterbrechung (#442)', () => {
+  it('verschiebt genau einen Eintrag und sortiert nach Zeitstelle', () => {
+    const r = verschiebeUnterbrechung([u(2, 'a', 1), u(6, 'b', 2)], 0, 7.5, 10)
+    expect(r.ok && r.unterbrechungen.map((e) => [e.aktionRef, e.zeitstelle])).toEqual([
+      ['b', 6],
+      ['a', 7.5],
+    ])
+  })
+
+  it('aendert NUR die Zeitstelle - Aktion und Dauer bleiben', () => {
+    const r = verschiebeUnterbrechung([u(2, 'a', 1.5)], 0, 4, 10)
+    expect(r.ok && r.unterbrechungen).toEqual([u(4, 'a', 1.5)])
+  })
+
+  it('klemmt in das offene Intervall (0, Videoende)', () => {
+    const rand = 1 / 30
+    const links = verschiebeUnterbrechung([u(2, 'a', 1)], 0, -5, 10)
+    expect(links.ok && links.unterbrechungen[0]?.zeitstelle).toBeCloseTo(rand, 10)
+    const rechts = verschiebeUnterbrechung([u(2, 'a', 1)], 0, 99, 10)
+    expect(rechts.ok && rechts.unterbrechungen[0]?.zeitstelle).toBeCloseTo(10 - rand, 10)
+  })
+
+  it('darf an einem Nachbarn vorbei - die Liste wird neu sortiert', () => {
+    const r = verschiebeUnterbrechung([u(2, 'a', 1), u(6, 'b', 1)], 0, 9, 10)
+    expect(r.ok && r.unterbrechungen.map((e) => [e.aktionRef, e.zeitstelle])).toEqual([
+      ['b', 6],
+      ['a', 9],
+    ])
+  })
+
+  it('klemmt in eine Luecke, statt eine doppelte Stelle zu erzeugen', () => {
+    const rand = 1 / 30
+    // Ziel 6.01 liegt dicht hinter b (6) und weit vor c (9) -> ein Frame Abstand.
+    const r = verschiebeUnterbrechung([u(2, 'a', 1), u(6, 'b', 1), u(9, 'c', 1)], 0, 6.01, 10)
+    expect(r.ok && r.unterbrechungen.map((e) => e.aktionRef)).toEqual(['b', 'a', 'c'])
+    expect(r.ok && (r.unterbrechungen[1]?.zeitstelle ?? 0)).toBeCloseTo(6 + rand, 10)
+  })
+
+  it('ohne Platz zwischen zwei Nachbarn -> abgelehnt mit Meldung', () => {
+    const rand = 1 / 30
+    const bestand = [u(2, 'a', 1), u(2 + 1.5 * rand, 'c', 1), u(9, 'b', 1)]
+    const r = verschiebeUnterbrechung(bestand, 2, 2.02, 10)
+    expect(r.ok).toBe(false)
+    expect(r.ok === false && r.meldung.length > 0).toBe(true)
+  })
+
+  it('unbekannter Index, NaN-Zeitstelle und unbrauchbare Videodauer -> abgelehnt', () => {
+    expect(verschiebeUnterbrechung([u(2, 'a', 1)], 5, 3, 10).ok).toBe(false)
+    expect(verschiebeUnterbrechung([u(2, 'a', 1)], 0, Number.NaN, 10).ok).toBe(false)
+    expect(verschiebeUnterbrechung([u(2, 'a', 1)], 0, 3, Number.NaN).ok).toBe(false)
   })
 })

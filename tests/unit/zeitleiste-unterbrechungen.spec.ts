@@ -61,6 +61,7 @@ interface Eigenschaften {
   projekt: Project | null
   bandZiel?: string | null
   aufEntfernen?: (elementId: string, index: number) => void
+  aufVerschieben?: (elementId: string, index: number, zeitstelle: number) => void
 }
 
 function ZeitleistenTest(richtung: Eigenschaften): JSX.Element {
@@ -73,6 +74,7 @@ function ZeitleistenTest(richtung: Eigenschaften): JSX.Element {
     korbRef: leereRef,
     bandZiel: richtung.bandZiel ?? null,
     aufUnterbrechungEntfernen: richtung.aufEntfernen,
+    aufUnterbrechungVerschieben: richtung.aufVerschieben,
   })
   return createElement(DndContext, null, kinder)
 }
@@ -94,6 +96,14 @@ afterAll(() => {
     geraet.behaelter.remove()
   }
 })
+
+/** Ein Zeiger-Ereignis auf ein Element (jsdom kennt kein PointerEvent; React hoert auf
+ *  den Typ `pointerdown`/`pointermove`/`pointerup`, `clientX` traegt die MouseEvent-Form). */
+function zeiger(ziel: Element, typ: 'pointerdown' | 'pointermove' | 'pointerup', clientX: number): void {
+  act(() => {
+    ziel.dispatchEvent(new MouseEvent(typ, { bubbles: true, clientX }))
+  })
+}
 
 describe('Die Zeitleiste zeigt die Unterbrechungen (#437)', () => {
   it('eine Unterbrechung wird als Aktions-Kasten im Video-Block gezeichnet', () => {
@@ -118,6 +128,27 @@ describe('Die Zeitleiste zeigt die Unterbrechungen (#437)', () => {
     expect(entfernen).not.toBeNull()
     act(() => entfernen!.click())
     expect(aufEntfernen).toHaveBeenCalledWith('v0', 0)
+  })
+
+  it('ein Zug am Kasten meldet die neue Zeitstelle (8 px/s: 40 px = 5 s)', () => {
+    const aufVerschieben = vi.fn()
+    const behaelter = montiere({ projekt: projektMitEinschub(), aufVerschieben })
+    const kasten = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-unterbrechung-0-0"]')
+    expect(kasten).not.toBeNull()
+    zeiger(kasten!, 'pointerdown', 100)
+    zeiger(kasten!, 'pointermove', 140)
+    zeiger(kasten!, 'pointerup', 140)
+    // gespeicherte Zeitstelle 1 s + 40 px / 8 px je Sekunde = 6 s
+    expect(aufVerschieben).toHaveBeenCalledWith('v0', 0, 6)
+  })
+
+  it('ein Klick ohne Zug verschiebt nichts', () => {
+    const aufVerschieben = vi.fn()
+    const behaelter = montiere({ projekt: projektMitEinschub(), aufVerschieben })
+    const kasten = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-unterbrechung-0-0"]')
+    zeiger(kasten!, 'pointerdown', 100)
+    zeiger(kasten!, 'pointerup', 100)
+    expect(aufVerschieben).not.toHaveBeenCalled()
   })
 
   it('das Drop-Ziel heisst "Unterbrechung" (ein Drop auf den Video-Koerper, #442)', () => {

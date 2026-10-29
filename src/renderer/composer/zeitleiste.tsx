@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { useState, type JSX } from "react";
 
 import {
   useDroppable,
@@ -92,6 +92,8 @@ export interface ZeitleistenEigenschaften {
   aufZoom?: (richtung: -1 | 1) => void
   /** #437: eine Unterbrechung am Video entfernen (Index in `element.unterbrechungen`). */
   aufUnterbrechungEntfernen?: (elementId: string, index: number) => void
+  /** #442: eine Unterbrechung an eine neue GESPIELTE Zeitstelle schieben. */
+  aufUnterbrechungVerschieben?: (elementId: string, index: number, zeitstelle: number) => void
 }
 
 export function Zeitleiste({
@@ -104,6 +106,7 @@ export function Zeitleiste({
   pxProSekunde = EA_PX_PRO_SEKUNDE,
   aufZoom,
   aufUnterbrechungEntfernen,
+  aufUnterbrechungVerschieben,
 }: ZeitleistenEigenschaften): JSX.Element {
   if (projekt === null) {
     return <div data-testid="zeitleiste-kein-projekt" />
@@ -197,6 +200,7 @@ export function Zeitleiste({
                 projekt={projekt}
                 element={elementeNachId.get(zeile.elementId) ?? null}
                 aufUnterbrechungEntfernen={aufUnterbrechungEntfernen}
+                aufUnterbrechungVerschieben={aufUnterbrechungVerschieben}
               />
               {neuZug !== null && (
                 <KantenBlock nummer={index + 1} aktiv={aktiveKante === index + 1} laedt={laedtKante === index + 1} />
@@ -261,6 +265,7 @@ function ZeilenBlock({
   projekt = null,
   element = null,
   aufUnterbrechungEntfernen,
+  aufUnterbrechungVerschieben,
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
@@ -273,11 +278,16 @@ function ZeilenBlock({
   element?: Listenelement | null;
   /** #437: Unterbrechung entfernen (Index in `element.unterbrechungen`). */
   aufUnterbrechungEntfernen?: (elementId: string, index: number) => void;
+  /** #442: Unterbrechung an eine neue gespielte Zeitstelle schieben. */
+  aufUnterbrechungVerschieben?: (elementId: string, index: number, zeitstelle: number) => void;
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: zeile.elementId })
   const beschriftung = zeilenBeschriftung(zeile, index)
   // #437: die Unterbrechungs-Marken des Video-Blocks (sequenzielle Positionen).
   const marken = zeile.art === 'video' && element !== null ? unterbrechungsMarken(element) : []
+  // #442: welcher Kasten gerade am Zeiger haengt (nur Bild) - der Schreibvorgang
+  // passiert EINMAL beim Loslassen.
+  const [zug, setzeZug] = useState<{ index: number; startX: number; versatz: number } | null>(null)
   // #442 (Entscheidung 29.10.2026): ein Drop im Video-Koerper legt IMMER eine
   // Unterbrechung an - das Ziel traegt deshalb nur noch dieses eine Label (violett).
   const zielArt = istBandZiel ? 'Unterbrechung' : null
@@ -345,8 +355,29 @@ function ZeilenBlock({
             key={marke.index}
             data-testid={`zeitleiste-unterbrechung-${index}-${marke.index}`}
             data-zeitstelle={marke.zeitstelle}
-            title={`Unterbrechung: ${titel} · ${marke.dauerSekunden.toFixed(1)} s ab ${marke.zeitstelle.toFixed(2)} s`}
-            onPointerDown={(ereignis) => ereignis.stopPropagation()}
+            title={`Unterbrechung: ${titel} · ${marke.dauerSekunden.toFixed(1)} s ab ${marke.zeitstelle.toFixed(2)} s (ziehen zum Verschieben)`}
+            onPointerDown={(ereignis) => {
+              // Kein Sortier-Drag des Blocks, kein Drop: der Kasten zieht sich selbst.
+              ereignis.stopPropagation()
+              if (aufUnterbrechungVerschieben === undefined) return
+              ereignis.currentTarget.setPointerCapture?.(ereignis.pointerId)
+              setzeZug({ index: marke.index, startX: ereignis.clientX, versatz: 0 })
+            }}
+            onPointerMove={(ereignis) => {
+              if (zug === null || zug.index !== marke.index) return
+              ereignis.stopPropagation()
+              setzeZug({ index: marke.index, startX: zug.startX, versatz: ereignis.clientX - zug.startX })
+            }}
+            onPointerUp={(ereignis) => {
+              if (zug === null || zug.index !== marke.index) return
+              ereignis.stopPropagation()
+              const versatz = ereignis.clientX - zug.startX
+              setzeZug(null)
+              // Ein Klick ist kein Zug: unter 2 px passiert nichts.
+              if (Math.abs(versatz) < 2) return
+              aufUnterbrechungVerschieben?.(zeile.elementId, marke.index, marke.zeitstelle + versatz / pxProSekunde)
+            }}
+            onPointerCancel={() => setzeZug(null)}
             style={{
               position: 'absolute',
               left: Math.max(0, Math.round(marke.startSekunden * pxProSekunde)),
@@ -362,6 +393,8 @@ function ZeilenBlock({
               borderRight: '2px solid #b07ae5',
               background: 'rgba(58, 42, 77, 0.96)',
               zIndex: 2,
+              cursor: zug?.index === marke.index ? 'grabbing' : 'grab',
+              transform: zug?.index === marke.index ? `translateX(${zug.versatz}px)` : undefined,
             }}
           >
             <span style={{ fontSize: 9, color: '#efe6fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

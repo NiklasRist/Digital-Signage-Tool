@@ -3,8 +3,16 @@
 // keine Teilstriche. Dieses Bauteil holt sie ueber dieselbe Aufnahme wie die
 // Thumbnails (composer/thumbnails.ts, `fangeBild`) und zeichnet sie nebeneinander.
 //
-// Die ANZAHL folgt der Blockbreite (also dem Zoom): je breiter der Block, desto mehr
-// Einzelbilder - beim Hineinzoomen naehert sich der Streifen den einzelnen Frames.
+// LADEZEIT (29.10.2026, User-Befund "die frames laden zu langsam"):
+//  1. Der Sucher laeuft je Bild EINMAL vorwaerts; die Bilder erscheinen einzeln,
+//     sobald sie da sind - der Streifen fuellt sich, statt am Ende auf einmal.
+//  2. Das Ergebnis wird je Quelle/Ausschnitt/Bildzahl GEMERKT (kleiner Speicher mit
+//     Obergrenze). Nochmal ansehen, Zoom hin und zurueck, Reiterwechsel: sofort.
+//  3. Ein Zoom-Schritt wartet 120 ms, bevor er laedt - schnelles Klicken loest nicht
+//     fuer jede Zwischenbreite einen eigenen Lauf aus.
+//
+// DIE BLOB-URL BLEIBT ZEITLICH BEGRENZT (#364): Sie wird weiterhin nach dem Lauf
+// freigegeben; gemerkt werden nur die FERTIGEN Einzelbilder (Canvas, 40x64 px).
 
 import { useEffect, useRef, useState, type JSX } from 'react'
 
@@ -12,6 +20,7 @@ import type { Listenelement, Project } from '../../shared/contracts/project'
 import type { Asset } from '../../shared/contracts/asset'
 import { mediaBlobUrl, gibMediaBlobUrlFrei } from '../gemeinsam/media-blob-url'
 import { fangeBild, warteAufMetadaten } from './thumbnails'
+import { holeStreifen, merkeStreifen, streifenSchluessel } from './filmstreifen-speicher'
 
 /** Zielbreite EINES Einzelbilds. Bestimmt, wie viele in die Blockbreite passen. */
 const ZIEL_BREITE_PX = 40
@@ -21,6 +30,8 @@ const MAX_BILDER = 40
 const BILD_HOEHE_PX = 64
 /** Zeitgrenze je Suchlauf, damit ein haengendes Video den Streifen nicht blockiert. */
 const SUCH_TIMEOUT_MS = 3000
+/** Wartezeit, bevor ein Zoom-Schritt wirklich laedt (Entprellung schneller Klicks). */
+const LADE_VERZOEGERUNG_MS = 120
 
 /** Wie viele Einzelbilder eine Blockbreite traegt (mindestens 1, hoechstens MAX_BILDER). REIN. */
 export function anzahlBilder(breitePx: number): number {
@@ -77,11 +88,14 @@ function sucheUndFange(video: HTMLVideoElement, zeit: number): Promise<HTMLCanva
   })
 }
 
-/** Laedt die Einzelbilder EINMAL je Quelle/Dauer/Anzahl. Fehler ergeben einen leeren Streifen. */
+/** Laedt die Einzelbilder EINMAL je Quelle/Dauer/Anzahl. Jedes Bild wird sofort
+ *  hereingereicht (`aufBild`), damit der Streifen sich fuellt. Fehler ergeben einen
+ *  leeren Streifen. */
 async function ladeFilmstreifen(
   projektId: string,
   dateiname: string,
   zeiten: number[],
+  aufBild: (stelle: number, bild: HTMLCanvasElement) => void,
 ): Promise<HTMLCanvasElement[]> {
   if (zeiten.length === 0) return []
   // #364: NICHT die media://-URL direkt binden - drawImage daraus taintet das
@@ -97,7 +111,10 @@ async function ladeFilmstreifen(
     const bilder: HTMLCanvasElement[] = []
     for (const zeit of zeiten) {
       const bild = await sucheUndFange(video, zeit)
-      if (bild !== null) bilder.push(bild)
+      if (bild !== null) {
+        aufBild(bilder.length, bild)
+        bilder.push(bild)
+      }
     }
     return bilder
   } catch {
@@ -138,7 +155,7 @@ export interface FilmstreifenEigenschaften {
 }
 
 export function VideoFilmstreifen({ projekt, element, breitePx, hoehePx }: FilmstreifenEigenschaften): JSX.Element | null {
-  const [bilder, setzeBilder] = useState<HTMLCanvasElement[]>([])
+  const [bilder, setzeBilder] = useState<Array<HTMLCanvasElement | null>>([])
   const quelle = videoQuelle(projekt, element)
   const start = typeof element.trimStart === 'number' ? element.trimStart : 0
   const ende = typeof element.trimEnde === 'number' ? element.trimEnde : (quelle?.dauer ?? 0)
@@ -149,18 +166,36 @@ export function VideoFilmstreifen({ projekt, element, breitePx, hoehePx }: Films
       setzeBilder([])
       return
     }
+    const schluessel = streifenSchluessel(quelle.projektId, quelle.dateiname, start, ende, anzahl)
+    const gemerkt = holeStreifen(schluessel)
+    if (gemerkt !== undefined) {
+      setzeBilder(gemerkt)
+      return
+    }
     let abgebrochen = false
-    const zeiten = bildZeitpunkte(start, ende, anzahlBilder(breitePx))
-    void ladeFilmstreifen(quelle.projektId, quelle.dateiname, zeiten).then((ergebnis) => {
-      if (!abgebrochen) setzeBilder(ergebnis)
-    })
+    setzeBilder(Array.from({ length: anzahl }, () => null))
+    const frist = setTimeout(() => {
+      void ladeFilmstreifen(quelle.projektId, quelle.dateiname, bildZeitpunkte(start, ende, anzahl), (stelle, bild) => {
+        if (abgebrochen) return
+        setzeBilder((alt) => {
+          const neu = [...alt]
+          neu[stelle] = bild
+          return neu
+        })
+      }).then((fertig) => {
+        // Auch nach einem Abbruch merken: die Arbeit ist getan, und der Nutzer kommt
+        // beim Zurueckzoomen genau auf diesen Schluessel zurueck.
+        merkeStreifen(schluessel, fertig)
+      })
+    }, LADE_VERZOEGERUNG_MS)
     return () => {
       abgebrochen = true
+      clearTimeout(frist)
     }
   }, [quelle?.projektId, quelle?.dateiname, start, ende, anzahl])
 
-  if (quelle === null || bilder.length === 0) return null
-  const je = breitePx / bilder.length
+  if (quelle === null || bilder.every((bild) => bild === null)) return null
+  const je = breitePx / Math.max(1, anzahl)
   return (
     <div
       data-testid="zeitleiste-filmstreifen"
@@ -173,9 +208,14 @@ export function VideoFilmstreifen({ projekt, element, breitePx, hoehePx }: Films
         zIndex: 0,
       }}
     >
-      {bilder.map((knoten, i) => (
-        <Einzelbild key={i} knoten={knoten} breite={je} hoehe={hoehePx} />
-      ))}
+      {Array.from({ length: anzahl }, (_, i) => {
+        const knoten = bilder[i] ?? null
+        return knoten === null ? (
+          <span key={i} style={{ flex: '0 0 auto', width: je, height: hoehePx }} />
+        ) : (
+          <Einzelbild key={i} knoten={knoten} breite={je} hoehe={hoehePx} />
+        )
+      })}
     </div>
   )
 }

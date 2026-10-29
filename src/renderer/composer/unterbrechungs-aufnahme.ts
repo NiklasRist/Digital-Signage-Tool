@@ -149,3 +149,50 @@ export function entferneUnterbrechung(
 ): Unterbrechung[] {
   return bestehende.filter((_, stelle) => stelle !== index)
 }
+
+/** Der Ausgang des Verschiebens - abgelehnt MIT Begruendung statt Wurf. */
+export type UnterbrechungVerschieben =
+  | { ok: true; unterbrechungen: Unterbrechung[] }
+  | { ok: false; meldung: string }
+
+/**
+ * Verschiebt den Einschub `index` auf die GESPIELTE Zeitstelle `neueZeitstelle` und
+ * liefert die nach Zeitstelle sortierte Liste. Geklemmt wird in das offene Intervall
+ * (0, videoDauer) und zwischen die Nachbarn - der Store verlangt aufsteigend und ohne
+ * doppelte Stelle (TK 9.5.2); ein Zug auf eine belegte Stelle landet also direkt
+ * daneben statt zu scheitern. Nur das betroffene Feld `zeitstelle` aendert sich.
+ */
+export function verschiebeUnterbrechung(
+  bestehende: readonly Unterbrechung[],
+  index: number,
+  neueZeitstelle: number,
+  videoDauer: number,
+): UnterbrechungVerschieben {
+  const eintrag = bestehende[index]
+  if (eintrag === undefined) {
+    return { ok: false, meldung: 'Diese Unterbrechung gibt es nicht (mehr).' }
+  }
+  if (!Number.isFinite(videoDauer) || !(videoDauer > 0)) {
+    return { ok: false, meldung: 'Ohne brauchbare Videodauer laesst sich nichts verschieben.' }
+  }
+  if (!Number.isFinite(neueZeitstelle)) {
+    return { ok: false, meldung: 'Die neue Zeitstelle ist keine Zahl.' }
+  }
+
+  const rand = 1 / RENDER_PROFILE.fps
+  const rest = bestehende.filter((_, stelle) => stelle !== index)
+  // Die Nachbarn im ZIEL: kleiner/groesser als die gewuenschte Stelle.
+  const davor = rest.filter((kandidat) => kandidat.zeitstelle < neueZeitstelle)
+  const danach = rest.filter((kandidat) => kandidat.zeitstelle > neueZeitstelle)
+  const unten = davor.length === 0 ? 0 : Math.max(...davor.map((kandidat) => kandidat.zeitstelle))
+  const oben = danach.length === 0 ? videoDauer : Math.min(...danach.map((kandidat) => kandidat.zeitstelle))
+  const min = Math.max(rand, unten + rand)
+  const max = Math.min(videoDauer - rand, oben - rand)
+  if (!(max > min)) {
+    return { ok: false, meldung: 'Zwischen den Nachbarn ist kein Platz fuer diese Unterbrechung.' }
+  }
+
+  const ziel = Math.min(Math.max(neueZeitstelle, min), max)
+  const neu = [...rest, { ...eintrag, zeitstelle: ziel }].sort((a, b) => a.zeitstelle - b.zeitstelle)
+  return { ok: true, unterbrechungen: neu }
+}
