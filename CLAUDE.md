@@ -11,7 +11,39 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, dreissigste Sitzung: Mutations-Charge 26 und das Verbot) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, einunddreissigste Sitzung: Produktarbeit #442 und #449) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-29-produktarbeit-442-449.md`](docs/agents/uebergabe-2026-10-29-produktarbeit-442-449.md).**
+
+- **GEPUSHT (Sitzungsbeginn, auf Anweisung):** 21 Commits, `4888913..78cb459`; `main == origin/main`.
+- **#442 GEBAUT UND GESCHLOSSEN (`e1bf975`, `21e1519`, `049649f`, `962502a`):** Ein Drop auf den
+  **Koerper** eines Video-Blocks legt **immer** eine Unterbrechung an - die Vorlagen-Heuristik aus
+  #437 (`vollflaeche` -> Unterbrechung, sonst Band) war die Ursache von "Aktionen zwischen Frames
+  geht nicht". Die Unterbrechung ist ein **sichtbarer Kasten** (Video | Aktion | Video) mit
+  Aktionstitel und eigenem **×**; der alte Kasten loeschte sich bei jedem Klick (daher "verschwindet
+  beim Klicken"). Der Kasten ist **verschiebbar** und springt nach dem Loslassen nicht zurueck.
+  **Band-Abschnitte entstehen nur noch in der Band-Bearbeitung** - der Band-Drop und der
+  Zeit-Split `teileUndFuege` (#428B) sind entfallen.
+- **#449 GEBAUT, OFFEN (Review ausstehend, `32b40b7`):** Marken-Editor ohne Feldliste. Elemente =
+  **Zonen der Vorschau-Vorlage** (`marken-elemente.ts`), anklickbar; Klick oeffnet eine **kleine Box**
+  mit genau den Werten des Elements. Palette unter der Vorschau fuer die 6 Farb-/2 Schriftrollen,
+  die "Vollbild" nicht zeigt. Ein Speichern derselben Marke laesst die Box offen.
+- **FILMSTREIFEN:** Bilder erscheinen einzeln, fertige Streifen werden gemerkt
+  (`filmstreifen-speicher.ts`, Obergrenze 40), Zoom entprellt 120 ms. Blob-URL bleibt begrenzt (#364).
+- **BEENDEN (`4be49ce`):** Fenster-Schliessen war NICHT defekt (gemessen, `exitCode 0`). Defekt war
+  der **Dev-Abbruch**: `dev.mjs` behandelte SIGHUP nicht -> Electron-Waise. Vorher/nachher belegt.
+  Der Flush-Dialog hat jetzt eine **15-s-Frist** (Zahl vom User noch nicht bestaetigt).
+- **Gate:** `npm run pruefung` **Exit 0** - Typecheck 0, Lint 0 Fehler, Unit **5.325 (343 Dateien)**,
+  Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** **6 Commits** vor `origin/main`. **Push nur auf Anweisung.**
+- **Befund ohne Bau:** `tools/bereitschaft.py` meldet **geschlossene** Issues als "bereit"
+  (`--state all`, kein Zustandsfilter). **Prozesse nach Arbeitsverzeichnis filtern, nicht nach dem
+  Programmnamen** - `Electron .` ist auch Kais Companion.
+- **Ehrlich offen:** Mutations-Gegenproben fuer die neuen #449-Tests fehlen; kein Treiber-Schritt
+  "Box oeffnet sich"; Filmstreifen unter dem Kasten wird nicht gekuerzt.
+- **Naechster Schritt:** #449 reviewen, dann #303 abnehmen, dann #443 (Videosteuerung).
+
+## STAND HEUTE (29.10.2026, dreissigste Sitzung: Mutations-Charge 26 und das Verbot) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-nach-charge-26.md`](docs/agents/uebergabe-2026-10-29-nach-charge-26.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 39.
