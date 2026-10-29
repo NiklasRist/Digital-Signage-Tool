@@ -27,10 +27,11 @@ Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation
   (gruen, harmlos) – erst `if (false)` ist die echte Mutation.
 - **B6 – Meldungstabelle:** `meldungZuBefunden` hatte keinen Test; ein geloeschter `case`
   blieb gruen. Neu: vier Faelle, je Feldname + Grund.
-- **PRODUKT-LUECKE, GEMELDET (nicht geaendert):** `meldungZuBefunden` hat **keinen
-  `case 'markeId'`**. Gemessen: `legeAktionAn({…, markeId: ''})` liefert
+- **PRODUKT-LUECKE GESCHLOSSEN (mit Freigabe):** `meldungZuBefunden` hatte **keinen
+  `case 'markeId'`**; `legeAktionAn({…, markeId: ''})` lieferte
   **`" Es wurde nichts gespeichert."`** – ohne Feldnamen, mit fuehrendem Leerzeichen.
-  Vorschlag: eigener `case` + Test; Entscheidung offen.
+  Jetzt: eigener `case`, ein Test, **und** der Rueckruf traegt den Rueckgabetyp `string` –
+  ein vergessener Zweig bricht `tsc` mit **TS2366** (belegt).
 - **Entfernt:** **21** Quelltext-/Meta-Tests, **5** Verhaltens-Tests ergaenzt; Suite
   **5.323 → 5.307** (340 Dateien). **Sperrklinke:** 25 → **20** Dateien.
 - **Ehrlich offen:** Die Abwesenheits-Zusagen der Renderer-Dateien (kein `window.api`, kein

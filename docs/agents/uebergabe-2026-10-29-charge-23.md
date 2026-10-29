@@ -27,11 +27,12 @@ Einzelbefunde: [`mutation-pilot-2026-10-20.md`](mutation-pilot-2026-10-20.md), A
   (Anführungszeichen-Tausch, grün) — erst `if (false)` ist die echte Mutation.
 - **B6 – Meldungstabelle:** `meldungZuBefunden` hatte **keinen** Test; ein gelöschter `case`
   blieb grün. Neu: vier Fälle, je Feldname + Grund.
-- **PRODUKT-LÜCKE, gemeldet, nicht geändert:** `meldungZuBefunden` hat keinen
-  `case 'markeId'`. Gemessen: `legeAktionAn({ …, markeId: '' })` liefert
+- **PRODUKT-LÜCKE GESCHLOSSEN (mit Freigabe):** `meldungZuBefunden` hatte keinen
+  `case 'markeId'`; `legeAktionAn({ …, markeId: '' })` lieferte
   **`" Es wurde nichts gespeichert."`** — ohne Feldnamen, mit führendem Leerzeichen.
-  Vorschlag: `case 'markeId': return 'markeId: Es muss eine Marke gewählt sein.'` + Test.
-  **Entscheidung steht bei Niklas.**
+  Jetzt: eigener `case`, eine Testzeile, **und** der Rückruf trägt den Rückgabetyp `string`
+  — ein vergessener Zweig bricht `tsc` mit **TS2366** (belegt, indem der `case` testweise
+  wieder entfernt wurde).
 - **Nachmessung nach dem Ausbau: 30 von 30 rot**, kein Fall kippt.
 
 ## 3. Nächster Schritt: Charge 23
@@ -119,7 +120,8 @@ bereits praktiziert.
   `no-restricted-imports`/`no-restricted-syntax`. Aus Charge 21: kein `fs`/`kill`/`unlink`
   im Abbruch, kein zweites Lock, kein Marken-Zugriff in `normalisieren`. Aus Charge 20:
   „eine Pfad-Autorität" (L8). Aus Charge 19: `try/catch` in beiden Anmeldungen, `whenReady`.
-- **Produkt-Lücke `markeId`** (s. Abschnitt 2) — gemeldet, Entscheidung offen.
+- **Produkt-Lücke `markeId`** (s. Abschnitt 2) — geschlossen; die Sperre gegen den
+  nächsten vergessenen `case` ist der Rückgabetyp `string` im Rückruf (TS2366).
 - **#448**: 192 Typ-Behauptungen in `src` ohne `SAFETY`-Begründung; Regel steht auf `warn`.
 - **Treiber**: In Charge 17 waren vier Läufe rot (CDP-Abriss, Pilot Abschnitt 30), ohne
   Codeänderung; Chargen 18–22 liefen ohne Befund. Ursache weiter **unbenannt**.

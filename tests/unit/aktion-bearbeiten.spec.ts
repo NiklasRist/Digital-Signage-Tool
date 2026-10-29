@@ -313,6 +313,7 @@ describe('meldungZuBefunden - jeder Befund nennt Feld und Grund', () => {
     ['vorlagenId', { vorlagenId: '  ' }, 'vorlagenId: Es muss eine Vorlage gewählt sein.'],
     ['standardDauer', { standardDauer: 5 }, 'standardDauer: Der Wert liegt außerhalb'],
     ['akzentfarbe', { akzentfarbe: 'rot' }, 'akzentfarbe: Der Wert ist kein gültiger Hex-Wert'],
+    ['markeId', { markeId: '   ' }, 'markeId: Es muss eine Marke gewählt sein.'],
   ])('nennt %s und den Grund, ohne zu senden', async (_feld, aenderungen, erwartet) => {
     doppel.aufrufe = []
     doppel.antwort = { ok: true, wert: AKTION_OK }

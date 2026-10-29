@@ -1846,15 +1846,19 @@ Zwei Luecken geschlossen (A4, B6), eine **Produkt-Luecke gemeldet** (markeId, s.
   `case` blieb gruen. Neu: vier Faelle (`titel`, `vorlagenId`, `standardDauer`,
   `akzentfarbe`), jeder prueft Feldnamen und Grund in der Meldung.
 
-### Produkt-Luecke: `markeId` fehlt in der Meldungstabelle (GEMELDET, nicht geaendert)
+### Produkt-Luecke: `markeId` fehlte in der Meldungstabelle (GESCHLOSSEN, mit Freigabe)
 
-`EntwurfBefund` kennt `{ feld: 'markeId', grund: 'leer' }`, `meldungZuBefunden` hat dafuer
+`EntwurfBefund` kennt `{ feld: 'markeId', grund: 'leer' }`, `meldungZuBefunden` hatte dafuer
 **keinen `case`**. Gemessen (temporaerer Diagnose-Test, danach entfernt):
 `legeAktionAn({ …, markeId: '' })` liefert die Meldung **`" Es wurde nichts gespeichert."`**
-– ohne Feldnamen, ohne Grund, mit fuehrendem Leerzeichen. Der Nutzer erfaehrt nicht, was
-fehlt. **Nicht eigenmaechtig behoben** (Produkttext, eigene Entscheidung noetig); der neue
-Meldungstest deckt bewusst nur die vier vorhandenen Faelle. Vorschlag: `case 'markeId':
-return 'markeId: Es muss eine Marke gewaehlt sein.'` plus ein Test.
+– ohne Feldnamen, ohne Grund, mit fuehrendem Leerzeichen. Zuerst **gemeldet statt geaendert**;
+mit Freigabe danach geschlossen:
+
+- `case 'markeId': return 'markeId: Es muss eine Marke gewaehlt sein.'`
+- **Sperre gegen den naechsten vergessenen Zweig:** der Rueckruf in `meldungZuBefunden` traegt
+  jetzt den Rueckgabetyp `string`. Ohne `case` bricht `tsc` mit **TS2366** („Function lacks
+  ending return statement") – belegt, indem der `case` testweise wieder entfernt wurde.
+- Test: eine Zeile in der Meldungstabelle (vor der Korrektur rot, danach gruen).
 
 ### Was die Verhaltens-Tests je Datei tragen (Auszug)
 
@@ -1892,7 +1896,7 @@ Verhaltens-Tests belegen nur den Weg, der gegangen wird. Ebenso in `App.tsx`: �
 | Refactorings | – | **0 / 5 rot** |
 | Quelltext-/Meta-Tests entfernt | – | **21** |
 | Verhaltens-Tests ergaenzt | – | **5** (1 + 4) |
-| Echte Luecken geschlossen | – | **2** (A4, B6) + **1 gemeldete Produkt-Luecke** (markeId) |
+| Echte Luecken geschlossen | – | **2** (A4, B6) + **1 Produkt-Luecke** (markeId, mit Freigabe) |
 | Suite | 5.323 | **5.307** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 25 | **20** Dateien |

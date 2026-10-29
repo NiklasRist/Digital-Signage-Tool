@@ -189,12 +189,19 @@ export async function speichereAktion(
 }
 
 function meldungZuBefunden(befunde: EntwurfBefund[]): string {
-  const texte = befunde.map((befund) => {
+  // Der Rueckgabetyp `string` an der Rueckruf-Funktion ist die SPERRE gegen einen
+  // vergessenen Zweig: Ohne `case` waere der Wert `undefined`, und TypeScript bricht hier.
+  // Genau das fehlte bis zum 29.10.2026 fuer `markeId` - die Meldung lautete dann
+  // " Es wurde nichts gespeichert." ohne Feldnamen und mit fuehrendem Leerzeichen
+  // (Charge 22, am laufenden Code gemessen).
+  const texte = befunde.map((befund): string => {
     switch (befund.feld) {
       case 'titel':
         return 'titel: Der Titel ist Pflicht und darf nicht leer sein.'
       case 'vorlagenId':
         return 'vorlagenId: Es muss eine Vorlage gewählt sein.'
+      case 'markeId':
+        return 'markeId: Es muss eine Marke gewählt sein.'
       case 'standardDauer':
         return `standardDauer: Der Wert liegt außerhalb des erlaubten Bereichs (${DAUER_BEREICH.min}–${DAUER_BEREICH.max} Sekunden).`
       case 'akzentfarbe':
