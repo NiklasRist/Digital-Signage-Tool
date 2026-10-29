@@ -282,7 +282,6 @@ export function ComposerInterna({
     pxProSekunde,
     holeProjekt: () => projekt.hole().projekt,
     setzeListe: projekt.setzeListe,
-    holeVorlagen: () => (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage),
     melde: meldeWurzel,
   })
 
@@ -922,7 +921,6 @@ export function ComposerInterna({
             pxProSekunde={pxProSekunde}
             aufZoom={zoome}
             aufUnterbrechungEntfernen={entferneUnterbrechungAmVideo}
-            videoWirkung={zug.videoWirkung}
           />
 
           {/* S4 (Naht N4): die Ausgaben-Region als eigener Baustein (#230/#232-Oeffnungsweg).

@@ -2,8 +2,8 @@
 //
 // Die Marken liegen SEQUENZIELL im Video-Block (nach #435 verlaengern die Einschuebe das
 // Element um ihre Dauer). Ein Klick auf eine Marke entfernt genau die Unterbrechung an
-// ihrem Index; das Bild des Drop-Ziels unterscheidet Band (orange) und Unterbrechung
-// (violett) anhand der VORLAGE der gezogenen Aktion.
+// ihrem Index; das Bild des Drop-Ziels heisst seit #442 (Entscheidung 29.10.2026) immer
+// "Unterbrechung" - ein Drop auf den Video-Koerper legt keine Band-Abschnitte mehr an.
 //
 // @vitest-environment jsdom
 import { act } from 'react'
@@ -47,7 +47,6 @@ function projektMitEinschub(): Project {
 interface Eigenschaften {
   projekt: Project | null
   bandZiel?: string | null
-  videoWirkung?: 'band' | 'unterbrechung'
   aufEntfernen?: (elementId: string, index: number) => void
 }
 
@@ -60,7 +59,6 @@ function ZeitleistenTest(richtung: Eigenschaften): JSX.Element {
     laedtKante: null,
     korbRef: leereRef,
     bandZiel: richtung.bandZiel ?? null,
-    videoWirkung: richtung.videoWirkung ?? 'band',
     aufUnterbrechungEntfernen: richtung.aufEntfernen,
   })
   return createElement(DndContext, null, kinder)
@@ -102,25 +100,13 @@ describe('Die Zeitleiste zeigt die Unterbrechungen (#437)', () => {
     expect(aufEntfernen).toHaveBeenCalledWith('v0', 0)
   })
 
-  it('das Drop-Ziel heisst "Unterbrechung", wenn eine vollflaechige Aktion gezogen wird', () => {
+  it('das Drop-Ziel heisst "Unterbrechung" (ein Drop auf den Video-Koerper, #442)', () => {
     const behaelter = montiere({
       projekt: projektMitEinschub(),
       bandZiel: 'v0',
-      videoWirkung: 'unterbrechung',
     })
     const block = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-block-0"]')
     expect(block?.getAttribute('data-band-ziel')).toBe('true')
     expect(block?.textContent).toContain('Unterbrechung')
-  })
-
-  it('das Drop-Ziel heisst "Band", wenn eine Band-Aktion gezogen wird', () => {
-    const behaelter = montiere({
-      projekt: projektMitEinschub(),
-      bandZiel: 'v0',
-      videoWirkung: 'band',
-    })
-    const block = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-block-0"]')
-    expect(block?.textContent).toContain('Band')
-    expect(block?.textContent).not.toContain('Unterbrechung')
   })
 })

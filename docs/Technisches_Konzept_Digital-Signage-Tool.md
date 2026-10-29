@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.9 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.29 (Nachtrag zu 9.5.7: `media://`-Bytes werden für Canvas-Nutzer als Blob-URL gebunden – Muster #315/Nachtrag II)
+**Version:** 3.30 (9.7.7: Ein Drop auf den Video-Körper legt immer eine Unterbrechung an – die Band-Wirkung entsteht nur in der Band-Bearbeitung, Entscheidung #442 vom 29.10.2026)
 **Datum:** 28.10.2026
 **Status:** In Planung
 
@@ -1487,12 +1487,15 @@ Der Nutzer legt eine Aktion **auf das Video**, statt sie nur davor/danach einzuo
   danach läuft das Video **weiter**. Das Video bleibt **EIN** Listenelement; es trägt das Feld
   `unterbrechungen` (9.11.3). Der **Render** zerlegt es frame-genau in **Video-Teil · Aktion ·
   Video-Teil** (9.2.9). In der Zeitleiste ist der **Körper eines Video-Blocks** das Drop-Ziel: ein Drop
-  **auf dem Video** ordnet an der gemessenen **Zeitstelle** ein – als **Band-Abschnitt** (parallel,
-  oben) **oder** als **Unterbrechung** (sequenziell), je nach gewählter Wirkung (AD 4.5); die genaue
-  Bedienung (Umschalter/Kontextweg) schneidet das Bau-Issue. Eine Aktion ist **entweder** Band-Abschnitt
-  **oder** Unterbrechung, **nie beides** – dieselbe Aktion darf nicht zugleich parallel und
-  unterbrechend laufen. Löscht man die Aktion, greift dieselbe chirurgische Kaskade wie beim Band
-  (9.5.3): nur der betroffene Einschub entfällt, das **Videoelement bleibt**.
+  **auf dem Video** ordnet an der gemessenen **Zeitstelle** ein. **Bedienung entschieden (29.10.2026,
+  #442):** Der Drop auf den Video-Körper legt **immer eine Unterbrechung** an – bei **jeder**
+  Vorlagenart der gezogenen Aktion. Die **Band**-Wirkung entsteht **nicht** per Drop, sondern
+  ausschließlich in der **Band-Bearbeitung** des Elements (`einblendung-ansicht.tsx`, 9.7.7 erster
+  Punkt). Die frühere Heuristik („`vollflaeche` → Unterbrechung, sonst Band") ist damit entfallen.
+  Eine Aktion ist **entweder** Band-Abschnitt **oder** Unterbrechung, **nie beides** – dieselbe Aktion
+  darf nicht zugleich parallel und unterbrechend laufen. Löscht man die Aktion, greift dieselbe
+  chirurgische Kaskade wie beim Band (9.5.3): nur der betroffene Einschub entfällt, das
+  **Videoelement bleibt**.
 
 Die verwandte **„Banner-Spur"** (Welle 2, BA-Familie) ist davon zu trennen: ihre Plan-Quelle
 `trennung-banner-aktionen-plan.md` **fehlt im Repo**; die Band-Kette ist eigenständig und ohne sie baubar.

@@ -1,35 +1,22 @@
-// Issue #425 - band-aufnahme.ts: die REINE Fachlichkeit der Aufnahme einer Aktion
-// ins Werbeband (Ziel-Erkennung + Entwurfs-Bau). Kein JSX, kein react, kein IPC,
-// kein throw.
+// Issue #425 - band-aufnahme.ts: die REINE Fachlichkeit des Drops auf einen Video-Block
+// (Ziel-Erkennung, Zeitstelle, Startdauer). Kein JSX, kein react, kein IPC, kein throw.
 //
-// ZWEI ENTSCHEIDUNGEN des Users (15.10.2026) sind hier festgehalten:
+// ENTSCHEIDUNG des Users (29.10.2026, #442): Ein Drop auf den KOERPER eines Video-Blocks
+// legt IMMER eine UNTERBRECHUNG an der Zeitstelle an (TK 9.2.9) - nicht mehr wahlweise
+// einen Band-Abschnitt. Die fruehere Vorlagen-Heuristik (`vollflaeche` -> Unterbrechung,
+// sonst Band) und der Band-Drop sind damit entfallen; Band-Abschnitte werden
+// ausschliesslich in der Band-Bearbeitung des Elements gepflegt
+// (`einblendung-ansicht.tsx`, #253). Der sequenzielle Weg (Kante zwischen zwei Bloecken)
+// bleibt unveraendert bei `spalt-drop.ts` (#412/#417).
 //
-// 1. STARTDAUER eines per Drag angehaengten Band-Abschnitts = die Dauer-Kette des
-//    Produkts: `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`
-//    (dieselbe Reihenfolge wie `element.dauer`, AD 4.4 / TK 9.11.3 - EINE Regel).
-//    Das ist NICHT der feste Wert `STANDARD_ANZEIGEDAUER_SEKUNDEN`; der bleibt nur
-//    der Rueckfall, wenn weder Aktion noch Projekt eine Vorgabe tragen.
-//
-// 2. BAND-VORLAGE, wenn am Video noch keine gewaehlt ist: die ERSTE waehlbare
-//    (`waehlbareBandVorlagen`, #129) - derselbe Startentwurf, den die
-//    Einblendung-Ansicht (#253, ENTSCHIEDEN 3) benutzt. Keine zweite, unsichtbare
-//    Ordnung neben der Bestandsreihenfolge.
-//
-// KEIN ZWEITER SCHREIBWEG: Diese Datei baut NUR den Entwurf. Geschrieben wird
-// ausschliesslich ueber `uebernehmeBand` (#129) und die Sicht-Korrektur der Wurzel -
-// genau der eine Weg, den TK 9.7.7 vorschreibt.
-//
-// KEINE GEOMETRIE-NEUERFINDUNG in der Anzeige: `bandZielAus` vermisst nur, ob der
-// Zeiger im KOERPER eines Video-Blocks steht. Die Kanten-Messung der Einfuegung
-// bleibt bei `waehleKanteAus` (#412/#417) - diese Datei entscheidet nichts ueber
-// sequenzielle Einfuegung.
+// WAS HIER BLEIBT:
+// 1. Die STARTDAUER eines Einschubs = die Dauer-Kette des Produkts:
+//    `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10` (AD 4.4 / TK 9.11.3,
+//    EINE Regel - dieselbe Kette gilt fuer Band-Abschnitte und Unterbrechungen).
+// 2. Die MESSUNG des Video-Koerpers unter dem Zeiger (`bandZielAus`) und die Zeitstelle
+//    darin (`bandZeitImVideo`) - die Geometrie der Zeitleiste (#412/#417).
 
-import type { Listenelement } from '../../shared/contracts/project'
-import type { Vorlage } from '../../shared/contracts/vorlage'
 import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../shared/contracts/konstanten'
-import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
-import { fuegeAbschnittAn, waehlbareBandVorlagen, type BandEntwurf } from './einblendung-bearbeiten'
-import { entwurfAus } from './einblendung-ansicht'
 
 /** Der Vorlauf im Slot bis zum Block-Koerper: Kante in Ruhelage (10 px) + eine
  *  Luecke (2 px). Dieselbe Rechnung wie `KANTEN_VORSCHUB_PX` in der Wurzel
@@ -39,7 +26,7 @@ const KOERPER_VORLAUF_PX = 12
 const KOERPER_NACHLAUF_PX = 2
 
 /**
- * Die Startdauer eines Band-Abschnitts nach der Dauer-Kette des Produkts:
+ * Die Startdauer eines Einschubs nach der Dauer-Kette des Produkts:
  * `aktionStandardDauer ?? projektStandarddauer ?? STANDARD_ANZEIGEDAUER_SEKUNDEN`.
  * `null` heisst „keine Vorgabe" - NICHT „0 Sekunden"; ein nicht endlicher Wert
  * faellt ebenfalls auf die naechste Stufe zurueck (eine erfundene Dauer waere
@@ -58,145 +45,6 @@ export function startdauerFuerBandabschnitt(
   return STANDARD_ANZEIGEDAUER_SEKUNDEN
 }
 
-/**
- * Der Entwurf nach der Aufnahme: die ERSTE waehlbare Band-Vorlage (User-
- * Entscheidung 2) als Startentwurf, daran EIN Abschnitt mit `aktionId` und
- * `dauer`. null, wenn das Element kein Video ist (TK 9.2.8) ODER keine
- * Band-Vorlage zur Verfuegung steht - dann gibt es nichts aufzunehmen und die
- * Wurzel meldet es.
- *
- * GERUFEN WERDEN NUR DIE BESTEHENDEN #129/#253-Operationen
- * (`waehlbareBandVorlagen`, `entwurfAus`, `fuegeAbschnittAn`) - kein zweiter
- * Schreibweg, keine zweite Vorlagen-Auswahl.
- */
-export function bandAufnahmeAus(
-  element: Listenelement,
-  aktionId: string,
-  dauer: number,
-  vorlagen: readonly Vorlage[],
-): BandEntwurf | null {
-  const bandWahl = waehlbareBandVorlagen(vorlagen)
-  const erste = bandWahl[0]
-  if (erste === undefined) return null
-
-  // `entwurfAus` behaelt eine vorhandene `einblendung` bei (nur die Vorlage wird
-  // beim ERSTEN Drop gesetzt); die Abschnitte werden ergaenzt, nie ersetzt.
-  const entwurf = entwurfAus(element, erste.id)
-  if (entwurf === null) return null
-
-  return fuegeAbschnittAn(entwurf, aktionId, dauer)
-}
-
-/**
- * Die WIRKSAME Zeit in der Bandfolge: bei kuerzerer Folge `t mod bandGesamt`, sonst bis
- * `bandGesamt` beschnitten - genau das Zeitverhalten aus TK 9.2.8. `null`, wenn die Folge
- * keine brauchbare Dauer hat (dann gibt es keine Stelle).
- */
-function wirksameBandzeit(
-  zeitSekunden: number,
-  abschnitte: readonly { dauer: number }[],
-  videoDauer: number,
-): number | null {
-  if (!Number.isFinite(zeitSekunden) || zeitSekunden < 0) return null
-  if (!Number.isFinite(videoDauer) || videoDauer <= 0) return null
-  let gesamt = 0
-  for (const abschnitt of abschnitte) {
-    if (Number.isFinite(abschnitt.dauer) && abschnitt.dauer > 0) gesamt += abschnitt.dauer
-  }
-  if (gesamt <= 0) return null
-  return gesamt < videoDauer ? zeitSekunden % gesamt : Math.min(zeitSekunden, gesamt)
-}
-
-/** Rundet auf das naechste Frame (30 fps, TK 9.2.6) - Teil-Dauern muessen frame-genau sein. */
-function rundeAufFrame(sekunden: number): number {
-  return Math.round(sekunden * RENDER_PROFILE.fps) / RENDER_PROFILE.fps
-}
-
-/**
- * #428B (User-Entscheidung 16.10.2026): teilt den Abschnitt an der ZEITSTELLE und fuegt die
- * neue Aktion dazwischen - `[A 0-10]` + Drop bei 6 s -> `[A 0-6] [NEU 6-16] [A 6-10]`.
- *
- * Das Band bleibt eine durchgehende ROTATION (FA-20): es entsteht KEINE Luecke. Faellt die
- * Zeitstelle genau auf eine Abschnittsgrenze, wird nur davor/danach eingefuegt; hinter dem
- * letzten Abschnitt (oder ohne brauchbare Zeit) wird angehaengt. Die Teil-Dauern sind
- * frame-gerundet (die Abschnitts-Dauer unterliegt derselben Rundung wie alles, 9.2.8).
- */
-export function teileUndFuege(
-  bestehende: readonly { aktionRef: string; dauer: number }[],
-  aktionRef: string,
-  dauer: number,
-  zeitSekunden: number | null,
-  videoDauer: number,
-): Array<{ aktionRef: string; dauer: number }> {
-  const neu = { aktionRef, dauer }
-  if (bestehende.length === 0) return [neu]
-  if (zeitSekunden === null) return [...bestehende, neu]
-
-  const wirksam = wirksameBandzeit(zeitSekunden, bestehende, videoDauer)
-  if (wirksam === null) return [...bestehende, neu]
-
-  let ende = 0
-  for (let stelle = 0; stelle < bestehende.length; stelle += 1) {
-    const abschnitt = bestehende[stelle]
-    if (abschnitt === undefined) return [...bestehende, neu]
-    const dauerAbschnitt = Number.isFinite(abschnitt.dauer) && abschnitt.dauer > 0 ? abschnitt.dauer : 0
-    const start = ende
-    ende += dauerAbschnitt
-
-    if (wirksam <= start + 1e-9) {
-      return [...bestehende.slice(0, stelle), neu, ...bestehende.slice(stelle)]
-    }
-    if (wirksam < ende - 1e-9) {
-      const vorne = rundeAufFrame(wirksam - start)
-      const hinten = rundeAufFrame(ende - wirksam)
-      if (vorne <= 0) return [...bestehende.slice(0, stelle), neu, ...bestehende.slice(stelle)]
-      if (hinten <= 0) return [...bestehende.slice(0, stelle + 1), neu, ...bestehende.slice(stelle + 1)]
-      return [
-        ...bestehende.slice(0, stelle),
-        { aktionRef: abschnitt.aktionRef, dauer: vorne },
-        neu,
-        { aktionRef: abschnitt.aktionRef, dauer: hinten },
-        ...bestehende.slice(stelle + 1),
-      ]
-    }
-  }
-  return [...bestehende, neu]
-}
-
-/**
- * #428B: wie `bandAufnahmeAus`, aber die neue Aktion wird an der ZEITSTELLE eingefuegt und
- * ein dort liegender Abschnitt geteilt - kein zweiter Schreibweg (nur `entwurfAus` +
- * `teileUndFuege`), `uebernehmeBand` unveraendert.
- */
-export function bandAufnahmeMitTeilung(
-  element: Listenelement,
-  aktionId: string,
-  dauer: number,
-  vorlagen: readonly Vorlage[],
-  zeitSekunden: number | null,
-  videoDauer: number,
-): BandEntwurf | null {
-  const bandWahl = waehlbareBandVorlagen(vorlagen)
-  const erste = bandWahl[0]
-  if (erste === undefined) return null
-  const basis = entwurfAus(element, erste.id)
-  if (basis === null) return null
-  return {
-    bandVorlageId: basis.bandVorlageId,
-    abschnitte: teileUndFuege(basis.abschnitte, aktionId, dauer, zeitSekunden, videoDauer),
-  }
-}
-
-/**
- * Die Kennung des Video-Blocks, in dessen KOERPER der Zeiger `xImKontext` steht;
- * sonst null. Ein Segment-Koerper liefert ABSICHTLICH null (User-Entscheidung 3):
- * Ein Drop darauf ordnet sequenziell davor/danach ein - das erledigt die
- * bestehende Kanten-Messung (`waehleKanteAus`), nicht diese Funktion.
- *
- * `breitePx(i)` ist die REINE Blockbreite (ohne Kanten-Vorschub); `vorschubPx`
- * wird je Block addiert (Kante + zwei Luecken, s. `KANTEN_VORSCHUB_PX`). Nur so
- * passen Koerper-Grenzen und die gemessenen Kanten-Grenzen aus #417 zusammen.
- */
 /** Der gemeinsame Durchlauf fuer `bandZielAus` und `bandZeitImVideo`: der Blockkoerper
  *  unter dem Zeiger samt seinem Startpunkt. Ein Durchlauf fuer beide Fragen - sonst
  *  koennten Ziel und Zeit auseinanderlaufen. */
@@ -246,15 +94,15 @@ export function bandZielAus(
 ): string | null {
   const treffer = findeKoerper(zeilen, breitePx, xImKontext, vorschubPx)
   if (treffer === null) return null
-  // Nur der Video-Koerper ist ein Band-Ziel; ein Segment-Koerper faellt bewusst
+  // Nur der Video-Koerper ist ein Drop-Ziel; ein Segment-Koerper faellt bewusst
   // durch (null) - die Kante daneben bleibt der sequenzielle Weg.
   return treffer.zeile.art === 'video' ? treffer.zeile.elementId : null
 }
 
 /**
  * #428: die ZEITSTELLE (Sekunden ab Videoanfang) unter dem Zeiger, wenn er im
- * Koerper eines VIDEO-Blocks steht; sonst null. Sie speist den Einfüge-Index
- * (`bandEinfuegeIndex`): der Drop an einer Zeitstelle waehlt die Stelle der Rotation.
+ * Koerper eines VIDEO-Blocks steht; sonst null. Sie traegt die Stelle der
+ * Unterbrechung (#437/#442).
  */
 export function bandZeitImVideo(
   zeilen: readonly { elementId: string; art: 'video' | 'segment' | 'fehlt' }[],

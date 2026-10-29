@@ -82,8 +82,9 @@ export interface ZeitleistenEigenschaften {
    *  der Wurzel, die den DndContext haelt (EIN Kontext fuer Quellen und Kanten). */
   korbRef: React.RefObject<HTMLDivElement | null>
   /** #425: die Kennung des Video-Blocks, ueber dem ein Aktion-Neuzug gerade steht -
-   *  dort entstuende ein BAND-Abschnitt (nicht sequenziell). null = kein Band-Ziel.
-   *  Die Messung liegt in `band-aufnahme.ts` (#425); hier wird nur gezeichnet. */
+   *  dort entstuende eine UNTERBRECHUNG an der Zeitstelle (#442), nicht sequenziell.
+   *  null = kein Video-Ziel. Die Messung liegt in `band-aufnahme.ts` (#425); hier wird
+   *  nur gezeichnet. */
   bandZiel?: string | null
   /** #428: das Zoom-Mass (px je Sekunde); Bild und Drop-Messung nutzen DENSELBEN Wert. */
   pxProSekunde?: number
@@ -91,8 +92,6 @@ export interface ZeitleistenEigenschaften {
   aufZoom?: (richtung: -1 | 1) => void
   /** #437: eine Unterbrechung am Video entfernen (Index in `element.unterbrechungen`). */
   aufUnterbrechungEntfernen?: (elementId: string, index: number) => void
-  /** #437: die Wirkung des laufenden Video-Drops - steuert nur das Bild (Label/Farbe). */
-  videoWirkung?: 'band' | 'unterbrechung'
 }
 
 export function Zeitleiste({
@@ -105,7 +104,6 @@ export function Zeitleiste({
   pxProSekunde = EA_PX_PRO_SEKUNDE,
   aufZoom,
   aufUnterbrechungEntfernen,
-  videoWirkung = 'band',
 }: ZeitleistenEigenschaften): JSX.Element {
   if (projekt === null) {
     return <div data-testid="zeitleiste-kein-projekt" />
@@ -199,7 +197,6 @@ export function Zeitleiste({
                 projekt={projekt}
                 element={elementeNachId.get(zeile.elementId) ?? null}
                 aufUnterbrechungEntfernen={aufUnterbrechungEntfernen}
-                videoWirkung={videoWirkung}
               />
               {neuZug !== null && (
                 <KantenBlock nummer={index + 1} aktiv={aktiveKante === index + 1} laedt={laedtKante === index + 1} />
@@ -264,7 +261,6 @@ function ZeilenBlock({
   projekt = null,
   element = null,
   aufUnterbrechungEntfernen,
-  videoWirkung = 'band',
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
@@ -277,17 +273,15 @@ function ZeilenBlock({
   element?: Listenelement | null;
   /** #437: Unterbrechung entfernen (Index in `element.unterbrechungen`). */
   aufUnterbrechungEntfernen?: (elementId: string, index: number) => void;
-  /** #437: Wirkung des Drops - nur fuer Label und Farbe. */
-  videoWirkung?: 'band' | 'unterbrechung';
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: zeile.elementId })
   const beschriftung = zeilenBeschriftung(zeile, index)
   // #437: die Unterbrechungs-Marken des Video-Blocks (sequenzielle Positionen).
   const marken = zeile.art === 'video' && element !== null ? unterbrechungsMarken(element) : []
-  // #437: das Drop-Ziel zeigt die WIRKUNG an - eine vollflaechige Aktion wird eine
-  // Unterbrechung (violett), eine Band-Aktion ein Band-Abschnitt (orange).
-  const zielArt = istBandZiel ? (videoWirkung === 'unterbrechung' ? 'Unterbrechung' : 'Band') : null
-  const zielFarbe = videoWirkung === 'unterbrechung' ? '#b07ae5' : '#e5a94d'
+  // #442 (Entscheidung 29.10.2026): ein Drop im Video-Koerper legt IMMER eine
+  // Unterbrechung an - das Ziel traegt deshalb nur noch dieses eine Label (violett).
+  const zielArt = istBandZiel ? 'Unterbrechung' : null
+  const zielFarbe = '#b07ae5'
   // #428: die Band-Abschnitte an ihren Zeitstellen - nur am Video, nur wenn ein Band da ist.
   const spur =
     zeile.art === 'video' && einblendung !== null
@@ -300,7 +294,7 @@ function ZeilenBlock({
       {...attributes}
       {...listeners}
       data-testid={`zeitleiste-block-${index}`}
-      // #425: sichtbares Band-Ziel - der Drop hier wird ein Band-Abschnitt.
+      // #425: sichtbares Drop-Ziel - der Drop hier wird eine Unterbrechung (#442).
       data-band-ziel={istBandZiel ? 'true' : 'false'}
       // #420: dieselbe Traeger-Konvention wie die #248-Listenzeile (data-element-id) -
       // so oeffnet EIN Selektor in der Wurzel das EINE KontextMenue fuer BEIDE Ansichten.

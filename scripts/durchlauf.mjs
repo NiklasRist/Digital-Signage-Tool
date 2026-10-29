@@ -2472,10 +2472,12 @@ const main = async () => {
       }
     }
 
-    // Schritt 4b6 - Unterbrechung per Drag (#437): Eine VOLLFLAECHIGE Aktion wird auf den
-    // VIDEO-Koerper gezogen. Nach #437 entscheidet die VORLAGE der Aktion: `vollflaeche` ->
-    // Unterbrechung (sequenziell, 9.2.9); eine Band-Vorlage bliebe ein Band. Erwartet: EINE
-    // Marke im Video-Block; ein Klick entfernt sie; Aufnahme UND Entfernen sind je EIN Undo.
+    // Schritt 4b6 - Unterbrechung per Drag (#437/#442): Eine Aktion wird auf den
+    // VIDEO-Koerper gezogen. Seit der Entscheidung zu #442 (29.10.2026) legt JEDER Drop
+    // auf den Koerper eine Unterbrechung an; die Vorlagenart entscheidet NICHTS mehr.
+    // Deshalb wird hier bewusst eine Aktion mit BAND-Vorlage gezogen (frueher waere sie
+    // ein Band-Abschnitt geworden). Erwartet: EINE Marke im Video-Block; ein Klick
+    // entfernt sie; Aufnahme UND Entfernen sind je EIN Undo.
     await klick('[data-testid="reiter-zusammenstellen"]');
     await schlafe(700);
     const projektDatei4b6 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
@@ -2493,13 +2495,14 @@ const main = async () => {
       fund("Unterbrechung Drag", "ein Video-Element fuer den Unterbrechungs-Drop (#437)",
         "keins gefunden", "Untersuchung", "composer/index.tsx");
     } else {
-      // Aktion mit vollflaechiger Vorlage saen - der EINZIGE vollflaechige Weg im Composer.
+      // Aktion mit BAND-Vorlage saen - sie belegt, dass die Vorlage die Wirkung nicht
+      // mehr entscheidet (#442).
       const saat4b6 = await seite.evaluate(async (markeId) => {
         const antwort = await window.api.invoke("project:erstelleAktion", {
           aktionsdaten: {
             titel: "Durchlauf-Unterbrechung",
             beschreibung: null, preis: null, bildRef: null, cta: null,
-            standardDauer: 1, vorlagenId: "vollbild", markeId, akzentfarbe: null,
+            standardDauer: 1, vorlagenId: "band-standard", markeId, akzentfarbe: null,
           },
         });
         if (antwort === null || antwort.ok !== true) {
@@ -2508,7 +2511,7 @@ const main = async () => {
         return { aktionId: antwort.wert.id };
       }, basis4b6.standardMarkeId);
       if (typeof saat4b6.aktionId !== "string") {
-        fund("Unterbrechung Drag", "eine vollflaechige Aktion als Drag-Quelle (#437)",
+        fund("Unterbrechung Drag", "eine Aktion mit Band-Vorlage als Drag-Quelle (#442)",
           `${saat4b6.fehler}`, "BLOCKER", "project-store/erstelle-aktion.ts");
       } else {
         // Sicht nachziehen: roher IPC-Ruf erreicht die Sicht NICHT - Projekt per UI neu oeffnen.
@@ -3428,11 +3431,13 @@ const main = async () => {
       }
     }
 
-    // Schritt 4f2 - BAND-Aufnahme am echten Fenster (#425): eine Aktion wird auf den
-    // VIDEO-Block gezogen (nicht an eine Kante). Erwartet: das Video-Element traegt
-    // danach einen Band-Abschnitt (harter Beleg: project.json), die Zahl der
-    // Zeitleisten-Bloecke bleibt GLEICH (das Band ist kein neues Listenelement, TK 9.2.8),
-    // und waehrend des Zugs traegt der Video-Block data-band-ziel="true".
+    // Schritt 4f2 - Drop auf den Video-Koerper (#442, Entscheidung 29.10.2026): eine
+    // Aktion wird auf den VIDEO-Block gezogen (nicht an eine Kante). Erwartet: das
+    // Video-Element traegt danach eine UNTERBRECHUNG (harter Beleg: project.json), es
+    // entsteht KEIN Band-Abschnitt mehr, die Zahl der Zeitleisten-Bloecke bleibt GLEICH
+    // (der Einschub ist kein neues Listenelement, TK 9.2.9), waehrend des Zugs traegt
+    // der Video-Block data-band-ziel="true". Danach: Cmd+Z nimmt den Einschub in EINEM
+    // Schritt zurueck.
     await klick('[data-testid="reiter-zusammenstellen"]');
     await schlafe(600);
     const videoBlock4f2 = await seite.$('[data-testid="zeitleiste-block-0"]');
@@ -3482,95 +3487,62 @@ const main = async () => {
         const bloeckeNach4f2 = await seite.evaluate(
           () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
         );
-        // Der harte Beleg ist der STORE-Stand auf der Platte (der Main schreibt die
-        // Einblendung ueber setzeEinblendung, #129) - nach dem entprellten Auto-Speichern.
+        // Der harte Beleg ist der STORE-Stand auf der Platte - nach dem entprellten
+        // Auto-Speichern: der Einschub steht in `unterbrechungen`, das Band bleibt leer
+        // (ein Drop auf den Koerper legt seit #442 KEINEN Band-Abschnitt mehr an).
+        let unterbrechungen4f2 = null;
         let abschnitte4f2 = null;
         try {
           const json4f2 = JSON.parse(
             fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
           );
           const videoEl4f2 = (json4f2.liste ?? []).find((e) => e.art === "video");
+          unterbrechungen4f2 = Array.isArray(videoEl4f2?.unterbrechungen) ? videoEl4f2.unterbrechungen : [];
           abschnitte4f2 = videoEl4f2 && videoEl4f2.einblendung ? videoEl4f2.einblendung.abschnitte : null;
         } catch (tu) {
-          abschnitte4f2 = "lesefehler: " + String(tu);
-        }
-        // Zweiter Beleg aus der OBERFLAECHE: die Band-Ansicht oeffnen und die
-        // Abschnittszeilen zaehlen (der Baustein liest die vorhandene Einblendung).
-        await klick('[data-testid="composer-ansicht-liste"]');
-        await schlafe(500);
-        const bandKnopf4f2 = await seite.$('[data-testid="element-band"]');
-        let bandZeilen4f2 = null;
-        if (bandKnopf4f2 !== null) {
-          await bandKnopf4f2.click();
-          await schlafe(700);
-          bandZeilen4f2 = await seite.evaluate(
-            () => document.querySelectorAll('[data-testid="band-abschnitt-griff"]').length,
-          );
-          await seite.evaluate(() => {
-            const overlay = document.querySelector('[data-testid="composer-overlay-band"]');
-            const ab = overlay === null
-              ? null
-              : [...overlay.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen');
-            if (ab) ab.click();
-          });
-          await schlafe(200);
+          unterbrechungen4f2 = "lesefehler: " + String(tu);
         }
         await klick('[data-testid="composer-ansicht-zeitleiste"]');
         await schlafe(200);
         const meldung4f2 = await seite.evaluate(
           () => document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
         );
-        console.log(`[schritt-4f2] Band: bandZiel=${bandZiel4f2}; Bloecke ${bloeckeVor4f2}->${bloeckeNach4f2}; Abschnitte=${JSON.stringify(abschnitte4f2)}; Band-Zeilen=${bandZeilen4f2}; Meldung=${JSON.stringify(meldung4f2)}`);
-        const hatAbschnitt4f2 =
-          (Array.isArray(abschnitte4f2) && abschnitte4f2.some((a) => a.aktionRef === aktionsId417)) ||
-          (typeof bandZeilen4f2 === "number" && bandZeilen4f2 > 0);
+        console.log(`[schritt-4f2] Drop auf Video: bandZiel=${bandZiel4f2}; Bloecke ${bloeckeVor4f2}->${bloeckeNach4f2}; Unterbrechungen=${JSON.stringify(unterbrechungen4f2)}; Band-Abschnitte=${JSON.stringify(abschnitte4f2)}; Meldung=${JSON.stringify(meldung4f2)}`);
+        const hatUnterbrechung4f2 =
+          Array.isArray(unterbrechungen4f2) && unterbrechungen4f2.some((u) => u.aktionRef === aktionsId417);
+        const hatBand4f2 = Array.isArray(abschnitte4f2) && abschnitte4f2.some((a) => a.aktionRef === aktionsId417);
         if (bandZiel4f2 !== "true") {
-          fund("Band-Aufnahme", "der Video-Block ist waehrend des Zugs sichtbar das Band-Ziel (#425)",
+          fund("Drop auf Video", "der Video-Block ist waehrend des Zugs sichtbar das Drop-Ziel (#425)",
             `data-band-ziel=${bandZiel4f2}`, "Befund", "composer/index.tsx");
         }
-        if (!hatAbschnitt4f2) {
-          fund("Band-Aufnahme", "ein Drop auf das Video wird ein Band-Abschnitt (#425)",
-            `Abschnitte: ${JSON.stringify(abschnitte4f2)}; Band-Zeilen: ${bandZeilen4f2}; Meldung: ${JSON.stringify(meldung4f2)}`,
+        if (!hatUnterbrechung4f2) {
+          fund("Drop auf Video", "ein Drop auf den Video-Koerper wird eine Unterbrechung (#442)",
+            `Unterbrechungen: ${JSON.stringify(unterbrechungen4f2)}; Meldung: ${JSON.stringify(meldung4f2)}`,
             "Befund", "composer/index.tsx");
+        } else if (hatBand4f2) {
+          fund("Drop auf Video", "ein Drop auf den Koerper legt KEINEN Band-Abschnitt an (#442)",
+            `Band-Abschnitte: ${JSON.stringify(abschnitte4f2)}`, "Befund", "composer/index.tsx");
         } else if (bloeckeNach4f2 !== bloeckeVor4f2) {
-          fund("Band-Aufnahme", "das Band ist KEIN neues Listenelement (TK 9.2.8)",
+          fund("Drop auf Video", "die Unterbrechung ist KEIN neues Listenelement (TK 9.2.9)",
             `Bloecke ${bloeckeVor4f2}->${bloeckeNach4f2}`, "Befund", "composer/index.tsx");
         } else {
-          console.log("[schritt-4f2] Band-Aufnahme GEMESSEN: das Video traegt einen Band-Abschnitt, die Blockzahl ist unveraendert (#425 belegt).");
+          console.log("[schritt-4f2] Drop auf Video GEMESSEN: das Video traegt eine Unterbrechung, keinen Band-Abschnitt, die Blockzahl ist unveraendert (#442 belegt).");
         }
         // DoD: die Aufnahme ist EIN Undo-Schritt (Cmd+Z). Gemessen wird in der
-        // Oberflaeche: nach EINEM Cmd+Z ist der Band-Abschnitt weg (Band-Zeilen 0).
+        // Oberflaeche: nach EINEM Cmd+Z ist die Marke im Video-Block weg.
         await seite.keyboard.down("Meta");
         await seite.keyboard.press("z");
         await seite.keyboard.up("Meta");
         await schlafe(1_500);
-        await klick('[data-testid="composer-ansicht-liste"]');
-        await schlafe(400);
-        const bandKnopfUndo4f2 = await seite.$('[data-testid="element-band"]');
-        let bandZeilenUndo4f2 = null;
-        if (bandKnopfUndo4f2 !== null) {
-          await bandKnopfUndo4f2.click();
-          await schlafe(600);
-          bandZeilenUndo4f2 = await seite.evaluate(
-            () => document.querySelectorAll('[data-testid="band-abschnitt-griff"]').length,
-          );
-          await seite.evaluate(() => {
-            const overlay = document.querySelector('[data-testid="composer-overlay-band"]');
-            const ab = overlay === null
-              ? null
-              : [...overlay.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen');
-            if (ab) ab.click();
-          });
-          await schlafe(200);
-        }
-        await klick('[data-testid="composer-ansicht-zeitleiste"]');
-        await schlafe(200);
-        console.log(`[schritt-4f2] Undo: Band-Zeilen nach Cmd+Z = ${bandZeilenUndo4f2}`);
-        if (bandZeilenUndo4f2 !== 0) {
-          fund("Band-Aufnahme-Undo", "Cmd+Z nimmt die Band-Aufnahme in EINEM Schritt zurueck (#243)",
-            `Band-Zeilen nach Undo: ${bandZeilenUndo4f2}`, "Befund", "composer/index.tsx");
+        const markenUndo4f2 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid^="zeitleiste-unterbrechung-"]').length,
+        );
+        console.log(`[schritt-4f2] Undo: Unterbrechungs-Marken nach Cmd+Z = ${markenUndo4f2}`);
+        if (markenUndo4f2 !== 0) {
+          fund("Drop auf Video - Undo", "Cmd+Z nimmt die Unterbrechung in EINEM Schritt zurueck (#243)",
+            `Marken nach Undo: ${markenUndo4f2}`, "Befund", "composer/index.tsx");
         } else {
-          console.log("[schritt-4f2] Undo GEMESSEN: die Band-Aufnahme ist EIN Schritt (Cmd+Z, #425 belegt).");
+          console.log("[schritt-4f2] Undo GEMESSEN: die Unterbrechung ist EIN Schritt (Cmd+Z, #442 belegt).");
         }
       }
     }
