@@ -1,4 +1,4 @@
-# Übergabe 28.10.2026 – Stand nach Charge 18
+# Übergabe 29.10.2026 – Stand nach Charge 18
 
 **Nächste Sitzung: Mutations-Charge 19.**
 **Der Plan für alle restlichen Chargen: [`charge-17-26-plan.md`](charge-17-26-plan.md).**

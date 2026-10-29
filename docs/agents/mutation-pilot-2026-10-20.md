@@ -1514,7 +1514,7 @@ Ursache ist **nicht benannt**; die Messung fiel in eine Phase hoher Systemlast (
 ~100 %, Load 2,4–5,5). Kein Produktbefund – aber ein Kandidat fuer die Treiber-Haertung
 (`dumpio`, Frist, ein Wiederholversuch), dieselbe Klasse wie FA-13.
 
-## 31. Charge 18 (28.10.2026): Tonspur und Media-Service
+## 31. Charge 18 (29.10.2026): Tonspur und Media-Service
 
 **Dateien:** `tonspur` (`src/main/ffmpeg-adapter/tonspur.ts`), `media-protokoll-schema`
 (`src/main/media-protokoll.ts`), `dialog` (`src/main/media-service/dialog.ts`),

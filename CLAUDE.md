@@ -11,9 +11,9 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (28.10.2026, zweiundzwanzigste Sitzung: Mutations-Charge 18) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, zweiundzwanzigste Sitzung: Mutations-Charge 18) – gilt vor ALLEM weiter unten
 
-**Volltext: [`docs/agents/uebergabe-2026-10-28-charge-19.md`](docs/agents/uebergabe-2026-10-28-charge-19.md).**
+**Volltext: [`docs/agents/uebergabe-2026-10-29-charge-19.md`](docs/agents/uebergabe-2026-10-29-charge-19.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 31.
 
 - **CHARGE 18 GEBAUT:** fuenf Testdateien – `tonspur` (`ffmpeg-adapter/`), `media-protokoll-schema`

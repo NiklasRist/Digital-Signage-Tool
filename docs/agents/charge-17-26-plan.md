@@ -10,7 +10,7 @@ Alias-aware). Die **Inhalte** der Ziele sind in dieser Sitzung **nicht** gelesen
 Erwartungen sind aus Modulnähe und Probe-Art abgeleitet; jede Charge beginnt mit dem Lesen der
 fünf Specs und Quellen.
 
-**Stand nach Charge 18 (28.10.2026):** Chargen 17 und 18 gebaut – Suite **5.417**
+**Stand nach Charge 18 (29.10.2026):** Chargen 17 und 18 gebaut – Suite **5.417**
 (340 Dateien), Sperrklinke **40** Dateien, Gate `npm run pruefung` **Exit 0**. Offen sind die
 Chargen **19–26** (acht). Zwei Befunde gehören seitdem zum Rezept: Die Probe kann die
 **einzige** Wächterin einer Zusage sein (Charge 17: drei Literale) – deshalb wird **nach dem
