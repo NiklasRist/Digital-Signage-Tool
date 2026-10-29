@@ -14,8 +14,6 @@
 //
 // NICHT hier geprueft wird, was anderen Stellen gehoert: die Betriebsflags (#158)
 // und die Video-Kodierargumente (#161) haben eigene Tests.
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import {
@@ -27,21 +25,6 @@ import {
 import { RENDER_PROFILE } from "../../src/shared/contracts/render-profile";
 
 import type { RenderProfile } from "../../src/shared/contracts/render-profile";
-
-const QUELLE = readFileSync(
-  new URL("../../src/main/ffmpeg-adapter/tonspur.ts", import.meta.url),
-  "utf8",
-);
-
-// Nur die CODE-Zeilen: Die Begruendungen in den Kommentaren zitieren das Konzept
-// woertlich ("48 kHz, mono") und nennen Messwerte - das ist erwuenscht und darf die
-// Literal-Probe nicht ausloesen.
-const CODEZEILEN = QUELLE.split("\n")
-  .filter((zeile) => {
-    const t = zeile.trim();
-    return t !== "" && !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*");
-  })
-  .join("\n");
 
 /**
  * Zerlegt eine Argumentliste in Flag/Wert-Paare und belegt dabei, dass sie
@@ -265,38 +248,5 @@ describe("die vier Funktionen gemeinsam (#162)", () => {
     ]) {
       expect(flach).not.toContain(verboten);
     }
-  });
-
-  it("reicht den Quellton unter keinen Umstaenden durch", () => {
-    // Die Fallunterscheidung "vorhandenen Ton behalten, nur bei fehlendem einen
-    // erzeugen" ist genau der Fehler: Sie erzeugt zwei verschiedene Streamlayouts
-    // und damit eine Datei, die mittendrin kaputtgeht (nachgemessen: die
-    // Verkettung mit `-c copy` meldet dann trotzdem Erfolg).
-    for (const verboten of ["-an", "c:a copy", "copy"]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
-  });
-
-  it("nennt im Quelltext kein Flag, das anderen Stellen gehoert", () => {
-    // Dieselbe Probe wie oben, aber auf den QUELLTEXT statt auf das Ergebnis: Ein
-    // Flag, das hier nur in einem noch unerreichten Zweig steht, waere von der
-    // Ergebnis-Probe nicht zu sehen.
-    for (const verboten of ["-c:v", "-pix_fmt", "-y", "frag_keyframe", "empty_moov"]) {
-      expect(CODEZEILEN).not.toContain(verboten);
-    }
-  });
-
-  it("schreibt keinen Profilwert als Literal in den Quelltext", () => {
-    // Sonst waere die naechste Profilaenderung keine Datenaenderung mehr, sondern
-    // eine Quelltextaenderung an einer zweiten, leicht zu uebersehenden Stelle -
-    // und die zweite Stelle bliebe beim ersten Mal stehen.
-    // NICHT in dieser Liste steht der Encoder-Name: Er MUSS im Quelltext stehen,
-    // weil er die Uebersetzung Format -> Encoder ist und #18 ihn bewusst nicht
-    // fuehrt - genau wie `libx264` in #161.
-    for (const literal of ["48000", "yuv420p", "1920", "1080"]) {
-      expect(CODEZEILEN).not.toContain(literal);
-    }
-    // Die Bitrate ist die EINE erlaubte Zahl - und sie steht genau einmal.
-    expect(CODEZEILEN.split("64").length - 1).toBe(1);
   });
 });

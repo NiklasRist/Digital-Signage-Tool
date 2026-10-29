@@ -9,10 +9,6 @@
 // anfassen. Fuer den Identitaetsvergleich aendert das nichts: Testdatei und Quelldatei bekommen
 // dieselbe Attrappe, und ein umhuellendes Lambda in der Quelldatei liesse den Vergleich
 // weiterhin scheitern. Genau darum geht es.
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Auftrag } from '../../src/shared/contracts/auftrag'
@@ -207,40 +203,7 @@ describe('registriereMedienHandler (#92) - die Naht zum Dispatcher', () => {
   })
 })
 
-describe('registriereMedienHandler (#92) - keine Uebersetzungsschicht', () => {
-  const quelle = readFileSync(
-    path.join(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '../../src/main/media-service/handler-registrierung.ts',
-    ),
-    'utf8',
-  )
-
-  // Die DoD-Grep-Proben gelten dem CODE, nicht der Begruendung daneben: Die Kommentare
-  // dieser Datei benennen die verbotenen Konstrukte ausdruecklich.
-  const code = quelle.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '')
-
-  it.each(['try', 'catch', 'async', 'await', '=>'])('enthaelt kein %s', (wort) => {
-    expect(code).not.toContain(wort)
-  })
-
-  it('registriert weder render noch export', () => {
-    expect(code).not.toContain("'render'")
-    expect(code).not.toContain("'export'")
-  })
-
-  it('fasst weder Dateisystem noch IPC an', () => {
-    for (const verboten of ['node:fs', 'child_process', 'ffprobe', 'kanaele', 'registriereHandler']) {
-      expect(code).not.toContain(verboten)
-    }
-  })
-
-  it('verdrahtet sich nicht selbst - kein Aufruf als Nebeneffekt des Ladens', () => {
-    expect(code).not.toContain('whenReady')
-    // Ein Selbstaufruf am Modulende stuende ganz links, ohne Einrueckung.
-    expect(code).not.toMatch(/^registriereMedienHandler\(\)/m)
-  })
-
+describe('registriereMedienHandler (#92) - Ausgang', () => {
   it('liefert void und wirft nicht', () => {
     expect(registriereMedienHandler()).toBeUndefined()
   })

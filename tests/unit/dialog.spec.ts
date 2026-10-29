@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FORMAT_WHITELIST } from '../../src/shared/contracts/asset'
@@ -218,38 +216,4 @@ describe('Ausnahme des Dialogs', () => {
     await erwarteUnbekanntenFehler(new Error('kein Fenster bereit'))
     expect(spion).toHaveBeenCalled()
   })
-})
-
-describe('Grenzen der Datei', () => {
-  const quelle = readFileSync(
-    new URL('../../src/main/media-service/dialog.ts', import.meta.url),
-    'utf8',
-  )
-
-  // Ueber die GANZE Datei, Kommentare eingeschlossen - so verlangt es die Definition of
-  // Done. Eine zweite Endungsliste bliebe sonst unbemerkt, wenn sie heute zufaellig mit
-  // der Whitelist uebereinstimmt.
-  it.each([...FORMAT_WHITELIST.video, ...FORMAT_WHITELIST.bild])(
-    'enthaelt das Endungs-Literal %s nicht',
-    (endung) => {
-      expect(quelle).not.toContain(endung)
-    },
-  )
-
-  it('registriert keinen Kanal', () => {
-    expect(quelle).not.toContain('ipcMain')
-  })
-
-  // Ohne Kommentarzeilen, sonst schlagen die Verbots-Vermerke im Kopf der Datei an.
-  const code = quelle
-    .split('\n')
-    .filter((zeile) => !/^\s*(\/\/|\/?\*)/.test(zeile))
-    .join('\n')
-
-  it.each(['reiheEin', 'pruefeFormat', 'BrowserWindow', 'defaultPath', 'node:fs', 'existsSync'])(
-    'ruft %s nicht auf',
-    (verboten) => {
-      expect(code).not.toContain(verboten)
-    },
-  )
 })

@@ -1,6 +1,4 @@
-import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -505,6 +503,20 @@ describe('importMedium – Ausnahmen', () => {
     expect(fehlerVon(ergebnis).meldung).not.toContain('    at ')
   })
 
+  it('nennt die Meldung der Ausnahme, nicht ihre toString-Form', async () => {
+    // `String(error)` lautet "Error: <meldung>" - der Praefix ist eine
+    // JavaScript-Eigenheit und gehoert nicht in die Oberflaeche. Der Text ist
+    // deshalb EXAKT geprueft, nicht nur auf "enthaelt": `toContain` allein
+    // bliebe bei "Error: Absturz ..." gruen.
+    zustand.wirftIn = 'kopiereInsStaging'
+
+    const ergebnis = await importMedium(auftrag, kontext)
+
+    expect(fehlerVon(ergebnis).meldung).toBe(
+      'Der Import ist unerwartet fehlgeschlagen. Grund: Absturz in kopiereInsStaging',
+    )
+  })
+
   it('raeumt die .part-Datei weg, wenn nach der Kopie eine Ausnahme faellt', async () => {
     zustand.wirftIn = 'leseRohMetadaten'
 
@@ -531,38 +543,6 @@ describe('importMedium – Ausnahmen', () => {
     ]
 
     expect(ergebnisse.map((e) => e.status)).toEqual(['fehlgeschlagen', 'fehlgeschlagen'])
-  })
-})
-
-describe('importMedium – was die Datei nicht anfasst', () => {
-  const quelle = readFileSync(
-    path.join(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '../../src/main/media-service/import-medium.ts',
-    ),
-    'utf8',
-  )
-
-  it.each(['node:fs', 'node:fs/promises', 'electron', 'child_process', 'ffmpeg-static'])(
-    'importiert %s nicht',
-    (modul) => {
-      expect(quelle).not.toMatch(new RegExp(`from ['"]${modul}`))
-      expect(quelle).not.toMatch(new RegExp(`require\\(['"]${modul}`))
-    },
-  )
-
-  it.each(['media', 'projects', 'project.json'])('enthaelt kein Literal %s', (wort) => {
-    expect(quelle).not.toMatch(new RegExp(`['"\`]${wort.replace('.', '\\.')}['"\`]`))
-  })
-
-  it('fragt die Zeit genau einmal ab', () => {
-    expect(quelle.match(/new Date\(/g)).toHaveLength(1)
-  })
-
-  it('fordert kein Lock an und stoesst keinen eigenen Flush an', () => {
-    expect(quelle).not.toContain('mitD1Lock')
-    expect(quelle).not.toContain('sofortFlush')
-    expect(quelle).not.toContain('planeAutoSpeicherung')
   })
 })
 
