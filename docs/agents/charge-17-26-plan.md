@@ -30,7 +30,14 @@ Probe die einzige Waechterin (inline `media`-Pfad, derselbe Wert).
 −34 Probetests netto), Sperrklinke **25** Dateien, Gate `npm run pruefung` **Exit 0**. Offen
 sind die Chargen **22–26** (fuenf). Charge 21 fand **eine echte Luecke** (L4, Fixture mit
 leerer zweiter Liste) und **keinen** aequivalenten Fall; nach dem Ausbau blieben alle 30
-Verhaltens-Mutationen rot. Zwei Befunde gehören seitdem zum Rezept: Die Probe kann die
+Verhaltens-Mutationen rot.
+
+**Stand nach Charge 22 (29.10.2026):** Chargen 17–22 gebaut – Suite **5.307** (340 Dateien,
+−16 Probetests netto), Sperrklinke **20** Dateien, Gate `npm run pruefung` **Exit 0**. Offen
+sind die Chargen **23–26** (vier). Charge 22 (erste Renderer-Charge mit `.tsx`) fand **zwei**
+Test-Luecken (A4 Zugangs-Spiegel, B6 Meldungstabelle) und eine **Produkt-Luecke**:
+`meldungZuBefunden` hat keinen `case 'markeId'` – die Meldung lautet dann
+`" Es wurde nichts gespeichert."`. Gemeldet, nicht geaendert. Zwei Befunde gehören seitdem zum Rezept: Die Probe kann die
 **einzige** Wächterin einer Zusage sein (Charge 17: drei Literale) – deshalb wird **nach dem
 Ausbau erneut gemessen**. Und eine Meldung mit dem richtigen **Text** ist kein Beleg für den
 richtigen Grund (Charge 18: `toContain` blieb bei `"Error: …"` grün; erst der exakte
@@ -63,7 +70,7 @@ Vergleich biss).
 | **19** (gebaut) | `loesche-medium` → `media-service/loesche-medium.ts`; `export-handler-anmeldung` → `export-service/handler-anmeldung.ts`; `ziel-dialog` → `export-service/ziel-dialog.ts`; `export-verdrahtung` → `ipc-gateway/export-verdrahtung.ts`; `render-handler-anmeldung` → `render-service/handler-anmeldung.ts` | Handler-Anmeldungen und Verdrahtung. Proben: „kein Kanal-Literal, kein `ipcMain.handle` doppelt". Verhaltens-Tests decken das Senden. |
 | **20** (gebaut) | `marken-store-pfade` → `marken-store/pfade.ts`; `ausgaben` → `project-store/ausgaben.ts`; `liste-projekte` → `project-store/liste-projekte.ts`; `oeffne-projektordner` → `project-store/oeffne-projektordner.ts`; `pfade` → `project-store/pfade.ts` | Pfad-Autoritäten und Store-Listen. Proben oft „kein `path.join` mit Projekt-ID". Die **Pfad-Autorität** ist Vertrag (TK 9.5.7) – Verhaltens-Tests müssen die Pfadbildung tragen. |
 | **21** (gebaut) | `render-abbruch` → `render-service/abbruch.ts`; `normalisieren` → `render-service/normalisieren.ts`; `als-eigenstaendige` → `vorlagen-store/als-eigenstaendige.ts`; `vorlagen-ipc-verdrahtung` → `vorlagen-store/ipc-verdrahtung.ts`; `loesche-vorlage` → `vorlagen-store/loesche-vorlage.ts` | Render-Abbruch und Vorlagen-Store. Achtung: `verwerfe-arbeitskopie` liegt in Charge 22 – die beiden hängen zusammen, Specs getrennt lesen. |
-| **22** | `verwerfe-arbeitskopie` → `vorlagen-store/verwerfe-arbeitskopie.ts`; `app-einhaengung` → `App.tsx`; `aktion-bearbeiten` → `action-editor/aktion-bearbeiten.ts`; `aktion-loeschen` → `action-editor/aktion-loeschen.ts`; `bild-zuweisen` → `action-editor/bild-zuweisen.ts` | Erste Renderer-Charge mit tsx. `app-einhaengung` liest `App.tsx` – dort ist „kein zweiter Zustand" die Zusage; **vor dem Entfernen** prüfen, ob der Verhaltens-Test die Montage wirklich trägt. |
+| **22** (gebaut) | `verwerfe-arbeitskopie` → `vorlagen-store/verwerfe-arbeitskopie.ts`; `app-einhaengung` → `App.tsx`; `aktion-bearbeiten` → `action-editor/aktion-bearbeiten.ts`; `aktion-loeschen` → `action-editor/aktion-loeschen.ts`; `bild-zuweisen` → `action-editor/bild-zuweisen.ts` | Erste Renderer-Charge mit tsx. `app-einhaengung` liest `App.tsx` – dort ist „kein zweiter Zustand" die Zusage; **vor dem Entfernen** prüfen, ob der Verhaltens-Test die Montage wirklich trägt. |
 | **23** | `kaputt-handling` → `action-editor/kaputt-handling.ts`; `live-vorschau` → `action-editor/live-vorschau.ts`; `aktions-auswahl` → `app-shell/aktions-auswahl-filter.ts`; `asset-auswahl` → `app-shell/asset-auswahl-filter.ts`; `bootstrap-ablauf` → `app-shell/bootstrap.ts` | Zwei Filter-Paare + Bootstrap. Die Filter sind rein und gut verhaltensgetestet; `bootstrap-ablauf` ist der riskanteste (Startreihenfolge). |
 | **24** | `inhalte-zugaenge-rechnung` → `app-shell/inhalte-zugaenge.ts`; `rahmen-montage` → `app-shell/rahmen-montage.ts`; `uebergabe` → `app-shell/uebergabe.ts`; `undo-projekt` → `app-shell/undo-projekt.ts`; `element-entfernen` → `composer/element-entfernen.ts` | Montage/Zugänge. `undo-projekt` liest evtl. den Projekt-Historien-Spion – der ist **bewusst geblieben** (Verhalten); nur die Quelltext-Probe zählt. |
 | **25** | `element-zeile-anzeige` → `composer/element-zeile.tsx`; `medien-bibliothek` → `composer/medien-bibliothek.ts`; `optimistisch` → `composer/optimistisch.ts`; `render-ausloesen` → `composer/render-ausloesen.ts`; `render-dialog` → `composer/render-dialog.ts` | Composer-Kern. `optimistisch` trägt die Undo-Zusage – Verhaltens-Tests prüfen die Reihenfolge; Proben dort besonders genau lesen. |

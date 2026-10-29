@@ -1822,3 +1822,77 @@ es gibt). Lint-Kandidaten: `no-restricted-imports` je Datei. #448 steht.
 | Suite | 5.357 | **5.323** (340 Dateien) |
 | Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
 | Sperrklinke | 30 | **25** Dateien |
+
+## 35. Charge 22 (29.10.2026): Erste Renderer-Charge mit tsx
+
+**Dateien:** `verwerfe-arbeitskopie` (`main/vorlagen-store/`), `app-einhaengung`
+(`renderer/App.tsx`), `aktion-bearbeiten`, `aktion-loeschen`, `bild-zuweisen`
+(`renderer/action-editor/`). Alle von der Sperrklinken-Liste (#447).
+
+**Ausgangsmessung:** 30 Verhaltens-Mutationen, 5 harmlose Refactorings. Erkannt: **28**.
+Zwei Luecken geschlossen (A4, B6), eine **Produkt-Luecke gemeldet** (markeId, s. u.);
+**0/5 Refactorings rot**; jede Mutation byte-identisch zurueckgenommen.
+
+### Die zwei Test-Luecken (geschlossen, fuenf neue Verhaltens-Tests)
+
+- **A4 – der Zugangs-Spiegel war ungetestet.** `setzeLage` schreibt
+  `zugaengeRef.current = neu.zugaenge`; fehlt die Zeile, liefert `holeProjekt()` der
+  UebergabeUmgebung **fuer immer `null`** – jede Reparatur verliert ihr Projekt. Kein Test
+  bemerkte es. Neu: `holeProjekt()` liefert nach `bereit` das Projekt. **Zusatzbefund zur
+  Messung selbst:** Der Fall war zuerst als **Anfuehrungszeichen-Tausch** gebaut
+  (`'bereit'` → `"bereit"`) – ein harmloses Refactoring, das gruen blieb. Erst die echte
+  Mutation (`if (false)`) ist rot.
+- **B6 – die Meldungstabelle von `meldungZuBefunden` hatte keinen Test.** Ein geloeschter
+  `case` blieb gruen. Neu: vier Faelle (`titel`, `vorlagenId`, `standardDauer`,
+  `akzentfarbe`), jeder prueft Feldnamen und Grund in der Meldung.
+
+### Produkt-Luecke: `markeId` fehlt in der Meldungstabelle (GEMELDET, nicht geaendert)
+
+`EntwurfBefund` kennt `{ feld: 'markeId', grund: 'leer' }`, `meldungZuBefunden` hat dafuer
+**keinen `case`**. Gemessen (temporaerer Diagnose-Test, danach entfernt):
+`legeAktionAn({ …, markeId: '' })` liefert die Meldung **`" Es wurde nichts gespeichert."`**
+– ohne Feldnamen, ohne Grund, mit fuehrendem Leerzeichen. Der Nutzer erfaehrt nicht, was
+fehlt. **Nicht eigenmaechtig behoben** (Produkttext, eigene Entscheidung noetig); der neue
+Meldungstest deckt bewusst nur die vier vorhandenen Faelle. Vorschlag: `case 'markeId':
+return 'markeId: Es muss eine Marke gewaehlt sein.'` plus ein Test.
+
+### Was die Verhaltens-Tests je Datei tragen (Auszug)
+
+- **W** – 6/6 rot: `parent`-Pruefung invertiert, Filter invertiert, falscher Code,
+  leere ID, `'entprellt'` statt `'sofort'`, falsches Suchkriterium.
+- **A** – 6/6 rot: fehlender Abbau beim Unmount, `'laeuft'`-Flaeche, Start-Hinweis trotz
+  offenem Projekt, fehlender Zugangs-Spiegel, falscher Abo-Kanal, fehlendes Overlay.
+- **B** – 6/6 rot: `trim()` vergessen, Obergrenze der Dauer, `markeId` aus den
+  Pflichtfeldern, falscher Nutzlast-Schluessel, leere ID, Meldungstabelle.
+- **C** – 6/6 rot: `ref`-Pruefung vergessen, `every` statt `some`, `some` statt `every`,
+  `trim()` vergessen, falscher Nutzlast-Schluessel, falsche Trefferliste.
+- **D** – 6/6 rot: `zustand`-Filter, invertierte „fehlt"-Pruefung, Video-Zuweisung,
+  `bildRef: null`, fehlende Frueh-Rueckgabe beim ersten Pfad, verlorener `abbruchGrund`.
+
+### Entfernt (21 Testfaelle, 5 ergaenzt, 0 gekuerzt)
+
+- **8** in `verwerfe-arbeitskopie` (`eslint-disable`, 5 Verbote, `'vorlagen:'`, `await`).
+- **1** in `app-einhaengung` (DoD-Grep-Block; zwei weitere Grep-Zeilen standen IN
+  Verhaltens-Tests und fielen dort mit weg).
+- **5** in `aktion-bearbeiten` (Grep-Block + Akzentfarb-Grep).
+- **5** in `aktion-loeschen` (Grep-Block samt Filter-Selbstprobe).
+- **2** in `bild-zuweisen` (Grep-Block).
+
+**Ehrlich offen:** Die Abwesenheits-Zusagen der Renderer-Dateien (kein `window.api`, kein
+Kanal-Literal, kein `fs`, kein `throw` im Rumpf) haben keinen Waechter mehr; die
+Verhaltens-Tests belegen nur den Weg, der gegangen wird. Ebenso in `App.tsx`: „kein
+`setTimeout`, kein `reiheEin`". Lint-Kandidat `no-restricted-imports`/`no-restricted-syntax`.
+#448 steht.
+
+### Stand nach Charge 22
+
+| | vorher | nachher |
+|---|---|---|
+| Mutationen in dieser Charge | – | **30**: 28 erkannt, 2 Luecken; nach der Schliessung 30/30 |
+| Refactorings | – | **0 / 5 rot** |
+| Quelltext-/Meta-Tests entfernt | – | **21** |
+| Verhaltens-Tests ergaenzt | – | **5** (1 + 4) |
+| Echte Luecken geschlossen | – | **2** (A4, B6) + **1 gemeldete Produkt-Luecke** (markeId) |
+| Suite | 5.323 | **5.307** (340 Dateien) |
+| Gate | – | `npm run pruefung` **Exit 0**, Integration 49, Treiber 0 Befunde |
+| Sperrklinke | 25 | **20** Dateien |

@@ -11,7 +11,40 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, fuenfundzwanzigste Sitzung: Mutations-Charge 21) – gilt vor ALLEM weiter unten
+## STAND HEUTE (29.10.2026, sechsundzwanzigste Sitzung: Mutations-Charge 22) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-29-charge-23.md`](docs/agents/uebergabe-2026-10-29-charge-23.md).**
+Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 35.
+
+- **CHARGE 22 GEBAUT:** fuenf Testdateien – `verwerfe-arbeitskopie` (`main/vorlagen-store/`),
+  `app-einhaengung` (`renderer/App.tsx`), `aktion-bearbeiten`, `aktion-loeschen`,
+  `bild-zuweisen` (`renderer/action-editor/`). Erste Renderer-Charge mit `.tsx`.
+  **30 Verhaltens-Mutationen**, **5 Refactorings**; 28 erkannt, **2 Test-Luecken** (A4, B6)
+  geschlossen, **0 aequivalent**; **0/5 Refactorings rot**.
+- **A4 – Zugangs-Spiegel:** Ohne `zugaengeRef.current = neu.zugaenge` liefert `holeProjekt()`
+  **fuer immer `null`**; kein Test bemerkte es. Neu: `holeProjekt()` liefert nach `bereit`
+  das Projekt. **Zusatzbefund:** Der Fall war zuerst als Anfuehrungszeichen-Tausch gebaut
+  (gruen, harmlos) – erst `if (false)` ist die echte Mutation.
+- **B6 – Meldungstabelle:** `meldungZuBefunden` hatte keinen Test; ein geloeschter `case`
+  blieb gruen. Neu: vier Faelle, je Feldname + Grund.
+- **PRODUKT-LUECKE, GEMELDET (nicht geaendert):** `meldungZuBefunden` hat **keinen
+  `case 'markeId'`**. Gemessen: `legeAktionAn({…, markeId: ''})` liefert
+  **`" Es wurde nichts gespeichert."`** – ohne Feldnamen, mit fuehrendem Leerzeichen.
+  Vorschlag: eigener `case` + Test; Entscheidung offen.
+- **Entfernt:** **21** Quelltext-/Meta-Tests, **5** Verhaltens-Tests ergaenzt; Suite
+  **5.323 → 5.307** (340 Dateien). **Sperrklinke:** 25 → **20** Dateien.
+- **Ehrlich offen:** Die Abwesenheits-Zusagen der Renderer-Dateien (kein `window.api`, kein
+  Kanal-Literal, kein `fs`, kein `throw`, kein `setTimeout`/`reiheEin` in `App.tsx`) haben
+  keinen Waechter mehr. Lint-Kandidat; #448 (192 SAFETY) steht.
+- **Gate:** `npm run pruefung` **Exit 0** – Typecheck 0, Lint 0 Fehler, Unit **5.307 (340
+  Dateien)**, Integration **49 (12 Dateien)**, Treiber **0 Befunde**.
+- **Nicht gepusht:** `main` liegt vor `origin/main`; **Push nur auf Anweisung.**
+- **Naechster Schritt: Mutations-Charge 23** – fuenf der verbleibenden **20**:
+  `kaputt-handling`, `live-vorschau` (`action-editor/`), `aktions-auswahl`,
+  `asset-auswahl`, `bootstrap-ablauf` (`app-shell/`). Die zwei Filter sind rein und gut
+  verhaltensgetestet; `bootstrap-ablauf` ist der riskanteste (Startreihenfolge).
+
+## STAND HEUTE (29.10.2026, fuenfundzwanzigste Sitzung: Mutations-Charge 21) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-charge-22.md`](docs/agents/uebergabe-2026-10-29-charge-22.md).**
 Einzelbefunde: [`docs/agents/mutation-pilot-2026-10-20.md`](docs/agents/mutation-pilot-2026-10-20.md), Abschnitt 34.
