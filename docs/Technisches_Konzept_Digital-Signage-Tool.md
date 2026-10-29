@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.9 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.30 (9.7.7: Ein Drop auf den Video-Körper legt immer eine Unterbrechung an – die Band-Wirkung entsteht nur in der Band-Bearbeitung, Entscheidung #442 vom 29.10.2026)
-**Datum:** 28.10.2026
+**Version:** 3.31 (9.2.8: Split-Screen gestrichen – das Band liegt **deckend über** dem vollflächigen Video; Vorlagen tragen **keine Art** mehr, `höhe` entscheidet. Entscheidung 29.10.2026, AD v1.10)
+**Datum:** 29.10.2026
 **Status:** In Planung
 
 ---
@@ -49,7 +49,7 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 - **Aktion/Produkt** – ID, Titel (Pflicht), Beschreibung?, Preis?, Bildreferenz?, CTA?, Anzeigedauer?, Vorlagen-ID, Akzentfarbe? (ersetzt die Akzent-Rollen der Vorlage, 9.10.9). *(FA-02, 4.1)*
 - **Medium (Asset)** – ID, Typ (video|image), Dateiname, Maße, Dauer (Video, via ffprobe), Importdatum. *(FA-01)*
 - **Listenelement** – ID, Art (Video|Aktions-Segment – **`bild` ist ab v3.16 gestrichen**, 9.11.3), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`. Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). **Nur bei Video** außerdem **Unterbrechungen** für die sequenzielle Anzeige: `{ zeitstelle, aktionRef, dauer }[]` – Einschübe, bei denen das Video pausiert (9.2.9, v3.26). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
-- **Vorlage** – datengetriebene Layout-Definition: `art` (vollflächig | Split-Band | Einblendung), `höhe` (bei Bändern), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Vollbild", „Split", „Band-Standard". **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
+- **Vorlage** – datengetriebene Layout-Definition: `höhe` (`null` = Ganzbild 1920 × 1080, Zahl = Bandhöhe), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Ganzflächig", „Zwei Spalten", „Band-Standard". **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
 - **Ausführungs-Protokoll / Ausgabe-Historie** – ID, Projekt-ID, Datum, Pfad, Dauer (nur bei Render, sonst leer – 9.3), Größe. Geführt von der Auftragsverwaltung als Speicher **Q3** (append-only, dauerhaft), nicht mehr in D3. *(Abschnitt 7, 9.3)*
 
 **B — App-/Konfigurationsdaten** (persistent, app-weit)
@@ -282,7 +282,7 @@ Q1–Q4 gehören zur Auftragsverwaltung (P6) und tragen **jeweils eigene Persist
 | 8 | P1 | Asset-Datensatz (Pfad, Maße, Dauer) | D1 |
 | 9 | D1 | Liste + Aktionsdaten | P4 / P5 |
 | 10 | D2 | Mediendateien | P4 / P5 |
-| 11 | V2 | Marke, aufgelöst (Aktions-Segmente: `aktion.markeId`; Band-Hintergrund und Split-Restflächen: `Project.standardMarkeId`, 9.15.4) | P4 / P5 |
+| 11 | V2 | Marke, aufgelöst (Aktions-Segmente: `aktion.markeId`; Band-Hintergrund: `Project.standardMarkeId`, 9.15.4) | P4 / P5 |
 | 12 | P4 | ffmpeg-Aufrufe / Clips | ffmpeg |
 | 13 | P4 | Segment-PNGs, `seg_*.mp4`, concat-Liste | T1 |
 | 13a | P4 | fertige Ausgabe-MP4 (`<name>.mp4.part` → Rename, 9.2.6) | `projects/<id>/output/` |
@@ -325,7 +325,7 @@ Dieser Abschnitt übersetzt die Prozesse **P1–P7** in konkrete Module mit scha
 
 - **Renderer (React-UI):** `ipc-client`, `app-shell` (Rahmen + Navigation, 9.14), `composer` [P3], `action-editor` [P2], `template-canvas` (geteilt: Segment → PNG, **einzige Pixelquelle**, 9.10), `preview-player` [P5], `vorlagen-editor` (9.12.2), `marken-editor` (9.15.2), `projekt-verwaltung` (Projektverwaltung FA-10, 9.14.3), `queue-panel` (Sicht auf die Auftrags-Queue). **Dazu `gemeinsam` – kein Modul, sondern der geteilte Renderer-Bereich:** ein Ort ohne Eigentümer, aus dem **jedes** Renderer-Modul direkt importieren darf. Er trägt, was mehrere Module benutzen und keines besitzt – heute das Register der offenen `<video>`-Handles, das vor dem Löschen eines Mediums freigegeben werden muss (9.4.6). *Warum nicht `src/shared/`:* Dort läge **Modul-Zustand**, und der Main-Prozess bekäme beim Import eine **zweite, eigene** Instanz davon – ein Register, das nie etwas enthält und niemandem auffällt. *Warum kein Durchreichen als Parameter:* Der Eintrag entsteht am **unteren Ende** zweier Bauteilketten (Vorschau-Video und Vorschaubild); ein Register, dessen Inhalt davon abhängt, ob jede Zwischenstufe die Funktion weitergereicht hat, ist keins.
 - **Main (Node):** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher Q1–Q4, 9.3), `media-service` [P1] (9.4), `project-store` [D1] (besitzt das eine D1-Schreib-Lock **und** ist Pfad-Autorität + trägt das `media://`-Protokoll, 9.5.7), `config-store` [D3], `vorlagen-store` (app-weite Vorlagen-Bibliothek, 9.12.1), `marken-store` [V2] (app-weiter Marken-Bestand, **löst die Marken-Vererbung als einzige Stelle auf**, 9.15.1), `render-service` [P4] (9.2), `export-service`, `ffmpeg-adapter` (enthält den getesteten `buildReel`-Kern).
-- **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …) **und die reine Bandgeometrie-Rechnung** `berechneBandGeometrie` (9.2.8) – die einzige Stelle, an der `render-service` und `preview-player` dieselbe Formel benutzen, statt sie zweimal zu schreiben. Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag.
+- **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …). Die reine Bandgeometrie-Rechnung `berechneBandGeometrie` ist mit dem Split-Screen **entfallen** (v3.31, 9.2.8). Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag.
 
 **Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1), die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3) sowie die **Marken-Verwaltung** `marken-store`/`marken-editor` (9.15). **Speicher `V2`** (Marken-Bestand) tritt neben `V1` (Vorlagen). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
 
@@ -426,7 +426,7 @@ Der Ausgabe-**Pfad** ist **nicht** Teil der Anfrage – nur der **Name**: Der Ma
 
 | `art` | Nutzdaten | Herkunft der Pixel | über IPC? |
 |---|---|---|---|
-| `"video"` | `medienRef` (relativer Pfad in `media/`), `trimStart`, `trimEnde` (Sekunden; **framegenauer** Schnitt s. 9.2.6), optional `einblendung` (**`art`**, **`höhe`** und die Band-Abschnitte als PNG-Puffer + Dauern, s. u. und 9.2.8) | Datei in D2; Band-Pixel vom Renderer | **teilweise** – Video per Pfad, Band-PNGs über IPC |
+| `"video"` | `medienRef` (relativer Pfad in `media/`), `trimStart`, `trimEnde` (Sekunden; **framegenauer** Schnitt s. 9.2.6), optional `einblendung` (**`höhe`** und die Band-Abschnitte als PNG-Puffer + Dauern, s. u. und 9.2.8) | Datei in D2; Band-Pixel vom Renderer | **teilweise** – Video per Pfad, Band-PNGs über IPC |
 | `"segment"` | `png` (Binärpuffer), `dauer` | Renderer via `template-canvas` | **ja** – einziger Pixel-Transport |
 
 Gemeinsam je Item: `id` (Rückverfolgung/Fehlerzuordnung). Bei `"segment"` werden **keine** Aktions-/Vorlagendaten mitgeschickt – die Pixel sind bereits final; das ist der Kern von Variante A.
@@ -437,16 +437,12 @@ Gemeinsam je Item: `id` (Rückverfolgung/Fehlerzuordnung). Bei `"segment"` werde
 
 | Feld | Inhalt |
 |---|---|
-| `art` | `"split"` \| `"einblendung"` – Kompositionsart (Band **unter** bzw. **über** dem Video, 9.2.8) |
 | `höhe` | Bandhöhe `H` in Pixeln (ganzzahlig und **gerade**, 9.2.8) |
 | `abschnitte` | geordnete Folge `{ png (Binärpuffer, 1920 × H), dauer }` |
-| `flaecheDunkel` | **fertiger Hex-Wert** für die Restflächen der Split-Komposition (9.2.8) – **kein** Rollen-Name, **keine** `markeId` |
 
-**`flaecheDunkel` reist aus demselben Grund mit (v3.7) – und ist der EINZIGE Marken-Bezug des `render-service`.** Bei Variante A liefert der Renderer **alle** gezeichneten Pixel als PNG; Logo und Schriften einer Marke wirken sich ausschließlich über diese PNGs aus. Was ffmpeg selbst noch einfärbt, ist die **Restfläche** der Split-Komposition – und dafür genügt **ein Farbwert**. Er wird **beim Einreihen** aus der Projekt-Standardmarke aufgelöst (9.15.4) und als fertiger Hex-Wert eingefroren. *Folge ohne die Einfrierung:* Ändert jemand die Marke, während der Auftrag in der Warteschlange wartet, füllte der `render-service` die Restflächen in einer **anderen** Farbe als die bereits gezeichneten Band-PNGs – **nebeneinander im selben Bild**. Es ist derselbe Fehler wie bei einer nachgeschlagenen Bandhöhe, nur sichtbarer. *Warum der Wert und nicht die `markeId`:* Eine mitgereiste Kennung wäre **nicht** eingefroren – die Marke dahinter kann sich ändern, ohne dass die Zuordnung sich ändert. Und der Renderer kennt den Wert ohnehin: **er hat das Band damit gezeichnet.**
+**`art` und `flaecheDunkel` sind entfallen (v3.31).** Es gibt nur noch **eine** Komposition – das Band liegt deckend **über** dem vollflächigen Video (9.2.8). Damit braucht der Auftrag weder eine Kompositionsart noch einen Marken-Farbwert: Der `render-service` färbt **nichts** selbst ein, alle Pixel kommen als PNG aus `template-canvas`. *Bis v3.30 trug der Auftrag beides für die Split-Komposition (Restflächen in `flaecheDunkel`, gestapelt per `vstack`); mit der Streichung des Split-Screen (Entscheidung 29.10.2026, AD 4.5) ist beides gegenstandslos geworden.*
 
-*Das Feld ist Pflicht, auch wenn `art: "einblendung"` es nicht benutzt* (dort wird nichts gefüllt, das Band überlagert mit Alpha). Ein optionales Feld hätte den Fall „`split` ohne Farbe" zugelassen – und dann müsste der `render-service` raten oder eine Hexzahl tippen, was 9.11.1 Punkt 7 verbietet.
-
-*Warum `art` und `höhe` im Auftrag stehen und nicht zur Laufzeit nachgeschlagen werden:* Der Render **friert seinen Eingang beim Einreihen ein** (9.3.5). Beide Werte stammen aus der Band-Vorlage und werden **beim Einreihen** aus ihr abgeleitet. Würde der Main die Vorlage stattdessen erst beim Start des Auftrags im `vorlagen-store` nachschlagen, wäre der Eingang **nicht** eingefroren: Ändert jemand die Bandhöhe, während der Auftrag in der Warteschlange wartet, passten die bereits gezeichneten Band-PNGs (1920 × H **zum Einreih-Zeitpunkt**) nicht mehr zur nachgeschlagenen Höhe – das Band im fertigen Video wäre verzerrt oder falsch platziert. So bleibt der Auftrag **in sich geschlossen**, und der `render-service` braucht **keine** Abhängigkeit zum `vorlagen-store`. Der Renderer kennt beide Werte ohnehin: er hat das Band damit gezeichnet.
+*Warum `höhe` im Auftrag steht und nicht zur Laufzeit nachgeschlagen wird:* Der Render **friert seinen Eingang beim Einreihen ein** (9.3.5). Der Wert stammt aus der Band-Vorlage und wird **beim Einreihen** aus ihr abgeleitet. Würde der Main die Vorlage stattdessen erst beim Start des Auftrags im `vorlagen-store` nachschlagen, wäre der Eingang **nicht** eingefroren: Ändert jemand die Bandhöhe, während der Auftrag in der Warteschlange wartet, passten die bereits gezeichneten Band-PNGs (1920 × H **zum Einreih-Zeitpunkt**) nicht mehr zur nachgeschlagenen Höhe – das Band im fertigen Video wäre verzerrt oder falsch platziert. So bleibt der Auftrag **in sich geschlossen**, und der `render-service` braucht **keine** Abhängigkeit zum `vorlagen-store`. Der Renderer kennt den Wert ohnehin: er hat das Band damit gezeichnet.
 
 #### 9.2.3 Ausgang: `RenderResult`
 
@@ -522,7 +518,7 @@ gebündelte `ffmpeg` 6.1.1; der Beleg liegt als Integrationstest vor.)*
 | **Pixel-Seitenverhältnis** | **1:1** (quadratisch, SAR 1:1) | Quellvideos mit nicht-quadratischen Pixeln würden am TV **verzerrt** dargestellt |
 | Abtastung | **progressiv** | kein Interlacing |
 | **Audio** | **stille AAC-Spur** (48 kHz, mono, niedrige Bitrate) – in **jedem** Segment identisch | Manche Player/TVs erwarten eine Audiospur und verhalten sich bei rein-Video-MP4 eigenartig. Das Ergebnis ist trotzdem **still** (Anforderungsdokument R-06 ist damit **entschieden**) |
-| Seitenverhältnis-Politik | einpassen + schwarze Balken (`pad`; Letterbox/Pillarbox), **kein** Beschnitt | Ausnahme: Split-Komposition füllt in der Farb-Rolle `flaecheDunkel` (9.2.8, 9.11.2) |
+| Seitenverhältnis-Politik | einpassen + schwarze Balken (`pad`; Letterbox/Pillarbox), **kein** Beschnitt | auch für Bänder: das Video bleibt vollflächig, das Band liegt deckend darüber (9.2.8) |
 | Container / Dateiname | **MP4** mit **`+faststart`** / `<ausgabeName>.mp4` (frei, FA-22) | Index vorn – hilft Playern, die ihn früh erwarten |
 
 **Ausdrücklich verboten** (typische „für mehr Qualität"-Fehlgriffe, die den TV aussperren): 10-Bit-Tiefe, 4:2:2/4:4:4-Abtastung, exotisch hohe Referenzframe-Zahlen, offene GOPs, unbegrenztes CRF ohne VBV-Deckel.
@@ -583,39 +579,20 @@ Während eines laufenden Renders läuft der Kanal in **beide** Richtungen; beide
 - Der Fortschrittskanal trägt **keinen** Endzustand. Erfolg, Fehler und Abbruch kommen **ausschließlich** über das `RenderResult` (9.2.3).
 - Nach dem terminalen `RenderResult` dürfen **keine** weiteren `RenderProgress`-Ereignisse dieser `renderId` mehr folgen. Verspätete Ereignisse eines bereits beendeten Laufs erkennt der Renderer an der nicht mehr aktuellen `renderId` und verwirft sie.
 
-#### 9.2.8 Parallele Einblendung: Split-Screen-Komposition (FA-20)
+#### 9.2.8 Parallele Einblendung: Band über dem Video (FA-20, v3.31)
 
-Ein `"video"`-Item kann eine **Einblendung** tragen: unter dem laufenden Video zeigt ein **Werbeband** eine oder mehrere rotierende Aktionen (Anforderungsdokument 4.5).
+Ein `"video"`-Item kann eine **Einblendung** tragen: über dem laufenden Video zeigt ein **Werbeband** eine oder mehrere rotierende Aktionen (Anforderungsdokument 4.5).
 
-Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vorlage** (`art`, 9.11.1) – gewählt bei der Vorlagenerstellung. **Genauer:** Die Art wird **beim Einreihen** des Render-Auftrags aus der Band-Vorlage abgeleitet und zusammen mit der Bandhöhe `H` als `einblendung.art` / `einblendung.höhe` im `RenderRequest` **mitgeführt** (9.2.2). Der `render-service` schlägt die Vorlage **nicht** zur Laufzeit nach – sein Eingang ist beim Einreihen eingefroren (9.3.5), und die Band-PNGs sind bereits in `1920 × H` gezeichnet.
+**Es gibt genau EINE Komposition (v3.31).** Das Video wird wie gewohnt auf **1920 × 1080** normalisiert (schwarze Balken nach 9.2.4, **keine** Verkleinerung, **keine** Markenfarb-Flächen). Das Band (1920 × H, **deckend**) wird **unten überlagert** (y = 1080 − H). Bis v3.30 stand daneben die **Split-Komposition** – Band *unter* einem auf 918 px verkleinerten Video, die Restflächen links und rechts in der Farb-Rolle `flaecheDunkel`. Sie ist **gestrichen** (Entscheidung 29.10.2026, AD 4.5): Sie kostete **13 % der Fläche** für Seitenbalken und **28 % der Bildhöhe**, ohne die Werbung lesbarer zu machen.
 
-**Art A – `split` (Hauptbetriebsart): Band *unter* dem verkleinerten Video.** Die **Bandhöhe `H` stammt aus der Band-Vorlage** und liegt dem Render als `einblendung.höhe` vor; die Geometrie leitet sich daraus ab:
+**Die Bandhöhe `H` stammt aus der Band-Vorlage** (9.11.1) und liegt dem Render als `einblendung.höhe` vor. Der `render-service` schlägt die Vorlage **nicht** zur Laufzeit nach – sein Eingang ist beim Einreihen eingefroren (9.3.5), und die Band-PNGs sind bereits in `1920 × H` gezeichnet.
 
-| Bereich | Rahmen im 1920×1080-Bild |
-|---|---|
-| Video-Bereich | **1920 × (1080 − H)** bei y = 0 |
-| Band | **1920 × H** bei y = 1080 − H |
-| Video eingepasst (16:9) | höhenbegrenzt → Breite = (1080 − H) × 16/9, **abgerundet auf das nächstkleinere Vielfache von 4**, zentriert |
-| Restflächen | links/rechts – gefüllt mit der Farb-Rolle **`flaecheDunkel`** (s. u.) |
+**Aufbau – genau eine Re-Encodierung, Pipeline unverändert:**
 
-*Beispiel mit der eingebauten Vorlage (H = 162):* Video-Bereich 1920 × 918, Video real **1632 × 918** zentriert (x = 144), Restflächen je **144 px**.
-
-**Warum die Breite auf ein Vielfaches von 4 abgerundet wird – bindend:** `yuv420p` (9.2.4) tastet die Farbe in **beiden** Richtungen um den Faktor zwei unter und verlangt deshalb eine gerade Breite **und** einen geraden x-Versatz. Die gerade Bandhöhe (Punkt oben) allein genügt dafür **nicht**: (1080 − H) × 16/9 ist nur ganzzahlig, wenn 1080 − H durch 18 teilbar ist – H = 162 trifft das zufällig (918 → 1632), H = 200 nicht (880 × 16/9 = 1564,44). Und selbst eine gerade Breite reicht nicht, weil der Versatz (1920 − Breite) / 2 nur dann gerade ist, wenn die Breite durch 4 teilbar ist (1564 → 178 ✓, 1562 → 179 ✗). Abrunden auf ein Vielfaches von 4 erfüllt beide Bedingungen in einem Schritt. Der Rest von höchstens 3 px geht in die seitlichen `flaecheDunkel`-Flächen – er ist unsichtbar, weil die Restflächen ohnehin dort liegen. **Aufrunden ist verboten:** Es würde das Video über den Video-Bereich hinaus vergrößern und damit die Zusage „contain ohne Beschnitt" brechen.
-
-**Die Rechnung liegt im geteilten Bereich, die Prüfung im `render-service` (bindend).** Die **reine** Geometrie-Rechnung – Videofläche, eingepasste Breite mit der Vierer-Abrundung, Versätze, Bandposition – ist eine Funktion **ohne Seiteneffekte** und gehört deshalb in den **geteilten Bereich** (`contracts`, Abschnitt 9): `berechneBandGeometrie(höhe) → BandGeometrie { videoBereichBreite, videoBereichHöhe, videoBreite, videoHöhe, videoVersatzX, videoVersatzY, bandY }`. **`render-service` (9.2.8) und `preview-player` (9.9.2) rufen dieselbe Funktion auf**; keiner von beiden rechnet selbst. Die **Prüfung** dagegen – zulässige Bandhöhe, Fehlercode `ungueltiges_element` (9.2.3) – bleibt im `render-service`: Sie ist Torwächter-Arbeit am Auftrags-Eingang, kennt Fehlercodes des Main und hat in einer reinen Rechenfunktion nichts zu suchen. *Begründung:* 9.9.2 verlangt seit je, dass die Vorschau „die Geometrie nach derselben Formel" rechnet. Solange die Formel im Main liegt, kann der Renderer sie **nicht importieren** (9.1) – er müsste sie **abschreiben**, und abgeschriebene Formeln driften. Verschärfend ist, dass ein Abschreibfehler bei der eingebauten Vorlage **unsichtbar** bliebe: H = 162 ergibt 1632, ein Vielfaches von 4, die Abrundung ändert dort **nichts**. Wer sie weglässt, merkt es erst, wenn ein Nutzer eine **eigene** Band-Vorlage baut – dann laufen Vorschau und fertiges Video auseinander, und zwar genau bei dem Nutzer, der es am wenigsten nachvollziehen kann.
-
-**Bewusste Abweichung vom Ausgabe-Profil – nur hier:** 9.2.4 schreibt **schwarze** Balken vor. In der Split-Komposition werden die Restflächen **in der Markenfarbe** gefüllt, damit der Split gestaltet wirkt und nicht wie ungenutzter Platz. Die Einpassung bleibt **„contain" ohne Beschnitt**.
-
-**Welche Markenfarbe – festgelegt:** die Farb-Rolle **`flaecheDunkel`** (9.11.2). Sie ist dort ausdrücklich als „Segment- und **Band**-Hintergrund" beschrieben; damit sind Band und seitliche Restflächen **dieselbe** Fläche und der Split wirkt aus einem Guss. **Aufgelöst wird die Rolle beim EINREIHEN, nicht zur Laufzeit (v3.7):** Der Renderer liest sie aus der **Projekt-Standardmarke** (`Project.standardMarkeId`, 9.15.4) – derselben Marke, mit der er die Band-PNGs zeichnet – und legt den fertigen Hex-Wert als `einblendung.flaecheDunkel` in den Auftrag (9.2.2). Der `render-service` **schlägt keine Marke nach**; er nimmt den eingefrorenen Wert und tippt **nie** eine Hexzahl selbst in eine Filterkette (9.11.1, Punkt 7). *Bis v3.6 stand hier ein Nachschlag zur Laufzeit – erst über `config-store.leseMarke`, dann über `marken-store.leseMarke(markeId)`. Beides verletzte die Einfrier-Zusage aus 9.3.5.*
-
-**Art B – `einblendung`: Band *über* dem vollflächigen Video.** Das Video wird wie gewohnt auf **1920 × 1080** normalisiert (schwarze Balken nach 9.2.4, **keine** Verkleinerung, **keine** Markenfarb-Flächen). Das Band (1920 × H, **mit Alpha**) wird **unten überlagert** (y = 1080 − H). Vorteil: das Video behält seine volle Größe; dafür verdeckt das Band den unteren Bildbereich.
-
-**Aufbau – in beiden Arten genau eine Re-Encodierung, Pipeline unverändert:**
-
-1. **Band-Spur** erzeugen: die Band-PNGs der Abschnitte (von `template-canvas` mit einer `split`- bzw. `einblendung`-Vorlage) mit ihren Dauern zu einer **1920 × H**-Spur bei **30 fps CFR** verketten.
-2. **Video vorbereiten:** bei `split` **contain** in den Video-Bereich skalieren und mit **`flaecheDunkel`** auffüllen (Wert aus der **Projekt-Standardmarke** `Project.standardMarkeId`, **nicht** aus der Marke der gerade sichtbaren Aktion – s. u.); bei `einblendung` normal auf 1920 × 1080 nach 9.2.4.
-3. **Zusammensetzen:** bei `split` beide Spuren **vertikal stapeln** (`vstack`); bei `einblendung` die Band-Spur **unten überlagern** (`overlay`, Alpha respektiert).
-4. Ergebnis ist der Zwischenclip `seg_*.mp4` im Profil. Der finale `concat -c copy` (9.2.6) bleibt **völlig unangetastet** – die Kern-Pipeline gilt in beiden Arten weiter.
+1. **Band-Spur** erzeugen: die Band-PNGs der Abschnitte (von `template-canvas`, 9.10.2) mit ihren Dauern zu einer **1920 × H**-Spur bei **30 fps CFR** verketten.
+2. **Video vorbereiten:** normal auf **1920 × 1080** nach 9.2.4.
+3. **Zusammensetzen:** die Band-Spur **unten überlagern** (`overlay`; Alpha wird respektiert – bei deckenden Bändern ist es ein Überschreiben).
+4. Ergebnis ist der Zwischenclip `seg_*.mp4` im Profil. Der finale `concat -c copy` (9.2.6) bleibt **völlig unangetastet**.
 
 **Zeitverhalten:**
 
@@ -627,10 +604,10 @@ Es gibt **zwei** Kompositionsarten; welche gilt, bestimmt die **Art der Band-Vor
 **Invarianten (bindend):**
 
 - Parallele Bänder gibt es **nur bei `"video"`-Items**; `"segment"`-Items sind bereits vollflächige Standbilder.
-- **Deckkraft folgt der Vorlagenart:** `split`-Bänder sind **deckend** (echter Split, keine Überdeckung); `einblendung`-Bänder tragen **Alpha** (sie überlagern das Video). `template-canvas` liefert beide in **1920 × H** (9.10.2).
-- **Die Bandhöhe `H` stammt ausschließlich aus der Vorlage** – sie ist **kein** Wert am Listenelement und **nicht** pro Element überschreibbar. So bleibt das Erscheinungsbild an die Vorlage gebunden. Dass `H` (und `art`) im `RenderRequest` **mitreisen** (9.2.2), ist **keine** zweite Quelle: Es ist der beim Einreihen eingefrorene Stand **derselben** Vorlage (9.3.5) – dieselbe Beziehung wie zwischen Aktion und fertigem Segment-PNG.
-- **Die Bandhöhe `H` muss *gerade* sein.** Das Ausgabe-Profil schreibt `yuv420p` vor (9.2.4); dieses Pixelformat tastet die Farbe in **beiden** Richtungen um den Faktor zwei unter und verlangt deshalb **gerade Höhen und gerade Versätze**. Bei ungeradem `H` bricht **jede** der beiden Kompositionsarten: bei `split` ist die Videofläche `1080 − H` ungerade, bei `einblendung` liegt das Overlay bei `y = 1080 − H` auf einer **ungeraden** Zeile. Durchgesetzt wird das **an der Quelle**, wo die Höhe entsteht: der `vorlagen-editor` sperrt eine ungerade Bandhöhe sofort (9.12.2), der `vorlagen-store` weist sie ab (9.12.1) – sonst erführe der Nutzer den Fehler erst beim Render, nachdem er die Vorlage fertig gebaut hat. Der `render-service` prüft sie **zusätzlich** und meldet `ungueltiges_element` (9.2.3), damit ein Auftrag aus einem älteren Bestand nicht mitten im Lauf scheitert. Die eingebaute Band-Vorlage erfüllt die Regel (`höhe: 162`, 9.11.1).
-- **Alle Abschnitte eines Elements nutzen dieselbe Band-Vorlage** (eine `bandVorlageId` pro Einblendung) – damit `H` und die Kompositionsart während eines Videos nicht wechseln. Ein Wechsel mitten im Video würde die Geometrie springen lassen.
+- **Bänder sind deckend (v3.31):** Ein halbtransparentes Band über bewegtem Bild ist aus der Entfernung eines Studio-Fernsehers nicht lesbar, und die Lesbarkeit ist der Zweck der Anzeige (AD 4.5). Das Overlay respektiert Alpha weiterhin; eine eingebaute Vorlage erzeugt keines mehr.
+- **Die Bandhöhe `H` stammt ausschließlich aus der Vorlage** – sie ist **kein** Wert am Listenelement und **nicht** pro Element überschreibbar. Dass `H` im `RenderRequest` **mitreist** (9.2.2), ist **keine** zweite Quelle: Es ist der beim Einreihen eingefrorene Stand **derselben** Vorlage (9.3.5) – dieselbe Beziehung wie zwischen Aktion und fertigem Segment-PNG.
+- **Die Bandhöhe `H` muss *gerade* sein.** Das Ausgabe-Profil schreibt `yuv420p` vor (9.2.4); das Overlay liegt bei `y = 1080 − H` und muss auf einer **geraden** Zeile beginnen. Durchgesetzt wird das **an der Quelle**, wo die Höhe entsteht: der `vorlagen-editor` sperrt eine ungerade Bandhöhe sofort (9.12.2), der `vorlagen-store` weist sie ab (9.12.1). Der `render-service` prüft sie **zusätzlich** und meldet `ungueltiges_element` (9.2.3), damit ein Auftrag aus einem älteren Bestand nicht mitten im Lauf scheitert. Die eingebaute Band-Vorlage erfüllt die Regel (`höhe: 162`, 9.11.1).
+- **Alle Abschnitte eines Elements nutzen dieselbe Band-Vorlage** (eine `bandVorlageId` pro Einblendung) – damit `H` während eines Videos nicht wechselt. Ein Wechsel mitten im Video würde die Bandhöhe springen lassen.
 - **Ohne** Band bleibt die Verarbeitung **unverändert**: Video vollflächig 1920 × 1080 mit **schwarzen** Balken nach 9.2.4.
 
 #### 9.2.9 Unterbrechungen des Videos (FA-20, v3.26)
@@ -1048,8 +1025,8 @@ Rolle, die er bei `setzeStandardMarke` spielt (s. u.).
 |---|---|
 | `setzeStandardMarke` | `projektId`, `markeId` → `Ergebnis<Projekt>` – setzt `Project.standardMarkeId` (9.11.3). Prüft die `markeId` **nicht** gegen den Marken-Bestand; das tut der Handler, s. u. Unbekannte `projektId` → `nicht_gefunden` |
 
-**Warum es diese Operation braucht (bindend).** `Project.standardMarkeId` färbt Band-Hintergrund und
-Split-Restflächen (9.15.4) und belegt neue Aktionen vor. Bis v3.10 entstand der Wert **nur** bei der
+**Warum es diese Operation braucht (bindend).** `Project.standardMarkeId` färbt den Band-Hintergrund
+(9.15.4) und belegt neue Aktionen vor. Bis v3.10 entstand der Wert **nur** bei der
 Migration (9.15.1) und wurde danach ausschließlich **gelesen** – es gab **keinen** Weg, ihn zu ändern.
 Zusammen mit der Lösch-Sperre aus FA-23 (eine als Standardmarke geführte Marke ist nicht löschbar, s.
 9.15.1) wäre das eine **Sackgasse** gewesen: Der Nutzer erführe, was ihn blockiert, könnte den Grund aber
@@ -1375,7 +1352,7 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 
 - **Eingang:** Projektzustand (Liste, Asset-Bibliothek, Aktions-Bibliothek) via `ipc-client` vom `project-store`.
 - **Ausgang – Instant-Mutationen** (`project-store` 9.5.2): `fügeElementHinzu` (Asset- **oder** Aktions-Referenz; mehrere Listenelemente dürfen dieselbe Aktion referenzieren), `entferneElement`, `ordneNeu`, `setzeTrim`, `setzeDauer`, sowie – **nur bei Video-Elementen** – `setzeEinblendung` (Band-Vorlage wählen, Abschnitte hinzufügen/ordnen/entfernen, Abschnitts-Dauern setzen; FA-20, 9.2.8).
-- **Parallele Einblendung in der UI (FA-20):** Am Video-Element lässt sich ein Werbeband anhängen: **Band-Vorlage** wählen (`art: "band"`, 9.11.1) und eine **Folge von Aktionen mit Dauern** zusammenstellen. Der composer zeigt dabei an, ob die Folge **kürzer** als das Video ist (dann wiederholt sie sich) oder **länger** (dann wird am Videoende abgeschnitten) – damit der Nutzer die Wirkung versteht, ohne rendern zu müssen. Die Elementdauer bleibt **allein** durch das Video bestimmt; das Band verändert sie nie.
+- **Parallele Einblendung in der UI (FA-20):** Am Video-Element lässt sich ein Werbeband anhängen: **Band-Vorlage** wählen (9.11.1) und eine **Folge von Aktionen mit Dauern** zusammenstellen – die Liste ist sortierbar und läuft im Kreis. Der composer zeigt dabei an, ob die Folge **kürzer** als das Video ist (dann wiederholt sie sich) oder **länger** (dann wird am Videoende abgeschnitten) – damit der Nutzer die Wirkung versteht, ohne rendern zu müssen. Die Elementdauer bleibt **allein** durch das Video bestimmt; das Band verändert sie nie.
 - **Ausgang – Aufträge** (Queue 9.3): `render`, `export`.
 - **Aktion löschen aus der Bibliothek (v3.25, #430):** Jede **Aktionszeile** der Composer-Bibliothek trägt neben „Zur Liste hinzufügen“ ein **Löschen**. Es wirkt **ohne Rückfrage** und ist **ein** Undo-Schritt (TK 9.13.1: „Aktionen … löschen“ ist undo-fähig). Die **Kaskade** (Segment-Listenelemente verschwinden ganz, Band-Abschnitte fallen weg; TK 9.5.3) rechnet der `project-store` – der Composer wendet den zurückgegebenen `stand` an und baut **nichts** nach. Der **Reiter Aktionen** behält seine Zahlen-Vorschau (#142); die Bibliothek fragt bewusst **nicht**, weil der Schritt in einem Zug rückgängig zu machen ist.
 
@@ -1489,7 +1466,7 @@ Der Nutzer legt eine Aktion **auf das Video**, statt sie nur davor/danach einzuo
   Video-Teil** (9.2.9). In der Zeitleiste ist der **Körper eines Video-Blocks** das Drop-Ziel: ein Drop
   **auf dem Video** ordnet an der gemessenen **Zeitstelle** ein. **Bedienung entschieden (29.10.2026,
   #442):** Der Drop auf den Video-Körper legt **immer eine Unterbrechung** an – bei **jeder**
-  Vorlagenart der gezogenen Aktion. Die **Band**-Wirkung entsteht **nicht** per Drop, sondern
+  Vorlage der gezogenen Aktion. Die **Band**-Wirkung entsteht **nicht** per Drop, sondern
   ausschließlich in der **Band-Bearbeitung** des Elements (`einblendung-ansicht.tsx`, 9.7.7 erster
   Punkt). Die frühere Heuristik („`vollflaeche` → Unterbrechung, sonst Band") ist damit entfallen.
   Eine Aktion ist **entweder** Band-Abschnitt **oder** Unterbrechung, **nie beides** – dieselbe Aktion
@@ -1580,11 +1557,10 @@ Aktion {
 - **Aktions-Segment:** exakt dasselbe `template-canvas`-Bild wie der finale Render → **pixelgleich** (Variante A).
 - **Video:** natives `<video>` von `trimStart` bis `trimEnde`.
 - **Medienzugriff ausschließlich über `media://`** (9.5.7) – der `preview-player` sieht **nie** absolute Pfade, sondern lädt `media://<projektId>/<dateiname>` in `<video>`/`<img>`.
-- **Parallele Anzeige (FA-20, 9.2.8) – beide Modi:** Trägt ein Video eine Einblendung, bestimmt die **`art` der Band-Vorlage**, was die Bühne simuliert – **genau wie im Render**. Die Bandhöhe `H` kommt aus der Vorlage; die Geometrie wird **daraus abgeleitet**, nie hartkodiert:
-  - **`split`:** Das `<video>` wird in den oberen Bereich **1920 × (1080 − H)** gelegt (`contain`), die Restflächen links/rechts in der Farb-Rolle **`flaecheDunkel`** gefüllt – **derselben**, die der Render benutzt (9.2.8, 9.11.2), und aus **derselben Quelle**: der **Projekt-Standardmarke** (`Project.standardMarkeId`, 9.15.4), **nicht** aus der Marke der gerade sichtbaren Aktion; das Band-Canvas (**1920 × H**) sitzt **darunter**.
-  - **`einblendung`:** Das `<video>` bleibt **vollflächig** 1920 × 1080 (schwarze Balken nach 9.2.4); das Band-Canvas (**1920 × H**, mit **Alpha**) liegt **darüber** am unteren Rand. Die Überlagerung im DOM respektiert den Alphakanal von sich aus.
+- **Parallele Anzeige (FA-20, 9.2.8):** Trägt ein Video eine Einblendung, simuliert die Bühne das Band **genau wie im Render** – deckend über dem vollflächigen Video. Die Bandhöhe `H` kommt aus der Vorlage, nie hartkodiert:
+  - **Band (`höhe` gesetzt):** Das `<video>` bleibt **vollflächig** 1920 × 1080 (schwarze Balken nach 9.2.4); das Band-Canvas (**1920 × H**, **deckend**) liegt **darüber** am unteren Rand (v3.31). Die frühere Split-Geometrie (Video verkleinert, Restflächen in `flaecheDunkel`) ist mit dem Split-Screen entfallen (AD v1.10, 4.5).
 - **Zeitverhalten identisch zum Render:** Das Band **wechselt zeitgesteuert** nach den Abschnitts-Dauern (frame-gerundet), **wiederholt** sich, wenn die Folge kürzer als das (getrimmte) Video ist, und wird am Videoende **abgeschnitten** – **dieselben** Regeln wie 9.2.8.
-- **Invariante:** Die Vorschau **rechnet die Geometrie nach derselben Formel** wie `render-service` (9.2.8). **Genauer: nicht „nach derselben Formel", sondern mit derselben Funktion.** Die reine Rechnung liegt im **geteilten Bereich** – `berechneBandGeometrie(höhe) → BandGeometrie` (9.2.8) –, und der `preview-player` **ruft sie auf**, statt sie nachzubilden. Eine eigene, abweichende Herleitung im Renderer würde genau die Übereinstimmung zerstören, für die der `preview-player` existiert; besonders tückisch ist dabei die **Vierer-Abrundung** der Videobreite, die bei der eingebauten Band-Vorlage (H = 162 → 1632) **zufällig aufgeht** und erst bei eigenen Vorlagen auffiele. Die **Prüfung** der Bandhöhe bleibt beim `render-service` – der `preview-player` prüft nichts und meldet keine Fehlercodes.
+- **Invariante:** Es gibt **keine** Band-Geometrie mehr, die Vorschau und Render auseinanderlaufen lassen könnte: Das Video ist immer 1920 × 1080, das Band immer am unteren Rand. Die **Prüfung** der Bandhöhe bleibt beim `render-service` – der `preview-player` prüft nichts und meldet keine Fehlercodes.
 
 #### 9.9.3 Invarianten (bindend)
 
@@ -1614,15 +1590,15 @@ zeichneSegment(aktion, vorlage, marke) → SegmentBild        // Canvas 1920×10
 
 | Feld | Wert |
 |---|---|
-| Auflösung | **die native Fläche der Vorlagenart** – `art: "vollflaeche"` → **1920 × 1080** (= `RenderProfile`, 9.2.4); `art: "split"` bzw. `"einblendung"` → **1920 × `höhe`** (Bandhöhe aus der Vorlage, 9.2.8). Immer die native Fläche, **unabhängig** von der Anzeigegröße. |
+| Auflösung | **die native Fläche der Vorlage** – `höhe: null` → **1920 × 1080** (= `RenderProfile`, 9.2.4); Band-Vorlage → **1920 × `höhe`** (9.2.8). Immer die native Fläche, **unabhängig** von der Anzeigegröße. |
 | Export-Format | **PNG** (verlustfrei; Begründung 9.1, Punkt 2) |
-| Deckkraft | **folgt der Vorlagenart:** `vollflaeche` und `split` → **deckend**; `einblendung` → **mit Alpha** (das Band überlagert das Video, 9.2.8). PNG trägt den Alphakanal verlustfrei. |
+| Deckkraft | **deckend** – auch für Bänder (Entscheidung 29.10.2026, AD 4.5). PNG trägt den Alphakanal verlustfrei, falls eine künftige Vorlage ihn nutzt. |
 | Farbraum | sRGB |
 
 #### 9.10.3 Determinismus-Invarianten (bindend)
 
-1. **Immer bei der nativen Fläche der Vorlagenart zeichnen** (1920×1080 bzw. 1920×162, s. 9.10.2); Skalierung geschieht **nur** zur Darstellung (CSS). **Nie** kleiner rendern und hochskalieren – das erzeugt ein unscharfes Segment bzw. Band im Endvideo.
-2. **`devicePixelRatio` wird ignoriert** – feste Canvas-Backing-Größe entsprechend der Vorlagenart. Das Ergebnis darf **nicht** vom Gerät abhängen (HiDPI-Laptop = gleiches Bild).
+1. **Immer bei der nativen Fläche der Vorlage zeichnen** (1920×1080 bzw. 1920×162, s. 9.10.2); Skalierung geschieht **nur** zur Darstellung (CSS). **Nie** kleiner rendern und hochskalieren – das erzeugt ein unscharfes Segment bzw. Band im Endvideo.
+2. **`devicePixelRatio` wird ignoriert** – feste Canvas-Backing-Größe entsprechend der Fläche der Vorlage. Das Ergebnis darf **nicht** vom Gerät abhängen (HiDPI-Laptop = gleiches Bild).
 3. **Schriften sind vor dem Zeichnen geladen.** Der Aufruf wartet, bis alle benötigten Fonts einsatzbereit sind. Zeichnen mit Fallback-Schrift ist ein **Vertragsbruch** (lautloser Drift zwischen Vorschau und Endvideo).
 4. **Bilder sind vor dem Zeichnen dekodiert.** Der Aufruf wartet auf das Motiv (geladen über `media://`, 9.5.7) – sonst entsteht ein Segment ohne Bild.
 5. **Gleiche Eingabe → gleiches Bild.** Keine Zeit-, Zufalls- oder Zustandsabhängigkeit (keine Animation, kein Datum, kein `Math.random`).
@@ -1717,7 +1693,7 @@ pixelgleich in Vorschau und Render. Vier Festlegungen, bindend:
 
 **Die Akzentfarbe des Ersatz-Logos ist die der MARKE** (`marke.farben.akzent`), nicht die der Aktion.
 Das ist eine ausdrückliche Ausnahme von 9.10.9 und dort im Abschnitt „Abgrenzung" verzeichnet. Sie hat
-denselben Grund wie die zweite Ausnahme dort und wie die Herkunft der Restflächen-Farbe (9.2.8):
+denselben Grund wie die zweite Ausnahme dort (die Band-Farbe kommt aus der Projekt-Standardmarke, 9.15.4):
 **Rahmen und Marken-Identität sind stabil, nur Inhalte folgen der Aktion.**
 
 ---
@@ -1731,10 +1707,11 @@ Dieser Abschnitt sammelt die **geteilten Datenmodelle** aus `contracts/types`: `
 ```
 Vorlage {
   id:        string        // "vollbild" | "split" | "band-standard" | <uuid> bei eigenen
+                            //   (die IDs sind historisch; "split" ist ein GANZBILD-Layout –
+                            //    zweispaltig, nicht zu verwechseln mit dem gestrichenen Split-Screen)
   name:      string        // Anzeigename
-  art:       "vollflaeche" | "split" | "einblendung"   // Fläche + Kompositionsart (s. u.)
-  höhe:      number | null // nur bei "split"/"einblendung": Bandhöhe in px, GERADZAHLIG (Punkt 8);
-                           //   bei "vollflaeche" null
+  höhe:      number | null // null = GANZBILD (1920 × 1080); Zahl = BANDHÖHE in px,
+                           //   GERADZAHLIG (Punkt 8). Die FLÄCHE ist die Art (v3.31).
   parent:    string | null // Herkunft: ID der Vorlage, von der diese abgeleitet wurde.
                            //   ≠ null → ARBEITSKOPIE (in Bearbeitung, nicht auswählbar)
                            //   = null → eigenständige, nutzbare Vorlage
@@ -1760,16 +1737,15 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 
 **Festlegungen (bindend):**
 
-0. **`art` bestimmt Zeichenfläche *und* Kompositionsart** (gewählt bei der Vorlagenerstellung, FA-13):
+0. **Die Fläche ist die Art (v3.31).** Eine Vorlagen-*Art* wird nicht mehr gewählt (AD v1.10, FA-13): `höhe === null` heißt **Ganzbild**, eine Zahl heißt **Band**.
 
-   | `art` | Zeichenfläche | Deckkraft | Video | Komposition (9.2.8) |
-   |---|---|---|---|---|
-   | `"vollflaeche"` | 1920 × 1080 | deckend | – | eigenständiges Segment (sequenziell) |
-   | `"split"` | 1920 × `höhe` | deckend | **verkleinert** auf 1080 − `höhe` | `vstack` (Band **unter** dem Video) |
-   | `"einblendung"` | 1920 × `höhe` | **mit Alpha** | bleibt **vollflächig** | `overlay` (Band **über** dem Video, unten) |
+   | Fläche | Zeichenfläche | Deckkraft | Verwendung |
+   |---|---|---|---|
+   | Ganzbild (`höhe: null`) | 1920 × 1080 | deckend | eigenständiges Segment (sequenziell oder als Unterbrechung) |
+   | Band (`höhe: 162`) | 1920 × `höhe` | deckend | parallele Einblendung **über** dem vollflächigen Video (9.2.8) |
 
-   Alle `rahmen`-Werte einer Zone beziehen sich auf die Fläche **ihrer** Vorlagenart. Die Arten sind **nicht** austauschbar: `composer` und `action-editor` bieten jeweils nur die passende Art an (vollflächig für eigenständige Segmente, `split`/`einblendung` für parallele Bänder).
-1. **Absolute Pixel** im Raster der Vorlagenart – keine Prozentwerte. Eindeutig, keine Rundungsdrift, deckungsgleich mit der Canvas-Auflösung (9.10.2).
+   Alle `rahmen`-Werte einer Zone beziehen sich auf die Fläche **ihrer** Vorlage. Die beiden Flächen sind **nicht** austauschbar, und der **Einfügeweg entscheidet**, welche gilt: Die **Zeitleiste** nimmt Ganzbild-Vorlagen, die **Bandliste** Band-Vorlagen – der Nutzer wählt keine Art (Entscheidung 29.10.2026). *Bis v3.30 hieß das Feld `art` und unterschied drei Fälle; die Unterscheidung `split`/`einblendung` ist mit dem Split-Screen entfallen (AD v1.10, 4.5).*
+1. **Absolute Pixel** im Raster der Vorlage – keine Prozentwerte. Eindeutig, keine Rundungsdrift, deckungsgleich mit der Canvas-Auflösung (9.10.2).
 2. **Zeichenreihenfolge = Array-Reihenfolge** (später gezeichnete Zone liegt oben). **Kein** implizites Sortieren – sonst ist die Überlagerung nicht reproduzierbar.
 3. **`bindung`** verknüpft Zone ↔ Aktions-Feld **deklarativ**. **`wennLeer`** bestimmt das Verhalten bei leerem Feld:
    - **`"leer"`** *(Default)*: Zone bleibt leer, Layout unverändert.
@@ -1781,14 +1757,14 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 7. **Farben und Schriften sind Rollen-Verweise in die `Marke`** (z. B. `farbRolle: "akzent"`, `schriftRolle: "headlineElegant"`), **keine** Hex-Werte oder Font-Namen. So bleibt ein Marken-Wechsel ein Datenwert und keine Vorlagen-Änderung.
 
    **Die Akzent-Rollen sind der eine Rollen-Satz, den die Aktion überschreibt.** Löst eine Zone eine der drei Akzent-Rollen **`akzent`**, **`akzentKraeftig`** oder **`akzentTief`** (9.11.2) auf, liefert die Auflösung **nicht** den Markenwert, sondern den Wert aus **`aktion.akzentfarbe`** (9.8.2). Alle übrigen Rollen – Text- und Flächen-Rollen einschließlich `flaecheDunkel` und `flaecheAkzentZart` – bleiben **unberührt**. **Die Vorlage bestimmt also, WO Akzentfarbe hingehört; die Aktion bestimmt, WELCHE Farbe der Markenpalette dort landet.** Ist `aktion.akzentfarbe` nicht gesetzt, gilt **der Markenwert** der jeweiligen Rolle – der Fall ist ausdrücklich vorgesehen und **kein** Fehler. Die Regeln der Auflösung stehen vollständig in 9.10.9; hier steht nur, dass die Rollen-Verweise der Vorlage davon betroffen sind.
-8. **`höhe` ist geradzahlig** – bei `art: "split"` und `"einblendung"` muss die Bandhöhe eine **gerade** Zahl sein (Wertebereich > 0 und < 1080, 9.12.1). Grund ist das Ausgabe-Profil `yuv420p` (9.2.4): Es verlangt gerade Höhen und gerade Versätze. Bei ungerader Höhe ist die Videofläche `1080 − höhe` (bei `split`) bzw. der Overlay-Versatz `y = 1080 − höhe` (bei `einblendung`) ungerade – **beide** Kompositionsarten aus 9.2.8 brechen. Geprüft wird schon im Editor (Sperre, 9.12.2), nicht erst beim Render.
+8. **`höhe` ist geradzahlig** – bei einer Band-Vorlage muss die Bandhöhe eine **gerade** Zahl sein (Wertebereich > 0 und < 1080, 9.12.1). Grund ist das Ausgabe-Profil `yuv420p` (9.2.4): Es verlangt gerade Höhen und Versätze; das Band liegt bei `y = 1080 − höhe` und muss auf einer **geraden** Zeile beginnen. Geprüft wird schon im Editor (Sperre, 9.12.2), nicht erst beim Render.
 
-**Bandhöhe und Markenrahmen eigener Vorlagen (Entscheidung 23.10.2026, AD v1.9/4.5):**
+**Bandhöhe und Markenrahmen eigener Vorlagen (Entscheidung 23.10.2026, bestätigt 29.10.2026, AD v1.10/4.5):**
 
-- **Angelegt wird ausschließlich mit 162 px** – für `split` **und** `einblendung`. Die Oberfläche bietet **kein Höhenfeld**; „Bandhöhe setzen" aus 9.12.2 ist damit zurückgenommen. Der allgemeine Wertebereich aus Punkt 8 bleibt als **Datenregel** des Stores bestehen (er prüft jeden Schreibweg), beschreibt aber nicht mehr, was die Oberfläche anbietet.
+- **Angelegt wird ausschließlich mit 162 px.** Die Oberfläche bietet **kein Höhenfeld**; „Bandhöhe setzen" aus 9.12.2 ist damit zurückgenommen. Der allgemeine Wertebereich aus Punkt 8 bleibt als **Datenregel** des Stores bestehen (er prüft jeden Schreibweg), beschreibt aber nicht mehr, was die Oberfläche anbietet.
 - **Grund:** Der Markenrahmen (Logo, Sicherheitsabstand) ist auf 162 px zugeschnitten. Eine andere Höhe verlangte eine Skalierungs- oder Verschieberegel für das Logo, die der Vertrag nirgends festlegt – und jede erfundene Regel wäre das **automatische Umlayouten**, das Punkt 3 verbietet.
-- **Feste Zonen einer eigenen Einblendung:** dieselben zwei festen Zonen wie beim Band – `hintergrund` (0, 0, 1920, 162) und `logo` (96, 20, 240, 69), in dieser Zeichenreihenfolge. Es gibt **keine eingebaute Einblendungs-Vorlage**; der Rahmen wird aus „Band-Standard" übernommen.
-- **Hintergrund der Einblendung:** Die `hintergrund`-Zone trägt **keine deckende `flaecheDunkel`-Füllung**, sondern den **Scrim-Verlauf** `scrimStart` → `scrimEnde`, Richtung `unten` (durchsichtig → 70 % Schwarz). Nur so trägt das Band Alpha und überlagert das Video, wie es die Kompositionsart `einblendung` verlangt (Punkt 0, 9.2.8). Ein eigenes Deckkraft-Feld gibt es nicht – die Deckkraft folgt weiterhin der Vorlagenart.
+- **Feste Zonen einer eigenen Band-Vorlage:** dieselben zwei festen Zonen wie beim eingebauten Band – `hintergrund` (0, 0, 1920, 162) und `logo` (96, 20, 240, 69), in dieser Zeichenreihenfolge.
+- **Hintergrund des Bandes:** Die `hintergrund`-Zone trägt die **deckende `flaecheDunkel`-Füllung** – das Band verdeckt die unteren 162 px des Videos (AD 4.5). *Bis v3.30 war für die Einblendung ein Scrim-Verlauf (`scrimStart` → `scrimEnde`) vorgeschrieben; mit der Entscheidung „Bänder sind deckend" ist er entfallen.*
 
 **Gemeinsame Basis der eingebauten Vorlagen**
 
@@ -1796,7 +1772,7 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 - **Logo 420×120**, **oben links** (Seitenverhältnis des Assets ≈ 3,5 : 1; der dunkle Balken ist im Logo-Asset **enthalten** – es braucht keine eigene Hintergrundzone). **Beim ersten Start gibt es kein Logo-Asset:** Die eingebaute Marke startet mit `logo: null` (9.15.1), die Zone trägt dann das **Ersatz-Logo** (9.10.10). Die Fläche bleibt dieselbe; die Angaben zum Asset gelten, sobald eines importiert ist.
 - Die Zone **`hintergrund`** (fest, dekorativ, Markenfarbe) wird **als erstes** gezeichnet. Grund: das Bild einer Aktion ist **optional** (FA-02) – ohne diese Zone würde eine Aktion ohne Motiv **schwarz** rendern statt markenkonform.
 
-**Eingebaute Vorlage „Vollbild"** *(Zeichenreihenfolge = Tabellenreihenfolge)*
+**Eingebaute Vorlage „Ganzflächig"** *(ID `vollbild`; Zeichenreihenfolge = Tabellenreihenfolge. Anzeigename seit 29.10.2026 – vorher „Vollbild", was mit dem Vollbild-Knopf des Players verwechselt wurde.)*
 
 | Zone | rolle | bindung | rahmen (x, y, b, h) | Parameter |
 |---|---|---|---|---|
@@ -1809,7 +1785,7 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 | `preis` | frei | preis | 1300, 660, 524, 150 | Pille (Akzent), `wennLeer: ausblenden` |
 | `cta` | frei | cta | 1300, 830, 524, 120 | Pille, `wennLeer: ausblenden` |
 
-**Eingebaute Vorlage „Split"** *(Motiv links, Text rechts; Trennung bei x = 960)*
+**Eingebaute Vorlage „Zwei Spalten"** *(ID `split` – die Kennung ist historisch und irreführend: gemeint ist ein **zweispaltiges Ganzbild**, Motiv links, Text rechts; Trennung bei x = 960. Nicht zu verwechseln mit dem gestrichenen Split-Screen, TK 9.2.8. Anzeigename seit 29.10.2026.)*
 
 | Zone | rolle | bindung | rahmen (x, y, b, h) | Parameter |
 |---|---|---|---|---|
@@ -1823,7 +1799,7 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 
 Alle Ränder liegen exakt auf der Inhaltsbox (rechts 1824, unten 1026). Die Werte sind datengetrieben und nach dem ersten echten Render leicht nachjustierbar.
 
-**Eingebaute Band-Vorlage „Band-Standard"** *(`art: "split"`, `höhe: 162`, Fläche 1920 × 162, deckend – für die Hauptbetriebsart Split-Screen, 9.2.8)*
+**Eingebaute Band-Vorlage „Band-Standard"** *(`höhe: 162`, Fläche 1920 × 162, deckend – für die Hauptbetriebsart, das Band über dem vollflächigen Video, 9.2.8)*
 
 | Zone | rolle | bindung | rahmen (x, y, b, h) | Parameter |
 |---|---|---|---|---|
@@ -1956,7 +1932,7 @@ Project {
   aktionen:      Aktion[]        // Aktions-Bibliothek des Projekts (9.8.2)
   liste:         Listenelement[] // geordnete Wiedergabeliste
   letzterAusgabeName: string | null  // FA-22: Vorbelegung des Render-Zielnamens; null = noch nie gerendert
-  standardMarkeId:    string         // FA-23: färbt Band-Hintergrund und Split-Restflächen und
+  standardMarkeId:    string         // FA-23: färbt Band-Hintergrund und
                                      //   belegt neue Aktionen vor. Pflicht; beim Anlegen die eingebaute
                                      //   Marke (vom Handler zugeliefert), danach wechselbar über
                                      //   setzeStandardMarke (9.5.2)
@@ -2050,7 +2026,7 @@ Vorlagen sind **app-weit** (9.11.1.1) und liegen damit **außerhalb** von `proje
 |---|---|
 | `listeVorlagen` | – → `Ergebnis<Vorlage[]>` – **nur nutzbare** (`parent = null`); Arbeitskopien erscheinen hier **nicht** |
 | `listeArbeitskopien` | – → `Ergebnis<Vorlage[]>` (`parent ≠ null`) – für „Bearbeitung fortsetzen" |
-| `erstelleVorlage` | `art`, `höhe?`, `name` → `Ergebnis<Vorlage>` mit `parent = null` (feste Zonen der Art vorbelegt) |
+| `erstelleVorlage` | `höhe` (`null` = Ganzbild, Zahl = Band), `name` → `Ergebnis<Vorlage>` mit `parent = null` (feste Zonen der Fläche vorbelegt) |
 | `oeffneZurBearbeitung` | `id` → `Ergebnis<Vorlage>` – legt eine **Arbeitskopie** mit `parent = id` an und gibt sie zurück |
 | `speichereArbeitskopie` | `arbeitsId`, `vorlage` → `Ergebnis<Vorlage>` – **Auto-Speichern** während des Bearbeitens |
 | `uebernehmeInParent` | `arbeitsId` → `Ergebnis<Vorlage>` – **mergt** in den Parent, Arbeitskopie verschwindet („überarbeiten"); im Fehlerfall Code `parent_eingebaut`, s. u. |
@@ -2118,12 +2094,12 @@ Vorlage X bearbeiten
 - **Auto-Speichern trifft nur die Arbeitskopie.** Während des Bearbeitens wird entprellt gesichert (3–5 s, wie 9.5.4) – aber **ausschließlich** in die Arbeitskopie. Die genutzte Vorlage ändert sich **erst** beim expliziten `uebernehmeInParent` bzw. `alsEigenstaendige`. So kann Experimentieren **nie** laufende Werbung in anderen Projekten verändern.
 - **Arbeitskopien (`parent ≠ null`) sind nicht auswählbar.** `composer` und `action-editor` bekommen sie nicht angeboten – halbfertige Vorlagen können nicht in einen Render geraten.
 - **`uebernehmeInParent` ist gesperrt, wenn der Parent eingebaut ist.** Eingebaute Vorlagen bleiben unveränderlich (9.11.1.1); dort bleibt nur `alsEigenstaendige`. Der Editor macht das vorher sichtbar, statt beim Speichern zu scheitern.
-- **`art` ist nach dem Anlegen unveränderlich** – auch über die Arbeitskopie. Ein Wechsel würde alle Zonen-Rahmen ungültig machen (andere Fläche); stattdessen neu anlegen.
-- **`höhe` nur bei `split`/`einblendung`**, Wertebereich > 0 und < 1080 **und geradzahlig** (9.11.1 Punkt 8, Begründung `yuv420p` in 9.2.8). Bei `vollflaeche` immer `null`. **Angelegt wird über die Oberfläche ausschließlich mit 162 px** (Entscheidung 23.10.2026, 9.11.1); der Wertebereich bleibt als Prüfregel für jeden Schreibweg bestehen. Der Store weist eine ungerade Höhe ab – auf **jedem** Weg, der sie setzen kann (`erstelleVorlage`, `speichereArbeitskopie`, `uebernehmeInParent`); der Editor sperrt sie bereits vorher (9.12.2).
+- **Die Fläche (`höhe`) ist nach dem Anlegen unveränderlich** – auch über die Arbeitskopie. Ein Wechsel würde alle Zonen-Rahmen ungültig machen (andere Fläche); stattdessen neu anlegen.
+- **`höhe` nur bei Band-Vorlagen**, Wertebereich > 0 und < 1080 **und geradzahlig** (9.11.1 Punkt 8, Begründung `yuv420p` in 9.2.8). Bei einer Ganzbild-Vorlage immer `null`. **Angelegt wird über die Oberfläche ausschließlich mit 162 px** (Entscheidung 23.10.2026, 9.11.1); der Wertebereich bleibt als Prüfregel für jeden Schreibweg bestehen. Der Store weist eine ungerade Höhe ab – auf **jedem** Weg, der sie setzen kann (`erstelleVorlage`, `speichereArbeitskopie`, `uebernehmeInParent`); der Editor sperrt sie bereits vorher (9.12.2).
 - **Feste Zonen (`rolle: "fest"`) dürfen nie entfernt oder verschoben werden** – auch nicht in eigenen Vorlagen (Markenrahmen erzwungen, FA-11).
 - **Löschen nur, wenn die Vorlage in *keinem* Projekt mehr benutzt wird.** Die Prüfung muss **beide** Referenzarten erfassen – das ist die entscheidende Feinheit:
   1. **`aktion.vorlagenId`** – Aktionen, die die Vorlage als vollflächiges Segment nutzen.
-  2. **`listenelement.einblendung.bandVorlageId`** – Listenelemente, die sie als **Band** nutzen (Split/Einblendung, 9.2.8).
+  2. **`listenelement.einblendung.bandVorlageId`** – Listenelemente, die sie als **Band** nutzen (9.2.8).
 
   **Eine Band-Vorlage wird ausschließlich über Weg 2 referenziert.** Wer nur Aktionen prüft, hält sie fälschlich für unbenutzt und löscht sie – der nächste Render bricht dann mit einer verwaisten Referenz. Die Prüfung liest dafür **alle** `project.json`, **nicht nur** das geladene Projekt (nur das aktive liegt im Speicher, 9.5.1). Blockierend, **nicht** kaskadierend.
 - **Arbeitskopien blockieren das Löschen nicht** – sie sind kein „Benutzen". Wird der Parent gelöscht, wird deren `parent` genullt (s. u.).
@@ -2131,7 +2107,7 @@ Vorlage X bearbeiten
 
 #### 9.12.2 `vorlagen-editor` [Renderer]
 
-**Ist:** die UI zum Anlegen und Bearbeiten – **Art wählen** (vollflächig / Split-Screen / Einblendung), die Bandhöhe ist für beide Bandarten **fest 162 px** (kein Höhenfeld; Entscheidung 23.10.2026, 9.11.1), freie und dekorative Zonen anlegen, verschieben, bemaßen, `bindung` und `wennLeer` wählen, Text-Parameter setzen (Schrift-/Farb-Rolle, Größenbereich, Max-Zeilen).
+**Ist:** die UI zum Anlegen und Bearbeiten – **zwei Flächen** (Ganzbild 1920 × 1080 oder Band 1920 × 162; eine Art wird nicht gewählt, v3.31), die Bandhöhe ist **fest 162 px** (kein Höhenfeld; Entscheidung 23.10.2026, 9.11.1), freie und dekorative Zonen anlegen, verschieben, bemaßen, `bindung` und `wennLeer` wählen, Text-Parameter setzen (Schrift-/Farb-Rolle, Größenbereich, Max-Zeilen).
 **Ist NICHT:** bearbeitet **keine** Aktions-Inhalte (`action-editor`), platziert nichts in die Liste (`composer`), rendert **keine** Pixel selbst, **kein** Dateisystem/ffmpeg.
 
 **Bedienung – zwei Wege auf dieselben Werte:**
@@ -2147,8 +2123,8 @@ Vorlage X bearbeiten
 | Fall | Verhalten |
 |---|---|
 | Zone ganz oder teilweise **außerhalb der Fläche** | **Sperre** – nicht speicherbar |
-| `höhe` ≤ 0 oder ≥ 1080 (bei `split`/`einblendung`) | **Sperre** |
-| `höhe` **ungerade** (bei `split`/`einblendung`) | **Sperre** – `yuv420p` verlangt gerade Höhen und Versätze; ungerade bricht **beide** Kompositionsarten (9.2.8, 9.11.1 Punkt 8) |
+| `höhe` ≤ 0 oder ≥ 1080 (bei einer Band-Vorlage) | **Sperre** |
+| `höhe` **ungerade** (bei einer Band-Vorlage) | **Sperre** – `yuv420p` verlangt gerade Höhen; das Band liegt bei `y = 1080 − höhe` (9.2.8, 9.11.1 Punkt 8) |
 | Textzone ohne Text-Parameter (Größenbereich, Max-Zeilen) | **Sperre** |
 | Zone überschreitet den **Sicherheitsabstand** (5 %, 9.10.5) | **Warnung** – am TV evtl. abgeschnitten |
 | Zonen **überlappen** | **erlaubt** – wird für Hintergrund und Scrim gebraucht |
@@ -2567,13 +2543,13 @@ Woher der Kontext kommt, ist **nicht** frei wählbar:
 |---|---|
 | Aktions-Segment (Vollfläche oder Band-Abschnitt) | `aktion.markeId` – die Marke **der Aktion** |
 | Band-Hintergrund (Zone `hintergrund` der Einblendung) | `Project.standardMarkeId` |
-| Restflächen der Split-Komposition (`flaecheDunkel`) | `Project.standardMarkeId` |
+| Restflächen der Split-Komposition (`flaecheDunkel`) | `Project.standardMarkeId` – **entfällt mit dem Split-Screen (v3.31)** |
 | Vorschau und Vorschaubilder | dieselbe Marke wie beim Render – nie eine andere |
 
-**Rahmen stabil, Inhalt wechselt (bindend).** Band-Hintergrund und Restflächen nehmen die
+**Rahmen stabil, Inhalt wechselt (bindend).** Der Band-Hintergrund nimmt die
 **Projekt-Standardmarke**, **nicht** die Marke der gerade sichtbaren Aktion. *Begründung:* Rotieren im
-Band Aktionen verschiedener Partner, wechselte sonst die Flächenfarbe im Sekundenrhythmus – links und
-rechts neben dem Video und im Bandhintergrund. Auf einem 85-Zoll-Schirm ist das unruhig, nicht
+Band Aktionen verschiedener Partner, wechselte sonst die Flächenfarbe im Sekundenrhythmus – im
+Bandhintergrund. Auf einem 85-Zoll-Schirm ist das unruhig, nicht
 professionell, und es widerspräche der Zusage aus Anforderungsdokument 4.1, die genau deshalb auf „**je
 Rahmen**" eingeschränkt wurde (4.8). Es ist dieselbe Linie wie beim Ersatz-Logo (9.10.10): Marken-
 Identität und Rahmen sind stabil.
@@ -2599,6 +2575,8 @@ Identität und Rahmen sind stabil.
 >
 > **Nachgezogen in v3.18 (16.08.2026), vom Auftraggeber entschieden – die Meldung aus v3.17 ist geschlossen (Anforderungsdokument unverändert v1.6):**
 
+> **Entschieden in v3.31 (29.10.2026), vom Auftraggeber entschieden (Anforderungsdokument v1.10):** Der **Split-Screen ist gestrichen**. Das Werbeband liegt **deckend über** dem vollflächigen Video; eine Vorlagen-*Art* wird nicht mehr gewählt – die **Fläche** (`höhe`) entscheidet. *Folge ohne die Änderung:* Das Bild bliebe dauerhaft auf 72 % verkleinert, 13 % der Fläche gingen an Seitenbalken, und die Oberfläche verlangte vom Nutzer eine technische Entscheidung („vollflächig / Split / Einblendung"), die er nicht beantworten kann. Ausgeschrieben in 9.2.8 (eine Komposition), 9.11.1 (`art` entfällt, `höhe` trägt die Geometrie), 9.12 (keine Art-Auswahl, Bandhöhe weiter fest 162), 9.2.2 (`art` und `flaecheDunkel` entfallen aus dem RenderRequest), 9.9.2 (keine Band-Geometrie in der Vorschau), 9.10.2 (Deckkraft immer deckend). Die eingebaute Vorlage „Split" bleibt als **zweispaltiges Ganzbild** erhalten – ihr Name ist historisch und wird nicht mit der gestrichenen Komposition verwechselt.
+>
 > **Entschieden in v3.19 (23.08.2026), vom Auftraggeber entschieden (Anforderungsdokument unverändert v1.6):** Der **Bedienort der Standarddauer** ist `projekt-verwaltung` (9.5.2, oben ausgeschrieben). Der Bau läuft über das Nachtrags-Issue **#334** (`setzeStandardSegmentdauer` samt Vertrags-Erweiterung in #15 und Vorbelegung in #33).
 >
 > **Entschieden in v3.20 (23.08.2026), vom Auftraggeber entschieden:** Die Einzel-Instanz-Sperre liefert `StartBefund` mit drei Zuständen statt `boolean` (9.5.4, oben ausgeschrieben; gebaut in #51, Nachtrag in #3).
