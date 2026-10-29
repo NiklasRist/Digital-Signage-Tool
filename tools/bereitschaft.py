@@ -87,7 +87,7 @@ def lade_zuordnung():
 def hole_issues():
     ergebnis = subprocess.run(
         ["gh", "issue", "list", "--state", "all", "--limit", "400",
-         "--json", "number,title,body,milestone"],
+         "--json", "number,title,body,milestone,state"],
         capture_output=True, text=True, encoding="utf-8", shell=(os.name == "nt"),
     )
     assert ergebnis.returncode == 0, ergebnis.stderr
@@ -117,6 +117,15 @@ def ist_gebaut(nummer, eintrag):
     # fielen aus ALLEN DREI Toepfen heraus und verschwanden lautlos aus der Zaehlung -
     # M1 meldete 48 von 49, ohne dass ein Issue als offen auftauchte. Die Summenprobe
     # unten faengt so etwas kuenftig ab.
+    # KORRIGIERT am 30.10.2026: Die Abfrage holte `--state all`, las den Zustand aber
+    # nirgends - ein GESCHLOSSENES Issue ohne passende Datei galt damit als "offen" und
+    # stand als "bereit" in der Liste. Am 29.10.2026 waren vier der vier "bereit"-Eintraege
+    # laengst geschlossen (#215/#240/#255/#317). Ein geschlossenes Issue ist NIE baubar.
+    # Es zaehlt als erledigt ("gebaut") - das Werkzeug beantwortet "was ist JETZT baubar",
+    # nicht "wurde es wirklich gebaut"; ein als "nicht geplant" geschlossenes Issue ist
+    # genauso wenig baubar wie ein fertiges.
+    if (eintrag.get("state") or "") == "CLOSED":
+        return "gebaut"
     if nummer == 3:
         return "gebaut"
     # NACHGEZOGEN am 05.10.2026: #231 traegt das Pflicht-Muster `**Datei:**` NICHT
@@ -195,7 +204,9 @@ def main():
     nach_nummer = {i["number"]: i for i in issues}
     gebaut = {n: ist_gebaut(n, e) for n, e in nach_nummer.items()}
 
-    for praefix in ("M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8"):
+    # M9 traegt den Umbau v3.31 (Split-Screen gestrichen). Ohne ihn faellt der ganze
+    # Meilenstein lautlos aus der Ausgabe - dieselbe Luecke wie oben bei den Zweigen.
+    for praefix in ("M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"):
         nummern = sorted(
             i["number"] for i in issues
             if (i.get("milestone") or {}).get("title", "").startswith(praefix)
