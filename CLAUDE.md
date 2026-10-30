@@ -14,6 +14,8 @@
 ## STAND HEUTE (30.10.2026, vierunddreissigste Sitzung: Marken-Ansicht und Streichung des Reiters) – gilt vor ALLEM weiter unten
 
 **Volltext: [`docs/agents/uebergabe-2026-10-30-marken-ansicht-reiter.md`](docs/agents/uebergabe-2026-10-30-marken-ansicht-reiter.md).**
+**Fortsetzung derselben Sitzung: [`docs/agents/uebergabe-2026-10-30-symbole-448.md`](docs/agents/uebergabe-2026-10-30-symbole-448.md)**
+— Symbole (#456), #453-Treiber, acht geschlossene Issues, #448 (Regel wieder `error`).
 
 - **#443 ABGENOMMEN UND GESCHLOSSEN** (Videosteuerung, Review ohne Befund).
 - **#455 GEBAUT (`c15f135`):** Marken-Editor mit **Inspector** rechts, **Reihenfolge der Arbeit**
