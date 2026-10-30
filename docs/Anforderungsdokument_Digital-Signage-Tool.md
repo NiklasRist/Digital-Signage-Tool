@@ -325,8 +325,9 @@ während der Editor den app-weiten **Bestand** führt. Ein neues Projekt startet
 mit der eingebauten Fitnessworld24-Marke.
 
 **Der Marken-Editor hängt am Projekt (v1.11, entschieden 30.10.2026).** Einen eigenen Reiter gibt es
-nicht mehr: Der Editor wird über die **Projektleiste** des geöffneten Projekts geöffnet, damit man beim
-Bearbeiten sieht, **welche Aktionen dieses Projekts** die Marke tragen. Das ändert **nichts am
+nicht mehr: Der Editor wird über den **Namen der gewählten Marke** in der **Projektleiste** des
+geöffneten Projekts geöffnet – kein zusätzlicher Knopf. So sieht man beim Bearbeiten, **welche Aktionen
+dieses Projekts** die Marke tragen. Das ändert **nichts am
 Bestand**: Marken sind app-weit, eine Marke kann von **beliebig vielen** Projekten genutzt werden, und
 eine Änderung an ihr wirkt überall. Eine Migration entfällt – es ändert sich nur der Weg dorthin.
 

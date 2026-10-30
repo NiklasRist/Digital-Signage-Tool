@@ -462,13 +462,15 @@ describe('Marken-Ansicht ueber der Reiterflaeche (#456)', () => {
         createElement('button', {
           'data-testid': 'projektleiste-marken',
           'aria-pressed': String(schalt.markenOffen),
-          onClick: schalt.aufMarken,
+          onClick: () => schalt.aufMarken('m-1'),
         }, 'Marken'),
       markenAnsicht: (schalt) =>
-        createElement('div', { 'data-testid': 'marken-ansicht' }, createElement('button', {
-          'data-testid': 'marken-zurueck',
-          onClick: schalt.aufSchliessen,
-        }, 'Zurueck')),
+        createElement('div', { 'data-testid': 'marken-ansicht' },
+          createElement('span', { 'data-testid': 'marken-ansicht-marke' }, schalt.markeId),
+          createElement('button', {
+            'data-testid': 'marken-zurueck',
+            onClick: schalt.aufSchliessen,
+          }, 'Zurueck')),
       ...teil,
     })
   }
@@ -493,6 +495,15 @@ describe('Marken-Ansicht ueber der Reiterflaeche (#456)', () => {
     for (const flaeche of reiterFlaechen) {
       expect((flaeche as HTMLElement).hidden).toBe(true)
     }
+    fertig()
+  })
+
+  it('die Ansicht bekommt die Marke, deren Name geklickt wurde', () => {
+    const { behaelter, fertig } = rendere(mitLeiste())
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marken"]')!.click()
+    })
+    expect(behaelter.querySelector('[data-testid="marken-ansicht-marke"]')?.textContent).toBe('m-1')
     fertig()
   })
 
@@ -550,7 +561,7 @@ describe('Marken-Ansicht ueber der Reiterflaeche (#456)', () => {
         projektleiste: (schalt) =>
           createElement('button', {
             'data-testid': 'projektleiste-marken',
-            onClick: schalt.aufMarken,
+            onClick: () => schalt.aufMarken('m-1'),
           }, 'Marken'),
       }),
     )

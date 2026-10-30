@@ -45,6 +45,8 @@ export interface MarkenEditorWurzelProps {
   /** Zugang zur gemeinsamen Vorlagen-Sicht (#155): liefert die drei Vorschau-Vorlagen.
    *  Nur gelesen; kein `lade()` von hier. */
   vorlagen: VorlagenZugang
+  /** v3.32 (#456): die Marke, die beim Öffnen gezeigt wird (aus der Projektleiste). */
+  startMarkeId: string
   /** v3.32 (#456): das geöffnete Projekt. Nur fuer die Anzeige - der Bestand bleibt app-weit. */
   projektId: string
   /** v3.32 (#456): die Aktionen des Projekts mit ihrer Marke (`Aktion.markeId`, TK 9.15.4).
@@ -90,7 +92,7 @@ type Zustand = {
  * ORDNET AN und REICHT DURCH.
  */
 export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.Element {
-  const { sichtbar, marken, vorlagen, aktionen, aufZurueck } = eigenschaften
+  const { sichtbar, marken, vorlagen, startMarkeId, aktionen, aufZurueck } = eigenschaften
   // ENTSCHIEDEN 3: nichts nachladen beim Auftauchen; die Marke kommt aus holeGeoeffneteMarke.
   const [zustand, setzeZustand] = useState<Zustand>(() => ({
     markenUebersicht: marken.hole(),
@@ -157,6 +159,15 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
       abmeldenMarke()
     }
   }, [])
+
+  // #456: Der Einstieg nennt die Marke - der Editor oeffnet GENAU sie. Nur wenn eine
+  // ANDERE Marke offen ist, wird gewechselt (sonst stuende bei jedem Rendern ein neuer
+  // Ladevorgang an). Der Aufruf ist idempotent, `oeffneMarke` meldet nur echte Wechsel.
+  useEffect(() => {
+    if (!sichtbar || startMarkeId === '') return
+    if (holeGeoeffneteMarke()?.id === startMarkeId) return
+    void oeffneMarke(startMarkeId)
+  }, [sichtbar, startMarkeId])
 
   // ESC hebt die Auswahl auf (#455). NUR im sichtbaren Reiter: Besuchte Reiter bleiben
   // montiert (TK 9.14.2) - ein Hoerer ohne diese Schranke schluckte ESC auch in anderen

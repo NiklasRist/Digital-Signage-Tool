@@ -20,8 +20,8 @@ export interface ProjektleisteProps {
   markenUebersicht: readonly { id: string; name: string }[]
   /** Wechselt die Standardmarke über `wechsleStandardMarke` (TK 9.14.3). */
   aufStandardMarke: (markeId: string) => void
-  /** Öffnet den Marken-Editor (Ansicht über der Reiterfläche). */
-  aufMarken: () => void
+  /** Öffnet den Marken-Editor GENAU DIESER Marke (Ansicht über der Reiterfläche). */
+  aufMarken: (markeId: string) => void
   /** true, solange der Editor offen ist - der Knopf zeigt das an. */
   markenOffen: boolean
 }
@@ -64,14 +64,18 @@ export function Projektleiste(p: ProjektleisteProps): JSX.Element {
           ))}
         </select>
       </label>
+      {/* #456: KEIN eigener Knopf - die gewaehlte Marke selbst ist der Einstieg.
+          Der Name steht als Schaltflaeche da; er oeffnet den Editor DIESER Marke. */}
       <button
         type="button"
-        data-testid="projektleiste-marken"
+        data-testid="projektleiste-marke-oeffnen"
         aria-pressed={p.markenOffen}
-        style={{ marginLeft: 'auto' }}
-        onClick={p.aufMarken}
+        title="Diese Marke bearbeiten"
+        style={{ marginLeft: 'auto', textDecoration: 'underline' }}
+        onClick={() => p.aufMarken(p.standardMarkeId)}
+        disabled={p.standardMarkeId === ''}
       >
-        Marken
+        {p.markenUebersicht.find((marke) => marke.id === p.standardMarkeId)?.name ?? 'Marke bearbeiten'}
       </button>
     </div>
   )

@@ -197,7 +197,8 @@ function zeige(props: Record<string, unknown>): HTMLElement {
     wurzel!.render(
       createElement(MarkenEditorWurzel, {
         vorlagen: VORLAGEN,
-        // #456: Der Editor haengt am Projekt - die drei Felder sind Pflicht.
+        // #456: Der Editor haengt am Projekt - die Felder sind Pflicht.
+        startMarkeId: '',
         projektId: 'p-1',
         aktionen: [],
         aufZurueck: () => undefined,
@@ -308,6 +309,28 @@ describe('MarkenEditorWurzel (#330) - Anordnung und Liste', () => {
 describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
   beforeEach(() => {
     h.holeGeoeffnete.mockImplementation(() => markeFuerTest({ id: DIE_ID }));
+  });
+
+  it('#456: der Editor oeffnet GENAU die Marke, deren Name geklickt wurde', async () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    zeige({ sichtbar: true, marken: zugang, startMarkeId: PARENT_ID });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    // `oeffneMarke` ist das Doppel; ein leerer startMarkeId darf NICHTS oeffnen.
+    expect(h.oeffneMarke).toHaveBeenCalledTimes(1);
+    expect(h.oeffneMarke).toHaveBeenCalledWith(PARENT_ID);
+    h.oeffneMarke.mockClear();
+  });
+
+  it('#456: ohne startMarkeId oeffnet der Editor NICHTS', async () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    h.oeffneMarke.mockClear();
+    zeige({ sichtbar: true, marken: zugang, startMarkeId: '' });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(h.oeffneMarke).not.toHaveBeenCalled();
   });
 
   it('#456: der Editor zeigt, WIE VIELE Aktionen dieses Projekts die Marke tragen', () => {

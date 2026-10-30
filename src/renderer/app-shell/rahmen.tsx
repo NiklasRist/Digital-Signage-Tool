@@ -38,15 +38,15 @@ export interface RahmenEigenschaften {
   /** #456: die Marken-Ansicht ÜBER der Reiterfläche. Sie ist kein Reiter (TK 9.14.2): Die
    *  besuchten Reiter bleiben montiert und nur verdeckt. Fehlt der Slot, bleibt die
    *  Reiterfläche sichtbar – ein offener Zustand ohne Ansicht darf sie NICHT verdecken. */
-  markenAnsicht?: (schalt: { aufSchliessen: () => void }) => JSX.Element | null
+  markenAnsicht?: (schalt: { markeId: string; aufSchliessen: () => void }) => JSX.Element | null
 }
 
 /** #456: Was die Projektleiste vom Rahmen bekommt – mehr braucht sie nicht. */
 export interface ProjektleistenSchalt {
   /** true, solange die Marken-Ansicht offen ist. */
   markenOffen: boolean
-  /** Öffnet die Marken-Ansicht. */
-  aufMarken: () => void
+  /** Öffnet die Marken-Ansicht für GENAU DIESE Marke. */
+  aufMarken: (markeId: string) => void
 }
 
 /** Die vier Reiterbeschriftungen (TK 9.14.1, v3.32) – der einzige eigene Text des Rahmens. */
@@ -70,11 +70,13 @@ interface RahmenZustand {
   besuchte: ReiterId[]
   /** #456: true, solange die Marken-Ansicht über der Reiterfläche liegt. */
   markenOffen: boolean
+  /** #456: welche Marke der Editor zeigt - null, solange die Ansicht geschlossen ist. */
+  markenMarkeId: string | null
 }
 
 type RahmenAktion =
   | { art: 'reiter-gewechselt'; reiter: ReiterId }
-  | { art: 'marken-geoeffnet' }
+  | { art: 'marken-geoeffnet'; markeId: string }
   | { art: 'marken-geschlossen' }
 
 /**
@@ -83,13 +85,13 @@ type RahmenAktion =
  */
 function rahmenReducer(zustand: RahmenZustand, aktion: RahmenAktion): RahmenZustand {
   if (aktion.art === 'marken-geoeffnet') {
-    return { ...zustand, markenOffen: true }
+    return { ...zustand, markenOffen: true, markenMarkeId: aktion.markeId }
   }
   if (aktion.art === 'marken-geschlossen') {
-    return { ...zustand, markenOffen: false }
+    return { ...zustand, markenOffen: false, markenMarkeId: null }
   }
   if (aktion.art === 'reiter-gewechselt') {
-    const neu = { ...zustand, markenOffen: false }
+    const neu = { ...zustand, markenOffen: false, markenMarkeId: null }
     if (aktion.reiter !== zustand.aktiv) {
       return { ...neu, aktiv: aktion.reiter, besuchte: ergaenzeBesuchte(zustand.besuchte, aktion.reiter) }
     }
@@ -101,7 +103,7 @@ function rahmenReducer(zustand: RahmenZustand, aktion: RahmenAktion): RahmenZust
 export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
   const [zustand, sende] = useReducer(rahmenReducer, undefined, () => {
     const start = holeReiter()
-    return { aktiv: start, besuchte: ergaenzeBesuchte([], start), markenOffen: false }
+    return { aktiv: start, besuchte: ergaenzeBesuchte([], start), markenOffen: false, markenMarkeId: null }
   })
 
   // Genau EIN Abo (ENTSCHIEDEN 4), angemeldet beim Aufbau, abgemeldet beim Abbau.
@@ -146,7 +148,7 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
       {eigenschaften.projektleiste !== undefined
         ? eigenschaften.projektleiste({
           markenOffen: zustand.markenOffen,
-          aufMarken: () => sende({ art: 'marken-geoeffnet' }),
+          aufMarken: (markeId: string) => sende({ art: 'marken-geoeffnet', markeId }),
         })
         : null}
 
@@ -179,7 +181,10 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
             montiert (TK 9.14.2) – nur verdeckt, damit keine Eingabe verlorengeht. */}
         {markenAktiv ? (
           <div data-testid="rahmen-inhalt-marken" style={{ height: '100%' }}>
-            {markenAnsicht({ aufSchliessen: () => sende({ art: 'marken-geschlossen' }) })}
+            {markenAnsicht({
+              markeId: zustand.markenMarkeId ?? '',
+              aufSchliessen: () => sende({ art: 'marken-geschlossen' }),
+            })}
           </div>
         ) : null}
       </div>

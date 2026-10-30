@@ -55,7 +55,10 @@ describe('Projektleiste (#456)', () => {
     const auswahl = el.querySelector<HTMLSelectElement>('[data-testid="projektleiste-standardmarke"]')!
     expect(auswahl.value).toBe('m-1')
     expect(Array.from(auswahl.options).map((o) => o.textContent)).toEqual(['Fitnessworld24', 'Partner'])
-    expect(el.querySelector('[data-testid="projektleiste-marken"]')).not.toBeNull()
+    // #456: KEIN eigener Marken-Knopf - der Name der gewaehlten Marke ist der Einstieg.
+    expect(el.querySelector('[data-testid="projektleiste-marken"]')).toBeNull()
+    const oeffnen = el.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marke-oeffnen"]')!
+    expect(oeffnen.textContent).toBe('Fitnessworld24')
   })
 
   it('die Auswahl meldet die gewählte Kennung GENAU einmal', () => {
@@ -81,22 +84,29 @@ describe('Projektleiste (#456)', () => {
     expect(aufStandardMarke).not.toHaveBeenCalled()
   })
 
-  it('[Marken] meldet den Klick und zeigt den offenen Zustand über aria-pressed', () => {
+  it('der Markenname oeffnet den Editor GENAU DIESER Marke', () => {
     const aufMarken = vi.fn()
-    const zu = zeige({ aufMarken })
+    const el = zeige({ aufMarken })
     act(() => {
-      zu.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marken"]')!.click()
+      el.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marke-oeffnen"]')!.click()
     })
     expect(aufMarken).toHaveBeenCalledTimes(1)
-    expect(
-      zu.querySelector('[data-testid="projektleiste-marken"]')?.getAttribute('aria-pressed'),
-    ).toBe('false')
+    expect(aufMarken).toHaveBeenCalledWith('m-1')
+  })
 
-    act(() => wurzel!.unmount())
-    behaelter?.remove()
+  it('nach einem Wechsel oeffnet der Name die NEUE Standardmarke', () => {
+    const aufMarken = vi.fn()
+    const el = zeige({ aufMarken, standardMarkeId: 'm-2' })
+    const oeffnen = el.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marke-oeffnen"]')!
+    expect(oeffnen.textContent).toBe('Partner')
+    act(() => oeffnen.click())
+    expect(aufMarken).toHaveBeenCalledWith('m-2')
+  })
+
+  it('aria-pressed zeigt den offenen Zustand', () => {
     const offen = zeige({ markenOffen: true })
     expect(
-      offen.querySelector('[data-testid="projektleiste-marken"]')?.getAttribute('aria-pressed'),
+      offen.querySelector('[data-testid="projektleiste-marke-oeffnen"]')?.getAttribute('aria-pressed'),
     ).toBe('true')
   })
 })

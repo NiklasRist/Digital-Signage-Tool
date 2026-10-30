@@ -117,6 +117,8 @@ export interface MarkenEditorWurzelProps {
    *  die Live-Vorschau braucht die feste Vorlage „Vollbild". Wird UNVERAENDERT durchgereicht;
    *  diese Datei ruft keine seiner drei Funktionen auf. */
   vorlagen: VorlagenZugang
+  /** v3.32: die Marke, die der Editor oeffnen soll (aus der Projektleiste). */
+  startMarkeId: string
   /** v3.32: das GELADENE Projekt - die Kennung fuers Anzeigen, keine Projekt-Daten. */
   projektId: string
   /** v3.32: die Aktionen des Projekts mit ihrer Marke. Der Editor zeigt damit, WO die Marke

@@ -361,7 +361,7 @@ export function App(): JSX.Element {
   const markenBestand = projektOffen === null ? [] : (lage.zugaenge.marken.hole()?.marken ?? [])
   const projektleiste = projektOffen === null
     ? undefined
-    : (schalt: { markenOffen: boolean; aufMarken: () => void }) => (
+    : (schalt: { markenOffen: boolean; aufMarken: (markeId: string) => void }) => (
       <Projektleiste
         projektName={projektOffen.name}
         standardMarkeId={projektOffen.standardMarkeId}
@@ -383,9 +383,10 @@ export function App(): JSX.Element {
     )
   const markenAnsicht = projektOffen === null
     ? undefined
-    : (schalt: { aufSchliessen: () => void }) => (
+    : (schalt: { markeId: string; aufSchliessen: () => void }) => (
       <MarkenEditorWurzel
         sichtbar
+        startMarkeId={schalt.markeId}
         marken={lage.zugaenge.marken}
         vorlagen={lage.zugaenge.vorlagen}
         projektId={projektOffen.id}
