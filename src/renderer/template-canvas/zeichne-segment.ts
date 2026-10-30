@@ -202,6 +202,9 @@ export function zeichneSegment(
     //    Ersatz-Logo gilt fuer "Marke HAT kein Logo", nicht fuer "Datei fehlt": Liefert
     //    holeLogo { zustand: 'fehlt' }, bleibt es beim Platzhalter von zeichneBildZone.
     if (zone.bindung === 'bild') {
+      // SAFETY: Eine Zone mit Bindung `bild` zeigt das Motiv der Aktion; `bildRef` ist
+      // laut Vertrag `string | null` (Aktion ohne Bild). `holeMotiv` liefert fuer einen
+      // fehlenden Schluessel ein "nicht da"-Motiv - der Cast reicht nur den Wert durch.
       zeichneBildZone(ctx, zone, holeMotiv(aktion.bildRef as string), markeDieserZone, aktion)
     } else if (zone.bindung === 'logo' && markeDieserZone.logo === null) {
       zeichneErsatzLogo(ctx, zone, markeDieserZone, aktion)

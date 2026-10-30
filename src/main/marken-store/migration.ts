@@ -21,6 +21,8 @@ export function migriereProjektAufMarke(
   // Argument wird NICHT mutiert - es entsteht im Bedarfsfall eine neue, ergaenzte Kopie.
   let geaendert = false
 
+  // SAFETY: `standardMarkeId` kann in einer ALTEN project.json fehlen; der Cast macht das
+  // Feld als unknown LESBAR - die Pruefung auf "nicht leerer Text" folgt zwei Zeilen spaeter.
   const standardMarkeId = (project as unknown as Record<string, unknown>)["standardMarkeId"]
   let projektKopie: Project = project
   if (!(typeof standardMarkeId === 'string' && standardMarkeId.length > 0)) {
@@ -34,6 +36,8 @@ export function migriereProjektAufMarke(
   let aktionenKopie = projektKopie.aktionen
   let aktionenGeaendert = false
   aktionenKopie = aktionenKopie.map((aktion) => {
+    // SAFETY: wie oben - `markeId` kann in einer alten Datei fehlen; geprueft wird der
+    // Wert unmittelbar danach, ein gesetzter Wert bleibt unangetastet.
     const markeId = (aktion as unknown as Record<string, unknown>)["markeId"]
     if (typeof markeId === 'string' && markeId.length > 0) {
       return aktion // bereits gesetzt - unangetastet (auch auf fremde ID)
@@ -42,7 +46,7 @@ export function migriereProjektAufMarke(
     return {
       ...aktion,
       markeId: eingebauteMarkeId,
-    } as typeof aktion
+    }
   })
   if (aktionenGeaendert) {
     projektKopie = { ...projektKopie, aktionen: aktionenKopie }

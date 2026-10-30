@@ -32,7 +32,7 @@ export type VerwaltungsDialog =
   | { art: 'duplizieren'; meta: ProjektMeta }
   | { art: 'loeschen'; meta: ProjektMeta }
 
-export const KEIN_DIALOG: VerwaltungsDialog = Object.freeze({ art: 'keiner' }) as VerwaltungsDialog
+export const KEIN_DIALOG: VerwaltungsDialog = Object.freeze({ art: 'keiner' })
 
 export function oeffneAnlegen(): VerwaltungsDialog {
   return { art: 'anlegen' }

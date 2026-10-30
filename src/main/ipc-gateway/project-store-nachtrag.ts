@@ -132,10 +132,14 @@ export function verdrahteProjectStoreNachtrag2IPC(): void {
     if (typeof stand !== 'object' || stand === null) {
       return abgelehnt('setzeBearbeitungsstand braucht einen Stand als Objekt.')
     }
+    // SAFETY: Die Zeilen davor haben `stand` als nicht-null Objekt belegt; der Cast macht
+    // die zwei Felder als unknown LESBAR, beide werden direkt danach auf Array geprueft.
     const roh = stand as { aktionen?: unknown; liste?: unknown }
     if (!Array.isArray(roh.aktionen) || !Array.isArray(roh.liste)) {
       return abgelehnt('Der Stand braucht aktionen und liste als Arrays.')
     }
+    // SAFETY: `aktionen` und `liste` sind oben auf Array geprueft; das dritte Feld
+    // (`standardSegmentdauer`) prueft der Store in `setzeBearbeitungsstand`.
     return { ok: true, wert: stand as Bearbeitungsstand }
   }, (stand) => setzeBearbeitungsstand(stand))
 

@@ -49,6 +49,8 @@ export async function pruefeMarkenReferenzen(
     // Der Fehlercode von #35 ist ProjectStoreFehlercode - er reist UNVERAENDERT als
     // Textcode (die IPC-Naht ist generisch, #60); die Huelle ist seit #60 ueber den Fehlercode generisch erweitert
     // ihn hier nur auf die Markennutzung-Huelle.
+    // SAFETY: Der Code kommt UNVERAENDERT durch die IPC-Naht (Textcode, #60) - der Cast
+    // verengt die generische Huelle auf die Markennutzung, der Wert bleibt derselbe.
     return { ok: false, fehler: { code: projekte.fehler.code as MarkenFehlercode & string, meldung: projekte.fehler.meldung } }
   }
 
@@ -74,7 +76,7 @@ export async function pruefeMarkenReferenzen(
     }
     let projekt: unknown
     try {
-      projekt = JSON.parse(roh) as unknown
+      projekt = JSON.parse(roh)
     } catch {
       return {
         ok: false,
@@ -93,6 +95,8 @@ export async function pruefeMarkenReferenzen(
         },
       }
     }
+    // SAFETY: Die Zeilen davor haben `projekt` als nicht-null Objekt (kein Array) belegt;
+    // der Cast macht die zwei Felder als unknown LESBAR, beide werden einzeln geprueft.
     const daten = projekt as { aktionen?: unknown; standardMarkeId?: unknown }
 
     // Referenzart 1: aktion.markeId. Fehlt das Feld 'aktionen' ganz -> als leer gelten.
@@ -111,6 +115,9 @@ export async function pruefeMarkenReferenzen(
         if (typeof einlaufElement !== 'object' || einlaufElement === null) {
           continue // kein Objekt - kann keine Referenz tragen (Muster aus M4-12)
         }
+        // SAFETY: Die Zeile davor hat `einlaufElement` als nicht-null Objekt belegt; der
+        // Cast macht die zwei Felder als unknown LESBAR, `markeId` wird verglichen,
+        // `id` auf Text geprueft - vor jedem Zugriff.
         const aktion = einlaufElement as { id?: unknown; markeId?: unknown }
         if (aktion.markeId === markeId && typeof aktion.id === 'string') {
           aktionen.push({

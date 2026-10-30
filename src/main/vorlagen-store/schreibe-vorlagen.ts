@@ -577,14 +577,22 @@ function migriereVon1(vorlagen: readonly unknown[]): Vorlage[] {
     // Hier wird nur das eine bekannte Feld entfernt - ein Nicht-Objekt bleibt, wie es war,
     // und faellt danach bei der fachlichen Pruefung auf.
     if (typeof eintrag !== 'object' || eintrag === null || Array.isArray(eintrag)) {
+      // SAFETY: Ein Nicht-Objekt wird UNVERAENDERT durchgereicht und faellt danach bei der
+      // fachlichen Pruefung auf (#100-#108) - der Cast behauptet keine Form, er laesst den
+      // Wert nur durch die Rueckgabe.
       return eintrag as Vorlage
     }
+    // SAFETY: Die Zeilen davor haben `eintrag` als nicht-null Objekt (kein Array) belegt;
+    // der Cast macht die Felder als unknown LESBAR - `art` wird entfernt, `id`/`eingebaut`/
+    // `name` werden geprueft, bevor sie benutzt werden.
     const kopie = { ...(eintrag as Record<string, unknown>) }
     delete kopie.art
     const id = kopie.id
     if (typeof id === 'string' && kopie.eingebaut === true && ALT_ZU_NEU[id] !== undefined) {
       kopie.name = ALT_ZU_NEU[id]
     }
+    // SAFETY: `kopie` ist das Objekt ohne `art`, mit gesetztem Namen; die fachliche
+    // Pruefung der Vorlage folgt im Aufrufer (#100-#108) - hier wird nichts behauptet.
     return kopie as unknown as Vorlage
   })
 }

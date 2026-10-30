@@ -38,7 +38,7 @@ function leseFremdesProjekt(projektId: string): Ergebnis<Project, ProjectStoreFe
   }
   let gelesen: unknown
   try {
-    gelesen = JSON.parse(roh) as unknown
+    gelesen = JSON.parse(roh)
   } catch {
     return {
       ok: false,
@@ -57,6 +57,8 @@ function leseFremdesProjekt(projektId: string): Ergebnis<Project, ProjectStoreFe
       },
     }
   }
+  // SAFETY: Die Zeilen davor haben `gelesen` als nicht-null Objekt belegt; die Form prueft
+  // die Funktion Feld fuer Feld (`id`, `standardMarkeId`) - der Cast macht sie nur lesbar.
   const projekt = gelesen as Project
   if (typeof projekt.id !== 'string' || projekt.id.length === 0) {
     return {

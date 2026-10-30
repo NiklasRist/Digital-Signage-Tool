@@ -103,18 +103,13 @@ export function benenneReferenzen(
 /** Liest `referenzenIds` aus einem `fehler.daten`-Feld heraus. Passt die Form nicht, ist das
  *  Ergebnis ein leeres Array – NIE ein Wurf und NIE ein erfundener Eintrag. */
 export function leseReferenzenIds(daten: unknown): string[] {
-  if (
-    daten &&
-    typeof daten === 'object' &&
-    'referenzenIds' in daten &&
-    Array.isArray((daten as { referenzenIds?: unknown }).referenzenIds)
-  ) {
-    const ids = (daten as { referenzenIds?: unknown[] }).referenzenIds ?? []
-    if (ids.every((id) => typeof id === 'string')) {
-      return ids as string[]
-    }
-  }
-  return []
+  if (daten === null || typeof daten !== 'object' || !('referenzenIds' in daten)) return []
+  // `in` verengt auf `object & Record<'referenzenIds', unknown>` - kein Cast noetig.
+  const ids: unknown = daten.referenzenIds
+  if (!Array.isArray(ids)) return []
+  // `every` mit Typpraedikat verengt das Array auf `string[]` - nur dann wird es geliefert.
+  if (!ids.every((id): id is string => typeof id === 'string')) return []
+  return ids
 }
 
 /** Alles, worauf das Löschen wirkt. Wird als Parameter übergeben (Entscheidung E1). */

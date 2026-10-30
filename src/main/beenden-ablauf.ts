@@ -4,7 +4,6 @@
 
 import { ipcMain, type BrowserWindow } from 'electron'
 import { KANAELE } from '../shared/contracts/kanaele'
-import type { Ergebnis } from '../shared/contracts/ergebnis'
 import { flushBeimBeenden } from './project-store/auto-speichern' // #47
 import { flushBestand as flushVorlagenBestand } from './vorlagen-store/schreibe-vorlagen' // #98
 import { flushBestand as flushMarkenBestand } from './marken-store/schreibe-marken' // #277, ALIAS-PFLICHT

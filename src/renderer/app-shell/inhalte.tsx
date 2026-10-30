@@ -257,7 +257,9 @@ export function baueReiterInhalte(
     sichtbar: boolean
     reiter: ReiterId
     kindOffen: (sichtbar: boolean, projekt: Project) => JSX.Element
-  }): JSX.Element {
+    // `null` ist ein gueltiger React-Knoten: fuer 'vorlagen'/'projekte' tritt der
+    // Leerzustand fachlich nie auf, dort wird nichts gerendert.
+  }): JSX.Element | null {
     const umgebung = holeUmgebung()
     const { sichtbar, reiter, kindOffen } = pruefEigenschaften
     const [sicht, setzeSicht] = useState(() => zugaenge.projektRoh.hole())
@@ -287,6 +289,9 @@ export function baueReiterInhalte(
     if (zeigtLeerzustand(reiter, false)) {
       return (
         <Leerzustand
+          // SAFETY: `zeigtLeerzustand(reiter, false)` ist GENAU fuer zusammenstellen/aktionen
+          // wahr (#198, die einzige Quelle der Regel) - eine Boolean-Funktion verengt den
+          // Typ nicht, der Cast nimmt die geprueften Verengung nur vor.
           reiter={reiter as 'zusammenstellen' | 'aktionen'}
           aufProjekteWechseln={umgebung.aufProjekteWechseln}
         />
@@ -294,7 +299,7 @@ export function baueReiterInhalte(
     }
     // Fuer 'vorlagen'/'projekte' tritt dieser Fall fachlich nie auf - diese
     // beiden Reiter haengen ihre Wurzeln direkt ein, ohne Projektstand.
-    return null as unknown as JSX.Element
+    return null
   }
 
   // Der Offene-Teil des Reiters Zusammenstellen - OBERFLAECHE-2.0-LAYOUT (#414,

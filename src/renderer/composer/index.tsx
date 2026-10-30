@@ -647,7 +647,7 @@ export function ComposerInterna({
   // (oeffneMenue, #259) - kein zweites Menue, keine zweite Adresse. Rechtsklick neben
   // Traegern (kein `data-element-id` in der Kette) bleibt beim Browser-Standard.
   const oeffneKontextMenue = (ereignis: React.MouseEvent): void => {
-    const ziel = ereignis.target as HTMLElement | null
+    const ziel = ereignis.target instanceof HTMLElement ? ereignis.target : null
     if (ziel === null) return
     const traeger = ziel.closest('[data-element-id]')
     const elementId = traeger === null ? null : traeger.getAttribute('data-element-id')
@@ -659,7 +659,7 @@ export function ComposerInterna({
   // #428: Zoom um eine Stufe (die Zeitleiste reicht nur die Richtung herein).
   const zoome = (richtung: -1 | 1): void => {
     setzePxProSekunde((alt) => {
-      const stelle = ZOOM_STUFEN.indexOf(alt as (typeof ZOOM_STUFEN)[number])
+      const stelle = ZOOM_STUFEN.findIndex((stufe) => stufe === alt)
       const naechste = Math.min(ZOOM_STUFEN.length - 1, Math.max(0, stelle + richtung))
       return ZOOM_STUFEN[naechste] ?? alt
     })
@@ -707,6 +707,8 @@ export function ComposerInterna({
     void loeseRenderMitNamenAus(
       inhalt,
       lage.ausgabeName,
+      // SAFETY: Der Render-Knopf ist nur frei, wenn `holeBereiteMarke` fuer die
+      // Standardmarke etwas liefert (`renderKnopfFrei`, oben) - derselbe Wert, kein zweiter.
       holeBereiteMarke(inhalt.standardMarkeId) as Marke,
       voraussetzungen.vorlagen,
       wirkungen,

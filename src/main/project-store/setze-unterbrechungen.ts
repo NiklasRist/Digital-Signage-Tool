@@ -96,10 +96,15 @@ function pruefe(
   const gebaut: Unterbrechung[] = []
   let vorherige = 0
 
-  for (const eintrag of unterbrechungen as unknown[]) {
+  // Nach `Array.isArray` ist die Liste `any[]`; die Zuweisung an `unknown[]` haelt die
+  // Elemente unbekannt, ohne einen Cast zu behaupten.
+  const liste: unknown[] = unterbrechungen
+  for (const eintrag of liste) {
     if (typeof eintrag !== 'object' || eintrag === null || Array.isArray(eintrag)) {
       return fehler('ungueltige_eingabe', 'Jede Unterbrechung muss ein Objekt mit Zeitstelle, Aktion und Dauer sein.')
     }
+    // SAFETY: Die drei Zeilen davor haben `eintrag` als nicht-null Objekt (kein Array)
+    // belegt; der Cast macht die drei Felder als unknown LESBAR, jedes wird einzeln geprueft.
     const { zeitstelle, aktionRef, dauer } = eintrag as {
       zeitstelle?: unknown
       aktionRef?: unknown
@@ -107,10 +112,10 @@ function pruefe(
     }
 
     // `Number.isFinite` vor JEDEM Vergleich: jeder Vergleich mit NaN ist falsch (setze-trim.ts).
-    if (!Number.isFinite(zeitstelle)) {
+    if (typeof zeitstelle !== 'number' || !Number.isFinite(zeitstelle)) {
       return fehler('ungueltige_eingabe', 'Die Zeitstelle einer Unterbrechung muss eine Zahl in Sekunden sein.')
     }
-    const z = zeitstelle as number
+    const z = zeitstelle
     if (!(z > 0) || !(z < videoDauer)) {
       return fehler(
         'ungueltige_eingabe',
@@ -128,7 +133,7 @@ function pruefe(
       return fehler('ungueltige_eingabe', 'Zu einer Unterbrechung fehlt die Angabe der Aktion.')
     }
 
-    if (!Number.isFinite(dauer) || (dauer as number) <= 0) {
+    if (typeof dauer !== 'number' || !Number.isFinite(dauer) || dauer <= 0) {
       return fehler('ungueltige_eingabe', 'Die Dauer einer Unterbrechung muss groesser als null Sekunden sein.')
     }
 
@@ -145,7 +150,7 @@ function pruefe(
     }
 
     // Neu gebaut, Feld fuer Feld - kein Weiterreichen des hereingereichten Objekts.
-    gebaut.push({ zeitstelle: z, aktionRef, dauer: dauer as number })
+    gebaut.push({ zeitstelle: z, aktionRef, dauer })
     vorherige = z
   }
 

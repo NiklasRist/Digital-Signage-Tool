@@ -17,7 +17,6 @@
 import { useEffect, useRef, useState, type JSX } from 'react'
 
 import type { Listenelement, Project } from '../../shared/contracts/project'
-import type { Asset } from '../../shared/contracts/asset'
 import { mediaBlobUrl, gibMediaBlobUrlFrei } from '../gemeinsam/media-blob-url'
 import { fangeBild, warteAufMetadaten } from './thumbnails'
 import { holeStreifen, merkeStreifen, streifenSchluessel } from './filmstreifen-speicher'
@@ -57,9 +56,8 @@ function videoQuelle(
   element: Listenelement,
 ): { projektId: string; dateiname: string; dauer: number } | null {
   if (element.art !== 'video') return null
-  const asset = projekt.assets.find((eintrag) => eintrag.id === element.ref) as
-    | (Asset & { dateiname?: unknown; dauer?: unknown })
-    | undefined
+  // `dateiname` und `dauer` stehen im Asset-Vertrag - kein Cast auf eine Sonderform.
+  const asset = projekt.assets.find((eintrag) => eintrag.id === element.ref)
   if (asset === undefined || asset.zustand === 'fehlt' || typeof asset.dateiname !== 'string') {
     return null
   }

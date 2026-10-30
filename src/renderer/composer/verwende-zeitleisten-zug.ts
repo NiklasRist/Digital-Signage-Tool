@@ -136,8 +136,16 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     setzeNeuZug(referenz)
     setzeBandZiel(null)
     setzeUnterbrechungsZeit(null)
-    const aktivator = ereignis.activatorEvent as MouseEvent
-    if (typeof aktivator?.clientX === 'number') zeigerStartX.current = aktivator.clientX
+    // dnd-kit liefert den ausloesenden Event. Gelesen wird nur `clientX` - und zwar als
+    // Merkmal, nicht ueber `instanceof`: Ein Test-Doppel ist kein echtes MouseEvent, hat
+    // die Eigenschaft aber (der alte Check war genau dieses Duck-Typing).
+    const aktivator: unknown = ereignis.activatorEvent
+    if (
+      typeof aktivator === 'object' && aktivator !== null && 'clientX' in aktivator &&
+      typeof aktivator.clientX === 'number'
+    ) {
+      zeigerStartX.current = aktivator.clientX
+    }
   }
 
   const amUeber = (ereignis: DragOverEvent): void => {

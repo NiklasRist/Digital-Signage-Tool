@@ -6,7 +6,7 @@
 // Es gibt keinen stillen Ersatz auf eine gebündelte Schrift: Schlägt das Laden
 // fehl, bleibt der Zustand "nicht bereit" (Determinismus, TK 9.10.3).
 
-import type { Marke, Schrift } from '../../shared/contracts/marke'
+import type { Marke, Schrift, SchriftRolle } from '../../shared/contracts/marke'
 
 import { schriftKurzform } from './schriften'
 
@@ -26,7 +26,9 @@ function importierteSchriften(marke: Marke): Schrift[] {
  * Ordner des Parents liegt. Ein EIGENES Feld importiert immer in den eigenen Ordner.
  */
 function quellMarkeId(marke: Marke, rolle: string): string {
-  const herkunft = marke.herkunftJeFeld?.schriften?.[rolle as keyof Marke['schriften']]
+  // SAFETY: `rolle` kommt aus `Object.entries(marke.schriften)` - die Schluesselmenge ist
+  // laut Vertrag `Partial<Record<SchriftRolle, Schrift>>`, enthaelt also nur Rollennamen.
+  const herkunft = marke.herkunftJeFeld?.schriften?.[rolle as SchriftRolle]
   return herkunft === 'geerbt' && marke.parent !== null ? marke.parent : marke.id
 }
 

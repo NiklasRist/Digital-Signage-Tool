@@ -78,7 +78,7 @@ export function aufSpeicherlage(hoerer: (stand: Speicherlage) => void): () => vo
   }
 }
 
-export function SpeicherHinweis(eigenschaften: SpeicherHinweisEigenschaften): JSX.Element {
+export function SpeicherHinweis(eigenschaften: SpeicherHinweisEigenschaften): JSX.Element | null {
   const [, setzeTakt] = useState(0)
 
   const abos = useMemo(() => eigenschaften, [eigenschaften])
@@ -118,7 +118,7 @@ export function SpeicherHinweis(eigenschaften: SpeicherHinweisEigenschaften): JS
 
   if (!zeigtHinweis(holeSpeicherlage())) {
     // 'unbekannt' und 'gespeichert' zeigen NICHTS - kein Haken, keine Entwarnung.
-    return null as unknown as JSX.Element
+    return null
   }
 
   const quellen = betroffeneQuellen(holeSpeicherlage())

@@ -111,7 +111,7 @@ const WURZELN: ModulWurzeln = {
   projektVerwaltung: ProjektVerwaltungWurzel,
 }
 
-export function App(): JSX.Element {
+export function App(): JSX.Element | null {
   // DIE LAGE (#260): vom Bootstrap gemeldet; 'laeuft' gehoert dem Aufrufer.
   const [lage, setzeLage] = useState<BootstrapLage>(ANFANGS_BOOTSTRAP)
   // DER Melde-Halter (ENTSCHIEDEN 7): GENAU EINE aktuelle Meldung; eine neue
@@ -341,7 +341,7 @@ export function App(): JSX.Element {
   // Unerreichbar: 'laeuft' und 'gescheitert' sind oben zurueckgekehrt. Der Waechter
   // macht die Nicht-Null-Zusage fuer den Typ und fuer spaetere Umbauten sichtbar.
   if (inhalte === null) {
-    return null as unknown as JSX.Element
+    return null
   }
   const projektOffen = zugaenge.projektRoh.hole().projekt
   // Der Start-Hinweis gilt nur, solange kein Projekt offen ist (#346, see oben).
@@ -373,9 +373,9 @@ export function App(): JSX.Element {
           void wechsleStandardMarke(projektOffen.id, markeId, {
             holeProjekt: () => zugaengeRef.current?.projektRoh.hole().projekt ?? null,
             uebernimmProjekt: (projekt) => zugaengeRef.current?.projektRoh.setzeProjekt(projekt),
-            aktualisiereProjektliste: (async () => {
+            aktualisiereProjektliste: async () => {
               await ladeProjektliste()
-            }) as () => Promise<unknown>,
+            },
             meldeFehler,
           })
         }}

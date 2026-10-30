@@ -263,6 +263,8 @@ function zaehleEinschubFrames(id: string, unterbrechungen: unknown): Ergebnis<nu
   }
   let frames = 0
   for (const eintrag of unterbrechungen) {
+    // SAFETY: Der Eintrag kommt aus einem `unknown[]`; der Cast macht `dauer` als unknown
+    // LESBAR - die Pruefung auf eine endliche Zahl groesser 0 folgt direkt darunter.
     const dauer = (eintrag as { dauer?: unknown } | null | undefined)?.dauer
     if (typeof dauer !== 'number' || !Number.isFinite(dauer) || dauer <= 0) {
       return ungueltigesElement(

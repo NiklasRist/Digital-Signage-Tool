@@ -77,6 +77,9 @@ export function verdrahteMedienIPC(): void {
     // in einen Fehler. Der Abbruch ist der haeufigste Ausgang des Dialogs und "kein
     // Fehler" (TK 9.4.3); wer ihn hier zu einem machte, liesse die Oberflaeche fuer eine
     // bewusste Nutzerentscheidung eine Fehlermeldung zeigen.
+    // SAFETY: Der Kanal ist `media:wähleDatei`; der Renderer sendet die Optionen des
+    // Dialogs (MedienDialogOptionen, #98). Der Handler ist als generisch typisiert -
+    // der Cast stellt die Form her, geprueft wird sie im Dialog selbst.
     (optionen) => öffneMedienDialog(optionen as MedienDialogOptionen),
   )
 }

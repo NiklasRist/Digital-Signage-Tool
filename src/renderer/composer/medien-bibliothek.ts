@@ -83,8 +83,8 @@ export function greifeDropAuf(dateien: readonly File[], pfadFuer: PfadHoler): Dr
     // Reihenfolge wie der Vertrag: erst Video, dann Bild; die Kleinschreibung
     // ist normalisiert. Die definitive Prüfung bleibt im Main.
     const unterstuetzt =
-      (FORMAT_WHITELIST.video as readonly string[]).includes(endung) ||
-      (FORMAT_WHITELIST.bild as readonly string[]).includes(endung)
+      FORMAT_WHITELIST.video.some((erlaubt) => erlaubt === endung) ||
+      FORMAT_WHITELIST.bild.some((erlaubt) => erlaubt === endung)
     if (!unterstuetzt) {
       ergebnis.abgelehnt.push({
         pfad,

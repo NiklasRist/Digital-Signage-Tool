@@ -40,7 +40,7 @@ export type EditorLage =
   | { modus: 'bestehend'; aktionId: string }    // eine Aktion der Bibliothek wird bearbeitet
   | { modus: 'neu' }                            // eine neue Aktion wird angelegt
 
-export const LEERE_EDITOR_LAGE: EditorLage = Object.freeze({ modus: 'keine' }) as EditorLage
+export const LEERE_EDITOR_LAGE: EditorLage = Object.freeze({ modus: 'keine' })
 
 /** Eine Aktion der Bibliothek waehlen. */
 export function waehleAktion(aktionId: string): EditorLage {

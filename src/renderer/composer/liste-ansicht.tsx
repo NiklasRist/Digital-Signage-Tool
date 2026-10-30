@@ -24,7 +24,6 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 
 import type { Listenelement, Project } from '../../shared/contracts/project'
-import type { Marke } from '../../shared/contracts/marke'
 import type { Zeichenvoraussetzungen } from './zeichen-vorbereitung'
 import type { KaputteStelle } from './kaputt-erkennung'
 import type { ReparaturStand } from './reparatur-fuehrung'

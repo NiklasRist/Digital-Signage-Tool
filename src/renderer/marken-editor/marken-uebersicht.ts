@@ -40,8 +40,8 @@ export interface MarkenUebersicht {
 
 // Der Bestand dieser Datei: die eine Liste und die eine geoeffnete Marke. Beide
 // werden NUR von den beiden Ladefunktionen gesetzt - kein zweiter Setzweg (ENTSCHIEDEN 3).
-let gezogene = null as MarkenUebersicht | null
-let geoeffnete = null as Marke | null
+let gezogene: MarkenUebersicht | null = null
+let geoeffnete: Marke | null = null
 const uebersichtHoerer = new Set<(u: MarkenUebersicht) => void>()
 const geoeffnetHoerer = new Set<(m: Marke | null) => void>()
 

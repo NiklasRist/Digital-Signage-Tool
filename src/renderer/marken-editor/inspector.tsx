@@ -339,7 +339,7 @@ function herkunftZeile(marke: Marke, pfad: HerkunftPfad, parentName: string | nu
   const lies = leseHerkunft(marke.herkunftJeFeld, pfad)
   const zeile = baueHerkunftText(lies, parentName)
   const zuruecksetzen = (): void => {
-    void setzeFeldAufGeerbt(marke.id, pfad as HerkunftPfad)
+    void setzeFeldAufGeerbt(marke.id, pfad)
   }
   return (
     <div data-testid={`herkunft-${pfad.art}`} data-rolle={'rolle' in pfad ? pfad.rolle : undefined}>

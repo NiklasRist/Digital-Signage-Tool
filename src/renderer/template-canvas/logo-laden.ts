@@ -69,7 +69,9 @@ export async function bereiteLogoVor(marke: Marke): Promise<void> {
 }
 
 async function ladeLogo(marke: Marke): Promise<void> {
-  const logo = marke.logo as { datei: string; herkunft: string }
+  // Ohne Logo gibt es nichts zu laden - der Zweig ist der Ersatz-Logo-Pfad.
+  if (marke.logo === null) return
+  const logo = marke.logo
   let objektUrl: string | undefined
   let quelle: string | undefined
   // Bei GEERBTEM Logo liegt die importierte Datei im Ordner des Parents, die

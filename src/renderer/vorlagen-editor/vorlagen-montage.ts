@@ -43,7 +43,7 @@ export interface Geste {
   stand: Vorlage | null
 }
 
-export const KEINE_GESTE: Geste = Object.freeze({ laeuft: false, stand: null }) as Geste
+export const KEINE_GESTE: Geste = Object.freeze({ laeuft: false, stand: null })
 
 /** Beginnt eine Geste mit dem aktuellen Stand. Liefert eine NEUE Geste. */
 export function beginneGeste(stand: Vorlage): Geste {

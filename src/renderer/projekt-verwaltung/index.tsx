@@ -99,9 +99,9 @@ function ProjekteInterna(p: ProjektVerwaltungWurzelProps): JSX.Element {
     zeichnen: p.zeichnen,
     leereProjektHistorie: p.leereProjektHistorie,
     wechsleZuZusammenstellen: p.wechsleZuZusammenstellen,
-    aktualisiereProjektliste: (async () => {
+    aktualisiereProjektliste: async () => {
       await ladeProjektliste()
-    }) as () => Promise<unknown>,
+    },
     meldeFehler,
   }
 

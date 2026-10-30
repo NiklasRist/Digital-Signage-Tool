@@ -168,6 +168,8 @@ export function migriereProjekt(
 function ergaenzeUnterbrechungen(projekt: Project): Project {
   let geaendert = false
   const liste = projekt.liste.map((element) => {
+    // SAFETY: `element` kommt aus `projekt.liste`; das Feld kann in einer ALTEN Datei
+    // fehlen - der Cast macht es als unknown LESBAR, geprueft wird `Array.isArray` direkt.
     if (Array.isArray((element as { unterbrechungen?: unknown }).unterbrechungen)) {
       return element
     }

@@ -43,7 +43,7 @@ export interface AssetAuswahlEigenschaften {
   aufFehler: (code: string, meldung: string) => void
 }
 
-export function AssetAuswahl(eigenschaften: AssetAuswahlEigenschaften): JSX.Element {
+export function AssetAuswahl(eigenschaften: AssetAuswahlEigenschaften): JSX.Element | null {
   const {
     elementId,
     projekt,
@@ -69,7 +69,7 @@ export function AssetAuswahl(eigenschaften: AssetAuswahlEigenschaften): JSX.Elem
     meldeUndLeere(
       () => aufFehler('nicht_gefunden', `Es gibt kein Listenelement mit der ID "${elementId}".`),
     )
-    return null as unknown as JSX.Element
+    return null
   }
 
   const typ = benoetigterAssetTyp(element)
@@ -84,7 +84,7 @@ export function AssetAuswahl(eigenschaften: AssetAuswahlEigenschaften): JSX.Elem
           'Das Element ist ein Segment; fuer dessen Reparatur ist die Aktions-Auswahl zuständig.',
         ),
     )
-    return null as unknown as JSX.Element
+    return null
   }
 
   const wahl = waehlbareAssets(projekt.assets, typ)

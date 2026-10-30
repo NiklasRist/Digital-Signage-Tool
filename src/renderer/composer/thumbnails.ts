@@ -1,8 +1,6 @@
 import type { Project, Listenelement } from '../../shared/contracts/project'
 import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage } from '../../shared/contracts/vorlage'
-import type { Aktion } from '../../shared/contracts/aktion'
-import type { Asset } from '../../shared/contracts/asset'
 
 export type Thumbnail =
   | { quelle: 'canvas'; canvas: HTMLCanvasElement; breite: number; höhe: number }

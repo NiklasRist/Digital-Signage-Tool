@@ -82,12 +82,13 @@
 //   wendet overrides auf jsPlugins-Regeln nicht an (oxc#14504). Gemeldet 20.08.2026.
 // - `anti-slop/require-safety-comment-for-type-assertion`: In `tests/**` bewusst AUS - die
 //   Testdateien schmuggeln absichtlich kaputte Werte ein (Fehlerpfad-Tabellen der Issues). In
-//   `src/**` steht die Regel seit dem 28.10.2026 auf `warn`, NICHT aus: Ein Lauf mit Oxlint
-//   1.79 meldet **192** Stellen ohne `SAFETY:`-Begruendung (Issue #448). Der Kopf dieses Files
-//   behauptete bis dahin, die src-Faelle seien abgearbeitet - das war seit dem 20.08.2026
-//   nicht mehr wahr, weil Oxlint in keinem Skript lief (nachgemessen 28.10.2026: 196 Fehler).
-//   `warn` haelt die Funde sichtbar, ohne das Gate zu blockieren; #448 stellt die Regel nach
-//   echten Invarianten wieder auf `error`. Abschalten waere das Gegenteil von Aufraeumen.
+//   `src/**` steht die Regel seit dem **30.10.2026** wieder auf `error` (#448): **0 Funde**.
+//   Der Weg dorthin war ehrlich - am 28.10. meldete Oxlint 1.79 **192** offene Stellen, die
+//   Regel stand deshalb auf `warn`; jede Stelle wurde einzeln entschieden: Cast entfernt, wo
+//   der Typ die Aussage traegt, sonst `SAFETY:` mit einer PRUEFBAREN Invariante (Belegstelle,
+//   vorheriger Check, Quelle des Werts). Vorher behauptete der Kopf dieses Files, die src-Faelle
+//   seien abgearbeitet - das war seit dem 20.08.2026 nicht mehr wahr, weil Oxlint in keinem
+//   Skript lief (nachgemessen 28.10.2026: 196 Fehler). Abschalten waere das Gegenteil.
 export default {
   ignorePatterns: [
     "dist/**",
@@ -141,6 +142,6 @@ export default {
     "anti-slop/no-unknown-type-aliases": "error",
     "anti-slop/no-unsafe-dictionary-type": "off",
     "anti-slop/no-widen-then-assert": "error",
-    "anti-slop/require-safety-comment-for-type-assertion": "warn",
+    "anti-slop/require-safety-comment-for-type-assertion": "error",
   },
 };

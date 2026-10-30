@@ -81,6 +81,8 @@ export function leseKantenIndex(id: unknown): number | null {
  *  Referenz ist der laufende Drag ein BESTANDSDrag - die Kanten bleiben unwirksam. */
 export function liestReferenz(daten: unknown): string | null {
   if (typeof daten !== 'object' || daten === null) return null
+  // SAFETY: Die Zeile davor hat `daten` als nicht-null Objekt belegt; der Cast macht
+  // `referenz` als unknown LESBAR - die Pruefung auf Text folgt direkt darunter.
   const referenz = (daten as { referenz?: unknown }).referenz
   if (typeof referenz !== 'string' || referenz.trim() === '') return null
   return referenz

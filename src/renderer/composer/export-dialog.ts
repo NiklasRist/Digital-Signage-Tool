@@ -131,8 +131,8 @@ export async function loeseExportMitAuswahlAus(
       // Behauptung waere das Zusammensetzen von dateiname/zielPfad hier doppelt.
       auswahl.datei === null || auswahl.zielPfad === null
         ? '' // kommt nicht vor: die Anzeige sperrt den Ausloeser (Fehlerpfade)
-        : (auswahl.datei.dateiname as string),
-      auswahl.datei === null || auswahl.zielPfad === null ? '' : (auswahl.zielPfad as string),
+        : auswahl.datei.dateiname,
+      auswahl.datei === null || auswahl.zielPfad === null ? '' : auswahl.zielPfad,
     )
   } catch (ausnahme) {
     wirkungen.meldeFehler(
