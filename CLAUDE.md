@@ -11,7 +11,49 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (29.10.2026, einunddreissigste Sitzung: Produktarbeit #442 und #449) – gilt vor ALLEM weiter unten
+## STAND HEUTE (30.10.2026, zweiunddreissigste Sitzung: Videosteuerung, Projekt-Suche, Umbau-Entscheidung) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-30-videosteuerung-suche-m9.md`](docs/agents/uebergabe-2026-10-30-videosteuerung-suche-m9.md).**
+
+- **GESCHLOSSEN (auf Anweisung, 30.10.):** **#391** (Vollbild-Vorschau-Modus) – der Modus steckt in
+  #443; ein eigenes `vollbild.tsx` waere ein **zweiter Player** (TK 9.14.1). Seine zwei offenen
+  Punkte stehen als Notiz an #443. **#303** (Marken-Live-Vorschau). **#443 bleibt offen** bis zum
+  Review, hat aber den Kommentar "so gebaut".
+- **#443 GEBAUT (`5cc281a`):** Videosteuerung als **Overlay ueber dem Bild** statt fester Leiste
+  darunter; **Symbole** statt Wortknoepfe (`symbole.tsx`, eigene SVGs); Play/Pause **und** Klick
+  aufs Bild, +-5 s, Position/Gesamt, Balken mit Kapitelmarken und Tooltip `mm:ss:ff`, **Ton
+  standardmaessig aus** (Hinweis "Ausgabe bleibt stumm"), Vollbild, Ausblenden nach 3 s.
+  **Tastatur** bleibt eigener Schritt (#387).
+- **PROJEKT-SUCHE GEBAUT (`5e6d0c1`):** `filtereProjekte` (Name **und** Ordner), Suchfeld ueber
+  der Liste, eigener Leerzustand "Kein Projekt passt zu ..." - nicht "Noch keine Projekte".
+  Treiber-Schritt 2 misst **3 -> 0 -> 3 Zeilen**.
+- **ENTSCHIEDEN (AD v1.10 / TK v3.31, `627e530`):** **Split-Screen gestrichen.** Das Werbeband
+  liegt **deckend ueber** dem vollflaechigen Video. Vorlagen tragen **keine Art** mehr - `hoehe`
+  entscheidet (`null` = Ganzbild 1920x1080, `162` = Band). **Der Einfuegeweg entscheidet:**
+  Zeitleiste = Ganzbild, Bandliste = Band. **Anzeigenamen:** "Ganzflaechig" (ID `vollbild`),
+  "Zwei Spalten" (ID `split`) - die Vorlage "Split" ist ein **zweispaltiges Ganzbild**, NICHT die
+  gestrichene Komposition. **Zonen-Namen:** Hintergrund, Bild der Aktion, Abdunkelung, Logo,
+  Ueberschrift, Beschreibung, Preis, Knopf.
+- **DIE DOKUMENTE FUEHREN DEN CODE:** Die App kennt `art`, `split.tsx` und die halbtransparente
+  Einblendung noch. Bis M9 gebaut ist, ist **das TK die Wahrheit, nicht das Fenster**.
+- **M9 "Ein Band, keine Art" (#450-#454):** #450 (contracts) blockiert #451 (Store + Migration),
+  #452 (Vorschau), #453 (Einfuegewege); **#454** (Zonen-Namen) ist unabhaengig. Plan:
+  [`docs/agents/umbau-v331-plan.md`](docs/agents/umbau-v331-plan.md).
+- **FALLE FUER DIE NAECHSTE SITZUNG:** `tools/bereitschaft.py` meldet fuer M9 **"4 von 5 gebaut"** -
+  es misst nur, ob die genannte **Datei existiert**. Wirklich baubar ist nur **#454**.
+  **#450 ohne #451** macht die `vorlagen.json` auf der Platte unlesbar (sie traegt `art`).
+- **Werkzeug nachgezogen (`a017657`):** `bereitschaft.py` liest den Issue-Zustand - geschlossene
+  Issues zaehlen als erledigt und erscheinen **nie** als "bereit"; **M9** ist in der Ausgabe.
+- **Gate:** `npm run pruefung` **Exit 0** - Unit **5.389 (347 Dateien)**, Integration **49
+  (12 Dateien)**, Treiber **0 Befunde**, Lint 0 Fehler.
+- **Nicht gepusht:** **12 Commits** vor `origin/main` (die Uebergabe selbst ist der 13.).
+  **Push nur auf Anweisung.**
+- **Ehrlich offen:** Die Leiste deckt bei der kleinsten Buehnenhoehe (200 px) rund ein Drittel und
+  verschwindet nur beim Abspielen; die Element-Nummern sind weiter **0-basiert**; die
+  Mutations-Gegenproben fuer die #449-Tests fehlen weiterhin.
+- **Naechster Schritt:** **#454** bauen (klein, sofort sichtbar), dann **#450 + #451** zusammen.
+
+## STAND HEUTE (29.10.2026, einunddreissigste Sitzung: Produktarbeit #442 und #449) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-29-produktarbeit-442-449.md`](docs/agents/uebergabe-2026-10-29-produktarbeit-442-449.md).**
 
