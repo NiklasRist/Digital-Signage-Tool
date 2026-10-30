@@ -154,7 +154,7 @@ async function ladenJetzt(): Promise<Ergebnis<MarkenEintrag[], MarkenFehlercode>
   // existiert.
 
   const hauptFassung =
-    haupt.parsebar && traegtBestand(haupt.wert) ? (haupt.wert as MarkenDatei) : null
+    haupt.parsebar && traegtBestand(haupt.wert) ? haupt.wert : null
 
   let gewaehlt: MarkenDatei
   if (hauptFassung !== null) {
@@ -162,7 +162,7 @@ async function ladenJetzt(): Promise<Ergebnis<MarkenEintrag[], MarkenFehlercode>
   } else {
     const sicherung = await liesKandidat(`${ziel}.bak`)
     const bakFassung =
-      sicherung.parsebar && traegtBestand(sicherung.wert) ? (sicherung.wert as MarkenDatei) : null
+      sicherung.parsebar && traegtBestand(sicherung.wert) ? sicherung.wert : null
     if (bakFassung === null) {
       // Das .bak fehlt oder taugt nichts: `speicher_fehler` - KEIN Rueckfall auf
       // [eingebauteMarke()] (s. Kommentar oben).
@@ -207,7 +207,7 @@ function traegtBestand(wert: unknown): wert is MarkenDatei {
   if (!('schemaVersion' in wert) || !('marken' in wert)) {
     return false
   }
-  const marken = (wert as { marken?: unknown }).marken
+  const marken = wert.marken
   return Array.isArray(marken) && marken.length > 0
 }
 
@@ -238,6 +238,8 @@ export async function aendereBestand<T>(
 
     let zustand: Ergebnis<{ bestand: MarkenEintrag[]; wert: T }, MarkenFehlercode>
     try {
+      // SAFETY: Der Zweig darüber hat `bestand` über `ladenJetzt` gefüllt, wenn es null
+      // war; TS verliert die Verengung über das `await` - zur Laufzeit ist es hier belegt.
       zustand = aenderung(tief(bestand as MarkenEintrag[]))
     } catch (ursache) {
       // Die aenderung wirft (Programmfehler des Aufrufers): nichts wird geschrieben,
@@ -431,11 +433,11 @@ async function liesKandidat(pfad: string): Promise<Lesecs> {
     return { fehlt: false, parsebar: false, wert: null }
   }
   try {
-    JSON.parse(roh) as unknown
+    JSON.parse(roh)
   } catch {
     return { fehlt: false, parsebar: false, wert: null }
   }
-  return { fehlt: false, parsebar: true, wert: JSON.parse(roh) as unknown }
+  return { fehlt: false, parsebar: true, wert: JSON.parse(roh) }
 }
 
 /** Ein Schreib-Ergebnis: gelungen oder mit Code + Meldung. */

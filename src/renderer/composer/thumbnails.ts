@@ -86,9 +86,11 @@ async function videoThumbnail(element: Listenelement, projekt: Project): Promise
 async function segmentThumbnail(
   element: Listenelement,
   projekt: Project,
-  marke: Marke,
+  marke: Marke | null,
   vorlagen: readonly Vorlage[],
 ): Promise<Thumbnail> {
+  // Ein Segment braucht seine Marke; fehlt sie, gibt es kein Bild (kein Ersatz).
+  if (marke === null) return { quelle: 'fehlt' }
   // Wie oben: `ref` und `Aktion.vorlagenId` stehen im Vertrag; eine Aktion, die nicht
   // mehr im Bestand steht, faellt eine Zeile spaeter heraus.
   const aktionsId = element.ref
@@ -109,7 +111,9 @@ async function segmentThumbnail(
 export async function erzeugeThumbnail(
   element: Listenelement,
   projekt: Project,
-  marke: Marke,
+  /** Die Marke der Aktion - ein VIDEO-Element liest sie nie (Vertrag #128), deshalb
+   *  ist `null` erlaubt; `segmentThumbnail` bricht dann mit "kein Bild" ab. */
+  marke: Marke | null,
   vorlagen: readonly Vorlage[],
 ): Promise<Thumbnail> {
   // `art` ist eine geschlossene Union im Vertrag - ein unbekannter Wert kann nur aus

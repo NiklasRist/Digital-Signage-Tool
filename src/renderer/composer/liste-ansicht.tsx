@@ -103,7 +103,7 @@ function Zeile({
       return
     }
     if (quelle.art === 'fehlt') {
-      setzeThumbnail({ quelle: 'fehlt' } as Thumbnail)
+      setzeThumbnail({ quelle: 'fehlt' })
       return
     }
     let abgebrochen = false
@@ -114,7 +114,7 @@ function Zeile({
     const elementAktion = quelle.art === 'aktion' ? quelle.aktion : null
     const marke = elementAktion !== null ? holeBereiteMarke(elementAktion.markeId) : null
     if (elementAktion !== null && marke === null) {
-      setzeThumbnail({ quelle: 'fehlt' } as Thumbnail)
+      setzeThumbnail({ quelle: 'fehlt' })
       return
     }
     // Bei einem Segment-Element ist die Marke aufgeloest (oben). Ein VIDEO-Element
@@ -123,7 +123,7 @@ function Zeile({
     erzeugeThumbnail(
       element,
       projekt,
-      marke ?? (null as unknown as Marke),
+      marke,
       voraussetzungen.vorlagen,
     )
       .then((bild: Thumbnail) => {
@@ -284,21 +284,24 @@ export function Wiedergabeliste(p: WiedergabelisteEigenschaften): JSX.Element {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={bewegt}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <ul data-testid="wiedergabeliste-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {zeilen.map((modell) => (
-              <Zeile
-                key={modell.elementId}
-                element={elementFuer(modell.elementId) as Listenelement}
-                projekt={p.projekt}
-                modell={modell}
-                quelle={findeThumbnailquelle(
-                  elementFuer(modell.elementId) as Listenelement,
-                  p.projekt,
-                )}
-                voraussetzungen={p.voraussetzungen}
-                zeichneBedienung={p.zeichneBedienung}
-                aufGewaehlt={() => p.aufZeileGewaehlt(modell.elementId)}
-              />
-            ))}
+            {zeilen.map((modell) => {
+              const element = elementFuer(modell.elementId)
+              // Ein Modell ohne Listenelement kann nur aus einem veralteten Stand stammen;
+              // dann wird die Zeile nicht gezeichnet - statt `undefined` durchzureichen.
+              if (element === undefined) return null
+              return (
+                <Zeile
+                  key={modell.elementId}
+                  element={element}
+                  projekt={p.projekt}
+                  modell={modell}
+                  quelle={findeThumbnailquelle(element, p.projekt)}
+                  voraussetzungen={p.voraussetzungen}
+                  zeichneBedienung={p.zeichneBedienung}
+                  aufGewaehlt={() => p.aufZeileGewaehlt(modell.elementId)}
+                />
+              )
+            })}
           </ul>
         </SortableContext>
       </DndContext>

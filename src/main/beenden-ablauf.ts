@@ -4,6 +4,7 @@
 
 import { ipcMain, type BrowserWindow } from 'electron'
 import { KANAELE } from '../shared/contracts/kanaele'
+import type { Ergebnis } from '../shared/contracts/ergebnis'
 import { flushBeimBeenden } from './project-store/auto-speichern' // #47
 import { flushBestand as flushVorlagenBestand } from './vorlagen-store/schreibe-vorlagen' // #98
 import { flushBestand as flushMarkenBestand } from './marken-store/schreibe-marken' // #277, ALIAS-PFLICHT
@@ -101,16 +102,30 @@ export async function pruefeBeendenUndFlush(fenster: BrowserWindow): Promise<boo
   }
 }
 
+/** Die drei Flush-Ergebnisse auf die gemeinsame Form bringen - Feld fuer Feld.
+ *  `Ergebnis.fehler.code` ist eine Union aus Text und (bei Systemfehlern) einem
+ *  verschachtelten Objekt; die Berichte fuehren TEXT, deshalb wird hier benannt
+ *  statt "[object Object]" durchzureichen. */
+function zuFlushErg(
+  erg: { ok: true } | { ok: false; fehler: { code: unknown; meldung: string } },
+): FlushErg {
+  if (erg.ok) return { ok: true }
+  const code = typeof erg.fehler.code === 'string' ? erg.fehler.code : 'unbekannter_fehler'
+  return { ok: false, fehler: { code, meldung: erg.fehler.meldung } }
+}
+
 async function flushUeberhauptAus(
   speicher: 'project' | 'vorlagen' | 'marken',
 ): Promise<FlushErg> {
+  // Kein Doppelcast: die drei Flush-Ergebnisse haben dieselbe Huelle, nur verschiedene
+  // Fehlercodes - `zuFlushErg` macht daraus die gemeinsame Form, ohne etwas zu behaupten.
   switch (speicher) {
     case 'project':
-      return (await flushBeimBeenden()) as unknown as FlushErg
+      return zuFlushErg(await flushBeimBeenden())
     case 'vorlagen':
-      return (await flushVorlagenBestand()) as unknown as FlushErg
+      return zuFlushErg(await flushVorlagenBestand())
     case 'marken':
-      return (await flushMarkenBestand()) as unknown as FlushErg
+      return zuFlushErg(await flushMarkenBestand())
   }
 }
 

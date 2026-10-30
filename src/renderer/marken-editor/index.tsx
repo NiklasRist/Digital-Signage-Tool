@@ -197,7 +197,7 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
   // v3.32 (#456): WO die Marke gebraucht wird - gezaehlt aus den Aktionen des offenen
   // Projekts, nicht nachgerechnet (die Zuordnung steht in `Aktion.markeId`, TK 9.15.4).
   const verwendung = zeigeMarke
-    ? aktionen.filter((eintrag) => eintrag.markeId === (marke as Marke).id)
+    ? aktionen.filter((eintrag) => eintrag.markeId === marke.id)
     : []
 
   // #456 (Entscheidung Niklas, 30.10.2026): „minimaler Text, Symbole für die Knöpfe."
@@ -214,13 +214,13 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
       >
         <SymbolPfeilLinks />
       </SymbolKnopf>
-      <h3 data-testid="marken-kopf" style={{ margin: 0 }}>{(marke as Marke).name}</h3>
+      <h3 data-testid="marken-kopf" style={{ margin: 0 }}>{marke.name}</h3>
       <span data-testid="marken-verwendung" style={{ opacity: 0.8 }}>
         {verwendung.length === 0
           ? 'In diesem Projekt verwendet sie keine Aktion.'
           : `In diesem Projekt: ${verwendung.length} ${verwendung.length === 1 ? 'Aktion' : 'Aktionen'}`}
       </span>
-      {(marke as Marke).parent !== null && (
+      {marke.parent !== null && (
         <span data-testid="marken-herkunft" style={{ opacity: 0.8 }}>
           abgeleitet von „{parentName ?? 'unbekannt'}"
         </span>
@@ -236,7 +236,7 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
           <SymbolVergroessern />
         </SymbolKnopf>
         <div data-testid="marken-loeschbereich">
-          {loeschStamm(marke as Marke, zustand, setzeZustand, marken)}
+          {loeschStamm(marke, zustand, setzeZustand, marken)}
         </div>
       </div>
     </div>
@@ -267,7 +267,7 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
           )}
           <div data-testid="marken-vorschau">
             <MarkenVorschau
-              marke={zeigeMarke ? (marke as Marke) : null}
+              marke={zeigeMarke ? marke : null}
               vorlagen={vorlagen}
               vorlageId={zustand.vorlageId}
               elemente={elemente}
@@ -310,12 +310,12 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
             zustand={zustand}
             setzeZustand={setzeZustand}
             marken={marken}
-            offeneId={(marke as Marke | null)?.id ?? null}
+            offeneId={marke?.id ?? null}
           />
         </div>
-        {!zustand.gross && zeigeMarke && (
+        {!zustand.gross && zeigeMarke && marke !== null && (
           <Inspector
-            marke={marke as Marke}
+            marke={marke}
             elemente={elemente}
             auswahl={zustand.auswahl}
             aufAuswahl={waehle}
