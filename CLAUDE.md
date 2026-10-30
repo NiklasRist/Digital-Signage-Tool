@@ -69,13 +69,15 @@
   Dateien)**, Treiber **0 Befunde**, Lint 0 Fehler. (Der erste Lauf war durch `| tail` im Exit-Code
   maskiert; der zweite Lauf mit sauberem Exit belegt 0.)
 - **Nicht gepusht:** **27 Commits** vor `origin/main`; diese Doku kommt als eigener Commit dazu. **Push nur auf Anweisung.**
+- **#455 UND #456 GESCHLOSSEN (30.10.2026, `completed`):** #456 am Fenster abgenommen („passt"),
+  #455 im Rahmen dieser Abnahme gesehen — die Abgrenzung steht so im Issue-Kommentar, damit sie
+  nicht spaeter wie eine behauptete aussieht. **Damit ist der Marken-Umbau buchhalterisch fertig.**
 - **Ehrlich offen:** #446 (FA-03-Ursache),
   #448 (192 SAFETY), Beenden-Frist 15 s; der Signaturblock in #456 nennt `projektId`, gebaut ist
   zusaetzlich `aktionen` (Widerspruch gemeldet, Text nicht nachgezogen); die
   **Loesch-Sperrgruende erscheinen mitten in der Marken-Kopfzeile** (aelter als #456, nicht
-  angefasst); **#456** (am Fenster abgenommen) und **#455** (nie ausdruecklich abgenommen) stehen
-  auf GitHub noch offen - Schliessen braucht ein Wort.
-- **Naechster Schritt:** #456/#455 schliessen (Freigabe), dann #446 und #448.
+  angefasst).
+- **Naechster Schritt:** #448 (192 SAFETY — allein machbar) oder #446 (braucht Fenster-Repro).
 
 ## STAND HEUTE (30.10.2026, dreiunddreissigste Sitzung: Zonen-Namen und M9) – historisiert durch den Abschnitt darueber
 
