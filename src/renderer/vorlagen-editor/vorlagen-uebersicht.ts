@@ -38,8 +38,9 @@ export interface VorlagenUebersicht {
  * es gibt kein Höhenfeld, andere Höhen bietet die Oberfläche nicht an. Der Store führt den
  * allgemeinen Wertebereich weiter als Datenregel - hier steht, was der Nutzer wählen kann.
  *
- * BESCHRIFTUNG: Vorschlag aus #453 („Nicht selbst entscheiden"): „Ganzbild (1920 x 1080)"
- * und „Band (1920 x 162)" - keine Kunstbegriffe. Vom Auftraggeber noch nicht bestätigt.
+ * BESCHRIFTUNG: „Ganzbild (1920 × 1080)" und „Band (1920 × 162)" - keine Kunstbegriffe.
+ * Der Vorschlag aus #453 („Nicht selbst entscheiden") ist am **30.10.2026 vom Auftraggeber
+ * bestaetigt** worden; damit ist der letzte offene Punkt des Issues entschieden.
  */
 export const ANLEGBARE_FLAECHEN: ReadonlyArray<{ höhe: number | null; bezeichnung: string }> = [
   { höhe: null, bezeichnung: 'Ganzbild (1920 × 1080)' },
