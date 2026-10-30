@@ -40,21 +40,30 @@
   des Composers aus dem Bild (Drop aufs Video und Loeschen-Knopf fielen aus; Gegenprobe per
   `display:none` gruen). Behoben mit flacher Leiste (22 px) **und** `BUEHNE_OBEN.minHeight`
   **200 -> 160**. **Wer Hoehe ergaenzt, muss den Composer nachmessen.**
+- **#453-TREIBER-SCHRITT GEBAUT (`6295605`):** Der letzte offene DoD-Punkt von M9 ist gemessen — **4f**
+  liest nach dem Kanten-Drop `project.json` und belegt `art: "segment"` an Position 2; **4f6** (neu)
+  haengt eine Aktion ueber die **Bandliste** des Video-Elements an und belegt den **Abschnitt** in
+  `einblendung.abschnitte` (Store), kein neues Listenelement, keine Unterbrechung. Der Schritt wartet
+  bis 10 s auf den Store: die erste Fassung las nach 3,5 s und bekam `null` (Messfehler, kein
+  Produktfehler). **Treiber-Matrix:** `4f6` gehoert zu FA-13 (`tests/unit/treiber-matrix.spec.ts`
+  fand die Luecke sofort).
 - **Gegenproben:** 11 in dieser Sitzung, jede rot und byte-identisch zurueckgenommen. Eine erste
   Fassung blieb gruen (Reiterklick deckte nur den Klickweg, nicht den programmatischen Wechsel).
   **Nachtrag `060abe1`: 6 weitere** (immer Stift statt Pfeil, `gedrueckt` entfernt, Markenname
   wieder als Text, Rueckweg als Textknopf, Loeschen als Textknopf, `title` entfernt) — alle rot.
+  **Nachtrag `6295605`: 2 weitere** (Band-Haelfte als Produkt-Mutation, Zeitleisten-Haelfte als
+  Messaufbau-Probe) — beide rot.
 - **Gate:** `npm run pruefung` **Exit 0** — Unit **5.288 (347 Dateien)**, Integration **50 (13
   Dateien)**, Treiber **0 Befunde**, Lint 0 Fehler. (Der erste Lauf war durch `| tail` im Exit-Code
   maskiert; der zweite Lauf mit sauberem Exit belegt 0.)
-- **Nicht gepusht:** **25 Commits** vor `origin/main`. **Push nur auf Anweisung.**
-- **Ehrlich offen:** #449 (schliessen oder ueberfuehren), #453-Treiber-Schritt, #446 (FA-03-Ursache),
-  #448 (192 SAFETY), Flaechen-Beschriftungen unbestatigt, Beenden-Frist 15 s; der Signaturblock in
-  #456 nennt `projektId`, gebaut ist zusaetzlich `aktionen` (Widerspruch gemeldet, Text nicht
-  nachgezogen); die **Loesch-Sperrgruende erscheinen mitten in der Marken-Kopfzeile** (aelter als
-  #456, nicht angefasst).
-- **Naechster Schritt:** #449 entscheiden, dann der #453-Treiber-Schritt („Aktion auf die Zeitleiste
-  = Segment, Aktion an die Bandliste = Abschnitt" — der letzte offene DoD-Punkt von M9).
+- **Nicht gepusht:** **27 Commits** vor `origin/main`; diese Doku kommt als eigener Commit dazu. **Push nur auf Anweisung.**
+- **Ehrlich offen:** #449 (schliessen oder ueberfuehren), #446 (FA-03-Ursache),
+  #448 (192 SAFETY), Flaechen-Beschriftungen unbestatigt (STOPP-Punkt in #453), Beenden-Frist 15 s;
+  der Signaturblock in #456 nennt `projektId`, gebaut ist zusaetzlich `aktionen` (Widerspruch
+  gemeldet, Text nicht nachgezogen); die **Loesch-Sperrgruende erscheinen mitten in der
+  Marken-Kopfzeile** (aelter als #456, nicht angefasst).
+- **Naechster Schritt:** #449 entscheiden. Danach: Flaechen-Beschriftungen bestaetigen (dann ist #453
+  abnehmbar) und #446.
 
 ## STAND HEUTE (30.10.2026, dreiunddreissigste Sitzung: Zonen-Namen und M9) – historisiert durch den Abschnitt darueber
 
