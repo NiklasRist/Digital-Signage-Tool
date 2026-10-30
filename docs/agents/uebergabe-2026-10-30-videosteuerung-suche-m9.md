@@ -10,7 +10,7 @@
 
 | | Wert |
 |---|---|
-| Commits | **12 vor `origin/main`**, **nicht gepusht** |
+| Commits | **12 Produkt-Commits vor `origin/main`**, **nicht gepusht** (die Übergabe-Dokumente kommen als eigene Commits dazu) |
 | Arbeitsbaum | sauber |
 | Gate | `npm run pruefung` **Exit 0** (zuletzt nach der Suchleiste) |
 | Unit | **5.389** Tests in **347** Dateien |

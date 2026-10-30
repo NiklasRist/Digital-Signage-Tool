@@ -46,8 +46,8 @@
   Issues zaehlen als erledigt und erscheinen **nie** als "bereit"; **M9** ist in der Ausgabe.
 - **Gate:** `npm run pruefung` **Exit 0** - Unit **5.389 (347 Dateien)**, Integration **49
   (12 Dateien)**, Treiber **0 Befunde**, Lint 0 Fehler.
-- **Nicht gepusht:** **12 Commits** vor `origin/main` (die Uebergabe selbst ist der 13.).
-  **Push nur auf Anweisung.**
+- **Nicht gepusht:** **12 Produkt-Commits** vor `origin/main`; die Uebergabe-Dokumente kommen als
+  eigene Commits dazu. **Push nur auf Anweisung.**
 - **Ehrlich offen:** Die Leiste deckt bei der kleinsten Buehnenhoehe (200 px) rund ein Drittel und
   verschwindet nur beim Abspielen; die Element-Nummern sind weiter **0-basiert**; die
   Mutations-Gegenproben fuer die #449-Tests fehlen weiterhin.
