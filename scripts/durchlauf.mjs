@@ -3598,6 +3598,29 @@ const main = async () => {
               `Meldung: ${JSON.stringify(danach4f.meldung)}; Ablehnungen: ${JSON.stringify(danach4f.ablehnungen)}`,
               "Befund", "composer/index.tsx");
           }
+          // #453, ERSTE Haelfte der DoD: "Aktion auf die Zeitleiste = Segment". Gelesen
+          // wird der STORE (project.json), nicht die Anzeige - `data-ref` sagt nur, WELCHE
+          // Referenz im Block steht, nicht ob das Element ein Segment ist. Der Auto-Speicher
+          // ist entprellt, deshalb erst warten.
+          await schlafe(2_000);
+          let eingefuegt4f = null;
+          try {
+            const json4f = JSON.parse(
+              fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
+            );
+            eingefuegt4f = (json4f.liste ?? [])[1] ?? null;
+          } catch (tu) {
+            eingefuegt4f = { art: "lesefehler: " + String(tu) };
+          }
+          const istSegment4f =
+            eingefuegt4f !== null && eingefuegt4f.art === "segment" && eingefuegt4f.ref === quelleRef;
+          if (istSegment4f) {
+            console.log('[schritt-4f] Einfuegeweg GEMESSEN: Position 2 ist art="segment" (ref ' +
+              quelleRef + ') - die Zeitleiste nimmt Ganzbilder (#453).');
+          } else {
+            fund("Einfuegeweg", "ein Drop auf die Zeitleiste erzeugt ein SEGMENT (#453)",
+              `Position 2 im Store: ${JSON.stringify(eingefuegt4f)}`, "Befund", "composer/index.tsx");
+          }
           // #414-Abnahme-Rest: GENAU EIN Undo-Schritt nimmt das Einfuegen zurueck.
           const davorUndo = davor4f.bloecke.length;
           await seite.keyboard.down("Meta");
@@ -3860,6 +3883,170 @@ const main = async () => {
           "Befund", "composer/dauer-regler.ts");
       } else {
         console.log("[schritt-4f4] Dauer/Trim-Undo GEMESSEN: der Pfeil nimmt die Regler-Aenderung in EINEM Schritt zurueck (#429).");
+      }
+      await klick('[data-testid="composer-ansicht-zeitleiste"]');
+      await schlafe(200);
+    }
+
+    // Schritt 4f6 - #453, ZWEITE Haelfte der DoD: "Aktion an die Bandliste = Abschnitt".
+    // Der Einfuegeweg entscheidet: Eine Aktion wird NICHT aufs Video gezogen (das waere
+    // eine Unterbrechung, #442), sondern ueber die Bandliste des Video-Elements
+    // angehaengt. Erwartet: das Video traegt danach einen ABSCHNITT in
+    // `einblendung.abschnitte` (Store-Beleg), es entsteht KEIN neues Listenelement und
+    // KEINE Unterbrechung. Die Anzeige wird mitgemessen (die Liste waechst vor dem
+    // Uebernehmen), der harte Beleg ist project.json.
+    {
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(500);
+      const videoId4f6 = await seite.evaluate(
+        () => document.querySelector('[data-testid="zeitleiste-block-0"]')?.getAttribute("data-element-id") ?? null,
+      );
+      // Die Vergleichsgroesse kommt aus dem STORE: Die Zeitleiste zeigt zwar alle
+      // Listenelemente, aber die Frage lautet "entsteht ein neues?" - und das entscheidet
+      // die Liste, nicht die Ansicht.
+      let listeVor4f6 = -1;
+      let form4f6 = null;
+      try {
+        const liste4f6 = JSON.parse(
+          fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
+        ).liste ?? [];
+        listeVor4f6 = liste4f6.length;
+        // Die Form der Liste mitloggen: Welches Element ist Block 0 wirklich? Ohne diese
+        // Zeile waere "einblendung blieb null" nicht von "falsches Element gelesen" zu
+        // unterscheiden - und die naechste Sitzung raet.
+        form4f6 = liste4f6.map((e) => ({
+          id: e.id, art: e.art, band: e.einblendung?.abschnitte?.length ?? null,
+        }));
+      } catch {
+        listeVor4f6 = -1;
+      }
+      console.log(`[schritt-4f6] Liste vor dem Band (Store): ${JSON.stringify(form4f6)}`);
+      if (videoId4f6 === null) {
+        fund("Einfuegeweg", "das Video-Element ist vor der Band-Messung sichtbar (#453)",
+          "zeitleiste-block-0 ohne data-element-id", "Untersuchung", "composer/zeitleiste.tsx");
+      } else {
+        // Die Band-Bedienung haengt an der LISTEN-Zeile (`element-band`), nicht am
+        // Zeitleisten-Block. Deshalb erst umschalten - das ist der Weg des Nutzers.
+        await klick('[data-testid="composer-ansicht-liste"]');
+        await schlafe(700);
+        const bandKnopf4f6 = await seite.evaluate((elementId) => {
+          const zeile = document.querySelector(
+            `[data-testid="wiedergabeliste-zeile"][data-element-id="${elementId}"]`,
+          );
+          const knopf = zeile === null ? null : zeile.querySelector('[data-testid="element-band"]');
+          if (knopf === null) return false;
+          knopf.click();
+          return true;
+        }, videoId4f6);
+        await schlafe(900);
+        const overlay4f6 = await stehtDa('[data-testid="composer-overlay-band"]');
+        if (!bandKnopf4f6 || !overlay4f6) {
+          fund("Einfuegeweg", "die Bandliste des Video-Elements laesst sich oeffnen (#453)",
+            `Knopf=${String(bandKnopf4f6)}, Overlay=${String(overlay4f6)}`,
+            "Befund", "composer/element-zeile.tsx");
+        } else {
+          // Die Aktion EXPLIZIT waehlen (die Ansicht waere sonst auf die erste im Bestand
+          // vorgewaehlt) - sonst haenge die Messung an der Reihenfolge der Bibliothek.
+          const gewaehlt4f6 = await seite.evaluate((ref) => {
+            const wahl = document.querySelector('[data-testid="abschnitt-aktions-wahl"]');
+            if (wahl === null) return "wahl-fehlt";
+            if (![...wahl.options].some((o) => o.value === ref)) {
+              return "option-fehlt: " + [...wahl.options].map((o) => o.value).join(",");
+            }
+            wahl.value = ref;
+            wahl.dispatchEvent(new Event("change", { bubbles: true }));
+            return "ok";
+          }, aktionsId417);
+          await schlafe(400);
+          const zeilenVor4f6 = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid="band-abschnitte"] > li').length,
+          );
+          await seite.evaluate(() => {
+            const knopf = document.querySelector('[data-testid="abschnitt-hinzufuegen"]');
+            if (knopf !== null) knopf.click();
+          });
+          await schlafe(600);
+          const zeilenNach4f6 = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid="band-abschnitte"] > li').length,
+          );
+          const uebernehmen4f6 = await seite.evaluate(() => {
+            const knopf = document.querySelector('[data-testid="einblendung-uebernehmen"]');
+            if (knopf === null || knopf.disabled === true) return false;
+            knopf.click();
+            return true;
+          });
+          await schlafe(800);
+          const overlayZu4f6 = !(await stehtDa('[data-testid="composer-overlay-band"]'));
+
+          // Auf den STORE WARTEN statt zu raten: `setzeEinblendung` schreibt im Main,
+          // danach zieht die Sicht nach. 10 s Frist, 300-ms-Takt - dieselbe Haltung wie
+          // `oeffneUeberListe` oben.
+          let stand4f6 = null;
+          const frist4f6 = Date.now() + 10_000;
+          while (Date.now() < frist4f6) {
+            stand4f6 = null;
+            try {
+              const json4f6 = JSON.parse(
+                fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
+              );
+              const video4f6 = (json4f6.liste ?? []).find((e) => e.id === videoId4f6) ?? null;
+              stand4f6 = {
+                liste: (json4f6.liste ?? []).length,
+                einblendung: video4f6?.einblendung ?? null,
+                unterbrechungen: video4f6?.unterbrechungen ?? null,
+              };
+            } catch (tu) {
+              stand4f6 = { lesefehler: String(tu) };
+            }
+            const erreicht4f6 =
+              Array.isArray(stand4f6.einblendung?.abschnitte) &&
+              stand4f6.einblendung.abschnitte.some((a) => a.aktionRef === aktionsId417);
+            if (erreicht4f6) break;
+            await schlafe(300);
+          }
+          const gewartet4f6 = Math.round((10_000 - (frist4f6 - Date.now())) / 100) / 10;
+          const meldung4f6 = await seite.evaluate(
+            () => document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+          );
+          // Was sagt die OBERFLAECHE nach dem Uebernehmen? Der Band-Knopf der Zeile
+          // traegt seinen Zustand im Text - ein zweiter, unabhaengiger Zeuge neben dem Store.
+          const bandText4f6 = await seite.evaluate((elementId) => {
+            const zeile = document.querySelector(
+              `[data-testid="wiedergabeliste-zeile"][data-element-id="${elementId}"]`,
+            );
+            return zeile === null
+              ? null
+              : (zeile.querySelector('[data-testid="element-band"]')?.textContent ?? null);
+          }, videoId4f6);
+          const hatAbschnitt4f6 =
+            Array.isArray(stand4f6?.einblendung?.abschnitte) &&
+            stand4f6.einblendung.abschnitte.some((a) => a.aktionRef === aktionsId417);
+          const hatUnterbrechung4f6 =
+            Array.isArray(stand4f6?.unterbrechungen) &&
+            stand4f6.unterbrechungen.some((u) => u.aktionRef === aktionsId417);
+          console.log(`[schritt-4f6] Bandliste: wahl=${gewaehlt4f6}; Zeilen ${zeilenVor4f6}->${zeilenNach4f6}; uebernehmen=${String(uebernehmen4f6)}; OverlayZu=${String(overlayZu4f6)}; Store nach ${String(gewartet4f6)} s=${JSON.stringify(stand4f6)}; Meldung=${JSON.stringify(meldung4f6)}; BandKnopf=${JSON.stringify(bandText4f6)}`);
+          if (gewaehlt4f6 !== "ok" || zeilenNach4f6 !== zeilenVor4f6 + 1) {
+            fund("Einfuegeweg", "die Bandliste nimmt einen Abschnitt an (#453)",
+              `wahl=${gewaehlt4f6}; Zeilen ${zeilenVor4f6}->${zeilenNach4f6}`,
+              "Befund", "composer/einblendung-ansicht.tsx");
+          } else if (!uebernehmen4f6 || !overlayZu4f6) {
+            fund("Einfuegeweg", "das Uebernehmen schliesst die Band-Bearbeitung (#453)",
+              `uebernehmen=${String(uebernehmen4f6)}, OverlayZu=${String(overlayZu4f6)}, Meldung=${JSON.stringify(meldung4f6)}`,
+              "Befund", "composer/index.tsx");
+          } else if (!hatAbschnitt4f6) {
+            fund("Einfuegeweg", "die angehaengte Aktion steht als ABSCHNITT im Video (#453)",
+              `Store: ${JSON.stringify(stand4f6)}; Meldung: ${JSON.stringify(meldung4f6)}; BandKnopf: ${JSON.stringify(bandText4f6)}`,
+              "Befund", "composer/index.tsx");
+          } else if (hatUnterbrechung4f6) {
+            fund("Einfuegeweg", "der Band-Weg legt KEINE Unterbrechung an (#442/#453)",
+              `Store: ${JSON.stringify(stand4f6)}`, "Befund", "composer/index.tsx");
+          } else if (stand4f6 !== null && stand4f6.liste !== listeVor4f6) {
+            fund("Einfuegeweg", "der Band-Weg legt KEIN neues Listenelement an (#453)",
+              `Liste ${listeVor4f6}->${stand4f6.liste}`, "Befund", "composer/index.tsx");
+          } else {
+            console.log("[schritt-4f6] Einfuegeweg GEMESSEN: Aktion an der Bandliste wird ein ABSCHNITT am Video, kein neues Listenelement, keine Unterbrechung (#453 belegt).");
+          }
+        }
       }
       await klick('[data-testid="composer-ansicht-zeitleiste"]');
       await schlafe(200);
