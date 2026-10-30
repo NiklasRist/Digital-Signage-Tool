@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 29.10.2026
-**Version:** 1.10 (Split-Screen gestrichen: das Werbeband liegt **deckend über** dem vollflächigen Video; die Wahl der Vorlagen-*Art* entfällt, die **Fläche** entscheidet – Entscheidung 29.10.2026, s. 4.5 und FA-13/FA-20)
+**Datum:** 30.10.2026
+**Version:** 1.11 (Der Reiter **[Marken] entfällt**: Der Marken-Editor wird über die **Projektleiste** des geöffneten Projekts geöffnet. Der Marken-Bestand bleibt **app-weit** – eine Marke kann von beliebig vielen Projekten genutzt werden. Entscheidung 30.10.2026, s. 4.8)
 **Status:** In Abstimmung
 
 ---
@@ -321,8 +321,14 @@ Projekt-Standardmarke.
 
 **Die Projekt-Standardmarke ist wechselbar.** Bedient wird das in der **Projektverwaltung** (Reiter
 [Projekte], FA-10), nicht im Marken-Editor: Die Standardmarke ist eine Eigenschaft des **Projekts**,
-während der Editor den app-weiten **Bestand** führt und keine Projekte kennt. Ein neues Projekt startet
+während der Editor den app-weiten **Bestand** führt. Ein neues Projekt startet
 mit der eingebauten Fitnessworld24-Marke.
+
+**Der Marken-Editor hängt am Projekt (v1.11, entschieden 30.10.2026).** Einen eigenen Reiter gibt es
+nicht mehr: Der Editor wird über die **Projektleiste** des geöffneten Projekts geöffnet, damit man beim
+Bearbeiten sieht, **welche Aktionen dieses Projekts** die Marke tragen. Das ändert **nichts am
+Bestand**: Marken sind app-weit, eine Marke kann von **beliebig vielen** Projekten genutzt werden, und
+eine Änderung an ihr wirkt überall. Eine Migration entfällt – es ändert sich nur der Weg dorthin.
 
 **Wenn eine Marke kein Logo hat** – bei Partnern der Normalfall –, zeichnet die Anwendung einen
 **Ersatz**: den Markennamen auf farbigem Grund in der Akzentfarbe der Marke. Kein leerer Bereich und

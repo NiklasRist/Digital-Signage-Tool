@@ -1,10 +1,10 @@
 # Technisches Konzept – Digital-Signage-Tool
 
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
-**Bezug:** Anforderungsdokument v1.9 (das „Was")
+**Bezug:** Anforderungsdokument v1.11 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.31 (9.2.8: Split-Screen gestrichen – das Band liegt **deckend über** dem vollflächigen Video; Vorlagen tragen **keine Art** mehr, `höhe` entscheidet. Entscheidung 29.10.2026, AD v1.10)
-**Datum:** 29.10.2026
+**Version:** 3.32 (9.14.1: Der Reiter **[Marken] entfällt** – der Marken-Editor wird über die **Projektleiste** des geöffneten Projekts geöffnet; der Bestand bleibt **app-weit**. Entscheidung 30.10.2026, AD v1.11)
+**Datum:** 30.10.2026
 **Status:** In Planung
 
 ---
@@ -2212,14 +2212,19 @@ Anforderungsdokument 4.4 steht; angepasst wird das **Hilfsmittel**.
 #### 9.14.1 Grundstruktur: Modus-Reiter + Warteschlangen-Leiste
 
 ```
-┌─ [Zusammenstellen] [Aktionen] [Vorlagen] [Marken] [Projekte] ─────────────┐
+┌─ [Zusammenstellen] [Aktionen] [Vorlagen] [Projekte] ──────────────────────┐
+│ ┌─ Projektleiste (v3.32, nur bei geöffnetem Projekt) ────────────────────┐│
+│ │ <Projektname> · Standardmarke [ … ▾]                          [Marken] ││
+│ └────────────────────────────────────────────────────────────────────────┘│
 │                                                                           │
 │   Der gewählte Reiter nutzt die ganze Fläche:                             │
 │     Zusammenstellen = composer [P3]  +  preview-player [P5]               │
 │     Aktionen        = action-editor [P2]  + große Live-Vorschau           │
 │     Vorlagen        = vorlagen-editor (Canvas + Zonen-Liste + Inspektor)  │
-│     Marken          = marken-editor (Liste + Rollen + Live-Vorschau)      │
 │     Projekte        = projekt-verwaltung (FA-10, 9.14.3)                  │
+│                                                                           │
+│   Der Marken-Editor (9.15.2) ist KEIN Reiter: [Marken] öffnet ihn über    │
+│   der Projektleiste, mit dem geöffneten Projekt als Kontext.              │
 │                                                                           │
 ├───────────────────────────────────────────────────────────────────────────┤
 │ queue-panel als schmale Leiste: „Render läuft · 3 von 7"  ▸ aufklappbar   │
@@ -2228,7 +2233,9 @@ Anforderungsdokument 4.4 steht; angepasst wird das **Hilfsmittel**.
 
 **Begründung der Wahl:** `action-editor`, `vorlagen-editor` und `marken-editor` brauchen **alle drei** eine Live-Vorschau über `template-canvas` in **lesbarer** Größe (9.8, 9.12.2, 9.15.2), der Vorlagen-Editor zusätzlich Canvas **plus** Zonen-Liste **plus** Inspektor. Eine schmale Seitenspalte oder ein Seitenblatt kann das nicht leisten. Reiter geben jeder Oberfläche die volle Fläche – auf einem Laptop-Bildschirm die tragfähige Lösung.
 
-**Warum die Marken einen eigenen Reiter bekommen (v3.6, entschieden):** Der Marken-Bestand ist **app-weit** (V2) – dieselbe Lage wie die Vorlagen-Bibliothek (V1), und aus demselben Grund gehört er neben sie und nicht in ein Projekt. *Warum nicht als Unterbereich der Vorlagen:* Es sind **zwei getrennte Bestände** mit **zwei verschiedenen Undo-Regimen** – der Vorlagen-Editor hat Undo (9.13.2), der Marken-Editor hat in v1 **keins** (9.15.2). Ein gemeinsamer Reiter hätte dem Nutzer zwei Sorten von Rückgängig-Verhalten an derselben Stelle gezeigt. *Warum nicht als Dialog aus dem `action-editor`:* Dort **wird** die Marke zwar gewählt, aber 9.15.2 verlangt die Live-Vorschau über `template-canvas` – in einem Dialog ist sie zu klein, und es wäre genau die „schmale Seitenspalte", die der Absatz oben ausschließt.
+**Warum der Marken-Reiter in v3.32 entfällt (entschieden 30.10.2026, AD v1.11):** Der **Bestand bleibt app-weit** (V2) – eine Marke kann von **beliebig vielen** Projekten genutzt werden (AD 4.8). Nur der **Einstieg** wandert: Marken werden **immer für ein Projekt** bearbeitet, und der Editor kann in dieser Lage zeigen, **welche Aktionen dieses Projekts** die Marke tragen – die Information, die im Reiter fehlte. Die **Projektleiste** ist dafür der Ort; sie steht über jedem Reiter, damit der Wechsel nicht vom gerade offenen Reiter abhängt. *Was ausdrücklich bleibt:* Der Wechsel der **Projekt-Standardmarke** gehört weiter in die Projektverwaltung (9.14.3) und muss **ohne** geöffnetes Projekt möglich sein – sonst wäre die Lösch-Sperre einer Marke (9.15.1) eine Sackgasse.
+
+**Warum der Reiter bis v3.31 trotzdem einer war (v3.6):** Der Marken-Bestand ist **app-weit** (V2) – dieselbe Lage wie die Vorlagen-Bibliothek (V1), und aus demselben Grund gehört er neben sie und nicht in ein Projekt. *Warum nicht als Unterbereich der Vorlagen:* Es sind **zwei getrennte Bestände** mit **zwei verschiedenen Undo-Regimen** – der Vorlagen-Editor hat Undo (9.13.2), der Marken-Editor hat in v1 **keins** (9.15.2). Ein gemeinsamer Reiter hätte dem Nutzer zwei Sorten von Rückgängig-Verhalten an derselben Stelle gezeigt. *Warum nicht als Dialog aus dem `action-editor`:* Dort **wird** die Marke zwar gewählt, aber 9.15.2 verlangt die Live-Vorschau über `template-canvas` – in einem Dialog ist sie zu klein, und es wäre genau die „schmale Seitenspalte", die der Absatz oben ausschließt.
 
 #### 9.14.2 Invarianten (bindend)
 
@@ -2237,7 +2244,9 @@ Anforderungsdokument 4.4 steht; angepasst wird das **Hilfsmittel**.
 - **Der geführte Reparatur-Modus wechselt den Reiter.** Führt die Reparatur eines Aktions-Bildes in den `action-editor` (9.7.5, 9.8.5), wechselt die Shell in den Reiter **Aktionen**, hebt die betroffene Aktion hervor und **kehrt danach zum Reiter Zusammenstellen zurück**, zur nächsten kaputten Stelle. Der Fortschritt „X von N behoben" bleibt dabei **über den Reiterwechsel hinweg** sichtbar – sonst verliert der Nutzer den Faden.
 - **Ein Reiterwechsel verwirft nie Arbeit.** Instant-Änderungen sind bereits gesichert (9.5.4); eine offene Vorlagen-**Arbeitskopie** bleibt beim Verlassen des Reiters erhalten (9.12.1) und wird beim Zurückkehren fortgesetzt. Es gibt **keinen** „ungespeicherten Zustand", der beim Wechseln verlorengeht.
 - **Undo/Redo gilt im jeweils aktiven Reiter** und arbeitet auf dessen Historie (9.13.2: getrennte Stapel für Projekt-Bearbeitung und Vorlagen-Editor). Ein Reiterwechsel **vermischt** die Historien nicht. **Der Reiter Marken hat in v1 KEINE Historie** (9.15.2, bewusste Grenze) – dort sind die Undo/Redo-Bedienelemente **abgeschaltet**, nicht etwa an den Stapel des zuletzt aktiven Reiters gebunden: Sonst widerriefe ein Klick im Marken-Reiter die letzte Änderung an einem **Projekt**.
-- **Ohne offenes Projekt sind die Reiter Zusammenstellen/Aktionen leer statt kaputt.** Beim Start ohne wiederherstellbares Projekt (9.5.6) landet der Nutzer im Reiter **Projekte**; **Zusammenstellen** und **Aktionen** zeigen dort einen Hinweis mit dem Weg zum Reiter Projekte, keine Fehlermeldung. **Ausgenommen sind Projekte, Vorlagen und Marken:** Alle drei bleiben ohne offenes Projekt **voll benutzbar** – der Reiter Projekte ist die Einstiegsstelle, und Vorlagen-Bibliothek (9.11.1.1) wie Marken-Bestand (9.15.1) sind **app-weit**, gehören also keinem Projekt. Wer eine Vorlage oder eine Marke bauen will, bevor er ein Projekt anlegt, darf das; ein Hinweis dort wäre eine erfundene Abhängigkeit.
+- **Ohne offenes Projekt sind die Reiter Zusammenstellen/Aktionen leer statt kaputt.** Beim Start ohne wiederherstellbares Projekt (9.5.6) landet der Nutzer im Reiter **Projekte**; **Zusammenstellen** und **Aktionen** zeigen dort einen Hinweis mit dem Weg zum Reiter Projekte, keine Fehlermeldung. **Ausgenommen sind Projekte und Vorlagen:** Beide bleiben ohne offenes Projekt **voll benutzbar** – der Reiter Projekte ist die Einstiegsstelle, und die Vorlagen-Bibliothek (9.11.1.1) ist **app-weit**, gehört also keinem Projekt. Wer eine Vorlage bauen will, bevor er ein Projekt anlegt, darf das; ein Hinweis dort wäre eine erfundene Abhängigkeit.
+
+**Der Marken-Editor hängt am Projekt (v3.32).** Er ist **kein Reiter** mehr und ohne geöffnetes Projekt **nicht erreichbar** – die Projektleiste (9.14.1) trägt den Einstieg. Das ist **keine** Aussage über den Bestand: Der Marken-Bestand bleibt **app-weit** (9.15.1), und eine Marke darf von beliebig vielen Projekten genutzt werden. Ohne offenes Projekt zeigt die Leiste den Hinweis „Öffne ein Projekt" statt eines Knopfes, der ins Leere führt.
 - **Die Shell rendert selbst keine Inhalte** – sie ordnet an, wechselt und hält die Warteschlangen-Leiste. Alles Fachliche liegt in den **sieben** Modulen (einschließlich `projekt-verwaltung`, 9.14.3, und `marken-editor`, 9.15.2).
 - **Das Anwendungsmenü trägt KEINE Undo/Redo-Acceleratoren (bindend, v3.24 / #431).** Electron legt ohne eigenes `setApplicationMenu` auf **macOS** ein Standardmenü mit `Edit → Undo (Cmd+Z)` / `Redo (Shift+Cmd+Z)` an. Menü-Acceleratoren werden **vor** dem Renderer verarbeitet – das `keydown` der `app-shell` (#350) erreicht Cmd+Z dann **nie**, und die Projekt-Undo/Redo-Bedienung ist allein auf die sichtbaren Pfeile beschränkt. Deshalb setzt die App auf macOS ein **eigenes** Menü (`src/main/anwendungs-menue.ts`), dessen **Edit-Gruppe nur `Cut/Copy/Paste/Select All`** trägt; **Undo/Redo fehlen darin absichtlich**, damit Cmd+Z an die Seite fällt und dort `registriereTastaturHandler` greift. In einem **fokussierten Textfeld** bleibt Cmd+Z beim Feld (native Tipp-Undo). Auf **Windows/Linux** wird **kein** Menü gesetzt. *Warum als Invariante:* Der Treiber (`scripts/durchlauf.mjs`) sendet Tasten per CDP **direkt an die Seite** und umgeht das Menü – ein Treiber-Beleg für Cmd+Z ist daher **kein** Beleg für den realen Tastatur-Weg; die Menü-Vorlage ist die Prüfstelle (Test in `tests/unit/anwendungs-menue.spec.ts`, Messung der Acceleratoren am gebauten Menü).
 
@@ -2437,6 +2446,13 @@ lässt.
 `template-canvas` dar – **dieselbe** Zeichenroutine wie überall, damit die Vorschau im Editor dem
 späteren Segment entspricht (9.10.1).
 
+**Einstieg (v3.32, entschieden 30.10.2026):** Der Editor wird über den Knopf **[Marken]** in der
+**Projektleiste** des geöffneten Projekts geöffnet (9.14.1) und bekommt dabei die `projektId` als
+Kontext. Er zeigt damit zusätzlich, **welche Aktionen dieses Projekts** die Marke tragen – die
+Zuordnung stammt aus `pruefeMarkenReferenzen` (9.15.1), der Editor rechnet sie **nicht** nach. Ohne
+geöffnetes Projekt ist der Editor nicht erreichbar. Der **Bestand** bleibt davon unberührt: `marken.json`
+(V2) ist app-weit, und eine Marke darf von **n** Projekten genutzt werden.
+
 **Invarianten (bindend):**
 
 - **Rollen sind fest, Werte frei.** Der Editor kann **keine** Rollen hinzufügen oder entfernen – die
@@ -2574,6 +2590,10 @@ Identität und Rahmen sind stabil.
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
 > **Nachgezogen in v3.18 (16.08.2026), vom Auftraggeber entschieden – die Meldung aus v3.17 ist geschlossen (Anforderungsdokument unverändert v1.6):**
+
+<a id="nachtrag-v3-32"></a>
+
+> **Entschieden in v3.32 (30.10.2026), vom Auftraggeber entschieden (Anforderungsdokument v1.11):** Der **Reiter [Marken] entfällt**; der Marken-Editor wird über die **Projektleiste** des geöffneten Projekts geöffnet und arbeitet mit dem Projekt als Kontext. Der **Bestand bleibt app-weit** – eine Marke darf von **n** Projekten genutzt werden; es gibt **keine** Migration, weil sich am Datenformat nichts ändert. *Folge ohne die Änderung:* Marken ließen sich nur „irgendwo" bearbeiten, ohne Bezug zu dem Projekt, in dem sie wirken, und der Nutzer müsste zwischen Reitern springen, um zu sehen, wo eine Marke gebraucht wird. Ausgeschrieben in 9.14.1 (vier Reiter + Projektleiste), 9.14.2 (Marken-Editor hängt am Projekt), 9.15.2 (Einstieg + Projekt-Kontext). **Unberührt:** Der Wechsel der Projekt-Standardmarke bleibt in der Projektverwaltung (9.14.3) und muss ohne geöffnetes Projekt möglich sein (9.15.1, Lösch-Sperre).
 
 > **Entschieden in v3.31 (29.10.2026), vom Auftraggeber entschieden (Anforderungsdokument v1.10):** Der **Split-Screen ist gestrichen**. Das Werbeband liegt **deckend über** dem vollflächigen Video; eine Vorlagen-*Art* wird nicht mehr gewählt – die **Fläche** (`höhe`) entscheidet. *Folge ohne die Änderung:* Das Bild bliebe dauerhaft auf 72 % verkleinert, 13 % der Fläche gingen an Seitenbalken, und die Oberfläche verlangte vom Nutzer eine technische Entscheidung („vollflächig / Split / Einblendung"), die er nicht beantworten kann. Ausgeschrieben in 9.2.8 (eine Komposition), 9.11.1 (`art` entfällt, `höhe` trägt die Geometrie), 9.12 (keine Art-Auswahl, Bandhöhe weiter fest 162), 9.2.2 (`art` und `flaecheDunkel` entfallen aus dem RenderRequest), 9.9.2 (keine Band-Geometrie in der Vorschau), 9.10.2 (Deckkraft immer deckend). Die eingebaute Vorlage „Split" bleibt als **zweispaltiges Ganzbild** erhalten – ihr Name ist historisch und wird nicht mit der gestrichenen Komposition verwechselt.
 >
