@@ -46,7 +46,7 @@ vi.mock('../../src/renderer/marken-editor/live-vorschau', () => ({
   zeichneMarkenVorschau: h.zeichneMarkenVorschau,
 }))
 
-const { MarkenVorschau, findeVorschauVorlage, VORSCHAU_VORLAGE_ID } = await import(
+const { MarkenVorschau, findeVorlage, VORSCHAU_VORLAGE_ID } = await import(
   '../../src/renderer/marken-editor/vorschau-flaeche.tsx'
 )
 
@@ -114,7 +114,13 @@ afterEach(() => {
   wurzel = null
 })
 
-async function zeige(props: { marke: Marke | null; vorlagen: ReturnType<typeof vorlagenZugang> }): Promise<HTMLElement> {
+async function zeige(props: {
+  marke: Marke | null
+  vorlagen: ReturnType<typeof vorlagenZugang>
+  vorlageId?: string
+  elemente?: readonly unknown[]
+  aufElement?: (id: string | null) => void
+}): Promise<HTMLElement> {
   wurzel = createRoot(behaelter!)
   await act(async () => {
     wurzel!.render(createElement(MarkenVorschau, props as never) as ReactElement)
@@ -123,28 +129,84 @@ async function zeige(props: { marke: Marke | null; vorlagen: ReturnType<typeof v
   return behaelter as unknown as HTMLElement
 }
 
-describe('findeVorschauVorlage (feste Vorlage "vollbild", A1)', () => {
+describe('findeVorlage (die drei festen Vorschauen, #455)', () => {
   it('liefert die eingebaute Vorlage ueber ihre ID - NICHT ueber den Anzeigenamen', () => {
     // Der Name hat sich mit v3.31 auf "Ganzflächig" geaendert; die ID ist die Identitaet.
     expect(VORSCHAU_VORLAGE_ID).toBe('vollbild')
-    expect(findeVorschauVorlage(vorlagenZugang() as never)?.id).toBe('vollbild')
+    expect(findeVorlage(vorlagenZugang() as never, 'vollbild')?.id).toBe('vollbild')
   })
 
   it('findet die Vorlage auch, wenn ihr Anzeigename ein anderer ist', () => {
     const umbenannt = { ...vollbild(), name: 'Ganzflächig' }
     const zugang = vorlagenZugang([{ vorlage: umbenannt, eingebaut: true }])
-    expect(findeVorschauVorlage(zugang as never)).toBe(umbenannt)
+    expect(findeVorlage(zugang as never, 'vollbild')).toBe(umbenannt)
   })
 
   it('ohne geladene Sicht: null (kein Nachladen, kein Ersatz)', () => {
     const zugang = { lade: vi.fn(), hole: vi.fn(() => null), aufGeaendert: vi.fn() }
-    expect(findeVorschauVorlage(zugang as never)).toBeNull()
+    expect(findeVorlage(zugang as never, 'vollbild')).toBeNull()
     expect(zugang.lade).not.toHaveBeenCalled()
   })
 
   it('eine eigene Vorlage mit derselben ID zaehlt NICHT - nur die EINGEBAUTE', () => {
     const zugang = vorlagenZugang([{ vorlage: { ...vollbild(), eingebaut: false }, eingebaut: false }])
-    expect(findeVorschauVorlage(zugang as never)).toBeNull()
+    expect(findeVorlage(zugang as never, 'vollbild')).toBeNull()
+  })
+
+  it('#455: findet JEDE der drei Vorschauen ueber ihre ID, nicht nur "vollbild"', () => {
+    const band = { ...vollbild(), id: 'band-standard', name: 'Band-Standard', höhe: 162 }
+    const zugang = vorlagenZugang([
+      { vorlage: vollbild(), eingebaut: true },
+      { vorlage: band, eingebaut: true },
+    ])
+    expect(findeVorlage(zugang as never, 'band-standard')).toBe(band)
+    expect(findeVorlage(zugang as never, 'gibtEsNicht')).toBeNull()
+  })
+})
+
+describe('Klickflaechen (#449/#455)', () => {
+  const elemente = (): unknown[] => [
+    {
+      id: 'hintergrund', titel: 'Hintergrund', art: 'farbe',
+      rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+      farbRollen: [], schriftRollen: [], flaeche: 1920 * 1080,
+    },
+    {
+      id: 'logo', titel: 'Logo', art: 'logo',
+      rahmen: { x: 96, y: 54, breite: 420, höhe: 120 },
+      farbRollen: [], schriftRollen: [], flaeche: 420 * 120,
+    },
+  ]
+
+  it('#455: eine Vollflaechen-Zone ist KEINE Klickflaeche (Weg B)', async () => {
+    const behaelterTest = await zeige({
+      marke: marke('m1'), vorlagen: vorlagenZugang(), elemente: elemente(), aufElement: vi.fn(),
+    })
+    // Sonst faengt `hintergrund` jeden Klick ab und es gaebe kein „daneben".
+    expect(behaelterTest.querySelector('[data-testid="marken-element-hintergrund"]')).toBeNull()
+    expect(behaelterTest.querySelector('[data-testid="marken-element-logo"]')).not.toBeNull()
+  })
+
+  it('#455: Klick neben die Klickflaechen meldet null', async () => {
+    const aufElement = vi.fn()
+    const behaelterTest = await zeige({
+      marke: marke('m1'), vorlagen: vorlagenZugang(), elemente: elemente(), aufElement,
+    })
+    const huelle = behaelterTest.firstElementChild as HTMLElement
+    act(() => {
+      huelle.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(aufElement).toHaveBeenCalledWith(null)
+  })
+
+  it('#455: zeichnet die VORLAGE, deren ID uebergeben wurde', async () => {
+    const band = { ...vollbild(), id: 'band-standard', name: 'Band-Standard', höhe: 162 }
+    const zugang = vorlagenZugang([
+      { vorlage: vollbild(), eingebaut: true },
+      { vorlage: band, eingebaut: true },
+    ])
+    await zeige({ marke: marke('m1'), vorlagen: zugang, vorlageId: 'band-standard' })
+    expect(h.zeichneMarkenVorschau).toHaveBeenCalledWith(expect.anything(), band)
   })
 })
 

@@ -510,10 +510,13 @@ const main = async () => {
           "Befund", "app-shell/rahmen.tsx");
       } else {
         const vorher4a0 = await seite.evaluate(
-          () => document.querySelectorAll('[data-testid="marken-liste"] > div > div > button').length,
+          () => document.querySelectorAll('[data-testid="marken-auswahl"] option').length,
         );
-        await seite.click('[data-testid="marken-liste"] input');
-        await seite.type('[data-testid="marken-liste"] input', neueMarkeName4a0, { delay: 8 });
+        // #455: Das Namensfeld liegt hinter „Neue Marke" unter der Auswahl.
+        await seite.click('[data-testid="marken-neu-oeffnen"]');
+        await schlafe(200);
+        await seite.click('[data-testid="marken-neu-name"]');
+        await seite.type('[data-testid="marken-neu-name"]', neueMarkeName4a0, { delay: 8 });
         await seite.evaluate(() => {
           const knopf = document.querySelector('[data-testid="erstelle-eigenstaendige-marken-namen"]');
           if (knopf !== null) knopf.click();
@@ -522,7 +525,7 @@ const main = async () => {
         let nachher4a0 = vorher4a0;
         while (Date.now() < frist4a0) {
           nachher4a0 = await seite.evaluate(
-            () => document.querySelectorAll('[data-testid="marken-liste"] > div > div > button').length,
+            () => document.querySelectorAll('[data-testid="marken-auswahl"] option').length,
           );
           if (nachher4a0 > vorher4a0) break;
           await schlafe(300);
@@ -668,10 +671,12 @@ const main = async () => {
         });
         await schlafe(1_200);
         const geoeffnet4a2 = await seite.evaluate((name) => {
-          const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] button')];
-          const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
-          if (knopf === undefined) return false;
-          knopf.click();
+          const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+          if (auswahl === null) return false;
+          const option = [...auswahl.options].find((o) => (o.textContent ?? "").trim() === name);
+          if (option === undefined) return false;
+          auswahl.value = option.value;
+          auswahl.dispatchEvent(new Event("change", { bubbles: true }));
           return true;
         }, neueMarke4a2.name);
         await schlafe(800);
@@ -758,9 +763,12 @@ const main = async () => {
             });
             await schlafe(1_200);
             await seite.evaluate((name) => {
-              const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] button')];
-              const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
-              if (knopf !== undefined) knopf.click();
+              const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+              if (auswahl === null) return;
+              const option = [...auswahl.options].find((o) => (o.textContent ?? "").trim() === name);
+              if (option === undefined) return;
+              auswahl.value = option.value;
+              auswahl.dispatchEvent(new Event("change", { bubbles: true }));
             }, neueMarke4a2.name);
             await schlafe(800);
             await seite.evaluate(() => {
@@ -842,7 +850,7 @@ const main = async () => {
           "reiter-marken fehlt", "Befund", "app-shell/reiter.ts");
       } else {
         const anzahlVorher4m = await seite.evaluate(
-          () => document.querySelectorAll('[data-testid="marken-liste"] > div > div > button').length,
+          () => document.querySelectorAll('[data-testid="marken-auswahl"] option').length,
         );
 
         // (1) Anlegen ueber die echte Oberflaeche. Das Namensfeld ist kontrolliert und
@@ -853,16 +861,18 @@ const main = async () => {
         // nicht in der App. Deshalb wird der Wert wie bei einem Einfuegen gesetzt: ueber
         // den nativen Setter mit einem echten `input`-Ereignis - derselbe onChange-Pfad,
         // den auch das Tippen ausloest, nur ohne Tastenrennen.
-        const setzeEingabe4m = async (index, wert) => seite.evaluate(({ i, w }) => {
-          const felder = [...document.querySelectorAll('[data-testid="marken-liste"] input')];
-          const feld = felder[i];
-          if (feld === undefined) return false;
+        const setzeEingabe4m = async (testid, wert) => seite.evaluate(({ t, w }) => {
+          const feld = document.querySelector(`[data-testid="${t}"]`);
+          if (feld === null) return false;
           const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
           setzeWert.call(feld, w);
           feld.dispatchEvent(new Event("input", { bubbles: true }));
           return true;
-        }, { i: index, w: wert });
-        await setzeEingabe4m(0, name4m);
+        }, { t: testid, w: wert });
+        // #455: Das Formular liegt hinter „Neue Marke" unter der Auswahl.
+        await seite.evaluate(() => document.querySelector('[data-testid="marken-neu-oeffnen"]')?.click());
+        await schlafe(150);
+        await setzeEingabe4m("marken-neu-name", name4m);
         const angelegt4m = await seite.evaluate(() => {
           const knopf = document.querySelector('[data-testid="erstelle-eigenstaendige-marken-namen"]');
           if (knopf === null) return false;
@@ -873,7 +883,7 @@ const main = async () => {
         let anzahlNachher4m = anzahlVorher4m;
         while (Date.now() < fristAnlegen4m) {
           anzahlNachher4m = await seite.evaluate(
-            () => document.querySelectorAll('[data-testid="marken-liste"] > div > div > button').length,
+            () => document.querySelectorAll('[data-testid="marken-auswahl"] option').length,
           );
           if (anzahlNachher4m > anzahlVorher4m) break;
           await schlafe(200);
@@ -889,10 +899,12 @@ const main = async () => {
         } else {
           // (2) Oeffnen.
           const geoeffnet4m = await seite.evaluate((name) => {
-            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-            const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
-            if (knopf === undefined) return false;
-            knopf.click();
+            const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+            if (auswahl === null) return false;
+            const option = [...auswahl.options].find((o) => (o.textContent ?? "").trim() === name);
+            if (option === undefined) return false;
+            auswahl.value = option.value;
+            auswahl.dispatchEvent(new Event("change", { bubbles: true }));
             return true;
           }, name4m);
           const fristOeffnen4m = Date.now() + 10_000;
@@ -933,10 +945,45 @@ const main = async () => {
               return hinweis === null ? null : (hinweis.textContent ?? "").trim();
             });
 
+            // #455: Die drei Vorschauen liegen als Umschalter unter dem Bild; die ID ist
+            // die Identitaet (TK 9.11.4). Gemessen wird, dass das Canvas nativ 1920x1080
+            // bleibt - skaliert wird NUR per CSS (TK 9.10.3).
+            const umschalter4m = await seite.evaluate(() => {
+              const knopf = document.querySelector('[data-testid="vorschau-vorlage-split"]');
+              if (knopf === null) return false;
+              knopf.click();
+              return true;
+            });
+            await schlafe(400);
+            const canvas4m = await seite.evaluate(() => {
+              const canvas = document.querySelector('[data-testid="marken-vorschau-flaeche"] canvas');
+              return canvas === null ? null : { breite: canvas.width, hoehe: canvas.height };
+            });
+            console.log(`[schritt-4m] Vorlagen-Umschalter: geklickt=${String(umschalter4m)}, Canvas=${JSON.stringify(canvas4m)}.`);
+            if (!umschalter4m) {
+              fund("Marken-Editor (FA-24)", "die Vorschau laesst sich auf eine andere Vorlage umschalten (#455)",
+                "vorschau-vorlage-split fehlt", "Befund", "marken-editor/index.tsx");
+            } else if (canvas4m === null || canvas4m.breite !== 1920 || canvas4m.hoehe !== 1080) {
+              fund("Marken-Editor (FA-24)", "die Vorschau zeichnet nativ 1920x1080, unabhaengig von der Vorlage",
+                JSON.stringify(canvas4m), "Befund", "marken-editor/vorschau-flaeche.tsx");
+            }
+            // Zurueck auf die Ausgangsvorschau - die folgenden Schritte messen dort.
+            await seite.evaluate(() => document.querySelector('[data-testid="vorschau-vorlage-vollbild"]')?.click());
+            await schlafe(300);
+
             // (3) Ausgangslage: die Kopie der eingebauten Marke hat genug Kontrast.
-            // #449: Das Akzentfeld liegt in der Box des Preis-Elements.
+            // #449/#455: Das Akzentfeld liegt in den Werten des Preis-Elements.
             await seite.evaluate(() => document.querySelector('[data-testid="marken-element-preis"]')?.click());
             await schlafe(300);
+            // #455: Der Klick auf eine Zone oeffnet deren Werte im Inspector - mit ihrem Namen.
+            const titel4m = await seite.evaluate(
+              () => document.querySelector('[data-testid="marken-inspector-titel"]')?.textContent ?? null,
+            );
+            console.log(`[schritt-4m] Inspector nach Klick auf das Preis-Element: "${String(titel4m)}".`);
+            if (titel4m !== "Preis") {
+              fund("Marken-Editor (FA-24)", "ein Klick auf eine Zone oeffnet deren Werte im Inspector (#455)",
+                `Titel: ${String(titel4m)}`, "Befund", "marken-editor/inspector.tsx");
+            }
             const warnungVorher4m = await warnung4m();
             const akzentVorher4m = await leseFeld4m("farbe-akzent");
             console.log(`[schritt-4m] Ausgang: akzent=${String(akzentVorher4m)}, Warnung=${String(warnungVorher4m)}.`);
@@ -992,8 +1039,11 @@ const main = async () => {
               // Sicherheitsabstand und Slogan. Die neue Marke kopiert 96/54 aus der
               // eingebauten - steht hier 0/0, zeigt der Editor den Stand des ERSTEN Aufbaus.
               const standFelder4m = await liesStand4m();
-              // #449: Abstand liegt in der Palette, der Slogan in der Logo-Box.
-              await seite.evaluate(() => document.querySelector('[data-testid="palette-abstand"]')?.click());
+              // #455: Der Abstand liegt in Stufe 6 der Reihenfolge, der Slogan beim Logo.
+              // Erst zurueck zur Reihenfolge - der Inspector zeigt immer nur EINE Sache.
+              await seite.evaluate(() => document.querySelector('[data-testid="marken-inspector-zurueck"]')?.click());
+              await schlafe(150);
+              await seite.evaluate(() => document.querySelector('[data-testid="marken-schritt-6"]')?.click());
               await schlafe(250);
               const abstandH4m = await leseFeld4m("abstand-horizontal");
               const abstandV4m = await leseFeld4m("abstand-vertikal");
@@ -1060,18 +1110,23 @@ const main = async () => {
                 console.log(`[schritt-4m] Live-Vorschau GEMESSEN: Canvas ${vorschau4m.breite}x${vorschau4m.hoehe} ueber den Zeichenweg (#303).`);
               }
 
-              // (7) Ableiten ueber die echte Oberflaeche: Namensfeld (zweites Eingabefeld),
-              // Basis-Auswahl (der eine <select> der Liste), Knopf "Ableiten".
-              const eingabeFelder4m = await seite.$$('[data-testid="marken-liste"] input');
-              const auswahl4m = await seite.$('[data-testid="marken-liste"] select');
-              if (eingabeFelder4m.length < 2 || auswahl4m === null || markeId4m === null) {
+              // (7) Ableiten ueber die echte Oberflaeche (#455: hinter „Ableiten").
+              const ableitFelder4m = await seite.evaluate(() => {
+                const oeffnen = document.querySelector('[data-testid="marken-ableiten-oeffnen"]');
+                if (oeffnen === null) return false;
+                oeffnen.click();
+                return true;
+              });
+              await schlafe(200);
+              const basis4m = await seite.$('[data-testid="marken-ableiten-basis"]');
+              if (!ableitFelder4m || basis4m === null || markeId4m === null) {
                 fund("Marken-Editor (FA-24)", "Ableiten ist ueber die Oberflaeche bedienbar",
-                  `Eingaben=${eingabeFelder4m.length}, select=${auswahl4m !== null}, id=${String(markeId4m)}`,
+                  `Formular=${String(ableitFelder4m)}, Basis=${basis4m !== null}, id=${String(markeId4m)}`,
                   "Untersuchung", "marken-editor/index.tsx");
               } else {
-                await setzeEingabe4m(1, kind4m);
+                await setzeEingabe4m("marken-ableiten-name", kind4m);
                 await seite.evaluate((ziel) => {
-                  const auswahl = document.querySelector('[data-testid="marken-liste"] select');
+                  const auswahl = document.querySelector('[data-testid="marken-ableiten-basis"]');
                   if (auswahl === null) return;
                   const trage = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set;
                   trage.call(auswahl, ziel);
@@ -1087,8 +1142,9 @@ const main = async () => {
                 let kindDa4m = false;
                 while (Date.now() < fristKind4m) {
                   kindDa4m = await seite.evaluate((name) => {
-                    const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-                    return knoepfe.some((k) => (k.textContent ?? "").trim() === name);
+                    const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+                    if (auswahl === null) return false;
+                    return [...auswahl.options].some((o) => (o.textContent ?? "").trim() === name);
                   }, kind4m);
                   if (kindDa4m) break;
                   await schlafe(250);
@@ -1105,9 +1161,12 @@ const main = async () => {
                   // (8) Das Kind oeffnen: es ist als abgeleitet gekennzeichnet und zeigt
                   // mindestens eine Herkunftszeile mit "geerbt" (TK 9.15.2).
                   await seite.evaluate((name) => {
-                    const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-                    const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
-                    if (knopf !== undefined) knopf.click();
+                    const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+                    if (auswahl === null) return;
+                    const option = [...auswahl.options].find((o) => (o.textContent ?? "").trim() === name);
+                    if (option === undefined) return;
+                    auswahl.value = option.value;
+                    auswahl.dispatchEvent(new Event("change", { bubbles: true }));
                   }, kind4m);
                   const fristKindKopf4m = Date.now() + 10_000;
                   let kindKopf4m = null;
@@ -1162,9 +1221,12 @@ const main = async () => {
             "keine Marke mit eingebaut=true", "Untersuchung", "marken-store/liste.ts");
         } else {
           await seite.evaluate((name) => {
-            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-            const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === name);
-            if (knopf !== undefined) knopf.click();
+            const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+            if (auswahl === null) return;
+            const option = [...auswahl.options].find((o) => (o.textContent ?? "").trim() === name);
+            if (option === undefined) return;
+            auswahl.value = option.value;
+            auswahl.dispatchEvent(new Event("change", { bubbles: true }));
           }, eingebaut4m);
           const fristWechsel4m = Date.now() + 10_000;
           let kopfWechsel4m = null;
@@ -1185,6 +1247,11 @@ const main = async () => {
             const hinweis = document.querySelector('[data-testid="marken-offen"] [role="status"]');
             return hinweis === null ? null : (hinweis.textContent ?? "").trim();
           });
+          // #455: Der Abstand steht in Stufe 6 - erst zurueck zur Reihenfolge.
+          await seite.evaluate(() => document.querySelector('[data-testid="marken-inspector-zurueck"]')?.click());
+          await schlafe(120);
+          await seite.evaluate(() => document.querySelector('[data-testid="marken-schritt-6"]')?.click());
+          await schlafe(250);
           const abstandEingebaut4m = await seite.evaluate(
             () => document.querySelector('[data-testid="abstand-horizontal"]')?.value ?? null,
           );
@@ -1208,17 +1275,21 @@ const main = async () => {
         // referenziert), danach die Basis. Beide ueber die echte Oberflaeche.
         const loescheUeberUi4m = async (name) => {
           const vorhanden4m = await seite.evaluate((n) => {
-            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-            return knoepfe.some((k) => (k.textContent ?? "").trim() === n);
+            const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+            if (auswahl === null) return false;
+            return [...auswahl.options].some((o) => (o.textContent ?? "").trim() === n);
           }, name);
           if (!vorhanden4m) {
             // Nichts anfassen, was nicht eindeutig diese Messmarke ist.
             return { name, gesucht: false, bestaetigt: false, nochDa: false };
           }
           await seite.evaluate((n) => {
-            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-            const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === n);
-            if (knopf !== undefined) knopf.click();
+            const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+            if (auswahl === null) return;
+            const option = [...auswahl.options].find((o) => (o.textContent ?? "").trim() === n);
+            if (option === undefined) return;
+            auswahl.value = option.value;
+            auswahl.dispatchEvent(new Event("change", { bubbles: true }));
           }, name);
           await schlafe(700);
           const gesucht4m = await seite.evaluate(() => {
@@ -1302,9 +1373,12 @@ const main = async () => {
       };
       const oeffne4m2 = async (name) => {
         await seite.evaluate((n) => {
-          const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-          const knopf = knoepfe.find((k) => (k.textContent ?? "").trim() === n);
-          if (knopf !== undefined) knopf.click();
+          const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+          if (auswahl === null) return;
+          const option = [...auswahl.options].find((o) => (o.textContent ?? "").trim() === n);
+          if (option === undefined) return;
+          auswahl.value = option.value;
+          auswahl.dispatchEvent(new Event("change", { bubbles: true }));
         }, name);
         const frist = Date.now() + 10_000;
         while (Date.now() < frist) {
@@ -1347,10 +1421,11 @@ const main = async () => {
           "reiter-marken fehlt", "Befund", "app-shell/reiter.ts");
       } else {
         // Anlegen und oeffnen (deterministisch: nativer Setter + input, s. 4m).
+        await seite.evaluate(() => document.querySelector('[data-testid="marken-neu-oeffnen"]')?.click());
+        await schlafe(150);
         await seite.evaluate((name) => {
-          const felder = [...document.querySelectorAll('[data-testid="marken-liste"] input')];
-          const feld = felder[0];
-          if (feld === undefined) return;
+          const feld = document.querySelector('[data-testid="marken-neu-name"]');
+          if (feld === null) return;
           const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
           setzeWert.call(feld, name);
           feld.dispatchEvent(new Event("input", { bubbles: true }));
@@ -1362,8 +1437,9 @@ const main = async () => {
         let angelegt4m2 = false;
         while (Date.now() < fristAnlegen4m2) {
           angelegt4m2 = await seite.evaluate((n) => {
-            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-            return knoepfe.some((k) => (k.textContent ?? "").trim() === n);
+            const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+            if (auswahl === null) return false;
+            return [...auswahl.options].some((o) => (o.textContent ?? "").trim() === n);
           }, name4m2);
           if (angelegt4m2) break;
           await schlafe(200);
@@ -1380,31 +1456,29 @@ const main = async () => {
             `angelegt=${String(angelegt4m2)}, geoeffnet=${String(geoeffnet4m2)}, id=${String(id4m2)}`,
             "Befund", "marken-editor/index.tsx");
         } else {
-          // #449: Farben, Schrift, Slogan und Abstand liegen in BOXEN. Vor jedem Zugriff
-          // wird das tragende Element (Zone) oder der Paletten-Eintrag geoeffnet.
+          // #455: Farben, Schrift, Slogan und Abstand liegen im INSPECTOR. Der zeigt immer
+          // nur EINE Sache - vor jedem Zugriff zurueck zur Reihenfolge, dann das Ziel oeffnen.
           const oeffneZiel4m2 = async (ziel) => {
+            await seite.evaluate(() => document.querySelector('[data-testid="marken-inspector-zurueck"]')?.click());
+            await schlafe(120);
             if (ziel === "palette:abstand") {
-              await seite.evaluate(() => document.querySelector('[data-testid="palette-abstand"]')?.click());
+              await seite.evaluate(() => document.querySelector('[data-testid="marken-schritt-6"]')?.click());
               await schlafe(250);
-              return;
+              return true;
             }
-            await seite.evaluate((z) => {
-              const [art, id] = z.split(":");
-              const selektor = art === "element"
-                ? `[data-testid="marken-element-${id}"]`
-                : `[data-testid="palette-farbe-${id}"]`;
-              document.querySelector(selektor)?.click();
-            }, ziel);
+            const [art, id] = ziel.split(":");
+            const gefunden = await seite.evaluate(({ a, i }) => {
+              const kandidaten = a === "element"
+                ? [`[data-testid="marken-element-${i}"]`]
+                : [`[data-testid="marken-farbe-${i}"]`, `[data-testid="weitere-farbe-${i}"]`];
+              for (const selektor of kandidaten) {
+                const knopf = document.querySelector(selektor);
+                if (knopf !== null) { knopf.click(); return true; }
+              }
+              return false;
+            }, { a: art, i: id });
             await schlafe(250);
-          };
-          const OEFFNER4M2 = {
-            akzent: "element:preis",
-            textAufDunkel: "element:preis",
-            flaecheDunkel: "element:hintergrund",
-            scrimStart: "element:scrim",
-            scrimEnde: "element:scrim",
-            textAufHell: "element:cta",
-            flaecheHell: "element:cta",
+            return gefunden;
           };
 
           // (1) ALLE dreizehn Farbrollen ueber die Oberflaeche schreiben.
@@ -1413,7 +1487,7 @@ const main = async () => {
             const rolle = rollen4m2[i];
             const wert = "#" + (i + 1).toString(16).padStart(2, "0").repeat(3);
             erwartet4m2[rolle] = wert;
-            await oeffneZiel4m2(OEFFNER4M2[rolle] ?? `farbe:${rolle}`);
+            await oeffneZiel4m2(`farbe:${rolle}`);
             const gesetzt = await setzeWert4m2(`farbe-${rolle}`, wert, "blur");
             if (!gesetzt) {
               fund("Marken-Rest (FA-24)", `Farbfeld ${rolle} ist vorhanden`,
@@ -1570,22 +1644,27 @@ const main = async () => {
 
           // (7) Eine ABGELEITETE Marke bearbeiten: eigen setzen, Herkunft zeigt "Eigener Wert",
           // "Vererbung wiederherstellen" -> wieder geerbt.
-          const eingabeFelder4m2 = await seite.$$('[data-testid="marken-liste"] input');
-          const auswahl4m2 = await seite.$('[data-testid="marken-liste"] select');
-          if (eingabeFelder4m2.length < 2 || auswahl4m2 === null) {
+          const ableitForm4m2 = await seite.evaluate(() => {
+            const oeffnen = document.querySelector('[data-testid="marken-ableiten-oeffnen"]');
+            if (oeffnen === null) return false;
+            oeffnen.click();
+            return true;
+          });
+          await schlafe(200);
+          const basis4m2 = await seite.$('[data-testid="marken-ableiten-basis"]');
+          if (!ableitForm4m2 || basis4m2 === null) {
             fund("Marken-Rest (FA-24)", "Ableiten ist ueber die Oberflaeche bedienbar",
-              `Eingaben=${eingabeFelder4m2.length}, select=${auswahl4m2 !== null}`,
+              `Formular=${String(ableitForm4m2)}, Basis=${basis4m2 !== null}`,
               "Untersuchung", "marken-editor/index.tsx");
           } else {
             await seite.evaluate(({ name, basis }) => {
-              const felder = [...document.querySelectorAll('[data-testid="marken-liste"] input')];
-              const feld = felder[1];
-              if (feld !== undefined) {
+              const feld = document.querySelector('[data-testid="marken-ableiten-name"]');
+              if (feld !== null) {
                 const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
                 setzeWert.call(feld, name);
                 feld.dispatchEvent(new Event("input", { bubbles: true }));
               }
-              const auswahl = document.querySelector('[data-testid="marken-liste"] select');
+              const auswahl = document.querySelector('[data-testid="marken-ableiten-basis"]');
               if (auswahl !== null) {
                 const trage = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set;
                 trage.call(auswahl, basis);
@@ -1599,8 +1678,9 @@ const main = async () => {
             let kind4m2Da = false;
             while (Date.now() < fristKind4m2) {
               kind4m2Da = await seite.evaluate((n) => {
-                const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-                return knoepfe.some((k) => (k.textContent ?? "").trim() === n);
+                const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+                if (auswahl === null) return false;
+                return [...auswahl.options].some((o) => (o.textContent ?? "").trim() === n);
               }, kind4m2);
               if (kind4m2Da) break;
               await schlafe(250);
@@ -1657,8 +1737,9 @@ const main = async () => {
         // Aufraeumen: Kind zuerst, dann die Basis (die Basis ist sonst referenziert).
         const loesche4m2 = async (n) => {
           const vorhanden = await seite.evaluate((name) => {
-            const knoepfe = [...document.querySelectorAll('[data-testid="marken-liste"] > div > div > button')];
-            return knoepfe.some((k) => (k.textContent ?? "").trim() === name);
+            const auswahl = document.querySelector('[data-testid="marken-auswahl"]');
+            if (auswahl === null) return false;
+            return [...auswahl.options].some((o) => (o.textContent ?? "").trim() === name);
           }, n);
           if (!vorhanden) return false;
           await oeffne4m2(n);

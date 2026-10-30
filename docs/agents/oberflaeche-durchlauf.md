@@ -2456,3 +2456,67 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 73
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T11:08:18.201Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Standardmarke (FA-23): erwartet "die zaehlende Marke "Neue Marke" legt eine zweite Marke an (FA-24)", erkannt "Marken 0->0, Fehler: null" (Ort: marken-editor/index.tsx)
+- **Untersuchung** Standardmarke (FA-23): erwartet "die Kennung der neuen Marke ist lesbar", erkannt "marken:listeMarken liefert sie nicht" (Ort: scripts/durchlauf.mjs)
+- **Befund** Standardmarke (FA-23): erwartet "die neue Marke steht im Bestand", erkannt "marken:listeMarken findet sie nicht" (Ort: marken-store/liste.ts)
+- **Befund** Marken-Editor (FA-24): erwartet "eine eigenstaendige Marke laesst sich ueber die Oberflaeche anlegen", erkannt "Marken 1->1, Fehler: null" (Ort: marken-editor/index.tsx)
+- **Befund** Marken-Editor (FA-24): erwartet "die eingebaute Marke laesst sich oeffnen", erkannt "Kopf=DurchlaufMarke-FA24-1793358253600" (Ort: marken-editor/index.tsx)
+- **Befund** Marken-Rest (FA-24): erwartet "die Messmarke laesst sich anlegen und oeffnen", erkannt "angelegt=false, geoeffnet=false, id=null" (Ort: marken-editor/index.tsx)
+
+## Nachlauf vom 2026-10-30T11:16:03.278Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Standardmarke (FA-23): erwartet "nach dem Zurueckstellen ist die Marke loeschbar (Sperre = Nutzung)", erkannt "kein Bestaetigen-Knopf - weiterhin gesperrt" (Ort: marken-store/referenzpruefung.ts)
+- **Befund** Marken-Editor (FA-24): erwartet "bei zu geringem Kontrast warnt der Editor sichtbar (TK 9.15.2)", erkannt "kein role=status im geoeffneten Bereich" (Ort: marken-editor/kontrast-warnung.tsx)
+- **Untersuchung** Marken-Editor (FA-24): erwartet "die Messmarken lassen sich wieder loeschen", erkannt "[{"name":"DurchlaufMarke-FA24-1793358716794-Kind","gesucht":false,"bestaetigt":false,"nochDa":false},{"name":"DurchlaufMarke-FA24-1793358716794","gesucht":true,"bestaetigt":false,"nochDa":true}]" (Ort: marken-editor/index.tsx)
+- **Untersuchung** Marken-Rest (FA-24): erwartet "die Messmarken lassen sich wieder loeschen", erkannt "Kind=true, Basis=true" (Ort: marken-editor/index.tsx)
+- **Befund** Marken-Rest (FA-24): erwartet "der Ordner marken-assets/<markeId>/ verschwindet mit der Marke (#441)", erkannt "Ordner besteht weiter: a22f5ba2-06ee-4c04-823e-46bbe6f022cd" (Ort: marken-store/loesche-marke.ts)
+
+## Nachlauf vom 2026-10-30T11:21:20.850Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Standardmarke (FA-23): erwartet "nach dem Zurueckstellen ist die Marke loeschbar (Sperre = Nutzung)", erkannt "kein Bestaetigen-Knopf - weiterhin gesperrt" (Ort: marken-store/referenzpruefung.ts)
+- **Befund** Marken-Editor (FA-24): erwartet "bei einer abgeleiteten Marke ist sichtbar, was geerbt ist (TK 9.15.2)", erkannt "{"abgeleitetText":false,"zeilen":3,"erste":"Geerbt von „DurchlaufMarke-FA24-1793359032814\". Ändert sich automatisch, wenn dort geändert wird.","zurueckKnopf":false}" (Ort: marken-editor/herkunft-anzeigen.ts)
+- **Untersuchung** Marken-Editor (FA-24): erwartet "die Messmarken lassen sich wieder loeschen", erkannt "[{"name":"DurchlaufMarke-FA24-1793359032814-Kind","gesucht":true,"bestaetigt":false,"nochDa":true},{"name":"DurchlaufMarke-FA24-1793359032814","gesucht":true,"bestaetigt":false,"nochDa":true}]" (Ort: marken-editor/index.tsx)
+- **Untersuchung** Marken-Rest (FA-24): erwartet "die Messmarken lassen sich wieder loeschen", erkannt "Kind=true, Basis=true" (Ort: marken-editor/index.tsx)
+- **Befund** Marken-Rest (FA-24): erwartet "der Ordner marken-assets/<markeId>/ verschwindet mit der Marke (#441)", erkannt "Ordner besteht weiter: 211884cb-fb42-46a4-8bea-4f5d167d07b2" (Ort: marken-store/loesche-marke.ts)
+
+## Nachlauf vom 2026-10-30T11:25:45.457Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T11:31:57.721Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T11:37:57.993Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

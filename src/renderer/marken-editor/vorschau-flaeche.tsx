@@ -28,27 +28,31 @@ import { stelleMarkenSchriftenBereit } from '../template-canvas/marken-schriften
 import { bereiteLogoVor } from '../template-canvas/logo-laden'
 import { zeichneMarkenVorschau } from './live-vorschau'
 import type { MarkenElement } from './marken-elemente'
+import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 
 /**
- * Die feste Vorschau-Vorlage (A1, 22.10.2026) - als ID der eingebauten Vorlage.
- *
- * DIE ID, NICHT DER ANZEIGENAME: Die Identitaet einer Vorlage ist ihre `id`
- * (TK 9.11.4). Mit v3.31 hat sich der Anzeigename von „Vollbild" auf „Ganzflächig"
- * geaendert - eine Suche ueber den Namen haette die Vorschau stillschweigend
- * abgeschaltet (am Treiber belegt, 30.10.2026).
+ * Die drei festen Vorschauen des Editors (#455) - die VORLAGEN-IDs der eingebauten Vorlagen.
+ * Der Anzeigename ist Praesentation; die Identitaet ist die `id` (TK 9.11.4).
  */
+export const VORSCHAU_VORLAGEN: readonly { id: string; name: string }[] = [
+  { id: 'vollbild', name: 'Ganzflächig' },
+  { id: 'split', name: 'Zwei Spalten' },
+  { id: 'band-standard', name: 'Band-Standard' },
+]
+
+/** Die Vorschau, mit der der Editor startet (A1, 22.10.2026: fest „Vollbild"). */
 export const VORSCHAU_VORLAGE_ID = 'vollbild'
 
 /**
- * Sucht die eingebaute Vorschau-Vorlage in der gemeinsamen Vorlagen-Sicht.
+ * Sucht eine eingebaute Vorlage ueber ihre ID in der gemeinsamen Vorlagen-Sicht.
  * REIN: liest nur `hole()`, laedt nichts nach (die Sicht wird beim App-Aufbau
  * geladen, #155). null = nicht verfuegbar; der Aufrufer zeichnet dann NICHT.
  */
-export function findeVorschauVorlage(vorlagen: VorlagenZugang): Vorlage | null {
+export function findeVorlage(vorlagen: VorlagenZugang, id: string): Vorlage | null {
   const uebersicht = vorlagen.hole()
   if (uebersicht === null) return null
   const eintrag = uebersicht.nutzbare.find(
-    (kandidat) => kandidat.eingebaut && kandidat.vorlage.id === VORSCHAU_VORLAGE_ID,
+    (kandidat) => kandidat.eingebaut && kandidat.vorlage.id === id,
   )
   return eintrag === undefined ? null : eintrag.vorlage
 }
@@ -71,12 +75,32 @@ export interface MarkenVorschauProps {
   /** Die geoeffnete Marke oder null (keine offen). */
   marke: Marke | null
   vorlagen: VorlagenZugang
+  /** #455: welche der drei festen Vorschauen gezeichnet wird (ID, nicht Name). */
+  vorlageId?: string
   /** #449: die anklickbaren Elemente (Zonen der Vorlage) - Rechtecke ueber dem Canvas. */
   elemente?: readonly MarkenElement[]
-  /** #449: das Element, dessen Box gerade offen ist (Rahmen hervorgehoben). */
+  /** #449: das Element, dessen Werte gerade offen sind (Rahmen hervorgehoben). */
   offenesElement?: string | null
   /** #449: Klick auf ein Element (id) oder daneben (null). */
   aufElement?: (id: string | null) => void
+}
+
+/**
+ * Eine Flaeche, die das GANZE Bild deckt, ist KEINE Klickflaeche (#455, Weg B).
+ *
+ * WARUM: Die Zone `hintergrund` reicht von 0,0 bis 1920,1080. Als Klickflaeche faengt sie
+ * jeden Klick ab - dann gibt es kein „daneben", und die Auswahl liesse sich nur ueber × oder
+ * ESC aufheben. Ihre Farbe bleibt erreichbar: sie steht in der Reihenfolge der Arbeit und im
+ * Inspector. Die Regel haengt an der FLAECHE, nicht an der Kennung - eine eigene Vorlage mit
+ * Vollflaechen-Zone verhaelt sich gleich.
+ */
+function decktGanzesBild(element: MarkenElement): boolean {
+  return (
+    element.rahmen.x <= 0 &&
+    element.rahmen.y <= 0 &&
+    element.rahmen.breite >= RENDER_PROFILE.breite &&
+    element.rahmen.höhe >= RENDER_PROFILE.hoehe
+  )
 }
 
 /**
@@ -88,6 +112,7 @@ export interface MarkenVorschauProps {
 export function MarkenVorschau({
   marke,
   vorlagen,
+  vorlageId = VORSCHAU_VORLAGE_ID,
   elemente = [],
   offenesElement = null,
   aufElement,
@@ -102,10 +127,10 @@ export function MarkenVorschau({
       setHinweis(null)
       return
     }
-    const vorlage = findeVorschauVorlage(vorlagen)
+    const vorlage = findeVorlage(vorlagen, vorlageId)
     if (vorlage === null) {
       ziel.replaceChildren()
-      setHinweis(`Die Vorschau-Vorlage (ID „${VORSCHAU_VORLAGE_ID}") ist nicht geladen.`)
+      setHinweis(`Die Vorschau-Vorlage (ID „${vorlageId}") ist nicht geladen.`)
       return
     }
 
@@ -134,11 +159,13 @@ export function MarkenVorschau({
     return () => {
       abgebrochen = true
     }
-  }, [marke, vorlagen])
+  }, [marke, vorlagen, vorlageId])
 
   // GROESSTE Flaeche zuerst zeichnen, kleinste zuletzt: sonst liegt der
   // Vollflaechen-Hintergrund ueber dem Logo und faengt jeden Klick ab (#449).
-  const klickflaechen = [...elemente].sort((a, b) => b.flaeche - a.flaeche)
+  // Vollflaechen-Zonen sind GAR KEINE Klickflaeche (#455, Weg B) - sonst gaebe es kein
+  // „Klick daneben", und die Auswahl liesse sich nur ueber × oder ESC aufheben.
+  const klickflaechen = [...elemente].filter((element) => !decktGanzesBild(element)).sort((a, b) => b.flaeche - a.flaeche)
   return (
     <div
       style={{ position: 'relative' }}

@@ -7,6 +7,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { createElement, type ReactElement } from 'react'
 
 import type { Marke, MarkenHerkunftJeFeld } from "../../src/shared/contracts/marke";
+import { farbRollenText } from '../../src/renderer/marken-editor/rollen-texte'
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -33,7 +34,7 @@ const h = vi.hoisted(() => ({
   waehleUndImportiereSchrift: vi.fn(),
   waehleUndImportiereLogo: vi.fn(),
   MarkenVorschau: vi.fn(() => null),
-  findeVorschauVorlage: vi.fn((): unknown => null),
+  findeVorlage: vi.fn((): unknown => null),
 }));
 
 vi.mock('../../src/renderer/marken-editor/marken-uebersicht', () => ({
@@ -90,7 +91,14 @@ vi.mock('../../src/renderer/marken-editor/datei-import', () => ({
 // dass die Wurzel ihn mit der geoeffneten Marke und dem Vorlagen-Zugang versorgt.
 vi.mock('../../src/renderer/marken-editor/vorschau-flaeche', () => ({
   MarkenVorschau: h.MarkenVorschau,
-  findeVorschauVorlage: h.findeVorschauVorlage,
+  findeVorlage: h.findeVorlage,
+  VORSCHAU_VORLAGE_ID: 'vollbild',
+  // #455: die drei festen Vorschauen - hier als Daten, die Vorschau selbst ist ein Doppel.
+  VORSCHAU_VORLAGEN: [
+    { id: 'vollbild', name: 'Ganzflächig' },
+    { id: 'split', name: 'Zwei Spalten' },
+    { id: 'band-standard', name: 'Band-Standard' },
+  ],
 }));
 
 const { MarkenEditorWurzel } = await import('../../src/renderer/marken-editor/index.tsx');
@@ -145,8 +153,8 @@ beforeEach(() => {
   h.oeffneMarke.mockClear();
   // #449: Das Vorschau-Doppel zeigt die Elemente als Knoepfe; der Klick oeffnet die Box,
   // die die WURZEL rendert (deshalb genuegt ein Doppel ohne Zeichenweg).
-  h.findeVorschauVorlage.mockReturnValue(VORLAGE_VOLLBILD);
-  (h.MarkenVorschau as unknown as { mockImplementation: (f: unknown) => void }).mockImplementation((p: { elemente?: Array<{ id: string; titel: string }>; aufElement?: (id: string) => void }) =>
+  h.findeVorlage.mockReturnValue(VORLAGE_VOLLBILD);
+  (h.MarkenVorschau as unknown as { mockImplementation: (f: unknown) => void }).mockImplementation((p: { elemente?: Array<{ id: string; titel: string }>; aufElement?: (id: string | null) => void }) =>
     createElement(
       'div',
       { 'data-testid': 'vorschau-doppel' },
@@ -156,6 +164,12 @@ beforeEach(() => {
           { key: element.id, 'data-testid': `element-${element.id}`, onClick: () => p.aufElement?.(element.id) },
           element.titel,
         ),
+      ),
+      // #455: der Klick „daneben" - die echte Vorschau meldet ihn als aufElement(null).
+      createElement(
+        'button',
+        { key: 'daneben', 'data-testid': 'element-daneben', onClick: () => p.aufElement?.(null) },
+        'daneben',
       ),
     ),
   );
@@ -229,22 +243,48 @@ describe('MarkenEditorWurzel (#330) - Anordnung und Liste', () => {
   it('Liste enthaelt ALLE Marken in Bestandsreihenfolge, ohne Sortierung', () => {
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
-    const texte = Array.from(
-      behaelterTest.querySelectorAll('[data-testid="marken-liste"] button'),
-    )
-      .map((b) => b.textContent)
-      .filter((t) => t === 'M' || t === 'P');
-    expect(texte).toEqual(['M', 'P']);
+    const optionen = Array.from(
+      behaelterTest.querySelectorAll<HTMLOptionElement>('[data-testid="marken-auswahl"] option'),
+    ).map((option) => option.textContent);
+    // Die erste Option ist der Platzhalter; danach ALLE Marken in Bestandsreihenfolge.
+    expect(optionen.slice(1)).toEqual(['M', 'P']);
   });
 
-  it('Klick auf Listeneintrag: oeffneMarke GENAU EINMAL mit dessen id', async () => {
+  it('Auswahl aus der Klappliste: oeffneMarke GENAU EINMAL mit dessen id', async () => {
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    const auswahl = behaelterTest.querySelector<HTMLSelectElement>('[data-testid="marken-auswahl"]')!;
     await act(async () => {
-      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-liste"] button')!.click();
+      auswahl.value = DIE_ID;
+      auswahl.dispatchEvent(new Event('change', { bubbles: true }));
     });
     expect(h.oeffneMarke).toHaveBeenCalledTimes(1);
     expect(h.oeffneMarke).toHaveBeenCalledWith(DIE_ID);
+  });
+
+  it('Suche filtert die Klappliste nach dem Namen (#455)', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    const suche = behaelterTest.querySelector<HTMLInputElement>('[data-testid="marken-suche"]')!;
+    act(() => {
+      fieldGetSetter(suche, 'p');
+      suche.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const optionen = Array.from(
+      behaelterTest.querySelectorAll<HTMLOptionElement>('[data-testid="marken-auswahl"] option'),
+    ).map((option) => option.textContent);
+    expect(optionen.slice(1)).toEqual(['P']);
+  });
+
+  it('kein Treffer: eigener Hinweis, nicht der Leerzustand des Bestands', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    const suche = behaelterTest.querySelector<HTMLInputElement>('[data-testid="marken-suche"]')!;
+    act(() => {
+      fieldGetSetter(suche, 'zzz');
+      suche.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(behaelterTest.querySelector('[data-testid="marken-kein-treffer"]')?.textContent).toContain('zzz');
   });
 
   it('hole() === null: Hinweis + EINE Schaltfläche; erst deren Betätigung ruft lade() GENAU EINMAL', async () => {
@@ -263,15 +303,92 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     h.holeGeoeffnete.mockImplementation(() => markeFuerTest({ id: DIE_ID }));
   });
 
-  it('alle 13 Farb-Rollen sind erreichbar: 7 an Elementen, 6 in der Palette (#449)', () => {
+  it('#455: alle 13 Farb- und alle 4 Schriftrollen sind im Inspector erreichbar', () => {
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
-    // Die Elemente der festen Vorlage decken 7 Rollen ab; die Palette traegt die uebrigen 6.
-    const palette = Array.from(behaelterTest.querySelectorAll('[data-testid^="palette-farbe-"]'));
-    expect(palette).toHaveLength(6);
-    // Eine der sichtbaren Rollen liegt im Preis-Element (akzent) - Box oeffnen und pruefen.
-    oeffne(behaelterTest, 'preis');
+    // Jede Rolle steht in GENAU EINER der beiden Mengen: Rollen der Stufen oder „Weitere Rollen".
+    const farbKnoepfe = Array.from(
+      behaelterTest.querySelectorAll('[data-testid^="marken-farbe-"], [data-testid^="weitere-farbe-"]'),
+    );
+    const schriftKnoepfe = Array.from(
+      behaelterTest.querySelectorAll('[data-testid^="marken-schrift-"], [data-testid^="weitere-schrift-"]'),
+    );
+    expect(farbKnoepfe).toHaveLength(13);
+    expect(schriftKnoepfe).toHaveLength(4);
+    // Jeder Knopf traegt einen Anzeigenamen, nicht die Kennung.
+    for (const knopf of [...farbKnoepfe, ...schriftKnoepfe]) {
+      const kennung = (knopf.getAttribute('data-testid') ?? '').replace(
+        /^(marken|weitere)-(farbe|schrift)-/,
+        '',
+      );
+      expect(knopf.textContent?.length ?? 0).toBeGreaterThan(0);
+      expect(knopf.textContent).not.toBe(kennung);
+    }
+  });
+
+  it('#455: Palette und Box existieren nicht mehr', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    expect(behaelterTest.querySelector('[data-testid="marken-palette"]')).toBeNull();
+    expect(behaelterTest.querySelector('[data-testid="marken-box"]')).toBeNull();
+    // Der Inspector ist die rechte Spalte und zeigt ohne Auswahl die Reihenfolge.
+    expect(behaelterTest.querySelector('[data-testid="marken-inspector"]')).not.toBeNull();
+    expect(behaelterTest.querySelector('[data-testid="marken-reihenfolge"]')).not.toBeNull();
+  });
+
+  it('#455: Klick auf eine Rolle oeffnet deren Werte im Inspector, mit Namen aus der EINEN Quelle', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    act(() => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-farbe-akzent"]')!.click();
+    });
     expect(behaelterTest.querySelector('[data-testid="farbe-akzent"]')).not.toBeNull();
+    expect(behaelterTest.querySelector('[data-testid="marken-inspector-titel"]')?.textContent).toBe(
+      farbRollenText('akzent').name,
+    );
+    // Die Reihenfolge ist dann nicht mehr zu sehen - es ist IMMER nur eins offen.
+    expect(behaelterTest.querySelector('[data-testid="marken-reihenfolge"]')).toBeNull();
+  });
+
+  it('#455: ESC hebt die Auswahl auf', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    act(() => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-farbe-akzent"]')!.click();
+    });
+    expect(behaelterTest.querySelector('[data-testid="marken-reihenfolge"]')).toBeNull();
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(behaelterTest.querySelector('[data-testid="marken-reihenfolge"]')).not.toBeNull();
+  });
+
+  it('#455: ESC im NICHT sichtbaren Reiter laesst die Auswahl stehen', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: false, marken: zugang });
+    act(() => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-farbe-akzent"]')!.click();
+    });
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    // Besuchte Reiter bleiben montiert (TK 9.14.2) - ohne die Schranke waere ESC ein
+    // unsichtbarer zweiter Tastenweg in allen anderen Reitern (#387).
+    expect(behaelterTest.querySelector('[data-testid="marken-reihenfolge"]')).toBeNull();
+  });
+
+  it('#455: Klick ins Leere im Bild hebt die Auswahl auf', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    act(() => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-farbe-akzent"]')!.click();
+    });
+    expect(behaelterTest.querySelector('[data-testid="marken-reihenfolge"]')).toBeNull();
+    // Die Vorschau meldet den Klick „daneben" als aufElement(null).
+    act(() => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="element-daneben"]')!.click();
+    });
+    expect(behaelterTest.querySelector('[data-testid="marken-reihenfolge"]')).not.toBeNull();
   });
 
   it('KontrastWarnung mit der geöffneten Marke und schwellenwert KONTRAST_SCHWELLE (4.5)', () => {
@@ -286,6 +403,16 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     expect(ruf[0]!.marke.id).toBe(DIE_ID);
     expect(ruf[0]!.schwellenwert).toBe(4.5);
 
+  });
+
+  it('#455: der Satz zur Rolle steht sichtbar unter dem Regler (aus rollen-texte)', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    oeffne(behaelterTest, 'preis');
+    const satz = behaelterTest.querySelector('[data-testid="zweck-farbe-akzent"]');
+    // Der Wortlaut kommt aus der EINEN Quelle - hier wird nicht abgeschrieben.
+    expect(satz?.textContent).toBe(farbRollenText('akzent').zweck);
+    expect(satz?.textContent?.length ?? 0).toBeGreaterThan(0);
   });
 
   it(' Farbänderung: setzeFarbe GENAU EINMAL mit (marke.id, rolle, wert UNVERAENDERT)', async () => {
@@ -328,7 +455,7 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
     // Der Sicherheitsabstand gehoert zu keiner Zone - er liegt in der Palette (#449).
     await act(async () => {
-      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="palette-abstand"]')!.click();
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-schritt-6"]')!.click();
     });
     const feld = behaelterTest.querySelector<HTMLInputElement>('[data-testid="abstand-horizontal"]')!;
     fieldGetSetter(feld, '10');
@@ -402,16 +529,20 @@ describe('MarkenEditorWurzel (#330) - Herkunft, Loeschen, Ableiten', () => {
 
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
-    // #449: Jede Box zeigt die Herkunft ihrer Felder - hier nacheinander alle Arten.
+    // #455: Die Herkunft haengt an den Feldern des Inspectors - hier nacheinander alle Arten.
     const arten = new Set<string>();
     for (const id of ['preis', 'ueberschrift', 'logo']) {
       oeffne(behaelterTest, id);
       for (const zeile of Array.from(behaelterTest.querySelectorAll('[data-testid^="herkunft-"]'))) {
         arten.add(zeile.getAttribute('data-testid') ?? '');
       }
+      // Zurueck zur Reihenfolge, sonst sind die Stufen-Knoepfe nicht im DOM.
+      act(() => {
+        behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-inspector-zurueck"]')!.click();
+      });
     }
     await act(async () => {
-      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="palette-abstand"]')!.click();
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-schritt-6"]')!.click();
     });
     for (const zeile of Array.from(behaelterTest.querySelectorAll('[data-testid^="herkunft-"]'))) {
       arten.add(zeile.getAttribute('data-testid') ?? '');
@@ -472,6 +603,10 @@ describe('MarkenEditorWurzel (#330) - Herkunft, Loeschen, Ableiten', () => {
     h.ableitbareBasen.mockReturnValue([markeFuerTest({ id: PARENT_ID, name: 'P' })]);
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    // #455: „Ableiten" liegt hinter einem kleinen Formular unter der Auswahl.
+    act(() => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-ableiten-oeffnen"]')!.click();
+    });
     await act(async () => {
       behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marke-ableiten"]')!.click();
     });
@@ -484,7 +619,11 @@ describe('MarkenEditorWurzel (#330) - Herkunft, Loeschen, Ableiten', () => {
     h.holeGeoeffnete.mockReturnValue(markeFuerTest({ id: DIE_ID, parent: null }));
     h.erstelleEigenstaendigeMarke.mockResolvedValue({ ok: true, wert: markeFuerTest() });
     const zugang = ZUGANG(UEBERSICHT);
-    zeige({ sichtbar: true, marken: zugang });
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    // #455: „Neue Marke" liegt hinter einem kleinen Formular unter der Auswahl.
+    act(() => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-neu-oeffnen"]')!.click();
+    });
     await act(async () => {
       (
         behaelter as unknown as HTMLElement
@@ -571,12 +710,12 @@ describe('MarkenEditorWurzel (#330) - Momentaufnahmen beim Markenwechsel (Treibe
 
     // #449: Abstand liegt in der Palette, Slogan in der Logo-Box.
     await act(async () => {
-      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="palette-abstand"]')!.click();
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-schritt-6"]')!.click();
     });
     expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="abstand-horizontal"]')!.value).toBe('96');
     expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="abstand-vertikal"]')!.value).toBe('54');
     await act(async () => {
-      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-box-schliessen"]')!.click();
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-inspector-zurueck"]')!.click();
     });
     oeffne(behaelterTest, 'logo');
     expect(behaelterTest.querySelector<HTMLInputElement>('[data-testid="slogan-text"]')!.value).toBe('Saisonstart');
@@ -584,10 +723,10 @@ describe('MarkenEditorWurzel (#330) - Momentaufnahmen beim Markenwechsel (Treibe
 
     // Ein Klick auf "Abstand uebernehmen" schreibt jetzt den Wert DER MARK, nicht 0/0.
     await act(async () => {
-      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-box-schliessen"]')!.click();
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-inspector-zurueck"]')!.click();
     });
     await act(async () => {
-      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="palette-abstand"]')!.click();
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-schritt-6"]')!.click();
     });
     await act(async () => {
       behaelterTest.querySelector<HTMLButtonElement>('[data-testid="abstand-uebernehmen"]')!.click();
