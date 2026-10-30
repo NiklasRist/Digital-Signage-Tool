@@ -115,7 +115,6 @@ import { fuehreFfmpegAus } from '../ffmpeg-adapter/prozess'                     
 import type { FfmpegFehlercode, FfmpegLauf } from '../ffmpeg-adapter/prozess'   // #158
 import { erzeugeFortschrittsLeser } from '../ffmpeg-adapter/fortschritt'        // #160
 import { baueVollbildFilter } from '../ffmpeg-adapter/filter-vollbild'          // #163
-import { baueSplitFilter, markenFarbeZuFfmpeg } from '../ffmpeg-adapter/filter-split'  // #164
 import { baueEinblendungFilter } from '../ffmpeg-adapter/filter-einblendung'    // #165
 import { baueStandbildArgumente } from '../ffmpeg-adapter/standbild'            // #166
 import { baueVideoAusschnittArgumente } from '../ffmpeg-adapter/video-ausschnitt'  // #167
@@ -123,7 +122,6 @@ import { baueBandspur } from '../ffmpeg-adapter/bandspur'                       
 import type { BandAbschnitt } from '../ffmpeg-adapter/bandspur'                 // #168
 import { frameDauer, trimFrames, zuFrames } from './frames'                     // #174
 import { bestimmeBandgeometrie } from './band-geometrie'                        // #176
-import type { Bandart } from './band-geometrie'                                 // #176
 
 /** Die in T1 abgelegten PNGs GENAU DIESES Elements (aus PngAblage, #175). */
 export interface ElementPngs {
@@ -168,10 +166,9 @@ const NAMENS_STELLEN = 4
 /**
  * Der Hintergrund JEDER vollflaechigen Normalisierung.
  *
- * "9.2.4 schreibt SCHWARZE Balken vor." Die Markenfarbe kommt ausschliesslich in
- * der Split-Komposition vor und reist dort als `einblendung.flaecheDunkel` IM ELEMENT
- * herein (beim Einreihen eingefroren, #316) - in dieser Datei steht KEINE Hexzahl,
- * auch nicht als Rueckfallwert.
+ * "9.2.4 schreibt SCHWARZE Balken vor." Die Markenfarbe `flaecheDunkel` ist mit der
+ * Split-Komposition entfallen (TK 9.2.2, v3.31) - es gibt keine Flaeche mehr, die sie
+ * fuellen muesste. In dieser Datei steht KEINE Hexzahl, auch nicht als Rueckfallwert.
  */
 const HINTERGRUND = 'black'
 
@@ -448,18 +445,18 @@ async function ausVideo(
     )
   }
 
-  // 3. Geometrie - fuer BEIDE Bandarten. Sie ist zugleich der Torwaechter ueber die
-  //    Bandhoehe (ganzzahlig, gerade, 0 < H < 1080); die reine Rechnung liegt im
-  //    geteilten Bereich und prueft nichts.
-  // SAFETY: bestimmeBandgeometrie prueft art/höhe als Torwaechter; der Cast reicht
+  // 3. Hoehe pruefen - der Torwaechter ueber die Bandhoehe (ganzzahlig, gerade,
+  //    0 < H < 1080). Seit TK v3.31 gibt es genau EINE Komposition: das Band liegt
+  //    DECKEND ueber dem vollflaechigen Video (9.2.8). Eine Geometrie wird nicht
+  //    mehr gerechnet; `y = 1080 - H` bildet `baueEinblendungFilter` (#165) selbst.
+  // SAFETY: bestimmeBandgeometrie prueft `höhe` als Torwaechter; der Cast reicht
   // die Form weiter, die Pruefung selbst folgt unmittelbar darunter (Ergebnis-Huelle).
-  const geo = bestimmeBandgeometrie(einblendung as { art: Bandart; höhe: number })
-  if (!geo.ok) return uebernimm(geo.fehler, bezug)
+  const geprueft = bestimmeBandgeometrie(einblendung as { höhe: number })
+  if (!geprueft.ok) return uebernimm(geprueft.fehler, bezug)
 
-  // SAFETY: geo.ok ist belegt, also hat bestimmeBandgeometrie art/höhe geprueft; der
-  // Cast benennt die damit belegte Form des Einblendungs-Objekts.
+  // SAFETY: geprueft.ok ist belegt, also ist `höhe` eine geprueft Zahl; der Cast
+  // benennt die damit belegte Form des Einblendungs-Objekts.
   const hoeheBand = feld(einblendung, 'höhe') as number
-  const bandart = feld(einblendung, 'art')
 
   const abschnitte = sammleBandAbschnitte(einblendung, pngs, bezug)
   if (!abschnitte.ok) return abschnitte
@@ -478,24 +475,8 @@ async function ausVideo(
   if (!spur.ok) return ausFfmpeg(spur.fehler, bezug)
 
   // 5. Filterkette. Erst JETZT - so verlangt es die verbindliche Reihenfolge.
-  const kette =
-    bandart === 'split'
-      ? baueSplitKette(
-          geo.wert.videoBreite,
-          geo.wert.videoVersatzX,
-          hoeheBand,
-          // SAFETY: #17 macht `flaecheDunkel` zum Pflichtfeld; der Wert reist ueber die
-          // IPC-Grenze und ist hier zur Laufzeit nur eine Zusage. Geprueft wird er HIER
-          // nicht (keine zweite Pruefstelle) - ein unbrauchbarer Wert faellt in
-          // `markenFarbeZuFfmpeg` mit einem Fehler auf, den diese Datei unveraendert
-          // uebernimmt. Der Cast benennt die vom Vertrag zugesicherte Form.
-          feld(einblendung, 'flaecheDunkel') as string,
-          bezug,
-          kontext,
-        )
-      : // Art B: Band UEBER dem vollflaechigen Video. Keine Markenfarbe - die
-        // Balken bleiben schwarz nach 9.2.4 (#165 setzt sie selbst).
-        baueEinblendungFilter(hoeheBand, kontext.profil)
+  //    Band UEBER dem vollflaechigen Video; die Balken bleiben schwarz nach 9.2.4.
+  const kette = baueEinblendungFilter(hoeheBand, kontext.profil)
   if (!kette.ok) return uebernimm(kette.fehler, bezug)
 
   return await schreibeVideoclip(
@@ -504,37 +485,6 @@ async function ausVideo(
     bezug,
     kontext,
   )
-}
-
-/**
- * Fall 4: Art A - `split`, Band UNTER dem verkleinerten Video.
- *
- * "Bewusste Abweichung vom Ausgabe-Profil - nur hier: 9.2.4 schreibt SCHWARZE Balken
- * vor. In der Split-Komposition werden die Restflaechen IN DER MARKENFARBE gefuellt."
- * (TK 9.2.8) Der Hexwert reist IM ELEMENT ein (beim Einreihen eingefroren, #316); diese
- * Datei schlaegt KEINE Marke nach und tippt keine Hexzahl.
- *
- * Gereicht werden `geo.videoBreite` (die tatsaechlich EINGEPASSTE Breite) und
- * `geo.videoVersatzX`. Die Vierer-Abrundung macht ausschliesslich die geteilte
- * Rechnung - zwei Rundungsstellen liefen unweigerlich auseinander, und der Fehler
- * bliebe bei der eingebauten Vorlage (H = 162) zufaellig unsichtbar.
- */
-function baueSplitKette(
-  videoBreite: number,
-  videoVersatzX: number,
-  hoeheBand: number,
-  flaecheDunkel: string,
-  bezug: Elementbezug,
-  kontext: NormalisierKontext,
-): Ergebnis<string> {
-  const farbe = markenFarbeZuFfmpeg(flaecheDunkel)
-  if (!farbe.ok) {
-    return {
-      ok: false,
-      fehler: { code: farbe.fehler.code, meldung: `${bezug.text}: ${farbe.fehler.meldung}` },
-    }
-  }
-  return baueSplitFilter(hoeheBand, videoBreite, videoVersatzX, farbe.wert, kontext.profil)
 }
 
 /** Der gemeinsame Schluss der Faelle 3 bis 5: Argumente bauen, ausfuehren, Pfad melden. */

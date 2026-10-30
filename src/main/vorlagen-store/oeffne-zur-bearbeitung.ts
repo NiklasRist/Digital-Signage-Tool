@@ -81,7 +81,6 @@ export async function oeffneZurBearbeitung(id: string): Promise<Ergebnis<Vorlage
         const kopie: Vorlage = {
           id: erzeugeId(),
           name: parent.name,
-          art: parent.art,
           höhe: parent.höhe,
           parent: id,
           eingebaut: false,

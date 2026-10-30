@@ -46,7 +46,6 @@ function vollbild(): Vorlage {
   return {
     id: "vollbild",
     name: "Vollbild",
-    art: "vollflaeche",
     höhe: null,
     parent: null,
     eingebaut: true,
@@ -136,7 +135,6 @@ function split(): Vorlage {
   return {
     id: "split",
     name: "Split",
-    art: "vollflaeche",
     höhe: null,
     parent: null,
     eingebaut: true,
@@ -215,7 +213,6 @@ function bandStandard(): Vorlage {
   return {
     id: "band-standard",
     name: "Band-Standard",
-    art: "split",
     höhe: 162,
     parent: null,
     eingebaut: true,
@@ -280,7 +277,6 @@ function band(höhe: number, zonen: Zone[]): Vorlage {
   return {
     id: "band-x",
     name: "Band X",
-    art: "split",
     höhe,
     parent: null,
     eingebaut: false,
@@ -305,7 +301,6 @@ describe("zone_ausserhalb (Sperre)", () => {
     const vorlage: Vorlage = {
       id: "v",
       name: "V",
-      art: "vollflaeche",
       höhe: null,
       parent: null,
       eingebaut: false,
@@ -338,7 +333,6 @@ describe("sicherheitsabstand (Warnung)", () => {
     const vorlage: Vorlage = {
       id: "v",
       name: "V",
-      art: "vollflaeche",
       höhe: null,
       parent: null,
       eingebaut: false,
@@ -353,7 +347,6 @@ describe("sicherheitsabstand (Warnung)", () => {
     const vorlage: Vorlage = {
       id: "v",
       name: "V",
-      art: "vollflaeche",
       höhe: null,
       parent: null,
       eingebaut: false,
@@ -370,12 +363,9 @@ describe("Geradzahligkeit der Bandhoehe (Sperre)", () => {
     { id: "titel", rolle: "frei", bindung: "titel", rahmen: { x: 96, y: 20, breite: 900, höhe: 60 }, ausrichtung: { horizontal: "links", vertikal: "mitte" }, wennLeer: "leer", text: text(PLAKATIV, TEXT_DUNKEL, 48, 32, 1) },
   ];
 
-  it.each([
-    ["split", 161, 162],
-    ["einblendung", 199, 200],
-  ] as const)("art %s: hoehe %i -> genau ein bandhoehe_ungueltig, hoehe %i -> keiner", (art, ungerade, gerade) => {
+  it.each([161, 199])("hoehe %i ist ungerade -> genau ein bandhoehe_ungueltig", (ungerade) => {
     const ungueltig = pruefeVorlage(
-      { id: "b", name: "B", art, höhe: ungerade, parent: null, eingebaut: false, zonen: innen() },
+      { id: "b", name: "B", höhe: ungerade, parent: null, eingebaut: false, zonen: innen() },
       [],
     );
     expect(ungueltig).toHaveLength(1);
@@ -385,9 +375,11 @@ describe("Geradzahligkeit der Bandhoehe (Sperre)", () => {
       zonenId: null,
     });
     expect(istSpeicherbar(ungueltig)).toBe(false);
+  });
 
+  it.each([162, 200])("hoehe %i ist gerade -> kein Befund", (gerade) => {
     const gueltig = pruefeVorlage(
-      { id: "b", name: "B", art, höhe: gerade, parent: null, eingebaut: false, zonen: innen() },
+      { id: "b", name: "B", höhe: gerade, parent: null, eingebaut: false, zonen: innen() },
       [],
     );
     expect(gueltig.filter((b) => b.code === "bandhoehe_ungueltig")).toEqual([]);
@@ -395,7 +387,7 @@ describe("Geradzahligkeit der Bandhoehe (Sperre)", () => {
   });
 
   it("die ungerade Hoehe erzeugt KEINE zone_ausserhalb und bleibt unveraendert (nicht gerundet)", () => {
-    const vorlage: Vorlage = { id: "b", name: "B", art: "split", höhe: 161, parent: null, eingebaut: false, zonen: innen() };
+    const vorlage: Vorlage = { id: "b", name: "B", höhe: 161, parent: null, eingebaut: false, zonen: innen() };
     const befunde = pruefeVorlage(vorlage, []);
     expect(befunde).toHaveLength(1);
     expect(befunde[0]!.code).toBe("bandhoehe_ungueltig");
@@ -403,30 +395,6 @@ describe("Geradzahligkeit der Bandhoehe (Sperre)", () => {
     expect(vorlage.höhe).toBe(161);
   });
 
-  it("bei hoehe null bekommt JEDE Zone ein zone_ausserhalb dazu (Flaeche degradiert auf 0)", () => {
-    const vorlage: Vorlage = { id: "b", name: "B", art: "split", höhe: null, parent: null, eingebaut: false, zonen: innen() };
-    const befunde = pruefeVorlage(vorlage, []);
-    const codes = befunde.map((b) => b.code);
-    expect(codes.filter((c) => c === "bandhoehe_ungueltig")).toHaveLength(1);
-    expect(codes.filter((c) => c === "zone_ausserhalb")).toHaveLength(1);
-  });
-
-  it("eine vollflaechige Vorlage mit gesetzter hoehe liefert GENAU EINEN Befund (keine Zonenbefunde)", () => {
-    const vorlage: Vorlage = {
-      id: "v",
-      name: "V",
-      art: "vollflaeche",
-      höhe: 100,
-      parent: null,
-      eingebaut: false,
-      zonen: [
-        { id: "ok", rolle: "frei", bindung: null, rahmen: { x: 0, y: 0, breite: 100, höhe: 100 }, ausrichtung: { horizontal: "mitte", vertikal: "mitte" }, wennLeer: "leer" },
-      ],
-    };
-    const befunde = pruefeVorlage(vorlage, []);
-    expect(befunde).toHaveLength(1);
-    expect(befunde[0]).toMatchObject({ code: "bandhoehe_ungueltig", zonenId: null });
-  });
 });
 
 describe("textparameter_fehlen / bildparameter_fehlen (Sperre)", () => {
@@ -434,7 +402,6 @@ describe("textparameter_fehlen / bildparameter_fehlen (Sperre)", () => {
     const vorlage: Vorlage = {
       id: "v",
       name: "V",
-      art: "vollflaeche",
       höhe: null,
       parent: null,
       eingebaut: false,
@@ -451,7 +418,6 @@ describe("textparameter_fehlen / bildparameter_fehlen (Sperre)", () => {
     const vorlage: Vorlage = {
       id: "v",
       name: "V",
-      art: "vollflaeche",
       höhe: null,
       parent: null,
       eingebaut: false,
@@ -470,7 +436,6 @@ describe("feste_zone_veraendert (Sperre)", () => {
     const vorlage: Vorlage = {
       id: "v",
       name: "V",
-      art: "vollflaeche",
       höhe: null,
       parent: null,
       eingebaut: false,
@@ -488,7 +453,6 @@ describe("feste_zone_veraendert (Sperre)", () => {
     const vorlage: Vorlage = {
       id: "v",
       name: "V",
-      art: "vollflaeche",
       höhe: null,
       parent: null,
       eingebaut: false,
@@ -506,7 +470,6 @@ describe("feste_zone_veraendert (Sperre)", () => {
     const vorlage: Vorlage = {
       id: "v",
       name: "V",
-      art: "vollflaeche",
       höhe: null,
       parent: null,
       eingebaut: false,
@@ -524,7 +487,6 @@ describe("Ueberlappung", () => {
     const vorlage: Vorlage = {
       id: "v",
       name: "V",
-      art: "vollflaeche",
       höhe: null,
       parent: null,
       eingebaut: false,

@@ -46,8 +46,8 @@ function aktion(id: string, titel: string): Aktion {
   }
 }
 
-function vorlage(id: string, art: Vorlage['art'], parent: string | null, hoehe: number | null): Vorlage {
-  return { id, name: id, art, höhe: hoehe, parent, eingebaut: false, zonen: [] }
+function vorlage(id: string, parent: string | null, hoehe: number | null): Vorlage {
+  return { id, name: id, höhe: hoehe, parent, eingebaut: false, zonen: [] }
 }
 
 /** Ein HAND-GEBAUTER Plan: die Zahlen stehen so, wie der Test sie braucht -
@@ -269,22 +269,21 @@ describe('baueWirkungsanzeige', () => {
 })
 
 describe('bandVorlage und artLabel', () => {
-  const b = vorlage('band-ein', 'einblendung', null, 210)
-  const besteand = [vorlage('split-x', 'split', null, 210), b]
+  const b = vorlage('band-ein', null, 210)
+  const besteand = [vorlage('split-x', null, 210), b]
 
   it('bandVorlage liefert die toBe-gleiche Vorlage, sonst null', () => {
     expect(bandVorlage({ bandVorlageId: 'band-ein', abschnitte: [] }, besteand)).toBe(b)
     expect(bandVorlage({ bandVorlageId: 'fehlt', abschnitte: [] }, besteand)).toBeNull()
   })
 
-  it('artLabel: leer bei null und bei vollflaeche; verschieden zwischen split und einblendung', () => {
+  it('artLabel: leer bei null und beim Ganzbild; „Band" bei jeder gesetzten Höhe', () => {
+    // Seit v3.31 gibt es genau EINE Komposition (TK 9.2.8): Das Band liegt deckend
+    // ueber dem vollflaechigen Video. Zwei verschiedene Band-Bezeichnungen gibt es nicht mehr.
     expect(artLabel(null)).toBe('')
-    expect(artLabel(vorlage('vol', 'vollflaeche', null, null))).toBe('')
-    const split = artLabel(vorlage('s', 'split', null, 210))
-    const einblendung = artLabel(vorlage('e', 'einblendung', null, 210))
-    expect(split.length).toBeGreaterThan(0)
-    expect(einblendung.length).toBeGreaterThan(0)
-    expect(split).not.toBe(einblendung)
+    expect(artLabel(vorlage('vol', null, null))).toBe('')
+    expect(artLabel(vorlage('e', null, 210))).toBe('Band')
+    expect(artLabel(vorlage('e2', null, 162))).toBe('Band')
   })
 })
 
@@ -333,7 +332,7 @@ describe('keine Mutation der Eingaben', () => {
         abschnitte: Object.freeze([{ aktionRef: 'a1', dauer: 7 }]),
       }) as unknown as { bandVorlageId: string; abschnitte: Array<{ aktionRef: string; dauer: number }> }
     const abFest = Object.freeze([aktion('a1', 'A')])
-    const vorlagenFest = Object.freeze([vorlage('band-x', 'split', null, 210)])
+    const vorlagenFest = Object.freeze([vorlage('band-x', null, 210)])
     const planFest: BandAblaufplan = Object.freeze(plan({ angeschnittenerIndex: 0 }))
     const stellenFest: readonly KaputteStelle[] = Object.freeze([
       { art: 'band_abschnitt', elementId: 'el-1', abschnittIndex: 0, aktionId: 'a1', assetId: null, grund: 'asset_fehlt' },

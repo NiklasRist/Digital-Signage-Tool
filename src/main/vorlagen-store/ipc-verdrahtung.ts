@@ -7,7 +7,7 @@ import { meldeAn } from '../ipc-gateway/melde-an' // #337
 import { registriereHandler } from '../ipc-gateway/registriere-handler' // #23
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import type { Vorlage, VorlagenArt, Vorlagennutzung } from '../../shared/contracts/vorlage'
+import type { Vorlage, Vorlagennutzung } from '../../shared/contracts/vorlage'
 import type { VorlagenFehlercode } from './fehlercodes'
 import { pruefeVorlagenReferenzen } from './referenzpruefung' // #106
 import { alsEigenstaendige } from './als-eigenstaendige' // #104
@@ -21,16 +21,6 @@ import { verwerfeArbeitskopie } from './verwerfe-arbeitskopie' // #105
 /** "endliche Zahl" - `Number.isFinite` und NICHT `typeof === 'number'` (gleiche Regel wie #76). */
 function istEndlicheZahl(wert: unknown): wert is number {
   return typeof wert === 'number' && Number.isFinite(wert)
-}
-
-/** Die drei zulaessigen Vorlagenarten - Laufzeitliste, gleiche wie in #100. */
-const ARTEN: readonly VorlagenArt[] = ['vollflaeche', 'split', 'einblendung']
-
-/** Geprueft wird die FORM, nicht die Fachlichkeit: ist `art` genau einer der drei Werte? */
-function istArt(wert: unknown): wert is VorlagenArt {
-  // SAFETY: ARTEN enthaelt nur gueltige Werte; der Cast macht das Einschliessen als
-  // Vergleich zur Laufzeit moeglich - includes prueft den Wert echt.
-  return ARTEN.includes(wert as VorlagenArt)
 }
 
 export function verdrahteVorlagenIPC(): void {
@@ -47,21 +37,17 @@ export function verdrahteVorlagenIPC(): void {
   meldeAn(KANAELE.vorlagen.listeVorlagen, ohneNutzlast, () => listeVorlagen())
   meldeAn(KANAELE.vorlagen.listeArbeitskopien, ohneNutzlast, () => listeArbeitskopien())
 
-  // erstelleVorlage - Nutzlast { art, höhe?, name }. `höhe` darf fehlen (= null), `null`
-  // oder eine ENDLICHE Zahl sein; den Wertebereich (> 0, < 1080) und die Kopplung an `art`
-  // prueft #100. Ein numerischer String wird abgelehnt - nicht umgewandelt ("keine
+  // erstelleVorlage - Nutzlast { höhe?, name }. `höhe` ist seit v3.31 die EINZIGE Aussage
+  // ueber die Flaeche: `null` (oder ein fehlendes Feld) = Ganzbild, eine Zahl = Bandhoehe.
+  // Eine `art` gibt es nicht mehr; ein mitgeschicktes Feld wird ignoriert, weil nur
+  // `höhe` und `name` weitergereicht werden. Den Wertebereich (> 0, < 1080, gerade) prueft
+  // #100. Ein numerischer String wird abgelehnt - nicht umgewandelt ("keine
   // Nutzlast-Reparatur", STOPP-Block).
   meldeAn(
     KANAELE.vorlagen.erstelleVorlage,
-    (nutzlast: unknown): Ergebnis<{ art: VorlagenArt; höhe: number | null; name: string }, 'ungueltige_eingabe'> => {
+    (nutzlast: unknown): Ergebnis<{ höhe: number | null; name: string }, 'ungueltige_eingabe'> => {
       if (!istObjekt(nutzlast)) {
-        return abgelehnt('erstelleVorlage erwartet ein Objekt { art, höhe?, name }.')
-      }
-      const art = nutzlast.art
-      if (!istArt(art)) {
-        return abgelehnt(
-          `erstelleVorlage braucht art aus ${ARTEN.join(', ')} (uebergeben: ${String(art)}).`,
-        )
+        return abgelehnt('erstelleVorlage erwartet ein Objekt { höhe?, name }.')
       }
       const name = nutzlast.name
       if (!istGefuellterText(name)) {
@@ -74,10 +60,10 @@ export function verdrahteVorlagenIPC(): void {
         )
       }
       // Fehlt `höhe`, gilt es als null - die EINE festgelegte Vorbelegung des Issues,
-      // kein Zurechtbiegen (die Renderer-Seite darf das Feld bei vollflaeche weglassen).
-      return { ok: true, wert: { art, höhe: hoehe === undefined ? null : hoehe, name } }
+      // kein Zurechtbiegen (die Renderer-Seite darf das Feld bei einem Ganzbild weglassen).
+      return { ok: true, wert: { höhe: hoehe === undefined ? null : hoehe, name } }
     },
-    ({ art, höhe, name }) => erstelleVorlage(art, höhe, name),
+    ({ höhe, name }) => erstelleVorlage(höhe, name),
   )
 
   meldeAn(

@@ -47,7 +47,6 @@ beforeEach(async () => {
 function vorlage(teil: Partial<Vorlage> & { id: string }): Vorlage {
   return {
     name: teil.id,
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: false,
@@ -219,27 +218,27 @@ describe('ladeUebersicht – Fehler und Hörer', () => {
 })
 
 describe('legeVorlageAn', () => {
-  it('sendet alle drei Felder (höhe ausdrücklich null) und öffnet die zurückgegebene id', async () => {
+  it('sendet höhe (ausdrücklich null) und Namen und öffnet die zurückgegebene id', async () => {
     const neue = vorlage({ id: 'neu-1' })
     antworte('vorlagen:erstelleVorlage', { ok: true, wert: neue })
 
-    const antwort = await m.legeVorlageAn('vollflaeche', null, '  Meine  ')
+    const antwort = await m.legeVorlageAn(null, '  Meine  ')
 
     expect(antwort.ok).toBe(true)
     expect(kanalAufrufe('vorlagen:erstelleVorlage')).toEqual([
-      { kanal: 'vorlagen:erstelleVorlage', nutzlast: { art: 'vollflaeche', höhe: null, name: 'Meine' } },
+      { kanal: 'vorlagen:erstelleVorlage', nutzlast: { höhe: null, name: 'Meine' } },
     ])
     expect(doppel.bearbeitet).toEqual(['neu-1'])
   })
 
   it('weist nicht anlegbare Kombinationen ohne IPC-Aufruf ab', async () => {
-    expect(await m.legeVorlageAn('einblendung', 120, 'X')).toMatchObject({ ok: false })
-    expect(await m.legeVorlageAn('split', 200, 'X')).toMatchObject({ ok: false })
+    expect(await m.legeVorlageAn(120, 'X')).toMatchObject({ ok: false })
+    expect(await m.legeVorlageAn(200, 'X')).toMatchObject({ ok: false })
     expect(doppel.aufrufe).toEqual([])
   })
 
   it('weist einen leeren Namen ohne IPC-Aufruf ab', async () => {
-    const antwort = await m.legeVorlageAn('vollflaeche', null, '   ')
+    const antwort = await m.legeVorlageAn(null, '   ')
 
     expect(antwort).toEqual({ ok: false, fehler: { code: 'ungueltige_eingabe', meldung: 'Name darf nicht leer sein' } })
     expect(doppel.aufrufe).toEqual([])
@@ -249,7 +248,7 @@ describe('legeVorlageAn', () => {
     antworte('vorlagen:erstelleVorlage', { ok: true, wert: vorlage({ id: 'neu-1' }) })
     doppel.bearbeitungAntwort = { ok: false, fehler: { code: 'nicht_gefunden', meldung: 'weg' } }
 
-    const antwort = await m.legeVorlageAn('vollflaeche', null, 'X')
+    const antwort = await m.legeVorlageAn(null, 'X')
 
     expect(antwort).toEqual({ ok: false, fehler: { code: 'nicht_gefunden', meldung: 'weg' } })
     expect(kanalAufrufe('vorlagen:löscheVorlage')).toEqual([])

@@ -48,7 +48,6 @@ function vollflaeche(zonen: Zone[]): Vorlage {
   return {
     id: 'v',
     name: 'Test-Vorlage',
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: true,
@@ -60,7 +59,6 @@ function band(höheBand: number | null, zonen: Zone[]): Vorlage {
   return {
     id: 'b',
     name: 'Band',
-    art: 'einblendung',
     höhe: höheBand,
     parent: null,
     eingebaut: true,
@@ -85,12 +83,12 @@ describe('flaecheDerVorlage', () => {
       breite: RENDER_PROFILE.breite,
       höhe: 162,
     })
-    const split: Vorlage = { ...band(200, []), art: 'split' }
-    expect(flaecheDerVorlage(split)).toEqual({ breite: RENDER_PROFILE.breite, höhe: 200 })
+    expect(flaecheDerVorlage(band(200, []))).toEqual({ breite: RENDER_PROFILE.breite, höhe: 200 })
   })
 
   it('liefert bei ungueltiger Bandhoehe Hoehe 0 und keine geratene Ersatzhoehe', () => {
-    for (const ungueltig of [null, -10, 0, Number.NaN, Number.POSITIVE_INFINITY]) {
+    // `null` ist KEIN ungueltiger Wert mehr: Die Flaeche IST die Art (v3.31), null = Ganzbild.
+    for (const ungueltig of [-10, 0, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(flaecheDerVorlage(band(ungueltig, []))).toEqual({
         breite: RENDER_PROFILE.breite,
         höhe: 0,

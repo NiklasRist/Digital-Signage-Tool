@@ -61,7 +61,6 @@ function vorlage(id: string, teil: Partial<Vorlage> = {}): Vorlage {
   return {
     id,
     name: `Name ${id}`,
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: false,
@@ -98,10 +97,9 @@ async function erfolg(arbeitsId: string, name = 'Neuer Name') {
 }
 
 describe('alsEigenstaendige (#104) – Erfolgsfall', () => {
-  it('nullt parent, setzt eingebaut false, uebernimmt den getrimmten Namen und behaelt id, art, höhe und zonen (Deep-Vergleich)', async () => {
+  it('nullt parent, setzt eingebaut false, uebernimmt den getrimmten Namen und behaelt id, höhe und zonen (Deep-Vergleich)', async () => {
     const kopie = vorlage('kopie', {
       parent: 'v1',
-      art: 'split',
       höhe: 162,
       name: '  Arbeitskopie von v1  ',
       zonen: [
@@ -131,7 +129,6 @@ describe('alsEigenstaendige (#104) – Erfolgsfall', () => {
     expect(ergebnis.wert.parent).toBeNull()
     expect(ergebnis.wert.eingebaut).toBe(false)
     expect(ergebnis.wert.name).toBe('Meine Vorlage')
-    expect(ergebnis.wert.art).toBe('split')
     expect(ergebnis.wert.höhe).toBe(162)
     // Deep-Vergleich der Zonen: unveraendert, inhaltsgleich.
     expect(ergebnis.wert.zonen).toEqual(kopie.zonen)
@@ -152,7 +149,6 @@ describe('alsEigenstaendige (#104) – Erfolgsfall', () => {
   it('der Parent-Eintrag ist danach byte-gleich (Deep-Vergleich) – unveraendert in name, zonen, eingebaut und parent', async () => {
     const parent = vorlage('v1', {
       name: 'Original-Name',
-      art: 'split',
       höhe: 162,
       eingebaut: true,
       parent: null,

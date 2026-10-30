@@ -2425,3 +2425,34 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 72
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T07:57:59.417Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Marken-Editor (FA-24): erwartet "die Akzentfarbe ist im Editor bedienbar", erkannt "farbe-akzent fehlt" (Ort: marken-editor/index.tsx)
+- **Befund** Marken-Editor (FA-24): erwartet "beim Wechsel der Marke zeigen die Farbfelder den Wert der NEUEN Marke", erkannt "Feld null statt #FF4040" (Ort: marken-editor/index.tsx)
+- **Befund** Marken-Rest (FA-24): erwartet "Farbfeld akzent ist vorhanden", erkannt "Feld fehlt" (Ort: marken-editor/index.tsx)
+- **Befund** Marken-Rest (FA-24): erwartet "alle dreizehn Farbrollen landen im Bestand", erkannt "["akzent","akzentKraeftig","akzentTief","flaecheDunkel","flaecheSehrDunkel","flaecheHell","flaecheAkzentZart","textAufDunkel","textAufHell","textSekundaer","linie","scrimStart","scrimEnde"]" (Ort: marken-editor/farben-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "Slogan-Text und -Schalter landen im Bestand", erkannt "{"text":"","aktiv":false}" (Ort: marken-editor/slogan-bearbeiten.ts)
+- **Befund** Marken-Rest (FA-24): erwartet "der Editor zeigt die importierte Schrift und den Logo-Weg", erkannt "{"schriftText":"","logoKnopf":false}" (Ort: marken-editor/index.tsx)
+- **Befund** Marken-Rest (FA-24): erwartet "ein gesetzter Wert am Kind wird als EIGEN gefuehrt", erkannt "geerbt" (Ort: marken-store/vererbung.ts)
+
+## Nachlauf vom 2026-10-30T08:04:49.084Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T08:12:58.182Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 5 (Zusammenstellen, Aktionen, Vorlagen, Marken, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

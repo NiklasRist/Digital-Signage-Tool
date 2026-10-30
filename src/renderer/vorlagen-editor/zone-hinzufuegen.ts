@@ -6,7 +6,6 @@ import type {
   Bindung,
   Rahmen,
   Vorlage,
-  VorlagenArt,
   Zone,
   ZonenText,
 } from '../../shared/contracts/vorlage'
@@ -55,7 +54,7 @@ export function fuegeZoneHinzu(vorlage: Vorlage, wunsch: ZonenWunsch): Ergebnis<
     )
   }
 
-  const start = startRahmen(vorlage.art)
+  const start = startRahmen(vorlage.höhe)
   const rahmen = begrenzeAufFlaeche(
     {
       x: start.x,
@@ -73,7 +72,7 @@ export function fuegeZoneHinzu(vorlage: Vorlage, wunsch: ZonenWunsch): Ergebnis<
     rahmen,
     ausrichtung: ausrichtungFuer(wunsch.sorte),
     wennLeer: 'leer',
-    ...sortenFelder(wunsch, textEinstellungenFuer(vorlage.art)),
+    ...sortenFelder(wunsch, textEinstellungenFuer(vorlage.höhe)),
   }
 
   return { ok: true, wert: { ...vorlage, zonen: [...vorlage.zonen, zone] } }
@@ -113,16 +112,17 @@ function freieZonenId(grundname: string, vorlage: Vorlage): string | null {
 }
 
 /** Startwerte aus dem Issue: Bildmitte auf vollflaeche, sonst knapp unter der Bandoberkante. */
-function startRahmen(art: VorlagenArt): Rahmen {
-  if (art === 'vollflaeche') {
+/** Start-Rahmen einer neuen Zone: Ganzbild oder Band (die Flaeche IST die Art, v3.31). */
+function startRahmen(höhe: number | null): Rahmen {
+  if (höhe === null) {
     return { x: 96, y: 540, breite: 400, höhe: 120 }
   }
   return { x: 96, y: 16, breite: 400, höhe: 72 }
 }
 
-/** Die Text-Vorgaben aus den eingebauten Vorlagen (TK 9.11.1), je Vorlagenart. */
-function textEinstellungenFuer(art: VorlagenArt): ZonenText {
-  if (art === 'vollflaeche') {
+/** Die Text-Vorgaben aus den eingebauten Vorlagen (TK 9.11.1), je Flaeche. */
+function textEinstellungenFuer(höhe: number | null): ZonenText {
+  if (höhe === null) {
     return {
       schriftRolle: 'headlinePlakativ',
       farbRolle: 'textAufDunkel',

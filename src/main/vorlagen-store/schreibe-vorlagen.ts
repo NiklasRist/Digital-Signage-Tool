@@ -16,8 +16,13 @@ import { istCode, text } from '../gemeinsam/systemfehler'
  * Schema-Version von vorlagen.json. Modul-lokal und hier deklariert.
  * NICHT die AKTUELLE_SCHEMA_VERSION aus #21 verwenden – die gehoert zu project.json/config.json;
  * eine Kopplung an D1-Migrationen ist unerwuenscht. Auch NICHT die QUEUE_SCHEMA_VERSION aus #69.
+ *
+ * VERSION 2 (M9, 30.10.2026): `Vorlage.art` ist entfallen (AD v1.10 / TK v3.31); die Flaeche
+ * steht allein in `höhe`. Die Migration 1 -> 2 entfernt das Feld und setzt die Anzeigenamen der
+ * beiden eingebauten Ganzbild-Vorlagen („Ganzflächig", „Zwei Spalten"). KEINE Vorlage wird
+ * geloescht, keine ID geaendert.
  */
-export const VORLAGEN_SCHEMA_VERSION = 1
+export const VORLAGEN_SCHEMA_VERSION = 2
 
 /** Dateiform von vorlagen.json. `vorlagen` enthaelt nutzbare Vorlagen UND Arbeitskopien. */
 export interface VorlagenDatei {
@@ -394,7 +399,11 @@ async function ladeVonPlatte(): Promise<Ergebnis<Vorlage[], VorlagenFehlercode>>
     }
   }
 
-  if (anfang.wert.neuAngelegt || fehlendeIds.length > 0) {
+  // EINE MIGRATION WIRD FESTGESCHRIEBEN - ausser der Bestand stammt aus der .bak-Rettung:
+  // Dann bleibt die defekte Datei unangetastet liegen und wird erst beim naechsten
+  // regulaeren Schreiben ersetzt (dieselbe Regel wie oben).
+  const migrationSchreiben = anfang.wert.migriert && !ausBakGerettet
+  if (anfang.wert.neuAngelegt || migrationSchreiben || fehlendeIds.length > 0) {
     const geschrieben = await schreibeUndMelde(vorlagen)
     if (!geschrieben.ok) {
       return geschrieben
@@ -417,17 +426,21 @@ async function ladeVonPlatte(): Promise<Ergebnis<Vorlage[], VorlagenFehlercode>>
  * dem `.bak` retten.
  *
  * `neuAngelegt` sagt, ob der Anfangsbestand frisch entstanden ist und deshalb geschrieben werden
- * muss. Eine reine `.bak`-Rettung setzt es NICHT: "die defekte vorlagen.json bleibt unveraendert
- * liegen und wird erst beim naechsten regulaeren Schreiben ersetzt".
+ * muss. `migriert` sagt, ob eine aeltere Fassung (v1) auf v2 gehoben wurde - auch dann wird
+ * geschrieben, damit die Datei nicht bei jedem Start erneut migriert werden muss. Eine reine
+ * `.bak`-Rettung setzt BEIDE nicht: "die defekte vorlagen.json bleibt unveraendert liegen und
+ * wird erst beim naechsten regulaeren Schreiben ersetzt".
  */
 async function ermittleAnfangsbestand(
   ziel: string,
-): Promise<Ergebnis<{ vorlagen: Vorlage[]; neuAngelegt: boolean }, VorlagenFehlercode>> {
+): Promise<
+  Ergebnis<{ vorlagen: Vorlage[]; neuAngelegt: boolean; migriert: boolean }, VorlagenFehlercode>
+> {
   const haupt = await leseDatei(ziel)
 
   // SCHRITT 2: Die fehlende Datei ist der Normalfall der Erstbenutzung und KEIN Defekt.
   if (haupt.zustand === 'fehlt') {
-    return { ok: true, wert: { vorlagen: eingebauteVorlagen(), neuAngelegt: true } }
+    return { ok: true, wert: { vorlagen: eingebauteVorlagen(), neuAngelegt: true, migriert: false } }
   }
 
   const bewertung: Auswertung =
@@ -436,14 +449,19 @@ async function ermittleAnfangsbestand(
   // SCHRITT 5: Eine unbekannte schemaVersion wird NICHT geraten - kein Laden, keine Migration,
   // und ausdruecklich auch kein Ausweichen auf das `.bak` (Fehlerpfad-Tabelle).
   if (bewertung.art === 'version') {
+    // Aeltere Fassungen (v1) sind oben schon migriert; hier steht eine UNBEKANNTE Version.
+    // Sie wird NICHT geraten - weder geladen noch ueberschrieben.
     return fehler(
       'speicher_fehler',
       `${ziel} traegt schemaVersion ${String(bewertung.gelesen)}, erwartet wird ` +
-        `${VORLAGEN_SCHEMA_VERSION}. Es gibt keine Migration; die Datei wurde NICHT geladen.`,
+        `${VORLAGEN_SCHEMA_VERSION}. Die Datei wurde NICHT geladen.`,
     )
   }
   if (bewertung.art === 'bestand') {
-    return { ok: true, wert: { vorlagen: bewertung.vorlagen, neuAngelegt: false } }
+    return { ok: true, wert: { vorlagen: bewertung.vorlagen, neuAngelegt: false, migriert: false } }
+  }
+  if (bewertung.art === 'migriert') {
+    return { ok: true, wert: { vorlagen: bewertung.vorlagen, neuAngelegt: false, migriert: true } }
   }
 
   // SCHRITT 3: Erst die Sicherung versuchen. Ein Backup, aus dem nie wiederhergestellt wird, waere
@@ -457,11 +475,19 @@ async function ermittleAnfangsbestand(
           grund: sicherung.zustand === 'fehlt' ? 'keine Sicherung vorhanden' : sicherung.grund,
         }
 
-  if (bewertungSicherung.art === 'bestand') {
+  if (bewertungSicherung.art === 'bestand' || bewertungSicherung.art === 'migriert') {
     // Die defekte Datei wird NICHT geloescht und NICHT durch das Backup ersetzt: "Die
-    // Wiederherstellung aus .bak repariert nichts von selbst."
+    // Wiederherstellung aus .bak repariert nichts von selbst." Eine Migration aus dem .bak
+    // wird deshalb ebenfalls NICHT sofort geschrieben (s. `migrationSchreiben` im Aufrufer).
     ausBakGerettet = true
-    return { ok: true, wert: { vorlagen: bewertungSicherung.vorlagen, neuAngelegt: false } }
+    return {
+      ok: true,
+      wert: {
+        vorlagen: bewertungSicherung.vorlagen,
+        neuAngelegt: false,
+        migriert: bewertungSicherung.art === 'migriert',
+      },
+    }
   }
 
   // SCHRITT 4: Beides unbrauchbar. HIER WIRD NICHT AUF DEN ANFANGSBESTAND ZURUECKGEFALLEN, und das
@@ -478,6 +504,7 @@ async function ermittleAnfangsbestand(
 
 type Auswertung =
   | { art: 'bestand'; vorlagen: Vorlage[] }
+  | { art: 'migriert'; vorlagen: Vorlage[] }
   | { art: 'unbrauchbar'; grund: string }
   | { art: 'version'; gelesen: unknown }
 
@@ -502,14 +529,22 @@ function werteAus(roh: unknown): Auswertung {
   // Felder als unknown sichtbar, jeder Wert wird nachfolgend einzeln geprueft.
   const datei = roh as { schemaVersion?: unknown; vorlagen?: unknown }
   const version = datei.schemaVersion
-  if (typeof version === 'number' && version !== VORLAGEN_SCHEMA_VERSION) {
+
+  // EINE aeltere Fassung ist der definierte Migrationsfall (9.5.5): erst pruefen, ob die
+  // Huelle ueberhaupt passt, dann migrieren. Eine UNBEKANNTE (hoehere oder krumme) Fassung
+  // wird NICHT geraten - dieselbe Regel wie bei project.json.
+  if (version === 1) {
+    if (!Array.isArray(datei.vorlagen)) {
+      return { art: 'unbrauchbar', grund: 'Feld "vorlagen" fehlt oder ist kein Array' }
+    }
+    return { art: 'migriert', vorlagen: migriereVon1(datei.vorlagen) }
+  }
+
+  if (version !== VORLAGEN_SCHEMA_VERSION) {
     return { art: 'version', gelesen: version }
   }
   if (!Array.isArray(datei.vorlagen)) {
     return { art: 'unbrauchbar', grund: 'Feld "vorlagen" fehlt oder ist kein Array' }
-  }
-  if (version !== VORLAGEN_SCHEMA_VERSION) {
-    return { art: 'version', gelesen: version }
   }
   // Der einzige Zwang in dieser Datei: JSON.parse liefert `any`, der Vertrag verspricht Vorlage[].
   // Wer den Inhalt behauptet, prueft ihn bei sich (#100 bis #108).
@@ -517,6 +552,41 @@ function werteAus(roh: unknown): Auswertung {
   // Arbeitskopien-Verbrauchern (#100 bis #108) - der Cast reicht die ungepruefte
   // Liste weiter, damit diese Grenze eine zweite Wahrheit vermeidet.
   return { art: 'bestand', vorlagen: datei.vorlagen as Vorlage[] }
+}
+
+/**
+ * Migration `vorlagen.json` v1 -> v2: `art` entfernen, Anzeigenamen der beiden eingebauten
+ * Ganzbild-Vorlagen setzen. Es wird KEINE Vorlage geloescht und keine `id` angefasst.
+ *
+ * DER INHALT WIRD NICHT NACHGEPRUEFT - dieselbe Grenze wie beim Laden einer aktuellen Datei:
+ * Ob Zonen gueltig sind, entscheiden #100 bis #108. Diese Funktion kennt genau EINEN
+ * Unterschied zwischen v1 und v2 und aendert genau diesen.
+ *
+ * Die Namen werden ueber die ID gesetzt, nicht ueber den alten Namen: Eine eigene Vorlage
+ * darf „Vollbild" heissen, ohne umbenannt zu werden. `eingebaut` wird zusaetzlich verlangt,
+ * weil nur die mitgelieferten Eintraege eingefroren sind - eine gleichnamige eigene Vorlage
+ * bleibt unberuehrt.
+ */
+function migriereVon1(vorlagen: readonly unknown[]): Vorlage[] {
+  const ALT_ZU_NEU: Readonly<Record<string, string>> = {
+    vollbild: 'Ganzflächig',
+    split: 'Zwei Spalten',
+  }
+  return vorlagen.map((eintrag) => {
+    // SAFETY: JSON.parse liefert `any`; die Form wird erst von #100 bis #108 geprueft.
+    // Hier wird nur das eine bekannte Feld entfernt - ein Nicht-Objekt bleibt, wie es war,
+    // und faellt danach bei der fachlichen Pruefung auf.
+    if (typeof eintrag !== 'object' || eintrag === null || Array.isArray(eintrag)) {
+      return eintrag as Vorlage
+    }
+    const kopie = { ...(eintrag as Record<string, unknown>) }
+    delete kopie.art
+    const id = kopie.id
+    if (typeof id === 'string' && kopie.eingebaut === true && ALT_ZU_NEU[id] !== undefined) {
+      kopie.name = ALT_ZU_NEU[id]
+    }
+    return kopie as unknown as Vorlage
+  })
 }
 
 type Leseergebnis =

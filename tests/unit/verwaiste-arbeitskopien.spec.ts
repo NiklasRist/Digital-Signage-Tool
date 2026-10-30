@@ -14,7 +14,6 @@ function vorlage(id: string, parent: string | null, eingebaut = false): Vorlage 
   return {
     id,
     name: `Name ${id}`,
-    art: 'vollflaeche',
     höhe: null,
     parent,
     eingebaut,

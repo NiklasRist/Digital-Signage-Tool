@@ -199,14 +199,16 @@ export function bandVorlage(entwurf: BandEntwurf, vorlagen: readonly Vorlage[]):
   return vorlagen.find((vorlage) => vorlage.id === entwurf.bandVorlageId) ?? null
 }
 
-/** Der Text, der die gewaehlte Art benennt – „Split-Screen" bzw. „Einblendung"; leer bei null. */
+/**
+ * Der Text, der die gewaehlte Flaeche benennt – „Band"; leer bei null und bei Ganzbild.
+ *
+ * Seit v3.31 gibt es genau EINE Komposition (TK 9.2.8): Das Band liegt deckend ueber dem
+ * vollflaechigen Video. „Split-Screen" und „Einblendung" als zwei Arten sind entfallen;
+ * ein Ganzbild kann als Band nichts heissen (Fehlerpfade-Tabelle).
+ */
 export function artLabel(vorlage: Vorlage | null): string {
-  // `vollflaeche` kann als Band nichts heissen: Der Text bleibt leer
-  // (Fehlerpfade-Tabelle: `vollflaeche` ist keine Band-Vorlage).
-  if (vorlage === null) return ''
-  if (vorlage.art === 'split') return 'Split-Screen'
-  if (vorlage.art === 'einblendung') return 'Einblendung'
-  return ''
+  if (vorlage === null || vorlage.höhe === null) return ''
+  return 'Band'
 }
 
 /**

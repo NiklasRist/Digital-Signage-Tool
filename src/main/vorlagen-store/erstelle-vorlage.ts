@@ -1,22 +1,12 @@
 // [vorlagen-store] erstelleVorlage implementieren
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import type { Vorlage, VorlagenArt, Zone } from '../../shared/contracts/vorlage'
+import type { Vorlage, Zone } from '../../shared/contracts/vorlage'
 import type { VorlagenFehlercode } from './fehlercodes'
 import { aendereBestand } from './schreibe-vorlagen'
 import { eingebauteVorlagen } from './eingebaute-vorlagen'
 import { erzeugeId } from '../../shared/contracts/id'
-import { berechneBandGeometrie } from '../../shared/band-geometrie'
 import { text } from '../gemeinsam/systemfehler'
-/**
- * Die drei zulaessigen Werte, hier als LAUFZEIT-Liste.
- *
- * Der Typ allein genuegt nicht: "Der Main validiert jede eingehende Nutzlast - er vertraut dem
- * Renderer NICHT" (TK 9.1.1 Punkt 6). Ueber IPC kommt beliebiges JSON an; ein `art: 'band'` waere
- * fuer TypeScript unsichtbar und laege danach dauerhaft in vorlagen.json - unveraenderlich, weil
- * die `art` nach dem Anlegen feststeht.
- */
-const ARTEN: readonly VorlagenArt[] = ['vollflaeche', 'split', 'einblendung']
 
 /** Groesste zulaessige Laenge des GETRIMMTEN Namens (Issue, Abschnitt "Eingang -> Ausgang"). */
 const NAME_MAX_ZEICHEN = 80
@@ -26,9 +16,10 @@ const NAME_MAX_ZEICHEN = 80
  * so hoch wie das Bild liesse keine Videoflaeche uebrig (TK 9.11.1 Punkt 8, Wertebereich > 0
  * und < 1080).
  *
- * SIE IST NICHT DIE GANZE SCHRANKE: H = 1078 liegt darunter und ergibt trotzdem eine
- * Videobreite von 0. Diesen Fall faengt weiter unten die Pruefung ueber
- * `berechneBandGeometrie` (#239) - dort steht die Begruendung.
+ * SEIT v3.31 GIBT ES KEINE ZWEITE SCHRANKE MEHR: Die fruehere Sonderregel fuer H = 1078
+ * (bei `split` blieb eine Videobreite von 0) ist mit dem gestrichenen Split-Screen
+ * entfallen. Das Band liegt deckend ueber dem vollflaechigen Video (TK 9.2.8); es bleibt
+ * in jedem zulaessigen Bereich ein Bild.
  */
 const HOEHE_AUSSCHLIESSLICHE_OBERGRENZE = 1080
 
@@ -63,7 +54,6 @@ const QUELLE_BAND = 'band-standard'
  * eine Aktion ohne Motiv SCHWARZ rendern statt markenkonform.
  */
 export async function erstelleVorlage(
-  art: VorlagenArt,
   höhe: number | null,
   name: string,
 ): Promise<Ergebnis<Vorlage, VorlagenFehlercode>> {
@@ -71,13 +61,6 @@ export async function erstelleVorlage(
     // SCHRITT 1: VOLLSTAENDIG VALIDIEREN, BEVOR IRGENDETWAS PASSIERT (TK 9.1.1 Punkt 6). Bis zum
     // Aufruf von `aendereBestand` weiter unten wird nichts geschrieben, nichts angelegt und keine
     // ID vergeben - "ungueltige Eingabe -> ungueltige_eingabe, OHNE jede Wirkung auf die Daten".
-    if (!ARTEN.includes(art)) {
-      return fehler(
-        'ungueltige_eingabe',
-        `Unbekannte Vorlagenart ${String(art)}; erlaubt sind ${ARTEN.join(', ')}.`,
-      )
-    }
-
     if (typeof name !== 'string') {
       return fehler('ungueltige_eingabe', 'Der Name einer Vorlage muss eine Zeichenkette sein.')
     }
@@ -98,7 +81,7 @@ export async function erstelleVorlage(
     // KEINE Pruefung auf Eindeutigkeit des Namens und kein automatisches "(2)": Zwei Vorlagen
     // duerfen gleich heissen, die Identitaet ist die `id` (TK 9.11.4).
 
-    const hoehenFehler = pruefeHoehe(art, höhe)
+    const hoehenFehler = pruefeHoehe(höhe)
     if (hoehenFehler !== null) {
       return hoehenFehler
     }
@@ -106,7 +89,7 @@ export async function erstelleVorlage(
     // SCHRITT 2: die festen Zonen. Sie kommen aus #96 und werden hier NICHT neu hingeschrieben -
     // sonst gaebe es eine zweite Quelle fuer den Markenrahmen, die beim ersten Nachjustieren
     // auseinanderlaeuft.
-    const zonen = festeZonen(art, höhe)
+    const zonen = festeZonen(höhe)
     if (!zonen.ok) {
       return zonen
     }
@@ -116,7 +99,6 @@ export async function erstelleVorlage(
     const vorlage: Vorlage = {
       id: erzeugeId(),
       name: getrimmt,
-      art,
       höhe,
       // `parent: null` -> sofort nutzbare Vorlage, KEINE Arbeitskopie. Wer sie bearbeiten will,
       // ruft danach `oeffneZurBearbeitung` (#101).
@@ -158,22 +140,15 @@ export async function erstelleVorlage(
 }
 
 /**
- * Prueft `höhe` gegen die `art`. Rueckgabe `null` = in Ordnung.
+ * Prueft `höhe` - die EINZIGE Aussage ueber die Flaeche (TK 9.11.1 Punkt 0).
+ * Rueckgabe `null` = in Ordnung.
  *
- * Die `art` wird NICHT aus der `höhe` erraten ("höhe gesetzt, also wohl ein Band"): Sie ist nach dem
- * Anlegen unveraenderlich (TK 9.12.1), ein Fehlgriff zwingt den Nutzer, die Vorlage wegzuwerfen.
+ * `null` heisst Ganzbild (1920 x 1080), eine Zahl heisst Band. Es wird NICHTS
+ * geraten: Eine Zahl ist ein Band, auch wenn sie zufaellig 1080 waere - und gerade
+ * dann ist sie ein Fehler.
  */
-function pruefeHoehe(
-  art: VorlagenArt,
-  höhe: number | null,
-): Ergebnis<never, VorlagenFehlercode> | null {
-  if (art === 'vollflaeche') {
-    if (höhe !== null) {
-      return fehler(
-        'ungueltige_eingabe',
-        'Eine vollflaechige Vorlage hat keine Bandhoehe; erwartet wird null.',
-      )
-    }
+function pruefeHoehe(höhe: number | null): Ergebnis<never, VorlagenFehlercode> | null {
+  if (höhe === null) {
     return null
   }
 
@@ -196,45 +171,14 @@ function pruefeHoehe(
   }
   if (höhe % 2 !== 0) {
     // GERADE - vom Vertrag vorgegeben, nicht von dieser Datei: Das Ausgabe-Profil (TK 9.2.4,
-    // Chroma-Unterabtastung 4:2:0) verlangt gerade Hoehen und gerade Versaetze. Bei ungerader
-    // Hoehe ist die Videoflaeche 1080 - höhe (bei
-    // `split`) bzw. der Overlay-Versatz y = 1080 - höhe (bei `einblendung`) ungerade, und BEIDE
-    // Kompositionsarten aus TK 9.2.8 brechen. Der Nutzer soll das HIER erfahren, nicht erst beim
-    // Render (TK 9.11.1 Punkt 8).
+    // Chroma-Unterabtastung 4:2:0) verlangt gerade Hoehen und gerade Versaetze. Das Band
+    // liegt bei y = 1080 - höhe; bei ungerader Hoehe laege seine Oberkante auf einer
+    // ungeraden Zeile und die Kante erschiene ausgefranst. Der Nutzer soll das HIER
+    // erfahren, nicht erst beim Render (TK 9.11.1 Punkt 8).
     return fehler(
       'ungueltige_eingabe',
       `Die Bandhoehe muss gerade sein (uebergeben: ${String(höhe)}); ungerade Hoehen brechen die ` +
         `Komposition des Ausgabe-Profils.`,
-    )
-  }
-  // DIE OBERGRENZE 1080 IST ZU WEIT - ES GIBT GENAU EINE ZULAESSIGE HOEHE, DIE KEIN BILD
-  // MEHR UEBRIG LAESST: H = 1078.
-  //
-  // Die Videobreite der Split-Komposition wird auf ein Vielfaches von 4 ABGERUNDET
-  // (TK 9.2.8). Bei H = 1078 bleiben 2 px Videoflaeche, und daraus wird
-  // floor(2 x 16/9 / 4) x 4 = floor(3,55 / 4) x 4 = 0 x 4 = 0 - ein Video der Breite 0
-  // ist nicht darstellbar. Es ist der EINZIGE solche Fall im ganzen Bereich: Schon bei
-  // H = 1076 bleiben 4 px, und daraus wird floor(4 x 16/9 / 4) x 4 = 1 x 4 = 4.
-  //
-  // GERECHNET WIRD NICHT HIER, sondern mit dem geteilten Rechenkern (#239). Eine
-  // abgeschriebene Formel waere eine zweite Wahrheit ueber die Bandgeometrie und liefe
-  // beim ersten Nachjustieren der Rundung auseinander; die Grenze folgt so von selbst
-  // der Rechnung, statt als Zahl daneben zu stehen.
-  //
-  // DIE GRENZE GILT FUER BEIDE BANDARTEN. Bei `einblendung` bleibt das Video
-  // vollflaechig, die Videoflaeche des Split-Falls wird dort also gar nicht gebraucht -
-  // aber die `art` steht nach dem Anlegen fest (TK 9.12.1), und der Wertebereich der
-  // Bandhoehe ist im Vertrag EINER fuer beide (TK 9.11.1 Punkt 8). Zwei Obergrenzen
-  // waeren zwei Regeln fuer eine Zahl; ein Band, das 1078 der 1080 Zeilen verdeckt, ist
-  // ausserdem in keiner der beiden Betriebsarten ein sinnvolles Band.
-  const geometrie = berechneBandGeometrie(höhe)
-  if (geometrie.videoBreite <= 0) {
-    return fehler(
-      'ungueltige_eingabe',
-      `Bei einer Bandhoehe von ${String(höhe)} bleiben nur ` +
-        `${String(geometrie.videoBereichHöhe)} Bildzeilen fuer das Video uebrig; die auf ein ` +
-        `Vielfaches von 4 abgerundete Videobreite ergibt ${String(geometrie.videoBreite)} und ` +
-        `damit kein darstellbares Bild. Bitte eine kleinere Bandhoehe waehlen.`,
     )
   }
   return null
@@ -251,9 +195,9 @@ function pruefeHoehe(
  * JEDEM Aufruf frische Objekte aus Literalen auf. Die hier ausgewaehlten Zonen stammen aus einem
  * Aufruf, dessen uebriges Ergebnis sofort verfaellt - sie werden mit niemandem geteilt.
  */
-function festeZonen(art: VorlagenArt, höhe: number | null): Ergebnis<Zone[], VorlagenFehlercode> {
+function festeZonen(höhe: number | null): Ergebnis<Zone[], VorlagenFehlercode> {
   const mitgelieferte = eingebauteVorlagen()
-  const quelle = quelleFuer(art, höhe, mitgelieferte)
+  const quelle = quelleFuer(höhe, mitgelieferte)
 
   if (quelle === null) {
     // DIE VERBLIEBENE LUECKE, ausdruecklich NICHT geraten (STOPP-Block):
@@ -265,17 +209,17 @@ function festeZonen(art: VorlagenArt, höhe: number | null): Ergebnis<Zone[], Vo
     // NIRGENDS - eine erfundene Skalierungsregel waere genau das "automatische Umlayouten", das
     // TK 9.11.1 Punkt 3 verbietet.
     //
-    // Die frueher hier stehende zweite Luecke - der Hintergrund einer `einblendung` - ist mit der
-    // Entscheidung vom 23.10.2026 geschlossen (AD v1.9 / TK 9.11.1): Angelegt wird ausschliesslich
-    // mit 162 px, die festen Zonen kommen aus `band-standard`, und die `hintergrund`-Zone traegt den
-    // Scrim-Verlauf statt der deckenden Fuellung (s. `festeZonen` unten).
+    // Angelegt wird ausschliesslich mit 162 px (TK 9.11.1): Die festen Zonen kommen aus
+    // `band-standard`, und dessen `hintergrund` traegt seit v3.31 die DECKENDE Fuellung -
+    // das Band liegt ueber dem Video (TK 9.2.8). Die frueher hier angewandte Scrim-Variante
+    // fuer `einblendung` ist mit dem gestrichenen Split-Screen entfallen.
     //
     // Deshalb entsteht hier KEINE Vorlage. Der Ausgang ist eine Huelle (kein Wurf, nichts
     // geschrieben) und ausdruecklich KEIN `ungueltige_eingabe`: Die Eingabe ist gueltig, die
     // FESTLEGUNG fehlt.
     return fehler(
       'unbekannter_fehler',
-      `Fuer eine Vorlage der Art ${art} mit der Hoehe ${String(höhe)} ist noch nicht festgelegt, ` +
+      `Fuer eine Vorlage mit der Bandhoehe ${String(höhe)} ist noch nicht festgelegt, ` +
         `welche festen Zonen den Markenrahmen bilden (offener Punkt in Issue #100). Es wurde ` +
         `nichts angelegt.`,
     )
@@ -284,9 +228,7 @@ function festeZonen(art: VorlagenArt, höhe: number | null): Ergebnis<Zone[], Vo
   // Die Reihenfolge kommt aus der Quell-Vorlage und wird NICHT umsortiert: Zeichenreihenfolge =
   // Array-Reihenfolge (TK 9.11.1 Punkt 2), und `hintergrund` steht dort zuerst - ans Ende sortiert
   // deckte er alles zu.
-  const zonen = quelle.zonen
-    .filter((zone) => MARKENRAHMEN_ZONEN.includes(zone.id))
-    .map((zone) => (art === 'einblendung' && zone.id === 'hintergrund' ? mitScrimVerlauf(zone) : zone))
+  const zonen = quelle.zonen.filter((zone) => MARKENRAHMEN_ZONEN.includes(zone.id))
   if (zonen.length !== MARKENRAHMEN_ZONEN.length) {
     // Kann nur eintreten, wenn sich #96 aendert. Dann lieber ein sichtbarer Fehlschlag als eine
     // Vorlage ohne Markenrahmen: Die liesse sich spaeter nicht mehr reparieren, weil der Editor
@@ -301,25 +243,7 @@ function festeZonen(art: VorlagenArt, höhe: number | null): Ergebnis<Zone[], Vo
 }
 
 /**
- * Ersetzt die deckende Fuellung der `hintergrund`-Zone durch den Scrim-Verlauf.
- *
- * WOERTLICH (TK 9.11.1, Entscheidung 23.10.2026): "Die `hintergrund`-Zone traegt **keine** deckende
- * `flaecheDunkel`-Fuellung, sondern den **Scrim-Verlauf** `scrimStart` -> `scrimEnde`, Richtung
- * `unten` (durchsichtig -> 70 % Schwarz). Nur so traegt das Band Alpha und ueberlagert das Video."
- * (Deckkraft folgt der Vorlagenart, TK 9.2.8.)
- *
- * Geaendert wird NUR die Deko. Rahmen, `id`, `rolle`, `bindung`, `ausrichtung` und `wennLeer`
- * bleiben die der Band-Vorlage - sonst waere der Markenrahmen eine zweite Festlegung.
- */
-function mitScrimVerlauf(zone: Zone): Zone {
-  return {
-    ...zone,
-    deko: { verlauf: { vonFarbRolle: 'scrimStart', bisFarbRolle: 'scrimEnde', richtung: 'unten' } },
-  }
-}
-
-/**
- * Die Quell-Vorlage des Markenrahmens - oder `null`, wenn fuer diese Kombination nichts festgelegt
+ * Die Quell-Vorlage des Markenrahmens - oder `null`, wenn fuer diese Hoehe nichts festgelegt
  * ist.
  *
  * Die Bandhoehe wird gegen die Hoehe der eingebauten Band-Vorlage geprueft statt gegen eine hier
@@ -327,22 +251,17 @@ function mitScrimVerlauf(zone: Zone): Zone {
  * Vorlage je eine andere Hoehe, wandert der entschiedene Fall automatisch mit.
  */
 function quelleFuer(
-  art: VorlagenArt,
   höhe: number | null,
   mitgelieferte: readonly Vorlage[],
 ): Vorlage | null {
-  if (art === 'vollflaeche') {
+  if (höhe === null) {
     return mitgelieferte.find((vorlage) => vorlage.id === QUELLE_VOLLFLAECHE) ?? null
   }
-  if (art === 'split' || art === 'einblendung') {
-    // BEIDE Bandarten holen ihren Markenrahmen aus derselben Vorlage: Angelegt wird nach der
-    // Entscheidung vom 23.10.2026 ausschliesslich mit 162 px (TK 9.11.1), und `band-standard` ist
-    // genau darauf zugeschnitten. Andere Hoehen bleiben unentschieden (s. `festeZonen`) - die
-    // Oberflaeche bietet sie nicht an, der Store weist sie ab.
-    const band = mitgelieferte.find((vorlage) => vorlage.id === QUELLE_BAND)
-    return band !== undefined && band.höhe === höhe ? band : null
-  }
-  return null
+  // Angelegt wird nach der Entscheidung vom 23.10.2026 ausschliesslich mit 162 px (TK 9.11.1),
+  // und `band-standard` ist genau darauf zugeschnitten. Andere Hoehen bleiben unentschieden
+  // (s. `festeZonen`) - die Oberflaeche bietet sie nicht an, der Store weist sie ab.
+  const band = mitgelieferte.find((vorlage) => vorlage.id === QUELLE_BAND)
+  return band !== undefined && band.höhe === höhe ? band : null
 }
 
 

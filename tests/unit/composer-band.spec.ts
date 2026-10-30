@@ -95,7 +95,7 @@ function aktion(id: string, standardDauer: number | null = null): Aktion {
 }
 
 function bandVorlage(id: string): Vorlage {
-  return { id, name: id, art: 'split', höhe: 162, parent: null, eingebaut: false, zonen: [] }
+  return { id, name: id, höhe: 162, parent: null, eingebaut: false, zonen: [] }
 }
 
 function baueProjekt(ueber: Partial<Project> = {}): Project {

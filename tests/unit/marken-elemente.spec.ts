@@ -19,7 +19,6 @@ function vollbild(): Vorlage {
   return {
     id: 'vollbild',
     name: 'Vollbild',
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: true,

@@ -1755,10 +1755,10 @@ const main = async () => {
           await seite.evaluate(() => document.querySelector('[data-testid="vorlage-verwerfen"]')?.click());
           await schlafe(1_200);
         }
-        const neuKnopf4n = await seite.$('[data-testid="vorlagen-neu-vollflaeche"]');
+        const neuKnopf4n = await seite.$('[data-testid="vorlagen-neu-ganzbild"]');
         if (neuKnopf4n === null) {
-          fund("Vorlagen (FA-13)", "der Weg 'Neu: vollflaeche' steht in der Uebersicht",
-            "vorlagen-neu-vollflaeche fehlt", "Befund", "vorlagen-editor/index.tsx");
+          fund("Vorlagen (FA-13)", "der Weg 'Neu: Ganzbild (1920 x 1080)' steht in der Uebersicht",
+            "vorlagen-neu-ganzbild fehlt", "Befund", "vorlagen-editor/index.tsx");
         } else {
           await neuKnopf4n.click();
           neuKnopf4n.dispose?.();
@@ -1906,10 +1906,10 @@ const main = async () => {
           await seite.evaluate(() => document.querySelector('[data-testid="vorlage-verwerfen"]')?.click());
           await schlafe(1_200);
         }
-        const neuKnopf4r = await seite.$('[data-testid="vorlagen-neu-einblendung"]');
+        const neuKnopf4r = await seite.$('[data-testid="vorlagen-neu-band"]');
         if (neuKnopf4r === null) {
-          fund("Einblendung anlegen (FA-13)", "der Weg 'Neu: einblendung' steht in der Uebersicht",
-            "vorlagen-neu-einblendung fehlt", "Befund", "vorlagen-editor/index.tsx");
+          fund("Band anlegen (FA-13)", "der Weg 'Neu: Band (1920 x 162)' steht in der Uebersicht",
+            "vorlagen-neu-band fehlt", "Befund", "vorlagen-editor/index.tsx");
         } else {
           await neuKnopf4r.click();
           neuKnopf4r.dispose?.();
@@ -1937,23 +1937,19 @@ const main = async () => {
           const zonen4r = neu4r === null ? [] : neu4r.zonen;
           const zoneHintergrund4r = zonen4r.find((z) => z.id === 'hintergrund') ?? null;
           const zoneLogo4r = zonen4r.find((z) => z.id === 'logo') ?? null;
-          const verlauf4r = zoneHintergrund4r?.deko?.verlauf ?? null;
-          console.log(`[schritt-4r] Einblendung: nameGesetzt=${String(nameGesetzt4r)}, gefunden=${String(neu4r !== null)}, art=${String(neu4r?.art)}, hoehe=${String(neu4r?.höhe)}, zonen=${JSON.stringify(zonen4r.map((z) => z.id))}, hintergrund=${JSON.stringify(zoneHintergrund4r?.deko)}, logo=${JSON.stringify(zoneLogo4r?.rahmen)}.`);
+          console.log(`[schritt-4r] Band: nameGesetzt=${String(nameGesetzt4r)}, gefunden=${String(neu4r !== null)}, hoehe=${String(neu4r?.höhe)}, zonen=${JSON.stringify(zonen4r.map((z) => z.id))}, hintergrund=${JSON.stringify(zoneHintergrund4r?.deko)}, logo=${JSON.stringify(zoneLogo4r?.rahmen)}.`);
           if (!nameGesetzt4r || neu4r === null) {
-            fund("Einblendung anlegen (FA-13)", "eine eigene Einblendung laesst sich anlegen",
+            fund("Band anlegen (FA-13)", "ein eigenes Band laesst sich anlegen",
               `gefunden=${String(neu4r !== null)}`, "Befund", "vorlagen-editor/index.tsx");
-          } else if (neu4r.art !== 'einblendung' || neu4r.höhe !== 162) {
-            fund("Einblendung anlegen (FA-13)", "die Einblendung traegt art=einblendung und hoehe=162",
-              `art=${String(neu4r.art)}, hoehe=${String(neu4r.höhe)}`, "Befund", "vorlagen-store/erstelle-vorlage.ts");
+          } else if (neu4r.höhe !== 162) {
+            fund("Band anlegen (FA-13)", "das Band traegt hoehe=162",
+              `hoehe=${String(neu4r.höhe)}`, "Befund", "vorlagen-store/erstelle-vorlage.ts");
           } else if (zonen4r.map((z) => z.id).join(',') !== 'hintergrund,logo') {
-            fund("Einblendung anlegen (FA-13)", "die festen Zonen sind hintergrund und logo (Reihenfolge)",
+            fund("Band anlegen (FA-13)", "die festen Zonen sind hintergrund und logo (Reihenfolge)",
               JSON.stringify(zonen4r.map((z) => z.id)), "Befund", "vorlagen-store/erstelle-vorlage.ts");
-          } else if (verlauf4r === null
-            || verlauf4r.vonFarbRolle !== 'scrimStart'
-            || verlauf4r.bisFarbRolle !== 'scrimEnde'
-            || verlauf4r.richtung !== 'unten'
-            || zoneHintergrund4r?.deko?.füllungFarbRolle !== undefined) {
-            fund("Einblendung anlegen (FA-13)", "der Hintergrund traegt den Scrim-Verlauf scrimStart -> scrimEnde (unten), keine deckende Fuellung",
+          } else if (zoneHintergrund4r?.deko?.füllungFarbRolle !== 'flaecheDunkel'
+            || zoneHintergrund4r?.deko?.verlauf !== undefined) {
+            fund("Band anlegen (FA-13)", "der Hintergrund ist DECKEND (flaecheDunkel), kein Scrim-Verlauf (TK 9.2.8 v3.31)",
               JSON.stringify(zoneHintergrund4r?.deko), "Befund", "vorlagen-store/erstelle-vorlage.ts");
           } else if (zoneLogo4r === null
             || zoneLogo4r.rahmen.x !== 96 || zoneLogo4r.rahmen.y !== 20
@@ -1961,7 +1957,7 @@ const main = async () => {
             fund("Einblendung anlegen (FA-13)", "das Logo steht auf dem Band-Rahmen (96, 20, 240, 69)",
               JSON.stringify(zoneLogo4r?.rahmen), "Befund", "vorlagen-store/erstelle-vorlage.ts");
           } else {
-            console.log("[schritt-4r] Einblendung GEMESSEN: art=einblendung, hoehe=162, Zonen [hintergrund, logo], Scrim-Verlauf, Logo (96, 20, 240, 69) (#100/FA-13).");
+            console.log("[schritt-4r] Band GEMESSEN: hoehe=162, Zonen [hintergrund, logo], deckende Fuellung, Logo (96, 20, 240, 69) (#100/FA-13).");
           }
         }
       } finally {

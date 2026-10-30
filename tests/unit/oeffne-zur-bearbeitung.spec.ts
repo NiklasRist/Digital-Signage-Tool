@@ -41,7 +41,6 @@ function eigene(id: string): Vorlage {
   return {
     id,
     name: `Name ${id}`,
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: false,
@@ -122,7 +121,6 @@ describe('oeffneZurBearbeitung (#101) – neue Arbeitskopie', () => {
     expect(kopie.id).toMatch(UUID)
     expect(kopie.eingebaut).toBe(false)
     expect(kopie.name).toBe('Band-Standard')
-    expect(kopie.art).toBe('split')
     expect(kopie.höhe).toBe(162)
   })
 

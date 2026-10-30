@@ -244,11 +244,9 @@ describe("renderReel - Erfolg", () => {
       trimStart: 0,
       trimEnde: 4,
       einblendung: {
-        art: "split",
         höhe: 162,
         bandVorlageId: "band-1",
         abschnitte: [{ png: new Uint8Array([1]), dauer: 4 }],
-        flaecheDunkel: "#2F2E2E",
       },
     };
 

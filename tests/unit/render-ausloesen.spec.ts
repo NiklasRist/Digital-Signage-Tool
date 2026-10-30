@@ -77,11 +77,6 @@ const marke = (): Marke => ({
   herkunftJeFeld: null as never,
 })
 
-/** Eine Marke mit EINEM unterscheidbaren Farbwert der Rolle `flaecheDunkel`. */
-function markeMit(farbe: string): Marke {
-  return { ...marke(), farben: { flaecheDunkel: farbe } as never }
-}
-
 function projekt(liste: Project['liste'], aktionen: Project['aktionen'] = [], assets: Project['assets'] = []): Project {
   return {
     id: 'p-1',
@@ -119,7 +114,7 @@ const AKTION_OK = {
   akzentfarbe: null,
 }
 
-const VORLAGEN_OK = [{ id: 'vollbild', name: 'Vollbild', art: 'vollflaeche' as const, höhe: null, parent: null, eingebaut: true, zonen: [] }]
+const VORLAGEN_OK = [{ id: 'vollbild', name: 'Vollbild', höhe: null, parent: null, eingebaut: true, zonen: [] }]
 
 let standardMarke: Marke
 
@@ -195,8 +190,8 @@ describe('loeseRenderAus (#134) - die Items', () => {
     expect(item.einblendung).toBeNull()
   })
 
-  it("video mit einblendung -> art und Höhe aus der SELBEN Band-Vorlage; je Abschnitt ein Band-PNG", async () => {
-    const band = { id: 'band-1', name: 'band', art: 'split' as const, höhe: 162, parent: null, eingebaut: true, zonen: [] }
+  it("video mit einblendung -> Höhe aus der SELBEN Band-Vorlage; je Abschnitt ein Band-PNG", async () => {
+    const band = { id: 'band-1', name: 'band', höhe: 162, parent: null, eingebaut: true, zonen: [] }
     const bild = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const }
     // Das EINBLENDUNG: der Video-Element nutzt die bild-Asset-ID; die Elemente
     // haben kein Dauer (Bild hat keine) aber trimmed Start/Ende CLOCK: 0 - 10
@@ -209,14 +204,13 @@ describe('loeseRenderAus (#134) - die Items', () => {
     if (!antwortProbe.ok) {
       throw new Error(`Probe fehlgeschlagen: ${antwortProbe.fehler.code} – ${antwortProbe.fehler.meldung}`)
     }
-    const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: Array<{ einblendung: { art: string; höhe: number; bandVorlageId: string; abschnitte: Array<{ png: Uint8Array; dauer: number }> } | null }> } }
-    expect(nutzlast.payload.elemente[0]?.einblendung?.art).toBe('split')
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: Array<{ einblendung: { höhe: number; bandVorlageId: string; abschnitte: Array<{ png: Uint8Array; dauer: number }> } | null }> } }
     expect(nutzlast.payload.elemente[0]?.einblendung?.höhe).toBe(162)
     expect(nutzlast.payload.elemente[0]?.einblendung?.abschnitte).toHaveLength(1)
   })
 
   it("die Hoehe kommt aus der SELBEN Band-Vorlage (120), nicht aus einer festen Zahl", async () => {
-    const flach = { id: 'band-2', name: 'flach', art: 'einblendung' as const, höhe: 120, parent: null, eingebaut: false, zonen: [] }
+    const flach = { id: 'band-2', name: 'flach', höhe: 120, parent: null, eingebaut: false, zonen: [] }
     const videoAsset = { id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: 9, importdatum: 'x', zustand: 'ok' as const }
     const p = projekt(
       [video('e1', 'v1', { bandVorlageId: 'band-2', abschnitte: [{ aktionRef: 'a-1', dauer: 2 }] }, 0, 10)],
@@ -225,9 +219,8 @@ describe('loeseRenderAus (#134) - die Items', () => {
     )
     const antwort = await loeseRenderAus(p, 'sommer', marke(), [...VORLAGEN_OK, flach], null)
     expect(antwort.ok).toBe(true)
-    const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: Array<{ einblendung: { art: string; höhe: number } | null }> } }
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: Array<{ einblendung: { höhe: number } | null }> } }
     expect(nutzlast.payload.elemente[0]?.einblendung?.höhe).toBe(120)
-    expect(nutzlast.payload.elemente[0]?.einblendung?.art).toBe('einblendung')
   })
 
   it("der Auftrag traegt die PROJEKT-Kennung (nicht die Testkonstante p-1)", async () => {
@@ -264,7 +257,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
 })
 
 describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
-  const bandVorlage = { id: 'band-1', name: 'band', art: 'split' as const, höhe: 162, parent: null, eingebaut: true, zonen: [] }
+  const bandVorlage = { id: 'band-1', name: 'band', höhe: 162, parent: null, eingebaut: true, zonen: [] }
   const bildAsset = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const }
   const band = (id: string) => video(id, 'bild-1', { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 5 }] }, 0, 10)
 
@@ -310,68 +303,18 @@ describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
   })
 })
 
-describe('loeseRenderAus (#316) - die Farbe reist eingefroren im Auftrag', () => {
-  const bandVorlage = { id: 'band-1', name: 'band', art: 'split' as const, höhe: 162, parent: null, eingebaut: true, zonen: [] }
-  const bildAsset = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const }
-  const band = (id: string) => video(id, 'bild-1', { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 5 }] }, 0, 10)
-
-  /** Die `einblendung`-Objekte des EINGEREIHTEN Auftrags - ohne `null`-Elemente. */
-  function bandFarben(): Array<{ flaecheDunkel?: string }> {
-    const nutzlast = doppel.aufrufe[0]?.nutzlast as {
-      payload: { elemente: Array<{ einblendung: { flaecheDunkel?: string } | null }> }
-    }
-    return nutzlast.payload.elemente.flatMap((element) => (element.einblendung === null ? [] : [element.einblendung]))
-  }
-
-  it('nimmt die Farbe der PROJEKT-Standardmarke - NICHT die der Inhaltsmarke', async () => {
-    markenDoppel.antwort = { ok: true, wert: markeMit('#010203') }
-    const antwort = await loeseRenderAus(
-      projekt([band('e1')], [AKTION_OK], [bildAsset]),
-      'sommer',
-      markeMit('#0A0B0C'),
-      [...VORLAGEN_OK, bandVorlage],
-    null)
-    expect(antwort.ok).toBe(true)
-    // Zwei unterscheidbare Werte: Der Rahmen gewinnt (TK 9.15.4). Der Parameter
-    // `marke` traegt den INHALT und wechselt mit jeder rotierenden Aktion -
-    // ihn zu nehmen waere der stille Fehler, den der Typecheck nicht sieht.
-    expect(bandFarben()[0]?.flaecheDunkel).toBe('#010203')
-    expect(bandFarben()[0]?.flaecheDunkel).not.toBe('#0A0B0C')
-  })
-
-  it('drei Band-Elemente tragen DENSELBEN Wert; stelleMarkeBereit bleibt bei EINEM Aufruf', async () => {
-    markenDoppel.antwort = { ok: true, wert: markeMit('#112233') }
-    await loeseRenderAus(
-      projekt([band('e1'), band('e2'), band('e3')], [AKTION_OK], [bildAsset]),
-      'sommer',
-      markeMit('#445566'),
-      [...VORLAGEN_OK, bandVorlage],
-    null)
-    expect(markenDoppel.aufrufe).toEqual(['m1'])
-    expect(bandFarben().map((e) => e.flaecheDunkel)).toEqual(['#112233', '#112233', '#112233'])
-  })
-
-  it('reicht den Wert ZEICHENGLEICH durch - kein Grossschreiben, kein Kuerzen, kein 0x', async () => {
-    markenDoppel.antwort = { ok: true, wert: markeMit('#2f2e2eAA') }
-    await loeseRenderAus(projekt([band('e1')], [AKTION_OK], [bildAsset]), 'sommer', marke(), [...VORLAGEN_OK, bandVorlage], null)
-    // Die Umrechnung nach `0xRRGGBB` macht `markenFarbeZuFfmpeg` - die EINZIGE
-    // Umrechnung im Projekt. Hier wird nur durchgereicht (TK 9.2.8).
-    expect(bandFarben()[0]?.flaecheDunkel).toBe('#2f2e2eAA')
-  })
-})
-
 describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
   const videoAsset = {
     id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa',
     maße: { breite: 10, höhe: 10 }, dauer: 12, importdatum: 'x', zustand: 'ok' as const,
   } as never as Project['assets'][number]
-  const bandVorlage = { id: 'band-1', name: 'band', art: 'split' as const, höhe: 162, parent: null, eingebaut: true, zonen: [] }
+  const bandVorlage = { id: 'band-1', name: 'band', höhe: 162, parent: null, eingebaut: true, zonen: [] }
 
   function unterbrochen(unterbrechungen: Project['liste'][number]['unterbrechungen'], einblendung: Project['liste'][number]['einblendung'] = null) {
     return { ...video('e1', 'v1', einblendung, 2, 12), unterbrechungen }
   }
 
-  function items(): Array<{ art: string; trimStart?: number; trimEnde?: number; dauer?: number; einblendung?: { abschnitte: Array<{ dauer: number }>; flaecheDunkel?: string } | null }> {
+  function items(): Array<{ art: string; trimStart?: number; trimEnde?: number; dauer?: number; einblendung?: { abschnitte: Array<{ dauer: number }> } | null }> {
     const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: never } }
     return nutzlast.payload.elemente as never
   }
@@ -403,23 +346,6 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
     expect(elemente[2]?.einblendung?.abschnitte.map((a) => a.dauer)).toEqual([1, 3])
   })
 
-  it('jedes Video-Teilstueck traegt DENSELBEN eingefrorenen flaecheDunkel-Wert (#316)', async () => {
-    // Das Band wird EINMAL gebaut (`baueBand`) und per Spread auf die Teilstuecke
-    // verteilt. Der Wert muss deshalb an JEDEM Teil stehen - und der der
-    // Projekt-Standardmarke sein, nicht der der Inhaltsmarke (TK 9.15.4).
-    markenDoppel.antwort = { ok: true, wert: markeMit('#0f1e2d') }
-    const einblendung = { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 4 }] }
-    const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 5 }], einblendung)], [AKTION_OK], [videoAsset])
-    const antwort = await loeseRenderAus(p, 'sommer', markeMit('#778899'), [...VORLAGEN_OK, bandVorlage], null)
-    expect(antwort.ok).toBe(true)
-
-    const elemente = items()
-    expect(elemente.map((i) => i.art)).toEqual(['video', 'segment', 'video'])
-    expect(elemente[0]?.einblendung?.flaecheDunkel).toBe('#0f1e2d')
-    expect(elemente[2]?.einblendung?.flaecheDunkel).toBe('#0f1e2d')
-    // Das Segment-Teilstueck (Einschub) traegt kein Band.
-    expect(elemente[1]?.einblendung ?? null).toBeNull()
-  })
 })
 
 describe('loeseExportAus (#134)', () => {

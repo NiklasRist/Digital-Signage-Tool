@@ -29,11 +29,10 @@ function zone(id: string): Zone {
   }
 }
 
-function vorlage(art: Vorlage['art'], höhe: number | null, ...zonen: Zone[]): Vorlage {
+function vorlage(höhe: number | null, ...zonen: Zone[]): Vorlage {
   return {
     id: 'vorlage-1',
     name: 'Testvorlage',
-    art,
     höhe,
     parent: null,
     eingebaut: true,
@@ -66,7 +65,7 @@ function pruefeRahmenInFlaeche(rahmen: Rahmen, breite: number, höhe: number) {
 
 describe('fuegeZoneHinzu (#147) – Sorten auf vollflaeche', () => {
   it('legt eine gebundene Textzone mit vollstaendigen Text-Parametern an (DoD a, 1, 2)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), { sorte: 'text', bindung: 'titel' })
+    const ergebnis = fuegeZoneHinzu(vorlage(null), { sorte: 'text', bindung: 'titel' })
 
     expect(ergebnis.ok).toBe(true)
     const z = neu(ergebnis)
@@ -90,7 +89,7 @@ describe('fuegeZoneHinzu (#147) – Sorten auf vollflaeche', () => {
   })
 
   it('legt eine Bildzone mit einpassung contain an, ohne text (DoD a, 3)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), { sorte: 'bild', bindung: 'logo' })
+    const ergebnis = fuegeZoneHinzu(vorlage(null), { sorte: 'bild', bindung: 'logo' })
 
     expect(ergebnis.ok).toBe(true)
     const z = neu(ergebnis)
@@ -102,7 +101,7 @@ describe('fuegeZoneHinzu (#147) – Sorten auf vollflaeche', () => {
   })
 
   it('legt eine dekorative Zone ohne statischen Text an - bindung null, kein text (DoD a, 4)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), { sorte: 'deko' })
+    const ergebnis = fuegeZoneHinzu(vorlage(null), { sorte: 'deko' })
 
     expect(ergebnis.ok).toBe(true)
     const z = neu(ergebnis)
@@ -115,7 +114,7 @@ describe('fuegeZoneHinzu (#147) – Sorten auf vollflaeche', () => {
 
 describe('fuegeZoneHinzu (#147) – Sorten auf dem 162-px-Band', () => {
   it('text nutzt die Band-Vorgaben 64/44/1 (DoD a)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('einblendung', 162), { sorte: 'text', bindung: 'preis' })
+    const ergebnis = fuegeZoneHinzu(vorlage(162), { sorte: 'text', bindung: 'preis' })
 
     expect(ergebnis.ok).toBe(true)
     const z = neu(ergebnis)
@@ -130,7 +129,7 @@ describe('fuegeZoneHinzu (#147) – Sorten auf dem 162-px-Band', () => {
   })
 
   it('bild nutzt dieselben Regeln wie auf vollflaeche (DoD a)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('split', 162), { sorte: 'bild', bindung: 'bild' })
+    const ergebnis = fuegeZoneHinzu(vorlage(162), { sorte: 'bild', bindung: 'bild' })
 
     expect(ergebnis.ok).toBe(true)
     const z = neu(ergebnis)
@@ -140,7 +139,7 @@ describe('fuegeZoneHinzu (#147) – Sorten auf dem 162-px-Band', () => {
   })
 
   it('deko bleibt bindung null (DoD a)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('einblendung', 162), { sorte: 'deko' })
+    const ergebnis = fuegeZoneHinzu(vorlage(162), { sorte: 'deko' })
 
     expect(ergebnis.ok).toBe(true)
     const z = neu(ergebnis)
@@ -151,7 +150,7 @@ describe('fuegeZoneHinzu (#147) – Sorten auf dem 162-px-Band', () => {
 
 describe('fuegeZoneHinzu (#147) – id-Vergabe', () => {
   it('vergibt beim zweiten titel titel-2 (DoD b)', () => {
-    const erste = fuegeZoneHinzu(vorlage('vollflaeche', null), { sorte: 'text', bindung: 'titel' })
+    const erste = fuegeZoneHinzu(vorlage(null), { sorte: 'text', bindung: 'titel' })
     expect(erste.ok).toBe(true)
     const zweite = fuegeZoneHinzu(stand(erste), { sorte: 'text', bindung: 'titel' })
 
@@ -161,7 +160,7 @@ describe('fuegeZoneHinzu (#147) – id-Vergabe', () => {
   })
 
   it('legt drei gleichartige Zonen als titel, titel-2, titel-3 an', () => {
-    let vorlageJetzt = vorlage('vollflaeche', null)
+    let vorlageJetzt = vorlage(null)
     for (const erwartet of ['titel', 'titel-2', 'titel-3']) {
       const ergebnis = fuegeZoneHinzu(vorlageJetzt, { sorte: 'text', bindung: 'titel' })
       expect(ergebnis.ok).toBe(true)
@@ -171,7 +170,7 @@ describe('fuegeZoneHinzu (#147) – id-Vergabe', () => {
   })
 
   it('deko zweimal ergibt deko und deko-2', () => {
-    const erste = fuegeZoneHinzu(vorlage('vollflaeche', null), { sorte: 'deko' })
+    const erste = fuegeZoneHinzu(vorlage(null), { sorte: 'deko' })
     expect(erste.ok).toBe(true)
     const zweite = fuegeZoneHinzu(stand(erste), { sorte: 'deko' })
 
@@ -180,7 +179,7 @@ describe('fuegeZoneHinzu (#147) – id-Vergabe', () => {
   })
 
   it('weicht einer bereits belegten Bildbindung mit -2 aus', () => {
-    const besetzt = vorlage('vollflaeche', null, zone('bild'))
+    const besetzt = vorlage(null, zone('bild'))
     const ergebnis = fuegeZoneHinzu(besetzt, { sorte: 'bild', bindung: 'bild' })
 
     expect(ergebnis.ok).toBe(true)
@@ -190,7 +189,7 @@ describe('fuegeZoneHinzu (#147) – id-Vergabe', () => {
 
 describe('fuegeZoneHinzu (#147) – Rahmen liegt in der Flaeche', () => {
   it('startet auf vollflaeche bei {96, 540, 400, 120} innerhalb von 1920x1080 (DoD 5)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), { sorte: 'text', bindung: 'slogan' })
+    const ergebnis = fuegeZoneHinzu(vorlage(null), { sorte: 'text', bindung: 'slogan' })
 
     expect(ergebnis.ok).toBe(true)
     const rahmen = neu(ergebnis).rahmen
@@ -199,7 +198,7 @@ describe('fuegeZoneHinzu (#147) – Rahmen liegt in der Flaeche', () => {
   })
 
   it('startet auf dem 162-px-Band bei {96, 16, 400, 72} innerhalb von 1920x162 (DoD 5)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('einblendung', 162), { sorte: 'bild', bindung: 'logo' })
+    const ergebnis = fuegeZoneHinzu(vorlage(162), { sorte: 'bild', bindung: 'logo' })
 
     expect(ergebnis.ok).toBe(true)
     const rahmen = neu(ergebnis).rahmen
@@ -208,7 +207,7 @@ describe('fuegeZoneHinzu (#147) – Rahmen liegt in der Flaeche', () => {
   })
 
   it('schrumpft die Hoehe auf das 40-px-Band und verschiebt die Zone hinein (DoD c, 5)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('split', 40), { sorte: 'text', bindung: 'cta' })
+    const ergebnis = fuegeZoneHinzu(vorlage(40), { sorte: 'text', bindung: 'cta' })
 
     expect(ergebnis.ok).toBe(true)
     const z = neu(ergebnis)
@@ -218,7 +217,7 @@ describe('fuegeZoneHinzu (#147) – Rahmen liegt in der Flaeche', () => {
   })
 
   it('laesst die uebergebene Vorlage unveraendert und haengt ans Ende an (DoD 6)', () => {
-    const eingang = vorlage('vollflaeche', null, zone('hintergrund'), zone('motiv'))
+    const eingang = vorlage(null, zone('hintergrund'), zone('motiv'))
     const vorher = eingang.zonen.map((z) => z)
 
     const ergebnis = fuegeZoneHinzu(eingang, { sorte: 'text', bindung: 'titel' })
@@ -238,7 +237,7 @@ describe('fuegeZoneHinzu (#147) – Rahmen liegt in der Flaeche', () => {
 
 describe('fuegeZoneHinzu (#147) – dekorative Zone mit statischem Text (DoD d)', () => {
   it('setzt deko.statischerText und den dazu noetigen text-Block', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), {
+    const ergebnis = fuegeZoneHinzu(vorlage(null), {
       sorte: 'deko',
       statischerText: 'Trainiere mit System',
     })
@@ -260,7 +259,7 @@ describe('fuegeZoneHinzu (#147) – dekorative Zone mit statischem Text (DoD d)'
   })
 
   it('nutzt auf dem Band denselben text-Block wie eine Textzone (64/44/1)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('einblendung', 162), {
+    const ergebnis = fuegeZoneHinzu(vorlage(162), {
       sorte: 'deko',
       statischerText: 'Band',
     })
@@ -278,7 +277,7 @@ describe('fuegeZoneHinzu (#147) – dekorative Zone mit statischem Text (DoD d)'
   })
 
   it('trimmt den statischen Text beim Speichern', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), {
+    const ergebnis = fuegeZoneHinzu(vorlage(null), {
       sorte: 'deko',
       statischerText: '  Abstand   ',
     })
@@ -288,7 +287,7 @@ describe('fuegeZoneHinzu (#147) – dekorative Zone mit statischem Text (DoD d)'
   })
 
   it('behandelt reinen Leerraum als nicht gesetzt - ok, ohne statischerText und ohne text', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), {
+    const ergebnis = fuegeZoneHinzu(vorlage(null), {
       sorte: 'deko',
       statischerText: '   ',
     })
@@ -302,17 +301,8 @@ describe('fuegeZoneHinzu (#147) – dekorative Zone mit statischem Text (DoD d)'
 })
 
 describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
-  it('weist eine Vorlage mit hoehe null auf split als ungueltige_eingabe ab', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('split', null), { sorte: 'text', bindung: 'titel' })
-
-    expect(ergebnis.ok).toBe(false)
-    expect(ergebnis.ok === false && ergebnis.fehler.code).toBe('ungueltige_eingabe')
-    expect(ergebnis.ok === false && ergebnis.fehler.meldung).toContain('vorlage-1')
-    expect(ergebnis.ok === false && ergebnis.fehler.daten).toBeUndefined()
-  })
-
   it('weist jede Flaeche unter MINDEST_ZONEN_KANTE_PX ab - auch hoehe 5', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('einblendung', 5), { sorte: 'deko' })
+    const ergebnis = fuegeZoneHinzu(vorlage(5), { sorte: 'deko' })
 
     expect(ergebnis.ok).toBe(false)
     expect(ergebnis.ok === false && ergebnis.fehler.code).toBe('ungueltige_eingabe')
@@ -321,7 +311,7 @@ describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
   it('nimmt GENAU die Mindesthoehe noch an - die Grenze ist einschliesslich', () => {
     // "< MINDEST" ist ungueltig, genau MINDEST ist gueltig. Ohne diesen Fall waere
     // eine Verschiebung auf "<=" unsichtbar (Mutation H6, 20.10.2026).
-    const ergebnis = fuegeZoneHinzu(vorlage('einblendung', MINDEST_ZONEN_KANTE_PX), {
+    const ergebnis = fuegeZoneHinzu(vorlage(MINDEST_ZONEN_KANTE_PX), {
       sorte: 'deko',
     })
 
@@ -329,7 +319,7 @@ describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
   })
 
   it('weist einen statischen Text ueber 200 Zeichen ab', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), {
+    const ergebnis = fuegeZoneHinzu(vorlage(null), {
       sorte: 'deko',
       statischerText: 'x'.repeat(201),
     })
@@ -339,7 +329,7 @@ describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
   })
 
   it('erlaubt einen statischen Text von genau 200 Zeichen', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), {
+    const ergebnis = fuegeZoneHinzu(vorlage(null), {
       sorte: 'deko',
       statischerText: 'x'.repeat(200),
     })
@@ -349,7 +339,7 @@ describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
   })
 
   it('weist einen Wunsch ab, der keiner Sorte entspricht (untypisierter Aufruf)', () => {
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null), {
+    const ergebnis = fuegeZoneHinzu(vorlage(null), {
       sorte: 'kaputt',
     } as unknown as ZonenWunsch)
 
@@ -362,7 +352,7 @@ describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
     for (let suffix = 2; suffix <= 99; suffix += 1) {
       zonen.push(zone(`deko-${suffix}`))
     }
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null, ...zonen), { sorte: 'deko' })
+    const ergebnis = fuegeZoneHinzu(vorlage(null, ...zonen), { sorte: 'deko' })
 
     expect(ergebnis.ok).toBe(false)
     expect(ergebnis.ok === false && ergebnis.fehler.code).toBe('ungueltige_eingabe')
@@ -374,7 +364,7 @@ describe('fuegeZoneHinzu (#147) – Fehlerpfade (DoD e, 8)', () => {
     for (let suffix = 2; suffix <= 98; suffix += 1) {
       zonen.push(zone(`deko-${suffix}`))
     }
-    const ergebnis = fuegeZoneHinzu(vorlage('vollflaeche', null, ...zonen), { sorte: 'deko' })
+    const ergebnis = fuegeZoneHinzu(vorlage(null, ...zonen), { sorte: 'deko' })
 
     expect(ergebnis.ok).toBe(true)
     expect(neu(ergebnis).id).toBe('deko-99')

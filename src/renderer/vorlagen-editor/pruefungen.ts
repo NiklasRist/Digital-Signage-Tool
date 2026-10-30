@@ -130,10 +130,10 @@ export function istSpeicherbar(befunde: readonly Befund[]): boolean {
 
 /**
  * Band-y, ab dem der Inhalt im Overscan liegt (= höhe − 54).
- * null bei `vollflaeche` und wenn die ganze Bandfläche unsicher ist.
+ * null bei einem Ganzbild (`höhe === null`) und wenn die ganze Bandfläche unsicher ist.
  */
 export function bandSicherheitsLinie(vorlage: Vorlage): number | null {
-  if (vorlage.art === 'vollflaeche') {
+  if (vorlage.höhe === null) {
     return null
   }
   const hoehe = vorlage.höhe
@@ -155,18 +155,10 @@ export function bandSicherheitsLinie(vorlage: Vorlage): number | null {
 /** bandhoehe_ungueltig - eine der drei ungueltigen Auspraegungen, sonst null. */
 function bandhoeheBefund(vorlage: Vorlage): Befund | null {
   const hoehe = vorlage.höhe
-  if (vorlage.art === 'vollflaeche') {
-    if (hoehe === null) {
-      return null
-    }
-    return {
-      schwere: 'sperre',
-      code: 'bandhoehe_ungueltig',
-      zonenId: null,
-      meldung: 'Eine vollflächige Vorlage trägt keine Bandhöhe; höhe muss null sein.',
-    }
+  if (hoehe === null) {
+    return null
   }
-  // split / einblendung: endliche ganze Zahl > 0 und < 1080 UND gerade (yuv420p).
+  // Band: endliche ganze Zahl > 0 und < 1080 UND gerade (yuv420p).
   if (hoehe === null || !Number.isInteger(hoehe) || !Number.isFinite(hoehe) || hoehe <= 0) {
     return {
       schwere: 'sperre',
@@ -274,7 +266,7 @@ function istZoneInBox(zone: Zone, box: Rahmen): boolean {
 function sicherheitsabstandMeldung(zonenId: string, vorlage: Vorlage): string {
   const horizontal = SICHERHEITSABSTAND_PX.horizontal
   const vertikal = SICHERHEITSABSTAND_PX.vertikal
-  if (vorlage.art === 'vollflaeche') {
+  if (vorlage.höhe === null) {
     return `Die Zone „${zonenId}" liegt im Rand von ${horizontal}/${vertikal} px (TV-Overscan) und kann am Fernseher abgeschnitten werden.`
   }
   const sicher = vorlage.höhe !== null ? vorlage.höhe - vertikal : 0

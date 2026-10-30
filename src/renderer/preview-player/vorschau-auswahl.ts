@@ -61,16 +61,6 @@ export type Vorschaubild =
   | { art: 'video'; assetId: string; dateiname: string; trimStart: number; trimEnde: number; zerlegung?: VideoZerlegung }
   | { art: 'segment'; aktion: Aktion; vorlage: Vorlage }
   | {
-      art: 'split'
-      assetId: string
-      dateiname: string
-      trimStart: number
-      trimEnde: number
-      bandVorlage: Vorlage
-      bandAktion: Aktion | null
-      zerlegung?: VideoZerlegung
-    }
-  | {
       art: 'einblendung'
       assetId: string
       dateiname: string
@@ -211,11 +201,7 @@ export function waehleVorschaubild(
   // Meldung - der preview-player prueft nichts und meldet keine Fehlercodes.
   const einblendung = element.einblendung
   const bandVorlage = vorlagen.find((kandidat) => kandidat.id === einblendung.bandVorlageId)
-  if (
-    bandVorlage === undefined ||
-    bandVorlage.art === 'vollflaeche' ||
-    bandVorlage.höhe === null
-  ) {
+  if (bandVorlage === undefined || bandVorlage.höhe === null) {
     return { art: 'video', assetId, dateiname, trimStart: videoTrimStart, trimEnde: videoTrimEnde, ...zusatz }
   }
 
@@ -229,9 +215,9 @@ export function waehleVorschaubild(
       projekt.aktionen.find((kandidat) => kandidat.id === ausgewaehlt.aktionRef) ?? null
   }
 
-  if (bandVorlage.art === 'split') {
-    return { art: 'split', assetId, dateiname, trimStart: videoTrimStart, trimEnde: videoTrimEnde, bandVorlage, bandAktion, ...zusatz }
-  }
+  // Seit v3.31 gibt es genau EINE Komposition: das Band liegt deckend ueber dem
+  // vollflaechigen Video. Der frueher hier stehende `split`-Zweig ist mit dem
+  // gestrichenen Split-Screen entfallen (#452).
   return { art: 'einblendung', assetId, dateiname, trimStart: videoTrimStart, trimEnde: videoTrimEnde, bandVorlage, bandAktion, ...zusatz }
 }
 

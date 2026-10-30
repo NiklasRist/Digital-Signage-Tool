@@ -4,17 +4,13 @@
 // ZAHLEN geprueft, nicht an Beispielen:
 //   * die Dauer-Grenzen einschliesslich (10 ja, 9.99 nein - 45 ja, 45.01 nein),
 //   * die PNG-Masse EXAKT (1920x1081 nein, 1919x1080 nein - keine Toleranz),
-//   * die Bandbreite 1920 und NICHT die eingepasste Videobreite 1632.
+//   * die Bandbreite 1920 - exakt, ohne Toleranz.
 //
-// DIE FALLE, gegen die der letzte Punkt gebaut ist (Nachtrag zum Issue vom
-// 14.08.2026): Im gebauten `BandGeometrie` (#239) heisst `videoBreite` die
-// EINGEPASSTE Breite - bei H = 162 sind das 1632, nicht 1920. Wer sie als Bandbreite
-// einsetzte, wiese jedes richtige Band-PNG ab, und weil beide Felder `number` sind,
-// uebersetzt das fehlerfrei. Der Test unten haelt beide Zahlen nebeneinander.
+// Seit TK v3.31 gibt es keine Bandgeometrie mehr (kein Split-Screen); die frueher
+// hier geprueften Felder `art` und `flaecheDunkel` sind mit dem Vertrag entfallen.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { berechneBandGeometrie } from '../../src/shared/band-geometrie'
 import { DAUER_BEREICH } from '../../src/shared/contracts/konstanten'
 import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 import type {
@@ -101,15 +97,12 @@ function mitBand(
 ): RenderItemVideo {
   return video({
     einblendung: {
-      art: 'einblendung',
       höhe: BANDHOEHE,
       bandVorlageId: 'bv1',
       abschnitte: [
         { png: png(RENDER_PROFILE.breite, BANDHOEHE), dauer: 5 },
         { png: png(RENDER_PROFILE.breite, BANDHOEHE), dauer: 5 },
       ],
-      // #316: Pflichtfeld im Auftrag (TK 9.2.2); die Formpruefung ist #339.
-      flaecheDunkel: '#2F2E2E',
       ...ueber,
     },
   })
@@ -465,7 +458,7 @@ describe('Die Einblendung - Band-Geometrie, Abschnitte, PNG-Masse', () => {
   it('Zeile 16: der Fehler von bestimmeBandgeometrie (#176) kommt mit seiner Meldung + elementId', () => {
     // Eine UNGERADE Bandhoehe. Geprueft wird sie NICHT hier, sondern von #176 - das
     // Ausgabe-Profil verlangt yuv420p, und das erlaubt nur gerade Hoehen (TK v2.9).
-    const direkt = bestimmeBandgeometrie({ art: 'einblendung', höhe: 163 })
+    const direkt = bestimmeBandgeometrie({ höhe: 163 })
     if (direkt.ok) throw new Error('Der Aufbau des Tests stimmt nicht: #176 haette melden muessen.')
 
     const meldung = elementFehler(
@@ -482,9 +475,8 @@ describe('Die Einblendung - Band-Geometrie, Abschnitte, PNG-Masse', () => {
     expect(meldung).toContain('ungerade')
   })
 
-  it('Zeile 16: unbekannte art, Hoehe 0, Hoehe >= 1080 - alle ueber #176', () => {
+  it('Zeile 16: Hoehe 0, Hoehe >= 1080, gebrochen, NaN - alle ueber #176', () => {
     for (const kaputt of [
-      { art: 'vollflaeche' as unknown as 'split' },
       { höhe: 0 },
       { höhe: RENDER_PROFILE.hoehe },
       { höhe: 162.5 },
@@ -562,16 +554,9 @@ describe('Die Einblendung - Band-Geometrie, Abschnitte, PNG-Masse', () => {
     expect(meldung).toContain('162')
   })
 
-  it('Zeile 19 (GEGENPROBE ZUM NACHTRAG): die Bandbreite ist 1920, NICHT die eingepasste 1632', () => {
-    // Bei H = 162 rechnet die geteilte Geometrie (#239) videoBreite = 1632 - das ist
-    // die EINGEPASSTE Videobreite, nicht die Bandbreite. Wer sie hier einsetzte,
-    // wiese jedes richtige Band-PNG ab und liesse jedes falsche durch.
-    const geo = berechneBandGeometrie(BANDHOEHE)
-    expect(geo.videoBreite).toBe(1632)
-    expect(geo.videoBereichBreite).toBe(1920)
-    expect(geo.bandY).toBe(918)
-
-    // Das RICHTIGE Band-PNG (1920 breit) wird angenommen ...
+  it('Zeile 19: die Bandbreite ist EXAKT 1920 - 1919 und 1921 werden abgewiesen', () => {
+    // Jedes Band-PNG ist 1920 x H (TK 9.2.8). Eine Toleranz gaebe es nicht: Ein
+    // schmaleres Band laege linksbuendig und liesse rechts Video stehen.
     expect(
       pruefeRenderRequest(
         anfrage({
@@ -582,14 +567,15 @@ describe('Die Einblendung - Band-Geometrie, Abschnitte, PNG-Masse', () => {
       ).ok,
     ).toBe(true)
 
-    // ... und ein PNG mit der eingepassten Videobreite abgewiesen.
-    expect(
-      pruefeRenderRequest(
-        anfrage({
-          elemente: [mitBand({ abschnitte: [{ png: png(geo.videoBreite, BANDHOEHE), dauer: 5 }] })],
-        }),
-      ).ok,
-    ).toBe(false)
+    for (const breite of [RENDER_PROFILE.breite - 1, RENDER_PROFILE.breite + 1]) {
+      expect(
+        pruefeRenderRequest(
+          anfrage({
+            elemente: [mitBand({ abschnitte: [{ png: png(breite, BANDHOEHE), dauer: 5 }] })],
+          }),
+        ).ok,
+      ).toBe(false)
+    }
   })
 
   it('Zeile 19 (Gegenprobe): die Bandhoehe folgt der Anfrage, nicht der eingebauten 162', () => {
@@ -648,45 +634,6 @@ describe('Die Einblendung - Band-Geometrie, Abschnitte, PNG-Masse', () => {
         ).ok,
       ).toBe(true)
     }
-  })
-
-  it('#339: flaecheDunkel ist ein Hex-Wert der Form #RRGGBB oder #RRGGBBAA', () => {
-    for (const gueltig of ['#2F2E2E', '#2F2E2EFF', '#abcdef', '#ABCDEF80']) {
-      expect(
-        pruefeRenderRequest(anfrage({ elemente: [mitBand({ flaecheDunkel: gueltig })] })).ok,
-      ).toBe(true)
-    }
-    for (const ungueltig of ['', 'RRGGBB', '#RGB', '#RRGGBBB', '#GGGGGG', '#2F2E2E0', '#2F2E2E000']) {
-      const meldung = elementFehler(
-        pruefeRenderRequest(
-          anfrage({ elemente: [{ ...mitBand({ flaecheDunkel: ungueltig }), id: 'v-x' }] }),
-        ),
-        'v-x',
-      )
-      // Die Meldung benennt das Feld - sonst muesste der Nutzer raten, was gemeint ist.
-      expect(meldung).toContain('flaecheDunkel')
-    }
-    // Kein String, kein Wert: derselbe ELEMENT-Fehler, kein Wurf (TK 9.1.1).
-    for (const kaputt of [42, null, undefined, {}]) {
-      elementFehler(
-        pruefeRenderRequest(
-          anfrage({
-            elemente: [{ ...mitBand({ flaecheDunkel: kaputt as unknown as string }), id: 'v-x' }],
-          }),
-        ),
-        'v-x',
-      )
-    }
-  })
-
-  it('#339: ohne Einblendung laeuft die Formpruefung NICHT', () => {
-    // Ein `flaecheDunkel` AM ELEMENT (nicht in der Einblendung) ist kein Band und geht die
-    // Pruefung nichts an: Sie liest ausschliesslich `einblendung.flaecheDunkel`.
-    const ohneBand = {
-      ...video({ id: 'v-x', einblendung: null }),
-      flaecheDunkel: 'Quatsch',
-    } as unknown as RenderItemVideo
-    expect(pruefeRenderRequest(anfrage({ elemente: [ohneBand] })).ok).toBe(true)
   })
 
   it('einblendung: genau null heisst „kein Band" - alles andere wird geprueft', () => {

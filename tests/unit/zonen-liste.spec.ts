@@ -29,7 +29,6 @@ function vorlage(...zonen: Zone[]): Vorlage {
   return {
     id: 'v1',
     name: 'Testvorlage',
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: true,

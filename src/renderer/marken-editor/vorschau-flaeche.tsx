@@ -29,11 +29,18 @@ import { bereiteLogoVor } from '../template-canvas/logo-laden'
 import { zeichneMarkenVorschau } from './live-vorschau'
 import type { MarkenElement } from './marken-elemente'
 
-/** Die feste Vorschau-Vorlage (A1, 22.10.2026). Anzeigename der eingebauten Vorlage. */
-export const VORSCHAU_VORLAGE_NAME = 'Vollbild'
+/**
+ * Die feste Vorschau-Vorlage (A1, 22.10.2026) - als ID der eingebauten Vorlage.
+ *
+ * DIE ID, NICHT DER ANZEIGENAME: Die Identitaet einer Vorlage ist ihre `id`
+ * (TK 9.11.4). Mit v3.31 hat sich der Anzeigename von „Vollbild" auf „Ganzflächig"
+ * geaendert - eine Suche ueber den Namen haette die Vorschau stillschweigend
+ * abgeschaltet (am Treiber belegt, 30.10.2026).
+ */
+export const VORSCHAU_VORLAGE_ID = 'vollbild'
 
 /**
- * Sucht die eingebaute Vorlage „Vollbild" in der gemeinsamen Vorlagen-Sicht.
+ * Sucht die eingebaute Vorschau-Vorlage in der gemeinsamen Vorlagen-Sicht.
  * REIN: liest nur `hole()`, laedt nichts nach (die Sicht wird beim App-Aufbau
  * geladen, #155). null = nicht verfuegbar; der Aufrufer zeichnet dann NICHT.
  */
@@ -41,7 +48,7 @@ export function findeVorschauVorlage(vorlagen: VorlagenZugang): Vorlage | null {
   const uebersicht = vorlagen.hole()
   if (uebersicht === null) return null
   const eintrag = uebersicht.nutzbare.find(
-    (kandidat) => kandidat.eingebaut && kandidat.vorlage.name === VORSCHAU_VORLAGE_NAME,
+    (kandidat) => kandidat.eingebaut && kandidat.vorlage.id === VORSCHAU_VORLAGE_ID,
   )
   return eintrag === undefined ? null : eintrag.vorlage
 }
@@ -98,7 +105,7 @@ export function MarkenVorschau({
     const vorlage = findeVorschauVorlage(vorlagen)
     if (vorlage === null) {
       ziel.replaceChildren()
-      setHinweis(`Die Vorlage „${VORSCHAU_VORLAGE_NAME}" ist nicht geladen.`)
+      setHinweis(`Die Vorschau-Vorlage (ID „${VORSCHAU_VORLAGE_ID}") ist nicht geladen.`)
       return
     }
 

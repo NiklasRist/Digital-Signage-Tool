@@ -1,12 +1,12 @@
 // Vertragstest zu #17 - `RenderRequest` und die drei `RenderItem`-Varianten.
 //
-// DoD 2 verlangt, dass `einblendung` BEIDE Geometriefelder traegt: `art` und `höhe`
-// MIT UMLAUT. Beides zusammen ergibt erst die Bandgeometrie - und beides ist eine
-// Stelle, an der ein Fehler nicht im Test auffaellt, sondern erst am Fernseher:
+// SEIT TK v3.31 (9.2.2) traegt `einblendung` NUR noch: `höhe`, `bandVorlageId` und
+// `abschnitte`. Die Kompositionsart `art` und die Markenfarbe `flaecheDunkel` sind
+// entfallen - es gibt genau EINE Komposition: Das Band liegt deckend ueber dem
+// vollflaechigen Video (9.2.8). Der Test haelt die Abwesenheit fest: Ein
+// zurueckkehrendes Feld waere ein zweiter Weg, den niemand mehr entscheiden kann.
 //
-//  - Fehlt `art`, weiss der ffmpeg-Adapter nicht, ob das Band UNTER dem Video liegt
-//    (split, Video wird kleiner) oder DARUEBER (einblendung, Video bleibt voll).
-//  - Steht dort `hoehe` statt `höhe`, ist es fuer TypeScript ein ANDERES Feld. Der
+//  - Steht `hoehe` statt `höhe`, ist es fuer TypeScript ein ANDERES Feld. Der
 //    Zugriff auf `höhe` ergaebe `undefined`, die Bandhoehe waere NaN, und die
 //    Filterkette rechnete mit einem Wert, den niemand gesetzt hat.
 //
@@ -26,19 +26,16 @@ import type { Behaupte, Gleich } from "../typ-gleich";
 
 type Einblendung = NonNullable<RenderItemVideo["einblendung"]>;
 
-// --- DoD 2: beide Geometriefelder, Umlaut-Schreibweise ------------------------
-type T1 = Behaupte<Gleich<Einblendung["art"], "split" | "einblendung">>;
+// --- Die eine Geometrie: `höhe` MIT Umlaut, sonst nichts ----------------------
+type T1 = Behaupte<Gleich<Extract<keyof Einblendung, "art">, never>>;
 type T2 = Behaupte<Gleich<Einblendung["höhe"], number>>;
 
 // Ein Feld `hoehe` OHNE Umlaut darf es nicht geben - sonst gaebe es zwei Namen fuer
 // dieselbe Zahl und der Vertrag entschiede nicht mehr, welcher gilt.
 type T3 = Behaupte<Gleich<Extract<keyof Einblendung, "hoehe">, never>>;
 
-// --- #316 (TK 9.2.2): `flaecheDunkel` ist ein PFLICHTFELD mit einem FERTIGEN Wert --
-type T5 = Behaupte<Gleich<Einblendung["flaecheDunkel"], string>>;
-
-// Der Auftrag traegt einen WERT, keinen Rollen-Namen und keine Marken-Kennung
-// ("flaecheDunkel reist ... kein Rollen-Name, keine markeId", TK 9.2.2).
+// --- v3.31: `flaecheDunkel` und `markeId` sind entfallen ----------------------
+type T5 = Behaupte<Gleich<Extract<keyof Einblendung, "flaecheDunkel">, never>>;
 type T6 = Behaupte<Gleich<Extract<keyof Einblendung, "markeId" | "flaecheDunkelRolle">, never>>;
 
 // --- DoD 4: das Segment traegt nur Pixel und Dauer ---------------------------
@@ -56,20 +53,14 @@ function pixelGroesse(element: RenderItem): number {
 // Alle "darf nicht uebersetzen"-Faelle stehen in einer Funktion, die NIE aufgerufen
 // wird - ein Gegenbeweis darf nichts ausfuehren.
 function nurTypebene(basis: Einblendung, segment: RenderItemSegment): void {
-  // @ts-expect-error `art` fehlt - ohne sie ist die Kompositionsart unbestimmt.
-  const ohneArt: Einblendung = { höhe: 162, bandVorlageId: "b", abschnitte: [] };
-
   // @ts-expect-error `höhe` fehlt - ohne sie hat das Band keine Geometrie.
-  const ohneHoehe: Einblendung = { art: "split", bandVorlageId: "b", abschnitte: [] };
+  const ohneHoehe: Einblendung = { bandVorlageId: "b", abschnitte: [] };
 
-  // @ts-expect-error 'vollflaeche' ist keine Kompositionsart (TK 9.2.8 kennt zwei).
-  const falscheArt: Einblendung = { ...basis, art: "vollflaeche" };
+  // @ts-expect-error `art` gibt es seit v3.31 nicht mehr (9.2.2).
+  const mitArt: Einblendung = { ...basis, art: "split" };
 
-  // @ts-expect-error `flaecheDunkel` fehlt - Pflichtfeld seit #316 (TK 9.2.2).
-  const ohneFarbe: Einblendung = { art: "einblendung", höhe: 162, bandVorlageId: "b", abschnitte: [] };
-
-  // @ts-expect-error nullbar ist es nicht - sonst gaebe es "split ohne Farbe".
-  const nullFarbe: Einblendung = { ...basis, flaecheDunkel: null };
+  // @ts-expect-error `flaecheDunkel` gibt es seit v3.31 nicht mehr (9.2.2).
+  const mitFarbe: Einblendung = { ...basis, flaecheDunkel: "#2F2E2E" };
 
   // @ts-expect-error Im segment-Zweig gibt es keine Aktions-/Vorlagendaten.
   const mitAktion: RenderItemSegment = { ...segment, aktionRef: "a1" };
@@ -77,11 +68,9 @@ function nurTypebene(basis: Einblendung, segment: RenderItemSegment): void {
   // @ts-expect-error `.png` gibt es nur im segment-Zweig, nicht auf der Union.
   const blind: number = (undefined as unknown as RenderItem).png.byteLength;
 
-  void ohneArt;
   void ohneHoehe;
-  void falscheArt;
-  void ohneFarbe;
-  void nullFarbe;
+  void mitArt;
+  void mitFarbe;
   void mitAktion;
   void blind;
 }

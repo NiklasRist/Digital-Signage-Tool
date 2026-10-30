@@ -3,8 +3,9 @@
 import type { Vorlage } from '../../shared/contracts/vorlage'
 
 // Fremde Typen – vollstaendig ausgeschrieben, damit hier nichts geraten wird:
-//   #95: interface Vorlage { id: string; name: string; art: VorlagenArt; höhe: number | null
+//   #95: interface Vorlage { id: string; name: string; höhe: number | null
 //                            parent: string | null; eingebaut: boolean; zonen: Zone[] }
+//        (v3.31: `art` ist entfallen - `höhe === null` heisst Ganzbild, Zahl heisst Band.)
 //        parent !== null -> ARBEITSKOPIE; parent === null -> eigenstaendige, nutzbare Vorlage
 //
 // EINZIGER AUFRUFER: #107 (löscheVorlage), main-intern, INNERHALB der einen

@@ -118,7 +118,6 @@ function vorlage(id: string, teil: Partial<Vorlage> = {}): Vorlage {
   return {
     id,
     name: `Name ${id}`,
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: false,

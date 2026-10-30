@@ -5,8 +5,7 @@
 // wird NUR, was Einblendung selbst tut: Video vollflaechig OHNE
 // rahmen/hintergrund (ENTSCHIEDEN 3), Segment bei y = bandY und OHNE
 // Groessenangabe, nichts hinter dem Band (ENTSCHIEDEN 4), die beiden
-// Leerfaelle (ENTSCHIEDEN 5), und dass berechneBandGeometrie (#239) GENAU
-// EINmal je Aufruf laeuft.
+// Leerfaelle (ENTSCHIEDEN 5), und dass das Band bei y = 1080 - H sitzt (TK 9.2.8).
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,7 +19,6 @@ import type { Marke } from '../../src/shared/contracts/marke'
 const doppel = vi.hoisted(() => ({
   videoAufrufe: [] as Array<Record<string, unknown>>,
   segmentAufrufe: [] as Array<Record<string, unknown>>,
-  geometrieAufrufe: [] as number[],
 }))
 
 vi.mock('../../src/renderer/preview-player/video', () => ({
@@ -37,17 +35,6 @@ vi.mock('../../src/renderer/preview-player/segment', () => ({
   },
 }))
 
-// Die echte Rechnung bleibt stehen; nur der Aufruf wird GEZAEHLT.
-vi.mock('../../src/shared/band-geometrie', async (importOriginal) => {
-  const echt = await importOriginal<typeof import('../../src/shared/band-geometrie')>()
-  return {
-    ...echt,
-    berechneBandGeometrie: (höhe: number) => {
-      doppel.geometrieAufrufe.push(höhe)
-      return echt.berechneBandGeometrie(höhe)
-    },
-  }
-})
 
 // React 19: act(...)-Umgebung (Muster wie video-anzeige.spec.ts).
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -69,7 +56,7 @@ function baueAktion(): Aktion {
 
 function baueVorlage(höhe: number | null): Vorlage {
   return {
-    id: 'v-2', name: 'Einblendung', art: 'einblendung', höhe,
+    id: 'v-2', name: 'Einblendung', höhe,
     parent: null, eingebaut: true, zonen: [],
   }
 }
@@ -115,7 +102,6 @@ function rendere(props: EinblendungProps): { behaelter: HTMLDivElement; wurzel: 
 beforeEach(() => {
   doppel.videoAufrufe = []
   doppel.segmentAufrufe = []
-  doppel.geometrieAufrufe = []
 })
 
 afterEach(() => {
@@ -185,9 +171,8 @@ describe('Das ueberlagernde Band (ENTSCHIEDEN 4)', () => {
     expect(video.nextElementSibling).toBe(band)
   })
 
-  it('die Geometrie GENAU EINmal je Aufruf, mit dem Uebergebenen; H = 204 -> bandY 876 aus der Rueckgewinnung', () => {
+  it('das Band sitzt bei y = 1080 − H (TK 9.2.8): H = 204 -> y 876', () => {
     rendere(eigenschaften({ bandVorlage: baueVorlage(204) }))
-    expect(doppel.geometrieAufrufe).toEqual([204])
     const aufruf = doppel.segmentAufrufe[0] as Record<string, unknown>
     expect(aufruf.y).toBe(876)
   })
@@ -219,9 +204,8 @@ describe('Das ueberlagernde Band (ENTSCHIEDEN 4)', () => {
 // ---------------- der Leerfall der Vorlage ----------------
 
 describe('bandVorlage.hoehe === null: kein Band (ENTSCHIEDEN 5)', () => {
-  it('berechneBandGeometrie wird NICHT gerufen, Segment nicht gerendert, Video ohne rahmen/hintergrund', () => {
+  it('Segment wird nicht gerendert, Video ohne rahmen/hintergrund', () => {
     rendere(eigenschaften({ bandVorlage: baueVorlage(null) }))
-    expect(doppel.geometrieAufrufe).toEqual([])
     expect(doppel.segmentAufrufe).toHaveLength(0)
     expect(doppel.videoAufrufe).toHaveLength(1)
     const aufruf = doppel.videoAufrufe[0] as Record<string, unknown>

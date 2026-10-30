@@ -45,8 +45,8 @@ const element: Listenelement = {
   einblendung: null,
 }
 
-function vorlage(id: string, art: Vorlage['art'], parent: string | null, hoehe: number | null): Vorlage {
-  return { id, name: id, art, höhe: hoehe, parent, eingebaut: false, zonen: [] }
+function vorlage(id: string, parent: string | null, hoehe: number | null): Vorlage {
+  return { id, name: id, höhe: hoehe, parent, eingebaut: false, zonen: [] }
 }
 
 function entwurf(): { bandVorlageId: string; abschnitte: Array<{ aktionRef: string; dauer: number }> } {
@@ -66,16 +66,15 @@ beforeEach(() => {
 })
 
 describe('waehlbareBandVorlagen', () => {
-  it('nimmt split und einblendung, wirft vollflaeche und Arbeitskopien heraus', () => {
-    // Die Höhe 210 ist bewusst NICHT durch 18 teilbar: Ein Testbestand, der nur die
-    // eingebaute Höhe 162 verwendet, geht bei der Split-Geometrie zufällig glatt auf
-    // und belegte damit nichts. Der Filter darf die Höhe ohnehin nicht ansehen.
+  it('nimmt Band-Vorlagen (höhe gesetzt), wirft Ganzbild und Arbeitskopien heraus', () => {
+    // Die Höhe 210 ist bewusst NICHT die eingebaute 162: Der Filter soll jede gesetzte
+    // Höhe annehmen (die Fläche IST die Art, TK 9.11.1 Punkt 0) und keinen Wert raten.
     const bestand = [
-      vorlage('split-210', 'split', null, 210),
-      vorlage('voll', 'vollflaeche', null, null),
-      vorlage('kopie', 'split', 'split-210', 210),
-      vorlage('band', 'einblendung', null, 162),
-      vorlage('kopie-band', 'einblendung', 'band', 162),
+      vorlage('split-210', null, 210),
+      vorlage('voll', null, null),
+      vorlage('kopie', 'split-210', 210),
+      vorlage('band', null, 162),
+      vorlage('kopie-band', 'band', 162),
     ]
 
     expect(waehlbareBandVorlagen(bestand).map((v) => v.id)).toEqual(['split-210', 'band'])
@@ -83,19 +82,13 @@ describe('waehlbareBandVorlagen', () => {
 
   it('sortiert nicht und lässt die Eingabeliste unangetastet', () => {
     const bestand = [
-      vorlage('zzz', 'split', null, 210),
-      vorlage('aaa', 'einblendung', null, 162),
+      vorlage('zzz', null, 210),
+      vorlage('aaa', null, 162),
     ]
     const kopie = [...bestand]
 
     expect(waehlbareBandVorlagen(bestand).map((v) => v.id)).toEqual(['zzz', 'aaa'])
     expect(bestand).toEqual(kopie)
-  })
-
-  it('lässt eine vollflaeche auch dann draußen, wenn eine Höhe daran steht', () => {
-    // `art` entscheidet, nicht `höhe !== null` - ein von Hand veränderter Bestand
-    // dürfte keine vollflächige Vorlage als Band anbieten.
-    expect(waehlbareBandVorlagen([vorlage('krumm', 'vollflaeche', null, 162)])).toEqual([])
   })
 })
 

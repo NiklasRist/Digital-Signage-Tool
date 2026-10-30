@@ -82,7 +82,6 @@ function vorlage(id: string, teil: Partial<Vorlage> = {}): Vorlage {
   return {
     id,
     name: `Name ${id}`,
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: false,
@@ -134,7 +133,7 @@ describe('verwerfeArbeitskopie – Erfolgslauf', () => {
   })
 
   it('der Parent-Eintrag ist danach byte-gleich wie vorher (Deep-Vergleich)', async () => {
-    const parent = vorlage('parent-1', { zonen: [zone('hintergrund')], art: 'split', höhe: 162 })
+    const parent = vorlage('parent-1', { zonen: [zone('hintergrund')], höhe: 162 })
     const kopie = vorlage('kopie', { parent: 'parent-1' })
     zustand.bestand = [parent, kopie]
 

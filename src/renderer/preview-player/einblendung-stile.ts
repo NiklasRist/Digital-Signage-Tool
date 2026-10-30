@@ -1,23 +1,22 @@
 // Issue #219 - einblendung-stile.ts: die reine Uebernahme der Bandposition.
 //
-// Bei der Einblendung (Art B, TK 9.2.8) ist das Video VOLLFLAECHIG - es gibt
-// nichts einzupassen. Der einzige bedeutungstragende Wert der geteilten
-// Rechnung (#239) ist hier bandY; die uebrigen sechs Felder beschreiben die
-// split-Aufteilung und werden hier NICHT gelesen (ENTSCHIEDEN 1).
+// Seit TK v3.31 gibt es genau EINE Komposition: Das Band liegt DECKEND ueber dem
+// vollflaechigen Video. Das Video wird nicht mehr eingepasst; die einzige Zahl, die
+// diese Datei braucht, ist die obere Bandkante y = 1080 − H (TK 9.2.8).
 //
-// Die Bandhoehe wird aus bandY ZURUECKGEWONNEN (RENDER_PROFILE.hoehe − bandY,
-// ENTSCHIEDEN 2), nie aus dem Eingabeparameter - sonst gaebe es zwei unabhaen-
-// gige Quellen fuer dieselbe Groesse.
+// DIE SUBTRAKTION STEHT HIER UND NICHT IN EINER GETEILTEN FUNKTION: Mit dem
+// gestrichenen Split-Screen ist `berechneBandGeometrie` entfallen (#450) - „eine
+// Subtraktion ist keine Fachlichkeit". `baueEinblendungFilter` im Main bildet
+// denselben Wert aus demselben Profil.
 //
 // Keine Pruefung, kein Fehlercode, keine Ergebnis-Huelle: „der preview-player
 // prueft nichts und meldet keine Fehlercodes" (TK 9.9.2).
 
-import { berechneBandGeometrie } from '../../shared/band-geometrie'
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 
 /** Die Lage des ueberlagernden Bandes im 1920×1080-Raster der Buehne (#212). */
 export interface EinblendungStile {
-  /** Obere Kante des Bandes – UNVERAENDERT `bandY` aus der geteilten Rechnung. */
+  /** Obere Kante des Bandes: 1080 − H (TK 9.2.8). */
   bandY: number
   /** Hoehe des Bandes: RENDER_PROFILE.hoehe − bandY. */
   bandHöhe: number
@@ -26,16 +25,14 @@ export interface EinblendungStile {
 }
 
 /**
- * Ruft berechneBandGeometrie(höhe) auf und liest daraus AUSSCHLIESSLICH `bandY`.
- * Die uebrigen sechs Felder gelten nur fuer die split-Komposition und werden hier NICHT gelesen.
- * RECHNET NICHTS SELBST ausser der einen Subtraktion fuer `bandHöhe`.
- * Total: wirft nie, traegt KEINE Ergebnis-Huelle und KEINEN Fehlercode.
+ * Die Bandkante aus Profil und Hoehe: y = 1080 − H (TK 9.2.8).
+ * Total: wirft nie, traegt KEINE Ergebnis-Huelle und KEINEN Fehlercode - der
+ * preview-player prueft nichts (TK 9.9.2).
  */
 export function baueEinblendungStile(höhe: number): EinblendungStile {
-  const geometrie = berechneBandGeometrie(höhe)
   return {
-    bandY: geometrie.bandY,
-    bandHöhe: RENDER_PROFILE.hoehe - geometrie.bandY,
+    bandY: RENDER_PROFILE.hoehe - höhe,
+    bandHöhe: höhe,
     bandBreite: RENDER_PROFILE.breite,
   }
 }

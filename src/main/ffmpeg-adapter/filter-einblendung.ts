@@ -1,21 +1,16 @@
-// [ffmpeg-adapter] Filterkette für die Einblendung bauen
+// [ffmpeg-adapter] Filterkette für das Band bauen
 //
 // ============================================================================
-// DER UNTERSCHIED ZU #164 IST DER OPTISCH GROESSTE IM GANZEN PRODUKT
+// DIE EINE KOMPOSITION SEIT TK v3.31 (9.2.8)
 // ============================================================================
-// „Art B - `einblendung`: Band *ueber* dem vollflaechigen Video. Das Video wird
-// wie gewohnt auf 1920 x 1080 normalisiert (schwarze Balken nach 9.2.4, keine
-// Verkleinerung, keine Markenfarb-Flaechen). Das Band (1920 x H, mit Alpha) wird
-// unten ueberlagert (y = 1080 - H)." (TK 9.2.8)
+// „Das Video wird wie gewohnt auf 1920 × 1080 normalisiert … Das Band
+// (1920 × H, deckend) wird unten überlagert (y = 1080 − H)." (TK 9.2.8)
 //
-// Bei `split` (#164) wird das Video VERKLEINERT und das Band sitzt DARUNTER;
-// hier behaelt das Video seine volle Groesse und das Band liegt DARUEBER. Wer
-// die beiden verwechselt, erzeugt kein Fehlerbild und keine Fehlermeldung -
-// sondern ein Video, das grundlegend anders aussieht als die Vorschau. DIESE
-// DATEI BAUT AUSSCHLIESSLICH ART B. Die Auswahl trifft der Dispatcher im
-// `render-service` (#177) anhand von `RenderItemVideo.einblendung.art` (#17) -
-// die Art wird hier NICHT erraten, weder aus der Bandhoehe noch aus dem
-// Alphakanal des Band-PNG noch aus dem Seitenverhaeltnis der Quelle.
+// Die fruehere zweite Komposition (`split`, #164: Video verkleinert, Band
+// darunter, Restflaechen in Markenfarbe) ist am 29.10.2026 gestrichen
+// (AD v1.10). Es gibt deshalb KEINEN Dispatcher mehr, der zwischen zwei Arten
+// waehlt, und keine `einblendung.art` im Auftrag (9.2.2) - diese Datei ist der
+// EINZIGE Filterweg fuer ein Band.
 //
 // WARUM AUF DEM ZWEIG [1:v] KEIN `format=yuv420p` STEHEN DARF: `yuv420p` hat
 // keinen Alphakanal. Wer die Bandspur vor dem `overlay` in dieses Format zwingt,
@@ -91,7 +86,7 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
  * Letterbox/Pillarbox), kein Beschnitt" (TK 9.2.4). Das ist KEIN Markenwert und
  * keine Entscheidung dieser Datei, sondern das Ausgabe-Profil - deshalb steht
  * hier der ffmpeg-Farbname und keine Hexzahl. Die Markenfarbe `flaecheDunkel`
- * kommt ausschliesslich in der Split-Komposition vor (#164).
+ * ist mit der Split-Komposition entfallen (TK 9.2.2, v3.31).
  *
  * Ein benannter Wert und kein Parameter: Die Signatur dieser Funktion ist
  * verbindlich `baueEinblendungFilter(hoeheBand, profil)`; eine durchgereichte

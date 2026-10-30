@@ -19,11 +19,25 @@ import type { Marke } from '../../src/shared/contracts/marke'
 let canvasZaehler = 0
 let contextAufrufe: { argumente: unknown[] }[] = []
 let ctx2d: Record<string, unknown> | null
+/** Jede Fuellung des Canvas: Position, Groesse und der Farbwert, mit dem sie lief. */
+let fuellungen: Array<{ x: number; y: number; breite: number; hoehe: number; farbe: unknown }> = []
 
 beforeEach(() => {
   canvasZaehler = 0
   contextAufrufe = []
-  ctx2d = { fillRect: (..._a: unknown[]) => undefined }
+  fuellungen = []
+  let stil: unknown = ''
+  ctx2d = {
+    get fillStyle() {
+      return stil
+    },
+    set fillStyle(wert: unknown) {
+      stil = wert
+    },
+    fillRect: (x: number, y: number, breite: number, hoehe: number) => {
+      fuellungen.push({ x, y, breite, hoehe, farbe: stil })
+    },
+  }
   vi.stubGlobal('document', {
     createElement: (tag: string) => {
       if (tag !== 'canvas') throw new Error('nur canvas erwartet')
@@ -136,11 +150,10 @@ function zone(partial: Partial<Zone>): Zone {
   } as unknown as Zone
 }
 
-function vorlage(art: Vorlage['art'], zonen: Zone[], höhe: number | null = null): Vorlage {
+function vorlage(zonen: Zone[], höhe: number | null = null): Vorlage {
   return {
-    id: art === 'vollflaeche' ? 'vollbild' : `band-${String(höhe)}`,
+    id: höhe === null ? 'vollbild' : `band-${String(höhe)}`,
     name: 'Testvorlage',
-    art,
     höhe,
     parent: null,
     eingebaut: true,
@@ -172,7 +185,7 @@ function einblendung(mitHintergrund: boolean): Vorlage {
   const zonen: Zone[] = mitHintergrund
     ? [zone({ id: 'hintergrund', bindung: null })]
     : []
-  return vorlage('einblendung', zonen, 200)
+  return vorlage(zonen, 200)
 }
 
 describe('zeichneSegment (#117/#294)', () => {
@@ -190,48 +203,42 @@ describe('zeichneSegment (#117/#294)', () => {
 
   describe('Flaeche (Ablauf 1/2)', () => {
     it('vollflaeche -> 1920 x 1080 aus RENDER_PROFILE, zurueckgemeldet in breite/höhe', () => {
-      const ergebnis = zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())
+      const ergebnis = zeichneSegment(aktion(), vorlage([]), marke(), marke())
       expect(ergebnis.breite).toBe(1920)
       expect(ergebnis.höhe).toBe(1080)
       expect(ergebnis.canvas.width).toBe(1920)
       expect(ergebnis.canvas.height).toBe(1080)
     })
 
-    it.each([
-      ['split', 162],
-      ['einblendung', 200],
-    ] as const)('%s mit hoehe %i -> 1920 x %i', (art, hoehe) => {
-      const ergebnis = zeichneSegment(aktion(), vorlage(art, [], hoehe), marke(), marke())
+    it.each([162, 200])('Band mit hoehe %i -> 1920 x dasselbe', (hoehe) => {
+      const ergebnis = zeichneSegment(aktion(), vorlage([], hoehe), marke(), marke())
       expect(ergebnis.höhe).toBe(hoehe)
       expect(ergebnis.canvas.height).toBe(hoehe)
     })
 
-    it.each([null, 0, -10, Number.NaN, 1080])(
-      'split mit hoehe %p wirft, Meldung nennt die Vorlagen-ID',
+    it.each([0, -10, Number.NaN, 1080])(
+      'Band mit unbrauchbarer hoehe %p wirft, Meldung nennt die Vorlagen-ID',
       (hoehe) => {
         expect(() =>
-          zeichneSegment(aktion(), vorlage('split', [], hoehe as number), marke(), marke()),
+          zeichneSegment(aktion(), vorlage([], hoehe as number), marke(), marke()),
         ).toThrow(/band-/)
       },
     )
 
-    it.each([
-      ['split', 161],
-      ['einblendung', 1],
-    ] as const)('ungerade hoehe %i wird bewusst NICHT abgewiesen oder gerundet', (art, hoehe) => {
-      const ergebnis = zeichneSegment(aktion(), vorlage(art, [], hoehe), marke(), marke())
+    it.each([161, 1])('ungerade hoehe %i wird bewusst NICHT abgewiesen oder gerundet', (hoehe) => {
+      const ergebnis = zeichneSegment(aktion(), vorlage([], hoehe), marke(), marke())
       expect(ergebnis.höhe).toBe(hoehe) // nachweislich nicht gerundet
     })
 
     it('getContext wird mit genau einem Argument aufgerufen', () => {
-      zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())
+      zeichneSegment(aktion(), vorlage([]), marke(), marke())
       expect(contextAufrufe).toHaveLength(1)
       expect(contextAufrufe[0]?.argumente).toHaveLength(1)
     })
 
     it('getContext null -> Wurf', () => {
       ctx2d = null
-      expect(() => zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())).toThrow(
+      expect(() => zeichneSegment(aktion(), vorlage([]), marke(), marke())).toThrow(
         /getContext/,
       )
     })
@@ -240,7 +247,7 @@ describe('zeichneSegment (#117/#294)', () => {
   describe('Schrift-Pruefung (Ablauf 0)', () => {
     it('nicht bereite Schriften -> Wurf, BEVOR ein Canvas entsteht', () => {
       schriftenBereit = false
-      expect(() => zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())).toThrow(
+      expect(() => zeichneSegment(aktion(), vorlage([]), marke(), marke())).toThrow(
         /nicht bereit/,
       )
       expect(canvasZaehler).toBe(0)
@@ -248,18 +255,23 @@ describe('zeichneSegment (#117/#294)', () => {
   })
 
   describe('Grundflaeche (Ablauf 3)', () => {
-    it('vollflaeche und split fuellen ueber loeseFarbe("flaecheDunkel"), einblendung nicht', () => {
-      zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())
-      expect(aufrufe.loeseFarbe).toHaveLength(1)
-      expect(aufrufe.loeseFarbe[0]?.[1]).toBe('flaecheDunkel')
-
-      aufrufe.loeseFarbe.length = 0
-      zeichneSegment(aktion(), vorlage('split', [], 162), marke(), marke())
-      expect(aufrufe.loeseFarbe).toHaveLength(1)
-
-      aufrufe.loeseFarbe.length = 0
-      zeichneSegment(aktion(), vorlage('einblendung', [], 200), marke(), marke())
-      expect(aufrufe.loeseFarbe).toHaveLength(0) // kein Vorfuellen bei Alpha
+    it('JEDE Flaeche fuellt DECKEND ueber die ganze Flaeche - Baender sind nicht durchsichtig', () => {
+      // Ganzbild und Band: seit v3.31 gibt es keine durchsichtige Bandvariante mehr
+      // (TK 9.2.8). Geprueft wird die TATSAECHLICHE Fuellung, nicht nur der Aufruf
+      // von loeseFarbe: Eine entfernte `fillRect` bliebe bei einer reinen
+      // Aufruf-Zaehlung gruen (Gegenprobe, 30.10.2026).
+      for (const höhe of [null, 162, 200]) {
+        aufrufe.loeseFarbe.length = 0
+        fuellungen = []
+        zeichneSegment(aktion(), vorlage([], höhe), marke(), marke())
+        expect(aufrufe.loeseFarbe, String(höhe)).toHaveLength(1)
+        expect(aufrufe.loeseFarbe[0]?.[1]).toBe('flaecheDunkel')
+        // `loeseFarbe` ist ein Doppel und liefert '#GEMESSEN' - genau dieser Wert
+        // muss als Fuellfarbe gesetzt worden sein, nicht ein Literal aus der Datei.
+        expect(fuellungen, String(höhe)).toEqual([
+          { x: 0, y: 0, breite: 1920, hoehe: höhe ?? 1080, farbe: '#GEMESSEN' },
+        ])
+      }
     })
   })
 
@@ -270,7 +282,7 @@ describe('zeichneSegment (#117/#294)', () => {
         zone({ id: 'z-titel', bindung: 'titel' }),
         zone({ id: 'z-preis', bindung: 'preis' }),
       ]
-      zeichneSegment(aktion(), vorlage('vollflaeche', zonen), marke(), marke())
+      zeichneSegment(aktion(), vorlage(zonen), marke(), marke())
       expect(aufrufe.text.map((a) => (a[1] as Zone).id)).toEqual(['z-cta', 'z-titel', 'z-preis'])
     })
 
@@ -278,7 +290,7 @@ describe('zeichneSegment (#117/#294)', () => {
       'bindung %s zeichnet Text aus der AKTION',
       (bindung) => {
         const a = aktion()
-        zeichneSegment(a, vorlage('vollflaeche', [zone({ bindung })]), marke(), marke())
+        zeichneSegment(a, vorlage([zone({ bindung })]), marke(), marke())
         expect(aufrufe.text).toHaveLength(1)
         expect(aufrufe.holeMotiv).toHaveLength(0)
       },
@@ -288,7 +300,7 @@ describe('zeichneSegment (#117/#294)', () => {
       const m = marke()
       zeichneSegment(
         aktion(),
-        vorlage('vollflaeche', [zone({ bindung: 'slogan' })]),
+        vorlage([zone({ bindung: 'slogan' })]),
         m,
         m,
       )
@@ -301,7 +313,7 @@ describe('zeichneSegment (#117/#294)', () => {
       ;(m as { slogan: { aktiv: boolean } }).slogan.aktiv = false
       zeichneSegment(
         aktion(),
-        vorlage('vollflaeche', [zone({ bindung: 'slogan', wennLeer: 'leer' })]),
+        vorlage([zone({ bindung: 'slogan', wennLeer: 'leer' })]),
         m,
         m,
       )
@@ -311,14 +323,14 @@ describe('zeichneSegment (#117/#294)', () => {
 
     it('bild reicht aktion.bildRef UNveraendert an holeMotiv durch', () => {
       const a = aktion({ bildRef: 'asset-id-42' })
-      zeichneSegment(a, vorlage('vollflaeche', [zone({ bindung: 'bild' })]), marke(), marke())
+      zeichneSegment(a, vorlage([zone({ bindung: 'bild' })]), marke(), marke())
       expect(aufrufe.holeMotiv).toEqual(['asset-id-42'])
       expect(aufrufe.bild).toHaveLength(1)
     })
 
     it('logo holt sein Motiv ueber holeLogo(markeId), nie ueber holeMotiv', () => {
       const m = marke()
-      zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ bindung: 'logo' })]), m, m)
+      zeichneSegment(aktion(), vorlage([zone({ bindung: 'logo' })]), m, m)
       expect(aufrufe.holeLogo).toHaveLength(1)
       // GEMELDETER WIDERSPRUCH (#117 vs. gebauter Code): Der Issue-Text nennt
       // holeLogo() parameterlos; der gebaute Stand nach dem Edit an #119/#315 ist
@@ -337,7 +349,7 @@ describe('zeichneSegment (#117/#294)', () => {
         zone({ bindung: 'bild', deko: {} }),
         zone({ id: 'nur-deko', bindung: null }),
       ]
-      zeichneSegment(a, vorlage('vollflaeche', zonen), marke(), marke())
+      zeichneSegment(a, vorlage(zonen), marke(), marke())
 
       for (const ruf of [...aufrufe.text, ...aufrufe.bild, ...aufrufe.deko]) {
         expect(ruf[ruf.length - 1]).toBe(a) // toBe, nicht toEqual
@@ -350,7 +362,7 @@ describe('zeichneSegment (#117/#294)', () => {
     it("preis: null + wennLeer 'leer' -> Deko bleibt stehen, kein Text", () => {
       zeichneSegment(
         aktion({ preis: null }),
-        vorlage('vollflaeche', [zone({ bindung: 'preis', wennLeer: 'leer' })]),
+        vorlage([zone({ bindung: 'preis', wennLeer: 'leer' })]),
         marke(),
         marke(),
       )
@@ -361,7 +373,7 @@ describe('zeichneSegment (#117/#294)', () => {
     it("preis: null + wennLeer 'ausblenden' -> weder Deko noch Text", () => {
       zeichneSegment(
         aktion({ preis: null }),
-        vorlage('vollflaeche', [zone({ bindung: 'preis', wennLeer: 'ausblenden' })]),
+        vorlage([zone({ bindung: 'preis', wennLeer: 'ausblenden' })]),
         marke(),
         marke(),
       )
@@ -372,7 +384,7 @@ describe('zeichneSegment (#117/#294)', () => {
     it("preis: '   ' (nur Leerzeichen) gilt wie null", () => {
       zeichneSegment(
         aktion({ preis: '   ' }),
-        vorlage('vollflaeche', [zone({ bindung: 'preis', wennLeer: 'ausblenden' })]),
+        vorlage([zone({ bindung: 'preis', wennLeer: 'ausblenden' })]),
         marke(),
         marke(),
       )
@@ -382,7 +394,7 @@ describe('zeichneSegment (#117/#294)', () => {
     it('bildRef: null -> KEIN holeMotiv, KEIN Platzhalter (Bild ist optional, FA-02)', () => {
       zeichneSegment(
         aktion({ bildRef: null }),
-        vorlage('vollflaeche', [zone({ bindung: 'bild', wennLeer: 'leer' })]),
+        vorlage([zone({ bindung: 'bild', wennLeer: 'leer' })]),
         marke(),
         marke(),
       )
@@ -395,7 +407,7 @@ describe('zeichneSegment (#117/#294)', () => {
       logoAntwort = { zustand: 'fehlt' }
       zeichneSegment(
         aktion({ bildRef: 'weg' }),
-        vorlage('vollflaeche', [
+        vorlage([
           zone({ bindung: 'bild' }),
           zone({ id: 'logo-zone', bindung: 'logo' }),
         ]),
@@ -410,14 +422,14 @@ describe('zeichneSegment (#117/#294)', () => {
     it('unbekannte Bindung -> nur Deko, kein Ratens', () => {
       const z = zone({})
       ;(z as { bindung: string }).bindung = 'irgendwas'
-      zeichneSegment(aktion(), vorlage('vollflaeche', [z]), marke(), marke())
+      zeichneSegment(aktion(), vorlage([z]), marke(), marke())
       expect(aufrufe.deko).toHaveLength(1)
       expect(aufrufe.text).toHaveLength(0)
       expect(aufrufe.bild).toHaveLength(0)
     })
 
     it('zonen: [] -> gueltiges SegmentBild ohne Ausnahme', () => {
-      const ergebnis = zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), marke())
+      const ergebnis = zeichneSegment(aktion(), vorlage([]), marke(), marke())
       expect(ergebnis.breite).toBe(1920)
     })
 
@@ -428,7 +440,7 @@ describe('zeichneSegment (#117/#294)', () => {
         }
         zeichneSegment(
           aktion({ bildRef: 'b' }),
-          vorlage('split', [
+          vorlage([
             zone({ id: 't', bindung: 'titel', deko: {} }),
             zone({ id: 'b', bindung: 'bild' }),
             zone({ id: 'l', bindung: 'logo' }),
@@ -445,10 +457,10 @@ describe('zeichneSegment (#117/#294)', () => {
   describe('#294 - Rahmen-Marke (TK 9.15.4)', () => {
     it("art !== 'einblendung': rahmenMarke wird nachweislich NICHT gelesen", () => {
       expect(() =>
-        zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), werfendeMarke()),
+        zeichneSegment(aktion(), vorlage([]), marke(), werfendeMarke()),
       ).not.toThrow()
       expect(() =>
-        zeichneSegment(aktion(), vorlage('split', [], 162), marke(), werfendeMarke()),
+        zeichneSegment(aktion(), vorlage([], 162), marke(), werfendeMarke()),
       ).not.toThrow()
     })
 
@@ -461,7 +473,7 @@ describe('zeichneSegment (#117/#294)', () => {
       ]
       zeichneSegment(
         aktion(),
-        vorlage('einblendung', zonen, 200),
+        vorlage(zonen, 200),
         inhalts,
         rahmen,
       )
@@ -485,10 +497,10 @@ describe('zeichneSegment (#117/#294)', () => {
 
     it("marke oder rahmenMarke null/undefined wirft (Programmierfehler)", () => {
       expect(() =>
-        zeichneSegment(aktion(), vorlage('vollflaeche', []), undefined as unknown as Marke, marke()),
+        zeichneSegment(aktion(), vorlage([]), undefined as unknown as Marke, marke()),
       ).toThrow(/rahmenMarke/)
       expect(() =>
-        zeichneSegment(aktion(), vorlage('vollflaeche', []), marke(), null as unknown as Marke),
+        zeichneSegment(aktion(), vorlage([]), marke(), null as unknown as Marke),
       ).toThrow(/rahmenMarke/)
     })
   })
@@ -500,7 +512,7 @@ describe('zeichneSegment (#117/#294)', () => {
       const rahmen = marke()
       zeichneSegment(
         aktion(),
-        vorlage('einblendung', [zone({ id: 'hintergrund', bindung: null })], 200),
+        vorlage([zone({ id: 'hintergrund', bindung: null })], 200),
         inhalts,
         rahmen,
       )
@@ -510,14 +522,14 @@ describe('zeichneSegment (#117/#294)', () => {
     })
 
     it.each([
-      ["art !== 'einblendung'", () => vorlage('vollflaeche', [])],
-      ['rahmenMarke === marke', () => vorlage('einblendung', [zone({ id: 'hintergrund', bindung: null })], 200)],
-      ['keine hintergrund-Zone', () => vorlage('einblendung', [], 200)],
+      ["art !== 'einblendung'", () => vorlage([])],
+      ['rahmenMarke === marke', () => vorlage([zone({ id: 'hintergrund', bindung: null })], 200)],
+      ['keine hintergrund-Zone', () => vorlage([], 200)],
     ])('%s -> genau EINE Pruefung (nur marke), werfende rahmenMarke bleibt ungelesen', (_name, baue) => {
       aufrufeMarkenSchriften.length = 0
       const m = marke()
       const v = baue()
-      const rahmen = v.art === 'einblendung' ? m : werfendeMarke()
+      const rahmen = v.höhe !== null ? m : werfendeMarke()
       expect(() => zeichneSegment(aktion(), v, m, rahmen)).not.toThrow()
       expect(aufrufeMarkenSchriften).toHaveLength(1)
       expect(aufrufeMarkenSchriften[0]).toBe(m)
@@ -528,7 +540,7 @@ describe('zeichneSegment (#117/#294)', () => {
       const createElementSpy = vi.fn()
       vi.stubGlobal('document', { createElement: createElementSpy })
       expect(() =>
-        zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ bindung: 'titel' })]), marke(), marke()),
+        zeichneSegment(aktion(), vorlage([zone({ bindung: 'titel' })]), marke(), marke()),
       ).toThrow(/nicht bereit/)
       expect(createElementSpy).not.toHaveBeenCalled()
       expect(aufrufe.text).toHaveLength(0)
@@ -550,7 +562,7 @@ describe('zeichneSegment (#117/#294)', () => {
         expect(() =>
           zeichneSegment(
             aktion(),
-            vorlage('einblendung', [zone({ id: 'hintergrund', bindung: null })], 200),
+            vorlage([zone({ id: 'hintergrund', bindung: null })], 200),
             inhalts,
             rahmen,
           ),
@@ -567,7 +579,7 @@ describe('zeichneSegment (#117/#294)', () => {
       const m = marke()
       ;(m as { logo: unknown }).logo = null
       const logoZone = zone({ id: 'l', bindung: 'logo', wennLeer: 'ausblenden' })
-      zeichneSegment(aktion(), vorlage('vollflaeche', [logoZone]), m, m)
+      zeichneSegment(aktion(), vorlage([logoZone]), m, m)
       expect(aufrufeErsatz).toHaveLength(1)
       expect(aufrufe.bild).toHaveLength(0)
       expect((aufrufeErsatz[0]?.[1] as Zone).id).toBe('l')
@@ -575,7 +587,7 @@ describe('zeichneSegment (#117/#294)', () => {
 
     it("logo !== null -> zeichneBildZone mit holeLogo(id), zeichneErsatzLogo nie", () => {
       const m = marke()
-      zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ id: 'l', bindung: 'logo' })]), m, m)
+      zeichneSegment(aktion(), vorlage([zone({ id: 'l', bindung: 'logo' })]), m, m)
       expect(aufrufe.holeLogo).toEqual([[m.id]]) // genau EIN Argument: die id dieser Marke
       expect(aufrufe.bild).toHaveLength(1)
       expect(aufrufeErsatz).toHaveLength(0)
@@ -585,7 +597,7 @@ describe('zeichneSegment (#117/#294)', () => {
       const m = marke()
       ;(m as { logo: unknown }).logo = null
       expect(() =>
-        zeichneSegment(aktion(), vorlage('vollflaeche', [zone({ id: 'l', bindung: 'logo' })]), m, m),
+        zeichneSegment(aktion(), vorlage([zone({ id: 'l', bindung: 'logo' })]), m, m),
       ).not.toThrow()
       expect(aufrufeErsatz[0]?.[2]).toBe(m) // markeDieserZone, dieselbe Referenz
     })

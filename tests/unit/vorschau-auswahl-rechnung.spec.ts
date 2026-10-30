@@ -78,7 +78,7 @@ const EINBLENDUNG: Einblendung = { bandVorlageId: 'bv-1', abschnitte: [] }
 
 function baueVorlage(teil: Partial<Vorlage> = {}): Vorlage {
   return {
-    id: 'v-1', name: 'Vollbild', art: 'vollflaeche', höhe: null,
+    id: 'v-1', name: 'Vollbild', höhe: null,
     parent: null, eingebaut: true, zonen: [],
     ...teil,
   }
@@ -200,45 +200,39 @@ describe('Schritt 5: video - die drei Varianten', () => {
     expect(waehleVorschaubild(projekt, ABSCHNITT, 5, [], [], true)).toEqual(FLACH)
   })
 
-  it('Band-Vorlage unbekannt / art vollflaeche / hoehe null -> jeweils ein FLACHES Video (drei benannte Faelle)', () => {
+  it('Band-Vorlage unbekannt / hoehe null -> jeweils ein FLACHES Video (zwei benannte Faelle)', () => {
     const projekt = baueProjekt({ liste: [baueElement({ ref: 'identifikator', einblendung: EINBLENDUNG })], assets: [ASSET] })
     expect(waehleVorschaubild(projekt, ABSCHNITT, 5, [baueVorlage({ id: 'anders' })], [], true)).toEqual(FLACH)
-    expect(waehleVorschaubild(projekt, ABSCHNITT, 5, [baueVorlage({ id: 'bv-1', art: 'vollflaeche' })], [], true)).toEqual(FLACH)
-    expect(waehleVorschaubild(projekt, ABSCHNITT, 5, [baueVorlage({ id: 'bv-1', art: 'split', höhe: null })], [], true)).toEqual(FLACH)
+    expect(waehleVorschaubild(projekt, ABSCHNITT, 5, [baueVorlage({ id: 'bv-1', höhe: null })], [], true)).toEqual(FLACH)
   })
 
-  it('split/einblendung: die art der Band-Vorlage entscheidet - zwei benannte Tests, die sich NUR in der art unterscheiden', () => {
+  it('Band-Vorlage (höhe gesetzt): EINE Variante - das Band liegt ueber dem vollflaechigen Video', () => {
     const projekt = baueProjekt({ liste: [baueElement({ ref: 'identifikator', einblendung: EINBLENDUNG })], assets: [ASSET] })
-    const split = baueVorlage({ id: 'bv-1', art: 'split', höhe: 162 })
-    const einbl = baueVorlage({ id: 'bv-1', art: 'einblendung', höhe: 162 })
-    expect(waehleVorschaubild(projekt, ABSCHNITT, 5, [split], [], true)).toEqual({
-      art: 'split', assetId: 'identifikator', dateiname: 'medien-x.mp4',
-      trimStart: 2, trimEnde: 12, bandVorlage: split, bandAktion: null,
-    })
-    expect(waehleVorschaubild(projekt, ABSCHNITT, 5, [einbl], [], true)).toEqual({
+    const band = baueVorlage({ id: 'bv-1', höhe: 162 })
+    expect(waehleVorschaubild(projekt, ABSCHNITT, 5, [band], [], true)).toEqual({
       art: 'einblendung', assetId: 'identifikator', dateiname: 'medien-x.mp4',
-      trimStart: 2, trimEnde: 12, bandVorlage: einbl, bandAktion: null,
+      trimStart: 2, trimEnde: 12, bandVorlage: band, bandAktion: null,
     })
   })
 
   it('waehleAbschnitt bekommt GENAU abschnitt.frames und den UNVERAENDERTEN lokalerFrame (Spion)', () => {
     const projekt = baueProjekt({ liste: [baueElement({ ref: 'identifikator', einblendung: EINBLENDUNG })], assets: [ASSET] })
-    waehleVorschaubild(projekt, ABSCHNITT, 44, [baueVorlage({ id: 'bv-1', art: 'split', höhe: 162 })], [], true)
+    waehleVorschaubild(projekt, ABSCHNITT, 44, [baueVorlage({ id: 'bv-1', höhe: 162 })], [], true)
     expect(doppel.abschnittAufrufe).toEqual([{ lokalerFrame: 44, elementFrames: 300 }])
   })
 
   it('waehleAbschnitt null -> bandAktion null; die Aktion des Abschnitts fehlt -> ebenfalls null', () => {
-    const vorlage = baueVorlage({ id: 'bv-1', art: 'split', höhe: 162 })
+    const vorlage = baueVorlage({ id: 'bv-1', höhe: 162 })
     doppel.bandabschnitt = { aktionRef: 'a-1', index: 0, startFrame: 0, endeFrame: 90, frames: 90 }
     doppel.takt = { abschnitte: [doppel.bandabschnitt], rundeFrames: 90 }
     const ohneAktion = baueProjekt({ liste: [baueElement({ ref: 'identifikator', einblendung: EINBLENDUNG })], assets: [ASSET] })
     const bild: Vorschaubild = waehleVorschaubild(ohneAktion, ABSCHNITT, 5, [vorlage], [], true)
-    expect((bild as Extract<Vorschaubild, { art: 'split' }>).bandAktion).toBeNull()
+    expect((bild as Extract<Vorschaubild, { art: 'einblendung' }>).bandAktion).toBeNull()
     const mitAktion = baueProjekt({
       liste: [baueElement({ ref: 'identifikator', einblendung: EINBLENDUNG })], assets: [ASSET], aktionen: [baueAktion()],
     })
     const bildMit: Vorschaubild = waehleVorschaubild(mitAktion, ABSCHNITT, 5, [vorlage], [], true)
-    expect((bildMit as Extract<Vorschaubild, { art: 'split' }>).bandAktion).toEqual(baueAktion())
+    expect((bildMit as Extract<Vorschaubild, { art: 'einblendung' }>).bandAktion).toEqual(baueAktion())
   })
 
   it('ein video-Element ohne zeiten (null) bleibt mit 0 belegt', () => {
@@ -306,15 +300,15 @@ describe('Schritt 5: video mit Unterbrechungen (#426)', () => {
       liste: [baueElement({ ref: 'identifikator', trimStart: 2.53, trimEnde: 10.47, unterbrechungen: [U], einblendung: EINBLENDUNG })],
       assets: [ASSET],
     })
-    const split = baueVorlage({ id: 'bv-1', art: 'split', höhe: 162 })
+    const band = baueVorlage({ id: 'bv-1', höhe: 162 })
     // Der Einschub wird ueber findeSegmentquelle aufgeloest; fuer die Bandmessung muss er stehen.
-    doppel.segmentquelle = { zustand: 'bereit', aktion: baueAktion(), vorlage: split }
+    doppel.segmentquelle = { zustand: 'bereit', aktion: baueAktion(), vorlage: band }
     // erster Video-Teil, Frame 10: gespielt 10, Video umfasst 238 Frames
-    waehleVorschaubild(projekt, ABSCHNITT, 10, [split], [], true)
+    waehleVorschaubild(projekt, ABSCHNITT, 10, [band], [], true)
     // zweiter Video-Teil, Frame 200: gespielt 95 + (200-147) = 148
-    waehleVorschaubild(projekt, ABSCHNITT, 200, [split], [], true)
+    waehleVorschaubild(projekt, ABSCHNITT, 200, [band], [], true)
     // Einschub, Frame 120: das Band steht an der Zeitstelle (gespielt 95)
-    waehleVorschaubild(projekt, ABSCHNITT, 120, [split], [], true)
+    waehleVorschaubild(projekt, ABSCHNITT, 120, [band], [], true)
     expect(doppel.abschnittAufrufe).toEqual([
       { lokalerFrame: 10, elementFrames: 238 },
       { lokalerFrame: 148, elementFrames: 238 },
@@ -353,7 +347,7 @@ describe('Schritt 5: segment', () => {
 describe('Reinheit: die Eingaben werden NICHT veraendert', () => {
   it('Object.freeze auf projekt, vorlagen und kaputteStellen; der Lauf bleibt ohne Wurf', () => {
     const aktion = baueAktion()
-    const vorlage = baueVorlage({ id: 'bv-1', art: 'split', höhe: 162 })
+    const vorlage = baueVorlage({ id: 'bv-1', höhe: 162 })
     doppel.segmentquelle = { zustand: 'bereit', aktion, vorlage: baueVorlage() }
     doppel.bandabschnitt = { aktionRef: 'a-1', index: 0, startFrame: 0, endeFrame: 90, frames: 90 }
     doppel.takt = { abschnitte: [doppel.bandabschnitt], rundeFrames: 90 }

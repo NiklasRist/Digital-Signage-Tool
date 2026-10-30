@@ -17,14 +17,14 @@ function aktion(id: string, vorlagenId: string): Aktion {
   }
 }
 
-function vorlage(id: string, art: Vorlage['art'], hoehe: number | null): Vorlage {
-  return { id, name: id, art, höhe: hoehe, parent: null, eingebaut: false, zonen: [] }
+function vorlage(id: string, hoehe: number | null): Vorlage {
+  return { id, name: id, höhe: hoehe, parent: null, eingebaut: false, zonen: [] }
 }
 
 describe('findeSegmentquelle – die PRUEFREIHENFOLGE (ENTSCHIEDEN 2)', () => {
   it('bereit: genau die Treffer-Objekte aus den Listen (Identitaet, nicht Kopie)', () => {
     const dieAktion = aktion('a-1', 'v-1')
-    const dieVorlage = vorlage('v-1', 'vollflaeche', null)
+    const dieVorlage = vorlage('v-1', null)
     const quelle = findeSegmentquelle('a-1', [dieAktion], [dieVorlage], true)
     expect(quelle.zustand).toBe('bereit')
     expect((quelle as { aktion: Aktion }).aktion).toBe(dieAktion)
@@ -37,7 +37,7 @@ describe('findeSegmentquelle – die PRUEFREIHENFOLGE (ENTSCHIEDEN 2)', () => {
   })
 
   it('vorlage_unbekannt schlagt die Schriften-Pruefung ebenso', () => {
-    const quelle = findeSegmentquelle('a-1', [aktion('a-1', 'fehlt')], [vorlage('v-1', 'split', 210)], false)
+    const quelle = findeSegmentquelle('a-1', [aktion('a-1', 'fehlt')], [vorlage('v-1', 210)], false)
     expect(quelle).toEqual({ zustand: 'vorlage_unbekannt', vorlagenId: 'fehlt' })
   })
 
@@ -45,7 +45,7 @@ describe('findeSegmentquelle – die PRUEFREIHENFOLGE (ENTSCHIEDEN 2)', () => {
     const quelle = findeSegmentquelle(
       'a-1',
       [aktion('a-1', 'v-1')],
-      [vorlage('v-1', 'vollflaeche', null)],
+      [vorlage('v-1', null)],
       false,
     )
     expect(quelle).toEqual({ zustand: 'schriften_fehlen' })
@@ -59,7 +59,7 @@ describe('findeSegmentquelle – die PRUEFREIHENFOLGE (ENTSCHIEDEN 2)', () => {
 describe('rein und total', () => {
   it('die uebergebenen Listen bleiben unverendert (Object.freeze, kein Wurf)', () => {
     const aktionenFest = Object.freeze([aktion('a-1', 'v-1')])
-    const vorlagenFest = Object.freeze([vorlage('v-1', 'vollflaeche', null)])
+    const vorlagenFest = Object.freeze([vorlage('v-1', null)])
     const vorher = JSON.stringify(aktionenFest) + JSON.stringify(vorlagenFest)
     expect(() => findeSegmentquelle('a-1', aktionenFest, vorlagenFest, true)).not.toThrow()
     const nachher = JSON.stringify(aktionenFest) + JSON.stringify(vorlagenFest)

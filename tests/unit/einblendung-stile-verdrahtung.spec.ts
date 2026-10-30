@@ -1,70 +1,32 @@
-// Tests zu #219 - einblendung-stile.ts, die VERDRAHTUNG mit der geteilten Rechnung.
+// Tests zu #219 / M9-3 (#452) - einblendung-stile.ts: die Bandlage ueber dem Vollbild.
 //
-// Zwei Nachweise, die die Rechnungs-Spec nicht stellen kann: berechneBandGeometrie
-// wird GENAU EINmal je Aufruf mit GENAU dem uebergebenen Wert gerufen, bandY
-// wird UNVERAENDERT uebernommen, bandHoehe ist RENDER_PROFILE.hoehe minus DIESEM
-// Wert - und die sechs uebrigen erfundenen Zahlen tauchen NIRGENDS im Ergebnis
-// auf (ENTSCHIEDEN 1). Dazu wird das Modul #239 ersetzt.
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-const doppel = vi.hoisted(() => ({
-  aufrufe: [] as number[],
-  ergebnis: null as import('../../src/shared/band-geometrie').BandGeometrie | null,
-}))
-
-vi.mock('../../src/shared/band-geometrie', () => ({
-  berechneBandGeometrie: (höhe: number) => {
-    doppel.aufrufe.push(höhe)
-    return doppel.ergebnis
-  },
-}))
+// Seit TK v3.31 gibt es keine geteilte Bandgeometrie mehr: Das Video bleibt
+// vollflaechig 1920 x 1080, das Band (1920 x H) liegt DECKEND am unteren Rand. Die
+// einzige Rechnung ist y = 1080 - H; sie wird hier gegen RENDER_PROFILE geprueft,
+// nicht gegen eine abgeschriebene 1080.
+import { describe, expect, it } from 'vitest'
 
 import { baueEinblendungStile } from '../../src/renderer/preview-player/einblendung-stile'
 import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 
-function ergebnisMitEindeutigenZahlen() {
-  return {
-    videoBereichBreite: 2001,
-    videoBereichHöhe: 2002,
-    videoBreite: 2003,
-    videoHöhe: 2004,
-    videoVersatzX: 2005,
-    videoVersatzY: 2006,
-    bandY: 2007,
-  }
-}
-
-beforeEach(() => {
-  doppel.aufrufe = []
-  doppel.ergebnis = ergebnisMitEindeutigenZahlen()
-})
-
-describe('Der einzige Aufruf der geteilten Rechnung', () => {
-  it('ruft berechneBandGeometrie GENAU EINmal je Aufruf, mit GENAU dem uebergebenen Wert', () => {
-    baueEinblendungStile(162)
-    expect(doppel.aufrufe).toEqual([162])
-    baueEinblendungStile(Number.NaN)
-    expect(doppel.aufrufe).toEqual([162, Number.NaN])
-  })
-})
-
-describe('bandY unverändert; die uebrigen sechs Felder NICHT gelesen', () => {
-  it('bandY = 2007 unverändert; bandHoehe = RENDER_PROFILE.hoehe - 2007', () => {
-    const stile = baueEinblendungStile(162)
-    expect(stile.bandY).toBe(2007)
-    expect(stile.bandHöhe).toBe(RENDER_PROFILE.hoehe - 2007)
+describe('baueEinblendungStile (#219, v3.31)', () => {
+  it('setzt die Bandkante auf 1080 − H, die Hoehe auf H und die Breite auf das Profil', () => {
+    expect(baueEinblendungStile(162)).toEqual({
+      bandY: RENDER_PROFILE.hoehe - 162,
+      bandHöhe: 162,
+      bandBreite: RENDER_PROFILE.breite,
+    })
   })
 
-  it('die sechs erfundenen Zahlen tauchen NIRGENDS im Ergebnis auf', () => {
-    const stile = baueEinblendungStile(162)
-    const alleWerte = [
-      stile.bandY, stile.bandHöhe, stile.bandBreite,
-    ]
-    for (const wert of alleWerte) {
-      for (const erfunden of [2001, 2002, 2003, 2004, 2005, 2006]) {
-        expect(wert).not.toBe(erfunden)
-      }
-    }
-    expect(Object.values(stile)).toHaveLength(3)
+  it('gilt fuer JEDE Hoehe - auch fuer eine, die frueher nicht glatt aufging', () => {
+    // 204 x 16/9 geht nicht glatt auf; das war nur fuer die gestrichene Split-Geometrie
+    // von Bedeutung. Fuer die Bandkante zaehlt allein die Subtraktion.
+    expect(baueEinblendungStile(204).bandY).toBe(RENDER_PROFILE.hoehe - 204)
+    expect(baueEinblendungStile(204).bandHöhe).toBe(204)
+  })
+
+  it('ist total: wirft auch bei 0 oder negativen Werten nicht', () => {
+    expect(() => baueEinblendungStile(0)).not.toThrow()
+    expect(() => baueEinblendungStile(-10)).not.toThrow()
   })
 })

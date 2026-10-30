@@ -64,11 +64,16 @@ export async function speichereArbeitskopie(
         // Schritt 4: unveraenderliche Felder abgleichen. Eine Abweichung ist ein Fehler im
         // Aufrufer - nicht stillschweigend korrigieren, sonst zeigen Editor und Store dauerhaft
         // verschiedene Staende.
-        if (vorlage.id !== kopie.id || vorlage.art !== kopie.art || vorlage.parent !== kopie.parent) {
+        if (
+          vorlage.id !== kopie.id ||
+          vorlage.höhe !== kopie.höhe ||
+          vorlage.parent !== kopie.parent
+        ) {
           return fehler(
             'ungueltige_eingabe',
-            `Die Nutzlast passt nicht zum gespeicherten Eintrag "${arbeitsId}" (id, art oder ` +
-              'parent weichen ab); nichts wird uebernommen.',
+            `Die Nutzlast passt nicht zum gespeicherten Eintrag "${arbeitsId}" (id, höhe ` +
+              'oder parent weichen ab); nichts wird uebernommen. Die Flaeche ist nach dem ' +
+              'Anlegen unveraenderlich (TK 9.11.1 Punkt 0).',
           )
         }
         if (vorlage.eingebaut !== kopie.eingebaut) {
@@ -136,20 +141,14 @@ function pruefeName(vorlage: Vorlage): Ergebnis<never, VorlagenFehlercode> | nul
 }
 
 /**
- * Prueft die zu uebernehmende höhe gegen die art (TK 9.11.1 Punkt 8 / 9.12.1): bei
- * vollflaeche muss höhe null sein, bei split/einblendung eine gerade ganze Zahl > 0 und < 1080.
- * Geprueft wird, NICHT gerundet. Rueckgabe `null` = in Ordnung, sonst die Fehler-Huelle.
+ * Prueft die zu uebernehmende hoehe (TK 9.11.1 Punkt 8 / 9.12.1): `null` = Ganzbild,
+ * sonst eine gerade ganze Zahl > 0 und < 1080. Die Flaeche IST die Art - eine
+ * Vorlagenart gibt es seit v3.31 nicht mehr. Geprueft wird, NICHT gerundet.
+ * Rueckgabe `null` = in Ordnung, sonst die Fehler-Huelle.
  */
 function pruefeHoehe(vorlage: Vorlage): Ergebnis<never, VorlagenFehlercode> | null {
-  const { id, art, höhe } = vorlage
-  if (art === 'vollflaeche') {
-    if (höhe !== null) {
-      return fehler(
-        'ungueltige_eingabe',
-        `Die Arbeitskopie "${id}" ist vollflaechig und darf keine Bandhoehe tragen ` +
-          `(uebergeben: ${String(höhe)}).`,
-      )
-    }
+  const { id, höhe } = vorlage
+  if (höhe === null) {
     return null
   }
   if (
@@ -285,14 +284,17 @@ function pruefeZonen(
 
 /**
  * Der GESPEICHERTE Stand der Arbeitskopie: getrimmter Name, gepruefte Zonen in exakt uebergebener
- * Reihenfolge, id/art/parent/eingebaut von der Nutzlast (nach Abgleich mit dem Eintrag). Es wird
+ * Reihenfolge, id/parent/eingebaut von der Nutzlast (nach Abgleich mit dem Eintrag). Es wird
  * ein NEUES Objekt gebaut - der Aufrufer-Eintrag bleibt unberuehrt.
+ *
+ * `höhe` kommt ebenfalls von der Nutzlast: `speichereArbeitskopie` aendert die Flaeche NICHT
+ * (sie ist nach dem Anlegen unveraenderlich), der Abgleich oben stellt sicher, dass die
+ * Nutzlast zum Eintrag passt - die Hoehe selbst prueft `pruefeHoehe`.
  */
 function gespeicherterStand(vorlage: Vorlage): Vorlage {
   return {
     id: vorlage.id,
     name: vorlage.name.trim(),
-    art: vorlage.art,
     höhe: vorlage.höhe,
     parent: vorlage.parent,
     eingebaut: vorlage.eingebaut,

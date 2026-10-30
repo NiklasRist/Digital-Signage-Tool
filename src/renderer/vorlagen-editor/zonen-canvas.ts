@@ -23,9 +23,9 @@ export const EINRAST_RASTER_PX = 8
 export const EINRAST_TOLERANZ_PX = 6
 export const MINDEST_ZONEN_KANTE_PX = 8
 
-/** 1920 × 1080 bei `vollflaeche`, sonst 1920 × vorlage.höhe. */
+/** 1920 × 1080 bei `höhe === null` (Ganzbild), sonst 1920 × vorlage.höhe. */
 export function flaecheDerVorlage(vorlage: Vorlage): Flaeche {
-  if (vorlage.art === 'vollflaeche') {
+  if (vorlage.höhe === null) {
     return { breite: RENDER_PROFILE.breite, höhe: RENDER_PROFILE.hoehe }
   }
   const bandHoehe = vorlage.höhe
@@ -44,7 +44,7 @@ export function flaecheDerVorlage(vorlage: Vorlage): Flaeche {
 export function sicherheitsBox(vorlage: Vorlage): Rahmen {
   const horizontal = SICHERHEITSABSTAND_PX.horizontal
   const vertikal = SICHERHEITSABSTAND_PX.vertikal
-  if (vorlage.art === 'vollflaeche') {
+  if (vorlage.höhe === null) {
     return {
       x: horizontal,
       y: vertikal,

@@ -21,7 +21,6 @@ import type { Zeichenvoraussetzungen } from '../../src/renderer/composer/zeichen
 const doppel = vi.hoisted(() => ({
   videoAufrufe: [] as Array<Record<string, unknown>>,
   segmentAufrufe: [] as Array<Record<string, unknown>>,
-  splitAufrufe: [] as Array<Record<string, unknown>>,
   einblendungAufrufe: [] as Array<Record<string, unknown>>,
   platzhalterAufrufe: [] as Array<Record<string, unknown>>,
   auswahlAufrufe: [] as Array<unknown>,
@@ -43,13 +42,6 @@ vi.mock('../../src/renderer/preview-player/segment', () => ({
   Segment: (props: Record<string, unknown>) => {
     doppel.segmentAufrufe.push(props)
     return createElement('div', { 'data-testid': 'stellvertreter-segment' })
-  },
-}))
-
-vi.mock('../../src/renderer/preview-player/split', () => ({
-  Split: (props: Record<string, unknown>) => {
-    doppel.splitAufrufe.push(props)
-    return createElement('div', { 'data-testid': 'stellvertreter-split' })
   },
 }))
 
@@ -144,7 +136,7 @@ function baueMarke(id: string = 'm1'): Marke {
 
 function baueVorlage(): Vorlage {
   return {
-    id: 'v-1', name: 'Vollbild', art: 'vollflaeche', höhe: null,
+    id: 'v-1', name: 'Vollbild', höhe: null,
     parent: null, eingebaut: true, zonen: [],
   }
 }
@@ -176,7 +168,6 @@ beforeEach(() => {
   doppel.auswahlAufrufe = []
   doppel.videoAufrufe = []
   doppel.segmentAufrufe = []
-  doppel.splitAufrufe = []
   doppel.einblendungAufrufe = []
   doppel.platzhalterAufrufe = []
   frameRuf = null
@@ -215,7 +206,6 @@ describe('Die Leerfaelle (ENTSCHIEDEN 2/10)', () => {
     expect(doppel.auswahlAufrufe).toHaveLength(0)
     expect(doppel.videoAufrufe).toHaveLength(0)
     expect(doppel.segmentAufrufe).toHaveLength(0)
-    expect(doppel.splitAufrufe).toHaveLength(0)
     expect(doppel.einblendungAufrufe).toHaveLength(0)
     expect(doppel.platzhalterAufrufe).toHaveLength(0)
     fertig()
@@ -338,7 +328,7 @@ describe('Die Marken-Aufloesung (#313, TK 9.15.4)', () => {
     fertig()
   })
 
-  it('Split: der Rahmen kommt aus projekt.standardMarkeId (m2), der Abschnitt aus der Band-Aktion (m1); beide UNVERAENDERT (toBe)', () => {
+  it('Band: der Rahmen kommt aus projekt.standardMarkeId (m2), der Abschnitt aus der Band-Aktion (m1); beide UNVERAENDERT (toBe)', () => {
     const rahmenMarke = baueMarke('m2')
     const abschnittMarke = baueMarke('m1')
     markenBereitschaft.bereit.set('m1', abschnittMarke)
@@ -352,21 +342,21 @@ describe('Die Marken-Aufloesung (#313, TK 9.15.4)', () => {
       }),
     ]
     const bandVorlage: Vorlage = {
-      id: 'v-split-v', name: 'Split', art: 'split', höhe: 162,
+      id: 'v-split-v', name: 'Split', höhe: 162,
       parent: null, eingebaut: true, zonen: [],
     }
     const { behaelter, fertig } = rendere(
       eigenschaften({ projekt, voraussetzungen: { vorlagen: [bandVorlage] } }),
     )
     // Doppel-Render ok - der INHALT zählt: toBe zur übergebenden Referenz.
-    const aufrufe = doppel.splitAufrufe as Array<Record<string, unknown>>
+    const aufrufe = doppel.einblendungAufrufe as Array<Record<string, unknown>>
     expect(aufrufe.length).toBeGreaterThan(0)
     expect(aufrufe.every((a) => a.rahmenMarke === rahmenMarke)).toBe(true)
     expect(aufrufe.every((a) => a.abschnittMarke === abschnittMarke)).toBe(true)
     fertig()
   })
 
-  it('Nicht bereitgestellte Marke: Segment und Split werden NICHT gerendert (keine Ersatzmarke, #312)', () => {
+  it('Nicht bereitgestellte Marke: Segment und Band werden NICHT gerendert (keine Ersatzmarke, #312)', () => {
     // bereit bleibt LEER (beide Loesungen liefern null):
     const projekt = baueProjekt()
     projekt.liste = [
@@ -377,7 +367,6 @@ describe('Die Marken-Aufloesung (#313, TK 9.15.4)', () => {
       doppel.segmentAufrufe,
       JSON.stringify(doppel.segmentAufrufe),
     ).toHaveLength(0)
-    expect(doppel.splitAufrufe).toHaveLength(0)
     fertig()
   })
 })

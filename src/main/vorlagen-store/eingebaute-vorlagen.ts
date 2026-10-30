@@ -2,7 +2,6 @@
 
 import type { Vorlage } from '../../shared/contracts/vorlage'
 // #95 – src/shared/contracts/vorlage.ts:
-//   export type VorlagenArt = 'vollflaeche' | 'split' | 'einblendung'
 //   export type Bindung = 'titel'|'beschreibung'|'preis'|'cta'|'bild'|'logo'|'slogan'
 //   export interface Rahmen { x: number; y: number; breite: number; höhe: number }
 //   export interface Ausrichtung { horizontal: 'links'|'mitte'|'rechts'
@@ -18,8 +17,9 @@ import type { Vorlage } from '../../shared/contracts/vorlage'
 //                           rahmen: Rahmen; ausrichtung: Ausrichtung
 //                           wennLeer: 'leer'|'ausblenden'
 //                           text?: ZonenText; bild?: ZonenBild; deko?: ZonenDeko }
-//   export interface Vorlage { id: string; name: string; art: VorlagenArt; höhe: number | null
+//   export interface Vorlage { id: string; name: string; höhe: number | null
 //                              parent: string | null; eingebaut: boolean; zonen: Zone[] }
+//   (v3.31: `art` ist entfallen - `höhe === null` heisst Ganzbild, eine Zahl heisst Band.)
 
 /** Die IDs der mitgelieferten Vorlagen – Reihenfolge = Reihenfolge im Anfangsbestand. */
 export const EINGEBAUTE_VORLAGEN_IDS = ['vollbild', 'split', 'band-standard'] as const
@@ -62,8 +62,7 @@ export function eingebauteVorlagen(): Vorlage[] {
 function vollbild(): Vorlage {
   return {
     id: EINGEBAUTE_VORLAGEN_IDS[0],
-    name: 'Vollbild',
-    art: 'vollflaeche',
+    name: 'Ganzflächig',
     höhe: null,
     parent: null,
     eingebaut: true,
@@ -189,20 +188,22 @@ function vollbild(): Vorlage {
 }
 
 /**
- * „Split" – Motiv links, Text rechts, Trennung bei x = 960.
+ * „Zwei Spalten" – Motiv links, Text rechts, Trennung bei x = 960. Flaeche 1920 x 1080.
  *
- * ACHTUNG, DIE GEFAEHRLICHSTE VERWECHSLUNG DIESER DATEI: Die `art` ist `'vollflaeche'`,
- * NICHT `'split'`. Diese Vorlage ist ein volles 1920x1080-Segment; die Vorlagenart
- * `'split'` dagegen meint das Werbeband unter einem verkleinerten Video (TK 9.2.8) und
- * wird von `band-standard` bedient. Name und Art tragen zufaellig dasselbe Wort und
- * meinen Verschiedenes. Mit `art: 'split'` waere die Flaeche 1920 x `höhe`, und saemtliche
- * Zonen mit y bis 1026 laegen ausserhalb - auffallen wuerde das erst beim Zeichnen.
+ * DER NAME IST SEIT v3.31 „Zwei Spalten", DIE ID BLEIBT `split`: Die IDs sind Daten
+ * (gespeicherter Bestand) und werden nicht umbenannt. Die ID meint hier ein
+ * ZWEISPALTIGES GANZBILD - ausdruecklich NICHT den am 29.10.2026 gestrichenen
+ * Split-Screen (Video verkleinert, Band darunter). Diese Verwechslung hat eine ganze
+ * Sitzung gekostet; sie steht deshalb auch im TK an drei Stellen.
+ *
+ * `höhe: null` ist die einzige Aussage ueber die Flaeche: Ganzbild (TK 9.11.1 Punkt 0).
+ * Mit einer Zahl waere die Flaeche 1920 x `höhe`, und saemtliche Zonen mit y bis 1026
+ * laegen ausserhalb - auffallen wuerde das erst beim Zeichnen.
  */
 function split(): Vorlage {
   return {
     id: EINGEBAUTE_VORLAGEN_IDS[1],
-    name: 'Split',
-    art: 'vollflaeche',
+    name: 'Zwei Spalten',
     höhe: null,
     parent: null,
     eingebaut: true,
@@ -312,13 +313,13 @@ function split(): Vorlage {
 }
 
 /**
- * „Band-Standard" – das deckende Werbeband unter dem verkleinerten Video, die
- * Hauptbetriebsart Split-Screen (TK 9.2.8). Flaeche 1920 x 162; ALLE Rahmenwerte beziehen
- * sich auf die BANDFLAECHE, nicht auf 1920x1080.
+ * „Band-Standard" – das DECKENDE Werbeband UEBER dem vollflaechigen Video (TK 9.2.8,
+ * v3.31). Flaeche 1920 x 162; ALLE Rahmenwerte beziehen sich auf die BANDFLAECHE, nicht
+ * auf 1920x1080.
  *
  * ZWEI ZAHLEN, DIE KEINE GESCHMACKSFRAGE SIND:
  * - `höhe: 162` ist GERADE. yuv420p verlangt gerade Hoehen und Versaetze; bei ungerader
- *   Bandhoehe brechen BEIDE Kompositionsarten aus TK 9.2.8 (TK 9.11.1 Punkt 8).
+ *   Bandhoehe weist der `render-service` den Auftrag ab (TK 9.11.1 Punkt 8).
  * - Alle INHALTSZONEN enden bei Band-y 90. Das Band sitzt am unteren Rahmenrand
  *   (Rahmen-y 918-1080), die unteren 54 px des Rahmens fallen also ins Band; sicher
  *   nutzbar sind nur die oberen 108 px. Tiefer liegender Inhalt kann am Fernseher
@@ -334,14 +335,13 @@ function bandStandard(): Vorlage {
   return {
     id: EINGEBAUTE_VORLAGEN_IDS[2],
     name: 'Band-Standard',
-    art: 'split',
     höhe: 162,
     parent: null,
     eingebaut: true,
     zonen: [
-      // 1 – `hintergrund`: deckende Grundflaeche ueber das ganze Band. Deckend, weil die
-      //     Deckkraft der Vorlagenart folgt: `split`-Baender sind deckend (echter Split),
-      //     nur `einblendung`-Baender tragen Alpha (TK 9.2.8).
+      // 1 – `hintergrund`: deckende Grundflaeche ueber das ganze Band. DECKEND, weil das
+      //     Band seit v3.31 ueber dem Video liegt und nichts verdecken darf, was darunter
+      //     durchscheinen muesste (TK 9.2.8).
       {
         id: 'hintergrund',
         rolle: 'fest',

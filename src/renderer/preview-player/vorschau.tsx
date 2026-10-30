@@ -48,7 +48,6 @@ import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import { Buehne } from './buehne'
 import { Video } from './video'
 import { Segment } from './segment'
-import { Split } from './split'
 import { Einblendung } from './einblendung'
 import { Platzhalter } from './platzhalter'
 import { baueZeitachse, findeAbschnitt, lokalerFrame } from './zeitachse'
@@ -262,7 +261,7 @@ export function Vorschau(props: VorschauProps): JSX.Element {
   // das an der Zeitstelle PAUSIERT ist. `lokalerBildFrame` ist dann der Frame im gezeigten
   // VIDEO-Teil, `videoLaeuft` falsch - so bleibt dasselbe <video> montiert und springt nicht.
   const videoartig =
-    bild !== null && (bild.art === 'video' || bild.art === 'split' || bild.art === 'einblendung')
+    bild !== null && (bild.art === 'video' || bild.art === 'einblendung')
   const einschub = videoartig ? bild.zerlegung?.einschub ?? null : null
   const lokalerBildFrame = videoartig ? bild.zerlegung?.lokalerFrame ?? lokal : lokal
   const videoLaeuft = einschub === null ? stand.laeuft : false
@@ -300,28 +299,6 @@ export function Vorschau(props: VorschauProps): JSX.Element {
               />
             )
           }
-        }
-        break
-      case 'split':
-        if (rahmenMarke !== null) {
-          const abschnittMarke = bild.bandAktion !== null ? holeBereiteMarke(bild.bandAktion.markeId) : null
-          buehneninhalt = (
-            <Split
-              projektId={props.projekt.id}
-              dateiname={bild.dateiname}
-              assetId={bild.assetId}
-              trimStart={bild.trimStart}
-              trimEnde={bild.trimEnde}
-              lokalerFrame={lokalerBildFrame}
-              laeuft={videoLaeuft}
-              stumm={ton.stumm}
-              lautstaerke={ton.lautstaerke}
-              rahmenMarke={rahmenMarke}
-              abschnittMarke={abschnittMarke}
-              bandVorlage={bild.bandVorlage}
-              bandAktion={bild.bandAktion}
-            />
-          )
         }
         break
       case 'einblendung':

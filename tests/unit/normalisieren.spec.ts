@@ -54,7 +54,6 @@ const attrappe = vi.hoisted(() => ({
   loeseAssetPfad: vi.fn(),
   fuehreFfmpegAus: vi.fn(),
   baueVollbildFilter: vi.fn(),
-  baueSplitFilter: vi.fn(),
   baueEinblendungFilter: vi.fn(),
   baueStandbildArgumente: vi.fn(),
   baueVideoAusschnittArgumente: vi.fn(),
@@ -72,13 +71,6 @@ vi.mock("../../src/main/ffmpeg-adapter/prozess", () => ({
 vi.mock("../../src/main/ffmpeg-adapter/filter-vollbild", () => ({
   baueVollbildFilter: attrappe.baueVollbildFilter,
 }));
-
-// TEILWEISE echt: `markenFarbeZuFfmpeg` bleibt die Originalfunktion, damit der
-// Test die WIRKLICHE Umrechnung sieht und nicht seine eigene Erwartung.
-vi.mock("../../src/main/ffmpeg-adapter/filter-split", async (originalLaden) => {
-  const echt = await originalLaden<typeof import("../../src/main/ffmpeg-adapter/filter-split")>();
-  return { ...echt, baueSplitFilter: attrappe.baueSplitFilter };
-});
 
 vi.mock("../../src/main/ffmpeg-adapter/filter-einblendung", () => ({
   baueEinblendungFilter: attrappe.baueEinblendungFilter,
@@ -113,9 +105,7 @@ afterAll(() => {
   rmSync(T1, { recursive: true, force: true });
 });
 
-const FLAECHE_DUNKEL = "#2F2E2E";
 const VOLLBILD_KETTE = "<vollbild>";
-const SPLIT_KETTE = "<split>";
 const EINBLENDUNG_KETTE = "<einblendung>";
 const STANDBILD_ARGUMENTE = ["-standbild"];
 const VIDEO_ARGUMENTE = ["-video"];
@@ -162,15 +152,10 @@ const VIDEO_OHNE_BAND: RenderItem = {
 
 /**
  * Ein Videoelement mit Band. `höhe` traegt den Umlaut wie im Vertrag (#17).
- * `flaecheDunkel` ist seit #316 ein Pflichtfeld IM ELEMENT - der Wert ist Testdatum,
- * kein Vertragswissen (er kommt im Betrieb aus der Projekt-Standardmarke).
+ * Seit TK v3.31 gibt es genau EINE Komposition (9.2.8); `art` und `flaecheDunkel`
+ * sind mit dem Vertrag entfallen.
  */
-function videoMitBand(
-  art: "split" | "einblendung",
-  höhe = 162,
-  flaecheDunkel = FLAECHE_DUNKEL,
-  id = "e-band",
-): RenderItem {
+function videoMitBand(höhe = 162, id = "e-band"): RenderItem {
   return {
     id,
     art: "video",
@@ -178,13 +163,11 @@ function videoMitBand(
     trimStart: 0,
     trimEnde: 4,
     einblendung: {
-      art,
       höhe,
       abschnitte: [
         { png: new Uint8Array(), dauer: 2 },
         { png: new Uint8Array(), dauer: 1 },
       ],
-      flaecheDunkel,
     },
   } as unknown as RenderItem;
 }
@@ -206,7 +189,6 @@ beforeEach(() => {
       : { ok: true, wert: path.join(MEDIEN, dateiname) },
   );
   attrappe.baueVollbildFilter.mockReturnValue({ ok: true, wert: VOLLBILD_KETTE });
-  attrappe.baueSplitFilter.mockReturnValue({ ok: true, wert: SPLIT_KETTE });
   attrappe.baueEinblendungFilter.mockReturnValue({ ok: true, wert: EINBLENDUNG_KETTE });
   attrappe.baueStandbildArgumente.mockReturnValue({ ok: true, wert: STANDBILD_ARGUMENTE });
   attrappe.baueVideoAusschnittArgumente.mockReturnValue({ ok: true, wert: VIDEO_ARGUMENTE });
@@ -304,7 +286,6 @@ describe("Die fuenf Faelle der Weiche", () => {
       },
       RENDER_PROFILE,
     );
-    expect(attrappe.baueSplitFilter).not.toHaveBeenCalled();
     expect(attrappe.baueEinblendungFilter).not.toHaveBeenCalled();
     expect(attrappe.fuehreFfmpegAus).toHaveBeenCalledTimes(1);
   });
@@ -328,51 +309,16 @@ describe("Die fuenf Faelle der Weiche", () => {
     expect(attrappe.baueBandspur).not.toHaveBeenCalled();
   });
 
-  it("Fall 4 - split: EINGEPASSTE Breite 1632, nicht die Zielflaeche 1920", async () => {
-    const ergebnis = await normalisiereElement(videoMitBand("split"), 3, BAND_PNGS, kontext());
+  it("Fall 4 - Band: Band-Kette, Bandspur, keine Markenfarbe", async () => {
+    const ergebnis = await normalisiereElement(videoMitBand(), 4, BAND_PNGS, kontext());
     expect(ergebnis.ok).toBe(true);
 
-    // Die Werte stammen aus der geteilten Rechnung (#239): bei H = 162 ist
-    // 918 x 16/9 = 1632 und der Versatz (1920 - 1632) / 2 = 144.
-    expect(attrappe.baueSplitFilter).toHaveBeenCalledWith(162, 1632, 144, "0x2F2E2E", RENDER_PROFILE);
-    // Die Zielflaeche darf NIE als Videobreite herausgehen - das ist der stille Fehler.
-    expect(attrappe.baueSplitFilter.mock.calls[0]?.[1]).not.toBe(RENDER_PROFILE.breite);
-    expect(attrappe.baueEinblendungFilter).not.toHaveBeenCalled();
-    expect(attrappe.baueVollbildFilter).not.toHaveBeenCalled();
-
-    expect(attrappe.baueVideoAusschnittArgumente.mock.calls[0]?.[0]).toMatchObject({
-      bandSpurPfad: path.join(T1, "band_0003.mp4"),
-      filterkette: SPLIT_KETTE,
-    });
-  });
-
-  it("Fall 4: zwei Elemente mit VERSCHIEDENER flaecheDunkel im SELBEN Lauf bekommen JEDES seinen Wert", async () => {
-    // Der schaerfste Nachweis der Umstellung von #316: Mit EINEM Kontext-Feld haetten
-    // beide denselben Wert - genau das war der Fehler (TK 9.2.2/9.3.5).
-    const erstes = await normalisiereElement(videoMitBand("split", 162, "#112233", "e-a"), 0, BAND_PNGS, kontext());
-    const zweites = await normalisiereElement(videoMitBand("split", 162, "#445566", "e-b"), 1, BAND_PNGS, kontext());
-    expect(erstes.ok && zweites.ok).toBe(true);
-
-    expect(attrappe.baueSplitFilter.mock.calls[0]?.[3]).toBe("0x112233");
-    expect(attrappe.baueSplitFilter.mock.calls[1]?.[3]).toBe("0x445566");
-  });
-
-  it("Fall 5 liest flaecheDunkel NICHT - ein unbrauchbarer Wert faellt nicht auf", async () => {
-    // Waere das Feld hier gelesen, ergaebe die Umrechnung von "kaputt" einen Fehler und
-    // der Lauf endete mit ungueltige_eingabe. TK 9.2.2: bei `einblendung` wird nichts
-    // gefuellt, das Band ueberlagert mit Alpha.
-    const ergebnis = await normalisiereElement(videoMitBand("einblendung", 162, "kaputt"), 5, BAND_PNGS, kontext());
-    expect(ergebnis.ok).toBe(true);
-    expect(attrappe.baueSplitFilter).not.toHaveBeenCalled();
-  });
-
-  it("Fall 5 - einblendung: Band-Kette, kein Split, keine Markenfarbe", async () => {
-    const ergebnis = await normalisiereElement(videoMitBand("einblendung"), 4, BAND_PNGS, kontext());
-    expect(ergebnis.ok).toBe(true);
-
+    // Das Band liegt DECKEND ueber dem vollflaechigen Video (TK 9.2.8): EINE Kette,
+    // eine Bandspur, kein zweiter Kompositionszweig.
     expect(attrappe.baueEinblendungFilter).toHaveBeenCalledWith(162, RENDER_PROFILE);
-    expect(attrappe.baueSplitFilter).not.toHaveBeenCalled();
+    expect(attrappe.baueBandspur).toHaveBeenCalledTimes(1);
     expect(attrappe.baueVideoAusschnittArgumente.mock.calls[0]?.[0]).toMatchObject({
+      bandSpurPfad: path.join(T1, "band_0004.mp4"),
       filterkette: EINBLENDUNG_KETTE,
     });
   });
@@ -400,7 +346,7 @@ describe("Die fuenf Faelle der Weiche", () => {
 // ===========================================================================
 describe("Bandspur (#168) - drei Argumente, Laenge vom Video", () => {
   it("bekommt gesamtFrames = trimFrames(...).frames und Abschnitte in FRAMES", async () => {
-    await normalisiereElement(videoMitBand("split"), 3, BAND_PNGS, kontext());
+    await normalisiereElement(videoMitBand(), 3, BAND_PNGS, kontext());
 
     const auftrag = attrappe.baueBandspur.mock.calls[0]?.[0] as {
       abschnitte: Array<{ pngPfad: string; frames: number }>;
@@ -425,7 +371,7 @@ describe("Bandspur (#168) - drei Argumente, Laenge vom Video", () => {
     // getrimmt wird, gehen die beiden Zahlen auseinander - ein Test mit
     // trimStart = 0 kann die Verwechslung grundsaetzlich nicht sehen.
     const getrimmt = {
-      ...(videoMitBand("split") as unknown as Record<string, unknown>),
+      ...(videoMitBand() as unknown as Record<string, unknown>),
       trimStart: 1,
       trimEnde: 5,
     } as unknown as RenderItem;
@@ -442,7 +388,7 @@ describe("Bandspur (#168) - drei Argumente, Laenge vom Video", () => {
 
   it("wird mit DREI Argumenten gerufen; das dritte traegt die Abbruch-Kette", async () => {
     const k = kontext();
-    await normalisiereElement(videoMitBand("split"), 3, BAND_PNGS, k);
+    await normalisiereElement(videoMitBand(), 3, BAND_PNGS, k);
 
     const aufruf = attrappe.baueBandspur.mock.calls[0];
     expect(aufruf).toHaveLength(3);
@@ -471,7 +417,7 @@ describe("Bandspur (#168) - drei Argumente, Laenge vom Video", () => {
       fehler: { code: "ffmpeg_fehler", meldung: "Encoder weg." },
     });
 
-    const ergebnis = await normalisiereElement(videoMitBand("split"), 3, BAND_PNGS, kontext());
+    const ergebnis = await normalisiereElement(videoMitBand(), 3, BAND_PNGS, kontext());
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
     expect(ergebnis.fehler.code).toBe("ffmpeg_fehler");
@@ -522,7 +468,7 @@ describe("Abbruch-Kette (#159/#179)", () => {
     merkeProzess.mockImplementation(() => reihenfolge.push("merke"));
     gibProzessFrei.mockImplementation(() => reihenfolge.push("frei"));
 
-    await normalisiereElement(videoMitBand("split"), 3, BAND_PNGS, kontext());
+    await normalisiereElement(videoMitBand(), 3, BAND_PNGS, kontext());
 
     // Bandspur-Lauf, Freigabe, Video-Lauf, Freigabe - nie zwei gleichzeitig.
     expect(reihenfolge).toEqual(["merke", "frei", "merke", "frei"]);
@@ -613,7 +559,7 @@ describe("Fehlerpfade - daten NUR bei medium_fehlt und ungueltiges_element", () 
 
   it("Band-Abschnitt mit LEEREM PNG-Pfad: ungueltiges_element", async () => {
     const ergebnis = await normalisiereElement(
-      videoMitBand("split"),
+      videoMitBand(),
       0,
       { segment: null, band: ["/t1/band-0000-0000.png", ""] },
       kontext(),
@@ -626,7 +572,7 @@ describe("Fehlerpfade - daten NUR bei medium_fehlt und ungueltiges_element", () 
   });
 
   it("zu wenige Band-PNGs: ungueltiges_element MIT daten", async () => {
-    const ergebnis = await normalisiereElement(videoMitBand("split"), 0, {
+    const ergebnis = await normalisiereElement(videoMitBand(), 0, {
       segment: null,
       band: ["/t1/band-0000-0000.png"],
     }, kontext());
@@ -744,7 +690,7 @@ describe("Fehlerpfade - daten NUR bei medium_fehlt und ungueltiges_element", () 
   });
 
   it("Codes fremder Bausteine kommen UNVERAENDERT durch (#176: ungerade Bandhoehe)", async () => {
-    const ergebnis = await normalisiereElement(videoMitBand("split", 161), 0, BAND_PNGS, kontext());
+    const ergebnis = await normalisiereElement(videoMitBand(161), 0, BAND_PNGS, kontext());
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
     expect(ergebnis.fehler.code).toBe("ungueltiges_element");
@@ -796,7 +742,7 @@ describe("Der Kontext wird nicht veraendert", () => {
   it("laesst das Profil unberuehrt und traegt KEINE Markenfarbe (#316)", async () => {
     const k = kontext();
     const vorher = JSON.stringify(k.profil);
-    await normalisiereElement(videoMitBand("split"), 0, BAND_PNGS, k);
+    await normalisiereElement(videoMitBand(), 0, BAND_PNGS, k);
 
     expect(JSON.stringify(k.profil)).toBe(vorher);
     expect(k.profil).toBe(RENDER_PROFILE);

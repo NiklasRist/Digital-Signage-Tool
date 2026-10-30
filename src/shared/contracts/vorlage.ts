@@ -9,9 +9,6 @@ import type { FarbRolle, SchriftRolle } from './marke'
 //     | 'linie' | 'scrimStart' | 'scrimEnde'
 //   export type SchriftRolle = 'headlineElegant' | 'headlinePlakativ' | 'fliesstext' | 'fliesstextFett'
 
-/** Flaeche UND Kompositionsart einer Vorlage (TK 9.11.1 Punkt 0). Nach dem Anlegen unveraenderlich. */
-export type VorlagenArt = 'vollflaeche' | 'split' | 'einblendung'
-
 /** Deklarative Verknuepfung Zone <-> Inhaltsfeld. null = dekorative/statische Zone. */
 export type Bindung =
   | 'titel' | 'beschreibung' | 'preis' | 'cta' | 'bild' | 'logo' | 'slogan'
@@ -26,7 +23,7 @@ export type Einpassung = 'contain' | 'cover'
 
 export type VerlaufRichtung = 'oben' | 'unten' | 'links' | 'rechts'
 
-/** ABSOLUTE Pixel in der Flaeche der jeweiligen Vorlagenart – niemals Prozente. */
+/** ABSOLUTE Pixel in der Flaeche der Vorlage – niemals Prozente. */
 export interface Rahmen {
   x: number
   y: number
@@ -78,8 +75,11 @@ export interface Zone {
 export interface Vorlage {
   id: string                      // "vollbild" | "split" | "band-standard" | <uuid> bei eigenen
   name: string                    // Anzeigename
-  art: VorlagenArt
-  höhe: number | null             // nur bei "split"/"einblendung": Bandhoehe in px; sonst null
+  /**
+   * Die Flaeche IST die Art (TK 9.11.1 Punkt 0, v3.31): `null` = Ganzbild 1920 x 1080,
+   * eine Zahl = Bandhoehe in px (gerade, > 0, < 1080). Nach dem Anlegen unveraenderlich.
+   */
+  höhe: number | null
   parent: string | null           // != null -> ARBEITSKOPIE; == null -> nutzbare Vorlage
   eingebaut: boolean              // true = mitgeliefert; false = eigene (FA-13)
   zonen: Zone[]                   // Zeichenreihenfolge = Array-Reihenfolge (spaeter = darueber)

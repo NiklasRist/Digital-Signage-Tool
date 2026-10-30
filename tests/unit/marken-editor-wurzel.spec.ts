@@ -117,7 +117,7 @@ const ZUGANG = (initial: unknown) => ({
 // #449: Die Elemente kommen aus der VORSCHAU-VORLAGE. Ohne sie gaebe es nichts zu klicken -
 // deshalb liefert die Vorlagen-Sicht hier die eingebaute „Vollbild" (Ausschnitt).
 const VORLAGE_VOLLBILD = {
-  id: 'vollbild', name: 'Vollbild', art: 'vollflaeche', höhe: null, parent: null, eingebaut: true,
+  id: 'vollbild', name: 'Vollbild', höhe: null, parent: null, eingebaut: true,
   zonen: [
     { id: 'hintergrund', rolle: 'fest', bindung: null, rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 }, ausrichtung: { horizontal: 'links', vertikal: 'oben' }, wennLeer: 'leer', deko: { füllungFarbRolle: 'flaecheDunkel' } },
     { id: 'motiv', rolle: 'frei', bindung: 'bild', rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 }, ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' }, wennLeer: 'leer', bild: { einpassung: 'cover' } },

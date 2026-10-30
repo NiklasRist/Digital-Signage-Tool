@@ -96,8 +96,8 @@ function aktion(id: string, titel: string): Aktion {
   }
 }
 
-function vorlage(id: string, art: Vorlage['art'], parent: string | null, hoehe: number | null): Vorlage {
-  return { id, name: id, art, höhe: hoehe, parent, eingebaut: false, zonen: [] }
+function vorlage(id: string, parent: string | null, hoehe: number | null): Vorlage {
+  return { id, name: id, höhe: hoehe, parent, eingebaut: false, zonen: [] }
 }
 
 function element(ueber: Partial<Listenelement> = {}): Listenelement {
@@ -109,10 +109,10 @@ function element(ueber: Partial<Listenelement> = {}): Listenelement {
 }
 
 const BANDBESTAND: readonly Vorlage[] = [
-  vorlage('volle', 'vollflaeche', null, null),
-  vorlage('kopie-1', 'split', 'band-1', 210),
-  vorlage('band-1', 'split', null, 210),
-  vorlage('band-2', 'einblendung', null, 54),
+  vorlage('volle', null, null),
+  vorlage('kopie-1', 'band-1', 210),
+  vorlage('band-1', null, 210),
+  vorlage('band-2', null, 54),
 ]
 
 const AKTIONS_BESTAND: readonly Aktion[] = [aktion('a-1', 'Sommeraktion'), aktion('a-2', 'Winterpause')]
@@ -237,11 +237,11 @@ describe('Die eine Vorlagen-Auswahl fuer das ganze Band', () => {
     // Bestand aus allen vier Sorten: vollflaeche, Arbeitskopien (parent gesetzt)
     // fuer beide Band-Arten, plus die zwei echten Band-Vorlagen.
     const bestand = [
-      vorlage('volle-v', 'vollflaeche', null, null),
-      vorlage('kopie-split', 'split', 'band-1', 210),
-      vorlage('kopie-ein', 'einblendung', 'band-2', 54),
-      vorlage('band-1', 'split', null, 210),
-      vorlage('band-2', 'einblendung', null, 54),
+      vorlage('volle-v', null, null),
+      vorlage('kopie-split', 'band-1', 210),
+      vorlage('kopie-ein', 'band-2', 54),
+      vorlage('band-1', null, 210),
+      vorlage('band-2', null, 54),
     ]
     const { behaelter, fertig } = rendere(eigenschaften({ vorlagen: bestand }))
     const angebot = Array.from(vorlagenWahl(behaelter).options).map((option) => option.value)
@@ -472,7 +472,7 @@ describe('Hinweis statt Bedienung (Fehlerpfade)', () => {
     const { behaelter, fertig } = rendere(
       eigenschaften({
         // Nur eine vollflaechige Vorlage und eine Arbeitskopie: nichts waelbar.
-        vorlagen: [vorlage('volle', 'vollflaeche', null, null), vorlage('kopie', 'split', 'band', 210)],
+        vorlagen: [vorlage('volle', null, null), vorlage('kopie', 'band', 210)],
       }),
     )
     expect(textVon(behaelter, 'einblendung-hinweis')).not.toBe('')

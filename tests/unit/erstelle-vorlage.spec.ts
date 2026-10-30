@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Ergebnis } from "../../src/shared/contracts/ergebnis";
 import type { Vorlage } from "../../src/shared/contracts/vorlage";
 
-// Unit-Test zu #100. Geprueft wird VERHALTEN, nicht die Deklaration.
+// Unit-Test zu #100, nachgezogen auf M9 (#451): `erstelleVorlage(höhe, name)` - die
+// Fläche IST die Art (TK 9.11.1 Punkt 0, v3.31). `höhe === null` heisst Ganzbild,
+// eine Zahl heisst Band; eine Vorlagenart gibt es nicht mehr.
 //
 // Der Schreibweg (#98) ist gemockt, und das aus zwei Gruenden: Der echte Modul zoege ueber
 // ermittleDatenOrt() `electron` herein, das es im Testlauf nicht gibt und wuerde die ECHTE
@@ -53,8 +55,8 @@ beforeEach(() => {
 });
 
 /** Legt an und besteht auf Erfolg - fuer die Tests, in denen der Fehlerfall nicht das Thema ist. */
-async function angelegt(art: "vollflaeche" | "split" | "einblendung", höhe: number | null, name: string) {
-  const ergebnis = await erstelleVorlage(art, höhe, name);
+async function angelegt(höhe: number | null, name: string) {
+  const ergebnis = await erstelleVorlage(höhe, name);
   if (!ergebnis.ok) {
     throw new Error(`unerwartet fehlgeschlagen: ${ergebnis.fehler.code} ${ergebnis.fehler.meldung}`);
   }
@@ -78,12 +80,11 @@ function eingebaute(id: string): Vorlage {
   return treffer;
 }
 
-describe("erstelleVorlage – vollflaechig", () => {
+describe("erstelleVorlage - Ganzbild (höhe null)", () => {
   it("legt eine nutzbare Vorlage mit UUID, parent null und eingebaut false an", async () => {
-    const neu = await angelegt("vollflaeche", null, "Meine Vorlage");
+    const neu = await angelegt(null, "Meine Vorlage");
 
     expect(neu.name).toBe("Meine Vorlage");
-    expect(neu.art).toBe("vollflaeche");
     expect(neu.höhe).toBeNull();
     expect(neu.parent).toBeNull();
     expect(neu.eingebaut).toBe(false);
@@ -93,15 +94,15 @@ describe("erstelleVorlage – vollflaechig", () => {
     expect(zustand.aufrufe).toEqual([{ schreibart: "sofort" }]);
   });
 
-  it("belegt genau die zwei festen Zonen des Markenrahmens vor – hintergrund zuerst", async () => {
-    const neu = await angelegt("vollflaeche", null, "Meine Vorlage");
+  it("belegt genau die zwei festen Zonen des Markenrahmens vor - hintergrund zuerst", async () => {
+    const neu = await angelegt(null, "Meine Vorlage");
 
     expect(neu.zonen.map((z) => z.id)).toEqual(["hintergrund", "logo"]);
     expect(neu.zonen.every((z) => z.rolle === "fest")).toBe(true);
   });
 
   it("uebernimmt die Rahmenwerte unveraendert aus der eingebauten Vorlage 'vollbild'", async () => {
-    const neu = await angelegt("vollflaeche", null, "Meine Vorlage");
+    const neu = await angelegt(null, "Meine Vorlage");
     const quelle = eingebaute("vollbild");
 
     expect(zone(neu, "hintergrund")).toEqual(zone(quelle, "hintergrund"));
@@ -109,7 +110,7 @@ describe("erstelleVorlage – vollflaechig", () => {
   });
 
   it("kopiert KEINE scrim-Zone", async () => {
-    const neu = await angelegt("vollflaeche", null, "Meine Vorlage");
+    const neu = await angelegt(null, "Meine Vorlage");
 
     // 'vollbild' fuehrt DREI feste Zonen; der Scrim gehoert nicht zum Markenrahmen.
     expect(eingebaute("vollbild").zonen.filter((z) => z.rolle === "fest")).toHaveLength(3);
@@ -117,20 +118,20 @@ describe("erstelleVorlage – vollflaechig", () => {
   });
 
   it("nimmt das Logo aus 'vollbild' und nicht aus der eingebauten Vorlage 'split'", async () => {
-    const neu = await angelegt("vollflaeche", null, "Meine Vorlage");
+    const neu = await angelegt(null, "Meine Vorlage");
 
     expect(zone(neu, "logo").rahmen.x).toBe(zone(eingebaute("vollbild"), "logo").rahmen.x);
     expect(zone(neu, "logo").rahmen.x).not.toBe(zone(eingebaute("split"), "logo").rahmen.x);
   });
 
   it("belegt keine freien Zonen vor", async () => {
-    const neu = await angelegt("vollflaeche", null, "Meine Vorlage");
+    const neu = await angelegt(null, "Meine Vorlage");
 
     expect(neu.zonen.filter((z) => z.rolle === "frei")).toEqual([]);
   });
 
-  it("liefert tiefe Kopien – eine Aenderung daran beruehrt weder #96 noch den Bestand", async () => {
-    const neu = await angelegt("vollflaeche", null, "Meine Vorlage");
+  it("liefert tiefe Kopien - eine Aenderung daran beruehrt weder #96 noch den Bestand", async () => {
+    const neu = await angelegt(null, "Meine Vorlage");
     const vorher = zone(eingebaute("vollbild"), "hintergrund").rahmen.x;
 
     const ersteZone = neu.zonen[0];
@@ -148,77 +149,33 @@ describe("erstelleVorlage – vollflaechig", () => {
   });
 });
 
-describe("erstelleVorlage – Band", () => {
+describe("erstelleVorlage - Band", () => {
   it("uebernimmt bei der Standard-Bandhoehe die zwei festen Zonen von 'band-standard'", async () => {
     const quelle = eingebaute("band-standard");
-    const neu = await angelegt("split", quelle.höhe, "Mein Band");
+    const neu = await angelegt(quelle.höhe, "Mein Band");
 
-    expect(neu.art).toBe("split");
     expect(neu.höhe).toBe(quelle.höhe);
     expect(neu.zonen.map((z) => z.id)).toEqual(["hintergrund", "logo"]);
     expect(zone(neu, "hintergrund")).toEqual(zone(quelle, "hintergrund"));
     expect(zone(neu, "logo")).toEqual(zone(quelle, "logo"));
   });
 
-  it("legt fuer eine noch nicht festgelegte Bandhoehe NICHTS an", async () => {
-    // Die offene Entscheidung des Issues: Welche festen Zonen bekommt ein Band, das nicht die
-    // Hoehe der eingebauten Vorlage hat - und welche eine 'einblendung'? Bis das entschieden ist,
-    // darf hier keine Vorlage entstehen; eine ohne Markenrahmen liesse sich spaeter nicht mehr
-    // reparieren.
-    const ergebnis = await erstelleVorlage("split", 120, "Schmales Band");
-
-    expect(ergebnis.ok).toBe(false);
-    expect(zustand.aufrufe).toEqual([]);
-    expect(zustand.bestand).toEqual([]);
-  });
-
-  it("legt eine einblendung mit den festen Zonen des Bandes an", async () => {
-    // Entscheidung 23.10.2026 (AD v1.9 / TK 9.11.1): Angelegt wird ausschliesslich mit 162 px;
-    // die festen Zonen kommen aus "Band-Standard" - hintergrund (0,0,1920,162) und logo
-    // (96,20,240,69), in dieser Zeichenreihenfolge.
-    const quelle = eingebaute("band-standard");
-    const neu = await angelegt("einblendung", 162, "Meine Einblendung");
-
-    expect(neu.art).toBe("einblendung");
-    expect(neu.höhe).toBe(162);
-    expect(neu.parent).toBeNull();
-    expect(neu.eingebaut).toBe(false);
-    expect(neu.zonen.map((z) => z.id)).toEqual(["hintergrund", "logo"]);
-    expect(zone(neu, "hintergrund").rahmen).toEqual(zone(quelle, "hintergrund").rahmen);
-    expect(zone(neu, "logo")).toEqual(zone(quelle, "logo"));
-    expect(zone(neu, "hintergrund").rolle).toBe("fest");
-  });
-
-  it("gibt der einblendung den Scrim-Verlauf statt der deckenden Fuellung", async () => {
-    // TK 9.11.1 (Entscheidung 23.10.2026), woertlich: "Die hintergrund-Zone traegt keine deckende
-    // flaecheDunkel-Fuellung, sondern den Scrim-Verlauf scrimStart -> scrimEnde, Richtung unten
-    // (durchsichtig -> 70 % Schwarz)." Deckkraft folgt der Vorlagenart (TK 9.2.8) - eine deckende
-    // Fuellung hoebe den Sinn der Einblendung auf.
-    const neu = await angelegt("einblendung", 162, "Meine Einblendung");
+  it("das Band ist DECKEND - der hintergrund traegt die Fuellung, keinen Scrim-Verlauf", async () => {
+    // TK 9.2.8 (v3.31): Das Band liegt deckend ueber dem vollflaecigen Video. Die
+    // frueher fuer `einblendung` gebaute Scrim-Variante ist mit dem Split-Screen entfallen;
+    // die festen Zonen kommen unveraendert aus `band-standard`.
+    const neu = await angelegt(162, "Mein Band");
     const hintergrund = zone(neu, "hintergrund");
 
-    expect(hintergrund.deko).toEqual({
-      verlauf: { vonFarbRolle: "scrimStart", bisFarbRolle: "scrimEnde", richtung: "unten" },
-    });
-    expect(hintergrund.deko?.füllungFarbRolle).toBeUndefined();
-    expect(hintergrund.deko?.radius).toBeUndefined();
-    expect(hintergrund.deko?.statischerText).toBeUndefined();
+    expect(hintergrund.deko).toEqual({ füllungFarbRolle: "flaecheDunkel" });
+    expect(hintergrund.deko?.verlauf).toBeUndefined();
   });
 
-  it("die einblendung aendert die QUELLE nicht - der Scrim entsteht als Kopie", async () => {
-    const quelldeko = zone(eingebaute("band-standard"), "hintergrund").deko;
-
-    await angelegt("einblendung", 162, "Meine Einblendung");
-
-    // Die eingebaute Band-Vorlage bleibt deckend; nur die neue Vorlage traegt den Verlauf.
-    expect(zone(eingebaute("band-standard"), "hintergrund").deko).toEqual(quelldeko);
-    expect(quelldeko?.verlauf).toBeUndefined();
-  });
-
-  it("legt eine einblendung mit anderer Hoehe NICHTS an", async () => {
-    // Nur 162 ist entschieden (AD v1.9 / TK 9.11.1). Fuer andere Hoehen fehlt die Logo-Regel -
-    // nicht raten, keine Vorlage ohne festgelegten Markenrahmen.
-    const ergebnis = await erstelleVorlage("einblendung", 120, "Schmale Einblendung");
+  it("legt fuer eine noch nicht festgelegte Bandhoehe NICHTS an", async () => {
+    // Die offene Entscheidung des Issues: Welche festen Zonen bekommt ein Band, das nicht die
+    // Hoehe der eingebauten Vorlage hat? Bis das entschieden ist, darf hier keine Vorlage
+    // entstehen; eine ohne Markenrahmen liesse sich spaeter nicht mehr reparieren.
+    const ergebnis = await erstelleVorlage(120, "Schmales Band");
 
     expect(ergebnis.ok).toBe(false);
     if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe("unbekannter_fehler");
@@ -227,14 +184,10 @@ describe("erstelleVorlage – Band", () => {
   });
 });
 
-describe("erstelleVorlage – Validierung", () => {
+describe("erstelleVorlage - Validierung", () => {
   /** Jeder Fehlerfall prueft dasselbe Paar: richtiger Code UND kein Schreibversuch. */
-  async function abgewiesen(
-    art: Parameters<typeof erstelleVorlage>[0],
-    höhe: number | null,
-    name: string,
-  ) {
-    const ergebnis = await erstelleVorlage(art, höhe, name);
+  async function abgewiesen(höhe: number | null, name: string) {
+    const ergebnis = await erstelleVorlage(höhe, name);
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) {
       return;
@@ -247,81 +200,52 @@ describe("erstelleVorlage – Validierung", () => {
     expect(zustand.bestand).toEqual([]);
   }
 
-  it("weist eine unbekannte Art ab", async () => {
-    await abgewiesen("band" as Parameters<typeof erstelleVorlage>[0], null, "X");
-  });
-
-  it("weist eine Hoehe bei einer vollflaechigen Vorlage ab", async () => {
-    await abgewiesen("vollflaeche", 162, "X");
-  });
-
-  it("weist 0, 1080, gebrochene und fehlende Bandhoehen ab", async () => {
-    await abgewiesen("split", 0, "X");
-    await abgewiesen("split", 1080, "X");
-    await abgewiesen("split", 162.5, "X");
-    await abgewiesen("split", null, "X");
+  it("weist 0, 1080 und gebrochene Bandhoehen ab", async () => {
+    await abgewiesen(0, "X");
+    await abgewiesen(1080, "X");
+    await abgewiesen(162.5, "X");
   });
 
   it("weist UNGERADE Bandhoehen ab, gerade nicht", async () => {
     // Der Kern von TK 9.11.1 Punkt 8: 161 und 162 unterscheiden sich um ein einziges Pixel, aber
     // nur die gerade Hoehe laesst die Komposition des Ausgabe-Profils heil.
-    await abgewiesen("split", 161, "X");
-    await abgewiesen("einblendung", 161, "X");
+    await abgewiesen(161, "X");
 
-    const neu = await angelegt("split", 162, "X");
+    const neu = await angelegt(162, "X");
     expect(neu.höhe).toBe(162);
   });
 
-  // Die Obergrenze 1080 allein ist zu weit: H = 1078 ist gerade, ganzzahlig und < 1080 -
-  // laesst aber nur 2 Bildzeilen uebrig, und die auf ein Vielfaches von 4 abgerundete
-  // Videobreite ist floor(2 * 16/9 / 4) * 4 = 0. Es ist der EINZIGE solche Wert im ganzen
-  // Bereich.
-  it("weist die Bandhoehe 1078 ab - sie ergaebe eine Videobreite von 0", async () => {
-    await abgewiesen("split", 1078, "X");
-    await abgewiesen("einblendung", 1078, "X");
-  });
-
-  it("weist 1078 mit ungueltige_eingabe ab, nicht erst ueber die fehlende Zonen-Festlegung", async () => {
-    // Der Unterschied traegt die Aussage: Waere 1078 nur zufaellig gescheitert, weil fuer
-    // diese Hoehe keine festen Zonen festgelegt sind, lautete der Code
-    // `unbekannter_fehler` (s. `festeZonen`). `ungueltige_eingabe` belegt, dass die
-    // Geometrie-Schranke ZUERST gegriffen hat.
-    const zuHoch = await erstelleVorlage("split", 1078, "X");
-    expect(zuHoch.ok).toBe(false);
-    if (!zuHoch.ok) expect(zuHoch.fehler.code).toBe("ungueltige_eingabe");
-
-    // Gegenprobe mit einer KRUMMEN Hoehe direkt darunter: 1076 ergibt eine Videobreite von
-    // 4 und passiert die Geometrie-Schranke - es scheitert danach an der offenen
-    // Zonen-Festlegung, also mit dem ANDEREN Code.
-    const knappDrunter = await erstelleVorlage("split", 1076, "X");
-    expect(knappDrunter.ok).toBe(false);
-    if (!knappDrunter.ok) expect(knappDrunter.fehler.code).toBe("unbekannter_fehler");
-
-    // Und dieselbe Gegenprobe fuer eine krumme Hoehe aus der Mitte des Bereichs, die NICHT
-    // durch 18 teilbar ist (534 * 16/9 = 949,33 -> abgerundet 948).
-    const mitte = await erstelleVorlage("split", 546, "X");
-    expect(mitte.ok).toBe(false);
-    if (!mitte.ok) expect(mitte.fehler.code).toBe("unbekannter_fehler");
+  it("andere gerade Bandhoehen scheitern an der OFFENEN Zonen-Festlegung, nicht an der Hoehe", async () => {
+    // 1078 war bis v3.31 verboten (im Split blieb eine Videobreite von 0). Diese Schranke
+    // ist mit dem Split-Screen entfallen; ein Band mit 1078 ist zulaessig, hat aber keine
+    // festgelegten festen Zonen -> `unbekannter_fehler`, und es wird nichts geschrieben.
+    for (const höhe of [1078, 1076, 546]) {
+      const ergebnis = await erstelleVorlage(höhe, "X");
+      expect(ergebnis.ok, String(höhe)).toBe(false);
+      if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe("unbekannter_fehler");
+    }
+    expect(zustand.aufrufe).toEqual([]);
+    expect(zustand.bestand).toEqual([]);
   });
 
   it("weist einen leeren und einen zu langen Namen ab", async () => {
-    await abgewiesen("vollflaeche", null, "   ");
-    await abgewiesen("vollflaeche", null, "");
-    await abgewiesen("vollflaeche", null, "a".repeat(81));
+    await abgewiesen(null, "   ");
+    await abgewiesen(null, "");
+    await abgewiesen(null, "a".repeat(81));
   });
 
   it("speichert den Namen getrimmt", async () => {
-    const neu = await angelegt("vollflaeche", null, "  Mein Aushang  ");
+    const neu = await angelegt(null, "  Mein Aushang  ");
 
     expect(neu.name).toBe("Mein Aushang");
     expect(zustand.bestand[0]?.name).toBe("Mein Aushang");
   });
 });
 
-describe("erstelleVorlage – Bestand", () => {
+describe("erstelleVorlage - Bestand", () => {
   it("erlaubt zwei Vorlagen mit demselben Namen und gibt ihnen verschiedene IDs", async () => {
-    const eine = await angelegt("vollflaeche", null, "Aushang");
-    const andere = await angelegt("vollflaeche", null, "Aushang");
+    const eine = await angelegt(null, "Aushang");
+    const andere = await angelegt(null, "Aushang");
 
     expect(eine.id).not.toBe(andere.id);
     expect(zustand.bestand.map((v) => v.id)).toEqual([eine.id, andere.id]);
@@ -331,7 +255,7 @@ describe("erstelleVorlage – Bestand", () => {
     zustand.bestand = eingebauteVorlagen();
     const vorher = zustand.bestand.map((v) => v.id);
 
-    const neu = await angelegt("vollflaeche", null, "Aushang");
+    const neu = await angelegt(null, "Aushang");
 
     expect(zustand.bestand.map((v) => v.id)).toEqual([...vorher, neu.id]);
   });
@@ -339,7 +263,7 @@ describe("erstelleVorlage – Bestand", () => {
   it("reicht speicher_fehler unveraendert durch und legt nichts an", async () => {
     zustand.fehler = "speicher_fehler";
 
-    const ergebnis = await erstelleVorlage("vollflaeche", null, "Aushang");
+    const ergebnis = await erstelleVorlage(null, "Aushang");
 
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) {

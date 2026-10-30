@@ -2,8 +2,9 @@
 // (#117, M4-23).
 //
 // DIE EINZIGE PIXELQUELLE DES SYSTEMS (TK 9.10.1): ein synchroner Aufruf, ein Canvas in
-// der nativen Flaeche der Vorlagenart - dasselbe Bild fuer Live-Vorschau, Thumbnail,
-// preview-player und (ueber alsPng, #118) den finalen Render.
+// der nativen Flaeche der Vorlage - dasselbe Bild fuer Live-Vorschau, Thumbnail,
+// preview-player und (ueber alsPng, #118) den finalen Render. Die Flaeche ist seit
+// v3.31 die EINZIGE Aussage: `höhe === null` = 1920 x 1080, eine Zahl = 1920 x H.
 //
 // Verbindliche Festlegungen dieses Baus:
 // - SYNCHRON: keiner der drei asynchronen Mechanismen (Funktionsschluesselwort,
@@ -66,7 +67,7 @@ export function zeichneSegment(
   //    (1) die vier gebuendelten Schriften (#110) - unveraendert;
   //    (2) die importierten Schriften der Inhalts-Marke (#291);
   //    (3) die importierten Schriften der Rahmen-Marke (#291) - NUR wenn sie in diesem
-  //        Aufruf ueberhaupt benutzt werden kann: art einblendung UND rahmenMarke !==
+  //        Aufruf ueberhaupt benutzt werden kann: Band (`höhe !== null`) UND rahmenMarke !==
   //        marke (Identitaetsvergleich, liest keine Eigenschaft) UND eine Zone mit
   //        id 'hintergrund' vorhanden. Jede Pruefung wirft bei false - synchron, kein
   //        Nachladen (das Bereitstellen gehoert #312), kein Rueckfall auf eine
@@ -82,11 +83,12 @@ export function zeichneSegment(
       `zeichneSegment: Die importierten Schriften der Marke "${marke.id}" sind nicht bereit.`,
     )
   }
-  const hintergrundVorhanden =
-    vorlage.art === 'einblendung' &&
-    vorlage.zonen.some((z) => z.id === 'hintergrund')
-  const rahmenMarkeBenutzt =
-    vorlage.art === 'einblendung' && rahmenMarke !== marke && hintergrundVorhanden
+  // Der Band-Hintergrund gehoert zum RAHMEN (TK 9.15.4: „Band-Hintergrund:
+  // Project.standardMarkeId"), die uebrigen Zonen zum Inhalt. `höhe !== null` erkennt
+  // das Band; die Flaeche IST die Art (TK 9.11.1 Punkt 0, v3.31).
+  const istBand = vorlage.höhe !== null
+  const hintergrundVorhanden = istBand && vorlage.zonen.some((z) => z.id === 'hintergrund')
+  const rahmenMarkeBenutzt = istBand && rahmenMarke !== marke && hintergrundVorhanden
   if (rahmenMarkeBenutzt && !sindMarkenSchriftenBereit(rahmenMarke)) {
     throw new Error(
       `zeichneSegment: Die importierten Schriften der Rahmen-Marke "${rahmenMarke.id}" ` +
@@ -98,7 +100,7 @@ export function zeichneSegment(
   //    Paritätsprüfung (ENTSCHIEDEN-Block im Kopf dieser Datei).
   const bandHoehe = vorlage.höhe
   if (
-    (vorlage.art === 'split' || vorlage.art === 'einblendung') &&
+    bandHoehe !== null &&
     (typeof bandHoehe !== 'number' ||
       !Number.isFinite(bandHoehe) ||
       bandHoehe <= 0 ||
@@ -112,8 +114,7 @@ export function zeichneSegment(
   }
 
   const breite = RENDER_PROFILE.breite
-  const hoehe =
-    vorlage.art === 'vollflaeche' ? RENDER_PROFILE.hoehe : (bandHoehe as number)
+  const hoehe = bandHoehe === null ? RENDER_PROFILE.hoehe : bandHoehe
 
   // 2. Das Canvas erzeugen - natives Backing, nichts Anzeige-bezogenes.
   const canvas = document.createElement('canvas')
@@ -124,14 +125,13 @@ export function zeichneSegment(
     throw new Error('zeichneSegment: getContext("2d") liefert null - kein Bild moeglich.')
   }
 
-  // 3. Die Grundflaeche setzen (TK 9.10.2): vollflaeche/split deckend in flaecheDunkel,
-  //    einblendung durchsichtig. Farbe ausschliesslich ueber loeseFarbe (#112) - die
-  //    Aktion wird mitgegeben, obwohl flaecheDunkel keine Akzent-Rolle ist: eine
-  //    "Abkuerzung" an dieser Stelle waere der zweite Aufloesungsweg.
-  if (vorlage.art !== 'einblendung') {
-    ctx.fillStyle = loeseFarbe(marke, 'flaecheDunkel', aktion)
-    ctx.fillRect(0, 0, breite, hoehe)
-  }
+  // 3. Die Grundflaeche setzen (TK 9.10.2): DECKEND in flaecheDunkel. Seit v3.31 gibt es
+  //    keine durchsichtige Bandvariante mehr - das Band liegt deckend ueber dem Video
+  //    (TK 9.2.8). Farbe ausschliesslich ueber loeseFarbe (#112) - die Aktion wird
+  //    mitgegeben, obwohl flaecheDunkel keine Akzent-Rolle ist: eine "Abkuerzung" an
+  //    dieser Stelle waere der zweite Aufloesungsweg.
+  ctx.fillStyle = loeseFarbe(marke, 'flaecheDunkel', aktion)
+  ctx.fillRect(0, 0, breite, hoehe)
 
   // 4. Ueber die Zonen laufen - Array-Reihenfolge, kein Sortieren/Filtern/Ueberspringen.
   for (const zone of vorlage.zonen) {
@@ -140,7 +140,7 @@ export function zeichneSegment(
     // "Rahmen stabil, Inhalt wechselt"). Fuer jede andere Zone ist markeDieserZone
     // dieselbe Objektreferenz wie marke.
     const markeDieserZone: Marke =
-      vorlage.art === 'einblendung' && zone.id === 'hintergrund' ? rahmenMarke : marke
+      istBand && zone.id === 'hintergrund' ? rahmenMarke : marke
 
     // a. Den gebundenen Wert bestimmen - ausschliesslich nach dieser Tabelle. Logo und
     //    Slogan kommen aus der MARKE (fester Markenrahmen, FA-11). Der Wert von `logo`

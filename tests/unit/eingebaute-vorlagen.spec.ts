@@ -61,18 +61,18 @@ describe("eingebauteVorlagen (#96)", () => {
   it("liefert genau drei mitgelieferte Vorlagen in der festgelegten Reihenfolge", () => {
     const v = eingebauteVorlagen();
     expect(v.map((e) => e.id)).toEqual([...EINGEBAUTE_VORLAGEN_IDS]);
-    expect(v.map((e) => e.name)).toEqual(["Vollbild", "Split", "Band-Standard"]);
+    expect(v.map((e) => e.name)).toEqual(["Ganzflächig", "Zwei Spalten", "Band-Standard"]);
     expect(v.map((e) => e.parent)).toEqual([null, null, null]);
     expect(v.map((e) => e.eingebaut)).toEqual([true, true, true]);
   });
 
-  it("gibt der Vorlage \"split\" die Art vollflaeche, nicht split", () => {
-    // Die gefaehrlichste Verwechslung dieser Daten: Mit art 'split' waere die Flaeche
-    // 1920 x hoehe, und saemtliche Zonen bis y 1026 laegen ausserhalb - auffallen wuerde
-    // das erst beim Zeichnen. Die Vorlagenart 'split' meint das Band, nicht dieses Layout.
-    expect([hole("vollbild").art, hole("vollbild").höhe]).toEqual(["vollflaeche", null]);
-    expect([hole("split").art, hole("split").höhe]).toEqual(["vollflaeche", null]);
-    expect([hole("band-standard").art, hole("band-standard").höhe]).toEqual(["split", 162]);
+  it("traegt die neuen Anzeigenamen; die Flaeche steht allein in höhe (v3.31)", () => {
+    // Die IDs bleiben historische Daten: "split" ist ein ZWEISPALTIGES GANZBILD, nicht der
+    // gestrichene Split-Screen. Mit einer Bandhoehe waeren saemtliche Zonen bis y 1026
+    // ausserhalb - auffallen wuerde das erst beim Zeichnen.
+    expect([hole("vollbild").name, hole("vollbild").höhe]).toEqual(["Ganzflächig", null]);
+    expect([hole("split").name, hole("split").höhe]).toEqual(["Zwei Spalten", null]);
+    expect([hole("band-standard").name, hole("band-standard").höhe]).toEqual(["Band-Standard", 162]);
   });
 
   it("gibt der Band-Vorlage eine gerade Hoehe", () => {
@@ -118,7 +118,7 @@ describe("eingebauteVorlagen (#96)", () => {
 
   it("haelt jede Zone innerhalb der Flaeche ihrer Vorlagenart", () => {
     for (const v of eingebauteVorlagen()) {
-      const flächenHöhe = v.art === "vollflaeche" ? 1080 : (v.höhe ?? 0);
+      const flächenHöhe = v.höhe ?? 1080;
       for (const z of v.zonen) {
         expect(z.rahmen.x, `${v.id}/${z.id}`).toBeGreaterThanOrEqual(0);
         expect(z.rahmen.y, `${v.id}/${z.id}`).toBeGreaterThanOrEqual(0);

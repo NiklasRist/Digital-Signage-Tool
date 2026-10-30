@@ -59,7 +59,7 @@ function baueAktion(): Aktion {
 
 function baueVorlage(): Vorlage {
   return {
-    id: 'v-1', name: 'Vollbild', art: 'vollflaeche', höhe: null,
+    id: 'v-1', name: 'Vollbild', höhe: null,
     parent: null, eingebaut: false, zonen: [],
   }
 }

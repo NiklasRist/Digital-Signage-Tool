@@ -46,7 +46,7 @@ vi.mock('../../src/renderer/marken-editor/live-vorschau', () => ({
   zeichneMarkenVorschau: h.zeichneMarkenVorschau,
 }))
 
-const { MarkenVorschau, findeVorschauVorlage, VORSCHAU_VORLAGE_NAME } = await import(
+const { MarkenVorschau, findeVorschauVorlage, VORSCHAU_VORLAGE_ID } = await import(
   '../../src/renderer/marken-editor/vorschau-flaeche.tsx'
 )
 
@@ -69,7 +69,6 @@ function vollbild(): Vorlage {
   return {
     id: 'vollbild',
     name: 'Vollbild',
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: true,
@@ -124,10 +123,17 @@ async function zeige(props: { marke: Marke | null; vorlagen: ReturnType<typeof v
   return behaelter as unknown as HTMLElement
 }
 
-describe('findeVorschauVorlage (feste Vorlage "Vollbild", A1)', () => {
-  it('liefert die eingebaute Vorlage mit dem Anzeigenamen Vollbild', () => {
-    expect(VORSCHAU_VORLAGE_NAME).toBe('Vollbild')
+describe('findeVorschauVorlage (feste Vorlage "vollbild", A1)', () => {
+  it('liefert die eingebaute Vorlage ueber ihre ID - NICHT ueber den Anzeigenamen', () => {
+    // Der Name hat sich mit v3.31 auf "Ganzflächig" geaendert; die ID ist die Identitaet.
+    expect(VORSCHAU_VORLAGE_ID).toBe('vollbild')
     expect(findeVorschauVorlage(vorlagenZugang() as never)?.id).toBe('vollbild')
+  })
+
+  it('findet die Vorlage auch, wenn ihr Anzeigename ein anderer ist', () => {
+    const umbenannt = { ...vollbild(), name: 'Ganzflächig' }
+    const zugang = vorlagenZugang([{ vorlage: umbenannt, eingebaut: true }])
+    expect(findeVorschauVorlage(zugang as never)).toBe(umbenannt)
   })
 
   it('ohne geladene Sicht: null (kein Nachladen, kein Ersatz)', () => {
@@ -136,8 +142,8 @@ describe('findeVorschauVorlage (feste Vorlage "Vollbild", A1)', () => {
     expect(zugang.lade).not.toHaveBeenCalled()
   })
 
-  it('eine eigene Vorlage gleichen Namens zaehlt NICHT', () => {
-    const zugang = vorlagenZugang([{ vorlage: { ...vollbild(), id: 'eigene', eingebaut: false }, eingebaut: false }])
+  it('eine eigene Vorlage mit derselben ID zaehlt NICHT - nur die EINGEBAUTE', () => {
+    const zugang = vorlagenZugang([{ vorlage: { ...vollbild(), eingebaut: false }, eingebaut: false }])
     expect(findeVorschauVorlage(zugang as never)).toBeNull()
   })
 })
@@ -170,12 +176,12 @@ describe('MarkenVorschau', () => {
     expect(behaelterTest.querySelector('canvas')).toBeNull()
   })
 
-  it('fehlt "Vollbild", erscheint ein Hinweis und es wird NICHT gezeichnet', async () => {
+  it('fehlt die Vorlage, erscheint ein Hinweis und es wird NICHT gezeichnet', async () => {
     const zugang = vorlagenZugang([])
     const behaelterTest = await zeige({ marke: marke('m1'), vorlagen: zugang as never })
     expect(h.zeichneMarkenVorschau).not.toHaveBeenCalled()
     const hinweis = behaelterTest.querySelector('[data-testid="marken-vorschau-hinweis"]')
-    expect(hinweis?.textContent).toContain('Vollbild')
+    expect(hinweis?.textContent).toContain('vollbild')
   })
 
   it('ein Fehler der Vorbereitung wird als Hinweis gezeigt, nicht als Absturz', async () => {

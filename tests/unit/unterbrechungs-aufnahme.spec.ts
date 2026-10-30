@@ -34,16 +34,17 @@ function aktion(vorlagenId: string): Aktion {
   }
 }
 
-function vorlage(id: string, art: 'vollflaeche' | 'split' | 'einblendung'): Vorlage {
-  return { id, name: id, art, höhe: art === 'vollflaeche' ? null : 120, parent: null, eingebaut: true, zonen: [] }
+function vorlage(id: string, höhe: number | null): Vorlage {
+  return { id, name: id, höhe, parent: null, eingebaut: true, zonen: [] }
 }
 
 describe('istVollflaechigeAktion (#437)', () => {
-  const vorlagen = [vorlage('v-voll', 'vollflaeche'), vorlage('v-split', 'split'), vorlage('v-ein', 'einblendung')]
-  it('vollflaeche -> true (Unterbrechung); split/einblendung -> false (Band)', () => {
+  // Die Flaeche IST die Art (TK 9.11.1 Punkt 0, v3.31): null = Ganzbild, Zahl = Band.
+  const vorlagen = [vorlage('v-voll', null), vorlage('v-band', 120), vorlage('v-band2', 162)]
+  it('Ganzbild (höhe null) -> true (Unterbrechung); jede Bandhöhe -> false (Band)', () => {
     expect(istVollflaechigeAktion(aktion('v-voll'), vorlagen)).toBe(true)
-    expect(istVollflaechigeAktion(aktion('v-split'), vorlagen)).toBe(false)
-    expect(istVollflaechigeAktion(aktion('v-ein'), vorlagen)).toBe(false)
+    expect(istVollflaechigeAktion(aktion('v-band'), vorlagen)).toBe(false)
+    expect(istVollflaechigeAktion(aktion('v-band2'), vorlagen)).toBe(false)
   })
   it('unbekannte Vorlage -> false (Band, bisheriges Verhalten)', () => {
     expect(istVollflaechigeAktion(aktion('gibt-es-nicht'), vorlagen)).toBe(false)

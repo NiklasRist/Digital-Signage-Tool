@@ -228,7 +228,6 @@ describe('frameDauer - je art die richtige Quelle', () => {
     const mit: RenderItemVideo = {
       ...ohne,
       einblendung: {
-        art: 'einblendung',
         höhe: 162,
         bandVorlageId: 'bv1',
         abschnitte: [
@@ -236,8 +235,6 @@ describe('frameDauer - je art die richtige Quelle', () => {
           { png: new Uint8Array([2]), dauer: 5 },
           { png: new Uint8Array([3]), dauer: 90 },
         ],
-        // #316: Pflichtfeld im Auftrag, hier ohne Bedeutung (kein Render).
-        flaecheDunkel: '#2F2E2E',
       },
     }
     expect(wert(frameDauer(mit))).toBe(300)

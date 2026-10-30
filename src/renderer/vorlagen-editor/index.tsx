@@ -56,7 +56,7 @@ import {
   type VorschauFeld,
 } from './editor-vorschau'
 import {
-  ANLEGBARE_ARTEN,
+  ANLEGBARE_FLAECHEN,
   bearbeiteVorlage,
   beendeLoeschbestaetigung,
   entferneVorlage,
@@ -138,7 +138,7 @@ function VorlagenInterna(p: VorlagenEditorWurzelProps): JSX.Element {
 
 function VorlagenUebersicht({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
   const ue = p.vorlagen.hole()
-  const [anlegenArtIndex, setzeAnlegenArtIndex] = useState<number | null>(null)
+  const [anlegenFlaecheIndex, setzeAnlegenFlaecheIndex] = useState<number | null>(null)
   const [anlegeName, setzeAnlegeName] = useState('')
   const [bestaetigerId, setzeBestaetigerId] = useState<string | null>(null)
   const [loeschStand, setzeLoeschStand] = useState<Nutzungsstand>(LEERER_NUTZUNGSSTAND)
@@ -257,19 +257,18 @@ function VorlagenUebersicht({ p }: { p: VorlagenEditorWurzelProps }): JSX.Elemen
 
       <hr />
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {ANLEGBARE_ARTEN.map((artInfo, index) => (
+        {ANLEGBARE_FLAECHEN.map((flaeche, index) => (
           <button
             type="button"
             key={index}
-            data-testid={`vorlagen-neu-${artInfo.art}`}
-            onClick={() => setzeAnlegenArtIndex(index)}
+            data-testid={`vorlagen-neu-${flaeche.höhe === null ? 'ganzbild' : 'band'}`}
+            onClick={() => setzeAnlegenFlaecheIndex(index)}
           >
-            Neu: {artInfo.art}
-            {artInfo.höhe !== null ? ` (${artInfo.höhe})` : ''}
+            Neu: {flaeche.bezeichnung}
           </button>
         ))}
       </div>
-      {anlegenArtIndex !== null && ANLEGBARE_ARTEN[anlegenArtIndex] !== undefined && (
+      {anlegenFlaecheIndex !== null && ANLEGBARE_FLAECHEN[anlegenFlaecheIndex] !== undefined && (
         <div data-testid="dialog-vorlage-anlegen">
           <label>
             Name{' '}
@@ -284,14 +283,14 @@ function VorlagenUebersicht({ p }: { p: VorlagenEditorWurzelProps }): JSX.Elemen
             type="button"
             data-testid="vorlage-anlegen-bestaetigen"
             onClick={() => {
-              const art = ANLEGBARE_ARTEN[anlegenArtIndex]
-              if (art === undefined || anlegeName.trim().length === 0) {
+              const flaeche = ANLEGBARE_FLAECHEN[anlegenFlaecheIndex]
+              if (flaeche === undefined || anlegeName.trim().length === 0) {
                 return
               }
-              void legeVorlageAn(art.art, art.höhe, anlegeName).then((antwort) => {
+              void legeVorlageAn(flaeche.höhe, anlegeName).then((antwort) => {
                 if (antwort.ok) {
                   p.sitzung.uebernimmSpeicherstand(antwort.wert)
-                  setzeAnlegenArtIndex(null)
+                  setzeAnlegenFlaecheIndex(null)
                   setzeAnlegeName('')
                 } else {
                   console.warn('[vorlagen-editor] legeVorlageAn lehnt ab:', antwort.fehler.code)
@@ -301,7 +300,7 @@ function VorlagenUebersicht({ p }: { p: VorlagenEditorWurzelProps }): JSX.Elemen
           >
             Anlegen
           </button>
-          <button type="button" onClick={() => setzeAnlegenArtIndex(null)}>
+          <button type="button" onClick={() => setzeAnlegenFlaecheIndex(null)}>
             Abbrechen
           </button>
         </div>

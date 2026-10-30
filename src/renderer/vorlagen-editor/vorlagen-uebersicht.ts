@@ -1,7 +1,7 @@
 // [vorlagen-editor] Vorlagen-Übersicht
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
-import type { Vorlage, VorlagenArt } from '../../shared/contracts/vorlage'
+import type { Vorlage } from '../../shared/contracts/vorlage'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { starteBearbeitung, type EditorSitzung } from './arbeitskopie'
@@ -31,17 +31,25 @@ export interface VorlagenUebersicht {
 }
 
 /**
- * Die Kombinationen aus `art` und `höhe`, die der Main heute anlegen kann.
+ * Die beiden FLAECHEN, die der Nutzer anlegen kann - mehr gibt es seit v3.31 nicht.
  *
- * Die Bandhöhe ist für BEIDE Bandarten fest 162 (Entscheidung 23.10.2026, AD v1.9 / TK 9.11.1):
- * Es gibt kein Höhenfeld, andere Höhen bietet die Oberfläche nicht an. Der Store führt den
+ * Die Fläche IST die Art (TK 9.11.1 Punkt 0): `höhe === null` heisst Ganzbild (1920 x 1080),
+ * die Zahl 162 heisst Band (1920 x 162). Die Bandhöhe ist fest (Entscheidung 23.10.2026);
+ * es gibt kein Höhenfeld, andere Höhen bietet die Oberfläche nicht an. Der Store führt den
  * allgemeinen Wertebereich weiter als Datenregel - hier steht, was der Nutzer wählen kann.
+ *
+ * BESCHRIFTUNG: Vorschlag aus #453 („Nicht selbst entscheiden"): „Ganzbild (1920 x 1080)"
+ * und „Band (1920 x 162)" - keine Kunstbegriffe. Vom Auftraggeber noch nicht bestätigt.
  */
-export const ANLEGBARE_ARTEN: ReadonlyArray<{ art: VorlagenArt; höhe: number | null }> = [
-  { art: 'vollflaeche', höhe: null },
-  { art: 'split', höhe: 162 },
-  { art: 'einblendung', höhe: 162 },
+export const ANLEGBARE_FLAECHEN: ReadonlyArray<{ höhe: number | null; bezeichnung: string }> = [
+  { höhe: null, bezeichnung: 'Ganzbild (1920 × 1080)' },
+  { höhe: 162, bezeichnung: 'Band (1920 × 162)' },
 ] as const;
+
+/** Ist diese Höhe eine der beiden anlegbaren Flächen? Rein, ohne Seiteneffekt. */
+export function istAnlegbareFlaeche(höhe: number | null): boolean {
+  return ANLEGBARE_FLAECHEN.some((flaeche) => flaeche.höhe === höhe)
+}
 
 /** Lädt beide Listen und macht sie zur gemeinsamen Vorlagen-Sicht. */
 export async function ladeUebersicht(): Promise<Ergebnis<VorlagenUebersicht, string>> {
@@ -107,14 +115,12 @@ export function aufUebersichtGeaendert(hoerer: (u: VorlagenUebersicht) => void):
 
 /** „Neu anlegen": erstellt die Vorlage und öffnet sie sofort zur Bearbeitung. */
 export async function legeVorlageAn(
-  art: VorlagenArt,
   höhe: number | null,
   name: string,
 ): Promise<Ergebnis<EditorSitzung, string>> {
-  // Prüfung ob (art, höhe) in ANLEGBARE_ARTEN steht
-  const istAnlegbar = ANLEGBARE_ARTEN.some((a) => a.art === art && a.höhe === höhe)
-  if (!istAnlegbar) {
-    return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: `Nicht anlegbare Kombination: art=${art}, höhe=${höhe}` } }
+  // Nur die beiden anlegbaren Flaechen; alles andere ist ein Programmierfehler im Aufrufer.
+  if (!istAnlegbareFlaeche(höhe)) {
+    return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: `Nicht anlegbare Fläche: höhe=${String(höhe)}` } }
   }
 
   // Prüfung name nicht leer nach trim()
@@ -125,7 +131,7 @@ export async function legeVorlageAn(
 
   const ergebnis = await rufeAuf<Vorlage>(
     KANAELE.vorlagen.erstelleVorlage,
-    { art, höhe, name: getrimmterName },
+    { höhe, name: getrimmterName },
   )
   if ('fehler' in ergebnis) {
     return ergebnis

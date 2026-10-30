@@ -85,7 +85,6 @@ export async function uebernehmeInParent(
         const gemergt: Vorlage = {
           id: parent.id,
           name: kopie.name,
-          art: kopie.art,
           höhe: kopie.höhe,
           parent: null,
           eingebaut: parent.eingebaut,
@@ -127,25 +126,16 @@ export async function uebernehmeInParent(
 // - kein fs, kein Lock, kein IPC-Kanal (den meldet #109 an)
 
 /**
- * Prüft die zu übernehmende höhe gegen die art (TK 9.11.1 Punkt 8 / 9.12.1). Rueckgabe
- * `null` = in Ordnung, sonst die Fehler-Huelle. Die höhe ist der EINZIGE Feldwert, den diese
- * Funktion inhaltlich ansieht - die Zonen werden wörtlich übernommen, nie geprüft.
- *
- * Grenzen identisch zur Hohenregel des Moduls (#100, #102): bei split/einblendung eine gerade
- * ganze Zahl > 0 und < 1080, bei vollflaeche immer null. Geprüft wird, NICHT gerundet: eine
- * ungerade 161 wird abgewiesen, keine still erzeugte 162 (TK 9.12.1 nennt uebernehmeInParent
- * ausdruecklich als Pruefstelle, s. ENTSCHIEDEN-Block des Issues).
+ * Prüft die zu übernehmende höhe (TK 9.11.1 Punkt 8 / 9.12.1): `null` = Ganzbild, sonst
+ * eine gerade ganze Zahl > 0 und < 1080. Die Fläche IST die Art - eine Vorlagenart gibt es
+ * seit v3.31 nicht mehr. Geprüft wird, NICHT gerundet: eine ungerade 161 wird abgewiesen,
+ * keine still erzeugte 162 (TK 9.12.1 nennt uebernehmeInParent ausdruecklich als Pruefstelle).
+ * Rueckgabe `null` = in Ordnung, sonst die Fehler-Huelle. Die höhe ist der EINZIGE Feldwert,
+ * den diese Funktion inhaltlich ansieht - die Zonen werden wörtlich übernommen, nie geprüft.
  */
 function pruefeHoehe(kopie: Vorlage): Ergebnis<never, VorlagenFehlercode> | null {
-  const { id, art, höhe } = kopie
-  if (art === 'vollflaeche') {
-    if (höhe !== null) {
-      return fehler(
-        'ungueltige_eingabe',
-        `Die Arbeitskopie "${id}" ist vollflaechig und darf keine Bandhoehe tragen ` +
-          `(uebergeben: ${String(höhe)}).`,
-      )
-    }
+  const { id, höhe } = kopie
+  if (höhe === null) {
     return null
   }
   if (

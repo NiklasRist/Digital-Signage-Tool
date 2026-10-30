@@ -88,13 +88,12 @@ const UNGUELTIG = { ok: false, fehler: { code: 'ungueltige_eingabe' } }
 function vorlage(id = 'v1'): {
   id: string
   name: string
-  art: string
   höhe: number | null
   parent: string | null
   eingebaut: boolean
   zonen: unknown[]
 } {
-  return { id, name: 'Sommer', art: 'vollflaeche', höhe: null, parent: null, eingebaut: false, zonen: [] }
+  return { id, name: 'Sommer', höhe: null, parent: null, eingebaut: false, zonen: [] }
 }
 
 beforeEach(() => {
@@ -175,22 +174,21 @@ describe('verdrahteVorlagenIPC (#109) – Nutzlasten, Aufrufe und Durchreichen',
     expect(ergebnis).toBe(antwort)
   })
 
-  it('ruft erstelleVorlage mit (art, höhe, name) in dieser Reihenfolge; fehlt höhe, kommt null', async () => {
-    await rufe(KANAELE.vorlagen.erstelleVorlage, { art: 'split', höhe: 400, name: 'Band' })
-    expect(ops.erstelleVorlage).toHaveBeenLastCalledWith('split', 400, 'Band')
+  it('ruft erstelleVorlage mit (höhe, name); fehlt höhe, kommt null (Ganzbild)', async () => {
+    await rufe(KANAELE.vorlagen.erstelleVorlage, { höhe: 400, name: 'Band' })
+    expect(ops.erstelleVorlage).toHaveBeenLastCalledWith(400, 'Band')
 
-    await rufe(KANAELE.vorlagen.erstelleVorlage, { art: 'vollflaeche', name: 'Ganzseite' })
-    expect(ops.erstelleVorlage).toHaveBeenLastCalledWith('vollflaeche', null, 'Ganzseite')
+    await rufe(KANAELE.vorlagen.erstelleVorlage, { name: 'Ganzseite' })
+    expect(ops.erstelleVorlage).toHaveBeenLastCalledWith(null, 'Ganzseite')
 
-    await rufe(KANAELE.vorlagen.erstelleVorlage, { art: 'split', höhe: null, name: 'Band leer' })
-    expect(ops.erstelleVorlage).toHaveBeenLastCalledWith('split', null, 'Band leer')
+    await rufe(KANAELE.vorlagen.erstelleVorlage, { höhe: null, name: 'Band leer' })
+    expect(ops.erstelleVorlage).toHaveBeenLastCalledWith(null, 'Band leer')
   })
 
-  it('lehnt art ausserhalb der drei Werte, einen numerischen String und NaN als höhe ab, ohne die Operation zu rufen', async () => {
+  it('lehnt einen numerischen String und NaN als höhe ab, ohne die Operation zu rufen', async () => {
     const faelle = [
-      { art: 'vollflaechig', höhe: null, name: 'x' },
-      { art: 'vollflaeche', höhe: '162', name: 'x' },
-      { art: 'vollflaeche', höhe: NaN, name: 'x' },
+      { höhe: '162', name: 'x' },
+      { höhe: NaN, name: 'x' },
     ]
     for (const nutzlast of faelle) {
       await expect(rufe(KANAELE.vorlagen.erstelleVorlage, nutzlast)).resolves.toMatchObject(UNGUELTIG)
@@ -225,7 +223,7 @@ describe('verdrahteVorlagenIPC (#109) – Nutzlasten, Aufrufe und Durchreichen',
   it('lehnt je Kanal eine ungueltige Nutzlast ab, ohne die Operation aufzurufen', async () => {
     const faelle: [string, ReturnType<typeof vi.fn>, unknown][] = [
       [KANAELE.vorlagen.erstelleVorlage, ops.erstelleVorlage, null],
-      [KANAELE.vorlagen.erstelleVorlage, ops.erstelleVorlage, { art: 'vollflaeche', höhe: 400 }],
+      [KANAELE.vorlagen.erstelleVorlage, ops.erstelleVorlage, { höhe: 400 }],
       [KANAELE.vorlagen.oeffneZurBearbeitung, ops.oeffneZurBearbeitung, { id: '' }],
       [KANAELE.vorlagen.speichereArbeitskopie, ops.speichereArbeitskopie, { arbeitsId: 'ak1' }],
       [KANAELE.vorlagen.speichereArbeitskopie, ops.speichereArbeitskopie, { vorlage: vorlage() }],

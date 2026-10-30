@@ -12,8 +12,7 @@ import { KANAELE } from "../../src/shared/contracts/kanaele";
 const attrappen = vi.hoisted(() => ({ rufeAuf: vi.fn() }));
 
 vi.mock("../../src/renderer/ipc-client/rufe-auf", () => ({
-  rufeAuf: attrappen.rufeAuf,
-}));
+  rufeAuf: attrappen.rufeAuf }));
 
 import * as modul from "../../src/renderer/action-editor/vorlage-waehlen";
 
@@ -21,7 +20,6 @@ function vorlage(teil: Partial<Vorlage>): Vorlage {
   return {
     id: "v-1",
     name: "Vorlage",
-    art: "vollflaeche",
     höhe: null,
     parent: null,
     eingebaut: true,
@@ -39,14 +37,14 @@ afterEach(() => {
 });
 
 describe("istWaehlbar", () => {
-  it("ist wahr genau fuer parent === null UND art === 'vollflaeche'", () => {
+  it("ist wahr genau fuer parent === null UND höhe === null (Ganzbild)", () => {
     const a = [
-      vorlage({ parent: null, art: "vollflaeche" }),
-      vorlage({ parent: null, art: "split" }),
-      vorlage({ parent: null, art: "einblendung" }),
-      vorlage({ parent: "p", art: "vollflaeche" }),
-      vorlage({ parent: "p", art: "split" }),
-      vorlage({ parent: "p", art: "einblendung" }),
+      vorlage({ parent: null }),
+      vorlage({ parent: null, höhe: 162 }),
+      vorlage({ parent: null, höhe: 162 }),
+      vorlage({ parent: "p" }),
+      vorlage({ parent: "p", höhe: 162 }),
+      vorlage({ parent: "p", höhe: 162 }),
     ];
     expect(a.map(modul.istWaehlbar)).toEqual([true, false, false, false, false, false]);
   });
@@ -60,25 +58,23 @@ describe("ladeWaehlbareVorlagen", () => {
     expect(attrappen.rufeAuf).toHaveBeenCalledWith(KANAELE.vorlagen.listeVorlagen);
   });
 
-  it("behaelt eine Band-Vorlage (art split, hoehe 162) nicht im Ergebnis", async () => {
+  it("behaelt eine Band-Vorlage (höhe 162) nicht im Ergebnis", async () => {
     attrappen.rufeAuf.mockResolvedValue({
       ok: true,
       wert: [
-        vorlage({ id: "vollbild", art: "vollflaeche" }),
-        vorlage({ id: "band-standard", art: "split", höhe: 162 }),
-      ],
-    });
+        vorlage({ id: "vollbild" }),
+        vorlage({ id: "band-standard", höhe: 162 }),
+      ] });
     const ergebnis = await modul.ladeWaehlbareVorlagen();
-    expect(ergebnis).toEqual({ ok: true, wert: [vorlage({ id: "vollbild", art: "vollflaeche" })] });
+    expect(ergebnis).toEqual({ ok: true, wert: [vorlage({ id: "vollbild" })] });
   });
 
   it("behaelt eine Arbeitskopie (parent !== null) nicht im Ergebnis", async () => {
     attrappen.rufeAuf.mockResolvedValue({
       ok: true,
-      wert: [vorlage({ id: "vollbild", art: "vollflaeche" }), vorlage({ id: "kopie", parent: "vollbild" })],
-    });
+      wert: [vorlage({ id: "vollbild" }), vorlage({ id: "kopie", parent: "vollbild" })] });
     const ergebnis = await modul.ladeWaehlbareVorlagen();
-    expect(ergebnis).toEqual({ ok: true, wert: [vorlage({ id: "vollbild", art: "vollflaeche" })] });
+    expect(ergebnis).toEqual({ ok: true, wert: [vorlage({ id: "vollbild" })] });
   });
 
   it("laesst die Bestandsreihenfolge der uebrig bleibenden Eintraege unveraendert", async () => {
@@ -87,10 +83,9 @@ describe("ladeWaehlbareVorlagen", () => {
       wert: [
         vorlage({ id: "zebra", name: "Zebra" }),
         vorlage({ id: "alpha", name: "Alpha" }),
-        vorlage({ id: "split", art: "split", höhe: 162 }),
+        vorlage({ id: "split", höhe: 162 }),
         vorlage({ id: "mittel", name: "Mittel" }),
-      ],
-    });
+      ] });
     const ergebnis = await modul.ladeWaehlbareVorlagen();
     expect(ergebnis).toEqual({
       ok: true,
@@ -98,39 +93,33 @@ describe("ladeWaehlbareVorlagen", () => {
         vorlage({ id: "zebra", name: "Zebra" }),
         vorlage({ id: "alpha", name: "Alpha" }),
         vorlage({ id: "mittel", name: "Mittel" }),
-      ],
-    });
+      ] });
   });
 
   it("reicht einen speicher_fehler des Stores unveraendert durch, OHNE leere Liste", async () => {
     attrappen.rufeAuf.mockResolvedValue({
       ok: false,
-      fehler: { code: "speicher_fehler", meldung: "Platte voll" },
-    });
+      fehler: { code: "speicher_fehler", meldung: "Platte voll" } });
     const ergebnis = await modul.ladeWaehlbareVorlagen();
     expect(ergebnis).toEqual({
       ok: false,
-      fehler: { code: "speicher_fehler", meldung: "Platte voll" },
-    });
+      fehler: { code: "speicher_fehler", meldung: "Platte voll" } });
   });
 
   it("reicht einen generischen Fehlercode des Stores unveraendert durch", async () => {
     attrappen.rufeAuf.mockResolvedValue({
       ok: false,
-      fehler: { code: "unbekannter_fehler", meldung: "kaputt" },
-    });
+      fehler: { code: "unbekannter_fehler", meldung: "kaputt" } });
     const ergebnis = await modul.ladeWaehlbareVorlagen();
     expect(ergebnis).toEqual({
       ok: false,
-      fehler: { code: "unbekannter_fehler", meldung: "kaputt" },
-    });
+      fehler: { code: "unbekannter_fehler", meldung: "kaputt" } });
   });
 
   it("meldet eine leere gefilterte Liste als Erfolg, nicht als Fehler", async () => {
     attrappen.rufeAuf.mockResolvedValue({
       ok: true,
-      wert: [vorlage({ id: "band", art: "split", höhe: 162 })],
-    });
+      wert: [vorlage({ id: "band", höhe: 162 })] });
     const ergebnis = await modul.ladeWaehlbareVorlagen();
     expect(ergebnis).toEqual({ ok: true, wert: [] });
   });

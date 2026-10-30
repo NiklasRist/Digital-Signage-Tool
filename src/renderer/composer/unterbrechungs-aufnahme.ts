@@ -20,11 +20,16 @@ import type { Aktion } from '../../shared/contracts/aktion'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 
-/** Ist die Aktion vollflaechig? Dann wird ein Drop auf das Video eine Unterbrechung.
- *  Unbekannte Vorlage -> `false` (Band, bisheriges Verhalten); die Band-Pruefung meldet es. */
+/**
+ * Ist die Aktion vollflaechig? Dann wird ein Drop auf das Video eine Unterbrechung.
+ * Unbekannte Vorlage -> `false` (Band, bisheriges Verhalten); die Band-Pruefung meldet es.
+ *
+ * Die Flaeche IST die Art (TK 9.11.1 Punkt 0, v3.31): `höhe === null` heisst Ganzbild.
+ * `vorlage?.höhe === null` ist nur bei GEFUNDENER Vorlage mit Ganzbild wahr.
+ */
 export function istVollflaechigeAktion(aktion: Aktion, vorlagen: readonly Vorlage[]): boolean {
   const vorlage = vorlagen.find((kandidat) => kandidat.id === aktion.vorlagenId)
-  return vorlage?.art === 'vollflaeche'
+  return vorlage?.höhe === null
 }
 
 /** Die GESPIELTE Videodauer (trimEnde − trimStart) in Sekunden; `null`, wenn unbrauchbar.

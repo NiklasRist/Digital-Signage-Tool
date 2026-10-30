@@ -276,7 +276,7 @@ async function baueBand(
       fehler: { code: 'ungueltige_eingabe', meldung: `Listenelement "${element.id}" verweist auf eine unbekannte Band-Vorlage.`, daten: undefined },
     }
   }
-  if (bandVorlage.art === 'vollflaeche' || bandVorlage.höhe === null) {
+  if (bandVorlage.höhe === null) {
     return {
       ok: false,
       fehler: { code: 'ungueltige_eingabe', meldung: `Listenelement "${element.id}" verweist auf eine Vorlage ohne Bandhöhe.`, daten: undefined },
@@ -302,14 +302,11 @@ async function baueBand(
   return {
     ok: true,
     wert: {
-      // KH (E5, #174): art und Höhe entsprechend den PNGs, im selben Pass
-      art: bandVorlage.art === 'split' ? 'split' : 'einblendung',
+      // KH (E5, #174): Höhe entsprechend den PNGs, im selben Pass. Eine Kompositionsart
+      // gibt es seit v3.31 nicht mehr - das Band liegt deckend ueber dem Video.
       höhe: bandVorlage.höhe,
       bandVorlageId: eigenesBand.bandVorlageId,
       abschnitte,
-      // #316: die Farb-Rolle der PROJEKT-Standardmarke (TK 9.15.4), zeichengleich und
-      // unveraendert - der Render-Service rechnet sie erst in `0xRRGGBB` um (TK 9.2.8).
-      flaecheDunkel: standardMarke.farben.flaecheDunkel,
     },
   }
 }

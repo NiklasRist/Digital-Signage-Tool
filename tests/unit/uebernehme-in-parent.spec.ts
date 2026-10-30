@@ -56,7 +56,6 @@ function vorlage(id: string, ueber: Partial<Vorlage> = {}): Vorlage {
   return {
     id,
     name: `Vorlage ${id}`,
-    art: "split",
     höhe: 162,
     parent: null,
     eingebaut: false,
@@ -96,7 +95,6 @@ describe("uebernehmeInParent (#103) – Erfolgsfall", () => {
     const p = vorlage("p", { name: "Alter Parent", zonen: [freieZone("p-alt", 96)] });
     const k = arbeitskopie("k", "p", {
       name: "Neuer Name",
-      art: "einblendung",
       höhe: 320,
       zonen: [freieZone("k-neu", 200)],
     });
@@ -110,7 +108,6 @@ describe("uebernehmeInParent (#103) – Erfolgsfall", () => {
     expect(wert.id).toBe("p");
     expect(wert.eingebaut).toBe(p.eingebaut);
     expect(wert.name).toBe("Neuer Name");
-    expect(wert.art).toBe("einblendung");
     expect(wert.höhe).toBe(320);
     expect(wert.zonen).toEqual(k.zonen);
     // Deep-Vergleich: der Parent traegt wirklich die Zonen der Arbeitskopie, nicht die alten.
@@ -265,9 +262,9 @@ describe("uebernehmeInParent (#103) – Hohenregel", () => {
     expect(zustand.bestand).toEqual(bestandVorher);
   }
 
-  it("weist split mit ungerader hoehe 161 ab und schreibt nichts; der Parent bleibt unveraendert", async () => {
+  it("weist die ungerade hoehe 161 ab und schreibt nichts; der Parent bleibt unveraendert", async () => {
     const p = vorlage("p", { höhe: 162 });
-    const k = arbeitskopie("k", "p", { art: "split", höhe: 161 });
+    const k = arbeitskopie("k", "p", { höhe: 161 });
     zustand.bestand = [p, k];
     const vorher = structuredClone(zustand.bestand);
 
@@ -281,13 +278,13 @@ describe("uebernehmeInParent (#103) – Hohenregel", () => {
   it("Regression gegen stilles Aufrunden: 161 gelingt NIE, 162 gelingt mit exakt 162", async () => {
     // 161 -> abgewiesen (Test oben), KEINE still erzeugte 162.
     const p = vorlage("p");
-    const k = arbeitskopie("k", "p", { art: "split", höhe: 161 });
+    const k = arbeitskopie("k", "p", { höhe: 161 });
     zustand.bestand = [p, k];
     const ergebnis161 = await uebernehmeInParent("k");
     expect(ergebnis161.ok).toBe(false);
 
     // 162 -> gelingt, und der Parent traegt danach exakt 162, nie ein gerundeter Wert.
-    zustand.bestand = [vorlage("p"), arbeitskopie("k", "p", { art: "split", höhe: 162 })];
+    zustand.bestand = [vorlage("p"), arbeitskopie("k", "p", { höhe: 162 })];
     const ergebnis162 = await uebernehmeInParent("k");
     expect(ergebnis162.ok).toBe(true);
     if (!ergebnis162.ok) return;
@@ -295,22 +292,15 @@ describe("uebernehmeInParent (#103) – Hohenregel", () => {
     expect(ergebnis162.wert.höhe).toBe(Number(ergebnis162.wert.höhe));
   });
 
-  it("weist einblendung mit hoehe null, 0, -2 und 1080 ab, ohne Schreibvorgang", async () => {
-    for (const höhe of [null, 0, -2, 1080]) {
-      zustand.bestand = [vorlage("p"), arbeitskopie("k", "p", { art: "einblendung", höhe })];
+  it("weist die Bandhoehen 0, -2 und 1080 ab, ohne Schreibvorgang", async () => {
+    // `höhe: null` ist KEIN Fehler mehr: Die Flaeche IST die Art (v3.31), null heisst Ganzbild.
+    for (const höhe of [0, -2, 1080]) {
+      zustand.bestand = [vorlage("p"), arbeitskopie("k", "p", { höhe })];
       const vorher = structuredClone(zustand.bestand);
       await abgewiesen(zustand.bestand[1] as Vorlage, vorher);
     }
   });
 
-  it("weist vollflaeche mit hoehe 162 ab und setzt sie NICHT stillschweigend auf null", async () => {
-    const p = vorlage("p");
-    const k = arbeitskopie("k", "p", { art: "vollflaeche", höhe: 162 });
-    zustand.bestand = [p, k];
-    const vorher = structuredClone(zustand.bestand);
-
-    await abgewiesen(k, vorher);
-  });
 });
 
 describe("uebernehmeInParent (#103) – formale Eingabe", () => {

@@ -88,11 +88,11 @@ export function waehlbareBandVorlagen(vorlagen: readonly Vorlage[]): Vorlage[] {
   // (`höhe === null`) und waere als Band nicht komponierbar - TK 9.2.8 leitet die
   // gesamte Geometrie aus `H` ab.
   //
-  // GEFILTERT WIRD UEBER `art`, NICHT UEBER `höhe !== null`. Das sieht gleichwertig
-  // aus, ist es aber nicht: `art` ist laut #95 nach dem Anlegen unveraenderlich und
-  // benennt die KOMPOSITIONSART, `höhe` ist ein Zahlenfeld, das bei einem von Hand
-  // veraenderten Vorlagenbestand auch mal an einer `vollflaeche` stehen kann. Der
-  // Filter liefe dann eine vollflaechige Vorlage als Band an.
+  // GEFILTERT WIRD UEBER `höhe !== null` - seit v3.31 die EINZIGE Aussage ueber die
+  // Flaeche (TK 9.11.1 Punkt 0). Eine Vorlagenart gibt es nicht mehr; `null` heisst
+  // Ganzbild und kann als Band nichts. Der fruehere Einwand gegen diese Pruefung
+  // ("eine von Hand veraenderte Datei koennte `art: vollflaeche` mit Hoehe tragen")
+  // ist mit dem Feld selbst entfallen - jetzt IST die Hoehe die Aussage.
   //
   // KEINE SORTIERUNG und kein `slice().sort()`: „Die Reihenfolge ist die der
   // Eingabeliste. Eine eigene Sortierung waere eine zweite, unsichtbare Ordnung neben
@@ -100,10 +100,7 @@ export function waehlbareBandVorlagen(vorlagen: readonly Vorlage[]): Vorlage[] {
   //
   // `filter` liefert ohnehin ein NEUES Array - die uebergebene `readonly`-Liste wird
   // nicht angefasst.
-  return vorlagen.filter(
-    (vorlage) =>
-      (vorlage.art === 'split' || vorlage.art === 'einblendung') && vorlage.parent === null,
-  )
+  return vorlagen.filter((vorlage) => vorlage.höhe !== null && vorlage.parent === null)
 }
 
 /** Entwurfsbearbeitung – rein lokal, ohne IPC, ohne Seiteneffekt. Liefert je einen NEUEN Entwurf. */

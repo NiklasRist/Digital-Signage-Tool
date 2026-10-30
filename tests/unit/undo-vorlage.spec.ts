@@ -26,7 +26,6 @@ function vorlage(id: string, parent: string | null = "v-1"): Vorlage {
   return {
     id,
     name: "Arbeitskopie",
-    art: "vollflaeche",
     höhe: null,
     parent,
     eingebaut: false,

@@ -1,13 +1,19 @@
-// [action-editor] Vorlage zuweisen – nur nutzbare Vollflächen-Vorlagen
+// [action-editor] Vorlage zuweisen – nur nutzbare Ganzbild-Vorlagen
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 
-/** Ist diese Vorlage im action-editor auswählbar? Nutzbar (parent === null) UND vollflächig. */
+/**
+ * Ist diese Vorlage im action-editor auswählbar? Nutzbar (parent === null) UND Ganzbild.
+ *
+ * Die Flaeche IST die Art (TK 9.11.1 Punkt 0, v3.31): `höhe === null` heisst Ganzbild.
+ * Eine Aktion ist ein eigenstaendiges Segment; ein Band waere dort 1920 x 162 und
+ * koennte die 1080er-Flaeche nicht fuellen.
+ */
 export function istWaehlbar(vorlage: Vorlage): boolean {
-  return vorlage.parent === null && vorlage.art === 'vollflaeche'
+  return vorlage.parent === null && vorlage.höhe === null
 }
 
 /** Holt die nutzbaren Vorlagen vom vorlagen-store und behält nur die auswählbaren.
@@ -23,8 +29,8 @@ export async function ladeWaehlbareVorlagen(): Promise<Ergebnis<Vorlage[], strin
       // Liste als Ersatz – sie sähe für den Nutzer aus, als gäbe es keine Vorlagen.
       return antwort
     }
-    // Art-Filter GEHÖRT hierher (TK 9.11.1 Punkt 0: das Angebot der passenden Art macht
-    // die Oberfläche; #99 verbietet dem Store ausdrücklich das Filtern nach `art`).
+    // Flaechen-Filter GEHOERT hierher (TK 9.11.1 Punkt 0: das Angebot der passenden
+    // Flaeche macht die Oberfläche; #99 verbietet dem Store ausdrücklich das Filtern).
     // Bestandsreihenfolge bleibt, kein sort. Eine leere gefilterte Liste ist keine Fehler,
     // sondern eine Aussage ("gerade keine vollflächige Vorlage").
     const waehlbare = antwort.wert.filter(istWaehlbar)

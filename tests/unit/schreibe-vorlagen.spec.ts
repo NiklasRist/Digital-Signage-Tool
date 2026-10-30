@@ -37,7 +37,6 @@ function eigene(id: string): Vorlage {
   return {
     id,
     name: id,
-    art: "vollflaeche",
     höhe: null,
     parent: null,
     eingebaut: false,
@@ -128,17 +127,77 @@ describe("ladeBestand (#98)", () => {
     expect(ids(ergebnis.wert)).toEqual(["vollbild", "split", "band-standard"]);
 
     const datei = await liesDatei();
-    expect(datei.schemaVersion).toBe(1);
+    expect(datei.schemaVersion).toBe(2);
     expect(ids(datei.vorlagen)).toEqual(["vollbild", "split", "band-standard"]);
+  });
+
+  it("migriert v1 -> v2: entfernt `art`, setzt die neuen Namen, loescht NICHTS und schreibt v2", async () => {
+    // M9 (#451): Die Datei auf der Platte traegt `art` und die alten Namen. Sobald der Typ
+    // das Feld nicht mehr kennt, laedt sie nur noch ueber diese Migration.
+    const v1 = {
+      schemaVersion: 1,
+      vorlagen: [
+        { ...eigene("vollbild"), name: "Vollbild", eingebaut: true, art: "vollflaeche" },
+        { ...eigene("split"), name: "Split", eingebaut: true, art: "vollflaeche" },
+        { ...eigene("band-standard"), name: "Band-Standard", eingebaut: true, art: "split", höhe: 162 },
+        { ...eigene("eigene-1"), name: "Meine eigene", art: "split", höhe: 162 },
+      ],
+    };
+    await schreibeRoh("vorlagen.json", JSON.stringify(v1));
+
+    const ergebnis = await modul.ladeBestand();
+
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+    // Drei eingebaute + die eigene: KEINE Vorlage wird geloescht.
+    expect(ergebnis.wert.map((v) => v.id)).toEqual(["vollbild", "split", "band-standard", "eigene-1"]);
+    expect(ergebnis.wert.map((v) => v.name)).toEqual([
+      "Ganzflächig",
+      "Zwei Spalten",
+      "Band-Standard",
+      "Meine eigene",
+    ]);
+    // Die eigene Vorlage behaelt ihren Namen - umbenannt werden nur die eingebauten.
+    expect(ergebnis.wert[3]?.höhe).toBe(162);
+
+    // Auf der Platte steht jetzt v2 ohne jedes `art`-Feld.
+    const roh = await lies("vorlagen.json");
+    expect(JSON.parse(roh).schemaVersion).toBe(2);
+    expect(roh).not.toContain('"art"');
+  });
+
+  it("faellt bei einer v1-Datei aus dem .bak NICHT ins Schreiben: die defekte Datei bleibt liegen", async () => {
+    const kaputt = '{"schemaVersion": 1, "vorlagen": [{"id": "eig';
+    await schreibeRoh("vorlagen.json", kaputt);
+    await schreibeRoh(
+      "vorlagen.json.bak",
+      JSON.stringify({
+        schemaVersion: 1,
+        vorlagen: [
+          { ...eigene("vollbild"), eingebaut: true, art: "vollflaeche" },
+          { ...eigene("split"), eingebaut: true, art: "vollflaeche" },
+          { ...eigene("band-standard"), eingebaut: true, art: "split", höhe: 162 },
+        ],
+      }),
+    );
+
+    const ergebnis = await modul.ladeBestand();
+
+    expect(ergebnis.ok).toBe(true);
+    // Die Migration wirkt im Speicher (neue Namen), geschrieben wird aber nicht.
+    if (ergebnis.ok) expect(ergebnis.wert[0]?.name).toBe("Ganzflächig");
+    expect(await lies("vorlagen.json")).toBe(kaputt);
   });
 
   it("ergaenzt nur die fehlende Vorlage hinten und laesst den vorhandenen Eintrag unangetastet", async () => {
     // Das absichtlich abgeaenderte `vollbild` ist der Kern des Tests: TK 9.11.1.1 verbietet
     // die In-place-Aenderung an einer eingebauten Vorlage. Ein "Reparieren beim Start"
     // wuerde Aktionen in bestehenden Projekten nach einem App-Update anders aussehen lassen.
+    // AKTUELLE Fassung (v2) - nur dann gilt die Regel "nichts wird repariert". Eine v1-Datei
+    // wird EINMAL migriert (andere Zusage, s. Migrationstests); danach ist sie v2.
     const abgeaendert: Vorlage = { ...eigene("vollbild"), name: "Selbst umbenannt", eingebaut: true };
     const split: Vorlage = { ...eigene("split"), eingebaut: true };
-    await schreibeRoh("vorlagen.json", JSON.stringify({ schemaVersion: 1, vorlagen: [abgeaendert, split] }));
+    await schreibeRoh("vorlagen.json", JSON.stringify({ schemaVersion: 2, vorlagen: [abgeaendert, split] }));
 
     const ergebnis = await modul.ladeBestand();
 
@@ -201,7 +260,7 @@ describe("ladeBestand (#98)", () => {
   it("meldet speicher_fehler bei unbekannter schemaVersion und laedt nichts", async () => {
     await schreibeRoh(
       "vorlagen.json",
-      JSON.stringify({ schemaVersion: 2, vorlagen: [eigene("eigene-1")] }),
+      JSON.stringify({ schemaVersion: 99, vorlagen: [eigene("eigene-1")] }),
     );
 
     const ergebnis = await modul.ladeBestand();
@@ -209,7 +268,7 @@ describe("ladeBestand (#98)", () => {
     expect(ergebnis.ok).toBe(false);
     if (ergebnis.ok) return;
     expect(ergebnis.fehler.code).toBe("speicher_fehler");
-    expect(ergebnis.fehler.meldung).toContain("2");
+    expect(ergebnis.fehler.meldung).toContain("99");
   });
 
   it("legt bei zwei gleichzeitigen Aufrufen genau EINMAL an", async () => {

@@ -1,18 +1,17 @@
-// Issue #219 - einblendung.tsx: die Einblendung-Simulation (Art B, TK 9.2.8).
+// Issue #219 - einblendung.tsx: die Band-Simulation. Seit TK v3.31 die EINZIGE
+// Komposition eines Video-Elements mit Band (9.2.8); die fruehere Split-Simulation
+// ist mit dem gestrichenen Split-Screen entfallen (#452).
 //
-// DREI Unterschiede zur Split-Komposition (#218), alle drei bindend:
+// DREI bindende Eigenschaften:
 // 1. Das Video bleibt VOLLFLAECHIG - es bekommt deshalb weder rahmen noch
 //    hintergrund (ENTSCHIEDEN 3); schwarze Balken liefert #216 selbst.
-// 2. KEINE Markenfarbe - flaecheDunkel ist die Ausnahme der Split-Komposition
-//    und gilt hier nicht (TK 9.2.4; die Marke wird nur an Segment gereicht).
-// 3. Das Band UEBERLAGERT das Video mit seinem Alphakanal - hinter dem Band
+// 2. KEINE Markenfarbe auf der Flaeche - die Marke wird nur an Segment gereicht
+//    (TK 9.2.4; `flaecheDunkel` ist mit der Split-Komposition entfallen).
+// 3. Das Band liegt DECKEND ueber dem Video (TK 9.2.8, v3.31) - hinter dem Band
 //    steht NICHTS: kein Hintergrund, keine Deckkraft, kein Filter (ENTSCHIEDEN 4).
-//    Eine Fuellfarbe unter dem Band wuerde es undurchsichtig machen und
-//    die Einblendung optisch zum Split machen.
 //
-// ENTSCHIEDEN 5: bandVorlage.hoehe === null bedeutet kein Band - kein Aufruf
-// der Geometrie, vollflaechiges Video wie ohne Einblendung, kein Ersatzwert,
-// keine Meldung.
+// ENTSCHIEDEN 5: bandVorlage.hoehe === null bedeutet kein Band - vollflaechiges
+// Video wie ohne Einblendung, kein Ersatzwert, keine Meldung.
 //
 // Die Zeitlogik (welcher Band-Abschnitt sichtbar ist) entscheidet #220; dieses
 // Bauteil bekommt die fertige bandAktion.

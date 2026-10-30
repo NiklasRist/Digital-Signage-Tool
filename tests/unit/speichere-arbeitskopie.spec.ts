@@ -110,7 +110,6 @@ function vorlage(id: string, teil: Partial<Vorlage> = {}): Vorlage {
   return {
     id,
     name: `Name ${id}`,
-    art: 'vollflaeche',
     höhe: null,
     parent: null,
     eingebaut: false,
@@ -243,7 +242,6 @@ describe('speichereArbeitskopie – Erfolgslauf', () => {
       vorlage('parent-1'),
       vorlage('kopie', {
         parent: 'parent-1',
-        art: 'split',
         höhe: 162,
         zonen: [festeZone('hintergrund', 162, 0)],
       }),
@@ -251,7 +249,6 @@ describe('speichereArbeitskopie – Erfolgslauf', () => {
 
     const neu = vorlage('kopie', {
       parent: 'parent-1',
-      art: 'split',
       höhe: 162,
       zonen: [
         festeZone('hintergrund', 162, 0),
@@ -268,7 +265,6 @@ describe('speichereArbeitskopie – Erfolgslauf', () => {
       vorlage('parent-1'),
       vorlage('kopie', {
         parent: 'parent-1',
-        art: 'split',
         höhe: 162,
         zonen: [festeZone('hintergrund', 162, 0)],
       }),
@@ -276,7 +272,6 @@ describe('speichereArbeitskopie – Erfolgslauf', () => {
 
     const neu = vorlage('kopie', {
       parent: 'parent-1',
-      art: 'split',
       höhe: 162,
       zonen: [
         festeZone('hintergrund', 162, 0),
@@ -356,7 +351,7 @@ describe('speichereArbeitskopie – Fehlerpfade', () => {
 describe('speichereArbeitskopie – unveränderliche Felder (Abgleich)', () => {
   it.each([
     ['id', vorlage('kopie', { parent: 'parent-1', name: 'Neue id' })],
-    ['art', vorlage('kopie', { parent: 'parent-1', art: 'split', höhe: 162 })],
+    ['art', vorlage('kopie', { parent: 'parent-1', höhe: 162 })],
     ['parent', vorlage('kopie', { parent: 'anderer-parent' })],
     ['eingebaut', vorlage('kopie', { parent: 'parent-1', eingebaut: true })],
   ])('weicht %s ab, ergibt ungueltige_eingabe und der gespeicherte Eintrag ist danach unveraendert', async (_beschreibung, neu) => {
@@ -394,7 +389,7 @@ describe('speichereArbeitskopie – name und höhe', () => {
     expect(zustand.bestand[1]?.name).toBe('x'.repeat(80))
   })
 
-  it('lehnt eine höhe bei vollflaeche (statt null) mit ungueltige_eingabe ab', async () => {
+  it('lehnt eine GEAENDERTE höhe ab - sie ist nach dem Anlegen unveraenderlich', async () => {
     zustand.bestand = [vorlage('parent-1'), vorlage('kopie', { parent: 'parent-1' })]
 
     const fehler = await fehlschlag('kopie', vorlage('kopie', { parent: 'parent-1', höhe: 162 }))
@@ -403,10 +398,10 @@ describe('speichereArbeitskopie – name und höhe', () => {
   })
 
   it.each([0, -5, 1080, 1079.5, 161, 200.5])('lehnt eine unbrauchbare höhe %s bei split ab', async (höhe) => {
-    const kopie = vorlage('kopie', { parent: 'parent-1', art: 'split', höhe: 162 })
+    const kopie = vorlage('kopie', { parent: 'parent-1', höhe: 162 })
     zustand.bestand = [vorlage('parent-1'), kopie]
 
-    const fehler = await fehlschlag('kopie', vorlage('kopie', { parent: 'parent-1', art: 'split', höhe }))
+    const fehler = await fehlschlag('kopie', vorlage('kopie', { parent: 'parent-1', höhe }))
 
     expect(fehler.code).toBe('ungueltige_eingabe')
     expect(zustand.bestand[1]).toEqual(kopie)
@@ -415,10 +410,10 @@ describe('speichereArbeitskopie – name und höhe', () => {
   it('eine gerade hohe 162 bei split gelingt', async () => {
     zustand.bestand = [
       vorlage('parent-1'),
-      vorlage('kopie', { parent: 'parent-1', art: 'split', höhe: 162 }),
+      vorlage('kopie', { parent: 'parent-1', höhe: 162 }),
     ]
 
-    await erfolg('kopie', vorlage('kopie', { parent: 'parent-1', art: 'split', höhe: 162 }))
+    await erfolg('kopie', vorlage('kopie', { parent: 'parent-1', höhe: 162 }))
   })
 })
 
@@ -647,7 +642,6 @@ describe('speichereArbeitskopie – Entprellung gegen den echten #98', () => {
     const kopieErgebnis = await speichere.speichereArbeitskopie('gibt-es-nicht', {
       id: 'gibt-es-nicht',
       name: 'x',
-      art: 'vollflaeche',
       höhe: null,
       parent: 'band-standard',
       eingebaut: false,

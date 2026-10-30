@@ -44,7 +44,7 @@ import { DAUER_BEREICH } from '../../shared/contracts/konstanten'
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 import type { RenderItem, RenderRequest } from '../../shared/contracts/render-request'
 import { loeseAusgabePfad } from '../project-store/pfade'
-import { bestimmeBandgeometrie, type Bandart } from './band-geometrie'
+import { bestimmeBandgeometrie } from './band-geometrie'
 import type { ElementFehlerdaten, RenderFehlercode } from './fehlercodes'
 import { frameDauer, zuFrames } from './frames'
 
@@ -104,21 +104,6 @@ function lies(objekt: unknown, schluessel: string): unknown {
 
 function istNichtLeereZeichenkette(wert: unknown): wert is string {
   return typeof wert === 'string' && wert.length > 0
-}
-
-/**
- * Die Form eines Hex-Farbwerts: `#RRGGBB` oder `#RRGGBBAA` (#339).
- *
- * Geprueft wird NUR die Form - nicht, ob die Farbe in einer Marke existiert und nicht, ob
- * sie dunkel genug ist. Das Muster traegt kein `g`: Mit `lastIndex`-Zustand koennte dasselbe
- * Muster beim zweiten Aufruf an einer verschobenen Stelle suchen und einen gueltigen Wert
- * abweisen. Diese Pruefung ist die EINZIGE ihrer Art (Verbot aus #339) - ein zweiter
- * Hex-Test anderswo waere eine zweite Wahrheit, die milder ausfallen koennte.
- */
-const HEX_FARBE = /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
-
-function istHexFarbe(wert: unknown): wert is string {
-  return typeof wert === 'string' && HEX_FARBE.test(wert)
 }
 
 /** Ein Wert fuer eine Meldung, ohne `JSON.stringify` (dessen Ausgabe an der Schluesselreihenfolge haengt). */
@@ -309,12 +294,11 @@ function pruefeDauerBereich(elementId: string, dauer: unknown): Ergebnis<void, R
 }
 
 /**
- * Die Einblendung eines `video`-Elements pruefen - Band-Geometrie, Abschnitte, PNG-Masse,
- * Abschnittsdauer und (seit #339) die Form von `flaecheDunkel`.
+ * Die Einblendung eines `video`-Elements pruefen - Bandhoehe, Abschnitte, PNG-Masse und
+ * Abschnittsdauer.
  *
- * ZUR BANDBREITE: Sie ist IMMER `RENDER_PROFILE.breite`. Sie stammt NICHT aus der
- * Geometrie - `BandGeometrie.videoBreite` ist die EINGEPASSTE Videobreite (bei H = 162
- * gerade 1632) und waere hier ein stiller, uebersetzbarer Fehlgriff. S. Kopf der Datei.
+ * ZUR BANDBREITE: Sie ist IMMER `RENDER_PROFILE.breite` - jedes Band-PNG ist 1920 x H
+ * (TK 9.2.8). Eine Geometrie wird seit v3.31 nicht mehr gerechnet.
  */
 function pruefeEinblendung(
   elementId: string,
@@ -324,25 +308,24 @@ function pruefeEinblendung(
   // koennte bei einem Objekt mit Zugriffsfunktionen einen anderen Wert liefern als den
   // geprueften - dann pruefte #176 die eine Hoehe und die PNG-Pruefung vergliche gegen
   // eine andere.
-  const art = lies(einblendung, 'art')
   const höhe = lies(einblendung, 'höhe')
 
-  // #176 ist die EINZIGE Autoritaet fuer „welche `art` und welche Bandhoehe sind
-  // zulaessig" - hier steht kein eigener Test auf `höhe < 1080` und keine eigene
-  // Geradzahligkeits-Pruefung. Die Umwandlung ist bewusst: Zur Laufzeit sind beide
-  // Werte unbekannt, und genau das prueft die gerufene Funktion.
+  // #176 ist die EINZIGE Autoritaet fuer „welche Bandhoehe ist zulaessig" - hier steht
+  // kein eigener Test auf `höhe < 1080` und keine eigene Geradzahligkeits-Pruefung.
+  // Die Umwandlung ist bewusst: Zur Laufzeit ist der Wert unbekannt, und genau das
+  // prueft die gerufene Funktion.
   // SAFETY: der Cast benennt die erwartete Form; bestimmeBandgeometrie ist die
   // Pruefung dieser Invariante (Ergebnis-Huelle, ok/fehler unmittelbar darunter).
-  const geometrie = bestimmeBandgeometrie({ art, höhe } as { art: Bandart; höhe: number })
-  if (!geometrie.ok) {
+  const geprueft = bestimmeBandgeometrie({ höhe } as { höhe: number })
+  if (!geprueft.ok) {
     // Code UND Meldung von #176 bleiben, wie sie sind; ergaenzt wird allein der
     // Elementbezug, den jene Funktion nicht kennt (TK 9.2.3).
-    return { ok: false, fehler: { ...geometrie.fehler, daten: { elementId } } }
+    return { ok: false, fehler: { ...geprueft.fehler, daten: { elementId } } }
   }
 
   // Ab hier steht fest: `höhe` ist eine ganze, gerade Zahl zwischen 0 und der Bildhoehe.
   const bandBreite = RENDER_PROFILE.breite
-  // SAFETY: geometrie.ok ist belegt - bestimmeBandgeometrie hat die hoehe geprueft;
+  // SAFETY: geprueft.ok ist belegt - bestimmeBandgeometrie hat die hoehe geprueft;
   // der Cast benennt die damit belegte Zahlenform.
   const bandHoehe = höhe as number
 
@@ -412,20 +395,8 @@ function pruefeEinblendung(
     }
   }
 
-  // SECHSTER PRUEFPUNKT (#339): `flaecheDunkel` traegt den FERTIGEN Hex-Wert der Farb-Rolle
-  // `flaecheDunkel` fuer die Restflaechen (TK 9.2.2, Pflichtfeld seit #17). Bis hierher fiel
-  // ein kaputter Wert erst in `markenFarbeZuFfmpeg` (M6-09/#167) durch - NACH dem Anlegen
-  // von T1 und dem Schreiben der Segment-PNGs, mit einer Meldung, die die Ursache nicht
-  // nennt. Die Grenzkontrolle prueft ihn deshalb VOR dem ersten ffmpeg-Aufruf (TK 9.1.1
-  // Punkt 6). Nur die Form: ob die Farbe zur Marke passt, prueft niemand hier.
-  const flaecheDunkel = lies(einblendung, 'flaecheDunkel')
-  if (!istHexFarbe(flaecheDunkel)) {
-    return elementFehler(
-      elementId,
-      'Die Restflaeche der Einblendung ("flaecheDunkel") ist kein Hex-Wert der Form ' +
-        `#RRGGBB oder #RRGGBBAA, vorgefunden: ${beschreibe(flaecheDunkel)}.`,
-    )
-  }
+  // `flaecheDunkel` ist mit TK v3.31 entfallen (9.2.2): Der einzige Verbraucher war die
+  // Split-Komposition, und die ist gestrichen. Hier steht deshalb keine Farbpruefung mehr.
 
   return { ok: true, wert: undefined }
 }

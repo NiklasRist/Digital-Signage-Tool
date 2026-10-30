@@ -44,7 +44,6 @@ function vorlage(id: string, parent: string | null = null): Vorlage {
   return {
     id,
     name: "Vorlage",
-    art: "vollflaeche",
     höhe: null,
     parent,
     eingebaut: false,

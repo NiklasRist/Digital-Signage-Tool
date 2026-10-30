@@ -38,7 +38,6 @@ function vorlage(teil: Partial<Vorlage>): Vorlage {
   return {
     id: "v-1",
     name: "Vorlage",
-    art: "vollflaeche",
     höhe: null,
     parent: null,
     eingebaut: false,

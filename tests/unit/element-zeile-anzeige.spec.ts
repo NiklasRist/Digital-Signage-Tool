@@ -84,7 +84,7 @@ function asset(): Asset {
 }
 
 const VORLAGEN: readonly Vorlage[] = [
-  { id: 'band-1', name: 'Standardband', art: 'einblendung', höhe: 162, parent: null, eingebaut: false, zonen: [] },
+  { id: 'band-1', name: 'Standardband', höhe: 162, parent: null, eingebaut: false, zonen: [] },
 ]
 
 function eigenschaften(
