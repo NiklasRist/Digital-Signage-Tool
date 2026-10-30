@@ -40,6 +40,12 @@
   des Composers aus dem Bild (Drop aufs Video und Loeschen-Knopf fielen aus; Gegenprobe per
   `display:none` gruen). Behoben mit flacher Leiste (22 px) **und** `BUEHNE_OBEN.minHeight`
   **200 -> 160**. **Wer Hoehe ergaenzt, muss den Composer nachmessen.**
+- **#453 GESCHLOSSEN (30.10.2026, `completed`):** Der STOPP-Punkt ist entschieden — die Flaechen
+  heissen **„Ganzbild (1920 × 1080)"** und **„Band (1920 × 162)"** (`4321cea`, nur der Kommentar
+  „noch nicht bestaetigt" nachgezogen). DoD Punkt fuer Punkt im Abschlusskommentar belegt.
+- **BUCHHALTUNGS-LUECKE:** **#450, #451, #452, #454** sind in `e4a5549` (M9) gebaut, stehen auf GitHub
+  aber **noch offen**. `tools/bereitschaft.py` meldet #452 deshalb faelschlich als „bereit": der Bau
+  hat `preview-player/split.tsx` **geloescht**, das Werkzeug liest „Datei fehlt" als „nicht gebaut".
 - **#449 GESCHLOSSEN (30.10.2026, `not planned`):** durch **#455** ersetzt und am Fenster
   abgenommen. Die hier beschriebene Form (kleine Box, Palette) ist verworfen, ihr Ziel erreicht.
   Zwei Abweichungen stehen im Abschlusskommentar: **`hintergrund` ohne Klickflaeche** (Weg B,
@@ -62,12 +68,11 @@
   maskiert; der zweite Lauf mit sauberem Exit belegt 0.)
 - **Nicht gepusht:** **27 Commits** vor `origin/main`; diese Doku kommt als eigener Commit dazu. **Push nur auf Anweisung.**
 - **Ehrlich offen:** #446 (FA-03-Ursache),
-  #448 (192 SAFETY), Flaechen-Beschriftungen unbestatigt (STOPP-Punkt in #453), Beenden-Frist 15 s;
-  der Signaturblock in #456 nennt `projektId`, gebaut ist zusaetzlich `aktionen` (Widerspruch
-  gemeldet, Text nicht nachgezogen); die **Loesch-Sperrgruende erscheinen mitten in der
-  Marken-Kopfzeile** (aelter als #456, nicht angefasst).
-- **Naechster Schritt:** Flaechen-Beschriftungen bestaetigen (dann ist #453 abnehmbar). Danach #446
-  und #448.
+  #448 (192 SAFETY), Beenden-Frist 15 s; der Signaturblock in #456 nennt `projektId`, gebaut ist
+  zusaetzlich `aktionen` (Widerspruch gemeldet, Text nicht nachgezogen); die
+  **Loesch-Sperrgruende erscheinen mitten in der Marken-Kopfzeile** (aelter als #456, nicht
+  angefasst); die vier M9-Issues **#450/#451/#452/#454** sind gebaut, aber auf GitHub offen.
+- **Naechster Schritt:** M9-Buchhaltung schliessen (Freigabe noetig), dann #446 und #448.
 
 ## STAND HEUTE (30.10.2026, dreiunddreissigste Sitzung: Zonen-Namen und M9) – historisiert durch den Abschnitt darueber
 
