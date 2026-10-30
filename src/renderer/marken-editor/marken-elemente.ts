@@ -10,12 +10,13 @@
 
 import type { FarbRolle, SchriftRolle } from '../../shared/contracts/marke'
 import type { Vorlage, Zone } from '../../shared/contracts/vorlage'
+import { zonenText } from '../gemeinsam/zonen-texte'
 
 /** Ein Element im Editor - genau eine Zone, die Marken-Werte traegt. */
 export interface MarkenElement {
   /** Zonen-Kennung der Vorlage (stabil ueber projektweite Aufrufe). */
   id: string
-  /** Deutsche Beschriftung fuer die Box. */
+  /** Deutsche Beschriftung fuer die Box - aus der geteilten Quelle (#454). */
   titel: string
   art: 'logo' | 'text' | 'verlauf' | 'farbe'
   /** Rahmen in Vorlagen-Pixeln (TK 9.11.1: absolute Pixel, nie Prozent). */
@@ -26,18 +27,6 @@ export interface MarkenElement {
   schriftRollen: SchriftRolle[]
   /** Flaeche in Quadratpixeln - die Treffer-Reihenfolge (kleinste zuerst). */
   flaeche: number
-}
-
-/** Deutsche Titel der bekannten Zonen; unbekannte Zonen tragen ihre Kennung. */
-const TITEL: Record<string, string> = {
-  logo: 'Logo',
-  ueberschrift: 'Überschrift',
-  beschreibung: 'Beschreibung',
-  preis: 'Preis',
-  cta: 'Button',
-  scrim: 'Verlauf',
-  hintergrund: 'Hintergrund',
-  motiv: 'Motiv',
 }
 
 function flaeche(zone: Zone): number {
@@ -80,7 +69,7 @@ export function baueMarkenElemente(vorlage: Vorlage): MarkenElement[] {
 
     elemente.push({
       id: zone.id,
-      titel: TITEL[zone.id] ?? zone.id,
+      titel: zonenText(zone.id).name,
       art,
       rahmen: { ...zone.rahmen },
       farbRollen,

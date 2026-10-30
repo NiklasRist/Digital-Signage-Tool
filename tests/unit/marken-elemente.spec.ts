@@ -68,7 +68,7 @@ function vollbild(): Vorlage {
 describe('baueMarkenElemente (#449)', () => {
   it('liest die Elemente aus den Zonen - mit deutschen Titeln', () => {
     const elemente = baueMarkenElemente(vollbild())
-    expect(elemente.map((e) => e.titel)).toEqual(['Hintergrund', 'Verlauf', 'Logo', 'Überschrift', 'Preis'])
+    expect(elemente.map((e) => e.titel)).toEqual(['Hintergrund', 'Abdunkelung', 'Logo', 'Überschrift', 'Preis'])
     expect(elemente.map((e) => e.art)).toEqual(['farbe', 'verlauf', 'logo', 'text', 'text'])
   })
 

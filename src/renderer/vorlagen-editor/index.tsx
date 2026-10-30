@@ -33,6 +33,7 @@ import type { Marke } from '../../shared/contracts/marke'
 import type { VorlagenZugang, ZeichenZugang, MarkenZugang } from '../app-shell/sichten'
 import type { Sitzungshalter } from '../app-shell/undo-aufzeichnung-vorlage'
 import { stelleMarkeBereit, holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
+import { zonenText } from '../gemeinsam/zonen-texte'
 import { stelleSchriftenBereit } from '../template-canvas/schriften'
 
 import { GRUND_PARENT_EINGEBAUT, sichereStand, type EditorSitzung } from './arbeitskopie'
@@ -652,43 +653,47 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
             ))}
           </div>
 
-          {/* Zonen-Liste = Zeichenreihenfolge (kein z-index, keine Sortierung). */}
+          {/* Zonen-Liste = Zeichenreihenfolge (kein z-index, keine Sortierung).
+              Beschriftung aus der EINEN Quelle (#454): Name und ein Satz je Kennung. */}
           <ul data-testid="zonen-liste" style={{ margin: 0, padding: 0, listStyle: 'none', fontSize: 12, overflow: 'auto' }}>
-            {liste.map((zeile) => (
-              <li key={zeile.zone.id} data-testid={`zonen-liste-${zeile.index}`}>
-                Ebene {zeile.ebene}: {zeile.zone.id}
-                {zeile.beweglich ? '' : ' (fest)'}
-                {zeile.beweglich && geste.laeuft === false && (
-                  <span>
-                    {' '}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const nach = Math.max(0, zeile.index - 1)
-                        const neu = ordneZonenNeu(vorlage.zonen, zeile.index, nach)
-                        if (neu.ok) {
-                          void uebernehme(mitZonen(vorlage, neu.wert))
-                        }
-                      }}
-                    >
-                      ▲
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const nach = Math.min(liste.length - 1, zeile.index + 1)
-                        const neu = ordneZonenNeu(vorlage.zonen, zeile.index, nach)
-                        if (neu.ok) {
-                          void uebernehme(mitZonen(vorlage, neu.wert))
-                        }
-                      }}
-                    >
-                      ▼
-                    </button>
-                  </span>
-                )}
-              </li>
-            ))}
+            {liste.map((zeile) => {
+              const text = zonenText(zeile.zone.id)
+              return (
+                <li key={zeile.zone.id} data-testid={`zonen-liste-${zeile.index}`}>
+                  {zeile.ebene}. {text.name} — {text.zweck}
+                  {zeile.beweglich ? '' : ' (fest)'}
+                  {zeile.beweglich && geste.laeuft === false && (
+                    <span>
+                      {' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nach = Math.max(0, zeile.index - 1)
+                          const neu = ordneZonenNeu(vorlage.zonen, zeile.index, nach)
+                          if (neu.ok) {
+                            void uebernehme(mitZonen(vorlage, neu.wert))
+                          }
+                        }}
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nach = Math.min(liste.length - 1, zeile.index + 1)
+                          const neu = ordneZonenNeu(vorlage.zonen, zeile.index, nach)
+                          if (neu.ok) {
+                            void uebernehme(mitZonen(vorlage, neu.wert))
+                          }
+                        }}
+                      >
+                        ▼
+                      </button>
+                    </span>
+                  )}
+                </li>
+              )
+            })}
           </ul>
 
           {/* Die GESTE lebt HIER: Beginnt beim Festhalten auf einer FREIEN Zone,
@@ -703,7 +708,8 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
                 // `{ sorte: 'text-formatiert' } as never` - eine Sorte, die
                 // `fuegeZoneHinzu` nicht kennt. Der Knopf tat damit NICHTS (nur
                 // console.warn), waehrend die reine Funktion und ihre Tests gruen
-                // waren. Die Beschriftung sagt "(titel)"; genau das wird bestellt.
+                // waren. Der Knopf bestellt die Bindung `titel`; die Beschriftung
+                // nennt seit #454 ihren Anzeigenamen aus der geteilten Quelle.
                 const wunsch: ZonenWunsch = { sorte: 'text', bindung: 'titel' }
                 const neu = fuegeZoneHinzu(vorlage, wunsch)
                 if (neu.ok) {
@@ -713,7 +719,7 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
                 }
               }}
             >
-              + Textzone (titel)
+              + Textzone ({zonenText('titel').name})
             </button>
           </div>
 
