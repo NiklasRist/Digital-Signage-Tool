@@ -23,27 +23,38 @@
   Klickflaeche mehr** (Weg B, entschieden) und ist ueber Stufe 2 erreichbar.
 - **#449 NICHT nachgebessert:** ESC fehlte, „Klick daneben" war strukturell tot, Ableiten lag nicht
   in der Kopfzeile, der Treiber-Schritt fehlte. Die Form wird ersetzt — das Issue bleibt **offen**.
-- **#456 GEBAUT (`ffa02dc` + `ac5e8fb` + `c13d288`):** **Reiter [Marken] entfaellt** (AD v1.11 /
-  TK v3.32, `21b5f38`). Vier Reiter; die **Projektleiste** ueber jedem Reiter traegt Projektname,
-  Standardmarke und den **Namen der Marke** — der **oeffnet ihren Editor** (kein eigener Knopf) und
-  ist ein **Umschalter** (zweiter Klick zurueck ins Projekt). Der Editor ist eine **Ansicht ueber
-  der Reiterflaeche**; die besuchten Reiter bleiben montiert. Er zeigt „In diesem Projekt: N
-  Aktionen". **Bestand bleibt app-weit**, keine Migration. Alle Projekte geloescht (Freigabe).
+- **#456 GEBAUT (`ffa02dc` + `ac5e8fb` + `c13d288`) und AM FENSTER ABGENOMMEN (30.10.2026, „passt"):**
+  **Reiter [Marken] entfaellt** (AD v1.11 / TK v3.32, `21b5f38`). Vier Reiter; die
+  **Projektleiste** ueber jedem Reiter traegt Projektname, Standardmarke und den **Einstieg in den
+  Editor** — **nachgebessert (`060abe1`) auf Anweisung: Symbole statt Textknopf**, der Stift steht
+  direkt hinter der Klappliste, offen wird er zum Pfeil zurueck (Umschalter). Der Editor ist eine
+  **Ansicht ueber der Reiterflaeche**; die besuchten Reiter bleiben montiert. Er zeigt „In diesem
+  Projekt: N Aktionen". **Bestand bleibt app-weit**, keine Migration. Alle Projekte geloescht
+  (Freigabe). **Abloesung, offen benannt:** Die Entscheidung vom selben Tag („der Markenname ist der
+  Einstieg, kein eigener Knopf") gilt nicht mehr — der Einstieg ist der Stift.
+- **SYMBOLE (`060abe1`, neuer Ort):** `src/renderer/gemeinsam/symbole.tsx` — fuenf Piktogramme +
+  `SymbolKnopf` (16er-Raster, `currentColor`, `aria-label` UND `title`). `gemeinsam` ist laut
+  `index.ts` der Ort ohne Eigentuemer; `preview-player/symbole.tsx` (#443) bleibt unberuehrt.
+  **Bestaetigende Aktionen bleiben Text** („Löschen bestätigen").
 - **BEFUND AUS DEM GATE — Merksatz:** Die Leiste kostet Hoehe. Bei 800x572 schob sie die Zeitleiste
   des Composers aus dem Bild (Drop aufs Video und Loeschen-Knopf fielen aus; Gegenprobe per
   `display:none` gruen). Behoben mit flacher Leiste (22 px) **und** `BUEHNE_OBEN.minHeight`
   **200 -> 160**. **Wer Hoehe ergaenzt, muss den Composer nachmessen.**
 - **Gegenproben:** 11 in dieser Sitzung, jede rot und byte-identisch zurueckgenommen. Eine erste
   Fassung blieb gruen (Reiterklick deckte nur den Klickweg, nicht den programmatischen Wechsel).
-- **Gate:** `npm run pruefung` **Exit 0** — Unit **5.280 (346 Dateien)**, Integration **50 (13
-  Dateien)**, Treiber **0 Befunde**, Lint 0 Fehler.
-- **Nicht gepusht:** **23 Commits** vor `origin/main`; diese Uebergabe kommt als eigener Commit
-  dazu. **Push nur auf Anweisung.**
+  **Nachtrag `060abe1`: 6 weitere** (immer Stift statt Pfeil, `gedrueckt` entfernt, Markenname
+  wieder als Text, Rueckweg als Textknopf, Loeschen als Textknopf, `title` entfernt) — alle rot.
+- **Gate:** `npm run pruefung` **Exit 0** — Unit **5.288 (347 Dateien)**, Integration **50 (13
+  Dateien)**, Treiber **0 Befunde**, Lint 0 Fehler. (Der erste Lauf war durch `| tail` im Exit-Code
+  maskiert; der zweite Lauf mit sauberem Exit belegt 0.)
+- **Nicht gepusht:** **25 Commits** vor `origin/main`. **Push nur auf Anweisung.**
 - **Ehrlich offen:** #449 (schliessen oder ueberfuehren), #453-Treiber-Schritt, #446 (FA-03-Ursache),
   #448 (192 SAFETY), Flaechen-Beschriftungen unbestatigt, Beenden-Frist 15 s; der Signaturblock in
   #456 nennt `projektId`, gebaut ist zusaetzlich `aktionen` (Widerspruch gemeldet, Text nicht
-  nachgezogen).
-- **Naechster Schritt:** #456 am Fenster abnehmen, dann #449 entscheiden, dann der #453-Treiber-Schritt.
+  nachgezogen); die **Loesch-Sperrgruende erscheinen mitten in der Marken-Kopfzeile** (aelter als
+  #456, nicht angefasst).
+- **Naechster Schritt:** #449 entscheiden, dann der #453-Treiber-Schritt („Aktion auf die Zeitleiste
+  = Segment, Aktion an die Bandliste = Abschnitt" — der letzte offene DoD-Punkt von M9).
 
 ## STAND HEUTE (30.10.2026, dreiunddreissigste Sitzung: Zonen-Namen und M9) – historisiert durch den Abschnitt darueber
 

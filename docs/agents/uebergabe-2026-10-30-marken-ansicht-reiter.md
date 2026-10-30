@@ -179,3 +179,36 @@ Fassung des Deckend-Tests in M9 wertlos (dort schon vermerkt).
 2. **#449 entscheiden** (schließen oder in #455 überführen).
 3. **#453-Treiber-Schritt** bauen.
 4. **Push** — nur auf Anweisung (23 Commits).
+
+---
+
+## 10. Nachtrag noch am 30.10.2026: #456 bekommt Symbole, Abnahme erfolgt
+
+**Anlass (User, wörtlich):** „also fürs erste geht das aber es sollten icons sein und die position
+der buttons ist müll #456" — nachgefragt: **„minimaler text aber es braucht symbole und beide"**.
+
+**Gebaut (`060abe1`), beide Stellen:**
+
+| Ort | vorher | jetzt |
+|---|---|---|
+| Projektleiste | `Fitnessworld24  Standardmarke [ … ▾]` … `Fitnessworld24` (unterstrichen, `marginLeft:auto`) | `Fitnessworld24 · Marke [ … ▾] ✎` |
+| Marken-Kopfzeile | `[Zurück zum Projekt]` … `[Groß] [Löschen]` | `[←] Name … [⤢] [🗑]` |
+
+- Der **Name stand zweimal** in derselben 22-px-Zeile; Wahl und Einstieg waren getrennt. Jetzt sitzt
+  der Stift direkt hinter der Klappliste, und offen wird dasselbe Feld zum **Pfeil zurück**.
+- „Standardmarke" ist nicht mehr sichtbar; es ist der `aria-label` der Klappliste. Sichtbar bleibt
+  **ein** Wort: „Marke".
+- **Bewusst Text geblieben:** „Löschen bestätigen" — ein zweiter Papierkorb hieße „nochmal
+  dasselbe".
+- **Neue Quelle:** `src/renderer/gemeinsam/symbole.tsx` (5 Piktogramme + `SymbolKnopf`).
+  `preview-player/symbole.tsx` (#443) bleibt unberührt.
+- **Abgelöst, offen benannt:** Die Entscheidung vom selben Tag („der Markenname ist der Einstieg,
+  kein eigener Knopf") gilt nicht mehr. `ProjektleisteProps` ist unverändert.
+
+**Belege:** Gate `npm run pruefung` **Exit 0** — Unit **5.288 (347 Dateien, +8)**, Integration 50
+(13), Treiber 0 Befunde, Lint 0. **6 Gegenproben**, jede rot und byte-identisch zurückgenommen.
+**25 Commits** vor `origin/main`, nicht gepusht.
+
+**#456 ist am Fenster abgenommen** („passt"). Offen bleibt: **#449 entscheiden**, der
+**#453-Treiber-Schritt**, und ein Befund ohne Bau — die **Lösch-Sperrgründe** erscheinen mitten in
+der Kopfzeile (älter als #456).
