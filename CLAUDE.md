@@ -89,6 +89,15 @@
   angefasst).
 - **Naechster Schritt (Ansage Niklas, 30.10.2026):** **UI 2.0**. #448 ist zu; #446 bleibt der
   einzige offene Punkt mit Fensterbedarf.
+- **UI 2.0, WELLE 2 ENTSCHIEDEN (30.10.2026):** Im Band laeuft eine **Aktion**, kein eigenes
+  Banner-Objekt. Die **Banner-Spur ist verworfen**; **#365-#373 und #376** sind `not planned`
+  geschlossen (der Vertrag `abschnitte.aktionRef` aus M9 bleibt). **Welle 2 = Variante A
+  (Bedienfluss):** #446 -> #392 -> Playhead -> Buchhaltung #383/#388/#393/#394 ->
+  Loesch-Sperrgruende. Grundlage:
+  [`docs/agents/ui-2-0-welle-2-vorschlag.md`](docs/agents/ui-2-0-welle-2-vorschlag.md).
+  **#374/#375 bleiben offen** (nicht banner-gebunden, Begruendung neu schreiben). **Offen:**
+  TK-Nachtrag v3.33 zur Banner-Spur; die Layout-Frage aus Welle 1 („Video mittig" im Plan,
+  gebaut ist „Buehne oben").
 
 ## STAND HEUTE (30.10.2026, dreiunddreissigste Sitzung: Zonen-Namen und M9) – historisiert durch den Abschnitt darueber
 
