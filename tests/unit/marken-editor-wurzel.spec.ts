@@ -367,6 +367,39 @@ describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
     expect(aufZurueck).toHaveBeenCalledTimes(1);
   });
 
+  it('#456: der Rueckweg ist ein SYMBOL mit Namen, kein Textknopf', () => {
+    h.holeGeoeffnete.mockReturnValue(markeFuerTest({ id: DIE_ID }));
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    const zurueck = behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-zurueck"]')!;
+    // Entscheidung Niklas, 30.10.2026: „minimaler Text, Symbole für die Knöpfe."
+    expect(zurueck.textContent).toBe('');
+    expect(zurueck.querySelector('svg')).not.toBeNull();
+    expect(zurueck.getAttribute('aria-label')).toBe('Zurück zum Projekt');
+    expect(zurueck.getAttribute('title')).toBe('Zurück zum Projekt');
+    h.holeGeoeffnete.mockReturnValue(null);
+  });
+
+  it('#456: Loeschen und Gross sind Symbole; der Gross-Schalter bleibt an seiner Stelle', () => {
+    h.holeGeoeffnete.mockReturnValue(markeFuerTest({ id: DIE_ID }));
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang });
+    const loeschen = behaelterTest.querySelector<HTMLButtonElement>('[data-testid="loeschengesuch"]')!;
+    expect(loeschen.textContent).toBe('');
+    expect(loeschen.getAttribute('aria-label')).toBe('Löschen');
+    const gross = behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-gross"]')!;
+    expect(gross.getAttribute('aria-pressed')).toBe('false');
+    expect(gross.getAttribute('aria-label')).toBe('Vorschau vergrößern');
+    act(() => gross.click());
+    // Die Kopfzeile ist weg - derselbe Schalter steht jetzt oben rechts ueber der Vorschau.
+    expect(behaelterTest.querySelector('[data-testid="marken-kopfzeile"]')).toBeNull();
+    const klein = behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-gross"]')!;
+    expect(klein.getAttribute('aria-pressed')).toBe('true');
+    expect(klein.getAttribute('aria-label')).toBe('Vorschau verkleinern');
+    expect(klein.querySelector('svg')).not.toBeNull();
+    h.holeGeoeffnete.mockReturnValue(null);
+  });
+
   it('#455: alle 13 Farb- und alle 4 Schriftrollen sind im Inspector erreichbar', () => {
     const zugang = ZUGANG(UEBERSICHT);
     const behaelterTest = zeige({ sichtbar: true, marken: zugang });

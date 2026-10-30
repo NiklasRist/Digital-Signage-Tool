@@ -30,6 +30,9 @@ import { MarkenVorschau, findeVorlage, VORSCHAU_VORLAGEN, VORSCHAU_VORLAGE_ID } 
 import { baueMarkenElemente } from './marken-elemente' // #449
 import { Inspector, type Auswahl } from './inspector' // #455
 import { filtereMarken } from './auswahl' // #455
+import {
+  SymbolKnopf, SymbolPapierkorb, SymbolPfeilLinks, SymbolVergroessern, SymbolVerkleinern,
+} from '../gemeinsam/symbole' // #456
 import type { Marke } from '../../shared/contracts/marke'
 
 /**
@@ -197,11 +200,20 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
     ? aktionen.filter((eintrag) => eintrag.markeId === (marke as Marke).id)
     : []
 
+  // #456 (Entscheidung Niklas, 30.10.2026): „minimaler Text, Symbole für die Knöpfe."
+  // Der Rückweg ist ein PFEIL, kein breiter Textknopf an der prominentesten Stelle; [Groß]
+  // und [Löschen] sind Symbole mit `title`/`aria-label`. Sichtbarer Text bleibt nur, wo er
+  // Information traegt: Markenname, Verwendung, Herkunft.
   const kopf = zeigeMarke && (
     <div data-testid="marken-kopfzeile" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-      <button type="button" data-testid="marken-zurueck" onClick={aufZurueck}>
-        Zurück zum Projekt
-      </button>
+      <SymbolKnopf
+        kennung="marken-zurueck"
+        beschriftung="Zurück zum Projekt"
+        groesse={24}
+        aufKlick={aufZurueck}
+      >
+        <SymbolPfeilLinks />
+      </SymbolKnopf>
       <h3 data-testid="marken-kopf" style={{ margin: 0 }}>{(marke as Marke).name}</h3>
       <span data-testid="marken-verwendung" style={{ opacity: 0.8 }}>
         {verwendung.length === 0
@@ -213,13 +225,16 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
           abgeleitet von „{parentName ?? 'unbekannt'}"
         </span>
       )}
-      <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <button
-          data-testid="marken-gross"
-          onClick={() => setzeZustand((alt) => ({ ...alt, gross: !alt.gross }))}
+      <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+        <SymbolKnopf
+          kennung="marken-gross"
+          beschriftung="Vorschau vergrößern"
+          gedrueckt={zustand.gross}
+          groesse={24}
+          aufKlick={() => setzeZustand((alt) => ({ ...alt, gross: !alt.gross }))}
         >
-          {zustand.gross ? 'Klein' : 'Groß'}
-        </button>
+          <SymbolVergroessern />
+        </SymbolKnopf>
         <div data-testid="marken-loeschbereich">
           {loeschStamm(marke as Marke, zustand, setzeZustand, marken)}
         </div>
@@ -237,12 +252,17 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
         <div style={{ flex: 1, minWidth: 0 }}>
           {zustand.gross && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-              <button
-                data-testid="marken-gross"
-                onClick={() => setzeZustand((alt) => ({ ...alt, gross: !alt.gross }))}
+              {/* Derselbe Schalter wie in der Kopfzeile (gleiche Kennung, gleiches Symbol),
+                  nur an der Stelle, die im Grossmodus sichtbar bleibt: oben rechts. */}
+              <SymbolKnopf
+                kennung="marken-gross"
+                beschriftung="Vorschau verkleinern"
+                gedrueckt={zustand.gross}
+                groesse={24}
+                aufKlick={() => setzeZustand((alt) => ({ ...alt, gross: !alt.gross }))}
               >
-                Klein
-              </button>
+                <SymbolVerkleinern />
+              </SymbolKnopf>
             </div>
           )}
           <div data-testid="marken-vorschau">
@@ -542,16 +562,22 @@ function loeschStamm(
         </button>
       )}
       {!darfFragen && (
-        <button
-          data-testid="loeschengesuch"
-          onClick={() => {
+        // #456: Der Einstieg in den Loeschweg ist ein SYMBOL (Entscheidung Niklas:
+        // „minimaler Text, Symbole für die Knöpfe"). Die BESTAETIGUNG bleibt Text:
+        // Ein zweiter, anders aussehender Papierkorb hiesse „nochmal dasselbe" - und
+        // bei einer destruktiven Aktion ist genau das die falsche Botschaft.
+        <SymbolKnopf
+          kennung="loeschengesuch"
+          beschriftung="Löschen"
+          groesse={24}
+          aufKlick={() => {
             void ermittleLoeschvorschau(marke).then((ergebnis) => {
               setzeZustand((alt) => ({ ...alt, loeschvorschau: ergebnis.ok ? ergebnis.wert : null }))
             })
           }}
         >
-          Löschen
-        </button>
+          <SymbolPapierkorb />
+        </SymbolKnopf>
       )}
       {zustand.meldeaktionFehler !== null && (
         <p data-testid="marken-loesch-fehler">{zustand.meldeaktionFehler}</p>

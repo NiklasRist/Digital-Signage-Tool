@@ -1,11 +1,13 @@
 // Tests zu #456 - die Projektleiste über der Reiterfläche (TK 9.14.1 v3.32).
 //
 // Die Zusagen:
-//   1. Sie zeigt Projektname, Standardmarke und den Knopf [Marken].
+//   1. Sie zeigt Projektname, Standardmarke und den Einstieg in den Marken-Editor - als
+//      SYMBOL (Entscheidung Niklas, 30.10.2026: „minimaler Text, Symbole für die Knöpfe").
 //   2. Die Auswahl der Standardmarke meldet die Kennung - und zwar IMMER (auch die
 //      bereits gewählte), weil der Wechsel selbst in `wechsleStandardMarke` entscheidet,
 //      ob etwas zu tun ist. Der leere Wert löst KEINEN Aufruf aus.
-//   3. Der Knopf [Marken] meldet den Klick und zeigt über aria-pressed, ob der Editor offen ist.
+//   3. Der Symbolknopf meldet den Klick, zeigt über aria-pressed den offenen Zustand und
+//      wird im offenen Zustand zum Rückweg (Pfeil statt Stift).
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -49,16 +51,30 @@ function zeige(teil: Partial<ProjektleisteProps> = {}): HTMLElement {
 }
 
 describe('Projektleiste (#456)', () => {
-  it('zeigt Projektname, die Standardmarke und den Knopf [Marken]', () => {
+  it('zeigt Projektname, die Standardmarke und den Einstieg als SYMBOL', () => {
     const el = zeige()
     expect(el.querySelector('[data-testid="projektleiste-name"]')?.textContent).toBe('Fitnessworld24')
     const auswahl = el.querySelector<HTMLSelectElement>('[data-testid="projektleiste-standardmarke"]')!
     expect(auswahl.value).toBe('m-1')
     expect(Array.from(auswahl.options).map((o) => o.textContent)).toEqual(['Fitnessworld24', 'Partner'])
-    // #456: KEIN eigener Marken-Knopf - der Name der gewaehlten Marke ist der Einstieg.
-    expect(el.querySelector('[data-testid="projektleiste-marken"]')).toBeNull()
+    // Genau EIN Knopf in der ganzen Leiste: Wahl (Klappliste) und Einstieg, sonst nichts.
+    expect(el.querySelectorAll('button')).toHaveLength(1)
+    // #456, Entscheidung 30.10.2026: Der Einstieg ist ein Stift, kein zweiter Markenname.
     const oeffnen = el.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marke-oeffnen"]')!
-    expect(oeffnen.textContent).toBe('Fitnessworld24')
+    expect(oeffnen.textContent).toBe('')
+    expect(oeffnen.querySelector('svg')).not.toBeNull()
+    expect(oeffnen.getAttribute('aria-label')).toBe('Marke „Fitnessworld24" bearbeiten')
+    expect(oeffnen.getAttribute('title')).toBe('Marke „Fitnessworld24" bearbeiten')
+  })
+
+  it('„Standardmarke" steht NICHT mehr sichtbar in der Leiste - es ist der Name der Klappliste', () => {
+    const el = zeige()
+    const leiste = el.querySelector('[data-testid="projektleiste"]')!
+    // Ein Wort bleibt: „Marke". Das ausgeschriebene „Standardmarke" kostete nur Breite.
+    expect(el.querySelector('[data-testid="projektleiste-marke-label"]')?.textContent).toBe('Marke')
+    expect(leiste.textContent).not.toContain('Standardmarke')
+    const auswahl = el.querySelector<HTMLSelectElement>('[data-testid="projektleiste-standardmarke"]')!
+    expect(auswahl.getAttribute('aria-label')).toBe('Standardmarke des Projekts')
   })
 
   it('die Auswahl meldet die gewählte Kennung GENAU einmal', () => {
@@ -94,19 +110,33 @@ describe('Projektleiste (#456)', () => {
     expect(aufMarken).toHaveBeenCalledWith('m-1')
   })
 
-  it('nach einem Wechsel oeffnet der Name die NEUE Standardmarke', () => {
+  it('nach einem Wechsel oeffnet der Stift die NEUE Standardmarke', () => {
     const aufMarken = vi.fn()
     const el = zeige({ aufMarken, standardMarkeId: 'm-2' })
     const oeffnen = el.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marke-oeffnen"]')!
-    expect(oeffnen.textContent).toBe('Partner')
+    expect(oeffnen.getAttribute('aria-label')).toBe('Marke „Partner" bearbeiten')
     act(() => oeffnen.click())
     expect(aufMarken).toHaveBeenCalledWith('m-2')
   })
 
-  it('aria-pressed zeigt den offenen Zustand', () => {
+  it('aria-pressed zeigt den offenen Zustand - false geschlossen, true offen', () => {
+    const zu = zeige()
+    expect(
+      zu.querySelector('[data-testid="projektleiste-marke-oeffnen"]')?.getAttribute('aria-pressed'),
+    ).toBe('false')
     const offen = zeige({ markenOffen: true })
     expect(
       offen.querySelector('[data-testid="projektleiste-marke-oeffnen"]')?.getAttribute('aria-pressed'),
     ).toBe('true')
+  })
+
+  it('bei offenem Editor zeigt DERSELBE Knopf den Rueckweg als Pfeil', () => {
+    const zu = zeige()
+    const offen = zeige({ markenOffen: true })
+    const knopfZu = zu.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marke-oeffnen"]')!
+    const knopfOffen = offen.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marke-oeffnen"]')!
+    // Der sichtbare Weg zurueck ist ein anderes Symbol, nicht nur ein anderer Titel.
+    expect(knopfOffen.getAttribute('aria-label')).toBe('Zurück zum Projekt')
+    expect(knopfOffen.innerHTML).not.toBe(knopfZu.innerHTML)
   })
 })
