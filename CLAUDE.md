@@ -11,7 +11,44 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (30.10.2026, zweiunddreissigste Sitzung: Videosteuerung, Projekt-Suche, Umbau-Entscheidung) – gilt vor ALLEM weiter unten
+## STAND HEUTE (30.10.2026, dreiunddreissigste Sitzung: Zonen-Namen und M9) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-30-zonen-texte-m9.md`](docs/agents/uebergabe-2026-10-30-zonen-texte-m9.md).**
+
+- **#454 GEBAUT (`1d4867a`):** Zonen-Namen aus EINER Quelle (`renderer/gemeinsam/zonen-texte.ts`);
+  die Vorlagen-Liste zeigt `1. Hintergrund — …`, der Marken-Editor nutzt dieselbe Quelle.
+  Sichtbare Folge: cta „Knopf", scrim „Abdunkelung", motiv „Bild der Aktion".
+- **M9 GEBAUT (`e4a5549`, 94 Dateien): #450–#453 in EINEM Paket.** `VorlagenArt`,
+  `Vorlage.art`, `einblendung.art` und `flaecheDunkel` sind entfallen;
+  `shared/band-geometrie.ts`, `filter-split.ts`, `split.tsx`/`split-stile.ts` geloescht.
+  Eingebaute Vorlagen heissen **Ganzflächig / Zwei Spalten / Band-Standard** (IDs unveraendert);
+  `erstelleVorlage(höhe, name)`; Migration `vorlagen.json` v1 → v2: `art` weg, die beiden
+  Ganzbilder ueber die ID umbenannt, **nichts geloescht**, einmal als v2 geschrieben.
+- **BEFUND, DER DEN PLAN KIPPTE:** #450 ist NICHT allein baubar - gemessen **21
+  Produktdateien, 38 Testdateien** brechen, und #452/#453 folgen typbedingt. M9 ist ein Atom;
+  die Dateiliste in #450 („keine Datei ausserhalb") ist unerfuellbar. Steht im Commit und in
+  der Uebergabe.
+- **TREIBER-FUND:** Der Marken-Editor suchte seine Vorschau-Vorlage ueber den **Namen**
+  `'Vollbild'`. Die Umbenennung schaltete die Vorschau STILL ab (sieben Befunde). Jetzt sucht
+  er ueber die **ID** `vollbild` - Anzeigename ist Praesentation, die ID ist die Identitaet.
+- **Gegenproben (byte-identisch zurueckgenommen):** falsches `y` -> Integrationstest rot;
+  `migriereVon1` unveraendert -> Migrationstests rot; `fillRect` entfernt -> Deckend-Test rot
+  (der Test wurde dafuer von einer Aufruf-Zaehlung auf die TATSAECHLICHE Fuellung umgestellt -
+  die erste Fassung blieb bei dieser Mutation gruen); Hoehen-Abgleich entfernt -> Test rot.
+- **Gate:** `npm run pruefung` **Exit 0** - Unit **5.236 (342 Dateien)**, Integration **50
+  (13 Dateien, +1 neuer ffmpeg-Test)**, Treiber **0 Befunde**, Lint 0. Die Unit-Zahl SINKT:
+  Split-, Geometrie- und `art`-Tests sind mit ihrem Gegenstand entfallen.
+- **Nicht gepusht:** **17 Commits** vor `origin/main`; diese Uebergabe kommt als eigener
+  Commit dazu. **Push nur auf Anweisung.**
+- **Ehrlich offen:** #453-DoD ohne Treiber-Beleg (Zeitleiste = Segment, Bandliste = Abschnitt);
+  die Flaechen-Beschriftungen sind der Vorschlag aus #453 und **unbestaetigt**;
+  `waehleVorlagenFlaeche` aus #453 ist **NICHT gebaut** (waere ein zweiter Anlegeweg) -
+  gebaut ist `istAnlegbareFlaeche` + `legeVorlageAn(höhe, name)`; #451 nennt `schema_fehler`,
+  gebaut ist `speicher_fehler`; #443 und #449 warten auf Review am Fenster.
+- **Naechster Schritt:** #443 und #449 am Fenster reviewen, danach den #453-Treiber-Schritt
+  bauen.
+
+## STAND HEUTE (30.10.2026, zweiunddreissigste Sitzung: Videosteuerung, Projekt-Suche, Umbau-Entscheidung) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-30-videosteuerung-suche-m9.md`](docs/agents/uebergabe-2026-10-30-videosteuerung-suche-m9.md).**
 

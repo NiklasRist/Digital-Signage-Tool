@@ -1,7 +1,12 @@
 # Umbau v3.31: eine Band-Komposition, keine Vorlagen-Art (Plan, 29.10.2026)
 
-**Stand:** Die Dokumente sind nachgezogen (AD v1.10, TK v3.31). **Der Code ist es nicht.**
-Dieses Dokument schneidet den Umbau in Arbeitspakete; gebaut wird nach Freigabe.
+**Stand 30.10.2026: GEBAUT.** Der Code ist nachgezogen - Pakete **A–D** in `e4a5549`
+(#450–#453), Paket **E** in `1d4867a` (#454). Dieses Dokument bleibt als Beleg stehen.
+
+**Nachtrag zur Paketgrenze (gemessen, 30.10.2026):** Die Trennung A → B → C → D gilt fuer das
+Verstaendnis, **nicht** fuer einen kompilierbaren Zwischenstand. `Vorlage.art` wird von 21
+Produkt- und 38 Testdateien gelesen; #450 ohne #451/#452/#453 bricht den Typecheck. Wer hier
+je wieder schneidet, misst zuerst mit `tsc`, statt der Dateiliste zu glauben.
 
 Vorher: [`marken-editor-ui-2026-10-29.md`](marken-editor-ui-2026-10-29.md) (Marken-Oberfläche,
 eigener Schnitt danach).
