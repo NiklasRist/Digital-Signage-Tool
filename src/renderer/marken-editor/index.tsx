@@ -45,6 +45,13 @@ export interface MarkenEditorWurzelProps {
   /** Zugang zur gemeinsamen Vorlagen-Sicht (#155): liefert die drei Vorschau-Vorlagen.
    *  Nur gelesen; kein `lade()` von hier. */
   vorlagen: VorlagenZugang
+  /** v3.32 (#456): das geöffnete Projekt. Nur fuer die Anzeige - der Bestand bleibt app-weit. */
+  projektId: string
+  /** v3.32 (#456): die Aktionen des Projekts mit ihrer Marke (`Aktion.markeId`, TK 9.15.4).
+   *  Der Editor rechnet NICHTS nach - er zaehlt nur, welche davon DIESE Marke tragen. */
+  aktionen: readonly { titel: string; markeId: string }[]
+  /** v3.32 (#456): Rueckweg in die Reiterflaeche. */
+  aufZurueck: () => void
 }
 
 /** Der EINE eigene Zustandswert: ob die zuletzt geoeffnete Marke noch gilt (ENTSCHIEDEN 6). */
@@ -83,7 +90,7 @@ type Zustand = {
  * ORDNET AN und REICHT DURCH.
  */
 export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.Element {
-  const { sichtbar, marken, vorlagen } = eigenschaften
+  const { sichtbar, marken, vorlagen, aktionen, aufZurueck } = eigenschaften
   // ENTSCHIEDEN 3: nichts nachladen beim Auftauchen; die Marke kommt aus holeGeoeffneteMarke.
   const [zustand, setzeZustand] = useState<Zustand>(() => ({
     markenUebersicht: marken.hole(),
@@ -173,9 +180,23 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
   const waehle = (auswahl: Auswahl | null): void =>
     setzeZustand((alt) => ({ ...alt, auswahl, auswahlMarkeId: marke?.id ?? null }))
 
+  // v3.32 (#456): WO die Marke gebraucht wird - gezaehlt aus den Aktionen des offenen
+  // Projekts, nicht nachgerechnet (die Zuordnung steht in `Aktion.markeId`, TK 9.15.4).
+  const verwendung = zeigeMarke
+    ? aktionen.filter((eintrag) => eintrag.markeId === (marke as Marke).id)
+    : []
+
   const kopf = zeigeMarke && (
     <div data-testid="marken-kopfzeile" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <button type="button" data-testid="marken-zurueck" onClick={aufZurueck}>
+        Zurück
+      </button>
       <h3 data-testid="marken-kopf" style={{ margin: 0 }}>{(marke as Marke).name}</h3>
+      <span data-testid="marken-verwendung" style={{ opacity: 0.8 }}>
+        {verwendung.length === 0
+          ? 'In diesem Projekt verwendet sie keine Aktion.'
+          : `In diesem Projekt: ${verwendung.length} ${verwendung.length === 1 ? 'Aktion' : 'Aktionen'}`}
+      </span>
       {(marke as Marke).parent !== null && (
         <span data-testid="marken-herkunft" style={{ opacity: 0.8 }}>
           abgeleitet von „{parentName ?? 'unbekannt'}"

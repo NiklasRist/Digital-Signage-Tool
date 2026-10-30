@@ -195,7 +195,14 @@ function zeige(props: Record<string, unknown>): HTMLElement {
   wurzel = createRoot(behaelter!);
   act(() => {
     wurzel!.render(
-      createElement(MarkenEditorWurzel, { vorlagen: VORLAGEN, ...props } as never) as ReactElement,
+      createElement(MarkenEditorWurzel, {
+        vorlagen: VORLAGEN,
+        // #456: Der Editor haengt am Projekt - die drei Felder sind Pflicht.
+        projektId: 'p-1',
+        aktionen: [],
+        aufZurueck: () => undefined,
+        ...props,
+      } as never) as ReactElement,
     );
   });
   return behaelter as unknown as HTMLElement;
@@ -301,6 +308,40 @@ describe('MarkenEditorWurzel (#330) - Anordnung und Liste', () => {
 describe('MarkenEditorWurzel (#330) - geöffnete Marke', () => {
   beforeEach(() => {
     h.holeGeoeffnete.mockImplementation(() => markeFuerTest({ id: DIE_ID }));
+  });
+
+  it('#456: der Editor zeigt, WIE VIELE Aktionen dieses Projekts die Marke tragen', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({
+      sichtbar: true,
+      marken: zugang,
+      aktionen: [
+        { titel: 'A', markeId: DIE_ID },
+        { titel: 'B', markeId: PARENT_ID },
+        { titel: 'C', markeId: DIE_ID },
+      ],
+    });
+    expect(behaelterTest.querySelector('[data-testid="marken-verwendung"]')?.textContent).toBe(
+      'In diesem Projekt: 2 Aktionen',
+    );
+  });
+
+  it('#456: ohne Aktion im Projekt sagt der Editor das ausdruecklich', () => {
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang, aktionen: [] });
+    expect(behaelterTest.querySelector('[data-testid="marken-verwendung"]')?.textContent).toBe(
+      'In diesem Projekt verwendet sie keine Aktion.',
+    );
+  });
+
+  it('#456: "Zurueck" meldet GENAU einmal - der Rueckweg in die Reiterflaeche', () => {
+    const aufZurueck = vi.fn();
+    const zugang = ZUGANG(UEBERSICHT);
+    const behaelterTest = zeige({ sichtbar: true, marken: zugang, aufZurueck });
+    act(() => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="marken-zurueck"]')!.click();
+    });
+    expect(aufZurueck).toHaveBeenCalledTimes(1);
   });
 
   it('#455: alle 13 Farb- und alle 4 Schriftrollen sind im Inspector erreichbar', () => {

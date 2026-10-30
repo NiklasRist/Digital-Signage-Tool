@@ -31,14 +31,29 @@ export interface RahmenEigenschaften {
    *  gebunden). Der SLOT bekommt den aktiven Reiter, weil nur der Rahmen ihn kennt. Fehlt er,
    *  bleibt der Platz leer – es wird NICHTS ersatzweise gezeigt. */
   undoRedo?: (reiter: ReiterId) => JSX.Element
+  /** #456: Die Projektleiste über der Reiterfläche (TK 9.14.1, v3.32). Sie erscheint nur,
+   *  solange ein Projekt offen ist – das entscheidet ihr Träger, nicht der Rahmen. Fehlt der
+   *  Slot, bleibt die Fläche leer; es wird NICHTS ersatzweise gezeigt. */
+  projektleiste?: (schalt: ProjektleistenSchalt) => JSX.Element
+  /** #456: die Marken-Ansicht ÜBER der Reiterfläche. Sie ist kein Reiter (TK 9.14.2): Die
+   *  besuchten Reiter bleiben montiert und nur verdeckt. Fehlt der Slot, bleibt die
+   *  Reiterfläche sichtbar – ein offener Zustand ohne Ansicht darf sie NICHT verdecken. */
+  markenAnsicht?: (schalt: { aufSchliessen: () => void }) => JSX.Element | null
 }
 
-/** Die fünf Reiterbeschriftungen (TK 9.14.1) – der einzige eigene Text des Rahmens. */
+/** #456: Was die Projektleiste vom Rahmen bekommt – mehr braucht sie nicht. */
+export interface ProjektleistenSchalt {
+  /** true, solange die Marken-Ansicht offen ist. */
+  markenOffen: boolean
+  /** Öffnet die Marken-Ansicht. */
+  aufMarken: () => void
+}
+
+/** Die vier Reiterbeschriftungen (TK 9.14.1, v3.32) – der einzige eigene Text des Rahmens. */
 const REITER_BESCHRIFTUNG: Record<ReiterId, string> = {
   zusammenstellen: 'Zusammenstellen',
   aktionen: 'Aktionen',
   vorlagen: 'Vorlagen',
-  marken: 'Marken',
   projekte: 'Projekte',
 }
 
@@ -53,17 +68,32 @@ const REITER_BESCHRIFTUNG: Record<ReiterId, string> = {
 interface RahmenZustand {
   aktiv: ReiterId
   besuchte: ReiterId[]
+  /** #456: true, solange die Marken-Ansicht über der Reiterfläche liegt. */
+  markenOffen: boolean
 }
 
-type RahmenAktion = { art: 'reiter-gewechselt'; reiter: ReiterId }
+type RahmenAktion =
+  | { art: 'reiter-gewechselt'; reiter: ReiterId }
+  | { art: 'marken-geoeffnet' }
+  | { art: 'marken-geschlossen' }
 
-/** Ein Reiterwechsel ergänzt die Besuchten um den Zielreiter (rahmen-montage.ts). */
+/**
+ * Ein Reiterwechsel ergänzt die Besuchten um den Zielreiter (rahmen-montage.ts) und
+ * SCHLIESST die Marken-Ansicht (#456): Wer einen Reiter anklickt, will den Reiter sehen.
+ */
 function rahmenReducer(zustand: RahmenZustand, aktion: RahmenAktion): RahmenZustand {
-  if (aktion.art === 'reiter-gewechselt' && aktion.reiter !== zustand.aktiv) {
-    return {
-      aktiv: aktion.reiter,
-      besuchte: ergaenzeBesuchte(zustand.besuchte, aktion.reiter),
+  if (aktion.art === 'marken-geoeffnet') {
+    return { ...zustand, markenOffen: true }
+  }
+  if (aktion.art === 'marken-geschlossen') {
+    return { ...zustand, markenOffen: false }
+  }
+  if (aktion.art === 'reiter-gewechselt') {
+    const neu = { ...zustand, markenOffen: false }
+    if (aktion.reiter !== zustand.aktiv) {
+      return { ...neu, aktiv: aktion.reiter, besuchte: ergaenzeBesuchte(zustand.besuchte, aktion.reiter) }
     }
+    return neu
   }
   return zustand
 }
@@ -71,7 +101,7 @@ function rahmenReducer(zustand: RahmenZustand, aktion: RahmenAktion): RahmenZust
 export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
   const [zustand, sende] = useReducer(rahmenReducer, undefined, () => {
     const start = holeReiter()
-    return { aktiv: start, besuchte: ergaenzeBesuchte([], start) }
+    return { aktiv: start, besuchte: ergaenzeBesuchte([], start), markenOffen: false }
   })
 
   // Genau EIN Abo (ENTSCHIEDEN 4), angemeldet beim Aufbau, abgemeldet beim Abbau.
@@ -83,6 +113,11 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
     })
   }, [])
 
+  // #456: Die Ansicht gilt nur, wenn der Träger sie wirklich liefert. Verschwindet der Slot
+  // (Projekt geschlossen), faellt die Reiterfläche sofort zurueck – kein leeres Fenster.
+  const markenAnsicht = eigenschaften.markenAnsicht
+  const markenAktiv = zustand.markenOffen && markenAnsicht !== undefined
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <nav role="tablist" style={{ flex: '0 0 auto', display: 'flex', gap: 4 }}>
@@ -93,7 +128,13 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
             role="tab"
             aria-selected={reiter === zustand.aktiv}
             data-testid={`reiter-${reiter}`}
-            onClick={() => wechsleReiter(reiter)}
+            onClick={() => {
+              // #456: Auch ein Klick auf den SCHON aktiven Reiter schliesst die
+              // Marken-Ansicht. `wechsleReiter` meldet in diesem Fall nichts (ENTSCHIEDEN 3),
+              // der Slot des Rahmens wuerde also nie erfahren, dass der Nutzer hier wegwill.
+              sende({ art: 'marken-geschlossen' })
+              wechsleReiter(reiter)
+            }}
           >
             {REITER_BESCHRIFTUNG[reiter]}
           </button>
@@ -101,6 +142,13 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
         {eigenschaften.undoRedo ? eigenschaften.undoRedo(zustand.aktiv) : null}
         {eigenschaften.speicherHinweis ? eigenschaften.speicherHinweis() : null}
       </nav>
+
+      {eigenschaften.projektleiste !== undefined
+        ? eigenschaften.projektleiste({
+          markenOffen: zustand.markenOffen,
+          aufMarken: () => sende({ art: 'marken-geoeffnet' }),
+        })
+        : null}
 
       {eigenschaften.meldungsFlaeche ? eigenschaften.meldungsFlaeche() : null}
 
@@ -112,7 +160,7 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
           istMontiert(zustand.besuchte, reiter) ? (
             <div
               key={reiter}
-              hidden={reiter !== zustand.aktiv}
+              hidden={markenAktiv || reiter !== zustand.aktiv}
               data-testid={`rahmen-inhalt-${reiter}`}
               // #419: Der Reiter-Wrapper FUeLLT den Inhaltsbereich. Ohne definite Hoehe
               // loesen `height: 100%`-Ketten im Reiterinhalt auf `auto` auf; die
@@ -127,6 +175,13 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
             </div>
           ) : null,
         )}
+        {/* #456: Die Marken-Ansicht liegt ÜBER der Reiterfläche. Die Reiter bleiben
+            montiert (TK 9.14.2) – nur verdeckt, damit keine Eingabe verlorengeht. */}
+        {markenAktiv ? (
+          <div data-testid="rahmen-inhalt-marken" style={{ height: '100%' }}>
+            {markenAnsicht({ aufSchliessen: () => sende({ art: 'marken-geschlossen' }) })}
+          </div>
+        ) : null}
       </div>
 
       {eigenschaften.warteschlangenLeiste()}

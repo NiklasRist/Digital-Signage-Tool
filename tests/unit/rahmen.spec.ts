@@ -50,7 +50,6 @@ function vollstaendigeInhalte(
     zusammenstellen: einfacherInhalt('inhalt-zusammenstellen'),
     aktionen: einfacherInhalt('inhalt-aktionen'),
     vorlagen: einfacherInhalt('inhalt-vorlagen'),
-    marken: einfacherInhalt('inhalt-marken'),
     projekte: einfacherInhalt('inhalt-projekte'),
   }
   return { ...inhalte, ...ueberschreibungen }
@@ -109,12 +108,12 @@ afterEach(() => {
 })
 
 describe('Reiterleiste (DoD)', () => {
-  it('zeigt fünf Knöpfe in REITER_REIHENFOLGE-Reihenfolge; ein Klick ruft wechsleReiter mit der passenden ReiterId (#314 ersetzt die vier-Knöpfe-Zeile)', () => {
+  it('#456: zeigt VIER Knöpfe in REITER_REIHENFOLGE-Reihenfolge; ein Klick ruft wechsleReiter mit der passenden ReiterId', () => {
     const spion = vi.spyOn(reiterModul, 'wechsleReiter')
     const { behaelter, fertig } = rendere(eigenschaften())
 
     const knöpfe = behaelter.querySelectorAll('button[role="tab"]')
-    expect(knöpfe).toHaveLength(5)
+    expect(knöpfe).toHaveLength(4)
     expect(Array.from(knöpfe).map((k) => k.getAttribute('data-testid'))).toEqual(
       REITER_REIHENFOLGE.map((reiter) => `reiter-${reiter}`),
     )
@@ -122,19 +121,18 @@ describe('Reiterleiste (DoD)', () => {
       'Zusammenstellen',
       'Aktionen',
       'Vorlagen',
-      'Marken',
       'Projekte',
     ])
 
-    const markenKnopf = behaelter.querySelector(
-      '[data-testid="reiter-marken"]',
+    const vorlagenKnopf = behaelter.querySelector(
+      '[data-testid="reiter-vorlagen"]',
     ) as HTMLButtonElement
     act(() => {
-      markenKnopf.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      vorlagenKnopf.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
     expect(spion).toHaveBeenCalledTimes(1)
-    expect(spion).toHaveBeenCalledWith('marken')
+    expect(spion).toHaveBeenCalledWith('vorlagen')
 
     fertig()
   })
@@ -153,7 +151,7 @@ describe('Reiterleiste (DoD)', () => {
   it('zeigt immer alle fünf Knöpfe, nie ausgegraut (ENTSCHIEDEN 6)', () => {
     const { behaelter, fertig } = rendere(eigenschaften())
     const knöpfe = behaelter.querySelectorAll('button[role="tab"]')
-    expect(knöpfe).toHaveLength(5)
+    expect(knöpfe).toHaveLength(4)
     for (const knopf of knöpfe) {
       expect(knopf.hasAttribute('disabled')).toBe(false)
     }
@@ -195,7 +193,7 @@ describe('Besuchte Reiter bleiben montiert (DoD, ENTSCHIEDEN 2)', () => {
     // Start: 'projekte' (setzeReiterZustandZurueck). Wechsel nach marken baut den
     // zusammenstellen-Inhalt noch NICHT:
     act(() => {
-      reiterModul.wechsleReiter('marken')
+      reiterModul.wechsleReiter('vorlagen')
     })
     expect(aufbau).toHaveBeenCalledTimes(0)
 
@@ -205,7 +203,7 @@ describe('Besuchte Reiter bleiben montiert (DoD, ENTSCHIEDEN 2)', () => {
     expect(aufbau).toHaveBeenCalledTimes(1)
 
     act(() => {
-      reiterModul.wechsleReiter('marken')
+      reiterModul.wechsleReiter('vorlagen')
     })
     // Der ZUSAMMENSTELLEN-Inhalt bleibt montiert (versteckt), wird NICHT neu aufgebaut:
     expect(aufbau).toHaveBeenCalledTimes(1)
@@ -244,7 +242,6 @@ describe('Besuchte Reiter bleiben montiert (DoD, ENTSCHIEDEN 2)', () => {
       zusammenstellen: undefined,
       aktionen: undefined,
       vorlagen: undefined,
-      marken: undefined,
       projekte: undefined,
     }
     function merkerInhalt(key: ReiterId): ReiterInhalt {
@@ -257,7 +254,6 @@ describe('Besuchte Reiter bleiben montiert (DoD, ENTSCHIEDEN 2)', () => {
       zusammenstellen: merkerInhalt('zusammenstellen'),
       aktionen: merkerInhalt('aktionen'),
       vorlagen: merkerInhalt('vorlagen'),
-      marken: merkerInhalt('marken'),
       projekte: merkerInhalt('projekte'),
     }
     const { fertig } = rendere(eigenschaften({ inhalte }))
@@ -403,7 +399,7 @@ describe('Speicher-Hinweis (DoD)', () => {
     const nav = behaelter.querySelector('[role="tablist"]')
     // Die Reiterleiste trägt ausschließlich die vier Reiterbeschriftungen.
     expect(nav?.textContent?.trim()).toBe(
-      'ZusammenstellenAktionenVorlagenMarkenProjekte',
+      'ZusammenstellenAktionenVorlagenProjekte',
     )
 
     fertig()
@@ -455,5 +451,115 @@ describe('Abbau des Rahmens (DoD)', () => {
       reiterModul.wechsleReiter('aktionen')
     })
     expect(aufrufeLeiste).toHaveBeenCalledTimes(2)
+  })
+})
+
+
+describe('Marken-Ansicht ueber der Reiterflaeche (#456)', () => {
+  function mitLeiste(teil: Partial<RahmenEigenschaften> = {}): RahmenEigenschaften {
+    return eigenschaften({
+      projektleiste: (schalt) =>
+        createElement('button', {
+          'data-testid': 'projektleiste-marken',
+          'aria-pressed': String(schalt.markenOffen),
+          onClick: schalt.aufMarken,
+        }, 'Marken'),
+      markenAnsicht: (schalt) =>
+        createElement('div', { 'data-testid': 'marken-ansicht' }, createElement('button', {
+          'data-testid': 'marken-zurueck',
+          onClick: schalt.aufSchliessen,
+        }, 'Zurueck')),
+      ...teil,
+    })
+  }
+
+  it('der Knopf oeffnet die Ansicht; die Reiter werden VERDECKT, bleiben aber montiert', () => {
+    const { behaelter, fertig } = rendere(mitLeiste())
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).toBeNull()
+
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marken"]')!.click()
+    })
+
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).not.toBeNull()
+    // TK 9.14.2: besuchte Reiter bleiben montiert - nur verdeckt.
+    const reiterFlaechen = Array.from(
+      behaelter.querySelectorAll('[data-testid^="rahmen-inhalt-"]'),
+    ).filter((knoten) => {
+      const id = knoten.getAttribute('data-testid')
+      return id !== 'rahmen-inhalt-marken' && id !== 'rahmen-inhalt-bereich'
+    })
+    expect(reiterFlaechen.length).toBeGreaterThan(0)
+    for (const flaeche of reiterFlaechen) {
+      expect((flaeche as HTMLElement).hidden).toBe(true)
+    }
+    fertig()
+  })
+
+  it('Zurueck und ein Klick auf einen Reiter schliessen die Ansicht', () => {
+    const { behaelter, fertig } = rendere(mitLeiste())
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marken"]')!.click()
+    })
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="marken-zurueck"]')!.click()
+    })
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).toBeNull()
+
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marken"]')!.click()
+    })
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="reiter-vorlagen"]')!.click()
+    })
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).toBeNull()
+    fertig()
+  })
+
+  it('auch ein PROGRAMMATISCHER Reiterwechsel schliesst die Ansicht (Projekt oeffnen, Reparatur)', () => {
+    const { behaelter, fertig } = rendere(mitLeiste())
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marken"]')!.click()
+    })
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).not.toBeNull()
+    // Kein Klick auf einen Reiter - der Wechsel kommt aus dem Modul (#194).
+    act(() => {
+      reiterModul.wechsleReiter('zusammenstellen')
+    })
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).toBeNull()
+    fertig()
+  })
+
+  it('auch der SCHON aktive Reiter schliesst die Ansicht (wechsleReiter meldet dann nichts)', () => {
+    const { behaelter, fertig } = rendere(mitLeiste())
+    const aktiv = behaelter.querySelector('[role="tab"][aria-selected="true"]') as HTMLButtonElement
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marken"]')!.click()
+    })
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).not.toBeNull()
+    act(() => {
+      aktiv.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).toBeNull()
+    fertig()
+  })
+
+  it('OHNE markenAnsicht bleibt die Reiterflaeche sichtbar - kein leeres Fenster', () => {
+    const { behaelter, fertig } = rendere(
+      eigenschaften({
+        projektleiste: (schalt) =>
+          createElement('button', {
+            'data-testid': 'projektleiste-marken',
+            onClick: schalt.aufMarken,
+          }, 'Marken'),
+      }),
+    )
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marken"]')!.click()
+    })
+    const aktiv = behaelter.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement
+    const flaeche = behaelter.querySelector(`[data-testid="rahmen-inhalt-${aktiv.getAttribute('data-testid')!.replace('reiter-', '')}"]`) as HTMLElement
+    expect(flaeche.hidden).toBe(false)
+    fertig()
   })
 })

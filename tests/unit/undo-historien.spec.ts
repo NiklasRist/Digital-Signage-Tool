@@ -53,9 +53,9 @@ describe('bereichFuerReiter (#234) – die Zuordnung', () => {
     expect(bereichFuerReiter('projekte')).toBeNull()
   })
 
-  it("liefert NULL fuer 'marken' - TK 9.14.2: der Reiter Marken hat in v1 KEINE Historie, die Undo/Redo-Bedienelemente sind abgeschaltet (#314, benannter Test)", () => {
-    expect(bereichFuerReiter('marken')).toBeNull()
-  })
+  // #456: 'marken' ist kein Reiter mehr (TK 9.14.1 v3.32). Die Marken-Ansicht hat
+  // weiterhin KEINE Historie (TK 9.15.2) - sie liegt ueber keinem Reiter, also kennt
+  // die Shell fuer sie keinen Bereich. Der Fall ist damit typbedingt unerreichbar.
 
   it('liefert null fuer einen unbekannten Wert und wirft nicht', () => {
     const fremd = 'unbekannt' as 'zusammenstellen'

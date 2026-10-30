@@ -94,6 +94,9 @@ import { wechsleReiter, holeReiter, type ReiterId } from './app-shell/reiter'
 import { registriereTastaturHandler } from './app-shell/tastatur'
 import { macheRueckgaengig, stelleWiederHer } from './app-shell/undo-projekt'
 import { Rahmen } from './app-shell/rahmen'
+import { Projektleiste } from './app-shell/projektleiste'
+import { wechsleStandardMarke } from './projekt-verwaltung/standardmarke'
+import { ladeProjektliste } from './projekt-verwaltung/liste'
 
 /** Der Anzeige-Datentyp des StartHinweis (#196). */
 type StartHinweisInfo = Extract<BootstrapLage, { schritt: 'bereit' }>['startHinweis'] & object
@@ -351,8 +354,53 @@ export function App(): JSX.Element {
     </div>
   )
 
+  // #456: Die Projektleiste und die Marken-Ansicht. Beide brauchen das GELADENE Projekt;
+  // ohne Projekt liefert App KEINEN der beiden Schlitze - die Reiterflaeche bleibt dann
+  // unveraendert (der Rahmen kann einen offenen Zustand ohne Ansicht nicht verdecken).
+  // Nur lesen, wenn die Leiste sie braucht: ohne offenes Projekt gibt es keinen Einstieg.
+  const markenBestand = projektOffen === null ? [] : (lage.zugaenge.marken.hole()?.marken ?? [])
+  const projektleiste = projektOffen === null
+    ? undefined
+    : (schalt: { markenOffen: boolean; aufMarken: () => void }) => (
+      <Projektleiste
+        projektName={projektOffen.name}
+        standardMarkeId={projektOffen.standardMarkeId}
+        markenUebersicht={markenBestand.map((marke) => ({ id: marke.id, name: marke.name }))}
+        markenOffen={schalt.markenOffen}
+        aufMarken={schalt.aufMarken}
+        aufStandardMarke={(markeId) => {
+          // DIESELBE Operation wie in der Projektverwaltung (TK 9.14.3) - kein zweiter Weg.
+          void wechsleStandardMarke(projektOffen.id, markeId, {
+            holeProjekt: () => zugaengeRef.current?.projektRoh.hole().projekt ?? null,
+            uebernimmProjekt: (projekt) => zugaengeRef.current?.projektRoh.setzeProjekt(projekt),
+            aktualisiereProjektliste: (async () => {
+              await ladeProjektliste()
+            }) as () => Promise<unknown>,
+            meldeFehler,
+          })
+        }}
+      />
+    )
+  const markenAnsicht = projektOffen === null
+    ? undefined
+    : (schalt: { aufSchliessen: () => void }) => (
+      <MarkenEditorWurzel
+        sichtbar
+        marken={lage.zugaenge.marken}
+        vorlagen={lage.zugaenge.vorlagen}
+        projektId={projektOffen.id}
+        aktionen={projektOffen.aktionen.map((aktion) => ({
+          titel: aktion.titel,
+          markeId: aktion.markeId,
+        }))}
+        aufZurueck={schalt.aufSchliessen}
+      />
+    )
+
   const rahmenEigenschaften = {
     inhalte,
+    projektleiste,
+    markenAnsicht,
     warteschlangenLeiste: () => <WarteschlangenLeiste />,
     // #424: die sichtbaren Undo/Redo-Pfeile in der Reiterleiste.
     undoRedo: (reiter: ReiterId) => (

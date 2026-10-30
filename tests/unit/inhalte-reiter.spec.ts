@@ -186,7 +186,7 @@ const BAUE_PROJEKT = (): Project => ({
 })
 
 function rendereReiter(
-  reiter: 'zusammenstellen' | 'aktionen' | 'vorlagen' | 'marken' | 'projekte',
+  reiter: 'zusammenstellen' | 'aktionen' | 'vorlagen' | 'projekte',
   sichtbar = true,
 ) {
   const ziel = document.createElement('div')
@@ -403,65 +403,11 @@ describe('Der Projektstand (ENTSCHIEDEN 7/8)', () => {
     expect(doppel.abmeldungen).toBe(1)
   })
 
-  it('genau fuenf Schluessel (#314 ersetzt die vier-Schluessel-Zeile; Reihenfolge wie in der Skizze TK 9.14.1)', () => {
+  it('#456: genau VIER Schluessel - "marken" ist mit TK v3.32 entfallen', () => {
     const sichten = baueSichten()
     const walks = baueReiterInhalte(verteileZugaenge(sichten), baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], (() => baueUmgebung()) as unknown as Parameters<typeof baueReiterInhalte>[2])
-    expect(Object.keys(walks)).toEqual(['zusammenstellen', 'aktionen', 'vorlagen', 'marken', 'projekte'])
+    expect(Object.keys(walks)).toEqual(['zusammenstellen', 'aktionen', 'vorlagen', 'projekte'])
     void sichten
   })
 
-  describe("Der Reiter 'marken' (#314, TK 9.14.2)", () => {
-    it('ruft GENAU die markenEditor-Wurzel; sichtbar UNVERAENDERT, marken ToBe-gleich', () => {
-      const { zugaenge, fertig } = rendereReiter('marken')
-      expect(doppel.markenEditorProps).toHaveLength(1)
-      const eigenschaften = doppel.markenEditorProps[0]!
-      expect(eigenschaften.sichtbar).toBe(true)
-      expect(eigenschaften.marken).toBe(zugaenge.marken)
-      // Drittes Feld seit A1 (22.10.2026): die Live-Vorschau braucht die Vorlagen-Sicht.
-      expect(eigenschaften.vorlagen).toBe(zugaenge.vorlagen)
-      // Keine andere Wurzel wurde gerufen (6 Spione):
-      expect(doppel.composerProps).toHaveLength(0)
-      expect(doppel.vorschauProps).toHaveLength(0)
-      expect(doppel.actionEditorProps).toHaveLength(0)
-      expect(doppel.vorlagenEditorProps).toHaveLength(0)
-      expect(doppel.projektVerwaltungProps).toHaveLength(0)
-      fertig()
-    })
-
-    it('ruft ohne offenes Projekt TROTZDEM die Wurzel und rendert keinen Leerzustand (TK 9.14.2)', () => {
-      doppel.sicht = { projekt: null, ladefehler: null }
-      const { zugaenge, fertig } = rendereReiter('marken')
-      expect(doppel.markenEditorProps.length).toBeGreaterThanOrEqual(1)
-      expect(doppel.markenEditorProps[0]!.marken).toBe(zugaenge.marken)
-      fertig()
-      // showsLeerzustand(#198) wurde fuer den Reiter marken GAR NICHT gerufen:
-      expect(leerzustandDoppel.aufrufe).toBe(0)
-    })
-
-    it('liest NICHTS: projektRoh.hole und aufGeaendert null Mal; die drei Funktionen von marken null Mal (fuenf Spione)', () => {
-      doppel.sicht = { projekt: null, ladefehler: null }
-      const sichten = baueSichten()
-      const zugaenge = verteileZugaenge(sichten)
-      const walks = baueReiterInhalte(zugaenge, baueWurzeln() as unknown as Parameters<typeof baueReiterInhalte>[1], (() => baueUmgebung()) as unknown as Parameters<typeof baueReiterInhalte>[2])
-      const inhalt = walks['marken']
-      const ziel = document.createElement('div')
-      document.body.appendChild(ziel)
-      // Die fuenf Spione:
-      const markenZugang = zugaenge.marken as unknown as { lade: ReturnType<typeof vi.fn>; hole: ReturnType<typeof vi.fn>; aufGeaendert: ReturnType<typeof vi.fn> }
-      const wurzel: Root = createRoot(ziel)
-      act(() => {
-        wurzel.render(createElement(inhalt, { sichtbar: true }) as ReactElement)
-      })
-      wurzel.unmount()
-      // projektRoh.hole: der Merker doppels zaehlt jeden Aufruf (baueSichten zählt in doppel.holeAufrufe):
-      expect(doppel.holeAufrufe).toBe(0)
-      // aufGeaendert: das Abo-Doppel merkt abmeldungen nur beim ANMELDEN via effect;
-      // der marken-Reiter rendert ohne Projektstand, also kein Abo: doppel.abmeldungen == 0 hier.
-      expect(doppel.abmeldungen).toBe(0)
-      expect(markenZugang.lade.mock.calls).toHaveLength(0)
-      expect(markenZugang.hole.mock.calls).toHaveLength(0)
-      expect(markenZugang.aufGeaendert.mock.calls).toHaveLength(0)
-      document.body.innerHTML = ''
-    })
-  })
 })

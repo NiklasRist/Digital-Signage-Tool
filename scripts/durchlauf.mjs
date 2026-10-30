@@ -156,13 +156,13 @@ const main = async () => {
     }
 
     // ZUSATZ-Gegenprobe (Kostprobe der limitations): Tastenkuerzel-Aufrufer.
-    // Reiterleiste: 4 Reiter im Code (TK 9.14.1); die Uebergabe spricht von 5 Reitern
-    // - die gemessene Zahl steht im Protokoll, Widerspruch wird gemeldet.
+    // #456: VIER Reiter (TK 9.14.1 v3.32) - der Reiter [Marken] ist entfallen und der
+    // Marken-Editor haengt an der Projektleiste. Die gemessene Zahl steht im Protokoll.
     const reiterZahl = (await seite.$$('[role="tab"]')).length;
     const tabs = await seite.$$eval('[role="tab"]', (e) => e.map((b) => b.textContent.trim()));
     console.log(`[schritt-1] Reiter gemessen: ${reiterZahl} -> ${tabs.join(", ")}`);
-    if (reiterZahl !== 5) {
-      fund("Start", "5 Reiter (TK 9.14.1)", `gemessen ${reiterZahl}`, "Untersuchung", "rahmen.tsx");
+    if (reiterZahl !== 4) {
+      fund("Start", "4 Reiter (TK 9.14.1 v3.32)", `gemessen ${reiterZahl}`, "Untersuchung", "rahmen.tsx");
     }
 
 
@@ -495,10 +495,12 @@ const main = async () => {
     const neueMarkeName4a0 = "DurchlaufMarke-" + Date.now();
     let neueMarkeId4a0 = null;
     {
+      // #456: Der Marken-Editor ist kein Reiter mehr - er haengt an der Projektleiste
+      // des GEOEFFNETEN Projekts (TK 9.14.1 v3.32).
       const markenReiter4a0 = await seite.evaluate(() => {
-        const tab = document.querySelector('[data-testid="reiter-marken"]');
-        if (tab === null) return false;
-        tab.click();
+        const knopf = document.querySelector('[data-testid="projektleiste-marken"]');
+        if (knopf === null) return false;
+        knopf.click();
         return true;
       });
       await schlafe(1_200);
@@ -666,8 +668,8 @@ const main = async () => {
       } else {
         // Marken-Reiter, neue Marke oeffnen, Loeschversuch.
         await seite.evaluate(() => {
-          const tab = document.querySelector('[data-testid="reiter-marken"]');
-          if (tab !== null) tab.click();
+          const knopf = document.querySelector('[data-testid="projektleiste-marken"]');
+          if (knopf !== null) knopf.click();
         });
         await schlafe(1_200);
         const geoeffnet4a2 = await seite.evaluate((name) => {
@@ -758,8 +760,8 @@ const main = async () => {
           } else {
             // Jetzt MUSS das Loeschen gehen - die Sperre war die Nutzung.
             await seite.evaluate(() => {
-              const tab = document.querySelector('[data-testid="reiter-marken"]');
-              if (tab !== null) tab.click();
+              const knopf = document.querySelector('[data-testid="projektleiste-marken"]');
+              if (knopf !== null) knopf.click();
             });
             await schlafe(1_200);
             await seite.evaluate((name) => {
@@ -839,15 +841,15 @@ const main = async () => {
       const kind4m = name4m + "-Kind";
 
       const markenReiter4m = await seite.evaluate(() => {
-        const tab = document.querySelector('[data-testid="reiter-marken"]');
-        if (tab === null) return false;
-        tab.click();
+        const knopf = document.querySelector('[data-testid="projektleiste-marken"]');
+        if (knopf === null) return false;
+        knopf.click();
         return true;
       });
       await schlafe(1_200);
       if (!markenReiter4m) {
-        fund("Marken-Editor (FA-24)", "der Reiter Marken ist erreichbar",
-          "reiter-marken fehlt", "Befund", "app-shell/reiter.ts");
+        fund("Marken-Editor (FA-24)", "die Projektleiste oeffnet den Marken-Editor (#456)",
+          "projektleiste-marken fehlt - kein Projekt offen?", "Befund", "app-shell/projektleiste.tsx");
       } else {
         const anzahlVorher4m = await seite.evaluate(
           () => document.querySelectorAll('[data-testid="marken-auswahl"] option').length,
@@ -1409,16 +1411,16 @@ const main = async () => {
       }, { t: testid, w: wert, e: ereignis });
 
       const reiter4m2 = await seite.evaluate(() => {
-        const tab = document.querySelector('[data-testid="reiter-marken"]');
-        if (tab === null) return false;
-        tab.click();
+        const knopf = document.querySelector('[data-testid="projektleiste-marken"]');
+        if (knopf === null) return false;
+        knopf.click();
         return true;
       });
       await schlafe(1_200);
 
       if (!reiter4m2) {
-        fund("Marken-Rest (FA-24)", "der Reiter Marken ist erreichbar",
-          "reiter-marken fehlt", "Befund", "app-shell/reiter.ts");
+        fund("Marken-Rest (FA-24)", "die Projektleiste oeffnet den Marken-Editor (#456)",
+          "projektleiste-marken fehlt - kein Projekt offen?", "Befund", "app-shell/projektleiste.tsx");
       } else {
         // Anlegen und oeffnen (deterministisch: nativer Setter + input, s. 4m).
         await seite.evaluate(() => document.querySelector('[data-testid="marken-neu-oeffnen"]')?.click());

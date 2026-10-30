@@ -4,6 +4,7 @@
 //   Aktionen        = action-editor [P2] (+ grosse Live-Vorschau HINTER der Wurzel)
 //   Vorlagen        = vorlagen-editor
 //   Projekte        = projekt-verwaltung (TK 9.14.3)
+//   (Der Reiter Marken ist mit #456/v3.32 entfallen - der Editor ist eine Ansicht.)
 //
 // ENTSCHIEDEN 1: Die fuenf Modul-Wurzeln kommen als PARAMETER, nicht per Import
 // (E1 des Meilensteins; als Pflichtfelder eines Typs bleibt kein fehlendes
@@ -101,11 +102,12 @@ export interface VorlagenEditorWurzelProps {
   sitzung: Sitzungshalter
 }
 
-/** Eigenschaften der Wurzel-Komponente des `marken-editor` (Reiter Marken, TK 9.14.1).
+/** Eigenschaften der Wurzel-Komponente des `marken-editor` (TK 9.15.2, Fassung v3.32).
  *  DEFINIERENDE QUELLE (#314) – die Komponente selbst baut #330
  *  (`src/renderer/marken-editor/index.tsx`).
- *  KEIN Projektzugang: Der Marken-Bestand ist app-weit und gehört keinem Projekt (TK 9.14.2) –
- *  dieselbe Festlegung, die #244 für den `vorlagen-editor` getroffen hat (ENTSCHIEDEN 6). */
+ *  SEIT v3.32 KEIN Reiter mehr: Der Editor ist eine Ansicht, die die Projektleiste öffnet
+ *  (#456). Er bekommt deshalb das geöffnete Projekt als Kontext - der BESTAND bleibt
+ *  app-weit (TK 9.15.2), nur der Einstieg hängt am Projekt. */
 export interface MarkenEditorWurzelProps {
   sichtbar: boolean
   /** Zugang zum app-weiten Marken-Bestand (#305/#311). Wird UNVERAENDERT durchgereicht;
@@ -115,6 +117,13 @@ export interface MarkenEditorWurzelProps {
    *  die Live-Vorschau braucht die feste Vorlage „Vollbild". Wird UNVERAENDERT durchgereicht;
    *  diese Datei ruft keine seiner drei Funktionen auf. */
   vorlagen: VorlagenZugang
+  /** v3.32: das GELADENE Projekt - die Kennung fuers Anzeigen, keine Projekt-Daten. */
+  projektId: string
+  /** v3.32: die Aktionen des Projekts mit ihrer Marke. Der Editor zeigt damit, WO die Marke
+   *  gebraucht wird (`Aktion.markeId`, TK 9.15.4) - er rechnet NICHTS nach. */
+  aktionen: readonly { titel: string; markeId: string }[]
+  /** v3.32: Rueckweg in die Reiterfläche. */
+  aufZurueck: () => void
 }
 
 /** Eigenschaften der Wurzel-Komponente der `projekt-verwaltung` (Reiter Projekte).
@@ -202,7 +211,11 @@ const SPALTE: CSSProperties = {
   padding: 8,
   boxSizing: 'border-box',
 }
-const BUEHNE_OBEN: CSSProperties = { height: '38%', flexShrink: 0, minHeight: 200, minWidth: 0, position: 'relative' }
+// #456: `minHeight` von 200 auf 160 gesenkt. Die Projektleiste kostet seit v3.32
+// dauerhaft Hoehe; bei 200 px Mindestbuehne schob sie im kleinen Fenster (800x572, am
+// Treiber gemessen) die Zeitleiste des Composers aus dem Bild - der Drop auf das Video
+// fiel aus. Die Buehne darf deshalb weiter schrumpfen; sie behaelt ihren Anteil von 38 %.
+const BUEHNE_OBEN: CSSProperties = { height: '38%', flexShrink: 0, minHeight: 160, minWidth: 0, position: 'relative' }
 const COMPOSER_UNTEN: CSSProperties = { flex: 1, minWidth: 0, minHeight: 0 }
 
 /**
@@ -357,15 +370,8 @@ export function baueReiterInhalte(
         sitzung: umgebung.vorlagenSitzung,
       })
     },
-    // Der fuenfte Reiter (TK 9.14.1, #314): GENAU eine Wurzel, OHNE Projektabfrage und
-    // OHNE Leerzustand (Marken sind app-weit, TK 9.14.2); auch ohne offenes Projekt
-    // voll benutzbar. Nichts wird hier geholt, abonniert oder gelesen.
-    marken: (reiterEigenschaften) =>
-      wurzeln.markenEditor({
-        sichtbar: reiterEigenschaften.sichtbar,
-        marken: zugaenge.marken,
-        vorlagen: zugaenge.vorlagen,
-      }),
+    // #456: Der Marken-Editor ist KEIN Reiter mehr (TK 9.14.1 v3.32). Er wird von der
+    // Projektleiste als Ansicht ueber der Reiterflaeche geoeffnet - App.tsx baut ihn.
     // Zusaetzlich zu #243 (entschieden): der ROHE Zugan (kein Projektwechsel
     // ist ein Bearbeitungsschritt). leereProjektHistorie wird nur GELEGT
     // (ENTSCHIEDEN 12) und hier nie gerufen.

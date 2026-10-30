@@ -2520,3 +2520,110 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 72
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T12:35:32.452Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **Untersuchung** Start: erwartet "5 Reiter (TK 9.14.1)", erkannt "gemessen 4" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "waehrend des Neu-Drags steht die Kante-1 im Fenster", erkannt "Kante-1 fehlt im laufenden Drag" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "der Video-Block ist waehrend des Zugs sichtbar das Drop-Ziel (#425)", erkannt "data-band-ziel=false" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "ein Drop auf den Video-Koerper wird eine Unterbrechung (#442)", erkannt "Unterbrechungen: []; Meldung: null" (Ort: composer/index.tsx)
+- **Befund** Aktion loeschen: erwartet "der Loeschen-Knopf entfernt die Aktion aus der Bibliothek (#430)", erkannt "Aktionen 1->1 (erwartet 0)" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T12:42:43.818Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **Untersuchung** Start: erwartet "5 Reiter (TK 9.14.1)", erkannt "gemessen 4" (Ort: rahmen.tsx)
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "waehrend des Neu-Drags steht die Kante-1 im Fenster", erkannt "Kante-1 fehlt im laufenden Drag" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "der Video-Block ist waehrend des Zugs sichtbar das Drop-Ziel (#425)", erkannt "data-band-ziel=false" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "ein Drop auf den Video-Koerper wird eine Unterbrechung (#442)", erkannt "Unterbrechungen: []; Meldung: null" (Ort: composer/index.tsx)
+- **Befund** Aktion loeschen: erwartet "der Loeschen-Knopf entfernt die Aktion aus der Bibliothek (#430)", erkannt "Aktionen 1->1 (erwartet 0)" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T12:47:07.433Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "waehrend des Neu-Drags steht die Kante-1 im Fenster", erkannt "Kante-1 fehlt im laufenden Drag" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "der Video-Block ist waehrend des Zugs sichtbar das Drop-Ziel (#425)", erkannt "data-band-ziel=false" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "ein Drop auf den Video-Koerper wird eine Unterbrechung (#442)", erkannt "Unterbrechungen: []; Meldung: null" (Ort: composer/index.tsx)
+- **Befund** Aktion loeschen: erwartet "der Loeschen-Knopf entfernt die Aktion aus der Bibliothek (#430)", erkannt "Aktionen 1->1 (erwartet 0)" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T12:51:20.763Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "waehrend des Neu-Drags steht die Kante-1 im Fenster", erkannt "Kante-1 fehlt im laufenden Drag" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "der Video-Block ist waehrend des Zugs sichtbar das Drop-Ziel (#425)", erkannt "data-band-ziel=false" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "ein Drop auf den Video-Koerper wird eine Unterbrechung (#442)", erkannt "Unterbrechungen: []; Meldung: null" (Ort: composer/index.tsx)
+- **Befund** Aktion loeschen: erwartet "der Loeschen-Knopf entfernt die Aktion aus der Bibliothek (#430)", erkannt "Aktionen 1->1 (erwartet 0)" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T12:56:26.831Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "waehrend des Neu-Drags steht die Kante-1 im Fenster", erkannt "Kante-1 fehlt im laufenden Drag" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "der Video-Block ist waehrend des Zugs sichtbar das Drop-Ziel (#425)", erkannt "data-band-ziel=false" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "ein Drop auf den Video-Koerper wird eine Unterbrechung (#442)", erkannt "Unterbrechungen: []; Meldung: null" (Ort: composer/index.tsx)
+- **Befund** Aktion loeschen: erwartet "der Loeschen-Knopf entfernt die Aktion aus der Bibliothek (#430)", erkannt "Aktionen 1->1 (erwartet 0)" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T13:00:53.872Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "waehrend des Neu-Drags steht die Kante-1 im Fenster", erkannt "Kante-1 fehlt im laufenden Drag" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T13:06:03.819Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "waehrend des Neu-Drags steht die Kante-1 im Fenster", erkannt "Kante-1 fehlt im laufenden Drag" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "der Video-Block ist waehrend des Zugs sichtbar das Drop-Ziel (#425)", erkannt "data-band-ziel=false" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "ein Drop auf den Video-Koerper wird eine Unterbrechung (#442)", erkannt "Unterbrechungen: []; Meldung: null" (Ort: composer/index.tsx)
+- **Befund** Aktion loeschen: erwartet "der Loeschen-Knopf entfernt die Aktion aus der Bibliothek (#430)", erkannt "Aktionen 1->1 (erwartet 0)" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T13:10:23.172Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T13:16:29.126Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-30T13:23:09.430Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

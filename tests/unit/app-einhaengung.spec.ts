@@ -375,7 +375,12 @@ function frischeDoppel(): void {
       hole: vi.fn(() => null),
       verwirfMotivBestand: vi.fn(),
     },
-    marken: {} as object,
+    // #456: Die Projektleiste liest den app-weiten Bestand (nur lesend, kein lade()).
+    marken: {
+      lade: vi.fn(async () => ({ ok: true, wert: null })),
+      hole: vi.fn(() => null),
+      aufGeaendert: vi.fn(() => () => {}),
+    },
   }
   d.sitzungshalterDoppel = { doppel: 'sitzung' }
 }
@@ -560,13 +565,19 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     })
     const rahmenEigenschaften = letzterRahmen()
     expect(Object.keys(rahmenEigenschaften).sort()).toEqual([
+      // #456: zwei neue Schlitze - Projektleiste und Marken-Ansicht. Solange kein Projekt
+      // offen ist, liefert App sie als `undefined`; die Schluessel stehen trotzdem.
       'inhalte',
+      'markenAnsicht',
       'meldungsFlaeche',
+      'projektleiste',
       'speicherHinweis',
       'undoRedo',
       'warteschlangenLeiste',
     ])
-    expect(Object.keys(rahmenEigenschaften)).toHaveLength(5)
+    // #456: sieben Schlitze - die zwei neuen (projektleiste, markenAnsicht) sind ohne
+    // offenes Projekt `undefined`, ihre Schluessel stehen trotzdem.
+    expect(Object.keys(rahmenEigenschaften)).toHaveLength(7)
     // inhalte ist ToBe zum Ergebnis von baueReiterInhalte.
     const baueRufe = vi.mocked(inhalteModul.baueReiterInhalte)
     expect(rahmenEigenschaften.inhalte).toBe(
@@ -953,8 +964,8 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(rahmenKnoten!.parentElement).toBe(behaelter)
     expect(rahmenKnoten!.contains(overlayKnoten!)).toBe(false)
     expect(overlayKnoten!.contains(rahmenKnoten!)).toBe(false)
-    // GENAU FUENF Eigenschaften im Rahmen - das Overlay ist KEIN sechster Eintrag:
-    expect(Object.keys(letzterRahmen())).toHaveLength(5)
+    // SIEBEN Eigenschaften im Rahmen seit #456 - das Overlay ist KEINE davonster Eintrag:
+    expect(Object.keys(letzterRahmen())).toHaveLength(7)
   })
 
   it('UebergabeOverlay bekommt ALLE SIEBEN Eigenschaften belegt: lage, projekt, die drei Abschluss-Funktionen und aufFehler (benannter Test)', async () => {

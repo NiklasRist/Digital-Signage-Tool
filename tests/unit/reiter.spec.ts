@@ -36,12 +36,11 @@ describe("Konstanten und Anfangswert (DoD)", () => {
     expect(REITER_NACH_PROJEKT_OEFFNEN).toBe("zusammenstellen");
   });
 
-  it("enthaelt REITER_REIHENFOLGE genau die fuenf Werte in Skizzen-Reihenfolge (#314 ersetzt den DoD 'vier Werte')", () => {
+  it('#456: REITER_REIHENFOLGE enthaelt genau die VIER Werte in Skizzen-Reihenfolge (TK 9.14.1 v3.32)', () => {
     expect(REITER_REIHENFOLGE).toEqual([
       "zusammenstellen",
       "aktionen",
       "vorlagen",
-      "marken",
       "projekte",
     ]);
   });
@@ -213,19 +212,23 @@ describe("#314: der Reiter 'marken'", () => {
     setzeReiterZustandZurueck();
   });
 
-  it("istGueltigerReiter('marken') ist true; Grossschreibung und Einzahl bleiben false", () => {
-    expect(istGueltigerReiter("marken")).toBe(true);
+  it("#456: istGueltigerReiter('marken') ist FALSE - der Reiter ist mit TK v3.32 entfallen", () => {
+    expect(istGueltigerReiter("marken")).toBe(false);
     expect(istGueltigerReiter("Marken")).toBe(false);
     expect(istGueltigerReiter("marke")).toBe(false);
+    // Die vier verbliebenen Reiter bleiben gueltig.
+    for (const reiter of ["zusammenstellen", "aktionen", "vorlagen", "projekte"]) {
+      expect(istGueltigerReiter(reiter)).toBe(true);
+    }
   });
 
-  it("wechsleReiter('marken') aendert holeReiter() und ruft jeden Hoerer GENAU einmal", () => {
+  it("wechsleReiter('vorlagen') aendert holeReiter() und ruft jeden Hoerer GENAU einmal", () => {
     const hoerer = vi.fn();
     aufReiterGeaendert(hoerer);
-    wechsleReiter("marken");
-    expect(holeReiter()).toBe("marken");
+    wechsleReiter("vorlagen");
+    expect(holeReiter()).toBe("vorlagen");
     expect(hoerer).toHaveBeenCalledTimes(1);
-    expect(hoerer).toHaveBeenCalledWith("marken");
+    expect(hoerer).toHaveBeenCalledWith("vorlagen");
   });
 
   it("holeReiter() liefert VOR jedem Wechsel weiterhin 'projekte' (unverändert)", () => {

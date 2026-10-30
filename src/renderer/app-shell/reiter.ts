@@ -1,15 +1,16 @@
 // [app-shell] Reiter-Zustand und Reiterwechsel
 
-/** Die FÜNF Modus-Reiter (TK 9.14.1). Der Wert 'marken' kommt mit TK v3.6 hinzu (#314). */
-export type ReiterId = 'zusammenstellen' | 'aktionen' | 'vorlagen' | 'marken' | 'projekte'
+/** Die VIER Modus-Reiter (TK 9.14.1, Fassung v3.32). Der Wert 'marken' ist mit #456
+ *  entfallen: Der Marken-Editor ist kein Reiter mehr, sondern eine Ansicht, die die
+ *  Projektleiste oeffnet (TK 9.14.2). */
+export type ReiterId = 'zusammenstellen' | 'aktionen' | 'vorlagen' | 'projekte'
 
-/** Anzeigereihenfolge der Reiterleiste, exakt wie in der Skizze TK 9.14.1:
- *  zusammenstellen, aktionen, vorlagen, marken, projekte. */
+/** Anzeigereihenfolge der Reiterleiste, exakt wie in der Skizze TK 9.14.1 (v3.32):
+ *  zusammenstellen, aktionen, vorlagen, projekte. */
 export const REITER_REIHENFOLGE: readonly ReiterId[] = [
   'zusammenstellen',
   'aktionen',
   'vorlagen',
-  'marken',
   'projekte',
 ]
 
@@ -75,7 +76,6 @@ export function istGueltigerReiter(wert: unknown): wert is ReiterId {
     wert === 'zusammenstellen' ||
     wert === 'aktionen' ||
     wert === 'vorlagen' ||
-    wert === 'marken' ||
     wert === 'projekte'
   )
 }
