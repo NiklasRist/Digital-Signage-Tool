@@ -43,6 +43,14 @@
 - **#453 GESCHLOSSEN (30.10.2026, `completed`):** Der STOPP-Punkt ist entschieden — die Flaechen
   heissen **„Ganzbild (1920 × 1080)"** und **„Band (1920 × 162)"** (`4321cea`, nur der Kommentar
   „noch nicht bestaetigt" nachgezogen). DoD Punkt fuer Punkt im Abschlusskommentar belegt.
+- **#448 ERLEDIGT (30.10.2026, `c6f8756` + vier Vorgaenger):** **0 Fundstellen** fuer
+  `anti-slop/require-safety-comment-for-type-assertion`, die Regel steht wieder auf **`error`**
+  (in `tests/**` bleibt sie aus, Nicht-Ziel). 200 Stellen einzeln entschieden: Cast weg, wo der
+  Typ traegt; sonst `SAFETY:` mit pruefbarer Invariante. Vier echte Loecher dabei gefunden
+  (`formular as AktionsEntwurf` reichte `null` durch, `standardDauer` als Zahl durch
+  `string | null`, `setzeBearbeitungFort` verlangte eine ganze `Vorlage`, fuenf Casts um
+  Vertragsfelder in `thumbnails`). **Warnungen 258 -> 65** (andere Regeln). **Gegenprobe:** neue
+  Datei mit `1 as number` -> `npm run lint` Exit 1, Datei entfernt.
 - **M9-BUCHHALTUNG ERLEDIGT (30.10.2026):** **#450, #451, #452, #454 geschlossen** (`completed`), je
   mit Beleg-Kommentar. Damit ist M9 vollstaendig. **#450 traegt eine benannte Abweichung:** der
   DoD-Punkt „keine Datei ausserhalb der genannten geaendert" war unerfuellbar (M9 ist ein Atom,
@@ -72,12 +80,13 @@
 - **#455 UND #456 GESCHLOSSEN (30.10.2026, `completed`):** #456 am Fenster abgenommen („passt"),
   #455 im Rahmen dieser Abnahme gesehen — die Abgrenzung steht so im Issue-Kommentar, damit sie
   nicht spaeter wie eine behauptete aussieht. **Damit ist der Marken-Umbau buchhalterisch fertig.**
-- **Ehrlich offen:** #446 (FA-03-Ursache),
-  #448 (192 SAFETY), Beenden-Frist 15 s; der Signaturblock in #456 nennt `projektId`, gebaut ist
+- **Ehrlich offen:** #446 (FA-03-Ursache - braucht eine Fenster-Reproduktion),
+  Beenden-Frist 15 s; der Signaturblock in #456 nennt `projektId`, gebaut ist
   zusaetzlich `aktionen` (Widerspruch gemeldet, Text nicht nachgezogen); die
   **Loesch-Sperrgruende erscheinen mitten in der Marken-Kopfzeile** (aelter als #456, nicht
   angefasst).
-- **Naechster Schritt:** #448 (192 SAFETY — allein machbar) oder #446 (braucht Fenster-Repro).
+- **Naechster Schritt (Ansage Niklas, 30.10.2026):** **UI 2.0**. #448 ist zu; #446 bleibt der
+  einzige offene Punkt mit Fensterbedarf.
 
 ## STAND HEUTE (30.10.2026, dreiunddreissigste Sitzung: Zonen-Namen und M9) – historisiert durch den Abschnitt darueber
 
