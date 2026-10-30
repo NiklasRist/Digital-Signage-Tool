@@ -148,7 +148,12 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
       {eigenschaften.projektleiste !== undefined
         ? eigenschaften.projektleiste({
           markenOffen: zustand.markenOffen,
-          aufMarken: (markeId: string) => sende({ art: 'marken-geoeffnet', markeId }),
+          // #456: Der Name ist ein UMSCHALTER. Wer ihn ein zweites Mal drueckt, will
+          // zurueck ins Projekt - nicht denselben Editor ein zweites Mal oeffnen.
+          aufMarken: (markeId: string) =>
+            zustand.markenOffen && zustand.markenMarkeId === markeId
+              ? sende({ art: 'marken-geschlossen' })
+              : sende({ art: 'marken-geoeffnet', markeId }),
         })
         : null}
 

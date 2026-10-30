@@ -498,6 +498,9 @@ const main = async () => {
       // #456: Der Marken-Editor ist kein Reiter mehr - er haengt an der Projektleiste
       // des GEOEFFNETEN Projekts (TK 9.14.1 v3.32).
       const markenReiter4a0 = await seite.evaluate(() => {
+        // #456: Der Name ist ein Umschalter - ein zweiter Klick wuerde SCHLIESSEN.
+        // Der Treiber oeffnet deshalb nur, wenn die Ansicht noch zu ist.
+        if (document.querySelector('[data-testid="rahmen-inhalt-marken"]') !== null) return true;
         const knopf = document.querySelector('[data-testid="projektleiste-marke-oeffnen"]');
         if (knopf === null) return false;
         knopf.click();
@@ -668,6 +671,7 @@ const main = async () => {
       } else {
         // Marken-Reiter, neue Marke oeffnen, Loeschversuch.
         await seite.evaluate(() => {
+          if (document.querySelector('[data-testid="rahmen-inhalt-marken"]') !== null) return;
           const knopf = document.querySelector('[data-testid="projektleiste-marke-oeffnen"]');
           if (knopf !== null) knopf.click();
         });
@@ -841,6 +845,9 @@ const main = async () => {
       const kind4m = name4m + "-Kind";
 
       const markenReiter4m = await seite.evaluate(() => {
+        // #456: Der Name ist ein Umschalter - ein zweiter Klick wuerde SCHLIESSEN.
+        // Der Treiber oeffnet deshalb nur, wenn die Ansicht noch zu ist.
+        if (document.querySelector('[data-testid="rahmen-inhalt-marken"]') !== null) return true;
         const knopf = document.querySelector('[data-testid="projektleiste-marke-oeffnen"]');
         if (knopf === null) return false;
         knopf.click();
@@ -1411,6 +1418,9 @@ const main = async () => {
       }, { t: testid, w: wert, e: ereignis });
 
       const reiter4m2 = await seite.evaluate(() => {
+        // #456: Der Name ist ein Umschalter - ein zweiter Klick wuerde SCHLIESSEN.
+        // Der Treiber oeffnet deshalb nur, wenn die Ansicht noch zu ist.
+        if (document.querySelector('[data-testid="rahmen-inhalt-marken"]') !== null) return true;
         const knopf = document.querySelector('[data-testid="projektleiste-marke-oeffnen"]');
         if (knopf === null) return false;
         knopf.click();

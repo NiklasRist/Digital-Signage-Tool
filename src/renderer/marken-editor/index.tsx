@@ -200,7 +200,7 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
   const kopf = zeigeMarke && (
     <div data-testid="marken-kopfzeile" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
       <button type="button" data-testid="marken-zurueck" onClick={aufZurueck}>
-        Zurück
+        Zurück zum Projekt
       </button>
       <h3 data-testid="marken-kopf" style={{ margin: 0 }}>{(marke as Marke).name}</h3>
       <span data-testid="marken-verwendung" style={{ opacity: 0.8 }}>

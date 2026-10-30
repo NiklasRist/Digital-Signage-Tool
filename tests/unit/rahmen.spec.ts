@@ -507,6 +507,40 @@ describe('Marken-Ansicht ueber der Reiterflaeche (#456)', () => {
     fertig()
   })
 
+  it('#456: der Name ist ein Umschalter - der ZWEITE Klick fuehrt zurueck ins Projekt', () => {
+    const { behaelter, fertig } = rendere(mitLeiste())
+    const name = () => behaelter.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marken"]')!
+    act(() => name().click())
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).not.toBeNull()
+    act(() => name().click())
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).toBeNull()
+    // Und wieder auf: er schaltet, er klemmt nicht.
+    act(() => name().click())
+    expect(behaelter.querySelector('[data-testid="marken-ansicht"]')).not.toBeNull()
+    fertig()
+  })
+
+  it('#456: eine ANDERE Marke zu oeffnen WECHSELT, statt zu schliessen', () => {
+    const { behaelter, fertig } = rendere(eigenschaften({
+      projektleiste: (schalt) =>
+        createElement('div', null,
+          createElement('button', { 'data-testid': 'marke-a', onClick: () => schalt.aufMarken('m-1') }, 'A'),
+          createElement('button', { 'data-testid': 'marke-b', onClick: () => schalt.aufMarken('m-2') }, 'B')),
+      markenAnsicht: (schalt) =>
+        createElement('div', { 'data-testid': 'marken-ansicht' },
+          createElement('span', { 'data-testid': 'marken-ansicht-marke' }, schalt.markeId)),
+    }))
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="marke-a"]')!.click()
+    })
+    expect(behaelter.querySelector('[data-testid="marken-ansicht-marke"]')?.textContent).toBe('m-1')
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="marke-b"]')!.click()
+    })
+    expect(behaelter.querySelector('[data-testid="marken-ansicht-marke"]')?.textContent).toBe('m-2')
+    fertig()
+  })
+
   it('Zurueck und ein Klick auf einen Reiter schliessen die Ansicht', () => {
     const { behaelter, fertig } = rendere(mitLeiste())
     act(() => {
