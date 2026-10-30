@@ -212,3 +212,8 @@ der buttons ist müll #456" — nachgefragt: **„minimaler text aber es braucht
 **#456 ist am Fenster abgenommen** („passt"). Offen bleibt: **#449 entscheiden**, der
 **#453-Treiber-Schritt**, und ein Befund ohne Bau — die **Lösch-Sperrgründe** erscheinen mitten in
 der Kopfzeile (älter als #456).
+
+**Nachgetragen am selben Tag:** #449 ist **geschlossen** (`not planned`) — durch #455 ersetzt, die
+zwei Abweichungen (kein Klick auf `hintergrund`, Palette → „Weitere Rollen") stehen im
+Abschlusskommentar. Der **#453-Treiber-Schritt** ist gebaut (`6295605`): 4f belegt
+`art: "segment"` aus dem Store, 4f6 belegt den Band-Abschnitt. Gate weiter **Exit 0**.
