@@ -103,7 +103,7 @@ export function ActionEditorWurzel(p: ActionEditorWurzelProps): JSX.Element {
   return <AktionenInterna {...p} />
 }
 
-function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
+function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
   const stand = p.projekt.hole()
   const projekt: Project | null = stand.projekt
   const [, setzeTakt] = useState(0)
@@ -171,7 +171,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
 
   if (projekt === null) {
     // Den Leerzustand des Reiters liefert #198, nicht diese Wurzel.
-    return null as unknown as JSX.Element
+    return null
   }
 
   const bibliothek = baueBibliothek(projekt.aktionen, projekt.assets)
@@ -186,6 +186,8 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
       return
     }
     const aktion = 'aktion' in antwort.wert ? antwort.wert.aktion : antwort.wert
+    // SAFETY: Der Rueckweg `if (projekt === null) return ...` steht VOR dieser Funktion;
+    // TS verliert die Verengung im Funktionsrumpf, zur Laufzeit ist `projekt` hier belegt.
     p.projekt.setzeProjekt(mitAktion(projekt as Project, aktion))
     setzeTakt((t) => t + 1)
   }
@@ -241,12 +243,13 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
 
       {/* = rechts unten: die BEARBEITUNGSFELDER = */}
       <div data-testid="aktion-formular" style={{ width: 320, overflow: 'auto' }}>
-        {formular === null && lage.modus === 'keine' ? (
+        {formular === null ? (
+          // Kein Entwurf heisst: nichts gewaehlt - die Lage allein macht noch keinen Entwurf.
           <p data-testid="aktion-formular-leer">Nichts gewählt.</p>
         ) : (
           <FormularFelder
             p={p}
-            formular={formular as AktionsEntwurf}
+            formular={formular}
             waehlbare={waehlbare}
             gewaehlt={gewaehlt}
             anlegeModus={lage.modus === 'neu'}
@@ -254,7 +257,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
               // #445: Der Knopf gehoert in das Formular, damit ein abgelehnter
               // Anlege-Versuch AM FELD sichtbar wird statt nur in `console.warn`.
               // Die Vollstaendigkeit prueft weiterhin allein `legeAktionAn` (#136).
-              const antwort = await legeAktionAn(formular as AktionsEntwurf)
+              const antwort = await legeAktionAn(formular)
               if (antwort.ok) {
                 einspeisen(antwort)
                 // Der Editor steht danach auf der SOEBEN entstandenen Aktion
@@ -271,13 +274,15 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element {
         )}
         {lage.modus === 'bestehend' && (
           <LoeschBlock
-            projekt={projekt as Project}
-            aktionId={lage.aktionId as string}
+            projekt={projekt}
+            aktionId={lage.aktionId}
             onLoesche={() => {
-              void loescheAktion(lage.aktionId as string).then((antwort) => {
+              void loescheAktion(lage.aktionId).then((antwort) => {
                 if (antwort.ok) {
                   // Der ZURÜCKGEGEBENE Stand geht in die Sicht (ENTSCHIEDEN 6);
                   // die Kaskade aus den Kennungen wird NICHT nachgebaut.
+                  // SAFETY: wie in `einspeisen` - der Rueckweg liegt vor dieser Closure,
+                  // TS verliert die Verengung im Rumpf, `projekt` ist hier belegt.
                   const alte = projekt as Project
                   p.projekt.setzeProjekt({
                     ...alte,
@@ -392,12 +397,15 @@ function FormularFelder({
   }
 
   // Feld verlassen -> speichereAktion (ENTSCHEIDEN-FRAG: gemeldet).
-  async function feldVerlassen(feld: keyof AktionsEntwurf, wert: string | null): Promise<void> {
+  async function feldVerlassen(feld: keyof AktionsEntwurf, wert: string | number | null): Promise<void> {
     if (gewaehlt === null) {
       // Modus "neu" (#445): Es gibt noch keine Aktion im Bestand, in die geschrieben
       // werden koennte - der getippte Wert gehoert in den ENTWURF. Vorher kehrte
       // diese Stelle still zurueck, `formular` blieb `leererEntwurf` mit `titel: ''`,
       // und „Anlegen" schickte einen leeren Titel an `project:erstelleAktion`.
+      // SAFETY: `feld` ist ein Schluessel von `AktionsEntwurf`, `wert` der Wert dieses
+      // Feldes (der Parameter ist `keyof`-typisiert); `pruefeEntwurf` prueft den Wert
+      // unmittelbar danach, bevor irgendetwas geschrieben wird.
       const aenderung = { [feld]: wert } as Partial<AktionsEntwurf>
       setzeBefunde(pruefeEntwurf(aenderung))
       setzeSpeicherMeldung(null)
@@ -413,6 +421,8 @@ function FormularFelder({
       )
       return
     }
+    // SAFETY: derselbe berechnete Schluessel wie oben; `pruefeEntwurf` laeuft direkt
+    // danach und bricht bei einem ungueltigen Wert ab, bevor `speichereAktion` ihn sieht.
     const geaenderteFelder: Partial<AktionsEntwurf> = { [feld]: wert } as Partial<AktionsEntwurf>
     const befundeArray = pruefeEntwurf(geaenderteFelder)
     if (befundeArray.length > 0) {
@@ -482,7 +492,7 @@ function FormularFelder({
           type="number"
           defaultValue={String(formular.standardDauer ?? '')}
           data-testid="aktion-dauer"
-          onBlur={(e) => void feldVerlassen('standardDauer', e.target.value === '' ? null : Number(e.target.value) as unknown as string | null)}
+          onBlur={(e) => void feldVerlassen('standardDauer', e.target.value === '' ? null : Number(e.target.value))}
         />
       </label>
       {speicherMeldung !== null && (

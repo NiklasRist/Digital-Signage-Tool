@@ -70,7 +70,10 @@ export function loeseMarkeAuf(
   // nachtraeglicher Vergleich der fertigen Marke mit dem Parent: Wer den eigenen Wert
   // nimmt, schreibt hier 'eigen' - auch wenn der Wert dem Parent gleich ist (verboten
   // ist nur der spaettere Wertvergleich, nicht die gleiche Zahl).
+  // SAFETY: Der Loop darunter schreibt JEDE Rolle aus ALLE_FARBROLLEN (eigen oder geerbt);
+  // danach ist das Record vollstaendig - der Cast beschreibt nur diesen Endzustand.
   const farben = {} as Record<FarbRolle, string>
+  // SAFETY: derselbe Loop schreibt auch den Stempel fuer jede Rolle - vollstaendig danach.
   const farbenHerkunft = {} as Record<FarbRolle, 'eigen' | 'geerbt'>
   for (const rolle of ALLE_FARBROLLEN) {
     const eigen = eintrag.farben[rolle]
@@ -79,11 +82,16 @@ export function loeseMarkeAuf(
       farbenHerkunft[rolle] = 'eigen'
       continue
     }
+    // SAFETY: Systeminvariante dieser Datei (Kopf): ein Parent ist vollstaendig befuellt,
+    // und die Kettensperre oben hat belegt, dass er nicht selbst ableitet - der Wert ist da.
     farben[rolle] = parentEintrag.farben[rolle] as string
     farbenHerkunft[rolle] = 'geerbt'
   }
 
+  // SAFETY: Der Loop darunter schreibt JEDE Rolle aus ALLE_SCHRIFTROLLEN; danach ist das
+  // Record vollstaendig - der Cast beschreibt nur diesen Endzustand.
   const schriften = {} as Record<SchriftRolle, Schrift>
+  // SAFETY: derselbe Loop schreibt auch den Stempel fuer jede Rolle - vollstaendig danach.
   const schriftenHerkunft = {} as Record<SchriftRolle, 'eigen' | 'geerbt'>
   for (const rolle of ALLE_SCHRIFTROLLEN) {
     const eigen = eintrag.schriften[rolle]
@@ -92,6 +100,7 @@ export function loeseMarkeAuf(
       schriftenHerkunft[rolle] = 'eigen'
       continue
     }
+    // SAFETY: dieselbe Systeminvariante wie bei den Farben - der Parent ist vollstaendig.
     schriften[rolle] = parentEintrag.schriften[rolle] as Schrift
     schriftenHerkunft[rolle] = 'geerbt'
   }
@@ -115,11 +124,16 @@ export function loeseMarkeAuf(
     // Die vier Felder gehen in den LaufPruefung und MUESSEN dann gefuellt sein
     // (findeLoch schlaegt andernfalls laut an); den Typecheck zufrieden zu stellen
     // geschieht hier bewusst NICHT mit Umschreiben der Kontrollflaeche, sondern mit
-    // dem gesetzten Ergebnis des Ein-/Vererbungswegs. Der Cast sehr ist RAUM -
+    // dem gesetzten Ergebnis des Ein-/Vererbungswegs. Der Cast ist hier RAUM -
     // die Kontrolle liegt in findeLoch.
+    // SAFETY: `sicherheit` stammt aus Kind oder Parent; `findeLoch` unter diesem Objekt
+    // bricht laut ab, wenn das Feld fehlt - der Cast nimmt die Verengung nur vor.
     sicherheit: sicherheit as NonNullable<typeof sicherheit>,
+    // SAFETY: wie `sicherheit`: gesetzt aus Kind oder Parent, Loch-Check in `findeLoch`.
     radien: radien as NonNullable<typeof radien>,
+    // SAFETY: wie `sicherheit`: gesetzt aus Kind oder Parent, Loch-Check in `findeLoch`.
     schatten: schatten as NonNullable<typeof schatten>,
+    // SAFETY: wie `sicherheit`: gesetzt aus Kind oder Parent, Loch-Check in `findeLoch`.
     slogan: slogan as NonNullable<typeof slogan>,
     herkunftJeFeld: {
       farben: farbenHerkunft,
@@ -176,10 +190,12 @@ const ALLE_SCHRIFTROLLEN: readonly SchriftRolle[] = [
  * einen Sonderfall: jeder Stempel-Einweis einer Methode bleibt 'eigen'.
  */
 function stempelEigenAlsMarke(eintrag: MarkenEintrag): Marke {
+  // SAFETY: Der Loop darunter setzt JEDE Rolle aus ALLE_FARBROLLEN auf 'eigen'.
   const farbenHerkunft = {} as Record<FarbRolle, 'eigen' | 'geerbt'>
   for (const rolle of ALLE_FARBROLLEN) {
     farbenHerkunft[rolle] = 'eigen'
   }
+  // SAFETY: Der Loop darunter setzt JEDE Rolle aus ALLE_SCHRIFTROLLEN auf 'eigen'.
   const schriftenHerkunft = {} as Record<SchriftRolle, 'eigen' | 'geerbt'>
   for (const rolle of ALLE_SCHRIFTROLLEN) {
     schriftenHerkunft[rolle] = 'eigen'
@@ -189,16 +205,26 @@ function stempelEigenAlsMarke(eintrag: MarkenEintrag): Marke {
     name: eintrag.name,
     parent: eintrag.parent,
     eingebaut: eintrag.eingebaut,
+    // SAFETY: `eintrag` kommt aus `ladeBestand`; die Vollstaendigkeit ist die
+    // Systeminvariante #280/#284. Der Signaturkommentar dieser Funktion verbietet die
+    // Pruefung hier ausdruecklich ("Partial nach Record durchgereicht") - der Cast ist
+    // diese Grenze, kein Beleg.
     farben: eintrag.farben as Record<FarbRolle, string>,
+    // SAFETY: wie `farben` - dieselbe Systeminvariante, derselbe verbindliche Verzicht.
     schriften: eintrag.schriften as Record<SchriftRolle, Schrift>,
     logo: eintrag.logo ?? null,
     // SAFETY: Auf DIESEM Pfad wird die Vollstaendigkeit NICHT geprueft (verbindlicher
     // Signaturkommentar); ein leeres Feld wuerde programmatisch durchgehen - den lauten
     // Loch-Check tragt nur der abgeleitete Pfad (findeLoch). Der Cast erweitert die
     // Form des optionalen Feldes auf die Pflichtform von Marke.
+    // SAFETY: `eintrag.sicherheit` kommt aus `ladeBestand`; die Vollstaendigkeit ist die
+    // Systeminvariante #280/#284 - hier bewusst nicht geprueft (Signaturkommentar oben).
     sicherheit: eintrag.sicherheit as NonNullable<MarkenEintrag['sicherheit']>,
+    // SAFETY: wie `sicherheit` - dieselbe Herkunft und dieselbe dokumentierte Grenze.
     radien: eintrag.radien as NonNullable<MarkenEintrag['radien']>,
+    // SAFETY: wie `sicherheit` - dieselbe Herkunft und dieselbe dokumentierte Grenze.
     schatten: eintrag.schatten as NonNullable<MarkenEintrag['schatten']>,
+    // SAFETY: wie `sicherheit` - dieselbe Herkunft und dieselbe dokumentierte Grenze.
     slogan: eintrag.slogan as NonNullable<MarkenEintrag['slogan']>,
     herkunftJeFeld: {
       farben: farbenHerkunft,

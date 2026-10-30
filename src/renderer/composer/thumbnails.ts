@@ -12,8 +12,6 @@ export type Thumbnail =
 const THUMBNAIL_HÖHE = 54
 const ZEHN_JAHRHUNDERTE_MS = 3000
 
-type RohElement = { id?: unknown; art?: unknown; ref?: unknown; trimStart?: unknown } | null | undefined
-type RohAktion = { id?: unknown; bildRef?: unknown; vorlagenId?: unknown } | null | undefined
 
 /** NaN hinein, null heraus - nie ein erfundener Trim-Punkt. */
 function klemme(wert: unknown, unten: number, oben: number): number | null {
@@ -59,13 +57,11 @@ export function warteAufMetadaten(video: HTMLVideoElement): Promise<void> {
 }
 
 async function videoThumbnail(element: Listenelement, projekt: Project): Promise<Thumbnail> {
-  const roh = element as unknown as RohElement
-  const assetId = typeof roh?.ref === 'string' ? roh.ref : null
-  if (assetId === null) return { quelle: 'fehlt' }
-
-  const asset = projekt.assets.find((eintrag) => (eintrag as unknown as RohAsset)?.id === assetId) as
-    | (Asset & { dateiname: string })
-    | undefined
+  // `Listenelement.ref` ist vertraglich ein Text (bei `video` die Asset-Kennung) und
+  // `Asset.dateiname` steht im Vertrag - der Main hat beides beim Speichern geprueft,
+  // hier wird es nur GELESEN. Ein Eintrag, der nicht mehr existiert, faellt unten raus.
+  const assetId = element.ref
+  const asset = projekt.assets.find((eintrag) => eintrag.id === assetId)
   if (asset === undefined || asset.zustand === 'fehlt') return { quelle: 'fehlt' }
 
   const video = document.createElement('video')
@@ -93,13 +89,10 @@ async function segmentThumbnail(
   marke: Marke,
   vorlagen: readonly Vorlage[],
 ): Promise<Thumbnail> {
-  const roh = element as unknown as RohElement
-  const aktionsId = typeof roh?.ref === 'string' ? roh.ref : null
-  if (aktionsId === null) return { quelle: 'fehlt' }
-
-  const aktion = projekt.aktionen.find((eintrag) => (eintrag as unknown as RohAktion)?.id === aktionsId) as
-    | (Aktion & { vorlagenId: string })
-    | undefined
+  // Wie oben: `ref` und `Aktion.vorlagenId` stehen im Vertrag; eine Aktion, die nicht
+  // mehr im Bestand steht, faellt eine Zeile spaeter heraus.
+  const aktionsId = element.ref
+  const aktion = projekt.aktionen.find((eintrag) => eintrag.id === aktionsId)
   if (aktion === undefined) return { quelle: 'fehlt' }
 
   const vorlage = vorlagen.find((kandidat) => kandidat.id === aktion.vorlagenId)
@@ -112,8 +105,6 @@ async function segmentThumbnail(
   return { quelle: 'canvas', canvas: segment.canvas, breite: segment.breite, höhe: segment.höhe }
 }
 
-type RohAsset = { id?: unknown; typ?: unknown; zustand?: unknown; dateiname?: unknown } | null | undefined
-
 /** Erzeugt das Vorschaubild eines Listenelements (TK 9.7.4: renderer-seitig, ohne ffmpeg). */
 export async function erzeugeThumbnail(
   element: Listenelement,
@@ -121,7 +112,9 @@ export async function erzeugeThumbnail(
   marke: Marke,
   vorlagen: readonly Vorlage[],
 ): Promise<Thumbnail> {
-  const art = (element as unknown as RohElement)?.art
+  // `art` ist eine geschlossene Union im Vertrag - ein unbekannter Wert kann nur aus
+  // einer defekten Datei kommen und endet unten als "kein Bild".
+  const art = element.art
   if (art === 'video') return videoThumbnail(element, projekt)
   if (art === 'segment') return segmentThumbnail(element, projekt, marke, vorlagen)
   return { quelle: 'fehlt' }

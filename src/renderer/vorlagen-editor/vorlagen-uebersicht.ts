@@ -153,9 +153,11 @@ export async function bearbeiteVorlage(
   return starteBearbeitung(vorlagenId)
 }
 
-/** „Fortsetzen": setzt die Bearbeitung über den PARENT der Arbeitskopie fort. */
+/** „Fortsetzen": setzt die Bearbeitung über den PARENT der Arbeitskopie fort.
+ *  Gelesen wird NUR `parent` - der Parameter verlangt deshalb auch nur dieses Feld
+ *  (`Pick`), damit kein Aufrufer einen ganzen Datensatz vortaeuschen muss (#448). */
 export async function setzeBearbeitungFort(
-  arbeitskopie: Vorlage,
+  arbeitskopie: Pick<Vorlage, 'parent'>,
 ): Promise<Ergebnis<EditorSitzung, string>> {
   if (arbeitskopie.parent === null) {
     return { ok: false, fehler: { code: 'ungueltige_eingabe', meldung: 'Ist keine Arbeitskopie (parent === null)' } }

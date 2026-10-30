@@ -171,10 +171,9 @@ function VorlagenUebersicht({ p }: { p: VorlagenEditorWurzelProps }): JSX.Elemen
               type="button"
               data-testid={`vorlage-fortsetzen-${eintrag.vorlage.id}`}
               onClick={() => {
-                // setzeBearbeitungFort liest nur arbeitskopie.parent (#155); der Pointer
-            // geschichtlich ist nicht eine zweite Wahrheit über den Datensatz, nur
-            // die ID mAht: die Wurzel hat den vollen Arbeitskopie-Datensatz nicht.
-            void setzeBearbeitungFort({ id: eintrag.arbeitskopieId, parent: eintrag.vorlage.id } as unknown as import('../../shared/contracts/vorlage').Vorlage).then((antwort) => {
+                // setzeBearbeitungFort liest nur `parent` (#155); der Parameter verlangt
+                // genau dieses Feld - kein Cast, kein vorgetaeuschter Datensatz.
+                void setzeBearbeitungFort({ parent: eintrag.vorlage.id }).then((antwort) => {
                   if (antwort.ok) p.sitzung.uebernimmSpeicherstand(antwort.wert)
                   else console.warn('[vorlagen-editor] setzeBearbeitungFort lehnt ab:', antwort.fehler.code)
                 })
@@ -407,7 +406,11 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
   }
 
   const stand = sichtbarerStand(sitzung, geste)
-  const vorlage = stand as Vorlage
+  // Ohne Stand gibt es nichts zu zeigen - dieselbe Ladeflaeche wie ohne Sitzung.
+  if (stand === null) {
+    return <div data-testid="vorlagen-editor-lade" />
+  }
+  const vorlage = stand
   const befinde: readonly Befund[] = pruefeVorlage(vorlage, sitzung.festeZonenSoll)
   const speicherbar = istSpeicherbar(befinde)
   const flaeche = flaecheDerVorlage(vorlage)
@@ -416,6 +419,9 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
 
   // ---- der verbindliche Ablauf einer Zonen-Änderung (ENTSCHIEDEN 4 / 17) ----
   async function uebernehme(neueArbeitskopie: Vorlage): Promise<void> {
+    // SAFETY: Der Rueckweg `if (sitzung === null) return` steht VOR dieser Funktion im
+    // selben Rumpf - TS verliert die Verengung im Funktionsrumpf, zur Laufzeit ist
+    // `sitzung` hier nie null.
     const neu = mitArbeitskopie(sitzung as EditorSitzung, neueArbeitskopie)
     // 1) Schnappschuss + Übernahme
     p.sitzung.uebernimmAenderung(neu)
@@ -455,7 +461,7 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
     if (!geste.laeuft) {
       return
     }
-    const gesichert = geste.stand as Vorlage | null
+    const gesichert = geste.stand
     setzeGeste(beendeGeste(geste))
     if (gesichert !== null) {
       void uebernehme(gesichert)
@@ -596,10 +602,10 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
                   }}
                   style={{
                     position: 'absolute',
-                    left: (z.rahmen as { x: number }).x / 2,
-                    top: (z.rahmen as { höhe: number; y: number }).y / 2,
-                    width: (z.rahmen as { breite: number }).breite / 2,
-                    height: (z.rahmen as { höhe: number }).höhe / 2,
+                    left: z.rahmen.x / 2,
+                    top: z.rahmen.y / 2,
+                    width: z.rahmen.breite / 2,
+                    height: z.rahmen.höhe / 2,
                     border: gewaehlt === z.id ? '2px solid #d9a441' : '1px solid #666',
                     opacity: z.rolle === 'fest' ? 0.6 : 1,
                   }}
@@ -613,7 +619,7 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
             {vorbereitet === false ? null : (
               <VorschauCanvas
                 aktion={BEISPIEL_AKTION}
-                vorlage={sichtbarerStand(sitzung, geste) as Vorlage}
+                vorlage={vorlage}
                 marke={vorschauMarkeId !== null ? holeBereiteMarke(vorschauMarkeId) : null}
                 geleert={geleert}
               />
@@ -764,7 +770,7 @@ function VorschauCanvas({
   vorlage: Vorlage | null
   marke: Marke | null
   geleert: ReadonlySet<VorschauFeld>
-}): JSX.Element {
+}): JSX.Element | null {
   const [bild, setzeBild] = useState<{ breite: number; höhe: number; adresse: string } | null>(null)
   const [fehler, setzeFehler] = useState<string | null>(null)
 
@@ -794,7 +800,7 @@ function VorschauCanvas({
     return <div data-testid="vorschau-feller" style={{ color: '#d9a441', fontSize: 11 }}>{fehler}</div>
   }
   if (bild === null) {
-    return null as unknown as JSX.Element
+    return null
   }
   return (
     <img
@@ -838,11 +844,11 @@ function InspektorFelder({
           <input
             type="number"
             disabled={fest}
-            value={(zone.rahmen as unknown as Record<string, number>)[eintrag.feld] ?? 0}
+            value={zone.rahmen[eintrag.feld] ?? 0}
             data-testid={`inspektor-${eintrag.feld}`}
-            onBlur={(e) => onWert(eintrag.feld as 'x', e.target.value)}
+            onBlur={(e) => onWert(eintrag.feld, e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') onWert(eintrag.feld as 'x', (e.target as HTMLInputElement).value)
+              if (e.key === 'Enter') onWert(eintrag.feld, e.currentTarget.value)
             }}
             style={{ width: 70 }}
           />

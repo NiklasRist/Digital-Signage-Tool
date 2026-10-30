@@ -134,7 +134,7 @@ export async function importiereMarkenDatei(
         fehler: { code: 'speicher_fehler', meldung: `importiereMarkenDatei: Das kopierte Logo liefert keine BildMasze - es wurde zurueckgebaut.` },
       }
     }
-        const massen = metadaten.wert["maße"] as { breite: number; "höhe": number }
+    const massen = metadaten.wert["maße"]
     const hohe = massen["höhe"]
     seitenverhaeltnis = hohe === 0 ? 1 : massen["breite"] / hohe
   }
@@ -144,13 +144,17 @@ export async function importiereMarkenDatei(
   // GENAU DAZWISCHEN bleibt - verboten ist nur der Rollback bei Absturz, Text).
   // SCHRIFT: familie = Originalname ohne Endung, gewicht 400 (lokal festgelegt,
   // dokumentiert im Nachtrag); LOGO: die Datei-REFERENZ mit 'importiert'.
+  // SAFETY (schriftRolle): `pruefeForm` (Schritt 1) hat fuer `art === 'schrift'` belegt, dass
+  // `schriftRolle` eine der vier Rollen ist - der Compiler sieht diese Beziehung zwischen zwei
+  // Parametern nicht, der Cast nimmt die geprueften Verengung nur vor.
   const teilzeile: MarkenTeilwerte =
     art === 'logo'
-      ? ({
+      ? {
           logo: { datei: zielname.split(path.sep).pop() ?? zielname, herkunft: 'importiert', seitenverhaeltnis: seitenverhaeltnis ?? 1 },
-        } as unknown as MarkenTeilwerte)
-      : ({
+        }
+      : {
           schriften: {
+            // SAFETY: derselbe Beleg wie oben - pruefeForm hat die Rolle fuer art 'schrift' geprueft.
             [schriftRolle as SchriftRolle]: {
               familie: basenameOhneEndung(quellPfad),
               gewicht: 400,
@@ -158,7 +162,7 @@ export async function importiereMarkenDatei(
               herkunft: 'importiert',
             } satisfies Schrift,
           },
-        } as unknown as MarkenTeilwerte)
+        }
 
   const geaendert = await bearbeiteMarke(markeId, teilzeile)
   if (!geaendert.ok) {
@@ -203,7 +207,10 @@ export async function entferneMarkenDatei(
   // SCHRITT 3: ist ueberhaupt eine IMPORTIERTE Datei gesetzt? Wenn nicht, ist das
   // Entfernen von "nichts" KEIN Fehler - die Marke bleibt, wie sie ist.
   if (art === 'schrift') {
-    if (eintrag.schriften[schriftRolle as SchriftRolle] === undefined) {
+    // SAFETY: `pruefeForm` hat fuer `art === 'schrift'` eine der vier Rollen belegt; der
+    // Index-Zugriff auf `Partial<Record<SchriftRolle, ...>>` verlangt den verengten Typ.
+    const gesetzteSchrift = eintrag.schriften[schriftRolle as SchriftRolle]
+    if (gesetzteSchrift === undefined) {
       return loeseMarkeAuf(eintrag, bestand.wert)   // unveraenderte, aufgeloeste Marke
     }
   } else if (eintrag.logo === undefined) {
@@ -247,16 +254,25 @@ export async function entferneMarkenDatei(
   if (eintrag.parent !== null) {
     teilzeile =
       art === 'logo'
-        ? ({ logo: { geerbt: true } } as unknown as MarkenTeilwerte)
-        : ({ schriften: { [schriftRolle as SchriftRolle]: { geerbt: true } } } as unknown as MarkenTeilwerte)
+        ? { logo: { geerbt: true } }
+        : {
+            schriften: {
+              // SAFETY: `pruefeForm` hat fuer `art === 'schrift'` eine der vier Rollen belegt.
+              [schriftRolle as SchriftRolle]: { geerbt: true },
+            },
+          }
   } else {
     const quelle = eingebauteMarke()
     teilzeile =
       art === 'logo'
-        ? ({ logo: eintrag.eingebaut ? quelle.logo : null } as unknown as MarkenTeilwerte)
-        : ({
-            schriften: { [schriftRolle as SchriftRolle]: quelle.schriften[schriftRolle as SchriftRolle] },
-          } as unknown as MarkenTeilwerte)
+        ? { logo: eintrag.eingebaut ? quelle.logo : null }
+        : {
+            schriften: {
+              // SAFETY: `pruefeForm` hat fuer `art === 'schrift'` eine der vier Rollen belegt -
+              // beide Zugriffe (Schluessel und `quelle.schriften`) stehen auf diesem Beleg.
+              [schriftRolle as SchriftRolle]: quelle.schriften[schriftRolle as SchriftRolle],
+            },
+          }
   }
   const geaendert = await bearbeiteMarke(markeId, teilzeile)
   return geaendert
@@ -313,7 +329,7 @@ async function pruefeForm(
     art === 'schrift' &&
     (schriftRolle === null ||
       typeof schriftRolle !== 'string' ||
-      !(ALLE_SCHRIFTROLLEN as readonly string[]).includes(schriftRolle))
+      !ALLE_SCHRIFTROLLEN.some((rolle) => rolle === schriftRolle))
   ) {
     return {
       ok: false,

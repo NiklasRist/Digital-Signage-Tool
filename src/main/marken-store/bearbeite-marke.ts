@@ -64,27 +64,31 @@ export async function bearbeiteMarke(
     neuerName = getrimmt
   }
 
-  const schluesselVonFarben = Object.keys(teilwerte.farben ?? {}) as FarbRolle[]
-  for (const rolle of schluesselVonFarben) {
+  // Kein Cast auf `Object.keys`: Die Pruefung steht IN der Schleife, und erst der Guard
+  // macht aus dem Text eine bekannte Rolle - so bleibt der Typ bis hierher ehrlich.
+  const schluesselVonFarben: FarbRolle[] = []
+  for (const rolle of Object.keys(teilwerte.farben ?? {})) {
     // KEIN Hex-Format hier (User-Entscheid 06.10.2026, Muster #339): Der Fachwert ist
     // ein freier String; ein Format-Maßstab wuerde eine zweite Formatquelle neben der
     // Zeichenschicht erzeugen. Nur die Sentinel-Form ist strukturiert und geprueft.
-    if (!ALLE_FARBROLLEN.includes(rolle)) {
+    if (!istFarbRolle(rolle)) {
       return abweis(
         'ungueltige_eingabe',
         `bearbeiteMarke: '${String(rolle)}' ist keine bekannte Farb-Rolle.`,
       )
     }
+    schluesselVonFarben.push(rolle)
   }
-  const schluesselVonSchriften = Object.keys(teilwerte.schriften ?? {}) as SchriftRolle[]
-  for (const rolle of schluesselVonSchriften) {
-    if (!ALLE_SCHRIFTROLLEN.includes(rolle)) {
+  const schluesselVonSchriften: SchriftRolle[] = []
+  for (const rolle of Object.keys(teilwerte.schriften ?? {})) {
+    if (!istSchriftRolle(rolle)) {
       return abweis(
         'ungueltige_eingabe',
         `bearbeiteMarke: '${String(rolle)}' ist keine bekannte Schrift-Rolle.`,
       )
     }
-    const wert = (teilwerte.schriften as Record<string, unknown>)[rolle]
+    schluesselVonSchriften.push(rolle)
+    const wert = teilwerte.schriften?.[rolle]
     if (!istSentinel(wert) && !istFachwertSchrift(wert)) {
       return abweis(
         'ungueltige_eingabe',
@@ -97,7 +101,7 @@ export async function bearbeiteMarke(
   // (ENTSCHEIDEN 10.08.). KEINE erfundenen Grenzen fuer andere Felder.
   if ('sicherheit' in teilwerte && teilwerte.sicherheit !== undefined) {
     if (!istSentinel(teilwerte.sicherheit)) {
-      const achsen = teilwerte.sicherheit as { horizontal?: unknown; vertikal?: unknown }
+      const achsen = teilwerte.sicherheit
       if (
         typeof achsen !== 'object' || achsen === null ||
         !('horizontal' in achsen) || !('vertikal' in achsen)
@@ -113,10 +117,9 @@ export async function bearbeiteMarke(
           'bearbeiteMarke: Beide Sicherheits-Achsen muessen endliche Ganzzahlen sein - NICHT gerundet.',
         )
       }
-      // SAFETY: istGanzzahl hat beide Achsen davor geprueft; die Casts machen die
-      // Zahlen dem Typcheck sichtbar. KEINE System-Verunglimpfung.
-      const horizontal = achsen.horizontal as number
-      const vertikal = achsen.vertikal as number
+      // `istGanzzahl` ist ein Type-Guard - nach der Pruefung sind beide Achsen `number`.
+      const horizontal = achsen.horizontal
+      const vertikal = achsen.vertikal
       if (
         horizontal < SICHERHEITSABSTAND_BEREICH.horizontal.min ||
         horizontal > SICHERHEITSABSTAND_BEREICH.horizontal.max ||
@@ -144,6 +147,9 @@ export async function bearbeiteMarke(
       return abweis('ungueltige_eingabe', `bearbeiteMarke: '${feld}' hat nicht die Fachform (Objekt).`)
     }
     if (feld === 'logo') {
+      // SAFETY: `wert` ist an dieser Stelle ein Objekt (zwei Zeilen darueber geprueft) und
+      // `feld === 'logo'`; der Cast macht die drei Felder als unknown LESBAR - geprueft
+      // werden sie unmittelbar danach, keiner der Werte wird ungeprueft benutzt.
       const logoAngaben = wert as { datei?: unknown; herkunft?: unknown; seitenverhaeltnis?: unknown }
       if (
         typeof logoAngaben.datei !== 'string' ||
@@ -168,9 +174,9 @@ export async function bearbeiteMarke(
     // mehr zum Parent zurueck.
     if (eintrag.parent === null) {
       for (const feld of ['farben', 'schriften', 'logo', 'sicherheit', 'radien', 'schatten', 'slogan'] as const) {
-        const wert = (teilwerte as Record<string, unknown>)[feld]
+        const wert = teilwerte[feld]
         const rolausdrueck = feld === 'farben' || feld === 'schriften'
-          ? Object.values((wert as Record<string, unknown> | undefined) ?? {})
+          ? Object.values(typeof wert === 'object' && wert !== null ? wert : {})
           : [wert]
         if (rolausdrueck.some((v) => istSentinel(v))) {
           return abweis(
@@ -192,19 +198,28 @@ export async function bearbeiteMarke(
     // Truthy-Checks nutzt - so verlangt es Ablaufpunkt 2b.
     if (teilwerte.farben !== undefined) {
       for (const [schluessel, wert] of Object.entries(teilwerte.farben)) {
+        // Die Pruefung oben hat jeden Schluessel abgewiesen, der keine Farb-Rolle ist;
+        // der Guard verengt ihn hier ein zweites Mal, damit kein Cast noetig ist.
+        if (!istFarbRolle(schluessel)) continue
         if (istSentinel(wert)) {
-          delete eintrag.farben[schluessel as FarbRolle]
+          delete eintrag.farben[schluessel]
         } else {
-          eintrag.farben[schluessel as FarbRolle] = wert as string
+          // SAFETY: `istSentinel` hat den Sentinel-Wert ausgeschlossen; damit ist der Wert
+          // die Fachform der Rolle - `MarkenFeld<string>` bleibt fuer den Typcheck aber eine
+          // Union, weil der Guard nur den Sentinel-Zweig ausschliesst.
+          eintrag.farben[schluessel] = wert as string
         }
       }
     }
     if (teilwerte.schriften !== undefined) {
       for (const [schluessel, wert] of Object.entries(teilwerte.schriften)) {
+        if (!istSchriftRolle(schluessel)) continue
         if (istSentinel(wert)) {
-          delete eintrag.schriften[schluessel as SchriftRolle]
+          delete eintrag.schriften[schluessel]
         } else {
-          eintrag.schriften[schluessel as SchriftRolle] = wert as Schrift
+          // SAFETY: wie bei den Farben - `istSentinel` hat den Sentinel ausgeschlossen,
+          // der Rest ist die Fachform (oben mit istFachwertSchrift geprueft).
+          eintrag.schriften[schluessel] = wert as Schrift
         }
       }
     }
@@ -214,7 +229,11 @@ export async function bearbeiteMarke(
       if (istSentinel(wert)) {
         delete eintrag[feld]
       } else {
-        ;(eintrag as unknown as Record<string, unknown>)[feld] = structuredClone(wert)
+        // SAFETY: `feld` ist genau die Union der fuenf Felder, `wert` kommt aus demselben
+        // Feld; der Doppelcast ist noetig, weil TS einen dynamischen Schreibzugriff auf
+        // `Marke` sonst als Zuweisung an die Vereinigung ALLER Feldtypen prueft.
+        const alsFeld = eintrag as unknown as Record<string, unknown>
+        alsFeld[feld] = structuredClone(wert)
       }
     }
 
@@ -247,17 +266,19 @@ const ALLE_SCHRIFTROLLEN: readonly SchriftRolle[] = [
 ] as const
 
 /** Der Sentinel - деко sein einziger als Hinweis. */
-function istSentinel(wert: unknown): boolean {
-  return (
-    typeof wert === 'object' && wert !== null && !Array.isArray(wert) && 'geerbt' in wert &&
-    (wert as { geerbt?: unknown }).geerbt === true &&
-    Object.keys(wert).length === 1
-  )
+function istSentinel(wert: unknown): wert is MarkenWertGeerbt {
+  if (typeof wert !== 'object' || wert === null || Array.isArray(wert)) return false
+  // SAFETY: Die drei Zeilen davor haben `wert` als nicht-null Objekt (kein Array) belegt;
+  // der Cast macht das Feld `geerbt` als unknown LESBAR - verglichen wird nur auf `=== true`.
+  const alsObjekt = wert as { geerbt?: unknown }
+  return 'geerbt' in wert && alsObjekt.geerbt === true && Object.keys(wert).length === 1
 }
 
 /** Die Fachform einer Schrift-Rollen-Wertes (familie/gewicht/datei/herkunft). */
 function istFachwertSchrift(wert: unknown): boolean {
   if (typeof wert !== 'object' || wert === null || Array.isArray(wert)) return false
+  // SAFETY: Die Zeile davor hat `wert` als nicht-null Objekt (kein Array) belegt; der Cast
+  // macht die vier Felder als unknown LESBAR - jedes wird direkt danach einzeln geprueft.
   const schrift = wert as { familie?: unknown; gewicht?: unknown; datei?: unknown; herkunft?: unknown }
   return (
     typeof schrift.familie === 'string' &&
@@ -268,7 +289,17 @@ function istFachwertSchrift(wert: unknown): boolean {
 }
 
 /** Wahre endliche Ganzzahl - kein Zurechtbiegen (kein Runden). */
-function istGanzzahl(wert: unknown): boolean {
+/** Ist dieser Text eine der bekannten Farb-Rollen? Der Guard verengt den Schluessel. */
+function istFarbRolle(wert: string): wert is FarbRolle {
+  return ALLE_FARBROLLEN.some((rolle) => rolle === wert)
+}
+
+/** Ist dieser Text eine der bekannten Schrift-Rollen? Der Guard verengt den Schluessel. */
+function istSchriftRolle(wert: string): wert is SchriftRolle {
+  return ALLE_SCHRIFTROLLEN.some((rolle) => rolle === wert)
+}
+
+function istGanzzahl(wert: unknown): wert is number {
   return typeof wert === 'number' && Number.isFinite(wert) && Number.isInteger(wert)
 }
 
