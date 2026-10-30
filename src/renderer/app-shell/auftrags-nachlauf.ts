@@ -57,7 +57,8 @@ export function starteAuftragsNachlauf(
   const ausgewertet = new Set<string>()
 
   const merkAuftrag = async (auftrag: Auftrag): Promise<void> => {
-    if (!(TERMINALE_ZUSTAENDE as readonly string[]).includes(auftrag.status)) return
+    // Kein Cast auf eine `readonly string[]`: `some` vergleicht die Union direkt.
+    if (!TERMINALE_ZUSTAENDE.some((zustand) => zustand === auftrag.status)) return
     if (ausgewertet.has(schluessel(auftrag))) return
     ausgewertet.add(schluessel(auftrag))
 
@@ -82,6 +83,8 @@ export function starteAuftragsNachlauf(
       // nachgefuehrt - ALLEIN dieses Feld, gleiche Array-Referenzen. Kein nicht
       // leerer Name => melden und überspringen (M7-06, ENTSCHIEDEN 7/8).
       if (auftrag.art === 'render') {
+        // SAFETY: `rohErgebnis` ist `unknown` (IPC-Nutzlast); der Cast macht das Feld
+        // LESBAR, geprueft wird der Wert in der Zeile darunter (`typeof name !== 'string'`).
         const ergebnis = rohErgebnis as { ausgabeName?: unknown }
         const name = (ergebnis ?? null)?.ausgabeName
         if (typeof name !== 'string' || name.length === 0) {
@@ -94,6 +97,8 @@ export function starteAuftragsNachlauf(
         const projekt = wirkungen.holeProjekt()
         if (
           projekt !== null &&
+          // SAFETY: wie oben - `payload` ist `unknown`; der Cast macht `projektId` lesbar,
+          // verglichen wird er mit `projekt.id` (Text), kein Wert wird umgewandelt.
           projekt.id === (auftrag.payload as { projektId?: unknown }).projektId
         ) {
           wirkungen.setzeProjekt({ ...projekt, letzterAusgabeName: name })
@@ -103,7 +108,7 @@ export function starteAuftragsNachlauf(
     }
 
     // D1-ändernde Arten (import/loeschen) ab hier (M7-06, Schritte 2.1-2.4, 2.6).
-    if (!(D1_AENDERNDE_ARTEN as readonly string[]).includes(auftrag.art)) return
+    if (!D1_AENDERNDE_ARTEN.some((art) => art === auftrag.art)) return
     if (rohErgebnis === null || rohErgebnis === undefined) {
       wirkungen.meldeFehler('unbekannter_fehler', `Der Auftrag ${auftrag.auftragId} meldet Erfolg ohne Ergebnis.`)
       return
@@ -118,6 +123,9 @@ export function starteAuftragsNachlauf(
     // Rückgabewert je Art (9.3.1): import → Asset; loeschen → { assetId }.
     let merged: Project
     if (auftrag.art === 'import') {
+      // SAFETY: Das Ergebnis eines `import`-Auftrags ist im Main ein vollstaendiges
+      // `Asset` (TK 9.3.1); geprueft wird hier nur die Kennung, weil nur sie ueber die
+      // Dublette entscheidet - die uebrigen Felder hat der Main gebaut.
       const asset = rohErgebnis as Asset
       if (typeof asset?.id !== 'string') {
         wirkungen.meldeFehler('unbekannter_fehler', 'Ein Import meldet Erfolg ohne Asset-Kennung.')
@@ -130,6 +138,8 @@ export function starteAuftragsNachlauf(
       }
       merged = { ...projekt, assets: [...projekt.assets, asset] }
     } else {
+      // SAFETY: `rohErgebnis` ist `unknown`; der Cast macht `assetId` lesbar, die Pruefung
+      // auf Text folgt direkt darunter.
       const kennung = (rohErgebnis as { assetId?: unknown }).assetId
       if (typeof kennung !== 'string') {
         wirkungen.meldeFehler('unbekannter_fehler', 'Eine Löschung meldet Erfolg ohne assetId.')
@@ -148,6 +158,8 @@ export function starteAuftragsNachlauf(
     }
 
     if (auftrag.art === 'import') {
+      // SAFETY: Dieselbe Kennung wurde oben bereits als Text geprueft (`asset?.id`), hier
+      // wird sie nur noch gemeldet - kein zweiter Zugriff auf ein ungeprueftes Feld.
       wirkungen.meldeImportErgebnis?.((rohErgebnis as Asset).id)
     }
     // Eine gelöschte Ausgabe-Liste nicht nachziehen (aktualisiereAusgabenListe?: optional
@@ -156,7 +168,8 @@ export function starteAuftragsNachlauf(
 
   return abonniereQueue((auftraege) => {
     for (const auftrag of auftraege) {
-      void merkAuftrag(auftrag as unknown as Auftrag)
+      // `abonniereQueue` liefert bereits `Auftrag[]` (Signatur oben) - kein Cast noetig.
+      void merkAuftrag(auftrag)
     }
   })
 }

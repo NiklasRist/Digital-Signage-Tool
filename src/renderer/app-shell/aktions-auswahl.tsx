@@ -52,7 +52,7 @@ export interface AktionsAuswahlEigenschaften {
   aufFehler: (code: string, meldung: string) => void
 }
 
-export function AktionsAuswahl(eigenschaften: AktionsAuswahlEigenschaften): JSX.Element {
+export function AktionsAuswahl(eigenschaften: AktionsAuswahlEigenschaften): JSX.Element | null {
   const {
     elementId,
     abschnittIndex,
@@ -76,7 +76,7 @@ export function AktionsAuswahl(eigenschaften: AktionsAuswahlEigenschaften): JSX.
 
   if (element === undefined) {
     aufFehler('nicht_gefunden', `Es gibt kein Listenelement mit der ID "${elementId}".`)
-    return null as unknown as JSX.Element
+    return null
   }
 
   // Die aktuell referenzierte Aktion - fuer die Ausschluss-Liste: Fall 2 aus
@@ -87,18 +87,18 @@ export function AktionsAuswahl(eigenschaften: AktionsAuswahlEigenschaften): JSX.
       // Fuer video/bild ist #202 zustaendig; die Shell darf die Referenz nicht
       // umsetzen, ohne den Typ zu kennen.
       aufFehler('ungueltige_eingabe', 'Dieses Element ist kein Segment; für seine Reparatur ist die Asset-Auswahl zuständig.')
-      return null as unknown as JSX.Element
+      return null
     }
     aktuell = element.ref
   } else {
     if (element.einblendung === null) {
       aufFehler('nicht_gefunden', 'Das Element trägt keine Einblendung; die kaputte Stelle ist inzwischen verschwunden.')
-      return null as unknown as JSX.Element
+      return null
     }
     const abschnitt = element.einblendung.abschnitte[abschnittIndex]
     if (abschnitt === undefined) {
       aufFehler('nicht_gefunden', `Der Band-Abschnitt ${abschnittIndex} existiert nicht mehr.`)
-      return null as unknown as JSX.Element
+      return null
     }
     aktuell = abschnitt.aktionRef
   }
@@ -159,7 +159,7 @@ export function AktionsAuswahl(eigenschaften: AktionsAuswahlEigenschaften): JSX.
                 {aktion.bildRef !== null ? (
                   (() => {
                     const asset = projekt.assets.find((eintrag) => eintrag.id === aktion.bildRef)
-                    if (asset === undefined) return null as unknown as JSX.Element
+                    if (asset === undefined) return null
                     return (
                       <img
                         src={medienUrl(projekt.id, asset.dateiname)}
