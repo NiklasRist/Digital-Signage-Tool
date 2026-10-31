@@ -82,8 +82,12 @@
 - **#455 UND #456 GESCHLOSSEN (30.10.2026, `completed`):** #456 am Fenster abgenommen („passt"),
   #455 im Rahmen dieser Abnahme gesehen — die Abgrenzung steht so im Issue-Kommentar, damit sie
   nicht spaeter wie eine behauptete aussieht. **Damit ist der Marken-Umbau buchhalterisch fertig.**
-- **Ehrlich offen:** #446 (FA-03-Ursache - braucht eine Fenster-Reproduktion),
-  Beenden-Frist 15 s; der Signaturblock in #456 nennt `projektId`, gebaut ist
+- **#446 BEHOBEN (31.10.2026) - Messweg, kein Produktcode:** Der rote 4g3-Lauf ist durch die
+  **8-s-Frist bei 4-s-Entprellung** erklaert (Probe: Titel stand **251 ms nach der Frist** im
+  `project.json`, keine Fehlermeldung, Bibliothekszeile neu). Frist **8 s -> 20 s** in 4g3 und
+  4q, Dauer bis zum Fund im Protokoll. Gegenprobe mit derselben SIGSTOP-Probe: gruen nach
+  **8045 ms**. Gate Exit 0. Issue-Kommentar steht aus.
+- **Ehrlich offen:** Beenden-Frist 15 s; der Signaturblock in #456 nennt `projektId`, gebaut ist
   zusaetzlich `aktionen` (Widerspruch gemeldet, Text nicht nachgezogen); die
   **Loesch-Sperrgruende erscheinen mitten in der Marken-Kopfzeile** (aelter als #456, nicht
   angefasst).
@@ -95,9 +99,9 @@
   (Bedienfluss):** #446 -> #392 -> Playhead -> Buchhaltung #383/#388/#393/#394 ->
   Loesch-Sperrgruende. Grundlage:
   [`docs/agents/ui-2-0-welle-2-vorschlag.md`](docs/agents/ui-2-0-welle-2-vorschlag.md).
-  **#374/#375 bleiben offen** (nicht banner-gebunden, Begruendung neu schreiben). **Offen:**
-  TK-Nachtrag v3.33 zur Banner-Spur; die Layout-Frage aus Welle 1 („Video mittig" im Plan,
-  gebaut ist „Buehne oben").
+  **#374/#375 bleiben offen** (nicht banner-gebunden, Begruendung neu schreiben). **TK-Nachtrag
+  v3.33 geschrieben (`c60b4b9`):** Banner-Spur entfaellt, `abschnitte.aktionRef` bleibt.
+  **Offen:** die Layout-Frage aus Welle 1 („Video mittig" im Plan, gebaut ist „Buehne oben").
 
 ## STAND HEUTE (30.10.2026, dreiunddreissigste Sitzung: Zonen-Namen und M9) – historisiert durch den Abschnitt darueber
 
