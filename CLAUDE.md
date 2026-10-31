@@ -86,7 +86,17 @@
   **8-s-Frist bei 4-s-Entprellung** erklaert (Probe: Titel stand **251 ms nach der Frist** im
   `project.json`, keine Fehlermeldung, Bibliothekszeile neu). Frist **8 s -> 20 s** in 4g3 und
   4q, Dauer bis zum Fund im Protokoll. Gegenprobe mit derselben SIGSTOP-Probe: gruen nach
-  **8045 ms**. Gate Exit 0. Issue-Kommentar steht aus.
+  **8045 ms**. Gate Exit 0. Issue **#446 kommentiert und geschlossen** (`completed`).
+- **#392 GEBAUT (`53ccaed`):** Mehrfachauswahl in **Liste und Zeitleiste** - **Shift = Bereich**,
+  **Cmd/Strg = umschalten**; Gruppen-Entfernen ist **EIN Undo-Schritt** ueber die neue
+  Store-Operation `entferneElemente` (Kanal `project:entferneElemente`, angemeldet im
+  project-store-Nachtrag, weil #76 seiner Datei keinen fuenften Kanal erlaubt). **Der Treiber
+  fand dabei einen echten Fehler:** `setzeListe` ist der Sicht-Schreiber und schrieb
+  `project.json` **nicht** - die Gruppe verschwand aus der UI, die Datei blieb. Treiber-Schritt
+  **4g5** misst Auswahl, Entfernen 2 -> 0 und **ein** Cmd+Z -> 2. **9 Gegenproben**, alle rot
+  und byte-identisch zurueckgenommen. Gate Exit 0 - Unit **5.334 (350)**, Integration **50
+  (13)**. **Gruppen-Verschieben ist nicht Teil des Issues** (keine Zielregel, Folge-Issue).
+  #392 offen bis zum Abschluss-Kommentar.
 - **Ehrlich offen:** Beenden-Frist 15 s; der Signaturblock in #456 nennt `projektId`, gebaut ist
   zusaetzlich `aktionen` (Widerspruch gemeldet, Text nicht nachgezogen); die
   **Loesch-Sperrgruende erscheinen mitten in der Marken-Kopfzeile** (aelter als #456, nicht
