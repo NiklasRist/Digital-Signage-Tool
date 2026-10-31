@@ -4203,7 +4203,15 @@ const main = async () => {
             feldFokus,
           };
         }, neu4g3);
-        const frist4g3 = Date.now() + 8_000;
+        // Frist 20 s statt 8 s (31.10.2026, #446): Der Store schreibt ENTPRELLT nach
+        // ENTPRELLUNG_MS = 4000 (auto-speichern.ts:29). Die alte Frist lag nur 4 s
+        // darueber; eine Lastspitze im Main machte den Schritt rot, ohne Produktfehler.
+        // BELEGT durch eine Probe am 31.10.2026: Main vor der Frist angehalten ->
+        // Titel stand 251 ms NACH der 8-s-Frist im project.json, Formularmeldung null,
+        // Bibliothekszeile bereits neu. Die Dauer bis zum Fund wird protokolliert; sie
+        // ist die Messgroesse fuer "langsam, aber richtig".
+        const start4g3 = Date.now();
+        const frist4g3 = start4g3 + 20_000;
         let nachher4g3 = vorher4g3;
         while (Date.now() < frist4g3) {
           try {
@@ -4214,7 +4222,9 @@ const main = async () => {
           if (nachher4g3.some((a) => a.titel === neu4g3)) break;
           await schlafe(250);
         }
+        const dauer4g3 = Date.now() - start4g3;
         const geaendert4g3 = nachher4g3.find((a) => a.titel === neu4g3) ?? null;
+        console.log(`[schritt-4g3] Speicherweg: Titel nach ${String(dauer4g3)} ms im project.json (Frist 20 s).`);
         console.log(`[schritt-4g3] Bearbeiten: gesetzt=${String(gesetzt4g3.gesetzt)}, "${String(alt4g3)}" -> "${neu4g3}", Aktionen ${vorher4g3.length} -> ${nachher4g3.length}, gefunden=${geaendert4g3 !== null}.`);
         console.log(`[schritt-4g3] Diagnose: Fensterfokus=${String(gesetzt4g3.fensterFokus)}, Feld hatte Fokus=${String(gesetzt4g3.feldFokus)}, aktives Element danach=${String(gesetzt4g3.aktiv)}.`);
         if (!gesetzt4g3.gesetzt || alt4g3 === null) {
@@ -4284,7 +4294,10 @@ const main = async () => {
         knopf.click();
         return true;
       });
-      const frist4q = Date.now() + 8_000;
+      // Dieselbe Frist wie 4g3 (20 s statt 8 s, #446): `legeAktionAn` schreibt ueber
+      // `planeAutoSpeicherung` und damit ebenfalls entprellt nach 4 s.
+      const start4q = Date.now();
+      const frist4q = start4q + 20_000;
       let nachher4q = vorher4q;
       while (Date.now() < frist4q) {
         try {
@@ -4295,6 +4308,7 @@ const main = async () => {
         if (nachher4q.some((a) => a.titel === titel4q)) break;
         await schlafe(250);
       }
+      console.log(`[schritt-4q] Speicherweg: Titel nach ${String(Date.now() - start4q)} ms im project.json (Frist 20 s).`);
       const neu4q = nachher4q.find((a) => a.titel === titel4q) ?? null;
       const sicht4q = await seite.evaluate(() => ({
         titelfeld: document.querySelector('[data-testid="aktion-titel"]')?.value ?? null,
