@@ -64,6 +64,7 @@ import { Transportleiste } from './transportleiste'
 import { TON_STAND, schalteTonUm, setzeLautstaerke } from './bedienung'
 import { findeKaputteStellen } from '../composer/kaputt-erkennung'
 import { taktDelta, taktSollLaufen, waehleVorschaubild } from './vorschau-auswahl'
+import { setzeAbspielstand } from '../gemeinsam/abspielposition'
 
 export interface VorschauProps {
   /** Das geladene Projekt; null = kein Projekt offen. Zustand kommt als PARAMETER (#197). */
@@ -87,6 +88,13 @@ export function Vorschau(props: VorschauProps): JSX.Element {
   const [stand, setStand] = useState(() => baueTransport())
   const letzterMsRef = useRef<number | null>(null)
   const anlaufRef = useRef<number | null>(null)
+
+  // #457: Die Zeitleiste zeigt diese Position. Veroeffentlicht wird NACH dem Render;
+  // nur die Abspielmarke abonniert den Stand - der Composer rendert dafuer nicht neu.
+  // Die Uhr bleibt hier die EINZIGE Quelle (TK 9.9, ENTSCHIEDEN 7).
+  useEffect(() => {
+    setzeAbspielstand({ frame: stand.frame, laeuft: stand.laeuft })
+  }, [stand.frame, stand.laeuft])
 
   // #443: Ton und Leiste. Der Ton startet STUMM (Entscheidung 29.10.2026) - `TON_STAND`
   // ist die einzige Quelle dieses Anfangswerts.

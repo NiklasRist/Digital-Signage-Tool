@@ -1,4 +1,4 @@
-import { useEffect, useState, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 
 import {
   useDroppable,
@@ -11,6 +11,7 @@ import { frameDauer } from "./gesamtlaenge";
 import { RENDER_PROFILE } from "../../shared/contracts/render-profile";
 import { EA_PX_PRO_SEKUNDE, baueZeitachse, baueBandspur } from "./zeitband";
 import { klickModusAus, AUSWAHLKANTE, type KlickModus } from "./mehrfachauswahl";
+import { AbspielMarke } from "./abspiel-marke.tsx";
 // #437: die Marken der Unterbrechungen liegen sequenziell im Video-Block.
 import { unterbrechungsMarken } from "./unterbrechungs-aufnahme";
 // #433: der Video-Block zeigt die EINZELBILDER des Videos als Filmstreifen.
@@ -115,6 +116,9 @@ export function Zeitleiste({
   ausgewaehlteIds = [],
   aufElementGewaehlt,
 }: ZeitleistenEigenschaften): JSX.Element {
+  // #457: der Scroll-Container. Die Abspielmarke sitzt IM Inhalt (absolute), der
+  // Ausschnitt folgt ihr nur bei laufender Uhr.
+  const scrollRef = useRef<HTMLDivElement | null>(null)
   if (projekt === null) {
     return <div data-testid="zeitleiste-kein-projekt" />
   }
@@ -131,6 +135,7 @@ export function Zeitleiste({
 
   return (
     <div
+      ref={scrollRef}
       data-testid="zeitleiste"
       style={{
         display: 'flex',
@@ -194,7 +199,7 @@ export function Zeitleiste({
           (#413) und Kanten (#412) im SELBEN Kontext liegen; diese Komponente haengt
           ihr Sortable-Fragment und ihren Messraum (korbRef) ein. */}
       <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
-        <div ref={korbRef} style={{ display: 'flex', alignItems: 'stretch', gap: 2, minHeight: ZEILE_HOEHE_PX }}>
+        <div ref={korbRef} style={{ position: 'relative', display: 'flex', alignItems: 'stretch', gap: 2, minHeight: ZEILE_HOEHE_PX }}>
           {neuZug !== null && <KantenBlock nummer={0} aktiv={aktiveKante === 0} laedt={laedtKante === 0} />}
           {zeilen.map((zeile, index) => (
             <span key={zeile.elementId} style={{ display: 'flex', alignItems: 'stretch', gap: 2, padding: 0 }}>
@@ -225,6 +230,8 @@ export function Zeitleiste({
               Leere Wiedergabeliste
             </div>
           )}
+          {/* #457: die Abspielmarke - absolut im Inhalt, ueber den Bloecken. */}
+          <AbspielMarke pxProSekunde={pxProSekunde} scrollRef={scrollRef} />
         </div>
       </SortableContext>
     </div>

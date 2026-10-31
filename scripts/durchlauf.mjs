@@ -3853,25 +3853,33 @@ const main = async () => {
         dauerNach4f4 = await seite.evaluate(
           () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
         );
-        const undoZustand4f4 = await seite.evaluate(() => {
-          const k = document.querySelector('[data-testid="undo-pfeil"]');
-          return k === null ? null : { da: true, disabled: k.disabled };
-        });
-        const zeilenVorUndo4f4 = await seite.evaluate(
-          () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
-        );
-        await klick('[data-testid="undo-pfeil"]');
-        await schlafe(1_500);
-        dauerUndo4f4 = await seite.evaluate(
-          () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
-        );
-        const zeilenNachUndo4f4 = await seite.evaluate(
-          () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
-        );
-        const meldung4f4 = await seite.evaluate(
-          () => document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
-        );
-        console.log(`[schritt-4f4] Diagnose: undo=${JSON.stringify(undoZustand4f4)}, Zeilen ${zeilenVorUndo4f4}->${zeilenNachUndo4f4}, Meldung=${JSON.stringify(meldung4f4)}`);
+        // KEIN UNDO OHNE EIGENE AENDERUNG (31.10.2026): Blieb die Dauer gleich, hat der
+        // Zug nichts bewirkt - dann darf der Pfeil NICHT gedrueckt werden, sonst nimmt er
+        // den VORHERIGEN Schritt zurueck (am 31.10. gemessen: Liste 2 -> 1, danach rot in
+        // 4f6). Die Vorbedingung wird als Untersuchung gemeldet, nicht als Produktfehler.
+        if (dauerNach4f4 === dauerVor4f4) {
+          console.log("[schritt-4f4] Kein Undo ausgeloest: der Zug hat die Dauer nicht geaendert (Vorbedingung).");
+        } else {
+          const undoZustand4f4 = await seite.evaluate(() => {
+            const k = document.querySelector('[data-testid="undo-pfeil"]');
+            return k === null ? null : { da: true, disabled: k.disabled };
+          });
+          const zeilenVorUndo4f4 = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+          );
+          await klick('[data-testid="undo-pfeil"]');
+          await schlafe(1_500);
+          dauerUndo4f4 = await seite.evaluate(
+            () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
+          );
+          const zeilenNachUndo4f4 = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length,
+          );
+          const meldung4f4 = await seite.evaluate(
+            () => document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+          );
+          console.log(`[schritt-4f4] Diagnose: undo=${JSON.stringify(undoZustand4f4)}, Zeilen ${zeilenVorUndo4f4}->${zeilenNachUndo4f4}, Meldung=${JSON.stringify(meldung4f4)}`);
+        }
       }
       console.log(`[schritt-4f4] Dauer/Trim-Undo: ${JSON.stringify(dauerVor4f4)} -> ${JSON.stringify(dauerNach4f4)} -> Undo ${JSON.stringify(dauerUndo4f4)}`);
       if (dauerNach4f4 === dauerVor4f4) {
@@ -3921,6 +3929,26 @@ const main = async () => {
         listeVor4f6 = -1;
       }
       console.log(`[schritt-4f6] Liste vor dem Band (Store): ${JSON.stringify(form4f6)}`);
+      // DIAGNOSE (31.10.2026): Der Schritt sah zweimal "Liste 2 -> 1", ohne dass ein
+      // Schritt dazwischen etwas entfernt. Diese Uhr schreibt JEDE Aenderung der
+      // Listenlaenge mit Zeitstempel mit - damit ist belegbar, WANN das Element
+      // verschwindet, statt es zu vermuten.
+      const start4f6 = Date.now();
+      const verlauf4f6 = [];
+      let letzteLaenge4f6 = listeVor4f6;
+      const uhr4f6 = setInterval(() => {
+        try {
+          const jetzt = JSON.parse(
+            fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
+          ).liste ?? [];
+          if (jetzt.length !== letzteLaenge4f6) {
+            verlauf4f6.push({ ms: Date.now() - start4f6, von: letzteLaenge4f6, auf: jetzt.length });
+            letzteLaenge4f6 = jetzt.length;
+          }
+        } catch {
+          // Datei mitten im Schreiben - naechster Takt.
+        }
+      }, 200);
       if (videoId4f6 === null) {
         fund("Einfuegeweg", "das Video-Element ist vor der Band-Messung sichtbar (#453)",
           "zeitleiste-block-0 ohne data-element-id", "Untersuchung", "composer/zeitleiste.tsx");
@@ -4048,6 +4076,8 @@ const main = async () => {
           }
         }
       }
+      clearInterval(uhr4f6);
+      console.log(`[schritt-4f6] Listenverlauf (ms seit Start): ${JSON.stringify(verlauf4f6)}`);
       await klick('[data-testid="composer-ansicht-zeitleiste"]');
       await schlafe(200);
     }
@@ -4327,6 +4357,82 @@ const main = async () => {
         await klick('[data-testid="reiter-aktionen"]');
         await schlafe(600);
       }
+    }
+
+    // Schritt 4f7 - #457: Die Abspielmarke der Zeitleiste folgt der Vorschau.
+    // Gemessen wird der Stand VOR dem Play, nach 1,5 s und nach der Pause. Der
+    // Play-Knopf liegt im Overlay (#443) und wird erst nach dem Hover bedienbar.
+    {
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(600);
+      const zeigeBedienleiste4f7 = async () => {
+        const mitte = await seite.evaluate(() => {
+          const kasten = document.querySelector('[data-testid="buehne-kasten"]');
+          if (kasten === null) return null;
+          const r = kasten.getBoundingClientRect();
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        });
+        if (mitte === null) return;
+        await seite.mouse.move(mitte.x, mitte.y);
+        await schlafe(150);
+      };
+      const liesMarke4f7 = async () => seite.evaluate(() => {
+        const marke = document.querySelector('[data-testid="zeitleiste-playhead"]');
+        return marke === null
+          ? null
+          : {
+              frame: Number(marke.getAttribute("data-frame")),
+              left: marke.style.left,
+              laeuft: marke.getAttribute("data-laeuft"),
+            };
+      });
+      await zeigeBedienleiste4f7();
+      let marke4f7 = await liesMarke4f7();
+      if (marke4f7 === null) {
+        fund("Abspielmarke (#457)", "die Zeitleiste traegt eine Abspielmarke",
+          "zeitleiste-playhead fehlt", "Befund", "composer/zeitleiste.tsx");
+      } else {
+        // Falls die Vorschau noch laeuft: erst anhalten, dann mit bekanntem Stand starten.
+        if (marke4f7.laeuft === "ja") {
+          await zeigeBedienleiste4f7();
+          await klick('[data-testid="vorschau-play-pause"]');
+          await schlafe(400);
+          marke4f7 = await liesMarke4f7();
+        }
+        const start4f7 = marke4f7;
+        await zeigeBedienleiste4f7();
+        await klick('[data-testid="vorschau-play-pause"]');
+        await schlafe(1_500);
+        const laeuft4f7 = await liesMarke4f7();
+        await zeigeBedienleiste4f7();
+        await klick('[data-testid="vorschau-play-pause"]');
+        await schlafe(400);
+        const pause4f7 = await liesMarke4f7();
+        await schlafe(600);
+        const pauseZwei4f7 = await liesMarke4f7();
+        console.log(`[schritt-4f7] Marke: Start=${JSON.stringify(start4f7)}, nach 1,5 s=${JSON.stringify(laeuft4f7)}, Pause=${JSON.stringify(pause4f7)}, 600 ms spaeter=${JSON.stringify(pauseZwei4f7)}.`);
+        if (start4f7 === null || laeuft4f7 === null || pause4f7 === null || pauseZwei4f7 === null) {
+          fund("Abspielmarke (#457)", "die Marke bleibt waehrend der Messung im DOM",
+            "Marke fehlt in einem Teilschritt", "Befund", "composer/abspiel-marke.tsx");
+        } else if (
+          laeuft4f7.laeuft !== "ja" ||
+          (laeuft4f7.frame === start4f7.frame && laeuft4f7.left === start4f7.left)
+        ) {
+          // NICHT "frame > start": Steht die Vorschau am Ende, startet Play wieder bei 0
+          // (spieleAb, ENTSCHIEDEN 3) - die Marke wandert dann rueckwaerts, und das ist
+          // richtig. Gemessen wird die BEWEGUNG waehrend laufender Uhr.
+          fund("Abspielmarke (#457)", "waehrend der Wiedergabe wandert die Marke",
+            `Frame ${start4f7.frame} -> ${laeuft4f7.frame}, left ${start4f7.left} -> ${laeuft4f7.left}, laeuft=${laeuft4f7.laeuft}`,
+            "Befund", "composer/abspiel-marke.tsx");
+        } else if (pauseZwei4f7.frame !== pause4f7.frame) {
+          fund("Abspielmarke (#457)", "bei Pause steht die Marke still",
+            `Frame ${pause4f7.frame} -> ${pauseZwei4f7.frame}`, "Befund", "composer/abspiel-marke.tsx");
+        } else {
+          console.log("[schritt-4f7] Abspielmarke GEMESSEN: folgt der Wiedergabe, steht bei Pause (#457).");
+        }
+      }
+      await klick('[data-testid="reiter-aktionen"]');
+      await schlafe(600);
     }
 
     // Schritt 4q - #445: Im Modus "Neue Aktion" erreichte der getippte Titel den Entwurf

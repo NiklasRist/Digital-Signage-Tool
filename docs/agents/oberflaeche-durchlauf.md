@@ -2769,3 +2769,46 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 71
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-31T17:41:05.626Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert ("2,0 s")" (Ort: composer/element-zeile.tsx)
+- **Befund** Einfuegeweg: erwartet "der Band-Weg legt KEIN neues Listenelement an (#453)", erkannt "Liste 2->1" (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+- **Befund** Abspielmarke (#457): erwartet "waehrend der Wiedergabe wandert die Marke", erkannt "Frame 60 -> 44, left 16px -> 12px" (Ort: composer/abspiel-marke.tsx)
+
+## Nachlauf vom 2026-10-31T17:48:39.674Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert ("2,0 s")" (Ort: composer/element-zeile.tsx)
+- **Befund** Einfuegeweg: erwartet "der Band-Weg legt KEIN neues Listenelement an (#453)", erkannt "Liste 2->1" (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-10-31T17:53:39.457Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert ("2,0 s")" (Ort: composer/element-zeile.tsx)
+- **Befund** Einfuegeweg: erwartet "der Band-Weg legt KEIN neues Listenelement an (#453)", erkannt "Liste 2->1" (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-10-31T18:00:11.941Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert ("2,0 s")" (Ort: composer/element-zeile.tsx)
