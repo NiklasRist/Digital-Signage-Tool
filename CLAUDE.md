@@ -96,7 +96,17 @@
   **4g5** misst Auswahl, Entfernen 2 -> 0 und **ein** Cmd+Z -> 2. **9 Gegenproben**, alle rot
   und byte-identisch zurueckgenommen. Gate Exit 0 - Unit **5.334 (350)**, Integration **50
   (13)**. **Gruppen-Verschieben ist nicht Teil des Issues** (keine Zielregel, Folge-Issue).
-  #392 offen bis zum Abschluss-Kommentar.
+  **#392 kommentiert und geschlossen** (`completed`).
+- **#457 GEBAUT (`cf37e7a`, Welle 3):** Abspielmarke in der Zeitleiste. Der Stand kommt aus
+  `gemeinsam/abspielposition` (die Vorschau veroeffentlicht ihn, **nur die Marke** abonniert);
+  Mitscrollen nur bei laufender Uhr. Treiber **4f7** misst Frame/`left` und die Pause
+  (0 -> 44 Frames, 0 -> 12 px; Pause 50 -> 50). **Gate OFFEN:** Der Integrationstest
+  `standbild-echt` (Gegenprobe ohne `-frames:v`) **haengt** seit dem dritten Lauf - das Kind
+  schreibt nur 48 Byte, `spawnSync` kehrt nicht zurueck; **nicht #457** (kein ffmpeg-Code
+  angefasst). Ein Async-Umbau half nicht und wurde **zurueckgenommen**. **4f4-Messfehler
+  behoben:** Ohne eigene Dauer-Aenderung wird kein Undo mehr gedrueckt - vorher nahm der Pfeil
+  den vorherigen Schritt zurueck (Liste 2 -> 1), und 4f6 erbte den Schaden. **#457 bleibt offen
+  bis zum gruenen Gate.**
 - **Ehrlich offen:** Beenden-Frist 15 s; der Signaturblock in #456 nennt `projektId`, gebaut ist
   zusaetzlich `aktionen` (Widerspruch gemeldet, Text nicht nachgezogen); die
   **Loesch-Sperrgruende erscheinen mitten in der Marken-Kopfzeile** (aelter als #456, nicht
