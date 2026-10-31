@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -52,6 +52,14 @@ const FESTER_VORSPANN = [
 const arbeitsordner = mkdtempSync(path.join(tmpdir(), "signage-standbild-"));
 
 afterAll(() => {
+  // Sicherheitsnetz (31.10.2026): Der Gegenproben-Lauf endet nie von selbst. Ueberlebt
+  // er das SIGTERM, haelt er seine Pipes offen und die Suite beendet sich nicht - der
+  // Zielpfad steht nur in diesem einen Lauf, also ist der Treffer eindeutig.
+  try {
+    execFileSync("pkill", ["-f", path.join(arbeitsordner, "endlos.mp4")], { stdio: "ignore" });
+  } catch {
+    // Kein Treffer = nichts zu tun.
+  }
   rmSync(arbeitsordner, { recursive: true, force: true });
 });
 
@@ -101,20 +109,43 @@ function argumente(bildPfad: string, frames: number, zielPfad: string): string[]
  * Die Frist ist das Messinstrument, nicht die Loesung: Sie ist genau der Grund,
  * warum dieser Test die Terminierungs-Zusage ueberhaupt pruefen KANN. In der
  * Anwendung gibt es sie nicht (#158 setzt bewusst keine).
+ *
+ * WARUM `spawn` UND NICHT `spawnSync` (31.10.2026): Der Gegenproben-Lauf endet nie
+ * von selbst und schreibt mit `-progress pipe:1` laufend auf stdout. `spawnSync`
+ * leert diese Pipe waehrend des Laufs nicht; nach dem SIGTERM blockiert ffmpeg
+ * beim letzten Fortschritts-Schreiben, und der Aufruf kehrt nicht zurueck (gemessen:
+ * derselbe Lauf ohne `-progress` kehrt nach 3 s zurueck, mit `-progress` haengt er).
+ * Der asynchrone Weg liest stdout ab, toetet nach der Frist mit SIGTERM und nach
+ * weiteren 2 s hart mit SIGKILL - sonst ueberlebt der endlose Orphan den Lauf und
+ * haelt die Pipes offen (die Suite beendet sich dann nicht).
  */
-function lauf(argumenteOhneVorspann: readonly string[], fristMs: number) {
+function lauf(
+  argumenteOhneVorspann: readonly string[],
+  fristMs: number,
+): Promise<{ code: number | null; signal: NodeJS.Signals | null; dauerMs: number; stderr: string }> {
   const begonnen = Date.now();
-  const ergebnis = spawnSync(
-    ermittleFfmpegPfad(),
-    [...FESTER_VORSPANN, ...argumenteOhneVorspann],
-    { timeout: fristMs, encoding: "utf8", windowsHide: true },
-  );
-  return {
-    code: ergebnis.status,
-    signal: ergebnis.signal,
-    dauerMs: Date.now() - begonnen,
-    stderr: (ergebnis.stderr ?? "").trim(),
-  };
+  return new Promise((fertig) => {
+    const kind = spawn(ermittleFfmpegPfad(), [...FESTER_VORSPANN, ...argumenteOhneVorspann], {
+      windowsHide: true,
+    });
+    let stderr = "";
+    kind.stderr.on("data", (stueck: Buffer) => {
+      stderr += stueck.toString("utf8");
+    });
+    // WICHTIG: stdout leeren - sonst blockiert der Kindprozess an `-progress`.
+    kind.stdout.on("data", () => {});
+    const frist = setTimeout(() => {
+      kind.kill("SIGTERM");
+    }, fristMs);
+    const netz = setTimeout(() => {
+      kind.kill("SIGKILL");
+    }, fristMs + 2_000);
+    kind.on("close", (code, signal) => {
+      clearTimeout(frist);
+      clearTimeout(netz);
+      fertig({ code, signal, dauerMs: Date.now() - begonnen, stderr: stderr.trim() });
+    });
+  });
 }
 
 /** Die TATSAECHLICH decodierten Bilder - gezaehlt, nicht aus dem Kopf gelesen. */
@@ -163,13 +194,13 @@ describe("Standbild-Zwischenclip gegen das echte ffmpeg", () => {
 
   it(
     "endet von selbst und hat exakt 300 Bilder (10 s bei 30 fps)",
-    () => {
+    async () => {
       const bild = erzeugeStandbild("motiv.png");
       const ziel = path.join(arbeitsordner, "seg_0300.mp4");
 
       // Die Frist ist grosszuegig gegen die gemessenen ~8 s und trotzdem endlich:
       // Laeuft der Prozess hinein, ist die Terminierungs-Zusage gebrochen.
-      const ergebnis = lauf(argumente(bild, 300, ziel), 90_000);
+      const ergebnis = await lauf(argumente(bild, 300, ziel), 90_000);
 
       expect(ergebnis.signal).toBeNull();
       expect(ergebnis.code).toBe(0);
@@ -181,13 +212,13 @@ describe("Standbild-Zwischenclip gegen das echte ffmpeg", () => {
 
   it(
     "trifft auch die Raender des Dauerbereichs genau",
-    () => {
+    async () => {
       const bild = erzeugeStandbild("motiv2.png");
       // 1 Bild ist die vertragliche Mindestlaenge dieser Funktion; 1350 Bilder
       // sind 45 s, das obere Ende des zulaessigen Dauerbereichs (4.4).
       for (const frames of [1, 1350]) {
         const ziel = path.join(arbeitsordner, `seg_${String(frames)}.mp4`);
-        const ergebnis = lauf(argumente(bild, frames, ziel), 120_000);
+        const ergebnis = await lauf(argumente(bild, frames, ziel), 120_000);
         expect(ergebnis.signal).toBeNull();
         expect(ergebnis.code).toBe(0);
         expect(zaehleBilder(ziel)).toBe(frames);
@@ -198,7 +229,7 @@ describe("Standbild-Zwischenclip gegen das echte ffmpeg", () => {
 
   it(
     "GEGENPROBE: ohne -frames:v endet derselbe Lauf NICHT",
-    () => {
+    async () => {
       // Ohne diesen Nachweis waere der Test oben wertlos: Er koennte auch dann
       // gruen sein, wenn irgendetwas anderes den Lauf beendet. Hier wird die
       // eine Zeile herausgenommen, an der die Zusage haengt - und der Prozess
@@ -210,7 +241,7 @@ describe("Standbild-Zwischenclip gegen das echte ffmpeg", () => {
       expect(stelle).toBeGreaterThan(-1);
       const ohne = [...volle.slice(0, stelle), ...volle.slice(stelle + 2)];
 
-      const ergebnis = lauf(ohne, 15_000);
+      const ergebnis = await lauf(ohne, 15_000);
 
       // NICHT ueber das Signal messen: ffmpeg faengt SIGTERM ab und beendet sich
       // mit einem Code - `signal` ist deshalb `null`, obwohl die Frist gegriffen
