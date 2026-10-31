@@ -97,16 +97,19 @@
   und byte-identisch zurueckgenommen. Gate Exit 0 - Unit **5.334 (350)**, Integration **50
   (13)**. **Gruppen-Verschieben ist nicht Teil des Issues** (keine Zielregel, Folge-Issue).
   **#392 kommentiert und geschlossen** (`completed`).
-- **#457 GEBAUT (`cf37e7a`, Welle 3):** Abspielmarke in der Zeitleiste. Der Stand kommt aus
-  `gemeinsam/abspielposition` (die Vorschau veroeffentlicht ihn, **nur die Marke** abonniert);
-  Mitscrollen nur bei laufender Uhr. Treiber **4f7** misst Frame/`left` und die Pause
-  (0 -> 44 Frames, 0 -> 12 px; Pause 50 -> 50). **Gate OFFEN:** Der Integrationstest
-  `standbild-echt` (Gegenprobe ohne `-frames:v`) **haengt** seit dem dritten Lauf - das Kind
-  schreibt nur 48 Byte, `spawnSync` kehrt nicht zurueck; **nicht #457** (kein ffmpeg-Code
-  angefasst). Ein Async-Umbau half nicht und wurde **zurueckgenommen**. **4f4-Messfehler
-  behoben:** Ohne eigene Dauer-Aenderung wird kein Undo mehr gedrueckt - vorher nahm der Pfeil
-  den vorherigen Schritt zurueck (Liste 2 -> 1), und 4f6 erbte den Schaden. **#457 bleibt offen
-  bis zum gruenen Gate.**
+- **#457 GEBAUT (`cf37e7a`, Welle 3) UND GESCHLOSSEN:** Abspielmarke in der Zeitleiste. Der
+  Stand kommt aus `gemeinsam/abspielposition` (die Vorschau veroeffentlicht ihn, **nur die
+  Marke** abonniert); Mitscrollen nur bei laufender Uhr. Treiber **4f7**: 0 -> 44 Frames,
+  0 -> 12 px; Pause 50 -> 50. **3 Gegenproben** (Position, Pause-Scroll, Zentrierung), alle rot
+  und byte-identisch zurueckgenommen. **Gate Exit 0 - Unit 5.348 (352), Integration 50 (13).**
+  **4f4-Messfehler behoben:** Ohne eigene Dauer-Aenderung wird kein Undo mehr gedrueckt -
+  vorher nahm der Pfeil den vorherigen Schritt zurueck (Liste 2 -> 1), und 4f6 erbte den
+  Schaden. `4f4` bleibt eine **Untersuchung** (der synthetische Reglerzug aendert die Dauer
+  aktuell nicht).
+- **INTEGRATIONSTEST REPARIERT (`70c66fa`):** `standbild-echt` (Gegenprobe ohne `-frames:v`)
+  hielt die Suite offen - `spawnSync` leerte die `-progress`-Pipe nicht, der SIGTERM-Kill
+  scheiterte, der Orphan lief weiter (912 s, Test-Timeout). Jetzt `spawn` mit Drain und
+  SIGKILL-Netz plus `pkill` in `afterAll`: **15,8 s, Exit 0**.
 - **Ehrlich offen:** Beenden-Frist 15 s; der Signaturblock in #456 nennt `projektId`, gebaut ist
   zusaetzlich `aktionen` (Widerspruch gemeldet, Text nicht nachgezogen); die
   **Loesch-Sperrgruende erscheinen mitten in der Marken-Kopfzeile** (aelter als #456, nicht
@@ -116,8 +119,8 @@
 - **UI 2.0, WELLE 2 ENTSCHIEDEN (30.10.2026):** Im Band laeuft eine **Aktion**, kein eigenes
   Banner-Objekt. Die **Banner-Spur ist verworfen**; **#365-#373 und #376** sind `not planned`
   geschlossen (der Vertrag `abschnitte.aktionRef` aus M9 bleibt). **Welle 2 = Variante A
-  (Bedienfluss):** #446 -> #392 -> Playhead -> Buchhaltung #383/#388/#393/#394 ->
-  Loesch-Sperrgruende. Grundlage:
+  (Bedienfluss):** #446, #392 und #457 sind **erledigt**; **naechste: Buchhaltung
+  #383/#388/#393/#394, danach Loesch-Sperrgruende**. Grundlage:
   [`docs/agents/ui-2-0-welle-2-vorschlag.md`](docs/agents/ui-2-0-welle-2-vorschlag.md).
   **#374/#375 bleiben offen** (nicht banner-gebunden, Begruendung neu schreiben). **TK-Nachtrag
   v3.33 geschrieben (`c60b4b9`):** Banner-Spur entfaellt, `abschnitte.aktionRef` bleibt.
