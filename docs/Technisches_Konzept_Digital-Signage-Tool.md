@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.11 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.32 (9.14.1: Der Reiter **[Marken] entfällt** – der Marken-Editor wird über die **Projektleiste** des geöffneten Projekts geöffnet; der Bestand bleibt **app-weit**. Entscheidung 30.10.2026, AD v1.11)
-**Datum:** 30.10.2026
+**Version:** 3.33 (9.7.7: Die **Banner-Spur entfällt** – im Band läuft eine **Aktion**; `einblendung.abschnitte` bleibt auf `aktionRef`. Entscheidung 31.10.2026, AD unverändert v1.11)
+**Datum:** 31.10.2026
 **Status:** In Planung
 
 ---
@@ -1474,8 +1474,10 @@ Der Nutzer legt eine Aktion **auf das Video**, statt sie nur davor/danach einzuo
   chirurgische Kaskade wie beim Band (9.5.3): nur der betroffene Einschub entfällt, das
   **Videoelement bleibt**.
 
-Die verwandte **„Banner-Spur"** (Welle 2, BA-Familie) ist davon zu trennen: ihre Plan-Quelle
-`trennung-banner-aktionen-plan.md` **fehlt im Repo**; die Band-Kette ist eigenständig und ohne sie baubar.
+Eine verwandte **„Banner-Spur"** gibt es **nicht** (v3.33, Entscheidung 31.10.2026): Im Band
+läuft eine **Aktion** – es gibt kein eigenes Banner-Objekt `BannerSchild` und keinen zweiten
+Abschnitts-Typ. Der Abschnitt trägt `aktionRef` (9.11.3); `schildRef` ist verworfen. Band und
+Unterbrechung sind die beiden einzigen Wirkungen einer Aktion auf das Video.
 
 ---
 
@@ -2591,6 +2593,10 @@ Identität und Rahmen sind stabil.
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
 > **Nachgezogen in v3.18 (16.08.2026), vom Auftraggeber entschieden – die Meldung aus v3.17 ist geschlossen (Anforderungsdokument unverändert v1.6):**
+
+<a id="nachtrag-v3-33"></a>
+
+> **Entschieden in v3.33 (31.10.2026), vom Auftraggeber entschieden (Anforderungsdokument unverändert v1.11):** Die **Banner-Spur entfällt.** Im Band läuft eine **Aktion** – es gibt kein eigenes Banner-Objekt `BannerSchild` und keinen zweiten Abschnitts-Typ. `einblendung.abschnitte` trägt weiterhin `aktionRef` (9.7.7, 9.11.3); so gebaut in M9 und mit dem Treiber-Schritt `4f6` am Fenster belegt. *Folge ohne die Änderung:* Zwei Datentypen (`aktionRef` und `schildRef`) füllten dasselbe Feld, jede Ansicht müsste beide kennen, und die Band-Bearbeitung hätte zwei Anlege- und zwei Löschwege. *Was ausdrücklich bleibt:* die Trennung von **Band** (parallel, 9.7.7 erster Punkt) und **Unterbrechung** (sequenziell, 9.7.7 zweiter Punkt) – sie ist gebaut und gemessen. **Verworfen:** die BA-Familie #365–#373 und #376 (auf GitHub `not planned` geschlossen); #374 (Aktionen-Overlay) und #375 (Bibliothek-Reduktion) bleiben als reine UI-Fragen offen.
 
 <a id="nachtrag-v3-32"></a>
 
