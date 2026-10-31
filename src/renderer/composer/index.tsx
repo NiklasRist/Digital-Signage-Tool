@@ -19,7 +19,14 @@ import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from 
 import { Zeitleiste } from './zeitleiste.tsx'
 import { EA_PX_PRO_SEKUNDE, ZOOM_STUFEN } from './zeitband'
 import { fuegeElementHinzu } from './element-hinzufuegen'
-import { entferneElementAusListe } from './element-entfernen'
+import { entferneElementAusListe, entferneElementeAusListe } from './element-entfernen'
+import {
+  LEERE_AUSWAHL,
+  gleicheAuswahlAb,
+  klickAuswahl,
+  type Auswahl,
+  type KlickModus,
+} from './mehrfachauswahl'
 // NACHTRAG #248 (Variante A, 05.10.): Die ad-hoc-Wiedergabeliste dieser Wurzel
 // (DndContext/Zeile/Regler unten) ist hier durch die Issue-richtige
 // `Wiedergabeliste` aus liste-ansicht.tsx (#248) ERSETZT - dokumentierte Ausnahme
@@ -266,6 +273,11 @@ export function ComposerInterna({
   // #414 (Weiche B): die Zeitleiste ist PRIMÄR; die #248-Zeilen-Liste bleibt hinter
   // dem Ansichtsschalter als Fallback erreichbar.
   const [ansicht, setzeAnsicht] = useState<'zeitleiste' | 'liste'>('zeitleiste')
+  // #392: die Mehrfachauswahl. Gehalten wird sie HIER (die Liste haelt bewusst keine,
+  // ENTSCHIEDEN 8); die Liste bekommt nur die IDs zum Anzeigen. Der Rohstand wird
+  // beim Lesen gegen die aktuelle Liste bereinigt - verschwundene Elemente fallen
+  // ohne Effekt aus der Auswahl.
+  const [auswahlRoh, setzeAuswahl] = useState<Auswahl>(LEERE_AUSWAHL)
 
   useEffect(() => aufAusgabenGeaendert(setzeAusgabenStand), [])
 
@@ -273,6 +285,28 @@ export function ComposerInterna({
 
   const inhalt: Project | null = sicht.projekt
   const liste = inhalt?.liste ?? []
+  // #392: die EINE Reihenfolge (Array-Reihenfolge, TK 9.11.3) - Bereich und Anzeige
+  // lesen sie aus derselben Quelle.
+  const reihenfolge = liste.map((element) => element.id)
+  const auswahl = gleicheAuswahlAb(auswahlRoh, reihenfolge)
+  const waehleElement = (elementId: string, modus: KlickModus): void => {
+    setzeAuswahl((bisher) =>
+      klickAuswahl(gleicheAuswahlAb(bisher, reihenfolge), reihenfolge, elementId, modus),
+    )
+  }
+  const entferneAuswahl = (): void => {
+    if (auswahl.ids.length < 2) return
+    const ids = [...auswahl.ids]
+    setzeAuswahl(LEERE_AUSWAHL)
+    // EIN Store-Aufruf (`project:entferneElemente`, #392) und EIN Sicht-Schritt -
+    // damit ist das Gruppen-Entfernen EIN Undo-Schritt. `setzeListe` allein schriebe
+    // nur die Sicht und liesse `project.json` unveraendert (am Treiber gemessen).
+    void entferneElementeAusListe(ids, projekt.setzeListe).then((antwort) => {
+      if (!antwort.ok) {
+        meldeWurzel(antwort.fehler.code, antwort.fehler.meldung)
+      }
+    })
+  }
 
   // S5 (Naht N5): der EINE Zeitleisten-Zug - Drag-Zustand + die vier DndContext-Handler.
   // Zustand und Schreibwege bleiben an EINER Stelle; die Wirkungen reisen als Rueckrufe.
@@ -774,6 +808,19 @@ export function ComposerInterna({
       <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
         {/* Die Gesamtlnge zeichnet Wiedergabeliste (#248) selbst ber baueLaengenAnzeige. */}
         <span style={{ flex: 1 }} />
+        {/* #392: Mehrfachauswahl - die Leiste steht IN der Kopfzeile, damit sie keine
+            Hoehe kostet (Merksatz aus #456: die Projektleiste schob die Zeitleiste aus
+            dem Bild; jede neue Zeile muss bei 800x572 nachgemessen werden). */}
+        {auswahl.ids.length > 1 && (
+          <>
+            <span data-testid="composer-auswahl" style={{ fontSize: 12, color: '#9aa4b2' }}>
+              {`${auswahl.ids.length} ausgewählt`}
+            </span>
+            <button type="button" data-testid="composer-auswahl-entfernen" onClick={entferneAuswahl}>
+              Entfernen
+            </button>
+          </>
+        )}
         {/* #394: Gesamtdauer, Anzahl der Elemente und das Verhaeltnis Video/Segment.
             Bewusst als FLACHE Leiste in der Kopfzeile: ein eigenes Panel ueber der
             Zeitleiste kostete die Hoehe, die die Zeitleiste zum Ziehen braucht. */}
@@ -922,11 +969,8 @@ export function ComposerInterna({
                     reparatur={verdrahtung.reparatur}
                     voraussetzungen={zeichnen.hole()}
                     zeichneBedienung={zeichneBedienung}
-                    aufZeileGewaehlt={(elementId) => {
-                      // ENTSCHIEDEN 8 (#248): Diese Ansicht haelt KEINE Auswahl - hier ist
-                      // die Wurzel der Aufrufer.
-                      void elementId
-                    }}
+                    ausgewaehlteIds={auswahl.ids}
+                    aufZeileGewaehlt={waehleElement}
                   />
                 </>
               )}
@@ -954,6 +998,8 @@ export function ComposerInterna({
             aufZoom={zoome}
             aufUnterbrechungEntfernen={entferneUnterbrechungAmVideo}
             aufUnterbrechungVerschieben={verschiebeUnterbrechungAmVideo}
+            ausgewaehlteIds={auswahl.ids}
+            aufElementGewaehlt={waehleElement}
           />
 
           {/* S4 (Naht N4): die Ausgaben-Region als eigener Baustein (#230/#232-Oeffnungsweg).

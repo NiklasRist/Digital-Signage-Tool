@@ -4258,6 +4258,77 @@ const main = async () => {
       }
     }
 
+    // Schritt 4g5 - #392: Mehrfachauswahl am echten Fenster. Zwei Bloecke per
+    // Klick + Shift waehlen, die Leiste messen, "Entfernen" druecken und EIN Cmd+Z
+    // als Rueckweg belegen. Die Fristen sind grosszuegig, weil beide Wege entprellt
+    // schreiben (ENTPRELLUNG_MS = 4000 in auto-speichern.ts).
+    {
+      const projektDatei4g5 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      const liesListe4g5 = () => JSON.parse(fs.readFileSync(projektDatei4g5, "utf-8")).liste;
+      const warteAufLaenge4g5 = async (ziel, fristMs) => {
+        const frist = Date.now() + fristMs;
+        let liste = liesListe4g5();
+        while (Date.now() < frist && liste.length !== ziel) {
+          await schlafe(250);
+          try {
+            liste = liesListe4g5();
+          } catch {
+            // Datei mitten im Schreiben - naechster Takt.
+          }
+        }
+        return liste;
+      };
+      const vorher4g5 = liesListe4g5();
+      if (vorher4g5.length < 2) {
+        fund("Mehrfachauswahl (#392)", "mindestens zwei Bloecke fuer den Shift-Bereich",
+          `Liste hat ${vorher4g5.length}`, "Untersuchung", "composer/mehrfachauswahl.ts");
+      } else {
+        // 4g3 endet im Reiter Aktionen - die Zeitleiste lebt in "Zusammenstellen".
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await schlafe(600);
+        const blockKlick4g5 = await klick('[data-testid="zeitleiste-block-0"]');
+        await seite.keyboard.down("Shift");
+        const zweiterKlick4g5 = await klick('[data-testid="zeitleiste-block-1"]');
+        await seite.keyboard.up("Shift");
+        await schlafe(300);
+        console.log(`[schritt-4g5] Klicks: block-0=${String(blockKlick4g5)}, block-1 mit Shift=${String(zweiterKlick4g5)}.`);
+        const leiste4g5 = await seite.evaluate(
+          () => document.querySelector('[data-testid="composer-auswahl"]')?.textContent ?? null,
+        );
+        const markiert4g5 = await seite.evaluate(
+          () => [...document.querySelectorAll('[data-testid^="zeitleiste-block-"]')]
+            .map((block) => block.getAttribute('data-ausgewaehlt')),
+        );
+        console.log(`[schritt-4g5] Auswahl: Leiste=${JSON.stringify(leiste4g5)}, markiert=${JSON.stringify(markiert4g5)}.`);
+        const entferntGeklickt4g5 = await klick('[data-testid="composer-auswahl-entfernen"]');
+        const ziel4g5 = vorher4g5.length - 2;
+        const nachher4g5 = await warteAufLaenge4g5(ziel4g5, 10_000);
+        await seite.keyboard.down("Meta");
+        await seite.keyboard.press("z");
+        await seite.keyboard.up("Meta");
+        const zurueck4g5 = await warteAufLaenge4g5(vorher4g5.length, 10_000);
+        console.log(`[schritt-4g5] Entfernen: Klick=${String(entferntGeklickt4g5)}, Liste ${vorher4g5.length} -> ${nachher4g5.length} (Ziel ${ziel4g5}), nach EINEM Cmd+Z = ${zurueck4g5.length}.`);
+        if (leiste4g5 === null || !leiste4g5.startsWith("2 ausgewählt")) {
+          fund("Mehrfachauswahl (#392)", "die Kopfzeile zeigt \"2 ausgewählt\"",
+            `Leiste: ${JSON.stringify(leiste4g5)}`, "Befund", "composer/index.tsx");
+        } else if (markiert4g5[0] !== "ja" || markiert4g5[1] !== "ja") {
+          fund("Mehrfachauswahl (#392)", "beide Bloecke sind sichtbar ausgewaehlt",
+            `data-ausgewaehlt: ${JSON.stringify(markiert4g5)}`, "Befund", "composer/zeitleiste.tsx");
+        } else if (nachher4g5.length !== ziel4g5) {
+          fund("Mehrfachauswahl (#392)", `Gruppen-Entfernen senkt die Liste um zwei (${String(ziel4g5)})`,
+            `Liste: ${nachher4g5.length}`, "Befund", "composer/index.tsx");
+        } else if (zurueck4g5.length !== vorher4g5.length) {
+          fund("Mehrfachauswahl (#392)", "EIN Cmd+Z stellt beide Elemente wieder her",
+            `Liste nach Undo: ${zurueck4g5.length}`, "Befund", "composer/index.tsx");
+        } else {
+          console.log("[schritt-4g5] Mehrfachauswahl GEMESSEN: Shift-Bereich, Gruppen-Entfernen, EIN Undo (#392).");
+        }
+        // 4q erwartet den Aktionen-Reiter (4g3 hatte ihn geoeffnet) - hierher zurueck.
+        await klick('[data-testid="reiter-aktionen"]');
+        await schlafe(600);
+      }
+    }
+
     // Schritt 4q - #445: Im Modus "Neue Aktion" erreichte der getippte Titel den Entwurf
     // nie (das Feld war ungesteuert, `feldVerlassen` kehrte bei `gewaehlt === null` zurueck);
     // "Anlegen" schickte `titel: ''`. Gemessen wird der ECHTE Bedienweg: Neue Aktion ->

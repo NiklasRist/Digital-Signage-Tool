@@ -47,6 +47,7 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { holeSicht, type SichtSchreiber } from './projektzustand'
+import { entferneAusgewaehlte } from './mehrfachauswahl'
 
 /** Entfernt genau ein Listenelement aus der Wiedergabeliste.
  *  #415 (Variante a) / #421: Der SICHT-SCHREIBER ist PFLICHT und laeuft ueber die
@@ -126,5 +127,67 @@ export async function entferneElementAusListe(
   // NICHTS ersatzweise gesetzt. Der Erfolg wird trotzdem ehrlich zurueckgemeldet -
   // er hat stattgefunden.
 
+  return antwort
+}
+
+/** Entfernt MEHRERE Listenelemente in EINEM Schritt (#392, Mehrfachauswahl).
+ *
+ *  Warum ein eigener Kanal und nicht n Aufrufe von `entferneElementAusListe`: Die
+ *  Undo-Huelle entscheidet JE AUFRUF, ob sie einen Schnappschuss ablegt - n Aufrufe
+ *  ergaeben n Undo-Schritte. `project:entferneElemente` streicht alle Elemente unter
+ *  EINEM Lock, und hier folgt EIN Sicht-Schritt; damit ist das Gruppen-Entfernen
+ *  EIN Schritt (die Entscheidung vom 31.10.2026, im Issue nachgetragen).
+ *
+ *  Die Pruefungen sind die des Einzelwegs: nicht leer, kein leerer Text, Projekt
+ *  geladen. Ob die Kennungen im Bestand liegen, entscheidet der Main; er entfernt
+ *  dann NICHTS (alles oder nichts). */
+export async function entferneElementeAusListe(
+  elementIds: readonly string[],
+  sichtSchreiber: SichtSchreiber,
+): Promise<Ergebnis<void>> {
+  if (!Array.isArray(elementIds) || elementIds.length === 0) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: 'entferneElementeAusListe braucht mindestens eine elementId.',
+      },
+    }
+  }
+  for (const elementId of elementIds) {
+    if (typeof elementId !== 'string' || elementId.trim() === '') {
+      return {
+        ok: false,
+        fehler: {
+          code: 'ungueltige_eingabe',
+          meldung: 'entferneElementeAusListe braucht ausschliesslich nicht leere elementIds.',
+        },
+      }
+    }
+  }
+  if (holeSicht().projekt === null) {
+    return {
+      ok: false,
+      fehler: {
+        code: 'ungueltige_eingabe',
+        meldung: 'Es ist kein Projekt geladen, aus dessen Wiedergabeliste entfernt werden koennte.',
+      },
+    }
+  }
+
+  const antwort = await rufeAuf<void>(KANAELE.project.entferneElemente, {
+    elementIds: [...elementIds],
+  })
+  if (!antwort.ok) {
+    return antwort
+  }
+
+  // ERST NACH dem `await` den Stand holen: Ein vor dem Aufruf gemerkter Stand waere
+  // waehrend der Wartezeit veraltet. Der Sicht-Schreiber ist die Wrapped-`setzeListe`
+  // (#244-Huelle) und legt GENAU EINEN Schnappschuss an.
+  const projekt = holeSicht().projekt
+  if (projekt !== null) {
+    sichtSchreiber(entferneAusgewaehlte(projekt.liste, elementIds))
+  }
   return antwort
 }

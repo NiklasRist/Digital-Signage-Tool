@@ -9,6 +9,7 @@ import { leseMarke } from '../marken-store/lese-marke'                       // 
 import { setzeStandardMarke } from '../project-store/setze-standard-marke'   // #323
 import { setzeStandardSegmentdauer } from '../project-store/setze-standard-segmentdauer' // #334
 import { setzeUnterbrechungen } from '../project-store/setze-unterbrechungen' // #426
+import { entferneElemente } from '../project-store/entferne-elemente'         // #392
 // Die vier Nutzlast-Pruefer liegen seit #332 an EINEM Ort - importiert, NICHT kopiert.
 // Genau die vierfache Kopie war der Anlass fuer #332; eine fuenfte waere der Rueckfall.
 import { abgelehnt, istGefuellterText, istObjekt } from './nutzlast-pruefer'  // #332
@@ -113,6 +114,32 @@ export function verdrahteProjectStoreNachtragIPC(): void {
       return { ok: true, wert: { elementId, referenz } }
     },
     ({ elementId, referenz }) => setzeElementReferenz(elementId, referenz),
+  )
+
+  // #392: MEHRERE Elemente in EINEM Schritt - der Kanal hinter dem Gruppen-Entfernen
+  // der Mehrfachauswahl. Die Nutzlast ist ausschliesslich `{ elementIds }`; jedes
+  // Element muss ein nicht leerer Text sein. Diese Datei meldet den Kanal an, weil
+  // #76 seiner eigenen Datei einen fuenfzehnten Kanal ausdruecklich verbietet.
+  meldeAn(
+    KANAELE.project.entferneElemente,
+    (nutzlast: unknown): Ergebnis<{ elementIds: string[] }, 'ungueltige_eingabe'> => {
+      if (!istObjekt(nutzlast)) {
+        return abgelehnt('entferneElemente erwartet ein Objekt { elementIds }.')
+      }
+      const roh = nutzlast.elementIds
+      if (!Array.isArray(roh) || roh.length === 0) {
+        return abgelehnt('entferneElemente braucht eine nicht leere Liste von elementIds.')
+      }
+      const geprueft: string[] = []
+      for (const eintrag of roh) {
+        if (!istGefuellterText(eintrag)) {
+          return abgelehnt('entferneElemente braucht ausschliesslich nicht leere elementIds.')
+        }
+        geprueft.push(eintrag)
+      }
+      return { ok: true, wert: { elementIds: geprueft } }
+    },
+    ({ elementIds }) => entferneElemente(elementIds),
   )
 }
 

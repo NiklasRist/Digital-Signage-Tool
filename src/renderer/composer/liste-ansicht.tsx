@@ -38,6 +38,7 @@ import {
   type Thumbnailquelle,
 } from './liste-ansicht'
 import { ordneNeuOptimistisch } from './liste-reorder'
+import { klickModusAus, AUSWAHLFARBE, AUSWAHLKANTE, type KlickModus } from './mehrfachauswahl'
 import { erzeugeThumbnail, type Thumbnail } from './thumbnails'
 import { aufInlineMeldung } from './optimistisch'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
@@ -59,8 +60,11 @@ export interface WiedergabelisteEigenschaften {
    *  Huelle). PFICHT - der Reorder (#122) braucht ihn fuer den Undo-Schnappschuss. */
   sichtSchreiber: (liste: Listenelement[]) => void
   /** Ruft der Nutzer eine Zeile auf (Klick), meldet die Ansicht die Auswahl nach oben.
-   *  Diese Datei hält KEINE Auswahl (s. ENTSCHIEDEN 8). */
-  aufZeileGewaehlt: (elementId: string) => void
+   *  Diese Datei hält KEINE Auswahl (s. ENTSCHIEDEN 8) - sie liest nur, welche Zeilen
+   *  ausgewählt sind (#392) und meldet die Bedienart mit (Shift/Cmd/Strg). */
+  aufZeileGewaehlt: (elementId: string, modus: KlickModus) => void
+  /** #392: die IDs der ausgewählten Elemente (Anzeige). Leer/fehlend = keine Auswahl. */
+  ausgewaehlteIds?: readonly string[]
 }
 
 const KAPUTTFARBE = '#e5634d'
@@ -75,6 +79,7 @@ function Zeile({
   voraussetzungen,
   zeichneBedienung,
   aufGewaehlt,
+  ausgewaehlt,
 }: {
   element: Listenelement
   projekt: Project
@@ -82,7 +87,9 @@ function Zeile({
   quelle: Thumbnailquelle
   voraussetzungen: Zeichenvoraussetzungen | null
   zeichneBedienung: (modell: ListenZeileModell) => JSX.Element
-  aufGewaehlt: () => void
+  aufGewaehlt: (modus: KlickModus) => void
+  /** #392: Diese Zeile ist Teil der Mehrfachauswahl. */
+  ausgewaehlt: boolean
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: modell.elementId,
@@ -151,14 +158,18 @@ function Zeile({
       data-testid="wiedergabeliste-zeile"
       data-element-id={modell.elementId}
       data-kaputt={kaputt ? 'ja' : 'nein'}
-      onClick={aufGewaehlt}
+      data-ausgewaehlt={ausgewaehlt ? 'ja' : 'nein'}
+      onClick={(ereignis) => aufGewaehlt(klickModusAus(ereignis))}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         border: kaputt
           ? `1px solid ${KAPUTTFARBE}`
           : '1px solid transparent',
-        background: modell.hervorgehoben ? HERVORHEBUNG : undefined,
+        background: ausgewaehlt
+          ? AUSWAHLFARBE
+          : modell.hervorgehoben ? HERVORHEBUNG : undefined,
+        boxShadow: ausgewaehlt ? `inset 3px 0 0 ${AUSWAHLKANTE}` : undefined,
         marginBottom: 4,
         borderRadius: 4,
         padding: '2px 4px',
@@ -297,7 +308,8 @@ export function Wiedergabeliste(p: WiedergabelisteEigenschaften): JSX.Element {
                   quelle={findeThumbnailquelle(element, p.projekt)}
                   voraussetzungen={p.voraussetzungen}
                   zeichneBedienung={p.zeichneBedienung}
-                  aufGewaehlt={() => p.aufZeileGewaehlt(modell.elementId)}
+                  ausgewaehlt={p.ausgewaehlteIds?.includes(modell.elementId) ?? false}
+                  aufGewaehlt={(modus) => p.aufZeileGewaehlt(modell.elementId, modus)}
                 />
               )
             })}

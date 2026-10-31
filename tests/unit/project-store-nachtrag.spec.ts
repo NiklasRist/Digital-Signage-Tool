@@ -25,6 +25,7 @@ vi.mock("electron", () => ({
 const ops = vi.hoisted(() => ({
   setzeEinblendung: vi.fn(),
   setzeElementReferenz: vi.fn(),
+  entferneElemente: vi.fn(),
 }));
 
 vi.mock("../../src/main/project-store/setze-einblendung", () => ({
@@ -32,6 +33,9 @@ vi.mock("../../src/main/project-store/setze-einblendung", () => ({
 }));
 vi.mock("../../src/main/project-store/setze-element-referenz", () => ({
   setzeElementReferenz: ops.setzeElementReferenz,
+}));
+vi.mock("../../src/main/project-store/entferne-elemente", () => ({
+  entferneElemente: ops.entferneElemente,
 }));
 
 const { verdrahteProjectStoreNachtragIPC } = await import(
@@ -57,13 +61,18 @@ beforeEach(() => {
 });
 
 describe("verdrahteProjectStoreNachtragIPC (#153)", () => {
-  it("meldet genau die zwei Kanaele an, jeden genau einmal", () => {
-    const erwartet = [KANAELE.project.setzeEinblendung, KANAELE.project.setzeElementReferenz];
+  it("meldet genau die drei Kanaele an, jeden genau einmal", () => {
+    const erwartet = [
+      KANAELE.project.setzeEinblendung,
+      KANAELE.project.setzeElementReferenz,
+      // #392: der Gruppen-Kanal der Mehrfachauswahl (31.10.2026 nachgetragen).
+      KANAELE.project.entferneElemente,
+    ];
 
     expect([...angemeldet.keys()].sort()).toEqual([...erwartet].sort());
     // Eine zweite Anmeldung desselben Kanals wirft erst im Betrieb (ipcMain.handle) - die
     // Map allein wuerde sie ueberschreiben und den Fehler verdecken.
-    expect(anmeldungen).toHaveLength(2);
+    expect(anmeldungen).toHaveLength(3);
   });
 
   it("ruft setzeElementReferenz mit genau den zwei Werten in dieser Reihenfolge und reicht das Ergebnis unveraendert durch", async () => {
@@ -79,6 +88,33 @@ describe("verdrahteProjectStoreNachtragIPC (#153)", () => {
     expect(ops.setzeElementReferenz).toHaveBeenCalledWith("e1", "a9");
     // toBe: kein Auspacken, kein Umformen, kein Zusatzfeld.
     expect(ergebnis).toBe(antwort);
+  });
+
+  it("reicht die Liste der elementIds unveraendert an entferneElemente weiter (#392)", async () => {
+    const antwort = { ok: true as const, wert: undefined };
+    ops.entferneElemente.mockResolvedValue(antwort);
+    const ids = ["e1", "e2", "e3"];
+
+    const ergebnis = await rufe(KANAELE.project.entferneElemente, { elementIds: ids, unfug: 1 });
+
+    expect(ops.entferneElemente).toHaveBeenCalledWith(ids);
+    expect(ergebnis).toBe(antwort);
+  });
+
+  it("lehnt eine leere oder nicht-textuelle elementIds-Liste ab, ohne die Operation zu rufen (#392)", async () => {
+    for (const nutzlast of [
+      { elementIds: [] },
+      { elementIds: "e1" },
+      { elementIds: ["e1", 2] },
+      { elementIds: ["e1", "  "] },
+      {},
+    ]) {
+      await expect(rufe(KANAELE.project.entferneElemente, nutzlast)).resolves.toMatchObject({
+        ok: false,
+        fehler: { code: "ungueltige_eingabe" },
+      });
+    }
+    expect(ops.entferneElemente).not.toHaveBeenCalled();
   });
 
   it("reicht das einblendung-Objekt als DIESELBE Referenz weiter, ohne Felder zu ergaenzen", async () => {
@@ -204,7 +240,7 @@ describe("Kanal-Registry nach #153", () => {
   it("ergaenzt den project-Block um genau zwei Namen und laesst die uebrigen Bloecke unberuehrt", () => {
     // 16 -> 17 am 20.08.2026: #238 traegt das ERREIGNIS `autoSpeichernStatus` nach.
     // 17 -> 18 am 23.08.2026: #334 traegt den Kanal `setzeStandardSegmentdauer` nach.
-    expect(Object.keys(KANAELE.project)).toHaveLength(22); // +1 durch #323, +1 durch #426
+    expect(Object.keys(KANAELE.project)).toHaveLength(23); // +1 durch #323, +1 durch #426, +1 durch #392
     expect(KANAELE.project.setzeEinblendung).toBe("project:setzeEinblendung");
     expect(KANAELE.project.setzeElementReferenz).toBe("project:setzeElementReferenz");
     // Die vierzehn aus #76 unveraendert.

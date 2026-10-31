@@ -45,7 +45,7 @@ describe("Kanal-Registry (#25)", () => {
     );
     expect(bloecke).toEqual({
       queue: ["entferne", "geaendert", "holeStand", "reiheEin", "stoerung", "wiederhole"],
-      project: ["autoSpeichernStatus", "bearbeiteAktion", "dupliziereProjekt", "entferneElement", "erstelleAktion", "erstelleProjekt", "fügeElementHinzu", "listeAusgaben", "listeProjekte", "löscheAktion", "löscheProjekt", "ordneNeu", "setzeBearbeitungsstand", "setzeDauer", "setzeEinblendung", "setzeElementReferenz", "setzeStandardMarke", "setzeStandardSegmentdauer", "setzeTrim", "setzeUnterbrechungen", "öffneProjekt", "öffneProjektordner"],
+      project: ["autoSpeichernStatus", "bearbeiteAktion", "dupliziereProjekt", "entferneElement", "entferneElemente", "erstelleAktion", "erstelleProjekt", "fügeElementHinzu", "listeAusgaben", "listeProjekte", "löscheAktion", "löscheProjekt", "ordneNeu", "setzeBearbeitungsstand", "setzeDauer", "setzeEinblendung", "setzeElementReferenz", "setzeStandardMarke", "setzeStandardSegmentdauer", "setzeTrim", "setzeUnterbrechungen", "öffneProjekt", "öffneProjektordner"],
       beenden: ["entscheidung", "status"],
       config: ["leseKonfig", "setzeAktivesProjekt", "setzeExportZiel", "setzeUIVoreinstellung"],
       media: ["öffneMedienDialog"],

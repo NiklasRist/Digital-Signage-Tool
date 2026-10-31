@@ -102,9 +102,9 @@ describe("verdrahteProjectStoreNachtrag3IPC (#323)", () => {
 });
 
 describe("KANAELE.project (#323)", () => {
-  it("traegt GENAU 22 Eintraege (21 nach #323 + setzeUnterbrechungen durch #426); Stichproben der bestehenden sind enthalten", () => {
+  it("traegt GENAU 23 Eintraege (21 nach #323 + setzeUnterbrechungen durch #426 + entferneElemente durch #392); Stichproben der bestehenden sind enthalten", () => {
     const eintraege = Object.entries(KANAELE.project);
-    expect(eintraege).toHaveLength(22);
+    expect(eintraege).toHaveLength(23); // +1 durch #392 (entferneElemente)
     const namen = eintraege.map(([, v]) => v as string);
     for (const schluessel in { // Stichprobe bestehender Eintraege unveraendert
       listeProjekte: 0,

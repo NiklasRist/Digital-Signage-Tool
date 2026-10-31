@@ -211,7 +211,38 @@ describe('Wiedergabeliste (#248) – Zeilen', () => {
       ;(behaelter.querySelector('[data-testid="wiedergabeliste-zeile"]') as HTMLElement).click()
     })
     expect(props.aufZeileGewaehlt).toHaveBeenCalledTimes(1)
-    expect(props.aufZeileGewaehlt).toHaveBeenCalledWith('z-1')
+    expect(props.aufZeileGewaehlt).toHaveBeenCalledWith('z-1', 'einzeln')
+    fertig()
+  })
+
+  it('Klick mit Shift meldet den Bereich, mit Cmd das Umschalten (#392)', () => {
+    const liste = [
+      element('z-1', 'segment', 'x-1', { dauer: 20 }),
+      element('b-2', 'segment', 'x-2', { dauer: 12 }),
+    ]
+    const props = eigenschaften(projekt(liste))
+    const { behaelter, fertig } = rendere(props)
+    const zeilen = behaelter.querySelectorAll('[data-testid="wiedergabeliste-zeile"]')
+    act(() => {
+      zeilen[0]?.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }))
+    })
+    expect(props.aufZeileGewaehlt).toHaveBeenLastCalledWith('z-1', 'bereich')
+    act(() => {
+      zeilen[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true, metaKey: true }))
+    })
+    expect(props.aufZeileGewaehlt).toHaveBeenLastCalledWith('b-2', 'umschalten')
+    fertig()
+  })
+
+  it('ausgewaehlteIds markiert GENAU diese Zeilen, die anderen nicht (#392)', () => {
+    const liste = [
+      element('z-1', 'segment', 'x-1', { dauer: 20 }),
+      element('b-2', 'segment', 'x-2', { dauer: 12 }),
+    ]
+    const { behaelter, fertig } = rendere(eigenschaften(projekt(liste), { ausgewaehlteIds: ['b-2'] }))
+    const zeilen = behaelter.querySelectorAll('[data-testid="wiedergabeliste-zeile"]')
+    expect((zeilen[0] as HTMLElement).dataset.ausgewaehlt).toBe('nein')
+    expect((zeilen[1] as HTMLElement).dataset.ausgewaehlt).toBe('ja')
     fertig()
   })
 

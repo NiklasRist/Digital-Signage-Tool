@@ -52,6 +52,8 @@ interface ZeitleistenTestEigenschaften {
   neuZug: string | null
   aktiveKante: number | null
   laedtKante: number | null
+  ausgewaehlteIds?: readonly string[]
+  aufElementGewaehlt?: (elementId: string, modus: 'einzeln' | 'bereich' | 'umschalten') => void
 }
 
 /** Der Korb-Messraum (korbRef) ist Prop der Komponente (#414); der Test liest das DOM
@@ -64,6 +66,8 @@ function ZeitleistenTest(richtung: ZeitleistenTestEigenschaften): JSX.Element {
     aktiveKante: richtung.aktiveKante,
     laedtKante: richtung.laedtKante,
     korbRef: leereRef,
+    ausgewaehlteIds: richtung.ausgewaehlteIds,
+    aufElementGewaehlt: richtung.aufElementGewaehlt,
   })
   return createElement(DndContext, null, kinder)
 }
@@ -136,5 +140,51 @@ describe('Die Zeitleiste zeigt die Einfuege-Kanten (#414)', () => {
     expect(zeilen).toHaveLength(3)
     // 3 Bloeken + Ende-Kante = Kanten 0..3; die Nummern baut die Wurzel aus der
     // Listenlaenge (baueEinfugeKanten) - die Zahlen selbst deckt spalt-drop.spec.ts ab.
+  })
+})
+
+describe('Die Zeitleiste meldet die Auswahl (#392)', () => {
+  it('Klick meldet die elementId mit der Bedienart aus dem Ereignis', () => {
+    const rufe: Array<{ id: string; modus: string }> = []
+    const behaelter = montiere({
+      projekt: projekt(2),
+      neuZug: null,
+      aktiveKante: null,
+      laedtKante: null,
+      aufElementGewaehlt: (id, modus) => rufe.push({ id, modus }),
+    })
+    const block = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-block-0"]')
+    act(() => {
+      block?.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }))
+    })
+    expect(rufe.at(-1)).toEqual({ id: 'e0', modus: 'bereich' })
+    act(() => {
+      block?.dispatchEvent(new MouseEvent('click', { bubbles: true, metaKey: true }))
+    })
+    expect(rufe.at(-1)).toEqual({ id: 'e0', modus: 'umschalten' })
+  })
+
+  it('ausgewaehlteIds markiert GENAU die genannten Bloecke', () => {
+    const behaelter = montiere({
+      projekt: projekt(2),
+      neuZug: null,
+      aktiveKante: null,
+      laedtKante: null,
+      ausgewaehlteIds: ['e1'],
+    })
+    const block0 = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-block-0"]')
+    const block1 = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-block-1"]')
+    expect(block0?.dataset.ausgewaehlt).toBe('nein')
+    expect(block1?.dataset.ausgewaehlt).toBe('ja')
+  })
+
+  it('ohne aufElementGewaehlt bleibt der Block ohne Klick-Wirkung (Prop optional)', () => {
+    const behaelter = montiere({ projekt: projekt(1), neuZug: null, aktiveKante: null, laedtKante: null })
+    const block = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-block-0"]')
+    expect(() => {
+      act(() => {
+        block?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
+    }).not.toThrow()
   })
 })

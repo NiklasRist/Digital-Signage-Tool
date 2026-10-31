@@ -2741,3 +2741,31 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 74
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-31T16:42:06.152Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Mehrfachauswahl (#392): erwartet "die Kopfzeile zeigt "2 ausgewählt"", erkannt "Leiste: null" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-10-31T16:49:03.952Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Mehrfachauswahl (#392): erwartet "Gruppen-Entfernen senkt die Liste um zwei (0)", erkannt "Liste: 2" (Ort: composer/index.tsx)
+- **Befund** Aktion anlegen (#445): erwartet "der Weg 'Neue Aktion' ist im Aktionen-Reiter bedienbar", erkannt "neu=false, titel=false, anlegen=false" (Ort: action-editor/index.tsx)
+- **Befund** Aktion anlegen (#445): erwartet "der Anlegen-Knopf steht im Modus 'Neue Aktion' am Formular", erkannt "neu=false, anlegen=false, knopf=false" (Ort: action-editor/index.tsx)
+
+## Nachlauf vom 2026-10-31T17:24:04.005Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 71
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)

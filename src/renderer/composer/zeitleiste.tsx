@@ -10,6 +10,7 @@ import type { Listenelement, Project, Einblendung } from "../../shared/contracts
 import { frameDauer } from "./gesamtlaenge";
 import { RENDER_PROFILE } from "../../shared/contracts/render-profile";
 import { EA_PX_PRO_SEKUNDE, baueZeitachse, baueBandspur } from "./zeitband";
+import { klickModusAus, AUSWAHLKANTE, type KlickModus } from "./mehrfachauswahl";
 // #437: die Marken der Unterbrechungen liegen sequenziell im Video-Block.
 import { unterbrechungsMarken } from "./unterbrechungs-aufnahme";
 // #433: der Video-Block zeigt die EINZELBILDER des Videos als Filmstreifen.
@@ -94,6 +95,10 @@ export interface ZeitleistenEigenschaften {
   aufUnterbrechungEntfernen?: (elementId: string, index: number) => void
   /** #442: eine Unterbrechung an eine neue GESPIELTE Zeitstelle schieben. */
   aufUnterbrechungVerschieben?: (elementId: string, index: number, zeitstelle: number) => void
+  /** #392: die IDs der ausgewaehlten Elemente (Anzeige). */
+  ausgewaehlteIds?: readonly string[]
+  /** #392: ein Klick auf einen Block meldet die Auswahl nach oben (Bedienart inklusive). */
+  aufElementGewaehlt?: (elementId: string, modus: KlickModus) => void
 }
 
 export function Zeitleiste({
@@ -107,6 +112,8 @@ export function Zeitleiste({
   aufZoom,
   aufUnterbrechungEntfernen,
   aufUnterbrechungVerschieben,
+  ausgewaehlteIds = [],
+  aufElementGewaehlt,
 }: ZeitleistenEigenschaften): JSX.Element {
   if (projekt === null) {
     return <div data-testid="zeitleiste-kein-projekt" />
@@ -201,6 +208,12 @@ export function Zeitleiste({
                 element={elementeNachId.get(zeile.elementId) ?? null}
                 aufUnterbrechungEntfernen={aufUnterbrechungEntfernen}
                 aufUnterbrechungVerschieben={aufUnterbrechungVerschieben}
+                ausgewaehlt={ausgewaehlteIds.includes(zeile.elementId)}
+                aufGewaehlt={
+                  aufElementGewaehlt === undefined
+                    ? undefined
+                    : (modus) => aufElementGewaehlt(zeile.elementId, modus)
+                }
               />
               {neuZug !== null && (
                 <KantenBlock nummer={index + 1} aktiv={aktiveKante === index + 1} laedt={laedtKante === index + 1} />
@@ -266,6 +279,8 @@ function ZeilenBlock({
   element = null,
   aufUnterbrechungEntfernen,
   aufUnterbrechungVerschieben,
+  ausgewaehlt = false,
+  aufGewaehlt,
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
@@ -280,6 +295,10 @@ function ZeilenBlock({
   aufUnterbrechungEntfernen?: (elementId: string, index: number) => void;
   /** #442: Unterbrechung an eine neue gespielte Zeitstelle schieben. */
   aufUnterbrechungVerschieben?: (elementId: string, index: number, zeitstelle: number) => void;
+  /** #392: dieser Block ist Teil der Mehrfachauswahl. */
+  ausgewaehlt?: boolean;
+  /** #392: Klick auf den Block (die Bedienart kommt aus dem Ereignis). */
+  aufGewaehlt?: (modus: KlickModus) => void;
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: zeile.elementId })
   const beschriftung = zeilenBeschriftung(zeile, index)
@@ -331,6 +350,13 @@ function ZeilenBlock({
       // data-ref bleibt (die #414-Abnahme-Messgroesse).
       data-element-id={zeile.elementId}
       data-ref={zeile.ref ?? ""}
+      // #392: die Auswahl ist in beiden Ansichten sichtbar (Testid-Messgroesse).
+      data-ausgewaehlt={ausgewaehlt ? 'ja' : 'nein'}
+      onClick={
+        aufGewaehlt === undefined
+          ? undefined
+          : (ereignis) => aufGewaehlt(klickModusAus(ereignis))
+      }
       style={{
         position: 'relative',
         width: zeile.breitePx,
@@ -344,6 +370,7 @@ function ZeilenBlock({
         border: `1px solid ${istBandZiel ? zielFarbe : zeile.art === 'fehlt' ? '#e5634d' : '#3a3a3a'}`,
         outline: istBandZiel ? `2px solid ${zielFarbe}` : 'none',
         outlineOffset: -2,
+        boxShadow: ausgewaehlt ? `inset 0 0 0 2px ${AUSWAHLKANTE}` : undefined,
         background: zeile.art === 'video' ? '#2f6db5' : zeile.art === 'segment' ? '#2a9d8f' : '#333',
         color: '#fff',
         display: 'flex',

@@ -46,7 +46,7 @@ vi.mock('../../src/renderer/composer/projektzustand', () => ({
   },
 }))
 
-import { entferneElementAusListe } from '../../src/renderer/composer/element-entfernen'
+import { entferneElementAusListe, entferneElementeAusListe } from '../../src/renderer/composer/element-entfernen'
 import { setzeListe } from '../../src/renderer/composer/projektzustand'
 
 // #421: `sichtSchreiber` ist Pflicht. Das Doppel reicht denselben (gemockten) `setzeListe`
@@ -330,5 +330,76 @@ describe('entferneElementAusListe - Fehlerpfade', () => {
     expect(doppel.aufrufe).toEqual([])
     expect(ergebnis.ok).toBe(false)
     if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('ungueltige_eingabe')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #392: Gruppen-Entfernen - EIN Kanal-Aufruf, EIN Sicht-Schritt
+// ---------------------------------------------------------------------------
+
+describe('entferneElementeAusListe (#392)', () => {
+  it('ruft EINMAL den Gruppen-Kanal und schreibt EINMAL die gefilterte Sicht', async () => {
+    doppel.projekt = projekt(fuenf())
+    doppel.antwort = { ok: true, wert: undefined }
+
+    const ergebnis = await entferneElementeAusListe(['e2', 'e4'], schreibe)
+
+    expect(ergebnis.ok).toBe(true)
+    expect(doppel.aufrufe).toHaveLength(1)
+    expect(doppel.aufrufe[0]?.kanal).toBe('project:entferneElemente')
+    expect(doppel.aufrufe[0]?.nutzlast).toEqual({ elementIds: ['e2', 'e4'] })
+    expect(doppel.gesetzteListen).toHaveLength(1)
+    expect(aktuelleListe().map((e) => e.id)).toEqual(['e1', 'e3', 'e5'])
+  })
+
+  it('reicht einen Main-Fehler unveraendert durch und entfernt lokal NICHTS', async () => {
+    doppel.projekt = projekt(fuenf())
+    doppel.antwort = { ok: false, fehler: { code: 'nicht_gefunden', meldung: 'Es gibt kein Listenelement.' } }
+
+    const ergebnis = await entferneElementeAusListe(['e2', 'gibt-es-nicht'], schreibe)
+
+    expect(ergebnis.ok).toBe(false)
+    if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('nicht_gefunden')
+    expect(doppel.gesetzteListen).toEqual([])
+    expect(aktuelleListe().map((e) => e.id)).toEqual(['e1', 'e2', 'e3', 'e4', 'e5'])
+  })
+
+  it('weist eine leere Kennungsliste ab, ohne zu fragen', async () => {
+    doppel.projekt = projekt(fuenf())
+
+    const ergebnis = await entferneElementeAusListe([], schreibe)
+
+    expect(ergebnis.ok).toBe(false)
+    if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('ungueltige_eingabe')
+    expect(doppel.aufrufe).toEqual([])
+  })
+
+  it('weist leere Kennungen ab, ohne zu fragen', async () => {
+    doppel.projekt = projekt(fuenf())
+
+    const ergebnis = await entferneElementeAusListe(['e1', '   '], schreibe)
+
+    expect(ergebnis.ok).toBe(false)
+    if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('ungueltige_eingabe')
+    expect(doppel.aufrufe).toEqual([])
+  })
+
+  it('ohne geladenes Projekt wird nicht gefragt', async () => {
+    doppel.projekt = null
+
+    const ergebnis = await entferneElementeAusListe(['e1'], schreibe)
+
+    expect(ergebnis.ok).toBe(false)
+    if (!ergebnis.ok) expect(ergebnis.fehler.code).toBe('ungueltige_eingabe')
+    expect(doppel.aufrufe).toEqual([])
+  })
+
+  it('entfernt bei doppelter Kennung im Aufruf genau einmal', async () => {
+    doppel.projekt = projekt(fuenf())
+    doppel.antwort = { ok: true, wert: undefined }
+
+    await entferneElementeAusListe(['e2', 'e2'], schreibe)
+
+    expect(aktuelleListe().map((e) => e.id)).toEqual(['e1', 'e3', 'e4', 'e5'])
   })
 })

@@ -104,6 +104,12 @@ export const KANAELE = {
     // ERGAENZT durch #426 (TK v3.26, 9.5.2): die Unterbrechungen eines Video-Elements.
     // Instant-Operation in diesem Namensraum; Schluessel und String sind zeichengleich.
     setzeUnterbrechungen: 'project:setzeUnterbrechungen',
+
+    // ERGAENZT durch #392 (31.10.2026): MEHRERE Elemente in EINEM Schritt - die eine
+    // Store-Operation, die das Gruppen-Entfernen der Mehrfachauswahl zu EINEM
+    // Undo-Schritt macht. Steht am ENDE des Blocks, damit die vierzehn Namen aus #76
+    // ihre Reihenfolge behalten (der Vertragstest von #153 prueft sie namentlich).
+    entferneElemente: 'project:entferneElemente',
   },
 
   // config-store (#77). Die vier Namen ENTSTEHEN hier und nirgends sonst; die
