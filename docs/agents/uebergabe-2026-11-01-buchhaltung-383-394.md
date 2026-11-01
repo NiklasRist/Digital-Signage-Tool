@@ -16,7 +16,7 @@
 | Integration | **50** in **13** Dateien |
 | Treiber | **0 Befunde** |
 | Lint | **0 Fehler**, **65 Warnungen** |
-| Offene Issues | **2**: #374, #375 |
+| Offene Issues | **0** — alle geschlossen |
 
 **Geschlossen in dieser Sitzung:** #383, #388, #394 (je `completed`, Abweichungen benannt) und
 **#393** (erst geprüft, dann auf Anweisung nachgebessert und geschlossen).
@@ -143,7 +143,13 @@ Prüfsummen der zurückgenommenen Dateien: `vorschau.tsx ee5229f9…`, `liste-an
 
 ## 7. Offene Punkte ohne Bau
 
-- **#374/#375** — nicht banner-gebunden; Ziel überlebt, Begründung muss neu geschrieben werden.
+- **#374/#375 — am 01.11.2026 neu geschnitten und `not planned` geschlossen.** Begründung steht
+  in den Abschlusskommentaren: **#374** (Aktionen-Overlay über Hauptmenü) setzt ein Hauptmenü und
+  vier Dateien voraus, die es nicht gibt; der **Reiter „Aktionen"** erfüllt das Ziel (Bibliothek,
+  Editor, Live-Vorschau). Übrig bleibt die **Navigationsfrage** (Editor als Overlay wie der
+  Marken-Editor seit #456) — dafür wäre ein neues Issue nötig. **#375** (Bibliothek auf Vollbild,
+  Badges) hat keine Voraussetzung mehr: `Aktion` kennt kein `art`, es gibt keine Badges und keine
+  Banner-Aktionen (M9/TK v3.33).
 - **Beenden-Frist 15 s** ist weiterhin unbestätigt (Zahl vom Auftraggeber nicht bestätigt).
 - **#456-Signaturblock** nennt `projektId`, gebaut ist zusätzlich `aktionen`.
 - **71 Dependabot-Lücken** (33 high) — nicht angefasst.
@@ -155,6 +161,13 @@ Prüfsummen der zurückgenommenen Dateien: `vorschau.tsx ee5229f9…`, `liste-an
 
 ## 8. Nächster Schritt
 
-**#374 und #375 neu schneiden:** beide sind am 31.10. offen geblieben, weil ihre Begründung die
-verworfene Banner-Spur voraussetzt. Ziel beschreiben, Ist-Stand gegen den Code prüfen, dann Bau
-oder `not planned`. Kein neuer Vertrag nötig.
+**Es ist kein Issue mehr offen.** Die nächste Arbeit ist eine **Entscheidung**, kein Bau:
+
+1. **Navigationsfrage aus #374:** Soll der Aktionen-Editor als **Overlay** über der Reiterfläche
+   stehen (wie der Marken-Editor seit #456)? Dann neues Issue mit eigenem Zuschnitt (Reiterleiste,
+   Projektleiste, Überlagerungslogik). Nicht auf Verdacht bauen.
+2. **Layout-Frage Welle 1:** Plan sagt „Video mittig", gebaut ist „Bühne oben". Entscheiden, dann
+   entweder nachziehen oder den Plan berichtigen.
+3. **71 Dependabot-Lücken (33 high)** — Sicherheit vor Optik; bisher nie angefasst.
+4. **Zwei unbestätigte Zahlen:** Beenden-Frist 15 s und der #456-Signaturblock (`projektId` gegen
+   gebaut zusätzlich `aktionen`).

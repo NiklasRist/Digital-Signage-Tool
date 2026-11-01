@@ -39,9 +39,16 @@
   Lint 0 Fehler / 65 Warnungen. **8 Gegenproben**, alle rot und byte-identisch zurueckgenommen.
 - **Nicht gepusht:** **4 Commits** (`9bba122`, `a94ec2e`, `72dea60`, `f13bc02`) + Doku.
   **Push nur auf Anweisung.**
-- **Offen:** **#374/#375** (Begruendung neu schreiben); Beenden-Frist 15 s; #456-Signaturblock;
-  71 Dependabot-Luecken; Layout-Frage Welle 1 („Video mittig" vs. „Buehne oben").
-  **Naechster Schritt: #374 und #375 neu schneiden.**
+- **#374/#375 NEU GESCHNITTEN UND `not planned` GESCHLOSSEN (01.11.2026):** #374 setzt ein
+  Hauptmenü und vier Dateien voraus, die es nicht gibt - der **Reiter „Aktionen"**
+  (`action-editor/index.tsx`, Bibliothek + Live-Vorschau + Formular) erfuellt das Ziel; uebrig
+  bleibt nur die **Navigationsfrage** (Overlay statt Reiter). #375 hat keine Voraussetzung mehr:
+  `Aktion` kennt **kein `art`** (`shared/contracts/aktion.ts`), es gibt **keine** Badges
+  (0 Treffer) und keine Banner-Aktionen (M9/TK v3.33). **Damit ist kein Issue mehr offen.**
+- **Offen ohne Issue:** Navigationsfrage aus #374 (Aktionen als Overlay?); Beenden-Frist 15 s;
+  #456-Signaturblock; 71 Dependabot-Luecken (33 high); Layout-Frage Welle 1
+  („Video mittig" vs. „Buehne oben"). **Naechster Schritt: eine dieser Fragen entscheiden, nicht
+  auf Verdacht bauen.**
 
 ## STAND HEUTE (31.10.2026, fuenfunddreissigste Sitzung: Bedienfluss – #446, #392, #457) – historisiert durch den Abschnitt darueber
 
