@@ -11,7 +11,35 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (30.10.2026, vierunddreissigste Sitzung: Marken-Ansicht und Streichung des Reiters) – gilt vor ALLEM weiter unten
+## STAND HEUTE (31.10.2026, fuenfunddreissigste Sitzung: Bedienfluss – #446, #392, #457) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-10-31-bedienfluss-446-392-457.md`](docs/agents/uebergabe-2026-10-31-bedienfluss-446-392-457.md).**
+
+- **TK v3.33 (`c60b4b9`):** Die **Banner-Spur entfaellt**; #365-#373 und #376 sind `not planned`.
+  Im Band laeuft eine **Aktion** (`abschnitte.aktionRef`, so in M9 gebaut).
+- **#446 GESCHLOSSEN (Messweg):** 4g3/4q warten **20 s** statt 8 s bei 4-s-Entprellung.
+  Probe: Titel **251 ms nach der Frist**; Gegenprobe mit derselben Probe gruen nach **8045 ms**.
+- **#392 GESCHLOSSEN:** Mehrfachauswahl (Shift/Cmd), Gruppen-Entfernen **EIN** Undo-Schritt ueber
+  die neue Store-Operation **`entferneElemente`** (Kanal `project:entferneElemente`).
+  **Der Treiber fand:** `setzeListe` ist der Sicht-Schreiber und schreibt `project.json` **nicht**.
+  Treiber `4g5` (2 -> 0, ein Cmd+Z -> 2), **9 Gegenproben**. Gruppen-Verschieben ist nicht Teil.
+- **#457 GESCHLOSSEN:** Abspielmarke in der Zeitleiste (`gemeinsam/abspielposition`, nur die Marke
+  abonniert); Mitscrollen nur bei Wiedergabe. Treiber `4f7` (0 -> 44 Frames, Pause 50 -> 50),
+  **3 Gegenproben**. Die Veroeffentlichung aus `vorschau.tsx` ist nur am Fenster belegt.
+- **INTEGRATIONSTEST REPARIERT (`70c66fa`):** `standbild-echt` hielt die Suite **912 s** offen
+  (`spawnSync` + `-progress pipe:1`, Orphan ueberlebte SIGTERM); jetzt `spawn` mit Drain +
+  SIGKILL-Netz + `pkill`: **15,8 s**. Ein erster Async-Umbau half nicht und wurde zurueckgenommen.
+- **4f4-MESSFEHLER BEHOBEN:** Ohne eigene Dauer-Aenderung wird kein Undo mehr gedrueckt (vorher
+  nahm der Pfeil den vorherigen Schritt zurueck, Liste 2 -> 1). Der Reglerzug selbst bleibt eine
+  **Untersuchung**.
+- **Gate Exit 0** - Unit **5.348 (352)**, Integration **50 (13)**, Treiber **0 Befunde**,
+  Lint 0 Fehler / 65 Warnungen.
+- **Gepusht:** `16e9b57..114d047`, **11 Commits**, `main == origin/main`.
+- **Offen:** 6 Issues (#383, #388, #393, #394, #374, #375); Beenden-Frist 15 s;
+  Loesch-Sperrgruende in der Marken-Kopfzeile; 71 Dependabot-Luecken. **Naechster Schritt:**
+  Buchhaltung #383/#388/#393/#394 gegen die DoD pruefen, dann die Loesch-Sperrgruende.
+
+## STAND HEUTE (30.10.2026, vierunddreissigste Sitzung: Marken-Ansicht und Streichung des Reiters) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-30-marken-ansicht-reiter.md`](docs/agents/uebergabe-2026-10-30-marken-ansicht-reiter.md).**
 **Fortsetzung derselben Sitzung: [`docs/agents/uebergabe-2026-10-30-symbole-448.md`](docs/agents/uebergabe-2026-10-30-symbole-448.md)**
