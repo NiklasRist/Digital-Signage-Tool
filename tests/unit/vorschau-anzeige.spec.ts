@@ -306,6 +306,34 @@ describe('Die Durchreichung der Auswahl', () => {
     expect(aufruf.dateiname).toBe('medien-1.mp4')
     fertig()
   })
+
+  it('#383: ein GEAENDERTES Projekt zeigt sofort das neue Element - die Vorschau ist live', () => {
+    // Die DoD von #383 verlangt "aktualisiert sich bei Änderungen". Bis zum 01.11.2026
+    // war das nirgends gemessen: Der Test beweist, dass die Vorschau NICHT den ersten
+    // Stand festhaelt, sondern bei neuen Projekt-Props das Element der neuen Liste
+    // waehlt (derselbe Taktgeber, kein zweiter Zeichenweg).
+    const erst = rendere(eigenschaften())
+    expect((doppel.videoAufrufe.at(-1) as Record<string, unknown>).dateiname).toBe('medien-1.mp4')
+
+    const neu = baueProjekt()
+    neu.assets = [
+      ...neu.assets,
+      { id: 'asset-2', typ: 'video', dateiname: 'medien-2.mp4', originalname: 'Herbst.mp4',
+        maße: { breite: 1920, höhe: 1080 }, dauer: 30, importdatum: '2026-10-06T00:00:00Z', zustand: 'ok' },
+    ]
+    neu.liste = [baueElement({ id: 'e-9', ref: 'asset-2', trimStart: 0, trimEnde: 1 })]
+
+    act(() => {
+      erst.wurzel.render(createElement(Vorschau, eigenschaften({ projekt: neu })))
+    })
+
+    const letzter = doppel.videoAufrufe.at(-1) as Record<string, unknown>
+    expect(letzter.dateiname).toBe('medien-2.mp4')
+    expect(letzter.assetId).toBe('asset-2')
+    // Und die LEERE Liste danach ist der eigene Zustand, kein eingefrorenes Bild.
+    expect(doppel.auswahlAufrufe.length).toBeGreaterThanOrEqual(2)
+    erst.fertig()
+  })
 })
 
 // ---------------- ENTSCHIEDEN 5 (#313): die Marken-Aufloesung ----------------

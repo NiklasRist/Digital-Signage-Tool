@@ -68,6 +68,13 @@ export interface WiedergabelisteEigenschaften {
 }
 
 const KAPUTTFARBE = '#e5634d'
+/**
+ * #388: Warnungen tragen GELB, nicht das Rot der kaputten Stellen. Rot heisst in dieser
+ * Liste "kaputt, Render blockiert" (TK 9.7.4); die 30-Minuten-Warnung blockiert nichts
+ * und stand bis zum 01.11.2026 trotzdem in derselben Farbe. Derselbe Ton wie die
+ * Warnung im Statistik-Panel (`statistik.tsx`) - eine Bedeutung, eine Farbe.
+ */
+const WARNFARBE = '#d9a441'
 const HERVORHEBUNG = '#f5d76e'
 
 /** Die Zeile innerhalb des SortableContext (der Ziehgriff lebt hier). */
@@ -274,7 +281,9 @@ export function Wiedergabeliste(p: WiedergabelisteEigenschaften): JSX.Element {
       <div data-testid="wiedergabeliste-laenge" style={{ fontSize: 12 }}>
         {laenge.unvollstaendig ? 'Gesamtdauer unbestimmbar' : `Gesamt: ${laenge.text}`}
         {laenge.warnung && laenge.warntext !== null && (
-          <span style={{ color: KAPUTTFARBE, marginLeft: 8 }}>{laenge.warntext}</span>
+          <span data-testid="wiedergabeliste-warnung" style={{ color: WARNFARBE, marginLeft: 8 }}>
+            {laenge.warntext}
+          </span>
         )}
       </div>
 

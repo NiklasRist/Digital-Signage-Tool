@@ -280,6 +280,39 @@ describe('Wiedergabeliste (#248) – Zeilen', () => {
     expect(zeile?.getAttribute('data-kaputt')).toBe('ja')
     fertig()
   })
+
+  it('#388: die 30-Minuten-Warnung ist GELB, die kaputte Zeile bleibt ROT', () => {
+    // Vor dem 01.11.2026 trug der Warntext dasselbe Rot wie eine kaputte Zeile - die
+    // Oberflaeche behauptete damit "Render blockiert" fuer eine Warnung, die laut
+    // TK 9.7.4 nichts blockiert. Zwei Bedeutungen brauchen zwei Farben.
+    const liste = [
+      element('s-1', 'segment', 'x-1', { dauer: 1801 }),
+      element('v-2', 'video', 'a-1', { trimStart: 0, trimEnde: 4 }),
+    ]
+    const stellen: KaputteStelle[] = [
+      { art: 'element_asset', elementId: 'v-2', assetId: 'a-1', grund: 'asset_fehlt' },
+    ]
+    const { behaelter, fertig } = rendere(eigenschaften(projekt(liste), { stellen }))
+
+    // Die angezeigte Farbe wird gegen ein Vergleichselement gemessen: jsdom
+    // normalisiert "#d9a441" zu "rgb(...)", der Literal-Vergleich ginge daneben.
+    const gemessen = (wert: string): string => {
+      const probe = document.createElement('span')
+      probe.style.color = wert
+      return probe.style.color
+    }
+
+    const warnung = behaelter.querySelector<HTMLElement>('[data-testid="wiedergabeliste-warnung"]')
+    expect(warnung).not.toBeNull()
+    expect(warnung?.textContent ?? '').toContain('länger als 30 Minuten')
+    expect(warnung?.style.color).toBe(gemessen('#d9a441'))
+    expect(warnung?.style.color).not.toBe(gemessen('#e5634d'))
+
+    const kaputteZeile = behaelter.querySelector<HTMLElement>('[data-element-id="v-2"]')
+    expect(kaputteZeile?.getAttribute('data-kaputt')).toBe('ja')
+    expect(kaputteZeile?.style.borderColor).toBe(gemessen('#e5634d'))
+    fertig()
+  })
 })
 
 // ---------------- Reorder (ENTSCHIEDEN 3, direkt über aufgefängtes onDragEnd) ----------------

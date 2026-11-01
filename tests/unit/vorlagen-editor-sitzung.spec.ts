@@ -19,12 +19,32 @@ import type { Sitzungshalter } from '../../src/renderer/app-shell/undo-aufzeichn
 import type { Vorlage } from '../../src/shared/contracts/vorlage'
 import { VorlagenEditorWurzel } from '../../src/renderer/vorlagen-editor'
 
+// #393: Die Vorschau laeuft ueber EINEN Zeichenaufruf (`zeichneSegment`, TK 9.10.1).
+// Der wird hier gezaehlt und liefert ein Ersatzbild - jsdom hat kein Canvas.
+const zeichnen = vi.hoisted(() => ({ aufrufe: [] as Array<{ vorlage: Vorlage }> }))
+
 vi.mock('../../src/renderer/template-canvas/schriften', () => ({
   stelleSchriftenBereit: vi.fn(async () => undefined),
 }))
+
+vi.mock('../../src/renderer/template-canvas/zeichne-segment', () => ({
+  zeichneSegment: (_aktion: unknown, vorlage: unknown) => {
+    zeichnen.aufrufe.push({ vorlage: vorlage as Vorlage })
+    const nummer = zeichnen.aufrufe.length
+    return {
+      canvas: { toDataURL: () => `data:image/png;base64,BILD-${String(nummer)}` },
+      breite: 1920,
+      hoehe: 1080,
+    }
+  },
+}))
+
+// Die Zeichen-Marke: ohne sie zeichnet der Editor NICHTS (#312/#313).
+const MARKE = { id: 'marke-eingebaut', name: 'Eingebaut', farben: {}, zonen: [] }
+
 vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
   stelleMarkeBereit: vi.fn(async () => ({ ok: true, wert: undefined })),
-  holeBereiteMarke: vi.fn(() => null),
+  holeBereiteMarke: vi.fn(() => MARKE),
 }))
 vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
   rufeAuf: vi.fn(async () => ({
@@ -105,7 +125,23 @@ function rendere(eigenschaften: VorlagenEditorWurzelProps): HTMLElement {
   return behaelter
 }
 
+/** Wie `rendere`, gibt aber die Wurzel zurueck - fuer den Nachweis eines NEUEN Renderns. */
+async function rendereMitWurzel(
+  eigenschaften: VorlagenEditorWurzelProps,
+): Promise<{ behaelter: HTMLElement; wurzel: Root }> {
+  const behaelter = document.createElement('div')
+  document.body.appendChild(behaelter)
+  const wurzel: Root = createRoot(behaelter)
+  await act(async () => {
+    wurzel.render(createElement(VorlagenEditorWurzel, eigenschaften) as ReactElement)
+    await new Promise((fertig) => setTimeout(fertig, 0))
+  })
+  GERAETE.push({ behaelter, wurzel })
+  return { behaelter, wurzel }
+}
+
 afterEach(() => {
+  zeichnen.aufrufe.length = 0
   for (const geraet of GERAETE) {
     act(() => {
       geraet.wurzel.unmount()
@@ -148,5 +184,52 @@ describe('Vorlagen-Editor-Sitzung (#409)', () => {
   it('Ohne Sitzung zeigt die Wurzel die Uebersicht und wirft NICHT', () => {
     const behaelter = rendere(baueEigenschaften(null))
     expect(behaelter.querySelector('[data-testid="vorlagen-uebersicht"]') !== null).toBe(true)
+  })
+})
+
+// Die DoD von #393 verlangt "Vorschau aktualisiert sich bei Aenderungen". Bis zum
+// 01.11.2026 war die Live-Vorschau des Vorlagen-Editors in KEINEM Test gemountet:
+// das Kabel `vorlage -> zeichneSegment` war nur am Fenster sichtbar.
+describe('#393: die Live-Vorschau zeichnet bei einer Aenderung neu', () => {
+  it('eine geaenderte Arbeitskopie erzeugt ein NEUES Bild (kein eingefrorener Stand)', async () => {
+    const parent = eigene('vorlage-test')
+    let aktuelle: EditorSitzung | null = sitzungFest(parent)
+    const eigenschaften = baueEigenschaften(aktuelle)
+    ;(eigenschaften.sitzung as unknown as { holeSitzung: () => EditorSitzung | null }).holeSitzung =
+      () => aktuelle
+    ;(
+      eigenschaften.sitzung as unknown as { uebernimmAenderung: (v: EditorSitzung) => void }
+    ).uebernimmAenderung = (v) => {
+      aktuelle = v
+    }
+
+    const { behaelter, wurzel } = await rendereMitWurzel(eigenschaften)
+
+    const erstes = behaelter.querySelector('[data-testid="vorschau-bild"]')
+    expect(erstes).not.toBeNull()
+    expect(zeichnen.aufrufe.length).toBeGreaterThan(0)
+    expect(zeichnen.aufrufe.at(-1)?.vorlage.zonen.length).toBe(parent.zonen.length)
+    const erstesBild = erstes?.getAttribute('src')
+
+    const knopf = [
+      ...behaelter.querySelectorAll<HTMLButtonElement>('[data-testid="zone-hinzufuegen"] button'),
+    ].find((b) => (b.textContent ?? '').includes('Textzone'))
+    expect(knopf).toBeDefined()
+    await act(async () => {
+      knopf!.click()
+      await new Promise((fertig) => setTimeout(fertig, 0))
+    })
+
+    // Die Sitzung meldet die neue Arbeitskopie zurueck; der Editor rendert mit IHR.
+    await act(async () => {
+      wurzel.render(createElement(VorlagenEditorWurzel, eigenschaften) as ReactElement)
+      await new Promise((fertig) => setTimeout(fertig, 0))
+    })
+
+    const letzte = zeichnen.aufrufe.at(-1)
+    expect(letzte?.vorlage.zonen.length).toBe(parent.zonen.length + 1)
+    const zweites = behaelter.querySelector('[data-testid="vorschau-bild"]')
+    expect(zweites).not.toBeNull()
+    expect(zweites?.getAttribute('src')).not.toBe(erstesBild)
   })
 })
