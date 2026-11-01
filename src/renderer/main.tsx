@@ -15,6 +15,9 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import { ladeMarkenSchriften } from "./styles/schriften";
+// Die Gestaltungs-Grundlage (Tokens, Reset, Typografie, Bedienelemente). Muss VOR dem
+// ersten Zeichnen gelten, damit die Oberflaeche nicht erst ungestylt aufblitzt.
+import "./styles/basis.css";
 
 const wurzel = document.getElementById("wurzel");
 if (!wurzel) {

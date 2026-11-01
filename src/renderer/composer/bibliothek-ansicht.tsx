@@ -68,8 +68,18 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
         </div>
       )}
 
-      <h2>Video</h2>
-      <button type="button" onClick={p.aufImportieren} data-testid="video-importieren">
+      {/* Die Abschnitts-Etiketten bleiben beim Scrollen der Rail stehen (`position:
+          sticky`) - am Bild gesehen: die Ueberschrift "VIDEO" wurde beim Scrollen halb
+          abgeschnitten statt ganz zu verschwinden oder ganz zu bleiben. */}
+      <h2 style={{ position: 'sticky', top: 0, zIndex: 1, background: '#18181c', paddingTop: 2, paddingBottom: 2 }}>
+        Video
+      </h2>
+      <button
+        type="button"
+        onClick={p.aufImportieren}
+        data-testid="composer-medien-import"
+        style={{ width: '100%' }}
+      >
         Video importieren
       </button>
       {videos.length === 0 ? (
@@ -88,7 +98,9 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
         </ul>
       )}
 
-      <h2>Aktionen</h2>
+      <h2 style={{ position: 'sticky', top: 0, zIndex: 1, background: '#18181c', paddingTop: 2, paddingBottom: 2 }}>
+        Aktionen
+      </h2>
       {/* #416: Inline-Erst-Anlage - Titel + Vorlage, ohne Reiterwechsel. Die neue Aktion
           erscheint sofort in der Liste darunter (Sicht-Pflege ueber den Zugang). */}
       {p.aufAktionAnlegen !== undefined && (
@@ -134,7 +146,17 @@ function Videozeile(p: VideozeileEigenschaften): JSX.Element {
       onClick={p.aufWaehlen === undefined ? undefined : () => p.aufWaehlen?.(p.eintrag.asset.id)}
       style={p.ausgewaehlt ? { outline: '2px solid #e5634d', outlineOffset: -2 } : undefined}
     >
-      <div data-ton={fehlt ? 'hervorgehoben' : 'ruhig'}>
+      <div
+        data-ton={fehlt ? 'hervorgehoben' : 'ruhig'}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 6px',
+          borderRadius: 4,
+          background: p.ausgewaehlt ? '#2c2c35' : 'transparent',
+        }}
+      >
         {/* Videos tragen in dieser Ansicht KEIN Vorschaubild (ENTSCHIEDEN 3/#128) -
             der Zweig bleibt fuer den Fall, dass ein Eintrag doch eine URL traegt. */}
         {p.eintrag.vorschauUrl ? (
@@ -144,11 +166,26 @@ function Videozeile(p: VideozeileEigenschaften): JSX.Element {
             style={{ width: '64px', height: '36px', objectFit: 'cover' }}
           />
         ) : (
-          <span>{p.eintrag.typLabel}</span>
+          <span style={{ flex: '0 0 auto', fontSize: 11, color: '#74747e' }}>{p.eintrag.typLabel}</span>
         )}
-        <span>{p.eintrag.bezeichnung}</span>
-        {fehlt && <span> · fehlt</span>}
-        <button type="button" onClick={() => p.aufMediumLoeschen(p.eintrag.asset.id)}>
+        <span
+          style={{
+            flex: '1 1 auto',
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={p.eintrag.bezeichnung}
+        >
+          {p.eintrag.bezeichnung}
+        </span>
+        {fehlt && <span style={{ flex: '0 0 auto', color: '#e5634d', fontSize: 11 }}>fehlt</span>}
+        <button
+          type="button"
+          onClick={() => p.aufMediumLoeschen(p.eintrag.asset.id)}
+          style={{ flex: '0 0 auto', minHeight: 20, padding: '0 8px', fontSize: 11 }}
+        >
           Löschen
         </button>
       </div>
@@ -184,34 +221,67 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
       // Textauswahl statt als Drag (Gegenprobe am echten Fenster, #417).
       style={{ cursor: 'grab', opacity: isDragging ? 0.6 : 1, userSelect: 'none' }}
     >
-      <div data-ton={p.eintrag.kaputt ? 'hervorgehoben' : 'ruhig'}>
-        <span>{p.eintrag.bezeichnung}</span>
-        {p.eintrag.kaputt && <span> · defekt</span>}
-        <button type="button" onClick={() => void hinzufuegen(p.eintrag.aktion.id, p.aufFehler, p.sichtSchreiber)}>
-          Zur Liste hinzufügen
-        </button>
-        {/* 01.11.2026: „gute Aktion erstellen" direkt am Einfuegeweg (Notiz 21.10.) -
-            der Editor geht als Ansicht ueber der Reiterflaeche auf, der Reiter bleibt. */}
-        {p.aufBearbeiten !== undefined && (
+      <div
+        data-ton={p.eintrag.kaputt ? 'hervorgehoben' : 'ruhig'}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+          padding: 6,
+          marginBottom: 4,
+          border: '1px solid #34343c',
+          borderRadius: 6,
+          background: '#1c1c21',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+          <span
+            style={{
+              flex: '1 1 auto',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={p.eintrag.bezeichnung}
+          >
+            {p.eintrag.bezeichnung}
+          </span>
+          {p.eintrag.kaputt && <span style={{ flex: '0 0 auto', color: '#e5634d', fontSize: 11 }}>defekt</span>}
+        </span>
+        <span style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           <button
             type="button"
-            data-testid={`aktion-bearbeiten-${p.eintrag.aktion.id}`}
-            onClick={() => p.aufBearbeiten?.(p.eintrag.aktion.id)}
+            style={{ flex: '1 1 100%', minHeight: 20, padding: '0 8px', fontSize: 11 }}
+            onClick={() => void hinzufuegen(p.eintrag.aktion.id, p.aufFehler, p.sichtSchreiber)}
           >
-            Bearbeiten
+            Zur Liste hinzufügen
           </button>
-        )}
-        {/* #430: Aktion loeschen - OHNE Rueckfrage (User-Entscheidung 16.10.2026); der
-            Schritt ist in EINEM Zug rueckgaengig zu machen (TK 9.13.1). */}
-        {p.aufLoeschen !== undefined && (
-          <button
-            type="button"
-            data-testid={`aktion-loeschen-${p.eintrag.aktion.id}`}
-            onClick={() => p.aufLoeschen?.(p.eintrag.aktion.id)}
-          >
-            Löschen
-          </button>
-        )}
+          {/* 01.11.2026: „gute Aktion erstellen" direkt am Einfuegeweg (Notiz 21.10.) -
+              der Editor geht als Ansicht ueber der Reiterflaeche auf, der Reiter bleibt. */}
+          {p.aufBearbeiten !== undefined && (
+            <button
+              type="button"
+              data-testid={`aktion-bearbeiten-${p.eintrag.aktion.id}`}
+              style={{ flex: '0 0 auto', minHeight: 20, padding: '0 8px', fontSize: 11 }}
+              onClick={() => p.aufBearbeiten?.(p.eintrag.aktion.id)}
+            >
+              Bearbeiten
+            </button>
+          )}
+          {/* #430: Aktion loeschen - OHNE Rueckfrage (User-Entscheidung 16.10.2026); der
+              Schritt ist in EINEM Zug rueckgaengig zu machen (TK 9.13.1). */}
+          {p.aufLoeschen !== undefined && (
+            <button
+              type="button"
+              data-testid={`aktion-loeschen-${p.eintrag.aktion.id}`}
+              style={{ flex: '0 0 auto', minHeight: 20, padding: '0 8px', fontSize: 11 }}
+              onClick={() => p.aufLoeschen?.(p.eintrag.aktion.id)}
+            >
+              Löschen
+            </button>
+          )}
+        </span>
       </div>
     </li>
   )

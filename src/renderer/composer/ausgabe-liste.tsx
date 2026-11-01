@@ -78,13 +78,39 @@ export function AusgabeListenansicht(p: AusgabeListenEigenschaften): JSX.Element
           return null
         }
         return (
-          <li key={datei.dateiname}>
-            <span>{zeile.dateiname}</span>
-            <span> · {zeile.groesseText}</span>
-            <span> · {zeile.zeitpunktText}</span>
+          <li
+            key={datei.dateiname}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              lineHeight: '20px',
+              whiteSpace: 'nowrap',
+              minWidth: 0,
+            }}
+          >
+            <span
+              style={{
+                flex: '0 1 auto',
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+              title={zeile.dateiname}
+            >
+              {zeile.dateiname}
+            </span>
+            <span style={{ flex: '0 0 auto', color: '#8f8f8f' }}>
+              {zeile.groesseText} · {zeile.zeitpunktText}
+            </span>
             {/* Der Export-Rueckruf bekommt die ORIGINAL-Datei aus dem Bestand, nicht die
                 abgeleitete Zeile - sie traegt nur Texte. */}
-            <button type="button" onClick={() => p.aufExportieren(datei)}>
+            <button
+              type="button"
+              onClick={() => p.aufExportieren(datei)}
+              style={{ flex: '0 0 auto', minHeight: 20, padding: '0 8px', fontSize: 12 }}
+            >
               Exportieren
             </button>
           </li>

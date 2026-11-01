@@ -3854,6 +3854,10 @@ const main = async () => {
         };
       });
       console.log(`[schritt-4f4] Hoehen: ${JSON.stringify(hoehen4f4)}`);
+      // BELEG FUER DIE DESIGNARBEIT (01.11.2026): "designmaessig sieht das nicht
+      // professionell aus" (Niklas). Der Treiber haelt den Composer als Bild fest,
+      // damit ueber Optik am echten Fenster geredet wird und nicht an Kästchen.
+      await seite.screenshot({ path: "/tmp/kai-ui-composer.png" });
       const dauerVor4f4 = await seite.evaluate(
         () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
       );

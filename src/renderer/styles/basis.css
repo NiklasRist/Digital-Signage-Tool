@@ -1,0 +1,276 @@
+/* [renderer] Die Gestaltungs-Grundlage der Oberfläche.
+ *
+ * WARUM DIESE DATEI EXISTIERT (01.11.2026, Niklas: "das hauptproblem ist
+ * designmaessig sieht das nicht professionell aus"): Bis hierher gab es im
+ * Renderer KEINE Zeile CSS - kein Reset, keine Typografie, keine Tokens. Jede
+ * Flaeche war ein inline gestyltes div, jeder Knopf der Browser-Standardknopf
+ * (grauer Verlauf, 3D-Rand), jede Ueberschrift die Browser-Vorgabe (~24 px fett).
+ * Genau das war der Eindruck: eine HTML-Seite, keine Anwendung.
+ *
+ * DIE REGEL DIESER DATEI: Sie setzt NUR die Grundlage - Farben, Schrift, Abstände
+ * und das Aussehen der Bedienelemente. Sie gestaltet keine Fachflaeche. Wo eine
+ * Komponente heute eigene Inline-Stile traegt, gewinnt weiter der Inline-Stil
+ * (React schreibt ihn in das style-Attribut); diese Datei fuellt nur, was bisher
+ * ungestylt war.
+ *
+ * FARBEN: Die Werte sind aus dem Bestand abgeleitet (#1f1f1f/#2b2b2b/#8f8f8f fuer
+ * die Flaechen, #e5634d fuer Fehler, #d9a441 fuer Warnungen) und zu Tokens
+ * zusammengefasst. Ein zweiter Satz Farben waere eine zweite Wahrheit.
+ */
+
+:root {
+  /* Dunkles Erscheinungsbild - auch fuer Bildlaufleisten und native Auswahlfelder. */
+  color-scheme: dark;
+
+  --grund: #16161a;
+  --flaeche: #1c1c21;
+  --flaeche-2: #232329;
+  --flaeche-3: #2c2c34;
+  --rand: #34343c;
+  --rand-stark: #4a4a54;
+
+  --text: #e7e7ea;
+  --text-2: #a0a0aa;
+  --text-3: #74747e;
+
+  --akzent: #7c8cff;
+  --akzent-text: #101124;
+  --fehler: #e5634d;
+  --warnung: #d9a441;
+
+  --radius: 6px;
+  --radius-klein: 4px;
+  --abstand: 8px;
+
+  --schrift: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue",
+    Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#wurzel {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--grund);
+  color: var(--text);
+  font-family: var(--schrift);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+}
+
+/* Auswahl darf man sehen - sie ist das einzige Element, das die Systemfarbe verliert. */
+::selection {
+  background: color-mix(in srgb, var(--akzent) 40%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Bedienelemente
+ *
+ * EIN Aussehen fuer alle Knoepfe: flach, ein Rand, 6 px Radius, 24 px hoch. Der
+ * wichtigste Teil ist `font: inherit` - ohne das zeichnet der Browser Knopftext in
+ * der Systemschrift und nicht in der Schrift der Anwendung.
+ * ------------------------------------------------------------------------- */
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--flaeche-2);
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  padding: 3px 10px;
+  min-height: 24px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--flaeche-3);
+  border-color: var(--rand-stark);
+}
+
+button:active:not(:disabled) {
+  background: #383840;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Der Umschalter (Reiter, Ansichten) traegt `aria-pressed` - er ist der EINE
+ * ausgewaehlte Zustand und darf sich deshalb deutlich unterscheiden. */
+button[aria-pressed="true"] {
+  background: var(--akzent);
+  border-color: var(--akzent);
+  color: var(--akzent-text);
+  font-weight: 600;
+}
+
+button[aria-pressed="true"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--akzent) 88%, white);
+  border-color: color-mix(in srgb, var(--akzent) 88%, white);
+}
+
+/* Die Reiterleiste markiert den aktiven Reiter mit `aria-selected` (role="tab"), nicht
+ * mit `aria-pressed`. Ohne diesen Block sehen alle vier Reiter gleich aus - am Bild
+ * gesehen: der offene Reiter war nicht erkennbar. */
+button[role="tab"][aria-selected="true"] {
+  background: var(--akzent);
+  border-color: var(--akzent);
+  color: var(--akzent-text);
+  font-weight: 600;
+}
+
+button[role="tab"][aria-selected="true"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--akzent) 88%, white);
+  border-color: color-mix(in srgb, var(--akzent) 88%, white);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: #131317;
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  min-height: 24px;
+}
+
+/* `user-select: none` am body gilt nicht fuer Eingabefelder - Text muss dort
+ * markierbar bleiben. */
+input,
+textarea {
+  user-select: text;
+}
+
+input:hover:not(:disabled),
+select:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  border-color: var(--rand-stark);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.5;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 0;
+  accent-color: var(--akzent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--akzent);
+  outline-offset: 1px;
+  border-radius: var(--radius-klein);
+}
+
+/* ---------------------------------------------------------------------------
+ * Typografie
+ *
+ * Abschnitts-Ueberschriften sind ETIKETTEN, keine Titel: klein, gesperrt,
+ * zurueckhaltend. Die Browser-Vorgabe (24 px fett) ist in einer Werkzeugleiste
+ * eine falsche Aussage ueber die Wichtigkeit.
+ * ------------------------------------------------------------------------- */
+h2:first-child,
+h3:first-child {
+  margin-top: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 12px 0 4px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h1 {
+  font-size: 15px;
+}
+
+h2,
+h3,
+h4 {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+p {
+  margin: 4px 0;
+  color: var(--text-2);
+}
+
+small {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+ul,
+ol {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+a {
+  color: var(--akzent);
+}
+
+code,
+kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  background: var(--flaeche-2);
+  border-radius: var(--radius-klein);
+  padding: 1px 4px;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--rand);
+  margin: 8px 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Bildlaufleisten - die Standardleisten sind der zweite grosse "unfertig"-Eindruck.
+ * ------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a44;
+  border: 2px solid var(--grund);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a56;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

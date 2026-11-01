@@ -147,6 +147,10 @@ export function Zeitleiste({
         padding: 4,
         overflowX: 'auto',
         minHeight: 80,
+        // Gerahmt wie Buehne und Rail: die drei Flaechen sollen dieselbe Kante zeigen.
+        background: '#141418',
+        border: '1px solid #2a2a31',
+        borderRadius: 8,
       }}
     >
       {/* #428: Zoom-Steuerung (px/s). Bei hohem Zoom werden einzelne Frames sichtbar. */}
@@ -501,7 +505,16 @@ function ZeilenBlock({
           </span>
         )
       })}
-      <span style={{ position: 'relative', zIndex: 1, textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}>
+      <span
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
         {beschriftung.dauerText}
         {zeile.art === 'video' && zeile.dauerSekunden !== null
           ? ` · ${Math.round(zeile.dauerSekunden * RENDER_PROFILE.fps)} F`
@@ -525,7 +538,24 @@ function ZeilenBlock({
           )}
         </span>
       )}
-      <span style={{ position: 'relative', zIndex: 1, opacity: 0.7, textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}>{zielArt ?? beschriftung.art}</span>
+      {/* Die Art-Bezeichnung braucht Platz: in einem 20-px-Block stand hier
+          "video" untereinander in vier Zeilen (am Fenster gesehen). Unter 56 px
+          Breite sagt der Block nur noch seine Dauer. */}
+      {zeile.breitePx >= 56 && (
+        <span
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            opacity: 0.7,
+            textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {zielArt ?? beschriftung.art}
+        </span>
+      )}
     </div>
   );
 }

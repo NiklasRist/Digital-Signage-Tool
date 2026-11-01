@@ -847,6 +847,12 @@ export function ComposerInterna({
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
+            // Eigene Flaeche mit Rand: Ohne sie schwimmen Rail und Buehne im selben
+            // Schwarz, und das Fenster wirkt ungegliedert (am Bild beurteilt).
+            background: '#18181c',
+            border: '1px solid #2a2a31',
+            borderRadius: 8,
+            padding: 8,
           }}
         >
           <div
@@ -866,9 +872,11 @@ export function ComposerInterna({
                 </button>
               </>
             )}
-            <button type="button" data-testid="composer-medien-import" onClick={importiere}>
-              Video importieren
-            </button>
+            {/* 01.11.2026: KEIN zweiter Import-Knopf. Vorher stand hier und in der
+                Bibliothek derselbe "Video importieren"-Weg untereinander - ein Weg,
+                zwei Knoepfe. Der Knopf lebt jetzt in der Bibliothek bei der
+                Video-Sektion, wo er hingehoert; der Testid bleibt der Messgroesse
+                des Treibers erhalten. */}
             <button
               type="button"
               data-testid="composer-render-oefnen"
@@ -881,7 +889,7 @@ export function ComposerInterna({
             <Statistik liste={inhalt.liste} />
           </div>
           <div
-            style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto' }}
+            style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto', paddingTop: 2 }}
             onDragOver={(ereignis) => {
               ereignis.preventDefault()
             }}
@@ -909,7 +917,17 @@ export function ComposerInterna({
 
       <div
         data-testid="composer-haupt"
-        style={{ flex: '1 1 auto', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8 }}
+        style={{
+          flex: '1 1 auto',
+          minWidth: 0,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          // Kein Durchschlagen: Sonst schob die letzte Zeile (Ausgaben) ein paar Pixel
+          // ueber die Kante und wurde angeschnitten (am Bild gesehen).
+          overflow: 'hidden',
+        }}
       >
       {/* BUEHNE, DIREKT DARUNTER DIE ZEITLEISTE (Entscheidung Niklas, 01.11.2026:
           "was wir brauchen ist die buehne und direkt darunter die zeitleiste").
@@ -917,7 +935,17 @@ export function ComposerInterna({
           (Wiedergabeliste), ist ausdruecklich noch offen. */}
       <div
         data-testid="composer-buehne"
-        style={{ flex: '1 1 auto', minHeight: 120, minWidth: 0, position: 'relative' }}
+        style={{
+          flex: '1 1 auto',
+          minHeight: 120,
+          minWidth: 0,
+          position: 'relative',
+          // Gerahmte Flaeche: das Video bekommt eine Kante statt in der Flaeche zu enden.
+          background: '#0d0d10',
+          border: '1px solid #2a2a31',
+          borderRadius: 8,
+          overflow: 'hidden',
+        }}
       >
         {buehne}
       </div>

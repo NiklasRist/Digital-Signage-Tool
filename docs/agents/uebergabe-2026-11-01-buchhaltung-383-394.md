@@ -242,3 +242,37 @@ volle Höhe. Bis das entschieden ist, bleiben FA-06/FA-14 in `treiber-matrix.md`
 **Gate nach dem Nachtrag:** typecheck 0, lint 0 Fehler / 65 Warnungen, Unit **5.364** (352),
 Integration **50** (13), Treiber `exit 0` mit **einem** Befund (der Layout-Blocker oben).
 
+## 11. Gestaltung: die Oberfläche hatte kein CSS
+
+Niklas, 01.11.2026: *„das hauptproblem ist designmaessig sieht das nicht professionell aus"*.
+Der harte Befund dahinter: **Der Renderer enthielt keine Zeile CSS** — kein Reset, keine
+Typografie, keine Tokens. Jeder Knopf war der Browser-Standardknopf, jede Überschrift die
+Browser-Vorgabe (~24 px fett), der Hintergrund weiß, obwohl der Code durchgehend auf dunkel
+ausgelegt ist.
+
+**Neu `src/renderer/styles/basis.css`** (in `main.tsx` VOR dem ersten Zeichnen importiert):
+Tokens (Flächen, Ränder, Text, Akzent, Fehler, Warnung), Reset, Systemschrift 13 px, ein
+Aussehen für Knopf/Eingabe/Auswahl, Fokusring, Bildlaufleisten, `color-scheme: dark`.
+
+Dazu, jeweils am Bild beurteilt (Treiber-Screenshot `/tmp/kai-ui-composer.png`, bei 800 × 572):
+
+- **Statistik** als Zeilen (Bezeichnung links, Wert rechts) statt Fließtext; lange Bezeichnung
+  wird mit Ellipse gekürzt.
+- **Ein** Import-Weg: der zweite „Video importieren"-Knopf in der Kopfzeile ist weg, der
+  Testid `composer-medien-import` liegt am Knopf der Video-Sektion.
+- **Ausgaben** zugeklappt eine Zeile (Schalter, neueste Datei, „Exportieren"); die volle Liste
+  bleibt **im DOM** und wird nur verdeckt — sonst zählt der Treiber `ausgaben-liste li` falsch
+  (am 01.11. gemessen: drei Befunde, danach weg).
+- **Bibliothek**: Video-Zeilen einzeilig mit Ellipse, Aktions-Karten mit Rahmen und breitem
+  „Zur Liste hinzufügen". Die Umbenennung auf „Einfügen" ist **zurückgenommen** — fünf Tests
+  sichern den Weg über genau diesen Text.
+- **Zeitleiste**: Blocktext bricht nicht mehr um; die Art-Bezeichnung entfällt unter 56 px
+  Breite (vorher stand „video" in vier Zeilen). Block, Rail und Bühne sind gerahmt.
+- **Der aktive Reiter** war nicht markiert — die Reiter tragen `aria-selected`, gestylt war nur
+  `aria-pressed`. Jetzt sichtbar.
+
+Gemessen bei 800 × 572: Bühne **520 × 288**, Zeitleiste **520 × 124**, `gleichLang true`.
+Offen: Die Wiedergabeliste bleibt ausgeblendet (Konzept); von ihr kommen der eine Befund
+(Bandliste) und die zwei „Untersuchungen" (Gesamtdauer, Dauer-Zug).
+
+
