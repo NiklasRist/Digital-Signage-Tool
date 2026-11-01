@@ -3838,13 +3838,77 @@ const main = async () => {
       if (box4f4 !== null) {
         const mx = box4f4.x + box4f4.width / 2;
         const my = box4f4.y + box4f4.height / 2;
-        await seite.mouse.move(mx, my);
-        await seite.mouse.down();
-        for (let i = 1; i <= 8; i += 1) {
-          await seite.mouse.move(mx - i * 8, my);
-          await schlafe(30);
+        // WIE WEIT DARF DER ZUG GEHEN (Nachtrag 01.11.2026)? Der Endgriff haelt am
+        // Anfangsgriff an (element-zeile.ts, "Kein Ueberholen"); ein Zug quer durch den
+        // Balken landete bei einem kurzen Ausschnitt im Gleichstand und wurde beim
+        // Loslassen als "Bereich ohne Laenge" abgewiesen - genau daher kam das
+        // wiederholte "Dauer unveraendert (Vorbedingung)" seit dem 31.10. Der Zug geht
+        // deshalb hoechstens bis zur MITTE zwischen den beiden Griffen (bei einem Griff:
+        // bis zur Balkenmitte). Bleibt kein Platz, wird nach rechts verlaengert.
+        const anfangGriff4f4 = await seite.$('[data-testid="element-griff-anfang"]');
+        const anfangBox4f4 = anfangGriff4f4 === null ? null : await anfangGriff4f4.boundingBox();
+        anfangGriff4f4?.dispose?.();
+        const balkenGriff4f4 = await seite.$('[data-testid="element-balken"]');
+        const balkenBox4f4 = balkenGriff4f4 === null ? null : await balkenGriff4f4.boundingBox();
+        balkenGriff4f4?.dispose?.();
+        const linkeGrenze4f4 = anfangBox4f4 === null
+          ? (balkenBox4f4?.x ?? mx)
+          : anfangBox4f4.x + anfangBox4f4.width;
+        const rechteGrenze4f4 = balkenBox4f4 === null ? mx : balkenBox4f4.x + balkenBox4f4.width;
+        const platzLinks4f4 = mx - linkeGrenze4f4;
+        const platzRechts4f4 = rechteGrenze4f4 - mx;
+        const richtung4f4 = platzLinks4f4 > 8 ? -1 : platzRechts4f4 > 8 ? 1 : 0;
+        const zug4f4 = richtung4f4 === -1
+          ? Math.min(64, platzLinks4f4 / 2)
+          : richtung4f4 === 1
+            ? Math.min(64, platzRechts4f4 / 2)
+            : 0;
+        console.log(
+          `[schritt-4f4] Zug: mx=${mx.toFixed(1)} links=${platzLinks4f4.toFixed(1)} ` +
+            `rechts=${platzRechts4f4.toFixed(1)} richtung=${richtung4f4} zug=${zug4f4.toFixed(1)}`,
+        );
+        if (zug4f4 > 0) {
+          // SONDE (Nachtrag 01.11.2026): "Gemessen" heisst, dass der Zug am Fenster
+          // WIRKLICH auf dem Griff beginnt. Vorher stand hier nur das Ergebnis, und ein
+          // nicht begonnener Zug sah genauso aus wie ein wirkungsloser. Die Sonde nennt
+          // das oberste Element unter dem Zeiger und den Stand WAEHREND der Geste.
+          const unterDemGriff4f4 = await seite.evaluate(
+            (x, y) => {
+              const stapel = document.elementsFromPoint(x, y).slice(0, 3).map((e) => e.getAttribute('data-testid') ?? e.tagName);
+              const rechteck = (testid) => {
+                const e = document.querySelector(`[data-testid="${testid}"]`);
+                if (e === null) return null;
+                const r = e.getBoundingClientRect();
+                return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+              };
+              // Die Vorfahrenkette bis zum Griff: sie zeigt, in welchem Kasten der
+              // Regler wirklich steckt (am 01.11.2026: ein 18 px hoher Scrollkasten).
+              const kette = [];
+              for (let e = document.querySelector('[data-testid="element-griff-ende"]'); e !== null && kette.length < 7; e = e.parentElement) {
+                const r = e.getBoundingClientRect();
+                kette.push(`${e.getAttribute('data-testid') ?? e.tagName} y=${Math.round(r.y)} h=${Math.round(r.height)}`);
+              }
+              return { stapel, griff: rechteck('element-griff-ende'), zeile: rechteck('wiedergabeliste-zeile'), statistik: rechteck('statistik'), kette };
+            },
+            mx,
+            my,
+          );
+          console.log(`[schritt-4f4] Unter dem Griff: ${JSON.stringify(unterDemGriff4f4)}`);
+          await seite.mouse.move(mx, my);
+          await seite.mouse.down();
+          let zwischenstand4f4 = dauerVor4f4;
+          for (let i = 1; i <= 8; i += 1) {
+            await seite.mouse.move(mx + richtung4f4 * (zug4f4 * i) / 8, my);
+            await schlafe(30);
+            if (i === 4) {
+              zwischenstand4f4 = await seite.evaluate(
+                () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
+              );
+            }
+          }
+          console.log(`[schritt-4f4] Waehrend des Zuges: ${JSON.stringify(zwischenstand4f4)}`);
+          await seite.mouse.up();
         }
-        await seite.mouse.up();
         await schlafe(1_500);
         dauerNach4f4 = await seite.evaluate(
           () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,

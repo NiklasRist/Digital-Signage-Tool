@@ -221,6 +221,28 @@ describe('Ziehbewegung (#249)', () => {
     fertig()
   })
 
+  it('der Endgriff kann den Anfangsgriff nicht ueberholen: keine negative Dauer in der Anzeige (Nachtrag 01.11.2026)', () => {
+    patcheBalkenBreite()
+    // Video 30,7 s, Ausschnitt 2,5 .. 12,5. Der Anfang liegt bei 2,5/30,7 * 1000 = 81 px.
+    const { behaelter, fertig } = rendere(eigenschaften(element()))
+    act(() => {
+      const griff = document.querySelector('[data-testid="element-griff-ende"]') as HTMLElement
+      griff.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    })
+    act(() => {
+      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 5 }))
+    })
+    // Am Fenster stand hier vorher "-1,0 s".
+    expect(text(behaelter, 'element-dauer')).toBe('0,0 s')
+    expect(text(behaelter, 'element-dauer')).not.toContain('-')
+    lasseLos()
+    // Gleichstand ist erlaubt (keine erfundene Mindestdistanz) - der Store weist ihn ab.
+    expect(doppel.uebernehme.length).toBe(1)
+    expect(doppel.uebernehme[0]?.anfang).toBe(2.5)
+    expect(doppel.uebernehme[0]?.ende).toBe(2.5)
+    fertig()
+  })
+
   it('abgelehntes uebernehmeGrenzen: aufFehler GENAU EINMAL mit UNVERÄNDERTEM Code, Anzeige zurueck auf dem Modell', async () => {
     patcheBalkenBreite()
     const e = element()

@@ -43,9 +43,11 @@ describe('ruheLage (#249)', () => {
 })
 
 describe('ziehe (#249) – die Klemmung ist exakt die von begrenze (#125)', () => {
-  const probe = [1.5, -2, 30.7, 31.9, 12.5, 0, 2.5, 5.05, 22.123, 40]
+  // Stichproben, die INNERHALB des Paares bleiben (anfang <= ende). Gekreuzte Werte
+  // sind seit dem Nachtrag vom 01.11.2026 ein eigener Fall - s. den Test darunter.
+  const probe = [1.5, -2, 2.5, 3.2, 0]
 
-  it('zehn Stichproben: deep-gleich zu begrenze(modell, wauch, wende) - keine zweite Klemmregel', () => {
+  it('Stichproben innerhalb des Paares: deep-gleich zu begrenze(modell, wert, ende) - keine zweite Klemmregel', () => {
     const m = modell()
     for (const wert of probe) {
       const lage: ReglerLage = { zieht: true, anfang: 2.5, ende: 3.5 }
@@ -56,17 +58,22 @@ describe('ziehe (#249) – die Klemmung ist exakt die von begrenze (#125)', () =
       const lage2: ReglerLage = { zieht: true, anfang: 2.5, ende: 3.5 }
       const zieheLageEnde = ziehe(m, lage2, 'ende', wert)
       const erwartetEnde = begrenze(m, 2.5, wert)
-      expect(zieheLageEnde).toEqual({ zieht: true, anfang: erwartetEnde.anfang, ende: erwartetEnde.ende })
+      // Nur so weit, wie der Zug nicht am anderen Griff anstoesst.
+      if (wert >= 2.5) {
+        expect(zieheLageEnde).toEqual({ zieht: true, anfang: erwartetEnde.anfang, ende: erwartetEnde.ende })
+      }
     }
   })
 
-  it('gekreuztes Paar: ziehe klemmt exakt wie begrenze', () => {
+  it('gekreuztes Paar: der BEWEGTE Griff haelt am anderen an - keine negative Dauer (Nachtrag 01.11.2026)', () => {
     const m = modell()
-    // anfang über das aktuelle ende hinaus ziehen.
+    // anfang ueber das aktuelle ende (3.5) hinaus ziehen.
     const lage: ReglerLage = { zieht: true, anfang: 2.5, ende: 3.5 }
-    const ziel = ziehe(m, lage, 'anfang', 3.4)
-    const erwartet = begrenze(m, 3.4, 3.5)
-    expect(ziel).toEqual({ zieht: true, anfang: erwartet.anfang, ende: erwartet.ende })
+    expect(ziehe(m, lage, 'anfang', 9)).toEqual({ zieht: true, anfang: 3.5, ende: 3.5 })
+    // ende unter den aktuellen anfang (2.5) ziehen.
+    expect(ziehe(m, lage, 'ende', 1)).toEqual({ zieht: true, anfang: 2.5, ende: 2.5 })
+    // Gleichstand ist erlaubt (keine erfundene Mindestdistanz), negativ nie.
+    expect(ziehe(m, lage, 'ende', 0).ende).toBe(2.5)
   })
 
   it('griffe: 1 und griff anfang -> UNVERÄNDERTE Lage (toBe) - ENTSCHIEDEN 2', () => {

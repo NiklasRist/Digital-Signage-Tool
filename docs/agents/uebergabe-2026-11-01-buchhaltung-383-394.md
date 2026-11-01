@@ -203,3 +203,42 @@ die tägliche Arbeit daneben klein.
 
 **Sicherheit (71 Dependabot-Lücken) ist nachrangig, solange der MVP nicht steht** — Ansage
 Niklas, 01.11.2026.
+
+## 10. Nachtrag derselben Sitzung: der Dauer-Regler ist am Fenster nicht erreichbar
+
+Ausgangspunkt war der Befund, der seit dem 31.10. in **jedem** Treiberlauf steht:
+`Untersuchung Dauer/Trim-Undo … Dauer unveraendert ("2,0 s")`. Drei Messungen, drei Ergebnisse:
+
+1. **Die Kreuzung war ein echter Fehler (behoben).** `ziehe` (`element-zeile.ts`) klemmte jedes
+   Ende einzeln in `[untergrenze, obergrenze]`; `begrenze` kennt den anderen Griff nicht. Der
+   Endgriff konnte den Anfangsgriff überholen — die Anzeige zeigte dann **`-1,0 s`** (belegt mit
+   jsdom-Probe: `waehrendZug=-1,0 s`, `uebernehme={anfang:2.5, ende:1.535}`, abgelehnt
+   `ungueltige_eingabe`). Jetzt hält der **bewegte** Griff am anderen an; Gleichstand bleibt
+   erlaubt (die Mindestdistanz ist weiter offener Punkt der Store-Operationen). Der bisherige
+   Test „gekreuztes Paar: ziehe klemmt exakt wie begrenze" kreuzte in Wahrheit **nicht** — er
+   ist ersetzt.
+2. **Der Regler selbst ist in Ordnung.** Probe mit echtem Store, echtem Sicht-Schreiber und
+   ersetztem IPC: `10,0 → 12,8 s (Zug) → 12,8 s (Antwort)`, `project.json` `trimEnde 15.35`.
+   Der Rücksprung aus der ersten Probe wird vom Effekt eingefangen, sobald die Sicht das neue
+   Element liefert.
+3. **Die Ursache am Fenster ist das Layout.** Sonde in `scripts/durchlauf.mjs` (Schritt 4f4):
+   ```
+   elementsFromPoint(525,263) -> ["statistik","DIV","composer-wurzel"]
+   wiedergabeliste      y=222 h=112
+     └ Eltern-DIV       y=316 h=18   <- der Scrollkasten der Liste
+   ```
+   Die Wiedergabeliste steckt bei **800 × 572** in einem **18 px hohen** Scrollkasten und ist
+   nach oben herausgescrollt; die Zeile ist damit nicht treffbar, der Klick landet auf der
+   Statistik-Leiste. Der Treiber zieht jetzt zusätzlich nur bis zur Mitte zwischen den Griffen
+   (statt pauschal 64 px) und **meldet**, wenn der Zug gar nicht erst beginnt.
+
+**Offen — und das ist die Entscheidung, nicht der Bau:** Bei 800 × 572 verteilen sich die 494 px
+der Reiterfläche auf Bühne **38 %** (`BUEHNE_OBEN`, `inhalte.tsx`) ≈ 198 px, den Composer ≈ 296 px
+und darin Kopfzeile 32 px + Umschalter ≈ 25 px + **Zeitleiste ≈ 190 px** + Liste **18 px**. Der
+Plan (`oberflaeche-2-0-plan.md`, Welle 1, #414) sagt: **Bibliothek links, Video mittig,
+Zeitleiste unten** — dann steht die Bühne nicht mehr über dem Composer und die Liste bekommt
+volle Höhe. Bis das entschieden ist, bleiben FA-06/FA-14 in `treiber-matrix.md` **blockiert**.
+
+**Gate nach dem Nachtrag:** typecheck 0, lint 0 Fehler / 65 Warnungen, Unit **5.364** (352),
+Integration **50** (13), Treiber `exit 0` mit **einem** Befund (der Layout-Blocker oben).
+

@@ -60,8 +60,7 @@ export function ziehe(
     return lage
   }
   // Die GRENZEN kommen aus dem Modell, der GEZOGENE Wert wird geklemmt: genau
-  // eine Klemmstelle, und sie sieht das Paar (anfang, ende) - begrenze entscheidet
-  // selbst, wie ein gekreuztes Paar behandelt wird.
+  // eine Klemmstelle fuer den Bereich des Elements.
   const ziel = { anfang: lage.anfang, ende: lage.ende }
   if (griff === 'anfang') {
     ziel.anfang = wert
@@ -69,7 +68,22 @@ export function ziehe(
     ziel.ende = wert
   }
   const resultat = begrenze(modell, ziel.anfang, ziel.ende)
-  return { zieht: true, anfang: resultat.anfang, ende: resultat.ende }
+
+  // KEIN UEBERHOLEN (Nachtrag 01.11.2026): `begrenze` klemmt jedes Ende EINZELN in
+  // [untergrenze, obergrenze] und kennt den anderen Griff nicht - ein gekreuztes Paar
+  // kaeme dort unveraendert durch. Sichtbar wurde das am Fenster als "-1,0 s" in der
+  // Anzeige: `formatiereReglerDauer(ende - anfang)` mit ende < anfang. Der AD 4.4
+  // verspricht "Der Regler zeigt die aktuelle effektive Dauer numerisch an"; eine
+  // negative Dauer ist keine solche Anzeige. Deshalb haelt der BEWEGTE Griff am
+  // anderen an - und nur er, denn nur hier ist bekannt, welcher Griff bewegt wird.
+  //
+  // GLEICHSTAND BLEIBT ERLAUBT: Eine Mindestdistanz der Griffe ist ausdruecklich ein
+  // offener Punkt der Store-Operationen (s. Fuss von `begrenze`); `uebernehmeGrenzen`
+  // weist einen Bereich ohne Laenge beim Loslassen ab (dauer-regler.ts). Hier wird
+  // also KEINE neue Untergrenze erfunden, sondern nur die Reihenfolge gehalten.
+  const anfang = griff === 'anfang' ? Math.min(resultat.anfang, resultat.ende) : resultat.anfang
+  const ende = griff === 'ende' ? Math.max(resultat.ende, resultat.anfang) : resultat.ende
+  return { zieht: true, anfang, ende }
 }
 
 /** Beendet die Geste: `zieht: false`, Werte bleiben stehen. Liefert eine NEUE Lage. */
