@@ -68,16 +68,17 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
         </div>
       )}
 
-      {/* Die Abschnitts-Etiketten bleiben beim Scrollen der Rail stehen (`position:
-          sticky`) - am Bild gesehen: die Ueberschrift "VIDEO" wurde beim Scrollen halb
-          abgeschnitten statt ganz zu verschwinden oder ganz zu bleiben. */}
-      <h2 style={{ position: 'sticky', top: 0, zIndex: 1, background: '#18181c', paddingTop: 2, paddingBottom: 2 }}>
-        Video
-      </h2>
+      {/* Abschnittskopf mit Trennlinie: ein 11-px-Etikett allein ging in der Rail unter
+          (am Bild gesehen). Die Linie macht die Gliederung ohne Farbe lesbar. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0 6px' }}>
+        <h2 style={{ margin: 0 }}>Video</h2>
+        <span aria-hidden="true" style={{ flex: '1 1 auto', height: 1, background: '#2c2c34' }} />
+      </div>
       <button
         type="button"
         onClick={p.aufImportieren}
         data-testid="composer-medien-import"
+        className={videos.length === 0 ? 'knopf-primaer' : undefined}
         style={{ width: '100%' }}
       >
         Video importieren
@@ -98,9 +99,10 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
         </ul>
       )}
 
-      <h2 style={{ position: 'sticky', top: 0, zIndex: 1, background: '#18181c', paddingTop: 2, paddingBottom: 2 }}>
-        Aktionen
-      </h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0 6px' }}>
+        <h2 style={{ margin: 0 }}>Aktionen</h2>
+        <span aria-hidden="true" style={{ flex: '1 1 auto', height: 1, background: '#2c2c34' }} />
+      </div>
       {/* #416: Inline-Erst-Anlage - Titel + Vorlage, ohne Reiterwechsel. Die neue Aktion
           erscheint sofort in der Liste darunter (Sicht-Pflege ueber den Zugang). */}
       {p.aufAktionAnlegen !== undefined && (

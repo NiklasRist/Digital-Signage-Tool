@@ -149,7 +149,7 @@ export function Zeitleiste({
         minHeight: 80,
         // Gerahmt wie Buehne und Rail: die drei Flaechen sollen dieselbe Kante zeigen.
         background: '#141418',
-        border: '1px solid #2a2a31',
+        border: '1px solid #2c2c34',
         borderRadius: 8,
       }}
     >
@@ -241,7 +241,7 @@ export function Zeitleiste({
           ))}
           {zeilen.length === 0 && neuZug === null && (
             <div data-testid="zeitleiste-leer" style={{ color: '#8f8f8f', fontSize: 12 }}>
-              Leere Wiedergabeliste
+              Noch nichts eingeordnet – eine Aktion aus der Bibliothek hierher ziehen.
             </div>
           )}
           {/* #457: die Abspielmarke - absolut im Inhalt, ueber den Bloecken. */}
@@ -323,6 +323,15 @@ function ZeilenBlock({
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: zeile.elementId })
   const beschriftung = zeilenBeschriftung(zeile, index)
+  // SELBSTERKLAEREND (01.11.2026): Ein Block sagt, WAS er ist, nicht wie die Datenart
+  // heisst. Vorher stand dort "segment"/"video" - die Sprache des Vertrags, nicht die
+  // des Nutzers. Jetzt der Titel der Aktion; beim Video bleibt "Video".
+  const blockName =
+    zeile.art === 'segment'
+      ? (projekt?.aktionen.find((eintrag) => eintrag.id === zeile.ref)?.titel ?? 'Aktion')
+      : zeile.art === 'video'
+        ? 'Video'
+        : null
   // #437: die Unterbrechungs-Marken des Video-Blocks (sequenzielle Positionen).
   const marken = zeile.art === 'video' && element !== null ? unterbrechungsMarken(element) : []
   // #442: welcher Kasten gerade am Zeiger haengt (nur Bild) - der Schreibvorgang
@@ -553,7 +562,7 @@ function ZeilenBlock({
             whiteSpace: 'nowrap',
           }}
         >
-          {zielArt ?? beschriftung.art}
+          {zielArt ?? blockName ?? beschriftung.art}
         </span>
       )}
     </div>

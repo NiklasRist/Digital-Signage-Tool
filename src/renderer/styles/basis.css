@@ -22,16 +22,20 @@
   /* Dunkles Erscheinungsbild - auch fuer Bildlaufleisten und native Auswahlfelder. */
   color-scheme: dark;
 
-  --grund: #16161a;
-  --flaeche: #1c1c21;
-  --flaeche-2: #232329;
-  --flaeche-3: #2c2c34;
-  --rand: #34343c;
-  --rand-stark: #4a4a54;
+  /* DREI FLÄCHEN UND DREI TEXTSTUFEN - mehr Ebenen braucht die Blickfuehrung nicht.
+   * Die Abstufung ist absichtlich deutlich (nicht 2 % Helligkeitsunterschied): Das Auge
+   * soll Fenster, Flaeche und erhabene Zeile unterscheiden koennen, ohne einen Rand zu
+   * suchen. */
+  --grund: #0f0f12;
+  --flaeche: #17171b;
+  --flaeche-2: #1f1f25;
+  --flaeche-3: #2a2a32;
+  --rand: #2c2c34;
+  --rand-stark: #3d3d47;
 
-  --text: #e7e7ea;
-  --text-2: #a0a0aa;
-  --text-3: #74747e;
+  --text: #f0f0f3;
+  --text-2: #a6a6b1;
+  --text-3: #6f6f7a;
 
   --akzent: #7c8cff;
   --akzent-text: #101124;
@@ -78,14 +82,16 @@ body {
 /* ---------------------------------------------------------------------------
  * Bedienelemente
  *
- * EIN Aussehen fuer alle Knoepfe: flach, ein Rand, 6 px Radius, 24 px hoch. Der
- * wichtigste Teil ist `font: inherit` - ohne das zeichnet der Browser Knopftext in
- * der Systemschrift und nicht in der Schrift der Anwendung.
+ * ZWEI SORTEN KNOPF, mehr nicht:
+ *   1. der stille Knopf (Vorgabe) - transparent, feiner Rand, Farbe erst beim Ueberfahren.
+ *      Er traegt die vielen Nebenhandlungen und soll nicht mit dem Auge konkurrieren.
+ *   2. der Hauptknopf (`.knopf-primaer`) - EINER je Flaeche, gefuellt im Akzent.
+ *      Er beantwortet die Frage "was ist der naechste Schritt?".
  * ------------------------------------------------------------------------- */
 button {
   font: inherit;
   color: var(--text);
-  background: var(--flaeche-2);
+  background: transparent;
   border: 1px solid var(--rand);
   border-radius: var(--radius);
   padding: 3px 10px;
@@ -100,7 +106,7 @@ button:hover:not(:disabled) {
 }
 
 button:active:not(:disabled) {
-  background: #383840;
+  background: #33333c;
 }
 
 button:disabled {
@@ -108,8 +114,8 @@ button:disabled {
   cursor: default;
 }
 
-/* Der Umschalter (Reiter, Ansichten) traegt `aria-pressed` - er ist der EINE
- * ausgewaehlte Zustand und darf sich deshalb deutlich unterscheiden. */
+/* Der Umschalter (Ansichten) traegt `aria-pressed` - er ist der EINE ausgewaehlte
+ * Zustand und darf sich deshalb deutlich unterscheiden. */
 button[aria-pressed="true"] {
   background: var(--akzent);
   border-color: var(--akzent);
@@ -122,19 +128,73 @@ button[aria-pressed="true"]:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--akzent) 88%, white);
 }
 
-/* Die Reiterleiste markiert den aktiven Reiter mit `aria-selected` (role="tab"), nicht
- * mit `aria-pressed`. Ohne diesen Block sehen alle vier Reiter gleich aus - am Bild
- * gesehen: der offene Reiter war nicht erkennbar. */
-button[role="tab"][aria-selected="true"] {
+/* DER HAUPTKNOPF einer Flaeche. */
+.knopf-primaer {
   background: var(--akzent);
   border-color: var(--akzent);
   color: var(--akzent-text);
   font-weight: 600;
 }
 
-button[role="tab"][aria-selected="true"]:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--akzent) 88%, white);
-  border-color: color-mix(in srgb, var(--akzent) 88%, white);
+.knopf-primaer:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--akzent) 86%, white);
+  border-color: color-mix(in srgb, var(--akzent) 86%, white);
+}
+
+/* Gesperrt bleibt gesperrt - kein gefuellter Knopf, der nichts tut. */
+.knopf-primaer:disabled {
+  background: var(--flaeche-2);
+  border-color: var(--rand);
+  color: var(--text-3);
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+ * Die Reiterleiste
+ *
+ * Ein Reiter ist KEIN Knopf mit Fuellung: Er sitzt in einer Leiste, der aktive
+ * traegt eine Unterkante und hellen Text. Vorher war der aktive Reiter ein
+ * gefuelltes blaues Feld - die lauteste Flaeche des Fensters war damit eine
+ * Navigation, nicht die Arbeit (am Bild beurteilt, Niklas: "die tabs oben in der
+ * jetzigen form grausam").
+ * ------------------------------------------------------------------------- */
+nav[role="tablist"] {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 0 6px;
+  background: #121216;
+  border-bottom: 1px solid var(--rand);
+}
+
+nav[role="tablist"] > button {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--text-2);
+  font-weight: 500;
+  padding: 0 12px;
+  min-height: 34px;
+}
+
+nav[role="tablist"] > button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--text);
+  border-bottom-color: var(--rand-stark);
+}
+
+nav[role="tablist"] > button[aria-selected="true"] {
+  background: transparent;
+  color: var(--text);
+  border-bottom-color: var(--akzent);
+  font-weight: 600;
+}
+
+/* Der Reiter, der gerade NICHT offen ist, bleibt trotzdem bedienbar - anders als der
+ * gesperrte Knopf ist er aber nicht ausgegraut. */
+nav[role="tablist"] > button:disabled {
+  opacity: 0.4;
 }
 
 input,

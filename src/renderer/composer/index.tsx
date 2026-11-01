@@ -849,15 +849,33 @@ export function ComposerInterna({
             gap: 8,
             // Eigene Flaeche mit Rand: Ohne sie schwimmen Rail und Buehne im selben
             // Schwarz, und das Fenster wirkt ungegliedert (am Bild beurteilt).
-            background: '#18181c',
-            border: '1px solid #2a2a31',
+            background: '#17171b',
+            border: '1px solid #2c2c34',
             borderRadius: 8,
             padding: 8,
+            // EIN Scrollbereich fuer die ganze Rail (nicht zwei ineinander): Sonst
+            // scrollte die Bibliothek unter ihrem eigenen Kopf weg, und das Etikett
+            // "VIDEO" verschwand beim ersten Klick (am Bild gesehen).
+            overflowY: 'auto',
           }}
         >
           <div
             data-testid="composer-kopf"
-            style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', gap: 6 }}
+            style={{
+              // Der Kopf bleibt beim Scrollen der Rail stehen: Die eine Haupthandlung
+              // darf nicht aus dem Bild rutschen, waehrend die Bibliothek laenger wird
+              // (am Bild gesehen: "Rendern..." war weg).
+              position: 'sticky',
+              top: 0,
+              zIndex: 2,
+              background: '#17171b',
+              paddingBottom: 6,
+              borderBottom: '1px solid #2c2c34',
+              flex: '0 0 auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+            }}
           >
             {/* #392: Mehrfachauswahl - die Leiste steht IN der Kopfzeile, damit sie keine
                 Hoehe kostet (Merksatz aus #456: die Projektleiste schob die Zeitleiste aus
@@ -880,16 +898,15 @@ export function ComposerInterna({
             <button
               type="button"
               data-testid="composer-render-oefnen"
+              className={renderKnopfFrei ? 'knopf-primaer' : undefined}
               disabled={!renderKnopfFrei}
               onClick={oeffneRenderDialog}
             >
               Rendern…
             </button>
-            {/* #394: Gesamtdauer, Anzahl der Elemente und das Verhaeltnis Video/Segment. */}
-            <Statistik liste={inhalt.liste} />
           </div>
           <div
-            style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto', paddingTop: 2 }}
+            style={{ flex: '0 0 auto', minHeight: 0, paddingTop: 2 }}
             onDragOver={(ereignis) => {
               ereignis.preventDefault()
             }}
@@ -911,6 +928,15 @@ export function ComposerInterna({
               aufMediumLoeschen={meldeVideoPflicht}
               aufFehler={meldeWurzel}
             />
+          </div>
+          {/* #394: Statistik. Sie steht am FUSS der Rail und nicht mehr zwischen Handlung
+              und Bibliothek - das Auge soll Handlung -> Arbeit -> Beiwerk laufen, nicht
+              Handlung -> Zahlen -> Arbeit (Blickfuehrung, 01.11.2026). */}
+          <div
+            data-testid="composer-statistik-fuss"
+            style={{ flex: '0 0 auto', paddingTop: 8, borderTop: '1px solid #2c2c34' }}
+          >
+            <Statistik liste={inhalt.liste} />
           </div>
         </div>
       )}
@@ -942,7 +968,7 @@ export function ComposerInterna({
           position: 'relative',
           // Gerahmte Flaeche: das Video bekommt eine Kante statt in der Flaeche zu enden.
           background: '#0d0d10',
-          border: '1px solid #2a2a31',
+          border: '1px solid #2c2c34',
           borderRadius: 8,
           overflow: 'hidden',
         }}
