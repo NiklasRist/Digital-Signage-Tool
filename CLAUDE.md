@@ -45,10 +45,20 @@
   bleibt nur die **Navigationsfrage** (Overlay statt Reiter). #375 hat keine Voraussetzung mehr:
   `Aktion` kennt **kein `art`** (`shared/contracts/aktion.ts`), es gibt **keine** Badges
   (0 Treffer) und keine Banner-Aktionen (M9/TK v3.33). **Damit ist kein Issue mehr offen.**
-- **Offen ohne Issue:** Navigationsfrage aus #374 (Aktionen als Overlay?); Beenden-Frist 15 s;
-  #456-Signaturblock; 71 Dependabot-Luecken (33 high); Layout-Frage Welle 1
-  („Video mittig" vs. „Buehne oben"). **Naechster Schritt: eine dieser Fragen entscheiden, nicht
-  auf Verdacht bauen.**
+- **PROJEKTEDITOR ENTRUEMPELT (`103811a`, Entscheidung Niklas 01.11.2026):** „Aktionen in die
+  Mitte, Galerie raus." Der linke Bibliothek-Dock ist entfallen, die **Aktionen-Bibliothek** steht
+  in der **Mitte**; die **Medien-Galerie** ist als Flaeche aus „Zusammenstellen" entfernt (Bilder
+  gehoeren zum Aktions-Editor, das Video zum schmalen Import). Die Datei-Drop-Zone (#335) haengt
+  jetzt an der Bibliothek. **Liste und Bibliothek schliessen sich aus** (bei 800x572 passen zwei
+  Bloecke unter der Buehne nicht - Lehre aus #456). Treiber 4b/4b3/4k messen jetzt `medium-`
+  statt `galerie-eintrag`. **Offen, benannt:** `galerie-bereich.tsx`, `asset-galerie.tsx`,
+  `bibliothek-dock.tsx` sind ohne Nutzer - Loeschen erst mit den sieben Test-Mocks.
+- **Offen ohne Issue:** Rest der 21.10.-Richtung (Aktions-Editor aus dem Projekteditor ohne
+  Reiterwechsel? Bild-Import-Form?); Navigationsfrage aus #374 (Aktionen als Overlay?);
+  Layout-Frage Welle 1 („Video mittig" vs. „Buehne oben"); Beenden-Frist 15 s;
+  #456-Signaturblock; 71 Dependabot-Luecken. **Sicherheit ist nachrangig, solange der MVP nicht
+  steht** (Ansage Niklas, 01.11.2026). **Naechster Schritt: eine Frage entscheiden, nicht auf
+  Verdacht bauen.**
 
 ## STAND HEUTE (31.10.2026, fuenfunddreissigste Sitzung: Bedienfluss – #446, #392, #457) – historisiert durch den Abschnitt darueber
 

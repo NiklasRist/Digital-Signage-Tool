@@ -9,10 +9,10 @@
 
 | | Wert |
 |---|---|
-| Commits | **4** vor `origin/main` (`9bba122`, `a94ec2e`, `72dea60`, `f13bc02`) + diese Doku; **nicht gepusht** |
+| Commits | **6** vor `origin/main` (`9bba122`, `a94ec2e`, `72dea60`, `f13bc02`, `2f53521`, `103811a`) + Doku; **nicht gepusht** |
 | Arbeitsbaum | sauber |
 | Gate | `npm run pruefung` **Exit 0** |
-| Unit | **5.358** Tests in **352** Dateien |
+| Unit | **5.359** Tests in **352** Dateien |
 | Integration | **50** in **13** Dateien |
 | Treiber | **0 Befunde** |
 | Lint | **0 Fehler**, **65 Warnungen** |
@@ -159,15 +159,36 @@ Prüfsummen der zurückgenommenen Dateien: `vorschau.tsx ee5229f9…`, `liste-an
 
 ---
 
-## 8. Nächster Schritt
+## 8. Nachzügler derselben Sitzung: Projekteditor entrümpelt (`103811a`)
+
+**Entscheidung Niklas (01.11.2026): „Aktionen in die Mitte, Galerie raus."** Richtung aus der
+Notiz vom 21.10. (`ui-ausrichtung-projekteditor-2026-10-21.md`): Die Medien-Galerie stand vorne,
+die tägliche Arbeit daneben klein.
+
+- Der **linke Bibliothek-Dock** (300 px) ist entfallen; die **Aktionen-Bibliothek** steht in der
+  **Mitte** (Video-Zeile + Aktionen + Anlegen).
+- Die **Medien-Galerie** ist als Fläche aus „Zusammenstellen" entfernt. Bilder gehören zum
+  Aktions-Editor, das eine Projektvideo zu seinem schmalen Import-Weg (FA-01, unverändert).
+- Die **Datei-Drop-Zone** (#335) bleibt — sie hängt jetzt an der Bibliothek.
+- **Liste und Bibliothek schließen sich aus** (Umschalter): Bei 800 × 572 sind zwei Blöcke unter
+  der Bühne nicht unterzubringen (Lehre aus #456).
+- **Treiber nachgezogen:** 4b misst die Video-Zeile statt `galerie-eintrag`, 4b3 die Auswahl am
+  `medium`, 4k die Zeilenzahl; die Montage-Prüfung bleibt als BLOCKER an der Bibliothek.
+- **Offen, benannt:** `galerie-bereich.tsx`, `asset-galerie.tsx` und `bibliothek-dock.tsx` sind
+  jetzt **ohne Nutzer**. Löschen erst mit den sieben Test-Mocks (eigener Schritt).
+
+## 9. Nächster Schritt
 
 **Es ist kein Issue mehr offen.** Die nächste Arbeit ist eine **Entscheidung**, kein Bau:
 
-1. **Navigationsfrage aus #374:** Soll der Aktionen-Editor als **Overlay** über der Reiterfläche
-   stehen (wie der Marken-Editor seit #456)? Dann neues Issue mit eigenem Zuschnitt (Reiterleiste,
-   Projektleiste, Überlagerungslogik). Nicht auf Verdacht bauen.
-2. **Layout-Frage Welle 1:** Plan sagt „Video mittig", gebaut ist „Bühne oben". Entscheiden, dann
-   entweder nachziehen oder den Plan berichtigen.
-3. **71 Dependabot-Lücken (33 high)** — Sicherheit vor Optik; bisher nie angefasst.
-4. **Zwei unbestätigte Zahlen:** Beenden-Frist 15 s und der #456-Signaturblock (`projektId` gegen
-   gebaut zusätzlich `aktionen`).
+1. **Rest der 21.10.-Richtung:** Soll der **Aktions-Editor aus dem Projekteditor** ohne
+   Reiterwechsel erreichbar sein (Overlay wie der Marken-Editor)? Und in welcher Form kommt der
+   **Bild-Import** (Feld im Editor, kleiner Dialog, Datei-Drop)?
+2. **Navigationsfrage aus #374:** Aktionen-Editor als Overlay über der Reiterfläche — dann neues
+   Issue mit eigenem Zuschnitt (Reiterleiste, Projektleiste, Überlagerung).
+3. **Layout-Frage Welle 1:** Plan sagt „Video mittig", gebaut ist „Bühne oben". Entscheiden.
+4. **Kleinigkeit mit Ansage:** die drei toten Galerie-/Dock-Dateien löschen (mit den Test-Mocks).
+5. **Zwei unbestätigte Zahlen:** Beenden-Frist 15 s und der #456-Signaturblock.
+
+**Sicherheit (71 Dependabot-Lücken) ist nachrangig, solange der MVP nicht steht** — Ansage
+Niklas, 01.11.2026.
