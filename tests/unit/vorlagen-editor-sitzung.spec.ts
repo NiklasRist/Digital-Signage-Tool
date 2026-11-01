@@ -14,22 +14,36 @@ import { createRoot, type Root } from 'react-dom/client'
 
 import type { EditorSitzung } from '../../src/renderer/vorlagen-editor/arbeitskopie'
 import type { VorlagenEditorWurzelProps } from '../../src/renderer/vorlagen-editor'
-import type { VorlagenZugang, ZeichenZugang, MarkenZugang } from '../../src/renderer/app-shell/sichten'
+import type {
+  VorlagenZugang,
+  ZeichenZugang,
+  MarkenZugang,
+  ProjektZugang,
+} from '../../src/renderer/app-shell/sichten'
 import type { Sitzungshalter } from '../../src/renderer/app-shell/undo-aufzeichnung-vorlage'
 import type { Vorlage } from '../../src/shared/contracts/vorlage'
+import type { Aktion } from '../../src/shared/contracts/aktion'
+import type { Project } from '../../src/shared/contracts/project'
 import { VorlagenEditorWurzel } from '../../src/renderer/vorlagen-editor'
 
 // #393: Die Vorschau laeuft ueber EINEN Zeichenaufruf (`zeichneSegment`, TK 9.10.1).
 // Der wird hier gezaehlt und liefert ein Ersatzbild - jsdom hat kein Canvas.
-const zeichnen = vi.hoisted(() => ({ aufrufe: [] as Array<{ vorlage: Vorlage }> }))
+// Gezaehlt werden AKTION und MARKE mit, weil #393 beides beweglich gemacht hat.
+const zeichnen = vi.hoisted(() => ({
+  aufrufe: [] as Array<{ aktion: { id: string }; vorlage: Vorlage; marke: { id: string } }>,
+}))
 
 vi.mock('../../src/renderer/template-canvas/schriften', () => ({
   stelleSchriftenBereit: vi.fn(async () => undefined),
 }))
 
 vi.mock('../../src/renderer/template-canvas/zeichne-segment', () => ({
-  zeichneSegment: (_aktion: unknown, vorlage: unknown) => {
-    zeichnen.aufrufe.push({ vorlage: vorlage as Vorlage })
+  zeichneSegment: (aktion: unknown, vorlage: unknown, marke: unknown) => {
+    zeichnen.aufrufe.push({
+      aktion: aktion as { id: string },
+      vorlage: vorlage as Vorlage,
+      marke: marke as { id: string },
+    })
     const nummer = zeichnen.aufrufe.length
     return {
       canvas: { toDataURL: () => `data:image/png;base64,BILD-${String(nummer)}` },
@@ -40,11 +54,21 @@ vi.mock('../../src/renderer/template-canvas/zeichne-segment', () => ({
 }))
 
 // Die Zeichen-Marke: ohne sie zeichnet der Editor NICHTS (#312/#313).
-const MARKE = { id: 'marke-eingebaut', name: 'Eingebaut', farben: {}, zonen: [] }
+// `logo: null` ist ein regulaerer Zustand (TK 9.10.10) - bereiteLogoVor kehrt sofort zurueck.
+// JE KENNUNG DASSELBE OBJEKT (wie der echte Bestand): Ein neues Objekt je Aufruf setzte
+// den Zeichen-Effekt in eine Endlosschleife - die Attrappe muss sich wie der Speicher
+// verhalten, sonst misst der Test den Messaufbau.
+const markenBestand = vi.hoisted(() => new Map<string, unknown>())
 
 vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
   stelleMarkeBereit: vi.fn(async () => ({ ok: true, wert: undefined })),
-  holeBereiteMarke: vi.fn(() => MARKE),
+  holeBereiteMarke: vi.fn((markeId: string) => {
+    const vorhanden = markenBestand.get(markeId)
+    if (vorhanden !== undefined) return vorhanden
+    const marke = { id: markeId, name: markeId, farben: {}, zonen: [], logo: null }
+    markenBestand.set(markeId, marke)
+    return marke
+  }),
 }))
 vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
   rufeAuf: vi.fn(async () => ({
@@ -87,7 +111,52 @@ function sitzungFest(parentVorlage: Vorlage): EditorSitzung {
   }
 }
 
-function baueEigenschaften(sitzung: EditorSitzung | null): VorlagenEditorWurzelProps {
+function baueAktion(id: string, titel: string): Aktion {
+  return {
+    id,
+    titel,
+    beschreibung: null,
+    preis: null,
+    bildRef: null,
+    cta: null,
+    standardDauer: null,
+    vorlagenId: 'vorlage-test',
+    markeId: 'marke-eingebaut',
+    akzentfarbe: null,
+  }
+}
+
+/** Ein Projekt, wie es der LESENDE Zugang liefert - nur die Felder, die der Editor liest. */
+function baueProjekt(aktionen: readonly Aktion[]): Project {
+  return {
+    id: 'p-393',
+    name: 'Vorlagen-Probe',
+    erstelltAm: '2026-11-01T00:00:00Z',
+    geaendertAm: '2026-11-01T00:00:00Z',
+    schemaVersion: 1,
+    assets: [],
+    aktionen: [...aktionen],
+    liste: [],
+    letzterAusgabeName: null,
+    standardSegmentdauer: 10,
+    standardMarkeId: 'marke-eingebaut',
+  }
+}
+
+/** Der veraenderliche Projektstand der Attrappe - `hoerer` ist die Abonnentenliste. */
+interface ProjektStand {
+  projekt: Project
+  hoerer: Set<() => void>
+}
+
+function baueEigenschaften(
+  sitzung: EditorSitzung | null,
+  aktionen: readonly Aktion[] = [],
+  stand?: ProjektStand,
+): VorlagenEditorWurzelProps {
+  // EIN Projektobjekt je Aufbau - der echte Zugang liefert ebenfalls den GESPEICHERTEN
+  // Stand, nicht bei jedem `hole()` eine neue Kopie.
+  const projektStand: ProjektStand = stand ?? { projekt: baueProjekt(aktionen), hoerer: new Set() }
   return {
     sichtbar: true,
     vorlagen: {
@@ -98,10 +167,21 @@ function baueEigenschaften(sitzung: EditorSitzung | null): VorlagenEditorWurzelP
     zeichnen: { hole: () => null } as unknown as ZeichenZugang,
     marken: {
       hole: () => ({
-        marken: [{ id: 'marke-eingebaut', eingebaut: true, name: 'Eingebaut' }],
+        marken: [
+          { id: 'marke-eingebaut', eingebaut: true, name: 'Eingebaut' },
+          { id: 'marke-zwei', eingebaut: false, name: 'Zwei' },
+        ],
       }),
       aufGeaendert: () => () => undefined,
     } as unknown as MarkenZugang,
+    // #393: der lesende Projektzugang - die Vorschau zieht ihre Aktion hierher.
+    projekt: {
+      hole: () => ({ projekt: projektStand.projekt, ladefehler: null }),
+      aufGeaendert: (hoerer: () => void) => {
+        projektStand.hoerer.add(hoerer)
+        return () => projektStand.hoerer.delete(hoerer)
+      },
+    } as unknown as ProjektZugang,
     sitzung: {
       holeSitzung: () => sitzung,
       uebernimmAenderung: () => undefined,
@@ -231,5 +311,82 @@ describe('#393: die Live-Vorschau zeichnet bei einer Aenderung neu', () => {
     const zweites = behaelter.querySelector('[data-testid="vorschau-bild"]')
     expect(zweites).not.toBeNull()
     expect(zweites?.getAttribute('src')).not.toBe(erstesBild)
+  })
+
+  it('zeichnet die ERSTE Aktion des Projekts und listet alle im Auswahlfeld', async () => {
+    const sitzung = sitzungFest(eigene('vorlage-test'))
+    const { behaelter } = await rendereMitWurzel(
+      baueEigenschaften(sitzung, [baueAktion('a-1', 'Sommeraktion'), baueAktion('a-2', 'Winterpause')]),
+    )
+
+    const optionen = [...behaelter.querySelectorAll('[data-testid="vorschau-aktion-wahl"] option')]
+    expect(optionen.map((o) => o.textContent)).toEqual(['Sommeraktion', 'Winterpause'])
+    expect(zeichnen.aufrufe.at(-1)?.aktion.id).toBe('a-1')
+  })
+
+  it('die Wahl im Auswahlfeld zeichnet mit DIESER Aktion neu (kein Beispiel mehr)', async () => {
+    const sitzung = sitzungFest(eigene('vorlage-test'))
+    const { behaelter } = await rendereMitWurzel(
+      baueEigenschaften(sitzung, [baueAktion('a-1', 'Sommeraktion'), baueAktion('a-2', 'Winterpause')]),
+    )
+    const erstesBild = behaelter.querySelector('[data-testid="vorschau-bild"]')?.getAttribute('src')
+
+    const feld = behaelter.querySelector<HTMLSelectElement>('[data-testid="vorschau-aktion-wahl"] select')
+    expect(feld).not.toBeNull()
+    await act(async () => {
+      feld!.value = 'a-2'
+      feld!.dispatchEvent(new Event('change', { bubbles: true }))
+      await new Promise((fertig) => setTimeout(fertig, 0))
+    })
+
+    expect(zeichnen.aufrufe.at(-1)?.aktion.id).toBe('a-2')
+    const zweitesBild = behaelter.querySelector('[data-testid="vorschau-bild"]')
+    expect(zweitesBild).not.toBeNull()
+    expect(zweitesBild?.getAttribute('src')).not.toBe(erstesBild)
+  })
+
+  it('ohne Aktion im Projekt zeichnet die BEISPIEL_AKTION - und das Feld sagt es', async () => {
+    const sitzung = sitzungFest(eigene('vorlage-test'))
+    const { behaelter } = await rendereMitWurzel(baueEigenschaften(sitzung, []))
+
+    const optionen = [...behaelter.querySelectorAll('[data-testid="vorschau-aktion-wahl"] option')]
+    expect(optionen.length).toBe(1)
+    expect(optionen[0]?.textContent ?? '').toContain('keine Aktion im Projekt')
+    expect(zeichnen.aufrufe.at(-1)?.aktion.id).toBe('vorschau-beispiel-aktion')
+  })
+
+  it('das AUSWAHLFELD zieht nach, wenn das Projekt sich aendert (Abonnement)', async () => {
+    const sitzung = sitzungFest(eigene('vorlage-test'))
+    const stand: ProjektStand = { projekt: baueProjekt([]), hoerer: new Set() }
+    const { behaelter } = await rendereMitWurzel(baueEigenschaften(sitzung, [], stand))
+
+    stand.projekt = baueProjekt([baueAktion('a-9', 'Frisch angelegt')])
+    await act(async () => {
+      for (const hoerer of stand.hoerer) hoerer()
+      await new Promise((fertig) => setTimeout(fertig, 0))
+    })
+
+    const optionen = [...behaelter.querySelectorAll('[data-testid="vorschau-aktion-wahl"] option')]
+    expect(optionen.map((o) => o.textContent)).toEqual(['Frisch angelegt'])
+    expect(zeichnen.aufrufe.at(-1)?.aktion.id).toBe('a-9')
+  })
+
+  it('der Wechsel der MARKE holt die Vorschau zurueck (vorher blieb sie fuer immer leer)', async () => {
+    // Gefundener Fehler: Der Vorbereitungs-Effekt hing allein an `arbeitsId`; die Wahl
+    // einer anderen Marke setzte `vorbereitet` auf false und nichts stellte es wieder her.
+    const sitzung = sitzungFest(eigene('vorlage-test'))
+    const { behaelter } = await rendereMitWurzel(baueEigenschaften(sitzung, []))
+    expect(behaelter.querySelector('[data-testid="vorschau-bild"]')).not.toBeNull()
+
+    const feld = behaelter.querySelector<HTMLSelectElement>('[data-testid="vorschau-marke-wahl"] select')
+    expect(feld).not.toBeNull()
+    await act(async () => {
+      feld!.value = 'marke-zwei'
+      feld!.dispatchEvent(new Event('change', { bubbles: true }))
+      await new Promise((fertig) => setTimeout(fertig, 0))
+    })
+
+    expect(behaelter.querySelector('[data-testid="vorschau-bild"]')).not.toBeNull()
+    expect(zeichnen.aufrufe.at(-1)?.marke.id).toBe('marke-zwei')
   })
 })

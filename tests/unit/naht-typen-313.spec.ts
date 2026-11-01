@@ -47,10 +47,35 @@ it('der action-editor VERLANGT marken (ohne ist ein Typfehler); mit ist die Bele
 
 it('der vorlagen-editor VERLANGT marken ebenso (Nachtrag 08.10.2026)', () => {
   type OhneMarken = Omit<VorlagenEditorWurzelProps, 'marken' | 'sitzung'>
-  const basis: OhneMarken = { sichtbar: true, vorlagen: vorlagenzugang, zeichnen: zeichenzugang }
+  const basis: OhneMarken = {
+    sichtbar: true,
+    vorlagen: vorlagenzugang,
+    zeichnen: zeichenzugang,
+    projekt: projektzugang,
+  }
   // @ts-expect-error - `marken` ist auch hier ein Pflicht-Feld.
   const ohne: VorlagenEditorWurzelProps = basis
   expect(ohne === undefined || ohne !== null).toBe(true)
   const mit: VorlagenEditorWurzelProps = { ...basis, marken: zugang, sitzung: {} as VorlagenEditorWurzelProps['sitzung'] }
   expect(mit.marken).toBe(zugang)
+})
+
+// #393 (01.11.2026): Die Live-Vorschau zeichnet mit einer AKTION AUS DEM PROJEKT.
+// Bis hierher galt fuer diesen Reiter "KEIN Projektzugang" (ENTSCHIEDEN 6) - der
+// Auftraggeber hat die Aktionen-Auswahl am 01.11.2026 entschieden. Ein stilles
+// Zuruecknehmen des Feldes faellt jetzt hier auf.
+it('#393: der vorlagen-editor VERLANGT den Projektzugang (Pflichtfeld)', () => {
+  type OhneProjekt = Omit<VorlagenEditorWurzelProps, 'projekt'>
+  const basis: OhneProjekt = {
+    sichtbar: true,
+    vorlagen: vorlagenzugang,
+    zeichnen: zeichenzugang,
+    marken: zugang,
+    sitzung: {} as VorlagenEditorWurzelProps['sitzung'],
+  }
+  // @ts-expect-error - `projekt` ist ein Pflicht-Feld (DoD-Probe von #393).
+  const ohne: VorlagenEditorWurzelProps = basis
+  expect(ohne === undefined || ohne !== null).toBe(true)
+  const mit: VorlagenEditorWurzelProps = { ...basis, projekt: projektzugang }
+  expect(mit.projekt).toBe(projektzugang)
 })

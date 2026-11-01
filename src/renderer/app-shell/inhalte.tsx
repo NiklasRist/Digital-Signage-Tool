@@ -97,8 +97,14 @@ export interface VorlagenEditorWurzelProps {
    *  „Vorschau gegen Marke". Liste nur fuer die Wahl – gezeichnet wird ueber
    *  stelleMarkeBereit/holeBereiteMarke (#312). Default: die Marke mit `eingebaut: true`. */
   marken: MarkenZugang
+  /** #393 (01.11.2026): der LESENDE Projektzugang fuer die Aktionen-Auswahl der
+   *  Live-Vorschau. ABLOESUNG, offen benannt: ENTSCHIEDEN 6 („kein Projektzugang")
+   *  gilt fuer den Vorlagen-Editor nicht mehr; der Auftraggeber hat die Aktionen-
+   *  Auswahl am 01.11.2026 entschieden. Durchgereicht wird `projektRoh` („fuer jedes
+   *  Lesen", inhalte-zugaenge.ts) - dieser Reiter schreibt nichts. */
+  projekt: ProjektZugang
   /** Der Sitzungshalter der Shell (#245) – er haelt die Arbeitskopie ueber den Reiterwechsel
-   *  hinweg und loest die Undo-Schnappschuesse aus. KEIN Projektzugang (ENTSCHIEDEN 6). */
+   *  hinweg und loest die Undo-Schnappschuesse aus. */
   sitzung: Sitzungshalter
 }
 
@@ -365,8 +371,10 @@ export function baueReiterInhalte(
       />
     ),
     aktionen: (reiterEigenschaften) => reiterAktionen(reiterEigenschaften),
-    // ENTSCHIEDEN 6: KEIN Projektzugang; der Sitzungshalter wird unveraendert
-    // durchgereicht (ENTSCHIEDEN 12-Grundlage: Vorlagen sind app-weit).
+    // #393 (01.11.2026): Der Editor bekommt `projektRoh` NUR LESEND - die Live-Vorschau
+    // zeichnet mit einer Aktion aus dem Projekt. Die fruehere Regel „KEIN Projektzugang"
+    // (ENTSCHIEDEN 6) ist damit abgeloest; der Sitzungshalter geht unveraendert durch
+    // (ENTSCHIEDEN 12-Grundlage: Vorlagen sind app-weit).
     vorlagen: (reiterEigenschaften) => {
       const umgebung = holeUmgebung()
       return wurzeln.vorlagenEditor({
@@ -374,6 +382,7 @@ export function baueReiterInhalte(
         vorlagen: zugaenge.vorlagen,
         zeichnen: zugaenge.zeichnen,
         marken: zugaenge.marken,
+        projekt: zugaenge.projektRoh,
         sitzung: umgebung.vorlagenSitzung,
       })
     },

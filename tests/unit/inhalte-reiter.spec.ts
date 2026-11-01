@@ -296,11 +296,16 @@ describe('Der Kernnachweis: wer bekommt welchen Zugang', () => {
     fertig()
   })
 
-  it('vorlagenEditor bekommt KEIN Feld projekt; sitzung wird unverändert gereicht und nicht gerufen', () => {
-    const { umgebung, fertig } = rendereReiter('vorlagen')
+  it('#393: vorlagenEditor bekommt den LESENDEN Projektzugang (projektRoh, NIE projektBearbeitung); sitzung unverändert', () => {
+    // Abloesung, offen benannt: bis zum 01.11.2026 galt hier "KEIN Feld projekt"
+    // (ENTSCHIEDEN 6). Die Live-Vorschau zeichnet seither mit einer Aktion aus dem
+    // Projekt; der Zugang ist `projektRoh` - Lesen zeichnet keinen Undo-Schnappschuss auf.
+    const lauf = rendereReiter('vorlagen')
+    const { umgebung, fertig } = lauf
     expect(doppel.vorlagenEditorProps.length).toBeGreaterThanOrEqual(1)
     const eigenschaften = doppel.vorlagenEditorProps[0]!
-    expect('projekt' in eigenschaften).toBe(false)
+    expect(eigenschaften.projekt).toBe(lauf.zugaenge.projektRoh)
+    expect(eigenschaften.projekt).not.toBe(lauf.zugaenge.projektBearbeitung)
     expect(eigenschaften.sitzung).toBe(umgebung.vorlagenSitzung)
     const sitzung = umgebung.vorlagenSitzung
     expect((sitzung.holeSitzung as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0)

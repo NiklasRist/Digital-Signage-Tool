@@ -18,9 +18,13 @@
 //    NIEMALS verwerfen. Warnungen blockieren nie.
 //  - 'als neue Vorlage' mit Pflicht-Eingabe; eine leere Eingabe ruft NICHTS
 //    (offene Frage aus dem Issue: keine Vorbelegung, keine Namensregeln).
-//  - Vorschau NUR über zeichneVorschau (#150), erst nach bereiteVorschauVor;
-//    bereiteVorschauVor(null, [], [], marke) + BEISPIEL_AKTION - die Lücke
-//    "echte Aktion ohne Projektzugang" ist im Issue VERMERKT, hier nicht gelöst.
+//  - Vorschau NUR über zeichneVorschau (#150), erst nach der Vorbereitung.
+//    #393 (01.11.2026): Gezeichnet wird mit einer ECHTEN Aktion aus `projekt.aktionen`
+//    (Auswahlfeld „Vorschau mit Aktion"); BEISPIEL_AKTION ist nur noch der Rueckfall,
+//    wenn das Projekt keine Aktion hat. Damit ist die alte Luecke "echte Aktion ohne
+//    Projektzugang" geschlossen - der Editor bekommt dafuer einen LESENDEN Projektzugang.
+//    Die Motive der gewaehlten Aktion laedt bereiteVorschauVor (#150); ohne sie zeigte
+//    eine Aktion mit Bild eine leere Bildzone.
 //  - p.zeichnen wird NICHT benutzt (ENTSCHIEDEN 10; gemeldet).
 //  - Nutzung: gefragt wird nach der parentId, GENAU EINMAL je Sitzung
 //    (giltFuer spart die zweite Abfrage); der Hinweis blockiert NICHTS.
@@ -30,7 +34,7 @@
 import { useEffect, useState, type JSX } from 'react'
 import type { Vorlage, Zone } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
-import type { VorlagenZugang, ZeichenZugang, MarkenZugang } from '../app-shell/sichten'
+import type { VorlagenZugang, ZeichenZugang, MarkenZugang, ProjektZugang } from '../app-shell/sichten'
 import type { Sitzungshalter } from '../app-shell/undo-aufzeichnung-vorlage'
 import { stelleMarkeBereit, holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import { zonenText } from '../gemeinsam/zonen-texte'
@@ -52,6 +56,8 @@ import { istSpeicherbar, pruefeVorlage, type Befund } from './pruefungen'
 import { alsNeueVorlage, ueberarbeiteVorlage, verwerfeBearbeitung } from './speichern'
 import {
   BEISPIEL_AKTION,
+  bereiteVorschauVor,
+  waehleVorschauAktion,
   zeichneVorschau,
   type VorschauFeld,
 } from './editor-vorschau'
@@ -99,7 +105,15 @@ export interface VorlagenEditorWurzelProps {
    *  in #313): Liste NUR fuer die Wahl – gezeichnet wird ueber stelleMarkeBereit/holeBereiteMarke
    *  (#312). Default: die Marke mit `eingebaut: true`. */
   marken: MarkenZugang
-  /** Der Sitzungshalter der Shell (#245) – KEIN Projektzugang. */
+  /**
+   * #393 (01.11.2026): der LESENDE Projektzugang - die Live-Vorschau zeichnet mit einer
+   * Aktion aus `projekt.aktionen`, nicht mehr mit der festen BEISPIEL_AKTION.
+   * ABLOESUNG, offen benannt: die fruehere Festlegung „KEIN Projektzugang" gilt nicht
+   * mehr; der Auftraggeber hat am 01.11.2026 die Aktionen-Auswahl entschieden.
+   * Hier wird NICHTS geschrieben (kein `setzeProjekt`, kein `setzeListe`).
+   */
+  projekt: ProjektZugang
+  /** Der Sitzungshalter der Shell (#245) – er haelt die Arbeitskopie ueber den Reiterwechsel. */
   sitzung: Sitzungshalter
 }
 
@@ -120,9 +134,13 @@ function VorlagenInterna(p: VorlagenEditorWurzelProps): JSX.Element {
     }
     const abmeldenVor = p.vorlagen.aufGeaendert(() => setzeTakt((t) => t + 1))
     const abmeldeSitzung = p.sitzung.aufSitzungGeaendert(() => setzeTakt((t) => t + 1))
+    // #393: Die Aktionen-Auswahl haengt am PROJEKT - aendert es sich (Import, Anlegen,
+    // Bearbeiten in einem anderen Reiter), muss die Liste hier nachziehen.
+    const abmeldeProjekt = p.projekt.aufGeaendert(() => setzeTakt((t) => t + 1))
     return () => {
       abmeldenVor()
       abmeldeSitzung()
+      abmeldeProjekt()
     }
   }, [])
 
@@ -337,7 +355,12 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
   // Liste kommt aus dem Marken-Zugang (#305); gemerkt wird NUR die Kennung - die
   // aufgeloeste Marke wohnt EXCLUSIV im Bestand von #312 (kein Zwischenspeicher hier).
   const [vorschauMarkeId, setzeVorschauMarkeId] = useState<string | null>(null)
+  // #393: die Aktion, MIT der gezeichnet wird. Gemerkt wird nur die Kennung - die
+  // Aufloesung macht `waehleVorschauAktion` (gewaehlt -> erste -> BEISPIEL_AKTION).
+  const [vorschauAktionId, setzeVorschauAktionId] = useState<string | null>(null)
   const markenListe = p.marken.hole()?.marken ?? []
+  const vorschauProjekt = p.projekt.hole().projekt
+  const vorschauAktion = waehleVorschauAktion(vorschauProjekt?.aktionen ?? [], vorschauAktionId)
   const [, setzeTakt] = useState(0)
 
   // #409: Der Nutzungs-Hinweis laedt GENAU EINMAL je Sitzung - als Effect, der
@@ -368,13 +391,14 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
     }
   }, [parentId])
 
-  // Die Vorbereitung der Vorschau: einmal je Editor-Auftritt, projetzId null
-  // über BEISPIEL_AKTION (GEMELDETER Mangel: echte Aktion ohne Projektzugang).
+  // Die Vorbereitung der Vorschau - jetzt JE STAND, nicht nur einmal je Auftritt:
+  // #393 hat zwei Eingaenge beweglich gemacht (Marke, Aktion). Vorher hing der Effekt
+  // allein an `arbeitsId`; die Wahl einer anderen Marke setzte `vorbereitet` auf false
+  // und die Vorschau blieb fuer immer leer (Fehler, der nur am Fenster sichtbar war).
   // Die Marke: die gewählte der Auswahl, Default die EINGEBAUTE (Variante (b)).
   // Reihenfolge (TK 9.10.3): die VIER gebündelten Schriften (#110), DANN die Marke
-  // samt importierter Schriften + Logo über #312 - erst wenn beides ok ist, wird
-  // gezeichnet. Der frühere Weg bereiteVorschauVor(#150) ist hier ersetzt; seine
-  // Logo-Einzel-Vorbereitung leistet stelleMarkeBereit je Marke (gemeldet in #313).
+  // samt importierter Schriften + Logo über #312, DANN die Motive der Aktion (#150).
+  // Erst wenn alles ok ist, wird gezeichnet.
   useEffect(() => {
     let abgebrochen = false
     const gewaehlteId =
@@ -389,16 +413,30 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
         return
       }
       const antwort = await stelleMarkeBereit(gewaehlteId)
-      if (!abgebrochen && antwort.ok) {
-        setzeVorschauMarkeId(gewaehlteId)
-        setzeVorbereitet(true)
-        setzeTakt((t) => t + 1)
+      if (abgebrochen || !antwort.ok) return
+      const marke = holeBereiteMarke(gewaehlteId)
+      if (marke === null) return
+      try {
+        // #393: die Motive der GEWAEHLTEN Aktion. Ohne Projekt entfallen sie -
+        // `media://` loest nur innerhalb eines Projekt-Medienordners auf.
+        await bereiteVorschauVor(
+          vorschauProjekt?.id ?? null,
+          [vorschauAktion],
+          vorschauProjekt?.assets ?? [],
+          marke,
+        )
+      } catch {
+        return
       }
+      if (abgebrochen) return
+      setzeVorschauMarkeId(gewaehlteId)
+      setzeVorbereitet(true)
+      setzeTakt((t) => t + 1)
     })()
     return () => {
       abgebrochen = true
     }
-  }, [sitzung?.arbeitsId ?? null])
+  }, [sitzung?.arbeitsId ?? null, vorschauMarkeId, vorschauAktion, vorschauProjekt])
 
   // Der Rueckweg NACH allen Hooks - nur noch Anzeige, keine Zustands-Arbeit.
   if (sitzung === null) {
@@ -618,13 +656,38 @@ function VorlagenEditor({ p }: { p: VorlagenEditorWurzelProps }): JSX.Element {
           <div data-testid="vorschau-flaeche" style={{ minHeight: 180, border: '1px solid #444', overflow: 'hidden' }}>
             {vorbereitet === false ? null : (
               <VorschauCanvas
-                aktion={BEISPIEL_AKTION}
+                aktion={vorschauAktion}
                 vorlage={vorlage}
                 marke={vorschauMarkeId !== null ? holeBereiteMarke(vorschauMarkeId) : null}
                 geleert={geleert}
               />
             )}
           </div>
+          {/* #393: Die AUSWAHL der Aktion. Ohne Projekt (oder ohne Aktion darin) steht
+              die Beispiel-Aktion - dann sagt die Zeile das auch. WAEHLEN, nie zeichnen:
+              die Vorschau zeichnet im Effekt darueber mit `vorschauAktion`. */}
+          <label data-testid="vorschau-aktion-wahl">
+            Vorschau mit Aktion{' '}
+            <select
+              value={vorschauAktion.id}
+              onChange={(e) => {
+                setzeVorschauAktionId(e.target.value)
+                setzeVorbereitet(false)
+              }}
+            >
+              {vorschauProjekt?.aktionen.length === 0 || vorschauProjekt === null ? (
+                <option value={BEISPIEL_AKTION.id}>
+                  {BEISPIEL_AKTION.titel} (keine Aktion im Projekt)
+                </option>
+              ) : (
+                vorschauProjekt.aktionen.map((aktion) => (
+                  <option key={aktion.id} value={aktion.id}>
+                    {aktion.titel}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
           {/* Die AUSWAHL „Vorschau gegen Marke" (Variante (b)): Liste aus dem
               Zugan (#311) - WAEHLEN, nie zeichnen; die Zeichen-Marke kommt je Wahl
               ueber stelleMarkeBereit/holeBereiteMarke (#312). */}
@@ -794,7 +857,10 @@ function VorschauCanvas({
       console.warn('[vorlagen-editor] zeichneVorschau wirft:', ausnahme)
       setzeFehler(ausnahme instanceof Error ? ausnahme.message : 'Zeichenfehler')
     }
-  }, [aktion.id, vorlage, marke, geleert])
+    // #393: `aktion` als OBJEKT, nicht `aktion.id` - seit die Aktion waehlbar ist und
+    // aus dem Projekt kommt, muss auch eine geaenderte Aktion (Titel, Preis, Bild)
+    // neu zeichnen; die Kennung allein bliebe gleich.
+  }, [aktion, vorlage, marke, geleert])
 
   if (fehler !== null) {
     return <div data-testid="vorschau-feller" style={{ color: '#d9a441', fontSize: 11 }}>{fehler}</div>
