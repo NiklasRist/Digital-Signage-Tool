@@ -811,6 +811,33 @@ export function ComposerInterna({
       onContextMenu={oeffneKontextMenue}
       style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: 8, gap: 8 }}
     >
+      {/* BUEHNE, DIREKT DARUNTER DIE ZEITLEISTE (Entscheidung Niklas, 01.11.2026:
+          "was wir brauchen ist die buehne und direkt darunter die zeitleiste").
+          Die Zeitleiste steht deshalb VOR der Kopfzeile: zwischen Bühne und Zeitachse
+          liegt ab jetzt nichts mehr. Was unter der Zeitachse kommt (Wiedergabeliste,
+          Aktionen-Bibliothek), ist ausdruecklich noch offen - "die bibliothek etc
+          muessen als konzept nochmal ueberarbeitet werden".
+
+          Vorher stand die Zeitleiste HINTER der Liste am Ende der Spalte. Bei
+          800x572 blieben der Liste dadurch 18 px, und der Dauer-Regler war nicht
+          mehr treffbar (am Fenster gemessen, `elementFromPoint` -> "statistik"). */}
+      {inhalt !== null && (
+        <Zeitleiste
+          projekt={inhalt}
+          neuZug={zug.neuZug}
+          aktiveKante={zug.aktiveKante}
+          laedtKante={zug.laedtKante}
+          korbRef={zug.korbRef}
+          bandZiel={zug.bandZiel}
+          pxProSekunde={pxProSekunde}
+          aufZoom={zoome}
+          aufUnterbrechungEntfernen={entferneUnterbrechungAmVideo}
+          aufUnterbrechungVerschieben={verschiebeUnterbrechungAmVideo}
+          ausgewaehlteIds={auswahl.ids}
+          aufElementGewaehlt={waehleElement}
+        />
+      )}
+
       <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
         {/* Die Gesamtlnge zeichnet Wiedergabeliste (#248) selbst ber baueLaengenAnzeige. */}
         <span style={{ flex: 1 }} />
@@ -996,23 +1023,6 @@ export function ComposerInterna({
               />
             </div>
           )}
-
-          {/* UNTEN: die Zeitleiste über die volle Breite (Kernachse #412/#414).
-              Wird in JEDER Ansicht gezeigt - sie ist die Einfuege-Flaeche. */}
-          <Zeitleiste
-            projekt={inhalt}
-            neuZug={zug.neuZug}
-            aktiveKante={zug.aktiveKante}
-            laedtKante={zug.laedtKante}
-            korbRef={zug.korbRef}
-            bandZiel={zug.bandZiel}
-            pxProSekunde={pxProSekunde}
-            aufZoom={zoome}
-            aufUnterbrechungEntfernen={entferneUnterbrechungAmVideo}
-            aufUnterbrechungVerschieben={verschiebeUnterbrechungAmVideo}
-            ausgewaehlteIds={auswahl.ids}
-            aufElementGewaehlt={waehleElement}
-          />
 
           {/* S4 (Naht N4): die Ausgaben-Region als eigener Baustein (#230/#232-Oeffnungsweg).
               Der Export-Rueckruf oeffnet das Overlay mit LEERER Auswahl (M7-60,
