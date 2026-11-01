@@ -9,7 +9,7 @@
 
 | | Wert |
 |---|---|
-| Commits | **8** vor `origin/main` (`9bba122`, `a94ec2e`, `72dea60`, `f13bc02`, `2f53521`, `103811a`, `bb7deb0`, `dfd9e48`) + Doku; **nicht gepusht** |
+| Commits | **10** vor `origin/main` (`9bba122`, `a94ec2e`, `72dea60`, `f13bc02`, `57c98e2`, `2f53521`, `103811a`, `bb7deb0`, `dfd9e48`, `25a0cba`); **nicht gepusht** |
 | Arbeitsbaum | sauber |
 | Gate | `npm run pruefung` **Exit 0** |
 | Unit | **5.363** Tests in **352** Dateien |
@@ -51,7 +51,7 @@ Der Auftrag war „DoD gegen den Code prüfen, mit Beleg schließen — oder nac
 
 ### #394 (composer) – geschlossen, keine Änderung
 
-Vollständig: `statistik.tsx` gebaut, in `composer/index.tsx:827` montiert (`2a2f551`), Unit-Test
+Vollständig: `statistik.tsx` gebaut, in `composer/index.tsx` (`<Statistik>`, heute Zeile 833) montiert (`2a2f551`), Unit-Test
 und **Treiber 4o** am Fenster (Gesamtdauer in `m:ss`, Zähler gegen `project.json`).
 **Lesart, benannt:** „Verhältnis Video/Segment" = die beiden Zähler nebeneinander, kein eigenes
 „3 : 1"-Feld. **Kleine Feststellung:** `zustand: 'keinProjekt'` ist in `baueStatistik` unerreichbar.
