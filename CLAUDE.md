@@ -11,7 +11,39 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (31.10.2026, fuenfunddreissigste Sitzung: Bedienfluss – #446, #392, #457) – gilt vor ALLEM weiter unten
+## STAND HEUTE (01.11.2026, sechsunddreissigste Sitzung: Buchhaltung #383–#394, Aktionen-Auswahl, Loesch-Sperrgruende) – gilt vor ALLEM weiter unten
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md).**
+
+- **#383, #388, #394 GESCHLOSSEN** (`completed`, je mit Beleg-Kommentar). Die DoD-Pruefung fand
+  **drei echte Luecken**: „aktualisiert sich bei Aenderungen" war bei #383 in **keinem** Test
+  belegt (neuer Fall in `vorschau-anzeige.spec.ts`); #388 hatte **kein Gelb** (die
+  30-Minuten-Warnung trug das Rot der kaputten Zeilen - jetzt `#d9a441`); #394 war vollstaendig
+  (montiert in `composer/index.tsx:827`, Treiber **4o**).
+- **`fehler-markierung.tsx` GELOESCHT** (`a94ec2e`, Anweisung): Geruest aus `110b9a6` ohne
+  Importeur. Die Markierung liegt in `liste-ansicht.tsx`/`element-zeile.tsx`.
+- **#393 GESCHLOSSEN, nachgebessert (`72dea60`):** Der Vorlagen-Editor hat jetzt einen **LESENDEN
+  Projektzugang** (`projektRoh`) und das Feld **„Vorschau mit Aktion"**; `BEISPIEL_AKTION` ist
+  nur noch Rueckfall. Zwei bisher ungenutzte Funktionen bekamen ihren Aufrufer
+  (`waehleVorschauAktion`, `bereiteVorschauVor`). **Abloesung, offen benannt:** die Regel
+  „KEIN Projektzugang" (ENTSCHIEDEN 6) gilt fuer diesen Reiter nicht mehr.
+- **DABEI GEFUNDENER FEHLER:** Der Vorbereitungs-Effekt hing nur an `arbeitsId` - die Wahl einer
+  anderen **Marke** leerte die Vorschau fuer immer. Jetzt am Stand (Marke, Aktion, Projekt).
+- **LOESCH-SPERRGRUENDE UNTER DER KOPFZEILE (`f13bc02`):** `loeschKnopf` bleibt im Kopf,
+  `loeschSperrgruende` bekommt eine eigene Flaeche darunter; Test prueft die **Lage**.
+- **FALLE:** `VorlagenEditorWurzelProps` existiert **zweimal** (`app-shell/inhalte.tsx` und
+  `vorlagen-editor/index.tsx`) - wer ein Feld ergaenzt, muss **beide** anfassen. Attrappen
+  muessen den **gespeicherten** Stand liefern; ein neues Objekt je `hole()` erzeugt eine
+  Zeichen-Endlosschleife (gemessen).
+- **Gate Exit 0** - Unit **5.358 (352 Dateien)**, Integration **50 (13)**, Treiber **0 Befunde**,
+  Lint 0 Fehler / 65 Warnungen. **8 Gegenproben**, alle rot und byte-identisch zurueckgenommen.
+- **Nicht gepusht:** **4 Commits** (`9bba122`, `a94ec2e`, `72dea60`, `f13bc02`) + Doku.
+  **Push nur auf Anweisung.**
+- **Offen:** **#374/#375** (Begruendung neu schreiben); Beenden-Frist 15 s; #456-Signaturblock;
+  71 Dependabot-Luecken; Layout-Frage Welle 1 („Video mittig" vs. „Buehne oben").
+  **Naechster Schritt: #374 und #375 neu schneiden.**
+
+## STAND HEUTE (31.10.2026, fuenfunddreissigste Sitzung: Bedienfluss – #446, #392, #457) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-10-31-bedienfluss-446-392-457.md`](docs/agents/uebergabe-2026-10-31-bedienfluss-446-392-457.md).**
 
