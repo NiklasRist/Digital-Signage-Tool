@@ -771,6 +771,39 @@ describe('MarkenEditorWurzel (#330) - Herkunft, Loeschen, Ableiten', () => {
 
     h.aufGeoeffneteGeaendert.mockImplementation(() => () => undefined);
   });
+
+  it('die Sperrgruende stehen UNTER der Kopfzeile, nicht in ihr (01.11.2026)', async () => {
+    // Befund: Der Block stand bis zum 01.11.2026 zwischen [Gross] und dem Papierkorb -
+    // drei Namenslisten mitten in einer einzeiligen Leiste. Der Knopf bleibt dort, die
+    // Begruendung bekommt eine eigene Flaeche.
+    h.holeGeoeffnete.mockReturnValue(markeFuerTest({ id: DIE_ID, parent: null }));
+    h.ermittleLoeschvorschau.mockResolvedValue({
+      ok: true,
+      wert: {
+        darfLoeschen: false,
+        eingebaut: false,
+        nutzung: {
+          aktionen: [],
+          abgeleiteteMarken: [],
+          standardInProjekten: [{ projektId: 'p-1', projektName: 'Projekt' }],
+        },
+      },
+    });
+    h.brauchtStandardmarkenAusweg.mockReturnValue(false);
+
+    const behaelterTest = zeige({ sichtbar: true, marken: ZUGANG(UEBERSICHT) });
+    await act(async () => {
+      behaelterTest.querySelector<HTMLButtonElement>('[data-testid="loeschengesuch"]')!.click();
+    });
+
+    const kopf = behaelterTest.querySelector('[data-testid="marken-kopfzeile"]');
+    const block = behaelterTest.querySelector('[data-testid="marken-loesch-blockiert"]');
+    expect(block).not.toBeNull();
+    expect(kopf).not.toBeNull();
+    expect(kopf?.contains(block as Node)).toBe(false);
+    // Der Einstieg bleibt in der Kopfzeile - er ist der Knopf, nicht die Begruendung.
+    expect(kopf?.querySelector('[data-testid="loeschengesuch"]')).not.toBeNull();
+  });
 });
 
 describe('MarkenEditorWurzel (#330) - Momentaufnahmen beim Markenwechsel (Treiber 4m, 22.10.2026)', () => {

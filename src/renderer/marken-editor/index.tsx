@@ -236,7 +236,7 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
           <SymbolVergroessern />
         </SymbolKnopf>
         <div data-testid="marken-loeschbereich">
-          {loeschStamm(marke, zustand, setzeZustand, marken)}
+          {loeschKnopf(marke, zustand, setzeZustand, marken)}
         </div>
       </div>
     </div>
@@ -248,6 +248,11 @@ export function MarkenEditorWurzel(eigenschaften: MarkenEditorWurzelProps): JSX.
       style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}
     >
       {!zustand.gross && kopf}
+      {/* Die Sperrgruende stehen UNTER der Kopfzeile, nicht in ihr: In der Zeile standen
+          bis zum 01.11.2026 drei Namenslisten zwischen den Symbolen und machten aus einer
+          einzeiligen Leiste einen mehrzeiligen Block. Der Kopf traegt jetzt nur noch den
+          Knopf; die Begruendung bekommt eine eigene Flaeche. */}
+      {!zustand.gross && zeigeMarke && loeschSperrgruende(zustand)}
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           {zustand.gross && (
@@ -500,52 +505,21 @@ function Markenwahl({
   )
 }
 
-/** Loeschen (#302): Vorschau, Sperrgruende und Bestaetigung - unveraendert aus #449. */
-function loeschStamm(
+/**
+ * Loeschen (#302): der KNOPF im Kopf - Einstieg, Bestaetigung, Fehlermeldung.
+ * Die Sperrgruende stehen NICHT hier, sondern in `loeschSperrgruende` unter der Kopfzeile.
+ */
+function loeschKnopf(
   marke: Marke,
   zustand: Zustand,
   setzeZustand: (aktualisiere: (alt: Zustand) => Zustand) => void,
   marken: MarkenZugang,
-): JSX.Element | null {
-  const vorschau = zustand.loeschvorschau
+): JSX.Element {
   // Reihenfolge verbindlich: ERST ermittleLoeschvorschau, DANN bestaetigeLoeschen.
-  const darfFragen = vorschau !== null && vorschau.darfLoeschen
-  if (vorschau !== null && !vorschau.darfLoeschen) {
-    const nutzung = vorschau.nutzung
-    return (
-      <div data-testid="marken-loesch-blockiert">
-        <p>Löschen ist gesperrt.</p>
-        {nutzung !== null && (
-          <>
-            {/* ALLE DREI Listen mit NAMEN, nie eine Anzahl (TK 9.15.1). */}
-            <ul data-testid="loesch-aktionen">
-              {nutzung.aktionen.map((n) => (
-                <li key={n.aktionId}>{n.projektName} - {n.aktionId}</li>
-              ))}
-            </ul>
-            <ul data-testid="loesch-abgeleitete">
-              {nutzung.abgeleiteteMarken.map((n) => (
-                <li key={n.markeId}>{n.markeName}</li>
-              ))}
-            </ul>
-            <ul data-testid="loesch-standard">
-              {nutzung.standardInProjekten.map((n) => (
-                <li key={n.projektId}>{n.projektName}</li>
-              ))}
-            </ul>
-            {/* Der AUSWEG - benannt, NICHT ausgeführt (TK 9.5.2). */}
-            {brauchtStandardmarkenAusweg(vorschau) && (
-              <p data-testid="loesch-ausweg">Wechsle die Standardmarke im Reiter Projekte.</p>
-            )}
-          </>
-        )}
-        {vorschau.eingebaut && <p>Eingebaute Marken sind nicht lösbar.</p>}
-      </div>
-    )
-  }
+  const darfFragen = zustand.loeschvorschau !== null && zustand.loeschvorschau.darfLoeschen
   return (
     <div>
-      {darfFragen && (
+      {darfFragen ? (
         <button
           data-testid="loeschen-bestaetigen"
           onClick={() => {
@@ -560,8 +534,7 @@ function loeschStamm(
         >
           Löschen bestätigen
         </button>
-      )}
-      {!darfFragen && (
+      ) : (
         // #456: Der Einstieg in den Loeschweg ist ein SYMBOL (Entscheidung Niklas:
         // „minimaler Text, Symbole für die Knöpfe"). Die BESTAETIGUNG bleibt Text:
         // Ein zweiter, anders aussehender Papierkorb hiesse „nochmal dasselbe" - und
@@ -582,6 +555,51 @@ function loeschStamm(
       {zustand.meldeaktionFehler !== null && (
         <p data-testid="marken-loesch-fehler">{zustand.meldeaktionFehler}</p>
       )}
+    </div>
+  )
+}
+
+/**
+ * Die Sperrgruende: WARUM eine Marke nicht geloescht werden darf (TK 9.15.1, TK 9.5.2).
+ *
+ * Eigene Flaeche UNTER der Kopfzeile (bis 01.11.2026 stand dieser Block mitten in der
+ * Kopfzeile zwischen [Gross] und dem Papierkorb und machte aus der Leiste einen
+ * mehrzeiligen Kasten). ALLE DREI Listen nennen NAMEN, nie eine Anzahl.
+ */
+function loeschSperrgruende(zustand: Zustand): JSX.Element | null {
+  const vorschau = zustand.loeschvorschau
+  if (vorschau === null || vorschau.darfLoeschen) return null
+  const nutzung = vorschau.nutzung
+  return (
+    <div
+      data-testid="marken-loesch-blockiert"
+      style={{ border: '1px solid #666', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
+    >
+      <p>Löschen ist gesperrt.</p>
+      {nutzung !== null && (
+        <>
+          <ul data-testid="loesch-aktionen">
+            {nutzung.aktionen.map((n) => (
+              <li key={n.aktionId}>{n.projektName} - {n.aktionId}</li>
+            ))}
+          </ul>
+          <ul data-testid="loesch-abgeleitete">
+            {nutzung.abgeleiteteMarken.map((n) => (
+              <li key={n.markeId}>{n.markeName}</li>
+            ))}
+          </ul>
+          <ul data-testid="loesch-standard">
+            {nutzung.standardInProjekten.map((n) => (
+              <li key={n.projektId}>{n.projektName}</li>
+            ))}
+          </ul>
+          {/* Der AUSWEG - benannt, NICHT ausgeführt (TK 9.5.2). */}
+          {brauchtStandardmarkenAusweg(vorschau) && (
+            <p data-testid="loesch-ausweg">Wechsle die Standardmarke im Reiter Projekte.</p>
+          )}
+        </>
+      )}
+      {vorschau.eingebaut && <p>Eingebaute Marken sind nicht lösbar.</p>}
     </div>
   )
 }
