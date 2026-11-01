@@ -83,8 +83,9 @@ import { loeseRenderAus, loeseExportAus } from './render-ausloesen'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import type { Marke } from '../../shared/contracts/marke'
 import { importiereMedien, baueImportBericht, type ImportBericht } from './medien-import'
-// S4 (Naht N4): die Galerie-Region (Datei-Drop-Zone #335) als eigener Baustein.
-import { GalerieBereich } from './galerie-bereich.tsx'
+// 01.11.2026: Die Galerie ist als Flaeche entfallen; die Datei-Drop-Zone (#335) haengt
+// jetzt an der Aktionen-Bibliothek. `GalerieBereich`/`AssetGalerie` sind NICHT mehr
+// montiert (offener Punkt: ihre Dateien und Tests stehen noch).
 import { greifeDropAuf, reiheDropEin } from './medien-bibliothek'
 import { pfadFuerDatei } from '../ipc-client/pfad-fuer-datei'
 // Mit Endung: der Pfad ohne Endung löst gegen die reine .ts-Naht auf, nicht gegen
@@ -95,8 +96,9 @@ import { ElementBedienung } from './element-zeile.tsx'
 // #407-Befund (12.10.2026): Der Baustein #123 hat zwei UI-Aufrufer, deren Ansichten
 // in der Geschichte nie in dieser Wurzel montiert wurden (Nachtrag am Issue #407).
 // Die Montage ist genau die Aufgabe dieser Datei (#261 "Bausteine anordnen").
-// S4 (Naht N4): die Bibliothek-Region als eigener Baustein (der Dock traegt die Ansicht).
-import { BibliothekDock } from './bibliothek-dock.tsx'
+// Die Bibliothek steht seit 01.11.2026 in der MITTE (der Dock als linke Spalte ist
+// entfallen); die Ansicht selbst bleibt derselbe Baustein.
+import { Bibliotheksansicht } from './bibliothek-ansicht.tsx'
 // S5 (Naht N5): der DnD-Zustand und die vier DndContext-Handler liegen im Hook
 // `verwendeZeitleistenZug` (Drag-Verband, Band-Aufnahme #425, Zeitstelle #428).
 import { verwendeZeitleistenZug } from './verwende-zeitleisten-zug'
@@ -631,8 +633,9 @@ export function ComposerInterna({
     )
   }
 
-  // Der Datei-Drop der Galerie (#335): Die Wirkung (Dateien einreihen, Bericht setzen)
-  // liegt in der Wurzel; `GalerieBereich` reicht nur die fallengelassenen Dateien herein.
+  // Der Datei-Drop (#335): Die Wirkung (Dateien einreihen, Bericht setzen) liegt in der
+  // Wurzel; seit 01.11.2026 haengt die Drop-Zone an der Aktionen-Bibliothek, nicht mehr
+  // an der (entfallenen) Galerie-Flaeche.
   const verarbeiteGalerieDrop = (dateien: File[]): void => {
     if (inhalt === null) {
       setzeDropFehler(
@@ -918,9 +921,12 @@ export function ComposerInterna({
         </div>
       ) : (
         <>
-          {/* #414: Lage-Umbersatz - Bibliothek LINKS (Dock), Galerie + Fallback-Liste
-              in der Mitte, Zeitleiste UNTEN ueber die volle Breite (Weiche B: primär).
-              Die #248-Wiedergabeliste bleibt hinter dem Umschalter erreichbar. */}
+          {/* 01.11.2026 (Entscheidung Niklas, „Aktionen in die Mitte, Galerie raus"):
+              Die Medien-GALERIE ist als Flaeche aus „Zusammenstellen" entfernt. Die
+              AKTIONEN-Bibliothek steht in der MITTE; Bilder gehoeren zum Aktions-Editor,
+              das eine Projektvideo zu seinem schmalen Import-Weg (FA-01). Die
+              Datei-Drop-Zone bleibt erhalten - sie haengt jetzt an der Bibliothek statt
+              an der Galerie (#335), die Datenwege sind unveraendert. */}
           <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
             <button
               type="button"
@@ -941,49 +947,51 @@ export function ComposerInterna({
             <span style={{ flex: 1 }} />
           </div>
 
-          <div style={{ flex: '1 1 auto', display: 'flex', gap: 8, minHeight: 0 }}>
-            {/* S4 (Naht N4): die Bibliothek-Region als eigener Baustein; die #423-Wirkung
-                (kein Video-Loeschen) bleibt in der Wurzel (Ownership, #259). */}
-            <BibliothekDock
-              projekt={inhalt}
-              sichtSchreiber={projekt.setzeListe}
-              aufImportieren={importiere}
-              ausgewaehltesId={lage.gewaehltesMediumId}
-              aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
-              vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
-              aufAktionAnlegen={legeAktionAnInline}
-              aufAktionLoeschen={loescheAktionInline}
-              aufMediumLoeschen={meldeVideoPflicht}
-              aufFehler={meldeWurzel}
-            />
-
-            {/* MITTE: Galerie als lebende Drop-Zone (#335) + falls gewaehlt die
-                #248-Liste (Fallback). */}
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
-              {ansicht === 'liste' && (
-                <>
-                  <Wiedergabeliste
-                    projekt={inhalt}
-                    sichtSchreiber={projekt.setzeListe}
-                    stellen={findeKaputteStellen(inhalt, markenListe)}
-                    reparatur={verdrahtung.reparatur}
-                    voraussetzungen={zeichnen.hole()}
-                    zeichneBedienung={zeichneBedienung}
-                    ausgewaehlteIds={auswahl.ids}
-                    aufZeileGewaehlt={waehleElement}
-                  />
-                </>
-              )}
-              {/* S4 (Naht N4): die Galerie-Region als eigener Baustein; die Drop-Wirkung
-                  liegt in der Wurzel (`verarbeiteGalerieDrop`, Ownership #259). */}
-              <GalerieBereich
+          {/* Die MITTE: entweder die #248-Wiedergabeliste (Fallback hinter dem
+              Umschalter) ODER die Aktionen-Bibliothek. NICHT beide gleichzeitig - bei
+              800x572 sind zwei Bloecke unter der Buehne nicht unterzubringen (Lehre aus
+              #456: wer Hoehe ergaenzt, muss den Composer nachmessen). */}
+          {ansicht === 'liste' ? (
+            <div style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto' }}>
+              <Wiedergabeliste
                 projekt={inhalt}
-                ausgewaehltesId={lage.gewaehltesMediumId}
-                aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
-                aufDateiDrop={verarbeiteGalerieDrop}
+                sichtSchreiber={projekt.setzeListe}
+                stellen={findeKaputteStellen(inhalt, markenListe)}
+                reparatur={verdrahtung.reparatur}
+                voraussetzungen={zeichnen.hole()}
+                zeichneBedienung={zeichneBedienung}
+                ausgewaehlteIds={auswahl.ids}
+                aufZeileGewaehlt={waehleElement}
               />
             </div>
-          </div>
+          ) : (
+            // Aktionen-Bibliothek (Video-Zeile + Aktionen + Anlegen) statt der frueheren
+            // Galerie. Sie ist zugleich die Datei-Drop-Zone (#335).
+            <div
+              data-testid="composer-aktionen-mitte"
+              style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto' }}
+              onDragOver={(ereignis) => {
+                ereignis.preventDefault()
+              }}
+              onDrop={(ereignis) => {
+                ereignis.preventDefault()
+                verarbeiteGalerieDrop(Array.from(ereignis.dataTransfer.files))
+              }}
+            >
+              <Bibliotheksansicht
+                projekt={inhalt}
+                sichtSchreiber={projekt.setzeListe}
+                aufImportieren={importiere}
+                ausgewaehltesId={lage.gewaehltesMediumId}
+                aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
+                vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+                aufAktionAnlegen={legeAktionAnInline}
+                aufAktionLoeschen={loescheAktionInline}
+                aufMediumLoeschen={meldeVideoPflicht}
+                aufFehler={meldeWurzel}
+              />
+            </div>
+          )}
 
           {/* UNTEN: die Zeitleiste über die volle Breite (Kernachse #412/#414).
               Wird in JEDER Ansicht gezeigt - sie ist die Einfuege-Flaeche. */}

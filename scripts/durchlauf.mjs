@@ -112,7 +112,7 @@ const main = async () => {
     });
     // #340-Gegenprobe (Beobachtung s. Schritt 4b): JEDE media://-Antwort wird beobachtet.
     // Der echte Handler liefert 200/206 - der Stub antwortete 404 auf ALLES. Der Anlass
-    // kommt spaeter (Seed-Import, Galerie-Bild).
+    // kommt spaeter (Seed-Import, Bild-Aktion).
     const mediaAntworten = [];
     seite.on("response", (antwort) => {
       if ((antwort.url() || "").startsWith("media://")) {
@@ -2087,7 +2087,7 @@ const main = async () => {
       if (!fs.existsSync(probe)) {
         fund("Medien-Seed", "Testvideo erzeugt", "kein zugreifbares Video", "BLOCKER", "ffmpeg-static");
       } else {
-        // Auf den Reiter Zusammenstellen wechseln: Galerie und Wiedergabeliste
+        // Auf den Reiter Zusammenstellen wechseln: Aktionen-Bibliothek und Wiedergabeliste
       // leben dort; im Projekte-Reiter ist die composer-Wurzel inaktiv.
       await klick('[data-testid="reiter-zusammenstellen"]');
       await schlafe(700);
@@ -2113,26 +2113,24 @@ const main = async () => {
           console.log(`[schritt-4b] Seed-Import: ${rein} queue-Ereignis(se) nach ${seed.dauerteMs} ms.`);
         }
         // Das Asset leitet nach dem Import; das Buchstabier-Gefecht wartet bis 12 s.
+        // 01.11.2026: Die Galerie ist als Flaeche entfallen (Aktionen in die Mitte) -
+        // gemessen wird die VIDEO-ZEILE der Bibliothek, dieselbe Aussage (das Asset
+        // steht in der Bibliothek).
         const eintrag = await seite.evaluate(() => new Promise((f) => {
           const start = Date.now();
           const nachsehen = () => {
-            const n = document.querySelectorAll('[data-testid^="galerie-eintrag-"]').length;
+            const n = document.querySelectorAll('[data-testid^="medium-"]').length;
             if (n > 0) return f(n);
             if (Date.now() - start > 12_000) return f(0);
             setTimeout(nachsehen, 400);
           };
           nachsehen();
         }));
-        const galerieDa = await seite.evaluate(() => !!document.querySelector('[data-testid="asset-galerie"]'));
-        const leerP = await seite.evaluate(() => !!document.querySelector('[data-testid="galerie-leer"]'));
-        console.log(`[schritt-4b] Galerie da: ${galerieDa}, leer-Plakette: ${leerP}, Eintraege: ${eintrag}`);
-        if (!galerieDa) {
-          fund("Medien-Bibliothek", "asset-galerie im Reiter Zusammenstellen",
-            "Galerie nicht mountet", "BLOCKER", "composer/index.tsx");
-        } else if (eintrag === 0) {
-          fund("Medien-Bibliothek", "galerie-eintrag nach dem Seed-Import",
-            "kein Eintrag nach 12 s (" + (leerP ? "leer-Plakette an" : "kein leer") + ")",
-            "Befund", "composer/asset-galerie.tsx");
+        // Die Montage der Bibliothek selbst prueft der #407-Block weiter unten (BLOCKER).
+        console.log(`[schritt-4b] Video-Zeilen nach dem Seed-Import: ${eintrag}`);
+        if (eintrag === 0) {
+          fund("Aktionen-Bibliothek", "Video-Zeile nach dem Seed-Import",
+            "kein Eintrag nach 12 s", "Befund", "composer/bibliothek-ansicht.tsx");
         }
         // #340/#407-Gegenprobe: media://-Handler statt Stub. Anlass: das Seed-Video
         // kommt in die Wiedergabeliste - ueber den ECHTEN Bedienweg "Zur Liste
@@ -2207,7 +2205,6 @@ const main = async () => {
           const fv = flaeche === null ? null : flaeche.getBoundingClientRect();
           const vv = video === null ? null : video.getBoundingClientRect();
           const medium = document.querySelector('[data-testid^="medium-"]');
-          const galerie = document.querySelector('[data-testid^="galerie-eintrag-"]');
           return {
             vorschau: !!document.querySelector('[data-testid="vorschau"]'),
             kasten: kv === null ? null : { w: Math.round(kv.width), h: Math.round(kv.height) },
@@ -2217,16 +2214,15 @@ const main = async () => {
             playLabel: document.querySelector('[data-testid="vorschau-play-pause"]')?.getAttribute('aria-label') ?? null,
             // #418: das nach dem Import standardmaessig ausgewaehlte Video.
             auswahlMedium: medium === null ? null : medium.getAttribute('data-ausgewaehlt'),
-            auswahlGalerie: galerie === null ? null : galerie.getAttribute('data-ausgewaehlt'),
           };
         });
         console.log("[schritt-4b3] Videostage: " + JSON.stringify(buehneDiag));
-        if (buehneDiag.auswahlMedium !== 'true' && buehneDiag.auswahlGalerie !== 'true') {
+        if (buehneDiag.auswahlMedium !== 'true') {
           fund("Import-Auswahl", "das importierte Video ist standardmaessig ausgewaehlt (#418)",
-            `medium=${buehneDiag.auswahlMedium}, galerie=${buehneDiag.auswahlGalerie}`,
+            `medium=${buehneDiag.auswahlMedium}`,
             "Befund", "composer/index.tsx");
         } else {
-          console.log(`[schritt-4b3] Import-Auswahl GEMESSEN: medium=${buehneDiag.auswahlMedium}, galerie=${buehneDiag.auswahlGalerie}.`);
+          console.log(`[schritt-4b3] Import-Auswahl GEMESSEN: medium=${buehneDiag.auswahlMedium}.`);
         }
         if (buehneDiag.kasten === null || buehneDiag.kasten.h < 10) {
           fund("Videostage", "die Buehne hat eine sichtbare Hoehe (> 10 px)",
@@ -2276,7 +2272,7 @@ const main = async () => {
         await klick('[data-testid="vorschau-play-pause"]');
         await schlafe(300);
         // #340-Gegenprobe (media-Antworten werden an der Kopf-Messstelle beobachtet): Ein
-        // BILD-Seed laesst die Galerie <img src="media://..."> rendern - die Anfrage
+        // BILD-Seed loest eine media://-Anfrage aus (das Seed-Video laedt ueber denselben Handler) - die Anfrage
         // streift den echten Handler (der Stub antwortete 404 auf ALLES).
         const probeBild = path.join("/tmp", "durchlauf-probe.png");
         const ffmpeg2 = path.join(WURZEL, "node_modules", "ffmpeg-static", "ffmpeg");
@@ -2291,7 +2287,7 @@ const main = async () => {
             payload: { projektId: projektId2, quellPfad: pfad2 },
           });
         }, probeBild, aktivesProjektId);
-        // Warten, bis die queue:geaendert-Ereignisse durchlaufen sind und die Galerie fragt.
+        // Warten, bis die queue:geaendert-Ereignisse durchlaufen sind und die Bibliothek fragt.
         await schlafe(3_500);
         const gut = mediaAntworten.filter((a) => a.status < 400).length;
         const schief = mediaAntworten.filter((a) => a.status >= 400).length;
@@ -4921,8 +4917,8 @@ const main = async () => {
             p.on("exit", (c) => (c === 0 ? f() : r(new Error("ffmpeg erzeugt kein Bild (code " + c + ")"))));
           });
 
-          const galerieDavor4k = await seite.evaluate(
-            () => document.querySelectorAll('[data-testid^="galerie-eintrag-"]').length,
+          const zeilenDavor4k = await seite.evaluate(
+            () => document.querySelectorAll('[data-testid^="medium-"]').length,
           );
           // Der ERFOLGS-BELEG kommt aus D1, nicht aus einer Anzeige: Die importierte
           // Datei muss als Asset im Projekt stehen (project.json, entprellt gespeichert).
@@ -4950,7 +4946,7 @@ const main = async () => {
           } else {
             // Erfolg heisst: der Auftrag ist aus Q1 UND Q2 weg (der Q2-Eintrag wird nur
             // nach ERFOLG gestrichen, TK 9.3.5) - die Zeile verschwindet, und der Import
-            // legt einen Galerie-Eintrag an.
+            // legt eine Video-Zeile in der Bibliothek an.
             const fristWeg4k = Date.now() + 25_000;
             let weg4k = false;
             while (Date.now() < fristWeg4k) {
@@ -4973,14 +4969,14 @@ const main = async () => {
               if (assetsJetzt4k > assetsDavor4k) break;
               await schlafe(300);
             }
-            const galerieJetzt4k = await seite.evaluate(
-              () => document.querySelectorAll('[data-testid^="galerie-eintrag-"]').length,
+            const zeilenJetzt4k = await seite.evaluate(
+              () => document.querySelectorAll('[data-testid^="medium-"]').length,
             );
             const standNach4k = await seite.evaluate(async (id) => {
               const antwort = await window.api.invoke("queue:holeStand");
               return antwort && antwort.ok ? antwort.wert.some((a) => a.auftragId === id) : null;
             }, fehlId);
-            console.log(`[schritt-4k] Wiederholung: Zeile weg=${String(weg4k)}, Assets ${assetsDavor4k}->${assetsJetzt4k}, Galerie ${galerieDavor4k}->${galerieJetzt4k}, Stand traegt den Auftrag=${String(standNach4k)}.`);
+            console.log(`[schritt-4k] Wiederholung: Zeile weg=${String(weg4k)}, Assets ${assetsDavor4k}->${assetsJetzt4k}, Video-Zeilen ${zeilenDavor4k}->${zeilenJetzt4k}, Stand traegt den Auftrag=${String(standNach4k)}.`);
             if (!weg4k) {
               fund("Wiederholen (FA-17)", "der wiederholte Auftrag ist nach dem Erfolg nicht mehr in der Leiste",
                 `Zeile nach 25 s noch da, Assets ${assetsDavor4k}->${assetsJetzt4k}`,

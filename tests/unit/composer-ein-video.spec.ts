@@ -182,6 +182,20 @@ describe('composer/index.tsx - ein Video (#422)', () => {
     expect(knopf?.textContent).toContain('Video importieren')
   })
 
+  it('01.11.2026: die AKTIONEN-Bibliothek steht in der Mitte, die Galerie ist raus', async () => {
+    // Entscheidung Niklas: „Aktionen in die Mitte, Galerie raus." Die Bibliothek
+    // (Video-Zeile + Aktionen) ist die mittlere Flaeche; der linke Dock und die
+    // Galerie sind NICHT mehr montiert. Der Dock ist entfallen, die Galerie bleibt
+    // als Datei-Drop-Zone an der Bibliothek erhalten.
+    await zeichne(baueEigenschaften(baueProjekt({ liste: [videoElement('el-1', 'asset-1')] })))
+
+    expect(behaelter.querySelector('[data-testid="bibliothek"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="composer-aktionen-mitte"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="composer-bibliothek-dock"]')).toBeNull()
+    expect(behaelter.querySelector('[data-testid="composer-galerie"]')).toBeNull()
+    expect(behaelter.querySelector('[data-testid="asset-galerie-doppel"]')).toBeNull()
+  })
+
   it('ohne Video startet der Import DIREKT (keine Rueckfrage)', async () => {
     await zeichne(baueEigenschaften(baueProjekt()))
     await klicke('composer-medien-import')
