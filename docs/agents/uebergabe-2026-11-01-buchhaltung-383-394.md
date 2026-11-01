@@ -9,10 +9,10 @@
 
 | | Wert |
 |---|---|
-| Commits | **6** vor `origin/main` (`9bba122`, `a94ec2e`, `72dea60`, `f13bc02`, `2f53521`, `103811a`) + Doku; **nicht gepusht** |
+| Commits | **8** vor `origin/main` (`9bba122`, `a94ec2e`, `72dea60`, `f13bc02`, `2f53521`, `103811a`, `bb7deb0`, `dfd9e48`) + Doku; **nicht gepusht** |
 | Arbeitsbaum | sauber |
 | Gate | `npm run pruefung` **Exit 0** |
-| Unit | **5.359** Tests in **352** Dateien |
+| Unit | **5.363** Tests in **352** Dateien |
 | Integration | **50** in **13** Dateien |
 | Treiber | **0 Befunde** |
 | Lint | **0 Fehler**, **65 Warnungen** |
@@ -174,21 +174,32 @@ die tägliche Arbeit daneben klein.
   der Bühne nicht unterzubringen (Lehre aus #456).
 - **Treiber nachgezogen:** 4b misst die Video-Zeile statt `galerie-eintrag`, 4b3 die Auswahl am
   `medium`, 4k die Zeilenzahl; die Montage-Prüfung bleibt als BLOCKER an der Bibliothek.
-- **Offen, benannt:** `galerie-bereich.tsx`, `asset-galerie.tsx` und `bibliothek-dock.tsx` sind
-  jetzt **ohne Nutzer**. Löschen erst mit den sieben Test-Mocks (eigener Schritt).
+- **Die drei toten Dateien sind gelöscht:** `galerie-bereich.tsx`, `asset-galerie.tsx`,
+  `bibliothek-dock.tsx` — samt sechs Test-Mocks und den zwei Galerie-Fällen in
+  `drag-quellen.spec.ts`.
+- **Der Aktions-Editor geht aus dem Projekteditor auf** (offene Frage der Notiz vom 21.10.):
+  Jede Aktions-Zeile trägt **„Bearbeiten"**; der Klick öffnet denselben `ActionEditorWurzel`
+  als **Ansicht über der Reiterfläche**. Die Reiter bleiben montiert und nur verdeckt
+  (TK 9.14.2); „Zurück zum Projekt" oder ein Reiterklick schließt sie. Der Editor bekommt den
+  **umhüllten** Zugang (`projektBearbeitung`), damit Bearbeiten ein Undo-Schritt bleibt.
+  NEU `gemeinsam/aktionen-ansicht.ts` (kleiner Speicher wie `reiter.ts`). **Treiber `4g6`**
+  misst es am Fenster; **Matrix FA-03** ist nachgezogen.
+- **Messfehler, den der Treiber aufdeckte:** Der erste Lauf meldete „Zurück schließt nicht".
+  Die Sonde `rahmen-inhalt-aktionen` traf aber den **Testid des Aktionen-Reiters**, nicht die
+  Ansicht. Sie heißt jetzt `rahmen-ansicht-aktionen`; beim Marken-Editor fiel die Kollision
+  nicht auf, weil es keinen Reiter `marken` mehr gibt. Der falsche Fund steht noch im
+  Protokoll (`oberflaeche-durchlauf.md`, Nachlauf 14:18) — als Geschichte, nicht als Befund.
 
 ## 9. Nächster Schritt
 
 **Es ist kein Issue mehr offen.** Die nächste Arbeit ist eine **Entscheidung**, kein Bau:
 
-1. **Rest der 21.10.-Richtung:** Soll der **Aktions-Editor aus dem Projekteditor** ohne
-   Reiterwechsel erreichbar sein (Overlay wie der Marken-Editor)? Und in welcher Form kommt der
-   **Bild-Import** (Feld im Editor, kleiner Dialog, Datei-Drop)?
-2. **Navigationsfrage aus #374:** Aktionen-Editor als Overlay über der Reiterfläche — dann neues
-   Issue mit eigenem Zuschnitt (Reiterleiste, Projektleiste, Überlagerung).
-3. **Layout-Frage Welle 1:** Plan sagt „Video mittig", gebaut ist „Bühne oben". Entscheiden.
-4. **Kleinigkeit mit Ansage:** die drei toten Galerie-/Dock-Dateien löschen (mit den Test-Mocks).
-5. **Zwei unbestätigte Zahlen:** Beenden-Frist 15 s und der #456-Signaturblock.
+1. **Bild-Import-Form** (letzte offene Frage der Notiz vom 21.10.): Feld im Aktions-Editor,
+   kleiner Dialog oder Datei-Drop? Der Weg selbst ist gebaut (`aktion-bild-import`).
+2. **Layout-Frage Welle 1:** Plan sagt „Video mittig", gebaut ist „Bühne oben". Entscheiden.
+3. **Alle Editoren und die UI weiter überarbeiten** — Ansage Niklas, 01.11.2026: der Umbau ist
+   damit begonnen, nicht abgeschlossen.
+4. **Zwei unbestätigte Zahlen:** Beenden-Frist 15 s und der #456-Signaturblock.
 
 **Sicherheit (71 Dependabot-Lücken) ist nachrangig, solange der MVP nicht steht** — Ansage
 Niklas, 01.11.2026.

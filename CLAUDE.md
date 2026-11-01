@@ -51,14 +51,23 @@
   gehoeren zum Aktions-Editor, das Video zum schmalen Import). Die Datei-Drop-Zone (#335) haengt
   jetzt an der Bibliothek. **Liste und Bibliothek schliessen sich aus** (bei 800x572 passen zwei
   Bloecke unter der Buehne nicht - Lehre aus #456). Treiber 4b/4b3/4k messen jetzt `medium-`
-  statt `galerie-eintrag`. **Offen, benannt:** `galerie-bereich.tsx`, `asset-galerie.tsx`,
-  `bibliothek-dock.tsx` sind ohne Nutzer - Loeschen erst mit den sieben Test-Mocks.
-- **Offen ohne Issue:** Rest der 21.10.-Richtung (Aktions-Editor aus dem Projekteditor ohne
-  Reiterwechsel? Bild-Import-Form?); Navigationsfrage aus #374 (Aktionen als Overlay?);
-  Layout-Frage Welle 1 („Video mittig" vs. „Buehne oben"); Beenden-Frist 15 s;
-  #456-Signaturblock; 71 Dependabot-Luecken. **Sicherheit ist nachrangig, solange der MVP nicht
-  steht** (Ansage Niklas, 01.11.2026). **Naechster Schritt: eine Frage entscheiden, nicht auf
-  Verdacht bauen.**
+  statt `galerie-eintrag`. **`galerie-bereich.tsx`, `asset-galerie.tsx`, `bibliothek-dock.tsx`
+  sind geloescht** (samt sechs Test-Mocks).
+- **AKTIONS-EDITOR AUS DEM PROJEKTEDITOR (`dfd9e48`):** Jede Aktions-Zeile traegt
+  **"Bearbeiten"**; der Klick oeffnet denselben `ActionEditorWurzel` als **Ansicht UEBER der
+  Reiterflaeche** (Reiter bleiben montiert, nur verdeckt - TK 9.14.2); "Zurueck zum Projekt"
+  oder ein Reiterklick schliesst sie. Neuer Speicher `gemeinsam/aktionen-ansicht.ts`, Slot
+  `aktionenAnsicht` im Rahmen, umhüllter Zugang (`projektBearbeitung`) fuer den Undo-Schritt.
+  **Treiber `4g6`** misst es am Fenster; Matrix FA-03 nachgezogen.
+  **Messfalle:** Die Ansicht heisst `rahmen-ansicht-aktionen` - `rahmen-inhalt-aktionen` ist der
+  Testid des AKTIONEN-REITERS (der erste Treiber-Lauf meldete deshalb falsch "Zurueck schliesst
+  nicht").
+- **Offen ohne Issue:** Bild-Import-Form im Aktions-Editor (Feld/Dialog/Drop); Layout-Frage
+  Welle 1 („Video mittig" vs. „Buehne oben"); Beenden-Frist 15 s; #456-Signaturblock;
+  71 Dependabot-Luecken. **Sicherheit ist nachrangig, solange der MVP nicht steht** (Ansage
+  Niklas, 01.11.2026). **Alle Editoren und die UI muessen weiter extrem ueberarbeitet werden** -
+  der Umbau ist begonnen, nicht abgeschlossen. **Naechster Schritt: eine Frage entscheiden,
+  nicht auf Verdacht bauen.**
 
 ## STAND HEUTE (31.10.2026, fuenfunddreissigste Sitzung: Bedienfluss – #446, #392, #457) – historisiert durch den Abschnitt darueber
 
