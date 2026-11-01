@@ -10,10 +10,11 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { createElement, useRef, type JSX } from 'react'
 import { DndContext } from '@dnd-kit/core'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 
 import type { Project } from '../../src/shared/contracts/project'
 import { Zeitleiste, baueZeitleistenZeilen } from '../../src/renderer/composer/zeitleiste.tsx'
+import { abonniereSprung } from '../../src/renderer/gemeinsam/abspielsprung'
 
 const GERAETE: Array<{ wurzel: Root; behaelter: HTMLDivElement }> = []
 
@@ -186,5 +187,35 @@ describe('Die Zeitleiste meldet die Auswahl (#392)', () => {
         block?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       })
     }).not.toThrow()
+  })
+})
+
+// 01.11.2026 (Niklas: "die zeitleiste und videowiedergabe muessen gesynct werden"):
+// Die Zeitachse ist die Sprung-Flaeche. Geprueft wird die Zuordnung Pixel -> Frame; sie
+// ist DIE Umkehrung der Marken-Rechnung (x = frame/fps*pxProSekunde), sonst springt die
+// Wiedergabe woandershin als der Zeiger stand.
+describe('Klick auf die Zeitachse setzt die Wiedergabe (#457-Nachtrag)', () => {
+  it(' 40 px bei 8 px/s ergeben Frame 150 (40 / 8 * 30 fps)', () => {
+    const springe = vi.fn()
+    const abmelden = abonniereSprung(springe)
+
+    // jsdom liefert fuer jedes Element ein Null-Rechteck; der Klick rechnet ab `left`.
+    const original = HTMLElement.prototype.getBoundingClientRect
+    HTMLElement.prototype.getBoundingClientRect = function (): DOMRect {
+      return { x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON: () => ({}) } as DOMRect
+    }
+    try {
+      const behaelter = montiere({ projekt: projekt(1), neuZug: null, aktiveKante: null, laedtKante: null })
+      const achse = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-zeitachse"]')
+      expect(achse).not.toBeNull()
+      act(() => {
+        achse?.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 40 }))
+      })
+      expect(springe).toHaveBeenCalledTimes(1)
+      expect(springe).toHaveBeenCalledWith(150)
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original
+      abmelden()
+    }
   })
 })

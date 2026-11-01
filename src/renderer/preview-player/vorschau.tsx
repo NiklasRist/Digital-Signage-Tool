@@ -65,6 +65,7 @@ import { TON_STAND, schalteTonUm, setzeLautstaerke } from './bedienung'
 import { findeKaputteStellen } from '../composer/kaputt-erkennung'
 import { taktDelta, taktSollLaufen, waehleVorschaubild } from './vorschau-auswahl'
 import { setzeAbspielstand } from '../gemeinsam/abspielposition'
+import { abonniereSprung } from '../gemeinsam/abspielsprung'
 
 export interface VorschauProps {
   /** Das geladene Projekt; null = kein Projekt offen. Zustand kommt als PARAMETER (#197). */
@@ -122,6 +123,22 @@ export function Vorschau(props: VorschauProps): JSX.Element {
   }, [props.projekt])
 
   const achse = achseErgebnis !== null && achseErgebnis.ok ? achseErgebnis.wert : null
+
+  // 01.11.2026 (Niklas: "die zeitleiste und videowiedergabe muessen gesynct werden"):
+  // die GEGENRICHTUNG zur Marke. Ein Klick auf die Zeitachse meldet einen Sprungwunsch
+  // (`gemeinsam/abspielsprung`); hier wird er zur Position der EINEN Uhr. Die Achse
+  // reist ueber eine Ref, damit das Abo nicht bei jedem Render neu entsteht.
+  const achseRef = useRef(achse)
+  achseRef.current = achse
+  useEffect(
+    () =>
+      abonniereSprung((frame) => {
+        const aktuelleAchse = achseRef.current
+        if (aktuelleAchse === null) return
+        setStand((bisher) => springeZuFrame(bisher, aktuelleAchse, frame))
+      }),
+    [],
+  )
 
   // ENTSCHIEDEN 12: klemmen, nicht zuruеcksetzen.
   useEffect(() => {

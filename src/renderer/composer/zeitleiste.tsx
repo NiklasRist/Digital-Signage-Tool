@@ -9,9 +9,12 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Listenelement, Project, Einblendung } from "../../shared/contracts/project";
 import { frameDauer } from "./gesamtlaenge";
 import { RENDER_PROFILE } from "../../shared/contracts/render-profile";
-import { EA_PX_PRO_SEKUNDE, baueZeitachse, baueBandspur } from "./zeitband";
+import { EA_PX_PRO_SEKUNDE, baueZeitachse, baueBandspur, frameAusXPx } from "./zeitband";
 import { klickModusAus, AUSWAHLKANTE, type KlickModus } from "./mehrfachauswahl";
 import { AbspielMarke } from "./abspiel-marke.tsx";
+// 01.11.2026: die Gegenrichtung der Marke - ein Klick auf die Zeitachse setzt die
+// Wiedergabe an diese Stelle ("zeitleiste und videowiedergabe gesynct", Niklas).
+import { fordereSprung } from "../gemeinsam/abspielsprung";
 // #437: die Marken der Unterbrechungen liegen sequenziell im Video-Block.
 import { unterbrechungsMarken } from "./unterbrechungs-aufnahme";
 // #433: der Video-Block zeigt die EINZELBILDER des Videos als Filmstreifen.
@@ -162,10 +165,17 @@ export function Zeitleiste({
         </div>
       )}
       {/* #428: die Zeitachse ueber der Blockzeile - gleiche Segmente/Luecken/Kanten wie
-          die Bloecke, darum sitzt sie deckungsgleich. Tick-Schritt und Label folgen dem Zoom. */}
+          die Bloecke, darum sitzt sie deckungsgleich. Tick-Schritt und Label folgen dem Zoom.
+          01.11.2026: Sie ist zugleich die SPRUNG-Flaeche - ein Klick setzt die Wiedergabe
+          auf diese Stelle (derselbe Massstab wie die Marke, `frameAusXPx`). */}
       <div
         data-testid="zeitleiste-zeitachse"
-        style={{ display: 'flex', alignItems: 'flex-end', gap: LUECKE_PX, height: 18 }}
+        title="Klick setzt die Wiedergabe an diese Stelle"
+        onClick={(ereignis) => {
+          const kasten = ereignis.currentTarget.getBoundingClientRect()
+          fordereSprung(frameAusXPx(ereignis.clientX - kasten.left, pxProSekunde))
+        }}
+        style={{ display: 'flex', alignItems: 'flex-end', gap: LUECKE_PX, height: 18, cursor: 'pointer' }}
       >
         {neuZug !== null && <span style={{ flex: '0 0 auto', width: 10 }} />}
         {achse.map((segment, index) => (

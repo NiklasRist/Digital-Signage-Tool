@@ -10,6 +10,17 @@ export const EA_PX_PRO_SEKUNDE = 8
 /** Die waehlbaren Zoom-Stufen (px/s). Hoeher = feiner; ab ~64 px/s werden einzelne Frames sichtbar. */
 export const ZOOM_STUFEN = [4, 8, 16, 32, 64, 128] as const
 
+/** Umkehrung der Marken-Position (#457, Nachtrag 01.11.2026): aus der Pixelstelle auf der
+ *  Achse den Frame. Es ist DIESELBE Rechnung wie in `abspiel-marke.tsx`
+ *  (`x = frame / fps * pxProSekunde`), nur rueckwaerts - sonst springt die Wiedergabe
+ *  woandershin als der Zeiger stand. Geklemmt wird nur nach unten (0); die Obergrenze
+ *  kennt diese Datei nicht, das ist Sache von `springeZuFrame` (transport.ts). */
+export function frameAusXPx(xPx: number, pxProSekunde: number, fps: number = RENDER_PROFILE.fps): number {
+  if (!Number.isFinite(xPx) || !(pxProSekunde > 0)) return 0
+  const frame = Math.round((xPx / pxProSekunde) * fps)
+  return frame < 0 ? 0 : frame
+}
+
 /** Tick-Schrittweiten in FRAMES - von einem Frame bis zu mehreren Minuten. Der Schritt wird je
  *  Zoom so gewaehlt, dass die Ticks einen Mindestabstand halten. */
 const TICK_SCHRITTE_FRAMES = [1, 2, 5, 10, 15, 30, 60, 150, 300, 600, 1800, 3600, 9000, 18000] as const

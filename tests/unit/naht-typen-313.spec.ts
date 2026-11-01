@@ -27,6 +27,9 @@ it('der composer traegt seit #338 den Marken-Zugang fuer die Kaputt-Erkennung', 
     zeichnen: zeichenzugang,
     vorlagen: vorlagenzugang,
     marken: zugang,
+    // 01.11.2026: Die Buehne kommt als Knoten herein, damit der Composer sie neben die
+    // Zeitleiste setzen kann (Rail links, gleiche Breite fuer beide).
+    buehne: null as unknown as ComposerWurzelProps['buehne'],
   }
   expect(basis.sichtbar).toBe(true)
   type Fehlerprobe = ComposerWurzelProps extends { marken: unknown } ? true : never

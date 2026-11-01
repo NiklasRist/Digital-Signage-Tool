@@ -3832,19 +3832,25 @@ const main = async () => {
       // und der Dauer-Regler nicht treffbar). Deshalb wird sie in JEDEM Lauf gemessen,
       // unabhaengig davon, ob der Regler gerade erreichbar ist.
       const hoehen4f4 = await seite.evaluate(() => {
-        const hoehe = (testid) => {
+        const masse = (testid) => {
           const e = document.querySelector(`[data-testid="${testid}"]`);
           if (e === null) return null;
           const r = e.getBoundingClientRect();
-          return { y: Math.round(r.y), h: Math.round(r.height) };
+          return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
         };
+        const buehne = masse('composer-buehne');
+        const zeitleiste = masse('zeitleiste');
         return {
           fenster: { w: window.innerWidth, h: window.innerHeight },
-          buehne: hoehe('buehne-kasten'),
-          composer: hoehe('composer-wurzel'),
-          zeitleiste: hoehe('zeitleiste'),
-          liste: hoehe('wiedergabeliste-liste'),
-          statistik: hoehe('statistik'),
+          rail: masse('composer-rail'),
+          buehne,
+          zeitleiste,
+          // "gleich lang" (Niklas, 01.11.2026): gleiche linke Kante UND gleiche Breite.
+          gleichLang: buehne !== null && zeitleiste !== null
+            ? { links: buehne.x === zeitleiste.x, breite: buehne.w === zeitleiste.w }
+            : null,
+          liste: masse('wiedergabeliste-liste'),
+          statistik: masse('statistik'),
         };
       });
       console.log(`[schritt-4f4] Hoehen: ${JSON.stringify(hoehen4f4)}`);
@@ -3975,6 +3981,61 @@ const main = async () => {
       }
       await klick('[data-testid="composer-ansicht-zeitleiste"]');
       await schlafe(200);
+    }
+
+    // Schritt 4f4b - Zeitleiste und Wiedergabe sind GESYNCt (Niklas, 01.11.2026:
+    // "ausserdem muss die zeitleiste und videowiedergabe gesynct werden"). Geprueft
+    // wird BEIDES: der Stand der Marke (`data-frame`) UND die echte Zeit des
+    // Video-Elements. Die Marke allein bewiese nur, dass der Speicher schreibt; erst
+    // `currentTime` zeigt, dass die Wiedergabe wirklich gesprungen ist.
+    {
+      const lage4f4b = await seite.evaluate(() => {
+        const achse = document.querySelector('[data-testid="zeitleiste-zeitachse"]');
+        const marke = document.querySelector('[data-testid="zeitleiste-playhead"]');
+        const zoom = document.querySelector('[data-testid="zeitleiste-zoom-wert"]')?.textContent ?? '';
+        if (achse === null) return null;
+        const r = achse.getBoundingClientRect();
+        return {
+          x: r.left,
+          y: r.top + 9,
+          breite: r.width,
+          px: Number.parseInt(zoom, 10),
+          frame: marke === null ? null : Number(marke.getAttribute('data-frame')),
+        };
+      });
+      if (lage4f4b === null || !(lage4f4b.px > 0) || lage4f4b.breite < 4) {
+        fund("Wiedergabe-Sync", "die Zeitachse ist anklickbar (Vorbedingung)",
+          `Achse ${JSON.stringify(lage4f4b)}`, "Untersuchung", "composer/zeitleiste.tsx");
+      } else {
+        // Ein Klick EINE Sekunde hinein: die Achse ist `pxProSekunde` px je Sekunde breit.
+        const x4f4b = Math.min(lage4f4b.px, Math.max(1, lage4f4b.breite - 1));
+        const erwartet4f4b = Math.round((x4f4b / lage4f4b.px) * 30);
+        await seite.mouse.click(lage4f4b.x + x4f4b, lage4f4b.y);
+        await schlafe(600);
+        const nach4f4b = await seite.evaluate(() => {
+          const marke = document.querySelector('[data-testid="zeitleiste-playhead"]');
+          const video = document.querySelector('video');
+          return {
+            frame: marke === null ? null : Number(marke.getAttribute('data-frame')),
+            zeit: video === null ? null : Math.round(video.currentTime * 100) / 100,
+          };
+        });
+        console.log(
+          `[schritt-4f4b] Sync: Frame ${JSON.stringify(lage4f4b.frame)} -> ${JSON.stringify(nach4f4b.frame)} ` +
+            `(erwartet ${erwartet4f4b}), Videozeit ${JSON.stringify(nach4f4b.zeit)} s, Achse ${lage4f4b.breite.toFixed(1)} px`,
+        );
+        if (nach4f4b.frame !== erwartet4f4b) {
+          fund("Wiedergabe-Sync", "ein Klick auf die Zeitachse setzt die Marke auf den gerechneten Frame",
+            `Frame ${JSON.stringify(nach4f4b.frame)} (erwartet ${erwartet4f4b})`,
+            "Befund", "composer/zeitleiste.tsx");
+        } else if (nach4f4b.zeit === null || Math.abs(nach4f4b.zeit - erwartet4f4b / 30) > 0.2) {
+          fund("Wiedergabe-Sync", "die Wiedergabe springt mit der Marke (gleiche Zeit)",
+            `Videozeit ${JSON.stringify(nach4f4b.zeit)} s (erwartet ~${(erwartet4f4b / 30).toFixed(2)} s)`,
+            "Befund", "preview-player/vorschau.tsx");
+        } else {
+          console.log("[schritt-4f4b] Sync GEMESSEN: Marke und Video springen gemeinsam (Frame + currentTime).");
+        }
+      }
     }
 
     // Schritt 4f6 - #453, ZWEITE Haelfte der DoD: "Aktion an die Bandliste = Abschnitt".

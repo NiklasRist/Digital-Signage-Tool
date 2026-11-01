@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { baueZeitachse, baueBandspur, formatiereFrameZahl } from '../../src/renderer/composer/zeitband'
+import { baueZeitachse, baueBandspur, formatiereFrameZahl, frameAusXPx } from '../../src/renderer/composer/zeitband'
+import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 
 // #428 (docs/agents/428-zeitband-plan.md): die REINE Zeitband-Geometrie der Zeitleiste
 // (Sekunden-/Frame-Achse + Band-Spur) samt Zoom. Ohne DOM pruefbar.
@@ -55,5 +56,26 @@ describe('baueBandspur (#428)', () => {
     expect(baueBandspur([{ dauer: 10 }, { dauer: 5 }], 60, 8).wiederholungen).toBe(4)
     expect(baueBandspur([{ dauer: 10 }, { dauer: 5 }], 10, 8).wiederholungen).toBe(1)
     expect(baueBandspur([], 60, 8).wiederholungen).toBe(1)
+  })
+})
+
+// 01.11.2026: Die Umkehrung der Marken-Position. Sie muss ZUR MARKEN-RECHNUNG passen
+// (x = frame/fps*pxProSekunde), sonst springt die Wiedergabe woandershin als der Zeiger.
+describe('frameAusXPx', () => {
+  it('ist die Umkehrung der Marken-Position', () => {
+    const fps = RENDER_PROFILE.fps
+    for (const pxProSekunde of [4, 8, 32, 128]) {
+      for (const frame of [0, 1, 30, 450, 1800]) {
+        const x = (frame / fps) * pxProSekunde
+        expect(frameAusXPx(x, pxProSekunde)).toBe(frame)
+      }
+    }
+  })
+
+  it('negative Stellen und unbrauchbare Masse ergeben 0 statt NaN', () => {
+    expect(frameAusXPx(-40, 8)).toBe(0)
+    expect(frameAusXPx(40, 0)).toBe(0)
+    expect(frameAusXPx(Number.NaN, 8)).toBe(0)
+    expect(frameAusXPx(40, Number.POSITIVE_INFINITY)).toBe(0)
   })
 })

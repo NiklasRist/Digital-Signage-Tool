@@ -185,6 +185,12 @@ export interface ComposerWurzelProps {
    *  auf eine geloeschte Marke zeigen, ohne dass der Render es merkt. */
   marken: MarkenZugang
   verdrahtung: ComposerVerdrahtung
+  /** NEU (Entscheidung Niklas, 01.11.2026): Die BUEHNE kommt als fertiger Knoten herein
+   *  und wird vom Composer GESETZT. Grund: "Buehne und Zeitleiste sollen gleich lang
+   *  sein, weil die Rail Platz braucht" - beide muessen dieselbe Breite haben, und die
+   *  ergibt sich erst aus der Rail links. Der Composer ordnet sie, er kennt die
+   *  Vorschau nicht (die Naht bleibt: `app-shell` baut den Knoten). */
+  buehne: JSX.Element
 }
 
 /** Die Modul-Wurzel des `composer`. Wird von #244 als `wurzeln.composer` uebergeben. */
@@ -200,12 +206,17 @@ export function ComposerWurzel(p: ComposerWurzelProps): JSX.Element {
       zeichnen={p.zeichnen}
       vorlagen={p.vorlagen}
       marken={p.marken}
+      buehne={p.buehne}
     />
   )
 }
 
 const FEHLERFARBE = '#e5634d'
 const TAKTFARBE = '#d9a441'
+
+/** Breite der linken Rail (Bibliothek). Niklas, 01.11.2026: "die rail braucht platz" -
+ *  sie nimmt Breite von Buehne UND Zeitleiste, deshalb stehen beide in derselben Spalte. */
+const RAIL_BREITE = 240
 
 /** #422: Traegt die Wiedergabeliste bereits ein Video-Element? Dann ist der naechste
  *  Import ein ERSETZEN (genau ein Video pro Projekt, User-Entscheidung 15.10.2026). */
@@ -219,6 +230,7 @@ export function ComposerInterna({
   zeichnen,
   vorlagen,
   marken,
+  buehne,
 }: {
   projekt: ProjektZugang
   verdrahtung: ComposerVerdrahtung
@@ -228,6 +240,8 @@ export function ComposerInterna({
   vorlagen: VorlagenZugang
   /** Marken-Bestand fuer die Kaputt-Erkennung (#338). */
   marken: MarkenZugang
+  /** Die Buehne als fertiger Knoten - der Composer setzt sie (s. `ComposerWurzelProps`). */
+  buehne: JSX.Element
 }): JSX.Element {
   const [sicht, setzeSicht] = useState<Projektsicht>(() => projekt.hole())
   // #338: EINE Sammelstelle fuer den Marken-Bestand (Verbot im Issue: kein zweiter
@@ -809,18 +823,57 @@ export function ComposerInterna({
     <div
       data-testid="composer-wurzel"
       onContextMenu={oeffneKontextMenue}
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: 8, gap: 8 }}
+      style={{ display: 'flex', flexDirection: 'row', height: '100%', minHeight: 0, padding: 8, gap: 8 }}
     >
+      {/* RAIL LINKS (Entscheidung Niklas, 01.11.2026: "die bibliothek wird teil der
+          rail" - ausdruecklich NICHT als mittlerer Block). Sie traegt Video-Zeile,
+          Aktionen und das Anlegen; die Datei-Drop-Zone (#335) bleibt an ihr.
+
+          BUEHNE UND ZEITLEISTE STEHEN RECHTS DANEBEN IN DERSELBEN SPALTE - nur so sind
+          sie "gleich lang" (Niklas): beide beginnen an derselben linken Kante und enden
+          an derselben rechten. Deshalb kommt die Buehne als Knoten herein (`buehne`). */}
+      {inhalt !== null && (
+        <div
+          data-testid="composer-rail"
+          style={{ flex: '0 0 auto', width: RAIL_BREITE, minHeight: 0, overflow: 'auto' }}
+          onDragOver={(ereignis) => {
+            ereignis.preventDefault()
+          }}
+          onDrop={(ereignis) => {
+            ereignis.preventDefault()
+            verarbeiteGalerieDrop(Array.from(ereignis.dataTransfer.files))
+          }}
+        >
+          <Bibliotheksansicht
+            projekt={inhalt}
+            sichtSchreiber={projekt.setzeListe}
+            aufImportieren={importiere}
+            ausgewaehltesId={lage.gewaehltesMediumId}
+            aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
+            vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+            aufAktionAnlegen={legeAktionAnInline}
+            aufAktionLoeschen={loescheAktionInline}
+            aufAktionBearbeiten={oeffneAktionenAnsicht}
+            aufMediumLoeschen={meldeVideoPflicht}
+            aufFehler={meldeWurzel}
+          />
+        </div>
+      )}
+
+      <div
+        data-testid="composer-haupt"
+        style={{ flex: '1 1 auto', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8 }}
+      >
       {/* BUEHNE, DIREKT DARUNTER DIE ZEITLEISTE (Entscheidung Niklas, 01.11.2026:
           "was wir brauchen ist die buehne und direkt darunter die zeitleiste").
-          Die Zeitleiste steht deshalb VOR der Kopfzeile: zwischen Bühne und Zeitachse
-          liegt ab jetzt nichts mehr. Was unter der Zeitachse kommt (Wiedergabeliste,
-          Aktionen-Bibliothek), ist ausdruecklich noch offen - "die bibliothek etc
-          muessen als konzept nochmal ueberarbeitet werden".
-
-          Vorher stand die Zeitleiste HINTER der Liste am Ende der Spalte. Bei
-          800x572 blieben der Liste dadurch 18 px, und der Dauer-Regler war nicht
-          mehr treffbar (am Fenster gemessen, `elementFromPoint` -> "statistik"). */}
+          Zwischen Bühne und Zeitachse liegt nichts mehr. Was unter der Zeitachse kommt
+          (Wiedergabeliste), ist ausdruecklich noch offen. */}
+      <div
+        data-testid="composer-buehne"
+        style={{ flex: '1 1 auto', minHeight: 120, minWidth: 0, position: 'relative' }}
+      >
+        {buehne}
+      </div>
       {inhalt !== null && (
         <Zeitleiste
           projekt={inhalt}
@@ -1003,33 +1056,11 @@ export function ComposerInterna({
               />
             </div>
           ) : (
-            // Aktionen-Bibliothek (Video-Zeile + Aktionen + Anlegen) statt der frueheren
-            // Galerie. Sie ist zugleich die Datei-Drop-Zone (#335).
-            <div
-              data-testid="composer-aktionen-mitte"
-              style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto' }}
-              onDragOver={(ereignis) => {
-                ereignis.preventDefault()
-              }}
-              onDrop={(ereignis) => {
-                ereignis.preventDefault()
-                verarbeiteGalerieDrop(Array.from(ereignis.dataTransfer.files))
-              }}
-            >
-              <Bibliotheksansicht
-                projekt={inhalt}
-                sichtSchreiber={projekt.setzeListe}
-                aufImportieren={importiere}
-                ausgewaehltesId={lage.gewaehltesMediumId}
-                aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
-                vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
-                aufAktionAnlegen={legeAktionAnInline}
-                aufAktionLoeschen={loescheAktionInline}
-                aufAktionBearbeiten={oeffneAktionenAnsicht}
-                aufMediumLoeschen={meldeVideoPflicht}
-                aufFehler={meldeWurzel}
-              />
-            </div>
+            // Die Aktionen-Bibliothek steht seit 01.11.2026 in der RAIL links
+            // ("die bibliothek wird teil der rail", Entscheidung Niklas). Hier bleibt
+            // der Platz leer; der Umschalter und die Liste sind bis zum Konzept
+            // ausgeblendet.
+            <div data-testid="composer-aktionen-mitte" style={{ display: 'none' }} />
           )}
           </div>
 
@@ -1116,6 +1147,7 @@ export function ComposerInterna({
           aufAbbrechen={() => setzeLage((alt) => schliesseOverlay(alt))}
         />
       )}
+      </div>
     </div>
     </DndContext>
   )

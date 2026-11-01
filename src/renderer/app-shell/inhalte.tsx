@@ -70,6 +70,9 @@ export interface ComposerWurzelProps {
   /** NEU (#338): der Marken-Bestand fuer die Kaputt-Erkennung. Wird UNVERAENDERT
    *  durchgereicht; diese Datei ruft keine seiner drei Funktionen auf. */
   marken: MarkenZugang
+  /** NEU (01.11.2026): Die Buehne kommt als fertiger Knoten herein. Der Composer setzt
+   *  sie neben die Zeitleiste - nur so sind beide gleich breit (Rail links). */
+  buehne: JSX.Element
 }
 
 /** Eigenschaften der Wurzel-Komponente des `action-editor` (Reiter Aktionen). */
@@ -205,11 +208,13 @@ export interface Reiterumgebung {
 }
 
 // ----------------------------------------------------------------------------
-// Die Anordnung des Reiters Zusammenstellen (ENTSCHIEDEN 2, Bedienentscheidung
-// 23.08.): Liste LINKS (schmal), Vorschau RECHTS (gross). Nur Ordnung - keine
-// Fachlogik, keine Beschriftung, keine verschiebbare Trennlinie.
+// Die Anordnung des Reiters Zusammenstellen.
+//
+// 01.11.2026 (Entscheidung Niklas): Die Bibliothek steht in der RAIL links, Buehne und
+// Zeitleiste rechts daneben in DERSELBEN Spalte ("gleich lang, weil die rail braucht
+// platz"). Die Aufteilung macht der Composer; diese Datei gibt ihm nur den Platz und
+// die Buehne als Knoten. Deshalb bleibt hier EIN Rahmen ohne eigene Aufteilung.
 // ----------------------------------------------------------------------------
-// #414 (Oberflaeche 2.0): Spalte fuer Zusammenstellen - Vorschau oben, Composer unten.
 const SPALTE: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
@@ -219,12 +224,6 @@ const SPALTE: CSSProperties = {
   padding: 8,
   boxSizing: 'border-box',
 }
-// #456: `minHeight` von 200 auf 160 gesenkt. Die Projektleiste kostet seit v3.32
-// dauerhaft Hoehe; bei 200 px Mindestbuehne schob sie im kleinen Fenster (800x572, am
-// Treiber gemessen) die Zeitleiste des Composers aus dem Bild - der Drop auf das Video
-// fiel aus. Die Buehne darf deshalb weiter schrumpfen; sie behaelt ihren Anteil von 38 %.
-const BUEHNE_OBEN: CSSProperties = { flex: '1 1 auto', minHeight: 160, minWidth: 0, position: 'relative' }
-const COMPOSER_UNTEN: CSSProperties = { flex: '0 1 auto', minWidth: 0, minHeight: 0 }
 
 /**
  * BUGFIX (Die Naht-Hooks, 08.10.): die STABLE Komponente, die den inline-Aufruf
@@ -308,33 +307,30 @@ export function baueReiterInhalte(
     return null
   }
 
-  // Der Offene-Teil des Reiters Zusammenstellen - OBERFLAECHE-2.0-LAYOUT (#414,
-  // gemeldete Ausnahme zur alten Entscheiden-2-Geometrie "Liste links/Vorschau
-  // rechts"): Der User-Wortlaut 14.10.2026 ist "das Video im ZENTRUM"; die
-  // Buehne steht OBEN zentriert ueber der vollen Breite, der Composer (Bibliothek
-  // links, Zeitleiste unten) darunter. Beide Module bleiben DIESELBEN zwei
-  // Bausteine - nur die Geometrie teilt sie in Zeilen statt Spalten.
+  // Der Offene-Teil des Reiters Zusammenstellen - OBERFLAECHE-2.0-LAYOUT.
+  //
+  // 01.11.2026 (Entscheidung Niklas): "die bibliothek wird teil der rail und buehne
+  // und zeitleiste sollen gleich lang sein, weil die rail braucht platz". Damit ordnet
+  // der COMPOSER: Rail links (Bibliothek), rechts daneben Buehne und Zeitleiste in
+  // derselben Spalte - nur so sind beide gleich breit. Die Buehne kommt deshalb als
+  // fertiger Knoten herein statt als eigener Block ueber dem Composer.
   const vereinigteOffenZusammenstellen = (sichtbar: boolean, projekt: Project) => {
     const umgebung = holeUmgebung()
     return (
       <div style={SPALTE}>
-        <div style={BUEHNE_OBEN}>
-          {wurzeln.vorschau({
+        {wurzeln.composer({
+          sichtbar,
+          projekt: zugaenge.projektBearbeitung,
+          zeichnen: zugaenge.zeichnen,
+          vorlagen: zugaenge.vorlagen,
+          marken: zugaenge.marken,
+          verdrahtung: umgebung.composerVerdrahtung,
+          buehne: wurzeln.vorschau({
             projekt,
             voraussetzungen: zugaenge.zeichnen.hole(),
             sichtbar,
-          })}
-        </div>
-        <div style={COMPOSER_UNTEN}>
-          {wurzeln.composer({
-            sichtbar,
-            projekt: zugaenge.projektBearbeitung,
-            zeichnen: zugaenge.zeichnen,
-            vorlagen: zugaenge.vorlagen,
-            marken: zugaenge.marken,
-            verdrahtung: umgebung.composerVerdrahtung,
-          })}
-        </div>
+          }),
+        })}
       </div>
     )
   }
