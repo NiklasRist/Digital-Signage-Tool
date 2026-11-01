@@ -957,6 +957,14 @@ export function ComposerInterna({
               das eine Projektvideo zu seinem schmalen Import-Weg (FA-01). Die
               Datei-Drop-Zone bleibt erhalten - sie haengt jetzt an der Bibliothek statt
               an der Galerie (#335), die Datenwege sind unveraendert. */}
+          {/* UMSCHALTER UND MITTE VORÜBERGEHEND AUSGEBLENDET (Entscheidung Niklas,
+              01.11.2026: "Mitte raus, Bühne und Zeitleiste groß" + "die Konzeption von
+              dem was unklar ist gemeinsam machen"). Bühne und Zeitleiste teilen sich
+              jetzt die volle Höhe; Wiedergabeliste und Aktionen-Bibliothek sind bis zur
+              Konzeption NICHT erreichbar. Nichts ist gelöscht - beide Flächen bleiben
+              montiert und werden nur verdeckt, damit das Konzept sie wieder hervorholen
+              kann (naheliegender Träger: ausklappbares Sidepanel, Vorschlag Niklas). */}
+          <div style={{ display: 'none' }}>
           <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
             <button
               type="button"
@@ -1023,6 +1031,7 @@ export function ComposerInterna({
               />
             </div>
           )}
+          </div>
 
           {/* S4 (Naht N4): die Ausgaben-Region als eigener Baustein (#230/#232-Oeffnungsweg).
               Der Export-Rueckruf oeffnet das Overlay mit LEERER Auswahl (M7-60,

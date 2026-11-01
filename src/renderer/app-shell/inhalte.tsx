@@ -223,8 +223,8 @@ const SPALTE: CSSProperties = {
 // dauerhaft Hoehe; bei 200 px Mindestbuehne schob sie im kleinen Fenster (800x572, am
 // Treiber gemessen) die Zeitleiste des Composers aus dem Bild - der Drop auf das Video
 // fiel aus. Die Buehne darf deshalb weiter schrumpfen; sie behaelt ihren Anteil von 38 %.
-const BUEHNE_OBEN: CSSProperties = { height: '38%', flexShrink: 0, minHeight: 160, minWidth: 0, position: 'relative' }
-const COMPOSER_UNTEN: CSSProperties = { flex: 1, minWidth: 0, minHeight: 0 }
+const BUEHNE_OBEN: CSSProperties = { flex: '1 1 auto', minHeight: 160, minWidth: 0, position: 'relative' }
+const COMPOSER_UNTEN: CSSProperties = { flex: '0 1 auto', minWidth: 0, minHeight: 0 }
 
 /**
  * BUGFIX (Die Naht-Hooks, 08.10.): die STABLE Komponente, die den inline-Aufruf

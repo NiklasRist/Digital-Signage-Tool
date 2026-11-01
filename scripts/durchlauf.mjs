@@ -3827,6 +3827,27 @@ const main = async () => {
     {
       await klick('[data-testid="composer-ansicht-liste"]');
       await schlafe(700);
+      // HOE HENBUDGET (Nachtrag 01.11.2026): Die Aufteilung Buehne / Zeitleiste /
+      // Mitte ist die Frage, an der die Bedienbarkeit haengt (die Liste war 18 px hoch
+      // und der Dauer-Regler nicht treffbar). Deshalb wird sie in JEDEM Lauf gemessen,
+      // unabhaengig davon, ob der Regler gerade erreichbar ist.
+      const hoehen4f4 = await seite.evaluate(() => {
+        const hoehe = (testid) => {
+          const e = document.querySelector(`[data-testid="${testid}"]`);
+          if (e === null) return null;
+          const r = e.getBoundingClientRect();
+          return { y: Math.round(r.y), h: Math.round(r.height) };
+        };
+        return {
+          fenster: { w: window.innerWidth, h: window.innerHeight },
+          buehne: hoehe('buehne-kasten'),
+          composer: hoehe('composer-wurzel'),
+          zeitleiste: hoehe('zeitleiste'),
+          liste: hoehe('wiedergabeliste-liste'),
+          statistik: hoehe('statistik'),
+        };
+      });
+      console.log(`[schritt-4f4] Hoehen: ${JSON.stringify(hoehen4f4)}`);
       const dauerVor4f4 = await seite.evaluate(
         () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
       );
