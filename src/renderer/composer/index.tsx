@@ -829,34 +829,81 @@ export function ComposerInterna({
           rail" - ausdruecklich NICHT als mittlerer Block). Sie traegt Video-Zeile,
           Aktionen und das Anlegen; die Datei-Drop-Zone (#335) bleibt an ihr.
 
+          DIE KOPFZEILE STEHT SEIT 01.11.2026 MIT IN DER RAIL: Import, Rendern, die
+          Auswahl-Leiste und die Statistik kosteten der Buehne 50 px Hoehe. Der Import
+          steht hier ohnehin schon (Bibliothek) - zwei Knoepfe fuer denselben Weg waren
+          ohnehin einer zu viel.
+
           BUEHNE UND ZEITLEISTE STEHEN RECHTS DANEBEN IN DERSELBEN SPALTE - nur so sind
           sie "gleich lang" (Niklas): beide beginnen an derselben linken Kante und enden
           an derselben rechten. Deshalb kommt die Buehne als Knoten herein (`buehne`). */}
       {inhalt !== null && (
         <div
           data-testid="composer-rail"
-          style={{ flex: '0 0 auto', width: RAIL_BREITE, minHeight: 0, overflow: 'auto' }}
-          onDragOver={(ereignis) => {
-            ereignis.preventDefault()
-          }}
-          onDrop={(ereignis) => {
-            ereignis.preventDefault()
-            verarbeiteGalerieDrop(Array.from(ereignis.dataTransfer.files))
+          style={{
+            flex: '0 0 auto',
+            width: RAIL_BREITE,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
           }}
         >
-          <Bibliotheksansicht
-            projekt={inhalt}
-            sichtSchreiber={projekt.setzeListe}
-            aufImportieren={importiere}
-            ausgewaehltesId={lage.gewaehltesMediumId}
-            aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
-            vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
-            aufAktionAnlegen={legeAktionAnInline}
-            aufAktionLoeschen={loescheAktionInline}
-            aufAktionBearbeiten={oeffneAktionenAnsicht}
-            aufMediumLoeschen={meldeVideoPflicht}
-            aufFehler={meldeWurzel}
-          />
+          <div
+            data-testid="composer-kopf"
+            style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', gap: 6 }}
+          >
+            {/* #392: Mehrfachauswahl - die Leiste steht IN der Kopfzeile, damit sie keine
+                Hoehe kostet (Merksatz aus #456: die Projektleiste schob die Zeitleiste aus
+                dem Bild; jede neue Zeile muss bei 800x572 nachgemessen werden). */}
+            {auswahl.ids.length > 1 && (
+              <>
+                <span data-testid="composer-auswahl" style={{ fontSize: 12, color: '#9aa4b2' }}>
+                  {`${auswahl.ids.length} ausgewählt`}
+                </span>
+                <button type="button" data-testid="composer-auswahl-entfernen" onClick={entferneAuswahl}>
+                  Entfernen
+                </button>
+              </>
+            )}
+            <button type="button" data-testid="composer-medien-import" onClick={importiere}>
+              Video importieren
+            </button>
+            <button
+              type="button"
+              data-testid="composer-render-oefnen"
+              disabled={!renderKnopfFrei}
+              onClick={oeffneRenderDialog}
+            >
+              Rendern…
+            </button>
+            {/* #394: Gesamtdauer, Anzahl der Elemente und das Verhaeltnis Video/Segment. */}
+            <Statistik liste={inhalt.liste} />
+          </div>
+          <div
+            style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto' }}
+            onDragOver={(ereignis) => {
+              ereignis.preventDefault()
+            }}
+            onDrop={(ereignis) => {
+              ereignis.preventDefault()
+              verarbeiteGalerieDrop(Array.from(ereignis.dataTransfer.files))
+            }}
+          >
+            <Bibliotheksansicht
+              projekt={inhalt}
+              sichtSchreiber={projekt.setzeListe}
+              aufImportieren={importiere}
+              ausgewaehltesId={lage.gewaehltesMediumId}
+              aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
+              vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+              aufAktionAnlegen={legeAktionAnInline}
+              aufAktionLoeschen={loescheAktionInline}
+              aufAktionBearbeiten={oeffneAktionenAnsicht}
+              aufMediumLoeschen={meldeVideoPflicht}
+              aufFehler={meldeWurzel}
+            />
+          </div>
         </div>
       )}
 
@@ -890,43 +937,6 @@ export function ComposerInterna({
           aufElementGewaehlt={waehleElement}
         />
       )}
-
-      <div style={{ flex: '0 0 auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-        {/* Die Gesamtlnge zeichnet Wiedergabeliste (#248) selbst ber baueLaengenAnzeige. */}
-        <span style={{ flex: 1 }} />
-        {/* #392: Mehrfachauswahl - die Leiste steht IN der Kopfzeile, damit sie keine
-            Hoehe kostet (Merksatz aus #456: die Projektleiste schob die Zeitleiste aus
-            dem Bild; jede neue Zeile muss bei 800x572 nachgemessen werden). */}
-        {auswahl.ids.length > 1 && (
-          <>
-            <span data-testid="composer-auswahl" style={{ fontSize: 12, color: '#9aa4b2' }}>
-              {`${auswahl.ids.length} ausgewählt`}
-            </span>
-            <button type="button" data-testid="composer-auswahl-entfernen" onClick={entferneAuswahl}>
-              Entfernen
-            </button>
-          </>
-        )}
-        {/* #394: Gesamtdauer, Anzahl der Elemente und das Verhaeltnis Video/Segment.
-            Bewusst als FLACHE Leiste in der Kopfzeile: ein eigenes Panel ueber der
-            Zeitleiste kostete die Hoehe, die die Zeitleiste zum Ziehen braucht. */}
-        {inhalt !== null && <Statistik liste={inhalt.liste} />}
-        <button
-          type="button"
-          data-testid="composer-medien-import"
-          onClick={importiere}
-        >
-          Video importieren
-        </button>
-        <button
-          type="button"
-          data-testid="composer-render-oefnen"
-          disabled={!renderKnopfFrei}
-          onClick={oeffneRenderDialog}
-        >
-          Rendern…
-        </button>
-      </div>
 
       {/* #421: das Bedien-Panel der gefuehrten Reparatur - sichtbar, solange es eine
           aktuelle kaputte Stelle gibt. Ohne es waere `fuehreFixAus` weiter ohne Aufrufer. */}
