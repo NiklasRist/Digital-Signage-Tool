@@ -20,7 +20,6 @@ import type { Asset } from '../../src/shared/contracts/asset'
 import type { Aktion } from '../../src/shared/contracts/aktion'
 import type { Project } from '../../src/shared/contracts/project'
 import { Bibliotheksansicht } from '../../src/renderer/composer/bibliothek-ansicht.tsx'
-import { AssetGalerie } from '../../src/renderer/composer/asset-galerie.tsx'
 
 const GERAETE: Array<{ wurzel: Root; behaelter: HTMLDivElement }> = []
 
@@ -123,34 +122,37 @@ describe('Nur AKTIONEN sind ziehbar (#413/#417)', () => {
     )
     expect(knopf).toBeDefined()
   })
-})
 
-describe('Die Galerie-Karten sind KEINE Drag-Quelle (#417)', () => {
-  it('JEDE Galerie-Karte traegt den draggable-Vertrag NICHT', () => {
-    const behaelter = montiere(createElement(AssetGalerie, { projekt: projekt() }))
+  it('01.11.2026: die Aktionszeile meldet "Bearbeiten" mit IHRER Kennung - ohne Reiterwechsel', () => {
+    const gemeldet: string[] = []
+    const behaelter = montiere(
+      createElement(Bibliotheksansicht, {
+        projekt: projekt(),
+        aufImportieren: () => {},
+        aufMediumLoeschen: () => {},
+        aufFehler: () => {},
+        sichtSchreiber: () => {},
+        aufAktionBearbeiten: (id: string) => gemeldet.push(id),
+      }),
+    )
 
-    const karte = behaelter.querySelector('[data-testid="galerie-eintrag-a-video"]')
-    const bildKarte = behaelter.querySelector('[data-testid="galerie-eintrag-a-bild"]')
-    expect(karte).not.toBeNull()
-    expect(bildKarte).not.toBeNull()
-    expect(karte?.getAttribute('aria-roledescription')).not.toBe('draggable')
-    expect(bildKarte?.getAttribute('aria-roledescription')).not.toBe('draggable')
+    const knopf = behaelter.querySelector<HTMLButtonElement>('[data-testid="aktion-bearbeiten-k1"]')
+    expect(knopf).not.toBeNull()
+    act(() => knopf!.click())
+    expect(gemeldet).toEqual(['k1'])
+  })
+
+  it('OHNE Rueckruf gibt es KEINEN Bearbeiten-Knopf (die Ansicht erfindet keinen Weg)', () => {
+    const behaelter = montiere(bibliothek())
+    expect(behaelter.querySelector('[data-testid="aktion-bearbeiten-k1"]')).toBeNull()
   })
 })
+
+// 01.11.2026: Die Galerie ist als Flaeche entfallen (Aktionen in die Mitte) - ihre
+// beiden Faelle (Drag-Vertrag, Auswahl-Hervorhebung) sind mit ihr weggefallen. Die
+// Auswahl wird an der VIDEO-ZEILE der Bibliothek geprueft (naechster Block).
 
 describe('Das ausgewaehlte Medium ist hervorgehoben (#418)', () => {
-  it('die gewaehlte Galerie-Karte traegt data-ausgewaehlt=true, die andere nicht', () => {
-    const behaelter = montiere(
-      createElement(AssetGalerie, { projekt: projekt(), ausgewaehltesId: 'a-video' }),
-    )
-    expect(
-      behaelter.querySelector('[data-testid="galerie-eintrag-a-video"]')?.getAttribute('data-ausgewaehlt'),
-    ).toBe('true')
-    expect(
-      behaelter.querySelector('[data-testid="galerie-eintrag-a-bild"]')?.getAttribute('data-ausgewaehlt'),
-    ).toBe('false')
-  })
-
   it('die gewaehlte Video-Zeile der Bibliothek traegt data-ausgewaehlt=true (#418/#422)', () => {
     const behaelter = montiere(
       createElement(Bibliotheksansicht, {

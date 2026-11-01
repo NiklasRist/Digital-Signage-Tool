@@ -84,8 +84,8 @@ import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import type { Marke } from '../../shared/contracts/marke'
 import { importiereMedien, baueImportBericht, type ImportBericht } from './medien-import'
 // 01.11.2026: Die Galerie ist als Flaeche entfallen; die Datei-Drop-Zone (#335) haengt
-// jetzt an der Aktionen-Bibliothek. `GalerieBereich`/`AssetGalerie` sind NICHT mehr
-// montiert (offener Punkt: ihre Dateien und Tests stehen noch).
+// jetzt an der Aktionen-Bibliothek. `galerie-bereich.tsx`, `asset-galerie.tsx` und
+// `bibliothek-dock.tsx` sind mit ihr geloescht.
 import { greifeDropAuf, reiheDropEin } from './medien-bibliothek'
 import { pfadFuerDatei } from '../ipc-client/pfad-fuer-datei'
 // Mit Endung: der Pfad ohne Endung löst gegen die reine .ts-Naht auf, nicht gegen
@@ -117,6 +117,9 @@ import { ExportOverlay } from './export-overlay.tsx'
 import { MediumLoeschenOverlay } from './medium-loeschen-overlay.tsx'
 import { BandOverlay } from './band-overlay.tsx'
 import { oeffneMenue, schliesseMenue, type ComposerLage } from './composer-montage'
+// 01.11.2026: Der Einstieg in den Aktions-Editor oeffnet eine Ansicht UEBER der
+// Reiterflaeche (gemeinsamer Speicher, wie `reiter.ts`; der Rahmen abonniert ihn).
+import { oeffneAktionenAnsicht } from '../gemeinsam/aktionen-ansicht'
 
 
 /** #416: der Anlege-Auftrag (Roheingabe + Marke). Die Wurzel baut daraus KEINEN Entwurf -
@@ -987,6 +990,7 @@ export function ComposerInterna({
                 vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
                 aufAktionAnlegen={legeAktionAnInline}
                 aufAktionLoeschen={loescheAktionInline}
+                aufAktionBearbeiten={oeffneAktionenAnsicht}
                 aufMediumLoeschen={meldeVideoPflicht}
                 aufFehler={meldeWurzel}
               />

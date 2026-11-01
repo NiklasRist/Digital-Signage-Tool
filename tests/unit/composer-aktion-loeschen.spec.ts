@@ -21,9 +21,6 @@ const d = vi.hoisted(() => ({
 vi.mock('../../src/renderer/composer/liste-ansicht.tsx', () => ({
   Wiedergabeliste: () => createElement('div', { 'data-testid': 'wiedergabeliste-doppel' }),
 }))
-vi.mock('../../src/renderer/composer/asset-galerie', () => ({
-  AssetGalerie: () => createElement('div', { 'data-testid': 'asset-galerie-doppel' }),
-}))
 vi.mock('../../src/renderer/composer/render-ausloesen', () => ({
   loeseRenderAus: vi.fn(),
   loeseExportAus: vi.fn(),

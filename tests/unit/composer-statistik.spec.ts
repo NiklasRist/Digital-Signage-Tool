@@ -21,9 +21,6 @@ vi.mock('../../src/renderer/composer/liste-ansicht.tsx', () => ({
 vi.mock('../../src/renderer/composer/element-zeile.tsx', () => ({
   ElementBedienung: () => createElement('div', { 'data-testid': 'element-bedienung-doppel' }),
 }))
-vi.mock('../../src/renderer/composer/asset-galerie', () => ({
-  AssetGalerie: () => createElement('div', { 'data-testid': 'asset-galerie-doppel' }),
-}))
 vi.mock('../../src/renderer/composer/render-ausloesen', () => ({
   loeseRenderAus: vi.fn(),
   loeseExportAus: vi.fn(),

@@ -22,6 +22,10 @@ import {
   type ReiterInhalt,
 } from '../../src/renderer/app-shell/rahmen'
 import type { ReiterId } from '../../src/renderer/app-shell/reiter'
+import {
+  oeffneAktionenAnsicht,
+  schliesseAktionenAnsicht,
+} from '../../src/renderer/gemeinsam/aktionen-ansicht'
 
 // React 19: act(...) setzt dieses Flag selbst nur in bekannten Testumgebungen.
 // Vitest mit jsdom erkennt es nicht automatisch - also hier setzen.
@@ -605,6 +609,85 @@ describe('Marken-Ansicht ueber der Reiterflaeche (#456)', () => {
     const aktiv = behaelter.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement
     const flaeche = behaelter.querySelector(`[data-testid="rahmen-inhalt-${aktiv.getAttribute('data-testid')!.replace('reiter-', '')}"]`) as HTMLElement
     expect(flaeche.hidden).toBe(false)
+    fertig()
+  })
+})
+
+// 01.11.2026: Die AKTIONEN-Ansicht (Einstieg aus der Aktions-Zeile des Composers).
+// Der offene Zustand liegt im gemeinsamen Speicher; der Rahmen abonniert ihn.
+describe('Aktionen-Ansicht ueber der Reiterflaeche (01.11.2026)', () => {
+  afterEach(() => {
+    schliesseAktionenAnsicht()
+  })
+
+  it('oeffnet sich aus dem Speicher und verdeckt die Reiterflaeche (Reiter bleiben montiert)', () => {
+    const { behaelter, fertig } = rendere(
+      eigenschaften({
+        aktionenAnsicht: (schalt) =>
+          createElement('div', { 'data-testid': 'aktionen-ansicht', 'data-aktion': schalt.aktionId }),
+      }),
+    )
+    act(() => {
+      oeffneAktionenAnsicht('a-1')
+    })
+
+    const ansicht = behaelter.querySelector('[data-testid="rahmen-ansicht-aktionen"]')
+    expect(ansicht).not.toBeNull()
+    expect(ansicht?.querySelector('[data-testid="aktionen-ansicht"]')?.getAttribute('data-aktion')).toBe('a-1')
+    // Die Reiterflaeche ist verdeckt, aber im DOM - kein Abbau (TK 9.14.2).
+    const aktiv = behaelter.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement
+    const reiter = aktiv.getAttribute('data-testid')!.replace('reiter-', '')
+    const flaeche = behaelter.querySelector(`[data-testid="rahmen-inhalt-${reiter}"]`) as HTMLElement
+    expect(flaeche.hidden).toBe(true)
+    fertig()
+  })
+
+  it('"Zurueck" schliesst die Ansicht und gibt die Reiterflaeche frei', () => {
+    const { behaelter, fertig } = rendere(
+      eigenschaften({
+        aktionenAnsicht: (schalt) =>
+          createElement('button', {
+            'data-testid': 'aktionen-zurueck',
+            onClick: schalt.aufSchliessen,
+          }, 'Zurueck'),
+      }),
+    )
+    act(() => {
+      oeffneAktionenAnsicht('a-1')
+    })
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="aktionen-zurueck"]')!.click()
+    })
+    expect(behaelter.querySelector('[data-testid="rahmen-ansicht-aktionen"]')).toBeNull()
+    fertig()
+  })
+
+  it('ein Reiterklick schliesst die Ansicht ebenfalls (der Reiter bleibt das Ziel)', () => {
+    const { behaelter, fertig } = rendere(
+      eigenschaften({
+        aktionenAnsicht: () => createElement('div', { 'data-testid': 'aktionen-ansicht' }),
+      }),
+    )
+    act(() => {
+      oeffneAktionenAnsicht('a-1')
+    })
+    const knopf = behaelter.querySelector('[data-testid="reiter-vorlagen"]') as HTMLElement
+    act(() => {
+      knopf.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(behaelter.querySelector('[data-testid="rahmen-ansicht-aktionen"]')).toBeNull()
+    fertig()
+  })
+
+  it('OHNE aktionenAnsicht bleibt die Reiterflaeche sichtbar - kein leeres Fenster', () => {
+    const { behaelter, fertig } = rendere(eigenschaften())
+    act(() => {
+      oeffneAktionenAnsicht('a-1')
+    })
+    expect(behaelter.querySelector('[data-testid="rahmen-ansicht-aktionen"]')).toBeNull()
+    const aktiv = behaelter.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement
+    const reiter = aktiv.getAttribute('data-testid')!.replace('reiter-', '')
+    expect((behaelter.querySelector(`[data-testid="rahmen-inhalt-${reiter}"]`) as HTMLElement).hidden).toBe(false)
     fertig()
   })
 })

@@ -4546,6 +4546,59 @@ const main = async () => {
       }
     }
 
+    // Schritt 4g6 (01.11.2026) - "gute Aktion erstellen" DIREKT am Einfuegeweg: Der
+    // Aktions-Editor geht aus der Aktions-Zeile des Composers als Ansicht UEBER der
+    // Reiterflaeche auf (offene Frage der Notiz vom 21.10.), ohne Reiterwechsel. Die
+    // Reiter bleiben montiert und nur verdeckt (TK 9.14.2), "Zurueck" gibt sie frei.
+    {
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(600);
+      const gestartet4g6 = await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid^="aktion-bearbeiten-"]');
+        if (knopf === null) return null;
+        const id = knopf.getAttribute("data-testid").replace("aktion-bearbeiten-", "");
+        knopf.click();
+        return id;
+      });
+      await schlafe(700);
+      const ansicht4g6 = await seite.evaluate(() => {
+        const aktiv = document.querySelector('[role="tab"][aria-selected="true"]');
+        const reiter = aktiv === null ? null : aktiv.getAttribute("data-testid")?.replace("reiter-", "");
+        const flaeche = reiter === null ? null : document.querySelector(`[data-testid="rahmen-inhalt-${reiter}"]`);
+        return {
+          ansicht: document.querySelector('[data-testid="rahmen-ansicht-aktionen"]') !== null,
+          editor: document.querySelector('[data-testid="aktion-editor-root"]') !== null,
+          reiterVerdeckt: flaeche === null ? null : flaeche.hidden,
+        };
+      });
+      console.log(`[schritt-4g6] Aktion ${String(gestartet4g6)}: ${JSON.stringify(ansicht4g6)}.`);
+      if (gestartet4g6 === null) {
+        fund("Aktions-Editor aus dem Projekteditor", "die Aktions-Zeile traegt einen Bearbeiten-Knopf",
+          "kein Knopf im Reiter Zusammenstellen", "Befund", "composer/bibliothek-ansicht.tsx");
+      } else if (!ansicht4g6.ansicht || !ansicht4g6.editor) {
+        fund("Aktions-Editor aus dem Projekteditor", "die Ansicht geht ueber der Reiterflaeche auf",
+          JSON.stringify(ansicht4g6), "Befund", "app-shell/rahmen.tsx");
+      } else if (ansicht4g6.reiterVerdeckt !== true) {
+        fund("Aktions-Editor aus dem Projekteditor", "die Reiterflaeche ist verdeckt, aber montiert (TK 9.14.2)",
+          `hidden=${String(ansicht4g6.reiterVerdeckt)}`, "Befund", "app-shell/rahmen.tsx");
+      } else {
+        const zurueck4g6 = await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="aktionen-zurueck"]');
+          if (knopf === null) return false;
+          knopf.click();
+          return true;
+        });
+        await schlafe(500);
+        const zu4g6 = await seite.evaluate(() => document.querySelector('[data-testid="rahmen-ansicht-aktionen"]') === null);
+        if (!zurueck4g6 || !zu4g6) {
+          fund("Aktions-Editor aus dem Projekteditor", "\"Zurueck zum Projekt\" schliesst die Ansicht",
+            `knopf=${String(zurueck4g6)}, zu=${String(zu4g6)}`, "Befund", "app-shell/rahmen.tsx");
+        } else {
+          console.log("[schritt-4g6] Aktions-Editor aus dem Projekteditor GEMESSEN: Ansicht ueber der Reiterflaeche, Reiter verdeckt, Rueckweg schliesst (21.10.-Notiz).");
+        }
+      }
+    }
+
     // Schritt 4i - VIERTER FALL (#438) am echten Fenster: Ein kaputter EINSCHUB (Aktion
     // mit fehlendem Bild) muss als `unterbrechung` im Reparatur-Panel stehen und den
     // Render sperren. Bisher hielt das nur der Unit-Test (TK 9.7.5 v3.27).

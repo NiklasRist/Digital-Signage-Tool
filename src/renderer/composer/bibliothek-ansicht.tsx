@@ -35,6 +35,10 @@ export interface BibliothekEigenschaften {
   /** #430: loescht eine Aktion (Kaskade im Main). FEHLT sie, gibt es KEINEN Loeschen-Knopf
    *  (dieselbe Haltung wie bei `aufAktionAnlegen`: die Ansicht erfindet keinen Weg). */
   aufAktionLoeschen?: (aktionId: string) => void
+  /** 01.11.2026: oeffnet den Aktions-Editor als Ansicht UEBER der Reiterflaeche - ohne
+   *  Reiterwechsel (offene Frage der Notiz vom 21.10.). Fehlt der Rueckruf, gibt es
+   *  KEINEN Bearbeiten-Knopf (die Ansicht erfindet keinen Weg). */
+  aufAktionBearbeiten?: (aktionId: string) => void
 }
 
 /**
@@ -95,7 +99,14 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
       ) : (
         <ul data-testid="aktionen-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {aktionen.map((eintrag) => (
-            <Aktionszeile key={eintrag.aktion.id} eintrag={eintrag} aufFehler={p.aufFehler} sichtSchreiber={p.sichtSchreiber} aufLoeschen={p.aufAktionLoeschen} />
+            <Aktionszeile
+              key={eintrag.aktion.id}
+              eintrag={eintrag}
+              aufFehler={p.aufFehler}
+              sichtSchreiber={p.sichtSchreiber}
+              aufLoeschen={p.aufAktionLoeschen}
+              aufBearbeiten={p.aufAktionBearbeiten}
+            />
           ))}
         </ul>
       )}
@@ -151,6 +162,8 @@ interface AktionszeileEigenschaften {
   sichtSchreiber: (liste: Listenelement[]) => void
   /** #430: loescht die Aktion (ohne Rueckfrage, EIN Undo-Schritt). Fehlt sie, kein Knopf. */
   aufLoeschen?: (aktionId: string) => void
+  /** 01.11.2026: oeffnet den Aktions-Editor ueber der Reiterflaeche. Fehlt er, kein Knopf. */
+  aufBearbeiten?: (aktionId: string) => void
 }
 
 function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
@@ -177,6 +190,17 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
         <button type="button" onClick={() => void hinzufuegen(p.eintrag.aktion.id, p.aufFehler, p.sichtSchreiber)}>
           Zur Liste hinzufügen
         </button>
+        {/* 01.11.2026: „gute Aktion erstellen" direkt am Einfuegeweg (Notiz 21.10.) -
+            der Editor geht als Ansicht ueber der Reiterflaeche auf, der Reiter bleibt. */}
+        {p.aufBearbeiten !== undefined && (
+          <button
+            type="button"
+            data-testid={`aktion-bearbeiten-${p.eintrag.aktion.id}`}
+            onClick={() => p.aufBearbeiten?.(p.eintrag.aktion.id)}
+          >
+            Bearbeiten
+          </button>
+        )}
         {/* #430: Aktion loeschen - OHNE Rueckfrage (User-Entscheidung 16.10.2026); der
             Schritt ist in EINEM Zug rueckgaengig zu machen (TK 9.13.1). */}
         {p.aufLoeschen !== undefined && (

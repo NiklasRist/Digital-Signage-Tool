@@ -1,6 +1,6 @@
 // [app-shell] Der Rahmen mit Reiterleiste oben und Warteschlangen-Leiste unten
 
-import { createElement, useEffect, useReducer, type JSX } from 'react'
+import { createElement, useEffect, useReducer, useState, type JSX } from 'react'
 import type { ReiterId } from './reiter'
 import {
   REITER_REIHENFOLGE,
@@ -9,6 +9,11 @@ import {
   wechsleReiter,
 } from './reiter'
 import { ergaenzeBesuchte, istMontiert } from './rahmen-montage'
+import {
+  aufAktionenAnsichtGeaendert,
+  holeAktionenAnsicht,
+  schliesseAktionenAnsicht,
+} from '../gemeinsam/aktionen-ansicht'
 
 /** Ein Reiterinhalt. Er bekommt gesagt, ob er gerade sichtbar ist – abgebaut wird er NICHT. */
 export type ReiterInhalt = (eigenschaften: { sichtbar: boolean }) => JSX.Element
@@ -39,6 +44,11 @@ export interface RahmenEigenschaften {
    *  besuchten Reiter bleiben montiert und nur verdeckt. Fehlt der Slot, bleibt die
    *  Reiterfläche sichtbar – ein offener Zustand ohne Ansicht darf sie NICHT verdecken. */
   markenAnsicht?: (schalt: { markeId: string; aufSchliessen: () => void }) => JSX.Element | null
+  /** 01.11.2026: die AKTIONEN-Ansicht über der Reiterfläche - derselbe Vertrag wie die
+   *  Marken-Ansicht. Der Einstieg liegt im Composer (Aktions-Zeile); der offene Zustand
+   *  steht im gemeinsamen Speicher `gemeinsam/aktionen-ansicht.ts`. Fehlt der Slot,
+   *  bleibt die Reiterfläche sichtbar. */
+  aktionenAnsicht?: (schalt: { aktionId: string; aufSchliessen: () => void }) => JSX.Element | null
 }
 
 /** #456: Was die Projektleiste vom Rahmen bekommt – mehr braucht sie nicht. */
@@ -115,10 +125,20 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
     })
   }, [])
 
+  // 01.11.2026: Die Aktionen-Ansicht haengt am gemeinsamen Speicher (Einstieg aus dem
+  // Composer). Der Anfangswert wird gelesen, danach haelt das Abo den Stand aktuell.
+  const [aktionenAktionId, setzeAktionenAktionId] = useState<string | null>(() => holeAktionenAnsicht())
+  useEffect(() => aufAktionenAnsichtGeaendert(setzeAktionenAktionId), [])
+
   // #456: Die Ansicht gilt nur, wenn der Träger sie wirklich liefert. Verschwindet der Slot
   // (Projekt geschlossen), faellt die Reiterfläche sofort zurueck – kein leeres Fenster.
   const markenAnsicht = eigenschaften.markenAnsicht
   const markenAktiv = zustand.markenOffen && markenAnsicht !== undefined
+  const aktionenAnsicht = eigenschaften.aktionenAnsicht
+  const aktionenAktiv = aktionenAktionId !== null && aktionenAnsicht !== undefined
+  // Es liegt IMMER nur EINE Ansicht über der Reiterfläche: die Marken-Ansicht hat Vorrang
+  // (sie wird aus der Projektleiste geoeffnet, die ueber allem steht).
+  const ansichtAktiv = markenAktiv || aktionenAktiv
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -135,6 +155,9 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
               // Marken-Ansicht. `wechsleReiter` meldet in diesem Fall nichts (ENTSCHIEDEN 3),
               // der Slot des Rahmens wuerde also nie erfahren, dass der Nutzer hier wegwill.
               sende({ art: 'marken-geschlossen' })
+              // 01.11.2026: derselbe Rueckweg fuer die Aktionen-Ansicht - ein Reiterklick
+              // heisst "zurueck zum Projekt", auch wenn derselbe Reiter schon aktiv ist.
+              schliesseAktionenAnsicht()
               wechsleReiter(reiter)
             }}
           >
@@ -167,7 +190,7 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
           istMontiert(zustand.besuchte, reiter) ? (
             <div
               key={reiter}
-              hidden={markenAktiv || reiter !== zustand.aktiv}
+              hidden={ansichtAktiv || reiter !== zustand.aktiv}
               data-testid={`rahmen-inhalt-${reiter}`}
               // #419: Der Reiter-Wrapper FUeLLT den Inhaltsbereich. Ohne definite Hoehe
               // loesen `height: 100%`-Ketten im Reiterinhalt auf `auto` auf; die
@@ -189,6 +212,15 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
             {markenAnsicht({
               markeId: zustand.markenMarkeId ?? '',
               aufSchliessen: () => sende({ art: 'marken-geschlossen' }),
+            })}
+          </div>
+        ) : null}
+        {/* 01.11.2026: Die Aktionen-Ansicht über der Reiterfläche - derselbe Vertrag. */}
+        {aktionenAktiv && !markenAktiv ? (
+          <div data-testid="rahmen-ansicht-aktionen" style={{ height: '100%' }}>
+            {aktionenAnsicht({
+              aktionId: aktionenAktionId,
+              aufSchliessen: () => schliesseAktionenAnsicht(),
             })}
           </div>
         ) : null}

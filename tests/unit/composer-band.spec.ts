@@ -46,9 +46,6 @@ vi.mock('../../src/renderer/composer/element-zeile.tsx', () => ({
       onClick: () => p.aufEinblendungBearbeiten(p.element.id),
     }),
 }))
-vi.mock('../../src/renderer/composer/asset-galerie', () => ({
-  AssetGalerie: () => createElement('div', { 'data-testid': 'asset-galerie-doppel' }),
-}))
 vi.mock('../../src/renderer/composer/render-ausloesen', () => ({
   loeseRenderAus: vi.fn(),
   loeseExportAus: vi.fn(),

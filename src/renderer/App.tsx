@@ -398,10 +398,37 @@ export function App(): JSX.Element | null {
       />
     )
 
+  // 01.11.2026: Der Aktions-Editor als Ansicht ÜBER der Reiterfläche. Der Einstieg liegt
+  // in der Aktions-Zeile des Composers (`gemeinsam/aktionen-ansicht.ts`); hier steht nur
+  // die Ansicht selbst - dieselbe Wurzel wie im Reiter [Aktionen], mit dem UMHÜLLTEN
+  // Zugang (#243), damit Bearbeiten ein Undo-Schritt bleibt.
+  const aktionenAnsicht = projektOffen === null
+    ? undefined
+    : (schalt: { aktionId: string; aufSchliessen: () => void }) => (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <div style={{ flex: '0 0 auto', padding: '4px 8px', borderBottom: '1px solid #444' }}>
+          <button type="button" data-testid="aktionen-zurueck" onClick={schalt.aufSchliessen}>
+            Zurück zum Projekt
+          </button>
+        </div>
+        <div style={{ flex: '1 1 auto', minHeight: 0 }}>
+          <ActionEditorWurzel
+            sichtbar
+            projekt={zugaenge.projektBearbeitung}
+            zeichnen={zugaenge.zeichnen}
+            vorlagen={zugaenge.vorlagen}
+            marken={zugaenge.marken}
+            hervorgehobeneAktionId={schalt.aktionId}
+          />
+        </div>
+      </div>
+    )
+
   const rahmenEigenschaften = {
     inhalte,
     projektleiste,
     markenAnsicht,
+    aktionenAnsicht,
     warteschlangenLeiste: () => <WarteschlangenLeiste />,
     // #424: die sichtbaren Undo/Redo-Pfeile in der Reiterleiste.
     undoRedo: (reiter: ReiterId) => (

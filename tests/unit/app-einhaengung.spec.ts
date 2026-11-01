@@ -567,6 +567,9 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(Object.keys(rahmenEigenschaften).sort()).toEqual([
       // #456: zwei neue Schlitze - Projektleiste und Marken-Ansicht. Solange kein Projekt
       // offen ist, liefert App sie als `undefined`; die Schluessel stehen trotzdem.
+      // 01.11.2026: `aktionenAnsicht` als dritter solcher Schlitz (Aktions-Editor ueber
+      // der Reiterflaeche, Einstieg aus der Aktions-Zeile des Composers).
+      'aktionenAnsicht',
       'inhalte',
       'markenAnsicht',
       'meldungsFlaeche',
@@ -575,9 +578,9 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       'undoRedo',
       'warteschlangenLeiste',
     ])
-    // #456: sieben Schlitze - die zwei neuen (projektleiste, markenAnsicht) sind ohne
-    // offenes Projekt `undefined`, ihre Schluessel stehen trotzdem.
-    expect(Object.keys(rahmenEigenschaften)).toHaveLength(7)
+    // #456/#393-Nachlauf: acht Schlitze - projektleiste, markenAnsicht und aktionenAnsicht
+    // sind ohne offenes Projekt `undefined`, ihre Schluessel stehen trotzdem.
+    expect(Object.keys(rahmenEigenschaften)).toHaveLength(8)
     // inhalte ist ToBe zum Ergebnis von baueReiterInhalte.
     const baueRufe = vi.mocked(inhalteModul.baueReiterInhalte)
     expect(rahmenEigenschaften.inhalte).toBe(
@@ -964,8 +967,9 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(rahmenKnoten!.parentElement).toBe(behaelter)
     expect(rahmenKnoten!.contains(overlayKnoten!)).toBe(false)
     expect(overlayKnoten!.contains(rahmenKnoten!)).toBe(false)
-    // SIEBEN Eigenschaften im Rahmen seit #456 - das Overlay ist KEINE davonster Eintrag:
-    expect(Object.keys(letzterRahmen())).toHaveLength(7)
+    // ACHT Eigenschaften im Rahmen seit dem 01.11.2026 (aktionenAnsicht) - das Overlay
+    // ist KEIN davonster Eintrag:
+    expect(Object.keys(letzterRahmen())).toHaveLength(8)
   })
 
   it('UebergabeOverlay bekommt ALLE SIEBEN Eigenschaften belegt: lage, projekt, die drei Abschluss-Funktionen und aufFehler (benannter Test)', async () => {
