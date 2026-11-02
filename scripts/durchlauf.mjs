@@ -4403,17 +4403,28 @@ const main = async () => {
       }
       // 02.11.2026: Der Rueckverweis an JEDER Zeile. Ohne ihn muss man die Zeitleiste
       // absuchen, um zu wissen, wohin ein Werbemittel gehoert (Messlatte, Abschnitt 16).
-      const verwendungen4g = await seite.evaluate(() => {
+      // 02.11.2026: ZWEI Zusagen je Zeile — der Verwendungstext und das GEZEICHNETE
+      // Motiv. Ein canvas-Element allein beweist nichts (es steht immer da); erst
+      // `width > 1` heisst, dass wirklich gezeichnet wurde.
+      const zeilen4g = await seite.evaluate(() => {
         const zeilen = [...document.querySelectorAll('[data-testid="aktionen-liste"] > li')];
         return zeilen.map((zeile) => {
           const text = zeile.querySelector('[data-testid^="aktion-verwendung-"]');
-          return text === null ? null : (text.textContent ?? "").trim();
+          const bild = zeile.querySelector('canvas[data-testid^="aktion-bild-"]');
+          return {
+            verwendung: text === null ? null : (text.textContent ?? "").trim(),
+            motivBreite: bild === null ? null : bild.width,
+          };
         });
       });
-      console.log("[schritt-4g] Verwendung je Aktion: " + JSON.stringify(verwendungen4g));
-      if (verwendungen4g.some((text) => text === null || text === "")) {
+      console.log("[schritt-4g] Zeilen: " + JSON.stringify(zeilen4g));
+      if (zeilen4g.some((z) => z.verwendung === null || z.verwendung === "")) {
         fund("Aktionen-Bibliothek", "jede Aktionszeile sagt, wo die Aktion laeuft",
-          "Texte: " + JSON.stringify(verwendungen4g), "Befund", "composer/bibliothek-ansicht.tsx");
+          "Texte: " + JSON.stringify(zeilen4g), "Befund", "composer/bibliothek-ansicht.tsx");
+      }
+      if (zeilen4g.some((z) => z.motivBreite === null || z.motivBreite <= 1)) {
+        fund("Aktionen-Bibliothek", "jede Aktionszeile zeigt das GEZEICHNETE Motiv",
+          "Breiten: " + JSON.stringify(zeilen4g), "Befund", "composer/aktions-vorschau.ts");
       }
       // Nach dem Anlegen ist das Formular wieder zu - sonst waere die Entlastung der
       // Rail nur bis zum ersten Anlegen geschenkt.

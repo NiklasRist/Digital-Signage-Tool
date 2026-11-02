@@ -4,14 +4,18 @@
 // nichts und fuehrt nur EINE Operation aus - `fuegeElementHinzu` (#123), die das
 // Element selbst ans Ende der Sicht haengt.
 
-import type { JSX } from 'react'
+import { useEffect, useRef, useState, type JSX } from 'react'
 import type { Listenelement, Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
+import type { Marke } from '../../shared/contracts/marke'
+import type { Aktion } from '../../shared/contracts/aktion'
 import type { MedienEintrag, AktionsEintrag } from './bibliothek-ansicht'
 import { baueMedienEintraege, baueAktionsEintraege, zaehleFehlende } from './bibliothek-ansicht'
 import { fuegeElementHinzu } from './element-hinzufuegen'
 import { AktionAnlegen, type AktionAnlegenEingabe } from './aktion-anlegen.tsx'
 import { baueVerwendungen, verwendungsText, type Verwendung } from './verwendungen'
+import { baueMotivEintraege, holeMotiv, MOTIV_HOEHE } from './aktions-vorschau'
+import { bereiteMotiveVor } from '../template-canvas/bild-laden'
 // #413: Die Karten/Zeilen werden als Drag-QUELLEN zur Zeitleiste (#412) - der Klick-Weg
 // bleibt UNVERAENDERT (zweiter Weg, nicht der einzige). Ein DndContext holt sie erst,
 // wenn #414 die Flaeche montiert; bis dahin laufen die Bestands-Specs unveraendert.
@@ -44,6 +48,9 @@ export interface BibliothekEigenschaften {
    *  bisher immer zusammen sichtbar; mit der Leiste wechselt man zwischen ihnen.
    *  Vorgabe `alle` haelt die bestehenden Aufrufer und Tests unveraendert. */
   bereich?: 'alle' | 'video' | 'aktionen'
+  /** 02.11.2026: die Marke einer Aktion (fuer das Motiv in der Zeile). Fehlt sie,
+   *  gibt es kein Bild - aber keine Falle: die Zeile zeigt dann nur Text. */
+  holeMarke?: (markeId: string) => Marke | null
 }
 
 /**
@@ -66,6 +73,26 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
   const fehlende = zaehleFehlende(videos)
   // EINE Rechnung fuer die ganze Liste - nicht je Zeile.
   const verwendungen = baueVerwendungen(p.projekt.liste)
+  // 02.11.2026: Bevor ein Motiv gezeichnet werden kann, muessen die BILDER der Aktionen
+  // geladen sein (sonst ist das Motiv ein Rahmen ohne Inhalt). Der Zaehler loest nach dem
+  // Laden EINEN neuen Zeichenlauf aus - kein Zeitgeber, kein zweiter Zustand.
+  const [motivBereit, setzeMotivBereit] = useState(0)
+  useEffect(() => {
+    if (p.holeMarke === undefined) return
+    const eintraege = baueMotivEintraege(p.projekt)
+    if (eintraege.length === 0) return
+    let abgemeldet = false
+    bereiteMotiveVor(p.projekt.id, eintraege)
+      .then(() => {
+        if (!abgemeldet) setzeMotivBereit((stand) => stand + 1)
+      })
+      .catch(() => {
+        // Kein Bild ist ein sichtbarer Zustand; ein Wurf waere ein Absturz der Liste.
+      })
+    return () => {
+      abgemeldet = true
+    }
+  }, [p.projekt.id, p.projekt.aktionen, p.projekt.assets, p.holeMarke])
   // 02.11.2026 (Sidepanel): Die Leiste schaltet zwischen den beiden Bereichen um.
   // Ohne `bereich` bleibt alles wie bisher - beide Bereiche untereinander.
   const bereich = p.bereich ?? 'alle'
@@ -139,6 +166,11 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
                 aufLoeschen={p.aufAktionLoeschen}
                 aufBearbeiten={p.aufAktionBearbeiten}
                 verwendung={verwendungen.get(eintrag.aktion.id)}
+                /* 02.11.2026: Vorlage und Marke fuer das Motiv; ohne Marke zeigt die
+                   Zeile nur Text (kein Ersatzbild, keine Ausnahme). */
+                vorlage={(p.vorlagen ?? []).find((k) => k.id === eintrag.aktion.vorlagenId)}
+                marke={p.holeMarke?.(eintrag.aktion.markeId) ?? null}
+                motivBereit={motivBereit}
               />
             ))}
           </ul>
@@ -226,6 +258,63 @@ interface AktionszeileEigenschaften {
   aufBearbeiten?: (aktionId: string) => void
   /** 02.11.2026: wo die Aktion laeuft (Rueckverweis aus `verwendungen.ts`). */
   verwendung?: Verwendung
+  /** 02.11.2026: Vorlage und Marke fuer das Motiv in der Zeile. */
+  vorlage?: Vorlage
+  marke?: Marke | null
+  /** Zaehler: steigt, sobald die Motive geladen sind (loest EINEN Zeichenlauf aus). */
+  motivBereit?: number
+}
+
+/**
+ * Das Motiv einer Aktion als kleines Bild (02.11.2026).
+ *
+ * WARUM EIN EIGENES BAUTEIL: Das Zeichnen ist ein DOM-Vorgang und gehoert in einen Effekt,
+ * nicht in den Rumpf einer Zeile - sonst zeichnete jeder Render neu. Das Bild selbst kommt
+ * aus `aktions-vorschau.ts` (Speicher + Verkleinerung); hier wird es nur eingesetzt.
+ */
+/** Breite, die ein Motiv in der Zeile hoechstens einnimmt (neben dem Titel). */
+const MOTIV_ANZEIGE_MAX = 96
+
+function Aktionsbild(p: {
+  aktion: Aktion
+  vorlage?: Vorlage
+  marke: Marke | null
+  bereit: number
+}): JSX.Element {
+  const flaeche = useRef<HTMLCanvasElement | null>(null)
+  useEffect(() => {
+    const ziel = flaeche.current
+    if (ziel === null || p.vorlage === undefined || p.marke === null) return
+    const klein = holeMotiv(p.aktion, p.vorlage, p.marke)
+    if (klein === null) return
+    ziel.width = klein.width
+    ziel.height = klein.height
+    ziel.getContext('2d')?.drawImage(klein, 0, 0)
+    // ANZEIGEGROESSE AUS DEM SEITENVERHAELTNIS (02.11.2026, am Fenster gemessen):
+    // Ein Band ist 1920x162, also 11,85:1 - eine feste Box von 71x40 haette es
+    // zusammengequetscht. Die Breite ist gedeckelt, damit das Motiv in die Spalte passt;
+    // die Hoehe folgt daraus. Ein Band wird dadurch flach - das ist, was ein Band ist.
+    const anzeigeBreite = Math.min(klein.width, MOTIV_ANZEIGE_MAX)
+    ziel.style.width = `${anzeigeBreite}px`
+    ziel.style.height = `${Math.max(1, Math.round((anzeigeBreite / klein.width) * klein.height))}px`
+  }, [p.aktion, p.vorlage, p.marke, p.bereit])
+
+  return (
+    <canvas
+      ref={flaeche}
+      data-testid={`aktion-bild-${p.aktion.id}`}
+      // Ohne gezeichnetes Bild bleibt eine dunkle Flaeche - kein Ersatzbild, das eine
+      // Vorschau behauptet, die es nicht gibt.
+      style={{
+        flex: '0 0 auto',
+        width: MOTIV_ANZEIGE_MAX,
+        height: MOTIV_HOEHE,
+        borderRadius: 3,
+        background: '#0d0d10',
+        border: '1px solid #34343c',
+      }}
+    />
+  )
 }
 
 function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
@@ -259,20 +348,27 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
           background: '#1c1c21',
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
-          <span
-            style={{
-              flex: '1 1 auto',
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-            title={p.eintrag.bezeichnung}
-          >
-            {p.eintrag.bezeichnung}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <Aktionsbild
+            aktion={p.eintrag.aktion}
+            vorlage={p.vorlage}
+            marke={p.marke ?? null}
+            bereit={p.motivBereit ?? 0}
+          />
+          <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: '1 1 auto' }}>
+            <span
+              style={{
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={p.eintrag.bezeichnung}
+            >
+              {p.eintrag.bezeichnung}
+            </span>
+            {p.eintrag.kaputt && <span style={{ color: '#e5634d', fontSize: 11 }}>defekt</span>}
           </span>
-          {p.eintrag.kaputt && <span style={{ flex: '0 0 auto', color: '#e5634d', fontSize: 11 }}>defekt</span>}
         </span>
         {/* 02.11.2026 (Messlatte): WO laeuft diese Aktion? Ohne diesen Rueckverweis musste
             man die Zeitleiste absuchen - genau die Arbeit, die das Werkzeug abnehmen soll.

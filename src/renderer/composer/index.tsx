@@ -915,6 +915,7 @@ export function ComposerInterna({
               aufAktionBearbeiten={oeffneAktionenAnsicht}
               aufMediumLoeschen={meldeVideoPflicht}
               aufFehler={meldeWurzel}
+              holeMarke={holeBereiteMarke}
               bereich={panelLage.ansicht}
             />
             )}
