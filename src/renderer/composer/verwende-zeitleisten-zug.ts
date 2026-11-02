@@ -59,6 +59,15 @@ export interface ZeitleistenZug {
   amUeber: (ereignis: DragOverEvent) => void
   amEnde: (ereignis: DragEndEvent) => void
   amDragAbbruch: () => void
+  /** 02.11.2026 („Ins Video"): DERSELBE Schreibweg wie ein Drop auf den Video-Koerper -
+   *  eine Unterbrechung an der Zeitstelle, EIN Undo-Schritt. Der Klick braucht die
+   *  Zeitstelle selbst (`videostelleAusAbspielmarke`, `ins-video.ts`) und reicht sie
+   *  hier herein; die Pruefung bleibt bei `fuegeUnterbrechungEin` und beim Store. */
+  nehmeAktionAlsUnterbrechungAuf: (
+    videoId: string,
+    aktionId: string,
+    zeitSekunden: number | null,
+  ) => void
 }
 
 export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): ZeitleistenZug {
@@ -252,5 +261,6 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     amUeber,
     amEnde,
     amDragAbbruch,
+    nehmeAktionAlsUnterbrechungAuf,
   }
 }

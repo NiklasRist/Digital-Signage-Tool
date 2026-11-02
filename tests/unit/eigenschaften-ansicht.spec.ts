@@ -8,7 +8,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { createElement, type JSX } from 'react'
-import { afterAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
 import type { Listenelement, Project } from '../../src/shared/contracts/project'
 import type { ListenZeileModell } from '../../src/renderer/composer/liste-ansicht'

@@ -51,6 +51,11 @@ export interface BibliothekEigenschaften {
   /** 02.11.2026: die Marke einer Aktion (fuer das Motiv in der Zeile). Fehlt sie,
    *  gibt es kein Bild - aber keine Falle: die Zeile zeigt dann nur Text. */
   holeMarke?: (markeId: string) => Marke | null
+  /** 02.11.2026 („Ins Video"): legt die Aktion per KLICK ins Video - Band-Aktion als
+   *  Abschnitt ans Werbeband, Ganzbild als Unterbrechung an die Abspielmarke
+   *  (`ins-video.ts`). Fehlt der Rueckruf, gibt es KEINEN Knopf: die Ansicht erfindet
+   *  keinen Weg und keine Regel. */
+  aufInsVideo?: (aktionId: string) => void
 }
 
 /**
@@ -98,6 +103,9 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
   const bereich = p.bereich ?? 'alle'
   const zeigeVideo = bereich !== 'aktionen'
   const zeigeAktionen = bereich !== 'video'
+  // „Ins Video" ohne Video waere ein Knopf, der nur scheitern kann. Der Zielort steht
+  // dann als Hinweis im Videobereich ("Noch kein Video - importieren Sie eines.").
+  const hatVideo = p.projekt.liste.some((element) => element.art === 'video')
 
   return (
     <div data-testid="bibliothek">
@@ -171,6 +179,8 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
                 vorlage={(p.vorlagen ?? []).find((k) => k.id === eintrag.aktion.vorlagenId)}
                 marke={p.holeMarke?.(eintrag.aktion.markeId) ?? null}
                 motivBereit={motivBereit}
+                aufInsVideo={p.aufInsVideo}
+                hatVideo={hatVideo}
               />
             ))}
           </ul>
@@ -263,6 +273,10 @@ interface AktionszeileEigenschaften {
   marke?: Marke | null
   /** Zaehler: steigt, sobald die Motive geladen sind (loest EINEN Zeichenlauf aus). */
   motivBereit?: number
+  /** 02.11.2026 („Ins Video"): der Klick-Weg. Fehlt er, gibt es keinen Knopf. */
+  aufInsVideo?: (aktionId: string) => void
+  /** Steht ueberhaupt ein Video, in das die Aktion gelegt werden koennte? */
+  hatVideo: boolean
 }
 
 /**
@@ -402,8 +416,26 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
           {verwendungsText(p.verwendung)}
         </span>
         <span style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {/* 02.11.2026 (Messlatte): der KLICK statt des Drags. Bei 800 px ist das
+              Einfuegeziel wenige Pixel breit - hier braucht es keine Zielscheibe. Was
+              angelegt wird, entscheidet die Form (Band oder Unterbrechung) und steht im
+              Tooltip; die Regel selbst liegt NICHT hier, sondern in `ins-video.ts`. */}
+          {p.aufInsVideo !== undefined && p.hatVideo && (
+            <button
+              type="button"
+              data-testid={`aktion-ins-video-${p.eintrag.aktion.id}`}
+              style={{ flex: '1 1 100%', minHeight: 20, padding: '0 8px', fontSize: 11 }}
+              title={istBand
+                ? 'Haengt die Aktion als Abschnitt ans Werbeband - laeuft ab 0:00 und wiederholt sich.'
+                : 'Setzt die Aktion als Unterbrechung an die Abspielmarke.'}
+              onClick={() => p.aufInsVideo?.(p.eintrag.aktion.id)}
+            >
+              Ins Video
+            </button>
+          )}
           <button
             type="button"
+            data-testid={`aktion-hinzufuegen-${p.eintrag.aktion.id}`}
             style={{ flex: '1 1 100%', minHeight: 20, padding: '0 8px', fontSize: 11 }}
             onClick={() => void hinzufuegen(p.eintrag.aktion.id, p.aufFehler, p.sichtSchreiber)}
           >

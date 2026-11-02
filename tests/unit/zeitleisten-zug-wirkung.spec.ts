@@ -168,3 +168,25 @@ describe('Drop auf den Video-Block (#442)', () => {
     expect(d.setzeUnterbrechungen).not.toHaveBeenCalled()
   })
 })
+
+describe('„Ins Video" als KLICK (02.11.2026)', () => {
+  it('nimmt die Aktion ueber DENSELBEN Weg auf wie ein Drop - an der uebergebenen Zeitstelle', async () => {
+    await act(async () => {
+      zug?.nehmeAktionAlsUnterbrechungAuf('video-1', 'akt-1', 42)
+      await Promise.resolve()
+    })
+    expect(d.setzeUnterbrechungen).toHaveBeenCalledWith('video-1', [
+      { zeitstelle: 42, aktionRef: 'akt-1', dauer: 5 },
+    ])
+    // KEIN zweiter Weg: der Klick reiht nichts Sequenzielles ein.
+    expect(d.fuegeHinzu).not.toHaveBeenCalled()
+  })
+
+  it('ohne Zeitstelle meldet der Weg - und schreibt nichts', async () => {
+    await act(async () => {
+      zug?.nehmeAktionAlsUnterbrechungAuf('video-1', 'akt-1', null)
+      await Promise.resolve()
+    })
+    expect(d.setzeUnterbrechungen).not.toHaveBeenCalled()
+  })
+})
