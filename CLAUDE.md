@@ -11,7 +11,53 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (02.11.2026, siebenunddreissigste Sitzung: Sidepanel gebaut, GATE GRÜN) — gilt vor allem darunter
+## STAND HEUTE (02.11.2026, achtunddreissigste Sitzung: „Ins Video", Buchhaltung, ein Produktwiderspruch) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 20**
+(der Dateiname ist historisch — Abschnitt 20 ist vom 02.11. und liegt in DERSELBEN Datei, damit es
+keine zweite Wahrheit gibt).
+
+- **„INS VIDEO" IST GEBAUT (`0268bf5`):** ein Knopf je Aktionszeile, der die Aktion **per Klick** ins
+  Video legt. Die Regel liegt **rein** in **`composer/ins-video.ts`**:
+  **Band-Aktion** (Vorlage mit Höhe) -> **Abschnitt ans Ende der Bandfolge** (`uebernehmeBand`),
+  **Ganzbild** (auch unbekannte Vorlage) -> **Unterbrechung an der Abspielmarke** (derselbe Weg wie
+  ein Drop auf den Video-Körper, #442). Die Marke wird von projektweiten Frames über Block und
+  `spieleZeitBeiSequenzzeit` in Videozeit gerechnet; steht sie nicht im Video, sagt das die Meldung.
+- **ABLÖSUNG, OFFEN BENANNT (Niklas, 02.11.2026):** #442 legte fest, Band-Abschnitte entstünden
+  **ausschließlich in der Band-Bearbeitung**. Für diesen Knopf gilt das nicht mehr. Die **Drop-Regel
+  bleibt unberührt**.
+- **AM FENSTER GEMESSEN (`6a73785`, Treiber `4f8`):** Marke Frame **30**; Ganzbild -> Unterbrechung
+  `{zeitstelle: 1, dauer: 10}` (Store nach **4270 ms**, kein neues Listenelement); Band -> Abschnitte
+  **1 -> 2**, Liste unverändert, Zeile **„Band ab 0:00"**; Höhen bei 800 × 572: Bühne **280**,
+  Zeitachse **18**, „Rendern…" **27** px. Danach beide Wirkungen per Cmd+Z zurück.
+- **MESSFALLE, teuer bezahlt:** `project.json` wird **entprellt** geschrieben (4 s,
+  `auto-speichern.ts`). Eine Sofortablesung meldet „nichts passiert", obwohl der Klick gewirkt hat.
+  Der Schritt **wartet** jetzt auf die Änderung (Frist 20 s) und protokolliert die Dauer.
+- **DER WICHTIGSTE BEFUND — OFFEN, nicht behoben:** **Ein Projekt mit einer Unterbrechung lässt sich
+  nicht rendern.** `render-ausloesen.ts:189` vergibt jedem Video-Teil **dieselbe** Element-Kennung
+  (für den Reparatur-Modus), `validierung.ts:524` verlangt **eindeutige** Kennungen -> der Auftrag
+  wird mit `ungueltige_eingabe` abgewiesen („Die Element-Kennung … kommt mehrfach vor"). Für den MVP
+  **blockierend**, weil „Ins Video" bei Ganzbildern genau so eine Unterbrechung erzeugt.
+  **Entscheidung nötig** (Teile dürfen dieselbe Kennung tragen *oder* sie bekommen eigene mit
+  Rückabbildung) — berührt TK 9.2.1.
+- **Gate EXIT 0:** Unit **5445/5445** (360 Dateien, +28), Integration **50/50** (13), **Treiber
+  0 Befunde / 0 Untersuchungen**, Typecheck 0, ESLint **0 Fehler / 0 Warnungen**. Einziger
+  Treiber-Eintrag: **MANUELL** (nativer Export-Dialog).
+- **10 Gegenproben**, jede rot und byte-identisch zurückgenommen. **Eine blieb zuerst grün** (IV6):
+  der Test führte nur ein Segment mit `trimStart: null` vor, da greift schon `videoSekunden` — die
+  Prüfung war von der Fixture verdeckt. Neuer Fall (Segment mit von Hand gesetzten Trim-Werten),
+  danach rot. **Lehre: eine grüne Probe ist eine Aussage über den Test, nicht über den Code.**
+- **Nebenbefund, behoben:** `tests/unit/eigenschaften-ansicht.spec.ts` trug seit `93c3343` einen
+  unbenutzten `vi`-Import; die Uebergabe behauptete „0 Warnungen", oxlint meldete eine. Entfernt.
+- **Buchhaltung nachgezählt:** `origin/main..HEAD` war **24**, nicht 23 (der korrigierende Commit
+  zählte sich selbst nicht). Mit den drei Commits dieser Sitzung (`0268bf5`, `6a73785`, dieser Doku)
+  sind es **27**. Die Zahl steht jetzt **mit dem Befehl** da — sie wächst mit jedem Doku-Commit.
+  **Push nur auf Anweisung.**
+- **NÄCHSTER SCHRITT:** erst der Widerspruch oben (Entscheidung Niklas), dann Konzept Abschnitt 10
+  weiter: **Preset beim Anlegen**, danach die **Effekte** (Band fährt ein/aus, Motiv atmet,
+  Übergang).
+
+## STAND HEUTE (02.11.2026, siebenunddreissigste Sitzung: Sidepanel gebaut, GATE GRÜN) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md),
 Abschnitte 12–19** (der Dateiname ist historisch — die Abschnitte 12–19 sind vom 02.11. und liegen
@@ -49,7 +95,11 @@ in DERSELBEN Datei, damit es keine zweite Wahrheit gibt).
 - **NÄCHSTER SCHRITT (Konzept Abschnitt 10):** die **Aufwand-Senker** — **„Ins Video" als Knopf**
   statt Drag und **Preset beim Anlegen**. Danach die **Effekte**: Band fährt ein/aus,
   Motiv atmet, Übergang statt hartem Schnitt.
-- **Nicht gepusht:** **23 Commits** vor `origin/main`. **Push nur auf Anweisung.**
+- **Nicht gepusht (Stand `c362ef9`, selbst nachgezaehlt):** `git log --oneline
+  origin/main..HEAD` = **24**. Die vorige Zahl (23) war um eins zu niedrig, weil der
+  korrigierende Commit `c362ef9` sich selbst nicht mitzaehlte. **Die Zahl waechst mit jedem
+  Doku-Commit** — nach dem Commit dieser Zeile sind es **25**; wer sie braucht, zaehlt mit
+  dem Befehl, statt sie abzuschreiben. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (01.11.2026, sechsunddreissigste Sitzung: Buchhaltung #383–#394, Aktionen-Auswahl, Loesch-Sperrgruende) – historisiert durch den Abschnitt darueber
 

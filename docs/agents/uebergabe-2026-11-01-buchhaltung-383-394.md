@@ -588,3 +588,85 @@ aber benannt.
 **Naechster Schritt:** Im Konzept (Abschnitt 10) stehen noch **`Ins Video` als Knopf** und
 **Preset beim Anlegen** — die Aufwand-Senker. Danach die **Effekte** (Band faehrt ein/aus,
 Motiv atmet, Uebergang statt hartem Schnitt).
+
+## 20. „INS VIDEO" GEBAUT (`0268bf5`, `6a73785`), die Buchhaltung nachgezaehlt — und ein Produktwiderspruch gefunden (02.11.2026)
+
+### 20.1 Die Commit-Zahl war falsch, und zwar systematisch
+
+Die Uebergabe sagte **23**; `git log --oneline origin/main..HEAD` zaehlte **24**. Ursache: der
+korrigierende Commit `c362ef9` („23 statt 13") zaehlte sich selbst nicht mit. Die Zahl steht
+jetzt **mit dem Befehl** und dem Bezugs-Commit in `CLAUDE.md` — eine abgeschriebene Zahl driftet
+bei jedem Doku-Commit um eins.
+
+### 20.2 Was „Ins Video" tut — und was es ablöst
+
+**Ein Knopf je Aktionszeile**, der die Aktion **per Klick** ins Video legt. Die Regel liegt in
+**`composer/ins-video.ts`** (rein, ohne React/DOM/IPC):
+
+| Form der Aktion | Wirkung | Weg |
+|---|---|---|
+| Band (`vorlage.höhe !== null`) | **Abschnitt am Ende der Bandfolge**; bestehende Abschnitte und die Band-Vorlage bleiben | `uebernehmeBand` (#129) |
+| Ganzbild (`höhe === null`, auch **unbekannte** Vorlage) | **Unterbrechung an der Abspielmarke** | `nehmeAktionAlsUnterbrechungAuf` — derselbe Weg wie ein Drop auf den Video-Koerper (#442) |
+
+**Die Zeitstelle** kommt aus der **Abspielmarke** (`gemeinsam/abspielposition`): projektweite
+Frames -> Block und Sekunden im Block (Summe der `frameDauer` davor) -> Videozeit
+(`spieleZeitBeiSequenzzeit`, rechnet Unterbrechungen heraus und klemmt in `(0, Videodauer)`).
+Steht die Marke nicht in einem Video, sagt die Meldung das — **es wird nichts erfunden.**
+
+**ABLÖSUNG, OFFEN BENANNT (Entscheidung Niklas, 02.11.2026):** #442 hatte festgelegt,
+Band-Abschnitte entstuenden **ausschliesslich in der Band-Bearbeitung**. Fuer diesen Knopf gilt
+das nicht mehr — er ist der Aufwand-Senker, für den das Band überhaupt existiert. Die
+**Drop-Regel bleibt unberührt** (Drop auf den Video-Körper = immer Unterbrechung).
+
+### 20.3 Am Fenster gemessen (Treiber `4f8`, neu)
+
+| Messung | Ergebnis |
+|---|---|
+| Marke setzen (Klick auf die Zeitachse, +8 px) | Frame **30** (= 1 s) |
+| **Ganzbild** klicken | Unterbrechung `{zeitstelle: 1, aktionRef: <neu>, dauer: 10}`, **0 -> 1**, Store nach **4270 ms**, **kein** neues Listenelement |
+| **Band** klicken | Abschnitte **1 -> 2**, letzter `aktionRef` = die geklickte Aktion, Liste **2 -> 2**, Zeile sagt **„Band ab 0:00"** |
+| Höhen bei 800 × 572 | Bühne **280**, Zeitachse **18**, „Rendern…" **27** px — nichts aus dem Bild geschoben |
+| Aufräumen | beide Wirkungen per Cmd+Z zurück, Zustand wie vorher |
+
+**Der Klick braucht keine Zielscheibe** — genau der Punkt aus Abschnitt 16 („Draggen statt
+Klicken: bei 800 px ist das Einfügeziel wenige Pixel breit").
+
+### 20.4 DER BEFUND, DER WICHTIGER IST ALS DAS FEATURE: ein Projekt MIT Unterbrechung lässt sich nicht rendern
+
+Beim Messen fiel ein **neuer** Treiber-Befund auf (`FA-08`, „der Render legt die Ausgabedatei
+an"). Die Ursachenkette ist vollständig belegt:
+
+1. `4f5` klickte den **ersten Knopf** der Aktionszeile — mit „Ins Video" an dieser Stelle legte
+   der Schritt die Aktion als **Unterbrechung** an (Messfehler, behoben: der Schritt klickt
+   jetzt `aktion-hinzufuegen-<id>`).
+2. Der Render **scheiterte** danach mit `ungueltige_eingabe`: *„Die Element-Kennung … kommt
+   mehrfach vor"*. `project.json` hatte dabei **ein** Element mit **einer** Unterbrechung.
+3. **`render-ausloesen.ts:189`** vergibt jedem **Video-Teil** bewusst **dieselbe** Element-Kennung
+   („damit der Reparatur-Modus (9.7.5) das Element über `RenderResult.fehlerhaftesElementId`
+   findet"). **`validierung.ts:524`** verlangt **eindeutige** Kennungen im Auftrag.
+4. Ergebnis: **jedes Projekt mit mindestens einer Unterbrechung ist nicht renderbar.** Die
+   Unterbrechung ist mit #426/#442 gebaut, im Editor bedienbar — und die Ausgabe scheitert.
+
+**NICHT behoben.** Es ist eine Entscheidung, keine Reparatur: entweder dürfen Teil-Clips
+dieselbe Kennung tragen (dann muss die Validierung sie zulassen und die Fehlerzuordnung eine
+Regel für „welcher Teil" bekommen), oder die Teile bekommen eigene Kennungen (dann braucht der
+Reparatur-Modus eine Rückabbildung auf das Element). Beides berührt TK 9.2.1 („Jedes
+`RenderItem` trägt eine `id` zur eindeutigen Fehlerzuordnung") — **das entscheidet Niklas,
+nicht der Agent.** Für den MVP ist es blockierend: „Ins Video" für Ganzbilder erzeugt genau
+so eine Unterbrechung.
+
+### 20.5 Belege
+
+- **Unit 5445/5445** (360 Dateien, +28: 21 `ins-video`, 5 Knopf, 2 Klick-Weg), **Integration
+  50/50** (13), **Treiber 0 Befunde / 0 Untersuchungen**, Typecheck 0, ESLint 0 Fehler /
+  0 Warnungen. `npm run pruefung` **EXIT 0**.
+- **10 Gegenproben**, jede rot und byte-identisch zurückgenommen. **Eine blieb zuerst grün**
+  (IV6, `art !== 'video'`): der Test führte nur ein Segment mit `trimStart: null` vor — dann
+  greift schon `videoSekunden`, und die Prüfung war von der Fixture verdeckt. Neuer Fall: ein
+  Segment, das **von Hand** Trim-Werte trägt. Danach rot.
+- **Nebenbefund, behoben:** `tests/unit/eigenschaften-ansicht.spec.ts` trug seit `93c3343`
+  einen unbenutzten `vi`-Import — die Uebergabe behauptete „0 Warnungen", oxlint meldete eine.
+  Entfernt.
+
+**Nächster Schritt:** der Widerspruch aus 20.4 (Entscheidung), danach Konzept Abschnitt 10
+weiter: **Preset beim Anlegen**, dann die **Effekte**.
