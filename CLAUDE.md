@@ -11,38 +11,47 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## NACHTRAG 02.11.2026 — gilt vor dem folgenden Abschnitt
+## STAND HEUTE (02.11.2026, siebenunddreissigste Sitzung: Sidepanel gebaut, GATE GRÜN) — gilt vor allem darunter
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md),
-Abschnitte 12–15.**
+Abschnitte 12–19** (der Dateiname ist historisch — die Abschnitte 12–19 sind vom 02.11. und liegen
+in DERSELBEN Datei, damit es keine zweite Wahrheit gibt).
+**Konzept: [`docs/agents/seitenpanel-konzept.md`](docs/agents/seitenpanel-konzept.md).**
 
-- **Gestaltung (01./02.11.):** `src/renderer/styles/basis.css` — vorher gab es **kein CSS**.
-  Reiter als Leiste, EIN Hauptknopf, Undo/Redo als Symbole (`aba05f5`).
-- **Beleglücke GESCHLOSSEN:** Unit **5376/5376** (353 Dateien), 27–36 s, Exit 0. Die Timeouts der
-  Vorsitzung waren **Rechnerlast**, kein Codefehler.
-- **Rail entlastet (`d379289`):** „Aktion anlegen" steht hinter „+ Neue Aktion"; Überlauf
-  0 px zu / 48 px offen / 67 px nach dem Anlegen.
-- **Lineal voll breit (`6e48265`):** Grundlinie 510 px, Graduierung endet mit dem Inhalt
-  (106 px). Entscheidung Niklas: rechts keine Ticks, weil das Projekt dort endet.
-- **REGEL: vor jeder Fenstermessung `npm run build`.** `npm run durchlauf` fährt `dist/`, nicht
-  den Quellstand. Der erste Lauf nach Schritt 1 maß alten Code und erzeugte drei Scheinbefunde
-  (Protokollblock als UNGÜLTIG markiert).
-- **Treiber:** **1 Befund** — der bekannte Bandliste-Fund — plus 2 Untersuchungen und 1 MANUELL.
-  **3 davon sind Folgen von „Mitte raus"** (Wiedergabeliste `display: none`).
-- **NÄCHSTER SCHRITT:** **Seitenpanel** — Konzept steht in
-  [`docs/agents/seitenpanel-konzept.md`](docs/agents/seitenpanel-konzept.md), **nichts gebaut**.
-  **Niklas entscheidet:** A (Panel schiebt) oder B (Panel liegt darüber), und ob der Inspector an
-  die Auswahl gekoppelt ist.
-- **ENTSCHEIDEN IST ENTSCHIEDEN (02.11.2026): Panel und Rail sind DASSELBE** — ein Sidepanel
-  links, nach VS-Code-Muster: eine **senkrechte Leiste**, die zwischen Ansichten wechselt
-  (Video · Aktionen · Eigenschaften) und das Panel zu-/aufklappt. Breite wird **nicht gezogen**.
-- **DIE MESSLATTE (Abschnitt 16 der Sitzungsübergabe) — vor allem anderen lesen:**
-  Das Panel muss den Werbebau **schneller machen als PowerPoint und besser für Produktwerbung**.
-  Heute ist es langsamer. Wer das Panel als Ablage für drei Listen baut, hat die Aufgabe nicht
-  verstanden.
-- **Nicht gepusht:** `d379289` und `6e48265`. **Push nur auf Anweisung.**
+- **`npm run pruefung` EXIT 0 — zum ersten Mal:** Unit **5417/5417** (358 Dateien), Integration
+  **50/50**, **Treiber 0 Befunde / 0 Untersuchungen**, Typecheck 0, ESLint 0 Fehler / 0 Warnungen.
+  Einziger Treiber-Eintrag: **MANUELL** (nativer Export-Dialog, User-Entscheidung 13.10.2026).
+- **DAS SIDEPANEL IST GEBAUT (Schritte 1–3).** Panel und Rail sind **dasselbe**: Leiste 36 px
+  (Video · Aktionen · Eigenschaften, Zuklapp-Pfeil unten) + Panel 240 px, VS-Code-Muster.
+  **Breite wird nicht gezogen.**
+  - **Schritt 1 (`fff1d85`):** Leiste + Umschalten. Gemessen: Sidepanel **284** px, Bühne **476**;
+    zugeklappt Hauptspalte **724**. **Befund am Bild:** Der gedrückte Zustand war unsichtbar —
+    `SymbolKnopf` setzt den Hintergrund inline, das schlägt `basis.css`; galt für **jede** Leiste.
+  - **Schritt 2 (`250f736`, `23be1f1`, `bcc1673`):** Aktionszeile mit **Motiv** (einmal zeichnen,
+    auf Zeilenhöhe verkleinern, Cache max. 40) und **„läuft bei 0:12 · 3×"**. Band-Motive bekommen
+    eine **eigene Zeile in voller Breite** (11,85 : 1), Ganzbilder stehen neben dem Titel.
+  - **Schritt 3 (`93c3343`):** **Eigenschaften an die Auswahl gebunden** — Kopf, **Folge**
+    („Gesamt 0:42 · Band 3× · ab 0:12") und die **bestehende** Bedienung `ElementBedienung` (#249).
+- **DER #453-BEFUND IST BEHOBEN, nicht dokumentiert (`921f3a1`):** Der Band-Weg läuft jetzt über
+  Block wählen → „Eigenschaften" → Band. Treiber: `wahl=ok`, Abschnitt im Store,
+  `["Band ab 0:00"]`. **Auch die zwei Untersuchungen sind Messungen geworden:** Gesamtdauer
+  `"0:12"` aus der Statistik; Dauer/Trim `"2,0 s" -> "1,1 s" -> Undo "2,0 s"`, **GEMESSEN**.
+- **DIE MESSLATTE GILT WEITER (Abschnitt 16 + 16a/16b):** Das Werkzeug muss für Produktwerbung
+  **besser** sein *und* **weniger Aufwand** kosten als PowerPoint; jedes Element muss **schneller
+  oder sehr viel besser** sein, sonst fällt es durch. Was zählt, ist **das Ergebnis am Ende**.
+- **REGELN, die diese Sitzung gekostet hat:** (1) **vor jeder Fenstermessung `npm run build`** —
+  `npm run durchlauf` fährt `dist/`. (2) Der **Panel-Zustand überlebt kein Projekt-Neuöffnen**
+  (fällt auf „Video") → der Treiber schaltet an jeder der 25 Composer-Stellen. (3) `$$` im
+  **Ersatztext** von `String.replace` heißt „ein `$`" — hat `seite.$$` zu `seite.$` gemacht.
+  (4) Ungültige Messläufe werden im Protokoll **markiert, nicht gelöscht**.
+- **Flaky, benannt:** `einzel-instanz.spec.ts` (#289) fiel im ersten Gesamtlauf; einzeln 3× 7/7
+  grün, im zweiten Gesamtlauf grün. **Nicht behoben.**
+- **NÄCHSTER SCHRITT (Konzept Abschnitt 10):** die **Aufwand-Senker** — **„Ins Video" als Knopf**
+  statt Drag und **Preset beim Anlegen**. Danach die **Effekte**: Band fährt ein/aus,
+  Motiv atmet, Übergang statt hartem Schnitt.
+- **Nicht gepusht:** **13 Commits** vor `origin/main`. **Push nur auf Anweisung.**
 
-## STAND HEUTE (01.11.2026, sechsunddreissigste Sitzung: Buchhaltung #383–#394, Aktionen-Auswahl, Loesch-Sperrgruende) – gilt vor ALLEM weiter unten
+## STAND HEUTE (01.11.2026, sechsunddreissigste Sitzung: Buchhaltung #383–#394, Aktionen-Auswahl, Loesch-Sperrgruende) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md).**
 
