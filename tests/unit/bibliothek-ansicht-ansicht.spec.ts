@@ -381,3 +381,65 @@ describe("Bereichs-Filter der Bibliothek (Sidepanel, 02.11.2026)", () => {
     expect(host.querySelector("[data-testid='aktionen-liste']")).not.toBeNull();
   });
 });
+
+// 02.11.2026 (Messlatte): Die Zeile sagt, WO die Aktion laeuft. Ohne diesen Rueckverweis
+// musste man die Zeitleiste absuchen - genau die Arbeit, die das Werkzeug abnehmen soll.
+describe("Rueckverweis: laeuft bei (Aktionszeile, 02.11.2026)", () => {
+  let host: HTMLElement;
+  let root: Root;
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  const videoMitBand = (abschnitte: Array<{ aktionRef: string; dauer: number }>) => ({
+    id: "v1",
+    art: "video" as const,
+    ref: "a1",
+    dauer: null,
+    trimStart: 0,
+    trimEnde: 30,
+    einblendung: { bandVorlageId: "band", abschnitte },
+    unterbrechungen: [],
+  });
+
+  it("nennt Startstelle und Wiederholung aus dem Band", () => {
+    const p = projekt({
+      id: "p1",
+      assets: [asset({ id: "a1" })],
+      aktionen: [aktion({ id: "k1" })],
+      // Folge 5 s, Video 30 s -> 6 Durchlaeufe
+      liste: [videoMitBand([{ aktionRef: "k1", dauer: 5 }])],
+    });
+    act(() => {
+      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
+    });
+    expect(host.querySelector("[data-testid='aktion-verwendung-k1']")?.textContent).toBe(
+      "Band ab 0:00 · 6×",
+    );
+  });
+
+  it("eine Aktion ohne Verwendung sagt das, statt zu schweigen", () => {
+    const p = projekt({
+      id: "p1",
+      assets: [asset({ id: "a1" })],
+      aktionen: [aktion({ id: "k1" })],
+      liste: [videoMitBand([{ aktionRef: "andere", dauer: 5 }])],
+    });
+    act(() => {
+      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
+    });
+    expect(host.querySelector("[data-testid='aktion-verwendung-k1']")?.textContent).toBe(
+      "noch nicht im Video",
+    );
+  });
+});

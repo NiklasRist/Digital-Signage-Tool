@@ -11,6 +11,7 @@ import type { MedienEintrag, AktionsEintrag } from './bibliothek-ansicht'
 import { baueMedienEintraege, baueAktionsEintraege, zaehleFehlende } from './bibliothek-ansicht'
 import { fuegeElementHinzu } from './element-hinzufuegen'
 import { AktionAnlegen, type AktionAnlegenEingabe } from './aktion-anlegen.tsx'
+import { baueVerwendungen, verwendungsText, type Verwendung } from './verwendungen'
 // #413: Die Karten/Zeilen werden als Drag-QUELLEN zur Zeitleiste (#412) - der Klick-Weg
 // bleibt UNVERAENDERT (zweiter Weg, nicht der einzige). Ein DndContext holt sie erst,
 // wenn #414 die Flaeche montiert; bis dahin laufen die Bestands-Specs unveraendert.
@@ -63,6 +64,8 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
   const videos = baueMedienEintraege(p.projekt).filter((eintrag) => eintrag.typLabel === 'Video')
   const aktionen = baueAktionsEintraege(p.projekt)
   const fehlende = zaehleFehlende(videos)
+  // EINE Rechnung fuer die ganze Liste - nicht je Zeile.
+  const verwendungen = baueVerwendungen(p.projekt.liste)
   // 02.11.2026 (Sidepanel): Die Leiste schaltet zwischen den beiden Bereichen um.
   // Ohne `bereich` bleibt alles wie bisher - beide Bereiche untereinander.
   const bereich = p.bereich ?? 'alle'
@@ -135,6 +138,7 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
                 sichtSchreiber={p.sichtSchreiber}
                 aufLoeschen={p.aufAktionLoeschen}
                 aufBearbeiten={p.aufAktionBearbeiten}
+                verwendung={verwendungen.get(eintrag.aktion.id)}
               />
             ))}
           </ul>
@@ -220,6 +224,8 @@ interface AktionszeileEigenschaften {
   aufLoeschen?: (aktionId: string) => void
   /** 01.11.2026: oeffnet den Aktions-Editor ueber der Reiterflaeche. Fehlt er, kein Knopf. */
   aufBearbeiten?: (aktionId: string) => void
+  /** 02.11.2026: wo die Aktion laeuft (Rueckverweis aus `verwendungen.ts`). */
+  verwendung?: Verwendung
 }
 
 function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
@@ -267,6 +273,23 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
             {p.eintrag.bezeichnung}
           </span>
           {p.eintrag.kaputt && <span style={{ flex: '0 0 auto', color: '#e5634d', fontSize: 11 }}>defekt</span>}
+        </span>
+        {/* 02.11.2026 (Messlatte): WO laeuft diese Aktion? Ohne diesen Rueckverweis musste
+            man die Zeitleiste absuchen - genau die Arbeit, die das Werkzeug abnehmen soll.
+            Der Text kommt aus `verwendungen.ts`; hier wird NICHTS nachgerechnet. */}
+        <span
+          data-testid={`aktion-verwendung-${p.eintrag.aktion.id}`}
+          style={{
+            color: p.verwendung === undefined || p.verwendung.band === null && p.verwendung.unterbrechungen.length === 0
+              ? '#6f6f7a'
+              : '#9aa4b2',
+            fontSize: 11,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {verwendungsText(p.verwendung)}
         </span>
         <span style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           <button

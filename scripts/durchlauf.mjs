@@ -4312,11 +4312,25 @@ const main = async () => {
               `Liste ${listeVor4f6}->${stand4f6.liste}`, "Befund", "composer/index.tsx");
           } else {
             console.log("[schritt-4f6] Einfuegeweg GEMESSEN: Aktion an der Bandliste wird ein ABSCHNITT am Video, kein neues Listenelement, keine Unterbrechung (#453 belegt).");
+
+            // 02.11.2026: Der Rueckverweis am ECHTEN Fenster - NUR im Erfolgsfall.
+            // Solange die Bandliste unerreichbar ist (#453), gibt es kein Band und damit
+            // nichts anzuzeigen; eine Pruefung dort zaehlte denselben Fehler zweimal.
+            const texte4f6 = await seite.evaluate(() => {
+              const knoten = [...document.querySelectorAll('[data-testid^="aktion-verwendung-"]')];
+              return knoten.map((k) => (k.textContent ?? "").trim());
+            });
+            console.log(`[schritt-4f6] Verwendung nach dem Band: ${JSON.stringify(texte4f6)}`);
+            if (!texte4f6.some((t) => t.startsWith("Band ab"))) {
+              fund("Aktionen-Bibliothek", "nach dem Band-Einfuegen nennt die Zeile die Stelle im Video",
+                `Texte: ${JSON.stringify(texte4f6)}`, "Befund", "composer/bibliothek-ansicht.tsx");
+            }
           }
         }
       }
       clearInterval(uhr4f6);
       console.log(`[schritt-4f6] Listenverlauf (ms seit Start): ${JSON.stringify(verlauf4f6)}`);
+
       await klick('[data-testid="composer-ansicht-zeitleiste"]');
       await schlafe(200);
     }
@@ -4386,6 +4400,20 @@ const main = async () => {
         fund("Aktion anlegen", "die neue Aktion erscheint sofort in der Bibliothek (#416)",
           `Aktionen davor/nachher: ${aktionenDavor4g}/${aktionenDanach4g}, abgeschickt: ${String(abgeschickt4g)}`,
           "Befund", "composer/index.tsx");
+      }
+      // 02.11.2026: Der Rueckverweis an JEDER Zeile. Ohne ihn muss man die Zeitleiste
+      // absuchen, um zu wissen, wohin ein Werbemittel gehoert (Messlatte, Abschnitt 16).
+      const verwendungen4g = await seite.evaluate(() => {
+        const zeilen = [...document.querySelectorAll('[data-testid="aktionen-liste"] > li')];
+        return zeilen.map((zeile) => {
+          const text = zeile.querySelector('[data-testid^="aktion-verwendung-"]');
+          return text === null ? null : (text.textContent ?? "").trim();
+        });
+      });
+      console.log("[schritt-4g] Verwendung je Aktion: " + JSON.stringify(verwendungen4g));
+      if (verwendungen4g.some((text) => text === null || text === "")) {
+        fund("Aktionen-Bibliothek", "jede Aktionszeile sagt, wo die Aktion laeuft",
+          "Texte: " + JSON.stringify(verwendungen4g), "Befund", "composer/bibliothek-ansicht.tsx");
       }
       // Nach dem Anlegen ist das Formular wieder zu - sonst waere die Entlastung der
       // Rail nur bis zum ersten Anlegen geschenkt.
