@@ -62,24 +62,62 @@ export function UndoPfeile(p: UndoPfeileProps): JSX.Element {
   }
 
   return (
-    <span style={{ display: 'flex', gap: 4, marginLeft: 8, alignItems: 'center' }}>
+    <span
+      style={{
+        display: 'flex',
+        gap: 2,
+        marginLeft: 8,
+        paddingLeft: 8,
+        alignItems: 'center',
+        // Eigene Gruppe: eine feine Trennlinie loest die Pfeile von der Navigation.
+        borderLeft: '1px solid #2c2c34',
+      }}
+    >
       <button
         type="button"
         data-testid="undo-pfeil"
+        aria-label="Rückgängig"
         disabled={!kannZurueck}
         title="Rückgängig (Cmd/Strg+Z)"
         onClick={() => tue('zurueck')}
+        style={{
+          width: 28,
+          height: 28,
+          minHeight: 0,
+          padding: 0,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
-        ↶
+        {/* Symbole statt Textzeichen: "↶/↷" werden je nach Systemschrift
+            unterschiedlich gross und schief gezeichnet (am Bild gesehen). */}
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6.5 3.5 3 7l3.5 3.5" />
+          <path d="M3 7h6.5a3.5 3.5 0 0 1 0 7H8" />
+        </svg>
       </button>
       <button
         type="button"
         data-testid="redo-pfeil"
+        aria-label="Wiederherstellen"
         disabled={!kannVor}
         title="Wiederherstellen (Shift+Cmd/Strg+Z)"
         onClick={() => tue('vor')}
+        style={{
+          width: 28,
+          height: 28,
+          minHeight: 0,
+          padding: 0,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
-        ↷
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M9.5 3.5 13 7l-3.5 3.5" />
+          <path d="M13 7H6.5a3.5 3.5 0 0 0 0 7H8" />
+        </svg>
       </button>
     </span>
   )
