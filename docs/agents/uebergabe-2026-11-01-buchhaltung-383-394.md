@@ -275,4 +275,48 @@ Gemessen bei 800 × 572: Bühne **520 × 288**, Zeitleiste **520 × 124**, `glei
 Offen: Die Wiedergabeliste bleibt ausgeblendet (Konzept); von ihr kommen der eine Befund
 (Bandliste) und die zwei „Untersuchungen" (Gesamtdauer, Dauer-Zug).
 
+## 12. Blickführung: die Messlatte für alles Weitere
+
+Niklas, 01.11.2026 (nach dem ersten Gestaltungs-Pass): *„es fehlen kontraste … die augen
+werden nicht dahin geleitet wo sie hingehen sollen … die tabs oben in der jetzigen form
+grausam … du musst einfach überlegen was selbst erklärend ist und ob das Auge richtig
+geleitet wird. das ist die methodik nach der man weiter konzipieren muss … konzipieren,
+testen wie das ist, konzipieren."*
+
+**Die fünf Kriterien** (gelten ab jetzt für jede Oberflächen-Entscheidung):
+
+1. **Eine Haupthandlung je Fläche** (Akzent), alles andere still.
+2. **Drei Kontraststufen** (Fenster / Fläche / erhaben), drei Textstufen.
+3. **Handlung → Arbeit → Beiwerk** in der Reihenfolge des Sichtfelds.
+4. **Jedes Element sagt, was es ist** — Aktionsname statt Datenart.
+5. **Leere Zustände sagen, was zu tun ist.**
+
+**Umgesetzt (`b6c0c5d`):** Flächen- und Textstufen deutlich getrennt; Reiter sind eine
+Leiste mit Unterkante statt eines gefüllten blauen Felds; stille Knöpfe und EIN Hauptknopf
+(„Rendern…", bzw. „Video importieren" im leeren Projekt); Statistik an den Fuß der Rail;
+Abschnittsköpfe mit Trennlinie; Rail-Kopf bleibt beim Scrollen stehen; Zeitleisten-Block
+nennt den Aktionsnamen; leerer Zustand nennt den nächsten Schritt. Drei Rücknahmen sind
+dokumentiert (klebende Etiketten deckten den Import-Knopf zu; zwei verschachtelte
+Scroll-Kästen ließen den Abschnittskopf verschwinden; ein geklemmter Flex-Kasten schob die
+Statistik über die Aktionskarte).
+
+**Undo/Redo (`aba05f5`):** SVG-Symbole in 28 × 28-Knöpfen, eigene Gruppe mit Trennlinie,
+`aria-label`. `tsc` für Renderer und Tests: exit 0. **Die Unit-Suite konnte in dieser
+Sitzung nicht sauber laufen** — der Rechner stand bei Last 13–30 (I/O-Stau, kein Prozess
+über 10 % CPU), einzelne Tests liefen in 675–900-Sekunden-Timeouts. Das ist ein
+**offener Belegpunkt**, kein grünes Gate.
+
+## 13. Nächste Schritte (vereinbart 01.11.2026)
+
+1. **Rail entlasten.** Das „Neue Aktion"-Formular ist immer offen und frisst ~100 px;
+   deshalb scrollt die Rail überhaupt. Es gehört hinter einen „+ Neue Aktion"-Knopf.
+   *Achtung:* Der Treiber tippt in `aktion-anlegen-titel` (`seite.click`/`type`) — das
+   Formular muss dafür erreichbar bleiben (erst öffnen, dann messen).
+2. **Lineal über die volle Breite.** Die Zeitachse ist heute nur so breit wie der Inhalt;
+   rechts bleibt eine leere Fläche.
+3. **Danach: das Konzept für alles im Seitenpanel** — Liste/Inspector, Bibliothek,
+   Auswahl und Bearbeiten eines Elements. Niklas' Vorschlag: ausklappbares Sidepanel nach
+   VS-Code-Muster. **Das wird gemeinsam entschieden, nicht allein gebaut.**
+
+
 
