@@ -14,7 +14,7 @@ import { baueMedienEintraege, baueAktionsEintraege, zaehleFehlende } from './bib
 import { fuegeElementHinzu } from './element-hinzufuegen'
 import { AktionAnlegen, type AktionAnlegenEingabe } from './aktion-anlegen.tsx'
 import { baueVerwendungen, verwendungsText, type Verwendung } from './verwendungen'
-import { baueMotivEintraege, holeMotiv, MOTIV_HOEHE } from './aktions-vorschau'
+import { baueMotivEintraege, holeMotiv } from './aktions-vorschau'
 import { bereiteMotiveVor } from '../template-canvas/bild-laden'
 // #413: Die Karten/Zeilen werden als Drag-QUELLEN zur Zeitleiste (#412) - der Klick-Weg
 // bleibt UNVERAENDERT (zweiter Weg, nicht der einzige). Ein DndContext holt sie erst,
@@ -272,14 +272,13 @@ interface AktionszeileEigenschaften {
  * nicht in den Rumpf einer Zeile - sonst zeichnete jeder Render neu. Das Bild selbst kommt
  * aus `aktions-vorschau.ts` (Speicher + Verkleinerung); hier wird es nur eingesetzt.
  */
-/** Breite, die ein Motiv in der Zeile hoechstens einnimmt (neben dem Titel). */
-const MOTIV_ANZEIGE_MAX = 96
-
 function Aktionsbild(p: {
   aktion: Aktion
   vorlage?: Vorlage
   marke: Marke | null
   bereit: number
+  /** `voll` = eigene Zeile in voller Breite (Band), eine Zahl = neben dem Titel. */
+  breite: number | 'voll'
 }): JSX.Element {
   const flaeche = useRef<HTMLCanvasElement | null>(null)
   useEffect(() => {
@@ -287,16 +286,12 @@ function Aktionsbild(p: {
     if (ziel === null || p.vorlage === undefined || p.marke === null) return
     const klein = holeMotiv(p.aktion, p.vorlage, p.marke)
     if (klein === null) return
+    // Nur die ECHTE Bildgroesse setzen - die Anzeige regelt das CSS ueber `width` und
+    // `height: auto`. Fuer ein Canvas als ersetztes Element bleibt damit das
+    // Seitenverhaeltnis erhalten: ein Band (11,85:1) wird flach, nicht gequetscht.
     ziel.width = klein.width
     ziel.height = klein.height
     ziel.getContext('2d')?.drawImage(klein, 0, 0)
-    // ANZEIGEGROESSE AUS DEM SEITENVERHAELTNIS (02.11.2026, am Fenster gemessen):
-    // Ein Band ist 1920x162, also 11,85:1 - eine feste Box von 71x40 haette es
-    // zusammengequetscht. Die Breite ist gedeckelt, damit das Motiv in die Spalte passt;
-    // die Hoehe folgt daraus. Ein Band wird dadurch flach - das ist, was ein Band ist.
-    const anzeigeBreite = Math.min(klein.width, MOTIV_ANZEIGE_MAX)
-    ziel.style.width = `${anzeigeBreite}px`
-    ziel.style.height = `${Math.max(1, Math.round((anzeigeBreite / klein.width) * klein.height))}px`
   }, [p.aktion, p.vorlage, p.marke, p.bereit])
 
   return (
@@ -306,9 +301,10 @@ function Aktionsbild(p: {
       // Ohne gezeichnetes Bild bleibt eine dunkle Flaeche - kein Ersatzbild, das eine
       // Vorschau behauptet, die es nicht gibt.
       style={{
+        display: 'block',
         flex: '0 0 auto',
-        width: MOTIV_ANZEIGE_MAX,
-        height: MOTIV_HOEHE,
+        width: p.breite === 'voll' ? '100%' : p.breite,
+        height: 'auto',
         borderRadius: 3,
         background: '#0d0d10',
         border: '1px solid #34343c',
@@ -321,6 +317,8 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
   // #413/#417: Die AKTIONS-Zeile ist die (einzige) Drag-QUELLE der Kernachse - die
   // User-Weisung 15.10.2026 stellt klar: der Drag in die Zeitleiste ist fuer AKTIONEN
   // gedacht, nicht fuer Bilder/Videos. `referenz` ist die aktionId (#123/#411).
+  // Die Form der Vorlage entscheidet das Layout: null = Ganzbild, Zahl = Band.
+  const istBand = p.vorlage !== undefined && p.vorlage.höhe !== null
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `quelle-aktion-${p.eintrag.aktion.id}`,
     data: { referenz: p.eintrag.aktion.id },
@@ -348,13 +346,29 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
           background: '#1c1c21',
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+        {/* 02.11.2026: ZWEI FORMEN, ZWEI LAYOUTS. Ein Band ist 11,85:1 - neben dem Titel
+            waere es 8 px hoch und unlesbar. Es bekommt deshalb eine EIGENE Zeile in voller
+            Breite (dort sind Logo, Ueberschrift und Preis als Flecken erkennbar). Ein
+            Ganzbild (16:9) steht neben dem Titel, da ist der Titel lesbar. */}
+        {istBand && (
           <Aktionsbild
             aktion={p.eintrag.aktion}
             vorlage={p.vorlage}
             marke={p.marke ?? null}
             bereit={p.motivBereit ?? 0}
+            breite="voll"
           />
+        )}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          {!istBand && (
+            <Aktionsbild
+              aktion={p.eintrag.aktion}
+              vorlage={p.vorlage}
+              marke={p.marke ?? null}
+              bereit={p.motivBereit ?? 0}
+              breite={71}
+            />
+          )}
           <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: '1 1 auto' }}>
             <span
               style={{

@@ -443,3 +443,50 @@ describe("Rueckverweis: laeuft bei (Aktionszeile, 02.11.2026)", () => {
     );
   });
 });
+
+// 02.11.2026: Zwei Formen, zwei Layouts. Ein Band (11,85:1) bekommt eine EIGENE Zeile in
+// voller Breite; ein Ganzbild (16:9) steht neben dem Titel. Geprueft wird das Layout am
+// DOM - ob wirklich gezeichnet wurde, kann jsdom nicht zeigen (kein 2d-Canvas), das
+// misst der Treiber am Fenster.
+describe("Motiv-Layout nach Form der Vorlage (02.11.2026)", () => {
+  let host: HTMLElement;
+  let root: Root;
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  const mitVorlage = (hoehe: number | null) =>
+    eigenschaften({
+      projekt: projekt({ id: "p1", aktionen: [aktion({ id: "k1" })] }),
+      vorlagen: [{ id: "v1", name: "Probe", höhe: hoehe, parent: null, eingebaut: true, zonen: [] }],
+      holeMarke: () => null,
+    });
+
+  it("Band: das Motiv steht in VOLLER Breite", () => {
+    act(() => {
+      root.render(createElement(Bibliotheksansicht, mitVorlage(162)));
+    });
+    const bild = host.querySelector<HTMLCanvasElement>("[data-testid='aktion-bild-k1']");
+    expect(bild).not.toBeNull();
+    expect(bild?.style.width).toBe("100%");
+  });
+
+  it("Ganzbild: das Motiv steht neben dem Titel in fester Breite", () => {
+    act(() => {
+      root.render(createElement(Bibliotheksansicht, mitVorlage(null)));
+    });
+    const bild = host.querySelector<HTMLCanvasElement>("[data-testid='aktion-bild-k1']");
+    expect(bild).not.toBeNull();
+    expect(bild?.style.width).toBe("71px");
+  });
+});
