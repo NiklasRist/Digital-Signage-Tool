@@ -540,3 +540,51 @@ Flecken erkennbar; ein Ganzbild bleibt **neben dem Titel** (71 × 40), wo der Ti
 Beide behalten ihr Seitenverhaeltnis: die Anzeige kommt aus dem CSS (`width` + `height: auto`),
 nicht aus gerechneten Pixeln. **Keine Verzerrung, kein Beschnitt.** Der Text im Band ist bei
 18 px nicht lesbar — das ist die ehrliche Grenze und steht so in der Abnahme.
+
+## 19. SIDEPANEL, SCHRITT 3: EIGENSCHAFTEN — UND DER TREIBER IST SAUBER (`93c3343`, `921f3a1`)
+
+**„Eigenschaften" ist an die Auswahl gebunden.** Die Ansicht baut **keine zweite Bedienung**:
+sie montiert `ElementBedienung` aus #249, die bisher nur in der **versteckten** Wiedergabeliste
+lag und damit unerreichbar war.
+
+- **`eigenschaften.ts`** (rein): die **Folge** eines Blocks — Gesamtlaenge, Bandwiederholungen,
+  Startstelle. Alles aus bestehenden Rechnungen (`gesamtlaenge`, `zeitband`, `verwendungen`);
+  was fehlt, steht als „unbekannt" da und wird nicht erfunden.
+- **`eigenschaften-ansicht.tsx`**: Kopf (Bezeichnung, „Block n von m"), Folge, dann die
+  bestehende Bedienung. Ohne Auswahl sagt sie, was zu tun ist; bei Mehrfachauswahl nennt sie
+  den ersten; ein verschwundener Block sagt das statt zu werfen.
+
+### Der Befund ist WEG — nicht dokumentiert, behoben
+
+Der Treiber geht den Band-Weg jetzt **wie ein Nutzer**: Block in der Zeitleiste waehlen,
+Ansicht „Eigenschaften", dort „Band". Ergebnis:
+
+```
+[schritt-4f6] Bandliste: wahl=ok; Zeilen 0->1; uebernehmen=true;
+               Store: einblendung.abschnitte = 1 Abschnitt
+[schritt-4f6] Einfuegeweg GEMESSEN ... (#453 belegt)
+[schritt-4f6] Verwendung nach dem Band: ["Band ab 0:00"]
+```
+
+### Auch die zwei Untersuchungen sind Messungen geworden (`921f3a1`)
+
+| Eintrag | vorher | jetzt |
+|---|---|---|
+| **Dauer der MP4** | las `wiedergabeliste-laenge` in der versteckten Liste → `null` | liest die Gesamtdauer aus der **Statistik** → `"0:12" (12 s)` |
+| **Dauer/Trim-Undo** | las `element-dauer` in der versteckten Liste → `null` | Block waehlen → „Eigenschaften" → `"2,0 s" -> "1,1 s" -> Undo "2,0 s"`, **GEMESSEN** (#429) |
+
+**TREIBER-STAND: 0 Befunde, 0 Untersuchungen, 1 MANUELL** (nativer Export-Dialog,
+User-Entscheidung 13.10.2026 — der bleibt MANUELL, weil der Treiber einen nativen Dialog
+weder bedienen noch mocken soll).
+
+**VOLLER PRUEFLAUF `npm run pruefung` — EXIT 0:** Unit **5417/5417** (358 Dateien),
+Integration **50/50** (13 Dateien), Treiber **0 Befunde**, Typecheck 0, ESLint 0 Fehler/0
+Warnungen.
+
+**Ehrlich offen:** Im ERSTEN Gesamtlauf fiel `einzel-instanz.spec.ts` (#289, Last-Flaky ueber
+eine Signaldatei); einzeln dreimal 7/7 gruen, im zweiten Gesamtlauf gruen. Nicht behoben,
+aber benannt.
+
+**Naechster Schritt:** Im Konzept (Abschnitt 10) stehen noch **`Ins Video` als Knopf** und
+**Preset beim Anlegen** — die Aufwand-Senker. Danach die **Effekte** (Band faehrt ein/aus,
+Motiv atmet, Uebergang statt hartem Schnitt).
