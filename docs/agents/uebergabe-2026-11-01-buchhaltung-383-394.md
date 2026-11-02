@@ -534,6 +534,9 @@ was ein Band ist.
 **Belegt:** Typecheck 0, ESLint 0, Unit **5404/5404**; Treiber **1 Befund** (Bandliste) — beide
 Motive im Fenster **gezeichnet** (`motivBreite 474 / 71`).
 
-**OFFEN (Niklas):** Ein Band-Motiv ist bei 8 px Hoehe kaum lesbar; es zeigt vor allem „das ist
-ein Band". Groesser waere nur ueber Verzerrung oder Beschnitt — beides eine Lüge ueber das
-Motiv. **Entscheidung noetig, ob das reicht.**
+**ENTSCHIEDEN UND GEBAUT (`bcc1673`): ZWEI FORMEN, ZWEI LAYOUTS.** Ein Band bekommt eine
+**eigene Zeile in voller Breite** (216 × 18) — dort sind Logo, Ueberschrift und Preis als
+Flecken erkennbar; ein Ganzbild bleibt **neben dem Titel** (71 × 40), wo der Titel lesbar ist.
+Beide behalten ihr Seitenverhaeltnis: die Anzeige kommt aus dem CSS (`width` + `height: auto`),
+nicht aus gerechneten Pixeln. **Keine Verzerrung, kein Beschnitt.** Der Text im Band ist bei
+18 px nicht lesbar — das ist die ehrliche Grenze und steht so in der Abnahme.
