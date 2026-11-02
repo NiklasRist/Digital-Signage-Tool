@@ -351,7 +351,6 @@ Sitzung nicht sauber laufen** — der Rechner stand bei Last 13–30 (I/O-Stau, 
   und Bearbeiten eines Elements) — **gemeinsam**, nicht allein gebaut.
 
 ## 15. Seitenpanel: Ist-Stand, Lücken, Streichliste (02.11.2026)
-
 **Volltext: [`seitenpanel-konzept.md`](seitenpanel-konzept.md).** Konzeptentwurf, **nichts gebaut.**
 Die Entscheidung in Abschnitt 5 ist **OFFEN**.
 
@@ -380,3 +379,52 @@ Die Entscheidung in Abschnitt 5 ist **OFFEN**.
 
 
 
+
+## 16. DIE MESSLATTE FÜR DAS PANEL (Niklas, 02.11.2026) — gilt vor allen Einzelheiten
+
+> „es muss besser sein für produktwerbung als powerpoint und am besten schneller vom aufwand
+> her und das ist es nicht"
+>
+> „es ist einfach wichtig dass du das verstehst weil sonst verstehst du nicht was das panel soll"
+
+**Diese zwei Bedingungen sind der Zweck des Panels.** Wer das Panel als Ablage für drei Listen
+baut, hat die Aufgabe nicht verstanden. Es muss den Werbebau **schneller** machen als
+PowerPoint **und** besser für Produktwerbung.
+
+**Worin das Werkzeug PowerPoint schlägt — und was dabei heute verschenkt wird:**
+
+- Das Band **wiederholt sich von selbst** durch das ganze Video, frame-genau (30 fps),
+  markengebunden. In PowerPoint kopiert man dafür die Folie zwanzigmal.
+- **Zeit ist ein Gegenstand des Werkzeugs**, keine Eigenschaft einer Folie. Deshalb sitzt das
+  Panel **neben der Zeitleiste**: Inhalt (was läuft) und Zeit (wann, wie lange) liegen im
+  selben Blickfeld. PowerPoint hat diesen Ort nicht.
+
+**Warum es heute trotzdem LANGSAMER ist als PowerPoint (fünf Ursachen, alle im Code):**
+
+1. **Draggen statt Klicken** — bei 800 px ist das Einfügeziel wenige Pixel breit.
+2. **Jede Aktion wird von Hand gebaut** — kein Preset, keine Kopie.
+3. **Zwei Aktionen sind ohne Öffnen nicht unterscheidbar** — kein Bild in der Liste.
+4. **Die Folge einer Änderung ist unsichtbar** — Gesamtdauer, Bandwiederholungen, Startzeit.
+5. **Das Ergebnis zeigt sich erst nach dem Rendern.**
+
+**Daraus folgt für die drei Ansichten des Panels:**
+
+- **Aktionen** = Regal, nicht Verwaltung: jede Zeile mit **Bild** (die Maschinerie ist da), mit
+  **„läuft bei 0:12 · 3×"** (Rückverweis fehlt heute im Code, 0 Treffer) und **einem Klick
+  „ins Video"** statt Drag. Dazu **Vorlage beim Anlegen** und **Duplizieren mit neuem Preis**.
+- **Video** = Zeitbasis, nicht Datei: Länge, Auflösung, fps — und **wie viel davon belegt ist**.
+- **Eigenschaften** = Folge, nicht Wert: „10 s" wird zu **„+10 s · Gesamt 0:42 · Band 3× · ab
+  0:12"**, dazu ±1 Frame und **„an die Abspielmarke setzen"** (die Marke existiert, ist aber
+  nirgends als Bezug nutzbar).
+
+**Effekte (später, aber Teil des Versprechens).** Geprüft: Der Band-Overlay ist heute **statisch**
+(`overlay=x=0:y=<by>`, `filter-einblendung.ts:258`). Bewegung ist kein neuer Motor, sondern ein
+Parameter — `overlay` nimmt Zeitausdrücke in `t`. Klein und billig: **Band fährt ein/aus**,
+**Motiv atmet** (`zoompan`), **Übergang statt hartem Schnitt** (`fade`), **mehrere Varianten in
+einem Lauf**.
+**Ehrliche Grenze:** Das Band ist EIN gerendertes Standbild (`standbild.ts`). Bewegung *im* Band
+heißt Bildfolge rendern — teuer. Das Band als Ganzes zu bewegen ist billig, seinen Inhalt zu
+animieren nicht.
+
+**Nächster Schritt bleibt:** Leiste + Panel, drei Ansichten — aber jede Ansicht wird nach DIESER
+Messlatte geschnitten, nicht nach dem, was heute in der Rail steht.
