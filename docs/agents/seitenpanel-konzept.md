@@ -259,3 +259,72 @@ Vorschau an der Abspielmarke statt erst nach dem Rendern.
 
 
 
+
+---
+
+## 10. WAS IN DAS PANEL MUSS — wie und warum (Stand 02.11.2026)
+
+Nicht das ganze Panel planen: **nur der Inhalt**, je Element mit *wie* und *warum*, und die
+**Lücken** offen benennen. Der Filter aus 16a gilt: schneller **oder** sehr viel besser.
+
+### Die Leiste
+
+| Element | wie | warum |
+|---|---|---|
+| Drei Symbole + Umschalter | senkrechte Spalte, aktives Symbol gefüllt; Klick aufs aktive Symbol klappt das Panel zu | **schneller**: Ansicht wechseln, ohne die Bühne zu verlieren. Heute scrollt die Rail, weil Video + Aktionen + Statistik nicht zusammen passen |
+
+**Lücke L-A:** Breite der Leiste und des Panels ist ungemessen. Vorschlag 44 px Leiste; Panel
+so breit, dass „+10 s · Gesamt 0:42 · Band 3×" in EINE Zeile passt.
+
+### Ansicht „Video" — die Zeitbasis
+
+| Element | wie | warum |
+|---|---|---|
+| Quelle | Originalname, **Länge (0:30)**, **1920 × 1080**, 30 fps | **sehr viel besser**: PowerPoint hat keine Zeitbasis. Die Werte stehen schon im Vertrag (`Asset.dauer`, `Asset.maße`) — sie werden nur nirgends gezeigt |
+| Belegung | „0:30 Video · 0:42 Projekt · Band deckt 0:30 ab" | **sehr viel besser**: man sieht vor dem Rendern, ob das Band zu kurz ist |
+| Import · Löschen | wie heute | *Voraussetzung*, kein Filterkandidat |
+
+### Ansicht „Aktionen" — das Regal
+
+| Element | wie | warum |
+|---|---|---|
+| Zeile mit **Bild** | gerendertes Motiv als Vorschau (Mechanik: `composer/thumbnails.ts` kann canvas/url/fehlt) | **schneller**: zwei Aktionen vergleichen, ohne beide zu öffnen |
+| **„läuft bei 0:12 · 3×"** | eine Zeile unter dem Titel, klickbar → springt an die Stelle | **sehr viel besser**: den Rückverweis gibt es heute **nicht** (0 Treffer im Code) |
+| **„Ins Video"** | Knopf an der Zeile, legt sie nach der bestehenden Regel an (Band bzw. Unterbrechung) | **schneller** als der Drag auf wenige Pixel |
+| **Anlegen mit Preset** | „+ Neue Aktion" öffnet mit Vorlage, Marke und Dauer vorbelegt | **schneller** |
+| **Duplizieren** | Kopie mit neuem Titel/Preis | **schneller** |
+| Bearbeiten · Löschen | wie heute | *Voraussetzung* |
+
+**Lücke L-B:** Der Rückverweis ist reine Rechnung über `liste[].einblendung.abschnitte` und
+`liste[].unterbrechungen` — klein, aber neu.
+**Lücke L-C:** Ob `thumbnails.ts` ein AKTIONS-Motiv liefert oder nur Videobilder, ist **nicht
+geprüft**. Vor dem Bau messen, sonst wird eine Vorschau versprochen, die es nicht gibt.
+
+### Ansicht „Eigenschaften" — die Folge
+
+| Element | wie | warum |
+|---|---|---|
+| Kopf | „Aktion X · Block 3 von 5" | **schneller**: man weiß, was man gerade ändert |
+| **Folge** | „+10 s · **Gesamt 0:42** · Band **3×** · ab 0:12" | **sehr viel besser**: die Zahlen sind berechnet (`gesamtlaenge`, `baueBandspur.wiederholungen`), aber heute als `x3` in 8 px versteckt |
+| Dauer | Regler + **±1 Frame** + **„an die Abspielmarke"** | **sehr viel besser**: frame-genau; die Marke existiert, ist aber nirgends als Bezug nutzbar |
+| Trim | wie heute (Griffe) | *Voraussetzung* |
+| Unterbrechungen | Liste mit Zeitstelle und × | *Voraussetzung* |
+| **Bandliste** | öffnet das Overlay | *Voraussetzung* — heute **unerreichbar** (der offene Treiber-Befund) |
+| Entfernen | wie heute | *Voraussetzung* |
+
+**Lücke L-D:** Die Bindung an die **Auswahl** ist die offene Frage aus Abschnitt 8.
+**Lücke L-E:** „an die Abspielmarke" braucht einen Schreibweg für Dauer/Trim — vorhanden ist er
+für Unterbrechungen (`verschiebeUnterbrechungAmVideo`).
+
+### Was NICHT hineinkommt
+
+Statistik („Elemente 2 · Videos 1 · Segmente 1") · der Umschalter Zeitleiste/Liste · die
+Wiedergabeliste als eigene Ansicht · eine „Reihenfolge"-Ansicht.
+
+### Was zuerst gebaut werden muss (Reihenfolge)
+
+1. **Leiste + Panel-Shell + Umschalten** — keine Abhängigkeit, sofort messbar (L-A).
+2. **Rückverweis „läuft bei …"** — reine Rechnung (L-B), und die Aktionen-Ansicht braucht ihn.
+3. **Eigenschaften an die Auswahl** — Auswahl existiert (`auswahl.ids`).
+4. **Bild in der Liste** — erst nach L-C.
+5. **„Ins Video"** und **Preset** — Aufwand-Senker, brauchen 1–3 nicht.
