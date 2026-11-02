@@ -33,6 +33,13 @@ Abschnitte 12–15.**
   [`docs/agents/seitenpanel-konzept.md`](docs/agents/seitenpanel-konzept.md), **nichts gebaut**.
   **Niklas entscheidet:** A (Panel schiebt) oder B (Panel liegt darüber), und ob der Inspector an
   die Auswahl gekoppelt ist.
+- **ENTSCHEIDEN IST ENTSCHIEDEN (02.11.2026): Panel und Rail sind DASSELBE** — ein Sidepanel
+  links, nach VS-Code-Muster: eine **senkrechte Leiste**, die zwischen Ansichten wechselt
+  (Video · Aktionen · Eigenschaften) und das Panel zu-/aufklappt. Breite wird **nicht gezogen**.
+- **DIE MESSLATTE (Abschnitt 16 der Sitzungsübergabe) — vor allem anderen lesen:**
+  Das Panel muss den Werbebau **schneller machen als PowerPoint und besser für Produktwerbung**.
+  Heute ist es langsamer. Wer das Panel als Ablage für drei Listen baut, hat die Aufgabe nicht
+  verstanden.
 - **Nicht gepusht:** `d379289` und `6e48265`. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (01.11.2026, sechsunddreissigste Sitzung: Buchhaltung #383–#394, Aktionen-Auswahl, Loesch-Sperrgruende) – gilt vor ALLEM weiter unten
