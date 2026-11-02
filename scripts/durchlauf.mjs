@@ -172,6 +172,18 @@ const main = async () => {
       catch { return false; }
     };
     const stehtDa = async (auswahl) => (await seite.$$(auswahl)).length > 0;
+    // 02.11.2026 (Sidepanel): Die Bibliothek zeigt immer nur EINE Ansicht - der Treiber
+    // waehlt sie wie der Nutzer, ueber die Leiste. Ein Klick auf die BEREITS offene
+    // Ansicht wuerde ZUKLAPPEN, deshalb wird der Zustand vorher gelesen.
+    const zeigeAnsicht = async (name) => {
+      const offen = await seite.evaluate((n) => {
+        const k = document.querySelector(`[data-testid="sidepanel-ansicht-${n}"]`);
+        return k === null ? null : k.getAttribute("aria-pressed") === "true";
+      }, name);
+      if (offen === null) return false;
+      if (!offen) await klick(`[data-testid="sidepanel-ansicht-${name}"]`);
+      return true;
+    };
     // Projekt ueber die LISTE neu oeffnen (der einzige Weg, der den Reconcile ausloest).
     // Auf die Zeile WARTEN statt 400 ms zu raten: Unter Last ist die Liste noch nicht
     // gerendert, der Klick liefe ins Leere und das Fenster behielte den ALTEN Stand
@@ -312,6 +324,7 @@ const main = async () => {
     // Schritt 3 - Zusammenstellen: Zeitleiste (PRIMÄR seit #414, Weiche B), Ausgaben,
     // Dialog-Mounts (#342). Die #248-Wiedergabeliste liegt hinter dem Umschalter.
     await klick('[data-testid="reiter-zusammenstellen"]');
+    await zeigeAnsicht("aktionen");
     await schlafe(600);
     // #424: Die Undo/Redo-Pfeile sitzen in der Reiterleiste der Shell.
     if (await stehtDa('[data-testid="undo-pfeil"]')) {
@@ -1972,6 +1985,7 @@ const main = async () => {
           }, id4n);
           console.log(`[schritt-4n] Aufraeumen: loeschen=${JSON.stringify(weg4n)}.`);
           await klick('[data-testid="reiter-zusammenstellen"]');
+          await zeigeAnsicht("aktionen");
           await schlafe(300);
         }
       }
@@ -2064,6 +2078,7 @@ const main = async () => {
           console.log(`[schritt-4r] Aufraeumen: loeschen=${JSON.stringify(weg4r)}.`);
         }
         await klick('[data-testid="reiter-zusammenstellen"]');
+        await zeigeAnsicht("aktionen");
         await schlafe(300);
       }
     }
@@ -2089,6 +2104,7 @@ const main = async () => {
         // Auf den Reiter Zusammenstellen wechseln: Aktionen-Bibliothek und Wiedergabeliste
       // leben dort; im Projekte-Reiter ist die composer-Wurzel inaktiv.
       await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
       await schlafe(700);
       const seed = await seite.evaluate(async (pfad, projektId) => {
           const alle = window.__durchlauf.kanaele;
@@ -2115,6 +2131,7 @@ const main = async () => {
         // 01.11.2026: Die Galerie ist als Flaeche entfallen (Aktionen in die Mitte) -
         // gemessen wird die VIDEO-ZEILE der Bibliothek, dieselbe Aussage (das Asset
         // steht in der Bibliothek).
+        await zeigeAnsicht("video");
         const eintrag = await seite.evaluate(() => new Promise((f) => {
           const start = Date.now();
           const nachsehen = () => {
@@ -2195,6 +2212,7 @@ const main = async () => {
         // und laeuft der Transport? Gemessen werden die Buehnen-Maße (der #414-Kandidat
         // "Buehne kollabiert") und der Play-Weg (currentTime + Uhr-Frame).
         await klick('[data-testid="reiter-zusammenstellen"]');
+        await zeigeAnsicht("video");
         await schlafe(600);
         const buehneDiag = await seite.evaluate(() => {
           const kasten = document.querySelector('[data-testid="buehne-kasten"]');
@@ -2450,6 +2468,7 @@ const main = async () => {
             fund("Video ersetzen (FA-01)", "genau EIN Video vor dem Ersetzen",
               `${videoVor4b7.length} Video-Element(e)`, "Untersuchung", "composer/index.tsx");
           } else {
+            await zeigeAnsicht("video");
             const frage4b7 = await seite.evaluate(() => {
               document.querySelector('[data-testid="composer-medien-import"]')?.click();
               return true;
@@ -2589,6 +2608,7 @@ const main = async () => {
             }, aktivesProjektId);
             await schlafe(2_500);
             await klick('[data-testid="reiter-zusammenstellen"]');
+            await zeigeAnsicht("aktionen");
             await schlafe(800);
 
             // Auf einen Frame IM Einschub springen: Zeitstelle 1 s = Frame 30, Einschub [30, 60).
@@ -2661,6 +2681,7 @@ const main = async () => {
     // (Video | Aktion | Video, #442); sein × entfernt ihn; Aufnahme UND Entfernen sind
     // je EIN Undo.
     await klick('[data-testid="reiter-zusammenstellen"]');
+    await zeigeAnsicht("aktionen");
     await schlafe(700);
     const projektDatei4b6 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
     let basis4b6 = null;
@@ -2706,9 +2727,11 @@ const main = async () => {
         }, aktivesProjektId);
         await schlafe(2_500);
         await klick('[data-testid="reiter-zusammenstellen"]');
+        await zeigeAnsicht("aktionen");
         await schlafe(700);
 
         // Die vollflaechige Aktionszeile finden, in den sichtbaren Bereich holen, messen.
+        await zeigeAnsicht("aktionen");
         await seite.evaluate(() => {
           const zeilen = [...document.querySelectorAll('[data-testid="aktionen-liste"] [data-testid^="aktion-"]')];
           const z = zeilen.find((e) => e.textContent.includes("Durchlauf-Unterbrechung"));
@@ -2842,6 +2865,7 @@ const main = async () => {
     // SICHT (inhalt) - und #407 meldet, dass direkte D1-Mutationen die Sicht nicht
     // erreichen. Der Lauf erzwinge nichts; er misst, was im echten Fenster passiert.
     await klick('[data-testid="reiter-zusammenstellen"]');
+    await zeigeAnsicht("aktionen");
     await schlafe(600);
     const renderLaufName = "durchlauf-render-" + Date.now();
     if (!(await klick('[data-testid="composer-render-oefnen"]'))) {
@@ -3120,6 +3144,7 @@ const main = async () => {
         // ueber ihren echten Knopf an die Liste haengen.
         await oeffneUeberListe(aktivesProjektId);
         await klick('[data-testid="reiter-zusammenstellen"]');
+        await zeigeAnsicht("aktionen");
         await schlafe(800);
         const hinzu4f5 = await seite.evaluate((id) => {
           const zeile = document.querySelector(`[data-testid="aktion-${id}"]`);
@@ -3483,6 +3508,7 @@ const main = async () => {
     console.log(`[schritt-4f] Projekt neu geoeffnet: ${neuGeoeffnet417}`);
     await schlafe(2_500);
     await klick('[data-testid="reiter-zusammenstellen"]');
+    await zeigeAnsicht("aktionen");
     await schlafe(700);
     const aktionDa417 = await seite.evaluate(
       () => !!document.querySelector('[data-testid="aktionen-liste"] [data-testid^="aktion-"]'),
@@ -3645,6 +3671,7 @@ const main = async () => {
     // der Video-Block data-band-ziel="true". Danach: Cmd+Z nimmt den Einschub in EINEM
     // Schritt zurueck.
     await klick('[data-testid="reiter-zusammenstellen"]');
+    await zeigeAnsicht("aktionen");
     await schlafe(600);
     const videoBlock4f2 = await seite.$('[data-testid="zeitleiste-block-0"]');
     const videoBlockBox4f2 = videoBlock4f2 === null ? null : await videoBlock4f2.boundingBox();
@@ -3758,6 +3785,7 @@ const main = async () => {
     // Cmd+Z) und messen, dass die Liste schrumpft; danach Redo und messen, dass sie
     // wieder waechst. Am Ende zuruecknehmen, damit der Zustand fuer 4g/4h gleich bleibt.
     await klick('[data-testid="reiter-zusammenstellen"]');
+    await zeigeAnsicht("aktionen");
     await schlafe(600);
     const bloeckeVor4f3 = await seite.evaluate(
       () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
@@ -3859,6 +3887,8 @@ const main = async () => {
         return {
           fenster: { w: window.innerWidth, h: window.innerHeight },
           rail: masse('composer-rail'),
+          sidepanel: masse('sidepanel'),
+          leiste: masse('sidepanel-leiste'),
           buehne,
           zeitleiste,
           // "gleich lang" (Niklas, 01.11.2026): gleiche linke Kante UND gleiche Breite.
@@ -3890,6 +3920,35 @@ const main = async () => {
       // BELEG FUER DIE DESIGNARBEIT (01.11.2026): "designmaessig sieht das nicht
       // professionell aus" (Niklas). Der Treiber haelt den Composer als Bild fest,
       // damit ueber Optik am echten Fenster geredet wird und nicht an Kästchen.
+      // SIDEPANEL (02.11.2026): Zuklappen muss der Hauptspalte die Breite geben.
+      // Gemessen wird beides - zu und wieder auf -, weil ein liegengebliebener
+      // Zuklapp-Zustand jeden spaeteren Schritt verfaelschen wuerde.
+      {
+        const hauptBreite = () =>
+          seite.evaluate(() => {
+            const r = document.querySelector('[data-testid="composer-haupt"]');
+            return r === null ? null : Math.round(r.getBoundingClientRect().width);
+          });
+        const vorher = await hauptBreite();
+        const zu = await klick('[data-testid="sidepanel-zuklappen"]');
+        await schlafe(400);
+        const nachher = await hauptBreite();
+        const railWeg = await seite.evaluate(
+          () => document.querySelector('[data-testid="composer-rail"]') === null,
+        );
+        const auf = await klick('[data-testid="sidepanel-zuklappen"]');
+        await schlafe(400);
+        const wieder = await hauptBreite();
+        console.log(
+          `[schritt-4f4] Sidepanel: Hauptspalte ${String(vorher)} -> zu ${String(nachher)} (Rail weg: ${String(railWeg)}) -> auf ${String(wieder)}`,
+        );
+        if (!zu || !auf || !railWeg || vorher === null || nachher === null || nachher <= vorher || wieder === null || Math.abs(wieder - vorher) > 1) {
+          fund("Sidepanel", "zugeklappt gibt der Buehne die Breite der Spalte, aufklappen stellt sie wieder her",
+            `Hauptspalte ${String(vorher)} -> ${String(nachher)} -> ${String(wieder)}, Rail weg: ${String(railWeg)}`,
+            "Befund", "composer/seitenleiste.tsx");
+        }
+      }
+
       await seite.screenshot({ path: "/tmp/kai-ui-composer.png" });
       const dauerVor4f4 = await seite.evaluate(
         () => document.querySelector('[data-testid="element-dauer"]')?.textContent ?? null,
@@ -4084,6 +4143,7 @@ const main = async () => {
     // Uebernehmen), der harte Beleg ist project.json.
     {
       await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
       await schlafe(500);
       const videoId4f6 = await seite.evaluate(
         () => document.querySelector('[data-testid="zeitleiste-block-0"]')?.getAttribute("data-element-id") ?? null,
@@ -4265,6 +4325,7 @@ const main = async () => {
     // Reiterwechsel. Titel eintippen, Vorlage waehlen, Knopf druecken - der Eintrag
     // muss SOFORT in der Aktionen-Liste der Bibliothek stehen.
     await klick('[data-testid="reiter-zusammenstellen"]');
+    await zeigeAnsicht("aktionen");
     await schlafe(600);
     const aktionenDavor4g = await seite.evaluate(
       () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
@@ -4344,6 +4405,7 @@ const main = async () => {
     // Bibliothek: nach dem Undo-Pfeil muss die neu angelegte Aktion verschwinden.
     {
       await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
       await schlafe(500);
       const aktionenVorUndo4g2 = await seite.evaluate(
         () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
@@ -4373,6 +4435,7 @@ const main = async () => {
     // der Schritt ist in EINEM Zug rueckgaengig zu machen.
     {
       await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
       await schlafe(500);
       const vor4g4 = await seite.evaluate(
         () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
@@ -4535,6 +4598,7 @@ const main = async () => {
       } else {
         // 4g3 endet im Reiter Aktionen - die Zeitleiste lebt in "Zusammenstellen".
         await klick('[data-testid="reiter-zusammenstellen"]');
+        await zeigeAnsicht("aktionen");
         await schlafe(600);
         const blockKlick4g5 = await klick('[data-testid="zeitleiste-block-0"]');
         await seite.keyboard.down("Shift");
@@ -4584,6 +4648,7 @@ const main = async () => {
     // Play-Knopf liegt im Overlay (#443) und wird erst nach dem Hover bedienbar.
     {
       await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
       await schlafe(600);
       const zeigeBedienleiste4f7 = async () => {
         const mitte = await seite.evaluate(() => {
@@ -4776,6 +4841,7 @@ const main = async () => {
     // Reiter bleiben montiert und nur verdeckt (TK 9.14.2), "Zurueck" gibt sie frei.
     {
       await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
       await schlafe(600);
       const gestartet4g6 = await seite.evaluate(() => {
         const knopf = document.querySelector('[data-testid^="aktion-bearbeiten-"]');
@@ -4880,6 +4946,7 @@ const main = async () => {
           fs.unlinkSync(bildDatei4i);
           await oeffneUeberListe(aktivesProjektId);
           await klick('[data-testid="reiter-zusammenstellen"]');
+          await zeigeAnsicht("aktionen");
           await schlafe(800);
           const lage4i = await seite.evaluate(() => ({
             panel: !!document.querySelector('[data-testid="reparatur-panel"]'),
@@ -4920,6 +4987,7 @@ const main = async () => {
           }
           await oeffneUeberListe(aktivesProjektId);
           await klick('[data-testid="reiter-zusammenstellen"]');
+          await zeigeAnsicht("aktionen");
           await schlafe(600);
           // Erst weiter, wenn die Reparatur-Anzeige WEG ist - sie haengt am neuen Stand.
           const fristWeg4i = Date.now() + 10_000;
@@ -4963,6 +5031,7 @@ const main = async () => {
     } else {
       await oeffneUeberListe(aktivesProjektId);
       await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
       await schlafe(800);
       // WARTEN statt raten: Das Oeffnen laeuft asynchron (Reconcile + Zeichen-
       // voraussetzungen). Erst wenn die ERWARTETE Stelle (das Video-Asset) im Panel
@@ -5077,6 +5146,7 @@ const main = async () => {
         await schlafe(400);
         const nachWechsel4j = await stehtDa('[data-testid="queue-panel"]');
         await klick('[data-testid="reiter-zusammenstellen"]');
+        await zeigeAnsicht("aktionen");
         await schlafe(400);
         if (!nachWechsel4j) {
           fund("Warteschlange", "die Leiste ueberlebt den Reiterwechsel (TK 9.14.2)",
@@ -5194,6 +5264,7 @@ const main = async () => {
             p.on("exit", (c) => (c === 0 ? f() : r(new Error("ffmpeg erzeugt kein Bild (code " + c + ")"))));
           });
 
+          await zeigeAnsicht("video");
           const zeilenDavor4k = await seite.evaluate(
             () => document.querySelectorAll('[data-testid^="medium-"]').length,
           );
@@ -5357,6 +5428,7 @@ const main = async () => {
         }
         await oeffneUeberListe(aktivesProjektId);
         await klick('[data-testid="reiter-zusammenstellen"]');
+        await zeigeAnsicht("aktionen");
         await schlafe(1_200);
         const bloecke4l = await seite.evaluate(
           () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,

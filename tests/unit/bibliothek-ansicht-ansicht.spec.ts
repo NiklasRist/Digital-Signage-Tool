@@ -320,3 +320,64 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx, #422)", () => {
     expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(1);
   });
 });
+
+// 02.11.2026 (Sidepanel): Die Leiste schaltet zwischen den Bereichen um. Ohne `bereich`
+// bleibt alles wie bisher - beide Bereiche untereinander (die Tests oben belegen das).
+describe("Bereichs-Filter der Bibliothek (Sidepanel, 02.11.2026)", () => {
+  let host: HTMLElement;
+  let root: Root;
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  const vollesProjekt = () =>
+    projekt({ id: "p1", assets: [asset({ id: "a1" })], aktionen: [aktion({ id: "k1" })] });
+
+  it("bereich 'video' zeigt NUR den Video-Bereich", () => {
+    act(() => {
+      root.render(
+        createElement(
+          Bibliotheksansicht,
+          eigenschaften({ projekt: vollesProjekt(), bereich: "video" }),
+        ),
+      );
+    });
+    expect(host.querySelector("[data-testid='video-liste']")).not.toBeNull();
+    expect(host.querySelector("[data-testid='aktionen-liste']")).toBeNull();
+    // Auch der Anlege-Weg der Aktionen gehoert nicht dazu.
+    expect(host.querySelector("[data-testid='aktion-anlegen-oeffnen']")).toBeNull();
+  });
+
+  it("bereich 'aktionen' zeigt NUR den Aktionen-Bereich", () => {
+    act(() => {
+      root.render(
+        createElement(
+          Bibliotheksansicht,
+          eigenschaften({ projekt: vollesProjekt(), bereich: "aktionen" }),
+        ),
+      );
+    });
+    expect(host.querySelector("[data-testid='aktionen-liste']")).not.toBeNull();
+    expect(host.querySelector("[data-testid='video-liste']")).toBeNull();
+    // Der Import-Knopf gehoert zum Video-Bereich.
+    expect(host.querySelector("[data-testid='composer-medien-import']")).toBeNull();
+  });
+
+  it("ohne bereich bleibt beides sichtbar (bestehende Aufrufer unveraendert)", () => {
+    act(() => {
+      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: vollesProjekt() })));
+    });
+    expect(host.querySelector("[data-testid='video-liste']")).not.toBeNull();
+    expect(host.querySelector("[data-testid='aktionen-liste']")).not.toBeNull();
+  });
+});

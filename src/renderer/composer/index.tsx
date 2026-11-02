@@ -120,6 +120,7 @@ import { oeffneMenue, schliesseMenue, type ComposerLage } from './composer-monta
 // 01.11.2026: Der Einstieg in den Aktions-Editor oeffnet eine Ansicht UEBER der
 // Reiterflaeche (gemeinsamer Speicher, wie `reiter.ts`; der Rahmen abonniert ihn).
 import { oeffneAktionenAnsicht } from '../gemeinsam/aktionen-ansicht'
+import { Seitenleiste, type PanelLage } from './seitenleiste.tsx'
 
 
 /** #416: der Anlege-Auftrag (Roheingabe + Marke). Die Wurzel baut daraus KEINEN Entwurf -
@@ -214,10 +215,6 @@ export function ComposerWurzel(p: ComposerWurzelProps): JSX.Element {
 const FEHLERFARBE = '#e5634d'
 const TAKTFARBE = '#d9a441'
 
-/** Breite der linken Rail (Bibliothek). Niklas, 01.11.2026: "die rail braucht platz" -
- *  sie nimmt Breite von Buehne UND Zeitleiste, deshalb stehen beide in derselben Spalte. */
-const RAIL_BREITE = 240
-
 /** #422: Traegt die Wiedergabeliste bereits ein Video-Element? Dann ist der naechste
  *  Import ein ERSETZEN (genau ein Video pro Projekt, User-Entscheidung 15.10.2026). */
 function hatVideoElement(projekt: Project): boolean {
@@ -277,6 +274,8 @@ export function ComposerInterna({
   // #342: DIE EINE ComposerLage (#259). Kein zweiter Zustand fuer Overlay, Meldung,
   // Ausgabename oder Exportauswahl - alles laeuft ueber die acht Uebergaenge.
   const [lage, setzeLage] = useState<ComposerLage>(() => LEERE_COMPOSER_LAGE)
+  // 02.11.2026 (Sidepanel): welche Ansicht das Panel zeigt und ob es offen ist.
+  const [panelLage, setzePanelLage] = useState<PanelLage>({ ansicht: 'video', offen: true })
   // S2 (Naht N2): der EINE Melder der Wurzel - `(code, meldung) => void`; er passt
   // direkt auf die `aufFehler`/`meldeFehler`-Rueckrufe der Bausteine.
   const meldeWurzel = wurzelMelder(setzeLage)
@@ -838,27 +837,7 @@ export function ComposerInterna({
           sie "gleich lang" (Niklas): beide beginnen an derselben linken Kante und enden
           an derselben rechten. Deshalb kommt die Buehne als Knoten herein (`buehne`). */}
       {inhalt !== null && (
-        <div
-          data-testid="composer-rail"
-          style={{
-            flex: '0 0 auto',
-            width: RAIL_BREITE,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            // Eigene Flaeche mit Rand: Ohne sie schwimmen Rail und Buehne im selben
-            // Schwarz, und das Fenster wirkt ungegliedert (am Bild beurteilt).
-            background: '#17171b',
-            border: '1px solid #2c2c34',
-            borderRadius: 8,
-            padding: 8,
-            // EIN Scrollbereich fuer die ganze Rail (nicht zwei ineinander): Sonst
-            // scrollte die Bibliothek unter ihrem eigenen Kopf weg, und das Etikett
-            // "VIDEO" verschwand beim ersten Klick (am Bild gesehen).
-            overflowY: 'auto',
-          }}
-        >
+        <Seitenleiste lage={panelLage} aufWechsel={setzePanelLage}>
           <div
             data-testid="composer-kopf"
             style={{
@@ -915,6 +894,15 @@ export function ComposerInterna({
               verarbeiteGalerieDrop(Array.from(ereignis.dataTransfer.files))
             }}
           >
+            {/* 02.11.2026 (Sidepanel): Die Ansicht „Eigenschaften" hat noch KEINEN Inhalt -
+                die Anbindung an die Auswahl ist der naechste Schritt. Bis dahin sagt sie,
+                was zu tun ist, statt leer zu bleiben (Kriterium 5 der Gestaltung). */}
+            {panelLage.ansicht === 'eigenschaften' ? (
+              <p data-testid="sidepanel-eigenschaften-leer">
+                In der Zeitleiste einen Block wählen – Dauer, Trim, Unterbrechungen und Band
+                stehen dann hier.
+              </p>
+            ) : (
             <Bibliotheksansicht
               projekt={inhalt}
               sichtSchreiber={projekt.setzeListe}
@@ -927,7 +915,9 @@ export function ComposerInterna({
               aufAktionBearbeiten={oeffneAktionenAnsicht}
               aufMediumLoeschen={meldeVideoPflicht}
               aufFehler={meldeWurzel}
+              bereich={panelLage.ansicht}
             />
+            )}
           </div>
           {/* #394: Statistik. Sie steht am FUSS der Rail und nicht mehr zwischen Handlung
               und Bibliothek - das Auge soll Handlung -> Arbeit -> Beiwerk laufen, nicht
@@ -938,7 +928,7 @@ export function ComposerInterna({
           >
             <Statistik liste={inhalt.liste} />
           </div>
-        </div>
+        </Seitenleiste>
       )}
 
       <div

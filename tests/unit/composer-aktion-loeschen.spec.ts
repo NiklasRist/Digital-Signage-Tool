@@ -127,6 +127,16 @@ describe('composer/index.tsx - Aktion loeschen (#430)', () => {
       wurzel.render(createElement(ComposerWurzel, baueEigenschaften(start) as never))
     })
 
+    // 02.11.2026 (Sidepanel): Die Aktionen stehen hinter ihrem Symbol - die Bibliothek
+    // zeigt immer nur EINE Ansicht. Der Weg des Nutzers gehoert damit in den Test.
+    const aktionenSymbol = behaelter.querySelector<HTMLButtonElement>(
+      '[data-testid="sidepanel-ansicht-aktionen"]',
+    )
+    expect(aktionenSymbol).not.toBeNull()
+    await act(async () => {
+      aktionenSymbol?.click()
+    })
+
     const knopf = behaelter.querySelector<HTMLButtonElement>('[data-testid="aktion-loeschen-a1"]')
     expect(knopf).not.toBeNull()
     await act(async () => {
@@ -149,6 +159,12 @@ describe('composer/index.tsx - Aktion loeschen (#430)', () => {
 
     await act(async () => {
       wurzel.render(createElement(ComposerWurzel, baueEigenschaften(start) as never))
+    })
+    // Sidepanel (02.11.2026): erst die Aktions-Ansicht oeffnen.
+    await act(async () => {
+      behaelter
+        .querySelector<HTMLButtonElement>('[data-testid="sidepanel-ansicht-aktionen"]')
+        ?.click()
     })
     const knopf = behaelter.querySelector<HTMLButtonElement>('[data-testid="aktion-loeschen-a1"]')
     await act(async () => {

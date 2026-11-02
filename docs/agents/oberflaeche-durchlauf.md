@@ -3179,3 +3179,64 @@ Ereignisse gesammelt: 57
 - **Untersuchung** Dauer der MP4 (FA-08): erwartet "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt", erkannt "Anzeige "null"" (Ort: composer/liste-ansicht.tsx)
 - **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert (null)" (Ort: composer/element-zeile.tsx)
 - **Befund** Einfuegeweg: erwartet "die Bandliste des Video-Elements laesst sich oeffnen (#453)", erkannt "Knopf=false, Overlay=false" (Ort: composer/element-zeile.tsx)
+
+> **UNGÜLTIG (Kai, 02.11.2026):** Die Läufe um 13:43 und 13:48 sind **Messfehler meiner
+> Treiber-Umstellung** auf das Sidepanel: Der Treiber schaltete die Panel-Ansicht an den
+> falschen Stellen (einmal zu früh auf „Aktionen", einmal zu spät auf „Video"), deshalb
+> standen Befunde wie „aktionen-liste ohne Aktionszeile" und „medium=null" im Protokoll.
+> **Der Produktcode war dabei nicht defekt.** Gültig ist der Lauf um 13:54 — er zeigt
+> dieselben vier Einträge wie vor dem Umbau.
+
+## Nachlauf vom 2026-11-02T13:43:14.627Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 56
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Dauer der MP4 (FA-08): erwartet "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt", erkannt "Anzeige "null"" (Ort: composer/liste-ansicht.tsx)
+- **Befund** Spalt-Drop: erwartet "die Aktionszeile steht nach der Saat in der Bibliothek", erkannt "aktionen-liste ohne Aktionszeile" (Ort: composer/bibliothek-ansicht.tsx)
+- **Untersuchung** Spalt-Drop: erwartet "zwei Bloecke in der Zeitleiste vor dem Drop", erkannt "1 Bloecke" (Ort: composer/index.tsx)
+- **Untersuchung** Band-Aufnahme: erwartet "Video-Block und Aktionszeile fuer den Band-Drag", erkannt "videoBox={"x":313,"y":419.609375,"height":64,"width":24}, quelle=false" (Ort: composer/index.tsx)
+- **Befund** Undo/Redo-Pfeile: erwartet "der Undo-Pfeil ist nach einer Hinzufuegung AKTIV (#424)", erkannt "undo-pfeil ist disabled" (Ort: app-shell/undo-pfeile.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert (null)" (Ort: composer/element-zeile.tsx)
+- **Befund** Einfuegeweg: erwartet "die Bandliste des Video-Elements laesst sich oeffnen (#453)", erkannt "Knopf=false, Overlay=false" (Ort: composer/element-zeile.tsx)
+- **Befund** Aktion anlegen: erwartet ""+ Neue Aktion" oeffnet das Inline-Formular der Bibliothek (#416)", erkannt "Oeffner vorhanden: false, Formular nach Klick: false" (Ort: composer/aktion-anlegen.tsx)
+- **Befund** Aktion loeschen: erwartet "Loeschen-Knopf in der Composer-Bibliothek (#430)", erkannt "kein aktion-loeschen-Knopf gefunden" (Ort: composer/bibliothek-ansicht.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+- **Befund** Abspielmarke (#457): erwartet "waehrend der Wiedergabe wandert die Marke", erkannt "Frame 30 -> 60, left 8px -> 16px, laeuft=nein" (Ort: composer/abspiel-marke.tsx)
+- **Befund** Aktions-Editor aus dem Projekteditor: erwartet "die Aktions-Zeile traegt einen Bearbeiten-Knopf", erkannt "kein Knopf im Reiter Zusammenstellen" (Ort: composer/bibliothek-ansicht.tsx)
+
+## Nachlauf vom 2026-11-02T13:48:46.586Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 56
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Import-Auswahl: erwartet "das importierte Video ist standardmaessig ausgewaehlt (#418)", erkannt "medium=null" (Ort: composer/index.tsx)
+- **Untersuchung** Dauer der MP4 (FA-08): erwartet "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt", erkannt "Anzeige "null"" (Ort: composer/liste-ansicht.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert (null)" (Ort: composer/element-zeile.tsx)
+- **Befund** Einfuegeweg: erwartet "die Bandliste des Video-Elements laesst sich oeffnen (#453)", erkannt "Knopf=false, Overlay=false" (Ort: composer/element-zeile.tsx)
+
+## Nachlauf vom 2026-11-02T13:54:25.591Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 56
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Dauer der MP4 (FA-08): erwartet "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt", erkannt "Anzeige "null"" (Ort: composer/liste-ansicht.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert (null)" (Ort: composer/element-zeile.tsx)
+- **Befund** Einfuegeweg: erwartet "die Bandliste des Video-Elements laesst sich oeffnen (#453)", erkannt "Knopf=false, Overlay=false" (Ort: composer/element-zeile.tsx)
+
+## Nachlauf vom 2026-11-02T14:01:01.446Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 57
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Dauer der MP4 (FA-08): erwartet "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt", erkannt "Anzeige "null"" (Ort: composer/liste-ansicht.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert (null)" (Ort: composer/element-zeile.tsx)
+- **Befund** Einfuegeweg: erwartet "die Bandliste des Video-Elements laesst sich oeffnen (#453)", erkannt "Knopf=false, Overlay=false" (Ort: composer/element-zeile.tsx)

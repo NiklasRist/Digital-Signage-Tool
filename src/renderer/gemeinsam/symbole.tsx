@@ -91,9 +91,42 @@ export function SymbolVerkleinern(): JSX.Element {
   )
 }
 
-/** Loeschen - Papierkorb mit Deckel und zwei Rippen. */
-export function SymbolPapierkorb(): JSX.Element {
+/** Video - das Rechteck mit zwei Filmloechern (Sidepanel-Ansicht „Video", 02.11.2026). */
+export function SymbolFilm(): JSX.Element {
   return (
+    <Piktogramm>
+      <rect x="2.2" y="4.4" width="11.6" height="7.2" rx="1" />
+      <path d="M5 4.4 V11.6" />
+      <path d="M11 4.4 V11.6" />
+    </Piktogramm>
+  )
+}
+
+/** Aktionen - drei Zeilen mit Punkt: die Bibliothek der Werbemittel. */
+export function SymbolListe(): JSX.Element {
+  return (
+    <Piktogramm>
+      <path d="M3 4.4 H13" />
+      <path d="M3 8 H13" />
+      <path d="M3 11.6 H13" />
+    </Piktogramm>
+  )
+}
+
+/** Eigenschaften - drei Regler mit Griff: die Werte des gewaehlten Blocks. */
+export function SymbolRegler(): JSX.Element {
+  return (
+    <Piktogramm>
+      <path d="M2.4 4.4 H13.6" />
+      <path d="M2.4 11.6 H13.6" />
+      <circle cx="6" cy="4.4" r="1.6" />
+      <circle cx="10.4" cy="11.6" r="1.6" />
+    </Piktogramm>
+  )
+}
+
+/** Loeschen - Papierkorb mit Deckel und zwei Rippen. */
+export function SymbolPapierkorb(): JSX.Element {  return (
     <Piktogramm>
       <path d="M2.8 4.4 H13.2" />
       <path d="M6.2 4.4 V2.8 H9.8 V4.4" />
@@ -116,6 +149,10 @@ export interface SymbolKnopfProps {
   abgeschaltet?: boolean
   /** Kantenlaenge des Knopfes in px. Standard 20: passt in die 22-px-Projektleiste. */
   groesse?: number
+  /** Untergrund, auf dem der Knopf liegt. `hell` (Vorgabe) ist die Projektleiste,
+   *  `dunkel` die Sidepanel-Leiste (02.11.2026) - dort waere ein schwarzer Hover
+   *  unsichtbar, deshalb ein heller. */
+  ton?: 'hell' | 'dunkel'
   children: ReactNode
 }
 
@@ -129,6 +166,11 @@ export function SymbolKnopf(p: SymbolKnopfProps): JSX.Element {
   const [fokus, setFokus] = useState(false)
   const ab = p.abgeschaltet === true
   const kante = p.groesse ?? 20
+  const dunkel = p.ton === 'dunkel'
+  // 02.11.2026: Der GEDRUECKTE Zustand muss sichtbar sein. `basis.css` stylt
+  // `button[aria-pressed="true"]`, aber der Inline-Hintergrund unten gewinnt immer -
+  // die Regel kam hier nie an (am Bild gesehen: die Leiste zeigte keine aktive Ansicht).
+  const gedrueckt = p.gedrueckt === true
 
   return (
     <button
@@ -154,8 +196,16 @@ export function SymbolKnopf(p: SymbolKnopfProps): JSX.Element {
         borderRadius: 4,
         // Die Leisten sind hell (die App setzt keine Dunkel-Palette). Ein Hover mit
         // Schwarzanteil bleibt deshalb in BEIDEN Faellen sichtbar.
-        background: zeigt && !ab ? 'rgba(0, 0, 0, 0.08)' : 'transparent',
-        color: 'inherit',
+        background: gedrueckt
+          ? 'var(--akzent)'
+          : zeigt && !ab
+            ? dunkel
+              ? 'rgba(255, 255, 255, 0.10)'
+              : 'rgba(0, 0, 0, 0.08)'
+            : 'transparent',
+        // Die Beschriftungsfarbe des gedrueckten Knopfes kommt aus demselben Token wie
+        // der Hauptknopf (basis.css `--akzent-text`).
+        color: gedrueckt ? 'var(--akzent-text)' : 'inherit',
         cursor: ab ? 'default' : 'pointer',
         opacity: ab ? 0.4 : 1,
         outline: fokus ? '2px solid currentColor' : 'none',

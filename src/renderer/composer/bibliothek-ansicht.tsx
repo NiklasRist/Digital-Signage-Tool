@@ -39,6 +39,10 @@ export interface BibliothekEigenschaften {
    *  Reiterwechsel (offene Frage der Notiz vom 21.10.). Fehlt der Rueckruf, gibt es
    *  KEINEN Bearbeiten-Knopf (die Ansicht erfindet keinen Weg). */
   aufAktionBearbeiten?: (aktionId: string) => void
+  /** 02.11.2026 (Sidepanel): welcher BEREICH gezeigt wird. Die beiden Bereiche waren
+   *  bisher immer zusammen sichtbar; mit der Leiste wechselt man zwischen ihnen.
+   *  Vorgabe `alle` haelt die bestehenden Aufrufer und Tests unveraendert. */
+  bereich?: 'alle' | 'video' | 'aktionen'
 }
 
 /**
@@ -59,70 +63,83 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
   const videos = baueMedienEintraege(p.projekt).filter((eintrag) => eintrag.typLabel === 'Video')
   const aktionen = baueAktionsEintraege(p.projekt)
   const fehlende = zaehleFehlende(videos)
+  // 02.11.2026 (Sidepanel): Die Leiste schaltet zwischen den beiden Bereichen um.
+  // Ohne `bereich` bleibt alles wie bisher - beide Bereiche untereinander.
+  const bereich = p.bereich ?? 'alle'
+  const zeigeVideo = bereich !== 'aktionen'
+  const zeigeAktionen = bereich !== 'video'
 
   return (
     <div data-testid="bibliothek">
-      {fehlende > 0 && (
-        <div data-ton="hervorgehoben" data-testid="bibliothek-hinweis">
-          {fehlende} Medium{fehlende === 1 ? '' : 'e'} fehlt{fehlende === 1 ? '' : 'en'}
+      {zeigeVideo && (
+        <>
+        {fehlende > 0 && (
+          <div data-ton="hervorgehoben" data-testid="bibliothek-hinweis">
+            {fehlende} Medium{fehlende === 1 ? '' : 'e'} fehlt{fehlende === 1 ? '' : 'en'}
+          </div>
+        )}
+
+        {/* Abschnittskopf mit Trennlinie: ein 11-px-Etikett allein ging in der Rail unter
+            (am Bild gesehen). Die Linie macht die Gliederung ohne Farbe lesbar. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0 6px' }}>
+          <h2 style={{ margin: 0 }}>Video</h2>
+          <span aria-hidden="true" style={{ flex: '1 1 auto', height: 1, background: '#2c2c34' }} />
         </div>
+        <button
+          type="button"
+          onClick={p.aufImportieren}
+          data-testid="composer-medien-import"
+          className={videos.length === 0 ? 'knopf-primaer' : undefined}
+          style={{ width: '100%' }}
+        >
+          Video importieren
+        </button>
+        {videos.length === 0 ? (
+          <p data-testid="video-leer">Noch kein Video - importieren Sie eines.</p>
+        ) : (
+          <ul data-testid="video-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {videos.map((eintrag) => (
+              <Videozeile
+                key={eintrag.asset.id}
+                eintrag={eintrag}
+                aufMediumLoeschen={p.aufMediumLoeschen}
+                ausgewaehlt={eintrag.asset.id === (p.ausgewaehltesId ?? null)}
+                aufWaehlen={p.aufWaehlen}
+              />
+            ))}
+          </ul>
+        )}
+        </>
       )}
 
-      {/* Abschnittskopf mit Trennlinie: ein 11-px-Etikett allein ging in der Rail unter
-          (am Bild gesehen). Die Linie macht die Gliederung ohne Farbe lesbar. */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0 6px' }}>
-        <h2 style={{ margin: 0 }}>Video</h2>
-        <span aria-hidden="true" style={{ flex: '1 1 auto', height: 1, background: '#2c2c34' }} />
-      </div>
-      <button
-        type="button"
-        onClick={p.aufImportieren}
-        data-testid="composer-medien-import"
-        className={videos.length === 0 ? 'knopf-primaer' : undefined}
-        style={{ width: '100%' }}
-      >
-        Video importieren
-      </button>
-      {videos.length === 0 ? (
-        <p data-testid="video-leer">Noch kein Video - importieren Sie eines.</p>
-      ) : (
-        <ul data-testid="video-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          {videos.map((eintrag) => (
-            <Videozeile
-              key={eintrag.asset.id}
-              eintrag={eintrag}
-              aufMediumLoeschen={p.aufMediumLoeschen}
-              ausgewaehlt={eintrag.asset.id === (p.ausgewaehltesId ?? null)}
-              aufWaehlen={p.aufWaehlen}
-            />
-          ))}
-        </ul>
-      )}
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0 6px' }}>
-        <h2 style={{ margin: 0 }}>Aktionen</h2>
-        <span aria-hidden="true" style={{ flex: '1 1 auto', height: 1, background: '#2c2c34' }} />
-      </div>
-      {/* #416: Inline-Erst-Anlage - Titel + Vorlage, ohne Reiterwechsel. Die neue Aktion
-          erscheint sofort in der Liste darunter (Sicht-Pflege ueber den Zugang). */}
-      {p.aufAktionAnlegen !== undefined && (
-        <AktionAnlegen vorlagen={p.vorlagen ?? []} aufAnlegen={p.aufAktionAnlegen} />
-      )}
-      {aktionen.length === 0 ? (
-        <p data-testid="aktionen-leer">Noch keine Aktionen – „+ Neue Aktion" legt die erste an.</p>
-      ) : (
-        <ul data-testid="aktionen-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          {aktionen.map((eintrag) => (
-            <Aktionszeile
-              key={eintrag.aktion.id}
-              eintrag={eintrag}
-              aufFehler={p.aufFehler}
-              sichtSchreiber={p.sichtSchreiber}
-              aufLoeschen={p.aufAktionLoeschen}
-              aufBearbeiten={p.aufAktionBearbeiten}
-            />
-          ))}
-        </ul>
+      {zeigeAktionen && (
+        <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0 6px' }}>
+          <h2 style={{ margin: 0 }}>Aktionen</h2>
+          <span aria-hidden="true" style={{ flex: '1 1 auto', height: 1, background: '#2c2c34' }} />
+        </div>
+        {/* #416: Inline-Erst-Anlage - Titel + Vorlage, ohne Reiterwechsel. Die neue Aktion
+            erscheint sofort in der Liste darunter (Sicht-Pflege ueber den Zugang). */}
+        {p.aufAktionAnlegen !== undefined && (
+          <AktionAnlegen vorlagen={p.vorlagen ?? []} aufAnlegen={p.aufAktionAnlegen} />
+        )}
+        {aktionen.length === 0 ? (
+          <p data-testid="aktionen-leer">Noch keine Aktionen – „+ Neue Aktion" legt die erste an.</p>
+        ) : (
+          <ul data-testid="aktionen-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {aktionen.map((eintrag) => (
+              <Aktionszeile
+                key={eintrag.aktion.id}
+                eintrag={eintrag}
+                aufFehler={p.aufFehler}
+                sichtSchreiber={p.sichtSchreiber}
+                aufLoeschen={p.aufAktionLoeschen}
+                aufBearbeiten={p.aufAktionBearbeiten}
+              />
+            ))}
+          </ul>
+        )}
+        </>
       )}
     </div>
   )
