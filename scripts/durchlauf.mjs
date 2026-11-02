@@ -3840,6 +3840,23 @@ const main = async () => {
         };
         const buehne = masse('composer-buehne');
         const zeitleiste = masse('zeitleiste');
+        // 02.11.2026 ("Lineal ueber die volle Breite"): Die Grundlinie muss den Kasten
+        // der Achse spannen, WAEHREND die Graduierung beim Inhalt endet. Beides wird
+        // gemessen - sonst waere "volle Breite" nur eine Behauptung.
+        const achsenKasten = masse('zeitleiste-zeitachse');
+        const achseEl = document.querySelector('[data-testid="zeitleiste-zeitachse"]');
+        let achsenInhaltW = null;
+        if (achseEl !== null) {
+          const segmente = Array.from(achseEl.children).filter(
+            (kind) => kind.getAttribute('data-testid') !== 'zeitleiste-lineal',
+          );
+          const letztes = segmente[segmente.length - 1] ?? null;
+          if (letztes !== null) {
+            achsenInhaltW = Math.round(
+              letztes.getBoundingClientRect().right - achseEl.getBoundingClientRect().left,
+            );
+          }
+        }
         return {
           fenster: { w: window.innerWidth, h: window.innerHeight },
           rail: masse('composer-rail'),
@@ -3851,9 +3868,26 @@ const main = async () => {
             : null,
           liste: masse('wiedergabeliste-liste'),
           statistik: masse('statistik'),
+          achse: { kasten: achsenKasten, lineal: masse('zeitleiste-lineal'), inhaltBreite: achsenInhaltW },
         };
       });
       console.log(`[schritt-4f4] Hoehen: ${JSON.stringify(hoehen4f4)}`);
+      // Das Lineal muss den Achsen-Kasten fuellen. Der Inhalt ist meist schmaler (die
+      // leere Flaeche rechts war der Anlass) - genau deshalb wird der Kasten gemessen
+      // und nicht der Inhalt.
+      {
+        const achse4f4 = hoehen4f4.achse;
+        const kastenW = achse4f4.kasten === null ? null : achse4f4.kasten.w;
+        const linealW = achse4f4.lineal === null ? null : achse4f4.lineal.w;
+        if (kastenW !== null && linealW === null) {
+          fund("Zeitleiste", "das Lineal laeuft ueber die volle Breite der Achse",
+            "zeitleiste-lineal fehlt", "Befund", "composer/zeitleiste.tsx");
+        } else if (kastenW !== null && linealW !== null && Math.abs(linealW - kastenW) > 1) {
+          fund("Zeitleiste", "das Lineal laeuft ueber die volle Breite der Achse",
+            `Achse ${String(kastenW)} px, Lineal ${String(linealW)} px, Inhalt ${String(achse4f4.inhaltBreite)} px`,
+            "Befund", "composer/zeitleiste.tsx");
+        }
+      }
       // BELEG FUER DIE DESIGNARBEIT (01.11.2026): "designmaessig sieht das nicht
       // professionell aus" (Niklas). Der Treiber haelt den Composer als Bild fest,
       // damit ueber Optik am echten Fenster geredet wird und nicht an Kästchen.

@@ -179,8 +179,28 @@ export function Zeitleiste({
           const kasten = ereignis.currentTarget.getBoundingClientRect()
           fordereSprung(frameAusXPx(ereignis.clientX - kasten.left, pxProSekunde))
         }}
-        style={{ display: 'flex', alignItems: 'flex-end', gap: LUECKE_PX, height: 18, cursor: 'pointer' }}
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: LUECKE_PX,
+          height: 18,
+          width: '100%',
+          cursor: 'pointer',
+        }}
       >
+        {/* 02.11.2026 (Niklas: "Lineal ueber die volle Breite"): Die Grundlinie laeuft
+            ueber die GANZE Flaeche, auch rechts vom letzten Block. Vorher endete die
+            Achse mit dem Inhalt und liess dort eine leere Flaeche stehen (am Bild
+            gesehen: rund 130 px). Die GRADUIERUNG bleibt beim Inhalt - rechts davon gibt
+            es keine Zeit, weil das Projekt dort endet (Entscheidung Niklas, 02.11.2026).
+            Absolut positioniert, damit sie die Segmentbreiten NICHT verschiebt: die Achse
+            muss weiter deckungsgleich ueber den Bloecken sitzen. */}
+        <span
+          aria-hidden="true"
+          data-testid="zeitleiste-lineal"
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 1, background: '#3a3a44' }}
+        />
         {neuZug !== null && <span style={{ flex: '0 0 auto', width: 10 }} />}
         {achse.map((segment, index) => (
           <span key={ids[index] ?? index} style={{ display: 'flex', gap: LUECKE_PX }}>

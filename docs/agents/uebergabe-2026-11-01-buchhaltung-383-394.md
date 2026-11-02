@@ -318,5 +318,38 @@ Sitzung nicht sauber laufen** — der Rechner stand bei Last 13–30 (I/O-Stau, 
    Auswahl und Bearbeiten eines Elements. Niklas' Vorschlag: ausklappbares Sidepanel nach
    VS-Code-Muster. **Das wird gemeinsam entschieden, nicht allein gebaut.**
 
+## 14. Schritte 1 und 2 gebaut (02.11.2026) — und die Beleglücke ist zu
+
+- **BELEGLÜCKE GESCHLOSSEN (zuerst, vor jedem Bau):** Die Unit-Suite lief sauber —
+  **5376/5376, 353 Dateien, 27–36 s, Exit 0**. Der Gestaltungs-Pass (`96b069b`/`aba05f5`)
+  steht damit auf belegtem Boden; die 675–900-s-Timeouts der Vorsitzung waren Rechnerlast.
+- **SCHRITT 1 — RAIL ENTLASTET (`d379289`):** Das Inline-Formular „Aktion anlegen" (#416)
+  stand IMMER offen und war der Grund, aus dem die Rail überhaupt scrollte. Jetzt öffnet
+  „+ Neue Aktion" es; „Abbrechen" und ein abgeschickter Entwurf schließen es wieder. Der
+  Absende-Knopf ist ein Submit-Knopf (Enter legt an), der Titel wird beim Schließen
+  geleert — sonst legte ein zweiter Klick eine Dublette an.
+  **Gemessen am Fenster (Treiber 4g):** Rail-Überlauf **0 px** zu, **48 px** offen,
+  **67 px** nach dem Anlegen (eine Aktion mehr). Öffner und Anlegen-Knopf werden mit der
+  **echten Maus** geklickt, nicht per `evaluate`.
+- **SCHRITT 2 — LINEAL VOLL BREIT:** Die Achse trägt eine Grundlinie
+  (`zeitleiste-lineal`), absolut auf `left: 0` / `right: 0` gespannt; die **Graduierung
+  bleibt beim Inhalt** (Entscheidung Niklas, 02.11.2026 — rechts gibt es keine Zeit, weil
+  das Projekt dort endet). Absolut, damit kein Segment um einen Platz rückt.
+  **Gemessen am Fenster (Treiber 4f4):** Achse **510 px**, Lineal **510 px**, Inhalt
+  **106 px** — vorher lagen 404 px ohne Lineal brach.
+- **MESSFEHLER, OFFEN BENANNT:** Der erste Treiberlauf nach Schritt 1 maß `dist/` von VOR
+  der Änderung (`npm run durchlauf` ohne `npm run build` fährt den letzten Build). Drei
+  Befunde waren Artefakte; der Protokollblock ist als **UNGÜLTIG** markiert, nicht
+  gelöscht. Als Probe war er nützlich: genau die zwei neuen Prüfungen sprangen an.
+  **Regel daraus: vor jeder Fenstermessung bauen.**
+- **Gegenproben:** 6 in dieser Sitzung (3 × Schritt 1, 3 × Schritt 2), jede rot und
+  byte-identisch zurückgenommen (Prüfsumme vor/nach gleich).
+- **Treiber:** **1 Befund** — der bekannte Bandliste-Fund (Wiedergabeliste ausgeblendet,
+  in 16 Läufen des Protokolls schon vorhanden), dazu 2 Untersuchungen und 1 MANUELL wie
+  zuvor. **Kein neuer Fund.** Das Gate bleibt deshalb bei Exit 2; es war vorher nicht anders.
+- **Nächster Schritt:** das **Seitenpanel-Konzept** (Liste/Inspector, Bibliothek, Auswahl
+  und Bearbeiten eines Elements) — **gemeinsam**, nicht allein gebaut.
+
+
 
 

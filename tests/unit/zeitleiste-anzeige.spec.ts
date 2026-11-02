@@ -95,6 +95,39 @@ afterAll(() => {
   }
 })
 
+// 02.11.2026 (Niklas: "Lineal ueber die volle Breite"): Die Grundlinie der Achse haengt
+// an der ACHSE, nicht am Inhalt - sonst endet sie mit dem letzten Block und laesst rechts
+// eine leere Flaeche (am Bild gesehen). Absolute Lage links/rechts 0 ist die Zusage:
+// sie spannt den Kasten der Achse, egal wie breit der Inhalt ist. In jsdom gibt es kein
+// Layout; die echte Breite misst der Treiber (Schritt 4f4).
+describe('Das Lineal laeuft ueber die volle Breite', () => {
+  it('die Grundlinie sitzt in der Achse und ist auf beide Kanten gespannt', () => {
+    const behaelter = montiere({ projekt: projekt(1), neuZug: null, aktiveKante: null, laedtKante: null })
+    const achse = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-zeitachse"]')
+    const lineal = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-lineal"]')
+    expect(achse).not.toBeNull()
+    expect(lineal).not.toBeNull()
+    // Die Linie ist ein KIND der Achse - nicht der Blockzeile, nicht des Inhalts.
+    expect(lineal?.parentElement).toBe(achse)
+    expect(lineal?.style.left).toBe('0px')
+    expect(lineal?.style.right).toBe('0px')
+    expect(lineal?.style.position).toBe('absolute')
+    expect(lineal?.style.height).toBe('1px')
+  })
+
+  it('sie liegt ausserhalb des Flusses - kein Segment rueckt dadurch', () => {
+    const behaelter = montiere({ projekt: projekt(2), neuZug: null, aktiveKante: null, laedtKante: null })
+    const achse = behaelter.querySelector<HTMLElement>('[data-testid="zeitleiste-zeitachse"]')
+    const kinder = Array.from(achse?.children ?? []) as HTMLElement[]
+    // Nur die Linie ist absolut gesetzt; die zwei Segmente bleiben im Fluss und behalten
+    // ihre Breite. Waere die Linie im Fluss, naehme sie einen Platz in der Flex-Zeile ein.
+    const absolut = kinder.filter((kind) => kind.style.position === 'absolute')
+    expect(absolut).toHaveLength(1)
+    expect(absolut[0]?.getAttribute('data-testid')).toBe('zeitleiste-lineal')
+    expect(kinder).toHaveLength(3)
+  })
+})
+
 describe('Die Zeitleiste zeigt die Einfuege-Kanten (#414)', () => {
   it('Ruhelage: KEINE Kante, die Bloecke liegen aneinander', () => {
     const behaelter = montiere({ projekt: projekt(2), neuZug: null, aktiveKante: null, laedtKante: null })
