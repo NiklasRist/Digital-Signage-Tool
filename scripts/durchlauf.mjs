@@ -3147,9 +3147,12 @@ const main = async () => {
         await zeigeAnsicht("aktionen");
         await schlafe(800);
         const hinzu4f5 = await seite.evaluate((id) => {
-          const zeile = document.querySelector(`[data-testid="aktion-${id}"]`);
-          if (zeile === null) return false;
-          const knopf = zeile.querySelector("button");
+          // EXPLIZIT statt "erster Knopf der Zeile" (02.11.2026): Mit „Ins Video" als
+          // erstem Knopf klickte dieser Schritt ploetzlich den NEUEN Weg, die Aktion
+          // landete als Unterbrechung IM Video statt als Block in der Liste - und der
+          // Render scheiterte danach an einer anderen Stelle. Ein Messschritt muss
+          // sagen, was er klickt.
+          const knopf = document.querySelector(`[data-testid="aktion-hinzufuegen-${id}"]`);
           if (knopf === null) return false;
           knopf.click();
           return true;
@@ -3229,8 +3232,46 @@ const main = async () => {
           const mp4Ende4f5 = dateienEnde4f5.filter((d) => d.endsWith(".mp4"));
           const partEnde4f5 = dateienEnde4f5.filter((d) => d.endsWith(".part"));
           if (!fs.existsSync(ziel4f5)) {
+            // DIAGNOSE (02.11.2026): Der Lauf meldete "1 fehlgeschlagen" in der
+            // Warteschlange - der GRUND stand nirgends im Protokoll. Er kommt hier mit
+            // hinein, damit die naechste Sitzung nicht raet.
+            // DIAGNOSE (02.11.2026): Der Lauf meldete "1 fehlgeschlagen" in der
+            // Warteschlange - der GRUND stand nirgends im Protokoll. Er kommt hier mit
+            // hinein. Gelesen wird ueber `queue:holeStand`, NICHT ueber die Leiste: ein
+            // aufgeklappter Panel-Zustand haette die spaeteren Schritte 4j verfaelscht
+            // (im Messlauf vom 20:1x passiert, dort als Befund notiert).
+            const stand4f5 = await seite.evaluate(async () => {
+              const antwort = await window.api.invoke("queue:holeStand");
+              const auftraege = antwort === null || antwort.ok === false ? [] : (antwort.wert ?? []);
+              return auftraege
+                .filter((auftrag) => auftrag.status === "fehlgeschlagen")
+                .map((auftrag) => ({ art: auftrag.art, name: auftrag.name, fehler: auftrag.fehler }));
+            });
+            const fehler4f5 = await seite.evaluate(() => {
+              const panel = document.querySelector('[data-testid="queue-panel"]');
+              const gruende = [...document.querySelectorAll('[data-testid^="queue-fehler-"]')]
+                .map((knoten) => knoten.textContent);
+              return { panel: panel === null ? null : panel.innerText, gruende };
+            });
+            // Dazu der DATEI-Stand: Steht die Dublette in project.json oder nur in der
+            // Sicht? (#392 hat gezeigt, dass beides auseinanderfallen kann.)
+            const dateiStand4f5 = (() => {
+              try {
+                const roh = JSON.parse(
+                  fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
+                );
+                return {
+                  liste: (roh.liste ?? []).map((e) => ({ id: e.id, art: e.art, unter: (e.unterbrechungen ?? []).length })),
+                  aktionen: (roh.aktionen ?? []).length,
+                };
+              } catch (fehler) {
+                return { fehler: String(fehler) };
+              }
+            })();
             fund("Dauer der MP4 (FA-08)", "der Render legt die Ausgabedatei an",
-              `nicht gefunden: ${name4f5}.mp4; Dateien=${JSON.stringify(dateienEnde4f5)}`,
+              `nicht gefunden: ${name4f5}.mp4; Dateien=${JSON.stringify(dateienEnde4f5)}; ` +
+                `Warteschlange=${JSON.stringify(fehler4f5)}; Auftraege=${JSON.stringify(stand4f5)}; ` +
+                `Datei=${JSON.stringify(dateiStand4f5)}`,
               "Befund", "render-service/ausgabe-platzieren.ts");
           } else {
             const dauer4f5 = await new Promise((f, r) => {
@@ -4776,6 +4817,270 @@ const main = async () => {
           console.log("[schritt-4f7] Abspielmarke GEMESSEN: folgt der Wiedergabe, steht bei Pause (#457).");
         }
       }
+      await klick('[data-testid="reiter-aktionen"]');
+      await schlafe(600);
+    }
+
+    // Schritt 4f8 - „Ins Video" als KLICK (02.11.2026, Messlatte Abschnitt 16).
+    // Zwei Wege, eine Regel: eine BAND-Aktion haengt einen Abschnitt ans Werbeband, eine
+    // GANZBILD-Aktion legt eine Unterbrechung an die Abspielmarke. Beides wird am STORE
+    // gemessen (project.json), nicht an der Ansicht - die Zeile darunter zeigt nur den
+    // Rueckverweis. Ohne diesen Schritt waere die Verdrahtung in der Wurzel
+    // (`fuegeAktionInsVideo`) unbelegt: die reinen Tests decken nur `ins-video.ts`.
+    {
+      const datei4f8 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      const liesListe4f8 = () => {
+        try {
+          return JSON.parse(fs.readFileSync(datei4f8, "utf-8")).liste ?? [];
+        } catch {
+          return [];
+        }
+      };
+      const videoAus4f8 = () => liesListe4f8().find((e) => e.art === "video") ?? null;
+
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(500);
+
+      // Eine GANZBILD-Aktion als Saat (der Bestand kennt bisher nur die Band-Aktion).
+      const marke4f8Saat = (() => {
+        try {
+          return JSON.parse(fs.readFileSync(datei4f8, "utf-8")).standardMarkeId;
+        } catch {
+          return null;
+        }
+      })();
+      const saat4f8 = await seite.evaluate(async (auftrag) => {
+        const antwort = await window.api.invoke("project:erstelleAktion", {
+          aktionsdaten: {
+            titel: "Durchlauf-Ganzbild",
+            beschreibung: null,
+            preis: null,
+            bildRef: null,
+            cta: null,
+            standardDauer: null,
+            vorlagenId: "vollbild",
+            markeId: auftrag.markeId,
+            akzentfarbe: null,
+          },
+        });
+        return antwort === null || antwort.ok !== true
+          ? { fehler: JSON.stringify(antwort) }
+          : { aktionId: antwort.wert.id };
+      }, { markeId: marke4f8Saat });
+      const ganzbild4f8 = typeof saat4f8.aktionId === "string" ? saat4f8.aktionId : null;
+      if (ganzbild4f8 === null) {
+        fund("Ins Video", "eine Ganzbild-Aktion fuer den Klick-Weg",
+          `Saat fehlgeschlagen: ${String(saat4f8.fehler)}`, "BLOCKER", "project-store/erstelle-aktion.ts");
+      }
+      // Projekt per UI neu oeffnen (der Weg, der die gemeinsame Sicht nachzieht).
+      await klick('[data-testid="reiter-projekte"]');
+      await schlafe(400);
+      await seite.evaluate((pid) => {
+        const zeile = document.querySelector(`[data-testid="projekt-${pid}"]`);
+        const knopf = zeile === null ? null : zeile.querySelector("button");
+        if (knopf !== null) knopf.click();
+      }, aktivesProjektId);
+      await schlafe(2_500);
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
+      await schlafe(700);
+
+      const vor4f8 = videoAus4f8();
+      const bandVor4f8 = vor4f8?.einblendung?.abschnitte?.length ?? 0;
+      const unterVor4f8 = vor4f8?.unterbrechungen?.length ?? 0;
+      const listeVor4f8 = liesListe4f8().length;
+
+      // DIE ABSPIELMARKE als Zeitbezug: ein Klick auf die Zeitachse setzt die Wiedergabe
+      // (dieselbe Flaeche, die #457/#428 gebaut haben). Gelesen wird `data-frame` der
+      // Marke - die Zahl, die `setzeAbspielstand` veroeffentlicht und die der Klick im
+      // Composer spaeter liest.
+      let marke4f8 = null;
+      const achse4f8 = await seite.$('[data-testid="zeitleiste-zeitachse"]');
+      const achsenBox4f8 = achse4f8 === null ? null : await achse4f8.boundingBox();
+      achse4f8?.dispose?.();
+      if (achsenBox4f8 !== null) {
+        // 8 px = 1 s bei 8 px/s. NICHT weiter rechts: das Video dieses Projekts ist 2 s
+        // lang - ein Klick bei 120 px landete im naechsten Block, und der Composer hat
+        // die Marke voellig richtig abgelehnt (erster Messlauf, als UNGUELTIG markiert).
+        await seite.mouse.click(achsenBox4f8.x + 8, achsenBox4f8.y + achsenBox4f8.height / 2);
+        await schlafe(600);
+        marke4f8 = await seite.evaluate(() => {
+          const marke = document.querySelector('[data-testid="zeitleiste-playhead"]');
+          return marke === null ? null : Number(marke.getAttribute("data-frame"));
+        });
+      }
+      const meldung4f8 = async () => seite.evaluate(() => {
+        const zeile = document.querySelector('[data-testid="composer-wurzel-meldung"]');
+        return zeile === null ? null : zeile.textContent;
+      });
+      const titel4f8 = async (id) => seite.evaluate((kennung) => {
+        const knopf = document.querySelector(`[data-testid="aktion-ins-video-${kennung}"]`);
+        return knopf === null ? null : knopf.getAttribute("title");
+      }, id);
+      // Der Knopf sitzt in der scrollenden Bibliothek, und ueber ihr klebt der
+      // Wurzel-Kopf (`composer-kopf`, position: sticky). Erst zur MITTE scrollen, dann
+      // nachsehen, WELCHES Element an der Klickstelle liegt - ein Klick auf den Kopf
+      // waere ein Messfehler, den sonst niemand sieht.
+      const klickeKnopf4f8 = async (id) => {
+        const ziel = `[data-testid="aktion-ins-video-${id}"]`;
+        await seite.evaluate((auswahl) => {
+          const knopf = document.querySelector(auswahl);
+          if (knopf !== null) knopf.scrollIntoView({ block: "center" });
+        }, ziel);
+        await schlafe(200);
+        const box = await seite.evaluate((auswahl) => {
+          const knopf = document.querySelector(auswahl);
+          if (knopf === null) return null;
+          const kasten = knopf.getBoundingClientRect();
+          const x = Math.round(kasten.x + kasten.width / 2);
+          const y = Math.round(kasten.y + kasten.height / 2);
+          const oben = document.elementFromPoint(x, y);
+          return {
+            x,
+            y,
+            oben: oben === null ? null : `${oben.tagName.toLowerCase()}[${oben.getAttribute("data-testid") ?? ""}]`,
+            trifft: oben === knopf,
+          };
+        }, ziel);
+        if (box === null) return { geklickt: false, box: null };
+        await seite.mouse.click(box.x, box.y);
+        return { geklickt: true, box };
+      };
+      // project.json wird ENTPRELLT geschrieben (`auto-speichern.ts`, 4 s): Eine
+      // Sofortablesung misst den Stand VOR dem Klick. Deshalb wird auf die erwartete
+      // AENDERUNG gewartet (Frist 20 s, Muster aus 4g3/#446) - die Wartezeit ist die
+      // Messgroesse "langsam, aber richtig" und steht im Protokoll. DER ERSTE MESSLAUF
+      // (18:55 und die zwei danach) las zu frueh und meldete "nichts passiert", obwohl
+      // der Klick gewirkt hatte; das ist dort als UNGUELTIG markiert.
+      const warteAuf4f8 = async (pruefe) => {
+        const start = Date.now();
+        const frist = start + 20_000;
+        while (Date.now() < frist) {
+          if (pruefe()) return Date.now() - start;
+          await schlafe(250);
+        }
+        return null;
+      };
+
+      console.log(`[schritt-4f8] Marke nach Achsen-Klick: ${JSON.stringify(marke4f8)}; ` +
+        `Band-Abschnitte vorher ${bandVor4f8}, Unterbrechungen vorher ${unterVor4f8}`);
+
+      // A) GANZBILD -> Unterbrechung an der Marke.
+      if (ganzbild4f8 !== null && marke4f8 !== null && Number.isFinite(marke4f8)) {
+        const titelVor4f8 = await titel4f8(ganzbild4f8);
+        const klick4f8 = await klickeKnopf4f8(ganzbild4f8);
+        const warte4f8 = await warteAuf4f8(
+          () => (videoAus4f8()?.unterbrechungen ?? []).length !== unterVor4f8,
+        );
+        const meldungNach4f8 = await meldung4f8();
+        const nach4f8 = videoAus4f8();
+        const unterNach4f8 = nach4f8?.unterbrechungen ?? [];
+        const neu4f8 = unterNach4f8[unterNach4f8.length - 1] ?? null;
+        const videoDauer4f8 = nach4f8 === null
+          ? null
+          : Number(nach4f8.trimEnde) - Number(nach4f8.trimStart);
+        console.log(`[schritt-4f8] Ganzbild: titel=${JSON.stringify(titelVor4f8)}, ` +
+          `klick=${JSON.stringify(klick4f8)}, Unterbrechungen ${unterVor4f8} -> ${unterNach4f8.length} ` +
+          `(nach ${String(warte4f8)} ms), neu=${JSON.stringify(neu4f8)}, ` +
+          `Videodauer=${String(videoDauer4f8)}, Meldung=${JSON.stringify(meldungNach4f8)}`);
+        if (
+          !klick4f8.geklickt ||
+          unterNach4f8.length !== unterVor4f8 + 1 ||
+          neu4f8 === null ||
+          neu4f8.aktionRef !== ganzbild4f8 ||
+          !(Number(neu4f8.zeitstelle) > 0) ||
+          !(Number(neu4f8.zeitstelle) < Number(videoDauer4f8))
+        ) {
+          fund("Ins Video", "eine Ganzbild-Aktion wird als Unterbrechung an die Abspielmarke gelegt",
+            `klick=${JSON.stringify(klick4f8)}, Unterbrechungen ${unterVor4f8} -> ${unterNach4f8.length}, ` +
+              `neu=${JSON.stringify(neu4f8)}, Meldung=${JSON.stringify(meldungNach4f8)}`,
+            "Befund", "composer/index.tsx");
+        } else {
+          console.log(`[schritt-4f8] GANZBILD GEMESSEN: Unterbrechung bei ${Number(neu4f8.zeitstelle).toFixed(2)} s ` +
+            `(Marke Frame ${String(marke4f8)}), kein neues Listenelement (#442-Weg).`);
+        }
+      } else {
+        fund("Ins Video", "die Abspielmarke ist lesbar und steht im Video",
+          `Marke=${JSON.stringify(marke4f8)}, Ganzbild-Aktion=${String(ganzbild4f8)}`,
+          "Untersuchung", "composer/abspiel-marke.tsx");
+      }
+
+      // B) BAND -> Abschnitt am Werbeband.
+      if (typeof aktionsId417 === "string") {
+        const titelBand4f8 = await titel4f8(aktionsId417);
+        const klickBand4f8 = await klickeKnopf4f8(aktionsId417);
+        const warteBand4f8 = await warteAuf4f8(
+          () => (videoAus4f8()?.einblendung?.abschnitte?.length ?? 0) !== bandVor4f8,
+        );
+        const meldungBand4f8 = await meldung4f8();
+        const nachBand4f8 = videoAus4f8();
+        const abschnitte4f8 = nachBand4f8?.einblendung?.abschnitte ?? [];
+        const letzter4f8 = abschnitte4f8[abschnitte4f8.length - 1] ?? null;
+        const listeNach4f8 = liesListe4f8().length;
+        const verwendung4f8 = await seite.evaluate((id) => {
+          const zeile = document.querySelector(`[data-testid="aktion-verwendung-${id}"]`);
+          return zeile === null ? null : zeile.textContent;
+        }, aktionsId417);
+        console.log(`[schritt-4f8] Band: titel=${JSON.stringify(titelBand4f8)}, ` +
+          `klick=${JSON.stringify(klickBand4f8)}, Abschnitte ${bandVor4f8} -> ${abschnitte4f8.length} ` +
+          `(nach ${String(warteBand4f8)} ms), neu=${JSON.stringify(letzter4f8)}, ` +
+          `Liste ${listeVor4f8} -> ${listeNach4f8}, Verwendung=${JSON.stringify(verwendung4f8)}, ` +
+          `Meldung=${JSON.stringify(meldungBand4f8)}`);
+        if (
+          !klickBand4f8.geklickt ||
+          abschnitte4f8.length !== bandVor4f8 + 1 ||
+          letzter4f8 === null ||
+          letzter4f8.aktionRef !== aktionsId417 ||
+          listeNach4f8 !== listeVor4f8
+        ) {
+          fund("Ins Video", "eine Band-Aktion wird als Abschnitt ans Werbeband gehaengt (kein neues Element)",
+            `klick=${JSON.stringify(klickBand4f8)}, Abschnitte ${bandVor4f8} -> ${abschnitte4f8.length}, ` +
+              `Liste ${listeVor4f8} -> ${listeNach4f8}, neu=${JSON.stringify(letzter4f8)}, ` +
+              `Meldung=${JSON.stringify(meldungBand4f8)}`,
+            "Befund", "composer/index.tsx");
+        } else {
+          console.log(`[schritt-4f8] BAND GEMESSEN: Abschnitt angehaengt, Verwendung "${String(verwendung4f8)}".`);
+        }
+      }
+
+      // HOEHE (Merksatz aus #456): Der Knopf kostet eine Zeile je Aktion. Gemessen wird,
+      // dass Buehne, Zeitachse und der Hauptknopf bei 800x572 weiter stehen.
+      const masse4f8 = await seite.evaluate(() => {
+        const buehne = document.querySelector('[data-testid="composer-buehne"]');
+        const achse = document.querySelector('[data-testid="zeitleiste-zeitachse"]');
+        const rendern = document.querySelector('[data-testid="composer-render-oefnen"]');
+        const sichtbar = (knoten) => {
+          if (knoten === null) return null;
+          const kasten = knoten.getBoundingClientRect();
+          return kasten.width > 0 && kasten.height > 0 ? Math.round(kasten.height) : 0;
+        };
+        return {
+          buehne: sichtbar(buehne),
+          achse: sichtbar(achse),
+          rendern: sichtbar(rendern),
+        };
+      });
+      console.log(`[schritt-4f8] Hoehen bei 800x572: ${JSON.stringify(masse4f8)}`);
+      if (masse4f8.buehne === 0 || masse4f8.achse === 0 || masse4f8.rendern === 0) {
+        fund("Ins Video", "der zusaetzliche Knopf schiebt Buehne, Zeitachse und Hauptknopf nicht aus dem Bild",
+          JSON.stringify(masse4f8), "Befund", "composer/bibliothek-ansicht.tsx");
+      }
+
+      // AUFRAEUMEN: die zwei Wirkungen sind je EIN Undo-Schritt (Band-Abschnitt,
+      // Unterbrechung). Der Schritt hinterlaesst das Projekt, wie er es vorgefunden hat -
+      // sonst haenge jeder spaetere Lauf an einer Unterbrechung, die nur zum Messen
+      // angelegt wurde (und ein Render mit Unterbrechung scheitert, s. Befund 02.11.2026).
+      await klick('[data-testid="undo-pfeil"]');
+      await schlafe(600);
+      await klick('[data-testid="undo-pfeil"]');
+      const zurueck4f8 = await warteAuf4f8(() => {
+        const jetzt = videoAus4f8();
+        return (jetzt?.einblendung?.abschnitte?.length ?? 0) === bandVor4f8 &&
+          (jetzt?.unterbrechungen?.length ?? 0) === unterVor4f8;
+      });
+      console.log(`[schritt-4f8] Aufraeumen: zurueck nach ${String(zurueck4f8)} ms ` +
+        `(Abschnitte ${bandVor4f8}, Unterbrechungen ${unterVor4f8}).`);
+
       await klick('[data-testid="reiter-aktionen"]');
       await schlafe(600);
     }

@@ -3354,3 +3354,157 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 73
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-11-02T18:55:03.220Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793645389386.mp4; Dateien=["durchlauf-render-1793645365349.mp4","durchlauf-zweite-1793645372542.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Ins Video: erwartet "eine Ganzbild-Aktion wird als Unterbrechung an die Abspielmarke gelegt", erkannt "geklickt=true, Unterbrechungen 0 -> 0, neu=null" (Ort: composer/index.tsx)
+- **Befund** Ins Video: erwartet "eine Band-Aktion wird als Abschnitt ans Werbeband gehaengt (kein neues Element)", erkannt "geklickt=true, Abschnitte 1 -> 1, Liste 2 -> 2, neu={"aktionRef":"ccc82d5e-8368-420a-a29f-749127a4edf0","dauer":10}" (Ort: composer/index.tsx)
+
+> **UNGÜLTIG (markiert, nicht gelöscht).** Die zwei „Ins Video"-Befunde dieses Laufs sind
+> Messfehler des Aufbaus, kein Produktbefund: Der Treiber klickte die Zeitachse bei
+> **+120 px**, das sind bei 8 px/s **15 s** — die Abspielmarke stand bei **Frame 360**, und das
+> Video dieses Projekts ist **2 s** lang. Die Marke lag damit in einem anderen Block; der
+> Composer hat sie **richtig** abgelehnt. Der nächste Lauf klickt bei **+8 px** (1 s) und
+> schreibt zusätzlich den Tooltip des Knopfes und die Wurzel-Meldung ins Protokoll.
+
+## Nachlauf vom 2026-11-02T19:03:18.578Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793645885264.mp4; Dateien=["durchlauf-render-1793645861238.mp4","durchlauf-zweite-1793645868430.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Ins Video: erwartet "eine Ganzbild-Aktion wird als Unterbrechung an die Abspielmarke gelegt", erkannt "geklickt=true, Unterbrechungen 0 -> 0, neu=null" (Ort: composer/index.tsx)
+- **Befund** Ins Video: erwartet "eine Band-Aktion wird als Abschnitt ans Werbeband gehaengt (kein neues Element)", erkannt "geklickt=true, Abschnitte 1 -> 1, Liste 2 -> 2, neu={"aktionRef":"f36533ac-d9f5-4edc-8bcc-b30eff27f42e","dauer":10}" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-11-02T19:11:24.745Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793646370454.mp4; Dateien=["durchlauf-render-1793646346429.mp4","durchlauf-zweite-1793646353624.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Ins Video: erwartet "eine Ganzbild-Aktion wird als Unterbrechung an die Abspielmarke gelegt", erkannt "klick={"geklickt":true,"box":{"x":180,"y":338,"oben":"button[aktion-ins-video-49e54752-2237-4a62-97d7-b97b4efd0595]","trifft":true}}, Unterbrechungen 0 -> 0, neu=null, Meldung=null" (Ort: composer/index.tsx)
+- **Befund** Ins Video: erwartet "eine Band-Aktion wird als Abschnitt ans Werbeband gehaengt (kein neues Element)", erkannt "klick={"geklickt":true,"box":{"x":180,"y":316,"oben":"button[aktion-ins-video-b1990360-75ae-43f5-b1d6-4266b7a6a393]","trifft":true}}, Abschnitte 1 -> 1, Liste 2 -> 2, neu={"aktionRef":"b1990360-75ae-43f5-b1d6-4266b7a6a393","dauer":10}, Meldung=null" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-11-02T19:19:45.228Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793646871025.mp4; Dateien=["durchlauf-render-1793646846983.mp4","durchlauf-zweite-1793646854179.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Ins Video: erwartet "eine Ganzbild-Aktion wird als Unterbrechung an die Abspielmarke gelegt", erkannt "klick={"geklickt":true,"box":{"x":180,"y":338,"oben":"button[aktion-ins-video-f8ad0b85-aefd-4efb-ad1b-7c7e1c49c9a2]","trifft":true}}, Unterbrechungen 0 -> 0, neu=null, Meldung=null" (Ort: composer/index.tsx)
+- **Befund** Ins Video: erwartet "eine Band-Aktion wird als Abschnitt ans Werbeband gehaengt (kein neues Element)", erkannt "klick={"geklickt":true,"box":{"x":180,"y":316,"oben":"button[aktion-ins-video-6935a3bb-efc1-4215-b567-6f195b4b9ee0]","trifft":true}}, Abschnitte 1 -> 1, Liste 2 -> 2, neu={"aktionRef":"6935a3bb-efc1-4215-b567-6f195b4b9ee0","dauer":10}, Meldung=null" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-11-02T19:27:53.577Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793647356245.mp4; Dateien=["durchlauf-render-1793647332220.mp4","durchlauf-zweite-1793647339412.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Ins Video: erwartet "eine Ganzbild-Aktion wird als Unterbrechung an die Abspielmarke gelegt", erkannt "klick={"geklickt":true,"box":{"x":180,"y":338,"oben":"button[aktion-ins-video-9c49c72b-27c5-4f4f-8a2a-e22297e9b965]","trifft":true}}, Unterbrechungen 0 -> 0, neu=null, Meldung=null" (Ort: composer/index.tsx)
+- **Befund** Ins Video: erwartet "eine Band-Aktion wird als Abschnitt ans Werbeband gehaengt (kein neues Element)", erkannt "klick={"geklickt":true,"box":{"x":180,"y":316,"oben":"button[aktion-ins-video-4301ca6d-6087-4a3f-b4a7-554259865174]","trifft":true}}, Abschnitte 1 -> 1, Liste 2 -> 2, neu={"aktionRef":"4301ca6d-6087-4a3f-b4a7-554259865174","dauer":10}, Meldung="An dieser Stelle liegt schon eine Unterbrechung."" (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-11-02T19:36:03.464Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793647844166.mp4; Dateien=["durchlauf-render-1793647820100.mp4","durchlauf-zweite-1793647827295.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+
+## Nachlauf vom 2026-11-02T19:43:51.950Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 64
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793648311474.mp4; Dateien=["durchlauf-render-1793648287430.mp4","durchlauf-zweite-1793648294625.mp4"]" (Ort: render-service/ausgabe-platzieren.ts)
+
+## Nachlauf vom 2026-11-02T19:51:42.575Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793648783093.mp4; Dateien=["durchlauf-render-1793648759062.mp4","durchlauf-zweite-1793648766258.mp4"]; Warteschlange="1 fehlgeschlagen\n▸"" (Ort: render-service/ausgabe-platzieren.ts)
+
+## Nachlauf vom 2026-11-02T19:59:34.724Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793649255096.mp4; Dateien=["durchlauf-render-1793649231073.mp4","durchlauf-zweite-1793649238267.mp4"]; Warteschlange={"panel":"1 fehlgeschlagen\n▾\nRender: durchlauf-fa08-1793649255096.mp4 · fehlgeschlagen\nErneut versuchen\n1. Versuch bisher. Der Auftrag wird ans Ende der Warteschlange gestellt und startet, sobald er an der Reihe ist.\nEingabe nicht zulässig Die Eingabe prüfen und den Vorgang erneut auslösen.","gruende":["Eingabe nicht zulässig Die Eingabe prüfen und den Vorgang erneut auslösen."]}" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Warteschlange: erwartet "die Leiste startet EINGEKLAPPT (ENTSCHIEDEN 3)", erkannt "die Liste ist beim Aufbau schon offen" (Ort: queue-panel/index.tsx)
+- **Befund** Warteschlange: erwartet "der Klapp-Schalter oeffnet die Auftragsliste (#257, #207)", erkannt "geklickt=false, Lage={"liste":true,"leer":false,"zeilen":1}" (Ort: queue-panel/index.tsx)
+
+## Nachlauf vom 2026-11-02T20:12:50.371Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793650051174.mp4; Dateien=["durchlauf-render-1793650027172.mp4","durchlauf-zweite-1793650034350.mp4"]; Warteschlange={"panel":"1 fehlgeschlagen\n▾\nRender: durchlauf-fa08-1793650051174.mp4 · fehlgeschlagen\nErneut versuchen\n1. Versuch bisher. Der Auftrag wird ans Ende der Warteschlange gestellt und startet, sobald er an der Reihe ist.\nEingabe nicht zulässig Die Eingabe prüfen und den Vorgang erneut auslösen.","gruende":["Eingabe nicht zulässig Die Eingabe prüfen und den Vorgang erneut auslösen."]}; Auftraege=[{"art":"render","fehler":{"code":"ungueltige_eingabe","meldung":"Die Element-Kennung \"00b336ec-e94f-4281-8f8b-ce6f30ed395d\" kommt mehrfach vor (zuletzt an Position 1). Kennungen muessen im Auftrag eindeutig sein, sonst ist die Fehlerzuordnung mehrdeutig."}}]" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Warteschlange: erwartet "die Leiste startet EINGEKLAPPT (ENTSCHIEDEN 3)", erkannt "die Liste ist beim Aufbau schon offen" (Ort: queue-panel/index.tsx)
+- **Befund** Warteschlange: erwartet "der Klapp-Schalter oeffnet die Auftragsliste (#257, #207)", erkannt "geklickt=false, Lage={"liste":true,"leer":false,"zeilen":1}" (Ort: queue-panel/index.tsx)
+
+> **UNGÜLTIG (markiert, nicht gelöscht) — die zwei „Warteschlange"-Befunde.** Sie stammen
+> nicht vom Produkt: Die Fehlerdiagnose dieses Laufs hat die Warteschlange **aufgeklappt**, um
+> den Render-Grund zu lesen, und ließ sie offen. Schritt 4j fand sie danach „beim Aufbau schon
+> offen". Die Diagnose liest den Stand jetzt über `queue:holeStand` und fasst die Leiste nicht
+> mehr an; der Lauf um **20:26** hat keine dieser beiden Zeilen.
+
+## Nachlauf vom 2026-11-02T20:20:56.518Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 61
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Dauer der MP4 (FA-08): erwartet "der Render legt die Ausgabedatei an", erkannt "nicht gefunden: durchlauf-fa08-1793650537286.mp4; Dateien=["durchlauf-render-1793650513273.mp4","durchlauf-zweite-1793650520451.mp4"]; Warteschlange={"panel":"1 fehlgeschlagen\n▾\nRender: durchlauf-fa08-1793650537286.mp4 · fehlgeschlagen\nErneut versuchen\n1. Versuch bisher. Der Auftrag wird ans Ende der Warteschlange gestellt und startet, sobald er an der Reihe ist.\nEingabe nicht zulässig Die Eingabe prüfen und den Vorgang erneut auslösen.","gruende":["Eingabe nicht zulässig Die Eingabe prüfen und den Vorgang erneut auslösen."]}; Auftraege=[{"art":"render","fehler":{"code":"ungueltige_eingabe","meldung":"Die Element-Kennung \"4411c425-d570-4eb2-b99d-c7c1f44113b7\" kommt mehrfach vor (zuletzt an Position 1). Kennungen muessen im Auftrag eindeutig sein, sonst ist die Fehlerzuordnung mehrdeutig."}}]; Datei={"liste":[{"id":"4411c425-d570-4eb2-b99d-c7c1f44113b7","art":"video","unter":1}],"aktionen":1}" (Ort: render-service/ausgabe-platzieren.ts)
+- **Befund** Warteschlange: erwartet "die Leiste startet EINGEKLAPPT (ENTSCHIEDEN 3)", erkannt "die Liste ist beim Aufbau schon offen" (Ort: queue-panel/index.tsx)
+- **Befund** Warteschlange: erwartet "der Klapp-Schalter oeffnet die Auftragsliste (#257, #207)", erkannt "geklickt=false, Lage={"liste":true,"leer":false,"zeilen":1}" (Ort: queue-panel/index.tsx)
+
+> **GÜLTIG GEMESSEN — und die Ursache ist gefunden (02.11.2026).** Der Render scheitert mit
+> `ungueltige_eingabe`: *„Die Element-Kennung … kommt mehrfach vor"*. Grund: `4f5` klickte den
+> **ersten Knopf** der Aktionszeile; mit „Ins Video" an dieser Stelle legte der Schritt die
+> Aktion als **Unterbrechung** an. `render-ausloesen.ts:189` vergibt jedem Video-TEIL die
+> **gleiche** Element-Kennung (für den Reparatur-Modus), `validierung.ts:524` verlangt
+> **eindeutige** Kennungen — **jedes Projekt mit einer Unterbrechung ist damit nicht
+> renderbar** (Produktwiderspruch, nicht Folge dieses Schritts). Behoben wurde nur der
+> Messfehler: der Schritt klickt jetzt `aktion-hinzufuegen-<id>`. Der Widerspruch selbst ist
+> **offen** und gehört entschieden.
+
+## Nachlauf vom 2026-11-02T20:26:47.290Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 72
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-11-02T20:35:35.190Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 73
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
