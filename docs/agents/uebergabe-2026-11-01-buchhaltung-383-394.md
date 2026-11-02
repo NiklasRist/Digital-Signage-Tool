@@ -453,3 +453,18 @@ Angewendet auf den Bestand:
 
 **Konsequenz:** Der Filter ist ein **Streich-Werkzeug**, kein Rechtfertigungsformular. Was
 durchfällt, wird entfernt und nicht umgestaltet.
+
+### 16b. WAS ZÄHLT, IST DAS ERGEBNIS (Niklas, 02.11.2026)
+
+> „wichtig ist vorallem das ergebnis am ende"
+
+Nicht das Panel, nicht die Ansicht, nicht die Ordnung im Werkzeug: **der fertige Werbespot**.
+Das Panel ist Mittel, das Ergebnis ist der Zweck. Folgen:
+
+- **Rückwärts planen:** erst beschreiben, wie der fertige Spot aussieht, dann die Schritte
+  dorthin zählen, dann das Panel daraus schneiden. Nicht vom vorhandenen Code her.
+- **Die Bühne ist der einzige Ort, an dem das Ergebnis VOR dem Rendern sichtbar ist.** Sie
+  zeichnet das Band bereits über das Video (`preview-player/einblendung.tsx`, `band-takt.ts`).
+  Also muss gelten: was im Panel geändert wird, ist **sofort auf der Bühne** zu sehen.
+- **Der Prüfstein jeder Änderung** ist damit nicht „ist die Liste schöner", sondern „sieht der
+  fertige Spot dadurch besser aus, und komme ich schneller dorthin".
