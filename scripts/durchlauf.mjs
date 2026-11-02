@@ -3164,11 +3164,11 @@ const main = async () => {
           await schlafe(250);
         }
         console.log(`[schritt-4f5] Aktions-Probe: angelegt=${String(hinzu4f5)}, Bloecke=${bloecke4f5}.`);
-        // Die Gesamtdauer zeichnet die LISTEN-Ansicht (#248).
-        await klick('[data-testid="composer-ansicht-liste"]');
-        await schlafe(700);
+        // 02.11.2026: Die Gesamtdauer steht in der STATISTIK am Fuss des Sidepanels.
+        // Die Wiedergabeliste, die sie frueher trug, ist ausgeblendet (und damit
+        // unerreichbar) - dieselbe Zahl, ein sichtbarer Ort.
       const anzeige4f5 = await seite.evaluate(
-        () => document.querySelector('[data-testid="wiedergabeliste-laenge"]')?.textContent ?? null,
+        () => document.querySelector('[data-testid="statistik-Gesamtdauer"]')?.textContent ?? null,
       );
       const treffer4f5 = /(\d+):(\d\d)/.exec(String(anzeige4f5));
       const angezeigtSek4f5 = treffer4f5 === null
@@ -3176,8 +3176,8 @@ const main = async () => {
         : Number(treffer4f5[1]) * 60 + Number(treffer4f5[2]);
       console.log(`[schritt-4f5] Anzeige: "${String(anzeige4f5)}" (${String(angezeigtSek4f5)} s).`);
       if (angezeigtSek4f5 === null || angezeigtSek4f5 < 3) {
-        fund("Dauer der MP4 (FA-08)", "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt",
-          `Anzeige "${String(anzeige4f5)}"`, "Untersuchung", "composer/liste-ansicht.tsx");
+        fund("Dauer der MP4 (FA-08)", "die Statistik zeigt eine Gesamtdauer mit sequenziellem Inhalt",
+          `Anzeige "${String(anzeige4f5)}"`, "Untersuchung", "composer/statistik.tsx");
       } else {
         const name4f5 = "durchlauf-fa08-" + Date.now();
         const ziel4f5 = path.join(WURZEL, "projects", aktivesProjektId, "output", `${name4f5}.mp4`);
@@ -3852,8 +3852,16 @@ const main = async () => {
     // ziehen (Dauer aendert sich) und mit dem Undo-PFEIL zuruecknehmen. Zuvor schrieb
     // der Dauer-/Trim-Weg am Undo-Stapel vorbei - der Pfeil tat fuer ihn nichts.
     {
-      await klick('[data-testid="composer-ansicht-liste"]');
-      await schlafe(700);
+      // 02.11.2026: Die Element-Bedienung (Regler, Griffe) liegt jetzt im Sidepanel -
+      // Block in der Zeitleiste waehlen, Ansicht "Eigenschaften". Die versteckte Liste
+      // war der Grund, aus dem dieser Schritt eine "Untersuchung" blieb.
+      await seite.evaluate(() => {
+        const block = document.querySelector('[data-testid^="zeitleiste-block-"]');
+        if (block instanceof HTMLElement) block.click();
+      });
+      await schlafe(300);
+      await zeigeAnsicht("eigenschaften");
+      await schlafe(400);
       // HOE HENBUDGET (Nachtrag 01.11.2026): Die Aufteilung Buehne / Zeitleiste /
       // Mitte ist die Frage, an der die Bedienbarkeit haengt (die Liste war 18 px hoch
       // und der Dauer-Regler nicht treffbar). Deshalb wird sie in JEDEM Lauf gemessen,
