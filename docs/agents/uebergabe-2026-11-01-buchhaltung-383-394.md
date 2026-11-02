@@ -428,3 +428,28 @@ animieren nicht.
 
 **Nächster Schritt bleibt:** Leiste + Panel, drei Ansichten — aber jede Ansicht wird nach DIESER
 Messlatte geschnitten, nicht nach dem, was heute in der Rail steht.
+
+### 16a. DER FILTER (Niklas, 02.11.2026)
+
+> „schneller oder sehr viel besser sonst passt es"
+
+**Jedes Element des Panels muss EINES von beiden sein — schneller oder sehr viel besser.
+Sonst gehört es nicht hinein.** Nicht „auch ganz hübsch", nicht „schon immer da". Die Frage je
+Zeile, je Knopf, je Zahl: *Macht das den Werbebau schneller, oder kann PowerPoint das nicht?*
+
+Angewendet auf den Bestand:
+
+| Element | Urteil |
+|---|---|
+| Aktion mit **Bild** in der Liste | **schneller** (kein Öffnen, um zu vergleichen) |
+| **„läuft bei 0:12 · 3×"** an der Aktion | **sehr viel besser** (Rückverweis gibt es in PowerPoint nicht) |
+| **„Ins Video"** als Klick | **schneller** als der Drag |
+| **Duplizieren mit neuem Preis** | **schneller** |
+| **„+10 s · Gesamt 0:42 · Band 3×"** | **sehr viel besser** |
+| **±1 Frame**, **„an die Abspielmarke"** | **sehr viel besser** (frame-genau kann PowerPoint nicht) |
+| nackte Dauer-Zahl („10 s") | **fällt durch** — weder schneller noch besser |
+| Titelliste ohne Bild (heutige Aktionen) | **fällt durch** |
+| Statistik „Elemente 2 · Videos 1 · Segmente 1" | **fällt durch** — Buchhaltung, kein Nutzen für den Bau |
+
+**Konsequenz:** Der Filter ist ein **Streich-Werkzeug**, kein Rechtfertigungsformular. Was
+durchfällt, wird entfernt und nicht umgestaltet.
