@@ -173,4 +173,43 @@ Was daraus folgt:
 3. **Was klappt auf?** Nur auf Klick, oder automatisch, wenn ein Element gewählt wird (dann
    wäre der Inspector an die Auswahl gekoppelt — Frage aus Abschnitt 5)?
 
+---
+
+## 8. PRÄZISIERUNG (Niklas, 02.11.2026): Leiste statt Zuklappen
+
+> „vielleicht so eine Leiste wie in VS Code zum Ein- und Ausklappen … aber so eine vertikale
+> Leiste wie in VS Code wo man zwischen verschiedenen Sidepanels wechseln kann macht mehr Sinn"
+
+**Breite ziehen entfällt.** `expandable/collapsible` im Sinn von „breiter/schmaler" ergibt
+keinen Sinn — gebraucht wird eine **schmale senkrechte Leiste** (VS Codes Activity Bar) und
+daneben **ein Panel**, dessen Inhalt sie umschaltet.
+
+- **Die Leiste ist immer da** (schmal). Ein Klick auf das **aktive** Symbol klappt das Panel zu
+  (VS-Code-Verhalten), ein Klick auf ein anderes Symbol wechselt die Ansicht.
+- **Die Panelbreite wird nicht gezogen.** Sie wird einmal festgelegt und **gemessen** — das ist
+  Niklas' Punkt 2 („das muss man herausfinden").
+- **Zugeklappt bleibt die Leiste**: der Einstieg ist immer sichtbar, kein versteckter Rückweg.
+
+**Vorgeschlagene Ansichten (drei, nicht mehr):**
+
+| Symbol | Ansicht | Inhalt heute |
+|---|---|---|
+| ▣ | **Video** | Import + Videozeile (`bibliothek`, oberer Teil) |
+| ✦ | **Aktionen** | Aktionsliste + „+ Neue Aktion" (unterer Teil) |
+| ⚙ | **Eigenschaften** | die Bedienung des GEWÄHLTEN Blocks: Dauer, Trim, Unterbrechungen, Band, Entfernen — heute in `element-zeile` der versteckten Liste |
+
+**Die „Reihenfolge" wird gestrichen** (Streichung aus Abschnitt 3): Die Zeitleiste zeigt die
+Ordnung, die Gesamtdauer steht schon in der Statistik am Fuß der Spalte. Eine eigene Liste
+dafür wäre eine dritte Anzeige desselben Gegenstands.
+
+**Damit sind die drei Fragen aus Abschnitt 7 beantwortet:**
+1. Zugeklappt → **Leiste bleibt**, Panel weg. ✔
+2. Breite → **nicht ziehen**, einmal festlegen und messen. ✔
+3. Aufklappen → **über die Leiste**; zusätzlich kann die Auswahl eines Blocks automatisch auf
+   „Eigenschaften" schalten. **Das ist noch offen.**
+
+**Erster Bau-Schritt (klein und sichtbar):** Leiste + leeres Panel + Umschalten, **ohne Inhalte
+umzuziehen** — dann ist die Breite messbar und die Bedienung am Fenster beurteilbar.
+
+
 
