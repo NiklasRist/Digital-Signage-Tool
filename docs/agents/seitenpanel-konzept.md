@@ -211,5 +211,51 @@ dafür wäre eine dritte Anzeige desselben Gegenstands.
 **Erster Bau-Schritt (klein und sichtbar):** Leiste + leeres Panel + Umschalten, **ohne Inhalte
 umzuziehen** — dann ist die Breite messbar und die Bedienung am Fenster beurteilbar.
 
+---
+
+## 9. Die MESSLATTE (Niklas, 02.11.2026)
+
+> „es muss besser sein für produktwerbung als powerpoint und am besten schneller vom aufwand
+> her und das ist es nicht"
+
+**Zwei Bedingungen, nicht eine.** Schönheit genügt nicht: Das Werkzeug muss für Produktwerbung
+**besser** sein *und* **weniger Aufwand** kosten als PowerPoint. Heute ist es langsamer, und
+zwar aus fünf Gründen, die alle im Code liegen:
+
+1. draggen statt klicken (bei 800 px ein Ziel von wenigen Pixeln),
+2. jede Aktion muss von Hand gebaut werden — kein Preset, keine Kopie,
+3. zwei Aktionen sind ohne Öffnen nicht unterscheidbar (kein Bild in der Liste),
+4. die Folge einer Änderung ist unsichtbar (Gesamtdauer, Bandwiederholungen),
+5. das Ergebnis zeigt sich erst nach dem Rendern.
+
+**Der Vorsprung, den PowerPoint nicht hat** (und der heute verschenkt wird): Das Band
+**wiederholt sich von selbst** durch das ganze Video, frame-genau bei 30 fps, markengebunden.
+In PowerPoint müsste man die Folie zwanzigmal kopieren.
+
+### Was an Effekten mit der vorhandenen Maschine geht
+
+Der Band-Overlay ist heute **statisch**: `overlay=x=0:y=<by>` ohne Zeitausdruck
+(`filter-einblendung.ts:258`). Bewegung ist damit kein neuer Motor, sondern ein Parameter —
+`overlay` nimmt Ausdrücke in `t` von sich aus.
+
+| Effekt | Aufwand | PowerPoint |
+|---|---|---|
+| **Band fährt ein/aus** (0,3 s) | klein — `y` als Ausdruck | nein |
+| **Motiv atmet** (langsamer Zoom auf dem Produktbild) | klein — `zoompan` | nur als Animation je Folie |
+| **Unterbrechung mit Übergang** statt hartem Schnitt | klein — `fade` über 6–8 Frames | nein (anderer Schnitt) |
+| **Mehrere Varianten in EINEM Lauf** (3 Angebote, ein Video) | mittel | nein |
+
+**Ehrliche Grenze:** Das Band ist EIN gerendertes Standbild (`standbild.ts`). Bewegung *im*
+Band (Text fliegt ein) hieße, eine Bildfolge zu rendern — teuer und langsam. Das Band als
+Ganzes zu bewegen ist billig, seinen Inhalt zu animieren nicht. Diese Grenze gehört in die
+Entscheidung, nicht in eine Überraschung.
+
+### Der Hebel für „weniger Aufwand"
+
+Nicht mehr Effekte zuerst, sondern **kein Schritt zu viel**: „Ins Video" als Knopf statt Drag ·
+Preset beim Anlegen (Vorlage + Marke + Dauer vorbelegt) · „Duplizieren mit neuem Preis" ·
+Vorschau an der Abspielmarke statt erst nach dem Rendern.
+
+
 
 
