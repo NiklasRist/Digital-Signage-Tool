@@ -510,3 +510,30 @@ defekten Code.
 **„läuft bei 0:12 · 3×"**. **Vorher messen (Lücke L-C):** ob `composer/thumbnails.ts` ein
 AKTIONS-Motiv liefert oder nur Videobilder — sonst wird eine Vorschau versprochen, die es
 nicht gibt.
+
+## 18. SIDEPANEL, SCHRITT 2 GEBAUT (`250f736`, `23be1f1`, 02.11.2026)
+
+**Die Aktionszeile ist jetzt ein Regal-Eintrag: Bild + Verwendung.**
+
+- **`verwendungen.ts`** (`250f736`, rein): Startsekunde im Band = Summe der Abschnitte davor;
+  Wiederholungszahl aus **derselben** Rechnung wie der Block `x3` (`baueBandspur`);
+  Unterbrechungen aufsteigend; laeuft eine Aktion zweimal in der Folge, nennt die Zeile die
+  **erste** Stelle. Ohne Verwendung: „noch nicht im Video".
+- **`aktions-vorschau.ts`** (`23be1f1`): zeichnet das Motiv **einmal** (voller Canvas), verkleinert
+  es und merkt nur das kleine Bild (max. 40). **Der Schluessel sind die EINGABEN**, nicht die ID —
+  sonst bliebe nach jeder Textaenderung das alte Motiv stehen. Ohne Canvas → `null`, kein Wurf.
+- **`bibliothek-ansicht.tsx`**: laedt die Bilder der Aktionen **vor** dem Zeichnen
+  (`bereiteMotiveVor`) — sonst waere das Motiv ein Rahmen ohne Inhalt. Zaehler statt Zeitgeber.
+
+**BEFUND AM FENSTER (nur die Messung zeigte ihn):** Der Treiber druckt die Motivbreiten
+**474** und **71** — das erste Motiv ist ein **Band** (1920 × 162 = 11,85:1). Eine feste
+Anzeigebox 71 × 40 haette es zusammengequetscht. Die Anzeigegroesse folgt jetzt dem
+Seitenverhaeltnis, gedeckelt auf **96 px**; ein Band wird dadurch **flach** (96 × 8) — das ist,
+was ein Band ist.
+
+**Belegt:** Typecheck 0, ESLint 0, Unit **5404/5404**; Treiber **1 Befund** (Bandliste) — beide
+Motive im Fenster **gezeichnet** (`motivBreite 474 / 71`).
+
+**OFFEN (Niklas):** Ein Band-Motiv ist bei 8 px Hoehe kaum lesbar; es zeigt vor allem „das ist
+ein Band". Groesser waere nur ueber Verzerrung oder Beschnitt — beides eine Lüge ueber das
+Motiv. **Entscheidung noetig, ob das reicht.**
