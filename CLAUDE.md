@@ -49,7 +49,7 @@ in DERSELBEN Datei, damit es keine zweite Wahrheit gibt).
 - **NÄCHSTER SCHRITT (Konzept Abschnitt 10):** die **Aufwand-Senker** — **„Ins Video" als Knopf**
   statt Drag und **Preset beim Anlegen**. Danach die **Effekte**: Band fährt ein/aus,
   Motiv atmet, Übergang statt hartem Schnitt.
-- **Nicht gepusht:** **13 Commits** vor `origin/main`. **Push nur auf Anweisung.**
+- **Nicht gepusht:** **23 Commits** vor `origin/main`. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (01.11.2026, sechsunddreissigste Sitzung: Buchhaltung #383–#394, Aktionen-Auswahl, Loesch-Sperrgruende) – historisiert durch den Abschnitt darueber
 
