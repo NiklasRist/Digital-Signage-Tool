@@ -468,3 +468,45 @@ Das Panel ist Mittel, das Ergebnis ist der Zweck. Folgen:
   Also muss gelten: was im Panel geändert wird, ist **sofort auf der Bühne** zu sehen.
 - **Der Prüfstein jeder Änderung** ist damit nicht „ist die Liste schöner", sondern „sieht der
   fertige Spot dadurch besser aus, und komme ich schneller dorthin".
+
+## 17. SIDEPANEL, SCHRITT 1 GEBAUT (`fff1d85`, 02.11.2026)
+
+**Leiste und Panel sind DASSELBE** — kein zweiter Block, kein Overlay.
+
+- **`seitenleiste.tsx`:** Leiste **36 px** (drei Symbole: Video · Aktionen · Eigenschaften,
+  Zuklapp-Pfeil unten), Panel **240 px**. **EINE Regel** im Bauteil: Klick auf die **offene**
+  Ansicht klappt zu, jeder andere Klick öffnet sie. Der Aufrufer (`composer/index.tsx`) speichert
+  nur `{ ansicht, offen }` — er rechnet die Regel nicht nach.
+- **`bibliothek-ansicht.tsx`** bekam `bereich: 'alle' | 'video' | 'aktionen'`. **Ohne Angabe
+  bleibt beides sichtbar** — deshalb sind alle bestehenden Aufrufer und Tests unberührt.
+- **„Eigenschaften" ist noch leer** und sagt, was zu tun ist (Anbindung an die Auswahl = Schritt 3).
+- **BEFUND AM BILD, den keine Zahl zeigte:** Der **gedrückte Zustand war unsichtbar**.
+  `SymbolKnopf` setzt seinen Hintergrund **inline**, und inline schlägt die
+  `aria-pressed`-Regel aus `basis.css` — das galt für **jede** Leiste der App (auch die
+  Projektleiste seit #456). Jetzt Akzentfläche mit dunkler Schrift; ein Test prüft den
+  **sichtbaren** Zustand, nicht nur `aria-pressed`.
+
+**Gemessen am Fenster (Treiber 4f4):**
+
+| | Breite |
+|---|---|
+| Sidepanel | **284** (Leiste 36 + Panel 240 + 8) |
+| Bühne / Zeitleiste | **476** |
+| Hauptspalte **zugeklappt** | **724** (Rail weg — gemessen) |
+| wieder aufgeklappt | **476** (exakt zurück) |
+
+**Belegt:** Typecheck 0, ESLint 0, Unit **5385/5385** (353 Dateien, +9: fünf Leiste, drei
+Bereichs-Filter, einer sichtbarer Zustand). Treiber **1 Befund** (Bandliste) + 2 Untersuchungen
++ 1 MANUELL — **derselbe Stand wie vor dem Umbau**.
+
+**Falle für die nächste Sitzung:** Der Treiber wählt die Ansicht selbst über die Leiste
+(`zeigeAnsicht`, liest `aria-pressed` — ein Klick auf die offene Ansicht würde **zuklappen**).
+Der Panel-Zustand **überlebt kein Projekt-Neuöffnen**: Der Composer setzt ihn auf „Video" zurück.
+Deshalb schaltet der Treiber an jeder der 25 Stellen, an denen er den Composer betritt.
+Zwei Protokoll-Läufe sind als **UNGÜLTIG** markiert — sie maßen falsche Ansichten, nicht
+defekten Code.
+
+**Nächster Schritt (Schritt 2 nach Konzept Abschnitt 10):** Aktionszeile mit **Bild** und
+**„läuft bei 0:12 · 3×"**. **Vorher messen (Lücke L-C):** ob `composer/thumbnails.ts` ein
+AKTIONS-Motiv liefert oder nur Videobilder — sonst wird eine Vorschau versprochen, die es
+nicht gibt.
