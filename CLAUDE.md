@@ -11,6 +11,30 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
+## NACHTRAG 02.11.2026 — gilt vor dem folgenden Abschnitt
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md),
+Abschnitte 12–15.**
+
+- **Gestaltung (01./02.11.):** `src/renderer/styles/basis.css` — vorher gab es **kein CSS**.
+  Reiter als Leiste, EIN Hauptknopf, Undo/Redo als Symbole (`aba05f5`).
+- **Beleglücke GESCHLOSSEN:** Unit **5376/5376** (353 Dateien), 27–36 s, Exit 0. Die Timeouts der
+  Vorsitzung waren **Rechnerlast**, kein Codefehler.
+- **Rail entlastet (`d379289`):** „Aktion anlegen" steht hinter „+ Neue Aktion"; Überlauf
+  0 px zu / 48 px offen / 67 px nach dem Anlegen.
+- **Lineal voll breit (`6e48265`):** Grundlinie 510 px, Graduierung endet mit dem Inhalt
+  (106 px). Entscheidung Niklas: rechts keine Ticks, weil das Projekt dort endet.
+- **REGEL: vor jeder Fenstermessung `npm run build`.** `npm run durchlauf` fährt `dist/`, nicht
+  den Quellstand. Der erste Lauf nach Schritt 1 maß alten Code und erzeugte drei Scheinbefunde
+  (Protokollblock als UNGÜLTIG markiert).
+- **Treiber:** **1 Befund** — der bekannte Bandliste-Fund — plus 2 Untersuchungen und 1 MANUELL.
+  **3 davon sind Folgen von „Mitte raus"** (Wiedergabeliste `display: none`).
+- **NÄCHSTER SCHRITT:** **Seitenpanel** — Konzept steht in
+  [`docs/agents/seitenpanel-konzept.md`](docs/agents/seitenpanel-konzept.md), **nichts gebaut**.
+  **Niklas entscheidet:** A (Panel schiebt) oder B (Panel liegt darüber), und ob der Inspector an
+  die Auswahl gekoppelt ist.
+- **Nicht gepusht:** `d379289` und `6e48265`. **Push nur auf Anweisung.**
+
 ## STAND HEUTE (01.11.2026, sechsunddreissigste Sitzung: Buchhaltung #383–#394, Aktionen-Auswahl, Loesch-Sperrgruende) – gilt vor ALLEM weiter unten
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md).**

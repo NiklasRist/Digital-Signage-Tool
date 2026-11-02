@@ -350,6 +350,33 @@ Sitzung nicht sauber laufen** — der Rechner stand bei Last 13–30 (I/O-Stau, 
 - **Nächster Schritt:** das **Seitenpanel-Konzept** (Liste/Inspector, Bibliothek, Auswahl
   und Bearbeiten eines Elements) — **gemeinsam**, nicht allein gebaut.
 
+## 15. Seitenpanel: Ist-Stand, Lücken, Streichliste (02.11.2026)
+
+**Volltext: [`seitenpanel-konzept.md`](seitenpanel-konzept.md).** Konzeptentwurf, **nichts gebaut.**
+Die Entscheidung in Abschnitt 5 ist **OFFEN**.
+
+- **Die teuerste Stelle, belegt:** Die Wiedergabeliste steht seit 01.11.2026 auf `display: none`
+  (`composer/index.tsx:1084`). Daran hängen `element-bedienung`, `element-regler`,
+  `element-griff-*`, `element-band` und `wiedergabeliste-laenge`. **Damit sind 3 der 4 offenen
+  Treiber-Einträge Folgen EINER Entscheidung:** der Befund „Bandliste lässt sich nicht öffnen"
+  und die zwei Untersuchungen (Gesamtdauer, Dauer-Zug). Der vierte ist der native Export-Dialog
+  (MANUELL, unverändert).
+- **Fünf Lücken benannt:** (L1) ein Zeitleisten-Element ist nicht bearbeitbar; (L2) s. o.;
+  (L3) kein Inspector für die Auswahl; (L4) die Aktionen-Liste steht doppelt (Rail +
+  `aktion-bibliothek`, 260 px); (L5) zwei Muster für Editoren (Reiter vs. Ansicht über der
+  Reiterfläche).
+- **Drei Streichungen vorgeschlagen:** der Umschalter Zeitleiste/Liste, die Bibliothek im
+  Aktionen-Editor, der Reiter „Aktionen" (die größte — eigene Entscheidung).
+- **Vorschlag:** ein ausklappbares Panel mit drei Abschnitten — Kopf („was ist gewählt?") ·
+  Eigenschaften (heute `element-zeile`) · Reihenfolge (heute `wiedergabeliste`). Damit werden
+  L1–L3 erreichbar, **ohne Produktlogik zu ändern**: die Flächen existieren und werden nur wieder
+  gezeigt und an die Auswahl gebunden.
+- **OFFEN, von Niklas zu entscheiden:** (a) **A — das Panel schiebt** (nimmt Breite, Bühne wird
+  bei 800 schmal) oder **B — das Panel liegt darüber** (verdeckt Bühne/Zeitleiste, nichts
+  schrumpft). Bei 800 × 572 passen 240 + 520 + 300 px nicht in 784. (b) Ist der Inspector an die
+  **Auswahl** gekoppelt?
+
+
 
 
 
