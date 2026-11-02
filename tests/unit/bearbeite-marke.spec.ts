@@ -72,7 +72,6 @@ type Marke = {
 
 const GEERBT = { geerbt: true } as const;
 type MarkenTeilwerteLoose = Parameters<typeof bearbeiteMarke>[1];
-type UnknownMarke = { farben: Record<string, string>; [k: string]: unknown };
 
 describe("bearbeiteMarke (#285)", () => {
   it("ein eigenstaendiges Feld farben.akzent wird uebernommen und erscheint in der Aufgeloesten Rueckgabe", async () => {

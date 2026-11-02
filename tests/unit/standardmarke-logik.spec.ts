@@ -94,15 +94,6 @@ describe("istWechselNoetig (#324) - drei benannte Faelle", () => {
   });
 });
 
-function wirkungen(ueber: { aktiv?: Project; uebernimmt: (projekt: Project) => void; liste: () => Promise<unknown>; melde: (a: string, m: string) => void }): StandardmarkenWirkungen {
-  return {
-    holeProjekt: vi.fn(() => ueber.aktiv ?? null),
-    uebernimmProjekt: vi.fn(ueber.uebernimmt),
-    aktualisiereProjektliste: ueber.liste,
-    meldeFehler: vi.fn(ueber.melde),
-  };
-}
-
 describe("wechsleStandardMarke (#324)", () => {
   it("GENAU EIN Ruf, Nutzlast EXAKT { projektId, markeId }; Projekt toBe-gleich zurück; beide Wirkungen", async () => {
     const projekt = { id: P_ID, standardMarkeId: M_LIMA } as unknown as Project;
@@ -203,4 +194,3 @@ describe("wechsleStandardMarke (#324)", () => {
 });
 
 import type { Project } from "../../src/shared/contracts/project";
-import type { StandardmarkenWirkungen } from "../../src/renderer/projekt-verwaltung/standardmarke";

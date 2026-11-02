@@ -252,7 +252,7 @@ describe('composer/index.tsx - ein Video (#422)', () => {
     expect(d.fuegeElementHinzu).toHaveBeenCalledTimes(1)
     expect(d.fuegeElementHinzu.mock.calls[0]?.[0]).toBe('asset-neu')
     expect(d.setzeListe).toHaveBeenCalledTimes(1)
-    expect((d.setzeListe.mock.calls[0]?.[0] as Listenelement[]).map((e) => e.id)).toEqual(['el-neu'])
+    expect((d.setzeListe.mock.calls[0]?.[0] as Listenelement[] | undefined)?.map((e) => e.id)).toEqual(['el-neu'])
   })
 
   it('ERSETZEN: das alte Video wird im BESTAND entfernt, das neue kommt dazu', async () => {
@@ -280,6 +280,6 @@ describe('composer/index.tsx - ein Video (#422)', () => {
     expect(d.entferneElementAusListe.mock.calls[0]?.[0]).toBe('el-alt')
     // Der Sicht-Schreiber des Entfernens liefert die neue Liste (hier die Attrappe).
     expect(d.setzeListe).toHaveBeenCalledTimes(1)
-    expect((d.setzeListe.mock.calls[0]?.[0] as Listenelement[]).map((e) => e.id)).toEqual(['el-neu'])
+    expect((d.setzeListe.mock.calls[0]?.[0] as Listenelement[] | undefined)?.map((e) => e.id)).toEqual(['el-neu'])
   })
 })

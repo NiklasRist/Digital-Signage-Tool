@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { createElement, type ReactElement, type ReactNode } from 'react'
+import { createElement, type ReactElement } from 'react'
 
 import type { Uebergabe } from '../../src/renderer/composer/reparatur-optionen'
 import type { Project } from '../../src/shared/contracts/project'

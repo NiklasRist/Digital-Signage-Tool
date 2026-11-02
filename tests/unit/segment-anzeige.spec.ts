@@ -91,9 +91,6 @@ function rendere(props: Segmenteigenschaften): { behaelter: HTMLDivElement; wurz
   return { behaelter: ziel, wurzel, fertig: () => act(() => wurzel.unmount()) }
 }
 
-const kinderVon = (ziel: HTMLElement): HTMLElement[] =>
-  Array.from(ziel.querySelectorAll('canvas'))
-
 beforeEach(() => {
   doppel.aufrufe = []
   doppel.schriftenBereit = true

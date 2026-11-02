@@ -1,7 +1,7 @@
 // Tests zu #256 (M7-64) - die reine Seite (uebergabe.ts, ohne Browser).
 // M7-08 wird ECHT benutzt; `rechneStandNeu`, `wechsleReiter`, `holeReiter`,
 // `starteMedienImport`, `schliesseMediumFixAb` und `meldeFehler` sind Doppel.
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { KaputteStelle } from '../../src/renderer/composer/kaputt-erkennung'
 import type { ReparaturStand } from '../../src/renderer/composer/reparatur-fuehrung'
@@ -173,7 +173,7 @@ describe('reparaturhalter (#256)', () => {
     const a = vi.fn()
     const b = vi.fn()
     const aboA = halter.aufLageGeaendert(a)
-    const aboB = halter.aufLageGeaendert(b)
+    halter.aufLageGeaendert(b)
     expect(a).not.toHaveBeenCalled()
 
     halter.setzeLage(LEERE_SHELL_REPARATUR)

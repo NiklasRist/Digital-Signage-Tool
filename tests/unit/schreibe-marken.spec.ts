@@ -261,8 +261,7 @@ describe("aendereBestand (#277)", () => {
     await schreibe("marken.json", "{ defekt");
     await schreibe("marken.json.bak", GERETTET);
     await ladeBestand();
-    const bakVorher = await fs.readFile(path.join(zustand.ordner, "marken.json.bak"), "utf8");
-
+    
     await aendereBestand((bestand: import("../../src/main/marken-store/schreibe-marken").MarkenEintrag[]) => {
       bestand.push({ id: "n", name: "Neu", parent: null, eingebaut: false, farben: {}, schriften: {} });
       return { ok: true, wert: { bestand, wert: 1 } };

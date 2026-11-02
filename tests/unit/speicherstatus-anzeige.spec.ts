@@ -6,7 +6,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { createElement, type ReactElement } from 'react'
 
-import type { SpeicherEreignis, Speicherlage } from '../../src/renderer/app-shell/speicherstatus-lage'
+import type { SpeicherEreignis } from '../../src/renderer/app-shell/speicherstatus-lage'
 import { SpeicherHinweis, holeSpeicherlage } from '../../src/renderer/app-shell/speicherstatus.tsx'
 
 

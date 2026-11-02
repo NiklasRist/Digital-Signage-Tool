@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { FarbRolle, Marke, SchriftRolle } from "../../src/shared/contracts/marke";
+import type { FarbRolle, SchriftRolle } from "../../src/shared/contracts/marke";
 import type { MarkenEintrag } from "../../src/main/marken-store/schreibe-marken";
 import { loeseMarkeAuf } from "../../src/main/marken-store/vererbung";
 

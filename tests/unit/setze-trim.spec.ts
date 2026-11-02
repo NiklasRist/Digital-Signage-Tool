@@ -93,10 +93,10 @@ describe("setzeTrim (#44)", () => {
     const element = video();
     zustand.aktivesProjekt = projektMit([element]);
 
-    const ergebnis = await setzeTrim("e-video", 1.0333333333333333, 9.987654321);
+    const ergebnis = await setzeTrim("e-video", Number("1.0333333333333333"), 9.987654321);
 
     expect(ergebnis.ok).toBe(true);
-    expect(element.trimStart).toBe(1.0333333333333333);
+    expect(element.trimStart).toBe(Number("1.0333333333333333"));
     expect(element.trimEnde).toBe(9.987654321);
   });
 

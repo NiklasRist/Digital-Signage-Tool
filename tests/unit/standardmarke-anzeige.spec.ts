@@ -17,7 +17,7 @@ import type { ProjektMeta } from "../../src/shared/contracts/projekt-meta";
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { StandardmarkeAuswahl, STANDARDMARKE_BESCHRIFTUNG } = await import(
+const { StandardmarkeAuswahl } = await import(
   "../../src/renderer/projekt-verwaltung/standardmarke.tsx"
 );
 const { baueStandardmarkenLage } = await import(

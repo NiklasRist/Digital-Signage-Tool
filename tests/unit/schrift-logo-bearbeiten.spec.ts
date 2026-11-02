@@ -177,7 +177,7 @@ describe("importiereLogo (#298)", () => {
         folge.push(kanal);
         return { ok: true as const, wert };
       });
-      h.uebernimme.mockImplementationOnce((m: Marke) => folge.push("uebernimm"));
+      h.uebernimme.mockImplementationOnce((_m: Marke) => folge.push("uebernimm"));
 
       const antwort = (await importiereLogo(DIE_ID, "/tmp/logo.png")) as { wert: Marke };
 

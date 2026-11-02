@@ -23,7 +23,6 @@ const {
   aufUebersichtGeaendert,
   oeffneMarke,
   holeGeoeffneteMarke,
-  aufGeoeffneteMarkeGeaendert,
   erstelleEigenstaendigeMarke,
   uebernimmAktualisierteMarke,
 } = await import("../../src/renderer/marken-editor/marken-uebersicht");
@@ -136,7 +135,7 @@ describe("oeffneMarke (#295)", () => {
 describe("erstelleEigenstaendigeMarke (#295)", () => {
   it("sendet GENAU { name, parentId: null } - das Feld parentId ist VORHANDEN", async () => {
     const neu = attrappeMarke("N");
-    h.rufeAuf.mockImplementation(async (kanal: string, nutzlast: unknown) => {
+    h.rufeAuf.mockImplementation(async (kanal: string, _nutzlast: unknown) => {
       if (kanal === "marken:erstelleMarke") return { ok: true as const, wert: neu };
       if (kanal === "marken:leseMarke") return { ok: true as const, wert: neu };
       if (kanal === "marken:listeMarken") return { ok: true as const, wert: [attrappeMarke("A"), neu] };
@@ -196,7 +195,7 @@ describe("erstelleEigenstaendigeMarke (#295)", () => {
 
   it("ein 200-Zeichen-Name wird UNVERAENDERT gesendet (kein trim, keine eigene Grenze)", async () => {
     const neu = attrappeMarke("N");
-    h.rufeAuf.mockImplementation(async (kanal: string, nutzlast: unknown) => {
+    h.rufeAuf.mockImplementation(async (kanal: string, _nutzlast: unknown) => {
       if (kanal === "marken:erstelleMarke") return { ok: true as const, wert: neu };
       if (kanal === "marken:leseMarke") return { ok: true as const, wert: neu };
       if (kanal === "marken:listeMarken") return { ok: true as const, wert: [neu] };

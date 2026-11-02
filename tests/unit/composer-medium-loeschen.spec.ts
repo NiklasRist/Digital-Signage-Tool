@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Project } from '../../src/shared/contracts/project'
 import type { Asset } from '../../src/shared/contracts/asset'
-import type { Aktion } from '../../src/shared/contracts/aktion'
 import {
   pruefeLoeschLage,
   benenneReferenzen,
@@ -149,7 +148,7 @@ describe('medium-loeschen (Renderer)', () => {
 
       // Mock rufeAuf
       const originalRufeAuf = await import('../../src/renderer/ipc-client/rufe-auf')
-      const spyRufeAuf = vi.spyOn(originalRufeAuf, 'rufeAuf').mockImplementation(async (kanal, nutzlast) => {
+      const spyRufeAuf = vi.spyOn(originalRufeAuf, 'rufeAuf').mockImplementation(async (kanal, _nutzlast) => {
         aufrufe.push(`rufeAuf:${kanal}`)
         return { ok: true, wert: { auftragId: 'auftrag-123' } } as any
       })

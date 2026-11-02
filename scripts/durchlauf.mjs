@@ -370,8 +370,7 @@ const main = async () => {
     }
     const ausgabenBereich = await stehtDa('[data-testid="composer-ausgaben"]');
     if (ausgabenBereich) {
-      const exportierKnopf = await seite.$('[data-testid="composer-ausgaben"] button');
-      let gefunden = false;
+        let gefunden = false;
       for (const knopf of await seite.$$('[data-testid="composer-ausgaben"] button')) {
         const text = await seite.evaluate((e) => e.textContent, knopf);
         if (text === "Exportieren") {
@@ -5462,8 +5461,7 @@ const main = async () => {
                 await schlafe(1_500);
                 const nachEntfernen4l = await zeilen4l();
                 const wartWeg4l = gleicheZeile(nachEntfernen4l, "Import: " + path.basename(wartPfad)) === null;
-                const renderNoch4l = gleicheZeile(nachEntfernen4l, `Render: ${renderName4l}.mp4`);
-                if (!entferntKlick4l || !wartWeg4l) {
+                          if (!entferntKlick4l || !wartWeg4l) {
                   fund("Warteschlange (FA-18)", "der Schalter nimmt den anstehenden Auftrag aus der Leiste",
                     `geklickt=${String(entferntKlick4l)}, Zeile weg=${String(wartWeg4l)}`,
                     "Befund", "queue-panel/index.tsx");

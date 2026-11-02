@@ -11,7 +11,6 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { createElement, type ReactElement } from 'react'
 
-import type { Aktion } from '../../src/shared/contracts/aktion'
 import { medienUrl } from '../../src/renderer/preview-player/medien-url'
 
 const doppel = vi.hoisted(() => ({
@@ -62,12 +61,9 @@ function rendere(props: VideoProps): { behaelter: HTMLDivElement; wurzel: Root; 
   return { behaelter: ziel, wurzel, fertig: () => act(() => wurzel.unmount()) }
 }
 
-let anmeldungsSpion: ReturnType<typeof vi.fn> | null = null
-
 beforeEach(() => {
   doppel.anmeldungen = []
   doppel.abmeldungen = []
-  anmeldungsSpion = null
   vi.spyOn(HTMLMediaElement.prototype, 'load')
 })
 

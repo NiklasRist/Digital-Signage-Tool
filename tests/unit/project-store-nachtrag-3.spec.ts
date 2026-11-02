@@ -60,7 +60,7 @@ describe("verdrahteProjectStoreNachtrag3IPC (#323)", () => {
       folge.push("leseMarke:" + markeId);
       return { ok: true as const, wert: { id: markeId } };
     });
-    h.setzeStandardMarke.mockImplementation(async (projektId: string, markeId: string) => {
+    h.setzeStandardMarke.mockImplementation(async (projektId: string, _markeId: string) => {
       folge.push("setzeStandardMarke");
       return { ok: true as const, wert: { id: projektId } };
     });

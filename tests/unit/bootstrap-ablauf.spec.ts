@@ -6,7 +6,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  ANFANGS_BOOTSTRAP,
   baueNachlaufWirkungen,
   starteRenderer,
   type BootstrapLage,
@@ -116,7 +115,7 @@ function baueAutomat(): Automat {
   automat.zugangRoh = eineZugangFassung('roh')
   automat.zugangUmhuellt = {
     ...automat.zugangRoh,
-    setzeProjekt: (projekt: Project) => {
+    setzeProjekt: (_projekt: Project) => {
       automat.log.push('umhuellt/setzeProjekt')
     },
     setzeListe: () => {
@@ -448,7 +447,7 @@ describe('Alle acht Wirkungen sind verdrahtet (Kernnachweis 2)', () => {
   })
 
   it('der Bau verändert zugaenge NICHT (Object.freeze; ohne Wurf) und ruft projektRoh.hole NICHT beim Bauen', () => {
-    const { automat, zugaenge, leere, ausgaben, fehl, einImport } = baueZugaengeFuerWirkungen()
+    const { zugaenge, leere, ausgaben, fehl, einImport } = baueZugaengeFuerWirkungen()
     // Spur statt spyOn: spyOn auf dem SPAETER eingefrorenen Objekt zerstoert
     // die Nachbarsaetze der Wiederherstellung; ein eigener Wrapper zaehlt.
     const holeAufrufe: number[] = []

@@ -112,3 +112,31 @@ zeigt genau dieses Element)? Gekoppelt ist VS-Code-fremd, hier aber richtig, wei
 schon existiert.
 
 **Nichts davon ist gebaut.**
+
+---
+
+## 6. Die Messung (02.11.2026) — A ist bei 800 nicht baubar
+
+Gemessen am echten Fenster mit einem **temporären 300-px-Platzhalter im DOM** (kein
+Produktcode; danach byte-identisch zurückgenommen, Prüfsumme `2bea33c…` des Treibers gleich).
+Die Breite 1440 wurde über den **Behälter** simuliert (`#wurzel` auf 1440 px), weil
+`window.resizeTo` in Electron nicht greift; das ist zulässig, weil die Flächen ihre Breite vom
+Behälter erben (die Bühne misst per `ResizeObserver`, kein `innerWidth`). **Höhe blieb die echte
+(572).**
+
+| Behälter | ohne Panel | mit 300-px-Panel |
+|---|---|---|
+| **1440** | Hauptspalte **1160** | Hauptspalte **852** |
+| **800** | Hauptspalte **520** | Hauptspalte **212** |
+
+**Folge:**
+- **A (Panel schiebt) ist bei 1440 gut** — 852 px Hauptspalte, die Bühne bleibt brauchbar.
+- **A ist bei 800 nicht baubar** — 212 px Hauptspalte; die Bühne wäre ein senkrechter Streifen
+  (212 × 280, das Video darin 212 × 119). Genau die Lage, aus der #456 entstand („wer Höhe
+  ergänzt, muss den Composer nachmessen" — hier ist es Breite).
+- **B (Overlay) lässt alles stehen**, verdeckt bei 800 aber 300 der 520 px Bühne.
+
+Damit ist die Entscheidung keine Geschmacksfrage mehr, sondern hat eine Zahl. Dritte
+Möglichkeit, noch nicht geprüft: **das Panel ersetzt bei schmalem Fenster die Rail** (240 → 300,
+Hauptspalte 520 → 452) statt daneben zu treten.
+

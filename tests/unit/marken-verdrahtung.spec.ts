@@ -69,7 +69,6 @@ function rufe(kanal: string, nutzlast?: unknown): Promise<unknown> {
 
 const MARKE_ID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 const OK = { ok: true as const, wert: undefined };
-const UNGUELTIG = { ok: false, fehler: { code: "ungueltige_eingabe" } };
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -64,18 +64,6 @@ let server = null;
  * @param {number} code
  * @returns {Promise<never>}
  */
-/** Wartet auf das Ende eines Kindprozesses, hoechstens `ms`. */
-function warteAufEnde(kind, ms) {
-  if (kind.exitCode !== null || kind.signalCode !== null) return Promise.resolve();
-  return new Promise((loese) => {
-    const frist = setTimeout(loese, ms);
-    kind.once("exit", () => {
-      clearTimeout(frist);
-      loese();
-    });
-  });
-}
-
 async function beende(code) {
   herunterfahren = true;
   if (entprellung) clearTimeout(entprellung);

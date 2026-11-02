@@ -13,7 +13,6 @@ import { act, createElement, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 
 import type { Project, Listenelement } from '../../src/shared/contracts/project'
-import type { Aktion } from '../../src/shared/contracts/aktion'
 import type { Vorlage } from '../../src/shared/contracts/vorlage'
 import type { Marke } from '../../src/shared/contracts/marke'
 import type { Zeichenvoraussetzungen } from '../../src/renderer/composer/zeichen-vorbereitung'
@@ -272,10 +271,6 @@ describe('Der Bildtakt (ENTSCHIEDEN 7)', () => {
   })
 })
 
-function drueckeVorher(behaelter: HTMLDivElement): void {
-  const zeitleiste = behaelter.querySelector('[data-testid="vorschau-zeitleiste"]') as HTMLInputElement
-  expect(zeitleiste.value).toBe('12') // 400 ms = 12 Frames
-}
 // ---------------- ENTSCHIEDEN 8/9 ----------------
 
 describe('Die Zustandszeilen', () => {
@@ -347,7 +342,7 @@ describe('Die Marken-Aufloesung (#313, TK 9.15.4)', () => {
     projekt.liste = [
       baueElement({ art: 'segment', ref: 'a-1', dauer: 2, trimStart: 0, trimEnde: 2 }),
     ]
-    const { behaelter, fertig } = rendere(eigenschaften({ projekt }))
+    const { fertig } = rendere(eigenschaften({ projekt }))
     // Doppel-Render durch den Klemm-Effekt sind normale Lebenszeichen: Die
     // Aussage zielt auf den INHALT jeder Anmeldung, nicht auf die Zählerzahl.
     const aufrufe = doppel.segmentAufrufe as Array<{ marke: Marke }>
@@ -373,7 +368,7 @@ describe('Die Marken-Aufloesung (#313, TK 9.15.4)', () => {
       id: 'v-split-v', name: 'Split', höhe: 162,
       parent: null, eingebaut: true, zonen: [],
     }
-    const { behaelter, fertig } = rendere(
+    const { fertig } = rendere(
       eigenschaften({ projekt, voraussetzungen: { vorlagen: [bandVorlage] } }),
     )
     // Doppel-Render ok - der INHALT zählt: toBe zur übergebenden Referenz.
@@ -390,7 +385,7 @@ describe('Die Marken-Aufloesung (#313, TK 9.15.4)', () => {
     projekt.liste = [
       baueElement({ art: 'segment', ref: 'a-1', dauer: 2, trimStart: 0, trimEnde: 2 }),
     ]
-    const { behaelter, fertig } = rendere(eigenschaften({ projekt }))
+    const { fertig } = rendere(eigenschaften({ projekt }))
     expect(
       doppel.segmentAufrufe,
       JSON.stringify(doppel.segmentAufrufe),

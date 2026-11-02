@@ -165,7 +165,7 @@ describe('macheRueckgaengig (#235)', () => {
     expect(erg).toEqual({ ok: true, wert: { art: 'angewendet', projekt: alt } })
     expect(doppel.aufrufe.length).toBe(1)
     expect(doppel.aufrufe[0]?.kanal).toBe(KANAELE.project.setzeBearbeitungsstand)
-    const stand = (doppel.aufrufe[0]?.nutzlast as { stand: Bearbeitungsstand }).stand
+    const stand = (doppel.aufrufe[0]?.nutzlast as { stand: Bearbeitungsstand } | undefined)?.stand
     // Deep-Vergleich des stand: genau der abgelegte Schnappschuss.
     expect(stand).toEqual({
       aktionen: a2,

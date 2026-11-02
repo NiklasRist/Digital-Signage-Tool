@@ -19,7 +19,6 @@ vi.mock('../../src/renderer/template-canvas/zeichne-segment', () => ({ zeichneSe
 import { stelleSchriftenBereit } from '../../src/renderer/template-canvas/schriften'
 import { bereiteLogoVor } from '../../src/renderer/template-canvas/logo-laden'
 import { bereiteMotiveVor } from '../../src/renderer/template-canvas/bild-laden'
-import { findeBildAsset } from '../../src/renderer/action-editor/bibliothek'
 
 import { zeichneSegment } from '../../src/renderer/template-canvas/zeichne-segment'
 import { bereiteVorschauVor, haengeVorschauEin, zeichneVorschau } from '../../src/renderer/action-editor/live-vorschau'

@@ -1,7 +1,6 @@
 // Tests zu #313 - zeichen-vorbereitung.ts: die Bereitstellung der Menge
 // "alle aktion.markeId plus standardMarkeId, entdoppelt", in der festen
 // Reihenfolge Vorlagen -> Schriften -> Marken -> Motive. Alles-oder-nichts.
-import { readFileSync } from 'node:fs'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -54,7 +53,7 @@ vi.mock('../../src/renderer/vorlagen-editor/vorlagen-uebersicht', () => ({
   aufUebersichtGeaendert: () => () => {},
 }))
 
-import { bereiteZeichnenVor, verwirfMotivBestand } from '../../src/renderer/composer/zeichen-vorbereitung'
+import { bereiteZeichnenVor } from '../../src/renderer/composer/zeichen-vorbereitung'
 
 function baueProjekt(teil: Record<string, unknown> = {}): never {
   return {
@@ -71,13 +70,6 @@ function aktion(markeId: string, mitBild = false): never {
     id: `a-${markeId}-${mitBild ? 'mit' : 'ohne'}`, titel: 'T', beschreibung: null, preis: null,
     bildRef: mitBild ? 'asset-1' : null,
     cta: null, standardDauer: null, vorlagenId: 'v-1', markeId, akzentfarbe: null,
-  } as never
-}
-
-function asset(): never {
-  return {
-    id: 'asset-1', typ: 'bild', dateiname: 'motiv.png', originalname: 'motiv.png',
-    maesse: { breite: 2, hoehe: 2 }, dauer: null, importdatum: '2026-10-06', zustand: 'ok',
   } as never
 }
 

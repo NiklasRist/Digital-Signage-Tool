@@ -1,10 +1,7 @@
 // Verhaltenstest zu #336 - pruefeBeendenUndFlush (Reihenfolge der drei Flushs,
 // Wiederholen nur der Gescheiterten, Verwerfen endgueltig) und der Separat-Dialog.
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
-import { createElement, type ReactElement } from 'react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 

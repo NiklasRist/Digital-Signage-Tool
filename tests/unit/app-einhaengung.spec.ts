@@ -336,7 +336,6 @@ import * as vorlagenEditorModul from '../../src/renderer/vorlagen-editor'
 import * as projektVerwaltungModul from '../../src/renderer/projekt-verwaltung'
 import * as markenEditorModul from '../../src/renderer/marken-editor'
 import * as vorschauModul from '../../src/renderer/preview-player/vorschau'
-import * as speicherModul from '../../src/renderer/app-shell/speicherstatus'
 import * as reiterModul from '../../src/renderer/app-shell/reiter'
 import * as uebergabeModul from '../../src/renderer/app-shell/uebergabe'
 import * as bootstrap from '../../src/renderer/app-shell/bootstrap'
@@ -625,7 +624,7 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
 
   it('Der Schlitz speicherHinweis rendert BEIDE Bauteile innerhalb desselben Knotens; das Abo Markenspeicherstatus wird mit GENAU DEM Kanal gebildet (#327)', async () => {
     stelleBereitOhneProjekt()
-  const { behaelter, wurzel } = rendere()
+  rendere()
   await act(async () => {
     await Promise.resolve()
     await Promise.resolve()
@@ -1041,7 +1040,7 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
 
   it('App ruft KEINE der drei Abschluss-Funktionen aus #133 selbst (drei Spione, Null nach einem vollstaendigen Lauf; ENTSCHIEDEN 6)', async () => {
     stelleBereitMitProjekt()
-    const { behaelter } = rendere()
+    rendere()
     await act(async () => {
       await Promise.resolve()
       await Promise.resolve()
@@ -1119,7 +1118,7 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
 
   it('Aendert der Halter seine Lage, wird das Overlay mit der NEUEN Lage neu aufgebaut; GENAU EIN aufLageGeaendert-Abo, kein zweites', async () => {
     stelleBereitOhneProjekt()
-    const { behaelter } = rendere()
+    rendere()
     await act(async () => {
       await Promise.resolve()
       await Promise.resolve()

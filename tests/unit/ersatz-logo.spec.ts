@@ -12,7 +12,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Zone } from '../../src/shared/contracts/vorlage'
 import type { Marke } from '../../src/shared/contracts/marke'
 import type { Aktion } from '../../src/shared/contracts/aktion'
-import type { FarbRolle } from '../../src/shared/contracts/marke'
 
 vi.mock('../../src/renderer/template-canvas/farben', async (importOriginal) => {
   const echt = await importOriginal<typeof import('../../src/renderer/template-canvas/farben')>()

@@ -177,7 +177,7 @@ describe('Wiedergabeliste (#248) – Zeilen', () => {
       element('s-3', 'segment', 'x-2', { dauer: 12 }),
     ]
     const p = projekt(liste)
-    const zeichneBedienung = vi.fn((_: ListenZeileModell) => null as unknown as ReactElement)
+    const zeichneBedienung = vi.fn((_modell: ListenZeileModell) => null as unknown as ReactElement)
     const { behaelter, fertig } = rendere(eigenschaften(p, { zeichneBedienung: zeichneBedienung as never }))
     expect(behaelter.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length).toBe(3)
     const modelle = zeichneBedienung.mock.calls.map((aufruf) => aufruf[0] as unknown as ListenZeileModell)
@@ -247,7 +247,7 @@ describe('Wiedergabeliste (#248) – Zeilen', () => {
   })
 
   it('leere liste: KEINE Zeile, KEIN zeichneBedienung-Aufruf, der Leer-Hinweis', () => {
-    const zeichneBedienung = vi.fn((_: ListenZeileModell) => null as unknown as ReactElement)
+    const zeichneBedienung = vi.fn((_modell: ListenZeileModell) => null as unknown as ReactElement)
     const { behaelter, fertig } = rendere(eigenschaften(projekt([]), { zeichneBedienung: zeichneBedienung as never }))
     expect(behaelter.querySelectorAll('[data-testid="wiedergabeliste-zeile"]').length).toBe(0)
     expect(zeichneBedienung).not.toHaveBeenCalled()

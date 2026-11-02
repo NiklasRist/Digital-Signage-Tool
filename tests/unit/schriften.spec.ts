@@ -76,8 +76,6 @@ describe('stelleSchriftenBereit / sindSchriftenBereit (#110)', () => {
 })
 
 describe('schriftKurzform (#110)', () => {
-  const modul = frischesModul
-
   it('liefert exakt "700 96px \\"Playfair Display\\"" - Zeichen für Zeichen', async () => {
     const m = await frischesModul()
     const schrift: Schrift = {

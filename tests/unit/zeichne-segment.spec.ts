@@ -582,7 +582,7 @@ describe('zeichneSegment (#117/#294)', () => {
       zeichneSegment(aktion(), vorlage([logoZone]), m, m)
       expect(aufrufeErsatz).toHaveLength(1)
       expect(aufrufe.bild).toHaveLength(0)
-      expect((aufrufeErsatz[0]?.[1] as Zone).id).toBe('l')
+      expect(aufrufeErsatz[0]?.[1]).toMatchObject({ id: 'l' })
     })
 
     it("logo !== null -> zeichneBildZone mit holeLogo(id), zeichneErsatzLogo nie", () => {

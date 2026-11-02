@@ -312,8 +312,8 @@ describe('zeichneDekoZone (#116) - Reihenfolge und Werthaltung', () => {
     const ersteFuellung = doppel.ereignisse.filter(
       (e) => e.art === 'set' && e.name === 'fillStyle',
     )
-    expect((ersteFuellung[0]?.wert as string).indexOf('gradient') === -1).toBe(true)
-    expect((ersteFuellung[1]?.wert as unknown as { name?: string }).name).toBe('verlauf-0')
+    expect(ersteFuellung[0]?.wert).not.toContain('gradient')
+    expect(ersteFuellung[1]?.wert).toMatchObject({ name: 'verlauf-0' })
   })
 
   it('loeseFarbe wird mit (marke, rolle, aktion) gerufen - an Fuellung UND beiden Stopp - die aktion ist DIESELBE Referenz', () => {

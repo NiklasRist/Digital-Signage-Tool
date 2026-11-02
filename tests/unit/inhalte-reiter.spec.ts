@@ -9,8 +9,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { createElement, useState, type ReactElement } from 'react'
-import type { JSX } from 'react'
+import { createElement, type ReactElement } from 'react'
 
 import type { Project } from '../../src/shared/contracts/project'
 import type { VorlagenZugang, ZeichenZugang, ProjektZugang, Sichten } from '../../src/renderer/app-shell/sichten'
@@ -149,10 +148,6 @@ function baueUmgebung() {
       aufSitzungGeaendert: vi.fn(),
     },
   }
-}
-
-function baueUmgebungFehlerfrei(): ReturnType<typeof baueUmgebung> {
-  return baueUmgebung()
 }
 
 beforeEach(() => {

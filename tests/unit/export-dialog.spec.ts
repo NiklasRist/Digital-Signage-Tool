@@ -27,11 +27,6 @@ const BESTAND: AusgabeDatei[] = [
   d('winterpause.mp4', 200),
 ]
 
-const tief = (pfad: string | null): unknown =>
-  pfad === null
-    ? { ok: true, wert: { pfad: null } }
-    : { ok: true, wert: { pfad } }
-
 describe('waehleDatei (#232)', () => {
   it('bekannter Name -> datei gesetzt, zielPfad bleibt stehen', () => {
     const vorher: typeof LEERE_EXPORTAUSWAHL = { datei: null, zielPfad: 'C:\\Ziel' }

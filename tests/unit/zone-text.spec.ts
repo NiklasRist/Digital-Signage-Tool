@@ -176,7 +176,6 @@ const zone = (aenderungen: Partial<Zone> = {}, textAenderungen: Partial<NonNulla
   ...aenderungen,
 });
 
-const KASKADE_FEST: KaskadenErgebnis = { zeilen: ["a", "b", "c"], größe: 50, gekürzt: false };
 
 beforeEach(() => {
   vi.mocked(loeseFarbe).mockImplementation(function (

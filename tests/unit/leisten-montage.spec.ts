@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type { AuftragsSicht } from '../../src/renderer/queue-panel/auftrags-sicht'
 import type { Auftrag } from '../../src/shared/contracts/auftrag'
 import type { RenderRequest } from '../../src/shared/contracts/render-request'
-import type { QueueAktion } from '../../src/renderer/queue-panel/entfernen'
 import {
   LEERE_LEISTEN_LAGE,
   Rueckfrage,
