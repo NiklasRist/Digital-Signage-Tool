@@ -121,6 +121,7 @@ import { oeffneMenue, schliesseMenue, type ComposerLage } from './composer-monta
 // Reiterflaeche (gemeinsamer Speicher, wie `reiter.ts`; der Rahmen abonniert ihn).
 import { oeffneAktionenAnsicht } from '../gemeinsam/aktionen-ansicht'
 import { Seitenleiste, type PanelLage } from './seitenleiste.tsx'
+import { EigenschaftenAnsicht } from './eigenschaften-ansicht.tsx'
 
 
 /** #416: der Anlege-Auftrag (Roheingabe + Marke). Die Wurzel baut daraus KEINEN Entwurf -
@@ -898,10 +899,12 @@ export function ComposerInterna({
                 die Anbindung an die Auswahl ist der naechste Schritt. Bis dahin sagt sie,
                 was zu tun ist, statt leer zu bleiben (Kriterium 5 der Gestaltung). */}
             {panelLage.ansicht === 'eigenschaften' ? (
-              <p data-testid="sidepanel-eigenschaften-leer">
-                In der Zeitleiste einen Block wählen – Dauer, Trim, Unterbrechungen und Band
-                stehen dann hier.
-              </p>
+              <EigenschaftenAnsicht
+                projekt={inhalt}
+                ausgewaehlt={auswahl.ids}
+                stellen={findeKaputteStellen(inhalt, markenListe)}
+                bedienung={zeichneBedienung}
+              />
             ) : (
             <Bibliotheksansicht
               projekt={inhalt}

@@ -4192,19 +4192,29 @@ const main = async () => {
         fund("Einfuegeweg", "das Video-Element ist vor der Band-Messung sichtbar (#453)",
           "zeitleiste-block-0 ohne data-element-id", "Untersuchung", "composer/zeitleiste.tsx");
       } else {
-        // Die Band-Bedienung haengt an der LISTEN-Zeile (`element-band`), nicht am
-        // Zeitleisten-Block. Deshalb erst umschalten - das ist der Weg des Nutzers.
-        await klick('[data-testid="composer-ansicht-liste"]');
-        await schlafe(700);
-        const bandKnopf4f6 = await seite.evaluate((elementId) => {
-          const zeile = document.querySelector(
-            `[data-testid="wiedergabeliste-zeile"][data-element-id="${elementId}"]`,
+        // 02.11.2026: Der Weg des Nutzers fuehrt jetzt ueber das SIDEPANEL - Block in der
+        // Zeitleiste waehlen, Ansicht "Eigenschaften". Vorher hing die Band-Bedienung an
+        // der VERSTECKTEN Wiedergabeliste und war damit unerreichbar (der offene Befund).
+        await seite.evaluate((elementId) => {
+          const block = document.querySelector(
+            `[data-testid^="zeitleiste-block-"][data-element-id="${elementId}"]`,
           );
-          const knopf = zeile === null ? null : zeile.querySelector('[data-testid="element-band"]');
+          if (block instanceof HTMLElement) block.click();
+        }, videoId4f6);
+        await schlafe(300);
+        const imPanel4f6 = await zeigeAnsicht("eigenschaften");
+        await schlafe(400);
+        const bandKnopf4f6 = await seite.evaluate(() => {
+          const panel = document.querySelector('[data-testid="eigenschaften"]');
+          const knopf = panel === null ? null : panel.querySelector('[data-testid="element-band"]');
           if (knopf === null) return false;
           knopf.click();
           return true;
-        }, videoId4f6);
+        });
+        if (!imPanel4f6) {
+          fund("Einfuegeweg", "die Ansicht \"Eigenschaften\" ist ueber die Leiste erreichbar",
+            "Symbol fehlt", "Befund", "composer/seitenleiste.tsx");
+        }
         await schlafe(900);
         const overlay4f6 = await stehtDa('[data-testid="composer-overlay-band"]');
         if (!bandKnopf4f6 || !overlay4f6) {
@@ -4314,6 +4324,9 @@ const main = async () => {
             console.log("[schritt-4f6] Einfuegeweg GEMESSEN: Aktion an der Bandliste wird ein ABSCHNITT am Video, kein neues Listenelement, keine Unterbrechung (#453 belegt).");
 
             // 02.11.2026: Der Rueckverweis am ECHTEN Fenster - NUR im Erfolgsfall.
+            // Erst zurueck in die Aktions-Ansicht: das Panel steht noch auf "Eigenschaften".
+            await zeigeAnsicht("aktionen");
+            await schlafe(300);
             // Solange die Bandliste unerreichbar ist (#453), gibt es kein Band und damit
             // nichts anzuzeigen; eine Pruefung dort zaehlte denselben Fehler zweimal.
             const texte4f6 = await seite.evaluate(() => {
