@@ -140,3 +140,37 @@ Damit ist die Entscheidung keine Geschmacksfrage mehr, sondern hat eine Zahl. Dr
 Möglichkeit, noch nicht geprüft: **das Panel ersetzt bei schmalem Fenster die Rail** (240 → 300,
 Hauptspalte 520 → 452) statt daneben zu treten.
 
+---
+
+## 7. ENTSCHEIDUNG (Niklas, 02.11.2026): Panel und Rail sind DASSELBE
+
+> „panel und rail sollten dasselbe sein nur das muss halt expandable und collapsable sein
+> ich nenn das sidepanel und du nennst das rail"
+
+**Damit sind A, B und C erledigt.** Es gibt **keine zweite Spalte** und **kein Overlay**: Die
+Rail links ist das Sidepanel. Sie kann **auf- und zuklappen** — mehr Zustände braucht es nicht.
+
+Was daraus folgt:
+
+- **Ein Träger für alles, was nicht Bühne oder Zeitleiste ist.** Die Abschnitte der Rail
+  (Video, Aktionen) bleiben; **Eigenschaften** (Dauer, Trim, Unterbrechungen, Band, Entfernen)
+  und **Reihenfolge** kommen als Abschnitte derselben Spalte hinzu. Damit wird die
+  `display:none`-Wiedergabeliste **nicht wieder als eigene Ansicht gebraucht** — ihr Inhalt
+  verteilt sich: Ordnung zeigt die Zeitleiste, die Bedienung je Element das Panel.
+- **L1, L2 und L3 gehen strukturell zu**, nicht durch eine zweite Fläche: die Bedienung ist
+  immer erreichbar, weil die Spalte immer da ist.
+- **Der Umschalter Zeitleiste/Liste entfällt** ersatzlos (Streichung 1 aus Abschnitt 3 wird
+  damit zwingend).
+- **Zugeklappt gewinnt die Bühne** die Breite der Spalte — bei 800 sind das rund 240 px, die
+  heute dauerhaft fehlen.
+
+**Offen (kleine Fragen, keine Richtungsentscheidung mehr):**
+
+1. **Zugeklappt = ganz weg oder schmaler Streifen?** (Ein Streifen hält den Einstieg sichtbar;
+   ganz weg gibt der Bühne 240 px und braucht einen anderen Weg zurück.)
+2. **Aufgeklappt wie breit?** Heute 240 px. Mit Eigenschaften-Abschnitt werden 300–340 px
+   nötig sein. Bei 800 bliebe die Hauptspalte dann bei ~420–470 px — **vor dem Bau nachmessen**.
+3. **Was klappt auf?** Nur auf Klick, oder automatisch, wenn ein Element gewählt wird (dann
+   wäre der Inspector an die Auswahl gekoppelt — Frage aus Abschnitt 5)?
+
+
