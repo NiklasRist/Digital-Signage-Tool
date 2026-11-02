@@ -109,7 +109,7 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
         <AktionAnlegen vorlagen={p.vorlagen ?? []} aufAnlegen={p.aufAktionAnlegen} />
       )}
       {aktionen.length === 0 ? (
-        <p data-testid="aktionen-leer">Noch keine Aktionen - legen Sie oben eine an.</p>
+        <p data-testid="aktionen-leer">Noch keine Aktionen – „+ Neue Aktion" legt die erste an.</p>
       ) : (
         <ul data-testid="aktionen-liste" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {aktionen.map((eintrag) => (

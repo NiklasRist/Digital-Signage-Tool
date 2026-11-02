@@ -4236,10 +4236,40 @@ const main = async () => {
     const aktionenDavor4g = await seite.evaluate(
       () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
     );
+    // 02.11.2026: Das Formular steht hinter "+ Neue Aktion" (Rail entlasten). Gemessen
+    // wird deshalb beides: zu, solange niemand anlegt - und offen nach EINEM Klick.
+    // DIE HOEHE wird mitgemessen (Ueberlauf der Rail), damit "entlastet" eine Zahl hat.
+    const railMasse4g = () =>
+      seite.evaluate(() => {
+        const rail = document.querySelector('[data-testid="composer-rail"]');
+        if (rail === null) return null;
+        const oeffner = document.querySelector('[data-testid="aktion-anlegen-oeffnen"]');
+        const r = oeffner === null ? null : oeffner.getBoundingClientRect();
+        return {
+          ueberlauf: Math.round(rail.scrollHeight - rail.clientHeight),
+          oeffner: r === null ? null : { y: Math.round(r.y), h: Math.round(r.height) },
+        };
+      });
+    const railZu4g = await railMasse4g();
+    const formZu4g = await seite.evaluate(
+      () => document.querySelector('[data-testid="aktion-anlegen"]') === null,
+    );
+    if (!formZu4g) {
+      fund("Aktion anlegen", "das Formular kostet der Rail keine Hoehe, solange niemand anlegt",
+        "aktion-anlegen steht ohne Klick offen", "Befund", "composer/aktion-anlegen.tsx");
+    }
+    // Der Oeffner wird mit der ECHTEN Maus geklickt (nicht per evaluate): Nur so ist
+    // belegt, dass "+ Neue Aktion" im 800x572-Fenster erreichbar ist - der Grund, aus
+    // dem das Formular ueberhaupt zugeht.
+    const oeffnerDa4g = await klick('[data-testid="aktion-anlegen-oeffnen"]');
+    await schlafe(150);
+    const railOffen4g = await railMasse4g();
     const formDa4g = await seite.evaluate(() => !!document.querySelector('[data-testid="aktion-anlegen"]'));
-    if (!formDa4g) {
-      fund("Aktion anlegen", "das Inline-Formular steht in der Bibliothek (#416)",
-        "aktion-anlegen fehlt", "Befund", "composer/bibliothek-ansicht.tsx");
+    console.log(`[schritt-4g] Rail: zu ${JSON.stringify(railZu4g)}, offen ${JSON.stringify(railOffen4g)}`);
+    if (!oeffnerDa4g || !formDa4g) {
+      fund("Aktion anlegen", '"+ Neue Aktion" oeffnet das Inline-Formular der Bibliothek (#416)',
+        `Oeffner vorhanden: ${String(oeffnerDa4g)}, Formular nach Klick: ${String(formDa4g)}`,
+        "Befund", "composer/aktion-anlegen.tsx");
     } else {
       await seite.evaluate(() => {
         const feld = document.querySelector('[data-testid="aktion-anlegen-titel"]');
@@ -4249,10 +4279,9 @@ const main = async () => {
       await seite.click('[data-testid="aktion-anlegen-titel"]');
       await seite.type('[data-testid="aktion-anlegen-titel"]', 'Durchlauf-Aktion-inline');
       await schlafe(200);
-      await seite.evaluate(() => {
-        const knopf = document.querySelector('[data-testid="aktion-anlegen-knopf"]');
-        if (knopf !== null) knopf.click();
-      });
+      // Der Anlegen-Knopf ist jetzt ein Submit-Knopf im Formular - auch er wird echt
+      // geklickt, damit der Absende-Weg selbst gemessen ist.
+      const abgeschickt4g = await klick('[data-testid="aktion-anlegen-knopf"]');
       await schlafe(2_500);
       const aktionenDanach4g = await seite.evaluate(
         () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
@@ -4261,7 +4290,19 @@ const main = async () => {
         console.log(`[schritt-4g] Aktion anlegen GEMESSEN: ${aktionenDavor4g} -> ${aktionenDanach4g} Aktionen (#416 belegt).`);
       } else {
         fund("Aktion anlegen", "die neue Aktion erscheint sofort in der Bibliothek (#416)",
-          `Aktionen davor/nachher: ${aktionenDavor4g}/${aktionenDanach4g}`, "Befund", "composer/index.tsx");
+          `Aktionen davor/nachher: ${aktionenDavor4g}/${aktionenDanach4g}, abgeschickt: ${String(abgeschickt4g)}`,
+          "Befund", "composer/index.tsx");
+      }
+      // Nach dem Anlegen ist das Formular wieder zu - sonst waere die Entlastung der
+      // Rail nur bis zum ersten Anlegen geschenkt.
+      const formWiederZu4g = await seite.evaluate(
+        () => document.querySelector('[data-testid="aktion-anlegen"]') === null,
+      );
+      const railNach4g = await railMasse4g();
+      console.log(`[schritt-4g] Rail nach dem Anlegen: ${JSON.stringify(railNach4g)}`);
+      if (!formWiederZu4g) {
+        fund("Aktion anlegen", "nach dem Anlegen ist das Formular zu (Rail entlastet)",
+          "aktion-anlegen steht nach dem Absenden noch offen", "Befund", "composer/aktion-anlegen.tsx");
       }
     }
 

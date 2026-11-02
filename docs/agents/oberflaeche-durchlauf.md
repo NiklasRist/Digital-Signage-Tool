@@ -3106,3 +3106,37 @@ Ereignisse gesammelt: 56
 - **Untersuchung** Dauer der MP4 (FA-08): erwartet "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt", erkannt "Anzeige "null"" (Ort: composer/liste-ansicht.tsx)
 - **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert (null)" (Ort: composer/element-zeile.tsx)
 - **Befund** Einfuegeweg: erwartet "die Bandliste des Video-Elements laesst sich oeffnen (#453)", erkannt "Knopf=false, Overlay=false" (Ort: composer/element-zeile.tsx)
+
+## Nachlauf vom 2026-11-02T10:38:54.752Z (automatisiert durch scripts/durchlauf.mjs)
+
+> **UNGÜLTIG (Kai, 02.11.2026):** Dieser Lauf hat `dist/` gemessen, das VOR der Änderung
+> gebaut war — `npm run durchlauf` ohne `npm run build` fährt den letzten Build, nicht den
+> Quellstand. Die drei Befunde „Aktion anlegen" (×2) und „Undo Aktions-Anlage" sind
+> Artefakte des alten Bundles, die Abspielmarke erscheint im gültigen Lauf nicht. **Gültig
+> ist der Lauf um 10:43.** Der Fehler ist wertvoll als Probe: er zeigt, dass genau die zwei
+> neuen Prüfungen auf „Formular dauerhaft offen" anspringen.
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 57
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Dauer der MP4 (FA-08): erwartet "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt", erkannt "Anzeige "null"" (Ort: composer/liste-ansicht.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert (null)" (Ort: composer/element-zeile.tsx)
+- **Befund** Einfuegeweg: erwartet "die Bandliste des Video-Elements laesst sich oeffnen (#453)", erkannt "Knopf=false, Overlay=false" (Ort: composer/element-zeile.tsx)
+- **Befund** Aktion anlegen: erwartet "das Formular kostet der Rail keine Hoehe, solange niemand anlegt", erkannt "aktion-anlegen steht ohne Klick offen" (Ort: composer/aktion-anlegen.tsx)
+- **Befund** Aktion anlegen: erwartet ""+ Neue Aktion" oeffnet das Inline-Formular der Bibliothek (#416)", erkannt "Oeffner vorhanden: false, Formular nach Klick: true" (Ort: composer/aktion-anlegen.tsx)
+- **Befund** Undo Aktions-Anlage: erwartet "der Undo-Pfeil nimmt eine neu angelegte Aktion zurück (#416/FA-21)", erkannt "Aktionen 1->1 (erwartet 0)" (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+- **Befund** Abspielmarke (#457): erwartet "waehrend der Wiedergabe wandert die Marke", erkannt "Frame 30 -> 60, left 8px -> 16px, laeuft=nein" (Ort: composer/abspiel-marke.tsx)
+
+## Nachlauf vom 2026-11-02T10:43:32.843Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 57
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Dauer der MP4 (FA-08): erwartet "die Wiedergabeliste zeigt eine Gesamtdauer mit sequenziellem Inhalt", erkannt "Anzeige "null"" (Ort: composer/liste-ansicht.tsx)
+- **Untersuchung** Dauer/Trim-Undo: erwartet "das Ziehen am Regler aendert die Dauer (Vorbedingung)", erkannt "Dauer unveraendert (null)" (Ort: composer/element-zeile.tsx)
+- **Befund** Einfuegeweg: erwartet "die Bandliste des Video-Elements laesst sich oeffnen (#453)", erkannt "Knopf=false, Overlay=false" (Ort: composer/element-zeile.tsx)
