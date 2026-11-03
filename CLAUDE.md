@@ -11,7 +11,36 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, einundvierzigste Sitzung: der Band-Abschnitt hat keine Dauer-Eingabe mehr, beide .docx wieder synchron) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, zweiundvierzigste Sitzung: Preset beim Anlegen – und zwei Fehler, die es sichtbar machte) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 24.**
+
+- **ENTSCHEIDUNG (Niklas, 03.11.2026):** „Neue Aktion" oeffnet mit der **zuletzt benutzten
+  Vorlage** vorbelegt (nicht „Band-Standard", nicht „erste waehlbare"); dazu
+  **Projekt-Standardmarke** und **Projekt-Standarddauer**.
+- **EINE Regel, zwei Wege:** `gemeinsam/vorlage-vorbelegung.ts` (`vorlageFuerNeueAktion`,
+  `merkeLetzteVorlage`) — gelesen vom Aktions-Editor **und** vom Inline-Formular im Composer
+  (#416); ein direkter Import zwischen den Bereichen waere ein Architekturbruch.
+  Gemerkt wird beim Oeffnen, Anlegen und Speichern; **Sitzungsspeicher**, kein Feld in der
+  `project.json`.
+- **FEHLER 1, behoben:** `leererEntwurf` schrieb fest **10 s**. Damit koppelte **jede** neue Aktion
+  den Projektstandard ab (ein geschriebener Wert heisst „eigene Dauer", TK 9.8.4). Jetzt ist
+  `standardDauer` **Pflicht-Argument**, die Aufrufer reichen `Project.standardSegmentdauer` herein.
+- **FEHLER 2, behoben (aelter als das Preset):** Die Formularfelder sind unkontrolliert
+  (`defaultValue`); „Neue Aktion" zeigte nach dem Oeffnen einer anderen Aktion **deren** Werte
+  (Entwurf leer, Bild nicht). Jetzt `key` am Formularblock (`neu-<Zaehler>` bzw. Aktions-ID) und
+  die Vorlagen-Auswahl liest `formular.vorlagenId` statt `gewaehlt?.vorlagenId`.
+- **Gate:** Typecheck **0** (auch `tsconfig.tests.json`), ESLint/oxlint **0**, Build **0**,
+  Unit **5460/5460** (361 Dateien, +8), Integration **51/51** (13), Treiber **0 Befunde**
+  (1 Untersuchung: Mehrfachauswahl; 1 MANUELL: Export-Dialog).
+- **Ehrlich offen:** Das Preset ist **nicht am Fenster gemessen** — die Belege sind jsdom-Tests,
+  es gibt keinen Treiber-Schritt dafuer. `einzel-instanz.spec.ts` (#289) flaky, unveraendert.
+  **Kein Issue offen.** `projects/lallala` bleibt (Nutzerdaten).
+- **Doku:** TK **v3.37** (9.8.3), `seitenpanel-konzept.md` auf GEBAUT gezogen, `.docx` neu erzeugt.
+- **Naechster Schritt:** die **Effekte** (Band faehrt ein/aus, Motiv atmet, Uebergang statt
+  hartem Schnitt).
+
+## STAND HEUTE (03.11.2026, einundvierzigste Sitzung: der Band-Abschnitt hat keine Dauer-Eingabe mehr, beide .docx wieder synchron) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 23.**
 

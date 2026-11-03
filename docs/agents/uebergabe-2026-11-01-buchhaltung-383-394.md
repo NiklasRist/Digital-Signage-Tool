@@ -1014,3 +1014,65 @@ die `.docx` im selben Commit neu.** Word war beim Schreiben geschlossen, die Dat
 
 Konzept Abschnitt 10 weiter: **Preset beim Anlegen** (Vorlage + Marke + Dauer vorbelegt), danach
 die **Effekte** (Band fährt ein/aus, Motiv atmet, Übergang statt hartem Schnitt).
+
+---
+
+## 24. PRESET BEIM ANLEGEN (03.11.2026)
+
+### 24.1 Die Entscheidung
+
+**Niklas, 03.11.2026:** „Preset von was" → „Neue Aktion" soll **vorbelegt** öffnen, und zwar mit
+der **zuletzt benutzten Vorlage** (Antwort auf die Frage: *Zuletzt benutzte*, nicht „Band-Standard",
+nicht „erste wählbare").
+
+Die drei Werte aus dem Konzept (Abschnitt 10, „Anlegen mit Preset") sind damit:
+
+| Wert | Quelle | vorher |
+|---|---|---|
+| **Vorlage** | zuletzt benutzte (Sitzung), sonst erste wählbare | erste wählbare (`waehlbare?.[0]`) |
+| **Marke** | `Project.standardMarkeId` | schon richtig seit #320 |
+| **Dauer** | `Project.standardSegmentdauer` | **Konstante 10** |
+
+### 24.2 Zwei Fehler, die dabei ans Licht kamen
+
+1. **Die Dauer koppelte jede neue Aktion vom Projekt ab.** `leererEntwurf` schrieb fest
+   `STANDARD_ANZEIGEDAUER_SEKUNDEN` (10). Ein Projekt mit 15 s bekam trotzdem Aktionen mit 10 s —
+   und weil ein geschriebener Wert „eigene Dauer" heißt (TK 9.8.4: `null` wäre „folgt dem Projekt"),
+   zog keine davon je mit. `standardDauer` ist jetzt **Pflicht-Argument** von `leererEntwurf`; die
+   Aufrufer reichen den Projektstandard herein.
+2. **„Neue Aktion" zeigte die Werte der zuletzt geöffneten Aktion.** Die Formularfelder sind
+   unkontrolliert (`defaultValue`); ohne Remount behielten sie Titel, Dauer und Vorlage des vorigen
+   Entwurfs — der Entwurf war leer, das Bild nicht. Jetzt trägt der Formularblock einen `key`
+   (`neu-<Zähler>` bzw. die Aktions-ID), und die Vorlagen-Auswahl liest `formular.vorlagenId`
+   statt `gewählt?.vorlagenId` (im Modus „neu" gibt es keine gewählte Aktion). **Das war ein
+   bestehender Fehler, nicht Folge des Presets** — der Preset hätte ihn nur sichtbar gemacht.
+
+### 24.3 Was gebaut ist
+
+- **`renderer/gemeinsam/vorlage-vorbelegung.ts`** — die eine Regel (`vorlageFuerNeueAktion`,
+  `merkeLetzteVorlage`). `gemeinsam`, weil **zwei** Bereiche sie lesen: `action-editor` und
+  `composer`; ein direkter Import zwischen ihnen wäre ein Architekturbruch.
+- **Gemerkt wird** beim Öffnen einer Aktion, beim erfolgreichen Anlegen und beim erfolgreichen
+  Speichern (deckt die Vorlagen-Wahl im Formular ab). Sitzungsspeicher, **kein** Feld in der
+  `project.json`, keine Migration.
+- **Beide Anlege-Wege** lesen dieselbe Regel: „Neue Aktion" im Aktions-Editor und das
+  Inline-Formular „Aktion anlegen" im Composer (#416).
+- **Eine gelöschte Vorlage** kann nicht zurückkommen: die gemerkte Kennung zählt nur, solange sie
+  im wählbaren Bestand liegt.
+
+### 24.4 Belege
+
+- **Unit 5460/5460** (361 Dateien): sechs Fälle für die reine Regel (`vorlage-vorbelegung.spec.ts`),
+  zwei Fenster-nahe Fälle in `action-editor-neue-aktion.spec.ts` — „vorbelegt mit zuletzt benutzter
+  Vorlage und Projekt-Standarddauer (15)" und „nach dem Öffnen einer Aktion zeigt ‚Neue Aktion'
+  NICHT deren Werte". Die zwei `leererEntwurf`-Fälle sind auf das neue Pflicht-Argument gezogen.
+- Typecheck 0 (auch Tests), Lint 0, Build 0, Integration **51/51**, Treiber **0 Befunde**
+  (1 Untersuchung, 1 MANUELL).
+- **Nicht am Fenster gemessen:** Die Vorbelegung ist über jsdom belegt, es gibt **keinen**
+  Treiber-Schritt dafür. Ehrlich benannt statt als „gemessen" ausgegeben.
+- Doku: TK **v3.37** (9.8.3), `seitenpanel-konzept.md` Zeile „Anlegen mit Preset" auf GEBAUT gezogen.
+  `.docx` im selben Commit neu erzeugt.
+
+### 24.5 Nächster Schritt
+
+**Effekte** (Band fährt ein/aus, Motiv atmet, Übergang statt hartem Schnitt).

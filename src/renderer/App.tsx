@@ -37,6 +37,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type JSX } from 'react'
 import type { Project } from '../shared/contracts/project'
+import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../shared/contracts/konstanten'
 import type { Auftrag } from '../shared/contracts/auftrag'
 import type { FixWirkung, Uebergabe } from './composer/reparatur-optionen'
 import type { ReparaturStand } from './composer/reparatur-fuehrung'
@@ -210,8 +211,20 @@ export function App(): JSX.Element | null {
         starteMedienImport,
         // #416: „Aktion anlegen" - der vollstaendige Entwurf entsteht HIER aus dem
         // #136-Entwurf (#319: Marke = Projekt-Standardmarke, Akzentfarbe null).
-        legeAktionAn: ({ titel, vorlagenId, markeId }) =>
-          legeAktionAn({ ...leererEntwurf(vorlagenId, markeId, null), titel }),
+        // Die Dauer ist der PROJEKT-Standard (03.11.2026, TK 9.8.4) - nicht die
+        // Konstante 10, die jede neue Aktion vom Projektstandard abgekoppelt haette.
+        legeAktionAn: ({ titel, vorlagenId, markeId }) => {
+          const offen = zugaengeRef.current?.projektRoh.hole().projekt ?? null
+          return legeAktionAn({
+            ...leererEntwurf(
+              vorlagenId,
+              markeId,
+              null,
+              offen?.standardSegmentdauer ?? STANDARD_ANZEIGEDAUER_SEKUNDEN,
+            ),
+            titel,
+          })
+        },
         // #430: „Aktion loeschen" - der Composer wendet den zurueckgegebenen Stand an.
         // Reine Durchreichung des #142-Wegs (Kaskade rechnet der Main).
         loescheAktion,

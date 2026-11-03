@@ -48,6 +48,8 @@ vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
 }))
 
 import { ActionEditorWurzel } from '../../src/renderer/action-editor/index.tsx'
+import { ladeWaehlbareVorlagen } from '../../src/renderer/action-editor/vorlage-waehlen'
+import { merkeLetzteVorlage } from '../../src/renderer/gemeinsam/vorlage-vorbelegung'
 
 const GERAETE: Array<{ wurzel: Root; behaelter: HTMLDivElement }> = []
 
@@ -65,6 +67,9 @@ function montiere(element: JSX.Element): HTMLDivElement {
 beforeEach(() => {
   doppel.aufrufe.length = 0
   doppel.antwort = { ok: true, wert: null }
+  // Der Vorlagen-Speicher ist Sitzungsspeicher - jede Pruefung startet ohne ihn.
+  merkeLetzteVorlage(null)
+  vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [] })
 })
 
 afterAll(() => {
@@ -225,5 +230,73 @@ describe('#445: „Neue Aktion" schreibt getippte Werte in den Entwurf', () => {
     await verlasseFeld(behaelter, 'aktion-cta', 'Jetzt anmelden')
 
     expect(doppel.aufrufe).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Preset beim Anlegen (03.11.2026): zuletzt benutzte Vorlage + Projekt-Standarddauer
+// ---------------------------------------------------------------------------
+
+/** Laesst die Lade-Effekte des Editors laufen (Vorlagen-Auswahl). */
+async function laufen(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+}
+
+function vorlage(id: string, hoehe: number | null): {
+  id: string
+  name: string
+  höhe: number | null
+  parent: string | null
+  eingebaut: boolean
+  zonen: []
+} {
+  return { id, name: id, höhe: hoehe, parent: null, eingebaut: false, zonen: [] }
+}
+
+describe('Preset beim Anlegen', () => {
+  it('vorbelegt die ZULETZT BENUTZTE Vorlage und die Projekt-Standarddauer', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({
+      ok: true,
+      wert: [vorlage('ganz', null), vorlage('band', 162)],
+    })
+    merkeLetzteVorlage('band')
+    const { behaelter } = editor({ ...projekt([]), standardSegmentdauer: 15 })
+    await laufen()
+
+    klicke(behaelter, 'aktion-neu')
+
+    const vorlageWahl = behaelter.querySelector<HTMLSelectElement>('[data-testid="aktion-vorlage"]')
+    expect(vorlageWahl).not.toBeNull()
+    expect(vorlageWahl?.value).toBe('band')
+    const dauer = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-dauer"]')
+    // NICHT die Konstante 10: der Projektstandard (TK 9.8.4).
+    expect(dauer?.value).toBe('15')
+  })
+
+  it('nach dem Oeffnen einer Aktion zeigt "Neue Aktion" NICHT deren Werte', async () => {
+    const bestehend = { ...aktion('a1', 'Sommeraktion'), standardDauer: 30 }
+    const { behaelter } = editor(projekt([bestehend]))
+    await laufen()
+
+    // Aktion oeffnen: der Bibliotheks-Knopf traegt den Titel.
+    const knopf = Array.from(behaelter.querySelectorAll('button')).find(
+      (kandidat) => kandidat.textContent === 'Sommeraktion',
+    )
+    expect(knopf).toBeDefined()
+    act(() => {
+      knopf?.click()
+    })
+    expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')?.value).toBe(
+      'Sommeraktion',
+    )
+
+    // Ohne den Remount (key am Formularblock) stuenden hier weiter Titel und Dauer
+    // der geoeffneten Aktion - der Entwurf waere leer, das Bild nicht.
+    klicke(behaelter, 'aktion-neu')
+    expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')?.value).toBe('')
+    expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-dauer"]')?.value).toBe('10')
   })
 })

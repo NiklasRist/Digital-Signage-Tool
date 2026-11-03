@@ -117,15 +117,18 @@ describe('pruefeEntwurf – nur vorhandene Felder', () => {
 })
 
 describe('leererEntwurf', () => {
-  it('setzt titel leer, optionale Felder null und standardDauer auf die Konstante', () => {
-    const entwurf = leererEntwurf('vollbild', 'm1', '#FF4040')
+  it('setzt titel leer, optionale Felder null und uebernimmt die uebergebene Dauer', () => {
+    const entwurf = leererEntwurf('vollbild', 'm1', '#FF4040', 15)
     expect(entwurf).toEqual({
       titel: '',
       beschreibung: null,
       preis: null,
       bildRef: null,
       cta: null,
-      standardDauer: STANDARD_ANZEIGEDAUER_SEKUNDEN,
+      // NICHT mehr die Konstante 10: die Dauer kommt vom Aufrufer (Projekt-Standard,
+      // Entscheidung 03.11.2026). Eine hier erfundene Zahl koppelte jede neue Aktion
+      // vom Projektstandard ab (TK 9.8.4).
+      standardDauer: 15,
       vorlagenId: 'vollbild',
       markeId: 'm1',
       akzentfarbe: '#FF4040',
@@ -133,7 +136,7 @@ describe('leererEntwurf', () => {
   })
 
   it('nimmt akzentfarbe null unverändert (Parameter ist string | null)', () => {
-    expect(leererEntwurf('v1', 'm1', null).akzentfarbe).toBeNull()
+    expect(leererEntwurf('v1', 'm1', null, STANDARD_ANZEIGEDAUER_SEKUNDEN).akzentfarbe).toBeNull()
   })
 })
 

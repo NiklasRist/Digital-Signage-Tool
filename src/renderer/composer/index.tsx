@@ -81,6 +81,7 @@ import { fuehreFixAus, type FixOptionId } from './reparatur-optionen'
 import { ReparaturPanel } from './reparatur-panel.tsx'
 import { loeseRenderAus, loeseExportAus } from './render-ausloesen'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
+import { merkeLetzteVorlage } from '../gemeinsam/vorlage-vorbelegung'
 import type { Marke } from '../../shared/contracts/marke'
 import { importiereMedien, baueImportBericht, type ImportBericht } from './medien-import'
 // 01.11.2026: Die Galerie ist als Flaeche entfallen; die Datei-Drop-Zone (#335) haengt
@@ -557,6 +558,9 @@ export function ComposerInterna({
           return
         }
         const aktion = ergebnis.wert
+        // Diese Vorlage ist ab jetzt „zuletzt benutzt" (03.11.2026) - dieselbe Regel
+        // wie im Aktions-Editor, der Speicher liegt in `gemeinsam/vorlage-vorbelegung`.
+        merkeLetzteVorlage(eingabe.vorlagenId)
         // Kein zweiter Entwurf, keine Kaskade: den neuen Stand in die Sicht geben; die
         // Bibliothek liest inhalt.aktionen und zeigt den Eintrag SOFORT (#416-DoD).
         projekt.setzeProjekt({ ...inhalt, aktionen: [...inhalt.aktionen, aktion] })

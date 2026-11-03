@@ -42,6 +42,8 @@ import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { ZeichenZugang, VorlagenZugang, ProjektZugang, MarkenZugang } from '../app-shell/sichten'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
+import { merkeLetzteVorlage, vorlageFuerNeueAktion } from '../gemeinsam/vorlage-vorbelegung'
+import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../shared/contracts/konstanten'
 
 import { baueBibliothek, zaehleKaputte } from './bibliothek'
 import {
@@ -109,6 +111,11 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
   const [, setzeTakt] = useState(0)
   const [lage, setzeLage] = useState<EditorLage>(LEERE_EDITOR_LAGE)
   const [formular, setzeFormular] = useState<AktionsEntwurf | null>(null)
+  // 03.11.2026: Der Formularblock wird bei jedem NEUEN Entwurf neu montiert. Ohne
+  // diesen Zaehler behielten die unkontrollierten Felder (defaultValue) die Werte des
+  // ZULETZT geoeffneten Entwurfs - „Neue Aktion" haette die Vorbelegung zwar im
+  // Entwurf, aber nicht auf dem Bildschirm.
+  const [entwurfZaehler, setzeEntwurfZaehler] = useState(0)
   // Die zwei hiesigen Zustände (ENTSCHIEDEN 4): Lage und Entwurf – sie MÜSSEN
   // den Reiterwechsel nicht überleben (#195 baut besuchte Reiter nicht ab).
 
@@ -205,6 +212,8 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
                 onClick={() => {
                   setzeLage(waehleAktion(eintrag.aktion.id))
                   setzeFormular({ ...eintrag.aktion })
+                  // „zuletzt benutzt" heisst auch: zuletzt GEÖFFNET (03.11.2026).
+                  merkeLetzteVorlage(eintrag.aktion.vorlagenId)
                 }}
               >
                 {eintrag.aktion.titel}{eintrag.kaputt ? ' (kaputt)' : ''}
@@ -217,17 +226,20 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
           data-testid="aktion-neu"
           onClick={() => {
             setzeLage(beginneNeu())
-            // Die Vorbelegung des ANLEGE-FORMULARS (#136): erste Vorlage als Basis
-            // ist Sache des Users ÜBER die Wahl; die Akzentfarbe bleibt null.
-            // markeId (#320/TK 9.8.2): vorbelegt mit Project.standardMarkeId -
-            // #319 (Markenwahl im Formular) macht sie später waehlbar.
+            setzeEntwurfZaehler((zaehler) => zaehler + 1)
+            // Die Vorbelegung des ANLEGE-FORMULARS (#136, Entscheidung 03.11.2026):
+            // die zuletzt BENUTZTE Vorlage, sonst die erste waehlbare
+            // (`gemeinsam/vorlage-vorbelegung`). Die Akzentfarbe bleibt null.
+            // markeId (#320/TK 9.8.2): Die Projekt-Standardmarke.
+            // standardDauer: der PROJEKT-Standard (8-45 s), nicht mehr die Konstante 10 -
+            // vorher koppelte jede neue Aktion den Projektstandard still ab (TK 9.8.4).
             const standDerSicht = p.projekt.hole().projekt
-            const ersteVorlage = waehlbare?.[0]?.id ?? 'vollbild'
             setzeFormular(
               leererEntwurf(
-                ersteVorlage,
+                vorlageFuerNeueAktion(waehlbare ?? []),
                 standDerSicht?.standardMarkeId ?? '',
                 null,
+                standDerSicht?.standardSegmentdauer ?? STANDARD_ANZEIGEDAUER_SEKUNDEN,
               ),
             )
           }}
@@ -248,6 +260,13 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
           <p data-testid="aktion-formular-leer">Nichts gewählt.</p>
         ) : (
           <FormularFelder
+            key={
+              lage.modus === 'neu'
+                ? `neu-${String(entwurfZaehler)}`
+                : lage.modus === 'bestehend'
+                  ? lage.aktionId
+                  : 'keine'
+            }
             p={p}
             formular={formular}
             waehlbare={waehlbare}
@@ -265,6 +284,8 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
                 setzeLage(nachAnlegen(antwort.wert))
                 setzeFormular({ ...antwort.wert })
                 setzeTakt((t) => t + 1)
+                // Diese Vorlage ist ab jetzt „zuletzt benutzt" (03.11.2026).
+                merkeLetzteVorlage(antwort.wert.vorlagenId)
               }
               return antwort
             }}
@@ -435,6 +456,8 @@ function FormularFelder({
     if (antwort.ok) {
       setzeSpeicherMeldung(null)
       onSetzeFormular({ ...antwort.wert })
+      // Auch eine gespeicherte Vorlagen-Wahl ist „benutzt" (03.11.2026).
+      merkeLetzteVorlage(antwort.wert.vorlagenId)
     } else {
       // Der Grund kommt aus `speichereAktion` (Validierung oder Main-Antwort) und ist
       // ein Bediener-Satz - er wird woertlich gezeigt, nicht neu formuliert.
@@ -507,7 +530,9 @@ function FormularFelder({
       {waehlbare === null ? null : (
         <select
           data-testid="aktion-vorlage"
-          defaultValue={gewaehlt?.vorlagenId ?? ''}
+          // `formular`, nicht `gewaehlt`: im Modus „neu" gibt es keine gewaehlte
+          // Aktion - und genau dort steht die Vorbelegung (03.11.2026).
+          defaultValue={formular.vorlagenId}
           onBlur={(e) => void feldVerlassen('vorlagenId', e.target.value)}
         >
           {waehlbare.map((v) => (

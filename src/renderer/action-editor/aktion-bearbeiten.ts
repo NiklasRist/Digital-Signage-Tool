@@ -27,7 +27,7 @@
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
-import { DAUER_BEREICH, STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../shared/contracts/konstanten'
+import { DAUER_BEREICH } from '../../shared/contracts/konstanten'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { istAkzentfarbe } from './akzentfarbe'
 
@@ -99,13 +99,19 @@ function leseAkzentfarbeAlsText(entwurf: Partial<AktionsEntwurf>): string {
   return typeof farbe === 'string' ? farbe : ''
 }
 
-/** Ein leerer Entwurf mit den Vorbelegungen für „Neue Aktion". Die Dritte Argumentform
- *  `leererEntwurf(vorlagenId, markeId, akzentfarbe)` ist bereits im Nachzug des
- *  #319-Kontexts (#320): `markeId` wird mit `Project.standardMarkeId` vorbelegt. */
+/** Ein leerer Entwurf mit den Vorbelegungen für „Neue Aktion".
+ *
+ *  `markeId` kommt seit #320 aus `Project.standardMarkeId`. `standardDauer` ist
+ *  seit der Entscheidung vom 03.11.2026 ein PFLICHT-Argument: vorher stand hier
+ *  die Konstante 10, und damit koppelte JEDE neue Aktion den Projektstandard ab -
+ *  ein Projekt mit 15 s bekam trotzdem Aktionen mit 10 s (AD 4.4, TK 9.8.4:
+ *  `null` hiesse „folgt dem Projekt"; ein geschriebener Wert heisst „eigene Dauer").
+ *  Der Aufrufer reicht den Projektstandard herein - eine zweite Zahl gibt es nicht. */
 export function leererEntwurf(
   vorlagenId: string,
   markeId: string,
   akzentfarbe: string | null,
+  standardDauer: number,
 ): AktionsEntwurf {
   return {
     titel: '',
@@ -113,7 +119,7 @@ export function leererEntwurf(
     preis: null,
     bildRef: null,
     cta: null,
-    standardDauer: STANDARD_ANZEIGEDAUER_SEKUNDEN,
+    standardDauer,
     vorlagenId,
     markeId,
     akzentfarbe,

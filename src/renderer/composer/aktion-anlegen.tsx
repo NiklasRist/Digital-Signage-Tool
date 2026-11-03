@@ -20,6 +20,7 @@
 import { useState, type JSX } from 'react'
 
 import type { Vorlage } from '../../shared/contracts/vorlage'
+import { vorlageFuerNeueAktion } from '../gemeinsam/vorlage-vorbelegung'
 
 export interface AktionAnlegenEingabe {
   titel: string
@@ -37,12 +38,13 @@ export interface AktionAnlegenEigenschaften {
 
 /** Das Inline-Formular „Aktion anlegen" (Titel + Vorlage; Marke = Projekt-Standardmarke). */
 export function AktionAnlegen(p: AktionAnlegenEigenschaften): JSX.Element {
-  const erste = p.vorlagen[0]
   // 02.11.2026: zu, bis jemand anlegen will. Die Rail ist der engste Ort der
   // Oberflaeche - ein dauerhaft offenes Formular nimmt der Bibliothek die Hoehe.
   const [offen, setzeOffen] = useState(false)
   const [titel, setzeTitel] = useState('')
-  const [vorlagenId, setzeVorlagenId] = useState<string>(erste?.id ?? '')
+  // 03.11.2026: dieselbe Vorbelegung wie „Neue Aktion" im Aktions-Editor -
+  // die zuletzt benutzte Vorlage, sonst die erste (gemeinsam/vorlage-vorbelegung).
+  const [vorlagenId, setzeVorlagenId] = useState<string>(() => vorlageFuerNeueAktion(p.vorlagen))
 
   const bereit = titel.trim() !== '' && vorlagenId !== '' && p.laeuft !== true
 

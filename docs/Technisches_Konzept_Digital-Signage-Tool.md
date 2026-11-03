@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.36 (9.5.2/9.7.2/9.7.7: Die Dauer eines Band-Abschnitts ist **keine Eingabe** – sie folgt der Dauer-Kette des Produkts (AD 4.5, v1.13). Entscheidung 03.11.2026)
+**Version:** 3.37 (9.8.3: „Neue Aktion" ist vorbelegt – zuletzt benutzte Vorlage, Projekt-Standardmarke, Projekt-Standarddauer. Entscheidung 03.11.2026, AD unverändert v1.13)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1524,6 +1524,11 @@ Aktion {
 #### 9.8.3 Operationen
 
 - Über `project-store` (9.5.2, instant): `erstelleAktion`, `bearbeiteAktion`, `löscheAktion` (Kaskade, 9.5.3).
+- **Vorbelegung beim Anlegen (03.11.2026).** „Neue Aktion" öffnet mit drei Werten vorbelegt:
+  - **Vorlage:** die **zuletzt benutzte** (Sitzungsspeicher, `renderer/gemeinsam/vorlage-vorbelegung.ts`); ohne gemerkte die **erste wählbare**. Eine gemerkte Kennung zählt nur, solange die Vorlage noch wählbar ist.
+  - **Marke:** `Project.standardMarkeId` (9.11.3) — unverändert seit #320.
+  - **Dauer:** `Project.standardSegmentdauer` — **nicht mehr** die Konstante 10. Bis 03.11.2026 schrieb jede neue Aktion 10 s und koppelte sich damit still vom Projektstandard ab (9.8.4: `null` hieße „folgt dem Projekt", ein Wert heißt „eigene Dauer"). Wer mitziehen will, leert das Feld; der Wert ist editierbar.
+  - **Dieselbe Vorbelegung** gilt für das Inline-Formular „Aktion anlegen" im Composer (#416) — beide Wege lesen die eine Regel.
 - **Bildzuweisung:** aus der Medien-Bibliothek **wählen** (Asset-ID) **oder** neu **importieren** (media-service → dann Asset-ID). Das Bild ist stets eine **Referenz**.
 - **Live-Vorschau:** `template-canvas` rendert (Aktion + Vorlage + Marke) → dieselben Pixel, die später als Segment-PNG in den finalen Render gehen.
 
