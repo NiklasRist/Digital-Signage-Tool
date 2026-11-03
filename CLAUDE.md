@@ -11,7 +11,36 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, dreiundvierzigste Sitzung: Anlegen ist ein Gestaltungsvorgang – „Neue Aktion" zeichnet den Entwurf) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, vierundvierzigste Sitzung: die Vorlagen-Auswahl zeigt Bilder) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 26.**
+
+- **SCHRITT B IST GEBAUT:** Die Vorlagen-Auswahl ist eine **Kachel-Liste mit Bild** statt einer
+  Klappliste mit Namen (`action-editor/vorlagen-wahl.tsx`, `vorlagen-bilder.ts`). Das Bild kommt
+  aus **demselben** Zeichenweg wie Vorschau und Render (`zeichneVorschau` → `zeichneSegment`) —
+  keine zweite Malroutine. Darunter Name und Flaeche („Ganzbild (1920 × 1080)" /
+  „Band (1920 × 162)").
+- **Die Bilder entstehen EINMAL beim Oeffnen** des Formulars: Layout-Vorschau, **kein** Live-Bild.
+  Das grosse Vorschaubild daneben bleibt live. Grund: je Vorlage ein 1920×1080-Canvas bei jedem
+  Feldwechsel waere der falsche Preis.
+- **Ein Klick geht denselben Weg wie jedes andere Feld** (`feldVerlassen('vorlagenId', …)`) — im
+  Modus „neu" in den Entwurf, sonst in den Speicherweg.
+- **FEHLER, DER DABEI AUFFIEL (und behoben ist):** Der erste Entwurf hing das **Marken-Objekt** in
+  die Effekt-Abhaengigkeiten. `holeBereiteMarke` kann je Aufruf eine neue Referenz liefern — dann
+  wurden bei JEDEM Rendern alle Vorlagenbilder neu gezeichnet (im Unit-Test messbar: vier
+  Zeichenaufrufe statt drei). Jetzt haengt der Effekt an einem **Bereitschafts-Flag**.
+- **FENSTER-BELEG:** `4g7` misst `{"bild":true,"breite":1920,"hoehe":1080,
+  "vorlage":"aktion-vorlage-vollbild","vorlagenBilder":6}` — sechs waehlbare Vorlagen, **sechs
+  Bilder**. Der Schritt meldet seit diesem Bau einen Befund, wenn eine Vorlage ohne Bild bleibt.
+- **Gate:** Typecheck **0** (auch tests), ESLint/oxlint **0**, Build **0**, Unit **5463/5463**
+  (361 Dateien, +1), Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung, 1 MANUELL).
+- **Treiber-Matrix:** `4g7` ist **FA-02** zugeordnet (`treiber-matrix.spec.ts` hat die Luecke
+  sofort gemeldet).
+- **Doku:** TK **v3.39** (9.8.3), `.docx` im selben Commit neu erzeugt.
+- **Offen:** **C** — Felder richten sich nach der Vorlage; Akzentfarbe als echter Farbwaehler
+  (#325) **oder** Feld raus. **Effekte bleiben geparkt.** `einzel-instanz.spec.ts` (#289) flaky.
+
+## STAND HEUTE (03.11.2026, dreiundvierzigste Sitzung: Anlegen ist ein Gestaltungsvorgang – „Neue Aktion" zeichnet den Entwurf) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 25.**
 

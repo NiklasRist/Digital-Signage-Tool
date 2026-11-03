@@ -33,7 +33,7 @@ python tools/bereitschaft.py     # welche Issues sind JETZT baubar
 ```
 
 **Die Anforderungsänderungen sind entschieden und dokumentiert** (Stand 03.11.2026:
-**AD v1.13 / TK v3.38**): die **projektweite Standarddauer** (je Aktion überschreibbar) und die
+**AD v1.13 / TK v3.39**): die **projektweite Standarddauer** (je Aktion überschreibbar) und die
 **Streichung der Elementart `bild`** (AD v1.6/TK v3.18), **ein Projekt – ein Video**
 (AD v1.7/TK v3.22), die **kurze Unterbrechung des Videos** (AD v1.8/TK v3.26), die **über die
 Oberfläche anlegbare Einblendung mit fester Bandhöhe 162** (AD v1.9/TK v3.28), die **Streichung

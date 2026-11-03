@@ -279,9 +279,10 @@ describe('Preset beim Anlegen', () => {
 
     klicke(behaelter, 'aktion-neu')
 
-    const vorlageWahl = behaelter.querySelector<HTMLSelectElement>('[data-testid="aktion-vorlage"]')
-    expect(vorlageWahl).not.toBeNull()
-    expect(vorlageWahl?.value).toBe('band')
+    // Die Auswahl ist seit 03.11.2026 eine Liste MIT BILD: gewaehlt ist die Kachel,
+    // die `data-gewaehlt="ja"` traegt.
+    const gewaehlt = behaelter.querySelector('[data-testid="aktion-vorlagen-wahl"] [data-gewaehlt="ja"]')
+    expect(gewaehlt?.getAttribute('data-testid')).toBe('aktion-vorlage-band')
     const dauer = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-dauer"]')
     // NICHT die Konstante 10: der Projektstandard (TK 9.8.4).
     expect(dauer?.value).toBe('15')
@@ -362,6 +363,33 @@ describe('Anlegen mit Vorschau und Bild', () => {
     expect(gezeichnet?.titel).toBe('')
   })
 
+  it('die Vorlagen-Auswahl zeigt je Vorlage ein Bild und wechselt die Vorlage per Klick', async () => {
+    vi.mocked(zeichneVorschau).mockClear()
+    const vorlagen = [vorlage('ganz', null), vorlage('band', 162)]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+
+    klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    // Eine Kachel je Vorlage, jede mit einem eigenen Bildplatz (03.11.2026).
+    const plaetze = behaelter.querySelectorAll('[data-testid="aktion-vorlagen-wahl"] [data-testid="vorlagen-bild"]')
+    expect(plaetze).toHaveLength(2)
+    expect(behaelter.querySelector('[data-testid="aktion-vorlage-vollbild"]')).toBeNull()
+
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="aktion-vorlage-band"]')?.click()
+    })
+    await laufen()
+
+    // Die Wahl steht im Entwurf, und die grosse Vorschau zeichnet MIT der neuen Vorlage.
+    const gewaehlt = behaelter.querySelector('[data-testid="aktion-vorlagen-wahl"] [data-gewaehlt="ja"]')
+    expect(gewaehlt?.getAttribute('data-testid')).toBe('aktion-vorlage-band')
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.vorlagenId).toBe('band')
+  })
+
   it('im Modus „neu" wandert das gewaehlte Bild in den Entwurf - ohne IPC - und die Vorschau zeichnet es', async () => {
     vi.mocked(zeichneVorschau).mockClear()
     vi.mocked(bereiteMotivVorFuer).mockClear()
@@ -378,6 +406,8 @@ describe('Anlegen mit Vorschau und Bild', () => {
     expect(doppel.aufrufe).toHaveLength(0)
     // Das Motiv wird VOR dem Zeichnen vorbereitet, sonst stuende der Platzhalter da.
     expect(bereiteMotivVorFuer).toHaveBeenCalledWith('p1', 'a1', [bildAsset('a1')])
+    // Der LETZTE Zeichenaufruf ist die grosse Vorschau mit dem neuen Bild - nicht
+    // eines der Vorlagenbilder (die entstehen einmal beim Oeffnen).
     const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
     expect(gezeichnet?.bildRef).toBe('a1')
   })

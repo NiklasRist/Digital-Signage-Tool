@@ -1138,3 +1138,62 @@ Produktbild setzen:
 ### 25.5 Nächster Schritt
 
 **B** (Vorlagen-Auswahl mit Bild), dann **C**. Danach entscheidet Niklas, was als Nächstes kommt.
+
+---
+
+## 26. DIE VORLAGEN-AUSWAHL ZEIGT BILDER (03.11.2026)
+
+### 26.1 Was vorher war
+
+Ein `<select>` mit drei bis sechs Namen: „Ganzflächig", „Zwei Spalten", „Band-Standard". Wer die
+Vorlagen nicht im Kopf hat, wählte blind — und sah das Ergebnis erst nach dem Wechsel im großen
+Vorschaubild. Das war Schritt **B** aus Abschnitt 25.
+
+### 26.2 Was jetzt gilt
+
+- **Eine Kachel je Vorlage**, darin ein **Bild der Vorlage** mit dem Entwurf, darunter Name und
+  Fläche („Ganzbild (1920 × 1080)", „Band (1920 × 162)"). Die gewählte Kachel trägt einen roten
+  Rahmen (`aria-pressed`, `data-gewaehlt="ja"`).
+- **Dasselbe Zeichen wie Vorschau und Render:** `zeichneVorschau` → `zeichneSegment`. Keine zweite
+  Malroutine, keine Skizze aus Rechtecken — sonst gäbe es einen zweiten Begriff davon, wie eine
+  Vorlage aussieht.
+- **Die Bilder entstehen EINMAL beim Öffnen** des Formulars (`vorlagen-wahl.tsx`,
+  `vorlagen-bilder.ts`): Sie sind **Layout-Vorschauen**, kein Live-Bild. Das große Vorschaubild
+  daneben bleibt live. Grund: je Vorlage ein 1920 × 1080-Canvas bei jedem Feldwechsel wäre der
+  falsche Preis für eine Auswahl.
+- **Ein Klick geht denselben Weg wie jedes andere Feld** — `feldVerlassen('vorlagenId', …)`, im
+  Modus „neu" in den Entwurf, im Modus „bestehend" in den Speicherweg. Die Auswahl-Datei schreibt
+  nichts und ruft kein IPC.
+
+### 26.3 Ein Fehler, der dabei auffiel
+
+Der erste Entwurf hing die **Marke** in die Abhängigkeiten des Zeichen-Effekts. `holeBereiteMarke`
+kann bei jedem Aufruf eine neue Referenz liefern — dann zeichnet der Effekt bei **jedem Rendern**
+alle Vorlagenbilder neu. Im Unit-Test war das messbar (vier Zeichenaufrufe statt drei). Der Effekt
+hängt jetzt an einem **Bereitschafts-Flag** (`markeBereit`), nicht am Objekt: Er läuft erneut, wenn
+die Marke fertig wird, aber nicht bei jedem Tastendruck.
+
+### 26.4 Belege
+
+- **Treiber `4g7`:** `{"flaeche":true,"bild":true,"breite":1920,"hoehe":1080,
+  "vorlage":"aktion-vorlage-vollbild","vorlagenBilder":6}` — *„VORSCHAU BEIM ANLEGEN GEMESSEN:
+  Canvas 1920 x 1080 im Modus 'neu', Vorlage aktion-vorlage-vollbild, 6 Vorlagenbild(er)"*.
+  Der Schritt prüft seit diesem Bau auch, dass **jede** wählbare Vorlage ein Bild hat (sonst
+  Befund).
+- **Unit 5463/5463** (361 Dateien, +1): „die Vorlagen-Auswahl zeigt je Vorlage ein Bild und wechselt
+  die Vorlage per Klick" — inklusive: die große Vorschau zeichnet nach dem Klick **mit der neuen
+  Vorlage**.
+- Typecheck 0 (auch Tests), Lint 0, Build 0, Integration **51/51**, Treiber **0 Befunde**
+  (1 Untersuchung, 1 MANUELL).
+- **Treiber-Matrix:** `4g7` ist **FA-02** zugeordnet (der Unit-Test `treiber-matrix.spec.ts` hat die
+  Lücke sofort gemeldet — genau wofür er da ist).
+- Doku: TK **v3.39** (9.8.3), `.docx` im selben Commit neu erzeugt.
+
+### 26.5 Offen
+
+**C:** Felder richten sich nach der Vorlage (nur zeigen, was sie benutzt); Akzentfarbe als echter
+Farbwähler (#325) **oder** Feld entfernen.
+
+### 26.6 Nächster Schritt
+
+**C.** Danach entscheidet Niklas, was als Nächstes kommt — die Effekte bleiben geparkt.

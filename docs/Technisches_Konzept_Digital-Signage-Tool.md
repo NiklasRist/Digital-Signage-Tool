@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.38 (9.8.3: „Neue Aktion" ist ein Gestaltungsvorgang – die Live-Vorschau zeichnet den **Entwurf**, das Bild ist schon im Entwurf wählbar. Entscheidung 03.11.2026, AD unverändert v1.13)
+**Version:** 3.39 (9.8.3: Die Vorlagen-Auswahl zeigt je Vorlage ein **Bild** aus demselben Zeichenweg – Kacheln statt Klappliste. Entscheidung 03.11.2026, AD unverändert v1.13)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1537,6 +1537,11 @@ Aktion {
   IPC-Schreibweg, es gibt noch keine Aktion), und sein Motiv wird **vor** dem Zeichnen
   vorbereitet (`bereiteMotivVorFuer`) — sonst stünde für das gerade gewählte Produktfoto der
   Platzhalter.
+- **Die Vorlagen-Auswahl zeigt Bilder (03.11.2026).** Jede wählbare Vorlage steht als Kachel mit
+  einem Bild aus **demselben** Zeichenweg (`zeichneVorschau` → `zeichneSegment`, 9.10.1) — keine
+  zweite Malroutine, keine Skizze aus Rechtecken. Die Bilder entstehen **einmal beim Öffnen** des
+  Formulars (Layout-Vorschau); das große Vorschaubild daneben bleibt live. Unter dem Bild stehen
+  Name und Fläche („Ganzbild (1920 × 1080)", „Band (1920 × 162)").
 - **Bildzuweisung:** aus der Medien-Bibliothek **wählen** (Asset-ID) **oder** neu **importieren** (media-service → dann Asset-ID). Das Bild ist stets eine **Referenz**.
 - **Live-Vorschau:** `template-canvas` rendert (Aktion + Vorlage + Marke) → dieselben Pixel, die später als Segment-PNG in den finalen Render gehen.
 

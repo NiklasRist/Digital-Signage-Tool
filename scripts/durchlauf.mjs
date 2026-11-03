@@ -6146,13 +6146,17 @@ const main = async () => {
       const lage4g7 = await seite.evaluate(() => {
         const flaeche = document.querySelector('[data-testid="aktion-vorschau-flaeche"]');
         const bild = flaeche === null ? null : flaeche.querySelector("canvas");
-        const wahl = document.querySelector('[data-testid="aktion-vorlage"]');
+        const gewaehlt = document.querySelector('[data-testid="aktion-vorlagen-wahl"] [data-gewaehlt="ja"]');
+        const vorlagenBilder = document.querySelectorAll(
+          '[data-testid="aktion-vorlagen-wahl"] [data-testid="vorlagen-bild"] canvas',
+        );
         return {
           flaeche: flaeche !== null,
           bild: bild !== null,
           breite: bild === null ? 0 : bild.width,
           hoehe: bild === null ? 0 : bild.height,
-          vorlage: wahl === null ? null : wahl.value,
+          vorlage: gewaehlt === null ? null : gewaehlt.getAttribute("data-testid"),
+          vorlagenBilder: vorlagenBilder.length,
         };
       });
       console.log(`[schritt-4g7] Neue Aktion: ${JSON.stringify(lage4g7)}.`);
@@ -6163,11 +6167,15 @@ const main = async () => {
         fund("Vorschau beim Anlegen", "der ENTWURF wird gezeichnet, nicht erst die gespeicherte Aktion",
           `Vorschauflaeche=${String(lage4g7.flaeche)}, Canvas=${String(lage4g7.bild)}, Vorlage=${String(lage4g7.vorlage)}`,
           "Befund", "action-editor/index.tsx");
+      } else if (lage4g7.vorlagenBilder === 0) {
+        fund("Vorschau beim Anlegen", "jede waehlbare Vorlage zeigt ein BILD, nicht nur ihren Namen (03.11.2026)",
+          `Vorlagenbilder=${String(lage4g7.vorlagenBilder)}, Vorlage=${String(lage4g7.vorlage)}`,
+          "Befund", "action-editor/vorlagen-wahl.tsx");
       } else if (lage4g7.breite !== 1920 || lage4g7.hoehe !== 1080) {
         fund("Vorschau beim Anlegen", "das Vorschaubild hat die native Flaeche 1920 x 1080",
           `${String(lage4g7.breite)} x ${String(lage4g7.hoehe)}`, "Befund", "template-canvas/zeichne-segment.ts");
       } else {
-        console.log(`[schritt-4g7] VORSCHAU BEIM ANLEGEN GEMESSEN: Canvas ${String(lage4g7.breite)} x ${String(lage4g7.hoehe)} im Modus "neu", Vorlage ${String(lage4g7.vorlage)}.`);
+        console.log(`[schritt-4g7] VORSCHAU BEIM ANLEGEN GEMESSEN: Canvas ${String(lage4g7.breite)} x ${String(lage4g7.hoehe)} im Modus "neu", Vorlage ${String(lage4g7.vorlage)}, ${String(lage4g7.vorlagenBilder)} Vorlagenbild(er).`);
       }
       // Kein Datensatz entstanden - der Entwurf bleibt einfach stehen; zurueck auf den
       // Reiter, den die Aufraeum-Schritte erwarten.

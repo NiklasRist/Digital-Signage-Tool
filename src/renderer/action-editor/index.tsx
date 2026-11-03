@@ -56,6 +56,7 @@ import {
 } from './aktion-bearbeiten'
 import { BefundAnzeige } from './befund-texte'
 import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
+import { VorlagenWahl } from './vorlagen-wahl'
 import { entferneBild, starteBildImport, waehlbareBilder, weiseBildZu } from './bild-zuweisen'
 import { setzeAkzentfarbe } from './akzentfarbe'
 import {
@@ -529,21 +530,22 @@ function FormularFelder({
       {befunde.map((befund, i) => (
         <BefundAnzeige key={i} befund={befund} />
       ))}
-      {/* die Vorlage: die Auswahl per speichereAktion (verhindert nur der WYSIWYG-Wahl) */}
-      {waehlbare === null ? null : (
-        <select
-          data-testid="aktion-vorlage"
-          // `formular`, nicht `gewaehlt`: im Modus „neu" gibt es keine gewaehlte
-          // Aktion - und genau dort steht die Vorbelegung (03.11.2026).
-          defaultValue={formular.vorlagenId}
-          onBlur={(e) => void feldVerlassen('vorlagenId', e.target.value)}
-        >
-          {waehlbare.map((v) => (
-            <option key={v.id} value={v.id}>{v.name}</option>
-          ))}
-        </select>
-      )}
-      {gewaehlt !== null && waehlbare !== null && findeZugewiesene(gewaehlt.vorlagenId, waehlbare) === null && (
+      {/* Die Vorlage: Auswahl MIT BILD (03.11.2026). Ein Klick geht denselben Weg wie
+          jedes andere Feld - `feldVerlassen`; im Modus „neu" landet er im Entwurf.
+          `formular`, nicht `gewaehlt`: im Modus „neu" gibt es keine gewaehlte Aktion -
+          und genau dort steht die Vorbelegung. */}
+      <div data-testid="aktion-vorlage">
+        <p style={{ margin: '0 0 4px' }}>Vorlage</p>
+        {waehlbare === null ? null : (
+          <VorlagenWahl
+            waehlbare={waehlbare}
+            aktuell={formular.vorlagenId}
+            entwurf={formular}
+            aufWahl={(vorlagenId) => void feldVerlassen('vorlagenId', vorlagenId)}
+          />
+        )}
+      </div>
+      {waehlbare !== null && findeZugewiesene(formular.vorlagenId, waehlbare) === null && (
         <p data-testid="aktion-vorlage-unbekannt" style={{ color: '#d9a441' }}>
           Unbekannte Vorlage - bitte neu wählen.
         </p>
