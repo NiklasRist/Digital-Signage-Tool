@@ -89,7 +89,6 @@ function baueEigenschaften(projekt: Project) {
     marken: { lade: vi.fn(), hole: vi.fn(() => null), aufGeaendert: vi.fn(() => () => {}) },
     verdrahtung: {
       starteMedienImport: vi.fn(),
-      legeAktionAn: vi.fn(),
       reparatur: null,
       meldeReparaturStand: vi.fn(),
       meldeUebergabe: vi.fn(),

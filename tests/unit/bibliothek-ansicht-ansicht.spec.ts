@@ -417,3 +417,52 @@ describe("Motiv-Layout nach Form der Vorlage (02.11.2026)", () => {
     expect(bild?.style.width).toBe("71px");
   });
 });
+
+// 03.11.2026 (Entscheidung 29.4): „+ Neue Aktion" legt NICHTS mehr selbst an - der Knopf
+// oeffnet den Aktions-Editor im Modus „neu" (Vorschau, Bild, Vorlagen, „Anlegen").
+describe("Der Knopf „+ Neue Aktion“ oeffnet den Editor (29.4)", () => {
+  let host: HTMLElement;
+  let root: Root;
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  it("der Knopf ruft den Weg auf - und es gibt KEIN Inline-Formular mehr", () => {
+    const aufNeueAktion = vi.fn();
+    act(() => {
+      root.render(
+        createElement(
+          Bibliotheksansicht,
+          eigenschaften({ projekt: projekt({ id: "p1" }), aufNeueAktion }),
+        ),
+      );
+    });
+
+    const knopf = host.querySelector<HTMLButtonElement>("[data-testid='aktion-anlegen-oeffnen']");
+    expect(knopf).not.toBeNull();
+    act(() => {
+      knopf?.click();
+    });
+    expect(aufNeueAktion).toHaveBeenCalledTimes(1);
+    // Das fruehere Inline-Formular (Titel + Vorlage + „Anlegen") ist entfallen.
+    expect(host.querySelector("[data-testid='aktion-anlegen']")).toBeNull();
+    expect(host.querySelector("[data-testid='aktion-anlegen-knopf']")).toBeNull();
+  });
+
+  it("ohne Rueckruf gibt es keinen Knopf - die Ansicht erfindet keinen Weg", () => {
+    act(() => {
+      root.render(createElement(Bibliotheksansicht, eigenschaften()));
+    });
+    expect(host.querySelector("[data-testid='aktion-anlegen-oeffnen']")).toBeNull();
+  });
+});

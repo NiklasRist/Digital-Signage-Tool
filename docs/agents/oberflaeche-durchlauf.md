@@ -3783,3 +3783,31 @@ Ereignisse gesammelt: 91
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
 - **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T18:45:47.272Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 92
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Aktion bearbeiten (FA-03): erwartet "Bearbeiten legt KEINE zweite Aktion an", erkannt "Aktionen 2 -> 1" (Ort: action-editor/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+> **UNGÜLTIG (markiert, nicht gelöscht) — der Befund „Aktion bearbeiten (FA-03)".** Er ist ein
+> **Messfehler des Treibers**, nicht des Produkts. Schritt 4g fragte `document.querySelector`
+> ohne Bereich: Der Reiter [Aktionen] ist montiert und verdeckt (TK 9.14.2) und trägt DIESELBEN
+> Testids — der Titel landete im verdeckten Reiter, „Anlegen" ebenfalls. 4g misst seit der
+> Korrektur nur innerhalb von `[data-testid="rahmen-ansicht-aktionen"]`. Der Folgebefund in 4g3
+> („Aktionen 2 -> 1") war eine **stehengebliebene Datei**: `project.json` schreibt entprellt nach
+> 4 s, nach 4g4s Undo stand die Sicht auf 1 und die Datei noch auf 2 — 4g3 wartet jetzt, bis die
+> Datei den Sicht-Stand trägt. Der Lauf um **19:53** hat keine dieser beiden Zeilen.
+
+## Nachlauf vom 2026-11-03T18:52:26.913Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 94
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)

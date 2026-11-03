@@ -11,33 +11,54 @@
 // beiden Renderer-Fachlichkeiten darf die andere direkt importieren.
 //
 // WAS HIER NICHT PASSIERT: kein Zeichnen, kein Speichern, keine Aktions-Daten. Nur die
-// Kennung der Aktion, die der Editor zeigen soll; `null` = Ansicht zu.
+// LAGE der Ansicht; `zu` = geschlossen.
+//
+// 03.11.2026 (Entscheidung 29.4, Niklas: „wir machen 2"): Es gibt einen DRITTEN
+// Zustand. „Neue Aktion" im Composer legt keine halbe Aktion mehr an, sondern öffnet
+// den Editor im Modus `neu` - dort sitzen Vorschau, Bild, Vorlagen-Kacheln, Felder nach
+// Vorlage und der Anlegen-Knopf. Das Inline-Formular der Bibliothek ist entfallen:
+// EIN Weg statt zwei (Begründung: 29.4 in `docs/agents/uebergabe-2026-11-01-…`).
 
-let aktionId: string | null = null
-const hoerer = new Set<(aktionId: string | null) => void>()
+/** Wo die Aktionen-Ansicht steht. `zu` = geschlossen, `neu` = Anlegen, `aktion` = diese Aktion. */
+export type AktionenAnsichtLage =
+  | { readonly art: 'zu' }
+  | { readonly art: 'neu' }
+  | { readonly art: 'aktion'; readonly aktionId: string }
+
+const ZU: AktionenAnsichtLage = { art: 'zu' }
+
+let lage: AktionenAnsichtLage = ZU
+const hoerer = new Set<(lage: AktionenAnsichtLage) => void>()
 
 /** Öffnet die Ansicht für GENAU diese Aktion. Dieselbe Aktion erneut = keine Meldung. */
 export function oeffneAktionenAnsicht(id: string): void {
   if (id.trim() === '') return
-  if (aktionId === id) return
-  aktionId = id
+  if (lage.art === 'aktion' && lage.aktionId === id) return
+  lage = { art: 'aktion', aktionId: id }
+  melde()
+}
+
+/** Öffnet die Ansicht im Modus „neu" (Anlegen). Ist sie schon so offen: keine Meldung. */
+export function oeffneNeueAktion(): void {
+  if (lage.art === 'neu') return
+  lage = { art: 'neu' }
   melde()
 }
 
 /** Schließt die Ansicht. Ist sie zu, geschieht NICHTS (kein Hörer wird gerufen). */
 export function schliesseAktionenAnsicht(): void {
-  if (aktionId === null) return
-  aktionId = null
+  if (lage.art === 'zu') return
+  lage = ZU
   melde()
 }
 
-/** Die offene Aktion - `null`, solange die Ansicht zu ist. */
-export function holeAktionenAnsicht(): string | null {
-  return aktionId
+/** Die offene Lage - `{ art: 'zu' }`, solange die Ansicht zu ist. */
+export function holeAktionenAnsicht(): AktionenAnsichtLage {
+  return lage
 }
 
 export function aufAktionenAnsichtGeaendert(
-  eintrag: (aktionId: string | null) => void,
+  eintrag: (lage: AktionenAnsichtLage) => void,
 ): () => void {
   hoerer.add(eintrag)
   return () => {
@@ -49,6 +70,6 @@ function melde(): void {
   // Kopie der Liste: Ein Hörer, der sich während der Meldung abmeldet, darf die
   // Schleife nicht verkürzen (dieselbe Regel wie in abspielposition.ts).
   for (const eintrag of [...hoerer]) {
-    eintrag(aktionId)
+    eintrag(lage)
   }
 }

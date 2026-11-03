@@ -291,7 +291,7 @@ so breit, dass „+10 s · Gesamt 0:42 · Band 3×" in EINE Zeile passt.
 | Zeile mit **Bild** | gerendertes Motiv als Vorschau (Mechanik: `composer/thumbnails.ts` kann canvas/url/fehlt) | **schneller**: zwei Aktionen vergleichen, ohne beide zu öffnen |
 | **„läuft bei 0:12 · 3×"** | eine Zeile unter dem Titel, klickbar → springt an die Stelle | **sehr viel besser**: den Rückverweis gibt es heute **nicht** (0 Treffer im Code) |
 | **„Ins Video"** | Knopf an der Zeile. **GEBAUT 02.11.2026** (`0268bf5`, Treiber `4f8`): Band-Aktion -> Abschnitt ans Werbeband, Ganzbild -> Unterbrechung an der **Abspielmarke**; die Regel liegt rein in `composer/ins-video.ts`. **Löst die #442-Teilregel ab** („Band nur in der Band-Bearbeitung"). **Achtung:** eine Unterbrechung macht das Projekt derzeit **unrenderbar** (Uebergabe Abschnitt 20.4, offen). | **schneller** als der Drag auf wenige Pixel |
-| **Anlegen mit Preset** | „+ Neue Aktion" öffnet mit **zuletzt benutzter Vorlage**, **Projekt-Standardmarke** und **Projekt-Standarddauer** vorbelegt. **GEBAUT 03.11.2026** (`gemeinsam/vorlage-vorbelegung.ts`): dieselbe Regel für den Aktions-Editor und das Inline-Formular im Composer (#416). | **schneller** |
+| **Anlegen mit Preset** | „+ Neue Aktion" öffnet mit **zuletzt benutzter Vorlage**, **Projekt-Standardmarke** und **Projekt-Standarddauer** vorbelegt. **GEBAUT 03.11.2026** (`gemeinsam/vorlage-vorbelegung.ts`). **Nachtrag 03.11.2026 (Entscheidung 29.4):** „+ Neue Aktion" öffnet den **Aktions-Editor im Modus „neu"** — das Inline-Formular im Composer ist entfallen, die Regel wird von **einem** Weg gelesen (TK 9.8.3). | **schneller** |
 | **Duplizieren** | Kopie mit neuem Titel/Preis | **schneller** |
 | Bearbeiten · Löschen | wie heute | *Voraussetzung* |
 

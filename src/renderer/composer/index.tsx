@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef, type JSX } from 'react'
 
 import type { Listenelement, Project, Bearbeitungsstand } from '../../shared/contracts/project'
-import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { MarkenZugang, ProjektZugang, VorlagenZugang, ZeichenZugang } from '../app-shell/sichten'
 import type { ReparaturStand } from './reparatur-fuehrung'
@@ -81,7 +80,6 @@ import { fuehreFixAus, type FixOptionId } from './reparatur-optionen'
 import { ReparaturPanel } from './reparatur-panel.tsx'
 import { loeseRenderAus, loeseExportAus } from './render-ausloesen'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
-import { merkeLetzteVorlage } from '../gemeinsam/vorlage-vorbelegung'
 import type { Marke } from '../../shared/contracts/marke'
 import { importiereMedien, baueImportBericht, type ImportBericht } from './medien-import'
 // 01.11.2026: Die Galerie ist als Flaeche entfallen; die Datei-Drop-Zone (#335) haengt
@@ -120,7 +118,9 @@ import { BandOverlay } from './band-overlay.tsx'
 import { oeffneMenue, schliesseMenue, type ComposerLage } from './composer-montage'
 // 01.11.2026: Der Einstieg in den Aktions-Editor oeffnet eine Ansicht UEBER der
 // Reiterflaeche (gemeinsamer Speicher, wie `reiter.ts`; der Rahmen abonniert ihn).
-import { oeffneAktionenAnsicht } from '../gemeinsam/aktionen-ansicht'
+// 03.11.2026 (Entscheidung 29.4): derselbe Speicher traegt jetzt AUCH den Modus „neu" -
+// „+ Neue Aktion" oeffnet den Editor, statt im Inline-Formular eine halbe Aktion anzulegen.
+import { oeffneAktionenAnsicht, oeffneNeueAktion } from '../gemeinsam/aktionen-ansicht'
 import { Seitenleiste, type PanelLage } from './seitenleiste.tsx'
 import { EigenschaftenAnsicht } from './eigenschaften-ansicht.tsx'
 // 02.11.2026 („Ins Video"): der Klick-Weg in dasselbe Video. Die REGEL (Band-Aktion ->
@@ -132,14 +132,6 @@ import { EigenschaftenAnsicht } from './eigenschaften-ansicht.tsx'
 import { videostelleAusAbspielmarke } from './ins-video'
 import { holeAbspielstand } from '../gemeinsam/abspielposition'
 
-
-/** #416: der Anlege-Auftrag (Roheingabe + Marke). Die Wurzel baut daraus KEINEN Entwurf -
- *  das tut allein der Aktions-Editor (#136/#319); hier reisen nur die drei Werte. */
-export interface AktionAnlegenAuftrag {
-  titel: string
-  vorlagenId: string
-  markeId: string
-}
 
 /** #430: die Antwort des Loeschens (Form von `loescheAktion`, #142). Die Kaskade rechnet
  *  der Main (TK 9.5.3); `stand` traegt die neue `liste`/`aktionen`, die beiden
@@ -159,9 +151,6 @@ export interface ComposerVerdrahtung {
   /** Der Medien-Dialog samt Import-Auftraegen (#204, `app-shell`). Wird an #228
    *  durchgereicht; diese Wurzel oeffnet KEINEN Dialog selbst. */
   starteMedienImport: MedienImportStarter
-  /** #416: „Aktion anlegen" (der #136-Weg). Der vollstaendige Entwurf entsteht im
-   *  Aktions-Editor; diese Wurzel reisst keinen zweiten Entwurf auf. */
-  legeAktionAn: (auftrag: AktionAnlegenAuftrag) => Promise<Ergebnis<Aktion>>
   /** #430: „Aktion loeschen" (der #142-Weg). Die Kaskade rechnet der Main; diese Wurzel
    *  wendet den zurueckgegebenen Stand an (EIN Undo-Schritt ueber den Wrapped-Zugang). */
   loescheAktion: (aktionId: string) => Promise<Ergebnis<LoeschAktionAntwort>>
@@ -544,28 +533,10 @@ export function ComposerInterna({
     })
   }
 
-  // #416: Aktion anlegen aus dem Composer heraus. Die Wurzel baut KEINEN Entwurf (das tut
-  // der Aktions-Editor #136 ueber verdrahtung.legeAktionAn); sie ergaenzt NUR die Marke
-  // (Projekt-Standardmarke) und pflegt die SICHT nach dem Erfolg - Anhaengen ans ENDE,
-  // dieselbe Regel wie mitAktion (#136). Fehler gehen in die stehende Wurzel-Meldung.
-  const legeAktionAnInline = (eingabe: { titel: string; vorlagenId: string }): void => {
-    if (inhalt === null) return
-    void verdrahtung
-      .legeAktionAn({ titel: eingabe.titel, vorlagenId: eingabe.vorlagenId, markeId: inhalt.standardMarkeId })
-      .then((ergebnis) => {
-        if (!ergebnis.ok) {
-          meldeWurzel(ergebnis.fehler.code, ergebnis.fehler.meldung)
-          return
-        }
-        const aktion = ergebnis.wert
-        // Diese Vorlage ist ab jetzt „zuletzt benutzt" (03.11.2026) - dieselbe Regel
-        // wie im Aktions-Editor, der Speicher liegt in `gemeinsam/vorlage-vorbelegung`.
-        merkeLetzteVorlage(eingabe.vorlagenId)
-        // Kein zweiter Entwurf, keine Kaskade: den neuen Stand in die Sicht geben; die
-        // Bibliothek liest inhalt.aktionen und zeigt den Eintrag SOFORT (#416-DoD).
-        projekt.setzeProjekt({ ...inhalt, aktionen: [...inhalt.aktionen, aktion] })
-      })
-  }
+  // 03.11.2026: KEIN Inline-Anlegen mehr (Entscheidung 29.4, Niklas: „wir machen 2").
+  // „+ Neue Aktion" oeffnet den Aktions-Editor im Modus „neu" (`oeffneNeueAktion`); dort
+  // sitzen Vorschau, Bild, Vorlagen-Kacheln, Felder nach Vorlage und „Anlegen". EIN Weg
+  // statt zwei - und beim Abbrechen entsteht keine halbe Aktion in der Bibliothek.
 
   // #430: eine Aktion loeschen (der #142-Weg). Der Main rechnet die Kaskade
   // (TK 9.5.3); diese Wurzel baut sie NICHT nach, sondern wendet den zurueckgegebenen
@@ -956,7 +927,7 @@ export function ComposerInterna({
               ausgewaehltesId={lage.gewaehltesMediumId}
               aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
               vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
-              aufAktionAnlegen={legeAktionAnInline}
+              aufNeueAktion={oeffneNeueAktion}
               aufAktionLoeschen={loescheAktionInline}
               aufAktionBearbeiten={oeffneAktionenAnsicht}
               aufMediumLoeschen={meldeVideoPflicht}

@@ -4457,107 +4457,149 @@ const main = async () => {
       await schlafe(200);
     }
 
-    // Schritt 4g - Aktion anlegen aus dem Composer (#416): Inline-Erst-Anlage ohne
-    // Reiterwechsel. Titel eintippen, Vorlage waehlen, Knopf druecken - der Eintrag
-    // muss SOFORT in der Aktionen-Liste der Bibliothek stehen.
-    await klick('[data-testid="reiter-zusammenstellen"]');
-    await zeigeAnsicht("aktionen");
-    await schlafe(600);
-    const aktionenDavor4g = await seite.evaluate(
-      () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
-    );
-    // 02.11.2026: Das Formular steht hinter "+ Neue Aktion" (Rail entlasten). Gemessen
-    // wird deshalb beides: zu, solange niemand anlegt - und offen nach EINEM Klick.
-    // DIE HOEHE wird mitgemessen (Ueberlauf der Rail), damit "entlastet" eine Zahl hat.
-    const railMasse4g = () =>
-      seite.evaluate(() => {
-        const rail = document.querySelector('[data-testid="composer-rail"]');
-        if (rail === null) return null;
-        const oeffner = document.querySelector('[data-testid="aktion-anlegen-oeffnen"]');
-        const r = oeffner === null ? null : oeffner.getBoundingClientRect();
-        return {
-          ueberlauf: Math.round(rail.scrollHeight - rail.clientHeight),
-          oeffner: r === null ? null : { y: Math.round(r.y), h: Math.round(r.height) },
-        };
-      });
-    const railZu4g = await railMasse4g();
-    const formZu4g = await seite.evaluate(
-      () => document.querySelector('[data-testid="aktion-anlegen"]') === null,
-    );
-    if (!formZu4g) {
-      fund("Aktion anlegen", "das Formular kostet der Rail keine Hoehe, solange niemand anlegt",
-        "aktion-anlegen steht ohne Klick offen", "Befund", "composer/aktion-anlegen.tsx");
-    }
-    // Der Oeffner wird mit der ECHTEN Maus geklickt (nicht per evaluate): Nur so ist
-    // belegt, dass "+ Neue Aktion" im 800x572-Fenster erreichbar ist - der Grund, aus
-    // dem das Formular ueberhaupt zugeht.
-    const oeffnerDa4g = await klick('[data-testid="aktion-anlegen-oeffnen"]');
-    await schlafe(150);
-    const railOffen4g = await railMasse4g();
-    const formDa4g = await seite.evaluate(() => !!document.querySelector('[data-testid="aktion-anlegen"]'));
-    console.log(`[schritt-4g] Rail: zu ${JSON.stringify(railZu4g)}, offen ${JSON.stringify(railOffen4g)}`);
-    if (!oeffnerDa4g || !formDa4g) {
-      fund("Aktion anlegen", '"+ Neue Aktion" oeffnet das Inline-Formular der Bibliothek (#416)',
-        `Oeffner vorhanden: ${String(oeffnerDa4g)}, Formular nach Klick: ${String(formDa4g)}`,
-        "Befund", "composer/aktion-anlegen.tsx");
-    } else {
-      await seite.evaluate(() => {
-        const feld = document.querySelector('[data-testid="aktion-anlegen-titel"]');
-        if (feld !== null) feld.scrollIntoView({ block: 'center' });
-      });
-      await schlafe(150);
-      await seite.click('[data-testid="aktion-anlegen-titel"]');
-      await seite.type('[data-testid="aktion-anlegen-titel"]', 'Durchlauf-Aktion-inline');
-      await schlafe(200);
-      // Der Anlegen-Knopf ist jetzt ein Submit-Knopf im Formular - auch er wird echt
-      // geklickt, damit der Absende-Weg selbst gemessen ist.
-      const abgeschickt4g = await klick('[data-testid="aktion-anlegen-knopf"]');
-      await schlafe(2_500);
-      const aktionenDanach4g = await seite.evaluate(
+    // Schritt 4g - Aktion anlegen aus dem Composer (Entscheidung 29.4, 03.11.2026):
+    // "+ Neue Aktion" legt NICHTS mehr inline an - es oeffnet den Aktions-Editor im
+    // Modus "neu" (Vorschau, Bild, Vorlagen-Kacheln, Felder nach Vorlage, "Anlegen").
+    // Gemessen wird der GANZE Weg am Fenster: Oeffner -> Ansicht mit leerem Entwurf ->
+    // Titel tippen -> Anlegen -> Aktion im project.json -> zurueck -> Zeile in der
+    // Bibliothek mit Verwendungstext und GEZEICHNETEM Motiv.
+    {
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
+      await schlafe(600);
+      const projektDatei4g = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      const liesAktionen4g = () => JSON.parse(fs.readFileSync(projektDatei4g, "utf-8")).aktionen;
+      const aktionenDavor4g = await seite.evaluate(
         () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
       );
-      if (aktionenDanach4g > aktionenDavor4g) {
-        console.log(`[schritt-4g] Aktion anlegen GEMESSEN: ${aktionenDavor4g} -> ${aktionenDanach4g} Aktionen (#416 belegt).`);
+      const vorher4g = liesAktionen4g();
+      // Der Oeffner wird mit der ECHTEN Maus geklickt: nur so ist belegt, dass der Knopf
+      // im 800x572-Fenster erreichbar ist.
+      // MESSFALLE (03.11.2026, im eigenen Lauf erwischt): Der Reiter [Aktionen] ist
+      // MONTIERT und verdeckt (TK 9.14.2) - seine ActionEditorWurzel traegt DIESELBEN
+      // Testids (`aktion-titel`, `aktion-anlegen-bestaetigen`, `aktion-formular-leer`).
+      // Ein ungefiltertes `document.querySelector` traf den VERDECKTEN Reiter; der Titel
+      // landete dort und die Messung haette den falschen Weg belegt. Alles wird deshalb
+      // auf `rahmen-ansicht-aktionen` eingegrenzt.
+      const ANSICHT4G = '[data-testid="rahmen-ansicht-aktionen"]';
+      const oeffnerDa4g = await klick('[data-testid="aktion-anlegen-oeffnen"]');
+      await schlafe(800);
+      const ansicht4g = await seite.evaluate((bereich) => {
+        const ansicht = document.querySelector(bereich);
+        const aktiv = document.querySelector('[role="tab"][aria-selected="true"]');
+        const reiter = aktiv === null ? null : aktiv.getAttribute("data-testid")?.replace("reiter-", "");
+        const flaeche = reiter === null ? null : document.querySelector(`[data-testid="rahmen-inhalt-${reiter}"]`);
+        return {
+          ansicht: ansicht !== null,
+          reiterVerdeckt: flaeche === null ? null : flaeche.hidden,
+          formularLeer:
+            ansicht === null
+              ? null
+              : ansicht.querySelector('[data-testid="aktion-formular-leer"]') !== null,
+          anlegenKnopf:
+            ansicht === null
+              ? null
+              : ansicht.querySelector('[data-testid="aktion-anlegen-bestaetigen"]') !== null,
+          titel: ansicht?.querySelector('[data-testid="aktion-titel"]')?.value ?? null,
+        };
+      }, ANSICHT4G);
+      console.log(`[schritt-4g] "+ Neue Aktion": ${JSON.stringify(ansicht4g)}.`);
+      if (!oeffnerDa4g || !ansicht4g.ansicht) {
+        fund("Aktion anlegen", '"+ Neue Aktion" oeffnet den Aktions-Editor ueber der Reiterflaeche (29.4)',
+          `Oeffner vorhanden: ${String(oeffnerDa4g)}, Ansicht offen: ${String(ansicht4g.ansicht)}`,
+          "Befund", "composer/bibliothek-ansicht.tsx");
+      } else if (ansicht4g.reiterVerdeckt !== true) {
+        fund("Aktion anlegen", "die Reiterflaeche ist verdeckt, aber montiert (TK 9.14.2)",
+          `hidden=${String(ansicht4g.reiterVerdeckt)}`, "Befund", "app-shell/rahmen.tsx");
+      } else if (!ansicht4g.anlegenKnopf || ansicht4g.formularLeer) {
+        // Der Einstieg muss DIREKT im Modus "neu" landen - nicht bei "Nichts gewaehlt."
+        fund("Aktion anlegen", 'der Einstieg oeffnet den Editor im Modus "neu" (Anlegen-Knopf, Entwurf steht)',
+          JSON.stringify(ansicht4g), "Befund", "action-editor/index.tsx");
       } else {
-        fund("Aktion anlegen", "die neue Aktion erscheint sofort in der Bibliothek (#416)",
-          `Aktionen davor/nachher: ${aktionenDavor4g}/${aktionenDanach4g}, abgeschickt: ${String(abgeschickt4g)}`,
-          "Befund", "composer/index.tsx");
-      }
-      // 02.11.2026: Der Rueckverweis an JEDER Zeile. Ohne ihn muss man die Zeitleiste
-      // absuchen, um zu wissen, wohin ein Werbemittel gehoert (Messlatte, Abschnitt 16).
-      // 02.11.2026: ZWEI Zusagen je Zeile — der Verwendungstext und das GEZEICHNETE
-      // Motiv. Ein canvas-Element allein beweist nichts (es steht immer da); erst
-      // `width > 1` heisst, dass wirklich gezeichnet wurde.
-      const zeilen4g = await seite.evaluate(() => {
-        const zeilen = [...document.querySelectorAll('[data-testid="aktionen-liste"] > li')];
-        return zeilen.map((zeile) => {
-          const text = zeile.querySelector('[data-testid^="aktion-verwendung-"]');
-          const bild = zeile.querySelector('canvas[data-testid^="aktion-bild-"]');
-          return {
-            verwendung: text === null ? null : (text.textContent ?? "").trim(),
-            motivBreite: bild === null ? null : bild.width,
-          };
+        // Der Titel wird gesetzt und das Feld VERLASSEN (Reacts onBlur haengt an
+        // `focusout`, #310/#445) - im Modus "neu" schreibt das in den ENTWURF.
+        const titel4g = `Durchlauf-Aktion-${Date.now()}`;
+        const getippt4g = await seite.evaluate((wert, bereich) => {
+          // NUR das Feld der Ansicht - nicht das gleichnamige im verdeckten Reiter.
+          const feld = document.querySelector(`${bereich} [data-testid="aktion-titel"]`);
+          if (feld === null) return false;
+          const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+          setzeWert.call(feld, wert);
+          feld.focus();
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+          feld.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+          feld.blur();
+          return true;
+        }, titel4g, ANSICHT4G);
+        await schlafe(300);
+        const abgeschickt4g = await klick(`${ANSICHT4G} [data-testid="aktion-anlegen-bestaetigen"]`);
+        // Dieselbe Frist wie 4g3/4q (20 s): der Speicher schreibt entprellt nach 4 s.
+        const start4g = Date.now();
+        const frist4g = start4g + 20_000;
+        let nachher4g = vorher4g;
+        while (Date.now() < frist4g) {
+          try {
+            nachher4g = liesAktionen4g();
+          } catch {
+            nachher4g = vorher4g;
+          }
+          if (nachher4g.some((a) => a.titel === titel4g)) break;
+          await schlafe(250);
+        }
+        const neu4g = nachher4g.find((a) => a.titel === titel4g) ?? null;
+        console.log(`[schritt-4g] Anlegen: Titel nach ${String(Date.now() - start4g)} ms im project.json (Frist 20 s); Knopf=${String(abgeschickt4g)}, getippt=${String(getippt4g)}.`);
+        // Zurueck ins Projekt - der Rueckweg der Ansicht.
+        const zurueck4g = await klick('[data-testid="aktionen-zurueck"]');
+        await schlafe(700);
+        const ansichtZu4g = await seite.evaluate(
+          () => document.querySelector('[data-testid="rahmen-ansicht-aktionen"]') === null,
+        );
+        const aktionenDanach4g = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid="aktionen-liste"] > li').length,
+        );
+        if (!getippt4g || !abgeschickt4g) {
+          fund("Aktion anlegen", "der Weg 'Neue Aktion' im Editor ist bedienbar",
+            `titel=${String(getippt4g)}, anlegen=${String(abgeschickt4g)}`,
+            "Befund", "action-editor/index.tsx");
+        } else if (neu4g === null) {
+          fund("Aktion anlegen", "die angelegte Aktion steht im project.json",
+            `Aktionen ${vorher4g.length} -> ${nachher4g.length}`,
+            "Befund", "action-editor/index.tsx");
+        } else if (!zurueck4g || !ansichtZu4g) {
+          fund("Aktion anlegen", '"Zurueck zum Projekt" gibt die Reiterflaeche frei',
+            `zurueck=${String(zurueck4g)}, Ansicht zu=${String(ansichtZu4g)}`,
+            "Befund", "app-shell/rahmen.tsx");
+        } else if (aktionenDanach4g !== aktionenDavor4g + 1) {
+          fund("Aktion anlegen", "die neue Aktion erscheint in der Bibliothek (29.4)",
+            `Aktionen davor/nachher: ${aktionenDavor4g}/${aktionenDanach4g}`,
+            "Befund", "composer/index.tsx");
+        } else {
+          console.log(`[schritt-4g] Aktion anlegen GEMESSEN: ${aktionenDavor4g} -> ${aktionenDanach4g} Aktionen, ueber den Editor (29.4 belegt).`);
+        }
+        // 02.11.2026: Der Rueckverweis an JEDER Zeile. Ohne ihn muss man die Zeitleiste
+        // absuchen, um zu wissen, wohin ein Werbemittel gehoert (Messlatte, Abschnitt 16).
+        // ZWEI Zusagen je Zeile - der Verwendungstext und das GEZEICHNETE Motiv. Ein
+        // canvas-Element allein beweist nichts; erst `width > 1` heisst, dass gezeichnet wurde.
+        const zeilen4g = await seite.evaluate(() => {
+          const zeilen = [...document.querySelectorAll('[data-testid="aktionen-liste"] > li')];
+          return zeilen.map((zeile) => {
+            const text = zeile.querySelector('[data-testid^="aktion-verwendung-"]');
+            const bild = zeile.querySelector('canvas[data-testid^="aktion-bild-"]');
+            return {
+              verwendung: text === null ? null : (text.textContent ?? "").trim(),
+              motivBreite: bild === null ? null : bild.width,
+            };
+          });
         });
-      });
-      console.log("[schritt-4g] Zeilen: " + JSON.stringify(zeilen4g));
-      if (zeilen4g.some((z) => z.verwendung === null || z.verwendung === "")) {
-        fund("Aktionen-Bibliothek", "jede Aktionszeile sagt, wo die Aktion laeuft",
-          "Texte: " + JSON.stringify(zeilen4g), "Befund", "composer/bibliothek-ansicht.tsx");
-      }
-      if (zeilen4g.some((z) => z.motivBreite === null || z.motivBreite <= 1)) {
-        fund("Aktionen-Bibliothek", "jede Aktionszeile zeigt das GEZEICHNETE Motiv",
-          "Breiten: " + JSON.stringify(zeilen4g), "Befund", "composer/aktions-vorschau.ts");
-      }
-      // Nach dem Anlegen ist das Formular wieder zu - sonst waere die Entlastung der
-      // Rail nur bis zum ersten Anlegen geschenkt.
-      const formWiederZu4g = await seite.evaluate(
-        () => document.querySelector('[data-testid="aktion-anlegen"]') === null,
-      );
-      const railNach4g = await railMasse4g();
-      console.log(`[schritt-4g] Rail nach dem Anlegen: ${JSON.stringify(railNach4g)}`);
-      if (!formWiederZu4g) {
-        fund("Aktion anlegen", "nach dem Anlegen ist das Formular zu (Rail entlastet)",
-          "aktion-anlegen steht nach dem Absenden noch offen", "Befund", "composer/aktion-anlegen.tsx");
+        console.log("[schritt-4g] Zeilen: " + JSON.stringify(zeilen4g));
+        if (zeilen4g.some((z) => z.verwendung === null || z.verwendung === "")) {
+          fund("Aktionen-Bibliothek", "jede Aktionszeile sagt, wo die Aktion laeuft",
+            "Texte: " + JSON.stringify(zeilen4g), "Befund", "composer/bibliothek-ansicht.tsx");
+        }
+        if (zeilen4g.some((z) => z.motivBreite === null || z.motivBreite <= 1)) {
+          fund("Aktionen-Bibliothek", "jede Aktionszeile zeigt das GEZEICHNETE Motiv",
+            "Breiten: " + JSON.stringify(zeilen4g), "Befund", "composer/aktions-vorschau.ts");
+        }
       }
     }
 
@@ -4640,6 +4682,26 @@ const main = async () => {
       await schlafe(800);
       const projektDatei4g3 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
       const liesAktionen4g3 = () => JSON.parse(fs.readFileSync(projektDatei4g3, "utf-8")).aktionen;
+      // MESSFALLE (03.11.2026, im eigenen Lauf erwischt): `project.json` wird ENTPRELLT
+      // geschrieben (4 s). Nach 4g4s Undo stand die SICHT auf 1 Aktion, die DATEI noch auf
+      // 2 - der Schritt verglich dann 2 -> 1 und meldete "Bearbeiten legt eine zweite
+      // Aktion an". Deshalb wird gewartet, bis die Datei den Sicht-Stand traegt; der
+      // Ausgangswert ist die Zahl, die der Editor selbst zeigt.
+      const fristSync4g3 = Date.now() + 20_000;
+      let sichtZahl4g3 = 0;
+      while (Date.now() < fristSync4g3) {
+        sichtZahl4g3 = await seite.evaluate(
+          () => document.querySelectorAll('[data-testid="aktion-bibliothek"] li').length,
+        );
+        let dateiZahl4g3 = -1;
+        try {
+          dateiZahl4g3 = liesAktionen4g3().length;
+        } catch {
+          dateiZahl4g3 = -1;
+        }
+        if (dateiZahl4g3 === sichtZahl4g3) break;
+        await schlafe(250);
+      }
       const vorher4g3 = liesAktionen4g3();
       const zeile4g3 = await seite.$('[data-testid="aktion-bibliothek"] li button');
       if (zeile4g3 === null) {

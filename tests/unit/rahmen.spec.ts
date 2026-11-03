@@ -24,6 +24,7 @@ import {
 import type { ReiterId } from '../../src/renderer/app-shell/reiter'
 import {
   oeffneAktionenAnsicht,
+  oeffneNeueAktion,
   schliesseAktionenAnsicht,
 } from '../../src/renderer/gemeinsam/aktionen-ansicht'
 
@@ -676,6 +677,29 @@ describe('Aktionen-Ansicht ueber der Reiterflaeche (01.11.2026)', () => {
       knopf.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(behaelter.querySelector('[data-testid="rahmen-ansicht-aktionen"]')).toBeNull()
+    fertig()
+  })
+
+  // 03.11.2026 (Entscheidung 29.4): „+ Neue Aktion" oeffnet denselben Slot - aber im
+  // Modus „neu". Am Vertrag gemessen: der Slot bekommt `aktionId === null`.
+  it('oeffnet sich auch im Modus "neu" (aktionId null) - der Editor legt dann an', () => {
+    const { behaelter, fertig } = rendere(
+      eigenschaften({
+        aktionenAnsicht: (schalt) =>
+          createElement('div', {
+            'data-testid': 'aktionen-ansicht',
+            'data-aktion': schalt.aktionId === null ? 'neu' : schalt.aktionId,
+          }),
+      }),
+    )
+    act(() => {
+      oeffneNeueAktion()
+    })
+
+    expect(behaelter.querySelector('[data-testid="rahmen-ansicht-aktionen"]')).not.toBeNull()
+    expect(
+      behaelter.querySelector('[data-testid="aktionen-ansicht"]')?.getAttribute('data-aktion'),
+    ).toBe('neu')
     fertig()
   })
 

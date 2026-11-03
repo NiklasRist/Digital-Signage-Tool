@@ -120,6 +120,8 @@ function editor(
   p: Project,
   zeichenVorlagen: readonly Vorlage[] = [],
   hervorgehoben: string | null = null,
+  /** 03.11.2026 (Entscheidung 29.4): Einstieg „+ Neue Aktion" aus dem Composer. */
+  starteNeu = false,
 ): { behaelter: HTMLDivElement; setzeProjekt: ReturnType<typeof vi.fn> } {
   const setzeProjekt = vi.fn()
   const behaelter = montiere(
@@ -146,6 +148,7 @@ function editor(
         aufGeaendert: vi.fn(() => () => {}),
       },
       hervorgehobeneAktionId: hervorgehoben,
+      starteNeu,
     } as unknown as Parameters<typeof ActionEditorWurzel>[0]),
   )
   return { behaelter, setzeProjekt }
@@ -326,6 +329,47 @@ describe('Preset beim Anlegen', () => {
     klicke(behaelter, 'aktion-neu')
     expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')?.value).toBe('')
     expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-dauer"]')?.value).toBe('10')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Einstieg „+ Neue Aktion" aus dem Composer (Entscheidung 29.4, 03.11.2026)
+// ---------------------------------------------------------------------------
+
+describe('starteNeu: der Editor oeffnet im Modus "neu"', () => {
+  it('steht SOFORT im Anlege-Formular - ohne Klick auf „Neue Aktion"', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [vorlage('ganz', null)] })
+    const { behaelter } = editor(projekt([]), [], null, true)
+    await laufen()
+
+    // Die Vorbelegung wartet auf die waehlbaren Vorlagen; danach steht der Entwurf.
+    expect(behaelter.querySelector('[data-testid="aktion-formular-leer"]')).toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-anlegen-bestaetigen"]')).not.toBeNull()
+    expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')?.value).toBe('')
+    // Vorbelegt ist die erste waehlbare Vorlage (dieselbe Regel wie der Knopf).
+    const gewaehlt = behaelter.querySelector('[data-testid="aktion-vorlagen-wahl"] [data-gewaehlt="ja"]')
+    expect(gewaehlt?.getAttribute('data-testid')).toBe('aktion-vorlage-ganz')
+  })
+
+  it('ohne starteNeu bleibt der Reiter [Aktionen] bei „Nichts gewählt."', async () => {
+    const { behaelter } = editor(projekt([]))
+    await laufen()
+
+    expect(behaelter.querySelector('[data-testid="aktion-formular-leer"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-anlegen-bestaetigen"]')).toBeNull()
+  })
+
+  it('legt aus diesem Zustand heraus an - der Titel geht in den Entwurf', async () => {
+    doppel.antwort = { ok: true, wert: aktion('neu-1', 'Aus dem Composer') }
+    const { behaelter, setzeProjekt } = editor(projekt([]), [], null, true)
+    await laufen()
+
+    await verlasseFeld(behaelter, 'aktion-titel', 'Aus dem Composer')
+    await klickeAnlegen(behaelter)
+
+    expect(doppel.aufrufe).toHaveLength(1)
+    expect(doppel.aufrufe[0]?.kanal).toBe(KANAELE.project.erstelleAktion)
+    expect(setzeProjekt).toHaveBeenCalledTimes(1)
   })
 })
 

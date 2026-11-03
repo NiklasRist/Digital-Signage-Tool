@@ -37,7 +37,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type JSX } from 'react'
 import type { Project } from '../shared/contracts/project'
-import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../shared/contracts/konstanten'
 import type { Auftrag } from '../shared/contracts/auftrag'
 import type { FixWirkung, Uebergabe } from './composer/reparatur-optionen'
 import type { ReparaturStand } from './composer/reparatur-fuehrung'
@@ -63,7 +62,6 @@ import { leereProjektHistorie } from './app-shell/undo-historien'
 import { aktualisiereAusgaben } from './composer/ausgabe-liste'
 import { starteMedienImport } from './app-shell/medien-import-uebergabe'
 import { waehleVideoPfad, reiheVideoImportEin } from './app-shell/anlegen-video'
-import { leererEntwurf, legeAktionAn } from './action-editor/aktion-bearbeiten'
 import { loescheAktion } from './action-editor/aktion-loeschen'
 import { ComposerWurzel } from './composer/index'
 import { ActionEditorWurzel } from './action-editor'
@@ -209,22 +207,10 @@ export function App(): JSX.Element | null {
       },
       composerVerdrahtung: {
         starteMedienImport,
-        // #416: „Aktion anlegen" - der vollstaendige Entwurf entsteht HIER aus dem
-        // #136-Entwurf (#319: Marke = Projekt-Standardmarke, Akzentfarbe null).
-        // Die Dauer ist der PROJEKT-Standard (03.11.2026, TK 9.8.4) - nicht die
-        // Konstante 10, die jede neue Aktion vom Projektstandard abgekoppelt haette.
-        legeAktionAn: ({ titel, vorlagenId, markeId }) => {
-          const offen = zugaengeRef.current?.projektRoh.hole().projekt ?? null
-          return legeAktionAn({
-            ...leererEntwurf(
-              vorlagenId,
-              markeId,
-              null,
-              offen?.standardSegmentdauer ?? STANDARD_ANZEIGEDAUER_SEKUNDEN,
-            ),
-            titel,
-          })
-        },
+        // 03.11.2026: KEIN zweiter Anlege-Weg mehr (Entscheidung 29.4, „wir machen 2").
+        // „+ Neue Aktion" oeffnet den Aktions-Editor im Modus „neu"; der Entwurf entsteht
+        // dort (#136/#319 - dieselbe Vorbelegung: zuletzt benutzte Vorlage, Projekt-
+        // Standardmarke, Projekt-Standarddauer). Der fruehere Inline-Auftrag ist entfallen.
         // #430: „Aktion loeschen" - der Composer wendet den zurueckgegebenen Stand an.
         // Reine Durchreichung des #142-Wegs (Kaskade rechnet der Main).
         loescheAktion,
@@ -418,13 +404,16 @@ export function App(): JSX.Element | null {
       />
     )
 
-  // 01.11.2026: Der Aktions-Editor als Ansicht ÜBER der Reiterfläche. Der Einstieg liegt
-  // in der Aktions-Zeile des Composers (`gemeinsam/aktionen-ansicht.ts`); hier steht nur
-  // die Ansicht selbst - dieselbe Wurzel wie im Reiter [Aktionen], mit dem UMHÜLLTEN
-  // Zugang (#243), damit Bearbeiten ein Undo-Schritt bleibt.
+  // 01.11.2026: Der Aktions-Editor als Ansicht ÜBER der Reiterfläche. Die Einstiege
+  // liegen im Composer (Aktions-Zeile „Bearbeiten" und „+ Neue Aktion",
+  // `gemeinsam/aktionen-ansicht.ts`); hier steht nur die Ansicht selbst - dieselbe Wurzel
+  // wie im Reiter [Aktionen], mit dem UMHÜLLTEN Zugang (#243), damit Bearbeiten und
+  // Anlegen je EIN Undo-Schritt bleiben.
+  // 03.11.2026 (Entscheidung 29.4): `aktionId === null` heisst Modus „neu" - dann oeffnet
+  // der Editor mit einem leeren Entwurf (Vorlage/Marke/Dauer vorbelegt, s. 9.8.3).
   const aktionenAnsicht = projektOffen === null
     ? undefined
-    : (schalt: { aktionId: string; aufSchliessen: () => void }) => (
+    : (schalt: { aktionId: string | null; aufSchliessen: () => void }) => (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div style={{ flex: '0 0 auto', padding: '4px 8px', borderBottom: '1px solid #444' }}>
           <button type="button" data-testid="aktionen-zurueck" onClick={schalt.aufSchliessen}>
@@ -439,6 +428,7 @@ export function App(): JSX.Element | null {
             vorlagen={zugaenge.vorlagen}
             marken={zugaenge.marken}
             hervorgehobeneAktionId={schalt.aktionId}
+            starteNeu={schalt.aktionId === null}
           />
         </div>
       </div>

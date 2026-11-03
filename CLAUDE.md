@@ -11,7 +11,49 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, siebenundvierzigste Sitzung: „Bearbeiten" führt sofort in die Aktion — und 211 Vorlagen-Reste gelöscht) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, achtundvierzigste Sitzung: „Neue Aktion" öffnet den Editor — Entscheidung 29.4 ist GEBAUT)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 30.**
+
+- **ENTSCHEIDUNG 29.4 IST GEBAUT.** „+ Neue Aktion" im Composer legt **keine** halbe Aktion mehr
+  an, sondern oeffnet den **Aktions-Editor im Modus „neu"** als Ansicht ueber der Reiterflaeche.
+  Vorschau, Bild, Vorlagen-Kacheln, Felder nach Vorlage und „Anlegen" sitzen dort. **Ein Weg
+  statt zwei.**
+- **Der Speicher hat jetzt DREI Zustaende:** `AktionenAnsichtLage = zu | neu | aktion(id)` in
+  `gemeinsam/aktionen-ansicht.ts` (`oeffneNeueAktion`). Der Rahmen-Slot `aktionenAnsicht` bekommt
+  `aktionId: string | null` — **`null` heisst „neu"**. `App.tsx` reicht
+  `starteNeu={schalt.aktionId === null}` an die `ActionEditorWurzel`.
+- **`starteNeu` wird EINMAL je Montage ausgewertet** (`useRef`) und **wartet**, bis die
+  waehlbaren Vorlagen geladen sind — sonst liefe die Vorbelegung (zuletzt benutzte Vorlage,
+  Projekt-Standardmarke, Projekt-Standarddauer) leer. Der Anlege-Code liegt in
+  `starteNeueAktion()`; Knopf im Editor und Composer-Einstieg benutzen ihn.
+- **Entfallen:** `composer/aktion-anlegen.tsx`, `tests/unit/aktion-anlegen.spec.ts`,
+  `aufAktionAnlegen`, `AktionAnlegenAuftrag`, `ComposerVerdrahtung.legeAktionAn`,
+  `composer/index.tsx:legeAktionAnInline`. Die Bibliothek hat nur noch einen Knopf
+  (`aktion-anlegen-oeffnen`, Text „+ Neue Aktion").
+- **ZWEI MESSFALLEN, im eigenen Lauf bezahlt:** (1) Der **verdeckte Reiter [Aktionen] traegt
+  DIESELBEN Testids** (`aktion-titel`, `aktion-anlegen-bestaetigen`) — ein ungefiltertes
+  `document.querySelector` traf den verdeckten Reiter; `4g` grenzt jetzt auf
+  `[data-testid="rahmen-ansicht-aktionen"]` ein. (2) Nach `4g4`s Undo stand die **Sicht** auf 1
+  Aktion, die **Datei** noch auf 2 (4-s-Entprellung) — `4g3` wartet jetzt, bis die Datei den
+  Sicht-Stand traegt. Der erste Lauf ist im Protokoll **markiert**, nicht geloescht.
+- **FENSTER-BELEG (`4g`, neu geschrieben):** `{"ansicht":true,"reiterVerdeckt":true,
+  "formularLeer":false,"anlegenKnopf":true,"titel":""}`; Titel nach **4271 ms** im
+  `project.json`; Aktionen **1 → 2**; Rueckweg schliesst; Zeilen mit Verwendungstext und
+  Motivbreiten **474 / 71 px**.
+- **Gate EXIT 0:** Typecheck **0** (auch tests), ESLint/oxlint **0**, Build **0**,
+  Unit **5477/5477** (362 Dateien), Integration **51/51** (13), Treiber **0 Befunde**
+  (1 Untersuchung: Mehrfachauswahl; 1 MANUELL: Export-Dialog).
+- **Doku:** TK **v3.42** (9.8.3), `.docx` im selben Commit neu erzeugt (2150 → 2161 Absaetze,
+  `unzip -t`, 0 Backticks). `seitenpanel-konzept.md` („Anlegen mit Preset") und
+  `treiber-matrix.md` (FA-02) nachgezogen. AD unveraendert v1.13.
+- **Nicht gepusht:** **49 Commits** vor `origin/main` **vor** dieser Sitzung; mit dem Commit
+  dieser Zeile **50**. Die Zahl waechst mit jedem Doku-Commit — mit dem Befehl zaehlen
+  (`git log --oneline origin/main..HEAD`). **Push nur auf Anweisung.**
+- **Weiter offen:** Befund 27.3 (Band-Vorlagen im Aktions-Editor, „ka"), Effekte geparkt (nur
+  Vollbild: Zoom/Drift, Pop), `einzel-instanz.spec.ts` (#289) flaky.
+
+## STAND HEUTE (03.11.2026, siebenundvierzigste Sitzung: „Bearbeiten" führt sofort in die Aktion — und 211 Vorlagen-Reste gelöscht) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 29.**
 

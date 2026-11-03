@@ -13,6 +13,7 @@ import {
   aufAktionenAnsichtGeaendert,
   holeAktionenAnsicht,
   schliesseAktionenAnsicht,
+  type AktionenAnsichtLage,
 } from '../gemeinsam/aktionen-ansicht'
 import {
   aufVorlagenAnsichtGeaendert,
@@ -53,8 +54,14 @@ export interface RahmenEigenschaften {
   /** 01.11.2026: die AKTIONEN-Ansicht über der Reiterfläche - derselbe Vertrag wie die
    *  Marken-Ansicht. Der Einstieg liegt im Composer (Aktions-Zeile); der offene Zustand
    *  steht im gemeinsamen Speicher `gemeinsam/aktionen-ansicht.ts`. Fehlt der Slot,
-   *  bleibt die Reiterfläche sichtbar. */
-  aktionenAnsicht?: (schalt: { aktionId: string; aufSchliessen: () => void }) => JSX.Element | null
+   *  bleibt die Reiterfläche sichtbar.
+   *  03.11.2026 (Entscheidung 29.4): `aktionId === null` heißt **Modus „neu"** - der
+   *  Editor legt dann eine neue Aktion an (Einstieg „+ Neue Aktion" im Composer);
+   *  eine Kennung heißt „genau diese Aktion bearbeiten". */
+  aktionenAnsicht?: (schalt: {
+    aktionId: string | null
+    aufSchliessen: () => void
+  }) => JSX.Element | null
   /** 03.11.2026: die VORLAGEN-Ansicht über der Reiterfläche - derselbe Vertrag. Der
    *  Einstieg sitzt in der Projektleiste; der offene Zustand steht im gemeinsamen
    *  Speicher `gemeinsam/vorlagen-ansicht.ts`. Fehlt der Slot, bleibt die Reiterfläche
@@ -142,8 +149,9 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
 
   // 01.11.2026: Die Aktionen-Ansicht haengt am gemeinsamen Speicher (Einstieg aus dem
   // Composer). Der Anfangswert wird gelesen, danach haelt das Abo den Stand aktuell.
-  const [aktionenAktionId, setzeAktionenAktionId] = useState<string | null>(() => holeAktionenAnsicht())
-  useEffect(() => aufAktionenAnsichtGeaendert(setzeAktionenAktionId), [])
+  // 03.11.2026: Die Lage hat DREI Formen (zu | neu | aktion) - s. aktionen-ansicht.ts.
+  const [aktionenLage, setzeAktionenLage] = useState<AktionenAnsichtLage>(() => holeAktionenAnsicht())
+  useEffect(() => aufAktionenAnsichtGeaendert(setzeAktionenLage), [])
 
   // 03.11.2026: Die Vorlagen-Ansicht (Einstieg in der Projektleiste). Derselbe Weg wie
   // die Aktionen-Ansicht: Anfangswert lesen, danach haelt das Abo den Stand aktuell.
@@ -153,15 +161,15 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
   // Aktionen-Ansicht, schliesst sich die Vorlagen-Ansicht - sonst lagen zwei uebereinander
   // und die Prioritaet entschiede, welche der Nutzer sieht.
   useEffect(() => {
-    if (aktionenAktionId !== null) schliesseVorlagenAnsicht()
-  }, [aktionenAktionId])
+    if (aktionenLage.art !== 'zu') schliesseVorlagenAnsicht()
+  }, [aktionenLage])
 
   // #456: Die Ansicht gilt nur, wenn der Träger sie wirklich liefert. Verschwindet der Slot
   // (Projekt geschlossen), faellt die Reiterfläche sofort zurueck – kein leeres Fenster.
   const markenAnsicht = eigenschaften.markenAnsicht
   const markenAktiv = zustand.markenOffen && markenAnsicht !== undefined
   const aktionenAnsicht = eigenschaften.aktionenAnsicht
-  const aktionenAktiv = aktionenAktionId !== null && aktionenAnsicht !== undefined
+  const aktionenAktiv = aktionenLage.art !== 'zu' && aktionenAnsicht !== undefined
   const vorlagenAnsicht = eigenschaften.vorlagenAnsicht
   const vorlagenAktiv = vorlagenOffen && vorlagenAnsicht !== undefined
   // Es liegt IMMER nur EINE Ansicht über der Reiterfläche. Vorrang: Marken, Aktionen,
@@ -265,7 +273,8 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
         {aktionenAktiv && !markenAktiv ? (
           <div data-testid="rahmen-ansicht-aktionen" style={{ height: '100%' }}>
             {aktionenAnsicht({
-              aktionId: aktionenAktionId,
+              // null = Modus „neu" (Entscheidung 29.4) - die Lage `zu` kommt hier nie an.
+              aktionId: aktionenLage.art === 'aktion' ? aktionenLage.aktionId : null,
               aufSchliessen: () => schliesseAktionenAnsicht(),
             })}
           </div>

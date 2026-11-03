@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.41 (9.14.2: Der Vorlagen-Editor ist aus der **Projektleiste** erreichbar und liegt über der Reiterfläche – „nur im Projekteditor arbeiten". Entscheidung 03.11.2026, AD unverändert v1.13)
+**Version:** 3.42 (9.8.3: „Neue Aktion" öffnet den Aktions-Editor im Modus **neu** — ein Anlege-Weg statt zwei. Entscheidung 03.11.2026, AD unverändert v1.13)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1528,7 +1528,19 @@ Aktion {
   - **Vorlage:** die **zuletzt benutzte** (Sitzungsspeicher, `renderer/gemeinsam/vorlage-vorbelegung.ts`); ohne gemerkte die **erste wählbare**. Eine gemerkte Kennung zählt nur, solange die Vorlage noch wählbar ist.
   - **Marke:** `Project.standardMarkeId` (9.11.3) — unverändert seit #320.
   - **Dauer:** `Project.standardSegmentdauer` — **nicht mehr** die Konstante 10. Bis 03.11.2026 schrieb jede neue Aktion 10 s und koppelte sich damit still vom Projektstandard ab (9.8.4: `null` hieße „folgt dem Projekt", ein Wert heißt „eigene Dauer"). Wer mitziehen will, leert das Feld; der Wert ist editierbar.
-  - **Dieselbe Vorbelegung** gilt für das Inline-Formular „Aktion anlegen" im Composer (#416) — beide Wege lesen die eine Regel.
+  - Diese Vorbelegung entsteht in **`renderer/gemeinsam/vorlage-vorbelegung.ts`** und wird von
+    **genau einem** Weg gelesen — dem Aktions-Editor (s. nächster Punkt).
+- **„Neue Aktion" öffnet den Editor (03.11.2026, Entscheidung 29.4).** Der Knopf „+ Neue Aktion"
+  in der Composer-Bibliothek legt **keine** Aktion mehr inline an (Titel + Vorlage, Bild/Preis/CTA
+  erst nach „Bearbeiten"), sondern öffnet den `action-editor` als **Ansicht über der Reiterfläche**
+  im Modus **neu**. Dafür trägt der gemeinsame Speicher `renderer/gemeinsam/aktionen-ansicht.ts`
+  einen **dritten Zustand** — `zu | neu | aktion(id)`; „Bearbeiten" und „Neue Aktion" laufen also
+  durch **dieselbe** Ansicht. Vorschau, Bild, Vorlagen-Kacheln, Felder nach Vorlage und „Anlegen"
+  sitzen dort. Das Inline-Formular (`composer/aktion-anlegen.tsx`) ist **entfallen** — **ein Weg
+  statt zwei**, weil Inline-Formular und Editor sonst auseinanderlaufen; eine Aktion ohne
+  Produktbild rendert den Platzhalter; und beim Abbrechen entsteht keine halbe Aktion im Bestand.
+  Der Editor wertet `starteNeu` **einmal je Montage** aus und wartet mit der Vorbelegung, bis die
+  wählbaren Vorlagen geladen sind — danach führt er seine eigene Lage.
 - **Anlegen ist ein Gestaltungsvorgang (03.11.2026).** Im Modus „neu" zeichnet die
   **Live-Vorschau den Entwurf**, nicht erst die gespeicherte Aktion. Die Zeichenroutine fordert
   dafür nur die Inhaltsfelder — `AktionsInhalt` (Titel, Beschreibung, Preis, CTA, `bildRef`,

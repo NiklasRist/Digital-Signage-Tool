@@ -34,7 +34,7 @@
 //  - Feld-Absenden beim Verlassen (Offene Frage aus dem Issue: gemeldet;
 //    keine Entprellung mit selbst gewählter Wartezeit).
 
-import { useEffect, useState, type JSX } from 'react'
+import { useEffect, useRef, useState, type JSX } from 'react'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
@@ -97,6 +97,11 @@ export interface ActionEditorWurzelProps {
   marken: MarkenZugang
   /** Die hervorzuhebende Aktion aus der Reparatur-Führung (#201); null = keine. */
   hervorgehobeneAktionId: string | null
+  /** 03.11.2026 (Entscheidung 29.4): true = der Editor oeffnet im Modus „neu" - der
+   *  Einstieg „+ Neue Aktion" im Composer. Ausgewertet wird das EINMAL je Montage
+   *  (danach fuehrt der Editor seine eigene Lage); die Vorbelegung wartet, bis die
+   *  waehlbaren Vorlagen geladen sind. Fehlt das Feld, aendert sich nichts. */
+  starteNeu?: boolean
 }
 
 /** LIEFERT die Schnittstelle aus #244: die Wurzel des Reiters Aktionen. */
@@ -181,11 +186,48 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
     if (treffer !== undefined) setzeFormular({ ...treffer })
   }, [p.hervorgehobeneAktionId])
 
+  // 03.11.2026 (Entscheidung 29.4): „+ Neue Aktion" im Composer oeffnet den Editor im
+  // Modus „neu" - der gesamte Anlege-Weg (Vorschau, Bild, Vorlagen-Kacheln, Felder nach
+  // Vorlage, „Anlegen") sitzt hier, nicht mehr im Inline-Formular der Bibliothek.
+  //
+  // EINMAL je Montage (`startAusgewertet`): Die Vorbelegung braucht die waehlbaren
+  // Vorlagen, die erst nach dem Aufbau eintreffen - ohne den Merker wuerde jedes
+  // Nachladen den Entwurf des Nutzers ueberschreiben.
+  const startAusgewertet = useRef(false)
+  useEffect(() => {
+    if (p.starteNeu !== true || startAusgewertet.current) return
+    if (waehlbare === null) return
+    startAusgewertet.current = true
+    starteNeueAktion()
+  }, [p.starteNeu, waehlbare])
+
   // Bestands-Fächern: die Lage fällt zurück, wenn die gewählte Aktion verschwindet.
   useEffect(() => {
     const aktionen = p.projekt.hole().projekt?.aktionen ?? []
     setzeLage((bisher) => gleicheLageAb(bisher, aktionen))
   }, [stand])
+
+  /** Legt einen NEUEN Entwurf an - derselbe Weg wie der Knopf „Neue Aktion" in der
+   *  Bibliothek und der Einstieg aus dem Composer (Entscheidung 29.4). */
+  function starteNeueAktion(): void {
+    setzeLage(beginneNeu())
+    setzeEntwurfZaehler((zaehler) => zaehler + 1)
+    // Die Vorbelegung des ANLEGE-FORMULARS (#136, Entscheidung 03.11.2026):
+    // die zuletzt BENUTZTE Vorlage, sonst die erste waehlbare
+    // (`gemeinsam/vorlage-vorbelegung`). Die Akzentfarbe bleibt null.
+    // markeId (#320/TK 9.8.2): Die Projekt-Standardmarke.
+    // standardDauer: der PROJEKT-Standard (8-45 s), nicht mehr die Konstante 10 -
+    // vorher koppelte jede neue Aktion den Projektstandard still ab (TK 9.8.4).
+    const standDerSicht = p.projekt.hole().projekt
+    setzeFormular(
+      leererEntwurf(
+        vorlageFuerNeueAktion(waehlbare ?? []),
+        standDerSicht?.standardMarkeId ?? '',
+        null,
+        standDerSicht?.standardSegmentdauer ?? STANDARD_ANZEIGEDAUER_SEKUNDEN,
+      ),
+    )
+  }
 
   if (projekt === null) {
     // Den Leerzustand des Reiters liefert #198, nicht diese Wurzel.
@@ -236,23 +278,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
           type="button"
           data-testid="aktion-neu"
           onClick={() => {
-            setzeLage(beginneNeu())
-            setzeEntwurfZaehler((zaehler) => zaehler + 1)
-            // Die Vorbelegung des ANLEGE-FORMULARS (#136, Entscheidung 03.11.2026):
-            // die zuletzt BENUTZTE Vorlage, sonst die erste waehlbare
-            // (`gemeinsam/vorlage-vorbelegung`). Die Akzentfarbe bleibt null.
-            // markeId (#320/TK 9.8.2): Die Projekt-Standardmarke.
-            // standardDauer: der PROJEKT-Standard (8-45 s), nicht mehr die Konstante 10 -
-            // vorher koppelte jede neue Aktion den Projektstandard still ab (TK 9.8.4).
-            const standDerSicht = p.projekt.hole().projekt
-            setzeFormular(
-              leererEntwurf(
-                vorlageFuerNeueAktion(waehlbare ?? []),
-                standDerSicht?.standardMarkeId ?? '',
-                null,
-                standDerSicht?.standardSegmentdauer ?? STANDARD_ANZEIGEDAUER_SEKUNDEN,
-              ),
-            )
+            starteNeueAktion()
           }}
         >
           Neue Aktion

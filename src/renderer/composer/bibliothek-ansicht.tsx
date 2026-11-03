@@ -15,7 +15,6 @@ import type { Marke } from '../../shared/contracts/marke'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { MedienEintrag, AktionsEintrag } from './bibliothek-ansicht'
 import { baueMedienEintraege, baueAktionsEintraege, zaehleFehlende } from './bibliothek-ansicht'
-import { AktionAnlegen, type AktionAnlegenEingabe } from './aktion-anlegen.tsx'
 import { baueVerwendungen, verwendungsText, type Verwendung } from './verwendungen'
 import { baueMotivEintraege, holeMotiv } from './aktions-vorschau'
 import { bereiteMotiveVor } from '../template-canvas/bild-laden'
@@ -32,12 +31,14 @@ export interface BibliothekEigenschaften {
   ausgewaehltesId?: string | null
   /** #418: Klick auf eine Medienzeile macht sie zur Auswahl. */
   aufWaehlen?: (assetId: string) => void
-  /** #416: die nutzbaren Vorlagen fuer das Inline-Anlegen einer Aktion. */
+  /** Die nutzbaren Vorlagen - fuer das Motiv der Aktionszeile. */
   vorlagen?: readonly Vorlage[]
-  /** #416: legt eine Aktion an (Titel + Vorlage; Marke = Projekt-Standardmarke). */
-  aufAktionAnlegen?: (eingabe: AktionAnlegenEingabe) => void
+  /** 03.11.2026 (Entscheidung 29.4): „+ Neue Aktion" oeffnet den Aktions-Editor im
+   *  Modus „neu". Die Ansicht legt NICHTS selbst an - sie oeffnet nur den Weg.
+   *  Fehlt der Rueckruf, gibt es keinen Knopf (die Ansicht erfindet keinen Weg). */
+  aufNeueAktion?: () => void
   /** #430: loescht eine Aktion (Kaskade im Main). FEHLT sie, gibt es KEINEN Loeschen-Knopf
-   *  (dieselbe Haltung wie bei `aufAktionAnlegen`: die Ansicht erfindet keinen Weg). */
+   *  (dieselbe Haltung wie bei `aufNeueAktion`: die Ansicht erfindet keinen Weg). */
   aufAktionLoeschen?: (aktionId: string) => void
   /** 01.11.2026: oeffnet den Aktions-Editor als Ansicht UEBER der Reiterflaeche - ohne
    *  Reiterwechsel (offene Frage der Notiz vom 21.10.). Fehlt der Rueckruf, gibt es
@@ -155,10 +156,18 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
           <h2 style={{ margin: 0 }}>Aktionen</h2>
           <span aria-hidden="true" style={{ flex: '1 1 auto', height: 1, background: '#2c2c34' }} />
         </div>
-        {/* #416: Inline-Erst-Anlage - Titel + Vorlage, ohne Reiterwechsel. Die neue Aktion
-            erscheint sofort in der Liste darunter (Sicht-Pflege ueber den Zugang). */}
-        {p.aufAktionAnlegen !== undefined && (
-          <AktionAnlegen vorlagen={p.vorlagen ?? []} aufAnlegen={p.aufAktionAnlegen} />
+        {/* 03.11.2026 (Entscheidung 29.4): Der Knopf oeffnet den Aktions-Editor im Modus
+            „neu" - der Editor ist der EINZIGE Anlege-Weg (Vorschau, Bild, Vorlagen-Kacheln,
+            Felder nach Vorlage, „Anlegen"). Das Inline-Formular ist entfallen. */}
+        {p.aufNeueAktion !== undefined && (
+          <button
+            type="button"
+            data-testid="aktion-anlegen-oeffnen"
+            onClick={p.aufNeueAktion}
+            style={{ width: '100%' }}
+          >
+            + Neue Aktion
+          </button>
         )}
         {aktionen.length === 0 ? (
           <p data-testid="aktionen-leer">Noch keine Aktionen – „+ Neue Aktion" legt die erste an.</p>

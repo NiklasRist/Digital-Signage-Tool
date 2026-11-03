@@ -1415,3 +1415,73 @@ Editor statt in einer halben Aktion.
 ### 29.5 Nächster Schritt
 
 **Option 2 bauen** (Abschnitt 29.4).
+
+---
+
+## 30. GEBAUT: „Neue Aktion" öffnet den Editor (Entscheidung 29.4, 03.11.2026)
+
+### 30.1 Was sich geändert hat
+
+- **`gemeinsam/aktionen-ansicht.ts`** trägt jetzt **drei Zustände**
+  (`AktionenAnsichtLage`): `{ art: 'zu' } | { art: 'neu' } | { art: 'aktion', aktionId }`.
+  Neu dazu: `oeffneNeueAktion()`. `oeffneAktionenAnsicht(id)` und `schliesseAktionenAnsicht()`
+  bleiben; „dieselbe Aktion erneut" und „schon im Modus neu" melden nichts.
+- **`app-shell/rahmen.tsx`**: der Slot `aktionenAnsicht` bekommt `aktionId: string | null` —
+  **`null` heißt Modus „neu"**. Der Rahmen hält die Lage statt einer Kennung.
+- **`App.tsx`**: reicht `starteNeu={schalt.aktionId === null}` an die `ActionEditorWurzel`.
+- **`action-editor/index.tsx`**: neues, **optionales** Prop `starteNeu`. Ein Effekt wertet es
+  **einmal je Montage** aus (`useRef`) und **wartet**, bis die wählbaren Vorlagen geladen sind —
+  sonst liefe die Vorbelegung leer. Der Anlege-Code des Knopfes „Neue Aktion" liegt jetzt in
+  `starteNeueAktion()`; Knopf und Composer-Einstieg benutzen ihn.
+- **`composer/bibliothek-ansicht.tsx`**: `aufAktionAnlegen` → **`aufNeueAktion`**; statt des
+  Inline-Formulars steht dort ein Knopf (`aktion-anlegen-oeffnen`, Text „+ Neue Aktion").
+- **`composer/index.tsx`**: `legeAktionAnInline`, `AktionAnlegenAuftrag` und das
+  `ComposerVerdrahtung.legeAktionAn` **entfallen**; der Composer öffnet nur noch die Ansicht.
+- **Gelöscht:** `src/renderer/composer/aktion-anlegen.tsx`, `tests/unit/aktion-anlegen.spec.ts`.
+
+### 30.2 Belege
+
+- **Unit (neu):** `starteNeu` steht sofort im Anlege-Formular (kein Klick); ohne `starteNeu`
+  bleibt der Reiter bei „Nichts gewählt."; aus diesem Zustand heraus wird korrekt angelegt;
+  der Rahmen gibt `aktionId === null` an den Slot; die Bibliothek ruft `aufNeueAktion` und
+  rendert **kein** Inline-Formular mehr.
+- **Treiber `4g` neu geschrieben:** „+ Neue Aktion" → Ansicht über der Reiterfläche (Reiter
+  verdeckt/montiert) → Modus „neu" (`aktion-anlegen-bestaetigen`, kein `aktion-formular-leer`)
+  → Titel → „Anlegen" → Aktion im `project.json` → „Zurück" → Bibliothekszeile +1, mit
+  Verwendungstext und gezeichnetem Motiv.
+- **`4q` bleibt unverändert** — gemessen: `4q` misst **nicht** das Inline-Formular, sondern den
+  Modus „neu" **im Aktionen-Reiter**. Die Notiz in 29.4 war an dieser Stelle ungenau.
+- **`4g3`, `4g4`, `4g6`, `4g7` unverändert** — sie messen Bearbeiten, Löschen, die Ansicht und die
+  Vorschau, nicht den Anlege-Weg.
+- **Lauf:** `4g` meldet `{"ansicht":true,"reiterVerdeckt":true,"formularLeer":false,
+  "anlegenKnopf":true,"titel":""}`; Titel nach **4271 ms** im `project.json`; Aktionen **1 → 2**;
+  „Zurück" schließt; die Zeilen tragen „Band ab 0:00" / „noch nicht im Video" und Motive
+  **474 / 71 px**. Treiber **Exit 0**, **0 Befunde**, 1 Untersuchung (Mehrfachauswahl, Baseline),
+  1 MANUELL (Export-Dialog).
+
+### 30.2a ZWEI MESSFALLEN, beide im eigenen Lauf bezahlt
+
+1. **Der verdeckte Reiter trägt dieselben Testids.** `4g` fragte `document.querySelector(...)`
+   ohne Bereich — und traf die `ActionEditorWurzel` des **montierten, verdeckten** Reiters
+   [Aktionen] (TK 9.14.2), nicht die Ansicht. Der Titel landete dort, „Anlegen" ebenfalls; der
+   Schritt wäre **grün** gewesen, ohne den Editor-Weg zu belegen. Jetzt ist **jede** Abfrage in
+   4g auf `[data-testid="rahmen-ansicht-aktionen"]` eingegrenzt. *Regel: Eine Ansicht über der
+   Reiterfläche wird IMMER über ihren Rahmen-Testid angesprochen — nie global.*
+2. **Die entprellte Datei schlägt zurück.** Der erste Lauf meldete danach in `4g3`
+   „Aktionen 2 → 1" (Befund „Bearbeiten legt eine zweite Aktion an"). Ursache: Nach `4g4`s Undo
+   stand die **Sicht** auf 1 Aktion, die **Datei** noch auf 2 (4-s-Entprellung); `4g3` verglich
+   eine veraltete Zahl. Jetzt **wartet** `4g3` (20 s), bis die Datei den Sicht-Stand trägt.
+   Beide Läufe sind in `docs/agents/oberflaeche-durchlauf.md` — der ungültige ist **markiert**.
+
+### 30.3 Gate (03.11.2026, nach allen Änderungen)
+
+Typecheck **0** (main/preload/renderer/tests), ESLint/oxlint **0**, Build **0**,
+Unit **5477/5477** (362 Dateien), Integration **51/51** (13), Treiber **Exit 0 / 0 Befunde**.
+
+### 30.4 Doku
+
+- **TK v3.42** (9.8.3): der neue Anlege-Weg samt Begründung; die Zeile „dieselbe Vorbelegung gilt
+  für das Inline-Formular" ist ersetzt (es gibt nur noch **einen** Leser der Regel).
+  `.docx` neu erzeugt (Staging, `unzip -t`, 0 Backticks, Absatz-Diff: 2150 → 2161 Absätze).
+- `seitenpanel-konzept.md` (Zeile „Anlegen mit Preset") und `treiber-matrix.md` (FA-02)
+  nachgezogen. AD unverändert (v1.13).
