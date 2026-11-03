@@ -17,6 +17,7 @@ vi.mock("../../src/main/project-store/auto-speichern", () => ({
 const { setzeUnterbrechungen } = await import("../../src/main/project-store/setze-unterbrechungen");
 const { merkeAktivesProjekt } = await import("../../src/main/project-store/aktives-projekt");
 const { mitD1Lock } = await import("../../src/main/project-store/d1-lock");
+const { DAUER_BEREICH } = await import("../../src/shared/contracts/konstanten");
 
 function aktion(id: string): Aktion {
   return {
@@ -87,14 +88,14 @@ describe("setzeUnterbrechungen (#426)", () => {
     merkeAktivesProjekt(projektMit([element]));
 
     const ergebnis = await setzeUnterbrechungen("e-video", [
-      { zeitstelle: 1, aktionRef: "ak-2", dauer: 5 },
-      { zeitstelle: 4, aktionRef: "ak-1", dauer: 3 },
+      { zeitstelle: 1, aktionRef: "ak-2", dauer: 10 },
+      { zeitstelle: 4, aktionRef: "ak-1", dauer: 8 },
     ]);
 
     expect(ergebnis.ok).toBe(true);
     expect(element.unterbrechungen).toEqual([
-      { zeitstelle: 1, aktionRef: "ak-2", dauer: 5 },
-      { zeitstelle: 4, aktionRef: "ak-1", dauer: 3 },
+      { zeitstelle: 1, aktionRef: "ak-2", dauer: 10 },
+      { zeitstelle: 4, aktionRef: "ak-1", dauer: 8 },
     ]);
     // Zurueck geht der LEBENDE Eintrag, keine Kopie.
     expect(ergebnis.ok && ergebnis.wert).toBe(element);
@@ -108,7 +109,7 @@ describe("setzeUnterbrechungen (#426)", () => {
     const vorher = { dauer: element.dauer, trimStart: element.trimStart, trimEnde: element.trimEnde };
     merkeAktivesProjekt(projektMit([element]));
 
-    await setzeUnterbrechungen("e-video", [{ zeitstelle: 2, aktionRef: "ak-1", dauer: 4 }]);
+    await setzeUnterbrechungen("e-video", [{ zeitstelle: 2, aktionRef: "ak-1", dauer: 9 }]);
 
     expect({ dauer: element.dauer, trimStart: element.trimStart, trimEnde: element.trimEnde }).toEqual(vorher);
     expect(element.einblendung).toBe(band);
@@ -119,16 +120,16 @@ describe("setzeUnterbrechungen (#426)", () => {
     const element = video();
     merkeAktivesProjekt(projektMit([element]));
 
-    await setzeUnterbrechungen("e-video", [{ zeitstelle: 2.37, aktionRef: "ak-1", dauer: 4.71 }]);
+    await setzeUnterbrechungen("e-video", [{ zeitstelle: 2.37, aktionRef: "ak-1", dauer: 8.71 }]);
 
     expect(element.unterbrechungen?.[0]?.zeitstelle).toBe(2.37);
-    expect(element.unterbrechungen?.[0]?.dauer).toBe(4.71);
+    expect(element.unterbrechungen?.[0]?.dauer).toBe(8.71);
   });
 
   it("baut die Eintraege neu und uebernimmt kein mitgeschicktes Fremdfeld", async () => {
     const element = video();
     merkeAktivesProjekt(projektMit([element]));
-    const hereingereicht = [{ zeitstelle: 3, aktionRef: "ak-1", dauer: 5, position: 9 }] as unknown as Unterbrechung[];
+    const hereingereicht = [{ zeitstelle: 3, aktionRef: "ak-1", dauer: 10, position: 9 }] as unknown as Unterbrechung[];
 
     await setzeUnterbrechungen("e-video", hereingereicht);
 
@@ -137,7 +138,7 @@ describe("setzeUnterbrechungen (#426)", () => {
   });
 
   it("nimmt ein leeres Array an (alle Unterbrechungen entfernt) - das Videoelement bleibt", async () => {
-    const element = video([{ zeitstelle: 1, aktionRef: "ak-1", dauer: 5 }]);
+    const element = video([{ zeitstelle: 1, aktionRef: "ak-1", dauer: 10 }]);
     const projekt = projektMit([element]);
     merkeAktivesProjekt(projekt);
 
@@ -164,8 +165,8 @@ describe("setzeUnterbrechungen (#426)", () => {
     merkeAktivesProjekt(projektMit([element]));
 
     const ergebnis = await setzeUnterbrechungen("e-video", [
-      { zeitstelle: 1, aktionRef: "ak-1", dauer: 4 },
-      { zeitstelle: 4, aktionRef: "ak-weg", dauer: 4 },
+      { zeitstelle: 1, aktionRef: "ak-1", dauer: 9 },
+      { zeitstelle: 4, aktionRef: "ak-weg", dauer: 9 },
     ]);
 
     expect(!ergebnis.ok && ergebnis.fehler.code).toBe("nicht_gefunden");
@@ -200,6 +201,10 @@ describe("setzeUnterbrechungen (#426)", () => {
     ["NaN", Number.NaN],
     ["Infinity", Number.POSITIVE_INFINITY],
     ["Zeichenkette", "5"],
+    // 03.11.2026: EINE Spanne fuer alle Segmente (DAUER_BEREICH). Vorher galt hier nur
+    // "> 0" - eine 5-s-Unterbrechung ging durch und der Render wies sie ab.
+    ["unter der Grenze", 7.99],
+    ["ueber der Grenze", 46],
   ])("weist eine unzulaessige Dauer ab: %s", async (_name, dauer) => {
     const element = video();
     merkeAktivesProjekt(projektMit([element]));
@@ -212,13 +217,26 @@ describe("setzeUnterbrechungen (#426)", () => {
     expect(element.unterbrechungen).toBeUndefined();
   });
 
+  it("nimmt genau die Grenzen aus DAUER_BEREICH an - nicht mehr und nicht weniger", async () => {
+    const element = video();
+    merkeAktivesProjekt(projektMit([element]));
+
+    for (const dauer of [DAUER_BEREICH.min, DAUER_BEREICH.max]) {
+      const ergebnis = await setzeUnterbrechungen("e-video", [
+        { zeitstelle: 2, aktionRef: "ak-1", dauer },
+      ]);
+      expect(ergebnis.ok).toBe(true);
+      expect(element.unterbrechungen?.[0]?.dauer).toBe(dauer);
+    }
+  });
+
   it("weist nicht aufsteigende oder doppelte Zeitstellen ab", async () => {
     const element = video();
     merkeAktivesProjekt(projektMit([element]));
 
     const ergebnis = await setzeUnterbrechungen("e-video", [
-      { zeitstelle: 4, aktionRef: "ak-1", dauer: 3 },
-      { zeitstelle: 2, aktionRef: "ak-2", dauer: 3 },
+      { zeitstelle: 4, aktionRef: "ak-1", dauer: 9 },
+      { zeitstelle: 2, aktionRef: "ak-2", dauer: 9 },
     ]);
 
     expect(!ergebnis.ok && ergebnis.fehler.code).toBe("ungueltige_eingabe");
@@ -259,7 +277,7 @@ describe("setzeUnterbrechungen (#426)", () => {
     const element = video();
     merkeAktivesProjekt(projektMit([element], [kaputt]));
 
-    const ergebnis = await setzeUnterbrechungen("e-video", [{ zeitstelle: 2, aktionRef: "ak-kaputt", dauer: 5 }]);
+    const ergebnis = await setzeUnterbrechungen("e-video", [{ zeitstelle: 2, aktionRef: "ak-kaputt", dauer: 10 }]);
 
     expect(ergebnis.ok).toBe(true);
     expect(element.unterbrechungen?.[0]?.aktionRef).toBe("ak-kaputt");
@@ -272,7 +290,7 @@ describe("setzeUnterbrechungen (#426)", () => {
     let freigeben: () => void = () => {};
     const belegt = mitD1Lock(() => new Promise<void>((aufloesen) => { freigeben = aufloesen; }));
 
-    const laeuft = setzeUnterbrechungen("e-video", [{ zeitstelle: 2, aktionRef: "ak-1", dauer: 5 }]);
+    const laeuft = setzeUnterbrechungen("e-video", [{ zeitstelle: 2, aktionRef: "ak-1", dauer: 10 }]);
     await Promise.resolve();
     await Promise.resolve();
     expect(element.unterbrechungen).toBeUndefined();

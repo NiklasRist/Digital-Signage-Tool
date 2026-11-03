@@ -22,7 +22,7 @@ import {
 import type { Behaupte, Gleich } from "../typ-gleich";
 
 // --- Die Bereiche sind Literale, nicht `number` ------------------------------
-type T1 = Behaupte<Gleich<typeof DAUER_BEREICH, { readonly min: 10; readonly max: 45 }>>;
+type T1 = Behaupte<Gleich<typeof DAUER_BEREICH, { readonly min: 8; readonly max: 45 }>>;
 type T2 = Behaupte<
   Gleich<typeof SICHERHEITSABSTAND_PX, { readonly horizontal: 96; readonly vertikal: 54 }>
 >;
@@ -37,7 +37,7 @@ describe("Projektweite Konstanten (#21)", () => {
 
   it("traegt die Werte aus dem Anforderungsdokument", () => {
     expect(STANDARD_ANZEIGEDAUER_SEKUNDEN).toBe(10);
-    expect(DAUER_BEREICH).toEqual({ min: 10, max: 45 });
+    expect(DAUER_BEREICH).toEqual({ min: 8, max: 45 });
     expect(AKTUELLE_SCHEMA_VERSION).toBe(1);
   });
 

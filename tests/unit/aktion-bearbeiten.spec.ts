@@ -83,10 +83,13 @@ describe('pruefeEntwurf – nur vorhandene Felder', () => {
     expect(pruefeEntwurf({ standardDauer: 300 })).toEqual([
       { feld: 'standardDauer', grund: 'ausserhalb_bereich' },
     ])
-    expect(pruefeEntwurf({ standardDauer: 9 })).toEqual([
+    // Untergrenze 8 seit 03.11.2026 (DAUER_BEREICH, eine Spanne fuer alle Segmente) -
+    // 7 ist draussen, 8 drin.
+    expect(pruefeEntwurf({ standardDauer: 7 })).toEqual([
       { feld: 'standardDauer', grund: 'ausserhalb_bereich' },
     ])
     expect(pruefeEntwurf({ standardDauer: 45 })).toEqual([])
+    expect(pruefeEntwurf({ standardDauer: 8 })).toEqual([])
     expect(pruefeEntwurf({ standardDauer: 10 })).toEqual([])
     expect(pruefeEntwurf({ standardDauer: null })).toEqual([])
   })

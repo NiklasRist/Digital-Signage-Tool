@@ -378,8 +378,9 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
     // den Auftrag, der Main wies ihn ab. Dieser Fall faehrt BEIDE Seiten in einem Lauf -
     // und zwar ohne ffmpeg, damit er nicht von der Umgebung abhaengt.
     const { pruefeRenderRequest } = await import('../../src/main/render-service/validierung')
-    // Dauer 10 s: ein Segment MUSS im Bereich 10-45 s liegen (TK 9.5.2) - die 5 s aus dem
-    // Nachbartest sind fuer die ITEM-Bildung richtig, fuer die Auftragspruefung nicht.
+    // Dauer 10 s: ein Segment MUSS im Dauer-Bereich liegen (DAUER_BEREICH, 8-45 s) - die
+    // 5 s aus dem Nachbartest sind fuer die ITEM-Bildung richtig, fuer die Auftragspruefung
+    // nicht.
     const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 10 }])], [AKTION_OK], [videoAsset])
     const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
     expect(antwort.ok).toBe(true)

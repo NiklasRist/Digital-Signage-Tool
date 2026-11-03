@@ -365,28 +365,30 @@ describe('Stufe 2 - Maengel eines ELEMENTS (ungueltiges_element, mit daten)', ()
     expect(meldung).toBe(direkt.fehler.meldung)
   })
 
-  it('Zeile 13 (DoD): dauer 10 und 45 werden angenommen, 9.99 und 45.01 abgewiesen', () => {
-    expect(DAUER_BEREICH).toEqual({ min: 10, max: 45 })
+  it('Zeile 13 (DoD): die Grenzen aus DAUER_BEREICH werden angenommen, knapp daneben abgewiesen', () => {
+    // 03.11.2026: Untergrenze 8 statt 10 (Niklas: "jede Dauer groesser als 8 s und keine
+    // zwei Typen"). Die Grenze bleibt EINSCHLIESSLICH - 8 selbst ist zulaessig.
+    expect(DAUER_BEREICH).toEqual({ min: 8, max: 45 })
 
     for (const dauer of [DAUER_BEREICH.min, DAUER_BEREICH.max, 27.5]) {
       expect(pruefeRenderRequest(anfrage({ elemente: [segment({ dauer })] })).ok).toBe(true)
     }
-    for (const dauer of [9.99, 45.01, 0.5, 3600]) {
+    for (const dauer of [7.99, 45.01, 0.5, 3600]) {
       const meldung = elementFehler(
         pruefeRenderRequest(anfrage({ elemente: [segment({ id: 's-x', dauer })] })),
         's-x',
       )
       // Die Meldung nennt BEIDE Grenzen.
-      expect(meldung).toContain('10')
+      expect(meldung).toContain('8')
       expect(meldung).toContain('45')
     }
   })
 
   it('Zeile 13 (Gegenprobe): die Grenze ist einschliesslich, nicht knapp daneben', () => {
     // Ein Frame unter der Grenze ist bereits zu wenig - hier gibt es keine Toleranz.
-    expect(pruefeRenderRequest(anfrage({ elemente: [segment({ dauer: 10 - 1 / 30 })] })).ok).toBe(
-      false,
-    )
+    expect(
+      pruefeRenderRequest(anfrage({ elemente: [segment({ dauer: DAUER_BEREICH.min - 1 / 30 })] })).ok,
+    ).toBe(false)
     expect(pruefeRenderRequest(anfrage({ elemente: [segment({ dauer: 45 + 1 / 30 })] })).ok).toBe(
       false,
     )

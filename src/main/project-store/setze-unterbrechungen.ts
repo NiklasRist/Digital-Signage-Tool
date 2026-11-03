@@ -10,6 +10,8 @@ import { holeAktivesProjekt } from './aktives-projekt'   // #192
 import { planeAutoSpeicherung } from './auto-speichern'  // #47
 import { mitD1Lock } from './d1-lock'                    // #32
 
+import { DAUER_BEREICH } from '../../shared/contracts/konstanten'   // #21
+
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'   // #72
 import type { Listenelement, Unterbrechung } from '../../shared/contracts/project'
@@ -133,8 +135,21 @@ function pruefe(
       return fehler('ungueltige_eingabe', 'Zu einer Unterbrechung fehlt die Angabe der Aktion.')
     }
 
-    if (typeof dauer !== 'number' || !Number.isFinite(dauer) || dauer <= 0) {
-      return fehler('ungueltige_eingabe', 'Die Dauer einer Unterbrechung muss groesser als null Sekunden sein.')
+    if (
+      typeof dauer !== 'number' ||
+      !Number.isFinite(dauer) ||
+      dauer < DAUER_BEREICH.min ||
+      dauer > DAUER_BEREICH.max
+    ) {
+      // 03.11.2026: EINE Spanne fuer alle Segmente. Vorher stand hier nur `> 0` mit dem
+      // Vermerk, ob eine Grenze gilt, sei nicht entschieden - die Folge war, dass eine
+      // Unterbrechung von 5 s im Store durchging und der Render sie mit
+      // `ungueltige_eingabe` abwies. Der Nutzer sah den Fehler erst beim Rendern.
+      return fehler(
+        'ungueltige_eingabe',
+        `Die Dauer einer Unterbrechung muss zwischen ${String(DAUER_BEREICH.min)} und ` +
+          `${String(DAUER_BEREICH.max)} Sekunden liegen (erhalten: ${String(dauer)}).`,
+      )
     }
 
     if (!istBekannteAktion(aktionRef)) {
@@ -170,9 +185,10 @@ function fehler<T>(
 // 1. KEINE FRAME-ARITHMETIK: kein RENDER_PROFILE, keine Bildrate, keine Rundung auf das
 //    Ausgaberaster. Gespeichert werden rohe Sekunden; die Frame-Rundung liegt im
 //    render-service (9.2.6/9.2.9) - dieselbe Linie wie setze-trim.ts (#44).
-// 2. KEINE OBERGRENZE FUER `unterbrechungen[].dauer` AUSSER `> 0`. Ob eine Obergrenze gilt
-//    (wie DAUER_BEREICH 10-45 s fuer Listenelemente), ist nicht hier festgelegt; das Band
-//    handhabt es genauso (setze-einblendung.ts, Meldeblock 4).
+// 2. KEINE FRAME-ARITHMETIK UND KEINE EIGENE GRENZE: die Dauer wird gegen `DAUER_BEREICH`
+//    (#21) geprueft - dieselbe Spanne wie bei `setzeDauer`. Eine zweite Zahl hier waere
+//    eine zweite Regel. (Bis 03.11.2026 stand hier nur `> 0`; das liess 5-s-Einschuebe zu,
+//    die der Render anschliessend abwies.)
 // 3. KEIN ANFASSEN VON `trimStart`/`trimEnde`/`dauer`/`einblendung` - nur `unterbrechungen`.
 // 4. KEIN UNDO-SCHNAPPSCHUSS - den legt die Huelle um die Projekt-Sicht (#243, 9.13.2).
 // 5. KEIN IPC-KANAL hier - Verdrahtung im ipc-gateway (project-store-nachtrag.ts, Eintrag 5).

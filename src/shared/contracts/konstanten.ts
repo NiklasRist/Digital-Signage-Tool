@@ -1,7 +1,14 @@
 // [contracts] Projektweite Konstanten definieren
 
 export const STANDARD_ANZEIGEDAUER_SEKUNDEN = 10
-export const DAUER_BEREICH = { min: 10, max: 45 } as const
+/** Die eine Dauer-Spanne aller Segmente (TK 9.5.2). Untergrenze 8 seit 03.11.2026
+ *  (Niklas: „jede Dauer größer als 8 s und keine zwei Typen"): Eine Unterbrechung ist
+ *  ein Segment wie jedes andere, also gilt EINE Spanne - kein zweiter Typ und kein
+ *  Sonderbereich. Vorher 10; damit war eine kurze Unterbrechung nicht einstellbar,
+ *  obwohl das Anforderungsdokument sie so nennt. Gelesen von `setzeDauer`,
+ *  `setzeStandardSegmentdauer`, `setzeUnterbrechungen`, `pruefeRenderRequest`,
+ *  `dauer-regler` und dem Aktions-Editor - NIE als zweites Zahlenpaar. */
+export const DAUER_BEREICH = { min: 8, max: 45 } as const
 export const SICHERHEITSABSTAND_PX = { horizontal: 96, vertikal: 54 } as const
 
 /** Erlaubte Spanne beim Bearbeiten von `Marke.sicherheit` (TK 9.11.4, v3.8). Obergrenze = ein
