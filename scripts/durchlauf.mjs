@@ -3140,23 +3140,28 @@ const main = async () => {
         fund("Dauer der MP4 (FA-08)", "eine vollflaechige Aktion als sequenzieller Inhalt",
           String(saat4f5.fehler), "Untersuchung", "project-store/erstelle-aktion.ts");
       } else {
-        // Sicht nachziehen: Projekt ueber die Liste neu oeffnen, dann die Aktionszeile
-        // ueber ihren echten Knopf an die Liste haengen.
+        // Sicht nachziehen: Projekt ueber die Liste neu oeffnen (der Weg, der die
+        // gemeinsame Sicht nachzieht - ein roher IPC-Ruf erreicht sie NICHT).
         await oeffneUeberListe(aktivesProjektId);
         await klick('[data-testid="reiter-zusammenstellen"]');
         await zeigeAnsicht("aktionen");
         await schlafe(800);
-        const hinzu4f5 = await seite.evaluate((id) => {
-          // EXPLIZIT statt "erster Knopf der Zeile" (02.11.2026): Mit „Ins Video" als
-          // erstem Knopf klickte dieser Schritt ploetzlich den NEUEN Weg, die Aktion
-          // landete als Unterbrechung IM Video statt als Block in der Liste - und der
-          // Render scheiterte danach an einer anderen Stelle. Ein Messschritt muss
-          // sagen, was er klickt.
-          const knopf = document.querySelector(`[data-testid="aktion-hinzufuegen-${id}"]`);
-          if (knopf === null) return false;
-          knopf.click();
-          return true;
+        // 02.11.2026: Den Knopf "Zur Liste hinzufuegen" gibt es NICHT mehr (Niklas:
+        // "Aktion als eigener Block ... ist Muell von frueher"). Eine Aktion gehoert ins
+        // Video - Band-Abschnitt oder Unterbrechung, beides ueber "Ins Video" (4f8).
+        // Dieser Schritt prueft aber weiterhin, dass ein **Altbestand mit einem Block**
+        // rendert: solche Elemente liegen in bestehenden Projekten und muessen ihre MP4
+        // behalten. Das Element kommt deshalb ueber den STORE-Weg, nicht ueber die
+        // Oberflaeche - offen benannt, es ist kein Bedienweg mehr.
+        const hinzu4f5 = await seite.evaluate(async (id) => {
+          const antwort = await window.api.invoke("project:fügeElementHinzu", { referenz: id });
+          if (antwort === null || antwort.ok !== true) return { ok: false, elementId: null };
+          return { ok: true, elementId: antwort.wert?.id ?? null };
         }, saat4f5.aktionId);
+        await oeffneUeberListe(aktivesProjektId);
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await zeigeAnsicht("aktionen");
+        await schlafe(600);
         const fristHinzu4f5 = Date.now() + 10_000;
         let bloecke4f5 = 0;
         while (Date.now() < fristHinzu4f5) {
@@ -3166,7 +3171,7 @@ const main = async () => {
           if (bloecke4f5 >= 2) break;
           await schlafe(250);
         }
-        console.log(`[schritt-4f5] Aktions-Probe: angelegt=${String(hinzu4f5)}, Bloecke=${bloecke4f5}.`);
+        console.log(`[schritt-4f5] Aktions-Probe: angelegt=${String(hinzu4f5.ok)}, Element=${String(hinzu4f5.elementId)}, Bloecke=${bloecke4f5}.`);
         // 02.11.2026: Die Gesamtdauer steht in der STATISTIK am Fuss des Sidepanels.
         // Die Wiedergabeliste, die sie frueher trug, ist ausgeblendet (und damit
         // unerreichbar) - dieselbe Zahl, ein sichtbarer Ort.
@@ -3299,9 +3304,19 @@ const main = async () => {
           }
         }
       }
-        // Probe wieder aus der Liste nehmen (EIN Undo-Schritt der Hinzufuegung).
-        await klick('[data-testid="undo-pfeil"]');
-        await schlafe(1_200);
+        // Probe wieder aus der Liste nehmen. 02.11.2026: NICHT mehr per Cmd+Z - das
+        // Element kommt aus einem STORE-Ruf (der Bedienweg ist entfallen), und der
+        // Undo-Pfeil nahm danach den falschen Schritt zurueck (gemessen: 2 Bloecke
+        // blieben stehen und die Kontextmenue-Schritte fanden eine zu lange Zeitleiste).
+        // Entfernt wird ueber denselben Kanal wie das Entfernen in der Oberflaeche.
+        const wegElement4f5 = await seite.evaluate(async (id) => {
+          const antwort = await window.api.invoke("project:entferneElement", { elementId: id });
+          return antwort !== null && antwort.ok === true;
+        }, hinzu4f5.elementId ?? "");
+        await oeffneUeberListe(aktivesProjektId);
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await zeigeAnsicht("aktionen");
+        await schlafe(600);
         const bloeckeNach4f5 = await seite.evaluate(
           () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
         );
@@ -3311,7 +3326,7 @@ const main = async () => {
           const antwort = await window.api.invoke("project:löscheAktion", { id });
           return antwort && antwort.ok ? true : antwort;
         }, saat4f5.aktionId);
-        console.log(`[schritt-4f5] Aufraeumen: Bloecke nach Undo=${bloeckeNach4f5}, Aktion geloescht=${JSON.stringify(weg4f5)}.`);
+        console.log(`[schritt-4f5] Aufraeumen: Element entfernt=${String(wegElement4f5)}, Bloecke=${bloeckeNach4f5}, Aktion geloescht=${JSON.stringify(weg4f5)}.`);
       }
     }
 
@@ -3558,20 +3573,25 @@ const main = async () => {
       fund("Spalt-Drop", "die Aktionszeile steht nach der Saat in der Bibliothek",
         "aktionen-liste ohne Aktionszeile", "Befund", "composer/bibliothek-ansicht.tsx");
     }
-      const zweiterKlick = await seite.evaluate(() => {
-        // #422: an der Video-Zeile gibt es kein "Zur Liste hinzufuegen" mehr - der
-        // zweite Block entsteht ueber den ECHTEN Weg der AKTIONEN (die sind ziehbar
-        // und haben den Knopf weiterhin).
-        const zeile = document.querySelector('[data-testid="aktionen-liste"] [data-testid^="aktion-"]');
-        const knopf = zeile === null
-          ? null
-          : [...(zeile.querySelectorAll('button') ?? [])]
-              .find((k) => k.textContent === "Zur Liste hinzufügen");
-        if (knopf === null) return false;
-        knopf.click();
-        return true;
+      // 02.11.2026: Den Knopf "Zur Liste hinzufuegen" gibt es nicht mehr (Niklas:
+      // "Aktion als eigener Block ... ist Muell von frueher"). Der zweite Block fuer die
+      // Drag-Messung entsteht deshalb ueber den STORE-Weg - offen benannt: kein Bedienweg,
+      // nur der Aufbau der Messung. Der Drag selbst ist unveraendert der Pruefling.
+      const zweiterKlick = await seite.evaluate(async () => {
+        const knopf = document.querySelector('[data-testid="aktionen-liste"] [data-testid^="aktion-"]');
+        if (knopf === null) return { ok: false, elementId: null };
+        const kennung = knopf.getAttribute("data-testid")?.replace("aktion-", "") ?? "";
+        if (kennung === "") return { ok: false, elementId: null };
+        const antwort = await window.api.invoke("project:fügeElementHinzu", { referenz: kennung });
+        if (antwort === null || antwort.ok !== true) return { ok: false, elementId: null };
+        return { ok: true, elementId: antwort.wert?.id ?? null };
       });
-      console.log("[schritt-4f] Zweiter Klick am Bedienweg: " + String(zweiterKlick));
+      await oeffneUeberListe(aktivesProjektId);
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
+      await schlafe(800);
+      console.log("[schritt-4f] Zweites Element am Store: " + String(zweiterKlick.ok) +
+        ", Kennung=" + String(zweiterKlick.elementId));
       await schlafe(3_500);
       const davor4f = await seite.evaluate(() => ({
         bloecke: [...document.querySelectorAll('[data-testid^="zeitleiste-block-"]')]
@@ -3600,7 +3620,7 @@ const main = async () => {
         } else {
           quelleHandle.dispose?.();
           // Der Griff sitzt am LINKEN Rand der Zeile (Titel) - das Zeilen-Zentrum
-          // traefe den "Zur Liste hinzufuegen"-Knopf. dnd-kit braucht pointerdown
+          // traefe einen KNOPF (seit 02.11.2026 "Ins Video"). dnd-kit braucht pointerdown
           // + 4 px Bewegung (PointerSensor, composer/index.tsx).
           const grip = {
             x: quelleBox.x + 6,
@@ -3699,6 +3719,26 @@ const main = async () => {
             fund("Spalt-Drop-Undo", "Cmd+Z nimmt das Kanten-Einfuegen in EINEM Schritt zurueck",
               `Bloecke danach Undo: ${nachUndo4f} (erwartet ${davorUndo})`,
               "Befund", "composer/index.tsx");
+          }
+          // 02.11.2026: Das ZWEITE Element kam aus einem STORE-Ruf (der Bedienweg ist
+          // entfallen) und steht NICHT im Undo-Stapel - es wird ueber den Store wieder
+          // entfernt. Ohne diesen Schritt bleibt ein 10-s-Block im Projekt: der Render in
+          // 4f8 misst dann 22 s statt 12, und der Block traegt das Band-PNG (1920 x 162)
+          // eines Band-Vorlagen-Elements, das die Validierung zu Recht abweist.
+          if (zweiterKlick.elementId !== null) {
+            const weg4f = await seite.evaluate(async (id) => {
+              const antwort = await window.api.invoke("project:entferneElement", { elementId: id });
+              return antwort !== null && antwort.ok === true;
+            }, zweiterKlick.elementId);
+            await oeffneUeberListe(aktivesProjektId);
+            await klick('[data-testid="reiter-zusammenstellen"]');
+            await zeigeAnsicht("aktionen");
+            await schlafe(600);
+            const nachWeg4f = await seite.evaluate(
+              () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
+            );
+            console.log("[schritt-4f] Aufraeumen: zweites Element entfernt=" + String(weg4f) +
+              ", Bloecke=" + nachWeg4f);
           }
         }
       }
@@ -3822,29 +3862,24 @@ const main = async () => {
     }
 
     // Schritt 4f3 - Undo/Redo-PFEILE am echten Fenster (#424): eine Aktion über den
-    // Klick-Weg hinzufuegen, dann den SICHTBAREN Pfeil-Rueckgaengig druecken (nicht nur
-    // Cmd+Z) und messen, dass die Liste schrumpft; danach Redo und messen, dass sie
-    // wieder waechst. Am Ende zuruecknehmen, damit der Zustand fuer 4g/4h gleich bleibt.
+    // KLICK-Weg ins Video legen, dann den SICHTBAREN Pfeil-Rueckgaengig druecken (nicht
+    // nur Cmd+Z) und messen, dass die Wirkung verschwindet; danach Redo.
+    //
+    // 02.11.2026: Der alte Weg ("Zur Liste hinzufuegen") ist entfallen - gemessen wird
+    // jetzt an "Ins Video" und am RUECKVERWEIS der Zeile: eine Band-Aktion sagt vorher
+    // "noch nicht im Video" und nachher "Band ab 0:00". Die Blockzahl taugt dafuer nicht
+    // mehr: ein Band-Abschnitt aendert sie nicht (TK 9.2.8).
     await klick('[data-testid="reiter-zusammenstellen"]');
     await zeigeAnsicht("aktionen");
     await schlafe(600);
-    const bloeckeVor4f3 = await seite.evaluate(
-      () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
-    );
-    const zweiter4f3 = await seite.evaluate(() => {
-      const zeile = document.querySelector('[data-testid="aktionen-liste"] [data-testid^="aktion-"]');
-      const knopf = zeile === null
-        ? null
-        : [...(zeile.querySelectorAll('button') ?? [])]
-            .find((k) => k.textContent === "Zur Liste hinzufügen");
-      if (knopf === null) return false;
-      knopf.click();
-      return true;
-    });
-    await schlafe(3_000);
-    const nachHinzu4f3 = await seite.evaluate(
-      () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
-    );
+    const verwendung4f3 = async () => seite.evaluate((id) => {
+      const zeile = document.querySelector(`[data-testid="aktion-verwendung-${id}"]`);
+      return zeile === null ? null : zeile.textContent;
+    }, aktionsId417);
+    const vor4f3 = await verwendung4f3();
+    const geklickt4f3 = await klick(`[data-testid="aktion-ins-video-${aktionsId417}"]`);
+    await schlafe(1_500);
+    const nachHinzu4f3 = await verwendung4f3();
     const undoDa4f3 = await seite.evaluate(() => {
       const k = document.querySelector('[data-testid="undo-pfeil"]');
       return k === null ? null : { da: true, disabled: k.disabled };
@@ -3858,33 +3893,30 @@ const main = async () => {
     if (undoDa4f3 !== null && undoDa4f3.disabled === false) {
       await klick('[data-testid="undo-pfeil"]');
       await schlafe(1_500);
-      nachUndo4f3 = await seite.evaluate(
-        () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
-      );
-      if (redoDa4f3 !== null && nachUndo4f3 !== null) {
+      nachUndo4f3 = await verwendung4f3();
+      if (redoDa4f3 !== null) {
         await klick('[data-testid="redo-pfeil"]');
         await schlafe(1_500);
-        nachRedo4f3 = await seite.evaluate(
-          () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
-        );
+        nachRedo4f3 = await verwendung4f3();
       }
     }
-    console.log(`[schritt-4f3] Pfeile: KlickHinzu=${zweiter4f3}, Bloecke ${bloeckeVor4f3}->${nachHinzu4f3}, undo=${JSON.stringify(undoDa4f3)}, redo=${JSON.stringify(redoDa4f3)}, nach Undo=${nachUndo4f3}, nach Redo=${nachRedo4f3}`);
+    console.log(`[schritt-4f3] Pfeile: KlickInsVideo=${String(geklickt4f3)}, Verwendung ${JSON.stringify(vor4f3)} -> ${JSON.stringify(nachHinzu4f3)}, undo=${JSON.stringify(undoDa4f3)}, redo=${JSON.stringify(redoDa4f3)}, nach Undo=${JSON.stringify(nachUndo4f3)}, nach Redo=${JSON.stringify(nachRedo4f3)}`);
     if (undoDa4f3 === null || redoDa4f3 === null) {
       fund("Undo/Redo-Pfeile", "die Pfeile stehen in der Reiterleiste (#424)",
         `undo=${JSON.stringify(undoDa4f3)}, redo=${JSON.stringify(redoDa4f3)}`, "Befund", "app-shell/undo-pfeile.tsx");
     } else if (undoDa4f3.disabled === true) {
       fund("Undo/Redo-Pfeile", "der Undo-Pfeil ist nach einer Hinzufuegung AKTIV (#424)",
         "undo-pfeil ist disabled", "Befund", "app-shell/undo-pfeile.tsx");
-    } else if (nachUndo4f3 === bloeckeVor4f3 && nachRedo4f3 === nachHinzu4f3) {
-      console.log("[schritt-4f3] Pfeile GEMESSEN: Undo schrumpft, Redo waechst (je EIN Schritt).");
+    } else if (nachUndo4f3 === vor4f3 && nachRedo4f3 === nachHinzu4f3) {
+      console.log("[schritt-4f3] Pfeile GEMESSEN: Undo nimmt zurueck, Redo stellt wieder her (je EIN Schritt).");
     } else {
       fund("Undo/Redo-Pfeile", "Undo nimmt zurueck, Redo stellt wieder her (#424)",
-        `Bloecke: vor=${bloeckeVor4f3}, nach Hinzu=${nachHinzu4f3}, nach Undo=${nachUndo4f3}, nach Redo=${nachRedo4f3}`,
+        `Verwendung: vor=${JSON.stringify(vor4f3)}, nach Hinzu=${JSON.stringify(nachHinzu4f3)}, ` +
+          `nach Undo=${JSON.stringify(nachUndo4f3)}, nach Redo=${JSON.stringify(nachRedo4f3)}`,
         "Befund", "app-shell/undo-pfeile.tsx");
     }
-    // Zustand fuer 4g/4h wiederherstellen (falls Redo die Aktion zurueckgebracht hat).
-    if (nachRedo4f3 !== null && nachRedo4f3 !== bloeckeVor4f3) {
+    // Zustand fuer 4g/4h wiederherstellen (falls Redo den Abschnitt zurueckgebracht hat).
+    if (nachRedo4f3 !== null && nachRedo4f3 !== vor4f3) {
       await klick('[data-testid="undo-pfeil"]');
       await schlafe(1_200);
     }
@@ -4788,7 +4820,14 @@ const main = async () => {
         const start4f7 = marke4f7;
         await zeigeBedienleiste4f7();
         await klick('[data-testid="vorschau-play-pause"]');
-        await schlafe(1_500);
+        // 02.11.2026: ZWEI Messungen statt einer. Ein kurzes Projekt (2 s) kann die
+        // Wiedergabe INNERHALB der Wartezeit bis ans Ende spielen - dann steht
+        // `laeuft` schon wieder auf "nein", obwohl die Uhr lief und die Marke wanderte.
+        // Gemessen wird deshalb: (1) die Uhr LAEUFT kurz nach dem Start, (2) die Marke
+        // hat sich bewegt.
+        await schlafe(400);
+        const startet4f7 = await liesMarke4f7();
+        await schlafe(1_100);
         const laeuft4f7 = await liesMarke4f7();
         await zeigeBedienleiste4f7();
         await klick('[data-testid="vorschau-play-pause"]');
@@ -4796,19 +4835,20 @@ const main = async () => {
         const pause4f7 = await liesMarke4f7();
         await schlafe(600);
         const pauseZwei4f7 = await liesMarke4f7();
-        console.log(`[schritt-4f7] Marke: Start=${JSON.stringify(start4f7)}, nach 1,5 s=${JSON.stringify(laeuft4f7)}, Pause=${JSON.stringify(pause4f7)}, 600 ms spaeter=${JSON.stringify(pauseZwei4f7)}.`);
-        if (start4f7 === null || laeuft4f7 === null || pause4f7 === null || pauseZwei4f7 === null) {
+        console.log(`[schritt-4f7] Marke: Start=${JSON.stringify(start4f7)}, nach 0,4 s=${JSON.stringify(startet4f7)}, nach 1,5 s=${JSON.stringify(laeuft4f7)}, Pause=${JSON.stringify(pause4f7)}, 600 ms spaeter=${JSON.stringify(pauseZwei4f7)}.`);
+        if (start4f7 === null || startet4f7 === null || laeuft4f7 === null || pause4f7 === null || pauseZwei4f7 === null) {
           fund("Abspielmarke (#457)", "die Marke bleibt waehrend der Messung im DOM",
             "Marke fehlt in einem Teilschritt", "Befund", "composer/abspiel-marke.tsx");
         } else if (
-          laeuft4f7.laeuft !== "ja" ||
+          startet4f7.laeuft !== "ja" ||
           (laeuft4f7.frame === start4f7.frame && laeuft4f7.left === start4f7.left)
         ) {
           // NICHT "frame > start": Steht die Vorschau am Ende, startet Play wieder bei 0
           // (spieleAb, ENTSCHIEDEN 3) - die Marke wandert dann rueckwaerts, und das ist
           // richtig. Gemessen wird die BEWEGUNG waehrend laufender Uhr.
           fund("Abspielmarke (#457)", "waehrend der Wiedergabe wandert die Marke",
-            `Frame ${start4f7.frame} -> ${laeuft4f7.frame}, left ${start4f7.left} -> ${laeuft4f7.left}, laeuft=${laeuft4f7.laeuft}`,
+            `Start=${start4f7.frame}/${start4f7.left}, nach 0,4 s laeuft=${startet4f7.laeuft}, ` +
+              `nach 1,5 s Frame ${laeuft4f7.frame}, left ${laeuft4f7.left}`,
             "Befund", "composer/abspiel-marke.tsx");
         } else if (pauseZwei4f7.frame !== pause4f7.frame) {
           fund("Abspielmarke (#457)", "bei Pause steht die Marke still",
@@ -5064,6 +5104,72 @@ const main = async () => {
       if (masse4f8.buehne === 0 || masse4f8.achse === 0 || masse4f8.rendern === 0) {
         fund("Ins Video", "der zusaetzliche Knopf schiebt Buehne, Zeitachse und Hauptknopf nicht aus dem Bild",
           JSON.stringify(masse4f8), "Befund", "composer/bibliothek-ansicht.tsx");
+      }
+
+      // C) DER EIGENTLICHE BELEG (Befund 02.11.2026): Das Projekt traegt jetzt eine
+      // Unterbrechung. Bis heute scheiterte JEDER solche Auftrag an der Validierung
+      // (doppelte Element-Kennung). Gerendert wird ueber den echten Dialog; geprueft wird
+      // die DATEI - und ihre Dauer gegen die Anzeige (Video 2 s + Einschub 10 s = 12 s).
+      const name4f8 = "durchlauf-insvideo-" + Date.now();
+      const ziel4f8 = path.join(WURZEL, "projects", aktivesProjektId, "output", `${name4f8}.mp4`);
+      const anzeige4f8 = await seite.evaluate(
+        () => document.querySelector('[data-testid="statistik-Gesamtdauer"]')?.textContent ?? null,
+      );
+      const geoeffnet4f8 = await klick('[data-testid="composer-render-oefnen"]');
+      await schlafe(500);
+      if (!geoeffnet4f8) {
+        fund("Ins Video", "der Render-Dialog laesst sich mit einer Unterbrechung oeffnen",
+          "Klick ohne Dialog", "Befund", "composer/render-dialog.tsx");
+      } else {
+        const nameGesetzt4f8 = await seite.evaluate((n) => {
+          const feld = document.querySelector('[data-testid="render-dialog-name"]');
+          if (feld === null) return false;
+          const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+          setzeWert.call(feld, n);
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+          return true;
+        }, name4f8);
+        await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="render-dialog-ausloeser"]');
+          if (knopf !== null) knopf.click();
+        });
+        const ordner4f8 = path.dirname(ziel4f8);
+        const frist4f8 = Date.now() + 150_000;
+        while (Date.now() < frist4f8) {
+          const dateien = fs.existsSync(ordner4f8) ? fs.readdirSync(ordner4f8) : [];
+          if (dateien.includes(`${name4f8}.mp4`) && !dateien.some((d) => d.endsWith(".part"))) break;
+          await schlafe(1_000);
+        }
+        const da4f8 = fs.existsSync(ziel4f8);
+        let dauer4f8 = null;
+        if (da4f8) {
+          dauer4f8 = await new Promise((fertig, scheitern) => {
+            const prozess = spawn(ffprobeStatic.path, [
+              "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", ziel4f8,
+            ]);
+            let aus = "";
+            prozess.stdout.on("data", (d) => { aus += String(d); });
+            prozess.on("exit", (code) => (code === 0
+              ? fertig(Number(aus.trim()))
+              : scheitern(new Error("ffprobe code " + code))));
+          });
+        }
+        console.log(`[schritt-4f8] Render MIT Unterbrechung: nameGesetzt=${String(nameGesetzt4f8)}, ` +
+          `Datei=${String(da4f8)}, ffprobe=${String(dauer4f8)} s, Anzeige=${JSON.stringify(anzeige4f8)}`);
+        if (!da4f8 || dauer4f8 === null || !(dauer4f8 > 11) || !(dauer4f8 < 13)) {
+          const stand4f8 = await seite.evaluate(async () => {
+            const antwort = await window.api.invoke("queue:holeStand");
+            const auftraege = antwort === null || antwort.ok === false ? [] : (antwort.wert ?? []);
+            return auftraege.map((auftrag) => ({ status: auftrag.status, fehler: auftrag.fehler }));
+          });
+          fund("Ins Video", "ein Projekt MIT Unterbrechung wird gerendert (Dauer: Video + Einschub)",
+            `Datei=${String(da4f8)}, ffprobe=${String(dauer4f8)} s, Anzeige=${JSON.stringify(anzeige4f8)}, ` +
+              `Auftraege=${JSON.stringify(stand4f8)}`,
+            "Befund", "render-service/validierung.ts");
+        } else {
+          console.log(`[schritt-4f8] RENDER MIT UNTERBRECHUNG GEMESSEN: ${dauer4f8} s bei Anzeige ${String(anzeige4f8)} ` +
+            `(Video 2 s + Einschub 10 s).`);
+        }
       }
 
       // AUFRAEUMEN: die zwei Wirkungen sind je EIN Undo-Schritt (Band-Abschnitt,

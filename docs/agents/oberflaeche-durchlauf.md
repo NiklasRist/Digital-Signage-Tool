@@ -3508,3 +3508,34 @@ Erlebte Fenster-Fehler (pageerror): keine
 Ereignisse gesammelt: 73
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+
+## Nachlauf vom 2026-11-02T22:07:35.031Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 80
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Ins Video: erwartet "ein Projekt MIT Unterbrechung wird gerendert (Dauer: Video + Einschub)", erkannt "Datei=false, ffprobe=null s, Anzeige="0:22", Auftraege=[{"status":"fehlgeschlagen","fehler":{"code":"ungueltiges_element","meldung":"Das \"segment\"-PNG hat die Masse 1920 x 162; erwartet waren 1920 x 1080.","daten":{"elementId":"e16191e0-e305-4e44-9194-b3f04ffa2b3d"}}}]" (Ort: render-service/validierung.ts)
+
+## Nachlauf vom 2026-11-02T22:15:53.304Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 94
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+- **Befund** Abspielmarke (#457): erwartet "waehrend der Wiedergabe wandert die Marke", erkannt "Frame 30 -> 60, left 8px -> 16px, laeuft=nein" (Ort: composer/abspiel-marke.tsx)
+- **Befund** Ins Video: erwartet "ein Projekt MIT Unterbrechung wird gerendert (Dauer: Video + Einschub)", erkannt "Datei=false, ffprobe=null s, Anzeige="0:12", Auftraege=[{"status":"fehlgeschlagen","fehler":{"code":"ffmpeg_fehler","meldung":"Element 102f606c-b83f-4429-8aa3-9056679eda69#3 (Index 2): ffmpeg ist mit Exit-Code 228 fehlgeschlagen.\nError while filtering: No space left on device"}}]" (Ort: render-service/validierung.ts)
+
+## Nachlauf vom 2026-11-02T22:24:32.895Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 94
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+- **Befund** Abspielmarke (#457): erwartet "bei Pause steht die Marke still", erkannt "Frame 11 -> 29" (Ort: composer/abspiel-marke.tsx)
+- **Befund** Ins Video: erwartet "ein Projekt MIT Unterbrechung wird gerendert (Dauer: Video + Einschub)", erkannt "Datei=false, ffprobe=null s, Anzeige="0:12", Auftraege=[{"status":"fehlgeschlagen","fehler":{"code":"ffmpeg_fehler","meldung":"Element 2ba0adf2-e8d3-41de-b520-9b7a535d2c26#3 (Index 2): ffmpeg ist mit Exit-Code 228 fehlgeschlagen.\nError while filtering: No space left on device"}}]" (Ort: render-service/validierung.ts)
