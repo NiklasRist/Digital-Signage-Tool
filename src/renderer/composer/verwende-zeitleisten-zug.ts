@@ -18,6 +18,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 
 import type { Listenelement, Project } from '../../shared/contracts/project'
+import type { Vorlage } from '../../shared/contracts/vorlage'
 import { baueZeitleistenZeilen } from './zeitleiste.tsx'
 import { baueEinfugeKanten, leseKantenIndex, liestReferenz, waehleKanteAus } from './spalt-drop'
 import { fuegeElementHinzu } from './element-hinzufuegen'
@@ -25,6 +26,8 @@ import { ordneNeuOptimistisch } from './liste-reorder'
 import { fuegeUnterbrechungEin, spieleZeitBeiSequenzzeit, videoSekunden } from './unterbrechungs-aufnahme'
 import { setzeElementUnterbrechungen } from './unterbrechungs-bearbeiten'
 import { bandZielAus, bandZeitImVideo, startdauerFuerBandabschnitt } from './band-aufnahme'
+import { entwurfMitNeuerAktion, istBandAktion, waehleBandVorlageId } from './ins-video'
+import { uebernehmeBand } from './einblendung-bearbeiten'
 
 /** #417: Layout-Vorschub je Zeitleisten-Block = Kantenbreite (10 px, zeitleiste.tsx) +
  *  ZWEI Luecken (je 2 px, `gap: 2` in korb UND in der Block-Gruppe). Er hebt den
@@ -41,6 +44,9 @@ export interface ZeitleistenZugEingaben {
   pxProSekunde: number
   /** Frischer Projektstand (nie ein gemerkter Wert) - fuer die Band-Aufnahme. */
   holeProjekt: () => Project | null
+  /** Die nutzbaren Vorlagen - EINE Quelle, derselbe Stand wie in der Bibliothek. Die
+   *  Entscheidung "Band oder Unterbrechung" braucht sie (03.11.2026). */
+  holeVorlagen: () => readonly Vorlage[]
   /** Der Sicht-Schreiber des umhuelleten Zugangs (#243) - EIN Undo-Schritt je Schreibvorgang. */
   setzeListe: (liste: Listenelement[]) => void
   /** Der EINE Wurzel-Melder (Naht N2). */
@@ -59,11 +65,12 @@ export interface ZeitleistenZug {
   amUeber: (ereignis: DragOverEvent) => void
   amEnde: (ereignis: DragEndEvent) => void
   amDragAbbruch: () => void
-  /** 02.11.2026 („Ins Video"): DERSELBE Schreibweg wie ein Drop auf den Video-Koerper -
-   *  eine Unterbrechung an der Zeitstelle, EIN Undo-Schritt. Der Klick braucht die
-   *  Zeitstelle selbst (`videostelleAusAbspielmarke`, `ins-video.ts`) und reicht sie
-   *  hier herein; die Pruefung bleibt bei `fuegeUnterbrechungEin` und beim Store. */
-  nehmeAktionAlsUnterbrechungAuf: (
+  /** 02.11.2026 („Ins Video"): Aktion in ein Video legen - der EINE Weg fuer KLICK und DROP
+   *  auf den Video-Koerper. Was entsteht, entscheidet die FORM der Aktion (03.11.2026):
+   *  Band-Aktion -> Abschnitt ans Band, Ganzbild -> Unterbrechung an der Zeitstelle.
+   *  `zeitSekunden` ist nur fuer die Unterbrechung noetig; ein Band-Abschnitt braucht
+   *  keine (die Folge laeuft ab 0:00). */
+  legeAktionInsVideo: (
     videoId: string,
     aktionId: string,
     zeitSekunden: number | null,
@@ -71,7 +78,7 @@ export interface ZeitleistenZug {
 }
 
 export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): ZeitleistenZug {
-  const { projektId, liste, pxProSekunde, holeProjekt, setzeListe, melde } = eingaben
+  const { projektId, liste, pxProSekunde, holeProjekt, holeVorlagen, setzeListe, melde } = eingaben
 
   const [neuZug, setzeNeuZug] = useState<string | null>(null)
   const [aktiveKante, setzeAktiveKante] = useState<number | null>(null)
@@ -90,12 +97,21 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     setzeUnterbrechungsZeit(null)
   }, [projektId])
 
-  // #437: EINE Aktion als UNTERBRECHUNG in das Video aufnehmen. Seit der Entscheidung zu
-  // #442 (29.10.2026) ist das der EINE Weg fuer einen Drop auf den Video-Koerper; die
-  // Zeitstelle wird geprueft und die Liste gebaut. Geschrieben wird ueber
-  // setzeElementUnterbrechungen (#426); die Sicht-Korrektur geht ueber den
-  // Wrapped-Zugang (EIN Undo-Schritt, #243).
-  const nehmeAktionAlsUnterbrechungAuf = (
+  // #437/#442: EINE Aktion in ein VIDEO legen - der EINE Weg fuer KLICK und DROP auf den
+  // Video-Koerper.
+  //
+  // 03.11.2026 (Niklas, Widerspruch 1): WAS entsteht, entscheidet die FORM der Aktion -
+  // und zwar an genau dieser Stelle, nicht an zwei Eingaengen verschieden. Bis heute
+  // galt: Klick entscheidet nach der Vorlage (ins-video.ts), Drop legt IMMER eine
+  // Unterbrechung an. Eine Band-Aktion (1920 x 162) wurde damit als vollflaechiger
+  // Einschub gezeichnet und war NICHT renderbar (der Render verlangt 1920 x 1080).
+  //
+  // AD 4.5 sagt, was gilt: „Eine Aktion wird als eigenes, VOLLFLAECHIGES Segment
+  // zwischen den Videos gezeigt. Dasselbe Segment traegt auch die kurze Unterbrechung."
+  // Eine Band-Aktion ist keine vollflaechige Aktion -> sie wird ein Band-Abschnitt.
+  // Eine Alternative "vollflaechig zeichnen" gibt es nicht: Die Zonen einer Bandvorlage
+  // haben feste y-Werte fuer die Bandhoehe; sie auf 1080 zu strecken waere unlesbar.
+  const legeAktionInsVideo = (
     videoId: string,
     aktionId: string,
     zeitSekunden: number | null,
@@ -106,12 +122,37 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     if (element === undefined || element.art !== 'video') return
     const aktion = frisch.aktionen.find((eintrag) => eintrag.id === aktionId)
     if (aktion === undefined) return
+
+    // DIESELBE Dauer-Kette wie jeder andere Einschub (AD 4.4 / TK 9.11.3).
+    const dauer = startdauerFuerBandabschnitt(aktion.standardDauer, frisch.standardSegmentdauer)
+
+    if (istBandAktion(aktion, holeVorlagen())) {
+      const bandVorlageId = waehleBandVorlageId(element, holeVorlagen())
+      if (bandVorlageId === null) {
+        melde('ungueltige_eingabe', 'Es gibt keine Band-Vorlage - legen Sie zuerst eine an.')
+        return
+      }
+      const entwurf = entwurfMitNeuerAktion(element, bandVorlageId, aktion.id, dauer)
+      // `uebernehmeBand` ist der EINE Schreibweg des Bandes (#129) - keine zweite
+      // Nutzlast, keine zweite Pruefung; ein Abschnitt wird DRANGEHAENGT.
+      void uebernehmeBand(element.id, entwurf).then((antwort) => {
+        if (!antwort.ok) {
+          melde(antwort.fehler.code, antwort.fehler.meldung)
+          return
+        }
+        const aktuell = holeProjekt()
+        if (aktuell === null) return
+        const wert = antwort.wert
+        setzeListe(aktuell.liste.map((eintrag) => (eintrag.id === wert.id ? wert : eintrag)))
+      })
+      return
+    }
+
     const gesamt = videoSekunden(element)
     if (gesamt === null || zeitSekunden === null) {
       melde('keine_zeitstelle', 'Ohne brauchbare Zeitstelle laesst sich keine Unterbrechung anlegen.')
       return
     }
-    const dauer = startdauerFuerBandabschnitt(aktion.standardDauer, frisch.standardSegmentdauer)
     const entwurf = fuegeUnterbrechungEin(
       element.unterbrechungen ?? [],
       aktion.id,
@@ -227,7 +268,7 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     // `zielVideo` null; dann laeuft der Drop wie bisher an die gemessene Kante
     // (sequenziell davor/danach).
     if (zielVideo !== null) {
-      nehmeAktionAlsUnterbrechungAuf(zielVideo, referenz, zielUnterbrechung)
+      legeAktionInsVideo(zielVideo, referenz, zielUnterbrechung)
       return
     }
     // NEU-Drag (#413): Einfuegen an der Kante (#411-Mutation, nicht optimistisch).
@@ -261,6 +302,6 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     amUeber,
     amEnde,
     amDragAbbruch,
-    nehmeAktionAlsUnterbrechungAuf,
+    legeAktionInsVideo,
   }
 }

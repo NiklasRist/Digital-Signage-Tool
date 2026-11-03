@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.11 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.34 (9.5.2/9.11.4: Die Untergrenze der Segmentdauer sinkt von **10 auf 8 s**, und `setzeUnterbrechungen` prüft sie gegen **dieselbe** Konstante – eine Spanne, kein zweiter Typ. Entscheidung 03.11.2026, AD v1.12)
+**Version:** 3.35 (9.7.7: Ein Drop auf den Video-Körper legt je nach **Vorlage** einen Band-Abschnitt oder eine Unterbrechung an – eine Band-Aktion als vollflächiger Einschub war **nicht renderbar** (1920 × 162 gegen 1920 × 1080). Entscheidung 03.11.2026, AD unverändert v1.12)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1465,10 +1465,18 @@ Der Nutzer legt eine Aktion **auf das Video**, statt sie nur davor/danach einzuo
   `unterbrechungen` (9.11.3). Der **Render** zerlegt es frame-genau in **Video-Teil · Aktion ·
   Video-Teil** (9.2.9). In der Zeitleiste ist der **Körper eines Video-Blocks** das Drop-Ziel: ein Drop
   **auf dem Video** ordnet an der gemessenen **Zeitstelle** ein. **Bedienung entschieden (29.10.2026,
-  #442):** Der Drop auf den Video-Körper legt **immer eine Unterbrechung** an – bei **jeder**
-  Vorlage der gezogenen Aktion. Die **Band**-Wirkung entsteht **nicht** per Drop, sondern
-  ausschließlich in der **Band-Bearbeitung** des Elements (`einblendung-ansicht.tsx`, 9.7.7 erster
-  Punkt). Die frühere Heuristik („`vollflaeche` → Unterbrechung, sonst Band") ist damit entfallen.
+  #442, geändert am 03.11.2026):** Der Drop auf den Video-Körper legt eine **Unterbrechung** an –
+  **wenn die gezogene Aktion vollflächig ist**. Trägt sie eine **Bandvorlage** (`höhe ≠ null`), wird
+  daraus ein **Band-Abschnitt** (an die Folge angehängt, wie „Ins Video", 9.7.7). *Anlass der Änderung:*
+  Mit der Regel „immer Unterbrechung" wurde eine Band-Aktion als **1920 × 162** gezeichnet, während
+  der Render für ein `segment` **1920 × 1080** verlangt – jedes solche Projekt war **nicht renderbar**
+  (Treiber-Befund `4f8`, `ungueltiges_element`). AD 4.5 sagt ohnehin: die Unterbrechung ist ein
+  „eigenes, **vollflächiges** Segment". Eine Alternative „vollflächig zeichnen" gibt es nicht: Die
+  Zonen einer Bandvorlage liegen auf festen `y`-Werten ihrer Bandhöhe; sie auf 1080 zu strecken wäre
+  unlesbar. **Klick und Drop entscheiden seitdem an DERSELBEN Stelle**
+  (`composer/verwende-zeitleisten-zug.ts`, `legeAktionInsVideo`). Gemessen: Treiber `4f2` (Band-Aktion
+  → Abschnitt, keine Unterbrechung, Blockzahl unverändert, EIN Undo-Schritt) und `4b6` (Ganzbild →
+  Unterbrechung). Die **Band**-Bearbeitung bleibt der zweite Weg für Abschnitte (9.7.7 erster Punkt).
   Eine Aktion ist **entweder** Band-Abschnitt **oder** Unterbrechung, **nie beides** – dieselbe Aktion
   darf nicht zugleich parallel und unterbrechend laufen. Löscht man die Aktion, greift dieselbe
   chirurgische Kaskade wie beim Band (9.5.3): nur der betroffene Einschub entfällt, das

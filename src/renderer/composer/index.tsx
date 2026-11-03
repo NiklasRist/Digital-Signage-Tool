@@ -126,14 +126,9 @@ import { EigenschaftenAnsicht } from './eigenschaften-ansicht.tsx'
 // Abschnitt ans Band, Ganzbild -> Unterbrechung an der Marke) liegt rein in
 // `ins-video.ts`; geschrieben wird ueber die BESTEHENDEN Wege - `uebernehmeBand` (#129)
 // fuers Band, `setzeElementUnterbrechungen` (#426) im Zeitleisten-Zug.
-import {
-  entwurfMitNeuerAktion,
-  istBandAktion,
-  videostelleAusAbspielmarke,
-  waehleBandVorlageId,
-} from './ins-video'
-import { uebernehmeBand } from './einblendung-bearbeiten'
-import { startdauerFuerBandabschnitt } from './band-aufnahme'
+// 03.11.2026: Die ENTSCHEIDUNG selbst sitzt jetzt im Zeitleisten-Zug (`legeAktionInsVideo`),
+// damit KLICK und DROP dieselbe Regel benutzen. Hier bleibt nur die Zeitstelle.
+import { videostelleAusAbspielmarke } from './ins-video'
 import { holeAbspielstand } from '../gemeinsam/abspielposition'
 
 
@@ -347,6 +342,8 @@ export function ComposerInterna({
     liste,
     pxProSekunde,
     holeProjekt: () => projekt.hole().projekt,
+    // DIESELBE Vorlagenliste, die die Bibliothek sieht (ein Stand, kein zweiter Weg).
+    holeVorlagen: () => (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage),
     setzeListe: projekt.setzeListe,
     melde: meldeWurzel,
   })
@@ -828,6 +825,10 @@ export function ComposerInterna({
   // DIE ZEITSTELLE KOMMT AUS DER ABSPIELMARKE - sie ist der einzige Ort, an dem der
   // Nutzer "hier" sagt. Steht sie nicht in einem Video, wird NICHTS erfunden: die
   // Meldung sagt, was zu tun ist.
+  //
+  // 03.11.2026: Die ENTSCHEIDUNG Band/Unterbrechung liegt NICHT mehr hier, sondern im
+  // Zeitleisten-Zug (`legeAktionInsVideo`) - damit KLICK und DROP auf den Video-Koerper
+  // dieselbe Regel benutzen. Hier bleibt nur: Video finden, Zeitstelle lesen, abgeben.
   const fuegeAktionInsVideo = (aktionId: string): void => {
     const frisch = projekt.hole().projekt
     if (frisch === null) return
@@ -841,48 +842,9 @@ export function ComposerInterna({
       meldeWurzel('ungueltige_eingabe', 'Ohne Video gibt es kein Ziel - importieren Sie zuerst eines.')
       return
     }
-    // DIESELBE Vorlagenliste, die die Bibliothek sieht (ein Stand, kein zweiter Weg).
-    const vorlagenListe = (vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)
-    // DIESELBE Dauer-Kette wie jeder andere Einschub (AD 4.4 / TK 9.11.3).
-    const dauer = startdauerFuerBandabschnitt(aktion.standardDauer, frisch.standardSegmentdauer)
-
-    if (istBandAktion(aktion, vorlagenListe)) {
-      const bandVorlageId = waehleBandVorlageId(video, vorlagenListe)
-      if (bandVorlageId === null) {
-        meldeWurzel('ungueltige_eingabe', 'Es gibt keine Band-Vorlage - legen Sie zuerst eine an.')
-        return
-      }
-      const entwurf = entwurfMitNeuerAktion(video, bandVorlageId, aktion.id, dauer)
-      // `uebernehmeBand` ist der EINE Schreibweg des Bandes (#129) - keine zweite
-      // Nutzlast, keine zweite Pruefung; die Leer-Regel (TK 9.5.3) gilt hier nicht,
-      // weil ein Abschnitt DRANGEHAENGT wird.
-      void uebernehmeBand(video.id, entwurf).then((antwort) => {
-        if (!antwort.ok) {
-          meldeWurzel(antwort.fehler.code, antwort.fehler.meldung)
-          return
-        }
-        // Sicht NACH dem await frisch holen (kein gemerkter Stand) - EIN Undo-Schritt
-        // ueber den Wrapped-Zugang (#243), genau wie bei der Band-Bearbeitung.
-        const aktuell = projekt.hole().projekt
-        if (aktuell === null) return
-        const wert = antwort.wert
-        projekt.setzeListe(
-          aktuell.liste.map((eintrag) => (eintrag.id === wert.id ? wert : eintrag)),
-        )
-      })
-      return
-    }
-
+    // Die Marke ist fuer die Unterbrechung da; ein Band-Abschnitt ignoriert sie.
     const stelle = videostelleAusAbspielmarke(frisch.liste, holeAbspielstand().frame)
-    if (stelle === null) {
-      meldeWurzel(
-        'keine_zeitstelle',
-        'Die Abspielmarke steht nicht in einem Video - schieben Sie sie in den Video-Block.',
-      )
-      return
-    }
-    // DERSELBE Weg wie ein Drop auf den Video-Koerper (#442): Unterbrechung, EIN Undo-Schritt.
-    zug.nehmeAktionAlsUnterbrechungAuf(stelle.elementId, aktion.id, stelle.zeitSekunden)
+    zug.legeAktionInsVideo(video.id, aktion.id, stelle?.zeitSekunden ?? null)
   }
 
   return (
