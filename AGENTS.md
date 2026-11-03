@@ -32,13 +32,14 @@ aufzulösen.
 python tools/bereitschaft.py     # welche Issues sind JETZT baubar
 ```
 
-**Die Anforderungsänderungen sind entschieden und dokumentiert** (Stand 31.10.2026:
-**AD v1.11 / TK v3.33**): die **projektweite Standarddauer** (je Aktion überschreibbar) und die
+**Die Anforderungsänderungen sind entschieden und dokumentiert** (Stand 03.11.2026:
+**AD v1.12 / TK v3.34**): die **projektweite Standarddauer** (je Aktion überschreibbar) und die
 **Streichung der Elementart `bild`** (AD v1.6/TK v3.18), **ein Projekt – ein Video**
 (AD v1.7/TK v3.22), die **kurze Unterbrechung des Videos** (AD v1.8/TK v3.26), die **über die
 Oberfläche anlegbare Einblendung mit fester Bandhöhe 162** (AD v1.9/TK v3.28), die **Streichung
-des Split-Screen** (AD v1.10/TK v3.31), der **Wegfall des Marken-Reiters** (AD v1.11/TK v3.32)
-und die **verworfene Banner-Spur** (TK v3.33). Details im
+des Split-Screen** (AD v1.10/TK v3.31), der **Wegfall des Marken-Reiters** (AD v1.11/TK v3.32),
+die **verworfene Banner-Spur** (TK v3.33) und die **Untergrenze 8 s für Segmentdauern
+einschließlich Unterbrechungen** (AD v1.12/TK v3.34). Details im
 Abschnitt „STAND HEUTE" von `CLAUDE.md`; wo genau wann ein Folge-Issue baubar ist, sagt
 `python tools/bereitschaft.py`.
 

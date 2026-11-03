@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 30.10.2026
-**Version:** 1.11 (Der Reiter **[Marken] entfällt**: Der Marken-Editor wird über die **Projektleiste** des geöffneten Projekts geöffnet. Der Marken-Bestand bleibt **app-weit** – eine Marke kann von beliebig vielen Projekten genutzt werden. Entscheidung 30.10.2026, s. 4.8)
+**Datum:** 03.11.2026
+**Version:** 1.12 (4.4: Die Untergrenze der Segmentdauer sinkt von **10 auf 8 s** – damit ist die „kurze Unterbrechung" aus 4.5 wirklich kurz einstellbar. **Eine** Spanne für alle Segmente, kein zweiter Typ. Entscheidung 03.11.2026, s. 4.4)
 **Status:** In Abstimmung
 
 ---
@@ -183,7 +183,8 @@ Die interaktive Vorschau (FA-07) ist **kein** Auftrag und läuft unabhängig von
 Dauer (FA-06) und Trim (FA-14) werden für **alle** Elementtypen über **denselben** Bedien-Baustein gesteuert – einen Balken mit Griffen, an denen der Nutzer die effektive Dauer zieht. Kürzen *und* Verlängern fühlen sich überall gleich an („wie Trimmen"); nur die Grenzen unterscheiden sich je nach Elementtyp:
 
 - **Video (FA-14):** zwei Griffe (Anfang/Ende) innerhalb der **Quelllänge** des Videos. Kürzen schneidet Anfang/Ende weg; Verlängern ist **nur bis zur Quelllänge** möglich (mehr Material existiert nicht). Der Schnitt ist **nicht-destruktiv** – die Originaldatei bleibt unverändert.
-- **Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **10–45 s** einstellbar. Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte Maximaldauer; Kürzen und Verlängern laufen über denselben Regler.
+- **Aktions-Segment (FA-06):** die effektive Anzeigedauer ist frei im Bereich **8–45 s** einstellbar (v1.12). Da es keine Quelllänge gibt, ist die Obergrenze die konfigurierte Maximaldauer; Kürzen und Verlängern laufen über denselben Regler.
+  - **Untergrenze 8 s statt 10 s (v1.12, entschieden 03.11.2026):** Die Unterbrechung des Videos (4.5) ist ein Segment wie jedes andere und teilt sich **diesen** Bereich – **kein zweiter Typ, keine zweite Spanne**. Mit 10 s war die im Anforderungsdokument selbst so genannte „**kurze** Unterbrechung" nicht einstellbar: Der Standard liegt bei 10 s, also war jede Unterbrechung mindestens 10 s lang. Die Obergrenze bleibt 45 s.
 
 Der Regler zeigt die aktuelle effektive Dauer numerisch an. So bleibt die Bedienung über Video und Aktions-Segment hinweg konsistent, obwohl technisch ein Trim (Ausschnitt) und eine reine Anzeigedauer dahinterstehen.
 
@@ -198,8 +199,8 @@ Elements ergibt sich in dieser Reihenfolge:
 3. sonst **10 s** – der eingebaute Rückfallwert.
 
 Eine Aktion **ohne** eigene Dauer folgt damit dem Projektstandard und zieht bei dessen Änderung mit; eine
-Aktion **mit** eigener Dauer bleibt, wo sie ist. Der einstellbare **Bereich 10–45 s bleibt unverändert
-fest** – konfigurierbar ist nur der **Standardwert** innerhalb dieses Bereichs, nicht der Bereich selbst.
+Aktion **mit** eigener Dauer bleibt, wo sie ist. Der einstellbare **Bereich 8–45 s gilt unverändert
+fest** (v1.12) – konfigurierbar ist nur der **Standardwert** innerhalb dieses Bereichs, nicht der Bereich selbst.
 Die Dauer am einzelnen **Listenelement** bleibt wie bisher maßgeblich für den Render: Die Kette liefert nur
 den **Startwert**, danach entscheidet der Regler.
 
