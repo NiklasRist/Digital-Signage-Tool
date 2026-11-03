@@ -927,3 +927,78 @@ hat den 228-Aufruf identifiziert und ist byte-identisch entfernt (`prozess.ts`, 
 
 Konzept Abschnitt 10 weiter: **Preset beim Anlegen** (Vorlage + Marke + Dauer vorbelegt), danach die
 **Effekte** (Band fährt ein/aus, Motiv atmet, Übergang statt hartem Schnitt).
+
+---
+
+## 23. DER BAND-ABSCHNITT HAT KEINE DAUER-EINGABE MEHR (03.11.2026)
+
+### 23.1 Die Entscheidung
+
+**Niklas, 03.11.2026:** *„feste zeit weil es macht keinen sinn dafür eine zeit festzulegen"*.
+
+Damit ist die Dauer eines **Band-Abschnitts** keine Nutzereingabe mehr. Sie folgt der
+**Dauer-Kette des Produkts** (`AD 4.4`): die **eigene Standarddauer der Aktion**, sonst die
+**projektweite Standarddauer**, sonst **10 s**. Das Eingabefeld im Band-Editor entfällt.
+
+**Warum die Kette und nicht die Konstante 10:** Sie war beim Einfügen schon der Startwert
+(`band-aufnahme.ts`, TK 9.7.7) — und sie ist die *eine* Dauerregel des Produkts. Eine Konstante
+hätte eine zweite Wahrheit neben `AD 4.4` gestellt.
+
+**Warum überhaupt ohne Eingabe:** Das Band läuft **parallel** zum Video und **wiederholt** sich,
+wenn die Folge kürzer ist. Die Dauer eines Abschnitts ist damit nur das **Tempo der Rotation**;
+eine je Abschnitt gesetzte Zeit müsste bei jeder Änderung der Standarddauer nachgezogen werden.
+
+**Doku:** AD **v1.13** (4.5, eigener Absatz mit Begründung), TK **v3.36** (9.2.8 Zeitverhalten,
+9.5.2 `setzeEinblendung`, 9.7.2 Bedienung, 9.7.7 „Dauer" statt „Startdauer", 9.11.3).
+Die Bezugszeile des TK („Anforderungsdokument v1.11") stand seit zwei Versionen falsch und ist
+auf **v1.13** gezogen.
+
+### 23.2 Was gebaut ist
+
+| Stelle | vorher | jetzt |
+|---|---|---|
+| `band-aufnahme.ts` | `startdauerFuerBandabschnitt` | **`dauerNachKette`** — eine Funktion für Unterbrechung **und** Band-Abschnitt |
+| `einblendung-ansicht.ts` (`entwurfAus`) | kopierte die gespeicherte `dauer` | dritter Parameter `dauerFuer`; **jeder** Abschnitt bekommt die Kette |
+| `einblendung-ansicht.tsx` | Textfeld je Zeile, `setzeAbschnittsDauer` | Feld weg; „hinzufuegen" nimmt die Kette statt der Konstante 10 |
+| `einblendung-bearbeiten.ts` | `setzeAbschnittsDauer` | **gelöscht** (kein toter Export) |
+| `band-overlay.tsx`, `composer/index.tsx` | — | reichen `standardSegmentdauer` durch |
+| `reparatur-optionen.ts` (`schliesseAbschnittsFixAb`) | behielt die Dauer des kaputten Abschnitts | zieht die Kette der **neuen** Aktion |
+
+**Der letzte Punkt war kein Beiwerk.** Er hätte sonst eine zweite Wahrheit erzeugt: repariert man
+einen Abschnitt, stünde dort die alte Dauer — bis die Band-Bearbeitung das nächste Mal geöffnet
+wird und sie überschreibt. Die **unbeteiligten** Abschnitte bleiben unangetastet; ein Fix soll
+nicht das ganze Band verschieben.
+
+**Verhaltensänderung, offen benannt:** Ein Altprojekt mit von Hand gesetzten Zeiten gleicht sich
+beim **ersten Öffnen** der Band-Bearbeitung an die Kette an. Das ist gewollt — die Anzeige soll
+zeigen, was geschrieben wird. Wer die alten Zeiten erhalten will, muss sie vorher sichern; ein
+Sonderfall ist **nicht** gebaut.
+
+### 23.3 Belege
+
+- **Typecheck 0** (main/preload/renderer/**tests**), **ESLint + oxlint 0**, **Build 0**.
+- **Unit 5452/5452** (360 Dateien). Neu: „die Zeile zeigt die Dauer aus der Kette, nicht die im
+  Element gespeicherte Zahl" und „eine Abschnitts-Zeile hat KEIN Dauer-Eingabefeld mehr";
+  der Ersetzen-Fall in `reparatur-optionen.spec.ts` prüft die Kette der neuen Aktion (22) **und**
+  den Rückfall auf die projektweite (10).
+- **Integration 51/51** (13 Dateien).
+- **Treiber: 0 Befunde**, 1 Untersuchung (Mehrfachauswahl, Baseline), 1 MANUELL (Export-Dialog).
+  `4f8` misst erneut: Band-Aktion → Abschnitt (`dauer: 10`), Ganzbild → Unterbrechung,
+  Render mit Unterbrechung **12,022 s** bei Anzeige 0:12.
+
+### 23.4 Befund: die .docx waren stehengeblieben
+
+Beim Erzeugen fiel auf: `Anforderungsdokument_…docx` stand auf **Version 1.9**,
+`Technisches_Konzept_…docx` auf **3.29** — während die `.md` bei 1.12/3.35 lagen. Die Word-Dateien
+waren also seit mehreren Sitzungen **nicht** mitgezogen worden, obwohl die Regel „.md und .docx
+synchron halten" im Projekt steht.
+
+Beide neu erzeugt (`tools/generate-docx.js`, Staging, `unzip -t`, 0 Backticks, Absatz-Diff gegen
+den alten Stand) und platziert. **Der Sprung in den Word-Dateien enthält deshalb auch die
+Änderungen der Sitzungen davor** — nicht nur diese. Ab jetzt gilt: **wer die `.md` ändert, erzeugt
+die `.docx` im selben Commit neu.** Word war beim Schreiben geschlossen, die Dateien frei.
+
+### 23.5 Nächster Schritt
+
+Konzept Abschnitt 10 weiter: **Preset beim Anlegen** (Vorlage + Marke + Dauer vorbelegt), danach
+die **Effekte** (Band fährt ein/aus, Motiv atmet, Übergang statt hartem Schnitt).

@@ -80,7 +80,8 @@ export async function setzeUnterbrechungen(
 
 /**
  * Prueft die Liste vollstaendig und baut sie neu auf (TK 9.5.2):
- * jede `zeitstelle` in `(0, videoDauer)`, `dauer > 0`, JEDER `aktionRef` existiert,
+ * jede `zeitstelle` in `(0, videoDauer)`, `dauer` in `[DAUER_BEREICH.min, DAUER_BEREICH.max]`,
+ * JEDER `aktionRef` existiert,
  * aufsteigend nach `zeitstelle` - zwei Einschuebe an derselben Stelle sind nicht darstellbar.
  *
  * Ein leeres Array ist GUELTIG (alle Unterbrechungen entfernt) - es bleibt `[]`, das

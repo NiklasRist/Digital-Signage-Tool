@@ -10,9 +10,10 @@
 // bleibt unveraendert bei `spalt-drop.ts` (#412/#417).
 //
 // WAS HIER BLEIBT:
-// 1. Die STARTDAUER eines Einschubs = die Dauer-Kette des Produkts:
-//    `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10` (AD 4.4 / TK 9.11.3,
-//    EINE Regel - dieselbe Kette gilt fuer Band-Abschnitte und Unterbrechungen).
+// 1. Die DAUER-KETTE des Produkts (`dauerNachKette`) - `aktion.standardDauer ??
+//    projekt.standardSegmentdauer ?? 10` (AD 4.4 / TK 9.11.3, EINE Regel). Sie traegt
+//    die Startdauer einer Unterbrechung UND die feste Dauer eines Band-Abschnitts
+//    (Entscheidung 03.11.2026, AD 4.5 - dort ist sie keine Eingabe mehr).
 // 2. Die MESSUNG des Video-Koerpers unter dem Zeiger (`bandZielAus`) und die Zeitstelle
 //    darin (`bandZeitImVideo`) - die Geometrie der Zeitleiste (#412/#417).
 
@@ -26,13 +27,18 @@ const KOERPER_VORLAUF_PX = 12
 const KOERPER_NACHLAUF_PX = 2
 
 /**
- * Die Startdauer eines Einschubs nach der Dauer-Kette des Produkts:
+ * Die DAUER aus der Dauer-Kette des Produkts:
  * `aktionStandardDauer ?? projektStandarddauer ?? STANDARD_ANZEIGEDAUER_SEKUNDEN`.
  * `null` heisst „keine Vorgabe" - NICHT „0 Sekunden"; ein nicht endlicher Wert
  * faellt ebenfalls auf die naechste Stufe zurueck (eine erfundene Dauer waere
  * schlimmer als die Konstante aus #21).
+ *
+ * ZWEI Verwendungen, EINE Regel (AD 4.4): die **Startdauer** einer Unterbrechung
+ * und - seit der Entscheidung vom 03.11.2026 - die **feste Dauer** eines
+ * Band-Abschnitts (AD 4.5, TK 9.2.8). Fuer das Band ist der Wert keine Eingabe
+ * mehr; deshalb heisst die Funktion nicht mehr nach ihrem alten Startwert.
  */
-export function startdauerFuerBandabschnitt(
+export function dauerNachKette(
   aktionStandardDauer: number | null,
   projektStandarddauer: number | null,
 ): number {

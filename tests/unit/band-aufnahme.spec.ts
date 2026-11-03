@@ -15,27 +15,27 @@
 import { describe, expect, it } from 'vitest'
 
 import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../src/shared/contracts/konstanten'
-import { startdauerFuerBandabschnitt, bandZielAus, bandZeitImVideo } from '../../src/renderer/composer/band-aufnahme'
+import { dauerNachKette, bandZielAus, bandZeitImVideo } from '../../src/renderer/composer/band-aufnahme'
 
-describe('startdauerFuerBandabschnitt', () => {
+describe('dauerNachKette', () => {
   it('nimmt die Aktions-Standarddauer, wenn sie gesetzt ist', () => {
-    expect(startdauerFuerBandabschnitt(7, 30)).toBe(7)
+    expect(dauerNachKette(7, 30)).toBe(7)
   })
 
   it('faellt auf die Projekt-Standarddauer zurueck, wenn die Aktion keine hat', () => {
-    expect(startdauerFuerBandabschnitt(null, 30)).toBe(30)
+    expect(dauerNachKette(null, 30)).toBe(30)
   })
 
   it('faellt auf STANDARD_ANZEIGEDAUER_SEKUNDEN zurueck, wenn BEIDE fehlen', () => {
-    expect(startdauerFuerBandabschnitt(null, null)).toBe(STANDARD_ANZEIGEDAUER_SEKUNDEN)
+    expect(dauerNachKette(null, null)).toBe(STANDARD_ANZEIGEDAUER_SEKUNDEN)
   })
 
   it('behandelt 0, negative und nicht endliche Werte als "keine Vorgabe"', () => {
-    expect(startdauerFuerBandabschnitt(0, 30)).toBe(30)
-    expect(startdauerFuerBandabschnitt(-1, 30)).toBe(30)
-    expect(startdauerFuerBandabschnitt(Number.NaN, 30)).toBe(30)
-    expect(startdauerFuerBandabschnitt(Number.POSITIVE_INFINITY, 30)).toBe(30)
-    expect(startdauerFuerBandabschnitt(0, 0)).toBe(STANDARD_ANZEIGEDAUER_SEKUNDEN)
+    expect(dauerNachKette(0, 30)).toBe(30)
+    expect(dauerNachKette(-1, 30)).toBe(30)
+    expect(dauerNachKette(Number.NaN, 30)).toBe(30)
+    expect(dauerNachKette(Number.POSITIVE_INFINITY, 30)).toBe(30)
+    expect(dauerNachKette(0, 0)).toBe(STANDARD_ANZEIGEDAUER_SEKUNDEN)
   })
 })
 

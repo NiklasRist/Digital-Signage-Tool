@@ -24,6 +24,7 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { entferneElementAusListe } from './element-entfernen'
+import { dauerNachKette } from './band-aufnahme'
 import { holeSicht, type SichtSchreiber } from './projektzustand'
 import { haengtAmElement, type KaputteStelle } from './kaputt-erkennung'
 
@@ -460,11 +461,15 @@ export async function schliesseAbschnittsFixAb(
   if (!band.ok) return fehler('nicht_gefunden', band.grund)
 
   // Ein NEUES Array gleicher LAENGE und gleicher REIHENFOLGE; nur der eine Eintrag
-  // ist ersetzt. Die `dauer` wird UNVERAENDERT uebernommen und NICHT aus der neuen
-  // Aktion gezogen: Der Nutzer hat das Motiv getauscht, nicht die Zeit - eine still
-  // geaenderte Dauer verschoebe das ganze Band gegen das Video (TK 9.2.8).
+  // ist ersetzt. Die `dauer` folgt der Dauer-Kette der NEUEN Aktion (AD 4.5, v1.13):
+  // Seit der Entscheidung vom 03.11.2026 ist sie keine Nutzereingabe mehr, sondern die
+  // feste Dauer des Abschnitts. Den alten Wert stehenzulassen hiesse, eine Zahl zu
+  // bewahren, die die Band-Bearbeitung beim naechsten Oeffnen ohnehin ueberschreibt -
+  // eine zweite Wahrheit fuer die Zeit zwischen den beiden Wegen.
+  const neueAktion = projekt.aktionen.find((aktion) => aktion.id === neueAktionId)
+  const dauer = dauerNachKette(neueAktion?.standardDauer ?? null, projekt.standardSegmentdauer)
   const abschnitte = band.einblendung.abschnitte.map((abschnitt, index) =>
-    index === abschnittIndex ? { aktionRef: neueAktionId, dauer: abschnitt.dauer } : abschnitt,
+    index === abschnittIndex ? { aktionRef: neueAktionId, dauer } : abschnitt,
   )
 
   // Der Leer-Fall aus TK 9.5.3 tritt hier NIE ein - ein Ersetzen entfernt nichts.

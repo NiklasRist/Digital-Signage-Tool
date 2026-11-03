@@ -1198,6 +1198,7 @@ export function ComposerInterna({
         <BandOverlay
           element={bandElement}
           aktionen={inhalt.aktionen}
+          standardSegmentdauer={inhalt.standardSegmentdauer}
           vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
           stellen={findeKaputteStellen(inhalt, markenListe)}
           aufUebernommen={uebernehmeBandElement}

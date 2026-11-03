@@ -34,10 +34,18 @@ export const BEZEICHNUNG_UNBEKANNT = 'Nicht gefunden'
  * Der Entwurf, mit dem die Bearbeitung startet: die vorhandene `einblendung` des Elements,
  * sonst ein leerer Entwurf mit `vorgabeVorlagenId`. null, wenn es kein Video-Element ist ODER
  * keine Band-Vorlage zur Verfuegung steht (s. ENTSCHIEDEN 2). Wirft nie.
+ *
+ * DIE DAUER KOMMT AUS `dauerFuer`, NICHT AUS DEM ELEMENT (Entscheidung 03.11.2026, AD 4.5):
+ * Die Dauer eines Band-Abschnitts ist keine Eingabe mehr, sondern die Dauer-Kette des
+ * Produkts. Der Entwurf setzt sie beim Oeffnen fuer JEDEN Abschnitt neu - so zeigt die Zeile
+ * den Wert, der beim Uebernehmen geschrieben wird, und ein alter Bestand mit von Hand
+ * gesetzten Zeiten gleicht sich beim ersten Oeffnen an. Waere die gespeicherte Zahl die
+ * Wahrheit der Anzeige, stuende dort ein Wert, den niemand mehr beeinflussen kann.
  */
 export function entwurfAus(
   element: Listenelement,
   vorgabeVorlagenId: string | null,
+  dauerFuer: (aktionRef: string) => number,
 ): BandEntwurf | null {
   // „Parallele Baender gibt es nur bei `\"video\"`-Items" (TK 9.2.8). Alles andere
   // liefert null - die Ansicht zeigt dann einen Hinweis statt Bedienung (Fehlerpfade).
@@ -55,7 +63,7 @@ export function entwurfAus(
       bandVorlageId: vorhanden.bandVorlageId,
       abschnitte: vorhanden.abschnitte.map((abschnitt) => ({
         aktionRef: abschnitt.aktionRef,
-        dauer: abschnitt.dauer,
+        dauer: dauerFuer(abschnitt.aktionRef),
       })),
     }
   }

@@ -1,9 +1,9 @@
 # Technisches Konzept – Digital-Signage-Tool
 
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
-**Bezug:** Anforderungsdokument v1.11 (das „Was")
+**Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.35 (9.7.7: Ein Drop auf den Video-Körper legt je nach **Vorlage** einen Band-Abschnitt oder eine Unterbrechung an – eine Band-Aktion als vollflächiger Einschub war **nicht renderbar** (1920 × 162 gegen 1920 × 1080). Entscheidung 03.11.2026, AD unverändert v1.12)
+**Version:** 3.36 (9.5.2/9.7.2/9.7.7: Die Dauer eines Band-Abschnitts ist **keine Eingabe** – sie folgt der Dauer-Kette des Produkts (AD 4.5, v1.13). Entscheidung 03.11.2026)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -48,7 +48,7 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 - **Projekt** – ID, Name, Erstell-/Änderungsdatum, geordnete Elementliste, **projektweite Standard-Segmentdauer** (Startwert neuer Aktions-Segmente, 9.8.4). *(FA-15, FA-10, FA-06)*
 - **Aktion/Produkt** – ID, Titel (Pflicht), Beschreibung?, Preis?, Bildreferenz?, CTA?, Anzeigedauer?, Vorlagen-ID, Akzentfarbe? (ersetzt die Akzent-Rollen der Vorlage, 9.10.9). *(FA-02, 4.1)*
 - **Medium (Asset)** – ID, Typ (video|image), Dateiname, Maße, Dauer (Video, via ffprobe), Importdatum. *(FA-01)*
-- **Listenelement** – ID, Art (Video|Aktions-Segment – **`bild` ist ab v3.16 gestrichen**, 9.11.3), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }`. Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). **Nur bei Video** außerdem **Unterbrechungen** für die sequenzielle Anzeige: `{ zeitstelle, aktionRef, dauer }[]` – Einschübe, bei denen das Video pausiert (9.2.9, v3.26). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
+- **Listenelement** – ID, Art (Video|Aktions-Segment – **`bild` ist ab v3.16 gestrichen**, 9.11.3), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }` – die `dauer` je Abschnitt ist keine Eingabe, sondern folgt der Dauer-Kette (AD 4.5, v3.36). Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). **Nur bei Video** außerdem **Unterbrechungen** für die sequenzielle Anzeige: `{ zeitstelle, aktionRef, dauer }[]` – Einschübe, bei denen das Video pausiert (9.2.9, v3.26). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
 - **Vorlage** – datengetriebene Layout-Definition: `höhe` (`null` = Ganzbild 1920 × 1080, Zahl = Bandhöhe), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Ganzflächig", „Zwei Spalten", „Band-Standard". **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
 - **Ausführungs-Protokoll / Ausgabe-Historie** – ID, Projekt-ID, Datum, Pfad, Dauer (nur bei Render, sonst leer – 9.3), Größe. Geführt von der Auftragsverwaltung als Speicher **Q3** (append-only, dauerhaft), nicht mehr in D3. *(Abschnitt 7, 9.3)*
 
@@ -597,6 +597,7 @@ Ein `"video"`-Item kann eine **Einblendung** tragen: über dem laufenden Video z
 **Zeitverhalten:**
 
 - Abschnitts-Dauern unterliegen **derselben Frame-Rundung** wie alles andere (30 fps, 9.2.6) – sonst driftet das Band gegen das Video.
+- Die **Dauer je Abschnitt ist keine Eingabe** (v3.36): Sie folgt der **Dauer-Kette** des Produkts `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10` (AD 4.5, AD 4.4) und wird von der Band-Bearbeitung beim Schreiben gesetzt (9.7.2). Der `setzeEinblendung`-Weg (9.5.2) validiert sie weiterhin als endliche Zahl `> 0`.
 - Ist die Abschnitts-Folge **kürzer** als das (getrimmte) Video, **wiederholt** sie sich bis zum Videoende.
 - Ist sie **länger**, wird am Videoende **abgeschnitten**.
 - Die Elementdauer bestimmt **allein das Video** (Trim). Das Band verlängert oder verkürzt sie **nie**.
@@ -1015,7 +1016,7 @@ Rolle, die er bei `setzeStandardMarke` spielt (s. u.).
 | `ordneNeu` | `reihenfolge` (elementIds) → `Ergebnis<void>` |
 | `setzeTrim` | `elementId`, `trimStart`, `trimEnde` → `Ergebnis<Listenelement>` (validiert `0 ≤ start < ende ≤ Videodauer`) |
 | `setzeDauer` | `elementId`, `dauer` → `Ergebnis<Listenelement>` (validiert Bereich **8–45 s**; nur bei `art: "segment"` – ein Video-Element hat keine eigene Dauer, es hat einen Trim) |
-| `setzeEinblendung` | `elementId`, `einblendung` (`Einblendung` **oder** `null`) → `Ergebnis<Listenelement>` – **nur bei `art: "video"`**; setzt Band-Vorlage und Abschnittsfolge in einem Zug (FA-20, 9.2.8). Die Bandhöhe kommt **ausschließlich** aus der Vorlage und ist kein Wert am Listenelement. Wird das Band leer, ist `einblendung = null`; das Videoelement **bleibt** (9.5.3) |
+| `setzeEinblendung` | `elementId`, `einblendung` (`Einblendung` **oder** `null`) → `Ergebnis<Listenelement>` – **nur bei `art: "video"`**; setzt Band-Vorlage und Abschnittsfolge in einem Zug (FA-20, 9.2.8). Die `dauer` je Abschnitt ist **keine Nutzereingabe**: die Band-Bearbeitung setzt sie aus der **Dauer-Kette** (AD 4.5, v3.36), der Store validiert sie als endliche Zahl `> 0`. Die Bandhöhe kommt **ausschließlich** aus der Vorlage und ist kein Wert am Listenelement. Wird das Band leer, ist `einblendung = null`; das Videoelement **bleibt** (9.5.3) |
 | `setzeUnterbrechungen` | `elementId`, `unterbrechungen` (`Unterbrechung[]`) → `Ergebnis<Listenelement>` – **nur bei `art: "video"`** (v3.26); setzt die Einschübe in einem Zug (9.2.9). Validiert: jede `zeitstelle` in `(0, Videoelementdauer)`, **`dauer` gegen den Dauer-Bereich (8–45 s, 9.11.4)** – seit v3.34, vorher nur `> 0`, aufsteigend nach `zeitstelle`, **keine Überschneidung**, jeder `aktionRef` existiert in `Project.aktionen`. Wird die Liste leer, ist sie `[]`; das Videoelement **bleibt** (9.5.3). EIN Undo-Schritt (9.13.1) |
 | `setzeElementReferenz` | `elementId`, `referenz` → `Ergebnis<Listenelement>` – setzt die Referenz eines bestehenden Elements um, **ohne** seine Position und seine `id` zu verlieren. Der Zielbestand folgt der `art`: `video` → Asset in `Project.assets` mit `typ: "video"`, `segment` → Aktion in `Project.aktionen`. Bei `video` werden `trimStart`/`trimEnde` auf `null` zurückgesetzt, weil sie sich auf die alte Quelllänge bezogen. Trägt die Fix-Optionen „neu verknüpfen/importieren" und „durch ein anderes ersetzen" des Reparatur-Modus (FA-19, 9.7.5) |
 
@@ -1351,8 +1352,8 @@ wähleExportZiel() → Ergebnis<{ pfad }>   // Instant; Ordner-/Laufwerks-Dialog
 #### 9.7.2 Eingang → Ausgang
 
 - **Eingang:** Projektzustand (Liste, Asset-Bibliothek, Aktions-Bibliothek) via `ipc-client` vom `project-store`.
-- **Ausgang – Instant-Mutationen** (`project-store` 9.5.2): `fügeElementHinzu` (Asset- **oder** Aktions-Referenz; mehrere Listenelemente dürfen dieselbe Aktion referenzieren), `entferneElement`, `ordneNeu`, `setzeTrim`, `setzeDauer`, sowie – **nur bei Video-Elementen** – `setzeEinblendung` (Band-Vorlage wählen, Abschnitte hinzufügen/ordnen/entfernen, Abschnitts-Dauern setzen; FA-20, 9.2.8).
-- **Parallele Einblendung in der UI (FA-20):** Am Video-Element lässt sich ein Werbeband anhängen: **Band-Vorlage** wählen (9.11.1) und eine **Folge von Aktionen mit Dauern** zusammenstellen – die Liste ist sortierbar und läuft im Kreis. Der composer zeigt dabei an, ob die Folge **kürzer** als das Video ist (dann wiederholt sie sich) oder **länger** (dann wird am Videoende abgeschnitten) – damit der Nutzer die Wirkung versteht, ohne rendern zu müssen. Die Elementdauer bleibt **allein** durch das Video bestimmt; das Band verändert sie nie.
+- **Ausgang – Instant-Mutationen** (`project-store` 9.5.2): `fügeElementHinzu` (Asset- **oder** Aktions-Referenz; mehrere Listenelemente dürfen dieselbe Aktion referenzieren), `entferneElement`, `ordneNeu`, `setzeTrim`, `setzeDauer`, sowie – **nur bei Video-Elementen** – `setzeEinblendung` (Band-Vorlage wählen, Abschnitte hinzufügen/ordnen/entfernen; FA-20, 9.2.8). Die **Dauer** eines Abschnitts ist **keine Bedienhandlung** (v3.36).
+- **Parallele Einblendung in der UI (FA-20):** Am Video-Element lässt sich ein Werbeband anhängen: **Band-Vorlage** wählen (9.11.1) und eine **Folge von Aktionen** zusammenstellen – die Liste ist sortierbar und läuft im Kreis. Die **Dauer je Abschnitt** wird **nicht** eingestellt; sie folgt der **Dauer-Kette** des Produkts (AD 4.5) und steht in der Zeile nur als Anzeige. Der composer zeigt dabei an, ob die Folge **kürzer** als das Video ist (dann wiederholt sie sich) oder **länger** (dann wird am Videoende abgeschnitten) – damit der Nutzer die Wirkung versteht, ohne rendern zu müssen. Die Elementdauer bleibt **allein** durch das Video bestimmt; das Band verändert sie nie.
 - **Ausgang – Aufträge** (Queue 9.3): `render`, `export`.
 - **Aktion löschen aus der Bibliothek (v3.25, #430):** Jede **Aktionszeile** der Composer-Bibliothek trägt neben „Zur Liste hinzufügen“ ein **Löschen**. Es wirkt **ohne Rückfrage** und ist **ein** Undo-Schritt (TK 9.13.1: „Aktionen … löschen“ ist undo-fähig). Die **Kaskade** (Segment-Listenelemente verschwinden ganz, Band-Abschnitte fallen weg; TK 9.5.3) rechnet der `project-store` – der Composer wendet den zurückgegebenen `stand` an und baut **nichts** nach. Der **Reiter Aktionen** behält seine Zahlen-Vorschau (#142); die Bibliothek fragt bewusst **nicht**, weil der Schritt in einem Zug rückgängig zu machen ist.
 
@@ -1454,9 +1455,10 @@ Der Nutzer legt eine Aktion **auf das Video**, statt sie nur davor/danach einzuo
     Zeitleisten-Layout #412/#417). Ein Drop auf einem **Aktions-Segment** ordnet **sequenziell**
     davor/danach ein – das leistet die bestehende Kanten-Messung (`waehleKanteAus`, #412); die
     Band-Bearbeitung wird dabei **nicht** angerissen.
-  - **Startdauer** eines angehängten Abschnitts: die **Dauer-Kette des Produkts**
+  - **Dauer** eines angehängten Abschnitts: die **Dauer-Kette des Produkts**
     `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10` (AD 4.4, 9.8.4) – **nicht** der feste
-    `STANDARD_ANZEIGEDAUER_SEKUNDEN` (der bleibt nur der letzte Rückfall).
+    `STANDARD_ANZEIGEDAUER_SEKUNDEN` (der bleibt nur der letzte Rückfall). Seit v3.36 ist das **die**
+    Dauer des Abschnitts, nicht mehr nur sein Startwert (AD 4.5).
   - **Band-Vorlage**, wenn am Video noch keine gewählt ist: die **erste wählbare**
     (`waehlbareBandVorlagen`, #129) – derselbe Startentwurf wie die Ansicht (ENTSCHIEDEN 3, #253).
     Keine zweite, unsichtbare Ordnung neben der Bestandsreihenfolge.
@@ -1960,7 +1962,7 @@ Listenelement {
   dauer:       number | null                            // Sekunden – nur bei segment
   trimStart:   number | null                            // Sekunden – nur bei video
   trimEnde:    number | null                            // Sekunden – nur bei video
-  einblendung: { bandVorlageId, abschnitte: [{ aktionRef, dauer }] } | null   // nur bei video
+  einblendung: { bandVorlageId, abschnitte: [{ aktionRef, dauer }] } | null   // nur bei video; dauer folgt der Dauer-Kette (AD 4.5, v3.36)
   unterbrechungen: [{ zeitstelle, aktionRef, dauer }]   // nur bei video; [] = keine (9.2.9, v3.26)
 }
 ```

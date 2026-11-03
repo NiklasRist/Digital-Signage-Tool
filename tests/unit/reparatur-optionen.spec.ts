@@ -672,8 +672,16 @@ describe('schliesseAktionsFixAb', () => {
 // ---------------------------------------------------------------------------
 
 describe('schliesseAbschnittsFixAb', () => {
-  it('tauscht genau einen Eintrag aus - gleiche Länge, gleiche dauer, gleiche bandVorlageId', async () => {
-    const projekt = projektMit(video('el-3', BAND))
+  it('tauscht genau einen Eintrag aus - gleiche Laenge, neue DAUER aus der Kette, gleiche bandVorlageId', async () => {
+    const projekt = {
+      ...projektMit(video('el-3', BAND)),
+      aktionen: [
+        {
+          id: 'aktion-neu', titel: 'Neu', beschreibung: null, preis: null, bildRef: null,
+          cta: null, standardDauer: 22, markeId: 'marke-test', vorlagenId: 'vollbild', akzentfarbe: null,
+        },
+      ],
+    }
     const ergebnis = await schliesseAbschnittsFixAb('el-3', 1, 'aktion-neu', projekt, schreibe)
 
     expect(ergebnis).toEqual({ ok: true, wert: { art: 'erledigt' } })
@@ -686,7 +694,9 @@ describe('schliesseAbschnittsFixAb', () => {
             bandVorlageId: 'vorlage-band',
             abschnitte: [
               { aktionRef: 'aktion-a', dauer: 10 },
-              { aktionRef: 'aktion-neu', dauer: 15 },
+              // Die Dauer des ERSETZTEN Abschnitts folgt der Kette der neuen Aktion
+              // (22), nicht dem alten Wert (15) - AD 4.5, v1.13.
+              { aktionRef: 'aktion-neu', dauer: 22 },
               { aktionRef: 'aktion-c', dauer: 20 },
             ],
           },
@@ -694,6 +704,16 @@ describe('schliesseAbschnittsFixAb', () => {
       },
     ])
     expect(doppel.abgeglichen).toEqual([ANTWORT_ELEMENT])
+  })
+
+  it('ohne eigene Standarddauer der neuen Aktion traegt die projektweite (10)', async () => {
+    // `projektMit` liefert einen leeren Aktionsbestand; die Kette faellt damit auf
+    // `standardSegmentdauer` (10) zurueck.
+    const projekt = projektMit(video('el-3', BAND))
+    await schliesseAbschnittsFixAb('el-3', 1, 'aktion-neu', projekt, schreibe)
+
+    const nutzlast = (doppel.aufrufe[0] as { nutzlast: { einblendung: Einblendung } }).nutzlast
+    expect(nutzlast.einblendung.abschnitte[1]).toEqual({ aktionRef: 'aktion-neu', dauer: 10 })
   })
 
   it('sendet nie einblendung null - auch nicht bei einem Band mit nur einem Abschnitt', async () => {
@@ -705,7 +725,7 @@ describe('schliesseAbschnittsFixAb', () => {
         kanal: KANAELE.project.setzeEinblendung,
         nutzlast: {
           elementId: 'el-3',
-          einblendung: { bandVorlageId: 'v1', abschnitte: [{ aktionRef: 'aktion-neu', dauer: 9 }] },
+          einblendung: { bandVorlageId: 'v1', abschnitte: [{ aktionRef: 'aktion-neu', dauer: 10 }] },
         },
       },
     ])

@@ -4,7 +4,7 @@
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
 **Datum:** 03.11.2026
-**Version:** 1.12 (4.4: Die Untergrenze der Segmentdauer sinkt von **10 auf 8 s** – damit ist die „kurze Unterbrechung" aus 4.5 wirklich kurz einstellbar. **Eine** Spanne für alle Segmente, kein zweiter Typ. Entscheidung 03.11.2026, s. 4.4)
+**Version:** 1.13 (4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026, s. 4.5. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
 **Status:** In Abstimmung
 
 ---
@@ -238,6 +238,8 @@ Werbeinhalte erscheinen auf **zwei** Wegen. **Hauptbetriebsart ist die parallele
 **Platz im Band:** In ein 162 px hohes Band passt eine **kompakte Zeile** (Logo, Titel, Preis/CTA); eine längere Beschreibung ist dort nicht vorgesehen.
 
 **Die Bandhöhe ist fest (Entscheidung 23.10.2026, bestätigt 29.10.2026):** Eigene Band-Vorlagen werden mit **162 px** angelegt. Ein Höhenfeld bietet die Oberfläche nicht; **höhere Bänder sind nicht vorgesehen**. Grund: Der Markenrahmen (Logo, Sicherheitsabstand) ist auf 162 px zugeschnitten; eine freie Höhe verlangte eine Skalierungsregel für das Logo, die das Technische Konzept an keiner Stelle festlegt und die als automatisches Umlayouten ausdrücklich verboten ist (TK 9.11.1 Punkt 3). Diese Festlegung ersetzt die frühere Zusage „Höhere Bänder sind über eigene Vorlagen möglich".
+
+**Die Dauer eines Band-Abschnitts wird nicht eingestellt (Entscheidung 03.11.2026).** Wie lange eine Aktion im Band zu sehen ist, folgt der **Dauer-Kette des Produkts** (4.4): die **eigene Standarddauer der Aktion**, sonst die **projektweite Standarddauer**, sonst **10 s**. Ein Eingabefeld dafür gibt es nicht. *Warum:* Das Band läuft **parallel** zum Video und **wiederholt sich**, wenn die Folge kürzer ist als das Video (oben) – die Dauer eines Abschnitts ist damit nur das **Tempo der Rotation**. Eine je Abschnitt von Hand gesetzte Zeit wäre ein zweiter Wert, der bei jeder Änderung der Standarddauer nachgezogen werden müsste. Die Gestaltungsmittel bleiben **Reihenfolge** und **Zahl** der Abschnitte.
 
 **Eine Aktion auf das Video legen (User-Entscheidung 15.10.2026).** In der Zusammenstellung zieht man
 eine Aktion **auf das Video** – sie wird dann **während** des Videos gezeigt, nicht davor oder danach.

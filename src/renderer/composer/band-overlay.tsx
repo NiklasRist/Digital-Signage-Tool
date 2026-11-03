@@ -18,6 +18,8 @@ import { OverlayRahmen } from './overlay-rahmen.tsx'
 export interface BandOverlayEigenschaften {
   element: Listenelement
   aktionen: readonly Aktion[]
+  /** Projektweite Standarddauer - zweite Stufe der Dauer-Kette (AD 4.4/4.5). */
+  standardSegmentdauer: number
   vorlagen: readonly Vorlage[]
   stellen: readonly KaputteStelle[]
   aufUebernommen: (element: Listenelement) => void
@@ -34,6 +36,7 @@ export function BandOverlay(p: BandOverlayEigenschaften): JSX.Element {
       <EinblendungAnsicht
         element={p.element}
         aktionen={p.aktionen}
+        standardSegmentdauer={p.standardSegmentdauer}
         vorlagen={p.vorlagen}
         stellen={p.stellen}
         aufUebernommen={p.aufUebernommen}

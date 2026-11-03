@@ -30,7 +30,6 @@ const {
   fuegeAbschnittAn,
   entferneAbschnitt,
   verschiebeAbschnitt,
-  setzeAbschnittsDauer,
   wechsleBandVorlage,
   uebernehmeBand,
 } = await import('../../src/renderer/composer/einblendung-bearbeiten')
@@ -134,18 +133,6 @@ describe('die sechs Entwurfsfunktionen', () => {
     expect(vorher.abschnitte.map((a) => a.aktionRef)).toEqual(['a', 'b', 'c'])
   })
 
-  it('setzeAbschnittsDauer trifft nur den einen Abschnitt und baut ihn neu', () => {
-    const vorher = entwurf()
-    const objektVorher = vorher.abschnitte[1]
-    const neu = setzeAbschnittsDauer(vorher, 1, 20)
-
-    expect(neu.abschnitte.map((a) => a.dauer)).toEqual([8, 20, 7])
-    expect(vorher.abschnitte.map((a) => a.dauer)).toEqual([8, 9, 7])
-    expect(neu.abschnitte[1]).not.toBe(objektVorher)
-    // Die unbeteiligten Abschnitte werden NICHT kopiert - sie sind unverändert.
-    expect(neu.abschnitte[0]).toBe(vorher.abschnitte[0])
-  })
-
   it('wechsleBandVorlage behält alle Abschnitte und tauscht nur die Vorlage', () => {
     const vorher = entwurf()
     const neu = wechsleBandVorlage(vorher, 'split-210')
@@ -166,7 +153,6 @@ describe('die sechs Entwurfsfunktionen', () => {
     const vorher = entwurf()
 
     expect(entferneAbschnitt(vorher, index)).toBe(vorher)
-    expect(setzeAbschnittsDauer(vorher, index, 20)).toBe(vorher)
     expect(verschiebeAbschnitt(vorher, index, 0)).toBe(vorher)
     expect(verschiebeAbschnitt(vorher, 0, index)).toBe(vorher)
     expect(vorher.abschnitte.map((a) => a.aktionRef)).toEqual(['a', 'b', 'c'])

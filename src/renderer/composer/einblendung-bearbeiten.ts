@@ -157,24 +157,6 @@ export function verschiebeAbschnitt(entwurf: BandEntwurf, von: number, nach: num
 
   return { bandVorlageId: entwurf.bandVorlageId, abschnitte }
 }
-export function setzeAbschnittsDauer(entwurf: BandEntwurf, index: number, dauer: number): BandEntwurf {
-  if (!istIndex(index, entwurf.abschnitte.length)) return entwurf
-
-  // Der Wert wird UNGEPRUEFT uebernommen - ein leeres Zahlenfeld ergibt `NaN`, und
-  // das ist waehrend des Tippens ein zulaessiger Zwischenstand. `uebernehmeBand`
-  // laesst ihn nicht ins Projekt; hier zurechtzubiegen hiesse, eine Nutzereingabe zu
-  // erfinden (dieselbe Linie wie `klemme` in dauer-regler.ts).
-  //
-  // Auch das ABSCHNITTSOBJEKT wird neu gebaut, nicht nur das Array: `{ ...alt, dauer }`
-  // auf demselben Objekt zu setzen wuerde den Vorzustand mitaendern, weil die
-  // uebrigen Abschnitte dieselben Objekte bleiben.
-  return {
-    bandVorlageId: entwurf.bandVorlageId,
-    abschnitte: entwurf.abschnitte.map((abschnitt, stelle) =>
-      stelle === index ? { aktionRef: abschnitt.aktionRef, dauer } : abschnitt,
-    ),
-  }
-}
 export function wechsleBandVorlage(entwurf: BandEntwurf, bandVorlageId: string): BandEntwurf {
   // ALLE ABSCHNITTE BLEIBEN. Das ist die Umsetzung der Invariante aus TK 9.2.8: EINE
   // `bandVorlageId` pro Einblendung. Wer beim Wechsel die Abschnitte leerte, zwaenge

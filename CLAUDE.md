@@ -11,7 +11,42 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, vierzigste Sitzung: der ENOSPC war ein Produktfehler, eine Dauer-Spanne, Widerspruch 1 gelöst) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, einundvierzigste Sitzung: der Band-Abschnitt hat keine Dauer-Eingabe mehr, beide .docx wieder synchron) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 23.**
+
+- **ENTSCHEIDUNG (Niklas, 03.11.2026):** *„feste zeit weil es macht keinen sinn dafür eine zeit
+  festzulegen"*. Die Dauer eines **Band-Abschnitts** ist **keine Eingabe** mehr; sie folgt der
+  **Dauer-Kette** `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10` (AD v1.13 / TK v3.36).
+  Zuvor war sie im Band-Editor je Abschnitt frei eintippbar.
+- **EINE Funktion, zwei Verwendungen:** `dauerNachKette` (vorher `startdauerFuerBandabschnitt`,
+  `composer/band-aufnahme.ts`) traegt die Startdauer der Unterbrechung **und** die feste Dauer des
+  Band-Abschnitts. Der Name sagt jetzt, was sie ist.
+- **Der Entwurf normalisiert beim Oeffnen** (`entwurfAus(element, vorlagenId, dauerFuer)`): JEDER
+  Abschnitt bekommt die Kette, nicht die gespeicherte Zahl. **Folge, offen benannt:** ein Altprojekt
+  mit von Hand gesetzten Zeiten gleicht sich beim ersten Oeffnen der Band-Bearbeitung an - eine
+  **Verhaltensänderung**, gewollt.
+- **Mitbehoben, sonst waere es eine zweite Wahrheit:** `schliesseAbschnittsFixAb`
+  (Band-Abschnitt reparieren) behielt die Dauer des kaputten Abschnitts. Sie zieht jetzt die Kette
+  der **neuen** Aktion; die unbeteiligten Abschnitte bleiben unangetastet.
+- **Entfernt:** das Dauer-Eingabefeld, `setzeAbschnittsDauer` (kein toter Export), die zwei
+  Eingabe-Tests. Der Knopf „hinzufuegen" nimmt die Kette statt der Konstante 10.
+- **BEFUND, der die Doku betrifft:** Die beiden `.docx` waren **stehengeblieben** - AD auf **1.9**,
+  TK auf **3.29**, waehrend die `.md` bei 1.12/3.35 stand. Neu erzeugt (Staging, `unzip -t`,
+  0 Backticks, Absatz-Diff) und platziert. **Der Sprung in den Word-Dateien enthaelt deshalb auch
+  die Aenderungen der letzten Sitzungen**, nicht nur diese. Der Dokustand ist wieder synchron;
+  **wer sie kuenftig aendert, erzeugt sie im selben Commit neu.**
+- **Zeile korrigiert:** `setze-unterbrechungen.ts` sagte im Kopf noch `dauer > 0`, geprueft werden
+  8-45 s - Kommentar nachgezogen (Niklas: „8-45").
+- **Gate:** Typecheck **0** (auch `tsconfig.tests.json`), ESLint/oxlint **0**, Build **0**,
+  Unit **5452/5452** (360 Dateien), Integration **51/51** (13), Treiber **0 Befunde**
+  (1 Untersuchung: Mehrfachauswahl; 1 MANUELL: nativer Export-Dialog).
+- **Ehrlich offen:** `einzel-instanz.spec.ts` (#289) flaky, unveraendert. **Kein Issue offen.**
+  `projects/lallala` bleibt (Nutzerdaten).
+- **Naechster Schritt:** Konzept Abschnitt 10 weiter - **Preset beim Anlegen** (Vorlage + Marke +
+  Dauer vorbelegt), danach die **Effekte** (Band faehrt ein/aus, Motiv atmet, Uebergang).
+
+## STAND HEUTE (03.11.2026, vierzigste Sitzung: der ENOSPC war ein Produktfehler, eine Dauer-Spanne, Widerspruch 1 gelöst) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 22.**
 

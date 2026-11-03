@@ -16,8 +16,9 @@
 //   ausschliesslich, was waehlbareBandVorlagen (#129) liefert; diese Datei
 //   filtert NICHT selbst.
 //
-// - ENTSCHIEDEN 4: Ein neuer Abschnitt startet mit STANDARD_ANZEIGEDAUER_SEKUNDEN
-//   (#21), nicht als Literal.
+// - ENTSCHIEDEN 4 (geaendert 03.11.2026): Ein neuer Abschnitt bekommt seine Dauer aus der
+//   Dauer-Kette des Produkts (`dauerNachKette`, AD 4.4); seit AD v1.13 ist das die FESTE
+//   Dauer jedes Abschnitts - ein Eingabefeld dafuer gibt es nicht mehr (AD 4.5).
 //
 // - Faellt die Uebernahme ab, bleibt der Entwurf stehen (Fehlerpfade): kein
 //   Rollback, kein Schliessen.
@@ -49,12 +50,11 @@ import type { Listenelement } from '../../shared/contracts/project'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { KaputteStelle } from './kaputt-erkennung'
-import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../shared/contracts/konstanten'
+import { dauerNachKette } from './band-aufnahme'
 import {
   fuegeAbschnittAn,
   entferneAbschnitt,
   verschiebeAbschnitt,
-  setzeAbschnittsDauer,
   wechsleBandVorlage,
   uebernehmeBand,
   waehlbareBandVorlagen,
@@ -76,6 +76,9 @@ export interface EinblendungAnsichtEigenschaften {
   element: Listenelement
   /** Die Aktions-Bibliothek des Projekts (#15). Reihenfolge = Bestandsreihenfolge. */
   aktionen: readonly Aktion[]
+  /** Die projektweite Standarddauer (AD 4.4) - zweite Stufe der Dauer-Kette. Die Dauer
+   *  eines Band-Abschnitts ist keine Eingabe mehr; sie kommt aus dieser Kette (AD 4.5). */
+  standardSegmentdauer: number
   /** Die nutzbaren Vorlagen (#155, ueber #154). Gefiltert wird HIER ueber
    *  waehlbareBandVorlagen (#129) - diese Datei filtert NICHT selbst. */
   vorlagen: readonly Vorlage[]
@@ -95,18 +98,12 @@ function BandZeile({
   aufNachOben,
   aufNachUnten,
   aufEntfernen,
-  eingabeText,
-  aufEingabe,
-  aufDauer,
 }: {
   zeile: AbschnittZeile
   letztIndex: number
   aufNachOben: () => void
   aufNachUnten: () => void
   aufEntfernen: () => void
-  eingabeText: string
-  aufEingabe: (wert: string) => void
-  aufDauer: () => void
 }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: String(zeile.index),
@@ -136,30 +133,27 @@ function BandZeile({
       <button type="button" onClick={aufEntfernen}>
         Entfernen
       </button>
-      <input
-        type="text"
-        inputMode="decimal"
-        aria-label={`Dauer des Abschnitts ${zeile.position}`}
-        value={eingabeText}
-        onChange={(ereignis) => aufEingabe(ereignis.target.value)}
-        onBlur={aufDauer}
-        onKeyDown={(taste) => {
-          if (taste.key === 'Enter') aufDauer()
-        }}
-      />
     </li>
   )
 }
 
 /** Die Bedienung des Werbebandes an genau EINEM Video-Element. */
 export function EinblendungAnsicht(p: EinblendungAnsichtEigenschaften): JSX.Element {
+  /** Die Dauer eines Abschnitts: die Dauer-Kette des Produkts (AD 4.4). Sie ist keine
+   *  Eingabe mehr (AD 4.5, Entscheidung 03.11.2026) - EINE Stelle fuer Entwurf, neue
+   *  Abschnitte und Anzeige. */
+  function dauerFuer(aktionRef: string): number {
+    const aktion = p.aktionen.find((eintrag) => eintrag.id === aktionRef)
+    return dauerNachKette(aktion?.standardDauer ?? null, p.standardSegmentdauer)
+  }
+
   // Der Startentwurf (ENTSCHIEDEN 2): die vorhandene Einblendung, sonst die ERSTE
   // aus waehlbareBandVorlagen (ENTSCHIEDEN 3 - keine Sortierung, keine Bevorzugung
   // des eingebauten). null heisst: kein Video ODER keine Band-Vorlage im Bestand;
   // statt der Bedienung steht dann ein Hinweis (Fehlerpfade-Tabelle).
   const [entwurf, setzeEntwurf] = useState(() => {
     const wahl = waehlbareBandVorlagen(p.vorlagen)
-    return entwurfAus(p.element, wahl[0]?.id ?? null)
+    return entwurfAus(p.element, wahl[0]?.id ?? null, dauerFuer)
   })
 
   // Die vorgewaehlte Aktion fuer den naechsten Abschnitt: die ERSTE aus dem
@@ -168,10 +162,6 @@ export function EinblendungAnsicht(p: EinblendungAnsichtEigenschaften): JSX.Elem
   const [gewaehlteAktionRef, setzeGewaehlteAktionRef] = useState(
     () => p.aktionen[0]?.id ?? '',
   )
-  // Der ROHE Eingabetext des Dauer-Feldes; in den Entwurf gelangt er nur als
-  // gueltige endliche Zahl groesser 0 (Offene Frage: Dauer-Bereich - nur diese
-  // vertragliche Minimum-Regel wird geprueft, keine erfundene Obergrenze).
-  const [eingabeText, setzeEingabeText] = useState('')
 
   // Die zwei Hinweis-Faelle aus der Fehlerpfade-Tabelle.
   const keinVideo = p.element.art !== 'video'
@@ -216,18 +206,6 @@ export function EinblendungAnsicht(p: EinblendungAnsichtEigenschaften): JSX.Elem
       p.aufFehler(antwort.fehler.code, antwort.fehler.meldung)
     }
   }, [entwurf, p])
-
-  /** Eine Abschnittsdauer eintragen: nur bei endlicher Zahl groesser 0
-   *  (Offene Frage: der fuer Abschnitte zulaessige Dauer-Bereich ist offen -
-   *  geprueft wird hier nur die vertragliche Minimum-Regel). Ausgeloest beim
-   *  Verlassen des Feldes (onBlur) ODER mit Enter; beide Wege enden am selben
-   *  EINEN Eintrag, damit ein Wert nie doppelt ankommt. */
-  function trageDauerEin(index: number): void {
-    const zahl = Number(eingabeText.trim().replace(',', '.'))
-    if (!Number.isFinite(zahl) || zahl <= 0 || entwurf === null) return
-    setzeEntwurf(setzeAbschnittsDauer(entwurf, index, zahl))
-    setzeEingabeText('')
-  }
 
   /** Drag-and-drop: aus den dnd-IDs (Index-Zeichenketten) wird EIN Aufruf von
    *  verschiebeAbschnitt; dieselbe Quelle wie die Pfeil-Knoepfe. */
@@ -326,9 +304,6 @@ export function EinblendungAnsicht(p: EinblendungAnsichtEigenschaften): JSX.Elem
                   setzeEntwurf(verschiebeAbschnitt(entwurf, zeile.index, zeile.index + 1))
                 }
                 aufEntfernen={() => setzeEntwurf(entferneAbschnitt(entwurf, zeile.index))}
-                eingabeText={eingabeText}
-                aufEingabe={setzeEingabeText}
-                aufDauer={() => trageDauerEin(zeile.index)}
               />
             ))}
           </ul>
@@ -355,12 +330,9 @@ export function EinblendungAnsicht(p: EinblendungAnsichtEigenschaften): JSX.Elem
           data-testid="abschnitt-hinzufuegen"
           disabled={gewaehlteAktionRef === ''}
           onClick={() => {
-            // Genau EIN Aufruf mit der gewaehlten Referenz und der Konstante
-            // aus #21 (ENTSCHIEDEN 4).
-            setzeEntwurf(
-              fuegeAbschnittAn(entwurf, gewaehlteAktionRef, STANDARD_ANZEIGEDAUER_SEKUNDEN),
-            )
-            setzeEingabeText('')
+            // Genau EIN Aufruf mit der gewaehlten Referenz und der Dauer aus der
+            // Kette (ENTSCHIEDEN 4, AD 4.5) - kein zweites Dauer-Literal.
+            setzeEntwurf(fuegeAbschnittAn(entwurf, gewaehlteAktionRef, dauerFuer(gewaehlteAktionRef)))
           }}
         >
           hinzufuegen

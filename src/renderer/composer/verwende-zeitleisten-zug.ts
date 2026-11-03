@@ -25,7 +25,7 @@ import { fuegeElementHinzu } from './element-hinzufuegen'
 import { ordneNeuOptimistisch } from './liste-reorder'
 import { fuegeUnterbrechungEin, spieleZeitBeiSequenzzeit, videoSekunden } from './unterbrechungs-aufnahme'
 import { setzeElementUnterbrechungen } from './unterbrechungs-bearbeiten'
-import { bandZielAus, bandZeitImVideo, startdauerFuerBandabschnitt } from './band-aufnahme'
+import { bandZielAus, bandZeitImVideo, dauerNachKette } from './band-aufnahme'
 import { entwurfMitNeuerAktion, istBandAktion, waehleBandVorlageId } from './ins-video'
 import { uebernehmeBand } from './einblendung-bearbeiten'
 
@@ -124,7 +124,7 @@ export function verwendeZeitleistenZug(eingaben: ZeitleistenZugEingaben): Zeitle
     if (aktion === undefined) return
 
     // DIESELBE Dauer-Kette wie jeder andere Einschub (AD 4.4 / TK 9.11.3).
-    const dauer = startdauerFuerBandabschnitt(aktion.standardDauer, frisch.standardSegmentdauer)
+    const dauer = dauerNachKette(aktion.standardDauer, frisch.standardSegmentdauer)
 
     if (istBandAktion(aktion, holeVorlagen())) {
       const bandVorlageId = waehleBandVorlageId(element, holeVorlagen())

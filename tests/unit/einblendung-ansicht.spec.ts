@@ -87,21 +87,26 @@ describe('entwurfAus', () => {
       },
     }
     const eingefroren = Object.freeze(mitBand)
-    const entwurf = entwurfAus(eingefroren, 'band-x')
+    const entwurf = entwurfAus(eingefroren, 'band-x', () => 12)
     if (entwurf === null || mitBand.einblendung === null) {
       // Belegter Abbruch statt geraunten Zugriffen: naemlich dann, wenn die
       // zugesagte Kopie NICHT gebaut wurde.
       throw new Error('entwurfAus lieferte keine Kopie des Vorhandenen')
     }
     expect(entwurf.bandVorlageId).toBe('band-x')
-    expect(entwurf.abschnitte).toEqual(mitBand.einblendung.abschnitte)
+    // Die REFERENZEN bleiben stehen, die DAUER kommt aus der Kette: der im Element
+    // gespeicherte Wert (7/8) ist seit AD v1.13 keine Eingabe mehr (AD 4.5).
+    expect(entwurf.abschnitte).toEqual([
+      { aktionRef: 'a1', dauer: 12 },
+      { aktionRef: 'a2', dauer: 12 },
+    ])
     // Der DoD-Vertrag: ein NEUES Array, damit eine spaetere Bearbeitung das
     // Element nie anfassen kann.
     expect(entwurf.abschnitte).not.toBe(mitBand.einblendung.abschnitte)
   })
 
   it('Ohne Einblendung: vorgabeVorlagenId und leere Abschnittsliste', () => {
-    const entwurf = entwurfAus(element, 'band-standard')
+    const entwurf = entwurfAus(element, 'band-standard', () => 12)
     expect(entwurf).toEqual({ bandVorlageId: 'band-standard', abschnitte: [] })
   })
 
@@ -110,8 +115,8 @@ describe('entwurfAus', () => {
     // nur 'video' | 'segment' - beide Nicht-Video-Arten laufen ueber denselben
     // Zweig (`art !== 'video'`).
     const segment: Listenelement = { ...element, art: 'segment' }
-    expect(entwurfAus(segment, 'band-x')).toBeNull()
-    expect(entwurfAus(element, null)).toBeNull()
+    expect(entwurfAus(segment, 'band-x', () => 12)).toBeNull()
+    expect(entwurfAus(element, null, () => 12)).toBeNull()
   })
 })
 
@@ -338,7 +343,7 @@ describe('keine Mutation der Eingaben', () => {
       { art: 'band_abschnitt', elementId: 'el-1', abschnittIndex: 0, aktionId: 'a1', assetId: null, grund: 'asset_fehlt' },
     ])
 
-    expect(() => entwurfAus(eingefrorenesElement, 'band-x')).not.toThrow()
+    expect(() => entwurfAus(eingefrorenesElement, 'band-x', () => 7)).not.toThrow()
     expect(() =>
       baueAbschnittZeilen(entwurf, abFest, planFest, kaputteAbschnitte(stellenFest, 'el-1')),
     ).not.toThrow()

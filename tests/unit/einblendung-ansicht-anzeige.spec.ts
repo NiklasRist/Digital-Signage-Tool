@@ -1,7 +1,7 @@
 // Tests zu #253 - einblendung-ansicht.tsx (die Band-Bedienung, jsdom).
 //
 // Ersetzt wird NUR die IPC-Naht uebernehmeBand (#129) - waehlbareBandVorlagen
-// und die sechs Entwurfs-Funktionen laufen ECHT (Spion mit Durchleitung: der
+// und die fuenf Entwurfs-Funktionen laufen ECHT (Spion mit Durchleitung: der
 // Test zaehlt die Aufrufe, die Rechnung bleibt die des Wahrheitsgebers).
 // planeBandAblauf (#130) ebenfalls echt mit Durchleitung, damit nachgewiesen
 // ist, mit welchem Trim und welchem Entwurf sie gerufen wird.
@@ -15,7 +15,6 @@ import { createElement, type ReactElement } from 'react'
 import type { Aktion } from '../../src/shared/contracts/aktion'
 import type { Vorlage } from '../../src/shared/contracts/vorlage'
 import type { Listenelement } from '../../src/shared/contracts/project'
-import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../src/shared/contracts/konstanten'
 import type { BandEntwurf } from '../../src/renderer/composer/einblendung-bearbeiten'
 import type { KaputteStelle } from '../../src/renderer/composer/kaputt-erkennung'
 import { EinblendungAnsicht, type EinblendungAnsichtEigenschaften } from '../../src/renderer/composer/einblendung-ansicht.tsx'
@@ -30,7 +29,6 @@ const doppel = vi.hoisted(() => ({
   fuege: [] as Array<{ entwurf: BandEntwurf; aktionRef: string; dauer: number }>,
   entferne: [] as Array<{ entwurf: BandEntwurf; index: number }>,
   verschiebe: [] as Array<{ entwurf: BandEntwurf; von: number; nach: number }>,
-  setzeDauer: [] as Array<{ entwurf: BandEntwurf; index: number; dauer: number }>,
   wechsle: [] as Array<{ entwurf: BandEntwurf; bandVorlageId: string }>,
   // die erhaltenen Trim-/Abschnitte-Anrufe an planeBandAblauf
   plant: [] as Array<{ trimStart: number; trimEnde: number; abschnitte: unknown }>,
@@ -55,10 +53,6 @@ vi.mock('../../src/renderer/composer/einblendung-bearbeiten', async (importOrigi
     verschiebeAbschnitt: (entwurf: BandEntwurf, von: number, nach: number) => {
       doppel.verschiebe.push({ entwurf, von, nach })
       return echt.verschiebeAbschnitt(entwurf, von, nach)
-    },
-    setzeAbschnittsDauer: (entwurf: BandEntwurf, index: number, dauer: number) => {
-      doppel.setzeDauer.push({ entwurf, index, dauer })
-      return echt.setzeAbschnittsDauer(entwurf, index, dauer)
     },
     wechsleBandVorlage: (entwurf: BandEntwurf, bandVorlageId: string) => {
       doppel.wechsle.push({ entwurf, bandVorlageId })
@@ -121,6 +115,7 @@ function eigenschaften(ueber: Partial<EinblendungAnsichtEigenschaften> = {}): Ei
   return {
     element: element({ trimStart: 0.3, trimEnde: 42.3 }),
     aktionen: AKTIONS_BESTAND,
+    standardSegmentdauer: 12,
     vorlagen: BANDBESTAND,
     stellen: [],
     aufUebernommen: vi.fn(),
@@ -165,24 +160,6 @@ function waehle(im: HTMLElement, testId: string, wert: string): void {
   })
 }
 
-function tippe(im: HTMLElement, wert: string, feld?: HTMLInputElement): void {
-  const knoten = feld ?? im.querySelector<HTMLInputElement>('[aria-label^="Dauer des Abschnitts"]')
-  expect(knoten).not.toBeNull()
-  act(() => {
-    // dieselbe Konvention wie im render-dialog (kontrollierte Eingabe)
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(knoten as unknown as HTMLInputElement, wert)
-    ;(knoten as unknown as HTMLInputElement).dispatchEvent(new Event('input', { bubbles: true }))
-  })
-}
-
-function blure(feld: HTMLInputElement): void {
-  act(() => {
-    // React fuehrt onBlur ueber die delegierten focusin/focusout-Ereignisse
-    // - plain 'blur' steigt in jsdom nicht hoch (kein Bubbling).
-    feld.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
-  })
-}
-
 const zeilenImDom = (im: HTMLElement): HTMLElement[] =>
   Array.from(im.querySelectorAll<HTMLElement>('[data-testid="band-abschnitte"] li'))
 
@@ -219,7 +196,6 @@ beforeEach(() => {
   doppel.fuege = []
   doppel.entferne = []
   doppel.verschiebe = []
-  doppel.setzeDauer = []
   doppel.wechsle = []
   doppel.plant = []
   doppel.antwort = { ok: true, wert: element() }
@@ -282,14 +258,15 @@ describe('Die eine Vorlagen-Auswahl fuer das ganze Band', () => {
 // ---------------- Hinzufuegen, Umordnen, Entfernen, Dauer ----------------
 
 describe('die Entwurfs-Bedienung', () => {
-  it('Abschnitt hinzufuegen ruft fuegeAbschnittAn GENAU EINMAL mit der gewaehlten Referenz und der Konstante aus #21', () => {
+  it('Abschnitt hinzufuegen ruft fuegeAbschnittAn GENAU EINMAL mit der gewaehlten Referenz und der Dauer aus der Kette', () => {
     const { behaelter, fertig } = rendere(eigenschaften())
     expect(doppel.fuege).toHaveLength(0)
     waehle(behaelter, 'abschnitt-aktions-wahl', 'a-2')
     klick(behaelter, 'abschnitt-hinzufuegen')
     expect(doppel.fuege).toHaveLength(1)
     expect(derEinzige(doppel.fuege).aktionRef).toBe('a-2')
-    expect(derEinzige(doppel.fuege).dauer).toBe(STANDARD_ANZEIGEDAUER_SEKUNDEN)
+    // a-2 hat keine eigene Standarddauer -> die projektweite (12) traegt (AD 4.4/4.5).
+    expect(derEinzige(doppel.fuege).dauer).toBe(12)
     fertig()
   })
 
@@ -345,27 +322,24 @@ describe('die Entwurfs-Bedienung', () => {
     fertig()
   })
 
-  it('die Dauer-Eingabe ruft setzeAbschnittsDauer GENAU EINMAL mit dem Index und der gut aufgelösten Zahl (Komma erlaubt)', () => {
+  it('die Zeile zeigt die Dauer aus der Kette, nicht die im Element gespeicherte Zahl (AD 4.5)', () => {
+    // bestucktesElement traegt 5, 6 und 7 s; a-1 und a-2 haben keine eigene
+    // Standarddauer -> alle drei Zeilen zeigen die projektweite 12.
     const { behaelter, fertig } = rendere(eigenschaften({ element: bestucktesElement() }))
-    expect(doppel.setzeDauer).toHaveLength(0)
-    const dritte = zeilenImDom(behaelter)[2] as HTMLElement
-    const feld = dritte.querySelector<HTMLInputElement>('input') as HTMLInputElement
-    tippe(behaelter, '4,5', feld)
-    blure(feld)
-    expect(doppel.setzeDauer).toHaveLength(1)
-    expect(derEinzige(doppel.setzeDauer).index).toBe(2)
-    expect(derEinzige(doppel.setzeDauer).dauer).toBe(4.5)
+    const zeilen = zeilenImDom(behaelter)
+    for (const zeile of zeilen) {
+      expect(zeile.textContent).toContain('12,0 s')
+    }
     fertig()
   })
 
-  it('ungueltige Dauer-Eingaben (0, negativ, keine Zahl) sagen NICHTS - kein Eintrag, kein Wurf', () => {
+  it('eine Abschnitts-Zeile hat KEIN Dauer-Eingabefeld mehr (AD 4.5)', () => {
     const { behaelter, fertig } = rendere(eigenschaften({ element: bestucktesElement() }))
-    const feld = (zeilenImDom(behaelter)[0] as HTMLElement).querySelector<HTMLInputElement>('input') as HTMLInputElement
-    for (const ungultig of ['0', '-2', 'abc', '']) {
-      tippe(behaelter, ungultig, feld)
-      blure(feld)
+    const zeilen = zeilenImDom(behaelter)
+    expect(zeilen).toHaveLength(3)
+    for (const zeile of zeilen) {
+      expect(zeile.querySelector('input')).toBeNull()
     }
-    expect(doppel.setzeDauer).toHaveLength(0)
     fertig()
   })
 
@@ -388,7 +362,7 @@ describe('die Entwurfs-Bedienung', () => {
     expect((letzter.abschnitte as Array<{ aktionRef: string; dauer: number }>)).toHaveLength(4)
     expect(
       (letzter.abschnitte as Array<{ aktionRef: string; dauer: number }>)[3],
-    ).toEqual({ aktionRef: 'a-1', dauer: STANDARD_ANZEIGEDAUER_SEKUNDEN })
+    ).toEqual({ aktionRef: 'a-1', dauer: 12 })
     zweites.fertig()
   })
 })
