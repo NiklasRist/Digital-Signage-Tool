@@ -344,8 +344,8 @@ describe("Die fuenf Faelle der Weiche", () => {
 });
 
 // ===========================================================================
-describe("Bandspur (#168) - drei Argumente, Laenge vom Video", () => {
-  it("bekommt gesamtFrames = trimFrames(...).frames und Abschnitte in FRAMES", async () => {
+describe("Bandspur (#168) - drei Argumente, Laenge bis zum Trim-Ende", () => {
+  it("bekommt gesamtFrames = endFrame und Abschnitte in FRAMES", async () => {
     await normalisiereElement(videoMitBand(), 3, BAND_PNGS, kontext());
 
     const auftrag = attrappe.baueBandspur.mock.calls[0]?.[0] as {
@@ -355,7 +355,9 @@ describe("Bandspur (#168) - drei Argumente, Laenge vom Video", () => {
       sequenzPfad: string;
       zielPfad: string;
     };
-    expect(auftrag.gesamtFrames).toBe(120); // trimEnde 4 s − trimStart 0 s bei 30 fps
+    // Ungetrimmt: endFrame 4 s = frames 4 s = 120. Hier ist die Laenge egal,
+    // der Fall darunter trennt die beiden Zahlen.
+    expect(auftrag.gesamtFrames).toBe(120);
     expect(auftrag.hoeheBand).toBe(162);
     // dauer 2 s / 1 s -> 60 / 30 Frames, NICHT Sekunden.
     expect(auftrag.abschnitte).toEqual([
@@ -366,10 +368,16 @@ describe("Bandspur (#168) - drei Argumente, Laenge vom Video", () => {
     expect(auftrag.zielPfad).toBe(path.join(T1, "band_0003.mp4"));
   });
 
-  it("nimmt bei GETRIMMTEM Video die Laenge, nicht endFrame", async () => {
+  it("nimmt bei GETRIMMTEM Video endFrame, nicht die Teillaenge", async () => {
     // Der entscheidende Fall: startFrame 30, endFrame 150, frames 120. Nur wenn
     // getrimmt wird, gehen die beiden Zahlen auseinander - ein Test mit
     // trimStart = 0 kann die Verwechslung grundsaetzlich nicht sehen.
+    //
+    // WARUM 150 UND NICHT 120 (gemessen 03.11.2026, Befund B3 im Kopf der
+    // Quelldatei): Der Schnitt laeuft ueber einen AUSGABE-`-ss`, der auch die
+    // Bandspur vorspult. Mit 120 Bildern verliert die Spur am Anfang 30 Bilder;
+    // bleiben weniger als eines, bricht ffmpeg mit Exit 228 (ENOSPC) ab. Genau
+    // das war der Treiber-Befund 4f8.
     const getrimmt = {
       ...(videoMitBand() as unknown as Record<string, unknown>),
       trimStart: 1,
@@ -379,7 +387,7 @@ describe("Bandspur (#168) - drei Argumente, Laenge vom Video", () => {
     await normalisiereElement(getrimmt, 0, BAND_PNGS, kontext());
 
     const auftrag = attrappe.baueBandspur.mock.calls[0]?.[0] as { gesamtFrames: number };
-    expect(auftrag.gesamtFrames).toBe(120);
+    expect(auftrag.gesamtFrames).toBe(150);
     expect(attrappe.baueVideoAusschnittArgumente.mock.calls[0]?.[0]).toMatchObject({
       startFrame: 30,
       endFrame: 150,

@@ -44,24 +44,35 @@
 //     die VOLLE Zielflaeche (1920) - sie heisst jetzt `videoBereichBreite` und
 //     wird hier NICHT gereicht.
 //
-// B3  TRIM + BAND ist an der Wurzel kaputt, und das Issue gibt keine Regel
-//     dafuer. Gemessen beim Bau von #167 (Commit 3d9fe17, 14.08.2026): Ist ein
-//     Videoelement GETRIMMT (`startFrame > 0`) UND traegt es ein Band, dann
-//       - `einblendung`: der Clip wird ZU KURZ (gemessen 75 statt 120 Bilder),
-//         weil `-ss` als Ausgabe-Option auch die Bandspur vorspult und
-//         `overlay=…:shortest=1` mit dem kuerzeren Strom endet;
-//       - `split`: der Clip hat die richtige Laenge, aber das Band ist um
-//         `startFrame` VERSETZT und friert am Ende ein (`vstack`/framesync
-//         haelt das letzte Bild).
-//     Zwei verschiedene Fehler, beide mit Exitcode 0 und ohne Warnung. Das
-//     Issue sagt fuer beide "zu kurz" voraus - das stimmt nur zur Haelfte.
-//     UMGESETZT IST DIE VERBINDLICHE VORGABE des Issues:
-//     `BandspurAuftrag.gesamtFrames` = `trimFrames(...).frames`. Eine eigene
-//     Korrektur (etwa `endFrame` statt `frames`) waere eine erfundene Regel an
-//     der falschen Stelle: Sie aenderte zugleich, WELCHER Bandabschnitt am
-//     Anfang steht, und gehoert damit in den Vertrag von #164/#165/#168, nicht
-//     in die Weiche. UNGETRIMMTE Elemente (`startFrame === 0`) sind nicht
-//     betroffen - das ist heute der Normalfall.
+// B3  TRIM + BAND - die Vorgabe des Issues war falsch; ersetzt am 03.11.2026.
+//
+//     Gemessen beim Bau von #167 (3d9fe17, 14.08.2026): Ist ein Videoelement
+//     GETRIMMT (`startFrame > 0`) UND traegt es ein Band, dann wurde der Clip
+//       - mit `einblendung` ZU KURZ (gemessen 75 statt 120 Bilder),
+//       - mit `split` richtig lang, aber das Band um `startFrame` VERSETZT.
+//     Umgesetzt wurde damals die Vorgabe `gesamtFrames = trimFrames(...).frames`.
+//
+//     GEMESSEN AM 03.11.2026 (Reproduktion ohne Electron, Treiber-Befund 4f8):
+//     Diese Vorgabe erzeugt den HAERTEREN Fehler. Der Schnitt laeuft ueber einen
+//     AUSGABE-`-ss` = `(startFrame - 0,25) / fps` (`video-ausschnitt.ts`), und der
+//     spult AUCH die Bandspur vor. Eine Spur von `frames` Bildern verliert damit
+//     `startFrame` Bilder am Anfang; bleiben weniger als ein Bild, bricht ffmpeg
+//     mit Exit 228 ("No space left on device", = 256 - 28 = ENOSPC) ab. Die
+//     Schwelle ist exakt: Band 30 Bilder -> 228, Band 31 Bilder -> Exit 0, bei
+//     `startFrame = 30`, `frames = 30`. Der Fehlercode zeigt also NICHT auf die
+//     Platte, sondern auf eine zu kurze Bandspur.
+//
+//     JETZT GILT `gesamtFrames = endFrame` (Bild 0 bis Trim-Ende). Der Ausgabe-
+//     Seek schneidet dann genau `startFrame` Bilder ab und es bleiben `frames`
+//     uebrig. FOLGE, offen benannt: Das Band ist am ELEMENTANFANG verankert und
+//     laeuft ueber eine Unterbrechung hinweg WEITER, statt an jedem Teil neu mit
+//     dem ersten Abschnitt zu beginnen - das ist die gewollte Semantik, aber es
+//     ist eine Verhaltensaenderung gegenueber der alten Vorgabe. Kosten: die Spur
+//     wird bis `endFrame` gerendert (qtrle auf einem Standbild, gemessen ~38 KB
+//     je 30 Bilder).
+//
+//     UNGETRIMMTE Elemente (`startFrame === 0`) sind unberuehrt: dort ist
+//     `endFrame === frames`.
 //
 // B4  Die Definition of Done verlangt eine Grep-Probe auf `child_process`. Der
 //     VERBINDLICHE Signaturblock schreibt aber `import type { ChildProcess }
@@ -461,16 +472,17 @@ async function ausVideo(
   const abschnitte = sammleBandAbschnitte(einblendung, pngs, bezug)
   if (!abschnitte.ok) return abschnitte
 
-  // 4. Bandspur. `gesamtFrames` kommt VOM VIDEO, nicht von den Abschnitten: "Die
-  //    Elementdauer bestimmt allein das Video (Trim). Das Band verlaengert oder
-  //    verkuerzt sie nie." (TK 9.2.8) - s. aber Befund B3 im Kopf.
+  // 4. Bandspur. `gesamtFrames` ist `endFrame`, NICHT `frames` - Begruendung und
+  //    Messung stehen in Befund B3 im Kopf dieser Datei. Kurz: der Schnitt laeuft
+  //    ueber einen AUSGABE-`-ss`, der auch die Bandspur vorspult; eine um
+  //    `startFrame` zu kurze Spur endet dann vor dem ersten Bild.
   const sequenzPfad = path.join(kontext.arbeitsbereich, `bandseq_${aufStellen(index)}.mp4`)
   const bandSpurPfad = path.join(kontext.arbeitsbereich, `band_${aufStellen(index)}.mp4`)
 
   const spur = await starteBandspur(
-    { abschnitte: abschnitte.wert, hoeheBand, gesamtFrames: frames, sequenzPfad, zielPfad: bandSpurPfad },
+    { abschnitte: abschnitte.wert, hoeheBand, gesamtFrames: endFrame, sequenzPfad, zielPfad: bandSpurPfad },
     kontext,
-    frames,
+    endFrame,
   )
   if (!spur.ok) return ausFfmpeg(spur.fehler, bezug)
 
@@ -664,9 +676,9 @@ async function starteBandspur(
     zielPfad: string
   },
   kontext: NormalisierKontext,
-  frames: number,
+  bandFrames: number,
 ): Promise<Ergebnis<void, FfmpegFehlercode>> {
-  const begleiter = erzeugeBegleiter(kontext, sollDauerSekunden(frames, kontext.profil))
+  const begleiter = erzeugeBegleiter(kontext, sollDauerSekunden(bandFrames, kontext.profil))
   try {
     return await baueBandspur(auftrag, kontext.profil, begleiter.lauf)
   } finally {

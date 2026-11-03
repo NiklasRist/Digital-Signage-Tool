@@ -33,6 +33,7 @@ const { baueVideoAusschnittArgumente } = await import(
   "../../src/main/ffmpeg-adapter/video-ausschnitt"
 );
 const { RENDER_PROFILE } = await import("../../src/shared/contracts/render-profile");
+const { ermittleFfprobePfad } = await import("../../src/main/ffmpeg-pfad");
 
 const arbeitsordner = mkdtempSync(path.join(tmpdir(), "signage-einblendung-"));
 
@@ -82,8 +83,7 @@ function erzeugeBandPng(): string {
 }
 
 /** Die RGB-Werte EINES Bildpunkts eines bestimmten Bildes. */
-function punkt(datei: string, y: number): [number, number, number] {
-  const roh = execFileSync(
+function punkt(datei: string, y: number): [number, number, number] {  const roh = execFileSync(
     ermittleFfmpegPfad(),
     [
       "-loglevel", "error",
@@ -95,6 +95,23 @@ function punkt(datei: string, y: number): [number, number, number] {
     { maxBuffer: 1024 * 1024 },
   );
   return [roh[0] ?? -1, roh[1] ?? -1, roh[2] ?? -1];
+}
+
+/** Wie viele BILDER hat die Datei wirklich? Gezaehlt von ffprobe, nicht geschaetzt. */
+function zaehleBilder(datei: string): number {
+  const roh = execFileSync(
+    ermittleFfprobePfad(),
+    [
+      "-v", "error",
+      "-select_streams", "v:0",
+      "-count_frames",
+      "-show_entries", "stream=nb_read_frames",
+      "-of", "default=nokey=1:noprint_wrappers=1",
+      datei,
+    ],
+    { encoding: "utf8" },
+  );
+  return Number(roh.trim());
 }
 
 function istBlau(p: readonly number[]): boolean {
@@ -161,6 +178,73 @@ describe("#450 Band-Einblendung gegen echtes ffmpeg", () => {
       // Gegenprobe gegen ein blosses „alles ist gruen": Oberhalb der Kante ist
       // das Bild nachweislich NICHT gruen.
       expect(istGruen(punkt(zielPfad, 0))).toBe(false);
+    },
+    180_000,
+  );
+
+  // Befund 4f8 vom 03.11.2026: Ein GETRIMMTER Videoteil mit Band war nicht
+  // renderbar. Die Bandspur bekam `frames` Bilder; der AUSGABE-`-ss` spult sie
+  // um `startFrame` vor, und ffmpeg brach mit Exit 228 (ENOSPC) ab, sobald
+  // weniger als ein Bild uebrig blieb.
+  //
+  // Dieser Fall haelt die ENTSCHEIDUNG fest, die `normalisieren.ts` trifft:
+  // `gesamtFrames = endFrame` (0 bis Trim-Ende). Dass es wirklich `endFrame` ist
+  // und nicht `frames`, prueft `tests/unit/normalisieren.spec.ts` - hier steht,
+  // dass dieser Wert einen VOLLEN Clip ergibt. Beide Haelften zusammen sind der
+  // Beleg; keine von beiden allein.
+  it(
+    "ein GETRIMMTER Teil mit Band entsteht vollstaendig (Befund 4f8)",
+    async () => {
+      const quelle = erzeugeQuelle(); // 2 s = 60 Bilder bei 30 fps
+      const bandPng = erzeugeBandPng();
+
+      const startFrame = 30;
+      const endFrame = 60;
+      const frames = endFrame - startFrame;
+
+      const bandSpur = path.join(arbeitsordner, "bandspur-getrimmt.mov");
+      const spur = await baueBandspur(
+        {
+          abschnitte: [{ pngPfad: bandPng, frames: 30 }],
+          hoeheBand: HOEHE_BAND,
+          // DIE ZAHL, UM DIE ES GEHT: bis zum Trim-Ende, nicht die Teillaenge.
+          gesamtFrames: endFrame,
+          sequenzPfad: path.join(arbeitsordner, "bandsequenz-getrimmt.mov"),
+          zielPfad: bandSpur,
+        },
+        RENDER_PROFILE,
+      );
+      expect(spur.ok).toBe(true);
+
+      const kette = baueEinblendungFilter(HOEHE_BAND, RENDER_PROFILE);
+      expect(kette.ok).toBe(true);
+      if (!kette.ok) return;
+
+      const zielPfad = path.join(arbeitsordner, "clip-getrimmt.mp4");
+      const gebaut = baueVideoAusschnittArgumente(
+        {
+          quellPfad: quelle,
+          startFrame,
+          endFrame,
+          bandSpurPfad: bandSpur,
+          filterkette: kette.wert,
+          zielPfad,
+        },
+        RENDER_PROFILE,
+      );
+      expect(gebaut.ok).toBe(true);
+      if (!gebaut.ok) return;
+
+      const lauf = await fuehreFfmpegAus({ argumente: [...gebaut.wert] });
+      // WARUM DAS DER KERN IST: vor der Aenderung endete genau dieser Aufruf mit
+      // Exit 228 und ohne Bild. `lauf.ok` allein genuegt aber nicht - ein zu
+      // kurzer Clip waere auch "ok".
+      expect(lauf.ok).toBe(true);
+      expect(zaehleBilder(zielPfad)).toBe(frames);
+
+      // Und das Band liegt an seiner Kante, auch im getrimmten Teil.
+      expect(istGruen(punkt(zielPfad, BAND_Y))).toBe(true);
+      expect(istBlau(punkt(zielPfad, BAND_Y - 1))).toBe(true);
     },
     180_000,
   );
