@@ -3539,3 +3539,43 @@ Ereignisse gesammelt: 94
 - **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
 - **Befund** Abspielmarke (#457): erwartet "bei Pause steht die Marke still", erkannt "Frame 11 -> 29" (Ort: composer/abspiel-marke.tsx)
 - **Befund** Ins Video: erwartet "ein Projekt MIT Unterbrechung wird gerendert (Dauer: Video + Einschub)", erkannt "Datei=false, ffprobe=null s, Anzeige="0:12", Auftraege=[{"status":"fehlgeschlagen","fehler":{"code":"ffmpeg_fehler","meldung":"Element 2ba0adf2-e8d3-41de-b520-9b7a535d2c26#3 (Index 2): ffmpeg ist mit Exit-Code 228 fehlgeschlagen.\nError while filtering: No space left on device"}}]" (Ort: render-service/validierung.ts)
+
+## Nachlauf vom 2026-11-03T09:45:23.879Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 95
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+- **Befund** Abspielmarke (#457): erwartet "bei Pause steht die Marke still", erkannt "Frame 11 -> 29" (Ort: composer/abspiel-marke.tsx)
+- **Befund** Ins Video: erwartet "ein Projekt MIT Unterbrechung wird gerendert (Dauer: Video + Einschub)", erkannt "Datei=false, ffprobe=null s, Anzeige="0:12", Auftraege=[{"status":"fehlgeschlagen","fehler":{"code":"ffmpeg_fehler","meldung":"Element 0265ac69-d7bc-4d50-a634-99d1138f5e2e#3 (Index 2): ffmpeg ist mit Exit-Code 228 fehlgeschlagen.\nError while filtering: No space left on device"}}]" (Ort: render-service/validierung.ts)
+
+## Nachlauf vom 2026-11-03T10:02:20.811Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 95
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+- **Befund** Ins Video: erwartet "ein Projekt MIT Unterbrechung wird gerendert (Dauer: Video + Einschub)", erkannt "Datei=false, ffprobe=null s, Anzeige="0:12", Auftraege=[{"status":"fehlgeschlagen","fehler":{"code":"ffmpeg_fehler","meldung":"Element ba21cba6-ec19-4718-b92e-03f2b46a9fee#3 (Index 2): ffmpeg ist mit Exit-Code 228 fehlgeschlagen.\nError while filtering: No space left on device"}}]" (Ort: render-service/validierung.ts)
+
+## Nachlauf vom 2026-11-03T10:11:11.148Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 95
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+- **Befund** Ins Video: erwartet "ein Projekt MIT Unterbrechung wird gerendert (Dauer: Video + Einschub)", erkannt "Datei=false, ffprobe=null s, Anzeige="0:12", Auftraege=[{"status":"fehlgeschlagen","fehler":{"code":"ffmpeg_fehler","meldung":"Element abf0ebe7-8bfc-42a1-bdee-a816ed616fab#3 (Index 2): ffmpeg ist mit Exit-Code 228 fehlgeschlagen.\nError while filtering: No space left on device"}}]" (Ort: render-service/validierung.ts)
+
+## Nachlauf vom 2026-11-03T10:38:14.240Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 93
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)

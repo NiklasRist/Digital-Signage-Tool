@@ -4825,31 +4825,52 @@ const main = async () => {
         // `laeuft` schon wieder auf "nein", obwohl die Uhr lief und die Marke wanderte.
         // Gemessen wird deshalb: (1) die Uhr LAEUFT kurz nach dem Start, (2) die Marke
         // hat sich bewegt.
+        //
+        // 03.11.2026, DRITTE FALLE - der Grund fuer die Umstellung unten: Wird erst
+        // NACH dem Ende pausiert, trifft der Klick denselben Knopf im PLAY-Zustand.
+        // Play beginnt am Ende wieder bei 0 (spieleAb, ENTSCHIEDEN 3), die Marke
+        // WANDERT - das sieht wie "steht bei Pause nicht still" aus und ist ein
+        // Neustart. Am 03.11.2026 genau so gemessen: Frame 11 -> 29, exakt 30 fps
+        // seit dem Klick. Deshalb wird jetzt PAUSIERT, solange die Uhr nachweislich
+        // laeuft, und die Bewegung VOR dem Pausieren belegt. Kein Warten bis zum Ende.
         await schlafe(400);
-        const startet4f7 = await liesMarke4f7();
-        await schlafe(1_100);
-        const laeuft4f7 = await liesMarke4f7();
+        let startet4f7 = await liesMarke4f7();
+        // Startet die Wiedergabe in den letzten Millisekunden des Projekts, ist sie
+        // 400 ms spaeter schon vorbei. Dann laeuft sie am Ende NICHT falsch - Play
+        // beginnt von vorn. Genau EIN Wiederholungsversuch, und er steht im Protokoll.
+        if (startet4f7 !== null && startet4f7.laeuft !== "ja") {
+          console.log("[schritt-4f7] Wiedergabe war nach 0,4 s schon am Ende - zweiter Start (Play ab 0).");
+          await zeigeBedienleiste4f7();
+          await klick('[data-testid="vorschau-play-pause"]');
+          await schlafe(400);
+          startet4f7 = await liesMarke4f7();
+        }
         await zeigeBedienleiste4f7();
         await klick('[data-testid="vorschau-play-pause"]');
         await schlafe(400);
         const pause4f7 = await liesMarke4f7();
         await schlafe(600);
         const pauseZwei4f7 = await liesMarke4f7();
-        console.log(`[schritt-4f7] Marke: Start=${JSON.stringify(start4f7)}, nach 0,4 s=${JSON.stringify(startet4f7)}, nach 1,5 s=${JSON.stringify(laeuft4f7)}, Pause=${JSON.stringify(pause4f7)}, 600 ms spaeter=${JSON.stringify(pauseZwei4f7)}.`);
-        if (start4f7 === null || startet4f7 === null || laeuft4f7 === null || pause4f7 === null || pauseZwei4f7 === null) {
+        console.log(`[schritt-4f7] Marke: Start=${JSON.stringify(start4f7)}, nach 0,4 s=${JSON.stringify(startet4f7)}, Pause=${JSON.stringify(pause4f7)}, 600 ms spaeter=${JSON.stringify(pauseZwei4f7)}.`);
+        if (start4f7 === null || startet4f7 === null || pause4f7 === null || pauseZwei4f7 === null) {
           fund("Abspielmarke (#457)", "die Marke bleibt waehrend der Messung im DOM",
             "Marke fehlt in einem Teilschritt", "Befund", "composer/abspiel-marke.tsx");
         } else if (
           startet4f7.laeuft !== "ja" ||
-          (laeuft4f7.frame === start4f7.frame && laeuft4f7.left === start4f7.left)
+          (startet4f7.frame === start4f7.frame && startet4f7.left === start4f7.left)
         ) {
           // NICHT "frame > start": Steht die Vorschau am Ende, startet Play wieder bei 0
           // (spieleAb, ENTSCHIEDEN 3) - die Marke wandert dann rueckwaerts, und das ist
           // richtig. Gemessen wird die BEWEGUNG waehrend laufender Uhr.
           fund("Abspielmarke (#457)", "waehrend der Wiedergabe wandert die Marke",
             `Start=${start4f7.frame}/${start4f7.left}, nach 0,4 s laeuft=${startet4f7.laeuft}, ` +
-              `nach 1,5 s Frame ${laeuft4f7.frame}, left ${laeuft4f7.left}`,
+              `Frame ${startet4f7.frame}, left ${startet4f7.left}`,
             "Befund", "composer/abspiel-marke.tsx");
+        } else if (pause4f7.laeuft !== "nein") {
+          // Ohne diesen Zweig waere "Frame steht" auch dann gruen, wenn die Uhr
+          // weiterlaeuft und nur die Marke haengt - die halbe Zusage.
+          fund("Abspielmarke (#457)", "der Pausen-Klick haelt die Uhr an",
+            `nach der Pause laeuft=${pause4f7.laeuft}`, "Befund", "composer/abspiel-marke.tsx");
         } else if (pauseZwei4f7.frame !== pause4f7.frame) {
           fund("Abspielmarke (#457)", "bei Pause steht die Marke still",
             `Frame ${pause4f7.frame} -> ${pauseZwei4f7.frame}`, "Befund", "composer/abspiel-marke.tsx");
