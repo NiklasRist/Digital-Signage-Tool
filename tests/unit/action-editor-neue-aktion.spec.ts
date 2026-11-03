@@ -119,6 +119,7 @@ function projekt(aktionen: Aktion[]): Project {
 function editor(
   p: Project,
   zeichenVorlagen: readonly Vorlage[] = [],
+  hervorgehoben: string | null = null,
 ): { behaelter: HTMLDivElement; setzeProjekt: ReturnType<typeof vi.fn> } {
   const setzeProjekt = vi.fn()
   const behaelter = montiere(
@@ -144,7 +145,7 @@ function editor(
         hole: vi.fn(() => ({ marken: [] })),
         aufGeaendert: vi.fn(() => () => {}),
       },
-      hervorgehobeneAktionId: null,
+      hervorgehobeneAktionId: hervorgehoben,
     } as unknown as Parameters<typeof ActionEditorWurzel>[0]),
   )
   return { behaelter, setzeProjekt }
@@ -288,6 +289,19 @@ describe('Preset beim Anlegen', () => {
     const dauer = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-dauer"]')
     // NICHT die Konstante 10: der Projektstandard (TK 9.8.4).
     expect(dauer?.value).toBe('15')
+  })
+
+  it('eine HERVORGEHOBENE Aktion steht SOFORT im Formular - kein zweiter Klick', async () => {
+    // 03.11.2026: Der Klick auf „Bearbeiten" setzte nur die Auswahl, nicht das Formular.
+    // Die Ansicht oeffnete mit markierter Zeile und „Nichts gewählt." daneben.
+    const bestehend = { ...aktion('a1', 'Sommeraktion'), standardDauer: 30 }
+    const { behaelter } = editor(projekt([bestehend]), [], 'a1')
+    await laufen()
+
+    const titel = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')
+    expect(titel).not.toBeNull()
+    expect(titel?.value).toBe('Sommeraktion')
+    expect(behaelter.querySelector('[data-testid="aktion-formular-leer"]')).toBeNull()
   })
 
   it('nach dem Oeffnen einer Aktion zeigt "Neue Aktion" NICHT deren Werte', async () => {

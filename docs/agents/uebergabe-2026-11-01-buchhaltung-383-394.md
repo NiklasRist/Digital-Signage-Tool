@@ -1326,3 +1326,64 @@ gingen schon ohne Reiterwechsel.
 ### 28.6 Nächster Schritt
 
 **Offen — Niklas entscheidet.**
+
+---
+
+## 29. DIREKT ZUR AKTION — UND DER VORLAGEN-MÜLL IST WEG (03.11.2026)
+
+### 29.1 Zwei Beschwerden, zwei Ursachen
+
+**Niklas, 03.11.2026:** *„wenn man eine aktion bearbeiten will dann sollte man direkt dahin
+geleitet werden. außerdem gibt es grade gefühlt tausen bestehende aktionen und man kann die nicht
+sinnvoll anlegen"*.
+
+**a) „direkt dahin geleitet".** Der Klick auf **Bearbeiten** in der Composer-Bibliothek öffnete die
+Aktions-Ansicht — aber nur die **Lage** wurde gesetzt (`uebernimmHervorhebung`), nicht das
+**Formular**. Die Ansicht kam also mit markierter Zeile links und „Nichts gewählt." rechts; erst
+ein **zweiter** Klick in der Bibliothek füllte das Formular. **Fix:** Derselbe Effekt setzt jetzt
+auch den Entwurf (`setzeFormular({ ...treffer })`) — eine Stelle, eine Regel.
+
+**b) „gefühlt tausend bestehende Aktionen".** Gemessen: Das Projekt `lallala` hat **1** Aktion.
+Die „tausenden" waren **Vorlagen**: `vorlagen.json` hatte **214** Einträge — **3 eingebaute**,
+**211 Driver-Reste** (`DurchlaufEinblendung-*`, `DurchlaufVorlage-*`), **0 eigene**. Ursache: Der
+Treiber löscht seine **Projekte**, aber nie seine **Vorlagen** — und die liegen **app-weit**, nicht
+im Projekt. Nach ein paar Dutzend Läufen ist die Vorlagen-Bibliothek Müll.
+
+### 29.2 Was gebaut ist
+
+- **`action-editor/index.tsx`:** Der Hervorhebungs-Effekt setzt **Lage und Entwurf**. Wer
+  „Bearbeiten" klickt, steht sofort in der Aktion.
+- **`scripts/durchlauf.mjs`:** Neuer Aufräum-Schritt für Vorlagen — **mehrstufig** (bis 3 Pässe)
+  und **abgeleitete zuerst** (`parent !== null` vor den Basen): Eine Basis mit noch vorhandener
+  Arbeitskopie ist gesperrt (`vorlage_referenziert`); in Bestandsreihenfolge stünde sie vorn.
+  Dieselbe Falle wie bei den Marken (22.10.2026), dieselbe Lösung.
+- **`vorlagen.json` (Nutzerdaten, gitignored):** 214 → **3** (nur die eingebauten). Ein Rest
+  blieb nach dem ersten Lauf stehen (er entstand während des Laufs); die mehrstufige Aufräumung
+  hat ihn im nächsten Lauf erwischt.
+
+### 29.3 Belege
+
+- **Treiber `4g6` (erweitert):** liest nach dem Öffnen `aktion-titel` und `aktion-formular-leer` —
+  ein leerer Titel oder „Nichts gewählt" wäre ein **Befund**. Lauf: **0 Befunde**.
+- **Treiber `5`:** `Vorlagen-Aufraeumen: {"anzahl":1,"fehler":null,"schlecht":0}` — der Lauf
+  löscht seine eigene Vorlage wieder; `vorlagen.json` steht danach auf **3**.
+- **Unit 5477/5477** (363 Dateien, +1): „eine HERVORGEHOBENE Aktion steht SOFORT im Formular —
+  kein zweiter Klick".
+- Typecheck 0 (auch Tests), Lint 0, Build 0, Integration **51/51**, Treiber **0 Befunde**.
+
+### 29.4 Offen — „man kann die nicht sinnvoll anlegen"
+
+**Nicht gebaut, weil die Richtung offen ist.** Heute legt „+ Neue Aktion" im Composer eine Aktion
+mit **Titel + Vorlage** an und ist damit fertig; Bild, Preis und CTA kommen erst über
+„Bearbeiten". Zwei Wege wären denkbar:
+
+1. **Nach dem Anlegen direkt in den Editor** springen (die neue Aktion ist offen, man ergänzt sie
+   und geht zurück) — klein, ändert den Anlege-Weg nicht.
+2. **„Neue Aktion" öffnet den Editor im Modus „neu"** (Vorschau + Bild + alle Felder), „Anlegen"
+   sitzt dort; das Inline-Formular im Composer entfällt — ein Weg statt zwei.
+
+**Niklas entscheidet.**
+
+### 29.5 Nächster Schritt
+
+**Offen.**

@@ -5392,6 +5392,21 @@ const main = async () => {
         fund("Aktions-Editor aus dem Projekteditor", "die Reiterflaeche ist verdeckt, aber montiert (TK 9.14.2)",
           `hidden=${String(ansicht4g6.reiterVerdeckt)}`, "Befund", "app-shell/rahmen.tsx");
       } else {
+        // 03.11.2026: „wenn man eine aktion bearbeiten will dann sollte man direkt dahin
+        // geleitet werden" - das Formular muss die Aktion SOFORT zeigen, nicht erst nach
+        // einem zweiten Klick in der Bibliothek.
+        const formular4g6 = await seite.evaluate(() => {
+          const titel = document.querySelector('[data-testid="aktion-titel"]');
+          return {
+            titel: titel === null ? null : titel.value,
+            leer: document.querySelector('[data-testid="aktion-formular-leer"]') !== null,
+          };
+        });
+        console.log(`[schritt-4g6] Formular beim Oeffnen: ${JSON.stringify(formular4g6)}.`);
+        if (formular4g6.titel === null || formular4g6.titel === '' || formular4g6.leer) {
+          fund("Aktions-Editor aus dem Projekteditor", 'Bearbeiten fuellt das Formular SOFORT (kein zweiter Klick)',
+            JSON.stringify(formular4g6), "Befund", "action-editor/index.tsx");
+        }
         const zurueck4g6 = await seite.evaluate(() => {
           const knopf = document.querySelector('[data-testid="aktionen-zurueck"]');
           if (knopf === null) return false;
@@ -6299,6 +6314,44 @@ const main = async () => {
       && (markenAufraeumt.ergebnisse ?? []).some((e) => !e.ok)) {
       fund("Aufraeumen", "der Lauf loescht seine eigenen DurchlaufMarke-Eintraege",
         JSON.stringify(markenAufraeumt.ergebnisse), "Untersuchung", "scripts/durchlauf.mjs");
+    }
+
+    // 03.11.2026 - DER LAUF RAEUMT AUCH SEINE VORLAGEN AUF. Bis heute nicht: Nach ein paar
+    // Dutzend Laeufen standen 211 „Durchlauf*"-Vorlagen im app-weiten Bestand (gemessen:
+    // vorlagen.json hatte 214 Eintraege, 3 eingebaute, 0 eigene). Niklas: „es gibt grade
+    // gefuehlt tausende bestehende ...". Die Vorlagen liegen APP-WEIT, nicht im Projekt -
+    // die Projekt-Aufraeumung fasst sie deshalb nicht.
+    const vorlagenAufraeumt = await seite.evaluate(async () => {
+      const antwort = await window.api.invoke("vorlagen:listeVorlagen");
+      if (!antwort || !antwort.ok) return { fehler: "listeVorlagen" };
+      const istRest = (v) => !v.eingebaut && String(v.name).startsWith("Durchlauf");
+      const ergebnisse = [];
+      // MEHRERE PAeSSE: Eine Basis mit noch vorhandener Arbeitskopie ist gesperrt
+      // (vorlage_referenziert). Erst die ABGELEITETEN loeschen, dann die Basis - und
+      // nachraeumen, weil waehrend des Laufs eine weitere entstehen kann.
+      for (let pass = 0; pass < 3; pass += 1) {
+        const frisch = await window.api.invoke("vorlagen:listeVorlagen");
+        if (!frisch || !frisch.ok) break;
+        const eigene = frisch.wert.filter(istRest);
+        if (eigene.length === 0) break;
+        // Abgeleitete zuerst: `parent !== null` vor den Basen.
+        const reihenfolge = [...eigene].sort((a, b) => (a.parent === null ? 1 : 0) - (b.parent === null ? 1 : 0));
+        for (const vorlage of reihenfolge) {
+          const weg = await window.api.invoke("vorlagen:löscheVorlage", { id: vorlage.id });
+          ergebnisse.push({
+            name: vorlage.name,
+            ok: weg && weg.ok,
+            code: weg && !weg.ok ? weg.fehler.code : null,
+          });
+        }
+      }
+      return { anzahl: ergebnisse.length, ergebnisse };
+    });
+    console.log("[schritt-5] Vorlagen-Aufraeumen: " + JSON.stringify({ anzahl: vorlagenAufraeumt.anzahl, fehler: vorlagenAufraeumt.fehler ?? null, schlecht: (vorlagenAufraeumt.ergebnisse ?? []).filter((e) => !e.ok).length }));
+    if (vorlagenAufraeumt.fehler === undefined
+      && (vorlagenAufraeumt.ergebnisse ?? []).some((e) => !e.ok)) {
+      fund("Aufraeumen", "der Lauf loescht seine eigenen Durchlauf-Vorlagen",
+        JSON.stringify(vorlagenAufraeumt.ergebnisse.filter((e) => !e.ok)), "Untersuchung", "scripts/durchlauf.mjs");
     }
 
     const fensterstand = await seite.evaluate(() => ({

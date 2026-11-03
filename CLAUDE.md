@@ -11,7 +11,31 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, sechsundvierzigste Sitzung: nur im Projekteditor arbeiten — der Vorlagen-Editor liegt jetzt über dem Projekt) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, siebenundvierzigste Sitzung: „Bearbeiten" führt sofort in die Aktion — und 211 Vorlagen-Reste gelöscht) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 29.**
+
+- **BESCHWERDE 1 (Niklas 03.11.): „wenn man eine aktion bearbeiten will dann sollte man direkt
+  dahin geleitet werden".** Ursache: `uebernimmHervorhebung` setzte nur die **Lage**, nicht das
+  **Formular** — die Ansicht kam mit markierter Zeile und „Nichts gewählt." rechts; erst ein
+  zweiter Klick fuellte sie. **Behoben:** derselbe Effekt setzt auch den Entwurf. Treiber `4g6`
+  prueft es jetzt (leerer Titel / „Nichts gewählt" waere ein Befund).
+- **BESCHWERDE 2 („gefuehlt tausend bestehende Aktionen").** Gemessen: Das Projekt `lallala` hat
+  **1** Aktion. Die „tausenden" waren **Vorlagen**: `vorlagen.json` hatte **214** Eintraege —
+  3 eingebaute, **211 Driver-Reste**, **0 eigene**. Der Treiber loeschte seine Projekte, **nie
+  seine Vorlagen** (die liegen app-weit). Jetzt raeumt er sie auf: **mehrstufig**, abgeleitete
+  zuerst (eine Basis mit Arbeitskopie ist gesperrt — dieselbe Falle wie bei den Marken).
+  `vorlagen.json` steht wieder auf **3**.
+- **Gate:** Typecheck **0** (auch tests), ESLint/oxlint **0**, Build **0**, Unit **5477/5477**
+  (363 Dateien), Integration **51/51** (13), Treiber **0 Befunde**.
+- **OFFEN — „man kann die nicht sinnvoll anlegen" (29.4):** Heute legt „+ Neue Aktion" nur Titel +
+  Vorlage an; Bild/Preis kommen ueber „Bearbeiten". Zwei Wege: (1) nach dem Anlegen **direkt in
+  den Editor** springen, (2) „Neue Aktion" oeffnet **den Editor im Modus „neu"** (Inline-Formular
+  entfaellt). **Niklas entscheidet.**
+- **Weiter offen:** Befund 27.3 (Band-Vorlagen im Aktions-Editor, „ka"), Effekte geparkt (nur
+  Vollbild: Zoom/Drift, Pop), `einzel-instanz.spec.ts` (#289) flaky.
+
+## STAND HEUTE (03.11.2026, sechsundvierzigste Sitzung: nur im Projekteditor arbeiten — der Vorlagen-Editor liegt jetzt über dem Projekt) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 28.**
 

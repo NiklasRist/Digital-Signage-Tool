@@ -168,9 +168,17 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
 
   // Die Hervorhebung aus der Reparatur-Führung (#201): auf ÄNDERung ausgewertet,
   // nie für jeden Render (ENTSCHIEDEN 5).
+  //
+  // 03.11.2026: Die Auswahl allein reichte NICHT - wer im Composer „Bearbeiten" klickt,
+  // kam in der Ansicht an, sah die Zeile markiert und daneben „Nichts gewählt." (das
+  // Formular wurde nur vom Klick in der Bibliothek gefuellt). Niklas: „wenn man eine
+  // aktion bearbeiten will dann sollte man direkt dahin geleitet werden." Deshalb
+  // uebernimmt dieser Effekt AUCH den Entwurf - dieselbe Stelle, eine Regel.
   useEffect(() => {
     const aktionen = p.projekt.hole().projekt?.aktionen ?? []
     setzeLage((bisher) => uebernimmHervorhebung(bisher, p.hervorgehobeneAktionId, aktionen))
+    const treffer = aktionen.find((aktion) => aktion.id === p.hervorgehobeneAktionId)
+    if (treffer !== undefined) setzeFormular({ ...treffer })
   }, [p.hervorgehobeneAktionId])
 
   // Bestands-Fächern: die Lage fällt zurück, wenn die gewählte Aktion verschwindet.
