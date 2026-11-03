@@ -6205,6 +6205,49 @@ const main = async () => {
       await schlafe(400);
     }
 
+    // Schritt 4g8 (03.11.2026) - „man soll nur im Projekteditor arbeiten müssen":
+    // Der Vorlagen-Editor geht aus der PROJEKTLEISTE als Ansicht über der Reiterfläche auf
+    // und schliesst wieder. Vorher war er nur über den Reiter [Vorlagen] erreichbar.
+    {
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(400);
+      await klick('[data-testid="projektleiste-vorlagen-oeffnen"]');
+      await schlafe(800);
+      const offen4g8 = await seite.evaluate(() => ({
+        ansicht: document.querySelector('[data-testid="rahmen-ansicht-vorlagen"]') !== null,
+        inhalt:
+          document.querySelector('[data-testid="vorlagen-uebersicht"]') !== null ||
+          document.querySelector('[data-testid="arbeitskopie-kopf"]') !== null,
+        reiterVerdeckt:
+          (document.querySelector('[data-testid="rahmen-inhalt-zusammenstellen"]') || {}).hidden === true,
+      }));
+      console.log(`[schritt-4g8] Vorlagen-Ansicht: ${JSON.stringify(offen4g8)}.`);
+      if (!offen4g8.ansicht || !offen4g8.inhalt) {
+        fund("Vorlagen aus dem Projekteditor", "die Projektleiste oeffnet den Vorlagen-Editor ueber der Reiterflaeche",
+          JSON.stringify(offen4g8), "Befund", "app-shell/projektleiste.tsx");
+      } else if (!offen4g8.reiterVerdeckt) {
+        fund("Vorlagen aus dem Projekteditor", "die Reiterflaeche bleibt montiert, aber verdeckt (TK 9.14.2)",
+          `hidden=${String(offen4g8.reiterVerdeckt)}`, "Befund", "app-shell/rahmen.tsx");
+      } else {
+        const zu4g8 = await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="vorlagen-zurueck"]');
+          if (knopf === null) return false;
+          knopf.click();
+          return true;
+        });
+        await schlafe(600);
+        const geschlossen4g8 = await seite.evaluate(
+          () => document.querySelector('[data-testid="rahmen-ansicht-vorlagen"]') === null,
+        );
+        if (!zu4g8 || !geschlossen4g8) {
+          fund("Vorlagen aus dem Projekteditor", '"Zurueck zum Projekt" schliesst die Ansicht',
+            `knopf=${String(zu4g8)}, zu=${String(geschlossen4g8)}`, "Befund", "app-shell/rahmen.tsx");
+        } else {
+          console.log("[schritt-4g8] VORLAGEN AUS DEM PROJEKTEDITOR GEMESSEN: Ansicht ueber der Reiterflaeche, Rueckweg schliesst (03.11.2026).");
+        }
+      }
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     // Aufräumblock (User-Entscheidung 14.10.2026, solange die App NICHT fertig ist):
     // Jeder Lauf loescht seine eigenen Projekte ("DurchlaufTest-*") ueber den ECHTEN

@@ -568,6 +568,8 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       // offen ist, liefert App sie als `undefined`; die Schluessel stehen trotzdem.
       // 01.11.2026: `aktionenAnsicht` als dritter solcher Schlitz (Aktions-Editor ueber
       // der Reiterflaeche, Einstieg aus der Aktions-Zeile des Composers).
+      // 03.11.2026: `vorlagenAnsicht` als vierter (Vorlagen-Editor ueber der Reiterflaeche,
+      // Einstieg in der Projektleiste - „nur im Projekteditor arbeiten müssen").
       'aktionenAnsicht',
       'inhalte',
       'markenAnsicht',
@@ -575,11 +577,12 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
       'projektleiste',
       'speicherHinweis',
       'undoRedo',
+      'vorlagenAnsicht',
       'warteschlangenLeiste',
     ])
-    // #456/#393-Nachlauf: acht Schlitze - projektleiste, markenAnsicht und aktionenAnsicht
-    // sind ohne offenes Projekt `undefined`, ihre Schluessel stehen trotzdem.
-    expect(Object.keys(rahmenEigenschaften)).toHaveLength(8)
+    // #456/#393-Nachlauf: neun Schlitze - projektleiste, markenAnsicht, aktionenAnsicht und
+    // vorlagenAnsicht sind ohne offenes Projekt `undefined`, ihre Schluessel stehen trotzdem.
+    expect(Object.keys(rahmenEigenschaften)).toHaveLength(9)
     // inhalte ist ToBe zum Ergebnis von baueReiterInhalte.
     const baueRufe = vi.mocked(inhalteModul.baueReiterInhalte)
     expect(rahmenEigenschaften.inhalte).toBe(
@@ -966,9 +969,9 @@ describe('#262 App.tsx: die Einhaengung (jsdom)', () => {
     expect(rahmenKnoten!.parentElement).toBe(behaelter)
     expect(rahmenKnoten!.contains(overlayKnoten!)).toBe(false)
     expect(overlayKnoten!.contains(rahmenKnoten!)).toBe(false)
-    // ACHT Eigenschaften im Rahmen seit dem 01.11.2026 (aktionenAnsicht) - das Overlay
+    // NEUN Eigenschaften im Rahmen seit dem 03.11.2026 (vorlagenAnsicht) - das Overlay
     // ist KEIN davonster Eintrag:
-    expect(Object.keys(letzterRahmen())).toHaveLength(8)
+    expect(Object.keys(letzterRahmen())).toHaveLength(9)
   })
 
   it('UebergabeOverlay bekommt ALLE SIEBEN Eigenschaften belegt: lage, projekt, die drei Abschluss-Funktionen und aufFehler (benannter Test)', async () => {

@@ -1264,3 +1264,65 @@ Zwei Lesarten, **Entscheidung nötig**:
 
 **Offen — Niklas entscheidet.** Zwei Kandidaten: der Befund aus 27.3 (Band-Vorlagen für Aktionen:
 gewollt oder Lücke?) und die geparkten Effekte (nur Vollbild: Zoom/Drift, Pop).
+
+---
+
+## 28. NUR IM PROJEKTEDITOR ARBEITEN (03.11.2026)
+
+### 28.1 Die Ansage
+
+**Niklas, 03.11.2026:** *„man soll nur im projekteditor arbeiten müssen sonst ist der flow
+unlogisch"*.
+
+Aufgenommen, nicht interpretiert. Die Messung am Code: **eine** Stelle zwang wirklich zum
+Reiterwechsel — der **Vorlagen-Editor** hing ausschließlich am Reiter [Vorlagen]. Aktions-Editor
+(Ansicht über der Reiterfläche, Einstieg in der Aktions-Zeile) und Marken-Editor (Projektleiste)
+gingen schon ohne Reiterwechsel.
+
+### 28.2 Was gebaut ist
+
+- **`gemeinsam/vorlagen-ansicht.ts`** — derselbe kleine Speicher wie `aktionen-ansicht.ts`:
+  offen/zu, Abo, keine Vorlagen-Daten.
+- **Der Rahmen** kennt einen vierten Schlitz `vorlagenAnsicht` und rendert ihn **über** der
+  Reiterfläche (`data-testid="rahmen-ansicht-vorlagen"`). Die besuchten Reiter bleiben montiert
+  und nur verdeckt (TK 9.14.2).
+- **Die Projektleiste** trägt einen zweiten Symbolknopf („Vorlagen bearbeiten"), der als
+  Umschalter den Rückweg zeigt. `aria-pressed` wie beim Marken-Stift.
+- **Es liegt immer nur EINE Ansicht** über der Reiterfläche: Marken schließt Vorlagen, Vorlagen
+  schließt Marken **und** Aktionen, ein Reiterklick schließt alle. Der Composer öffnet die
+  Aktionen-Ansicht → die Vorlagen-Ansicht schließt sich (ein Effekt im Rahmen).
+- **Derselbe Sitzungshalter** wie im Reiter (`umgebungStand.current.vorlagenSitzung`): ein
+  zweiter `sitzungshalter()` wäre eine zweite Arbeitskopie.
+
+### 28.3 Was NICHT gebaut ist (bewusst)
+
+- **Die Reiter bleiben.** [Vorlagen] ist die app-weite Bibliothek und ohne offenes Projekt
+  benutzbar (TK 9.14.1/9.14.2) — nötig ist er für die Arbeit am Projekt aber nicht mehr.
+  [Aktionen] ist jetzt **doppelt** vorhanden (Reiter + Ansicht aus der Aktions-Zeile). Ob der
+  Reiter entfällt, ist eine eigene Entscheidung — **nicht** in dieser Sitzung getroffen.
+- **Kein Umbau der Navigation** (Hauptmenü o. ä.). Die Ansage verlangt, dass man den Projekteditor
+  nicht verlassen **muss** — nicht, dass es keine Reiter mehr gibt.
+
+### 28.4 Belege
+
+- **Treiber `4g8` (neu):** `{"ansicht":true,"inhalt":true,"reiterVerdeckt":true}` —
+  *„VORLAGEN AUS DEM PROJEKTEDITOR GEMESSEN: Ansicht ueber der Reiterflaeche, Rueckweg schliesst"*.
+  Der Schritt öffnet über `projektleiste-vorlagen-oeffnen` und schließt über `vorlagen-zurueck`.
+- **Unit 5476/5476** (363 Dateien, +5): `vorlagen-ansicht.spec.ts` (öffnen/schließen, keine
+  Meldung ohne echte Änderung, Abmelden wirkt); `projektleiste.spec.ts` (zweiter Knopf, Symbol,
+  Umschalter); `app-einhaengung.spec.ts` (neun Schlitze im Rahmen).
+- Typecheck 0 (auch Tests), Lint 0, Build 0, Integration **51/51**, Treiber **0 Befunde**
+  (1 Untersuchung, 1 MANUELL).
+- **Treiber-Matrix:** `4g8` ist **FA-13** zugeordnet.
+- Doku: TK **v3.41** (9.14.2), `.docx` im selben Commit neu erzeugt.
+
+### 28.5 Offen
+
+- **Befund 27.3** (Band-Vorlagen im Aktions-Editor): Niklas hat darauf mit „ka" geantwortet — die
+  Frage bleibt offen, ist aber **nicht** dringend.
+- **Reiter [Aktionen]:** doppelt zur Ansicht. Entfällt er, oder bleibt er als Bibliothek?
+- **Effekte:** geparkt (nur Vollbild: Zoom/Drift, Pop).
+
+### 28.6 Nächster Schritt
+
+**Offen — Niklas entscheidet.**

@@ -14,6 +14,12 @@ import {
   holeAktionenAnsicht,
   schliesseAktionenAnsicht,
 } from '../gemeinsam/aktionen-ansicht'
+import {
+  aufVorlagenAnsichtGeaendert,
+  istVorlagenAnsichtOffen,
+  oeffneVorlagenAnsicht,
+  schliesseVorlagenAnsicht,
+} from '../gemeinsam/vorlagen-ansicht'
 
 /** Ein Reiterinhalt. Er bekommt gesagt, ob er gerade sichtbar ist – abgebaut wird er NICHT. */
 export type ReiterInhalt = (eigenschaften: { sichtbar: boolean }) => JSX.Element
@@ -49,6 +55,11 @@ export interface RahmenEigenschaften {
    *  steht im gemeinsamen Speicher `gemeinsam/aktionen-ansicht.ts`. Fehlt der Slot,
    *  bleibt die Reiterfläche sichtbar. */
   aktionenAnsicht?: (schalt: { aktionId: string; aufSchliessen: () => void }) => JSX.Element | null
+  /** 03.11.2026: die VORLAGEN-Ansicht über der Reiterfläche - derselbe Vertrag. Der
+   *  Einstieg sitzt in der Projektleiste; der offene Zustand steht im gemeinsamen
+   *  Speicher `gemeinsam/vorlagen-ansicht.ts`. Fehlt der Slot, bleibt die Reiterfläche
+   *  sichtbar. */
+  vorlagenAnsicht?: (schalt: { aufSchliessen: () => void }) => JSX.Element | null
 }
 
 /** #456: Was die Projektleiste vom Rahmen bekommt – mehr braucht sie nicht. */
@@ -57,6 +68,10 @@ export interface ProjektleistenSchalt {
   markenOffen: boolean
   /** Öffnet die Marken-Ansicht für GENAU DIESE Marke. */
   aufMarken: (markeId: string) => void
+  /** true, solange die Vorlagen-Ansicht offen ist. */
+  vorlagenOffen: boolean
+  /** Öffnet/schließt die Vorlagen-Ansicht (Umschalter). */
+  aufVorlagen: () => void
 }
 
 /** Die vier Reiterbeschriftungen (TK 9.14.1, v3.32) – der einzige eigene Text des Rahmens. */
@@ -130,15 +145,29 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
   const [aktionenAktionId, setzeAktionenAktionId] = useState<string | null>(() => holeAktionenAnsicht())
   useEffect(() => aufAktionenAnsichtGeaendert(setzeAktionenAktionId), [])
 
+  // 03.11.2026: Die Vorlagen-Ansicht (Einstieg in der Projektleiste). Derselbe Weg wie
+  // die Aktionen-Ansicht: Anfangswert lesen, danach haelt das Abo den Stand aktuell.
+  const [vorlagenOffen, setzeVorlagenOffen] = useState<boolean>(() => istVorlagenAnsichtOffen())
+  useEffect(() => aufVorlagenAnsichtGeaendert(setzeVorlagenOffen), [])
+  // Es liegt IMMER nur EINE Ansicht ueber der Reiterflaeche. Oeffnet der Composer die
+  // Aktionen-Ansicht, schliesst sich die Vorlagen-Ansicht - sonst lagen zwei uebereinander
+  // und die Prioritaet entschiede, welche der Nutzer sieht.
+  useEffect(() => {
+    if (aktionenAktionId !== null) schliesseVorlagenAnsicht()
+  }, [aktionenAktionId])
+
   // #456: Die Ansicht gilt nur, wenn der Träger sie wirklich liefert. Verschwindet der Slot
   // (Projekt geschlossen), faellt die Reiterfläche sofort zurueck – kein leeres Fenster.
   const markenAnsicht = eigenschaften.markenAnsicht
   const markenAktiv = zustand.markenOffen && markenAnsicht !== undefined
   const aktionenAnsicht = eigenschaften.aktionenAnsicht
   const aktionenAktiv = aktionenAktionId !== null && aktionenAnsicht !== undefined
-  // Es liegt IMMER nur EINE Ansicht über der Reiterfläche: die Marken-Ansicht hat Vorrang
-  // (sie wird aus der Projektleiste geoeffnet, die ueber allem steht).
-  const ansichtAktiv = markenAktiv || aktionenAktiv
+  const vorlagenAnsicht = eigenschaften.vorlagenAnsicht
+  const vorlagenAktiv = vorlagenOffen && vorlagenAnsicht !== undefined
+  // Es liegt IMMER nur EINE Ansicht über der Reiterfläche. Vorrang: Marken, Aktionen,
+  // Vorlagen - in dieser Reihenfolge wird gerendert; die Oeffnen-Wege schliessen die
+  // jeweils anderen (Projektleiste unten, Composer-Effekt oben).
+  const ansichtAktiv = markenAktiv || aktionenAktiv || vorlagenAktiv
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -158,6 +187,7 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
               // 01.11.2026: derselbe Rueckweg fuer die Aktionen-Ansicht - ein Reiterklick
               // heisst "zurueck zum Projekt", auch wenn derselbe Reiter schon aktiv ist.
               schliesseAktionenAnsicht()
+              schliesseVorlagenAnsicht()
               wechsleReiter(reiter)
             }}
           >
@@ -173,10 +203,26 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
           markenOffen: zustand.markenOffen,
           // #456: Der Name ist ein UMSCHALTER. Wer ihn ein zweites Mal drueckt, will
           // zurueck ins Projekt - nicht denselben Editor ein zweites Mal oeffnen.
-          aufMarken: (markeId: string) =>
-            zustand.markenOffen && zustand.markenMarkeId === markeId
-              ? sende({ art: 'marken-geschlossen' })
-              : sende({ art: 'marken-geoeffnet', markeId }),
+          aufMarken: (markeId: string) => {
+            // Nur EINE Ansicht: die Vorlagen-Ansicht schliesst, wer Marken oeffnet.
+            schliesseVorlagenAnsicht()
+            if (zustand.markenOffen && zustand.markenMarkeId === markeId) {
+              sende({ art: 'marken-geschlossen' })
+            } else {
+              sende({ art: 'marken-geoeffnet', markeId })
+            }
+          },
+          vorlagenOffen,
+          aufVorlagen: () => {
+            if (istVorlagenAnsichtOffen()) {
+              schliesseVorlagenAnsicht()
+              return
+            }
+            // Nur EINE Ansicht: Marken und Aktionen schliessen, dann oeffnen.
+            if (zustand.markenOffen) sende({ art: 'marken-geschlossen' })
+            schliesseAktionenAnsicht()
+            oeffneVorlagenAnsicht()
+          },
         })
         : null}
 
@@ -222,6 +268,13 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
               aktionId: aktionenAktionId,
               aufSchliessen: () => schliesseAktionenAnsicht(),
             })}
+          </div>
+        ) : null}
+        {/* 03.11.2026: Die VORLAGEN-Ansicht - „man soll nur im Projekteditor arbeiten
+            müssen". Einstieg in der Projektleiste, Rückweg ueber den Knopf darin. */}
+        {vorlagenAktiv && !markenAktiv && !aktionenAktiv ? (
+          <div data-testid="rahmen-ansicht-vorlagen" style={{ height: '100%' }}>
+            {vorlagenAnsicht({ aufSchliessen: () => schliesseVorlagenAnsicht() })}
           </div>
         ) : null}
       </div>

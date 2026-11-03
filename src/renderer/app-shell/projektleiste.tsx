@@ -21,7 +21,7 @@
 // zweiten Stelle; `aria-pressed` sagt Screenreadern, dass es derselbe Schalter ist.
 
 import type { JSX } from 'react'
-import { SymbolKnopf, SymbolPfeilLinks, SymbolStift } from '../gemeinsam/symbole'
+import { SymbolKnopf, SymbolPfeilLinks, SymbolRegler, SymbolStift } from '../gemeinsam/symbole'
 
 export interface ProjektleisteProps {
   projektName: string
@@ -35,6 +35,11 @@ export interface ProjektleisteProps {
   aufMarken: (markeId: string) => void
   /** true, solange der Editor offen ist - der Knopf zeigt das an. */
   markenOffen: boolean
+  /** true, solange die Vorlagen-Ansicht offen ist (03.11.2026). */
+  vorlagenOffen: boolean
+  /** Öffnet/schließt die Vorlagen-Ansicht - der zweite Einstieg neben der Marke, damit
+   *  man den Projekteditor für eine Vorlage NICHT verlassen muss. */
+  aufVorlagen: () => void
 }
 
 export function Projektleiste(p: ProjektleisteProps): JSX.Element {
@@ -107,6 +112,17 @@ export function Projektleiste(p: ProjektleisteProps): JSX.Element {
         aufKlick={() => p.aufMarken(p.standardMarkeId)}
       >
         {p.markenOffen ? <SymbolPfeilLinks /> : <SymbolStift />}
+      </SymbolKnopf>
+      {/* 03.11.2026: Der zweite Einstieg - Vorlagen bearbeiten, ohne den Reiter zu wechseln.
+          Niklas: „man soll nur im projekteditor arbeiten müssen sonst ist der flow unlogisch". */}
+      <SymbolKnopf
+        kennung="projektleiste-vorlagen-oeffnen"
+        beschriftung={p.vorlagenOffen ? 'Zurück zum Projekt' : 'Vorlagen bearbeiten'}
+        gedrueckt={p.vorlagenOffen}
+        abgeschaltet={false}
+        aufKlick={() => p.aufVorlagen()}
+      >
+        {p.vorlagenOffen ? <SymbolPfeilLinks /> : <SymbolRegler />}
       </SymbolKnopf>
     </div>
   )

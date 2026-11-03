@@ -42,6 +42,8 @@ function zeige(teil: Partial<ProjektleisteProps> = {}): HTMLElement {
     aufStandardMarke: vi.fn(),
     aufMarken: vi.fn(),
     markenOffen: false,
+    aufVorlagen: vi.fn(),
+    vorlagenOffen: false,
     ...teil,
   }
   act(() => {
@@ -57,14 +59,34 @@ describe('Projektleiste (#456)', () => {
     const auswahl = el.querySelector<HTMLSelectElement>('[data-testid="projektleiste-standardmarke"]')!
     expect(auswahl.value).toBe('m-1')
     expect(Array.from(auswahl.options).map((o) => o.textContent)).toEqual(['Fitnessworld24', 'Partner'])
-    // Genau EIN Knopf in der ganzen Leiste: Wahl (Klappliste) und Einstieg, sonst nichts.
-    expect(el.querySelectorAll('button')).toHaveLength(1)
+    // ZWEI Knoepfe seit 03.11.2026: der Marken-Stift und der Vorlagen-Einstieg - damit man
+    // den Projekteditor fuer eine Vorlage nicht mehr verlassen muss. Sonst nichts.
+    expect(el.querySelectorAll('button')).toHaveLength(2)
     // #456, Entscheidung 30.10.2026: Der Einstieg ist ein Stift, kein zweiter Markenname.
     const oeffnen = el.querySelector<HTMLButtonElement>('[data-testid="projektleiste-marke-oeffnen"]')!
     expect(oeffnen.textContent).toBe('')
     expect(oeffnen.querySelector('svg')).not.toBeNull()
     expect(oeffnen.getAttribute('aria-label')).toBe('Marke „Fitnessworld24" bearbeiten')
     expect(oeffnen.getAttribute('title')).toBe('Marke „Fitnessworld24" bearbeiten')
+  })
+
+  it('der ZWEITE Einstieg öffnet die Vorlagen - Symbol und Umschalter (03.11.2026)', () => {
+    const aufVorlagen = vi.fn()
+    const el = zeige({ aufVorlagen })
+    const knopf = el.querySelector<HTMLButtonElement>('[data-testid="projektleiste-vorlagen-oeffnen"]')
+    expect(knopf).not.toBeNull()
+    expect(knopf?.textContent).toBe('')
+    expect(knopf?.querySelector('svg')).not.toBeNull()
+    expect(knopf?.getAttribute('aria-label')).toBe('Vorlagen bearbeiten')
+    act(() => knopf?.click())
+    expect(aufVorlagen).toHaveBeenCalledTimes(1)
+  })
+
+  it('ist die Vorlagen-Ansicht offen, zeigt derselbe Knopf den Rückweg', () => {
+    const el = zeige({ vorlagenOffen: true })
+    const knopf = el.querySelector<HTMLButtonElement>('[data-testid="projektleiste-vorlagen-oeffnen"]')
+    expect(knopf?.getAttribute('aria-label')).toBe('Zurück zum Projekt')
+    expect(knopf?.getAttribute('aria-pressed')).toBe('true')
   })
 
   it('„Standardmarke" steht NICHT mehr sichtbar in der Leiste - es ist der Name der Klappliste', () => {

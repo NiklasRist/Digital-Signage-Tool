@@ -11,7 +11,33 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, fünfundvierzigste Sitzung: Felder nach Vorlage, echte Akzentfarbe — und ein Befund) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, sechsundvierzigste Sitzung: nur im Projekteditor arbeiten — der Vorlagen-Editor liegt jetzt über dem Projekt) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 28.**
+
+- **ANSAGE (Niklas, 03.11.2026):** *„man soll nur im projekteditor arbeiten müssen sonst ist der
+  flow unlogisch"*. Am Code gemessen war **eine** Stelle wirklich ein Zwang zum Reiterwechsel:
+  der **Vorlagen-Editor** hing nur am Reiter [Vorlagen]. Aktions-Editor und Marken-Editor gingen
+  schon ohne Wechsel.
+- **GEBAUT:** `gemeinsam/vorlagen-ansicht.ts` (offen/zu, wie `aktionen-ansicht.ts`), ein vierter
+  Rahmenschlitz `vorlagenAnsicht` (`rahmen-ansicht-vorlagen`), ein **zweiter Symbolknopf in der
+  Projektleiste** (`projektleiste-vorlagen-oeffnen`, Umschalter mit Rueckweg). Die besuchten
+  Reiter bleiben montiert und verdeckt (TK 9.14.2).
+- **Es liegt immer nur EINE Ansicht** ueber der Reiterflaeche: Marken / Aktionen / Vorlagen
+  schliessen einander aus; ein Reiterklick schliesst alle. **Derselbe Sitzungshalter** wie im
+  Reiter - keine zweite Arbeitskopie.
+- **NICHT gebaut (bewusst):** Die Reiter bleiben. [Vorlagen] ist die app-weite Bibliothek (ohne
+  Projekt nutzbar), [Aktionen] ist jetzt **doppelt** (Reiter + Ansicht) - ob der Reiter entfaellt,
+  ist eine eigene Entscheidung.
+- **FENSTER-BELEG:** `4g8` (neu) misst `{"ansicht":true,"inhalt":true,"reiterVerdeckt":true}` —
+  Ansicht ueber der Reiterflaeche, Rueckweg schliesst. Matrix: **FA-13**.
+- **Gate:** Typecheck **0** (auch tests), ESLint/oxlint **0**, Build **0**, Unit **5476/5476**
+  (363 Dateien, +5), Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung, 1 MANUELL).
+- **Doku:** TK **v3.41** (9.14.2), `.docx` im selben Commit neu erzeugt.
+- **Offen:** **Befund 27.3** (Band-Vorlagen im Aktions-Editor) - Niklas: „ka", nicht dringend.
+  **Effekte** bleiben geparkt (nur Vollbild: Zoom/Drift, Pop). `einzel-instanz.spec.ts` (#289) flaky.
+
+## STAND HEUTE (03.11.2026, fünfundvierzigste Sitzung: Felder nach Vorlage, echte Akzentfarbe — und ein Befund) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 27.**
 

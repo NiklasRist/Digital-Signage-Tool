@@ -374,13 +374,20 @@ export function App(): JSX.Element | null {
   const markenBestand = projektOffen === null ? [] : (lage.zugaenge.marken.hole()?.marken ?? [])
   const projektleiste = projektOffen === null
     ? undefined
-    : (schalt: { markenOffen: boolean; aufMarken: (markeId: string) => void }) => (
+    : (schalt: {
+      markenOffen: boolean
+      aufMarken: (markeId: string) => void
+      vorlagenOffen: boolean
+      aufVorlagen: () => void
+    }) => (
       <Projektleiste
         projektName={projektOffen.name}
         standardMarkeId={projektOffen.standardMarkeId}
         markenUebersicht={markenBestand.map((marke) => ({ id: marke.id, name: marke.name }))}
         markenOffen={schalt.markenOffen}
         aufMarken={schalt.aufMarken}
+        vorlagenOffen={schalt.vorlagenOffen}
+        aufVorlagen={schalt.aufVorlagen}
         aufStandardMarke={(markeId) => {
           // DIESELBE Operation wie in der Projektverwaltung (TK 9.14.3) - kein zweiter Weg.
           void wechsleStandardMarke(projektOffen.id, markeId, {
@@ -437,11 +444,38 @@ export function App(): JSX.Element | null {
       </div>
     )
 
+  // 03.11.2026: Der Vorlagen-Editor als Ansicht ÜBER der Reiterfläche - derselbe Vertrag
+  // wie Marken und Aktionen. Einstieg in der Projektleiste. Dieselbe Wurzel wie im Reiter
+  // [Vorlagen] UND DERSELBE Sitzungshalter (`umgebungStand`): ein zweiter `sitzungshalter()`
+  // wäre eine zweite Sitzung, und die Arbeitskopie hinge an einem der beiden.
+  const vorlagenAnsicht = projektOffen === null
+    ? undefined
+    : (schalt: { aufSchliessen: () => void }) => (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <div style={{ flex: '0 0 auto', padding: '4px 8px', borderBottom: '1px solid #444' }}>
+          <button type="button" data-testid="vorlagen-zurueck" onClick={schalt.aufSchliessen}>
+            Zurück zum Projekt
+          </button>
+        </div>
+        <div style={{ flex: '1 1 auto', minHeight: 0 }}>
+          <VorlagenEditorWurzel
+            sichtbar
+            vorlagen={zugaenge.vorlagen}
+            zeichnen={zugaenge.zeichnen}
+            marken={zugaenge.marken}
+            projekt={zugaenge.projektRoh}
+            sitzung={umgebungStand.current.vorlagenSitzung}
+          />
+        </div>
+      </div>
+    )
+
   const rahmenEigenschaften = {
     inhalte,
     projektleiste,
     markenAnsicht,
     aktionenAnsicht,
+    vorlagenAnsicht,
     warteschlangenLeiste: () => <WarteschlangenLeiste />,
     // #424: die sichtbaren Undo/Redo-Pfeile in der Reiterleiste.
     undoRedo: (reiter: ReiterId) => (
