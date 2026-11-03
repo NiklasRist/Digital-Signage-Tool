@@ -757,3 +757,173 @@ weg … und die unterbrechungen sind ja essenziell"*.
 
 **Nächster Schritt:** Maschine neu starten, `npm run pruefung` **einmal vollständig**; dann die zwei
 Entscheidungen aus 21.6, danach Konzept Abschnitt 10 weiter (Preset beim Anlegen, Effekte).
+
+## 22. DAS GATE LÄUFT DURCH, DER ENOSPC IST ERKLÄRT, BEIDE WIDERSPRÜCHE SIND ZU (03.11.2026)
+
+### 22.1 Das Gate — vollständig, zum ersten Mal nach den Reparaturen
+
+| Prüfung | Ergebnis |
+|---|---|
+| typecheck main / preload / renderer / **tests** | 0 |
+| eslint + oxlint | 0 |
+| build | ok |
+| Unit | **5452 / 5452** (360 Dateien) |
+| Integration | **51 / 51** (13 Dateien) |
+| Treiber | **0 Befunde**, 1 Untersuchung (`Mehrfachauswahl`, kein Befund), 1 MANUELL (nativer Export-Dialog) |
+
+Damit ist die Lücke aus 21.5 geschlossen — auch `tsc -p tsconfig.tests.json`, das dort ausdrücklich
+ungeprüft war. **`einzel-instanz.spec.ts` fiel in einem Lauf** und lief einzeln dreimal grün: der
+bekannte Flaky (#289), nicht behoben.
+
+**Der Render-Beleg ist erbracht:** `4f8` rendert ein Projekt **mit** Unterbrechung —
+`Datei=true, ffprobe 12.022 s` bei Anzeige `0:12` (2 s Video + 10 s Einschub).
+
+### 22.2 Der ENOSPC war ein Produktfehler (`fcbc758`)
+
+Die Meldung sah wie ein Umgebungsproblem aus („No space left on device" bei **843 GB** frei), und der
+vorige Abschnitt hat sie so behandelt. Sie war keine: eine **Diagnose-Probe** (volles `argv` und
+voller `stderr` in eine Datei, per Umgebungsvariable `SIGNAGE_FFMPEG_PROTOKOLL`, danach byte-identisch
+entfernt) zeigte den scheiternden Aufruf — ein **Video mit Band**, `-ss 0.991667`, `-frames:v 30`,
+`band_0002.mp4` als zweiter Eingang.
+
+| Stelle | vorher | jetzt |
+|---|---|---|
+| `normalisieren.ts` (Bandspur) | `gesamtFrames = frames` (Teillänge) | **`gesamtFrames = endFrame`** |
+| Fortschritts-Solldauer der Bandspur | `frames` | `endFrame` |
+
+**Warum das die Ursache war.** Der Schnitt läuft über einen **Ausgabe**-`-ss`
+(`(startFrame − 0,25)/fps`, `video-ausschnitt.ts`), und der spult **jede** Spur im Graph vor — auch
+die Bandspur. Eine Spur von `frames` Bildern verliert damit `startFrame` Bilder am Anfang. Blieb
+weniger als ein Bild, brach ffmpeg mit **Exit 228** ab (`= 256 − 28 = ENOSPC`). Am echten Aufruf
+gemessen, `startFrame = 30`, `frames = 30`:
+
+| Bandlänge | Exit |
+|---|---|
+| 30 Bilder (= `frames`) | **228** |
+| 31 Bilder | 0 |
+| 60 Bilder (= `startFrame + frames`) | 0 |
+
+**Das betraf JEDES getrimmte Video mit Band** — nicht nur Unterbrechungen. Die Unterbrechung hat nur
+zum ersten Mal einen Videoteil mit `startFrame ≠ 0` erzeugt; ein von Hand getrimmtes Video mit Band
+wäre an derselben Wand gelandet, nur hatte das kein Treiber gerendert.
+
+**Folge, offen benannt:** Das Band ist am **Elementanfang** verankert und läuft über eine
+Unterbrechung hinweg **weiter**, statt an jedem Teil neu mit dem ersten Abschnitt zu beginnen. Das ist
+die gewollte Semantik, aber eine Verhaltensänderung gegen die alte Vorgabe. Befund **B3** im Kopf von
+`normalisieren.ts` ist neu geschrieben und nennt die Messung; `tests/unit/normalisieren.spec.ts` trug
+die alte Regel wörtlich im Testnamen („nimmt bei GETRIMMTEM Video die Laenge, nicht endFrame") und ist
+umgedreht. Neuer Integrationstest in `einblendung-echt.spec.ts`: getrimmter Teil mit Band, **ffprobe
+zählt die Bilder** (30 erwartet) — `lauf.ok` allein hätte nicht gereicht, ein zu kurzer Clip wäre auch
+„ok".
+
+### 22.3 Eine Dauer-Spanne für alle Segmente (`0f1d223`, AD v1.12 / TK v3.34)
+
+**Niklas, 03.11.2026:** *„sonst nehmen wir einfach jede dauer größer als 8s und keine zwei typen"*.
+
+Damit fällt der zweite Typ weg: **kein** Feld im Render-Auftrag, das Einschub und Zeitleisten-Segment
+unterscheidet. Es gilt **eine** Spanne aus **einer** Konstante.
+
+- `DAUER_BEREICH.min` **10 → 8** (`shared/contracts/konstanten.ts`). Die Konstante ist die eine Quelle;
+  `setzeDauer`, `setzeStandardSegmentdauer`, `fuegeElementHinzu`, `pruefeRenderRequest`, der
+  Dauer-Regler und der Aktions-Editor lesen sie schon.
+- **`setzeUnterbrechungen` prüft die Dauer jetzt gegen dieselbe Spanne.** Vorher stand dort nur `> 0`
+  mit dem ausdrücklichen Vermerk, ob eine Grenze gilt sei „nicht hier festgelegt". Folge: eine
+  Unterbrechung von 5 s wurde **gespeichert** und erst der **Render** wies sie ab — der Nutzer sah den
+  Fehler erst beim Rendern.
+
+**Warum 8 und nicht die Slot-Grenze 10:** Das Anforderungsdokument nennt das Merkmal selbst „**kurze**
+Unterbrechung" (4.5). Mit einer Untergrenze von 10 s **und** einem Standard von 10 s war jede
+Unterbrechung mindestens 10 s lang — der Name war ein Etikett. Die Obergrenze **45 bleibt**.
+
+**Doku:** AD v1.12 (4.4 mit eigener Begründung), TK v3.34 (Operationstabelle 9.5.2, Konstantentabelle
+9.11.4), `AGENTS.md`. Die Zeile zur mit v3.16 gestrichenen `bild`-Art bleibt als **historisches Zitat**
+auf 10–45 stehen.
+
+**Ehrlich benannt:** Ein **Altprojekt** mit einer Unterbrechung unter 8 s (nur per API oder
+Handeditierung möglich — die Oberfläche bietet keine Dauer-Eingabe) wäre beim Verschieben dieses
+Einschubs blockiert. **Kein Sonderfall gebaut**, solange kein solcher Fall existiert.
+
+### 22.4 Widerspruch 1: Der Drop entscheidet nach der Vorlage (`85adaf7`, TK v3.35)
+
+**Vorher:** Der **Klick** entschied nach der Form der Aktion (`ins-video.ts`), der **Drop** auf den
+Video-Körper legte **immer** eine Unterbrechung an (#442). Eine Band-Aktion wurde damit als
+vollflächiger Einschub gezeichnet: **1920 × 162**, während der Render für ein `segment`
+**1920 × 1080** verlangt — jedes solche Projekt war **nicht renderbar** (`ungueltiges_element`).
+
+**Jetzt entscheidet EINE Stelle für BEIDE Eingänge:** `legeAktionInsVideo`
+(`composer/verwende-zeitleisten-zug.ts`).
+
+| Form der Aktion | Wirkung beim Klick **und** beim Drop |
+|---|---|
+| Band-Vorlage (`höhe !== null`) | **Abschnitt ans Band** über `uebernehmeBand` (derselbe Schreibweg wie die Band-Bearbeitung) |
+| Ganzbild (auch unbekannte Vorlage) | **Unterbrechung** an der Zeitstelle |
+
+`index.tsx` bleibt nur noch: Video finden, Zeitstelle aus der Abspielmarke lesen, abgeben.
+
+**Warum nicht „vollflächig zeichnen":** Die Zonen einer Bandvorlage liegen auf **festen `y`-Werten
+ihrer Bandhöhe**. Auf 1080 gestreckt wäre es unlesbar; oben leer gelassen wäre es kein Vollbild,
+sondern ein Streifen mit schwarzem Loch. Für beides bräuchte es eine **zweite Layout-Wahrheit je
+Vorlage**. AD 4.5 sagt ohnehin: die Unterbrechung ist ein „eigenes, **vollflächiges** Segment".
+
+**Belege:** `zeitleisten-zug-wirkung.spec.ts` schrieb die alte Regel wörtlich fest („auch fuer eine
+Aktion mit Band-Vorlage") und hat jetzt zwei Aktionen und beide Wege — **7 Fälle**, darunter der
+Band-Fall **ohne** Zeitstelle. Der Mock ersetzt nur `uebernehmeBand`; `fuegeAbschnittAn` und
+`waehlbareBandVorlagen` bleiben **echt**, sonst prüfte der Test seine eigene Attrappe.
+Am Fenster: `4b6` (Ganzbild → Unterbrechung) und `4f2` (Band → Abschnitt, keine Unterbrechung,
+Blockzahl 1 → 1, ein `Cmd+Z` nimmt den Abschnitt zurück).
+
+### 22.5 `4f7` war ein Messfehler (`5203b42`)
+
+Der Lauf meldete „bei Pause steht die Marke still" mit **Frame 11 → 29**. Das Projekt ist **2 s** lang;
+die Wiedergabe war nach 1,5 s **am Ende**, und der Klick auf `vorschau-play-pause` traf denselben Knopf
+im **Play**-Zustand. Play beginnt am Ende wieder bei 0 (ENTSCHIEDEN 3) — die Marke wanderte, weil sie
+**neu startete**. Die Zahlen passen frame-genau: 400 ms nach dem Neustart Frame 11, 1000 ms Frame 29,
+bei 30 fps.
+
+Jetzt: kein Warten bis zum Ende, **pausiert wird 400 ms nach dem Start**; die Bewegung wird **vor** dem
+Pausieren belegt; ein **neuer Zweig** verlangt nach der Pause `laeuft="nein"` (vorher prüfte der
+Schritt nur „Frame unverändert" — das wäre auch grün gewesen, wenn die Uhr weiterläuft und nur die
+Marke hängt); ein Wiederholungsversuch ist erlaubt und wird protokolliert.
+
+### 22.6 Treiber (`4c2cbce`) und drei Lehren
+
+| Schritt | Grund | Lösung |
+|---|---|---|
+| `4b5` | Seed legte eine **1-s**-Unterbrechung an — mit der neuen Untergrenze ungültig | 8 s (die Untergrenze, damit sie mitgemessen wird); Frames 120/275 statt 45/70 |
+| `4b6` | zog bewusst eine **Band**-Aktion, um zu zeigen, dass die Vorlage nichts entscheidet | zieht jetzt eine **Ganzbild**-Aktion |
+| `4f2` | maß den alten Fall und zog die **erste** Aktionszeile | misst Band → Abschnitt; greift die gesäte Aktion über **`aktion-<id>`** |
+| `4b5`-Frames | Projekt zu kurz für die Wartezeit | Messpunkt 275 statt 345, Wartezeit 200 ms |
+
+**Die Lehren, alle teuer bezahlt:**
+
+1. **Vor jeder Fenstermessung `npm run build`.** Der Durchlauf fährt `dist/`. Ich habe es einmal
+   verletzt — der Treiber maß das **alte Bündel**, und der „Produktfehler" (ein Drop legte noch eine
+   Unterbrechung an) war meiner. Dieselbe Regel stand schon in der vorigen Übergabe.
+2. **Im Treiber Aktionen über die Kennung greifen, nie über die erste Zeile.** Welche Aktion oben
+   steht, hängt an den Schritten davor; `4f2` meldete deshalb einen Fehler, den es nicht gab.
+3. **Ein Projekt kann zu kurz für die Wartezeit sein.** `4b5` ist in dieser Sitzung **dreimal**
+   gekippt: einmal lief die Uhr über das Projektende hinaus (Frame 360 von 360, das `<video>`-Element
+   war weg, `paused` null), einmal lag „danach" mit Frame 245 **mitten im** Einschub (30 + 240 = 270).
+
+### 22.7 Gegenproben
+
+Drei, jede **rot** und **byte-identisch** zurückgenommen (Prüfsummen im Commit):
+
+1. Integrationstest mit `gesamtFrames: frames` → `lauf.ok` falsch (der 228).
+2. `normalisieren.ts` auf `frames` → „expected 120 to be 150".
+3. Band-Zweig mit `false && istBandAktion(...)` → beide Band-Fälle rot.
+
+Dazu eine **Diagnose-Probe** (kein Test, sondern eine Messung): volles `argv` + voller `stderr` je
+ffmpeg-Lauf nach `SIGNAGE_FFMPEG_PROTOKOLL`, ohne die Variable verhält sich die Datei unverändert. Sie
+hat den 228-Aufruf identifiziert und ist byte-identisch entfernt (`prozess.ts`, `eec0169d…`).
+
+### 22.8 Offen
+
+- **`einzel-instanz.spec.ts` (#289)** flaky — im Gate gefallen, einzeln 3/3 grün. Nicht behoben.
+- **Altprojekte mit Unterbrechung < 8 s** (siehe 22.3) — kein Sonderfall gebaut.
+- **Kein Issue offen.** `projects/lallala` bleibt (Nutzerdaten, nicht anfassen).
+
+### 22.9 Nächster Schritt
+
+Konzept Abschnitt 10 weiter: **Preset beim Anlegen** (Vorlage + Marke + Dauer vorbelegt), danach die
+**Effekte** (Band fährt ein/aus, Motiv atmet, Übergang statt hartem Schnitt).

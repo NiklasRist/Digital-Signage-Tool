@@ -11,7 +11,65 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, neununddreissigste Sitzung: Unterbrechungen sind wieder renderbar, der Block-Weg ist weg) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, vierzigste Sitzung: der ENOSPC war ein Produktfehler, eine Dauer-Spanne, Widerspruch 1 gelöst) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 22.**
+
+- **GATE EXIT 0, vollständig — zum ersten Mal nach den Reparaturen:** Unit **5452/5452** (360 Dateien),
+  Integration **51/51** (13), **Treiber 0 Befunde**, Typecheck **0** (auch `tsconfig.tests.json`, der
+  Punkt, der in 21.5 ungeprüft war), ESLint/oxlint 0, Build 0. Einzige Untersuchung:
+  Mehrfachauswahl (#392). Einziger MANUELL-Eintrag: nativer Export-Dialog.
+  (`einzel-instanz.spec.ts` fiel in einem Lauf — der bekannte Flaky #289, einzeln **3/3 grün**.)
+- **DER RENDER-BELEG IST ERBRACHT:** Treiber `4f8` rendert ein Projekt **mit** Unterbrechung:
+  **Datei=true, ffprobe 12.022 s** bei Anzeige 0:12 (2 s Video + 10 s Einschub). Die Lücke aus
+  Abschnitt 21.5 ist zu.
+- **DER ENOSPC WAR EIN PRODUKTFEHLER, keine Umgebung (`fcbc758`):** Die Bandspur bekam
+  `gesamtFrames = frames` (Teillänge), der **Ausgabe**-`-ss` = `(startFrame − 0,25)/fps` spult sie
+  aber um `startFrame` vor. Blieb weniger als ein Bild, brach ffmpeg mit **Exit 228**
+  („No space left on device" = 256 − 28) ab — bei 843 GB freiem Platz. Ohne Electron reproduziert;
+  gemessen: Band **30** Bilder → 228, **31** → 0, **60** (= `startFrame + frames`) → 0.
+  Jetzt `gesamtFrames = endFrame`. **Das betraf JEDES getrimmte Video mit Band**, nicht nur
+  Unterbrechungen — die Unterbrechung hat nur zum ersten Mal `startFrame ≠ 0` erzeugt.
+- **Folge, offen benannt:** Das Band ist am Elementanfang verankert und läuft über eine Unterbrechung
+  hinweg **weiter**, statt an jedem Teil neu mit dem ersten Abschnitt zu beginnen. Gewollt, aber eine
+  Verhaltensänderung (Befund B3 in `normalisieren.ts` neu geschrieben).
+- **EINE DAUER-SPANNE FÜR ALLE SEGMENTE (`0f1d223`, AD v1.12 / TK v3.34):** Niklas, 03.11.2026:
+  *„sonst nehmen wir einfach jede dauer größer als 8s und keine zwei typen"*. `DAUER_BEREICH.min`
+  **10 → 8**; **kein** zweites Feld im Render-Auftrag. `setzeUnterbrechungen` prüft die Dauer jetzt
+  gegen **dieselbe** Konstante — vorher stand dort nur `> 0` mit dem Vermerk „nicht entschieden";
+  ein 5-s-Einschub wurde gespeichert und erst der **Render** wies ihn ab.
+- **WIDERSPRUCH 1 GELÖST (`85adaf7`, TK v3.35):** Eine **Band-Aktion** wird beim Drop ein
+  **Band-Abschnitt**, keine Unterbrechung — als vollflächiger Einschub war sie 1920 × 162 und damit
+  **nicht renderbar**. AD 4.5 sagt ohnehin: die Unterbrechung ist ein „eigenes, **vollflächiges**
+  Segment". Klick und Drop entscheiden jetzt an **einer** Stelle: `legeAktionInsVideo`
+  (`verwende-zeitleisten-zug.ts`). Treiber: `4b6` Ganzbild → Unterbrechung, `4f2` Band → Abschnitt.
+- **`4f7` war ein MESSFEHLER (`5203b42`):** Der Pause-Klick traf **Play**, weil das 2-s-Projekt nach
+  1,5 s am Ende war; Frame 11 → 29 sind exakt 30 fps seit dem Neustart. Jetzt wird 400 ms nach dem
+  Start pausiert, ein neuer Zweig prüft `laeuft="nein"`, ein Wiederholungsversuch ist erlaubt.
+- **Treiber (`4c2cbce`):** `4b5`-Seed auf 8 s (die Untergrenze, damit sie mitgemessen wird), Frames
+  120/275 statt 45/70; `4f2` greift die gesäte Aktion über die **Kennung** statt über die erste Zeile.
+- **LEHREN, teuer bezahlt:** (1) **Vor jeder Fenstermessung `npm run build`** — ich habe es einmal
+  verletzt und einen ganzen Lauf gegen das alte Bündel gemessen; der „Produktfehler" war meiner.
+  (2) **Im Treiber Aktionen über die Kennung greifen**, nie über die erste Zeile: welche Aktion oben
+  steht, hängt an den Schritten davor. (3) **Ein Projekt kann zu kurz für die Wartezeit sein** — das
+  hat `4b5` in dieser Sitzung dreimal gekippt (Ende erreicht, `<video>` weg, `paused` null).
+- **Gegenproben:** drei, jede rot und **byte-identisch** zurückgenommen (Prüfsummen im Commit):
+  Band auf `frames` → `lauf.ok` falsch; `normalisieren.ts` auf `frames` → „expected 120 to be 150";
+  Band-Zweig mit `false &&` → beide Band-Fälle rot. Dazu eine **Diagnose-Probe** (volles `argv` +
+  voller `stderr` nach `SIGNAGE_FFMPEG_PROTOKOLL`), die den 228-Aufruf identifizierte und
+  byte-identisch entfernt wurde.
+- **Ehrlich offen:** `einzel-instanz.spec.ts` (#289) flaky; ein **Altprojekt** mit einer Unterbrechung
+  unter 8 s (nur per API oder Handeditierung möglich — die Oberfläche bietet keine Dauer-Eingabe)
+  wäre beim Verschieben dieses Einschubs blockiert; dafür ist **kein Sonderfall gebaut**.
+  **Kein Issue offen.**
+- **NICHT GEPUSHT:** **38 Commits** vor `origin/main` — Stand **dieses Doku-Commits**; die Zahl wächst
+  mit jedem Doku-Commit: **mit dem Befehl zählen** (`git log --oneline origin/main..HEAD`).
+  **Push nur auf Anweisung.**
+- **Arbeitsbaum sauber.** `projects/lallala` bleibt (Nutzerdaten, nicht anfassen).
+- **NÄCHSTER SCHRITT:** Konzept Abschnitt 10 weiter — **Preset beim Anlegen** (Vorlage + Marke + Dauer
+  vorbelegt), danach die **Effekte** (Band fährt ein/aus, Motiv atmet, Übergang).
+
+## STAND HEUTE (03.11.2026, neununddreissigste Sitzung: Unterbrechungen sind wieder renderbar, der Block-Weg ist weg) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 21.**
 
