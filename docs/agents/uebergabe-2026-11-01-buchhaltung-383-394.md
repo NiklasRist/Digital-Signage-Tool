@@ -1073,6 +1073,11 @@ Die drei Werte aus dem Konzept (Abschnitt 10, „Anlegen mit Preset") sind damit
 - Doku: TK **v3.37** (9.8.3), `seitenpanel-konzept.md` Zeile „Anlegen mit Preset" auf GEBAUT gezogen.
   `.docx` im selben Commit neu erzeugt.
 
-### 24.5 Nächster Schritt
+### 24.5 Nächster Schritt: OFFEN — nicht die Effekte
 
-**Effekte** (Band fährt ein/aus, Motiv atmet, Übergang statt hartem Schnitt).
+**Korrektur, 03.11.2026 (Niklas: *„die effekte machen keinen sinn"*).** Die Zeile „danach die
+Effekte" ist in den Sitzungen 20–22 aus der **Notiz** in Abschnitt 16 entstanden
+(„später, aber Teil des Versprechens") — einer technischen Feststellung, dass Bewegung billig wäre,
+**keiner Entscheidung**. Sie stand danach als „Nächster Schritt" in der Übergabe, ohne dass jemand
+sie beschlossen hätte. **Was als Nächstes gebaut wird, entscheidet Niklas** — es wird nicht aus
+einer Notiz abgeleitet.

@@ -37,8 +37,11 @@
   es gibt keinen Treiber-Schritt dafuer. `einzel-instanz.spec.ts` (#289) flaky, unveraendert.
   **Kein Issue offen.** `projects/lallala` bleibt (Nutzerdaten).
 - **Doku:** TK **v3.37** (9.8.3), `seitenpanel-konzept.md` auf GEBAUT gezogen, `.docx` neu erzeugt.
-- **Naechster Schritt:** die **Effekte** (Band faehrt ein/aus, Motiv atmet, Uebergang statt
-  hartem Schnitt).
+- **Naechster Schritt: OFFEN — ausdruecklich NICHT die Effekte.** Die Zeile „danach die Effekte
+  (Band faehrt ein/aus, Motiv atmet, Uebergang)" steht seit Sitzung 20 in dieser Uebergabe; sie
+  stammt aus einer **Notiz** in Abschnitt 16 von `uebergabe-2026-11-01-buchhaltung-383-394.md`
+  („spaeter, aber Teil des Versprechens") und ist **nie entschieden** worden. **Niklas,
+  03.11.2026: *„die effekte machen keinen sinn"*.** Was als naechstes gebaut wird, entscheidet er.
 
 ## STAND HEUTE (03.11.2026, einundvierzigste Sitzung: der Band-Abschnitt hat keine Dauer-Eingabe mehr, beide .docx wieder synchron) – historisiert durch den Abschnitt darueber
 
