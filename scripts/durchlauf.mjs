@@ -2680,12 +2680,12 @@ const main = async () => {
     }
 
     // Schritt 4b6 - Unterbrechung per Drag (#437/#442): Eine Aktion wird auf den
-    // VIDEO-Koerper gezogen. Seit der Entscheidung zu #442 (29.10.2026) legt JEDER Drop
-    // auf den Koerper eine Unterbrechung an; die Vorlagenart entscheidet NICHTS mehr.
-    // Deshalb wird hier bewusst eine Aktion mit BAND-Vorlage gezogen (frueher waere sie
-    // ein Band-Abschnitt geworden). Erwartet: EIN Unterbrechungs-Kasten im Video-Block
-    // (Video | Aktion | Video, #442); sein × entfernt ihn; Aufnahme UND Entfernen sind
-    // je EIN Undo.
+    // VIDEO-Koerper gezogen. Seit der Entscheidung vom 03.11.2026 entscheidet die
+    // VORLAGE: Ganzbild -> Unterbrechung, Band-Aktion -> Abschnitt ans Band (AD 4.5:
+    // die Unterbrechung ist ein vollflaechiges Segment). Gezogen wird deshalb eine
+    // GANZBILD-Aktion; der Band-Fall wird in 4f2 gemessen.
+    // Erwartet: EIN Unterbrechungs-Kasten im Video-Block (Video | Aktion | Video, #442);
+    // sein × entfernt ihn; Aufnahme UND Entfernen sind je EIN Undo.
     await klick('[data-testid="reiter-zusammenstellen"]');
     await zeigeAnsicht("aktionen");
     await schlafe(700);
@@ -2711,7 +2711,7 @@ const main = async () => {
           aktionsdaten: {
             titel: "Durchlauf-Unterbrechung",
             beschreibung: null, preis: null, bildRef: null, cta: null,
-            standardDauer: 10, vorlagenId: "band-standard", markeId, akzentfarbe: null,
+            standardDauer: 10, vorlagenId: "vollbild", markeId, akzentfarbe: null,
           },
         });
         if (antwort === null || antwort.ok !== true) {
@@ -3750,13 +3750,14 @@ const main = async () => {
       }
     }
 
-    // Schritt 4f2 - Drop auf den Video-Koerper (#442, Entscheidung 29.10.2026): eine
-    // Aktion wird auf den VIDEO-Block gezogen (nicht an eine Kante). Erwartet: das
-    // Video-Element traegt danach eine UNTERBRECHUNG (harter Beleg: project.json), es
-    // entsteht KEIN Band-Abschnitt mehr, die Zahl der Zeitleisten-Bloecke bleibt GLEICH
-    // (der Einschub ist kein neues Listenelement, TK 9.2.9), waehrend des Zugs traegt
-    // der Video-Block data-band-ziel="true". Danach: Cmd+Z nimmt den Einschub in EINEM
-    // Schritt zurueck.
+    // Schritt 4f2 - Drop auf den Video-Koerper (03.11.2026): Eine BAND-Aktion wird auf
+    // den VIDEO-Block gezogen (nicht an eine Kante). Erwartet: das Video-Element traegt
+    // danach einen BAND-ABSCHNITT, KEINE Unterbrechung - eine Band-Aktion ist 1920 x 162
+    // und damit kein vollflaechiges Segment (AD 4.5); als Einschub gezeichnet war das
+    // Projekt nicht renderbar. Die Zahl der Zeitleisten-Bloecke bleibt GLEICH (der
+    // Abschnitt ist kein neues Listenelement). Waehrend des Zugs traegt der Video-Block
+    // data-band-ziel="true". Danach: Cmd+Z nimmt den Abschnitt in EINEM Schritt zurueck.
+    // Der GANZBILD-Fall (Drop -> Unterbrechung) wird in 4b6 gemessen.
     await klick('[data-testid="reiter-zusammenstellen"]');
     await zeigeAnsicht("aktionen");
     await schlafe(600);
@@ -3765,7 +3766,13 @@ const main = async () => {
     const bloeckeVor4f2 = await seite.evaluate(
       () => document.querySelectorAll('[data-testid^="zeitleiste-block-"]').length,
     );
-    const quelle4f2 = await seite.$('[data-testid="aktionen-liste"] [data-testid^="aktion-"]');
+    // GEZIELT die gesaete BAND-Aktion, nicht die erste Zeile: welche Aktion oben steht,
+    // haengt an den Schritten davor (03.11.2026: die erste Zeile war eine Ganzbild-Aktion,
+    // der Drop legte deshalb voellig richtig eine Unterbrechung an - der Schritt maß das
+    // Falsche).
+    const quelle4f2 = await seite.$(
+      `[data-testid="aktionen-liste"] [data-testid="aktion-${aktionsId417}"]`,
+    );
     if (videoBlockBox4f2 === null || quelle4f2 === null) {
       fund("Band-Aufnahme", "Video-Block und Aktionszeile fuer den Band-Drag",
         `videoBox=${JSON.stringify(videoBlockBox4f2)}, quelle=${quelle4f2 !== null}`,
@@ -3835,18 +3842,18 @@ const main = async () => {
           fund("Drop auf Video", "der Video-Block ist waehrend des Zugs sichtbar das Drop-Ziel (#425)",
             `data-band-ziel=${bandZiel4f2}`, "Befund", "composer/index.tsx");
         }
-        if (!hatUnterbrechung4f2) {
-          fund("Drop auf Video", "ein Drop auf den Video-Koerper wird eine Unterbrechung (#442)",
-            `Unterbrechungen: ${JSON.stringify(unterbrechungen4f2)}; Meldung: ${JSON.stringify(meldung4f2)}`,
+        if (!hatBand4f2) {
+          fund("Drop auf Video", "eine BAND-Aktion wird beim Drop ein Abschnitt am Band (AD 4.5)",
+            `Band-Abschnitte: ${JSON.stringify(abschnitte4f2)}; Unterbrechungen: ${JSON.stringify(unterbrechungen4f2)}; Meldung: ${JSON.stringify(meldung4f2)}`,
             "Befund", "composer/index.tsx");
-        } else if (hatBand4f2) {
-          fund("Drop auf Video", "ein Drop auf den Koerper legt KEINEN Band-Abschnitt an (#442)",
-            `Band-Abschnitte: ${JSON.stringify(abschnitte4f2)}`, "Befund", "composer/index.tsx");
+        } else if (hatUnterbrechung4f2) {
+          fund("Drop auf Video", "eine Band-Aktion wird NICHT zur Unterbrechung (1920x162 gegen 1920x1080)",
+            `Unterbrechungen: ${JSON.stringify(unterbrechungen4f2)}`, "Befund", "composer/index.tsx");
         } else if (bloeckeNach4f2 !== bloeckeVor4f2) {
-          fund("Drop auf Video", "die Unterbrechung ist KEIN neues Listenelement (TK 9.2.9)",
+          fund("Drop auf Video", "der Band-Abschnitt ist KEIN neues Listenelement (TK 9.2.9)",
             `Bloecke ${bloeckeVor4f2}->${bloeckeNach4f2}`, "Befund", "composer/index.tsx");
         } else {
-          console.log("[schritt-4f2] Drop auf Video GEMESSEN: das Video traegt eine Unterbrechung, keinen Band-Abschnitt, die Blockzahl ist unveraendert (#442 belegt).");
+          console.log("[schritt-4f2] Drop auf Video GEMESSEN: die Band-Aktion wurde ein Abschnitt am Band, keine Unterbrechung, die Blockzahl ist unveraendert (03.11.2026 belegt).");
         }
         // DoD: die Aufnahme ist EIN Undo-Schritt (Cmd+Z). Gemessen wird in der
         // Oberflaeche: nach EINEM Cmd+Z ist die Marke im Video-Block weg.
@@ -3854,15 +3861,30 @@ const main = async () => {
         await seite.keyboard.press("z");
         await seite.keyboard.up("Meta");
         await schlafe(1_500);
-        const markenUndo4f2 = await seite.evaluate(
-          () => document.querySelectorAll('[data-testid^="zeitleiste-unterbrechung-"]').length,
-        );
-        console.log(`[schritt-4f2] Undo: Unterbrechungs-Marken nach Cmd+Z = ${markenUndo4f2}`);
-        if (markenUndo4f2 !== 0) {
-          fund("Drop auf Video - Undo", "Cmd+Z nimmt die Unterbrechung in EINEM Schritt zurueck (#243)",
-            `Marken nach Undo: ${markenUndo4f2}`, "Befund", "composer/index.tsx");
+        // EIN Cmd+Z muss den Abschnitt wieder entfernen. Gelesen wird der STORE (nach der
+        // 4-s-Entprellung) - die Unterbrechungs-Marken taugen hier nicht mehr, seit der
+        // Drop eine Band-Aktion als Abschnitt anlegt.
+        await schlafe(6_000);
+        let abschnitteUndo4f2 = null;
+        try {
+          const jsonUndo4f2 = JSON.parse(
+            fs.readFileSync(path.join(WURZEL, "projects", aktivesProjektId, "project.json"), "utf-8"),
+          );
+          const videoUndo4f2 = (jsonUndo4f2.liste ?? []).find((e) => e.art === "video");
+          abschnitteUndo4f2 = videoUndo4f2 && videoUndo4f2.einblendung
+            ? videoUndo4f2.einblendung.abschnitte
+            : null;
+        } catch (tu) {
+          abschnitteUndo4f2 = "lesefehler: " + String(tu);
+        }
+        const nochDa4f2 = Array.isArray(abschnitteUndo4f2)
+          && abschnitteUndo4f2.some((a) => a.aktionRef === aktionsId417);
+        console.log(`[schritt-4f2] Undo: Band-Abschnitte nach Cmd+Z = ${JSON.stringify(abschnitteUndo4f2)}`);
+        if (nochDa4f2) {
+          fund("Drop auf Video - Undo", "Cmd+Z nimmt den Band-Abschnitt in EINEM Schritt zurueck (#243)",
+            `Abschnitte nach Undo: ${JSON.stringify(abschnitteUndo4f2)}`, "Befund", "composer/index.tsx");
         } else {
-          console.log("[schritt-4f2] Undo GEMESSEN: die Unterbrechung ist EIN Schritt (Cmd+Z, #442 belegt).");
+          console.log("[schritt-4f2] Undo GEMESSEN: der Abschnitt ist mit EINEM Schritt weg (Cmd+Z).");
         }
       }
     }

@@ -3645,3 +3645,41 @@ Ereignisse gesammelt: 92
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
 - **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T14:05:43.997Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 91
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "eine BAND-Aktion wird beim Drop ein Abschnitt am Band (AD 4.5)", erkannt "Band-Abschnitte: null; Unterbrechungen: [{"zeitstelle":0.03333333333333333,"aktionRef":"1252400f-b381-4765-a37b-6f0b053e1da0","dauer":10}]; Meldung: null" (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T14:11:11.566Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 92
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "eine BAND-Aktion wird beim Drop ein Abschnitt am Band (AD 4.5)", erkannt "Band-Abschnitte: null; Unterbrechungen: [{"zeitstelle":0.03333333333333333,"aktionRef":"28961d02-5524-457d-9513-6f525c86183c","dauer":10}]; Meldung: null" (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T14:16:34.670Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 90
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T14:25:13.200Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 94
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
