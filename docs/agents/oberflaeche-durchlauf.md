@@ -3579,3 +3579,69 @@ Ereignisse gesammelt: 93
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
 - **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T11:11:28.946Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 91
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Unterbrechungs-Seed: erwartet "Unterbrechung per IPC gesetzt (#426)", erkannt "{"ok":false,"fehler":{"code":"ungueltige_eingabe","meldung":"Die Dauer einer Unterbrechung muss zwischen 8 und 45 Sekunden liegen (erhalten: 1)."}}" (Ort: project-store/setze-unterbrechungen.ts)
+- **Befund** Unterbrechung Drag: erwartet "ein Drop einer vollflaechigen Aktion auf das Video wird EINE Unterbrechung (#437)", erkannt "Marken 0->0; Store-Einschuebe 0; data-band-ziel=true" (Ort: composer/verwende-zeitleisten-zug.ts)
+- **Befund** Unterbrechung Drag: erwartet "der Unterbrechungs-Kasten traegt einen Entfernen-Knopf (#442)", erkannt "kein Entfernen-Knopf gefunden" (Ort: composer/zeitleiste.tsx)
+- **Befund** Spalt-Drop: erwartet "das Element steigt an der Kante-POSITION 2 in die Liste", erkannt "Bloecke danach: ["b07700e9-0c47-4a50-aa0e-9762084d0540","f63abc86-5919-4b28-b37e-c6b5126c2fe6","f63abc86-5919-4b28-b37e-c6b5126c2fe6"]" (Ort: composer/index.tsx)
+- **Befund** Einfuegeweg: erwartet "ein Drop auf die Zeitleiste erzeugt ein SEGMENT (#453)", erkannt "Position 2 im Store: {"id":"bb4f0fed-68ca-48ec-ac3c-b2de182c2fb2","art":"segment","ref":"f63abc86-5919-4b28-b37e-c6b5126c2fe6","dauer":10,"trimStart":null,"trimEnde":null,"einblendung":null,"unterbrechungen":[]}" (Ort: composer/index.tsx)
+- **Befund** Drop auf Video: erwartet "ein Drop auf den Video-Koerper wird eine Unterbrechung (#442)", erkannt "Unterbrechungen: [{"zeitstelle":0.03333333333333333,"aktionRef":"f63abc86-5919-4b28-b37e-c6b5126c2fe6","dauer":10}]; Meldung: null" (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+- **Befund** Vierter Fall (#438): erwartet "Einschub per project:setzeUnterbrechungen", erkannt "{"ok":false,"fehler":{"code":"ungueltige_eingabe","meldung":"Die Dauer einer Unterbrechung muss zwischen 8 und 45 Sekunden liegen (erhalten: 1)."}}" (Ort: project-store/setze-unterbrechungen.ts)
+
+## Nachlauf vom 2026-11-03T11:16:37.946Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 94
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Unterbrechung Vorschau: erwartet "nach dem Einschub: Video laeuft an derselben Stelle weiter", erkannt "{"einschub":true,"paused":true,"frame":"84"}" (Ort: preview-player/vorschau.tsx)
+- **Befund** Unterbrechung Drag: erwartet "ein Drop einer vollflaechigen Aktion auf das Video wird EINE Unterbrechung (#437)", erkannt "Marken 0->0; Store-Einschuebe 0; data-band-ziel=true" (Ort: composer/verwende-zeitleisten-zug.ts)
+- **Befund** Unterbrechung Drag: erwartet "der Unterbrechungs-Kasten traegt einen Entfernen-Knopf (#442)", erkannt "kein Entfernen-Knopf gefunden" (Ort: composer/zeitleiste.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T11:22:17.693Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 91
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T11:29:00.670Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 93
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Unterbrechung Vorschau: erwartet "nach dem Einschub: Video laeuft an derselben Stelle weiter", erkannt "{"einschub":false,"paused":null,"frame":"360"}" (Ort: preview-player/vorschau.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T11:35:57.929Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 91
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Befund** Unterbrechung Vorschau: erwartet "nach dem Einschub: Video laeuft an derselben Stelle weiter", erkannt "{"einschub":true,"paused":true,"frame":"254"}" (Ort: preview-player/vorschau.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-03T11:41:12.673Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 92
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)

@@ -2583,7 +2583,7 @@ const main = async () => {
             if (!akt || !akt.ok) return { aktion: akt };
             const unter = await window.api.invoke("project:setzeUnterbrechungen", {
               elementId,
-              unterbrechungen: [{ zeitstelle: 1, aktionRef: akt.wert.id, dauer: 1 }],
+              unterbrechungen: [{ zeitstelle: 1, aktionRef: akt.wert.id, dauer: 8 }],
             });
             return { aktion: akt, unterbrechung: unter };
           }, videoElement.id, seedBasis.standardMarkeId);
@@ -2611,7 +2611,10 @@ const main = async () => {
             await zeigeAnsicht("aktionen");
             await schlafe(800);
 
-            // Auf einen Frame IM Einschub springen: Zeitstelle 1 s = Frame 30, Einschub [30, 60).
+            // Auf einen Frame IM Einschub springen: Zeitstelle 1 s = Frame 30, Einschub
+            // [30, 270) bei 8 s Dauer - der MINIMUM-Wert des Dauer-Bereichs. Damit prueft
+            // dieser Schritt nebenbei, dass die neue Untergrenze wirklich renderbar ist.
+            // Der Seed stand vorher auf 1 s und wurde vom Store zu Recht abgewiesen.
             const setzeFrame = (wert) => seite.evaluate((w) => {
               const schieber = document.querySelector('[data-testid="vorschau-zeitleiste"]');
               if (schieber === null) return false;
@@ -2631,7 +2634,7 @@ const main = async () => {
 
             await klick('[data-testid="vorschau-play-pause"]'); // die Uhr laeuft
             await schlafe(300);
-            const schieberDa = await setzeFrame(45);
+            const schieberDa = await setzeFrame(120);
             if (!schieberDa) {
               fund("Unterbrechung Vorschau", "die Vorschau-Zeitleiste ist bedienbar (#436)",
                 "keine vorschau-zeitleiste im Fenster", "Befund", "preview-player/vorschau.tsx");
@@ -2639,8 +2642,11 @@ const main = async () => {
               await schlafe(300);
               const imEinschub = await vorschauDiag();
               console.log("[schritt-4b5] Im Einschub: " + JSON.stringify(imEinschub));
-              await setzeFrame(70); // nach dem Einschub (zweiter Video-Teil)
-              await schlafe(500);
+              await setzeFrame(275); // nach dem Einschub: er endet bei Frame 270 (30 + 8 s x 30).
+              // Nur 200 ms messen: Die Uhr LAEUFT weiter (die Zusage ist "Video laeuft"), und
+              // das Projekt endet bei Frame 300. Eine laengere Wartezeit lief am 03.11.2026
+              // ueber das Ende hinaus - dann ist das <video>-Element weg und `paused` null.
+              await schlafe(200);
               const danach = await vorschauDiag();
               console.log("[schritt-4b5] Danach: " + JSON.stringify(danach));
               if (!imEinschub.einschub || imEinschub.paused !== true) {
@@ -2705,7 +2711,7 @@ const main = async () => {
           aktionsdaten: {
             titel: "Durchlauf-Unterbrechung",
             beschreibung: null, preis: null, bildRef: null, cta: null,
-            standardDauer: 1, vorlagenId: "band-standard", markeId, akzentfarbe: null,
+            standardDauer: 10, vorlagenId: "band-standard", markeId, akzentfarbe: null,
           },
         });
         if (antwort === null || antwort.ok !== true) {
@@ -5419,7 +5425,7 @@ const main = async () => {
           if (!akt || !akt.ok) return { aktion: akt };
           const unter = await window.api.invoke("project:setzeUnterbrechungen", {
             elementId,
-            unterbrechungen: [{ zeitstelle: 1, aktionRef: akt.wert.id, dauer: 1 }],
+            unterbrechungen: [{ zeitstelle: 1, aktionRef: akt.wert.id, dauer: 8 }],
           });
           return { aktionId: akt.wert.id, unterbrechung: unter };
         }, videoId4i, markeId4i, bildAsset4i.id);
