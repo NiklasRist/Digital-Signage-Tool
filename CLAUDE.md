@@ -49,6 +49,11 @@
 - **NÄCHSTER SCHRITT:** Maschine neu starten, `npm run pruefung` **einmal vollständig** laufen
   lassen; dann die zwei Widersprüche entscheiden (Band-Aktion als Unterbrechung verbieten **oder**
   vollflächig zeichnen; Dauer-Grenze für Einschübe festlegen).
+- **NICHT GEPUSHT:** **31 Commits** vor `origin/main` — Stand **dieses Doku-Commits**. Die Zahl
+  wächst mit jedem Doku-Commit: **mit dem Befehl zählen**, nicht abschreiben
+  (`git log --oneline origin/main..HEAD`). **Push nur auf Anweisung.**
+- **Arbeitsbaum sauber.** Aufgeräumt: drei leere Projekt-Reste abgebrochener Treiber-Läufe
+  (`DurchlaufTest-*`) und `instanz.lock` — `projects/lallala` bleibt (Nutzerdaten, nicht anfassen).
 
 ## STAND HEUTE (02.11.2026, achtunddreissigste Sitzung: „Ins Video", Buchhaltung, ein Produktwiderspruch) – historisiert durch den Abschnitt darueber
 
