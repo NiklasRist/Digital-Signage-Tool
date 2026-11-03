@@ -36,8 +36,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// Befund 27.3, entschieden 03.11.2026: Eine Aktion ist im UI IMMER ein Ganzbild; das
+// Band gehoert zum Video (TK 9.2.8). Der Filter ist kein Versehen - und seit
+// Entscheidung 29.4 (Inline-Formular entfallen) der einzige Anlege-Weg.
 describe("istWaehlbar", () => {
-  it("ist wahr genau fuer parent === null UND höhe === null (Ganzbild)", () => {
+  it("ist wahr genau fuer parent === null UND höhe === null (Ganzbild, 27.3)", () => {
     const a = [
       vorlage({ parent: null }),
       vorlage({ parent: null, höhe: 162 }),

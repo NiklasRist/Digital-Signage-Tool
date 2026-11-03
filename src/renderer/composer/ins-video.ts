@@ -45,6 +45,19 @@ export const STANDARD_BAND_VORLAGE_ID = 'band-standard'
  * Klick legt eine Unterbrechung an. Das ist die sichtbarere und leichter
  * rueckgaengig zu machende Wirkung; ein Bandabschnitt mit unbekannter Vorlage
  * waere ausserdem gar nicht darstellbar.
+ *
+ * WARUM DIESER ZWEIG BLEIBT, OBWOHL DIE OBERFLAECHE IHN NICHT MEHR ERZEUGT
+ * (Entscheidung 03.11.2026 zu Befund 27.3): Der Aktions-Editor bietet nur
+ * Ganzbild-Vorlagen an (`action-editor/vorlage-waehlen.ts`), und das fruehere
+ * Inline-Formular der Bibliothek — der EINZIGE Weg, auf dem eine Aktion je eine
+ * Band-Vorlage bekam (sein `<select>` war ungefiltert) — ist mit Entscheidung 29.4
+ * entfallen. Der Zweig ist deshalb aber KEIN toter Code: Aeltere Projekte tragen
+ * solche Aktionen (belegt: `projects/lallala`, Aktion „Fuss" mit `band-standard`).
+ * Fuer sie ist der Band-Abschnitt die EINZIGE darstellbare Wirkung — als Unterbrechung
+ * waeren sie 1920 x 162, und der Render weist jedes Segment ab, das nicht 1920 x 1080
+ * ist (TK 9.5.2). Loeschen hiesse: ein bestehendes Projekt wird unrenderbar.
+ * Das Band selbst gehoert zum VIDEO (`bandVorlageId`, TK 9.2.8) — ein Abschnitt wird
+ * mit DESSEN Vorlage gezeichnet, nie mit der der Aktion.
  */
 export function istBandAktion(aktion: Aktion, vorlagen: readonly Vorlage[]): boolean {
   const vorlage = vorlagen.find((kandidat) => kandidat.id === aktion.vorlagenId)

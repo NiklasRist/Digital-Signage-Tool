@@ -78,7 +78,11 @@ function aktion(vorlagenId: string): Aktion {
 }
 
 describe('istBandAktion', () => {
-  it('eine Vorlage MIT Hoehe ist ein Band', () => {
+  // Befund 27.3 (entschieden 03.11.2026): Die Oberflaeche erzeugt solche Aktionen nicht
+  // mehr (der Editor bietet nur Ganzbild, `vorlage-waehlen.ts`). BESTEHENDE Projekte
+  // tragen sie aber (`projects/lallala`), und fuer die ist der Abschnitt die einzige
+  // darstellbare Wirkung - eine Unterbrechung waere 1920 x 162 und nicht renderbar.
+  it('eine Vorlage MIT Hoehe ist ein Band - auch fuer Aktionen aus ALTEN Daten (27.3)', () => {
     expect(istBandAktion(aktion('band-standard'), [vorlage('band-standard', 162)])).toBe(true)
   })
 

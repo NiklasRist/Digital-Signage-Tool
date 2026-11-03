@@ -1485,3 +1485,50 @@ Unit **5477/5477** (362 Dateien), Integration **51/51** (13), Treiber **Exit 0 /
   `.docx` neu erzeugt (Staging, `unzip -t`, 0 Backticks, Absatz-Diff: 2150 → 2161 Absätze).
 - `seitenpanel-konzept.md` (Zeile „Anlegen mit Preset") und `treiber-matrix.md` (FA-02)
   nachgezogen. AD unverändert (v1.13).
+
+---
+
+## 31. BEFUND 27.3 ENTSCHIEDEN — „Band gehört zum Video" (03.11.2026)
+
+Niklas, 03.11.2026: **„Nein — Band gehört zum Video."**
+
+### 31.1 Die Entscheidung
+
+Eine Aktion ist im **UI immer ein Ganzbild**. Das Band ist Sache des **Videos**
+(`bandVorlageId`, TK 9.2.8) und wird im **Band-Editor** gewählt. `istWaehlbar` bleibt, wie es
+ist (nur `parent === null && höhe === null`).
+
+### 31.2 Warum der Band-Zweig NICHT gelöscht wird
+
+Die Übergabe hatte als Option 1 „gewollt → `istBandAktion`-Zweig ist toter Code und sollte weg"
+genannt. **Das ist widerlegt — am Bestand gemessen:**
+
+- `projects/lallala` enthält genau **eine** Aktion: **„Fuß"** mit `vorlagenId: "band-standard"`.
+  Der einzige Weg dorthin war das **Inline-Formular** der Bibliothek (heute entfallen): dessen
+  Auswahlfeld listete `vorlagen.hole().nutzbare` **ungefiltert**, also auch Band-Vorlagen. Der
+  Aktions-Editor filterte dagegen schon immer (`art === 'vollflaeche'`, seit M9 `höhe === null`).
+- Für eine solche Aktion ist der **Band-Abschnitt die einzige darstellbare Wirkung**: als
+  Unterbrechung wäre sie 1920 × 162, und der Render weist jedes Segment ab, das nicht
+  1920 × 1080 ist (TK 9.5.2). Den Zweig zu löschen hieße: ein bestehendes Projekt wird
+  **unrenderbar**.
+- Ein Band-Abschnitt wird ohnehin mit der Band-Vorlage **des Videos** gezeichnet
+  (`render-ausloesen.ts` → `zeichneSegment(aktion, bandVorlage, …)`), nie mit der der Aktion.
+  Eine Band-Vorlage an der Aktion ändert am Aussehen **nichts** — sie verspräche nur etwas.
+  Das ist der sachliche Grund für „Nein".
+
+### 31.3 Was geändert ist
+
+- **`composer/ins-video.ts`:** `istBandAktion` trägt die Entscheidung samt Beleg im Kopf —
+  inklusive der Feststellung, dass der Zweig **Bestandsschutz** ist und nicht toter Code.
+- **`action-editor/vorlage-waehlen.ts`:** derselbe Grund beim Filter; dazu der Hinweis, dass
+  dieser Filter seit 29.4 der **einzige** Anlege-Weg ist.
+- **Tests:** beide Spec-Köpfe nennen die Entscheidung; `ins-video.spec.ts` sagt jetzt im
+  Testnamen, dass der Band-Fall für **alte Daten** gilt (27.3).
+- **TK v3.43** (9.8.3): neuer Absatz „Eine Aktion ist immer ein Ganzbild", `.docx` im selben
+  Commit neu erzeugt (2161 → 2171 Absätze, `unzip -t`, 0 Backticks).
+
+### 31.4 Gate
+
+Typecheck **0** (alle vier), ESLint/oxlint **0**; die zwei berührten Spec-Dateien **33/33**.
+Der volle Lauf steht im Commit dieser Sitzung. **Kein Treiber-Schritt nötig** — 4f2/4f8 messen
+den Band-Weg weiter über IPC-erzeugte Aktionen, und genau das ist jetzt der Bestandsschutz.

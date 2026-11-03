@@ -50,8 +50,17 @@
 - **Nicht gepusht:** **49 Commits** vor `origin/main` **vor** dieser Sitzung; mit dem Commit
   dieser Zeile **50**. Die Zahl waechst mit jedem Doku-Commit — mit dem Befehl zaehlen
   (`git log --oneline origin/main..HEAD`). **Push nur auf Anweisung.**
-- **Weiter offen:** Befund 27.3 (Band-Vorlagen im Aktions-Editor, „ka"), Effekte geparkt (nur
-  Vollbild: Zoom/Drift, Pop), `einzel-instanz.spec.ts` (#289) flaky.
+- **NACHTRAG: Befund 27.3 ENTSCHIEDEN (Niklas, 03.11.2026: „Nein — Band gehört zum Video").**
+  Eine Aktion ist im UI **immer ein Ganzbild**; das Band ist Sache des **Videos**
+  (`bandVorlageId`, TK 9.2.8) und wird im Band-Editor gewaehlt. **Der Band-Zweig in
+  `istBandAktion` bleibt trotzdem** — er ist **kein toter Code**: Dein Projekt `lallala` traegt
+  die Aktion „Fuss" mit `band-standard` (entstanden ueber das heute entfallene Inline-Formular,
+  dessen Auswahlfeld **ungefiltert** war). Als Unterbrechung waere sie 1920 × 162 und **nicht
+  renderbar** (TK 9.5.2). Die Kommentare in `composer/ins-video.ts` und
+  `action-editor/vorlage-waehlen.ts` nennen die Entscheidung; TK **v3.43**, `.docx` synchron;
+  Typecheck/Lint 0, die zwei beruehrten Spec-Dateien 33/33 gruen.
+- **Weiter offen:** Effekte geparkt (nur Vollbild: Zoom/Drift, Pop), `einzel-instanz.spec.ts`
+  (#289) flaky.
 
 ## STAND HEUTE (03.11.2026, siebenundvierzigste Sitzung: „Bearbeiten" führt sofort in die Aktion — und 211 Vorlagen-Reste gelöscht) – historisiert durch den Abschnitt darueber
 

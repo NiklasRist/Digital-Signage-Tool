@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.42 (9.8.3: „Neue Aktion" öffnet den Aktions-Editor im Modus **neu** — ein Anlege-Weg statt zwei. Entscheidung 03.11.2026, AD unverändert v1.13)
+**Version:** 3.43 (9.8.3: Eine Aktion ist immer ein **Ganzbild** — das Band gehört zum Video; Band-Aktionen aus älteren Projekten bleiben gültig. Nachträglich zu Entscheidung 29.4, 03.11.2026, AD unverändert v1.13)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1541,6 +1541,16 @@ Aktion {
   Produktbild rendert den Platzhalter; und beim Abbrechen entsteht keine halbe Aktion im Bestand.
   Der Editor wertet `starteNeu` **einmal je Montage** aus und wartet mit der Vorbelegung, bis die
   wählbaren Vorlagen geladen sind — danach führt er seine eigene Lage.
+- **Eine Aktion ist immer ein Ganzbild (03.11.2026, Befund 27.3).** Der Aktions-Editor bietet nur
+  Vorlagen mit `höhe === null` an (`istWaehlbar`). Das **Band gehört zum Video** (9.2.8): gewählt
+  wird seine `bandVorlageId` im Band-Editor, und ein Abschnitt wird mit **dieser** Vorlage
+  gezeichnet (`render-ausloesen.ts` — `zeichneSegment(aktion, bandVorlage, …)`), nie mit der der
+  Aktion. Eine Band-Vorlage an einer Aktion ändert am Aussehen also nichts; sie verspräche nur
+  etwas. **Bestandsschutz:** Projekte aus der Zeit des Inline-Formulars (entfallen mit
+  Entscheidung 29.4 — sein Auswahlfeld listete die Vorlagen **ungefiltert**, daher stammt die
+  Band-Aktion in `projects/lallala`) können solche Aktionen tragen. Sie gehen beim Drop weiterhin
+  als **Band-Abschnitt** ins Video; als Unterbrechung wären sie 1920 × 162 und damit nach 9.5.2
+  nicht renderbar. Der Zweig in `istBandAktion` ist deshalb **kein toter Code**.
 - **Anlegen ist ein Gestaltungsvorgang (03.11.2026).** Im Modus „neu" zeichnet die
   **Live-Vorschau den Entwurf**, nicht erst die gespeicherte Aktion. Die Zeichenroutine fordert
   dafür nur die Inhaltsfelder — `AktionsInhalt` (Titel, Beschreibung, Preis, CTA, `bildRef`,

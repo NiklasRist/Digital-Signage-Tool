@@ -11,6 +11,15 @@ import { rufeAuf } from '../ipc-client/rufe-auf'
  * Die Flaeche IST die Art (TK 9.11.1 Punkt 0, v3.31): `höhe === null` heisst Ganzbild.
  * Eine Aktion ist ein eigenstaendiges Segment; ein Band waere dort 1920 x 162 und
  * koennte die 1080er-Flaeche nicht fuellen.
+ *
+ * ENTSCHIEDEN 03.11.2026 (Befund 27.3): Das bleibt so. Eine Aktion ist im UI IMMER ein
+ * Ganzbild; das Band gehoert zum Video (`bandVorlageId`, TK 9.2.8) und wird im
+ * Band-Editor gewaehlt. Ein Abschnitt wird mit DESSEN Vorlage gezeichnet — eine
+ * Band-Vorlage an der Aktion aenderte am Aussehen nichts, sie verspraeche nur etwas.
+ * Dieser Filter ist seit Entscheidung 29.4 der EINZIGE Anlege-Weg (das fruehere
+ * Inline-Formular der Bibliothek listete die Vorlagen ungefiltert — daher stammt die
+ * Band-Aktion in `projects/lallala`). Bestehende Band-Aktionen bleiben gueltig und
+ * gehen weiterhin als Band-Abschnitt ins Video (`composer/ins-video.ts:istBandAktion`).
  */
 export function istWaehlbar(vorlage: Vorlage): boolean {
   return vorlage.parent === null && vorlage.höhe === null
