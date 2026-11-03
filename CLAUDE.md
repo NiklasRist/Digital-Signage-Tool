@@ -28,10 +28,15 @@
   `vorlagen.json` steht wieder auf **3**.
 - **Gate:** Typecheck **0** (auch tests), ESLint/oxlint **0**, Build **0**, Unit **5477/5477**
   (363 Dateien), Integration **51/51** (13), Treiber **0 Befunde**.
-- **OFFEN — „man kann die nicht sinnvoll anlegen" (29.4):** Heute legt „+ Neue Aktion" nur Titel +
-  Vorlage an; Bild/Preis kommen ueber „Bearbeiten". Zwei Wege: (1) nach dem Anlegen **direkt in
-  den Editor** springen, (2) „Neue Aktion" oeffnet **den Editor im Modus „neu"** (Inline-Formular
-  entfaellt). **Niklas entscheidet.**
+- **ENTSCHEIDUNG 29.4 (Niklas, 03.11.2026): „wir machen 2" — NICHT GEBAUT.** „Neue Aktion"
+  oeffnet kuenftig den **Aktions-Editor im Modus „neu"** (Vorschau, Bild, Vorlagen-Kacheln, Felder
+  nach Vorlage, „Anlegen" sitzt dort); **das Inline-Formular im Composer entfaellt** — ein Weg
+  statt zwei. Gruende: ein Weg statt zwei, eine Aktion ohne Produktbild ist halbfertig,
+  Abbrechen hinterlaesst nichts, und die Vorschau steckt im Editor.
+  **Beim Bauen beachten:** `gemeinsam/aktionen-ansicht.ts` braucht einen **dritten Zustand**
+  (`neu | aktion(id) | zu`); der Editor kann „neu" laengst. Entfaellt: `composer/aktion-anlegen.tsx`
+  samt Tests; Treiber `4q` (und der Anlege-Teil von `4g`) misst heute das Inline-Formular und muss
+  auf den Editor-Weg. `vorlage-vorbelegung.ts` bleibt gueltig.
 - **Weiter offen:** Befund 27.3 (Band-Vorlagen im Aktions-Editor, „ka"), Effekte geparkt (nur
   Vollbild: Zoom/Drift, Pop), `einzel-instanz.spec.ts` (#289) flaky.
 

@@ -1371,19 +1371,47 @@ im Projekt. Nach ein paar Dutzend Läufen ist die Vorlagen-Bibliothek Müll.
   kein zweiter Klick".
 - Typecheck 0 (auch Tests), Lint 0, Build 0, Integration **51/51**, Treiber **0 Befunde**.
 
-### 29.4 Offen — „man kann die nicht sinnvoll anlegen"
+### 29.4 ENTSCHIEDEN: „Neue Aktion" öffnet den Editor (Option 2) — NICHT GEBAUT
 
-**Nicht gebaut, weil die Richtung offen ist.** Heute legt „+ Neue Aktion" im Composer eine Aktion
-mit **Titel + Vorlage** an und ist damit fertig; Bild, Preis und CTA kommen erst über
-„Bearbeiten". Zwei Wege wären denkbar:
+**Niklas, 03.11.2026:** *„nein, schreib es in die uebergabe aber wir machen 2"*.
 
-1. **Nach dem Anlegen direkt in den Editor** springen (die neue Aktion ist offen, man ergänzt sie
-   und geht zurück) — klein, ändert den Anlege-Weg nicht.
-2. **„Neue Aktion" öffnet den Editor im Modus „neu"** (Vorschau + Bild + alle Felder), „Anlegen"
-   sitzt dort; das Inline-Formular im Composer entfällt — ein Weg statt zwei.
+Heute legt „+ Neue Aktion" im Composer eine Aktion mit **Titel + Vorlage** an und ist damit
+fertig; Bild, Preis und CTA kommen erst über „Bearbeiten". Es gibt also **zwei** Anlege-Wege mit
+unterschiedlichem Können. **Entschieden ist Variante 2:**
 
-**Niklas entscheidet.**
+> **„Neue Aktion" öffnet den Aktions-Editor im Modus „neu"** (Vorschau, Bild, Vorlagen-Kacheln,
+> Felder nach Vorlage, „Anlegen" sitzt dort). **Das Inline-Formular im Composer entfällt** —
+> **ein** Weg statt zwei.
+
+**Begründung (die vier Punkte, die zur Entscheidung führten):**
+
+1. **Ein Weg statt zwei** — Inline-Formular und Editor würden auseinanderlaufen; das ist die
+   Doppelung, die dieses Projekt sonst teuer bezahlt.
+2. **Eine Aktion ohne Produktbild ist halbfertig** — sie rendert den Platzhalter. Der schnelle Weg
+   wäre der Weg in den Müll.
+3. **Abbrechen ist sauber:** Bei Variante 2 entsteht beim Abbrechen **keine** Aktion; bei
+   Variante 1 bliebe eine halbe Leiche in der Bibliothek.
+4. **Die Vorschau ist der Punkt** — der ganze Aufwand aus Abschnitt 25–27 (Entwurf wird gezeichnet,
+   Bild im Entwurf, Vorlagen-Kacheln, Felder nach Vorlage) steckt **im Editor**; das Inline-Formular
+   zeigt davon nichts.
+
+**Vorbehalten (bleibt):** die Vorbelegung aus Abschnitt 24 — zuletzt benutzte Vorlage,
+Projekt-Standardmarke, Projekt-Standarddauer. „Neue Aktion" bleibt **ein** Klick, landet aber im
+Editor statt in einer halben Aktion.
+
+**Was der Bau berührt (beim nächsten Mal lesen):**
+
+- `gemeinsam/aktionen-ansicht.ts` kennt heute nur `aktionId: string | null` (`null` = zu). Für
+  „neu" braucht der Speicher einen **dritten Zustand**: `neu | aktion(id) | zu`. Rahmen und
+  `App.tsx` ziehen mit.
+- Der Editor kann den Modus „neu" **längst** (der Reiter [Aktionen] nutzt ihn) — es fehlt nur der
+  Einstieg über den Overlay-Speicher.
+- **Entfällt:** `composer/aktion-anlegen.tsx` samt Tests; der Treiber-Schritt **`4q`** (und der
+  Anlege-Teil von `4g`/`4g3`) misst heute das Inline-Formular und muss auf den Editor-Weg.
+  `vorlage-vorbelegung.ts` bleibt unverändert gültig.
+
+**NICHT GEBAUT — die Entscheidung steht, die Arbeit nicht.**
 
 ### 29.5 Nächster Schritt
 
-**Offen.**
+**Option 2 bauen** (Abschnitt 29.4).
