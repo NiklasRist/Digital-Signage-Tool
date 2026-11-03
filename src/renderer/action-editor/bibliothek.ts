@@ -11,7 +11,7 @@ export interface BibliothekEintrag {
 
 /** Löst `bildRef` gegen die Medien-Bibliothek des Projekts auf.
  *  null bei `bildRef === null`, bei unbekannter ID und bei `zustand === 'fehlt'`. */
-export function findeBildAsset(bildRef: string | null, assets: Asset[]): Asset | null {
+export function findeBildAsset(bildRef: string | null, assets: readonly Asset[]): Asset | null {
   if (bildRef === null) return null
 
   const bildAsset = assets.find((asset) => asset.id === bildRef)

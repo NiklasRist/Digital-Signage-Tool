@@ -1081,3 +1081,60 @@ Effekte" ist in den Sitzungen 20–22 aus der **Notiz** in Abschnitt 16 entstand
 **keiner Entscheidung**. Sie stand danach als „Nächster Schritt" in der Übergabe, ohne dass jemand
 sie beschlossen hätte. **Was als Nächstes gebaut wird, entscheidet Niklas** — es wird nicht aus
 einer Notiz abgeleitet.
+
+---
+
+## 25. ANLEGEN IST EIN GESTALTUNGSVORGANG (03.11.2026)
+
+### 25.1 Warum
+
+**Niklas, 03.11.2026:** *„Die Aktionen müssen besser sein zum anlegen, mehr Sinn ergeben"*. Die
+Messung am Code gab ihm recht — das Formular war im Modus „neu" blind und konnte nicht einmal das
+Produktbild setzen:
+
+| Befund | Beleg |
+|---|---|
+| **Keine Vorschau beim Anlegen** | `VorschauFlaeche` zeichnete nur mit `gewaehlt` (gespeicherte Aktion) — im Modus „neu" leer |
+| **Kein Bild beim Anlegen** | Bild-Auswahl und Akzentfarbe brachen bei `gewaehlt === null` ab; man musste anlegen, zweimal öffnen, dann das Bild setzen |
+| **Akzentfarbe ist ein totes Feld** | die Klappliste hat genau eine Option („Markenwert") — offen für Schritt C |
+| **Vorlage ohne Vorschau** | nackte Klappliste mit Namen — offen für Schritt B |
+| **Alle Felder immer sichtbar** | auch wenn die Vorlage keine Zone dafür hat — offen für Schritt C |
+
+### 25.2 Was gebaut ist (Schritt A)
+
+- **`AktionsInhalt`** (`shared/contracts/aktion.ts`): `Omit<Aktion, 'id'>` — alles, was zum
+  **Zeichnen** gebraucht wird. Gemessen: `aktion.id` kommt in `template-canvas/` **nirgends** vor.
+  `zeichneSegment`, `zeichneVorschau`, `findeZeichenVorlage` und die fünf Zonen-/Farb-Module
+  nehmen jetzt `AktionsInhalt` an. Damit kann derselbe Zeichenweg einen **Entwurf** zeichnen —
+  die Voraussetzung für die Vorschau.
+- **`VorschauFlaeche` zeichnet den Entwurf** (`formular`), nicht mehr `gewaehlt`.
+- **Bild im Entwurf wählbar**: im Modus „neu" schreibt die Bild-Auswahl in `bildRef` des Entwurfs
+  (kein IPC — es gibt noch keine Aktion); im Modus „bestehend" bleibt der Weg über `weiseBildZu` /
+  `entferneBild`.
+- **`bereiteMotivVorFuer`** (`live-vorschau.ts`): bereitet EIN Motiv des Entwurfs vor. **Ohne das
+  zeichnete die Vorschau für ein gerade gewähltes Produktfoto den Platzhalter** — `bereiteVorschauVor`
+  läuft nur über die gespeicherten Aktionen.
+
+### 25.3 Belege
+
+- **Treiber `4g7` (neu):** `{"flaeche":true,"bild":true,"breite":1920,"hoehe":1080,"vorlage":"vollbild"}`
+  — *„VORSCHAU BEIM ANLEGEN GEMESSEN: Canvas 1920 x 1080 im Modus 'neu'"*. Das ist der Fenster-Beleg;
+  der Unit-Test hätte nur den **Aufruf** beweisen können (die Zeichenroutine ist dort gemattet).
+- **Unit 5462/5462** (361 Dateien, +2): „die Vorschau zeichnet den ENTWURF" und „im Modus 'neu'
+  wandert das gewählte Bild in den Entwurf — ohne IPC — und die Vorschau zeichnet es".
+- Typecheck 0 (auch Tests), Lint 0, Build 0, Integration **51/51**, Treiber **0 Befunde**
+  (1 Untersuchung, 1 MANUELL).
+- Doku: TK **v3.38** (9.8.3), `.docx` im selben Commit neu erzeugt.
+
+### 25.4 Offen (die Schritte B und C)
+
+- **B:** Vorlagen-Auswahl **mit Bild** statt Klappliste.
+- **C:** Felder richten sich nach der Vorlage (nur zeigen, was sie benutzt); Akzentfarbe als
+  echter Farbwähler (#325) **oder** Feld entfernen.
+- **Effekte: geparkt** (Niklas, 03.11.2026: *„die machen nur sinn wenn der rest der app funktioniert"*).
+  Wenn sie kommen: **nur Vollbild** — Zoom/Drift aufs Produktbild, Pop für Preis/Text. **Nicht** das
+  Band, **nicht** „Band fährt ein/aus", **nicht** Übergangs-Fade.
+
+### 25.5 Nächster Schritt
+
+**B** (Vorlagen-Auswahl mit Bild), dann **C**. Danach entscheidet Niklas, was als Nächstes kommt.

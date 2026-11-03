@@ -24,7 +24,7 @@
 //   - Kein Undo-Stapel (M7/9.13), kein Platzieren in der Liste (composer #123),
 //     keine rueckwirkende Anwendung von standardDauer auf Listenelemente.
 
-import type { Aktion } from '../../shared/contracts/aktion'
+import type { Aktion, AktionsInhalt } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { DAUER_BEREICH } from '../../shared/contracts/konstanten'
@@ -32,7 +32,7 @@ import { rufeAuf } from '../ipc-client/rufe-auf'
 import { istAkzentfarbe } from './akzentfarbe'
 
 /** Der Entwurf im Formular: alle Felder der Aktion außer der ID, die der Main vergibt. */
-export type AktionsEntwurf = Omit<Aktion, 'id'>
+export type AktionsEntwurf = AktionsInhalt
 
 /** Feldbezogene Befunde für die Formularanzeige – KEIN IPC-Fehlercode. */
 export type EntwurfBefund =

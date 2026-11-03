@@ -27,7 +27,7 @@
 //   (#100/#102/#103) und im render-service (9.2.3) - nicht hier, sonst braeche die
 //   Live-Vorschau des Editors bei jeder Höheneingabe.
 
-import type { Aktion } from '../../shared/contracts/aktion'
+import type { AktionsInhalt } from '../../shared/contracts/aktion'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
 
@@ -54,7 +54,7 @@ export interface SegmentBild {
 }
 
 export function zeichneSegment(
-  aktion: Aktion,
+  aktion: AktionsInhalt,
   vorlage: Vorlage,
   marke: Marke,
   rahmenMarke: Marke,

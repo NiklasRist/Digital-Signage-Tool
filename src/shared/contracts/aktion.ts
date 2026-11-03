@@ -16,3 +16,14 @@ export interface Aktion {
   // Markenwert; das ist ein zugesagter Zustand, kein Fehler.
   akzentfarbe: string | null
 }
+
+/**
+ * Alles an einer Aktion, was zum ZEICHNEN gebraucht wird - die Kennung nicht.
+ *
+ * `template-canvas` liest nur `titel`, `beschreibung`, `preis`, `cta`, `bildRef` und
+ * `akzentfarbe` (gemessen: `aktion.id` kommt dort nirgends vor). Ein gespeicherter
+ * `Aktion`-Satz erfuellt diesen Typ, und der ENTWURF im Editor (`AktionsEntwurf`) auch -
+ * deshalb kann die Live-Vorschau denselben Zeichenweg nehmen wie der Render, statt auf
+ * eine gespeicherte Aktion zu warten (Entscheidung 03.11.2026).
+ */
+export type AktionsInhalt = Omit<Aktion, 'id'>

@@ -28,7 +28,7 @@
 
 import type { Zone } from '../../shared/contracts/vorlage'
 import type { Marke, Schrift } from '../../shared/contracts/marke'
-import type { Aktion } from '../../shared/contracts/aktion'
+import type { AktionsInhalt } from '../../shared/contracts/aktion'
 
 import { loeseFarbe } from './farben'
 import { schriftKurzform } from './schriften'
@@ -68,7 +68,7 @@ export function zeichneErsatzLogo(
   ctx: CanvasRenderingContext2D,
   zone: Zone,
   marke: Marke,
-  aktion: Aktion,
+  aktion: AktionsInhalt,
 ): void {
   if (typeof marke.name !== 'string' || marke.name.trim() === '') {
     throw new Error('ersatz-logo: marke.name ist leer (Programmierfehler, #52-Pflichtfeld).')

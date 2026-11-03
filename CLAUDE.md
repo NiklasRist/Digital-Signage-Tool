@@ -11,7 +11,36 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, zweiundvierzigste Sitzung: Preset beim Anlegen – und zwei Fehler, die es sichtbar machte) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, dreiundvierzigste Sitzung: Anlegen ist ein Gestaltungsvorgang – „Neue Aktion" zeichnet den Entwurf) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 25.**
+
+- **DIE EFFEKTE SIND GEPARKT (Niklas, 03.11.2026):** *„die machen nur sinn wenn der rest der app
+  funktioniert"*. Wenn sie kommen: **nur Vollbild** — Zoom/Drift aufs Produktbild, Pop für
+  Preis/Text. **Nicht** das Band, **nicht** „Band faehrt ein/aus", **nicht** ein Uebergangs-Fade.
+  Diese drei waren eine Erfindung aus einer Notiz (Abschnitt 16) und sind **verworfen**.
+- **WAS AM ANLEGEN KAPUTT WAR (am Code gemessen, nicht geraten):** Im Modus „neu" zeichnete die
+  Vorschau **nichts** (`VorschauFlaeche` hing an der gespeicherten Aktion), **kein Produktbild**
+  war setzbar (die Bild-Auswahl brach bei `gewaehlt === null` ab), die **Akzentfarbe** ist ein
+  totes Feld (genau eine Option), die **Vorlage** eine nackte Klappliste, und **alle Felder**
+  stehen da, auch wenn die Vorlage keine Zone dafuer hat.
+- **SCHRITT A IST GEBAUT:** `AktionsInhalt` (`Omit<Aktion,'id'>`) — alles zum **Zeichnen**, ohne
+  Kennung; `template-canvas` fordert nur noch das (gemessen: `aktion.id` kommt dort nicht vor).
+  Die Vorschau zeichnet den **Entwurf**, und das Bild ist **im Entwurf** waehlbar (kein IPC).
+  **`bereiteMotivVorFuer`** bereitet das Motiv des Entwurfs vor — ohne das stuende der Platzhalter
+  fuer ein gerade gewaehltes Produktfoto.
+- **FENSTER-BELEG:** Treiber **`4g7` (neu)** misst `{"flaeche":true,"bild":true,"breite":1920,
+  "hoehe":1080,"vorlage":"vollbild"}` — *„VORSCHAU BEIM ANLEGEN GEMESSEN: Canvas 1920 x 1080 im
+  Modus 'neu'"*. Ein Unit-Test haette nur den Aufruf beweisen koennen (dort ist die Zeichenroutine
+  gemattet).
+- **Gate:** Typecheck **0** (auch tests), ESLint/oxlint **0**, Build **0**, Unit **5462/5462**
+  (361 Dateien, +2), Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung, 1 MANUELL).
+- **Offen, in dieser Reihenfolge:** **B** Vorlagen-Auswahl **mit Bild**; **C** Felder richten sich
+  nach der Vorlage + Akzentfarbe (echter Farbwaehler #325 **oder** Feld raus).
+- **Doku:** TK **v3.38** (9.8.3), `.docx` im selben Commit neu erzeugt. `einzel-instanz.spec.ts`
+  (#289) bleibt flaky. **Kein Issue offen.** `projects/lallala` bleibt (Nutzerdaten).
+
+## STAND HEUTE (03.11.2026, zweiundvierzigste Sitzung: Preset beim Anlegen – und zwei Fehler, die es sichtbar machte) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 24.**
 

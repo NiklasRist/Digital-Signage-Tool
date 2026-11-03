@@ -18,7 +18,7 @@
 
 import type { Zone } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
-import type { Aktion } from '../../shared/contracts/aktion'
+import type { AktionsInhalt } from '../../shared/contracts/aktion'
 import type { Motiv } from './bild-laden'
 
 import { loeseFarbe, loeseSchrift } from './farben'
@@ -34,7 +34,7 @@ export function zeichneBildZone(
   zone: Zone,
   motiv: Motiv,
   marke: Marke,
-  aktion: Aktion,
+  aktion: AktionsInhalt,
 ): void {
   // SCHRITT 1 - Abbruchbedingungen VOR dem save(): Eine Zone ohne Flaeche kann
   // nichts anzeigen - auch keinen Platzhalter.

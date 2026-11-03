@@ -21,6 +21,7 @@ import { KANAELE } from '../../src/shared/contracts/kanaele'
 // Die Vorschau- und Vorlagenwege laufen ins Leere - hier interessiert nur der Schreibweg.
 vi.mock('../../src/renderer/action-editor/live-vorschau', () => ({
   bereiteVorschauVor: vi.fn(async () => ({ ok: true, wert: undefined })),
+  bereiteMotivVorFuer: vi.fn(async () => undefined),
   haengeVorschauEin: vi.fn(),
   zeichneVorschau: vi.fn(),
 }))
@@ -49,7 +50,10 @@ vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
 
 import { ActionEditorWurzel } from '../../src/renderer/action-editor/index.tsx'
 import { ladeWaehlbareVorlagen } from '../../src/renderer/action-editor/vorlage-waehlen'
+import { bereiteMotivVorFuer, zeichneVorschau } from '../../src/renderer/action-editor/live-vorschau'
 import { merkeLetzteVorlage } from '../../src/renderer/gemeinsam/vorlage-vorbelegung'
+import type { Asset } from '../../src/shared/contracts/asset'
+import type { Vorlage } from '../../src/shared/contracts/vorlage'
 
 const GERAETE: Array<{ wurzel: Root; behaelter: HTMLDivElement }> = []
 
@@ -110,7 +114,10 @@ function projekt(aktionen: Aktion[]): Project {
   }
 }
 
-function editor(p: Project): { behaelter: HTMLDivElement; setzeProjekt: ReturnType<typeof vi.fn> } {
+function editor(
+  p: Project,
+  zeichenVorlagen: readonly Vorlage[] = [],
+): { behaelter: HTMLDivElement; setzeProjekt: ReturnType<typeof vi.fn> } {
   const setzeProjekt = vi.fn()
   const behaelter = montiere(
     createElement(ActionEditorWurzel, {
@@ -124,7 +131,11 @@ function editor(p: Project): { behaelter: HTMLDivElement; setzeProjekt: ReturnTy
         leere: vi.fn(),
         aufGeaendert: vi.fn(() => () => {}),
       },
-      zeichnen: { bereiteVor: vi.fn(), hole: vi.fn(() => null), verwirfMotivBestand: vi.fn() },
+      zeichnen: {
+        bereiteVor: vi.fn(),
+        hole: vi.fn(() => ({ vorlagen: zeichenVorlagen })),
+        verwirfMotivBestand: vi.fn(),
+      },
       vorlagen: { lade: vi.fn(), hole: vi.fn(() => null), aufGeaendert: vi.fn(() => () => {}) },
       marken: {
         lade: vi.fn(),
@@ -298,5 +309,76 @@ describe('Preset beim Anlegen', () => {
     klicke(behaelter, 'aktion-neu')
     expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')?.value).toBe('')
     expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-dauer"]')?.value).toBe('10')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Anlegen mit Vorschau und Bild (03.11.2026)
+// ---------------------------------------------------------------------------
+
+function bildAsset(id: string): Asset {
+  return {
+    id,
+    typ: 'bild',
+    dateiname: `${id}.png`,
+    originalname: `${id}.png`,
+    maße: { breite: 400, höhe: 300 },
+    dauer: null,
+    importdatum: '2026-11-03T00:00:00.000Z',
+    zustand: 'ok',
+  }
+}
+
+/** Setzt den Wert eines <select> und meldet die Aenderung (React hoert auf `change`). */
+async function waehleImFeld(behaelter: HTMLDivElement, testid: string, wert: string): Promise<void> {
+  const feld = behaelter.querySelector<HTMLSelectElement>(`[data-testid="${testid}"]`)
+  if (feld === null) throw new Error(`Feld ${testid} fehlt`)
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(feld, wert)
+    feld.dispatchEvent(new Event('change', { bubbles: true }))
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+}
+
+describe('Anlegen mit Vorschau und Bild', () => {
+  it('die Vorschau zeichnet den ENTWURF, nicht erst die gespeicherte Aktion', async () => {
+    vi.mocked(zeichneVorschau).mockClear()
+    const vorlagen = [vorlage('ganz', null)]
+    // Dieselben Vorlagen in BEIDEN Quellen: die Auswahl (ladeWaehlbareVorlagen) und der
+    // Zeichenbestand (zeichnen.hole). Sonst faellt der Entwurf auf 'vollbild' zurueck und
+    // es gibt nichts zu zeichnen.
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+
+    klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    // Ohne diese Aenderung blieb die Flaeche im Modus „neu" leer (`gewaehlt === null`).
+    expect(zeichneVorschau).toHaveBeenCalled()
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.vorlagenId).toBe('ganz')
+    expect(gezeichnet?.titel).toBe('')
+  })
+
+  it('im Modus „neu" wandert das gewaehlte Bild in den Entwurf - ohne IPC - und die Vorschau zeichnet es', async () => {
+    vi.mocked(zeichneVorschau).mockClear()
+    vi.mocked(bereiteMotivVorFuer).mockClear()
+    const vorlagen = [vorlage('ganz', null)]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor({ ...projekt([]), assets: [bildAsset('a1')] }, vorlagen)
+    await laufen()
+
+    klicke(behaelter, 'aktion-neu')
+    await laufen()
+    await waehleImFeld(behaelter, 'aktion-bild-wahl', 'a1')
+
+    // Kein Schreibweg im Modus „neu": der Entwurf traegt das Bild.
+    expect(doppel.aufrufe).toHaveLength(0)
+    // Das Motiv wird VOR dem Zeichnen vorbereitet, sonst stuende der Platzhalter da.
+    expect(bereiteMotivVorFuer).toHaveBeenCalledWith('p1', 'a1', [bildAsset('a1')])
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.bildRef).toBe('a1')
   })
 })

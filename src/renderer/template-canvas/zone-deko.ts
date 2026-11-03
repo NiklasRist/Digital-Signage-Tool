@@ -36,7 +36,7 @@
 
 import type { Zone, VerlaufRichtung } from '../../shared/contracts/vorlage'
 import type { FarbRolle, Marke } from '../../shared/contracts/marke'
-import type { Aktion } from '../../shared/contracts/aktion'
+import type { AktionsInhalt } from '../../shared/contracts/aktion'
 
 import { loeseFarbe } from './farben'
 import { zeichneTextZone } from './zone-text'
@@ -45,7 +45,7 @@ export function zeichneDekoZone(
   ctx: CanvasRenderingContext2D,
   zone: Zone,
   marke: Marke,
-  aktion: Aktion,
+  aktion: AktionsInhalt,
 ): void {
   // SCHRITT 1 - kein deko: sofort zurueck, ohne save/restore.
   if (!zone.deko) {
@@ -149,7 +149,7 @@ function baueVerlauf(
   richtung: VerlaufRichtung,
   rahmen: Zone['rahmen'],
   marke: Marke,
-  aktion: Aktion,
+  aktion: AktionsInhalt,
 ): CanvasGradient {
   // Die Tabelle ist an den echten scrim-Daten geprueft (Vollbild 0,432,1920,648,
   // richtung unten -> oben durchsichtig, unten dunkel); sie wird nicht umgedeutet.

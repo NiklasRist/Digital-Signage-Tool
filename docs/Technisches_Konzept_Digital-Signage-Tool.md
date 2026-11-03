@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.37 (9.8.3: „Neue Aktion" ist vorbelegt – zuletzt benutzte Vorlage, Projekt-Standardmarke, Projekt-Standarddauer. Entscheidung 03.11.2026, AD unverändert v1.13)
+**Version:** 3.38 (9.8.3: „Neue Aktion" ist ein Gestaltungsvorgang – die Live-Vorschau zeichnet den **Entwurf**, das Bild ist schon im Entwurf wählbar. Entscheidung 03.11.2026, AD unverändert v1.13)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1529,6 +1529,14 @@ Aktion {
   - **Marke:** `Project.standardMarkeId` (9.11.3) — unverändert seit #320.
   - **Dauer:** `Project.standardSegmentdauer` — **nicht mehr** die Konstante 10. Bis 03.11.2026 schrieb jede neue Aktion 10 s und koppelte sich damit still vom Projektstandard ab (9.8.4: `null` hieße „folgt dem Projekt", ein Wert heißt „eigene Dauer"). Wer mitziehen will, leert das Feld; der Wert ist editierbar.
   - **Dieselbe Vorbelegung** gilt für das Inline-Formular „Aktion anlegen" im Composer (#416) — beide Wege lesen die eine Regel.
+- **Anlegen ist ein Gestaltungsvorgang (03.11.2026).** Im Modus „neu" zeichnet die
+  **Live-Vorschau den Entwurf**, nicht erst die gespeicherte Aktion. Die Zeichenroutine fordert
+  dafür nur die Inhaltsfelder — `AktionsInhalt` (Titel, Beschreibung, Preis, CTA, `bildRef`,
+  `akzentfarbe`, **ohne** Kennung); ein gespeicherter `Aktion`-Satz erfüllt ihn ebenso. Das
+  **Bild** lässt sich schon im Entwurf wählen: es wandert in `bildRef` des Entwurfs (kein
+  IPC-Schreibweg, es gibt noch keine Aktion), und sein Motiv wird **vor** dem Zeichnen
+  vorbereitet (`bereiteMotivVorFuer`) — sonst stünde für das gerade gewählte Produktfoto der
+  Platzhalter.
 - **Bildzuweisung:** aus der Medien-Bibliothek **wählen** (Asset-ID) **oder** neu **importieren** (media-service → dann Asset-ID). Das Bild ist stets eine **Referenz**.
 - **Live-Vorschau:** `template-canvas` rendert (Aktion + Vorlage + Marke) → dieselben Pixel, die später als Segment-PNG in den finalen Render gehen.
 

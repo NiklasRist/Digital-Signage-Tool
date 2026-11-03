@@ -59,6 +59,7 @@ import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
 import { entferneBild, starteBildImport, waehlbareBilder, weiseBildZu } from './bild-zuweisen'
 import { setzeAkzentfarbe } from './akzentfarbe'
 import {
+  bereiteMotivVorFuer,
   bereiteVorschauVor,
   haengeVorschauEin,
   zeichneVorschau,
@@ -250,7 +251,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
 
       {/* = rechts oben: die GROSSE Live-Vorschau = */}
       <div data-testid="aktion-vorschau" style={{ flex: 1, minHeight: 240 }}>
-        <VorschauFlaeche p={p} gewaehlt={gewaehlt} />
+        <VorschauFlaeche p={p} entwurf={formular} />
       </div>
 
       {/* = rechts unten: die BEARBEITUNGSFELDER = */}
@@ -335,10 +336,12 @@ function setzeZeichenvoraussetzungenFrisch(): void {
 /** Die Vorschaufläche: zeichnet mit zeichneVorschau (#140) - dem EINZIGEN Zeichenweg. */
 function VorschauFlaeche({
   p,
-  gewaehlt,
+  entwurf,
 }: {
   p: ActionEditorWurzelProps
-  gewaehlt: Aktion | null
+  /** Der ENTWURF, nicht die gespeicherte Aktion (Entscheidung 03.11.2026): Im Modus
+   *  „neu" gibt es keine gespeicherte Aktion - und trotzdem soll gezeichnet werden. */
+  entwurf: AktionsEntwurf | null
 }): JSX.Element {
   const containerBezug = useState<HTMLDivElement | null>(null)
   const [, setzeContainer] = containerBezug
@@ -346,16 +349,16 @@ function VorschauFlaeche({
 
   useEffect(() => {
     const ziel = containerBezug[0]
-    if (ziel !== null && gewaehlt !== null) {
+    if (ziel !== null && entwurf !== null) {
       const zeichenv = p.zeichnen.hole()?.vorlagen ?? []
-      const vorlage = findeZeichenVorlage(gewaehlt, zeichenv)
+      const vorlage = findeZeichenVorlage(entwurf, zeichenv)
       if (vorlage === null) return
-      // Die Marke der GEWAEHLTEN Aktion (#313, ENTSCHIEDEN 5). null heisst: nicht
+      // Die Marke des ENTWURFS (#313, ENTSCHIEDEN 5). null heisst: nicht
       // zeichnen - keine Ersatzmarke, kein Nachladen im Zeichenpfad (TK 9.10.3).
-      const marke = holeBereiteMarke(gewaehlt.markeId)
+      const marke = holeBereiteMarke(entwurf.markeId)
       if (marke === null) return
       try {
-        const bild = zeichneVorschau(gewaehlt, vorlage, marke)
+        const bild = zeichneVorschau(entwurf, vorlage, marke)
         haengeVorschauEin(ziel, bild)
         setzeFehlertext(null)
       } catch (ausnähm) {
@@ -363,7 +366,7 @@ function VorschauFlaeche({
         setzeFehlertext(ausnähm instanceof Error ? ausnähm.message : 'Zeichenfehler')
       }
     }
-  }, [gewaehlt, p, zeichenvoraussetzungenFrisch])
+  }, [entwurf, p, zeichenvoraussetzungenFrisch])
 
   return <div ref={(el) => setzeContainer(el)} data-testid="aktion-vorschau-flaeche" style={{ border: '1px solid #444', minHeight: 200 }} />
 }
@@ -545,21 +548,36 @@ function FormularFelder({
           Unbekannte Vorlage - bitte neu wählen.
         </p>
       )}
-      {/* das Bild: über weiseBildZu / entferneBild / starteBildImport */}
+      {/* das Bild: im Modus „bestehend" ueber weiseBildZu / entferneBild, im Modus
+          „neu" direkt in den ENTWURF (Entscheidung 03.11.2026). Vorher lief dieser Weg
+          ins Leere - ein Produktbild war erst nach „Anlegen", erneutem Oeffnen und
+          einem zweiten Speichern zu setzen. */}
       <div data-testid="aktion-bild">
         <select
           data-testid="aktion-bild-wahl"
-          defaultValue={gewaehlt?.bildRef ?? ''}
+          defaultValue={(gewaehlt?.bildRef ?? formular.bildRef) ?? ''}
           onChange={(e) => {
+            const wahl = e.target.value === '' ? null : e.target.value
+            const projektJetzt = p.projekt.hole().projekt
+            if (gewaehlt === null) {
+              if (projektJetzt === null) return
+              // ERST das Motiv vorbereiten, DANN in den Entwurf: die Vorschau zeichnet
+              // unmittelbar nach dem Setzen - waere das Bild noch nicht geladen, stuende
+              // dort der Platzhalter (live-vorschau, bereiteMotivVorFuer).
+              void (async () => {
+                await bereiteMotivVorFuer(projektJetzt.id, wahl, projektJetzt.assets)
+                await feldVerlassen('bildRef', wahl)
+              })()
+              return
+            }
             void (async () => {
-              const projekt = p.projekt.hole().projekt
-              if (projekt === null || gewaehlt === null) return
-              if (e.target.value === '') {
+              if (projektJetzt === null) return
+              if (wahl === null) {
                 const antwort = await entferneBild(gewaehlt.id)
                 onEinspeisen(antwort)
                 return
               }
-              const antwort = await weiseBildZu(gewaehlt.id, e.target.value, projekt.assets)
+              const antwort = await weiseBildZu(gewaehlt.id, wahl, projektJetzt.assets)
               onEinspeisen(antwort)
             })()
           }}

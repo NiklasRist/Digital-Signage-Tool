@@ -15,7 +15,7 @@
 
 import type { Zone } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
-import type { Aktion } from '../../shared/contracts/aktion'
+import type { AktionsInhalt } from '../../shared/contracts/aktion'
 
 import { loeseFarbe, loeseSchrift } from './farben'
 import { schriftKurzform } from './schriften'
@@ -28,7 +28,7 @@ export function zeichneTextZone(
   zone: Zone,
   text: string,
   marke: Marke,
-  aktion: Aktion,
+  aktion: AktionsInhalt,
 ): void {
   // SCHRITT 1 - Abbruchbedingungen, und zwar BEVOR irgendetwas am Kontext steht.
   // Kein ctx.save() auf diesen Pfaden (das verlangt der Abrechnungstest "genau

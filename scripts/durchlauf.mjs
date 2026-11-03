@@ -6130,6 +6130,51 @@ const main = async () => {
       }
     }
 
+    // Schritt 4g7 (03.11.2026) - "Anlegen mit Vorschau": Im Modus "Neue Aktion" zeichnet
+    // die Vorschau den ENTWURF. Vorher hing sie an `gewaehlt` und blieb im Modus "neu"
+    // leer - man gestaltete blind (Uebergabe Abschnitt 25).
+    {
+      await klick('[data-testid="reiter-aktionen"]');
+      await schlafe(600);
+      const neu4g7 = await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="aktion-neu"]');
+        if (knopf === null) return false;
+        knopf.click();
+        return true;
+      });
+      await schlafe(800);
+      const lage4g7 = await seite.evaluate(() => {
+        const flaeche = document.querySelector('[data-testid="aktion-vorschau-flaeche"]');
+        const bild = flaeche === null ? null : flaeche.querySelector("canvas");
+        const wahl = document.querySelector('[data-testid="aktion-vorlage"]');
+        return {
+          flaeche: flaeche !== null,
+          bild: bild !== null,
+          breite: bild === null ? 0 : bild.width,
+          hoehe: bild === null ? 0 : bild.height,
+          vorlage: wahl === null ? null : wahl.value,
+        };
+      });
+      console.log(`[schritt-4g7] Neue Aktion: ${JSON.stringify(lage4g7)}.`);
+      if (!neu4g7) {
+        fund("Vorschau beim Anlegen", 'der Knopf "Neue Aktion" existiert',
+          "kein Knopf im Reiter Aktionen", "Befund", "action-editor/index.tsx");
+      } else if (!lage4g7.bild) {
+        fund("Vorschau beim Anlegen", "der ENTWURF wird gezeichnet, nicht erst die gespeicherte Aktion",
+          `Vorschauflaeche=${String(lage4g7.flaeche)}, Canvas=${String(lage4g7.bild)}, Vorlage=${String(lage4g7.vorlage)}`,
+          "Befund", "action-editor/index.tsx");
+      } else if (lage4g7.breite !== 1920 || lage4g7.hoehe !== 1080) {
+        fund("Vorschau beim Anlegen", "das Vorschaubild hat die native Flaeche 1920 x 1080",
+          `${String(lage4g7.breite)} x ${String(lage4g7.hoehe)}`, "Befund", "template-canvas/zeichne-segment.ts");
+      } else {
+        console.log(`[schritt-4g7] VORSCHAU BEIM ANLEGEN GEMESSEN: Canvas ${String(lage4g7.breite)} x ${String(lage4g7.hoehe)} im Modus "neu", Vorlage ${String(lage4g7.vorlage)}.`);
+      }
+      // Kein Datensatz entstanden - der Entwurf bleibt einfach stehen; zurueck auf den
+      // Reiter, den die Aufraeum-Schritte erwarten.
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(400);
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     // Aufräumblock (User-Entscheidung 14.10.2026, solange die App NICHT fertig ist):
     // Jeder Lauf loescht seine eigenen Projekte ("DurchlaufTest-*") ueber den ECHTEN

@@ -1,7 +1,7 @@
 // [template-canvas] Farb- und Schriftrollen der Marke auflösen
 
 import type { Marke, FarbRolle, SchriftRolle, Schrift } from '../../shared/contracts/marke'
-import type { Aktion } from '../../shared/contracts/aktion'
+import type { AktionsInhalt } from '../../shared/contracts/aktion'
 
 // DIE EINE AUFLOESUNGSSTELLE FUER FARB- UND SCHRIFTROLLEN.
 //
@@ -145,7 +145,7 @@ function alsCanvasFarbe(hex: string, woher: string): string {
  *
  * Von der `Aktion` wird AUSSCHLIESSLICH `akzentfarbe` gelesen (Festlegung 7).
  */
-export function loeseFarbe(marke: Marke, rolle: FarbRolle, aktion: Aktion): string {
+export function loeseFarbe(marke: Marke, rolle: FarbRolle, aktion: AktionsInhalt): string {
   pruefePflichteingang(marke, 'marke')
   pruefePflichteingang(aktion, 'aktion')
 

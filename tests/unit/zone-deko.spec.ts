@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SICHERHEITSABSTAND_PX } from '../../src/shared/contracts/konstanten'
 import { zeichneDekoZone } from '../../src/renderer/template-canvas/zone-deko'
 
-import type { Aktion } from '../../src/shared/contracts/aktion'
+import type { Aktion, AktionsInhalt } from '../../src/shared/contracts/aktion'
 import type { FarbRolle, Marke } from '../../src/shared/contracts/marke'
 import type { Zone } from '../../src/shared/contracts/vorlage'
 
@@ -194,7 +194,7 @@ const HINTERGRUND: Zone['rahmen'] = { x: 0, y: 0, breite: 1920, höhe: 1080 }
 const SCRIM: Zone['rahmen'] = { x: 0, y: 432, breite: 1920, höhe: 648 }
 
 beforeEach(() => {
-  vi.mocked(loeseFarbe).mockClear().mockImplementation((m: Marke, r: FarbRolle, a: Aktion) => {
+  vi.mocked(loeseFarbe).mockClear().mockImplementation((m: Marke, r: FarbRolle, a: AktionsInhalt) => {
     // Wie in farben.ts real: ein GESSETZTER Hex-Wert der Aktion ersetzt die drei
     // Akzent-Rollen (TK 9.10.9) - die Rollenliste steht nicht in dieser Datei.
     const istAkzentRolle = r === 'akzent' || r === 'akzentKraeftig' || r === 'akzentTief'

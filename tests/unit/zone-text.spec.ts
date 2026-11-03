@@ -7,7 +7,7 @@ import { ZEILENHOEHE_FAKTOR } from "../../src/renderer/template-canvas/text-kask
 import { loeseFarbe, loeseSchrift } from "../../src/renderer/template-canvas/farben";
 import { passeTextEin } from "../../src/renderer/template-canvas/text-kaskade";
 
-import type { Aktion } from "../../src/shared/contracts/aktion";
+import type { Aktion, AktionsInhalt } from "../../src/shared/contracts/aktion";
 import type { FarbRolle, Marke, SchriftRolle } from "../../src/shared/contracts/marke";
 import type { Zone } from "../../src/shared/contracts/vorlage";
 import type { KaskadenEingang, KaskadenErgebnis } from "../../src/renderer/template-canvas/text-kaskade";
@@ -182,7 +182,7 @@ beforeEach(() => {
     this: unknown,
     m: Marke,
     r: FarbRolle,
-    a: Aktion,
+    a: AktionsInhalt,
   ) {
     // Echtes Verhalten: 8-stelliges Hex wird in rgba umgerechnet, 6-stelliges
     // bleibt. Fuer die Tests reicht ein deterministischer, von den Argumenten

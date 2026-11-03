@@ -115,7 +115,7 @@ export function mitAktion(projekt: Project, aktion: Aktion): Project {
 
 /** Die Vorlage, mit der eine Aktion gezeichnet wird; null, wenn sie im Bestand fehlt. */
 export function findeZeichenVorlage(
-  aktion: Aktion,
+  aktion: { vorlagenId: string },
   vorlagen: readonly Vorlage[],
 ): Vorlage | null {
   return vorlagen.find((eintrag) => eintrag.id === aktion.vorlagenId) ?? null

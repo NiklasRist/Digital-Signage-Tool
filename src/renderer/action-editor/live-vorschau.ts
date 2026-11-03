@@ -17,7 +17,7 @@
 //    ("Skalierung geschieht NUR zur Darstellung", CSS). canvas.width/height
 //    bleiben NATIV (TK 9.10.3 Punkt 2).
 
-import type { Aktion } from '../../shared/contracts/aktion'
+import type { AktionsInhalt } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
 import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage } from '../../shared/contracts/vorlage'
@@ -37,8 +37,8 @@ import { zeichneSegment } from '../template-canvas/zeichne-segment'
  *  Import erneut aufrufen. */
 export async function bereiteVorschauVor(
   projektId: string,
-  aktionen: Aktion[],
-  assets: Asset[],
+  aktionen: readonly AktionsInhalt[],
+  assets: readonly Asset[],
   marke: Marke,
 ): Promise<void> {
   // 1. Schriften: idempotent in #110 (dort sitzt der Merker).
@@ -65,10 +65,33 @@ export async function bereiteVorschauVor(
 }
 
 /** Die Vorschau: EIN Aufruf von zeichneSegment, sonst nichts. Synchron. */
-export function zeichneVorschau(aktion: Aktion, vorlage: Vorlage, marke: Marke): SegmentBild {
+export function zeichneVorschau(aktion: AktionsInhalt, vorlage: Vorlage, marke: Marke): SegmentBild {
   // rahmenMarke === marke (TK v3.18 / M8-21): bis auf den Hintergrund einer
   // EinblendungRunWith gilt dieselbe Marke.
   return zeichneSegment(aktion, vorlage, marke, marke)
+}
+
+/**
+ * Bereitet EIN Motiv des ENTWURFS vor (Entscheidung 03.11.2026).
+ *
+ * WARUM DAS NOETIG IST: `bereiteVorschauVor` laeuft ueber die GESPEICHERTEN Aktionen.
+ * Im Modus „neu" gibt es keine - ein frisch gewaehltes Produktfoto waere also nicht
+ * vorbereitet, und `holeMotiv` lieferte `{ zustand: 'fehlt' }`: Die Vorschau zeichnete
+ * den Platzhalter statt des Bildes, obwohl der Nutzer es gerade ausgewaehlt hat.
+ *
+ * Wirft nicht bei fehlendem Asset - dann bleibt es beim Platzhalter (TK 9.8.5), genau
+ * wie bei einer kaputten Referenz. Der Aufruf ist idempotent genug: `bereiteMotiveVor`
+ * ueberschreibt einen vorhandenen Schluessel.
+ */
+export async function bereiteMotivVorFuer(
+  projektId: string,
+  bildRef: string | null,
+  assets: readonly Asset[],
+): Promise<void> {
+  if (bildRef === null) return
+  const asset = findeBildAsset(bildRef, assets)
+  if (asset === null) return
+  await bereiteMotiveVor(projektId, [{ schluessel: bildRef, dateiname: asset.dateiname }])
 }
 
 /** Hängt das Canvas in ein Anzeigeelement und skaliert es AUSSCHLIESSLICH per CSS.
