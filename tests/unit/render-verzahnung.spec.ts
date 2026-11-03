@@ -68,10 +68,12 @@ vi.mock("../../src/main/project-store/d1-lock", () => ({
 async function frischeVerzahnung() {
   vi.resetModules();
   const dispatcher = await import("../../src/main/auftrags-manager/dispatcher");
-  const { registriereRenderHandler } = await import(
-    "../../src/main/auftrags-manager/render-verzahnung"
-  );
-  return { ...dispatcher, registriereRenderHandler };
+  const verzahnung = await import("../../src/main/auftrags-manager/render-verzahnung");
+  return {
+    ...dispatcher,
+    registriereRenderHandler: verzahnung.registriereRenderHandler,
+    elementIdAusItemKennung: verzahnung.elementIdAusItemKennung,
+  };
 }
 
 type RenderAuftrag = Extract<Auftrag, { art: "render" }>;
@@ -325,6 +327,31 @@ describe("Render-Verzahnung (#68)", () => {
     }));
 
     expect(alsFehlschlag(ausgang).daten).toEqual({ elementId: "el-7" });
+  });
+
+  it("bildet die Kennung eines zerlegten VIDEO-TEILS auf das Element zurueck (02.11.2026)", async () => {
+    // Ein Element mit Unterbrechungen wird im Auftrag zerlegt; jeder Teil traegt
+    // `<elementId>#<n>` (eindeutig, so verlangt es die Validierung). Der Reparatur-Modus
+    // sucht aber das LISTENELEMENT - er darf die Teil-Nummer nie sehen.
+    const ausgang = await laufe(async () => ({
+      status: "fehler",
+      renderId: "r-42",
+      fehlercode: "medium_fehlt",
+      fehlerhaftesElementId: "e1#2",
+      meldung: "Medium fehlt",
+    }));
+
+    expect(alsFehlschlag(ausgang).daten).toEqual({ elementId: "e1" });
+  });
+
+  it("elementIdAusItemKennung schneidet am ERSTEN Rautezeichen und laesst nackte Kennungen stehen", async () => {
+    const { elementIdAusItemKennung } = await frischeVerzahnung();
+    expect(elementIdAusItemKennung("e1#1")).toBe("e1");
+    expect(elementIdAusItemKennung("e1#12")).toBe("e1");
+    expect(elementIdAusItemKennung("e1")).toBe("e1");
+    expect(elementIdAusItemKennung("e1#2#3")).toBe("e1");
+    expect(elementIdAusItemKennung("#1")).toBe("");
+    expect(elementIdAusItemKennung("")).toBe("");
   });
 
   it("laesst daten weg, wenn fehlerhaftesElementId null ist", async () => {

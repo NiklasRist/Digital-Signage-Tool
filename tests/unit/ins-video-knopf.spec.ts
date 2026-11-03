@@ -75,8 +75,6 @@ function eigenschaften(ueber: Partial<BibliothekEigenschaften> = {}): Bibliothek
     projekt: projekt(),
     aufImportieren: () => {},
     aufMediumLoeschen: () => {},
-    aufFehler: () => {},
-    sichtSchreiber: () => {},
     ...ueber,
   };
 }

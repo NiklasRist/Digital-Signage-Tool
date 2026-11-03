@@ -62,7 +62,7 @@ function aktion(id: string): Aktion {
   }
 }
 
-function projekt(): Project {
+function projekt(ueber: Partial<Project> = {}): Project {
   return {
     id: 'p1',
     name: 'Probe',
@@ -75,6 +75,7 @@ function projekt(): Project {
     letzterAusgabeName: null,
     standardMarkeId: 'marke-x',
     standardSegmentdauer: 10,
+    ...ueber,
   }
 }
 
@@ -83,8 +84,6 @@ function bibliothek(): JSX.Element {
     projekt: projekt(),
     aufImportieren: () => {},
     aufMediumLoeschen: () => {},
-    aufFehler: () => {},
-    sichtSchreiber: () => {},
   })
 }
 
@@ -114,13 +113,37 @@ describe('Nur AKTIONEN sind ziehbar (#413/#417)', () => {
     expect(zeile?.getAttribute('aria-roledescription')).toBe('draggable')
   })
 
-  it('Der Klick-Weg ist UNVERAENDERT: der Hinzufuege-Knopf bleibt Knopf wie vorher', () => {
-    const behaelter = montiere(bibliothek())
-
-    const knopf = [...behaelter.querySelectorAll('button')].find(
-      (b) => b.textContent === 'Zur Liste hinzufügen',
+  it('Der KLICK-Weg steht weiterhin NEBEN dem Ziehen - seit 02.11.2026 ist es "Ins Video"', () => {
+    // Bis 02.11.2026 hing diese Zusage am Knopf "Zur Liste hinzufuegen". Der ist
+    // entfallen (Aktion als eigener Block = Muell von frueher); der Klick-Weg in die
+    // Liste ist damit NICHT verschwunden, sondern durch "Ins Video" ersetzt - und der
+    // erscheint nur mit Rueckruf und vorhandenem Video (der Test reicht beides herein).
+    const behaelter = montiere(
+      createElement(Bibliotheksansicht, {
+        projekt: projekt({
+          liste: [
+            {
+              id: 'video-1',
+              art: 'video',
+              ref: 'a-video',
+              dauer: null,
+              trimStart: 0,
+              trimEnde: 10,
+              einblendung: null,
+              unterbrechungen: [],
+            },
+          ],
+        }),
+        aufImportieren: () => {},
+        aufMediumLoeschen: () => {},
+        aufInsVideo: () => {},
+      }),
     )
-    expect(knopf).toBeDefined()
+
+    const knopf = behaelter.querySelector('[data-testid="aktion-ins-video-k1"]')
+    expect(knopf).not.toBeNull()
+    // Und der alte Knopf ist WEG - nicht nur umbenannt.
+    expect(behaelter.textContent).not.toContain('Zur Liste hinzufügen')
   })
 
   it('01.11.2026: die Aktionszeile meldet "Bearbeiten" mit IHRER Kennung - ohne Reiterwechsel', () => {
@@ -130,8 +153,6 @@ describe('Nur AKTIONEN sind ziehbar (#413/#417)', () => {
         projekt: projekt(),
         aufImportieren: () => {},
         aufMediumLoeschen: () => {},
-        aufFehler: () => {},
-        sichtSchreiber: () => {},
         aufAktionBearbeiten: (id: string) => gemeldet.push(id),
       }),
     )
@@ -159,8 +180,6 @@ describe('Das ausgewaehlte Medium ist hervorgehoben (#418)', () => {
         projekt: projekt(),
         aufImportieren: () => {},
         aufMediumLoeschen: () => {},
-        aufFehler: () => {},
-        sichtSchreiber: () => {},
         ausgewaehltesId: 'a-video',
       }),
     )

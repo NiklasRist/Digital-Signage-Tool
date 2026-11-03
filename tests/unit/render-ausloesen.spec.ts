@@ -7,6 +7,7 @@ import { KANAELE } from '../../src/shared/contracts/kanaele'
 import { RENDER_PROFILE } from '../../src/shared/contracts/render-profile'
 
 import type { Project } from '../../src/shared/contracts/project'
+import type { RenderRequest } from '../../src/shared/contracts/render-request'
 import type { Marke } from '../../src/shared/contracts/marke'
 
 const doppel = vi.hoisted(() => ({
@@ -14,9 +15,27 @@ const doppel = vi.hoisted(() => ({
   antwort: null as unknown,
 }))
 
+/** Ein PNG-KOPF (Signatur + IHDR) mit echten Massen - mehr liest `liesPngMasse` nicht. */
+function pngKopf(breite: number, hoehe: number): Uint8Array {
+  const bytes = new Uint8Array(33)
+  bytes.set([137, 80, 78, 71, 13, 10, 26, 10], 0)
+  bytes.set([0, 0, 0, 13], 8)
+  bytes.set([73, 72, 68, 82], 12) // "IHDR"
+  const sicht = new DataView(bytes.buffer)
+  sicht.setUint32(16, breite)
+  sicht.setUint32(20, hoehe)
+  return bytes
+}
+
 const markenDoppel = vi.hoisted(() => ({
   aufrufe: [] as string[],
   antwort: null as unknown,
+}))
+
+// Die Main-Validierung zieht ueber `ffmpeg-pfad` die Electron-App heran. Im Unit-Test gibt
+// es sie nicht - ein minimaler Doppel genuegt, weil der Naht-Test KEIN Binary braucht.
+vi.mock('electron', () => ({
+  app: { isPackaged: false, getPath: () => '/tmp', getAppPath: () => '/tmp' },
 }))
 
 vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
@@ -35,7 +54,10 @@ vi.mock('../../src/renderer/template-canvas/zeichne-segment', () => ({
   zeichneSegment: vi.fn(() => ({ canvas: { width: 1920, height: 1080 }, breite: 1920, höhe: 1080 })),
 }))
 vi.mock('../../src/renderer/template-canvas/als-png', () => ({
-  alsPng: vi.fn(async () => ({ ok: true, wert: new Uint8Array([137, 80]) })),
+  // Ein PNG-KOPF mit echten Massen (Signatur + IHDR). Die Main-Validierung liest genau
+  // diese Bytes (`liesPngMasse`) - ein Zwei-Byte-Attrappen wuerde an der Naht scheitern,
+  // und dann pruefte der Naht-Test unten nicht den Auftrag, sondern die Attrappe.
+  alsPng: vi.fn(async () => ({ ok: true, wert: pngKopf(1920, 1080) })),
 }))
 vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
   stelleMarkeBereit: async (markeId: string) => {
@@ -314,7 +336,7 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
     return { ...video('e1', 'v1', einblendung, 2, 12), unterbrechungen }
   }
 
-  function items(): Array<{ art: string; trimStart?: number; trimEnde?: number; dauer?: number; einblendung?: { abschnitte: Array<{ dauer: number }> } | null }> {
+  function items(): Array<{ id?: string; art: string; trimStart?: number; trimEnde?: number; dauer?: number; einblendung?: { abschnitte: Array<{ dauer: number }> } | null }> {
     const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: never } }
     return nutzlast.payload.elemente as never
   }
@@ -322,6 +344,11 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
   it('ohne Unterbrechungen bleibt EIN Video-Item', async () => {
     await loeseRenderAus(projekt([unterbrochen([])], [AKTION_OK], [videoAsset]), 'sommer', marke(), VORLAGEN_OK, null)
     expect(items().map((i) => i.art)).toEqual(['video'])
+  })
+
+  it('ohne Zerlegung bleibt die NACKTE Element-Kennung (Normalfall unveraendert)', async () => {
+    await loeseRenderAus(projekt([unterbrochen([])], [AKTION_OK], [videoAsset]), 'sommer', marke(), VORLAGEN_OK, null)
+    expect(items().map((i) => i.id)).toEqual(['e1'])
   })
 
   it('zerlegt in Video-Teil · Aktion · Video-Teil an der Zeitstelle', async () => {
@@ -333,6 +360,32 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
     expect(elemente[0]).toMatchObject({ trimStart: 2, trimEnde: 5 })
     expect(elemente[1]).toMatchObject({ dauer: 5 })
     expect(elemente[2]).toMatchObject({ trimStart: 5, trimEnde: 12 })
+  })
+
+  it('jeder TEIL traegt eine EIGENE Kennung - der Auftrag verlangt Eindeutigkeit', async () => {
+    // BEFUND 02.11.2026: Alle Teile trugen dieselbe `id`, `validierung.ts` weist doppelte
+    // Kennungen ab - ein Projekt mit Unterbrechung liess sich nicht rendern. Die Teil-Kennung
+    // ist `<elementId>#<n>`; die Rueckabbildung macht die Auftragsverwaltung.
+    const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 5 }])], [AKTION_OK], [videoAsset])
+    await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
+    const kennungen = items().map((i) => i.id)
+    expect(kennungen).toEqual(['e1#1', 'e1#2', 'e1#3'])
+    expect(new Set(kennungen).size).toBe(kennungen.length)
+  })
+
+  it('NAHT: der fertige Auftrag besteht die Pruefung des render-service', async () => {
+    // Der eigentliche Befund vom 02.11.2026 lag ZWISCHEN zwei Modulen: der Renderer baute
+    // den Auftrag, der Main wies ihn ab. Dieser Fall faehrt BEIDE Seiten in einem Lauf -
+    // und zwar ohne ffmpeg, damit er nicht von der Umgebung abhaengt.
+    const { pruefeRenderRequest } = await import('../../src/main/render-service/validierung')
+    // Dauer 10 s: ein Segment MUSS im Bereich 10-45 s liegen (TK 9.5.2) - die 5 s aus dem
+    // Nachbartest sind fuer die ITEM-Bildung richtig, fuer die Auftragspruefung nicht.
+    const p = projekt([unterbrochen([{ zeitstelle: 3, aktionRef: 'a-1', dauer: 10 }])], [AKTION_OK], [videoAsset])
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
+    expect(antwort.ok).toBe(true)
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: RenderRequest }
+    const geprueft = pruefeRenderRequest(nutzlast.payload)
+    expect(geprueft.ok ? null : geprueft.fehler.meldung).toBeNull()
   })
 
   it('jeder Video-Teil traegt das Band in der zum Zeitpunkt gedrehten Phase', async () => {

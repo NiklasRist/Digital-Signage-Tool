@@ -186,12 +186,23 @@ export async function loeseRenderAus(
 
       // #435: das Video an den Zeitstellen zerlegen (rein, `unterbrechungs-zerlegung.ts`).
       // Jeder Video-Teil traegt das Band in der richtigen Phase (`rotiereBand`); die
-      // Einschuebe werden eigene Segment-Items. Die `id` bleibt die des Elements, damit der
-      // Reparatur-Modus (9.7.5) das Element ueber `RenderResult.fehlerhaftesElementId` findet.
-      for (const stueck of zerlegeVideo(trimStart, trimEnde, unterbrechungen)) {
+      // Einschuebe werden eigene Segment-Items.
+      //
+      // DIE KENNUNG JE TEIL (02.11.2026): Beim Zerlegen entstehen MEHRERE Items aus EINEM
+      // Listenelement. Bis heute trugen alle dieselbe `id` ("damit der Reparatur-Modus das
+      // Element findet") - und `validierung.ts` weist jeden Auftrag mit doppelter Kennung
+      // ab. Ergebnis: **kein Projekt mit einer Unterbrechung liess sich rendern.**
+      // Jetzt traegt jeder Teil `<elementId>#<n>`; die Rueckabbildung auf das Element
+      // macht die Grenze in `auftrags-manager/render-verzahnung.ts` (eine Stelle,
+      // TK 9.2.1). Das unzerlegte Item behaelt die nackte Kennung.
+      const teile = [...zerlegeVideo(trimStart, trimEnde, unterbrechungen)]
+      for (let stelle = 0; stelle < teile.length; stelle += 1) {
+        const stueck = teile[stelle]
+        if (stueck === undefined) continue
+        const teilKennung = `${element.id}#${String(stelle + 1)}`
         if (stueck.art === 'video') {
           elemente.push({
-            id: element.id,
+            id: teilKennung,
             art: 'video',
             medienRef: asset.dateiname,
             trimStart: stueck.trimStart,
@@ -222,7 +233,7 @@ export async function loeseRenderAus(
         if (!png.ok) {
           return { ok: false, fehler: { code: 'png_export_fehler', meldung: png.fehler.meldung, daten: undefined } }
         }
-        elemente.push({ id: element.id, art: 'segment', png: png.wert, dauer: stueck.dauer })
+        elemente.push({ id: teilKennung, art: 'segment', png: png.wert, dauer: stueck.dauer })
       }
     }
   }

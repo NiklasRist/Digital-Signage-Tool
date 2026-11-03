@@ -56,6 +56,24 @@ function protokolliere(stelle: string, ursache: unknown): void {
   console.error(`[auftrags-manager] Render-Verzahnung: ${stelle}:`, ursache);
 }
 
+/**
+ * Die ELEMENT-Kennung aus einer Item-Kennung (02.11.2026).
+ *
+ * WARUM ES DIESE FUNKTION GIBT: Ein Listenelement mit Unterbrechungen wird im Auftrag in
+ * MEHRERE Items zerlegt (Video-Teil · Aktion · Video-Teil …). Der Auftrag verlangt
+ * eindeutige Kennungen (`validierung.ts`), der Reparatur-Modus (FA-19) will aber das
+ * ELEMENT nennen. Deshalb traegt jeder Teil `<elementId>#<n>` (`composer/render-ausloesen.ts`),
+ * und HIER - an der Grenze zwischen Dienst und Auftragsverwaltung - wird daraus wieder die
+ * Element-Kennung. EINE Stelle, nicht zwei.
+ *
+ * Ein Item ohne `#` bleibt unveraendert: das ist der Normalfall (kein zerlegtes Element).
+ * Geschnitten wird am ERSTEN `#` - alles danach ist die Teil-Nummer.
+ */
+export function elementIdAusItemKennung(kennung: string): string {
+  const stelle = kennung.indexOf('#');
+  return stelle < 0 ? kennung : kennung.slice(0, stelle);
+}
+
 function fehlgeschlagen(
   code: RenderFehlercode,
   meldung: string,
@@ -199,10 +217,14 @@ function uebersetze(ergebnis: RenderResult): HandlerErgebnis<RenderFehlercode> {
       // unveraendert weiter, und der gefuehrte Reparatur-Modus (FA-19) liest genau diesen
       // Schluessel. Ohne diesen Weg erreichte die ID nie den Nutzer.
       //
+      // SEIT 02.11.2026 mit RUECKABBILDUNG: Der render-service meldet die Kennung des ITEMS;
+      // bei einem zerlegten Video ist das `<elementId>#<n>`. Der Reparatur-Modus sucht das
+      // Listenelement - er bekommt hier die Element-Kennung, nicht die Teil-Kennung.
+      //
       // Ist der Wert `null`, bleibt `daten` WEG statt `{ elementId: null }` zu tragen: Die Form
       // von `daten` ist je Fehlercode festgelegt, ein leerer Beutel waere eine dritte Bedeutung.
       if (ergebnis.fehlerhaftesElementId !== null) {
-        fehler.daten = { elementId: ergebnis.fehlerhaftesElementId };
+        fehler.daten = { elementId: elementIdAusItemKennung(ergebnis.fehlerhaftesElementId) };
       }
 
       return { status: 'fehlgeschlagen', fehler };

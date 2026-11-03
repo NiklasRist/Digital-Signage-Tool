@@ -2,12 +2,15 @@
 //
 // #422 (15.10.2026): Ein Projekt hat genau EIN Video. Der Medien-Bereich heisst "Video"
 // und zeigt NUR Video-Assets; Bilder sind Motiv einer Aktion (action-editor) und
-// erscheinen hier nicht mehr. Das Video ist automatisch Listeneintrag - es gibt fuer es
-// KEIN "Zur Liste hinzufuegen" mehr (das bleibt fuer AKTIONEN).
+// erscheinen hier nicht mehr.
+//
+// 02.11.2026: "Zur Liste hinzufuegen" ist ENTFALLEN (Niklas: "Aktion als eigener Block
+// ... ist Muell von frueher"). Eine Aktion gehoert ins VIDEO - als Band-Abschnitt oder
+// als Unterbrechung. Die Tests, die den alten Knopf und `fuegeElementHinzu` prueften,
+// sind mit dem Weg entfallen; die Montage des neuen Wegs steht in `ins-video-knopf.spec`.
 //
 // Gemessen wird: zwei getrennte Bereiche, der Hinweis ueber fehlende Videos, dass ein
-// fehlendes Video gekennzeichnet aber NICHT gesperrt ist, dass die Video-Zeile keinen
-// Hinzufuegen-Knopf traegt, und dass ein Aktions-Klick genau EINEN Aufruf ausloest.
+// fehlendes Video gekennzeichnet aber NICHT gesperrt ist, und die Loeschen-Wege.
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
@@ -22,15 +25,6 @@ import type { BibliothekEigenschaften } from "../../src/renderer/composer/biblio
 // Test-tsconfig verbietet die Endung aber ohne `allowImportingTsExtensions`
 // (TS5097) - deshalb der ts-expect-error wie im Projekt ueblich.
 import { Bibliotheksansicht } from "../../src/renderer/composer/bibliothek-ansicht.tsx";
-
-
-const attrappen = vi.hoisted(() => ({
-  fuegeElementHinzu: vi.fn(),
-}));
-
-vi.mock("../../src/renderer/composer/element-hinzufuegen", () => ({
-  fuegeElementHinzu: attrappen.fuegeElementHinzu,
-}));
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -84,8 +78,6 @@ function eigenschaften(ueber: Partial<BibliothekEigenschaften> = {}): Bibliothek
     projekt: projekt({ id: "p1" }),
     aufImportieren: () => {},
     aufMediumLoeschen: () => {},
-    aufFehler: () => {},
-    sichtSchreiber: () => {},
     ...ueber,
   };
 }
@@ -98,8 +90,6 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx, #422)", () => {
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
-    attrappen.fuegeElementHinzu.mockReset();
-    attrappen.fuegeElementHinzu.mockResolvedValue({ ok: true, wert: null });
   });
 
   afterEach(() => {
@@ -188,22 +178,21 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx, #422)", () => {
   });
 
   it("kennzeichnet eine kaputte Aktion mit „· defekt“ - sichtbar, nicht gesperrt (#414)", () => {
+    const aufAktionLoeschen = vi.fn();
     const p = projekt({
       id: "p1",
       aktionen: [aktion({ id: "k1", bildRef: "gibt-es-nicht" })],
     });
     act(() => {
-      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
+      root.render(
+        createElement(Bibliotheksansicht, eigenschaften({ projekt: p, aufAktionLoeschen })),
+      );
     });
 
     const zeile = host.querySelector("[data-testid='aktion-k1']");
     expect(zeile?.textContent).toContain("defekt");
-    // Gekennzeichnet heisst NICHT gesperrt: der Hinzufuegen-Weg bleibt offen.
-    expect(
-      Array.from(zeile?.querySelectorAll("button") ?? []).some((b) =>
-        b.textContent?.includes("Zur Liste hinzufügen"),
-      ),
-    ).toBe(true);
+    // Gekennzeichnet heisst NICHT gesperrt: die Bedienung der Zeile bleibt stehen.
+    expect(zeile?.querySelector("[data-testid='aktion-loeschen-k1']")).not.toBeNull();
   });
 
   it("zeigt Leer-Hinweise fuer leere Bereiche (Fehlerpfad)", () => {
@@ -215,7 +204,7 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx, #422)", () => {
     expect(host.querySelector("[data-testid='aktionen-leer']")).not.toBeNull();
   });
 
-  it("die Video-Zeile traegt KEINEN Hinzufuegen-Knopf, aber Loeschen (#422)", () => {
+  it("die Video-Zeile traegt nur Loeschen - einen Hinzufuegen-Weg gibt es nirgends mehr (#422)", () => {
     const p = projekt({ id: "p1", assets: [asset({ id: "a1" })] });
     act(() => {
       root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
@@ -226,6 +215,8 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx, #422)", () => {
     const knopfe = Array.from(zeile?.querySelectorAll("button") ?? []);
     expect(knopfe.some((b) => b.textContent?.includes("Zur Liste hinzufügen"))).toBe(false);
     expect(knopfe.some((b) => b.textContent?.includes("Löschen"))).toBe(true);
+    // 02.11.2026: auch die AKTIONS-Zeile traegt den alten Knopf nicht mehr.
+    expect(host.textContent).not.toContain("Zur Liste hinzufügen");
   });
 
   it("ohne aufAktionLoeschen traegt die Aktionszeile KEINEN Loeschen-Knopf (#430)", () => {
@@ -254,70 +245,6 @@ describe("Bibliotheksansicht (bibliothek-ansicht.tsx, #422)", () => {
 
     expect(aufAktionLoeschen).toHaveBeenCalledTimes(1);
     expect(aufAktionLoeschen).toHaveBeenCalledWith("k1");
-    // Der Loeschen-Knopf reisst KEINEN Hinzufuege-Ruf mit an.
-    expect(attrappen.fuegeElementHinzu).not.toHaveBeenCalled();
-  });
-
-  it("ruft fuegeElementHinzu genau einmal mit der Aktions-ID beim Aktions-Klick (DoD)", async () => {
-    const p = projekt({ id: "p1", aktionen: [aktion({ id: "k1" })] });
-    act(() => {
-      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
-    });
-
-    const knopf = Array.from(host.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Zur Liste hinzufügen"),
-    );
-    await act(async () => {
-      knopf?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(1);
-    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledWith("k1", undefined, expect.any(Function));
-  });
-
-  it("ist auch fuer kaputte Aktionen erreichbar - kein Sperren (DoD)", async () => {
-    const p = projekt({
-      id: "p1",
-      aktionen: [aktion({ id: "k1", bildRef: "unbekannt" })],
-    });
-    act(() => {
-      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p })));
-    });
-
-    const knopf = Array.from(host.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Zur Liste hinzufügen"),
-    );
-    expect(knopf).toBeDefined();
-
-    await act(async () => {
-      knopf?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(1);
-    expect(attrappen.fuegeElementHinzu.mock.calls.map((c) => c[0])).toEqual(["k1"]);
-  });
-
-  it("leitet einen Fehler von fuegeElementHinzu unveraendert an aufFehler - kein zweiter Aufruf (DoD)", async () => {
-    const p = projekt({ id: "p1", aktionen: [aktion({ id: "k1" })] });
-    attrappen.fuegeElementHinzu.mockResolvedValueOnce({
-      ok: false,
-      fehler: { code: "nicht_gefunden", meldung: "weg" },
-    });
-    const aufFehler = vi.fn();
-    act(() => {
-      root.render(createElement(Bibliotheksansicht, eigenschaften({ projekt: p, aufFehler })));
-    });
-
-    const knopf = Array.from(host.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Zur Liste hinzufügen"),
-    );
-    await act(async () => {
-      knopf?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    expect(aufFehler).toHaveBeenCalledTimes(1);
-    expect(aufFehler).toHaveBeenCalledWith("nicht_gefunden", "weg");
-    expect(attrappen.fuegeElementHinzu).toHaveBeenCalledTimes(1);
   });
 });
 

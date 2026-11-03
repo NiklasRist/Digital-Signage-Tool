@@ -986,7 +986,6 @@ export function ComposerInterna({
             ) : (
             <Bibliotheksansicht
               projekt={inhalt}
-              sichtSchreiber={projekt.setzeListe}
               aufImportieren={importiere}
               ausgewaehltesId={lage.gewaehltesMediumId}
               aufWaehlen={(assetId) => setzeLage((alt) => waehleMedium(alt, assetId))}
@@ -995,7 +994,6 @@ export function ComposerInterna({
               aufAktionLoeschen={loescheAktionInline}
               aufAktionBearbeiten={oeffneAktionenAnsicht}
               aufMediumLoeschen={meldeVideoPflicht}
-              aufFehler={meldeWurzel}
               holeMarke={holeBereiteMarke}
               bereich={panelLage.ansicht}
               aufInsVideo={fuegeAktionInsVideo}

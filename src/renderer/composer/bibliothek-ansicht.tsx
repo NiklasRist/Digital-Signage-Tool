@@ -1,17 +1,20 @@
 // Handgeschrieben zu Issue #227 - der zweite Baustein des Issues (die Ableitung steht
 // in `bibliothek-ansicht.ts`, das Geruest-Werkzeug fasst je Issue nur die ERSTE
-// Zieldatei an). DÜNN: Die Ansicht haelt keinen Zustand, sortiert nichts, filtert
-// nichts und fuehrt nur EINE Operation aus - `fuegeElementHinzu` (#123), die das
-// Element selbst ans Ende der Sicht haengt.
+// Zieldatei an). DÜNN: Die Ansicht haelt keinen Zustand, sortiert nichts und schreibt
+// NICHTS ins Projekt - sie zeigt und reicht Rueckrufe weiter.
+//
+// 02.11.2026: „Zur Liste hinzufuegen" ist ENTFALLEN (Niklas: „Aktion als eigener Block
+// zur Liste hinzufuegen ist Muell von frueher, der muss weg"). Eine Aktion gehoert ins
+// VIDEO - als Band-Abschnitt oder als Unterbrechung; beides legt „Ins Video" an. Damit
+// sind auch `aufFehler` und `sichtSchreiber` hier ohne Verbraucher und mit entfallen.
 
 import { useEffect, useRef, useState, type JSX } from 'react'
-import type { Listenelement, Project } from '../../shared/contracts/project'
+import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { MedienEintrag, AktionsEintrag } from './bibliothek-ansicht'
 import { baueMedienEintraege, baueAktionsEintraege, zaehleFehlende } from './bibliothek-ansicht'
-import { fuegeElementHinzu } from './element-hinzufuegen'
 import { AktionAnlegen, type AktionAnlegenEingabe } from './aktion-anlegen.tsx'
 import { baueVerwendungen, verwendungsText, type Verwendung } from './verwendungen'
 import { baueMotivEintraege, holeMotiv } from './aktions-vorschau'
@@ -25,10 +28,6 @@ export interface BibliothekEigenschaften {
   projekt: Project
   aufImportieren: () => void
   aufMediumLoeschen: (assetId: string) => void
-  aufFehler: (code: string, meldung: string) => void
-  /** #415 (Variante a): der Sicht-Schreiber (Wrapped-Zugangs-`setzeListe`, #244-Huelle).
-   *  PFICHT - ohne ihn haette JEDES hier angelegte Element keinen Undo-Schritt. */
-  sichtSchreiber: (liste: Listenelement[]) => void
   /** #418: das hervorgehobene Medium (nach dem Import standardmaessig das neue Video). */
   ausgewaehltesId?: string | null
   /** #418: Klick auf eine Medienzeile macht sie zur Auswahl. */
@@ -169,8 +168,6 @@ export function Bibliotheksansicht(p: BibliothekEigenschaften): JSX.Element {
               <Aktionszeile
                 key={eintrag.aktion.id}
                 eintrag={eintrag}
-                aufFehler={p.aufFehler}
-                sichtSchreiber={p.sichtSchreiber}
                 aufLoeschen={p.aufAktionLoeschen}
                 aufBearbeiten={p.aufAktionBearbeiten}
                 verwendung={verwendungen.get(eintrag.aktion.id)}
@@ -260,8 +257,6 @@ function Videozeile(p: VideozeileEigenschaften): JSX.Element {
 
 interface AktionszeileEigenschaften {
   eintrag: AktionsEintrag
-  aufFehler: (code: string, meldung: string) => void
-  sichtSchreiber: (liste: Listenelement[]) => void
   /** #430: loescht die Aktion (ohne Rueckfrage, EIN Undo-Schritt). Fehlt sie, kein Knopf. */
   aufLoeschen?: (aktionId: string) => void
   /** 01.11.2026: oeffnet den Aktions-Editor ueber der Reiterflaeche. Fehlt er, kein Knopf. */
@@ -433,14 +428,6 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
               Ins Video
             </button>
           )}
-          <button
-            type="button"
-            data-testid={`aktion-hinzufuegen-${p.eintrag.aktion.id}`}
-            style={{ flex: '1 1 100%', minHeight: 20, padding: '0 8px', fontSize: 11 }}
-            onClick={() => void hinzufuegen(p.eintrag.aktion.id, p.aufFehler, p.sichtSchreiber)}
-          >
-            Zur Liste hinzufügen
-          </button>
           {/* 01.11.2026: „gute Aktion erstellen" direkt am Einfuegeweg (Notiz 21.10.) -
               der Editor geht als Ansicht ueber der Reiterflaeche auf, der Reiter bleibt. */}
           {p.aufBearbeiten !== undefined && (
@@ -469,20 +456,4 @@ function Aktionszeile(p: AktionszeileEigenschaften): JSX.Element {
       </div>
     </li>
   )
-}
-
-/**
- * ENTSCHIEDEN 6: Hinzufügen ruft `fuegeElementHinzu` und tut sonst NICHTS - kein
- * Anhängen an die Sicht (#123 tut das selbst), kein optimistisches Einfügen, kein
- * zweiter Versuch. Ein Fehler geht UNVERAENDERT an `aufFehler` (Fehlerpfade).
- */
-async function hinzufuegen(
-  referenz: string,
-  aufFehler: (code: string, meldung: string) => void,
-  sichtSchreiber: (liste: Listenelement[]) => void,
-): Promise<void> {
-  const ergebnis = await fuegeElementHinzu(referenz, undefined, sichtSchreiber)
-  if (!ergebnis.ok) {
-    aufFehler(ergebnis.fehler.code, ergebnis.fehler.meldung)
-  }
 }
