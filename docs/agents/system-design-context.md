@@ -633,6 +633,11 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
   Layout-Änderungen nur als NEUE Vorlagen-ID, sonst ändern sich bestehende Projekte nach App-Updates.
 
 ## 9h. Parallele Einblendung / Split-Screen (FA-20) – TK 9.2.8  ⟵ ANFORDERUNGSÄNDERUNG 23.07.
+
+> **Der Split-Screen ist gestrichen (29.10.2026, AD v1.10 / TK v3.31).** Das Band liegt **deckend
+> über** dem vollflächigen Video (y = 1080 − H); es gibt **keine** 918er-Videospalte, keine
+> 144-px-Restflächen und **kein `vstack`**. Die Geometrie- und Aufbaupunkte darunter sind
+> **Historie** und beschreiben den Stand bis v3.30. Es gilt TK 9.2.8 (v3.31/v3.35) und AD 4.5.
 - **Zwei Betriebsarten** für Werbung: (1) sequenziell als vollflächiges Segment (bisher) UND (2) **parallel
   als Band unter dem laufenden Video** – mit **mehreren rotierenden Aktionen**.
 - **Feste Geometrie:** Video-Bereich **1920×918** (y=0), Band **1920×162** (y=918). 16:9-Video höhenbegrenzt
@@ -644,6 +649,10 @@ projekt-eigen: ein Bestand in `marken.json` + `marken.json.bak`, importierte Log
 - **Zeitverhalten:** Abschnitts-Dauern mit **derselben Frame-Rundung** (30 fps, 9.2.6). Folge **kürzer** als
   Video → **wiederholt** sich; **länger** → am Videoende abgeschnitten. Die Elementdauer bestimmt **allein
   das Video** (Trim) – das Band verändert sie nie.
+- **Die Dauer je Abschnitt ist keine Eingabe (AD v1.13 / TK v3.36, 03.11.2026):** Sie folgt der
+  **Dauer-Kette** `aktion.standardDauer ?? projekt.standardSegmentdauer ?? 10`; es gibt kein Dauer-Feld
+  in der Band-Bearbeitung. `entwurfAus` setzt sie beim Öffnen für **jeden** Abschnitt neu, der Store
+  validiert sie nur als endliche Zahl `> 0`.
 - **Invarianten:** Einblendung **nur bei `"video"`**-Items. Band-PNGs sind **deckend** (kein Alpha – echter
   Split ohne Überdeckung), Größe **1920×162**. Ohne Einblendung bleibt alles wie bisher (vollflächig, schwarze Balken).
 - **Die Bandhöhe `H` MUSS GERADE SEIN (v2.9, bindend).** Das Ausgabe-Profil schreibt `yuv420p` vor

@@ -43,6 +43,10 @@
   (1 Untersuchung: Mehrfachauswahl; 1 MANUELL: nativer Export-Dialog).
 - **Ehrlich offen:** `einzel-instanz.spec.ts` (#289) flaky, unveraendert. **Kein Issue offen.**
   `projects/lallala` bleibt (Nutzerdaten).
+- **Nachgezogen (Niklas, 03.11.2026):** `system-design-context.md` 9h traegt die Dauer-Regel **und**
+  jetzt einen Marker, dass der Split-Screen gestrichen ist (der Abschnitt beschrieb ihn noch).
+  Die drei geschlossenen Issues **#129 / #249 / #253** sind kommentiert, ihre lokalen Volltexte
+  tragen denselben Nachtrag.
 - **Naechster Schritt:** Konzept Abschnitt 10 weiter - **Preset beim Anlegen** (Vorlage + Marke +
   Dauer vorbelegt), danach die **Effekte** (Band faehrt ein/aus, Motiv atmet, Uebergang).
 

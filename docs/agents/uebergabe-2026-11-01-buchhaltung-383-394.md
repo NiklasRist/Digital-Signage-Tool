@@ -998,7 +998,19 @@ den alten Stand) und platziert. **Der Sprung in den Word-Dateien enthält deshal
 Änderungen der Sitzungen davor** — nicht nur diese. Ab jetzt gilt: **wer die `.md` ändert, erzeugt
 die `.docx` im selben Commit neu.** Word war beim Schreiben geschlossen, die Dateien frei.
 
-### 23.5 Nächster Schritt
+### 23.5 Nachgezogen (Niklas: „ja" auf beide Punkte)
+
+- **`system-design-context.md`:** Die Dauer-Regel steht jetzt in 9h („Die Dauer je Abschnitt ist
+  keine Eingabe"). **Dabei aufgefallen:** 9h beschreibt weiter den **gestrichenen Split-Screen**
+  (918er-Videospalte, 144-px-Restflächen, `vstack`). Die Sektion trägt jetzt einen Marker
+  „Split-Screen ist gestrichen (29.10.2026)" — der Text darunter bleibt als Historie, ist aber als
+  solche gekennzeichnet. **Wer 9h liest, baute sonst eine zweite Wahrheit.**
+- **Drei geschlossene Issues kommentiert** (deren Signaturblock `setzeAbschnittsDauer` nennt):
+  **#129** (M5-10), **#249** (M7-56, nur der Einordnungsblock), **#253** (M7-61). Die lokalen
+  Volltexte in `docs/agents/m5/` und `docs/agents/m7/` tragen denselben Nachtrag — GitHub und
+  lokale Datei sagen dasselbe.
+
+### 23.6 Nächster Schritt
 
 Konzept Abschnitt 10 weiter: **Preset beim Anlegen** (Vorlage + Marke + Dauer vorbelegt), danach
 die **Effekte** (Band fährt ein/aus, Motiv atmet, Übergang statt hartem Schnitt).
