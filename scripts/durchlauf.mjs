@@ -6177,6 +6177,28 @@ const main = async () => {
       } else {
         console.log(`[schritt-4g7] VORSCHAU BEIM ANLEGEN GEMESSEN: Canvas ${String(lage4g7.breite)} x ${String(lage4g7.hoehe)} im Modus "neu", Vorlage ${String(lage4g7.vorlage)}, ${String(lage4g7.vorlagenBilder)} Vorlagenbild(er).`);
       }
+      // Schritt 4g7 b (03.11.2026): Die Akzentfarbe ist ein echter Farbwaehler (#325),
+      // kein Select mit der einzigen Option „Markenwert".
+      // NICHT gemessen werden kann hier der NEGATIV-Fall „Feld verschwindet": Der
+      // Aktions-Editor bietet nur Ganzbild-Vorlagen an (istWaehlbar: parent === null &&
+      // hoehe === null), „Band-Standard" steht dort gar nicht. Der Fall ist mit der
+      // ECHTEN Band-Vorlage im Unit-Test belegt (feld-bedarf.spec.ts).
+      const akzent4g7 = await seite.evaluate(() => {
+        const akzent = document.querySelector('[data-testid="aktion-akzent-farbe"]');
+        return {
+          typ: akzent === null ? null : akzent.getAttribute("type"),
+          altesSelect: document.querySelector('[data-testid="aktion-akzent-vorschlag"]') !== null,
+        };
+      });
+      console.log(`[schritt-4g7] Akzentfarbe: ${JSON.stringify(akzent4g7)}.`);
+      if (akzent4g7.typ !== "color" || akzent4g7.altesSelect) {
+        fund("Felder nach Vorlage", "die Akzentfarbe ist ein echter Farbwaehler (#325)",
+          `typ=${String(akzent4g7.typ)}, altes Select=${String(akzent4g7.altesSelect)}`,
+          "Befund", "action-editor/index.tsx");
+      } else {
+        console.log("[schritt-4g7] AKZENTFARBE GEMESSEN: input type=color, kein Schein-Select (03.11.2026).");
+      }
+
       // Kein Datensatz entstanden - der Entwurf bleibt einfach stehen; zurueck auf den
       // Reiter, den die Aufraeum-Schritte erwarten.
       await klick('[data-testid="reiter-zusammenstellen"]');

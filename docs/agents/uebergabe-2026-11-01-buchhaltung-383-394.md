@@ -1197,3 +1197,70 @@ Farbwähler (#325) **oder** Feld entfernen.
 ### 26.6 Nächster Schritt
 
 **C.** Danach entscheidet Niklas, was als Nächstes kommt — die Effekte bleiben geparkt.
+
+---
+
+## 27. DIE FELDER RICHTEN SICH NACH DER VORLAGE — UND DIE AKZENTFARBE IST ECHT (03.11.2026)
+
+### 27.1 Was vorher war
+
+Das Formular zeigte **immer** alle Felder. Bei „Band-Standard" gibt es aber bewusst **keine**
+`beschreibung`-Zone (TK 9.11.1: in die nutzbaren ~90 px passt genau eine kompakte Zeile) — wer dort
+eine Beschreibung tippte, schrieb in ein Feld, das nie gezeichnet wird. Und die „Akzentfarbe" war
+ein `<select>` mit **einer** Option („Markenwert"): eine Wahl, die keine war.
+
+### 27.2 Was jetzt gilt
+
+- **`action-editor/feld-bedarf.ts`** leitet aus den **Zonendaten** ab, welche Felder eine Vorlage
+  benutzt: `beschreibung`, `preis`, `cta`, `bild` je nach `Zone.bindung`; die Akzentfarbe, wenn
+  irgendeine Zone eine **Akzent-Rolle** (`akzent`, `akzentKraeftig`, `akzentTief`) verwendet — in
+  Text-, Füllungs- oder Verlaufsrolle. Keine zweite Liste „welche Vorlage was kann".
+- **Der Titel bleibt immer sichtbar** — er ist Pflicht (TK 9.8.4), auch wenn eine Vorlage ihn nicht
+  zeichnet. **Unbekannte Vorlage** (noch nicht geladen): **nichts** ausblenden.
+- **Akzentfarbe = `<input type="color">`** (#325), mit dem eigenen Wert oder dem **Markenwert** der
+  Rolle `akzent`; ein Knopf „Markenwert" setzt zurück auf `null`. Gespeichert wird beim
+  **Verlassen** des Feldes wie bei jedem anderen Feld — ein Farbwähler feuert beim Ziehen viele
+  Änderungen, und jede wäre im Modus „bestehend" ein eigener **Undo-Schritt** (TK 9.13.1).
+
+### 27.3 BEFUND, offen — und nicht stillschweigend gelöst
+
+**`istWaehlbar` (`action-editor/vorlage-waehlen.ts:15`) bietet im Aktions-Editor nur Vorlagen mit
+`höhe === null` an — also nur Ganzbild.** Eine Aktion kann über die Oberfläche **nie** eine
+Band-Vorlage tragen. Damit ist die Regel aus Abschnitt 22 („Band-Aktion → Abschnitt, Ganzbild →
+Unterbrechung") für **UI-erzeugte** Aktionen **nicht erreichbar**: Jede gezogene Aktion wird zur
+Unterbrechung. Der Treiber `4f8` misst den Band-Fall nur, weil er die Aktion **über IPC** mit einer
+Band-Vorlage anlegt.
+
+Zwei Lesarten, **Entscheidung nötig**:
+
+1. **Gewollt:** Das Band wird ausschließlich im **Band-Editor** gewählt (dort ist die
+   `bandVorlageId` des Videos), eine Aktion ist immer ein Ganzbild. Dann ist der
+   `istBandAktion`-Zweig im Drop-/„Ins Video"-Pfad **toter Code** und sollte weg (samt Test).
+2. **Lücke:** Aktionen sollen auch Band-Vorlagen tragen können (z. B. „diese Aktion ist fürs
+   Band gedacht"); dann muss `istWaehlbar` sie anbieten — mit der Folge, dass im Editor eine
+   Band-Fläche (1920 × 162) gezeichnet wird.
+
+**Nicht gebaut, nicht geraten.** Es steht als offene Frage in der Übergabe.
+
+### 27.4 Belege
+
+- **Unit 5471/5471** (362 Dateien, +8):
+  - `feld-bedarf.spec.ts` mit den **echten eingebauten Vorlagen**: „Band-Standard" hat **keine**
+    Beschreibung und **kein** Bild; „Ganzflächig" und „Zwei Spalten" benutzen alles; eine Vorlage
+    ohne Akzent-Rolle braucht keinen Farbwähler; der Titel bleibt immer.
+  - `action-editor-neue-aktion.spec.ts`: „eine Vorlage ohne Beschreibungs-Zone blendet das Feld
+    aus — und beim Wechsel wieder ein"; „die Akzentfarbe ist ein Farbwaehler, kein Select mit einer
+    Option".
+- **Treiber `4g7`:** `{"typ":"color","altesSelect":false}` — *„AKZENTFARBE GEMESSEN: input
+  type=color, kein Schein-Select"*.
+- **Ehrlich benannt:** Der **Negativ-Fall** (Feld verschwindet) ist am Fenster **nicht messbar**,
+  weil der Aktions-Editor keine Band-Vorlage anbietet (Befund 27.3). Er ist über den Unit-Test mit
+  der **echten** Band-Vorlage belegt — nicht über eine Attrappe.
+- Typecheck 0 (auch Tests), Lint 0, Build 0, Integration **51/51**, Treiber **0 Befunde**
+  (1 Untersuchung, 1 MANUELL).
+- Doku: TK **v3.40** (9.8.3), `.docx` im selben Commit neu erzeugt.
+
+### 27.5 Nächster Schritt
+
+**Offen — Niklas entscheidet.** Zwei Kandidaten: der Befund aus 27.3 (Band-Vorlagen für Aktionen:
+gewollt oder Lücke?) und die geparkten Effekte (nur Vollbild: Zoom/Drift, Pop).

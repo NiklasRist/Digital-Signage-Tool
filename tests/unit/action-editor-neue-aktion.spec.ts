@@ -32,7 +32,9 @@ vi.mock('../../src/renderer/action-editor/vorlage-waehlen', async (importOrigina
 }))
 
 vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
-  holeBereiteMarke: vi.fn(() => ({ id: 'm1' })),
+  // Die Marke braucht seit 03.11.2026 ihre Farben: der Farbwaehler zeigt ohne eigenen
+  // Wert den Markenwert der Rolle `akzent`.
+  holeBereiteMarke: vi.fn(() => ({ id: 'm1', farben: { akzent: '#ff4040' } })),
 }))
 
 // Der Kanal-Doppel: JEDER Schreibweg des Editors laeuft hier durch.
@@ -53,7 +55,7 @@ import { ladeWaehlbareVorlagen } from '../../src/renderer/action-editor/vorlage-
 import { bereiteMotivVorFuer, zeichneVorschau } from '../../src/renderer/action-editor/live-vorschau'
 import { merkeLetzteVorlage } from '../../src/renderer/gemeinsam/vorlage-vorbelegung'
 import type { Asset } from '../../src/shared/contracts/asset'
-import type { Vorlage } from '../../src/shared/contracts/vorlage'
+import type { Vorlage, Zone } from '../../src/shared/contracts/vorlage'
 
 const GERAETE: Array<{ wurzel: Root; behaelter: HTMLDivElement }> = []
 
@@ -393,7 +395,9 @@ describe('Anlegen mit Vorschau und Bild', () => {
   it('im Modus „neu" wandert das gewaehlte Bild in den Entwurf - ohne IPC - und die Vorschau zeichnet es', async () => {
     vi.mocked(zeichneVorschau).mockClear()
     vi.mocked(bereiteMotivVorFuer).mockClear()
-    const vorlagen = [vorlage('ganz', null)]
+    // Die Vorlage muss eine BILD-Zone haben - sonst blendet das Formular das Bild
+    // seit 03.11.2026 aus (feld-bedarf.ts), und dieser Test pruefte nichts.
+    const vorlagen = [vorlageMitZonen('ganz', null, [zone('bild')])]
     vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
     const { behaelter } = editor({ ...projekt([]), assets: [bildAsset('a1')] }, vorlagen)
     await laufen()
@@ -410,5 +414,85 @@ describe('Anlegen mit Vorschau und Bild', () => {
     // eines der Vorlagenbilder (die entstehen einmal beim Oeffnen).
     const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
     expect(gezeichnet?.bildRef).toBe('a1')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Felder richten sich nach der Vorlage / echter Farbwaehler (03.11.2026)
+// ---------------------------------------------------------------------------
+
+const RAHMEN = { x: 0, y: 0, breite: 100, höhe: 50 }
+const AUSRICHTUNG = { horizontal: 'links' as const, vertikal: 'oben' as const }
+
+function zone(bindung: Zone['bindung'], extra: Partial<Zone> = {}): Zone {
+  return {
+    id: String(bindung ?? 'deko'),
+    rolle: 'frei',
+    bindung,
+    rahmen: RAHMEN,
+    ausrichtung: AUSRICHTUNG,
+    wennLeer: 'leer',
+    ...extra,
+  }
+}
+
+const AKZENT_ZONE = zone(null, {
+  id: 'preis-pille',
+  deko: { füllungFarbRolle: 'akzent' },
+})
+
+function vorlageMitZonen(id: string, hoehe: number | null, zonen: Zone[]): Vorlage {
+  return { id, name: id, höhe: hoehe, parent: null, eingebaut: false, zonen }
+}
+
+describe('Felder richten sich nach der Vorlage', () => {
+  const mitBeschreibung = vorlageMitZonen('mit', null, [
+    zone('titel'),
+    zone('beschreibung'),
+    AKZENT_ZONE,
+  ])
+  const ohneBeschreibung = vorlageMitZonen('ohne', 162, [zone('titel'), AKZENT_ZONE])
+
+  it('eine Vorlage ohne Beschreibungs-Zone blendet das Feld aus - und beim Wechsel wieder ein', async () => {
+    const vorlagen = [mitBeschreibung, ohneBeschreibung]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+
+    klicke(behaelter, 'aktion-neu')
+    await laufen()
+    // Die vorbelegte erste Vorlage bindet `beschreibung`.
+    expect(behaelter.querySelector('[data-testid="aktion-beschreibung"]')).not.toBeNull()
+
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="aktion-vorlage-ohne"]')?.click()
+    })
+    await laufen()
+    // „ohne" hat keine Beschreibungs-Zone: das Feld verschwindet.
+    expect(behaelter.querySelector('[data-testid="aktion-beschreibung"]')).toBeNull()
+
+    act(() => {
+      behaelter.querySelector<HTMLButtonElement>('[data-testid="aktion-vorlage-mit"]')?.click()
+    })
+    await laufen()
+    expect(behaelter.querySelector('[data-testid="aktion-beschreibung"]')).not.toBeNull()
+  })
+
+  it('die Akzentfarbe ist ein Farbwaehler, kein Select mit einer Option', async () => {
+    const vorlagen = [mitBeschreibung, ohneBeschreibung]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+
+    klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    const feld = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-akzent-farbe"]')
+    expect(feld).not.toBeNull()
+    expect(feld?.getAttribute('type')).toBe('color')
+    // Ohne eigenen Wert zeigt der Waehler den Markenwert der Rolle `akzent`.
+    expect(feld?.value.toLowerCase()).toBe('#ff4040')
+    // Das alte Schein-Select ist weg.
+    expect(behaelter.querySelector('[data-testid="aktion-akzent-vorschlag"]')).toBeNull()
   })
 })

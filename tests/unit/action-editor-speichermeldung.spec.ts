@@ -25,7 +25,8 @@ vi.mock('../../src/renderer/action-editor/vorlage-waehlen', async (importOrigina
 }))
 
 vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
-  holeBereiteMarke: vi.fn(() => ({ id: 'm1' })),
+  // Seit 03.11.2026 liest das Formular `farben.akzent` fuer den Farbwaehler.
+  holeBereiteMarke: vi.fn(() => ({ id: 'm1', farben: { akzent: '#ff4040' } })),
 }))
 
 const speichereAktion = vi.fn()

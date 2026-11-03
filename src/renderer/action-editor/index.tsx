@@ -57,6 +57,7 @@ import {
 import { BefundAnzeige } from './befund-texte'
 import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
 import { VorlagenWahl } from './vorlagen-wahl'
+import { feldBedarf } from './feld-bedarf'
 import { entferneBild, starteBildImport, waehlbareBilder, weiseBildZu } from './bild-zuweisen'
 import { setzeAkzentfarbe } from './akzentfarbe'
 import {
@@ -405,10 +406,35 @@ function FormularFelder({
   const projekt = p.projekt.hole().projekt
   const assets: Asset[] = projekt?.assets ?? []
 
+  // Welche Felder die GEWAEHLTE Vorlage ueberhaupt benutzt (03.11.2026): Bei
+  // „Band-Standard" gibt es bewusst keine Beschreibungs-Zone (TK 9.11.1) - das Feld
+  // verschwindet, statt in ein Feld tippen zu lassen, das nie gezeichnet wird.
+  // Unbekannte Vorlage (noch nicht geladen): nichts ausblenden.
+  const gewaehlteVorlage = waehlbare?.find((vorlage) => vorlage.id === formular.vorlagenId) ?? null
+  const bedarf = feldBedarf(gewaehlteVorlage)
+  const markeDesEntwurfs = holeBereiteMarke(formular.markeId)
+  // Was der Farbwaehler zeigt: der EIGENE Wert, sonst der Markenwert. `null` heisst:
+  // weder eigener Wert noch bereite Marke - dann gibt es nichts Sinnvolles zu zeigen.
+  const angezeigteFarbe = formular.akzentfarbe ?? markeDesEntwurfs?.farben.akzent ?? null
+
   // #445: Anlegen im Modus „neu". Die Vollstaendigkeit prueft `legeAktionAn` (#136) -
   // aber ein abgelehnter Versuch endete bisher in `console.warn` und war fuer den
   // Nutzer unsichtbar. Hier laeuft dieselbe Feldpruefung wie beim Verlassen und
   // schreibt ihren Befund in die Anzeige; kein IPC-Aufruf bei leerem Pflichtfeld.
+  /** Die Akzentfarbe setzen: im Modus „neu" in den ENTWURF (kein IPC), sonst ueber
+   *  `setzeAkzentfarbe` (#318). `null` = Markenwert gilt. */
+  function setzeFarbe(farbe: string | null): void {
+    if (gewaehlt === null) {
+      void feldVerlassen('akzentfarbe', farbe)
+      return
+    }
+    void (async () => {
+      const antwort = await setzeAkzentfarbe(gewaehlt.id, farbe)
+      onEinspeisen(antwort)
+      if (antwort.ok) onSetzeFormular({ ...antwort.wert })
+    })()
+  }
+
   async function anlegen(): Promise<void> {
     const befundeJetzt = pruefeEntwurf(formular)
     if (befundeJetzt.length > 0) {
@@ -490,30 +516,36 @@ function FormularFelder({
           onBlur={(e) => void feldVerlassen('titel', e.target.value)}
         />
       </label>
-      <label>Beschreibung{' '}
-        <input
-          type="text"
-          defaultValue={formular.beschreibung ?? ''}
-          data-testid="aktion-beschreibung"
-          onBlur={(e) => void feldVerlassen('beschreibung', e.target.value || null)}
-        />
-      </label>
-      <label>Preis{' '}
-        <input
-          type="text"
-          defaultValue={formular.preis ?? ''}
-          data-testid="aktion-preis"
-          onBlur={(e) => void feldVerlassen('preis', e.target.value || null)}
-        />
-      </label>
-      <label>CTA{' '}
-        <input
-          type="text"
-          defaultValue={formular.cta ?? ''}
-          data-testid="aktion-cta"
-          onBlur={(e) => void feldVerlassen('cta', e.target.value || null)}
-        />
-      </label>
+      {bedarf.beschreibung && (
+        <label>Beschreibung{' '}
+          <input
+            type="text"
+            defaultValue={formular.beschreibung ?? ''}
+            data-testid="aktion-beschreibung"
+            onBlur={(e) => void feldVerlassen('beschreibung', e.target.value || null)}
+          />
+        </label>
+      )}
+      {bedarf.preis && (
+        <label>Preis{' '}
+          <input
+            type="text"
+            defaultValue={formular.preis ?? ''}
+            data-testid="aktion-preis"
+            onBlur={(e) => void feldVerlassen('preis', e.target.value || null)}
+          />
+        </label>
+      )}
+      {bedarf.cta && (
+        <label>CTA{' '}
+          <input
+            type="text"
+            defaultValue={formular.cta ?? ''}
+            data-testid="aktion-cta"
+            onBlur={(e) => void feldVerlassen('cta', e.target.value || null)}
+          />
+        </label>
+      )}
       <label>Standarddauer{' '}
         <input
           type="number"
@@ -553,7 +585,9 @@ function FormularFelder({
       {/* das Bild: im Modus „bestehend" ueber weiseBildZu / entferneBild, im Modus
           „neu" direkt in den ENTWURF (Entscheidung 03.11.2026). Vorher lief dieser Weg
           ins Leere - ein Produktbild war erst nach „Anlegen", erneutem Oeffnen und
-          einem zweiten Speichern zu setzen. */}
+          einem zweiten Speichern zu setzen. NUR wenn die Vorlage eine Bild-Zone hat
+          (`bedarf.bild`): eine Vorlage ohne `motiv` zeigt das Bild nie. */}
+      {bedarf.bild && (
       <div data-testid="aktion-bild">
         <select
           data-testid="aktion-bild-wahl"
@@ -610,25 +644,45 @@ function FormularFelder({
           Bild importieren
         </button>
       </div>
-      {/* die Akzentfarbe: freie Hex-Eintrag (#318, FA-24). Die PALETTEN-Optionen
-          („Akzentfarbe aus der Markenpalette", #250) sind seit #318 bzw. #313
-          UEBERHOLT und entfallen - der freie Farbwähler ist der Nachzug #325,
-          hier NICHT vorweggenommen. */}
-      <div data-testid="aktion-akzent">
-        <select
-          data-testid="aktion-akzent-vorschlag"
-          defaultValue={gewaehlt?.akzentfarbe ?? ''}
-          onChange={(e) => {
-            void (async () => {
-              if (gewaehlt === null) return
-              const antwort = await setzeAkzentfarbe(gewaehlt.id, e.target.value === '' ? null : e.target.value)
-              onEinspeisen(antwort)
-            })()
-          }}
-        >
-          <option value="">Markenwert</option>
-        </select>
-      </div>
+      )}
+      {/* Die Akzentfarbe ist ein FREIER Hex-Wert (#318, FA-24) - und seit 03.11.2026
+          ein echter Farbwaehler (#325) statt eines Selects mit der EINZIGEN Option
+          „Markenwert", das wie eine Wahl aussah und keine war. Nur wenn die Vorlage
+          eine Akzent-Rolle benutzt (`bedarf.akzent`) - sonst bewirkte die Wahl nichts.
+          Gespeichert wird wie ueberall hier beim VERLASSEN des Feldes: Ein Farbwaehler
+          feuert waehrend des Ziehens viele Aenderungen - jede waere ein Schreibvorgang
+          und im Modus „bestehend" ein eigener Undo-Schritt (TK 9.13). */}
+      {bedarf.akzent && (
+        <div data-testid="aktion-akzent">
+          <label>Akzentfarbe{' '}
+            {angezeigteFarbe === null ? (
+              <span data-testid="aktion-akzent-unbekannt">Marke wird geladen …</span>
+            ) : (
+              <input
+                key={angezeigteFarbe}
+                type="color"
+                data-testid="aktion-akzent-farbe"
+                defaultValue={angezeigteFarbe}
+                onBlur={(e) => {
+                  if (e.target.value.toLowerCase() === angezeigteFarbe.toLowerCase()) return
+                  setzeFarbe(e.target.value)
+                }}
+              />
+            )}
+          </label>
+          {formular.akzentfarbe !== null && (
+            <button
+              type="button"
+              data-testid="aktion-akzent-marke"
+              onClick={() => {
+                setzeFarbe(null)
+              }}
+            >
+              Markenwert
+            </button>
+          )}
+        </div>
+      )}
       {/* Die Kaputt-Verweisung (~#141): stellen und der Fix-Weg 'entfernen'. */}
       {gewaehlt !== null && projekt !== null && (
         <KaputtAnzeige aktionId={gewaehlt.id} projekt={projekt} onEinspeisen={onEinspeisen} />

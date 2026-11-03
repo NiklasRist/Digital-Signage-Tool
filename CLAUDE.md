@@ -11,7 +11,36 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, vierundvierzigste Sitzung: die Vorlagen-Auswahl zeigt Bilder) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, fünfundvierzigste Sitzung: Felder nach Vorlage, echte Akzentfarbe — und ein Befund) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 27.**
+
+- **SCHRITT C IST GEBAUT:** Das Aktionen-Formular zeigt nur, was die gewaehlte Vorlage
+  **benutzt** (`action-editor/feld-bedarf.ts`, abgeleitet aus den **Zonendaten**): `beschreibung`,
+  `preis`, `cta`, `bild` je nach `Zone.bindung`; die Akzentfarbe, wenn eine Zone eine
+  **Akzent-Rolle** verwendet. Der **Titel bleibt immer** (Pflicht, TK 9.8.4); eine **unbekannte**
+  Vorlage blendet **nichts** aus.
+- **DIE AKZENTFARBE IST ECHT (#325):** `<input type="color">` mit eigenem Wert oder Markenwert,
+  „Markenwert"-Knopf setzt zurueck auf `null`. Gespeichert wird beim **Verlassen** des Feldes -
+  ein Farbwaehler feuert beim Ziehen viele Aenderungen, jede waere im Modus „bestehend" ein
+  eigener Undo-Schritt (TK 9.13.1).
+- **BEFUND, OFFEN (nicht gebaut, nicht geraten):** `istWaehlbar` bietet im Aktions-Editor nur
+  **Ganzbild**-Vorlagen an (`parent === null && hoehe === null`). Eine Aktion kann ueber die
+  Oberflaeche **nie** eine Band-Vorlage tragen - damit ist die Regel aus Abschnitt 22
+  („Band-Aktion → Abschnitt") fuer **UI-erzeugte** Aktionen **nicht erreichbar**; jede gezogene
+  Aktion wird zur Unterbrechung. Der Treiber `4f8` misst den Band-Fall nur, weil er die Aktion
+  **per IPC** mit Band-Vorlage anlegt. **Entscheidung noetig:** gewollt (dann ist der
+  `istBandAktion`-Zweig toter Code und sollte weg) **oder** Luecke (dann muss `istWaehlbar` sie
+  anbieten).
+- **FENSTER-BELEG:** `4g7` misst `{"typ":"color","altesSelect":false}`. Der **Negativ-Fall**
+  (Beschreibungs-Feld verschwindet) ist am Fenster **nicht messbar** (Befund oben) - er ist im
+  Unit-Test mit der **echten** Band-Vorlage belegt, nicht mit einer Attrappe.
+- **Gate:** Typecheck **0** (auch tests), ESLint/oxlint **0**, Build **0**, Unit **5471/5471**
+  (362 Dateien, +8), Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung, 1 MANUELL).
+- **Doku:** TK **v3.40** (9.8.3), `.docx` im selben Commit neu erzeugt.
+- **Effekte bleiben geparkt** (nur Vollbild: Zoom/Drift, Pop). `einzel-instanz.spec.ts` (#289) flaky.
+
+## STAND HEUTE (03.11.2026, vierundvierzigste Sitzung: die Vorlagen-Auswahl zeigt Bilder) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 26.**
 

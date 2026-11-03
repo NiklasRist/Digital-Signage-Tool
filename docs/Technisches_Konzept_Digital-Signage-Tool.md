@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.39 (9.8.3: Die Vorlagen-Auswahl zeigt je Vorlage ein **Bild** aus demselben Zeichenweg – Kacheln statt Klappliste. Entscheidung 03.11.2026, AD unverändert v1.13)
+**Version:** 3.40 (9.8.3: Die Formularfelder richten sich nach der **Vorlage**; die Akzentfarbe ist ein echter **Farbwähler** (#325). Entscheidung 03.11.2026, AD unverändert v1.13)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1542,6 +1542,19 @@ Aktion {
   zweite Malroutine, keine Skizze aus Rechtecken. Die Bilder entstehen **einmal beim Öffnen** des
   Formulars (Layout-Vorschau); das große Vorschaubild daneben bleibt live. Unter dem Bild stehen
   Name und Fläche („Ganzbild (1920 × 1080)", „Band (1920 × 162)").
+- **Felder richten sich nach der Vorlage (03.11.2026).** Das Formular zeigt nur, was die gewählte
+  Vorlage **benutzt**: `beschreibung`, `preis`, `cta`, `bild` und die Akzentfarbe erscheinen genau
+  dann, wenn eine Zone sie bindet bzw. eine **Akzent-Rolle** (`akzent`, `akzentKraeftig`,
+  `akzentTief`) verwendet — geprüft in `action-editor/feld-bedarf.ts`, **abgeleitet aus den
+  Zonendaten**, nicht aus einer zweiten Liste. Grund: „Band-Standard" hat bewusst **keine**
+  `beschreibung`-Zone (9.11.1); das Feld war eine Einladung, in etwas zu tippen, das nie gezeichnet
+  wird. **Der Titel bleibt immer sichtbar** — er ist Pflicht (9.8.4), auch wenn eine Vorlage ihn
+  nicht zeichnet. Eine unbekannte Vorlage blendet **nichts** aus.
+- **Die Akzentfarbe ist ein echter Farbwähler (03.11.2026, #325).** `<input type="color">` mit dem
+  eigenen Wert, sonst dem **Markenwert** der Rolle `akzent`; „Markenwert" setzt zurück auf `null`
+  (9.10.8). Gespeichert wird beim **Verlassen** des Feldes wie bei jedem anderen Feld — ein
+  Farbwähler feuert beim Ziehen viele Änderungen, und jede wäre im Modus „bestehend" ein eigener
+  Undo-Schritt (9.13.1). Das frühere Select hatte genau **eine** Option und war damit keine Wahl.
 - **Bildzuweisung:** aus der Medien-Bibliothek **wählen** (Asset-ID) **oder** neu **importieren** (media-service → dann Asset-ID). Das Bild ist stets eine **Referenz**.
 - **Live-Vorschau:** `template-canvas` rendert (Aktion + Vorlage + Marke) → dieselben Pixel, die später als Segment-PNG in den finalen Render gehen.
 
