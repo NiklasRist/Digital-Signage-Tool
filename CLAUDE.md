@@ -11,7 +11,46 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (02.11.2026, achtunddreissigste Sitzung: „Ins Video", Buchhaltung, ein Produktwiderspruch) — gilt vor allem darunter
+## STAND HEUTE (03.11.2026, neununddreissigste Sitzung: Unterbrechungen sind wieder renderbar, der Block-Weg ist weg) — gilt vor allem darunter
+
+**Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 21.**
+
+- **DER RENDER-WIDERSPRUCH IST BEHOBEN (`6e09d4f`):** Jedes Projekt **mit einer Unterbrechung** war
+  nicht renderbar — `render-ausloesen.ts` gab jedem Video-Teil **dieselbe** Element-Kennung,
+  `validierung.ts` verlangt eindeutige. Jetzt trägt jeder Teil **`<elementId>#<n>`**, und
+  **`elementIdAusItemKennung`** in `auftrags-manager/render-verzahnung.ts` bildet an der Grenze
+  wieder aufs Element zurück (**eine** Stelle). Das unzerlegte Item behält die nackte Kennung.
+- **BELEGT DURCH EINEN NAHT-TEST:** `render-ausloesen.spec.ts` schickt den von `loeseRenderAus`
+  gebauten Auftrag durch **`pruefeRenderRequest`** des render-service — beide Seiten in einem Lauf,
+  ohne ffmpeg. Der Fall war zuerst **rot** (alte Kennung) und ist jetzt grün.
+- **„ZUR LISTE HINZUFÜGEN" IST WEG (Niklas, 02.11.2026: „Aktion als eigener Block … ist Müll von
+  früher"):** Der Knopf ist entfernt, mit ihm die Props `aufFehler` und `sichtSchreiber` der
+  Bibliothek. Eine Aktion gehört ins **Video** — Band-Abschnitt oder Unterbrechung, beides über
+  „Ins Video". **Der Drag an eine Kante erzeugt weiterhin einen Block**; alte Projekte mit Blöcken
+  müssen weiter rendern (4f5 prüft genau das).
+- **TREIBER UMGEBAUT (`96861fc`):** `4f5`/`4f` legen ihr Zweit-Element über den **Store** an und
+  entfernen es dort wieder (der Undo-Pfeil nimmt einen Store-Ruf **nicht** zurück — gemessen: zwei
+  Blöcke blieben stehen); `4f3` misst die Pfeile an „Ins Video"; `4f7` misst „die Uhr läuft" nach
+  **0,4 s** (ein 2-s-Projekt kann die Wiedergabe vorher beenden).
+- **NICHT BELEGT — und das ist der offene Punkt:** Der Render-Beleg in `4f8` (Projekt **mit**
+  Unterbrechung → Datei + ffprobe) kam **nicht bis zum Ende**. Der Auftrag **besteht die Prüfung**
+  (der Fehler ist von `ungueltige_eingabe` zu `ffmpeg_fehler` gewandert), dann scheiterte ffmpeg an
+  **„No space left on device"** — bei **843 GB freiem Platz**. Danach starben die Läufe ohnehin
+  früher: **Fenster-Tod bei 4a2** (`detached Frame`), reproduzierbar, ohne Main-stderr.
+- **UMGEBUNG, ehrlich benannt:** Nach einem Dutzend Electron-Läufen hängen `tsc`, `oxlint` und
+  `vitest` sporadisch (Worker werden abgeschossen), während dieselben Befehle Minuten später in
+  Sekunden durchlaufen. **Das volle Gate ist nach diesen Änderungen NICHT gelaufen.** Belegt sind:
+  `eslint` **0**, `tsc` main/renderer **0**, die Naht-Probe grün — **nicht** belegt: die volle
+  Unit-Zahl, Integration, Treiber.
+- **ZWEI NEUE WIDERSPRÜCHE, offen (nicht behoben):** (1) Eine **Band-Aktion als Unterbrechung**
+  (Drop auf den Video-Körper, 4f2) zeichnet ein PNG **1920 × 162**; der Render verlangt für
+  `segment` **1920 × 1080** — auch das ist nicht renderbar. (2) Eine Unterbrechung mit **Dauer < 10 s**
+  wird vom Render abgewiesen (Segmente 10–45 s, TK 9.5.2), der Store erlaubt jede Dauer > 0.
+- **NÄCHSTER SCHRITT:** Maschine neu starten, `npm run pruefung` **einmal vollständig** laufen
+  lassen; dann die zwei Widersprüche entscheiden (Band-Aktion als Unterbrechung verbieten **oder**
+  vollflächig zeichnen; Dauer-Grenze für Einschübe festlegen).
+
+## STAND HEUTE (02.11.2026, achtunddreissigste Sitzung: „Ins Video", Buchhaltung, ein Produktwiderspruch) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 20**
 (der Dateiname ist historisch — Abschnitt 20 ist vom 02.11. und liegt in DERSELBEN Datei, damit es

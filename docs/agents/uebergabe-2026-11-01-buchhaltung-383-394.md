@@ -670,3 +670,90 @@ so eine Unterbrechung.
 
 **Nächster Schritt:** der Widerspruch aus 20.4 (Entscheidung), danach Konzept Abschnitt 10
 weiter: **Preset beim Anlegen**, dann die **Effekte**.
+
+## 21. UNTERBRECHUNGEN SIND WIEDER RENDERBAR — und der Block-Weg ist weg (03.11.2026)
+
+### 21.1 Die Reparatur (`6e09d4f`)
+
+Der Widerspruch aus 20.4 ist **behoben**, nicht umgangen:
+
+| Stelle | vorher | jetzt |
+|---|---|---|
+| `composer/render-ausloesen.ts` | jeder Video-Teil trägt `id: element.id` | `<elementId>#<n>` (n = 1..Anzahl Teile); **ohne** Zerlegung bleibt die nackte Kennung |
+| `auftrags-manager/render-verzahnung.ts` | reicht `fehlerhaftesElementId` durch | `elementIdAusItemKennung(...)` schneidet am **ersten** `#` — **eine** Rückabbildungsstelle |
+
+Damit gilt beides: der Auftrag hat **eindeutige** Kennungen (Validierung), und der Reparatur-Modus
+bekommt das **Element** (FA-19). TK 9.2.1 bleibt erfüllt — „jedes `RenderItem` trägt eine `id` zur
+eindeutigen Fehlerzuordnung" ist mit Teil-Kennungen sogar wörtlicher als vorher.
+
+### 21.2 Der Beleg, der nicht von der Umgebung abhängt
+
+**`render-ausloesen.spec.ts` → „NAHT: der fertige Auftrag besteht die Pruefung des render-service":**
+Der Test baut den Auftrag mit `loeseRenderAus` (Unterbrechung im Video) und schickt ihn durch
+**`pruefeRenderRequest`** des render-service. Beide Seiten in **einem** Lauf, ohne ffmpeg.
+Er war zuerst **rot** („Die Element-Kennung … kommt mehrfach vor") und ist jetzt grün.
+Zwei Nebenarbeiten dafür: der `alsPng`-Doppel liefert einen **echten PNG-Kopf** (sonst prüft der
+Fall die Attrappe), und `electron` wird gemockt (`app.isPackaged`).
+
+### 21.3 „Zur Liste hinzufügen" ist entfernt — und was das nach sich zog
+
+**Niklas, 02.11.2026:** *„aktion als eigener block zur liste hinzufügen ist müll von früher der muss
+weg … und die unterbrechungen sind ja essenziell"*.
+
+- **Entfernt:** der Knopf, der Helfer `hinzufuegen`, der `fuegeElementHinzu`-Import und die Props
+  `aufFehler` + `sichtSchreiber` der Bibliothek (beide ohne Verbraucher). Der Prop
+  `sichtSchreiber` bleibt nur dort, wo er noch schreibt.
+- **Tests:** drei Fälle des alten Wegs sind entfallen (`fuegeElementHinzu`-Ruf, Fehlerdurchreichung,
+  Sperrfreiheit) und durch zwei neue ersetzt (kaputte Aktion bleibt **bedienbar**; der alte Knopf
+  existiert **nirgends** mehr). `drag-quellen.spec.ts` prüft den Klick-Weg jetzt an „Ins Video".
+- **NICHT entfernt:** der **Drag an eine Kante** erzeugt weiterhin ein `segment`-Element, und alte
+  Projekte tragen solche Blöcke. Sie müssen weiter rendern — 4f5 ist deshalb auf einen
+  **Altbestands-Fall** umgestellt (Element per Store, nicht per Bedienung; offen benannt).
+
+### 21.4 Treiber: vier Schritte mussten mitziehen (`96861fc`)
+
+| Schritt | Grund | Lösung |
+|---|---|---|
+| 4f5 | klickte den entfallenen Knopf | Element per `project:fügeElementHinzu`, Aufräumen per `project:entferneElement` (der Undo-Pfeil nimmt einen Store-Ruf **nicht** zurück — gemessen: 2 Blöcke blieben, die Kontextmenü-Schritte fanden eine zu lange Zeitleiste) |
+| 4f | dito (zweiter Block für die Drag-Messung) | dito, mit Aufräumen |
+| 4f3 | klickte den entfallenen Knopf | misst die Pfeile an „Ins Video": `"noch nicht im Video"` → `"Band ab 0:00"` → Undo → Redo |
+| 4f7 | `laeuft=nein`, obwohl die Marke wanderte | „die Uhr läuft" wird **0,4 s** nach dem Start gemessen; ein 2-s-Projekt ist nach 1,5 s am Ende |
+
+**4f8** rendert zusätzlich ein Projekt **mit** Unterbrechung (Datei + ffprobe gegen die Anzeige).
+
+### 21.5 Was NICHT belegt ist (und warum)
+
+- **Der Render-Beleg in 4f8 kam nicht durch.** Der Auftrag **besteht die Prüfung** — der Fehler ist
+  von `ungueltige_eingabe` zu `ffmpeg_fehler` gewandert, das ist der Fortschritt —, dann scheiterte
+  ffmpeg an **„Error while filtering: No space left on device"** (Exit 228 = `256 − 28`), bei
+  **843 GB freiem Platz** und 140 MB Temp-Verzeichnis. Ursache **nicht** gefunden; eine gezielte
+  Diagnose (voller ffmpeg-`stderr` + `argv` in eine Datei) wurde vorbereitet, aber der Lauf starb
+  vorher.
+- **Danach starben die Läufe früher:** reproduzierbar **`detached Frame` bei 4a2**
+  (`standZurueckLesen`), ohne `[fenster crash]` und ohne Main-stderr (mit `dumpio: true` geprüft).
+  Zwei Läufe hingen dort 25 bzw. 15 Minuten.
+- **Das volle Gate ist nach diesen Änderungen NICHT gelaufen.** Belegt sind: `eslint .` **Exit 0**,
+  `tsc` main **0**, `tsc` renderer **0**, die Naht-Probe grün (22/22 in `render-ausloesen.spec.ts`),
+  `render-verzahnung.spec.ts` 25/25. **Nicht** belegt: volle Unit-Zahl, Integration, Treiber,
+  `tsc -p tsconfig.tests.json` **nach** der letzten Teständerung.
+  *Grund, ehrlich:* `tsc`, `oxlint` und `vitest` hängen in dieser Sitzung sporadisch (Vitest:
+  „Worker exited unexpectedly"), während dieselben Befehle Minuten später in Sekunden durchlaufen.
+  Nach einem Dutzend Electron-Läufen und 7 Tagen Laufzeit ist die Maschine die naheliegende Ursache
+  — **belegt ist das nicht.**
+
+### 21.6 Zwei NEUE Widersprüche, offen
+
+1. **Band-Aktion als Unterbrechung ist nicht renderbar.** Ein Drop auf den Video-Körper legt seit
+   #442 **immer** eine Unterbrechung an — auch für eine Band-Aktion. `zeichneSegment` zeichnet dann
+   mit der Band-Vorlage: **1920 × 162**. Der Render verlangt für `segment` **1920 × 1080** und weist
+   ab („Das `segment`-PNG hat die Masse 1920 x 162; erwartet waren 1920 x 1080"). Belegt in 4f8
+   (Fehlercode `ungueltiges_element`, `daten.elementId` sauber zurückgebildet).
+   **Entscheidung nötig:** Band-Aktionen als Unterbrechung **verbieten** (Drop landet im Band) oder
+   sie **vollflächig** zeichnen.
+2. **Unterbrechung mit Dauer < 10 s ist nicht renderbar.** `fuegeUnterbrechungEin` erlaubt jede Dauer
+   `> 0`; die Auftragsprüfung verlangt für `segment` **10–45 s** (TK 9.5.2). Der Standard ist 10 s,
+   deshalb fällt es nur nach einer Änderung auf. **Entscheidung nötig:** Grenze für Einschübe
+   festlegen (und dann an EINER Stelle prüfen) oder die Prüfung für Unterbrechungen öffnen.
+
+**Nächster Schritt:** Maschine neu starten, `npm run pruefung` **einmal vollständig**; dann die zwei
+Entscheidungen aus 21.6, danach Konzept Abschnitt 10 weiter (Preset beim Anlegen, Effekte).
