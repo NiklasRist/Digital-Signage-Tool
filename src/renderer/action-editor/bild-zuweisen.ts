@@ -17,15 +17,17 @@
 //    ("Aufträge sind daher grundsätzlich nicht undo-fähig", TK 9.13.1).
 //  - Pfade werden NICHT angefasst (nicht sortiert, nicht dedupliziert, nicht
 //    nach Endung gefiltert - FORMAT_WHITELIST ist Sache des Imports #80).
-//  - Kein Kanal-Literal: Kanäle aus KANAELE (#25), Aufruf aus rufeAuf (#24);
-//    Schreiben ausschliesslich ueber speichereAktion (#136).
+//  - Kein Kanal-Literal: Kanäle aus KANAELE (#25), Aufruf aus rufeAuf (#24).
+//
+// 04.11.2026: Der Schreibweg `weiseBildZu`/`entferneBild` ist entfallen - der Editor
+// haelt einen ENTWURF und schreibt beim Abschluss (s. `aktions-entwurf.ts`). Geblieben
+// ist die Pruefung der Wahl (`pruefeBildWahl`): sie sichert dieselbe Zusage wie vorher,
+// nur ohne zu schreiben.
 
-import type { Aktion } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { KANAELE } from '../../shared/contracts/kanaele'
 import { rufeAuf } from '../ipc-client/rufe-auf'
-import { speichereAktion } from './aktion-bearbeiten'
 
 /** Die Bilder des Projekts, die als Motiv taugen: typ === 'bild' UND zustand === 'ok'.
  *  Reihenfolge = Reihenfolge in Project.assets, ohne Sortierung. */
@@ -33,54 +35,33 @@ export function waehlbareBilder(assets: Asset[]): Asset[] {
   return assets.filter((asset) => asset.typ === 'bild' && asset.zustand === 'ok')
 }
 
-function ungueltigeEingabe(meldung: string): Ergebnis<Aktion> {
-  return {
-    ok: false,
-    fehler: { code: 'ungueltige_eingabe', meldung, daten: undefined },
-  }
-}
-
-/** Setzt bildRef auf eine bereits vorhandene Asset-ID. Schreibt über #136.
- *  `assets` ist Project.assets – ohne den Bestand kann diese Funktion die Zuweisung nicht prüfen.
+/** Prueft eine Bildwahl aus der Bibliothek - OHNE zu schreiben.
  *
- *  DIESE Renderer-Pruefung ist eine Bequemlichkeit, aber die EINZIGE: bearbeiteAktion
- *  (#39) prueft bildRef NICHT - eine unbekannte Asset-ID wuerde also unbeanstandet
- *  in D1 landen und erst beim Zeichnen als Platzhalter auffallen. Ob die Pruefung
- *  zusaetzlich in den Main gehoert, ist eine Vertragsentscheidung gemeldet (#138
- *  STOPP), nicht hier zu bauen. Einstufung BEREITS bestehender Aktionen mit einem
- *  Video in bildRef: gemeinsam mit #135 entschieden, hier nicht einseitig gelockert. */
-export async function weiseBildZu(
-  aktionId: string,
-  assetId: string,
-  assets: readonly Asset[],
-): Promise<Ergebnis<Aktion>> {
+ *  SEIT 04.11.2026 ist der Aktions-Editor ein Entwurf: die Wahl wandert in `bildRef` des
+ *  Entwurfs, geschrieben wird erst beim Abschluss. Damit faellt der frueher hier sitzende
+ *  Schreibweg (`weiseBildZu`/`entferneBild`) weg - die PRUEFUNG bleibt, und zwar an
+ *  derselben Stelle mit denselben Saetzen: bearbeiteAktion (#39) prueft `bildRef` NICHT,
+ *  eine unbekannte Asset-ID laege sonst unbeanstandet in D1 und faende sich erst beim
+ *  Zeichnen als Platzhalter wieder.
+ *
+ *  Rueckgabe: `null` heisst „darf gewaehlt werden"; sonst der Bediener-Satz. */
+export function pruefeBildWahl(assetId: string, assets: readonly Asset[]): string | null {
   if (assetId.length === 0) {
-    return ungueltigeEingabe('assetId: Die Kennung ist leer. Es wurde nichts gespeichert.')
+    return 'assetId: Die Kennung ist leer. Es wurde nichts gespeichert.'
   }
   const asset = assets.find((eintrag) => eintrag.id === assetId)
   if (asset === undefined) {
-    return ungueltigeEingabe(
-      `assetId: "${assetId}" gehört nicht zum Projektbestand. Es wurde nichts gespeichert.`,
-    )
+    return `assetId: "${assetId}" gehört nicht zum Projektbestand. Es wurde nichts gespeichert.`
   }
   if (asset.zustand === 'fehlt') {
     // Ein bewusst zugewiesenes kaputtes Bild waere ein Defekt auf Bestellung;
     // die Reparatur laeuft über #141.
-    return ungueltigeEingabe(
-      `assetId: "${asset.originalname}" gilt als fehlend und kann nicht zugewiesen werden.`,
-    )
+    return `assetId: "${asset.originalname}" gilt als fehlend und kann nicht zugewiesen werden.`
   }
   if (asset.typ === 'video') {
-    return ungueltigeEingabe(
-      `assetId: "${asset.originalname}" ist ein Video und taugt nicht als Aktions-Bild.`,
-    )
+    return `assetId: "${asset.originalname}" ist ein Video und taugt nicht als Aktions-Bild.`
   }
-  return speichereAktion(aktionId, { bildRef: assetId })
-}
-
-/** Entfernt das Bild: bildRef = null. Die Aktion bleibt gültig (Bild optional, Titel Pflicht). */
-export async function entferneBild(aktionId: string): Promise<Ergebnis<Aktion>> {
-  return speichereAktion(aktionId, { bildRef: null })
+  return null
 }
 
 /** Öffnet den Medien-Dialog und reiht für JEDEN gewählten Pfad einen EIGENEN Import-Auftrag ein.

@@ -1,38 +1,34 @@
 // Die Modul-Wurzel des Aktions-Editors (#250 / M7-57).
 //
-// Anordnung (TK 9.14.1): links die Aktions-Bibliothek (#135) mit Kaputt-Zähler
-// und den Knöpfen Neue Aktion / Löschen; rechts oben die GROSSE Live-Vorschau
-// (#140, über template-canvas - NICHT der preview-player); rechts unten die
-// Bearbeitungsfelder (#136/#137/#138/#139).
+// UMBAU 04.11.2026 (Niklas: „der aktionseditor muss stark überarbeitet werden"):
 //
-// ENTSCHEIDENE Regeln (verbindlich; Details in aktions-montage.ts):
-//  - Der neue Stand geht nach JEDER erfolgreichen Mutation über
-//    projekt.setzeProjekt(mitAktion(projekt, aktion)) in die gemeinsame Sicht
-//    - über den UMHÜLLTEN Zugang (#243/#244), damit der Undo-Schnappschuss
-//    von selbst entsteht. SECHS WEGE, sechs compute-Nachweise: legeAktionAn /
-//    speichereAktion (#136), weiseBildZu / entferneBild (#138),
-//    setzeAkzentfarbe (#139) und behebeAktionsBild (#141; dessen aktion steckt
-//    in wert.aktion - sonst hängt mitAktion ein Objekt ohne id ANS ENDE und
-//    die Bibliothek trägt die Aktion doppelt).
-//  - Die Lage = WERT (EditorLage aus aktions-montage); die Hervorhebung aus
-//    der Reparatur-Führung (#201) wird in einem Effekt AUF ÄNDERUNG
-//    ausgewertet - nicht bei jedem Rendering (sonst fände der Nutzer nie
-//    mehr selbst gestaltete Auswahl weg).
-//  - Loeschvorschau VOR dem Absenden (#142) mit ZAHLEN, nicht Kennungen;
-//    nach dem erfolgreichen loescheAktion geht der ZURÜCKGEGEBENE stand
-//    über setzeProjekt in die Sicht (#243/Sicht führen - keine Kaskade
-//    aus entfernteElementIds nachgebaut, ENTSCHIEDEN 6).
-//  - Vorbereitung: bereiteVorschauVor (#140) beim Aufbau mit offenem
-//    Projekt und erneut, wenn sich aktionen/assets ändern; zeichnen aus
-//    zeichnen.hole()?.vorlagen (das Feld, mit dem später gerendert wird),
-//    Marke aus p.marke. Ohne Vorbereitung KEIN zeichneVorschau (wirft sonst).
-//  - Die Auswahlliste der Vorlagen kommt über ladeWaehlbareVorlagen (#137),
-//    das Neuladen über vorlagen.aufGeaendert (ENTSCHIEDEN 10).
-//  - KEIN IPC, kein Zeichnen über zeichneSegment (#140 reichte durch), kein
-//    Undo-Stapel (der umhüllte Zugang macht das), kein Abonnieren von
-//    queue:geaendert (#199 ist der einzige Auswerter).
-//  - Feld-Absenden beim Verlassen (Offene Frage aus dem Issue: gemeldet;
-//    keine Entprellung mit selbst gewählter Wartezeit).
+//   VORHER: drei Spalten - Bibliothek 260 px (Textzeilen), Vorschau, Formular 320 px mit
+//   acht Bloecken untereinander. Geschrieben wurde je Feld beim Verlassen (Modus
+//   „bestehend") bzw. nur ueber „Anlegen" (Modus „neu") - zwei Modelle in einem Fenster.
+//
+//   JETZT: eine Kopfleiste (Zurueck, Titel, Abschluss), ein Bildstreifen 96 px, die
+//   Buehne und ein Inspector 340 px mit fuenf Schritten in der Reihenfolge der Arbeit
+//   (dasselbe Muster wie der Marken-Editor, #455 - eine Editor-Grammatik in der App).
+//
+//   EIN Speichermodell: `entwurf` ist die EINZIGE Wahrheit. Jedes Feld schreibt in den
+//   Entwurf (kein IPC), die Vorschau zeichnet den Entwurf. Geschrieben wird beim
+//   Abschluss („Fertig"/„Anlegen"), beim Wechsel auf eine andere Aktion und beim
+//   Verlassen der Ansicht - je EIN Schreibvorgang, also EIN Undo-Schritt (TK 9.13.1).
+//
+// ENTSCHEIDENDE REGELN (verbindlich; Details in aktions-montage.ts):
+//  - Der neue Stand geht nach JEDER erfolgreichen Mutation ueber
+//    projekt.setzeProjekt(mitAktion(projekt, aktion)) in die gemeinsame Sicht - ueber den
+//    UMHUELLTEN Zugang (#243/#244), damit der Undo-Schnappschuss von selbst entsteht.
+//  - Die Lage = WERT (EditorLage aus aktions-montage); die Hervorhebung aus der
+//    Reparatur-Fuehrung (#201) wird in einem Effekt AUF AENDERUNG ausgewertet.
+//  - Loeschvorschau VOR dem Absenden (#142) mit ZAHLEN, nicht Kennungen; nach dem
+//    erfolgreichen loescheAktion geht der ZURUECKGEGEBENE stand ueber setzeProjekt in die
+//    Sicht (ENTSCHIEDEN 6).
+//  - Vorbereitung: bereiteVorschauVor (#140) beim Aufbau mit offenem Projekt und erneut,
+//    wenn sich aktionen/assets aendern; gezeichnet wird aus zeichnen.hole()?.vorlagen.
+//    Ohne Vorbereitung KEIN zeichneVorschau (wirft sonst).
+//  - KEIN IPC ausser ueber die M-Funktionen, kein Undo-Stapel (der umhuellte Zugang macht
+//    das), kein Abonnieren von queue:geaendert (#199 ist der einzige Auswerter).
 
 import { useEffect, useRef, useState, type JSX } from 'react'
 import type { Aktion } from '../../shared/contracts/aktion'
@@ -42,10 +38,13 @@ import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { ZeichenZugang, VorlagenZugang, ProjektZugang, MarkenZugang } from '../app-shell/sichten'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
+import { holeMotiv } from '../gemeinsam/aktions-motiv'
+import { merkeInsVideoAuftrag } from '../gemeinsam/aktion-ins-video'
+import { schliesseAktionenAnsicht, setzeSchliessenWaechter } from '../gemeinsam/aktionen-ansicht'
 import { merkeLetzteVorlage, vorlageFuerNeueAktion } from '../gemeinsam/vorlage-vorbelegung'
 import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../shared/contracts/konstanten'
 
-import { baueBibliothek, zaehleKaputte } from './bibliothek'
+import { baueBibliothek, type BibliothekEintrag, zaehleKaputte } from './bibliothek'
 import {
   leererEntwurf,
   legeAktionAn,
@@ -54,12 +53,12 @@ import {
   type AktionsEntwurf,
   type EntwurfBefund,
 } from './aktion-bearbeiten'
+import { istNeuerEntwurfLeer, unterschiede } from './aktions-entwurf'
 import { BefundAnzeige } from './befund-texte'
 import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
 import { VorlagenWahl } from './vorlagen-wahl'
 import { feldBedarf } from './feld-bedarf'
-import { entferneBild, starteBildImport, waehlbareBilder, weiseBildZu } from './bild-zuweisen'
-import { setzeAkzentfarbe } from './akzentfarbe'
+import { pruefeBildWahl, starteBildImport, waehlbareBilder } from './bild-zuweisen'
 import {
   bereiteMotivVorFuer,
   bereiteVorschauVor,
@@ -86,9 +85,18 @@ import {
   type EditorLage,
 } from './aktions-montage'
 
+/** Breite des Bildstreifens und des Inspectors. Zwei Zahlen, die zusammen mit der Buehne
+ *  das Fenster fuellen: bei 1440 px bleiben der Vorschau rund 950 px statt 820.
+ *  Der Streifen ist 108 breit, nicht 96: bei 96 blieben der Kachel nach Rahmen und
+ *  Innenabstand zu wenige Pixel, und der Titel brach mitten im Wort (am Bild gesehen). */
+const STREIFEN_BREITE = 108
+const INSPECTOR_BREITE = 340
+/** Hoehe der Motivbilder im Streifen (dieselbe Verkleinerung wie in der Bibliothek). */
+const STREIFEN_BILD_HOEHE = 54
+
 export interface ActionEditorWurzelProps {
   sichtbar: boolean
-  /** UMHÜLLTER Projektzugang (#243). */
+  /** UMHUELLTER Projektzugang (#243). */
   projekt: ProjektZugang
   zeichnen: ZeichenZugang
   vorlagen: VorlagenZugang
@@ -102,6 +110,11 @@ export interface ActionEditorWurzelProps {
    *  (danach fuehrt der Editor seine eigene Lage); die Vorbelegung wartet, bis die
    *  waehlbaren Vorlagen geladen sind. Fehlt das Feld, aendert sich nichts. */
   starteNeu?: boolean
+  /** 04.11.2026: Der Rueckweg der ANSICHT. Gesetzt, wenn der Editor ueber der Reiterflaeche
+   *  liegt; im Reiter [Aktionen] fehlt er - dort gibt es nichts zu schliessen.
+   *  Der Knopf steht in der Kopfleiste des Editors, nicht in einer zweiten Leiste
+   *  darueber: der Abschluss gehoert neben den Titel, den er speichert. */
+  aufSchliessen?: () => void
 }
 
 /** LIEFERT die Schnittstelle aus #244: die Wurzel des Reiters Aktionen. */
@@ -118,44 +131,47 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
   const projekt: Project | null = stand.projekt
   const [, setzeTakt] = useState(0)
   const [lage, setzeLage] = useState<EditorLage>(LEERE_EDITOR_LAGE)
-  const [formular, setzeFormular] = useState<AktionsEntwurf | null>(null)
+  /** DER Entwurf - die einzige Wahrheit des Editors (s. Kopf). */
+  const [entwurf, setzeEntwurf] = useState<AktionsEntwurf | null>(null)
   // 03.11.2026: Der Formularblock wird bei jedem NEUEN Entwurf neu montiert. Ohne
   // diesen Zaehler behielten die unkontrollierten Felder (defaultValue) die Werte des
   // ZULETZT geoeffneten Entwurfs - „Neue Aktion" haette die Vorbelegung zwar im
   // Entwurf, aber nicht auf dem Bildschirm.
   const [entwurfZaehler, setzeEntwurfZaehler] = useState(0)
-  // Die zwei hiesigen Zustände (ENTSCHIEDEN 4): Lage und Entwurf – sie MÜSSEN
-  // den Reiterwechsel nicht überleben (#195 baut besuchte Reiter nicht ab).
-
-  // Die Vorlagen-Auswahl: nur lädt Sie NICHT initial - sie wird per vorlagen.-Abgabge,
-  // ja je bedient ladeWaehlbareVorlagen() lädt (das Neuladen so). VorlagenZugang
-  // liefert NUR den Anlass, nicht den Inhalt (ENTSCHIEDEN 10).
   const [waehlbare, setzeWaehlbare] = useState<Vorlage[] | null>(null)
+  // Befunde und Meldung gehoeren zum ABSCHLUSS, nicht zum Formular: der Abschluss steht
+  // in der Kopfleiste, seine Begruendung muss dort lesbar sein (FA-03-Nachlauf).
+  const [befunde, setzeBefunde] = useState<EntwurfBefund[]>([])
+  const [meldung, setzeMeldung] = useState<string | null>(null)
+  const [schreibt, setzeSchreibt] = useState(false)
+  // Zaehler: steigt, sobald Schriften/Logo/Motive bereit sind (loest EINEN Zeichenlauf aus).
+  const [vorbereitet, setzeVorbereitet] = useState(0)
+  // Die zwei hiesigen Zustaende (ENTSCHIEDEN 4): Lage und Entwurf – sie MUESSEN
+  // den Reiterwechsel nicht ueberleben (#195 baut besuchte Reiter nicht ab).
 
-  // Reaktionskette: Bereit تنظش für die Bibliothek; erneut nach jeder
-  // Bestandsändenung (ENTSCHIEDEN 11: bereiteVorschauVor - NICHT zeichnen.bereiteVor).
+  // Reaktionskette: Bereitstellung fuer die Vorschau; erneut nach jeder Bestandsaenderung
+  // (ENTSCHIEDEN 11: bereiteVorschauVor - NICHT zeichnen.bereiteVor).
   useEffect(() => {
     void (async () => {
       const eintrag = p.projekt.hole().projekt
       if (eintrag === null) {
         return
       }
-      // Die Marke fuer die Logo-Vorbereitung: die STABILE Rahmen-Marke (TK 9.15.4) -
-      // sie wird von bereiteZeichnenVor (#313) IMMER bereitgestellt. Die Marken zum
-      // Zeichnen kommen je Aktion ueber holeBereiteMarke; der #140-Aufruf behaelt
-      // seine vierte Stellung (die Datei ist NICHT Teil dieses Issues).
+      // Die Marke fuer die Logo-Vorbereitung: die STABILE Rahmen-Marke (TK 9.15.4).
       const markeFuerVorbereitung = holeBereiteMarke(eintrag.standardMarkeId)
       if (markeFuerVorbereitung === null) {
-        // Nicht bereitgestellt heisst: nicht vorbereiten, nicht zeichnen - kein
-        // Ersatz und kein Nachladen im Zeichenpfad (TK 9.10.3).
+        // Nicht bereitgestellt heisst: nicht vorbereiten, nicht zeichnen - kein Ersatz
+        // und kein Nachladen im Zeichenpfad (TK 9.10.3).
         return
       }
       await bereiteVorschauVor(eintrag.id, [...eintrag.aktionen], [...eintrag.assets], markeFuerVorbereitung)
-      setzeZeichenvoraussetzungenFrisch()
+      // Ohne diesen Zaehler bliebe es beim EINEN Zeichenlauf von vor der Vorbereitung:
+      // die Motive im Streifen und die grosse Vorschau stuenden als Rahmen ohne Inhalt.
+      setzeVorbereitet((zaehler) => zaehler + 1)
     })()
   }, [p, p.projekt])
 
-  // Das Neuladen der Vorlagen-Auswahl (ENTSCHIEDEN 10): je Änderung der Sicht.
+  // Das Neuladen der Vorlagen-Auswahl (ENTSCHIEDEN 10): je Aenderung der Sicht.
   useEffect(() => {
     void ladeWaehlbareVorlagen().then((antwort) => {
       if (antwort.ok) setzeWaehlbare(antwort.wert)
@@ -171,55 +187,161 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
     }
   }, [])
 
-  // Die Hervorhebung aus der Reparatur-Führung (#201): auf ÄNDERung ausgewertet,
-  // nie für jeden Render (ENTSCHIEDEN 5).
-  //
-  // 03.11.2026: Die Auswahl allein reichte NICHT - wer im Composer „Bearbeiten" klickt,
-  // kam in der Ansicht an, sah die Zeile markiert und daneben „Nichts gewählt." (das
-  // Formular wurde nur vom Klick in der Bibliothek gefuellt). Niklas: „wenn man eine
-  // aktion bearbeiten will dann sollte man direkt dahin geleitet werden." Deshalb
-  // uebernimmt dieser Effekt AUCH den Entwurf - dieselbe Stelle, eine Regel.
+  // Die Hervorhebung aus der Reparatur-Fuehrung (#201): auf AENDERUNG ausgewertet,
+  // nie fuer jeden Render (ENTSCHIEDEN 5). 03.11.2026: Sie setzt AUCH den Entwurf -
+  // wer im Composer „Bearbeiten" klickt, soll direkt in der Aktion stehen.
   useEffect(() => {
     const aktionen = p.projekt.hole().projekt?.aktionen ?? []
     setzeLage((bisher) => uebernimmHervorhebung(bisher, p.hervorgehobeneAktionId, aktionen))
     const treffer = aktionen.find((aktion) => aktion.id === p.hervorgehobeneAktionId)
-    if (treffer !== undefined) setzeFormular({ ...treffer })
+    if (treffer !== undefined) {
+      setzeEntwurf({ ...treffer })
+      setzeBefunde([])
+      setzeMeldung(null)
+    }
   }, [p.hervorgehobeneAktionId])
 
   // 03.11.2026 (Entscheidung 29.4): „+ Neue Aktion" im Composer oeffnet den Editor im
-  // Modus „neu" - der gesamte Anlege-Weg (Vorschau, Bild, Vorlagen-Kacheln, Felder nach
-  // Vorlage, „Anlegen") sitzt hier, nicht mehr im Inline-Formular der Bibliothek.
-  //
-  // EINMAL je Montage (`startAusgewertet`): Die Vorbelegung braucht die waehlbaren
-  // Vorlagen, die erst nach dem Aufbau eintreffen - ohne den Merker wuerde jedes
-  // Nachladen den Entwurf des Nutzers ueberschreiben.
+  // Modus „neu". EINMAL je Montage (`startAusgewertet`): Die Vorbelegung braucht die
+  // waehlbaren Vorlagen, die erst nach dem Aufbau eintreffen.
   const startAusgewertet = useRef(false)
   useEffect(() => {
     if (p.starteNeu !== true || startAusgewertet.current) return
     if (waehlbare === null) return
     startAusgewertet.current = true
-    starteNeueAktion()
+    beginneNeuenEntwurf()
   }, [p.starteNeu, waehlbare])
 
-  // Bestands-Fächern: die Lage fällt zurück, wenn die gewählte Aktion verschwindet.
+  // Bestands-Faechern: die Lage faellt zurueck, wenn die gewaehlte Aktion verschwindet.
   useEffect(() => {
     const aktionen = p.projekt.hole().projekt?.aktionen ?? []
     setzeLage((bisher) => gleicheLageAb(bisher, aktionen))
   }, [stand])
 
-  /** Legt einen NEUEN Entwurf an - derselbe Weg wie der Knopf „Neue Aktion" in der
-   *  Bibliothek und der Einstieg aus dem Composer (Entscheidung 29.4). */
-  function starteNeueAktion(): void {
+  const gewaehlt = projekt === null ? null : findeGewaehlte(lage, projekt.aktionen)
+
+  // ---------------------------------------------------------------------------
+  // Der EINE Schreibweg (s. Kopf). `ok: false` heisst: der Entwurf ist ungueltig oder
+  // der Speicher hat abgelehnt; die Meldung steht am Editor. `aktionId` ist die Aktion,
+  // die danach im Bestand steht - `null`, wenn es nichts zu schreiben gab (ein leerer
+  // neuer Entwurf, eine Aktion, die es nicht mehr gibt).
+  // ---------------------------------------------------------------------------
+  async function schreibe(): Promise<{ ok: boolean; aktionId: string | null }> {
+    const jetzt = p.projekt.hole().projekt
+    const laufenderEntwurf = entwurf
+    if (jetzt === null || laufenderEntwurf === null) {
+      return { ok: true, aktionId: null }
+    }
+
+    const befundeJetzt = pruefeEntwurf(laufenderEntwurf)
+    if (befundeJetzt.length > 0) {
+      setzeBefunde(befundeJetzt)
+      return { ok: false, aktionId: null }
+    }
+
+    if (lage.modus === 'neu') {
+      // Titel ist Pflicht (TK 9.8.4): ohne Titel gibt es nichts anzulegen. Wer nichts
+      // getippt hat, verliert nichts - der leere Entwurf verschwindet still.
+      if (istNeuerEntwurfLeer(laufenderEntwurf)) return { ok: true, aktionId: null }
+      setzeSchreibt(true)
+      const antwort = await legeAktionAn(laufenderEntwurf)
+      setzeSchreibt(false)
+      if (!antwort.ok) {
+        setzeMeldung(`Nicht angelegt: ${antwort.fehler.meldung}`)
+        return { ok: false, aktionId: null }
+      }
+      einspeisen(antwort)
+      setzeLage(nachAnlegen(antwort.wert))
+      setzeEntwurf({ ...antwort.wert })
+      setzeBefunde([])
+      setzeMeldung(null)
+      merkeLetzteVorlage(antwort.wert.vorlagenId)
+      return { ok: true, aktionId: antwort.wert.id }
+    }
+
+    if (lage.modus === 'bestehend') {
+      const gespeichert = jetzt.aktionen.find((aktion) => aktion.id === lage.aktionId)
+      // Die Aktion ist im aktuellen Stand nicht mehr vorhanden: es gibt nichts zu
+      // schreiben. Frueher war das ein stilles `return` - jetzt sagt es der Editor.
+      if (gespeichert === undefined) {
+        setzeMeldung(
+          'Die Aktion ist im aktuellen Projektstand nicht mehr vorhanden - die Änderung wurde NICHT gespeichert.',
+        )
+        return { ok: true, aktionId: null }
+      }
+      const aenderungen = unterschiede(laufenderEntwurf, gespeichert)
+      // Kein Schreibvorgang ohne Aenderung: ein Aufruf waere ein Undo-Schritt fuer nichts.
+      if (Object.keys(aenderungen).length === 0) return { ok: true, aktionId: gespeichert.id }
+      setzeSchreibt(true)
+      const antwort = await speichereAktion(gespeichert.id, aenderungen)
+      setzeSchreibt(false)
+      if (!antwort.ok) {
+        setzeMeldung(`Nicht gespeichert: ${antwort.fehler.meldung}`)
+        return { ok: false, aktionId: null }
+      }
+      einspeisen(antwort)
+      setzeEntwurf({ ...antwort.wert })
+      setzeBefunde([])
+      setzeMeldung(null)
+      merkeLetzteVorlage(antwort.wert.vorlagenId)
+      return { ok: true, aktionId: antwort.wert.id }
+    }
+
+    return { ok: true, aktionId: null }
+  }
+
+  // Der Abschluss steht in der Kopfleiste. Er schreibt und - wenn der Editor ueber der
+  // Reiterflaeche liegt - schliesst er die Ansicht. Im Reiter [Aktionen] bleibt er offen.
+  //
+  // „Fertig & ins Video" (04.11.2026) stellt nach dem Schreiben einen AUFTRAG an den
+  // Composer (`gemeinsam/aktion-ins-video.ts`): der Editor kennt die Abspielmarke nicht
+  // und baut keinen zweiten Schreibweg. Ohne angelegte Aktion gibt es nichts zu platzieren.
+  async function fertig(undInsVideo: boolean): Promise<void> {
+    const ergebnis = await schreibe()
+    if (!ergebnis.ok) return
+    if (undInsVideo) {
+      if (ergebnis.aktionId === null) {
+        setzeMeldung('Die Aktion ist noch nicht gespeichert - ohne Titel gibt es nichts, das ins Video läuft.')
+        return
+      }
+      merkeInsVideoAuftrag(ergebnis.aktionId)
+    }
+    if (p.aufSchliessen === undefined) return
+    // Der Waechter (s. u.) wuerde sonst ein zweites Mal schreiben wollen - hier ist
+    // bereits geschrieben, er darf durchlassen.
+    schliessenErlaubt.current = true
+    p.aufSchliessen()
+    schliessenErlaubt.current = false
+  }
+
+  // Ein Wechsel auf eine andere Aktion schreibt zuerst (derselbe Weg, kein zweiter).
+  // Schlaegt das fehl, bleibt der Entwurf stehen - der Wechsel findet nicht statt.
+  async function waehleAndere(aktionId: string): Promise<void> {
+    if (!(await schreibe())) return
+    const aktion = p.projekt.hole().projekt?.aktionen.find((eintrag) => eintrag.id === aktionId)
+    setzeLage(waehleAktion(aktionId))
+    if (aktion !== undefined) {
+      setzeEntwurf({ ...aktion })
+      // „zuletzt benutzt" heisst auch: zuletzt GEOEFFNET (03.11.2026).
+      merkeLetzteVorlage(aktion.vorlagenId)
+    }
+    setzeBefunde([])
+    setzeMeldung(null)
+  }
+
+  async function neueAktion(): Promise<void> {
+    if (!(await schreibe())) return
+    beginneNeuenEntwurf()
+  }
+
+  /** Legt einen NEUEN Entwurf an - der Knopf im Streifen und der Einstieg aus dem Composer. */
+  function beginneNeuenEntwurf(): void {
     setzeLage(beginneNeu())
     setzeEntwurfZaehler((zaehler) => zaehler + 1)
-    // Die Vorbelegung des ANLEGE-FORMULARS (#136, Entscheidung 03.11.2026):
-    // die zuletzt BENUTZTE Vorlage, sonst die erste waehlbare
-    // (`gemeinsam/vorlage-vorbelegung`). Die Akzentfarbe bleibt null.
-    // markeId (#320/TK 9.8.2): Die Projekt-Standardmarke.
-    // standardDauer: der PROJEKT-Standard (8-45 s), nicht mehr die Konstante 10 -
-    // vorher koppelte jede neue Aktion den Projektstandard still ab (TK 9.8.4).
+    // Die Vorbelegung: zuletzt BENUTZTE Vorlage, sonst die erste waehlbare
+    // (`gemeinsam/vorlage-vorbelegung`), Projekt-Standardmarke, Projekt-Standarddauer.
     const standDerSicht = p.projekt.hole().projekt
-    setzeFormular(
+    setzeEntwurf(
       leererEntwurf(
         vorlageFuerNeueAktion(waehlbare ?? []),
         standDerSicht?.standardMarkeId ?? '',
@@ -227,7 +349,39 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
         standDerSicht?.standardSegmentdauer ?? STANDARD_ANZEIGEDAUER_SEKUNDEN,
       ),
     )
+    setzeBefunde([])
+    setzeMeldung(null)
   }
+
+  // ---------------------------------------------------------------------------
+  // Der Rueckweg von AUSSEN (Reiterklick, Oeffnen einer anderen Ansicht). Er darf keinen
+  // Entwurf verschlucken: der Waechter schreibt erst und laesst dann schliessen. Nur in
+  // der Ansicht registriert - im Reiter gibt es keinen Rueckweg.
+  // ---------------------------------------------------------------------------
+  const schreibeRef = useRef<() => Promise<{ ok: boolean; aktionId: string | null }>>(async () => ({
+    ok: true,
+    aktionId: null,
+  }))
+  useEffect(() => {
+    schreibeRef.current = schreibe
+  })
+  const schliessenErlaubt = useRef(false)
+  useEffect(() => {
+    if (p.aufSchliessen === undefined) return
+    setzeSchliessenWaechter(() => {
+      if (schliessenErlaubt.current) return true
+      void (async () => {
+        if (!(await schreibeRef.current()).ok) return
+        schliessenErlaubt.current = true
+        schliesseAktionenAnsicht()
+        schliessenErlaubt.current = false
+      })()
+      return false
+    })
+    return () => {
+      setzeSchliessenWaechter(null)
+    }
+  }, [p.aufSchliessen])
 
   if (projekt === null) {
     // Den Leerzustand des Reiters liefert #198, nicht diese Wurzel.
@@ -236,12 +390,10 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
 
   const bibliothek = baueBibliothek(projekt.aktionen, projekt.assets)
   const kaputt = zaehleKaputte(bibliothek)
-  const gewaehlt = findeGewaehlte(lage, projekt.aktionen)
+  const zeichenvorlagen = p.zeichnen.hole()?.vorlagen ?? []
 
   // Die Write-nach der Sicht - DER Weg des ganzen Moduls (ENTSCHIEDEN 1).
   function einspeisen(antwort: Ergebnis<Aktion> | { ok: true; wert: { aktion: Aktion } }): void {
-    // Der Fehlerfall wird NICHT mehr still verschluckt: `FormularFelder` meldet ihn am
-    // Feld. Hier bleibt nur der Erfolgsweg - die Sicht schreibt die neue Aktion.
     if (!antwort.ok) {
       return
     }
@@ -252,132 +404,352 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
     setzeTakt((t) => t + 1)
   }
 
+  /** Ein Feld des Entwurfs aendern - KEIN IPC (s. Kopf). Die Pruefung laeuft sofort,
+   *  damit ein leerer Titel nicht erst beim Abschluss auffaellt. */
+  function aendere(feld: keyof AktionsEntwurf, wert: string | number | null): void {
+    if (entwurf === null) return
+    // SAFETY: `feld` ist ein Schluessel von `AktionsEntwurf`, `wert` der Wert dieses
+    // Feldes (der Parameter ist `keyof`-typisiert); `pruefeEntwurf` prueft den Wert
+    // unmittelbar danach und meldet ihn, bevor irgendetwas geschrieben wird.
+    const aenderung = { [feld]: wert } as Partial<AktionsEntwurf>
+    setzeBefunde(pruefeEntwurf(aenderung))
+    setzeMeldung(null)
+    setzeEntwurf({ ...entwurf, ...aenderung })
+  }
+
+  /** Die Bildwahl geht in den Entwurf - aber erst, wenn das Motiv geladen ist: sonst
+   *  zeichnete die Vorschau einen Platzhalter fuer ein gerade gewaehltes Foto. */
+  async function waehleBild(bildRef: string | null): Promise<void> {
+    const jetzt = p.projekt.hole().projekt
+    if (jetzt === null) return
+    if (bildRef !== null) {
+      const fehler = pruefeBildWahl(bildRef, jetzt.assets)
+      if (fehler !== null) {
+        setzeMeldung(fehler)
+        return
+      }
+      await bereiteMotivVorFuer(jetzt.id, bildRef, jetzt.assets)
+    }
+    aendere('bildRef', bildRef)
+  }
+
   return (
-    <div data-testid="aktion-editor-root" style={{ display: 'flex', gap: 12, padding: 8, minHeight: 0 }}>
-      {/* = links: die BIBLIOTHEK = */}
-      <div data-testid="aktion-bibliothek" style={{ width: 260, overflow: 'auto' }}>
-        <h2>Aktionen {kaputt > 0 ? (<span style={{ color: '#e5634d' }}>({kaputt} kaputt)</span>) : null}</h2>
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {bibliothek.map((eintrag) => (
-            <li key={eintrag.aktion.id}>
+    <div
+      data-testid="aktion-editor-root"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}
+    >
+      {/* = die KOPFLEISTE: Rueckweg, Titel, Abschluss. Der Titel ist die Identitaet der
+          Aktion - er steht immer sichtbar da, nicht als drittes Feld im Formular. */}
+      <div
+        data-testid="aktion-editor-kopf"
+        style={{
+          flex: '0 0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '6px 10px',
+          borderBottom: '1px solid #2c2c34',
+        }}
+      >
+        {p.aufSchliessen !== undefined && (
+          <button
+            type="button"
+            data-testid="aktionen-zurueck"
+            onClick={() => {
+              void fertig(false)
+            }}
+          >
+            ← Zurück zum Projekt
+          </button>
+        )}
+        {entwurf !== null ? (
+          <input
+            key={`titel-${lage.modus === 'neu' ? `neu-${String(entwurfZaehler)}` : (lage.modus === 'bestehend' ? lage.aktionId : 'keine')}`}
+            type="text"
+            data-testid="aktion-titel"
+            aria-label="Titel"
+            placeholder="Titel (Pflicht)"
+            defaultValue={entwurf.titel}
+            onBlur={(ereignis) => {
+              aendere('titel', ereignis.target.value)
+            }}
+            style={{ flex: '1 1 auto', minWidth: 120, maxWidth: 420, fontSize: 15, padding: '2px 6px' }}
+          />
+        ) : (
+          <span style={{ color: '#9aa4b2' }}>Keine Aktion gewählt</span>
+        )}
+        <span style={{ flex: '1 1 auto' }} />
+        {entwurf !== null && (
+          <>
+            {/* Der zweite Abschluss nur in der ANSICHT: dort gibt es ein Video in der
+                Reiterflaeche dahinter. Im Reiter [Aktionen] waere er ein Knopf ohne Ziel. */}
+            {p.aufSchliessen !== undefined && (
               <button
                 type="button"
+                data-testid="aktion-anlegen-und-ins-video"
+                disabled={schreibt}
                 onClick={() => {
-                  setzeLage(waehleAktion(eintrag.aktion.id))
-                  setzeFormular({ ...eintrag.aktion })
-                  // „zuletzt benutzt" heisst auch: zuletzt GEÖFFNET (03.11.2026).
-                  merkeLetzteVorlage(eintrag.aktion.vorlagenId)
+                  void fertig(true)
                 }}
               >
-                {eintrag.aktion.titel}{eintrag.kaputt ? ' (kaputt)' : ''}
+                {lage.modus === 'neu' ? 'Anlegen & ins Video' : 'Fertig & ins Video'}
               </button>
-            </li>
-          ))}
-        </ul>
-        <button
-          type="button"
-          data-testid="aktion-neu"
-          onClick={() => {
-            starteNeueAktion()
+            )}
+            <button
+              type="button"
+              data-testid="aktion-anlegen-bestaetigen"
+              className="knopf-primaer"
+              disabled={schreibt}
+              onClick={() => {
+                void fertig(false)
+              }}
+            >
+              {schreibt ? 'Speichert…' : lage.modus === 'neu' ? 'Anlegen' : 'Fertig'}
+            </button>
+          </>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, padding: 8, minHeight: 0, flex: '1 1 auto' }}>
+        {/* = links: der BILDSTREIFEN. Die Aktionen stehen im Composer als Liste; hier
+            braucht es kein zweites Verzeichnis, sondern das schnelle Umschalten. */}
+        <Bildstreifen
+          bibliothek={bibliothek}
+          kaputt={kaputt}
+          lage={lage}
+          vorlagen={zeichenvorlagen}
+          vorbereitet={vorbereitet}
+          aufWahl={(aktionId) => {
+            void waehleAndere(aktionId)
           }}
+          aufNeu={() => {
+            void neueAktion()
+          }}
+        />
+
+        {/* = Mitte: die BUENNE. Zeichnet IMMER den Entwurf - auch im Modus „bestehend"
+            (das konnte template-canvas seit `AktionsInhalt`, Sitzung 43). */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: '1 1 auto', minWidth: 0 }}>
+          {gewaehlt !== null && (
+            <KaputtAnzeige aktionId={gewaehlt.id} projekt={projekt} onEinspeisen={einspeisen} />
+          )}
+          <div
+            data-testid="aktion-vorschau"
+            // Das Feld ist SELBST ein Flex-Container: `height: 100%` am Kind greift in
+            // einer Spalte mit `flex: 1` nicht zuverlaessig (am Bild gesehen: die
+            // Vorschau hing oben, darunter blieben 220 px leer).
+            style={{ flex: '1 1 auto', minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <VorschauFlaeche p={p} entwurf={entwurf} vorbereitet={vorbereitet} />
+          </div>
+        </div>
+
+        {/* = rechts: der INSPECTOR. Fuenf Schritte in der Reihenfolge der Arbeit. */}
+        <div
+          data-testid="aktion-formular"
+          style={{ width: INSPECTOR_BREITE, flex: '0 0 auto', overflowY: 'auto', minHeight: 0 }}
         >
-          Neue Aktion
-        </button>
-      </div>
-
-      {/* = rechts oben: die GROSSE Live-Vorschau = */}
-      <div data-testid="aktion-vorschau" style={{ flex: 1, minHeight: 240 }}>
-        <VorschauFlaeche p={p} entwurf={formular} />
-      </div>
-
-      {/* = rechts unten: die BEARBEITUNGSFELDER = */}
-      <div data-testid="aktion-formular" style={{ width: 320, overflow: 'auto' }}>
-        {formular === null ? (
-          // Kein Entwurf heisst: nichts gewaehlt - die Lage allein macht noch keinen Entwurf.
-          <p data-testid="aktion-formular-leer">Nichts gewählt.</p>
-        ) : (
-          <FormularFelder
-            key={
-              lage.modus === 'neu'
-                ? `neu-${String(entwurfZaehler)}`
-                : lage.modus === 'bestehend'
-                  ? lage.aktionId
-                  : 'keine'
-            }
-            p={p}
-            formular={formular}
-            waehlbare={waehlbare}
-            gewaehlt={gewaehlt}
-            anlegeModus={lage.modus === 'neu'}
-            onAnlegen={async () => {
-              // #445: Der Knopf gehoert in das Formular, damit ein abgelehnter
-              // Anlege-Versuch AM FELD sichtbar wird statt nur in `console.warn`.
-              // Die Vollstaendigkeit prueft weiterhin allein `legeAktionAn` (#136).
-              const antwort = await legeAktionAn(formular)
-              if (antwort.ok) {
-                einspeisen(antwort)
-                // Der Editor steht danach auf der SOEBEN entstandenen Aktion
-                // (nachAnlegen, aktiv-mit-Definition der Lage).
-                setzeLage(nachAnlegen(antwort.wert))
-                setzeFormular({ ...antwort.wert })
-                setzeTakt((t) => t + 1)
-                // Diese Vorlage ist ab jetzt „zuletzt benutzt" (03.11.2026).
-                merkeLetzteVorlage(antwort.wert.vorlagenId)
+          {entwurf === null ? (
+            <p data-testid="aktion-formular-leer" style={{ color: '#9aa4b2' }}>
+              Aktion wählen oder neu anlegen.
+            </p>
+          ) : (
+            <Inspector
+              key={
+                lage.modus === 'neu'
+                  ? `neu-${String(entwurfZaehler)}`
+                  : lage.modus === 'bestehend'
+                    ? lage.aktionId
+                    : 'keine'
               }
-              return antwort
-            }}
-            onEinspeisen={einspeisen}
-            onSetzeFormular={setzeFormular}
-          />
-        )}
-        {lage.modus === 'bestehend' && (
-          <LoeschBlock
-            projekt={projekt}
-            aktionId={lage.aktionId}
-            onLoesche={() => {
-              void loescheAktion(lage.aktionId).then((antwort) => {
-                if (antwort.ok) {
-                  // Der ZURÜCKGEGEBENE Stand geht in die Sicht (ENTSCHIEDEN 6);
-                  // die Kaskade aus den Kennungen wird NICHT nachgebaut.
-                  // SAFETY: wie in `einspeisen` - der Rueckweg liegt vor dieser Closure,
-                  // TS verliert die Verengung im Rumpf, `projekt` ist hier belegt.
-                  const alte = projekt as Project
-                  p.projekt.setzeProjekt({
-                    ...alte,
-                    aktionen: antwort.wert.stand.aktionen,
-                    liste: antwort.wert.stand.liste,
-                  })
-                  setzeLage({ modus: 'keine' })
-                  setzeFormular(null)
-                  setzeTakt((t) => t + 1)
-                } else {
-                  console.warn('[aktion-editor] loescheAktion lehnt ab:', antwort.fehler.code, antwort.fehler.meldung)
-                }
-              })
-            }}
-            onAbbrechen={() => undefined}
-          />
-        )}
+              projekt={projekt}
+              entwurf={entwurf}
+              waehlbare={waehlbare}
+              befunde={befunde}
+              meldung={meldung}
+              aufAenderung={aendere}
+              aufBild={(bildRef) => {
+                void waehleBild(bildRef)
+              }}
+            />
+          )}
+          {lage.modus === 'bestehend' && (
+            <LoeschBlock
+              projekt={projekt}
+              aktionId={lage.aktionId}
+              onLoesche={() => {
+                void loescheAktion(lage.aktionId).then((antwort) => {
+                  if (antwort.ok) {
+                    // Der ZURUECKGEGEBENE Stand geht in die Sicht (ENTSCHIEDEN 6);
+                    // die Kaskade aus den Kennungen wird NICHT nachgebaut.
+                    p.projekt.setzeProjekt({
+                      ...projekt,
+                      aktionen: antwort.wert.stand.aktionen,
+                      liste: antwort.wert.stand.liste,
+                    })
+                    setzeLage({ modus: 'keine' })
+                    setzeEntwurf(null)
+                    setzeTakt((t) => t + 1)
+                  } else {
+                    setzeMeldung(`Nicht gelöscht: ${antwort.fehler.meldung}`)
+                  }
+                })
+              }}
+              onAbbrechen={() => undefined}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-// Merker der Vorbereitung; die Vorschaufläche prüft ihn je Render.
-let zeichenvoraussetzungenFrisch = false
-function setzeZeichenvoraussetzungenFrisch(): void {
-  zeichenvoraussetzungenFrisch = true
+/** Der Bildstreifen links: eine Kachel je Aktion, „+ Neue Aktion" oben. */
+function Bildstreifen({
+  bibliothek,
+  kaputt,
+  lage,
+  vorlagen,
+  vorbereitet,
+  aufWahl,
+  aufNeu,
+}: {
+  bibliothek: readonly BibliothekEintrag[]
+  kaputt: number
+  lage: EditorLage
+  vorlagen: readonly Vorlage[]
+  vorbereitet: number
+  aufWahl: (aktionId: string) => void
+  aufNeu: () => void
+}): JSX.Element {
+  return (
+    <div
+      data-testid="aktion-bibliothek"
+      title={kaputt > 0 ? `${String(kaputt)} Aktion(en) kaputt` : 'Aktionen'}
+      style={{
+        width: STREIFEN_BREITE,
+        flex: '0 0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        overflowY: 'auto',
+        minHeight: 0,
+      }}
+    >
+      <button
+        type="button"
+        data-testid="aktion-neu"
+        title="Neue Aktion"
+        onClick={aufNeu}
+        style={{ height: 30, fontSize: 16 }}
+      >
+        +
+      </button>
+      {bibliothek.map((eintrag) => (
+        <StreifenKachel
+          key={eintrag.aktion.id}
+          eintrag={eintrag}
+          vorlagen={vorlagen}
+          gewaehlt={lage.modus === 'bestehend' && lage.aktionId === eintrag.aktion.id}
+          vorbereitet={vorbereitet}
+          aufWahl={aufWahl}
+        />
+      ))}
+    </div>
+  )
 }
 
-/** Die Vorschaufläche: zeichnet mit zeichneVorschau (#140) - dem EINZIGEN Zeichenweg. */
+function StreifenKachel({
+  eintrag,
+  vorlagen,
+  gewaehlt,
+  vorbereitet,
+  aufWahl,
+}: {
+  eintrag: BibliothekEintrag
+  vorlagen: readonly Vorlage[]
+  gewaehlt: boolean
+  vorbereitet: number
+  aufWahl: (aktionId: string) => void
+}): JSX.Element {
+  const flaeche = useRef<HTMLSpanElement | null>(null)
+  useEffect(() => {
+    const ziel = flaeche.current
+    if (ziel === null) return
+    ziel.replaceChildren()
+    const vorlage = findeZeichenVorlage(eintrag.aktion, vorlagen)
+    const marke = holeBereiteMarke(eintrag.aktion.markeId)
+    // Ohne Vorlage oder Marke bleibt die Flaeche leer - kein Ersatzbild, das eine
+    // Zeichnung behauptet (dieselbe Haltung wie in der Composer-Bibliothek).
+    if (vorlage === null || marke === null) return
+    const bild = holeMotiv(eintrag.aktion, vorlage, marke, STREIFEN_BILD_HOEHE)
+    if (bild !== null) {
+      // Das Motiv ist auf ZEILENHOEHE verkleinert; die Breite gibt der Streifen vor.
+      // `object-fit: cover` ist fuer BAND-Vorlagen entscheidend: 1920 x 162 waeren bei
+      // 108 px Breite ein 9-px-Streifen - als Kachel unbrauchbar (am Bild gesehen).
+      // Beschnitten wird, nicht verzerrt; zu sehen ist der linke Teil mit dem Logo.
+      bild.style.width = '100%'
+      bild.style.height = `${String(STREIFEN_BILD_HOEHE)}px`
+      bild.style.objectFit = 'cover'
+      bild.style.display = 'block'
+      ziel.append(bild)
+    }
+  }, [eintrag, vorlagen, vorbereitet])
+
+  return (
+    <button
+      type="button"
+      data-testid={`aktion-strip-${eintrag.aktion.id}`}
+      title={eintrag.aktion.titel}
+      aria-label={eintrag.aktion.titel}
+      onClick={() => {
+        aufWahl(eintrag.aktion.id)
+      }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        gap: 2,
+        padding: 2,
+        // Ein Knopf zentriert seinen Text von sich aus - hier steht er LINKS, damit
+        // alle Kacheln an derselben Kante beginnen (am Bild gesehen).
+        textAlign: 'left',
+        border: gewaehlt ? '2px solid #6ea8fe' : eintrag.kaputt ? '2px solid #e5634d' : '2px solid transparent',
+        background: '#17171b',
+      }}
+    >
+      <span
+        ref={flaeche}
+        style={{ display: 'block', minHeight: 18, background: '#101014', lineHeight: 0 }}
+      />
+      <span
+        style={{
+          display: 'block',
+          fontSize: 10,
+          color: eintrag.kaputt ? '#e5634d' : '#9aa4b2',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {eintrag.aktion.titel === '' ? '(ohne Titel)' : eintrag.aktion.titel}
+      </span>
+    </button>
+  )
+}
+
+/** Die Vorschauflaeche: zeichnet mit zeichneVorschau (#140) - dem EINZIGEN Zeichenweg. */
 function VorschauFlaeche({
   p,
   entwurf,
+  vorbereitet,
 }: {
   p: ActionEditorWurzelProps
-  /** Der ENTWURF, nicht die gespeicherte Aktion (Entscheidung 03.11.2026): Im Modus
-   *  „neu" gibt es keine gespeicherte Aktion - und trotzdem soll gezeichnet werden. */
+  /** Der ENTWURF, nicht die gespeicherte Aktion: der Editor zeigt immer, was er schreiben
+   *  wuerde (seit 04.11.2026 auch im Modus „bestehend"). */
   entwurf: AktionsEntwurf | null
+  /** Steigt, sobald Motive/Schriften bereit sind - dann wird neu gezeichnet. */
+  vorbereitet: number
 }): JSX.Element {
   const containerBezug = useState<HTMLDivElement | null>(null)
   const [, setzeContainer] = containerBezug
@@ -389,306 +761,165 @@ function VorschauFlaeche({
       const zeichenv = p.zeichnen.hole()?.vorlagen ?? []
       const vorlage = findeZeichenVorlage(entwurf, zeichenv)
       if (vorlage === null) return
-      // Die Marke des ENTWURFS (#313, ENTSCHIEDEN 5). null heisst: nicht
-      // zeichnen - keine Ersatzmarke, kein Nachladen im Zeichenpfad (TK 9.10.3).
+      // Die Marke des ENTWURFS (#313, ENTSCHIEDEN 5). null heisst: nicht zeichnen -
+      // keine Ersatzmarke, kein Nachladen im Zeichenpfad (TK 9.10.3).
       const marke = holeBereiteMarke(entwurf.markeId)
       if (marke === null) return
       try {
         const bild = zeichneVorschau(entwurf, vorlage, marke)
         haengeVorschauEin(ziel, bild)
         setzeFehlertext(null)
-      } catch (ausnähm) {
-        console.warn('[aktion-editor] zeichneVorschau wirft:', ausnähm)
-        setzeFehlertext(ausnähm instanceof Error ? ausnähm.message : 'Zeichenfehler')
+      } catch (ausnahme) {
+        console.warn('[aktion-editor] zeichneVorschau wirft:', ausnahme)
+        setzeFehlertext(ausnahme instanceof Error ? ausnahme.message : 'Zeichenfehler')
       }
     }
-  }, [entwurf, p, zeichenvoraussetzungenFrisch])
+  }, [entwurf, p, vorbereitet])
 
-  return <div ref={(el) => setzeContainer(el)} data-testid="aktion-vorschau-flaeche" style={{ border: '1px solid #444', minHeight: 200 }} />
+  return <div ref={(el) => setzeContainer(el)} data-testid="aktion-vorschau-flaeche" style={{ border: '1px solid #444', minHeight: 200, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
 }
 
-/** Die Felder je Aktion: Titel/Beschr./Preis/CTA/Dauer/Vorlage/Bild/Akzent - je der
- *  schreibweg liefert eine neue Aktion; sie geht über einspeisen in die Sicht. */
-function FormularFelder({
-  p,
-  formular,
+/** Der Inspector: fuenf Schritte in der Reihenfolge der Arbeit. */
+function Inspector({
+  projekt,
+  entwurf,
   waehlbare,
-  gewaehlt,
-  anlegeModus,
-  onAnlegen,
-  onEinspeisen,
-  onSetzeFormular,
+  befunde,
+  meldung,
+  aufAenderung,
+  aufBild,
 }: {
-  p: ActionEditorWurzelProps
-  formular: AktionsEntwurf
+  projekt: Project
+  entwurf: AktionsEntwurf
   waehlbare: Vorlage[] | null
-  gewaehlt: Aktion | null
-  /** true im Modus „Neue Aktion": dann steht hier der Anlegen-Knopf mit seinen Befunden. */
-  anlegeModus: boolean
-  /** Legt den Entwurf an; der Befund bleibt am Formular. */
-  onAnlegen: () => Promise<Ergebnis<Aktion>>
-  /** Der Fehlerfall traegt seine Meldung mit - `{ ok: false }` allein machte ein
-   *  gescheitertes Speichern unsichtbar (FA-03-Nachlauf). */
-  onEinspeisen: (antwort: Ergebnis<Aktion> | { ok: true; wert: { aktion: Aktion } }) => void
-  onSetzeFormular: (entwurf: AktionsEntwurf | null) => void
+  befunde: EntwurfBefund[]
+  meldung: string | null
+  aufAenderung: (feld: keyof AktionsEntwurf, wert: string | number | null) => void
+  aufBild: (bildRef: string | null) => void
 }): JSX.Element {
-  const [befunde, setzeBefunde] = useState<EntwurfBefund[]>([])
-  // FA-03-Nachlauf: Ein verlorener Edit war bisher UNSICHTBAR - es gab keinen Weg,
-  // auf dem der Nutzer von einem gescheiterten Speichern erfaehrt. Diese Zeile ist
-  // dieser Weg (die Wurzel-Meldung steht dem action-editor nicht zur Verfuegung).
-  const [speicherMeldung, setzeSpeicherMeldung] = useState<string | null>(null)
-  const projekt = p.projekt.hole().projekt
-  const assets: Asset[] = projekt?.assets ?? []
-
+  const assets: Asset[] = projekt.assets
   // Welche Felder die GEWAEHLTE Vorlage ueberhaupt benutzt (03.11.2026): Bei
-  // „Band-Standard" gibt es bewusst keine Beschreibungs-Zone (TK 9.11.1) - das Feld
-  // verschwindet, statt in ein Feld tippen zu lassen, das nie gezeichnet wird.
-  // Unbekannte Vorlage (noch nicht geladen): nichts ausblenden.
-  const gewaehlteVorlage = waehlbare?.find((vorlage) => vorlage.id === formular.vorlagenId) ?? null
+  // „Band-Standard" gibt es bewusst keine Beschreibungs-Zone (TK 9.11.1).
+  const gewaehlteVorlage = waehlbare?.find((vorlage) => vorlage.id === entwurf.vorlagenId) ?? null
   const bedarf = feldBedarf(gewaehlteVorlage)
-  const markeDesEntwurfs = holeBereiteMarke(formular.markeId)
+  const markeDesEntwurfs = holeBereiteMarke(entwurf.markeId)
   // Was der Farbwaehler zeigt: der EIGENE Wert, sonst der Markenwert. `null` heisst:
   // weder eigener Wert noch bereite Marke - dann gibt es nichts Sinnvolles zu zeigen.
-  const angezeigteFarbe = formular.akzentfarbe ?? markeDesEntwurfs?.farben.akzent ?? null
-
-  // #445: Anlegen im Modus „neu". Die Vollstaendigkeit prueft `legeAktionAn` (#136) -
-  // aber ein abgelehnter Versuch endete bisher in `console.warn` und war fuer den
-  // Nutzer unsichtbar. Hier laeuft dieselbe Feldpruefung wie beim Verlassen und
-  // schreibt ihren Befund in die Anzeige; kein IPC-Aufruf bei leerem Pflichtfeld.
-  /** Die Akzentfarbe setzen: im Modus „neu" in den ENTWURF (kein IPC), sonst ueber
-   *  `setzeAkzentfarbe` (#318). `null` = Markenwert gilt. */
-  function setzeFarbe(farbe: string | null): void {
-    if (gewaehlt === null) {
-      void feldVerlassen('akzentfarbe', farbe)
-      return
-    }
-    void (async () => {
-      const antwort = await setzeAkzentfarbe(gewaehlt.id, farbe)
-      onEinspeisen(antwort)
-      if (antwort.ok) onSetzeFormular({ ...antwort.wert })
-    })()
-  }
-
-  async function anlegen(): Promise<void> {
-    const befundeJetzt = pruefeEntwurf(formular)
-    if (befundeJetzt.length > 0) {
-      setzeBefunde(befundeJetzt)
-      setzeSpeicherMeldung(null)
-      return
-    }
-    setzeBefunde([])
-    const antwort = await onAnlegen()
-    setzeSpeicherMeldung(antwort.ok ? null : `Nicht angelegt: ${antwort.fehler.meldung}`)
-  }
-
-  // Feld verlassen -> speichereAktion (ENTSCHEIDEN-FRAG: gemeldet).
-  async function feldVerlassen(feld: keyof AktionsEntwurf, wert: string | number | null): Promise<void> {
-    if (gewaehlt === null) {
-      // Modus "neu" (#445): Es gibt noch keine Aktion im Bestand, in die geschrieben
-      // werden koennte - der getippte Wert gehoert in den ENTWURF. Vorher kehrte
-      // diese Stelle still zurueck, `formular` blieb `leererEntwurf` mit `titel: ''`,
-      // und „Anlegen" schickte einen leeren Titel an `project:erstelleAktion`.
-      // SAFETY: `feld` ist ein Schluessel von `AktionsEntwurf`, `wert` der Wert dieses
-      // Feldes (der Parameter ist `keyof`-typisiert); `pruefeEntwurf` prueft den Wert
-      // unmittelbar danach, bevor irgendetwas geschrieben wird.
-      const aenderung = { [feld]: wert } as Partial<AktionsEntwurf>
-      setzeBefunde(pruefeEntwurf(aenderung))
-      setzeSpeicherMeldung(null)
-      onSetzeFormular({ ...formular, ...aenderung })
-      return
-    }
-    const entwurf = p.projekt.hole().projekt?.aktionen.find((e) => e.id === gewaehlt.id)
-    if (entwurf === undefined) {
-      // Die Auswahl zeigt auf eine Aktion, die im aktuellen Stand nicht mehr existiert.
-      // Frueher: stilles `return` - der getippte Wert war weg, ohne jede Spur.
-      setzeSpeicherMeldung(
-        'Die Aktion ist im aktuellen Projektstand nicht mehr vorhanden - die Änderung wurde NICHT gespeichert.',
-      )
-      return
-    }
-    // SAFETY: derselbe berechnete Schluessel wie oben; `pruefeEntwurf` laeuft direkt
-    // danach und bricht bei einem ungueltigen Wert ab, bevor `speichereAktion` ihn sieht.
-    const geaenderteFelder: Partial<AktionsEntwurf> = { [feld]: wert } as Partial<AktionsEntwurf>
-    const befundeArray = pruefeEntwurf(geaenderteFelder)
-    if (befundeArray.length > 0) {
-      setzeBefunde(befundeArray)
-      return
-    }
-    setzeBefunde([])
-    const antwort = await speichereAktion(gewaehlt.id, geaenderteFelder)
-    onEinspeisen(antwort)
-    if (antwort.ok) {
-      setzeSpeicherMeldung(null)
-      onSetzeFormular({ ...antwort.wert })
-      // Auch eine gespeicherte Vorlagen-Wahl ist „benutzt" (03.11.2026).
-      merkeLetzteVorlage(antwort.wert.vorlagenId)
-    } else {
-      // Der Grund kommt aus `speichereAktion` (Validierung oder Main-Antwort) und ist
-      // ein Bediener-Satz - er wird woertlich gezeigt, nicht neu formuliert.
-      setzeSpeicherMeldung(`Nicht gespeichert: ${antwort.fehler.meldung}`)
-    }
-  }
+  const angezeigteFarbe = entwurf.akzentfarbe ?? markeDesEntwurfs?.farben.akzent ?? null
 
   return (
-    <div>
-      {anlegeModus && (
-        <button
-          type="button"
-          data-testid="aktion-anlegen-bestaetigen"
-          onClick={() => {
-            void anlegen()
-          }}
-        >
-          Anlegen
-        </button>
-      )}
-      <label>Titel{' '}
-        <input
-          type="text"
-          data-testid="aktion-titel"
-          defaultValue={String(formular.titel)}
-          onBlur={(e) => void feldVerlassen('titel', e.target.value)}
-        />
-      </label>
-      {bedarf.beschreibung && (
-        <label>Beschreibung{' '}
-          <input
-            type="text"
-            defaultValue={formular.beschreibung ?? ''}
-            data-testid="aktion-beschreibung"
-            onBlur={(e) => void feldVerlassen('beschreibung', e.target.value || null)}
-          />
-        </label>
-      )}
-      {bedarf.preis && (
-        <label>Preis{' '}
-          <input
-            type="text"
-            defaultValue={formular.preis ?? ''}
-            data-testid="aktion-preis"
-            onBlur={(e) => void feldVerlassen('preis', e.target.value || null)}
-          />
-        </label>
-      )}
-      {bedarf.cta && (
-        <label>CTA{' '}
-          <input
-            type="text"
-            defaultValue={formular.cta ?? ''}
-            data-testid="aktion-cta"
-            onBlur={(e) => void feldVerlassen('cta', e.target.value || null)}
-          />
-        </label>
-      )}
-      <label>Standarddauer{' '}
-        <input
-          type="number"
-          defaultValue={String(formular.standardDauer ?? '')}
-          data-testid="aktion-dauer"
-          onBlur={(e) => void feldVerlassen('standardDauer', e.target.value === '' ? null : Number(e.target.value))}
-        />
-      </label>
-      {speicherMeldung !== null && (
-        <p data-testid="aktion-speicher-meldung" style={{ color: '#e5634d', fontSize: 12 }}>
-          {speicherMeldung}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {meldung !== null && (
+        <p data-testid="aktion-speicher-meldung" style={{ color: '#e5634d', fontSize: 12, margin: 0 }}>
+          {meldung}
         </p>
       )}
-      {befunde.map((befund, i) => (
-        <BefundAnzeige key={i} befund={befund} />
+      {befunde.map((befund, stelle) => (
+        <BefundAnzeige key={stelle} befund={befund} />
       ))}
-      {/* Die Vorlage: Auswahl MIT BILD (03.11.2026). Ein Klick geht denselben Weg wie
-          jedes andere Feld - `feldVerlassen`; im Modus „neu" landet er im Entwurf.
-          `formular`, nicht `gewaehlt`: im Modus „neu" gibt es keine gewaehlte Aktion -
-          und genau dort steht die Vorbelegung. */}
-      <div data-testid="aktion-vorlage">
-        <p style={{ margin: '0 0 4px' }}>Vorlage</p>
-        {waehlbare === null ? null : (
-          <VorlagenWahl
-            waehlbare={waehlbare}
-            aktuell={formular.vorlagenId}
-            entwurf={formular}
-            aufWahl={(vorlagenId) => void feldVerlassen('vorlagenId', vorlagenId)}
-          />
+
+      <Schritt nummer={1} titel="Vorlage">
+        <div data-testid="aktion-vorlage">
+          {waehlbare === null ? null : (
+            <VorlagenWahl
+              waehlbare={waehlbare}
+              aktuell={entwurf.vorlagenId}
+              entwurf={entwurf}
+              aufWahl={(vorlagenId) => {
+                aufAenderung('vorlagenId', vorlagenId)
+              }}
+            />
+          )}
+          {waehlbare !== null && findeZugewiesene(entwurf.vorlagenId, waehlbare) === null && (
+            <p data-testid="aktion-vorlage-unbekannt" style={{ color: '#d9a441' }}>
+              Unbekannte Vorlage - bitte neu wählen.
+            </p>
+          )}
+        </div>
+      </Schritt>
+
+      <Schritt nummer={2} titel="Inhalt">
+        {bedarf.beschreibung && (
+          <label style={{ display: 'block' }}>Beschreibung{' '}
+            <input
+              type="text"
+              defaultValue={entwurf.beschreibung ?? ''}
+              data-testid="aktion-beschreibung"
+              style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
+              onBlur={(ereignis) => {
+                aufAenderung('beschreibung', ereignis.target.value || null)
+              }}
+            />
+          </label>
         )}
-      </div>
-      {waehlbare !== null && findeZugewiesene(formular.vorlagenId, waehlbare) === null && (
-        <p data-testid="aktion-vorlage-unbekannt" style={{ color: '#d9a441' }}>
-          Unbekannte Vorlage - bitte neu wählen.
-        </p>
-      )}
-      {/* das Bild: im Modus „bestehend" ueber weiseBildZu / entferneBild, im Modus
-          „neu" direkt in den ENTWURF (Entscheidung 03.11.2026). Vorher lief dieser Weg
-          ins Leere - ein Produktbild war erst nach „Anlegen", erneutem Oeffnen und
-          einem zweiten Speichern zu setzen. NUR wenn die Vorlage eine Bild-Zone hat
-          (`bedarf.bild`): eine Vorlage ohne `motiv` zeigt das Bild nie. */}
+        {bedarf.preis && (
+          <label style={{ display: 'block' }}>Preis{' '}
+            <input
+              type="text"
+              defaultValue={entwurf.preis ?? ''}
+              data-testid="aktion-preis"
+              style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
+              onBlur={(ereignis) => {
+                aufAenderung('preis', ereignis.target.value || null)
+              }}
+            />
+          </label>
+        )}
+        {bedarf.cta && (
+          <label style={{ display: 'block' }}>Knopf{' '}
+            <input
+              type="text"
+              defaultValue={entwurf.cta ?? ''}
+              data-testid="aktion-cta"
+              style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
+              onBlur={(ereignis) => {
+                aufAenderung('cta', ereignis.target.value || null)
+              }}
+            />
+          </label>
+        )}
+      </Schritt>
+
       {bedarf.bild && (
-      <div data-testid="aktion-bild">
-        <select
-          data-testid="aktion-bild-wahl"
-          defaultValue={(gewaehlt?.bildRef ?? formular.bildRef) ?? ''}
-          onChange={(e) => {
-            const wahl = e.target.value === '' ? null : e.target.value
-            const projektJetzt = p.projekt.hole().projekt
-            if (gewaehlt === null) {
-              if (projektJetzt === null) return
-              // ERST das Motiv vorbereiten, DANN in den Entwurf: die Vorschau zeichnet
-              // unmittelbar nach dem Setzen - waere das Bild noch nicht geladen, stuende
-              // dort der Platzhalter (live-vorschau, bereiteMotivVorFuer).
-              void (async () => {
-                await bereiteMotivVorFuer(projektJetzt.id, wahl, projektJetzt.assets)
-                await feldVerlassen('bildRef', wahl)
-              })()
-              return
-            }
-            void (async () => {
-              if (projektJetzt === null) return
-              if (wahl === null) {
-                const antwort = await entferneBild(gewaehlt.id)
-                onEinspeisen(antwort)
-                return
-              }
-              const antwort = await weiseBildZu(gewaehlt.id, wahl, projektJetzt.assets)
-              onEinspeisen(antwort)
-            })()
-          }}
-        >
-          <option value="">– kein Bild –</option>
-          {waehlbareBilder(assets).map((asset) => (
-            <option key={asset.id} value={asset.id}>{asset.originalname}</option>
-          ))}
-        </select>
-        <button
-          type="button"
-          data-testid="aktion-bild-import"
-          onClick={() => {
-            void (async () => {
-              const projekt = p.projekt.hole().projekt
-              if (projekt === null) return
-              const antwort = await starteBildImport(projekt.id)
-              if (antwort.ok && antwort.wert.auftragIds.length > 0) {
-                console.info(
-                  antwort.wert.abbruchGrund === null
-                    ? `${antwort.wert.auftragIds.length} Import(e) gestartet.`
-                    : `${antwort.wert.auftragIds.length} gestartet; abgebrochen wegen ${antwort.wert.abbruchGrund}.`,
-                )
-              }
-            })()
-          }}
-        >
-          Bild importieren
-        </button>
-      </div>
+        <Schritt nummer={3} titel="Bild">
+          <div data-testid="aktion-bild" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <select
+              data-testid="aktion-bild-wahl"
+              defaultValue={entwurf.bildRef ?? ''}
+              onChange={(ereignis) => {
+                aufBild(ereignis.target.value === '' ? null : ereignis.target.value)
+              }}
+            >
+              <option value="">– kein Bild –</option>
+              {waehlbareBilder(assets).map((asset) => (
+                <option key={asset.id} value={asset.id}>{asset.originalname}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              data-testid="aktion-bild-import"
+              onClick={() => {
+                void (async () => {
+                  const antwort = await starteBildImport(projekt.id)
+                  if (antwort.ok && antwort.wert.auftragIds.length > 0) {
+                    console.info(
+                      antwort.wert.abbruchGrund === null
+                        ? `${String(antwort.wert.auftragIds.length)} Import(e) gestartet.`
+                        : `${String(antwort.wert.auftragIds.length)} gestartet; abgebrochen wegen ${antwort.wert.abbruchGrund}.`,
+                    )
+                  }
+                })()
+              }}
+            >
+              Bild importieren
+            </button>
+          </div>
+        </Schritt>
       )}
-      {/* Die Akzentfarbe ist ein FREIER Hex-Wert (#318, FA-24) - und seit 03.11.2026
-          ein echter Farbwaehler (#325) statt eines Selects mit der EINZIGEN Option
-          „Markenwert", das wie eine Wahl aussah und keine war. Nur wenn die Vorlage
-          eine Akzent-Rolle benutzt (`bedarf.akzent`) - sonst bewirkte die Wahl nichts.
-          Gespeichert wird wie ueberall hier beim VERLASSEN des Feldes: Ein Farbwaehler
-          feuert waehrend des Ziehens viele Aenderungen - jede waere ein Schreibvorgang
-          und im Modus „bestehend" ein eigener Undo-Schritt (TK 9.13). */}
+
       {bedarf.akzent && (
-        <div data-testid="aktion-akzent">
-          <label>Akzentfarbe{' '}
+        <Schritt nummer={4} titel="Farbe">
+          <div data-testid="aktion-akzent" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {angezeigteFarbe === null ? (
               <span data-testid="aktion-akzent-unbekannt">Marke wird geladen …</span>
             ) : (
@@ -697,31 +928,63 @@ function FormularFelder({
                 type="color"
                 data-testid="aktion-akzent-farbe"
                 defaultValue={angezeigteFarbe}
-                onBlur={(e) => {
-                  if (e.target.value.toLowerCase() === angezeigteFarbe.toLowerCase()) return
-                  setzeFarbe(e.target.value)
+                onBlur={(ereignis) => {
+                  if (ereignis.target.value.toLowerCase() === angezeigteFarbe.toLowerCase()) return
+                  aufAenderung('akzentfarbe', ereignis.target.value)
                 }}
               />
             )}
-          </label>
-          {formular.akzentfarbe !== null && (
-            <button
-              type="button"
-              data-testid="aktion-akzent-marke"
-              onClick={() => {
-                setzeFarbe(null)
-              }}
-            >
-              Markenwert
-            </button>
-          )}
-        </div>
+            {entwurf.akzentfarbe !== null && (
+              <button
+                type="button"
+                data-testid="aktion-akzent-marke"
+                onClick={() => {
+                  aufAenderung('akzentfarbe', null)
+                }}
+              >
+                Markenwert
+              </button>
+            )}
+          </div>
+        </Schritt>
       )}
-      {/* Die Kaputt-Verweisung (~#141): stellen und der Fix-Weg 'entfernen'. */}
-      {gewaehlt !== null && projekt !== null && (
-        <KaputtAnzeige aktionId={gewaehlt.id} projekt={projekt} onEinspeisen={onEinspeisen} />
-      )}
+
+      <Schritt nummer={5} titel="Dauer">
+        <label>Standarddauer{' '}
+          <input
+            type="number"
+            defaultValue={String(entwurf.standardDauer ?? '')}
+            data-testid="aktion-dauer"
+            onBlur={(ereignis) => {
+              aufAenderung('standardDauer', ereignis.target.value === '' ? null : Number(ereignis.target.value))
+            }}
+          />
+        </label>
+        <p style={{ color: '#9aa4b2', fontSize: 11, margin: '2px 0 0' }}>
+          Nur die Vorgabe beim Einsetzen; die Dauer am Listenelement zählt.
+        </p>
+      </Schritt>
     </div>
+  )
+}
+
+/** Ein nummerierter Schritt des Inspectors - Ueberschrift plus Inhalt. */
+function Schritt({
+  nummer,
+  titel,
+  children,
+}: {
+  nummer: number
+  titel: string
+  children: JSX.Element | (JSX.Element | null | false)[]
+}): JSX.Element {
+  return (
+    <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <h3 style={{ margin: 0, fontSize: 12, color: '#9aa4b2', letterSpacing: 0.4 }}>
+        {nummer}. {titel}
+      </h3>
+      {children}
+    </section>
   )
 }
 
@@ -742,11 +1005,11 @@ function KaputtAnzeige({
     return <></>
   }
   return (
-    <div data-testid="aktion-kaputt">
-      <p>
+    <div data-testid="aktion-kaputt" style={{ fontSize: 12, color: '#9aa4b2', display: 'flex', gap: 8, alignItems: 'center' }}>
+      <span>
         {anzahlStellen(stellen)} Stelle(n) verwenden diese Aktion: {stellen.segmentElementIds.length} Segment(e),
-        {stellen.bandAbschnitte.length} Band-Abschnitt(e).
-      </p>
+        {' '}{stellen.bandAbschnitte.length} Band-Abschnitt(e).
+      </span>
       <button
         type="button"
         data-testid="kaputt-beheben"
@@ -770,11 +1033,11 @@ function KaputtAnzeige({
   )
 }
 
-// Die Lösch-Kaskade aus den Kennungen wird bewusst NICHT nachgebaut (ENTSCHIEDEN 6):
-// der zurückgegebene stand ist die einzige Quelle des neuen Listen-Standes.
+// Die Loesch-Kaskade aus den Kennungen wird bewusst NICHT nachgebaut (ENTSCHIEDEN 6):
+// der zurueckgegebene stand ist die einzige Quelle des neuen Listen-Standes.
 
-// Die Lösch-Vorschau (#142): ZAHLEN vor dem Klick (ENTSCHIEDEN 12) -
-// Kennungen sind für den Nutzer bedeutungslos.
+// Die Loesch-Vorschau (#142): ZAHLEN vor dem Klick (ENTSCHIEDEN 12) -
+// Kennungen sind fuer den Nutzer bedeutungslos.
 function LoeschBlock({
   projekt,
   aktionId,
@@ -794,13 +1057,14 @@ function LoeschBlock({
         type="button"
         data-testid="aktion-loeschen"
         onClick={() => setzeOffen(true)}
+        style={{ marginTop: 16 }}
       >
         Aktion löschen
       </button>
     )
   }
   return (
-    <div data-testid="aktion-loesch-vorschau">
+    <div data-testid="aktion-loesch-vorschau" style={{ marginTop: 16, fontSize: 12 }}>
       <p>
         Es verschwinden {vorschau.entfernteElementIds.length} Listenelement(e) ganz;
         {vorschau.gekuerzteElementIds.length} Video-Element(e) werden gekürzt;

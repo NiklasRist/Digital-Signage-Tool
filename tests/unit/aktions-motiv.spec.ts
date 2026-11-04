@@ -18,7 +18,7 @@ import {
   leereMotivSpeicher,
   motivImSpeicher,
   motivSchluessel,
-} from '../../src/renderer/composer/aktions-vorschau'
+} from '../../src/renderer/gemeinsam/aktions-motiv'
 
 function aktion(id: string, bildRef: string | null): Aktion {
   return {

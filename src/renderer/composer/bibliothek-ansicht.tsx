@@ -16,7 +16,7 @@ import type { Aktion } from '../../shared/contracts/aktion'
 import type { MedienEintrag, AktionsEintrag } from './bibliothek-ansicht'
 import { baueMedienEintraege, baueAktionsEintraege, zaehleFehlende } from './bibliothek-ansicht'
 import { baueVerwendungen, verwendungsText, type Verwendung } from './verwendungen'
-import { baueMotivEintraege, holeMotiv } from './aktions-vorschau'
+import { baueMotivEintraege, holeMotiv } from '../gemeinsam/aktions-motiv'
 import { bereiteMotiveVor } from '../template-canvas/bild-laden'
 // #413: Die Karten/Zeilen werden als Drag-QUELLEN zur Zeitleiste (#412) - der Klick-Weg
 // bleibt UNVERAENDERT (zweiter Weg, nicht der einzige). Ein DndContext holt sie erst,
@@ -288,7 +288,7 @@ interface AktionszeileEigenschaften {
  *
  * WARUM EIN EIGENES BAUTEIL: Das Zeichnen ist ein DOM-Vorgang und gehoert in einen Effekt,
  * nicht in den Rumpf einer Zeile - sonst zeichnete jeder Render neu. Das Bild selbst kommt
- * aus `aktions-vorschau.ts` (Speicher + Verkleinerung); hier wird es nur eingesetzt.
+ * aus `gemeinsam/aktions-motiv.ts` (Speicher + Verkleinerung); hier wird es nur eingesetzt.
  */
 function Aktionsbild(p: {
   aktion: Aktion

@@ -154,11 +154,17 @@ function editor(
   return { behaelter, setzeProjekt }
 }
 
-function klicke(behaelter: HTMLDivElement, testid: string): void {
+async function klicke(behaelter: HTMLDivElement, testid: string): Promise<void> {
   const knopf = behaelter.querySelector(`[data-testid="${testid}"]`)
   if (knopf === null) throw new Error(`Knopf ${testid} fehlt`)
-  act(() => {
+  // 04.11.2026: Ein Klick kann jetzt SCHREIBEN (der Editor ist ein Entwurf, „+ Neue
+  // Aktion" und jeder Wechsel schreiben erst). Deshalb laeuft der Klick in `act` mit
+  // ein paar Runden Zeit - sonst prueft der Test den Zustand von vorher.
+  await act(async () => {
     ;(knopf as HTMLButtonElement).click()
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
   })
 }
 
@@ -198,7 +204,7 @@ describe('#445: „Neue Aktion" schreibt getippte Werte in den Entwurf', () => {
     doppel.antwort = { ok: true, wert: aktion('neu-1', 'Durchlauf-Neu') }
     const { behaelter, setzeProjekt } = editor(projekt([]))
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     await verlasseFeld(behaelter, 'aktion-titel', 'Durchlauf-Neu')
     await klickeAnlegen(behaelter)
 
@@ -215,7 +221,7 @@ describe('#445: „Neue Aktion" schreibt getippte Werte in den Entwurf', () => {
   it('ein leeres Titelfeld wird abgelehnt und der Befund steht AM FORMULAR', async () => {
     const { behaelter } = editor(projekt([]))
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     await klickeAnlegen(behaelter)
 
     // Kein IPC-Aufruf: die Pruefung greift VOR dem Kanal.
@@ -230,7 +236,7 @@ describe('#445: „Neue Aktion" schreibt getippte Werte in den Entwurf', () => {
     }
     const { behaelter } = editor(projekt([]))
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     await verlasseFeld(behaelter, 'aktion-titel', 'Durchlauf-Neu')
     await klickeAnlegen(behaelter)
 
@@ -242,7 +248,7 @@ describe('#445: „Neue Aktion" schreibt getippte Werte in den Entwurf', () => {
   it('im Modus "neu" wird beim Verlassen KEIN project:bearbeiteAktion gesendet', async () => {
     const { behaelter } = editor(projekt([]))
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     await verlasseFeld(behaelter, 'aktion-titel', 'Nur getippt')
     await verlasseFeld(behaelter, 'aktion-cta', 'Jetzt anmelden')
 
@@ -283,7 +289,7 @@ describe('Preset beim Anlegen', () => {
     const { behaelter } = editor({ ...projekt([]), standardSegmentdauer: 15 })
     await laufen()
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
 
     // Die Auswahl ist seit 03.11.2026 eine Liste MIT BILD: gewaehlt ist die Kachel,
     // die `data-gewaehlt="ja"` traegt.
@@ -313,12 +319,14 @@ describe('Preset beim Anlegen', () => {
     await laufen()
 
     // Aktion oeffnen: der Bibliotheks-Knopf traegt den Titel.
-    const knopf = Array.from(behaelter.querySelectorAll('button')).find(
+    const knopf = Array.from(behaelter.querySelectorAll('[data-testid^="aktion-strip-"]')).find(
       (kandidat) => kandidat.textContent === 'Sommeraktion',
     )
     expect(knopf).toBeDefined()
-    act(() => {
-      knopf?.click()
+    await act(async () => {
+      ;(knopf as HTMLButtonElement).click()
+      await Promise.resolve()
+      await Promise.resolve()
     })
     expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')?.value).toBe(
       'Sommeraktion',
@@ -326,7 +334,7 @@ describe('Preset beim Anlegen', () => {
 
     // Ohne den Remount (key am Formularblock) stuenden hier weiter Titel und Dauer
     // der geoeffneten Aktion - der Entwurf waere leer, das Bild nicht.
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')?.value).toBe('')
     expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-dauer"]')?.value).toBe('10')
   })
@@ -413,7 +421,7 @@ describe('Anlegen mit Vorschau und Bild', () => {
     const { behaelter } = editor(projekt([]), vorlagen)
     await laufen()
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     await laufen()
 
     // Ohne diese Aenderung blieb die Flaeche im Modus „neu" leer (`gewaehlt === null`).
@@ -430,7 +438,7 @@ describe('Anlegen mit Vorschau und Bild', () => {
     const { behaelter } = editor(projekt([]), vorlagen)
     await laufen()
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     await laufen()
 
     // Eine Kachel je Vorlage, jede mit einem eigenen Bildplatz (03.11.2026).
@@ -460,7 +468,7 @@ describe('Anlegen mit Vorschau und Bild', () => {
     const { behaelter } = editor({ ...projekt([]), assets: [bildAsset('a1')] }, vorlagen)
     await laufen()
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     await laufen()
     await waehleImFeld(behaelter, 'aktion-bild-wahl', 'a1')
 
@@ -517,7 +525,7 @@ describe('Felder richten sich nach der Vorlage', () => {
     const { behaelter } = editor(projekt([]), vorlagen)
     await laufen()
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     await laufen()
     // Die vorbelegte erste Vorlage bindet `beschreibung`.
     expect(behaelter.querySelector('[data-testid="aktion-beschreibung"]')).not.toBeNull()
@@ -542,7 +550,7 @@ describe('Felder richten sich nach der Vorlage', () => {
     const { behaelter } = editor(projekt([]), vorlagen)
     await laufen()
 
-    klicke(behaelter, 'aktion-neu')
+    await klicke(behaelter, 'aktion-neu')
     await laufen()
 
     const feld = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-akzent-farbe"]')

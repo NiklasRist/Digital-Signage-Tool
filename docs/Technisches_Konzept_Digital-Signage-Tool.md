@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.43 (9.8.3: Eine Aktion ist immer ein **Ganzbild** — das Band gehört zum Video; Band-Aktionen aus älteren Projekten bleiben gültig. Nachträglich zu Entscheidung 29.4, 03.11.2026, AD unverändert v1.13)
+**Version:** 3.44 (9.8: Der Aktions-Editor ist umgebaut — Kopfleiste, Bildstreifen, Inspector in fünf Schritten, **EIN Speichermodell** (Entwurf + „Fertig") und „Fertig & ins Video". Die frühere Regel „platziert nicht in die Liste" (9.8.1) ist damit **überholt**; 04.11.2026)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1498,7 +1498,8 @@ Unterbrechung sind die beiden einzigen Wirkungen einer Aktion auf das Video.
 #### 9.8.1 Rolle & Grenze
 
 - **Ist:** Aktionen anlegen/bearbeiten/löschen, Vorlage zuweisen, freie Zonen gestalten, Live-Vorschau der Aktion.
-- **Ist NICHT:** platziert Aktionen **nicht** in die Liste (`composer` [P3]); macht **keinen** finalen Render; **kein** Dateisystem/ffmpeg (alles über `ipc-client` an den Main).
+- **Ist NICHT:** platziert Aktionen **nicht selbst** in die Liste (`composer` [P3]); macht **keinen** finalen Render; **kein** Dateisystem/ffmpeg (alles über `ipc-client` an den Main).
+  **Nachtrag 04.11.2026:** Der Editor **beauftragt** das Platzieren („Fertig & ins Video", 9.8.3) — ausgeführt wird es ausschließlich im `composer`. Ein Auftrag ist keine Platzierung: der Editor kennt weder Abspielmarke noch Einfüge-Regel und baut keinen zweiten Schreibweg.
 
 #### 9.8.2 Der `Aktion`-Datensatz
 
@@ -1574,9 +1575,9 @@ Aktion {
   nicht zeichnet. Eine unbekannte Vorlage blendet **nichts** aus.
 - **Die Akzentfarbe ist ein echter Farbwähler (03.11.2026, #325).** `<input type="color">` mit dem
   eigenen Wert, sonst dem **Markenwert** der Rolle `akzent`; „Markenwert" setzt zurück auf `null`
-  (9.10.8). Gespeichert wird beim **Verlassen** des Feldes wie bei jedem anderen Feld — ein
-  Farbwähler feuert beim Ziehen viele Änderungen, und jede wäre im Modus „bestehend" ein eigener
-  Undo-Schritt (9.13.1). Das frühere Select hatte genau **eine** Option und war damit keine Wahl.
+  (9.10.8). Übernommen wird der Wert beim **Verlassen** des Feldes — ein Farbwähler feuert beim
+  Ziehen viele Änderungen. Seit dem Umbau (9.8.6) landen sie im **Entwurf**; geschrieben wird
+  erst beim Abschluss. Das frühere Select hatte genau **eine** Option und war damit keine Wahl.
 - **Bildzuweisung:** aus der Medien-Bibliothek **wählen** (Asset-ID) **oder** neu **importieren** (media-service → dann Asset-ID). Das Bild ist stets eine **Referenz**.
 - **Live-Vorschau:** `template-canvas` rendert (Aktion + Vorlage + Marke) → dieselben Pixel, die später als Segment-PNG in den finalen Render gehen.
 
@@ -1605,6 +1606,49 @@ Aktion {
 - Zeigt `bildRef` auf ein `fehlt`-Asset (media-service 9.4.7), wird die **Aktion** als kaputt markiert; die Live-Vorschau zeigt einen **Platzhalter** statt des Bildes.
 - **Fix-Optionen:** Bild **neu verknüpfen/importieren** (media-service), durch ein **anderes ersetzen**, oder **entfernen** (eine Aktion ohne Bild ist gültig – Bild ist optional, Titel Pflicht).
 - Da Aktionen **referenzierbar** sind, behebt **ein** Fix an der Aktion **alle** Listenelemente, die sie verwenden. Der Reparatur-Modus des composer (9.7.5) leitet für Aktions-Segmente genau hierher über.
+
+#### 9.8.6 Der Umbau des Editors (04.11.2026)
+
+Auslöser (Niklas, 04.11.2026): *„der aktionseditor muss stark überarbeitet werden"* — und der
+gesamte Kernfluss mit ihm. Vorher standen drei Spalten nebeneinander (Bibliothek 260 px als
+Textliste, Vorschau, Formular 320 px mit acht Blöcken untereinander), und es galten **zwei**
+Speichermodelle: im Modus „bestehend" schrieb **jedes** Feld beim Verlassen (ein Undo-Schritt und
+ein IPC-Aufruf je Feld), im Modus „neu" schrieb allein „Anlegen".
+
+**Aufbau.** Eine Kopfleiste trägt Rückweg, **Titel** und Abschluss — der Titel ist die Identität
+der Aktion und steht nicht mehr als drittes Feld im Formular. Links steht ein **Bildstreifen**
+(108 px) mit dem gezeichneten Motiv je Aktion (`gemeinsam/aktions-motiv.ts`, derselbe Speicher wie
+die Composer-Bibliothek) und „+ Neue Aktion"; er ersetzt die zweite Textliste, die der Composer
+ohnehin führt. Rechts steht ein **Inspector** (340 px) mit **fünf Schritten** in der Reihenfolge
+der Arbeit — Vorlage, Inhalt, Bild, Farbe, Dauer —, dasselbe Muster wie der Marken-Editor (9.15.2).
+Die Vorlagen-Kacheln stehen zu zweit nebeneinander; dadurch passen alle fünf Schritte bei
+1440 × 900 ohne Scrollen.
+
+**EIN Speichermodell.** `entwurf` ist die einzige Wahrheit: jedes Feld schreibt in den Entwurf
+(kein IPC), und die Vorschau zeichnet den **Entwurf** — auch im Modus „bestehend". Geschrieben wird
+an genau drei Stellen, jeweils **einmal** (also EIN Undo-Schritt, 9.13.1): beim Abschluss
+(„Fertig"/„Anlegen"), beim Wechsel auf eine andere Aktion und beim Verlassen der Ansicht. Ohne
+Änderung wird **nicht** geschrieben (`unterschiede`, `action-editor/aktions-entwurf.ts`). Was sich
+gegenüber dem gespeicherten Stand geändert hat, entscheidet dieselbe Datei feldweise; sie ist rein
+und ohne React geprüft.
+
+**Der Rückweg von außen.** Der Editor liegt als Ansicht über der Reiterfläche, also schließen ihn
+auch ein Reiterklick und das Öffnen einer anderen Ansicht (`app-shell/rahmen.tsx`). Damit dabei kein
+Entwurf verschwindet, meldet der Editor einen **Wächter** an (`setzeSchliessenWaechter` in
+`gemeinsam/aktionen-ansicht.ts`): `false` heißt „noch nicht schließen" — er schreibt und ruft das
+Schließen selbst erneut. Scheitert das Schreiben, bleibt die Ansicht offen und nennt den Grund.
+
+**„Fertig & ins Video" (zweiter Abschluss).** Der Editor **platziert nicht selbst** (9.8.1): er legt
+einen Auftrag in `gemeinsam/aktion-ins-video.ts` ab und schließt sich; der `composer` hört zu und
+führt ihn über denselben Weg aus wie den Knopf „Ins Video" (`legeAktionInsVideo`, Band-Aktion →
+Abschnitt, Ganzbild → Unterbrechung an der Abspielmarke). Der Auftrag gilt **genau einmal**. Ohne
+angelegte Aktion (leerer Titel) gibt es nichts zu platzieren — der Editor sagt das, statt zu raten.
+Im Reiter [Aktionen] fehlt der Knopf: dort gibt es keine Ansicht zu schließen und kein Ziel.
+
+**Was entfiel.** `weiseBildZu`/`entferneBild` (der Bildweg schreibt nicht mehr; die Prüfung lebt als
+`pruefeBildWahl` weiter), die zweite Leiste in `App.tsx` und die Schreibwege je Feld. Das Motiv-Modul
+zog von `composer/aktions-vorschau.ts` nach `gemeinsam/aktions-motiv.ts` (der Editor darf den
+Composer nicht importieren).
 
 ---
 

@@ -30,6 +30,25 @@ const ZU: AktionenAnsichtLage = { art: 'zu' }
 let lage: AktionenAnsichtLage = ZU
 const hoerer = new Set<(lage: AktionenAnsichtLage) => void>()
 
+/**
+ * Der Waechter des Editors (04.11.2026).
+ *
+ * WARUM ER EXISTIERT: Seit dem Umbau haelt der Editor einen ENTWURF und schreibt erst
+ * beim Abschluss. Der Rueckweg liegt aber nicht nur bei ihm: ein Reiterklick und das
+ * Oeffnen einer anderen Ansicht rufen `schliesseAktionenAnsicht` von AUSSEN. Ohne
+ * Waechter verschwaende dabei ein getippter Titel lautlos.
+ *
+ * Der Editor meldet sich hier an, solange er einen Entwurf fuehren kann. `false` heisst
+ * „noch nicht schliessen" - der Editor schreibt im Hintergrund und ruft
+ * `schliesseAktionenAnsicht` selbst erneut, sobald der Schreibvorgang durch ist.
+ */
+let waechter: (() => boolean) | null = null
+
+/** Meldet den Waechter an (`null` meldet ihn ab). Es gibt genau einen Editor. */
+export function setzeSchliessenWaechter(fn: (() => boolean) | null): void {
+  waechter = fn
+}
+
 /** Öffnet die Ansicht für GENAU diese Aktion. Dieselbe Aktion erneut = keine Meldung. */
 export function oeffneAktionenAnsicht(id: string): void {
   if (id.trim() === '') return
@@ -45,9 +64,11 @@ export function oeffneNeueAktion(): void {
   melde()
 }
 
-/** Schließt die Ansicht. Ist sie zu, geschieht NICHTS (kein Hörer wird gerufen). */
+/** Schließt die Ansicht. Ist sie zu, geschieht NICHTS (kein Hörer wird gerufen).
+ *  Ein angemeldeter Waechter darf das Schliessen AUFHALTEN (s. `setzeSchliessenWaechter`). */
 export function schliesseAktionenAnsicht(): void {
   if (lage.art === 'zu') return
+  if (waechter !== null && !waechter()) return
   lage = ZU
   melde()
 }

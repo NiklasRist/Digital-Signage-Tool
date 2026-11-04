@@ -1,9 +1,11 @@
-// [composer] Das Motiv einer Aktion als kleines Bild fuer die Bibliothek.
+// [gemeinsam] Das Motiv einer Aktion als kleines Bild - für JEDE Liste von Aktionen.
 //
-// WARUM ES DIESE DATEI GIBT (02.11.2026, Messlatte): In der Bibliothek standen bisher nur
-// TITEL. Zwei Aktionen waren ohne Oeffnen nicht unterscheidbar - in PowerPoint sieht man
-// Folien, hier sah man Woerter. Das Motiv gibt es bereits: `zeichneSegment` zeichnet eine
-// Aktion mit Vorlage und Marke.
+// HERKUNFT (02.11.2026, Messlatte): In der Composer-Bibliothek standen nur TITEL. Zwei
+// Aktionen waren ohne Oeffnen nicht unterscheidbar - in PowerPoint sieht man Folien,
+// hier sah man Woerter. Seit dem Umbau des Aktions-Editors (04.11.2026) braucht auch
+// dessen Bildstreifen ein Motiv; deshalb steht der Speicher hier und nicht mehr im
+// `composer`. Der Ordner `gemeinsam` ist laut `index.ts` der Ort ohne Eigentuemer -
+// eine der beiden Fachlichkeiten darf die andere nicht direkt importieren.
 //
 // ZWEI BEDINGUNGEN, DIE DIESE DATEI LOEST:
 //   1. Das Motiv ist ein VOLLES Canvas (1920x1080 = 8,3 MB; Band 1920x162). Eine Liste mit
@@ -15,7 +17,8 @@
 //
 // DER SCHLUESSEL SIND DIE EINGABEN, nicht die ID: Aendert der Nutzer Titel, Preis oder Farbe,
 // ist es ein anderes Bild. Ein Schluessel nur aus `aktion.id` zeigte nach jeder Aenderung das
-// alte Motiv - und niemand faende den Grund.
+// alte Motiv - und niemand faende den Grund. Die HOEHE gehoert dazu: derselbe Entwurf in
+// zwei Listen mit verschiedener Zeilenhoehe sind zwei Bilder.
 
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Marke } from '../../shared/contracts/marke'
@@ -23,7 +26,7 @@ import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import { zeichneSegment } from '../template-canvas/zeichne-segment'
 
-/** Hoehe des kleinen Bildes in der Zeile. Die Breite folgt dem Seitenverhaeltnis. */
+/** Hoehe des kleinen Bildes in einer Bibliothekszeile. Die Breite folgt dem Seitenverhaeltnis. */
 export const MOTIV_HOEHE = 40
 
 /** Wie viele Motive gemerkt werden. Aeltere fliegen zuerst (Muster: filmstreifen-speicher). */
@@ -31,9 +34,14 @@ export const MOTIV_SPEICHER_MAX = 40
 
 const speicher = new Map<string, HTMLCanvasElement>()
 
-/** Der Schluessel: alles, was ins Bild eingeht. */
-export function motivSchluessel(aktion: Aktion, vorlage: Vorlage, marke: Marke): string {
-  return JSON.stringify([aktion, vorlage, marke])
+/** Der Schluessel: alles, was ins Bild eingeht - samt der Zielhoehe. */
+export function motivSchluessel(
+  aktion: Aktion,
+  vorlage: Vorlage,
+  marke: Marke,
+  hoehe: number = MOTIV_HOEHE,
+): string {
+  return JSON.stringify([aktion, vorlage, marke, hoehe])
 }
 
 /** Nur fuer Tests und den Projektwechsel: verwirft alle gemerkten Motive. */
@@ -65,8 +73,9 @@ export function holeMotiv(
   aktion: Aktion,
   vorlage: Vorlage,
   marke: Marke,
+  hoehe: number = MOTIV_HOEHE,
 ): HTMLCanvasElement | null {
-  const schluessel = motivSchluessel(aktion, vorlage, marke)
+  const schluessel = motivSchluessel(aktion, vorlage, marke, hoehe)
   const vorhanden = speicher.get(schluessel)
   if (vorhanden !== undefined) return vorhanden
 
@@ -78,7 +87,7 @@ export function holeMotiv(
     // weiterreichte, liesse die Bibliothek abstuerzen - fuer eine Vorschau.
     return null
   }
-  const klein = verkleinere(voll.canvas, MOTIV_HOEHE)
+  const klein = verkleinere(voll.canvas, hoehe)
   if (klein === null) return null
 
   speicher.set(schluessel, klein)

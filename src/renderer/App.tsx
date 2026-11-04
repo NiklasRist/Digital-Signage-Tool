@@ -414,23 +414,20 @@ export function App(): JSX.Element | null {
   const aktionenAnsicht = projektOffen === null
     ? undefined
     : (schalt: { aktionId: string | null; aufSchliessen: () => void }) => (
+      // 04.11.2026: KEINE eigene Leiste mit „Zurueck zum Projekt" mehr. Der Editor
+      // traegt seine Kopfleiste selbst (Zurueck, Titel, Abschluss) - zwei Leisten
+      // uebereinander kosteten Hoehe und trennten den Knopf von dem, was er speichert.
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <div style={{ flex: '0 0 auto', padding: '4px 8px', borderBottom: '1px solid #444' }}>
-          <button type="button" data-testid="aktionen-zurueck" onClick={schalt.aufSchliessen}>
-            Zurück zum Projekt
-          </button>
-        </div>
-        <div style={{ flex: '1 1 auto', minHeight: 0 }}>
-          <ActionEditorWurzel
-            sichtbar
-            projekt={zugaenge.projektBearbeitung}
-            zeichnen={zugaenge.zeichnen}
-            vorlagen={zugaenge.vorlagen}
-            marken={zugaenge.marken}
-            hervorgehobeneAktionId={schalt.aktionId}
-            starteNeu={schalt.aktionId === null}
-          />
-        </div>
+        <ActionEditorWurzel
+          sichtbar
+          projekt={zugaenge.projektBearbeitung}
+          zeichnen={zugaenge.zeichnen}
+          vorlagen={zugaenge.vorlagen}
+          marken={zugaenge.marken}
+          hervorgehobeneAktionId={schalt.aktionId}
+          starteNeu={schalt.aktionId === null}
+          aufSchliessen={schalt.aufSchliessen}
+        />
       </div>
     )
 

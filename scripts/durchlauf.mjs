@@ -4548,8 +4548,10 @@ const main = async () => {
         }
         const neu4g = nachher4g.find((a) => a.titel === titel4g) ?? null;
         console.log(`[schritt-4g] Anlegen: Titel nach ${String(Date.now() - start4g)} ms im project.json (Frist 20 s); Knopf=${String(abgeschickt4g)}, getippt=${String(getippt4g)}.`);
-        // Zurueck ins Projekt - der Rueckweg der Ansicht.
-        const zurueck4g = await klick('[data-testid="aktionen-zurueck"]');
+        // 04.11.2026: Der Abschluss schliesst die Ansicht SELBST - ein Speichermodell
+        // („Anlegen"/„Fertig" schreibt EINMAL und gibt die Reiterflaeche frei). Den
+        // zweiten Klick auf „Zurueck" gibt es an dieser Stelle nicht mehr; gemessen wird,
+        // dass die Ansicht ohne ihn verschwindet.
         await schlafe(700);
         const ansichtZu4g = await seite.evaluate(
           () => document.querySelector('[data-testid="rahmen-ansicht-aktionen"]') === null,
@@ -4565,10 +4567,10 @@ const main = async () => {
           fund("Aktion anlegen", "die angelegte Aktion steht im project.json",
             `Aktionen ${vorher4g.length} -> ${nachher4g.length}`,
             "Befund", "action-editor/index.tsx");
-        } else if (!zurueck4g || !ansichtZu4g) {
-          fund("Aktion anlegen", '"Zurueck zum Projekt" gibt die Reiterflaeche frei',
-            `zurueck=${String(zurueck4g)}, Ansicht zu=${String(ansichtZu4g)}`,
-            "Befund", "app-shell/rahmen.tsx");
+        } else if (!ansichtZu4g) {
+          fund("Aktion anlegen", 'der Abschluss „Anlegen" gibt die Reiterflaeche frei',
+            `Ansicht zu=${String(ansichtZu4g)}`,
+            "Befund", "action-editor/index.tsx");
         } else if (aktionenDanach4g !== aktionenDavor4g + 1) {
           fund("Aktion anlegen", "die neue Aktion erscheint in der Bibliothek (29.4)",
             `Aktionen davor/nachher: ${aktionenDavor4g}/${aktionenDanach4g}`,
@@ -4600,6 +4602,100 @@ const main = async () => {
           fund("Aktionen-Bibliothek", "jede Aktionszeile zeigt das GEZEICHNETE Motiv",
             "Breiten: " + JSON.stringify(zeilen4g), "Befund", "composer/aktions-vorschau.ts");
         }
+      }
+    }
+
+    // Schritt 4g9 - „Fertig & ins Video" (04.11.2026): Der zweite Abschluss des
+    // Aktions-Editors schreibt die Aktion UND legt sie auf die Abspielmarke ins Video.
+    // Der Editor platziert nicht selbst - er stellt einen Auftrag, den der Composer
+    // ausfuehrt (`gemeinsam/aktion-ins-video.ts`). Gemessen wird die WIRKUNG in D1:
+    // Aktion da UND eine zusaetzliche Unterbrechung am Video.
+    {
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await zeigeAnsicht("aktionen");
+      await schlafe(500);
+      const projektDatei4g9 = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      const lies4g9 = () => JSON.parse(fs.readFileSync(projektDatei4g9, "utf-8"));
+      const vorher4g9 = lies4g9();
+      const erstes4g9 = vorher4g9.liste[0];
+      if (erstes4g9 === undefined || erstes4g9.art !== "video") {
+        // Ohne Video an erster Stelle ist die Abspielmarke bei 1 s nicht im Video -
+        // dann waere jede Aussage ueber die Platzierung eine ueber den Messaufbau.
+        console.log("[schritt-4g9] uebersprungen: das erste Listenelement ist kein Video.");
+      } else {
+        const unterVor4g9 = (erstes4g9.unterbrechungen ?? []).length;
+        // Die Marke INS VIDEO setzen: 8 px = 1 s, das Video ist 2 s lang (dieselbe
+        // Rechnung wie 4f8 - ein Klick weiter rechts landete im naechsten Block).
+        const achse4g9 = await seite.$('[data-testid="zeitleiste-zeitachse"]');
+        const box4g9 = achse4g9 === null ? null : await achse4g9.boundingBox();
+        achse4g9?.dispose?.();
+        if (box4g9 !== null) {
+          await seite.mouse.click(box4g9.x + 8, box4g9.y + box4g9.height / 2);
+          await schlafe(600);
+        }
+        const ANSICHT4G9 = '[data-testid="rahmen-ansicht-aktionen"]';
+        await klick('[data-testid="aktion-anlegen-oeffnen"]');
+        await schlafe(800);
+        const titel4g9 = `Durchlauf-InsVideo-${Date.now()}`;
+        await seite.evaluate((wert, bereich) => {
+          const feld = document.querySelector(`${bereich} [data-testid="aktion-titel"]`);
+          if (feld === null) return;
+          const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+          setzeWert.call(feld, wert);
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+          feld.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+        }, titel4g9, ANSICHT4G9);
+        await schlafe(300);
+        const geklickt4g9 = await klick(`${ANSICHT4G9} [data-testid="aktion-anlegen-und-ins-video"]`);
+        const start4g9 = Date.now();
+        const frist4g9 = start4g9 + 20_000;
+        let nachher4g9 = vorher4g9;
+        while (Date.now() < frist4g9) {
+          try {
+            nachher4g9 = lies4g9();
+          } catch {
+            nachher4g9 = vorher4g9;
+          }
+          const video4g9 = nachher4g9.liste.find((e) => e.id === erstes4g9.id);
+          const unter4g9 = (video4g9?.unterbrechungen ?? []).length;
+          const aktion4g9 = nachher4g9.aktionen.some((a) => a.titel === titel4g9);
+          if (unter4g9 === unterVor4g9 + 1 && aktion4g9) break;
+          await schlafe(250);
+        }
+        const videoNach4g9 = nachher4g9.liste.find((e) => e.id === erstes4g9.id);
+        const unterNach4g9 = (videoNach4g9?.unterbrechungen ?? []).length;
+        const aktionNach4g9 = nachher4g9.aktionen.some((a) => a.titel === titel4g9);
+        const ansichtZu4g9 = await seite.evaluate(
+          (bereich) => document.querySelector(bereich) === null,
+          ANSICHT4G9,
+        );
+        console.log(`[schritt-4g9] Fertig & ins Video: ${JSON.stringify({
+          geklickt: geklickt4g9,
+          aktion: aktionNach4g9,
+          unterbrechungen: `${String(unterVor4g9)} -> ${String(unterNach4g9)}`,
+          ansichtZu: ansichtZu4g9,
+          dauerMs: Date.now() - start4g9,
+        })}.`);
+        if (!geklickt4g9) {
+          fund("Fertig & ins Video", "der zweite Abschluss ist im Editor bedienbar",
+            "Knopf aktion-anlegen-und-ins-video fehlt oder ist verdeckt",
+            "Befund", "action-editor/index.tsx");
+        } else if (!aktionNach4g9) {
+          fund("Fertig & ins Video", "die Aktion steht danach im project.json",
+            `Titel ${titel4g9} nicht gefunden`, "Befund", "action-editor/index.tsx");
+        } else if (unterNach4g9 !== unterVor4g9 + 1) {
+          fund("Fertig & ins Video", "die Aktion wird an der Abspielmarke zur Unterbrechung",
+            `Unterbrechungen ${String(unterVor4g9)} -> ${String(unterNach4g9)}`,
+            "Befund", "gemeinsam/aktion-ins-video.ts");
+        } else if (!ansichtZu4g9) {
+          fund("Fertig & ins Video", "der Abschluss gibt die Reiterflaeche frei",
+            "Ansicht noch offen", "Befund", "action-editor/index.tsx");
+        } else {
+          console.log("[schritt-4g9] FERTIG & INS VIDEO GEMESSEN: Aktion angelegt und als Unterbrechung platziert.");
+        }
+        // Aufraeumen: die Unterbrechung wieder wegnehmen (ein Cmd+Z).
+        await klick('[data-testid="undo-pfeil"]');
+        await schlafe(800);
       }
     }
 
@@ -4691,7 +4787,7 @@ const main = async () => {
       let sichtZahl4g3 = 0;
       while (Date.now() < fristSync4g3) {
         sichtZahl4g3 = await seite.evaluate(
-          () => document.querySelectorAll('[data-testid="aktion-bibliothek"] li').length,
+          () => document.querySelectorAll('[data-testid="aktion-bibliothek"] [data-testid^="aktion-strip-"]').length,
         );
         let dateiZahl4g3 = -1;
         try {
@@ -4703,10 +4799,10 @@ const main = async () => {
         await schlafe(250);
       }
       const vorher4g3 = liesAktionen4g3();
-      const zeile4g3 = await seite.$('[data-testid="aktion-bibliothek"] li button');
+      const zeile4g3 = await seite.$('[data-testid="aktion-bibliothek"] button[data-testid^="aktion-strip-"]');
       if (zeile4g3 === null) {
         fund("Aktion bearbeiten (FA-03)", "eine Aktionszeile im Aktionen-Reiter",
-          "aktion-bibliothek/li/button fehlt", "Befund", "action-editor/index.tsx");
+          "aktion-bibliothek/[data-testid^=aktion-strip-] fehlt", "Befund", "action-editor/index.tsx");
       } else {
         await zeile4g3.click();
         zeile4g3.dispose?.();
@@ -4739,6 +4835,11 @@ const main = async () => {
             feldFokus,
           };
         }, neu4g3);
+        // 04.11.2026: Ein Speichermodell - das Tippen schreibt NICHT mehr, der Abschluss
+        // („Fertig") schreibt EINMAL. Ohne diesen Klick wartete der Schritt 20 s auf eine
+        // Datei, die niemand geschrieben hat.
+        const abgeschlossen4g3 = await klick('[data-testid="aktion-anlegen-bestaetigen"]');
+        console.log(`[schritt-4g3] Abschluss „Fertig" geklickt: ${String(abgeschlossen4g3)}.`);
         // Frist 20 s statt 8 s (31.10.2026, #446): Der Store schreibt ENTPRELLT nach
         // ENTPRELLUNG_MS = 4000 (auto-speichern.ts:29). Die alte Frist lag nur 4 s
         // darueber; eine Lastspitze im Main machte den Schritt rot, ohne Produktfehler.
@@ -4773,7 +4874,7 @@ const main = async () => {
           // vs. Wurzel-Meldung vs. gar keine), der Zeilentext die Sicht.
           const lageFehlschlag4g3 = await seite.evaluate(() => ({
             titelfeld: document.querySelector('[data-testid="aktion-titel"]')?.value ?? null,
-            zeilen: [...document.querySelectorAll('[data-testid="aktion-bibliothek"] li button')]
+            zeilen: [...document.querySelectorAll('[data-testid="aktion-bibliothek"] button[data-testid^="aktion-strip-"]')]
               .map((knopf) => knopf.textContent),
             formularMeldung: document.querySelector('[data-testid="aktion-speicher-meldung"]')?.textContent ?? null,
             wurzelMeldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
@@ -5356,7 +5457,7 @@ const main = async () => {
       const neu4q = nachher4q.find((a) => a.titel === titel4q) ?? null;
       const sicht4q = await seite.evaluate(() => ({
         titelfeld: document.querySelector('[data-testid="aktion-titel"]')?.value ?? null,
-        zeilen: [...document.querySelectorAll('[data-testid="aktion-bibliothek"] li button')]
+        zeilen: [...document.querySelectorAll('[data-testid="aktion-bibliothek"] button[data-testid^="aktion-strip-"]')]
           .map((knopf) => knopf.textContent),
         befund: document.querySelector('[data-testid="aktion-befund"]')?.textContent ?? null,
         speicherMeldung: document.querySelector('[data-testid="aktion-speicher-meldung"]')?.textContent ?? null,

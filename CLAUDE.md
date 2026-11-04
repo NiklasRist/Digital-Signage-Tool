@@ -11,7 +11,53 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (03.11.2026, achtundvierzigste Sitzung: „Neue Aktion" öffnet den Editor — Entscheidung 29.4 ist GEBAUT)
+## STAND HEUTE (04.11.2026, neunundvierzigste Sitzung: der Aktions-Editor ist umgebaut — ein Speichermodell, Bildstreifen, „Fertig & ins Video")
+
+**Volltext: [`docs/agents/uebergabe-2026-11-04-aktionseditor.md`](docs/agents/uebergabe-2026-11-04-aktionseditor.md).**
+
+- **AUFTRAG (Niklas):** *„der aktionseditor muss stark überarbeitet werden. und allgemein der gesamte
+  core flow"*. Drei Entscheidungen, alle bestätigt: **ein Speichermodell**, **Bildstreifen**,
+  **„Fertig & ins Video"**.
+- **AUFBAU:** Kopfleiste (Zurück · **Titel** · Abschluss), **Bildstreifen 108 px** mit dem
+  gezeichneten Motiv je Aktion, **Inspector 340 px** mit fünf Schritten (Vorlage, Inhalt, Bild,
+  Farbe, Dauer — Vorlagen-Kacheln zu zweit). Die zweite Leiste in `App.tsx` ist **weg**.
+- **EIN SPEICHERMODELL:** `entwurf` ist die einzige Wahrheit, jedes Feld schreibt **ohne IPC** in den
+  Entwurf, die Vorschau zeichnet den **Entwurf**. Geschrieben wird **einmal** je Vorgang — beim
+  Abschluss, beim Wechsel und beim Verlassen der Ansicht (`action-editor/aktions-entwurf.ts`).
+  Ohne Änderung wird **nicht** geschrieben. **Ein Undo-Schritt je Bearbeitung.**
+- **RÜCKWEG VON AUSSEN:** Reiterklick und Ansichtswechsel schließen die Ansicht von `rahmen.tsx`
+  aus. Der Editor meldet dafür einen **Wächter** an (`setzeSchliessenWaechter` in
+  `gemeinsam/aktionen-ansicht.ts`) — er schreibt erst, dann schließt er; scheitert das Schreiben,
+  bleibt die Ansicht offen mit Meldung. **Kein stiller Verlust.**
+- **„FERTIG & INS VIDEO":** Der Editor **platziert nicht selbst**, er stellt einen Auftrag in
+  `gemeinsam/aktion-ins-video.ts`; der Composer führt ihn über `fuegeAktionInsVideo` aus
+  (Ganzbild → Unterbrechung an der Abspielmarke). **Ablösung, offen benannt:** TK 9.8.1 sagte
+  „platziert **nicht** in die Liste" — der Nachtrag steht in 9.8.6, der Editor beauftragt nur.
+- **ENTFALLEN:** `weiseBildZu`/`entferneBild` (Prüfung als `pruefeBildWahl`), die Leiste in
+  `App.tsx`, der Feld-für-Feld-Schreibweg. Das Motiv-Modul zog nach `gemeinsam/aktions-motiv.ts`
+  (der Editor darf den Composer nicht importieren).
+- **FENSTER-BELEG (neu, `4g9`):** `{"geklickt":true,"aktion":true,"unterbrechungen":"0 -> 1",
+  "ansichtZu":true,"dauerMs":4273}` — zweiter Abschluss schreibt und platziert. `4g` misst jetzt,
+  dass „Anlegen" die Ansicht **selbst** schließt (Titel nach 4019 ms); `4g3` schreibt über „Fertig".
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5490/5490** (365 Dateien),
+  Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
+  Export-Dialog).
+- **Doku:** TK **v3.44** (9.8.6 neu), `.docx` im selben Commit neu erzeugt (2171 → 2208 Absätze,
+  `unzip -t`, 0 Backticks). `treiber-matrix.md` FA-02 um `4g9` ergänzt. AD unverändert v1.13.
+- **BEFUND, NICHT BEHOBEN — das gemerkte Projekt öffnet nicht:** Der Main öffnet es
+  (`öffneProjekt`), `bootstrap.ts:159` gibt es über `projektRoh.setzeProjekt` weiter, und
+  `composer/projektzustand.ts:239` **weist das ab** („setzeProjekt ohne geladenes Projekt") —
+  `ladeProjekt` läuft nur beim Klick in der Projektliste. Nach jedem Neustart steht die App auf
+  „kein Projekt" (Widerspruch zu FA-15/TK 9.5.6). **Nicht angefasst**, weil die Sperre dort bewusst
+  steht (Reconcile #94); die Reparatur ist eine Entscheidung.
+- **Ehrlich offen:** Die **Sichtprüfung der mittigen Vorschau** fehlt (letzte Korrektur nicht mehr
+  gesehen, weil der Reopen am Befund oben scheitert). Die **Breiten** der neuen Spalten sind bei
+  800 × 572 nicht gemessen. Der **Kern-Flow** ist erst begonnen — als Nächstes die **Vorschau im
+  Video-Kontext**.
+- **Nicht gepusht** — Zahl mit dem Befehl zählen (`git log --oneline origin/main..HEAD`).
+  **Push nur auf Anweisung.**
+
+## STAND HEUTE (03.11.2026, achtundvierzigste Sitzung: „Neue Aktion" öffnet den Editor — Entscheidung 29.4 ist GEBAUT) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md`](docs/agents/uebergabe-2026-11-01-buchhaltung-383-394.md), Abschnitt 30.**
 

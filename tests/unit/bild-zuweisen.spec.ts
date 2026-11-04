@@ -1,19 +1,17 @@
 // Verhaltenstests zu #138 - bild-zuweisen.ts.
-// rufeAuf (#24) und speichereAktion (#136) als Doppel; der Fokus sind Auswahlregel,
-// Nutzlasten und die Teilerfolg-Logik der Einreih-Schleife.
+// Seit dem Editor-Umbau (04.11.2026) schreibt diese Datei NICHT mehr: der Editor haelt
+// einen Entwurf. Geprueft werden die Pruefung der Bildwahl (`pruefeBildWahl`) und die
+// Teilerfolg-Logik der Einreih-Schleife des Imports.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KANAELE } from '../../src/shared/contracts/kanaele'
 
 import type { Asset } from '../../src/shared/contracts/asset'
-import type { Aktion } from '../../src/shared/contracts/aktion'
 
 const doppelWeg = vi.hoisted(() => ({
   rufeAufrufe: [] as Array<{ kanal: string; nutzlast: unknown }>,
   rufeAntworten: [] as unknown[],
-  speicherAufrufe: [] as Array<{ id: string; aenderungen: unknown }>,
-  speicherAntwort: null as unknown,
 }))
 
 vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
@@ -27,18 +25,10 @@ vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
   },
 }))
 
-vi.mock('../../src/renderer/action-editor/aktion-bearbeiten', () => ({
-  speichereAktion: async (id: string, aenderungen: unknown) => {
-    doppelWeg.speicherAufrufe.push({ id, aenderungen })
-    return doppelWeg.speicherAntwort
-  },
-}))
-
 import {
-  entferneBild,
+  pruefeBildWahl,
   starteBildImport,
   waehlbareBilder,
-  weiseBildZu,
 } from '../../src/renderer/action-editor/bild-zuweisen'
 
 // ---------------- Bausteine ----------------
@@ -56,25 +46,8 @@ function asset(id: string, typ: 'video' | 'bild', zustand: 'ok' | 'fehlt' = 'ok'
   }
 }
 
-const AKTION_OK = {
-  ok: true as const,
-  wert: {
-    id: 'a-1',
-    titel: 'Sommeraktion',
-    beschreibung: null,
-    preis: null,
-    bildRef: 'b-neu',
-    cta: null,
-    standardDauer: null,
-    vorlagenId: 'vollbild',
-    markeId: 'm1',
-    akzentfarbe: null,
-  } as Aktion,
-}
-
 beforeEach(() => {
   doppelWeg.rufeAufrufe.splice(0)
-  doppelWeg.speicherAufrufe.splice(0)
   doppelWeg.rufeAntworten = [
     // Standard: Dialog liefert drei Bildpfade (andere Reihenfolge bewusst krumm).
     {
@@ -85,7 +58,6 @@ beforeEach(() => {
     { ok: true, wert: { auftragId: 'q-2' } },
     { ok: true, wert: { auftragId: 'q-3' } },
   ]
-  doppelWeg.speicherAntwort = AKTION_OK
 })
 
 describe('waehlbareBilder (#138)', () => {
@@ -104,55 +76,34 @@ describe('waehlbareBilder (#138)', () => {
   })
 })
 
-describe('weiseBildZu (#138)', () => {
-  it('ruft speichereAktion(aktionId, { bildRef: assetId }) - NUR dieses Feld', async () => {
-    await weiseBildZu('a-1', 'b-ok', [asset('b-ok', 'bild')])
-    expect(doppelWeg.speicherAufrufe).toEqual([
-      { id: 'a-1', aenderungen: { bildRef: 'b-ok' } },
-    ])
+describe('pruefeBildWahl (#138, Entwurfs-Modell seit 04.11.2026)', () => {
+  it('eine vorhandene Bild-ID wird angenommen - null heisst „darf gewaehlt werden"', () => {
+    expect(pruefeBildWahl('b-ok', [asset('b-ok', 'bild')])).toBeNull()
   })
 
-  it('leere assetId -> ungueltige_eingabe, kein Aufruf', async () => {
-    const antwort = await weiseBildZu('a-1', '', [asset('b-ok', 'bild')])
-    expect(antwort.ok).toBe(false)
-    expect(doppelWeg.speicherAufrufe).toHaveLength(0)
+  it('leere assetId -> Meldung, kein Wurf', () => {
+    expect(pruefeBildWahl('', [asset('b-ok', 'bild')])).toContain('Kennung ist leer')
   })
 
-  it('unbekannte assetId -> ungueltige_eingabe, kein Aufruf, Meldung nennt die ID', async () => {
-    const antwort = await weiseBildZu('a-1', 'gibts-nicht', [asset('b-ok', 'bild')])
-    expect(antwort.ok).toBe(false)
-    expect(doppelWeg.speicherAufrufe).toHaveLength(0)
+  it('unbekannte assetId -> Meldung nennt die ID', () => {
+    const meldung = pruefeBildWahl('gibts-nicht', [asset('b-ok', 'bild')])
+    expect(meldung).toContain('gibts-nicht')
+    expect(meldung).toContain('gehört nicht zum Projektbestand')
   })
 
-  it('fehlt-Asset -> ungueltige_eingabe, kein Aufruf (kein Defekt auf Bestellung)', async () => {
-    const antwort = await weiseBildZu('a-1', 'b-fehlt', [asset('b-fehlt', 'bild', 'fehlt')])
-    expect(antwort.ok).toBe(false)
-    expect(doppelWeg.speicherAufrufe).toHaveLength(0)
+  it('fehlt-Asset -> Meldung (kein Defekt auf Bestellung)', () => {
+    const meldung = pruefeBildWahl('b-fehlt', [asset('b-fehlt', 'bild', 'fehlt')])
+    expect(meldung).toContain('gilt als fehlend')
   })
 
-  it('Video als Aktions-Bild -> ungueltige_eingabe, kein Aufruf', async () => {
-    const antwort = await weiseBildZu('a-1', 'v1', [asset('v1', 'video')])
-    expect(antwort.ok).toBe(false)
-    expect(doppelWeg.speicherAufrufe).toHaveLength(0)
+  it('Video als Aktions-Bild -> Meldung', () => {
+    const meldung = pruefeBildWahl('v1', [asset('v1', 'video')])
+    expect(meldung).toContain('ist ein Video')
   })
 
-  it('Main-Fehler (nicht_gefunden) wird unveraendert durchgereicht', async () => {
-    const mainFehler = {
-      ok: false as const,
-      fehler: { code: 'nicht_gefunden', meldung: 'Aktion unbekannt', daten: undefined },
-    }
-    doppelWeg.speicherAntwort = mainFehler
-    const antwort = await weiseBildZu('fehlt', 'b-ok', [asset('b-ok', 'bild')])
-    expect(antwort).toBe(mainFehler)
-  })
-})
-
-describe('entferneBild (#138)', () => {
-  it('ruft speichereAktion(aktionId, { bildRef: null }) - null, nie der leere String', async () => {
-    await entferneBild('a-1')
-    expect(doppelWeg.speicherAufrufe).toEqual([
-      { id: 'a-1', aenderungen: { bildRef: null } },
-    ])
+  it('schreibt NICHTS: kein Kanal-Aufruf, keine Nutzlast', () => {
+    pruefeBildWahl('b-ok', [asset('b-ok', 'bild')])
+    expect(doppelWeg.rufeAufrufe).toHaveLength(0)
   })
 })
 

@@ -20,8 +20,10 @@ import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import type { AktionsEntwurf } from './aktion-bearbeiten'
 import { zeichneVorlagenBild } from './vorlagen-bilder'
 
-/** Anzeigebreite eines Vorlagenbildes in der 320-px-Formularspalte. */
-const BILD_BREITE = 284
+/** Anzeigebreite eines Vorlagenbildes. Seit dem Inspector-Umbau (04.11.2026) stehen die
+ *  Kacheln ZU ZWEIT nebeneinander - bei 284 px je Bild fuellte die Vorlagenwahl allein
+ *  die halbe Inspector-Hoehe, und „5. Dauer" lag unter der Kante (am Bild gesehen). */
+const BILD_BREITE = 150
 
 export interface VorlagenWahlEigenschaften {
   /** Die waehlbaren Vorlagen in Bestandsreihenfolge (keine Sortierung hier). */
@@ -69,7 +71,7 @@ export function VorlagenWahl(p: VorlagenWahlEigenschaften): JSX.Element {
     <ul
       ref={liste}
       data-testid="aktion-vorlagen-wahl"
-      style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}
+      style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}
     >
       {p.waehlbare.map((vorlage) => {
         const gewaehlt = vorlage.id === p.aktuell
@@ -97,7 +99,10 @@ export function VorlagenWahl(p: VorlagenWahlEigenschaften): JSX.Element {
                 style={{ display: 'block', lineHeight: 0, background: '#000', minHeight: 12 }}
               />
               <span style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
-                {vorlage.name} &ndash; {flaecheText(vorlage)}
+                {vorlage.name}
+              </span>
+              <span style={{ display: 'block', fontSize: 10, color: '#9aa4b2' }}>
+                {flaecheText(vorlage)}
               </span>
             </button>
           </li>

@@ -1,6 +1,9 @@
 // FA-03-Nachlauf: Ein gescheitertes Speichern im Aktions-Editor war UNSICHTBAR
-// (`einspeisen` verwarf `ok: false`, `feldVerlassen` kehrte still zurueck). Geprueft
-// wird hier der Weg am echten Formular: Feld verlassen -> `speichereAktion` -> Meldung.
+// (`einspeisen` verwarf `ok: false`, `feldVerlassen` kehrte still zurueck).
+//
+// SEIT DEM UMBau (04.11.2026) gilt EIN Speichermodell: Felder schreiben in den ENTWURF,
+// geschrieben wird erst beim Abschluss („Fertig"). Geprueft wird hier beides - dass das
+// Tippen NICHT schreibt, und dass ein abgelehnter Abschluss sichtbar ist.
 // @vitest-environment jsdom
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -15,6 +18,7 @@ import type { Project } from '../../src/shared/contracts/project'
 // Die Vorschau- und Vorlagenwege laufen ins Leere - hier interessiert nur der Speicherweg.
 vi.mock('../../src/renderer/action-editor/live-vorschau', () => ({
   bereiteVorschauVor: vi.fn(async () => ({ ok: true, wert: undefined })),
+  bereiteMotivVorFuer: vi.fn(async () => undefined),
   haengeVorschauEin: vi.fn(),
   zeichneVorschau: vi.fn(),
 }))
@@ -120,12 +124,26 @@ function editor(p: Project): { behaelter: HTMLDivElement; setzeProjekt: ReturnTy
   return { behaelter, setzeProjekt }
 }
 
-/** Klick auf die Aktionszeile der Bibliothek - der Weg, der die Auswahl setzt. */
-function waehleZeile(behaelter: HTMLDivElement): void {
-  const knopf = behaelter.querySelector('[data-testid="aktion-bibliothek"] li button')
-  if (knopf === null) throw new Error('Aktionszeile fehlt')
-  act(() => {
+/** Ein Klick mit Zeit: seit dem Umbau kann ein Klick SCHREIBEN (s. Kopf). */
+async function klicke(behaelter: HTMLDivElement, testid: string): Promise<void> {
+  const knopf = behaelter.querySelector(`[data-testid="${testid}"]`)
+  if (knopf === null) throw new Error(`Knopf ${testid} fehlt`)
+  await act(async () => {
     ;(knopf as HTMLButtonElement).click()
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+}
+
+/** Klick auf die Kachel im Bildstreifen - der Weg, der die Auswahl setzt. */
+async function waehleZeile(behaelter: HTMLDivElement): Promise<void> {
+  const knopf = behaelter.querySelector('[data-testid="aktion-bibliothek"] [data-testid^="aktion-strip-"]')
+  if (knopf === null) throw new Error('Aktionszeile fehlt')
+  await act(async () => {
+    ;(knopf as HTMLButtonElement).click()
+    await Promise.resolve()
+    await Promise.resolve()
   })
 }
 
@@ -138,7 +156,6 @@ async function verlasseFeld(behaelter: HTMLDivElement, wert: string): Promise<vo
     setzeWert?.call(feld, wert)
     feld.dispatchEvent(new Event('input', { bubbles: true }))
     feld.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
-    // Dem asynchronen Speicherweg eine Runde Zeit geben.
     await Promise.resolve()
     await Promise.resolve()
   })
@@ -148,18 +165,44 @@ function meldung(behaelter: HTMLDivElement): string | null {
   return behaelter.querySelector('[data-testid="aktion-speicher-meldung"]')?.textContent ?? null
 }
 
-describe('FA-03-Nachlauf: ein gescheitertes Speichern ist sichtbar', () => {
-  it('ein Fehler von speichereAktion erscheint als Meldung am Formular', async () => {
+describe('Ein Modell: das Tippen schreibt NICHT, der Abschluss schreibt EINMAL', () => {
+  it('ein Feld zu verlassen ruft speichereAktion NICHT - erst „Fertig"', async () => {
+    speichereAktion.mockResolvedValue({ ok: true, wert: aktion('a1', 'Durchlauf-Aktion-bearbeitet') })
+    const { behaelter } = editor(projekt([aktion('a1', 'Durchlauf-Aktion')]))
+    await waehleZeile(behaelter)
+
+    await verlasseFeld(behaelter, 'Durchlauf-Aktion-bearbeitet')
+    // Der Entwurf traegt den neuen Titel (im Titelfeld sichtbar), geschrieben ist nichts.
+    expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')?.value).toBe(
+      'Durchlauf-Aktion-bearbeitet',
+    )
+    expect(speichereAktion).toHaveBeenCalledTimes(0)
+
+    await klicke(behaelter, 'aktion-anlegen-bestaetigen')
+    expect(speichereAktion).toHaveBeenCalledTimes(1)
+    // NUR das geaenderte Feld - kein vollstaendiger Satz, keine Nicht-Aenderung.
+    expect(speichereAktion).toHaveBeenCalledWith('a1', { titel: 'Durchlauf-Aktion-bearbeitet' })
+  })
+
+  it('ohne Aenderung schreibt „Fertig" NICHTS (kein Undo-Schritt fuer nichts)', async () => {
+    const { behaelter } = editor(projekt([aktion('a1', 'Durchlauf-Aktion')]))
+    await waehleZeile(behaelter)
+
+    await klicke(behaelter, 'aktion-anlegen-bestaetigen')
+    expect(speichereAktion).toHaveBeenCalledTimes(0)
+  })
+
+  it('ein Fehler von speichereAktion erscheint als Meldung am Editor', async () => {
     speichereAktion.mockResolvedValue({
       ok: false,
       fehler: { code: 'speicher_fehler', meldung: 'Die Datei ist gesperrt.' },
     })
     const { behaelter } = editor(projekt([aktion('a1', 'Durchlauf-Aktion')]))
-    waehleZeile(behaelter)
+    await waehleZeile(behaelter)
 
     await verlasseFeld(behaelter, 'Durchlauf-Aktion-bearbeitet')
+    await klicke(behaelter, 'aktion-anlegen-bestaetigen')
 
-    expect(speichereAktion).toHaveBeenCalledTimes(1)
     expect(meldung(behaelter)).toContain('Nicht gespeichert')
     expect(meldung(behaelter)).toContain('Die Datei ist gesperrt.')
   })
@@ -167,11 +210,25 @@ describe('FA-03-Nachlauf: ein gescheitertes Speichern ist sichtbar', () => {
   it('ein erfolgreiches Speichern laesst KEINE Meldung stehen', async () => {
     speichereAktion.mockResolvedValue({ ok: true, wert: aktion('a1', 'Durchlauf-Aktion-bearbeitet') })
     const { behaelter } = editor(projekt([aktion('a1', 'Durchlauf-Aktion')]))
-    waehleZeile(behaelter)
+    await waehleZeile(behaelter)
 
     await verlasseFeld(behaelter, 'Durchlauf-Aktion-bearbeitet')
+    await klicke(behaelter, 'aktion-anlegen-bestaetigen')
 
     expect(speichereAktion).toHaveBeenCalledTimes(1)
     expect(meldung(behaelter)).toBeNull()
+  })
+
+  it('ein leerer Titel wird AM ABSCHLUSS abgelehnt - kein Schreibweg', async () => {
+    const { behaelter } = editor(projekt([aktion('a1', 'Sommeraktion')]))
+    await waehleZeile(behaelter)
+
+    await verlasseFeld(behaelter, '   ')
+    await klicke(behaelter, 'aktion-anlegen-bestaetigen')
+
+    expect(speichereAktion).toHaveBeenCalledTimes(0)
+    expect(behaelter.querySelector('[data-testid="aktion-befund"]')?.textContent ?? '').toContain(
+      'Der Titel fehlt',
+    )
   })
 })

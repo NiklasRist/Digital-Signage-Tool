@@ -89,6 +89,12 @@ export interface ActionEditorWurzelProps {
   marken: MarkenZugang
   /** Die hervorzuhebende Aktion aus der Reparatur-Fuehrung (#201); null = keine. */
   hervorgehobeneAktionId: string | null
+  /** 03.11.2026 (Entscheidung 29.4): Einstieg „+ Neue Aktion" - der Editor oeffnet im
+   *  Modus „neu". Im Reiter [Aktionen] fehlt das Feld. */
+  starteNeu?: boolean
+  /** 04.11.2026: Der Rueckweg der Ansicht. Gesetzt, wenn der Editor ueber der Reiterflaeche
+   *  liegt; im Reiter fehlt er (dort gibt es nichts zu schliessen). */
+  aufSchliessen?: () => void
 }
 
 /** Eigenschaften der Wurzel-Komponente des `vorlagen-editor` (Reiter Vorlagen). */
