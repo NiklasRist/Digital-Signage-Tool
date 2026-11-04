@@ -98,6 +98,7 @@ function baueSichten(): Sichten {
       return doppel.sicht
     },
     setzeProjekt: () => {},
+    uebernimmGeoeffnetesProjekt: () => {},
     setzeListe: () => {},
     gleicheElementAb: () => {},
     leere: () => {},

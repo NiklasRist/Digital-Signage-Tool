@@ -155,8 +155,11 @@ export function starteRenderer(schritte: BootstrapSchritte): () => void {
       if (abgebaut) return
       let startHinweis: StartHinweis | null = null
       if (startErgebnis.art === 'projekt-geladen') {
-        // Erst setzen, DANN vorbereiten (Reihenfolge beachtet):
-        zugaenge.projektRoh.setzeProjekt(startErgebnis.projekt)
+        // Erst setzen, DANN vorbereiten (Reihenfolge beachtet). 04.11.2026: NICHT mehr
+        // ueber `setzeProjekt` - das weist ein Projekt ab, solange kein `ladeProjekt`
+        // lief, und genau das war beim Start der Fall (FA-15, am Fenster gemessen:
+        // der Main hatte das Projekt geoeffnet, die Oberflaeche blieb leer).
+        zugaenge.projektRoh.uebernimmGeoeffnetesProjekt(startErgebnis.projekt)
         const vorbereitet = await zugaenge.zeichnen.bereiteVor(startErgebnis.projekt)
         if (abgebaut) return
         // ENTSCHIEDEN 2: ein Vorbereitungs-Fehlschlag ist KEIN Bootstrap-Ende.

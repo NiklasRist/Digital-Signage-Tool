@@ -42,14 +42,19 @@
 - **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5490/5490** (365 Dateien),
   Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
   Export-Dialog).
-- **Doku:** TK **v3.44** (9.8.6 neu), `.docx` im selben Commit neu erzeugt (2171 → 2208 Absätze,
-  `unzip -t`, 0 Backticks). `treiber-matrix.md` FA-02 um `4g9` ergänzt. AD unverändert v1.13.
-- **BEFUND, NICHT BEHOBEN — das gemerkte Projekt öffnet nicht:** Der Main öffnet es
-  (`öffneProjekt`), `bootstrap.ts:159` gibt es über `projektRoh.setzeProjekt` weiter, und
-  `composer/projektzustand.ts:239` **weist das ab** („setzeProjekt ohne geladenes Projekt") —
-  `ladeProjekt` läuft nur beim Klick in der Projektliste. Nach jedem Neustart steht die App auf
-  „kein Projekt" (Widerspruch zu FA-15/TK 9.5.6). **Nicht angefasst**, weil die Sperre dort bewusst
-  steht (Reconcile #94); die Reparatur ist eine Entscheidung.
+- **Doku:** TK **v3.45** (9.8.6 neu, 9.5.6-Nachtrag zum Start), `.docx` im selben Commit neu erzeugt
+  (2209 Absätze, `unzip -t`, 0 Backticks). `treiber-matrix.md` FA-02 um `4g9` ergänzt. AD unverändert v1.13.
+- **BEFUND BEHOBEN — das gemerkte Projekt öffnete nicht (FA-15):** Der Main öffnete es,
+  `bootstrap.ts` gab es über `setzeProjekt` weiter, und `composer/projektzustand.ts` **wies das ab**
+  („setzeProjekt ohne geladenes Projekt"). Jetzt übernimmt der Bootstrap es über
+  **`uebernimmGeoeffnetesProjekt`** — ein benannter Weg für „der Main hat geöffnet und aufgeräumt";
+  die Sperre auf `setzeProjekt` bleibt. **Der Unit-Test war grün, weil sein Doppel jede Eingabe
+  annahm** — jetzt gegen den echten Store geprüft (`projektzustand.spec.ts`, 2 Fälle).
+- **Werkzeug `scripts/schau.mjs` (neu):** startet die gebaute App über CDP, öffnet Projekt und
+  Editor, legt einen Screenshot ab; `--gross` setzt 1440 × 900 und gibt die Maße der drei Flächen
+  aus. **Beleg:** `Projekt beim Start offen: true` (vorher mit derselben `config.json` leer);
+  `{"buehne":{"w":952},"canvas":{"y":216,"h":534},"streifen":{"w":108},"inspector":{"w":340}}` —
+  Canvas-Mitte 483, Bühnen-Mitte 484: **die Vorschau sitzt mittig**.
 - **Ehrlich offen:** Die **Sichtprüfung der mittigen Vorschau** fehlt (letzte Korrektur nicht mehr
   gesehen, weil der Reopen am Befund oben scheitert). Die **Breiten** der neuen Spalten sind bei
   800 × 572 nicht gemessen. Der **Kern-Flow** ist erst begonnen — als Nächstes die **Vorschau im

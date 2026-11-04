@@ -70,6 +70,10 @@ function rohZugang(initial: Project): ProjektZugang {
       aktuell = p
       doppel.sicht = p
     },
+    uebernimmGeoeffnetesProjekt: (p) => {
+      aktuell = p
+      doppel.sicht = p
+    },
     setzeListe: (liste) => {
       aktuell = { ...aktuell, liste }
       doppel.sicht = aktuell

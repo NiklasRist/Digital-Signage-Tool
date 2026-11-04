@@ -246,6 +246,26 @@ export function setzeProjekt(projekt: Project): void {
   schalteUm({ projekt, ladefehler: sicht.ladefehler })
 }
 
+/**
+ * Uebernimmt ein Projekt, das der MAIN beim Start bereits geoeffnet hat (FA-15, TK 9.5.6).
+ *
+ * WARUM ES DIESE FUNKTION GIBT (04.11.2026, am Fenster gemessen): `start.ts` oeffnet das
+ * gemerkte Projekt ueber `project:oeffneProjekt` - inklusive Reconcile (#94). Der
+ * Bootstrap reichte es danach an `setzeProjekt` weiter, und DAS wies es ab, solange kein
+ * `ladeProjekt` gelaufen war (die Sperre oben). Folge: Nach jedem Neustart stand die App
+ * auf „kein Projekt", obwohl der Main es geoeffnet hatte - und der Unit-Test war gruen,
+ * weil sein Doppel jede Eingabe annahm.
+ *
+ * Warum das die Sperre NICHT aufweicht: Der Reconcile ist bereits gelaufen (im Main,
+ * vor dieser Uebergabe); genau die Bedingung, die `setzeProjekt` schuetzt, ist hier
+ * erfuellt. Es entsteht kein zweiter Weg in den geladenen Zustand, sondern ein BENANNTER
+ * fuer den einen Fall, in dem der Main ihn hergestellt hat. Der Aufrufer ist allein der
+ * Bootstrap (`app-shell/bootstrap.ts`); der Composer ruft diese Funktion nie.
+ */
+export function uebernimmGeoeffnetesProjekt(projekt: Project): void {
+  schalteUm({ projekt, ladefehler: null })
+}
+
 /** Setzt die Sicht in den Zustand „kein Projekt geladen" zurück: `projekt` und `ladefehler`
  *  werden `null`. Kein Eingang, kein Rückgabewert. Zu rufen, wo ein Projekt aufhört, offen zu
  *  sein, ohne dass ein anderes an seine Stelle tritt (TK 9.7.4). */

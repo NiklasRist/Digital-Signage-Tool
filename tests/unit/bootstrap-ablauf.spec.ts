@@ -96,6 +96,11 @@ function baueAutomat(): Automat {
         automat.setzeProjektAufrufe.push(projekt)
         automat.setzeProjektZeiten.push(automat.log.length)
       },
+      uebernimmGeoeffnetesProjekt: (projekt: Project) => {
+        automat.log.push(`${name}/uebernimmGeoeffnetesProjekt`)
+        automat.setzeProjektAufrufe.push(projekt)
+        automat.setzeProjektZeiten.push(automat.log.length)
+      },
       setzeListe: () => {
         automat.log.push(`${name}/setzeListe`)
       },
@@ -212,14 +217,14 @@ beforeEach(() => {
 // ---------------- DIE REIHENFOLGE (Kernnachweis 1) ----------------
 
 describe('Die feste Reihenfolge (Kernnachweis 1)', () => {
-  it('laeuft baueSichten -> verteileZugaenge -> starteSitzung -> setzeProjekt -> bereiteVor -> merkeAktivenReiter -> starteAuftragsNachlauf, EINmal je; setzeLage erst am Ende', async () => {
+  it('laeuft baueSichten -> verteileZugaenge -> starteSitzung -> uebernimmGeoeffnetesProjekt -> bereiteVor -> merkeAktivenReiter -> starteAuftragsNachlauf, EINmal je; setzeLage erst am Ende', async () => {
     const automat = baueAutomat()
     starteRenderer(baueSchritte(automat))
     await vi.waitFor(() => {
       expect(automat.lagen.some((lage) => lage.schritt === 'bereit')).toBe(true)
     })
     expect(automat.log).toEqual([
-      'baueSichten', 'verteileZugaenge', 'starteSitzung', 'roh/setzeProjekt',
+      'baueSichten', 'verteileZugaenge', 'starteSitzung', 'roh/uebernimmGeoeffnetesProjekt',
       'zeichnen/bereiteVor', 'merkeAktivenReiter', 'starteAuftragsNachlauf',
       'setzeLage/bereit',
     ])
@@ -251,7 +256,7 @@ describe('Die feste Reihenfolge (Kernnachweis 1)', () => {
     expect(erfuellung).toEqual(['starteSitzung erfuehrt', 'nachlauf gestartet'])
   })
 
-  it('setzeProjekt GENAU einmal mit dem gelieferten projekt, DANN bereiteVor mit DEMSELBEN projekt (Reihenfolge und Argument)', async () => {
+  it('uebernimmGeoeffnetesProjekt GENAU einmal mit dem gelieferten projekt, DANN bereiteVor mit DEMSELBEN projekt (Reihenfolge und Argument)', async () => {
     const automat = baueAutomat()
     starteRenderer(baueSchritte(automat))
     await vi.waitFor(() => {
@@ -262,7 +267,11 @@ describe('Die feste Reihenfolge (Kernnachweis 1)', () => {
     expect(automat.setzeProjektAufrufe[0]).toBe(geladen.projekt)
     expect(automat.bereiteVorAufrufe).toHaveLength(1)
     expect(automat.bereiteVorAufrufe[0]).toBe(geladen.projekt)
-    expect(automat.log.indexOf('roh/setzeProjekt')).toBeLessThan(automat.log.indexOf('zeichnen/bereiteVor'))
+    // 04.11.2026: Der Start geht NICHT ueber `setzeProjekt` - das weist ein Projekt ab,
+    // solange kein `ladeProjekt` lief, und genau daran scheiterte FA-15.
+    expect(automat.log).toContain('roh/uebernimmGeoeffnetesProjekt')
+    expect(automat.log).not.toContain('roh/setzeProjekt')
+    expect(automat.log.indexOf('roh/uebernimmGeoeffnetesProjekt')).toBeLessThan(automat.log.indexOf('zeichnen/bereiteVor'))
   })
 
   it('kein-projekt: setzeProjekt und bereiteVor null Mal; Lage bereit mit GENAUEM hinweis', async () => {

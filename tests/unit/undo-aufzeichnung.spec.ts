@@ -103,6 +103,9 @@ function rohZugang(start: Project | null): ProjektZugang {
     setzeProjekt: vi.fn((p: Project) => {
       projekt = p
     }),
+    uebernimmGeoeffnetesProjekt: vi.fn((p: Project) => {
+      projekt = p
+    }),
     setzeListe: vi.fn((liste: Listenelement[]) => {
       if (projekt !== null) {
         projekt = { ...projekt, liste }

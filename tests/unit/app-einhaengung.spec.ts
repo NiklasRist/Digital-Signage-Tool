@@ -359,6 +359,7 @@ function frischeDoppel(): void {
       lade: vi.fn(async () => ({ ok: true, wert: d.projektImZugang })),
       hole: vi.fn(() => ({ projekt: d.projektImZugang })),
       setzeProjekt: vi.fn(),
+      uebernimmGeoeffnetesProjekt: vi.fn(),
       setzeListe: vi.fn(),
       gleicheElementAb: vi.fn(),
       leere: vi.fn(),

@@ -36,6 +36,7 @@ function baueSichten(): Sichten {
     }),
     hole: () => ({ projekt: null, ladefehler: null }),
     setzeProjekt: () => {},
+    uebernimmGeoeffnetesProjekt: () => {},
     setzeListe: () => {},
     gleicheElementAb: () => {},
     leere: () => {},

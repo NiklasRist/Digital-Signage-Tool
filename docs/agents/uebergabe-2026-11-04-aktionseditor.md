@@ -63,30 +63,46 @@ der Bild-Schreibweg, die Leiste in `App.tsx`, der Feld-für-Feld-Schreibweg.
 - **Neu geprüft:** `aktions-entwurf.spec.ts` (7 Fälle, rein), `aktion-ins-video.spec.ts` (4 Fälle),
   `pruefeBildWahl` (6 Fälle, ersetzt die `weiseBildZu`/`entferneBild`-Fälle).
 
-## Befund, NICHT behoben — das gemerkte Projekt öffnet nicht
+## Befund BEHOBEN — das gemerkte Projekt öffnete nicht (FA-15)
 
-**Am laufenden Fenster reproduziert (04.11.2026):** Beim Start öffnet der Main das gemerkte Projekt
-(`öffneProjekt`, samt Aufräumlauf — im Log sichtbar), aber `bootstrap.ts:159` schiebt es über
-`projektRoh.setzeProjekt(...)` in die Sicht, und `composer/projektzustand.ts:239` **weist das ab**,
-solange kein `ladeProjekt` gelaufen ist („setzeProjekt ohne geladenes Projekt"). `ladeProjekt` ruft
+**Am laufenden Fenster reproduziert (04.11.2026):** Beim Start öffnete der Main das gemerkte Projekt
+(`öffneProjekt`, samt Aufräumlauf — im Log sichtbar), aber `bootstrap.ts:159` schob es über
+`projektRoh.setzeProjekt(...)` in die Sicht, und `composer/projektzustand.ts:239` **wies das ab**,
+solange kein `ladeProjekt` gelaufen war („setzeProjekt ohne geladenes Projekt"). `ladeProjekt` ruft
 nur `projekt-verwaltung/anlegen-oeffnen.ts:84` — also **nur ein Klick in der Projektliste**.
-Folge: Nach einem Neustart steht die App auf „kein Projekt", obwohl der Main es geöffnet hat. Das
-widerspricht FA-15/TK 9.5.6.
+Folge: Nach einem Neustart stand die App auf „kein Projekt", obwohl der Main es geöffnet hatte.
 
-**Nicht angefasst**, weil der Kommentar an der Sperre ausdrücklich sagt, `ladeProjekt` sei der
-**einzige** Weg in den geladenen Zustand (Grund: der Reconcile aus #94). Die Reparatur ist eine
-Entscheidung, kein Tippfehler — Kandidat: `project-store`/Bootstrap übernehmen ein **bereits
-geöffnetes** Projekt als eigenen, benannten Weg.
+**Warum die Tests grün blieben:** `bootstrap-ablauf.spec.ts` prüfte `setzeProjekt` gegen ein
+**Doppel**, das jede Eingabe annimmt — die Sperre im echten Store wurde nie berührt. Eine grüne
+Suite war hier eine Aussage über den Test, nicht über das Produkt.
+
+**Behoben:** `composer/projektzustand.ts` hat jetzt `uebernimmGeoeffnetesProjekt(projekt)` — ein
+**benannter** Weg für genau den Fall „der Main hat geöffnet und aufgeräumt". Der Bootstrap benutzt
+ihn (`bootstrap.ts`), die Sperre auf `setzeProjekt` bleibt unverändert (9.7.4: kein zweiter Einstieg
+in den geladenen Zustand). Der Zugang `ProjektZugang` trägt die Funktion; die Hülle reicht sie durch
+(kein Schnappschuss fürs Öffnen).
+
+**Beleg am Fenster:** `node scripts/schau.mjs …` startet die **gebaute** App und meldet
+`Projekt beim Start offen: true`. Vorher — mit **derselben** `config.json` — blieb die App leer.
+Neu: `uebernimmGeoeffnetesProjekt`-Tests in `projektzustand.spec.ts` (2 Fälle, gegen den ECHTEN
+Store) und die Bootstrap-Reihenfolge prüft jetzt `roh/uebernimmGeoeffnetesProjekt` und
+`nicht roh/setzeProjekt`.
+
+## Werkzeug: `scripts/schau.mjs`
+
+Weil ein Bildschirmfoto des Desktops nur hilft, solange das Fenster vorn ist (und Klicks von außen an
+fehlenden Bedienungshilfen scheitern), startet dieses Werkzeug die **gebaute** App über CDP — derselbe
+Weg wie der Treiber —, öffnet das gemerkte Projekt, optional den Aktions-Editor, und legt einen
+Screenshot ab. `--gross` setzt den Viewport auf 1440 × 900 und gibt die **Maße** der drei Flächen aus:
+`{"buehne":{"w":952,"h":748},"canvas":{"y":216,"h":534},"streifen":{"w":108},"inspector":{"w":340}}` —
+der Canvas-Mittelpunkt (483) liegt auf dem der Bühne (484), die Vorschau sitzt also **mittig**.
 
 ## Ehrlich offen
 
-- **Die Sichtprüfung der mittigen Vorschau fehlt.** Screenshots vor der letzten Korrektur zeigten:
-  Kacheln abgeschnitten (behoben), Vorlagen-Kacheln fraßen die Höhe (behoben), Titel zentriert
-  (behoben), Vorschau oben (Korrektur eingebaut, **nicht mehr gesehen**). Das Fenster war danach
-  zu; ein Reopen scheiterte am Befund oben.
-- Bei **800 × 572** nimmt der Inspector 340 px = 42 % der Breite. Der Treiber misst die Höhen
-  (`4f8`: Bühne 280, Achse 18, Rendern 27) unverändert — die **Breiten** der neuen Spalten sind
-  nicht gemessen.
+- Die **Breiten** der neuen Spalten sind jetzt bei 1440 × 900 gemessen (952 / 340 / 108); bei
+  **800 × 572** bleibt der Inspector bei 340 px = 42 % der Breite — dort sind „4. Farbe" und
+  „5. Dauer" nur nach Scrollen sichtbar (am Bild gesehen, nicht als Fehler eingestuft: das Fenster
+  ist die Stressgröße des Treibers, nicht die Arbeitsgröße).
 - Der **Band-Motiv**-Fall im Streifen ist mit `object-fit: cover` gelöst (1920 × 162 wäre bei 108 px
   ein 9-px-Streifen). Sichtbar ist der linke Teil mit dem Logo — bewusst beschnitten, nicht verzerrt.
 - **Kern-Flow ist erst begonnen.** Der nächste Schritt ist die **Vorschau im Video-Kontext** (die

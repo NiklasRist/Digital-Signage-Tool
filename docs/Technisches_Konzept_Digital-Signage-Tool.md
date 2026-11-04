@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.44 (9.8: Der Aktions-Editor ist umgebaut — Kopfleiste, Bildstreifen, Inspector in fünf Schritten, **EIN Speichermodell** (Entwurf + „Fertig") und „Fertig & ins Video". Die frühere Regel „platziert nicht in die Liste" (9.8.1) ist damit **überholt**; 04.11.2026)
+**Version:** 3.45 (9.5.6: der Start übernimmt das vom Main geöffnete Projekt über einen benannten Weg — FA-15 war am Fenster kaputt; 04.11.2026. Vorher 3.44: 9.8.6 Aktions-Editor-Umbau)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1264,6 +1264,7 @@ Besitzt `config.json` (app-weit): aktives Projekt, letztes Export-Ziel, UI-Vorei
 | `setzeUIVoreinstellung` | `schlüssel`, `wert` → `Ergebnis<void>` |
 
 - **Sitzungswiederherstellung (FA-15):** beim Start das zuletzt aktive Projekt laden; **fehlt** es (extern gelöscht) → sanfter Rückfall auf „kein aktives Projekt / Projektliste", **kein** Absturz. Im Renderer wird dieser Zustand über `leereProjektSicht()` hergestellt (9.7.4) – derselbe Weg wie nach dem Löschen des aktiven Projekts.
+  - **Nachtrag 04.11.2026 (behoben):** Der Start öffnet das gemerkte Projekt im **Main** (`project:öffneProjekt`, inklusive Reconcile aus #94); der Bootstrap übergab es danach an `setzeProjekt`, und das **weist** ein Projekt ab, solange kein `ladeProjekt` gelaufen ist (9.7.4: „der einzige Weg in den geladenen Zustand"). Folge war, dass die App nach jedem Neustart auf „kein Projekt" stand, obwohl der Main es geöffnet hatte — **am Fenster gemessen**. Der Bootstrap benutzt deshalb `uebernimmGeoeffnetesProjekt` (`composer/projektzustand.ts`), einen **benannten** Weg für genau den Fall „der Main hat geöffnet und aufgeräumt"; die Sperre auf `setzeProjekt` bleibt unverändert.
 - Gleiche Schreib-Invarianten wie 9.5.4 (atomar, `schemaVersion`).
 
 #### 9.5.7 Pfad-Autorität & `media://`-Protokoll

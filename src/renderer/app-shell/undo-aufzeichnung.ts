@@ -88,6 +88,9 @@ export function umhuelleFuerBearbeitung(zugang: ProjektZugang): ProjektZugang {
     // gleicheElementAb nur Abgleich (TK 9.7.4), leere() wie lade() (TK v3.2).
     lade: (projektId) => zugang.lade(projektId),
     hole: () => zugang.hole(),
+    // Der Startweg (FA-15, 04.11.2026) wird NUR durchgereicht: kein Schnappschuss fuer
+    // das Oeffnen eines Projekts, und der Editor ruft ihn nie (der Bootstrap allein).
+    uebernimmGeoeffnetesProjekt: (projekt) => zugang.uebernimmGeoeffnetesProjekt(projekt),
     setzeListe: (liste: Listenelement[]) => {
       legeSchnappschussWennNotig(zugang, (jetzt: GeladenesProjekt) => ({
         projektId: jetzt.id,

@@ -274,6 +274,32 @@ describe("setzeProjekt", () => {
   });
 });
 
+describe("uebernimmGeoeffnetesProjekt (FA-15, 04.11.2026)", () => {
+  it("uebernimmt ein vom Main geoeffnetes Projekt OHNE vorheriges laden", async () => {
+    const modul = await frisch();
+    const geoeffnet = projekt("p7");
+
+    modul.uebernimmGeoeffnetesProjekt(geoeffnet);
+
+    // Genau der Fall, an dem der Start scheiterte: `setzeProjekt` haette hier
+    // gewarnt und nichts uebernommen.
+    expect(modul.holeSicht().projekt).toBe(geoeffnet);
+    expect(modul.holeSicht().ladefehler).toBeNull();
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  it("benachrichtigt die Hoerer wie jede Aenderung der Sicht", async () => {
+    const modul = await frisch();
+    const gehoert = vi.fn();
+    const abmelden = modul.aufSichtGeaendert(gehoert);
+
+    modul.uebernimmGeoeffnetesProjekt(projekt("p8"));
+
+    expect(gehoert).toHaveBeenCalledTimes(1);
+    abmelden();
+  });
+});
+
 describe("leereProjektSicht", () => {
   it("nimmt Projekt UND Ladefehler zurueck", async () => {
     const { modul } = await mitGeladenemProjekt();

@@ -6,7 +6,7 @@ import { type MarkenZugang, baueMarkenZugang } from './marken-zugang'
 import {
   type Projektsicht,
   ladeProjekt, holeSicht, setzeProjekt, setzeListe, gleicheElementAb, aufSichtGeaendert,
-  leereProjektSicht,
+  leereProjektSicht, uebernimmGeoeffnetesProjekt,
 } from '../composer/projektzustand'
 import {
   type Zeichenvoraussetzungen,
@@ -22,6 +22,9 @@ export interface ProjektZugang {
   lade: (projektId: string) => Promise<Ergebnis<Project>>
   hole: () => Projektsicht
   setzeProjekt: (projekt: Project) => void
+  /** Ein Projekt uebernehmen, das der MAIN bereits geoeffnet und aufgeraeumt hat -
+   *  ausschliesslich der Bootstrap beim Start (FA-15, s. `projektzustand.ts`). */
+  uebernimmGeoeffnetesProjekt: (projekt: Project) => void
   setzeListe: (liste: Listenelement[]) => void
   gleicheElementAb: (element: Listenelement) => void
   /** Setzt die Sicht auf „kein Projekt geladen" zurück (TK 9.7.4). Kein Ersatzprojekt. */
@@ -79,6 +82,7 @@ export async function baueSichten(): Promise<Ergebnis<Sichten, string>> {
     lade: ladeProjekt,
     hole: holeSicht,
     setzeProjekt,
+    uebernimmGeoeffnetesProjekt,
     setzeListe,
     gleicheElementAb,
     leere: leereProjektSicht,
