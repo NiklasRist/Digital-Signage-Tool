@@ -39,7 +39,7 @@
 - **FENSTER-BELEG (neu, `4g9`):** `{"geklickt":true,"aktion":true,"unterbrechungen":"0 -> 1",
   "ansichtZu":true,"dauerMs":4273}` — zweiter Abschluss schreibt und platziert. `4g` misst jetzt,
   dass „Anlegen" die Ansicht **selbst** schließt (Titel nach 4019 ms); `4g3` schreibt über „Fertig".
-- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5490/5490** (365 Dateien),
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5492/5492** (365 Dateien),
   Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
   Export-Dialog).
 - **Doku:** TK **v3.45** (9.8.6 neu, 9.5.6-Nachtrag zum Start), `.docx` im selben Commit neu erzeugt
@@ -55,10 +55,11 @@
   aus. **Beleg:** `Projekt beim Start offen: true` (vorher mit derselben `config.json` leer);
   `{"buehne":{"w":952},"canvas":{"y":216,"h":534},"streifen":{"w":108},"inspector":{"w":340}}` —
   Canvas-Mitte 483, Bühnen-Mitte 484: **die Vorschau sitzt mittig**.
-- **Ehrlich offen:** Die **Sichtprüfung der mittigen Vorschau** fehlt (letzte Korrektur nicht mehr
-  gesehen, weil der Reopen am Befund oben scheitert). Die **Breiten** der neuen Spalten sind bei
-  800 × 572 nicht gemessen. Der **Kern-Flow** ist erst begonnen — als Nächstes die **Vorschau im
-  Video-Kontext**.
+- **Ehrlich offen:** Der **Kern-Flow** ist **nicht** verstanden — Niklas hat meine Lesart
+  („Vorschau im Video-Kontext") am 04.11.2026 **verworfen**. Was er meint, steht nicht fest; der
+  nächste Schritt beginnt mit einer **Frage an ihn**, nicht mit einem Bau. Die Breiten der neuen
+  Spalten sind bei 1440 × 900 gemessen (952 / 340 / 108), bei 800 × 572 sind „4. Farbe" und
+  „5. Dauer" nur nach Scrollen sichtbar.
 - **Nicht gepusht** — Zahl mit dem Befehl zählen (`git log --oneline origin/main..HEAD`).
   **Push nur auf Anweisung.**
 

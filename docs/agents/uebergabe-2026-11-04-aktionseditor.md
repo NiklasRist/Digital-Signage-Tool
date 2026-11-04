@@ -57,7 +57,7 @@ der Bild-Schreibweg, die Leiste in `App.tsx`, der Feld-für-Feld-Schreibweg.
 - **`4g3`:** der Titel wird über „Fertig" geschrieben (4265 ms), nicht mehr beim Verlassen des Feldes.
 - **`4q`:** die neue Aktion steht in der **Streifen**liste (Testid `aktion-strip-<id>`), nicht mehr
   in `aktion-bibliothek li`.
-- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5490/5490** (365 Dateien),
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5492/5492** (365 Dateien),
   Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
   Export-Dialog).
 - **Neu geprüft:** `aktions-entwurf.spec.ts` (7 Fälle, rein), `aktion-ins-video.spec.ts` (4 Fälle),
@@ -105,22 +105,26 @@ der Canvas-Mittelpunkt (483) liegt auf dem der Bühne (484), die Vorschau sitzt 
   ist die Stressgröße des Treibers, nicht die Arbeitsgröße).
 - Der **Band-Motiv**-Fall im Streifen ist mit `object-fit: cover` gelöst (1920 × 162 wäre bei 108 px
   ein 9-px-Streifen). Sichtbar ist der linke Teil mit dem Logo — bewusst beschnitten, nicht verzerrt.
-- **Kern-Flow ist erst begonnen.** Der nächste Schritt ist die **Vorschau im Video-Kontext** (die
-  Aktion im laufenden Video sehen) — dafür fehlt jede Messung und jede Entscheidung.
+- **Der Kern-Flow ist NICHT verstanden — offen, keine Festlegung.** Niklas hat am 04.11.2026
+  meine Lesart verworfen, der nächste Schritt sei die **Vorschau im Video-Kontext** (die Aktion im
+  laufenden Video sehen). Was er mit „core flow" meint, steht **nicht** fest und ist **nicht**
+  geraten worden. Der nächste Schritt beginnt deshalb mit **einer Frage an ihn**, nicht mit einem
+  Bau: Was ist der Kern-Flow, wo hakt er? Erst danach eine Skizze wie bei diesem Umbau.
 
 ## Nicht gepusht
 
-**51 Commits** vor `origin/main` vor dieser Sitzung; mit den Commits dieser Sitzung mehr. Die Zahl
-wächst mit jedem Doku-Commit — **mit dem Befehl zählen** (`git log --oneline origin/main..HEAD`).
-**Push nur auf Anweisung.**
+**53 Commits** vor `origin/main` zum Stand dieser Übergabe. Die Zahl wächst mit jedem Doku-Commit —
+**mit dem Befehl zählen** (`git log --oneline origin/main..HEAD`). **Push nur auf Anweisung.**
 
 ## Lehren
 
-1. **Ein HMR-Reload im Dev-Lauf kostet das Projekt** (siehe Befund) — jede Layout-Iteration kostet
-   ein manuelles Öffnen. Wer am UI arbeitet, sollte die Fixes **bündeln**, bevor er Niklas um einen
-   Blick bittet.
+1. **Der Projektverlust nach jedem Reload war FA-15, kein Dev-Artefakt** — und er hat diese Sitzung
+   teuer gemacht: Jede Layout-Korrektur kostete ein manuelles Öffnen, und ich habe Niklas dreimal
+   darum gebeten, bevor der Befund gefunden war. **Wer ein Symptom mehrfach sieht, misst es, statt
+   es zu umgehen.**
 2. **jsdom prüft kein Layout.** Die drei Layout-Fehler (abgeschnittene Kacheln, Höhenfresser,
-   zentrierter Titel) waren für 5486 grüne Tests unsichtbar. Sichtprüfung ist nicht optional.
+   zentrierter Titel) waren für 5486 grüne Tests unsichtbar. Sichtprüfung ist nicht optional —
+   dafür gibt es jetzt `scripts/schau.mjs`.
 3. **`object-fit` auf Canvas funktioniert** (Chromium) — ein beschnittenes Motiv ist besser als ein
    9-px-Streifen.
 4. **Eine Sperre, die einen legitimen Weg abschneidet, ist ein Befund** — nicht stillschweigend
