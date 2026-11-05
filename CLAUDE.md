@@ -90,8 +90,11 @@
   ein **beschrifteter Knopf „Farbe wählen …"** (öffnet den System-Farbwähler), darunter
   **„oder Wert"** mit dem Hex-Feld. **TK v3.52**, `.docx` 2458 Absätze, Unit **5595/5595**,
   Treiber `freiKnopf: true`.
-- **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen.
-  **Push nur auf Anweisung.**
+- **GEPUSHT (Niklas, 05.11.2026: „pushen und dann übergabe"):** `ca99b6f..a8e0359` nach
+  `origin/main`, **65 Commits** in einem Zug. `git log --oneline origin/main..HEAD` steht danach auf
+  **0**. Der Push meldete nebenbei **71 Dependabot-Findings** im Repository (33 high, 25 moderate,
+  13 low) — unabhängig von dieser Arbeit, nicht angefasst.
+- **Arbeitsbaum sauber.** Der Stand dieser Zeile ist der gepushte Stand.
 
 ## STAND HEUTE (05.11.2026, einundfünfzigste Sitzung: „Ergebnis zuerst" — der Editor zeigt ein Beispiel, der Titel steht im Inhalt) – historisiert durch den Abschnitt darueber
 

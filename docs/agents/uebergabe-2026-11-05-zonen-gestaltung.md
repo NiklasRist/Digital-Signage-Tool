@@ -174,6 +174,19 @@ dem Hex-Feld. Beide Wege sind sichtbar, keiner versteckt sich.
 **Gegenprobe:** Hex-Übernahme entfernt → 2 Tests rot, byte-identisch zurückgenommen.
 **Gate:** Unit **5595/5595**, Treiber `hexFeld: true`, `freiKnopf: true`, TK **v3.52**, `.docx` 2458 Absätze.
 
+## Stand am Sitzungsende
+
+**Gepusht** (Niklas, 05.11.2026: „pushen und dann übergabe"): `ca99b6f..a8e0359` nach `origin/main`,
+**65 Commits** in einem Zug; `git log --oneline origin/main..HEAD` steht danach auf **0**. Dieses
+Dokument ist der letzte Commit darauf (Nachtrag, ebenfalls gepusht) — der Arbeitsbaum ist sauber.
+
+**Gate beim Push:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5595/5595** (368 Dateien),
+Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
+Export-Dialog). TK **v3.52**, `.docx` 2458 Absätze, `unzip -t` heil, 0 Backticks. AD unverändert v1.13.
+
+**Der Push meldete 71 Dependabot-Findings** im Repository (33 high, 25 moderate, 13 low). Sie stammen
+nicht aus dieser Arbeit und sind **nicht angefasst** — wer sie angeht, macht das als eigene Aufgabe.
+
 ## Ehrlich offen
 
 - **Der Scrim ist nicht einstellbar** (Verlauf, zwei Stopps). Wer ihn tönen will, braucht einen
@@ -187,4 +200,4 @@ dem Hex-Feld. Beide Wege sind sichtbar, keiner versteckt sich.
   ist mit mehr Looks und mehr Reglern beantwortet worden, nicht mit einem anderen Bedienmodell.
 - `einzel-instanz.spec.ts` (#289) bleibt flaky, unverändert.
 
-**Nicht gepusht.** Zahl mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
+**Gepusht** am 05.11.2026 auf Anweisung (`ca99b6f..a8e0359`).
