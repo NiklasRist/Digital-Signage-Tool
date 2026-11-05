@@ -44,9 +44,9 @@
   Export-Dialog).
 - **Doku:** TK **v3.48** (9.8.2/9.8.8/9.10.9/9.11.1), `.docx` im selben Commit neu erzeugt
   (2388 Absätze, `unzip -t`, 0 Backticks). AD unverändert v1.13 (keine Anforderungsänderung).
-- **Ehrlich offen:** Scrim nicht einstellbar (Verlauf, zwei Stopps), senkrechte Ausrichtung nicht,
-  kein eigener Bildrahmen; die sechs Looks sind **nicht am Fernseher** geprüft. `einzel-instanz`
-  (#289) flaky.
+- **Ehrlich offen:** senkrechte Ausrichtung nicht, kein eigener Bildrahmen; die sechs Looks sind
+  **nicht am Fernseher** geprüft. `einzel-instanz` (#289) flaky. Der Scrim ist seit v3.53 in zwei
+  Stopps einstellbar (9.8.10) — die frühere Lücke ist damit zu.
 - **NACHARBEIT (Niklas, 05.11.2026, gleiche Sitzung):** *„die anordnung in der seitenleiste ist
   scheiße … was zusammen gehört muss zusammen gruppiert werden"*, *„warum kann man nach links und
   rechts scrollen"*, *„die farbauswahl objektunabhängig … objekte haben die unabhängige
@@ -90,6 +90,37 @@
   ein **beschrifteter Knopf „Farbe wählen …"** (öffnet den System-Farbwähler), darunter
   **„oder Wert"** mit dem Hex-Feld. **TK v3.52**, `.docx` 2458 Absätze, Unit **5595/5595**,
   Treiber `freiKnopf: true`.
+- **SCRIM (Niklas, 05.11.2026: „mach scrim") — GEBAUT (TK v3.53, 9.8.10):** Die Abdunkelung ist
+  je Zone in **zwei Stopps** einstellbar — Farbe (`#RRGGBB`) **und** Deckkraft (0–100 %) je Stopp.
+  Neues Feld `ZonenGestaltung.scrim?: ScrimGestaltung` (`vonFarbe`, `vonDeckkraft`, `bisFarbe`,
+  `bisDeckkraft`); `scrimStart` = erster, `scrimEnde` = zweiter Stopp, eine **deckende** Abdunkelung
+  (`scrimEnde` als Fläche, Look „Zentriert") nimmt die `bis`-Werte. Ohne Angabe gilt die Marke —
+  Farbe und Alpha getrennt, `#B00B00B3` zeigt also **70 %**, nicht 100 %. `loeseFarbe` bekam den
+  **optionalen vierten Parameter `zone`**; `loeseFarbeInZone` reicht ihn durch, damit Füllung **und**
+  beide Verlaufs-Stopps denselben Weg nehmen. Editor: je Scrim-Zone „Anfang"/„Ende" mit Farbwähler
+  und Deckkraft-Regler; der gewöhnliche Flächen-Regler entfällt dort. Grenzen in
+  `shared/gestaltung.ts` (`GESTALTUNG_GRENZEN.deckkraft`, 8-stellige Zonenfarben fallen weg).
+  Werkzeug `scripts/schau.mjs` nachgezogen: `--gestaltung` scrollt zum Schritt, und ohne gemerktes
+  Projekt öffnet es die **erste** Projektzeile (vorher brach es bei `aktivesProjektId = null` ab).
+  **Doku-Befund:** Die alte TK-`.docx` trug nur `logo.png` (197 KB); das `<svg>`-DFD-Bild fehlte —
+  sie war ohne `--dfd` erzeugt. Neu mit `--dfd`: **2498 Absätze, zwei Bilder** (Logo + DFD, 221 KB).
+- **GEGENPROBEN:** 3, jede rot und **byte-identisch** zurückgenommen (SHA-256 vorher = nachher):
+  Deckkraft ignoriert → 3 Tests rot; Zone nicht an den Verlauf gereicht → Naht-Test rot;
+  Scrim-Zeile aus dem Inspector gefiltert → 4 UI-Tests rot.
+- **FENSTER-BELEG (`4g7`, 1440 × 900):** `{"zonenAnzahl":6,"textfarben":4,"flaechen":3,
+  "groessenRegler":4,"schriftarten":4,"scrimFarben":2,"scrimDeckkraft":2,"zoomTyp":"range",
+  "vorlagenKacheln":8,"formularQuer":0}` — beide Stopps sind am echten Inspector bedienbar.
+- **BEFUND „PowerPoint" (Niklas, 05.11.2026: „das ding ist es sieht immer noch wie eine langweilige
+  powerpoint aus"):** Am Bild geprüft — das **Beispielbild ist das erste Projekt-Asset**, hier ein
+  **macOS-Systemeinstellungen-Screenshot** (512 × 599), kein Foto. Damit sieht jede Vorlage wie eine
+  Folie aus. Dazu kommt die Grammatik der Looks: Textblock + Pillen + Rand, sechs Varianten derselben
+  Grammatik; und die Vorschau ist ein **Standbild** eines Videos. **Mehr Regler lösen das nicht.**
+  Vorschlag: (1) Beispielmotiv darf kein beliebiges Asset sein, (2) ein Look, der die Grammatik
+  bricht (Überlappung/Beschnitt), (3) Bewegung. **Kein Bau ohne Entscheidung.**
+- **EFFEKTE SIND EIN ISSUE:** **#458** (`braucht-entscheidung`, `risiko:pixelgleichheit`) —
+  Entscheidungs-Issue, **keine Signatur**: AD/TK haben keinen Effekt-Abschnitt; Option A (keine),
+  B (drei Effekte: Ken Burns, Text-Einblendung, Preis-Pop; empfohlen), C (Bibliothek, verworfen).
+  Verworfen bleiben Band-Effekte und Übergänge (harter Schnitt, deckendes Band).
 - **GEPUSHT (Niklas, 05.11.2026: „pushen und dann übergabe"):** `ca99b6f..a8e0359` nach
   `origin/main`, **65 Commits** in einem Zug. `git log --oneline origin/main..HEAD` steht danach auf
   **0**. Der Push meldete nebenbei **71 Dependabot-Findings** im Repository (33 high, 25 moderate,

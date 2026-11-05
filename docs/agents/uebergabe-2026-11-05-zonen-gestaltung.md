@@ -174,6 +174,54 @@ dem Hex-Feld. Beide Wege sind sichtbar, keiner versteckt sich.
 **Gegenprobe:** Hex-Übernahme entfernt → 2 Tests rot, byte-identisch zurückgenommen.
 **Gate:** Unit **5595/5595**, Treiber `hexFeld: true`, `freiKnopf: true`, TK **v3.52**, `.docx` 2458 Absätze.
 
+## Scrim (Nacharbeit 5, 05.11.2026)
+
+**Auftrag:** *„mach scrim"*. Die Übergabe hatte den Scrim als offen geführt („Verlauf, zwei Stopps;
+ein Regler müsste den anderen raten"). Gebaut ist die wörtliche Antwort: **zwei Stopps, je Farbe und
+Deckkraft.**
+
+- **Datenmodell:** `ZonenGestaltung.scrim?: ScrimGestaltung` mit `vonFarbe`, `vonDeckkraft`,
+  `bisFarbe`, `bisDeckkraft` (optional). `scrimStart` = erster, `scrimEnde` = zweiter Stopp; eine
+  deckende Abdunkelung (`scrimEnde` als Fläche) nimmt die `bis`-Werte. Fehlt nur die Farbe, bleibt
+  der Farbton der Marke; fehlt nur die Deckkraft, bleibt deren Alpha.
+- **Auflösung:** `loeseFarbe(marke, rolle, aktion, zone?)` — der vierte Parameter ist neu und
+  optional. Nur die beiden Scrim-Rollen lesen die Zonen-Angabe; `loeseFarbeInZone` reicht die Zone
+  durch, damit Füllung und beide Verlaufs-Stopps denselben Weg nehmen.
+- **Editor:** „Abdunkelung" je Scrim-Zone mit „Anfang"/„Ende", je ein Farbwähler und ein
+  Deckkraft-Regler; der gewöhnliche Flächen-Regler entfällt dort (sonst zwei Wege für eine Fläche).
+- **Grenzen:** Deckkraft 0–100 %, Zonenfarben `#RRGGBB` (8-stellig fällt weg), unbrauchbarer Wert
+  wirft statt Ersatzfarbe.
+- **Gegenproben:** 3, jede rot und byte-identisch zurückgenommen: Deckkraft ignoriert → 3 Tests rot;
+  Zone nicht an den Verlauf gereicht → Naht-Test rot; Scrim-Zeile ausgeblendet → 4 UI-Tests rot.
+- **Gate:** Typecheck 0, Lint 0, Build 0, Unit **5617/5617** (366), Integration **51/51**, Treiber
+  **0 Befunde** (`scrimFarben: 2`, `scrimDeckkraft: 2`, `formularQuer: 0`).
+- **Doku:** TK **v3.53** (9.8.10), `.docx` 2498 Absätze, `unzip -t` heil, 0 Backticks. AD v1.13
+  unverändert. **Befund:** Die alte `.docx` trug nur `logo.png` (197 KB); das `<svg>`-DFD-Bild
+  fehlte — sie war ohne `--dfd` erzeugt. Neu mit `--dfd`: zwei Bilder (Logo + DFD).
+
+**Fenster-Beleg:** Treiber `4g7` misst `{"zonenAnzahl":6,"textfarben":4,"flaechen":3,
+"groessenRegler":4,"schriftarten":4,"scrimFarben":2,"scrimDeckkraft":2,"zoomTyp":"range",
+"vorlagenKacheln":8,"formularQuer":0}`. Der Sichtvergleich (`scripts/schau.mjs --gross
+--gestaltung`) zeigt „Abdunkelung" mit „Anfang #1B0012, 19 %" und „Ende #B00B00, 70 %" — die Werte
+kommen aus der Marke (`#1B001230` / `#B00B00B3`), nicht aus dem Formular.
+
+## Der PowerPoint-Befund (05.11.2026)
+
+**Niklas:** *„das ding ist es sieht immer noch wie eine langweilige powerpoint aus"* — nach allen
+Reglern. Am Bild geprüft, nicht geraten:
+
+1. **Das Beispielmotiv ist das erste Projekt-Asset** — hier ein Screenshot der macOS-
+   Systemeinstellungen (512 × 599), kein Foto. Jede Vorlage sieht damit wie eine Folie aus.
+2. **Die Looks sind Varianten derselben Grammatik:** Textblock, Pillen, Sicherheitsrand; sechs
+   Positionen, kein Bruch (keine Überlappung, kein Beschnitt, keine Typografie, die das Bild besetzt).
+3. **Die Vorschau ist ein Standbild.** Das Produkt ist ein Video; ohne Bewegung bleibt der Beweis
+   „Folie".
+
+**Der ehrliche Satz:** Mehr Regler beantworten die Frage nicht. Die nächsten Hebel sind (1) ein
+Beispielmotiv, das kein beliebiges Asset ist, (2) ein Look, der die Grammatik bricht, (3) Bewegung.
+**Effekte sind jetzt Issue #458** (Entscheidungs-Issue; Option B empfohlen: Ken Burns,
+Text-Einblendung, Preis-Pop; nur Ganzbild; harter Schnitt bleibt). **Kein Bau ohne Entscheidung.**
+
 ## Stand am Sitzungsende
 
 **Gepusht** (Niklas, 05.11.2026: „pushen und dann übergabe"): `ca99b6f..a8e0359` nach `origin/main`,
@@ -184,20 +232,23 @@ Dokument ist der letzte Commit darauf (Nachtrag, ebenfalls gepusht) — der Arbe
 Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
 Export-Dialog). TK **v3.52**, `.docx` 2458 Absätze, `unzip -t` heil, 0 Backticks. AD unverändert v1.13.
 
+**Nachtrag nach dem Push (gleiche Sitzung):** Scrim gebaut (9.8.10) — TK **v3.53**, `.docx` 2498
+Absätze, Unit **5617/5617** (366), Integration 51/51, Treiber 0 Befunde. Der Arbeitsbaum trägt diese
+Änderung; **nicht gepusht** (mit `git log --oneline origin/main..HEAD` zählen, nicht abschreiben).
+
 **Der Push meldete 71 Dependabot-Findings** im Repository (33 high, 25 moderate, 13 low). Sie stammen
 nicht aus dieser Arbeit und sind **nicht angefasst** — wer sie angeht, macht das als eigene Aufgabe.
 
 ## Ehrlich offen
 
-- **Der Scrim ist nicht einstellbar** (Verlauf, zwei Stopps). Wer ihn tönen will, braucht einen
-  eigenen Weg — z. B. zwei Regler oder eine Scrim-Rolle je Zone.
 - **Die senkrechte Ausrichtung** ist nicht einstellbar.
 - **Ein eigener Bildrahmen** (x/y/Breite/Höhe je Aktion) ist nicht gebaut; der Rahmen kommt aus der
   Vorlage.
 - **Die sechs Looks sind nicht am Fernseher geprüft.** Die Koordinaten halten die Inhaltsbox ein
   (Test), aber ob „Riesig" bei 190 px auf dem Studio-Bildschirm wirkt, sagt erst der Blick.
 - **Der Editor ist weiterhin ein Formular.** Die Frage vom 05.11. („PowerPoint-Folie statt Werbung")
-  ist mit mehr Looks und mehr Reglern beantwortet worden, nicht mit einem anderen Bedienmodell.
+  ist mit mehr Looks und mehr Reglern beantwortet worden, nicht mit einem anderen Bedienmodell. Der
+  Befund steht oben („Der PowerPoint-Befund"); die Effekte liegen als Entscheidungs-Issue **#458**.
 - `einzel-instanz.spec.ts` (#289) bleibt flaky, unverändert.
 
 **Gepusht** am 05.11.2026 auf Anweisung (`ca99b6f..a8e0359`).
