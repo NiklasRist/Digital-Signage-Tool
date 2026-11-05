@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.50 (9.8.9: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.51 (9.8.9: freie Farbwahl im Popup; 05.11.2026. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1825,6 +1825,18 @@ gehandelt werden"*
   Aktionsname im Bildstreifen und in der Bibliothek, Statistik-Bezeichnung („30-Minuten-War…"),
   Dateiname in den Ausgaben, Zonenname und Farbzeile im Inspector. Ausgenommen bleibt allein die
   Zeitachse — dort ist die Breite eines Clips die Aussage, Umbrechen wäre falsch.
+
+**Nacharbeit 3: freie Farbwahl (Niklas, 05.11.2026):** *„jz fehlt nur noch die freie farbwahl in dem
+popup"*. Das native Farbfeld allein ist keine freie Wahl — man kann dort nichts eintippen und keinen
+Wert aus einer Vorlage einsetzen. Im Popup steht deshalb unter der Überschrift **„Freie Farbe"**
+neben dem Farbfeld ein **Hex-Feld**:
+
+- Es zeigt den geltenden Wert (`#RRGGBB`), übernimmt bei **Enter** oder Fokusverlust und versteht
+  `#RRGGBB`, `RRGGBB` sowie die Kurzform `#RGB` — normalisiert wird immer auf `#RRGGBB` (Großbuchstaben).
+- Ein unbrauchbarer Wert ändert **nichts**: Das Feld springt auf den geltenden Wert zurück und ein Satz
+  sagt „Ungültig – erwartet wird #RRGGBB." Kein stiller Fallback, kein halb getippter Zustand.
+- Farbnamen (`rot`) werden bewusst **nicht** angenommen: Die Marken-Rollen sind Hex-Werte, ein zweiter
+  Farbraum neben `farben.ts` wäre eine zweite Wahrheit.
 
 **Kein waagerechtes Scrollen.** Die Inspector-Fläche trägt `overflowX: 'hidden'`; Schieberegler und
 Flex-Kinder tragen `minWidth: 0`, damit sie schrumpfen statt die Fläche zu sprengen. Der Treiber

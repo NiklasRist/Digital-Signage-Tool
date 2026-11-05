@@ -55,6 +55,11 @@ export function FarbWahl({
 }: FarbWahlEigenschaften): JSX.Element {
   const angezeigt = anzeigewert(wert, markenWert)
   const [offen, setzeOffen] = useState(false)
+  // NACHARBEIT 3 (05.11.2026): Niklas: „jz fehlt nur noch die freie farbwahl in dem popup".
+  // Das native Farbfeld allein ist keine freie Wahl - man kann dort nichts eintippen und
+  // nichts aus einer Vorlage einsetzen. Deshalb ein Hex-Feld daneben.
+  const [hexEingabe, setzeHexEingabe] = useState('')
+  const [hexFehler, setzeHexFehler] = useState<string | null>(null)
   const [lage, setzeLage] = useState<{ links: number; oben: number }>({ links: 0, oben: 0 })
   const knopf = useRef<HTMLButtonElement | null>(null)
   const popup = useRef<HTMLDivElement | null>(null)
@@ -81,6 +86,13 @@ export function FarbWahl({
     }
   }, [offen, testid])
 
+  // Der Hex-Text folgt dem GELTENDEN Wert (Palette-Klick, „Markenwert", Farbfeld).
+  // Waehrend des Tippens aendert sich `angezeigt` nicht - die Eingabe bleibt also stehen.
+  useEffect(() => {
+    if (!offen) return
+    setzeHexEingabe(angezeigt.toUpperCase())
+  }, [angezeigt, offen])
+
   // NACHARBEIT 05.11.2026: Ein Popup, das aus einem Knopf am UNTEREN Fensterrand
   // aufgeht, stand bisher unterhalb des Bildschirms (gemessen: y=920 bei 900 px Hoehe).
   // Deshalb wird es nach dem ersten Zeichnen am Fenster gehalten.
@@ -100,7 +112,36 @@ export function FarbWahl({
       const links = Math.max(8, Math.min(kasten.right - POPUP_BREITE, window.innerWidth - POPUP_BREITE - 8))
       setzeLage({ links, oben: kasten.bottom + 4 })
     }
+    setzeHexEingabe(angezeigt.toUpperCase())
+    setzeHexFehler(null)
     setzeOffen(true)
+  }
+
+  /** Eintippen und Enter oder Fokusverlust uebernimmt den Wert. Ungueltig heisst: der
+   *  Entwurf bleibt unberuehrt und das Feld springt auf den geltenden Wert zurueck. */
+  function uebernehmeHex(): void {
+    const hex = alsHex(hexEingabe)
+    if (hex === null) {
+      setzeHexFehler('Ungültig – erwartet wird #RRGGBB.')
+      setzeHexEingabe(angezeigt.toUpperCase())
+      return
+    }
+    setzeHexFehler(null)
+    setzeHexEingabe(hex)
+    waehle(hex)
+  }
+
+  /** `#abc`, `abc`, `#aabbcc` und `aabbcc` werden zu `#AABBCC`; alles andere ist ungueltig.
+   *  Bewusst NUR Hex: Die Marken-Rollen sind Hex-Werte, und ein Farbname („rot") haette
+   *  eine zweite Wahrheit neben `farben.ts` erzeugt. */
+  function alsHex(wert: string): string | null {
+    const roh = wert.trim().replace(/^#/, '')
+    if (/^[0-9a-fA-F]{6}$/.test(roh)) return `#${roh.toUpperCase()}`
+    if (/^[0-9a-fA-F]{3}$/.test(roh)) {
+      const [r, g, b] = roh
+      return `#${r}${r}${g}${g}${b}${b}`.toUpperCase()
+    }
+    return null
   }
 
   function waehle(farbe: string): void {
@@ -187,15 +228,19 @@ export function FarbWahl({
             boxShadow: '0 6px 20px rgba(0, 0, 0, 0.5)',
           }}
         >
-          {/* Farbfeld und Palette stehen GLEICHZEITIG hier - das ist der Punkt. */}
+          {/* DIE FREIE WAHL (Nacharbeit 3, 05.11.2026): Farbfeld UND Hex-Feld. Das
+              Feld allein war keine freie Wahl - man konnte nichts eintippen und keinen
+              Wert aus einer Vorlage einsetzen. Beide stehen gleichzeitig mit der Palette
+              hier; es gibt keinen zweiten Zustand fuer dieselbe Handlung. */}
+          <span style={{ fontSize: 11, color: '#9aa4b2' }}>Freie Farbe</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input
               key={`${testid}-${angezeigt}`}
               type="color"
               data-testid={`${testid}-farbe`}
-              aria-label={beschriftung}
+              aria-label={`${beschriftung} frei wählen`}
               defaultValue={angezeigt}
-              style={{ flex: '0 0 auto', width: 34, height: 26, padding: 0 }}
+              style={{ flex: '0 0 auto', width: 44, height: 28, padding: 0 }}
               // `onChange` ist im Popup richtig: Man sieht das Ergebnis sofort, und der
               // Popup-Zustand wird beim Ziehen nicht neu aufgebaut (anders als ein Feld,
               // das dauerhaft im Formular steht).
@@ -203,8 +248,28 @@ export function FarbWahl({
                 waehle(ereignis.target.value)
               }}
             />
-            <span style={{ fontSize: 11, color: '#9aa4b2' }}>{beschriftung}</span>
-            <span style={{ flex: '1 1 auto' }} />
+            <input
+              type="text"
+              data-testid={`${testid}-hex`}
+              aria-label={`Farbe als Hex-Wert (${beschriftung})`}
+              value={hexEingabe}
+              placeholder="#RRGGBB"
+              spellCheck={false}
+              style={{
+                flex: '1 1 auto',
+                minWidth: 0,
+                fontFamily: 'Menlo, Consolas, monospace',
+                fontSize: 12,
+              }}
+              onChange={(ereignis) => {
+                setzeHexEingabe(ereignis.target.value)
+                setzeHexFehler(null)
+              }}
+              onKeyDown={(ereignis) => {
+                if (ereignis.key === 'Enter') uebernehmeHex()
+              }}
+              onBlur={uebernehmeHex}
+            />
             {wert !== null && (
               <button
                 type="button"
@@ -217,6 +282,11 @@ export function FarbWahl({
               </button>
             )}
           </div>
+          {hexFehler !== null && (
+            <span data-testid={`${testid}-hex-fehler`} style={{ fontSize: 11, color: '#e5634d' }}>
+              {hexFehler}
+            </span>
+          )}
 
           {palette.length > 0 && (
             <>

@@ -6372,6 +6372,8 @@ const main = async () => {
           // SEIT 05.11.2026 (Nacharbeit): JEDER Farbwaehler ist derselbe Baustein
           // (`farb-wahl.tsx`); die Akzentfarbe hat den Praefix `aktion-akzent-`.
           popup: document.querySelector('[data-testid="aktion-akzent-popup"]') !== null,
+          // NACHARBEIT 3 (05.11.2026): Die freie Wahl ist Farbfeld UND Hex-Feld.
+          hexFeld: document.querySelector('[data-testid="aktion-akzent-hex"]') !== null,
           markenFarben: document.querySelectorAll('[data-testid^="aktion-akzent-palette-"]').length,
           letzteFarben: document.querySelector('[data-testid="aktion-akzent-letzte"]') !== null,
         };
@@ -6381,6 +6383,10 @@ const main = async () => {
         fund("Felder nach Vorlage", "die Akzentfarbe ist ein echter Farbwaehler (#325)",
           `typ=${String(akzent4g7.typ)}, altes Select=${String(akzent4g7.altesSelect)}`,
           "Befund", "action-editor/index.tsx");
+      } else if (!akzent4g7.hexFeld) {
+        fund('Felder nach Vorlage', 'die freie Farbwahl steht im Popup (Farbfeld UND Hex-Feld)',
+          `popup=${String(akzent4g7.popup)}, hexFeld=${String(akzent4g7.hexFeld)}`,
+          "Befund", "action-editor/farb-wahl.tsx");
       } else if (akzent4g7.markenFarben < 8 || !akzent4g7.letzteFarben) {
         fund("Felder nach Vorlage", "unter dem Waehler stehen Markenpalette und die letzten Farben",
           `Markenfarben=${String(akzent4g7.markenFarben)}, letzteFarben=${String(akzent4g7.letzteFarben)}`,

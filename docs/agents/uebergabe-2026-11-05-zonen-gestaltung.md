@@ -155,6 +155,20 @@ byte-identisch zurückgenommen. **Gate:** Unit **5579/5579**, Integration 51/51,
 **Gegenproben:** 2 (Schriftart ignoriert; Pfeil setzt nur eine Achse) — beide rot und byte-identisch
 zurückgenommen. **Gate:** Unit **5590/5590**, Treiber 0 Befunde, TK v3.50, `.docx` 2444 Absätze.
 
+## Nacharbeit 3 (Niklas, 05.11.2026)
+
+*„jz fehlt nur noch die freie farbwahl in dem popup"* — Das native Farbfeld allein ist keine freie
+Wahl: Man kann dort nichts eintippen und keinen Wert aus einer Vorlage einsetzen. Im Popup steht
+deshalb unter **„Freie Farbe"** neben dem Farbfeld ein **Hex-Feld**:
+
+- zeigt den geltenden Wert, übernimmt bei **Enter** oder Fokusverlust;
+- versteht `#RRGGBB`, `RRGGBB` und `#RGB` (Kurzform wird aufgelöst), normalisiert auf `#RRGGBB`;
+- ein unbrauchbarer Wert ändert **nichts**: Das Feld springt auf den geltenden Wert zurück und zeigt
+  „Ungültig – erwartet wird #RRGGBB."; Farbnamen werden bewusst nicht angenommen.
+
+**Gegenprobe:** Hex-Übernahme entfernt → 2 Tests rot, byte-identisch zurückgenommen.
+**Gate:** Unit **5594/5594**, Treiber `hexFeld: true`, TK **v3.51**, `.docx` 2454 Absätze.
+
 ## Ehrlich offen
 
 - **Der Scrim ist nicht einstellbar** (Verlauf, zwei Stopps). Wer ihn tönen will, braucht einen

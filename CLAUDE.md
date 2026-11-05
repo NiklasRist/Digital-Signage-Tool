@@ -79,6 +79,12 @@
   - **Gate:** Unit **5590/5590**, Integration 51/51, Treiber 0 Befunde (`formularQuer 0`), TK **v3.50**,
     `.docx` 2444 Absätze, 0 Backticks. Zwei Gegenproben (Schriftart, Richtungsfeld), beide rot und
     byte-identisch zurückgenommen.
+- **NACHARBEIT 3 (Niklas, 05.11.2026):** *„jz fehlt nur noch die freie farbwahl in dem popup"*.
+  Im Popup steht unter **„Freie Farbe"** neben dem Farbfeld ein **Hex-Feld** (versteht `#RRGGBB`,
+  `RRGGBB`, `#RGB`; normalisiert auf `#RRGGBB`). Ein unbrauchbarer Wert ändert **nichts** — das Feld
+  springt zurück und sagt „Ungültig – erwartet wird #RRGGBB." Farbnamen werden nicht angenommen
+  (zweiter Farbraum neben `farben.ts`). **TK v3.51**, `.docx` 2454 Absätze, Unit **5594/5594**,
+  Treiber `hexFeld: true`. Gegenprobe: Hex-Übernahme entfernt → 2 Tests rot, byte-identisch zurück.
 - **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen.
   **Push nur auf Anweisung.**
 

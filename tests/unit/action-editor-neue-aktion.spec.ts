@@ -1199,3 +1199,57 @@ describe('Nacharbeit 05.11.2026: Schriftart und Richtungsfeld', () => {
     })
   })
 })
+
+describe('Nacharbeit 3: freie Farbwahl im Popup (05.11.2026)', () => {
+  const VORLAGE = vorlageMitZonen('frei', null, [
+    zone('preis', { id: 'preis', deko: { füllungFarbRolle: 'akzent' } }),
+  ])
+
+  async function oeffne(): Promise<HTMLDivElement> {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [VORLAGE] })
+    const { behaelter } = editor(projekt([]), [VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+    await oeffneFarbe(behaelter, 'aktion-zone-preis-flaeche')
+    return behaelter
+  }
+
+  it('das Popup hat ein Hex-Feld neben dem Farbfeld - und es zeigt den geltenden Wert', async () => {
+    const behaelter = await oeffne()
+    const hex = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-zone-preis-flaeche-hex"]')
+    expect(hex).not.toBeNull()
+    // Ohne eigene Wahl gilt der Markenwert der Rolle `akzent`.
+    expect(hex?.value).toBe('#FF4040')
+    expect(behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche-farbe"]')).not.toBeNull()
+  })
+
+  it('ein eingetippter Hex-Wert setzt die Farbe', async () => {
+    const behaelter = await oeffne()
+    await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche-hex', '00ff00')
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.preis?.flaechefarbe).toBe('#00FF00')
+  })
+
+  it('die Kurzform #abc wird zu #AABBCC', async () => {
+    const behaelter = await oeffne()
+    await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche-hex', '#abc')
+    expect(vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]?.zonenGestaltung?.preis?.flaechefarbe).toBe(
+      '#AABBCC',
+    )
+  })
+
+  it('ein unbrauchbarer Wert aendert NICHTS und sagt warum', async () => {
+    const behaelter = await oeffne()
+    await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche-hex', 'rot')
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.preis?.flaechefarbe).toBeUndefined()
+    const fehler = behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche-hex-fehler"]')
+    expect(fehler?.textContent ?? '').toContain('RRGGBB')
+    // Das Feld springt auf den geltenden Wert zurueck - kein halb getippter Zustand.
+    const hex = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-zone-preis-flaeche-hex"]')
+    expect(hex?.value).toBe('#FF4040')
+  })
+})
