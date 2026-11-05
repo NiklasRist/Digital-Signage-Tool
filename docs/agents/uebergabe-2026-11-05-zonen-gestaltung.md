@@ -111,6 +111,32 @@ da; auf die Platte kommen sie mit dem nächsten regulären Schreibvorgang.
   Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
   Export-Dialog).
 
+## Nacharbeit derselben Sitzung (Niklas, 05.11.2026)
+
+Vier Beschwerden, alle vier behoben (TK **v3.49**, 9.8.9):
+
+1. **„die anordnung in der seitenleiste ist scheiße … was zusammen gehört muss zusammen gruppiert
+   werden"** — Der Inspector hat jetzt **fünf** Gruppen. Die Trennung „Akzentfarbe" (global) und
+   „Zonen" (je Objekt) ist **aufgelöst**: beides steht in **einer** Gruppe **„Gestaltung"** — oben
+   „Alle Objekte" (Akzent), darunter **jedes Objekt** mit Schriftfarbe, Flächenfarbe, Größe und
+   Ausrichtung. Die Kopfzeile sagt, wie viele Objekte eigene Werte tragen.
+2. **„warum kann man nach links und rechts scrollen?"** — Die Vorlagen-Galerie ist eine
+   zugeklappte Gruppe mit dem Vorlagennamen in der Kopfzeile (**offen beim Anlegen**, **zu beim
+   Bearbeiten**); die Inspector-Fläche trägt `overflowX: 'hidden'`, Regler und Flex-Kinder
+   `minWidth: 0`. Der Treiber misst den Überlauf: **`formularQuer: 0`**. Höhe des Inspectors
+   gemessen **2124 → 1559 px**.
+3. **„die farbauswahl objektunabhängig … objekte haben die unabhängige farbauswahl"** — **Ein**
+   Baustein (`action-editor/farb-wahl.tsx`) für **jede** Farbe: Farbfeld, Markenpalette,
+   „Zuletzt verwendet", „Markenwert". Der **Wert** bleibt beim Objekt: Akzent und Zone schreiben in
+   verschiedene Felder und beeinflussen einander nicht (zwei Tests halten genau das fest).
+4. **„die bildausschnitt regler können komische effekte auf das logo haben"** — **Echter Fehler**:
+   Der Ausschnitt lief über jede Bildzone, also auch über das **Logo**. Bindend ist jetzt
+   `zone.bindung === 'bild'`; ein Logo ist eine Konstante (dieselbe Begründung wie beim
+   Ersatz-Logo, 9.10.10). Der Satz am Regler sagt es zusätzlich.
+
+**Gegenproben:** 2 (Logo-Ausschnitt entfernt; Akzent aus der Gruppe genommen) — jede rot und
+byte-identisch zurückgenommen. **Gate:** Unit **5579/5579**, Integration 51/51, Treiber 0 Befunde.
+
 ## Ehrlich offen
 
 - **Der Scrim ist nicht einstellbar** (Verlauf, zwei Stopps). Wer ihn tönen will, braucht einen

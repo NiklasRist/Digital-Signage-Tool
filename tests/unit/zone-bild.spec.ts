@@ -632,3 +632,34 @@ describe("zeichneBildZone - Bildausschnitt (TK 9.8.8)", () => {
     expect(drawImageAufrufe[0]).toHaveLength(9);
   });
 });
+
+describe("Bildausschnitt trifft NUR das Bild der Aktion (Nacharbeit 05.11.2026)", () => {
+  it("das LOGO wird nicht gezoomt und nicht beschnitten", () => {
+    // Niklas: „die bildausschnitt regler können komische effekte auf das logo haben".
+    // Der Zoom gehoert dem Motiv der Aktion; ein beschnittenes Markenzeichen ist ein
+    // Markenfehler, kein Gestaltungswunsch.
+    const logo: Zone = {
+      ...zone({ x: 96, y: 54, breite: 420, höhe: 120 }, "cover"),
+      id: "logo",
+      bindung: "logo",
+    }
+    const { kontext, ereignisse, drawImageAufrufe } = baueKontextDoppel();
+    zeichneBildZone(kontext, logo, MOTIV, marke(), mitAusschnitt({ zoom: 200, versatzX: 20 }));
+
+    expect(ereignisse.some((e) => e.art === "rufe" && e.name === "clip")).toBe(false);
+    // Der alte Weg fuer `cover`: neun Argumente, kein Zielrechteck.
+    expect(drawImageAufrufe[0]).toHaveLength(9);
+  });
+
+  it("die MOTIVZONE derselben Aktion wird weiterhin gezoomt", () => {
+    const { kontext, drawImageAufrufe } = baueKontextDoppel();
+    zeichneBildZone(
+      kontext,
+      zone({ x: 0, y: 0, breite: 960, höhe: 540 }, "cover"),
+      MOTIV,
+      marke(),
+      mitAusschnitt({ zoom: 200 }),
+    );
+    expect(drawImageAufrufe[0]).toEqual([ATTRAPPE, -480, -450, 1920, 1440]);
+  });
+});

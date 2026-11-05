@@ -6362,8 +6362,10 @@ const main = async () => {
           altesSelect: document.querySelector('[data-testid="aktion-akzent-vorschlag"]') !== null,
           // 05.11.2026: unter dem freien Waehler steht die Markenpalette (doppelte
           // Hex-Werte sind EIN Swatch) und der Bereich der letzten 20 Farben.
-          markenFarben: document.querySelectorAll('[data-testid^="aktion-farbe-marke-"]').length,
-          letzteFarben: document.querySelector('[data-testid="aktion-farben-letzte"]') !== null,
+          // SEIT 05.11.2026 (Nacharbeit): JEDER Farbwaehler ist derselbe Baustein
+          // (`farb-wahl.tsx`); die Akzentfarbe hat den Praefix `aktion-akzent-`.
+          markenFarben: document.querySelectorAll('[data-testid^="aktion-akzent-palette-"]').length,
+          letzteFarben: document.querySelector('[data-testid="aktion-akzent-letzte"]') !== null,
         };
       });
       console.log(`[schritt-4g7] Akzentfarbe: ${JSON.stringify(akzent4g7)}.`);
@@ -6389,12 +6391,20 @@ const main = async () => {
         return {
           zonenBereich: zonen !== null,
           zonenAnzahl: zonen === null ? 0 : zonen.querySelectorAll(":scope > div").length,
-          textfarben: document.querySelectorAll('[data-testid$="-textfarbe"]').length,
+          textfarben: document.querySelectorAll('[data-testid$="-schrift-farbe"]').length,
           flaechen: document.querySelectorAll('[data-testid$="-flaeche"]').length,
           groessenRegler: document.querySelectorAll('[data-testid$="-groesse"]').length,
           ausschnitt: ausschnitt !== null,
           zoomTyp: zoom === null ? null : zoom.getAttribute("type"),
           vorlagenKacheln: document.querySelectorAll('[data-testid^="aktion-vorlage-"]').length,
+          // SEIT 05.11.2026 (Nacharbeit): Der Inspector darf NUR senkrecht scrollen.
+          // Ein Schieberegler oder eine lange Zeile erzeugte vorher eine zweite
+          // Scrollrichtung (Niklas: „warum kann man nach links und rechts scrollen?").
+          formularQuer: (() => {
+            const form = document.querySelector('[data-testid="aktion-formular"]');
+            if (form === null) return null;
+            return form.scrollWidth - form.clientWidth;
+          })(),
         };
       });
       console.log(`[schritt-4g7] Zonen und Ausschnitt: ${JSON.stringify(gestaltung4g7)}.`);
@@ -6410,6 +6420,10 @@ const main = async () => {
         fund('Bildausschnitt', 'Zoom und Position sind Regler am Fenster',
           `Bereich=${String(gestaltung4g7.ausschnitt)}, Zoom-Typ=${String(gestaltung4g7.zoomTyp)}`,
           "Befund", "action-editor/bild-ausschnitt.tsx");
+      } else if ((gestaltung4g7.formularQuer ?? 0) > 1) {
+        fund('Gestaltung je Zone', 'die Seitenleiste scrollt NUR senkrecht',
+          `waagerechter Ueberlauf ${String(gestaltung4g7.formularQuer)} px`,
+          'Befund', 'action-editor/index.tsx');
       } else if (gestaltung4g7.vorlagenKacheln < 8) {
         // Acht = die acht waehlbaren Ganzbild-Vorlagen (drei alte ohne das Band + sechs
         // neue, Stand 05.11.2026). Weniger heisst: die neuen Looks fehlen im Bestand.

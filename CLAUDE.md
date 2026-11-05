@@ -11,7 +11,7 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (05.11.2026, zweiundfünfzigste Sitzung: Kontrolle statt Formular — Zonen-Gestaltung, Bildausschnitt, sechs Looks)
+## STAND HEUTE (05.11.2026, zweiundfünfzigste Sitzung: Kontrolle statt Formular — Zonen-Gestaltung, Bildausschnitt, sechs Looks, danach Nacharbeit an der Seitenleiste)
 
 **Volltext: [`docs/agents/uebergabe-2026-11-05-zonen-gestaltung.md`](docs/agents/uebergabe-2026-11-05-zonen-gestaltung.md).**
 
@@ -47,6 +47,24 @@
 - **Ehrlich offen:** Scrim nicht einstellbar (Verlauf, zwei Stopps), senkrechte Ausrichtung nicht,
   kein eigener Bildrahmen; die sechs Looks sind **nicht am Fernseher** geprüft. `einzel-instanz`
   (#289) flaky.
+- **NACHARBEIT (Niklas, 05.11.2026, gleiche Sitzung):** *„die anordnung in der seitenleiste ist
+  scheiße … was zusammen gehört muss zusammen gruppiert werden"*, *„warum kann man nach links und
+  rechts scrollen"*, *„die farbauswahl objektunabhängig … objekte haben die unabhängige
+  farbauswahl"*, *„die bildausschnitt regler können komische effekte auf das logo haben"*.
+  **Alles vier ist gebaut (TK v3.49, 9.8.9):**
+  - **Gruppiert:** fünf Gruppen; „Akzentfarbe" und „Zonen" sind **eine** Gruppe **„Gestaltung"** —
+    oben „Alle Objekte" (Akzent), darunter je Objekt Farbe/Größe/Ausrichtung.
+  - **Vorlagen-Galerie** ist eine zugeklappte Gruppe mit dem Namen in der Kopfzeile: **offen beim
+    Anlegen**, **zu beim Bearbeiten** (sie war höher als der ganze Inspector).
+  - **EIN Farbwähler** (`action-editor/farb-wahl.tsx`) für Akzent **und** jede Zone: Farbfeld,
+    Markenpalette, „Zuletzt verwendet", „Markenwert" — die **Werte bleiben je Objekt**.
+  - **Bildausschnitt trifft nur `bindung === 'bild'`** — das **Logo** wurde vorher mitgezoomt und
+    beschnitten (echter Fehler).
+  - **Kein Querscrollen:** `overflowX: 'hidden'`, `minWidth: 0`; der Treiber misst `formularQuer`
+    (gemessen **0**). Inspector-Höhe 2124 → **1559 px**.
+  - **Gate:** Unit **5579/5579**, Integration **51/51**, Treiber **0 Befunde**. TK **v3.49**,
+    `.docx` 2420 Absätze, 0 Backticks. Zwei Gegenproben (Logo-Ausschnitt, Akzent in der Gruppe),
+    jede rot und byte-identisch zurückgenommen.
 - **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen.
   **Push nur auf Anweisung.**
 

@@ -790,7 +790,7 @@ describe('Farbauswahl', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
-    const swatches = behaelter.querySelectorAll('[data-testid^="aktion-farbe-marke-"]')
+    const swatches = behaelter.querySelectorAll('[data-testid^="aktion-akzent-palette-"]')
     // 13 Rollen, aber doppelte Hex-Werte (Weiß, Schwarz, #202020) sind EIN Swatch.
     expect(swatches).toHaveLength(10)
 
@@ -832,7 +832,7 @@ describe('Farbauswahl', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
-    const letzte = behaelter.querySelector('[data-testid="aktion-farbe-letzte-#112233"]')
+    const letzte = behaelter.querySelector('[data-testid="aktion-akzent-letzte-#112233"]')
     expect(letzte).not.toBeNull()
 
     vi.mocked(zeichneVorschau).mockClear()
@@ -854,7 +854,7 @@ describe('Farbauswahl', () => {
     await laufen()
 
     act(() => {
-      ;(behaelter.querySelector('[data-testid="aktion-farbe-marke-akzent"]') as HTMLButtonElement).click()
+      ;(behaelter.querySelector('[data-testid="aktion-akzent-palette-akzent"]') as HTMLButtonElement).click()
     })
     await laufen()
     expect(behaelter.querySelector('[data-testid="aktion-akzent-marke"]')).not.toBeNull()
@@ -915,7 +915,7 @@ describe('Gestaltung je Zone (05.11.2026)', () => {
     const titelZone = behaelter.querySelector('[data-testid="aktion-zone-ueberschrift"]')
     expect(titelZone).not.toBeNull()
     // Die Titelzone hat Text: Schriftfarbe, Groesse, Ausrichtung.
-    expect(behaelter.querySelector('[data-testid="aktion-zone-ueberschrift-textfarbe"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-zone-ueberschrift-schrift-farbe"]')).not.toBeNull()
     expect(behaelter.querySelector('[data-testid="aktion-zone-ueberschrift-groesse"]')).not.toBeNull()
     expect(behaelter.querySelector('[data-testid="aktion-zone-ueberschrift-ausrichtung-mitte"]')).not.toBeNull()
     // Sie hat KEINE Flaeche.
@@ -932,7 +932,7 @@ describe('Gestaltung je Zone (05.11.2026)', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
-    await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche', '#00ff00')
+    await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche-farbe', '#00ff00')
 
     expect(projektAufrufe()).toHaveLength(0)
     const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
@@ -964,7 +964,7 @@ describe('Gestaltung je Zone (05.11.2026)', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
-    await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche', '#00ff00')
+    await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche-farbe', '#00ff00')
     await klicke(behaelter, 'aktion-zone-preis-zuruecksetzen')
 
     const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
@@ -1000,5 +1000,89 @@ describe('Bildausschnitt (05.11.2026)', () => {
 
     const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
     expect(gezeichnet?.bildAusschnitt).toBeNull()
+  })
+})
+
+describe('Nacharbeit 05.11.2026: EIN Farbwaehler, unabhaengige Werte je Objekt', () => {
+  const VORLAGE = vorlageMitZonen('farben', null, [
+    zone('titel', {
+      id: 'ueberschrift',
+      text: {
+        schriftRolle: 'headlinePlakativ',
+        farbRolle: 'textAufDunkel',
+        größeMax: 96,
+        größeMin: 56,
+        maxZeilen: 2,
+      },
+    }),
+    zone('preis', { id: 'preis', deko: { füllungFarbRolle: 'akzent' } }),
+  ])
+
+  async function oeffne(): Promise<HTMLDivElement> {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [VORLAGE] })
+    const { behaelter } = editor(projekt([]), [VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+    return behaelter
+  }
+
+  it('Akzentfarbe und Zonenfarbe benutzen DENSELBEN Baustein - gleiche Palette, gleiche Struktur', async () => {
+    const behaelter = await oeffne()
+
+    const akzent = behaelter.querySelector('[data-testid="aktion-akzent"]')
+    const zone = behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche"]')
+    expect(akzent).not.toBeNull()
+    expect(zone).not.toBeNull()
+
+    // Beide haben Farbfeld, Palette und „Zuletzt verwendet" - EIN Baustein, zwei Werte.
+    for (const praefix of ['aktion-akzent', 'aktion-zone-preis-flaeche']) {
+      expect(behaelter.querySelector(`[data-testid="${praefix}-farbe"]`)).not.toBeNull()
+      expect(
+        behaelter.querySelectorAll(`[data-testid^="${praefix}-palette-"]`).length,
+      ).toBeGreaterThanOrEqual(8)
+      expect(behaelter.querySelector(`[data-testid="${praefix}-letzte"]`) ?? behaelter.querySelector(`[data-testid="${praefix}"]`)).not.toBeNull()
+    }
+  })
+
+  it('ein Klick auf die Zonenfarbe laesst die Akzentfarbe unberuehrt', async () => {
+    const behaelter = await oeffne()
+
+    act(() => {
+      ;(behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche-palette-akzent"]') as HTMLButtonElement).click()
+    })
+    await laufen()
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.preis?.flaechefarbe).toBe('#ff4040')
+    expect(gezeichnet?.akzentfarbe).toBeNull()
+  })
+
+  it('ein Klick auf die Akzentfarbe laesst die Zonenfarbe unberuehrt', async () => {
+    const behaelter = await oeffne()
+
+    act(() => {
+      ;(behaelter.querySelector('[data-testid="aktion-akzent-palette-akzentKraeftig"]') as HTMLButtonElement).click()
+    })
+    await laufen()
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.akzentfarbe).toBe('#df3131')
+    expect(gezeichnet?.zonenGestaltung ?? {}).toEqual({})
+  })
+
+  it('Akzent und Objekte stehen in DERSELBEN Gruppe „Gestaltung"', async () => {
+    const behaelter = await oeffne()
+
+    const gruppe = Array.from(behaelter.querySelectorAll('details')).find((d) =>
+      (d.querySelector('summary')?.textContent ?? '').startsWith('Gestaltung'),
+    )
+    expect(gruppe).toBeDefined()
+    expect(gruppe?.querySelector('[data-testid="aktion-akzent"]')).not.toBeNull()
+    expect(gruppe?.querySelector('[data-testid="aktion-zonen"]')).not.toBeNull()
+    // Und es gibt keinen zweiten Schritt „Akzentfarbe"/„Zonen" mehr.
+    const titel = Array.from(behaelter.querySelectorAll('summary')).map((e) => e.textContent ?? '')
+    expect(titel.some((t) => t.startsWith('Akzentfarbe'))).toBe(false)
+    expect(titel.some((t) => t.startsWith('Zonen'))).toBe(false)
   })
 })

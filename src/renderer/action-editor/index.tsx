@@ -57,10 +57,10 @@ import { BefundAnzeige } from './befund-texte'
 import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
 import { VorlagenWahl } from './vorlagen-wahl'
 import { ZonenGestaltung } from './zonen-gestaltung'
+import { FarbWahl, markenPalette } from './farb-wahl'
 import { BildAusschnittRegler } from './bild-ausschnitt'
 import { feldBedarf } from './feld-bedarf'
 import { BEISPIEL_INHALT, erstesBild, mitBeispielinhalt } from './beispiel-inhalt'
-import { istAkzentfarbe } from './akzentfarbe'
 import { ladeLetzteFarben, mitFarbe, speichereLetzteFarben } from './letzte-farben'
 import { pruefeBildWahl, starteBildImport, waehlbareBilder } from './bild-zuweisen'
 import {
@@ -590,7 +590,18 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
         {/* = rechts: der INSPECTOR. Fuenf Schritte in der Reihenfolge der Arbeit. */}
         <div
           data-testid="aktion-formular"
-          style={{ width: INSPECTOR_BREITE, flex: '0 0 auto', overflowY: 'auto', minHeight: 0 }}
+          style={{
+            width: INSPECTOR_BREITE,
+            flex: '0 0 auto',
+            // `overflowX: 'hidden'` ist die Sperre gegen den waagerechten Scrollbalken:
+            // Ein einzelnes breites Kind (Schieberegler, langer Dateiname) erzeugte sonst
+            // eine zweite Scrollrichtung, die niemand braucht. Was nicht passt, wird
+            // umgebrochen oder gekuerzt - gescrollt wird hier nur SENKRECHT.
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            minHeight: 0,
+            minWidth: 0,
+          }}
         >
           {entwurf === null ? (
             <p data-testid="aktion-formular-leer" style={{ color: '#9aa4b2' }}>
@@ -615,6 +626,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
               aufBild={(bildRef) => {
                 void waehleBild(bildRef)
               }}
+              neuModus={lage.modus === 'neu'}
             />
           )}
           {lage.modus === 'bestehend' && (
@@ -833,6 +845,7 @@ function Inspector({
   meldung,
   aufAenderung,
   aufBild,
+  neuModus,
 }: {
   projekt: Project
   entwurf: AktionsEntwurf
@@ -843,6 +856,9 @@ function Inspector({
   meldung: string | null
   aufAenderung: <K extends keyof AktionsEntwurf>(feld: K, wert: AktionsEntwurf[K]) => void
   aufBild: (bildRef: string | null) => void
+  /** „neu" heisst: hier wird die Vorlage GEWAEHLT - dann steht die Galerie offen.
+   *  Beim Bearbeiten einer bestehenden Aktion ist sie zu (s. Schritt „Vorlage"). */
+  neuModus: boolean
 }): JSX.Element {
   const assets: Asset[] = projekt.assets
   // 05.11.2026: Der Import ist ein AUFTRAG (TK 9.3.4) - er kann nicht sofort fertig
@@ -866,24 +882,19 @@ function Inspector({
   const gewaehlteVorlage = waehlbare?.find((vorlage) => vorlage.id === entwurf.vorlagenId) ?? null
   const bedarf = feldBedarf(gewaehlteVorlage)
   const markeDesEntwurfs = holeBereiteMarke(entwurf.markeId)
-  // Was der Farbwaehler zeigt: der EIGENE Wert, sonst der Markenwert. `null` heisst:
-  // weder eigener Wert noch bereite Marke - dann gibt es nichts Sinnvolles zu zeigen.
-  const angezeigteFarbe = entwurf.akzentfarbe ?? markeDesEntwurfs?.farben.akzent ?? null
-  // Die Markenpalette: alle 13 Rollen, wie sie die Marke traegt. Kein zweiter
-  // Farbspeicher - die Werte kommen aus der BEREITEN Marke des Entwurfs.
-  // Doppelte Hex-Werte (z. B. Weiß als Text- und Flächenrolle) sind EIN Swatch:
-  // Eine Auswahl soll Farben zeigen, nicht Rollen. 8-stellige Werte (Scrim mit Alpha)
-  // fallen heraus - `Aktion.akzentfarbe` ist laut Vertrag `#RRGGBB`; ein Klick darauf
-  // wuerde erst beim Speichern als `kein_hex` abgelehnt.
-  const markenFarben: Array<[string, string]> =
-    markeDesEntwurfs === null
-      ? []
-      : Object.entries(markeDesEntwurfs.farben)
-          .filter(([, hex]) => istAkzentfarbe(hex))
-          .filter(
-            ([, hex], stelle, alle) =>
-              alle.findIndex(([, vergleich]) => vergleich.toLowerCase() === hex.toLowerCase()) === stelle,
-          )
+  // Die Markenpalette fuer JEDEN Farbwaehler: alle Rollen, wie sie die bereite Marke
+  // traegt (doppelte Hex-Werte als EIN Swatch, 8-stellige Scrim-Werte fallen heraus).
+  // Die Regel steht in `farb-wahl.tsx` - hier wird sie nur EINMAL geholt und an alle
+  // Waehler derselben Sitzung weitergereicht, damit acht Zonen nicht achtmal dasselbe
+  // rechnen.
+  const markenFarben = markenPalette(markeDesEntwurfs?.farben)
+  // Die Kopfzeile der Gruppe sagt, ob es eigene Werte gibt - sonst muesste man
+  // aufklappen, um zu sehen, ob man schon etwas eingestellt hat.
+  const angepassteObjekte = Object.values(entwurf.zonenGestaltung ?? {}).filter(
+    (gestaltung) => Object.keys(gestaltung).length > 0,
+  ).length
+  const gestaltungsZusammenfassung =
+    angepassteObjekte === 0 ? '' : `${String(angepassteObjekte)} Objekt(e) geändert`
 
   /** Eine Farbe in die app-weite Historie heben. Der Entwurf schreibt NICHT mit -
    *  das macht der Aufrufer ueber `aufAenderung`. */
@@ -905,7 +916,16 @@ function Inspector({
         <BefundAnzeige key={stelle} befund={befund} />
       ))}
 
-      <Schritt titel="Vorlage">
+      {/* Die Vorlagen-Galerie ist beim ANLEGEN offen (da wird der Look gewaehlt) und beim
+          BEARBEITEN zu: Mit acht Kacheln ist sie hoeher als der ganze restliche Inspector
+          und schob „Inhalt", „Bild" und „Gestaltung" aus dem Bild (Niklas, 05.11.2026:
+          „die anordnung in der seitenleiste ist scheiße"). Der Name der gewaehlten Vorlage
+          steht in der Kopfzeile - man sieht ohne Aufklappen, womit man arbeitet. */}
+      <Schritt
+        titel="Vorlage"
+        zusammenfassung={gewaehlteVorlage?.name ?? 'unbekannt'}
+        aufgeklappt={neuModus}
+      >
         <div data-testid="aktion-vorlage">
           {waehlbare === null ? null : (
             <VorlagenWahl
@@ -1063,123 +1083,49 @@ function Inspector({
         </Schritt>
       )}
 
-      {bedarf.akzent && (
-        <Schritt titel="Akzentfarbe">
-          <div data-testid="aktion-akzent" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {angezeigteFarbe === null ? (
-              <span data-testid="aktion-akzent-unbekannt">Marke wird geladen …</span>
-            ) : (
-              <input
-                key={angezeigteFarbe}
-                type="color"
-                data-testid="aktion-akzent-farbe"
-                defaultValue={angezeigteFarbe}
-                onBlur={(ereignis) => {
-                  const farbe = ereignis.target.value
-                  if (farbe.toLowerCase() === angezeigteFarbe.toLowerCase()) return
-                  aufAenderung('akzentfarbe', farbe)
-                  merkeFarbe(farbe)
-                }}
-              />
-            )}
-            {entwurf.akzentfarbe !== null && (
-              <button
-                type="button"
-                data-testid="aktion-akzent-marke"
-                onClick={() => {
-                  aufAenderung('akzentfarbe', null)
-                }}
-              >
-                Markenwert
-              </button>
-            )}
-          </div>
-          <p style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}>
-            Färbt die Akzentflächen der Vorlage – zum Beispiel Preis-Pille und Knopf.
-          </p>
-
-          {markenFarben.length > 0 && (
-            <div data-testid="aktion-farben-marke" style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-              {markenFarben.map(([rolle, hex]) => {
-                const gewaehlt = angezeigteFarbe !== null && angezeigteFarbe.toLowerCase() === hex.toLowerCase()
-                return (
-                  <button
-                    key={rolle}
-                    type="button"
-                    data-testid={`aktion-farbe-marke-${rolle}`}
-                    title={`${rolle} ${hex}`}
-                    aria-label={`${rolle} ${hex}`}
-                    onClick={() => {
-                      aufAenderung('akzentfarbe', hex)
-                      merkeFarbe(hex)
-                    }}
-                    style={{
-                      width: 22,
-                      height: 22,
-                      padding: 0,
-                      boxSizing: 'border-box',
-                      borderRadius: 4,
-                      cursor: 'pointer',
-                      background: hex,
-                      border: gewaehlt ? '2px solid #6ea8fe' : '1px solid #444',
-                    }}
-                  />
-                )
-              })}
-            </div>
-          )}
-
-          <div data-testid="aktion-farben-letzte" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ color: '#9aa4b2', fontSize: 11 }}>Zuletzt verwendet</span>
-            {letzteFarben.length === 0 ? (
-              <span style={{ color: '#9aa4b2', fontSize: 11 }}>
-                Noch keine eigene Farbe gewählt – die letzten 20 erscheinen hier.
+      {/* SEIT 05.11.2026 (Nacharbeit): EINE Gruppe „Gestaltung" für ALLES, was Farbe und
+          Schrift angeht. Vorher lagen die Akzentfarbe und die Zonen-Farben in zwei
+          getrennten Schritten - genau die Gruppierung, die Niklas kritisiert hat
+          („was zusammen gehört muss zusammen gruppiert werden"). Ganz oben steht die
+          Vorgabe für ALLE Objekte, darunter jedes Objekt mit seinen eigenen Werten. */}
+      <Schritt titel="Gestaltung" zusammenfassung={gestaltungsZusammenfassung}>
+        {bedarf.akzent && (
+          <div data-testid="aktion-akzent" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <strong style={{ fontSize: 12 }}>Alle Objekte</strong>
+            {markeDesEntwurfs === null ? (
+              <span data-testid="aktion-akzent-unbekannt" style={{ color: '#9aa4b2', fontSize: 11 }}>
+                Marke wird geladen …
               </span>
             ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {letzteFarben.map((hex) => {
-                  const gewaehlt = angezeigteFarbe !== null && angezeigteFarbe.toLowerCase() === hex.toLowerCase()
-                  return (
-                    <button
-                      key={hex}
-                      type="button"
-                      data-testid={`aktion-farbe-letzte-${hex}`}
-                      title={`Zuletzt verwendet: ${hex}`}
-                      aria-label={`Zuletzt verwendet: ${hex}`}
-                      onClick={() => {
-                        aufAenderung('akzentfarbe', hex)
-                        merkeFarbe(hex)
-                      }}
-                      style={{
-                        width: 22,
-                        height: 22,
-                        padding: 0,
-                        boxSizing: 'border-box',
-                        borderRadius: 4,
-                        cursor: 'pointer',
-                        background: hex,
-                        border: gewaehlt ? '2px solid #6ea8fe' : '1px solid #444',
-                      }}
-                    />
-                  )
-                })}
-              </div>
+              <FarbWahl
+                testid="aktion-akzent"
+                beschriftung="Akzent"
+                wert={entwurf.akzentfarbe}
+                markenWert={markeDesEntwurfs.farben.akzent}
+                palette={markenFarben}
+                letzteFarben={letzteFarben}
+                aufWahl={(farbe) => {
+                  aufAenderung('akzentfarbe', farbe)
+                }}
+                aufFarbeMerken={merkeFarbe}
+              />
             )}
+            <p style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}>
+              Färbt die Akzentflächen der Vorlage – zum Beispiel Preis-Pille und Knopf.
+            </p>
           </div>
-        </Schritt>
-      )}
+        )}
 
-      {/* SEIT 05.11.2026 (TK 9.8.8): Farbe, Groesse und Ausrichtung JE ZONE. Der Schritt
-          steht hinter dem Akzent, weil er feiner ist: Der Akzent faerbt die Rollen, die
-          die Vorlage als Akzent vorsieht; hier bekommt EINE Zone ihre eigene Farbe. */}
-      <Schritt titel="Zonen">
         <ZonenGestaltung
           vorlage={gewaehlteVorlage}
           entwurf={entwurf}
           marke={markeDesEntwurfs}
+          palette={markenFarben}
+          letzteFarben={letzteFarben}
           aufAendern={(gestaltung) => {
             aufAenderung('zonenGestaltung', gestaltung)
           }}
+          aufFarbeMerken={merkeFarbe}
         />
       </Schritt>
 
@@ -1207,18 +1153,45 @@ function Inspector({
  *  Reihenfolge ergibt sich aus dem Aufbau (Vorlage -> Inhalt -> Bild -> Farbe -> Dauer). */
 function Schritt({
   titel,
+  zusammenfassung,
+  aufgeklappt = true,
   children,
 }: {
   titel: string
+  /** Steht neben dem Titel, auch wenn der Schritt zugeklappt ist - z. B. der Vorlagenname. */
+  zusammenfassung?: string
+  /** false = zugeklappt STARTEN. Der Nutzer kann jederzeit oeffnen; der Zustand wird
+   *  nicht zurueckgesetzt, weil React den unveraenderten `open`-Wert nicht neu schreibt.
+   *  Gebraucht wird das fuer die Vorlagen-Galerie: Sie ist mit acht Kacheln hoeher als
+   *  der ganze restliche Inspector und schiebt alles andere aus dem Bild. */
+  aufgeklappt?: boolean
   children: JSX.Element | (JSX.Element | null | false)[]
 }): JSX.Element {
+  if (zusammenfassung === undefined) {
+    return (
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+        <h3 style={{ margin: 0, fontSize: 12, color: '#9aa4b2', letterSpacing: 0.4 }}>
+          {titel}
+        </h3>
+        {children}
+      </section>
+    )
+  }
+
   return (
-    <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <h3 style={{ margin: 0, fontSize: 12, color: '#9aa4b2', letterSpacing: 0.4 }}>
+    <details open={aufgeklappt} style={{ minWidth: 0 }}>
+      <summary
+        style={{ fontSize: 12, color: '#9aa4b2', letterSpacing: 0.4, cursor: 'pointer' }}
+      >
         {titel}
-      </h3>
-      {children}
-    </section>
+        {zusammenfassung !== '' && (
+          <span style={{ color: '#e6e6e6', letterSpacing: 0 }}> · {zusammenfassung}</span>
+        )}
+      </summary>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 6, minWidth: 0 }}>
+        {children}
+      </div>
+    </details>
   )
 }
 

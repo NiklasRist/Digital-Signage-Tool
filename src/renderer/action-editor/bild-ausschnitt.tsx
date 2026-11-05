@@ -51,6 +51,12 @@ export function BildAusschnittRegler({
   return (
     <div data-testid="aktion-ausschnitt" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <span style={{ fontSize: 12, fontWeight: 600 }}>Bildausschnitt</span>
+      {/* Der Satz stand hier, weil die Regler zuerst AUCH das Logo bewegten (Niklas,
+          05.11.2026). Seit der Korrektur gilt der Ausschnitt nur noch fuer das Motiv der
+          Aktion - der Satz sagt das, damit niemand es fuer einen Fehler haelt. */}
+      <span style={{ fontSize: 11, color: '#9aa4b2' }}>
+        Gilt nur für das Bild der Aktion – das Logo bleibt unverändert.
+      </span>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
         Zoom
@@ -62,6 +68,7 @@ export function BildAusschnittRegler({
           max={GESTALTUNG_GRENZEN.zoom.max}
           step={5}
           value={zoom}
+          style={{ flex: '1 1 auto', minWidth: 0 }}
           onChange={(ereignis) => {
             setze('zoom', Number(ereignis.target.value))
           }}
@@ -79,6 +86,7 @@ export function BildAusschnittRegler({
           max={GESTALTUNG_GRENZEN.versatz.max}
           step={5}
           value={versatzX}
+          style={{ flex: '1 1 auto', minWidth: 0 }}
           onChange={(ereignis) => {
             setze('versatzX', Number(ereignis.target.value))
           }}
@@ -96,6 +104,7 @@ export function BildAusschnittRegler({
           max={GESTALTUNG_GRENZEN.versatz.max}
           step={5}
           value={versatzY}
+          style={{ flex: '1 1 auto', minWidth: 0 }}
           onChange={(ereignis) => {
             setze('versatzY', Number(ereignis.target.value))
           }}

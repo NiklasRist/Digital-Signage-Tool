@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.48 (9.8.8: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks; 05.11.2026. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.49 (9.8.8: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1767,6 +1767,41 @@ kein Sonderfall im Zeichenweg. Die IDs sind gespeicherter Bestand; fehlende eing
 der Ladevorgang **hinten** an, bestehende Einträge bleiben unangetastet (9.11.1.1). Nach einer
 `.bak`-Rettung wird dabei **nicht** geschrieben: die defekte Datei bleibt liegen, bis der nächste
 reguläre Schreibvorgang sie ersetzt (9.12.1).
+
+#### 9.8.9 Nacharbeit: Objekte, ein Farbwähler, kein Querscrollen (05.11.2026)
+
+Auslöser (Niklas, 05.11.2026): *„die anordnung in der seitenleiste ist scheiße … was zusammen gehört
+muss zusammen gruppiert werden"*, *„warum kann man nach links und rechts scrollen?"*, *„die
+farbauswahl so gestalten, dass sie objektunabhängig ist, aber objekte an sich haben die unabhängige
+farbauswahl"* und *„die bildausschnitt regler können komische effekte auf das logo haben"*.
+
+**Gruppierung.** Der Inspector hat **fünf** Gruppen statt sechs Schritten. Die frühere Trennung
+„Akzentfarbe" (global) und „Zonen" (je Objekt) ist **aufgelöst**: Beides steht in **einer** Gruppe
+**„Gestaltung"** — zuerst die Vorgabe für **alle Objekte**, darunter **jedes Objekt** mit allem, was
+zu ihm gehört (Schriftfarbe, Flächenfarbe, Größe, Ausrichtung). Die Kopfzeile nennt, wie viele
+Objekte eigene Werte tragen („2 Objekt(e) geändert").
+
+**Die Vorlagen-Galerie** ist eine zugeklappte Gruppe mit dem Namen der aktuellen Vorlage in der
+Kopfzeile. Sie ist **offen, solange eine Aktion angelegt wird** (dort wird der Look gewählt) und
+**zu, sobald eine bestehende Aktion bearbeitet wird** — mit acht Kacheln war sie höher als der
+gesamte restliche Inspector und schob „Inhalt", „Bild" und „Gestaltung" aus dem Bild.
+
+**EIN Farbwähler (`action-editor/farb-wahl.tsx`).** Das **Bedienelement** ist objektunabhängig:
+Farbfeld, Markenpalette (doppelte Hex-Werte als EIN Swatch, 8-stellige Scrim-Werte fallen heraus)
+und „Zuletzt verwendet" (20) sind **überall derselbe** Baustein — für die Akzentfarbe und für jede
+Zonenfarbe. Der **Wert** gehört dem Objekt: Akzent und Zone schreiben in verschiedene Felder und
+beeinflussen einander nicht. Die Palette liegt in einem zugeklappten `<details>`; die Elemente sind
+auch zugeklappt im DOM (messbar, ohne Zustand). „Markenwert" entfernt die eigene Angabe ganz —
+„keine eigene Wahl" ist kein gespeicherter Wert.
+
+**Der Bildausschnitt trifft NUR das Motiv der Aktion.** Bindend: `zone.bindung === 'bild'`. Bis zur
+Nacharbeit lief der Zoom über **jede** Bildzone — also auch über das **Logo**, das damit beschnitten
+und verschoben werden konnte. Das ist ein Markenfehler, kein Gestaltungswunsch: Ein Logo ist eine
+Konstante (dieselbe Begründung wie beim Ersatz-Logo, 9.10.10).
+
+**Kein waagerechtes Scrollen.** Die Inspector-Fläche trägt `overflowX: 'hidden'`; Schieberegler und
+Flex-Kinder tragen `minWidth: 0`, damit sie schrumpfen statt die Fläche zu sprengen. Der Treiber
+`4g7` misst den Überlauf (`formularQuer`) und meldet jeden Wert über 1 px als Befund — gemessen: **0**.
 
 ---
 

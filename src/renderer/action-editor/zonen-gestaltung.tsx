@@ -1,43 +1,42 @@
-// [action-editor] Farbe, Groesse und Ausrichtung je Zone (05.11.2026, TK 9.8.8)
+// [action-editor] ALLES zu EINEM Objekt an einer Stelle (05.11.2026, Nacharbeit)
 //
-// WARUM ES DIESE DATEI GIBT: Bis hierher liess sich an einer Aktion genau EINE Farbe
-// einstellen (`akzentfarbe`), und sie wirkte nur dort, wo die VORLAGE eine Akzent-Rolle
-// benutzt - in „Ganzflächig" also auf der Preis-Pille. Niklas, 05.11.2026: „man hat
-// momentan einfach keine kontrolle". Diese Datei gibt die Kontrolle ueber die Zonen
-// zurueck, die die Vorlage tatsaechlich zeichnet.
+// WARUM ES DIESE DATEI GIBT: Bis hierher lagen die Farben einer Zone im Schritt „Zonen",
+// die globale Akzentfarbe in einem eigenen Schritt „Akzentfarbe" — und Niklas' Kritik war
+// genau das: „was zusammen gehört muss zusammen gruppiert werden". Seit dieser Fassung hat
+// jede Zone EINEN Block mit ALLEM, was zu ihr gehoert: Schriftfarbe, Flächenfarbe, Größe,
+// Ausrichtung. Die Akzentfarbe der Aktion steht als erster Block derselben Gruppe darüber
+// („Alle Objekte") — sie ist die Vorgabe, die jede Zone einzeln überschreiben kann.
 //
-// DIE QUELLE IST DIE VORLAGE, NICHT EINE LISTE HIER: Angezeigt wird je Zone, was die
-// Zone selbst traegt - eine Textfarbe nur bei `zone.text`, eine Flaechenfarbe nur bei
-// `zone.deko.füllungFarbRolle`. Ein Verlauf (`deko.verlauf`) bekommt bewusst keinen
-// Regler: zwei Stopps mit einer Farbe zu bedienen hiesse, den anderen zu raten.
-// Dieselbe Regel wertet `template-canvas/farben.ts` aus - Anzeige und Wirkung koennen
-// deshalb nicht auseinanderlaufen.
+// DIE QUELLE IST DIE VORLAGE, NICHT EINE LISTE HIER: Angezeigt wird je Zone, was die Zone
+// selbst trägt - eine Schriftfarbe nur bei `zone.text`, eine Flächenfarbe nur bei
+// `zone.deko.füllungFarbRolle`. Ein Verlauf (`deko.verlauf`) bekommt bewusst keinen Regler:
+// zwei Stopps mit einer Farbe zu bedienen hiesse, den anderen zu raten. Dieselbe Regel
+// wertet `template-canvas/farben.ts` aus - Anzeige und Wirkung können nicht auseinanderlaufen.
 //
-// WAS HIER NICHT PASSIERT: kein IPC, kein Speichern, kein eigener Zustand fuer den
-// Entwurf. Jede Aenderung geht ueber `aufAendern` in den Entwurf der Wurzel; geschrieben
-// wird beim Abschluss (ein Undo-Schritt je Vorgang, TK 9.13.1).
+// DER WAHLER IST OBJEKTUNABHAENGIG (`farb-wahl.tsx`): ein Bedienelement für jede Farbe,
+// der WERT bleibt beim Objekt. Kein Zustand hier außer dem Entwurf, den der Aufrufer hält.
+
+import type { JSX } from 'react'
 
 import type { Vorlage, Zone } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
 import type { AktionsInhalt, ZonenGestaltung } from '../../shared/contracts/aktion'
-import type { JSX } from 'react'
-import { GESTALTUNG_GRENZEN, istHexFarbe } from '../../shared/gestaltung'
+import { GESTALTUNG_GRENZEN } from '../../shared/gestaltung'
 import { zonenText } from '../gemeinsam/zonen-texte'
 
+import { FarbWahl, type PalettenFarbe } from './farb-wahl'
+
 /** Die Farbe, die ohne eigene Wahl gilt: die Rollen-Farbe der bereiten Marke. */
-function markenFarbe(marke: Marke | null, rolle: string | undefined): string {
-  if (marke === null || rolle === undefined) return '#000000'
+function markenFarbe(marke: Marke | null, rolle: string | undefined): string | null {
+  if (marke === null || rolle === undefined) return null
   // SAFETY: `rolle` kommt aus der Vorlage und ist laut Vertrag eine `FarbRolle`; ein
-  // handeditierter Wert trifft die Marke nicht und faellt auf Schwarz zurueck - die
-  // Vorschau zeigt dann den Wert, der ohne eigene Wahl auch gezeichnet wuerde.
+  // handeditierter Wert trifft die Marke nicht und liefert `undefined` - dann zeigt der
+  // Waehler „kein Markenwert", statt eine erfundene Farbe zu behaupten.
   const wert = (marke.farben as Record<string, string>)[rolle]
-  return typeof wert === 'string' && istHexFarbe(wert) ? wert : '#000000'
+  return typeof wert === 'string' ? wert : null
 }
 
-/**
- * Hat diese Zone etwas, das man einstellen kann?
- * `grund` sagt, WOZU der Regler gehoert - die Beschriftung im Formular.
- */
+/** Kann an dieser Zone etwas eingestellt werden - und wenn ja, was? */
 function einstellbar(zone: Zone): { text: boolean; flaeche: boolean } {
   return {
     text: zone.text !== undefined,
@@ -49,13 +48,19 @@ export function ZonenGestaltung({
   vorlage,
   entwurf,
   marke,
+  palette,
+  letzteFarben,
   aufAendern,
+  aufFarbeMerken,
 }: {
   vorlage: Vorlage | null
   entwurf: AktionsInhalt
   marke: Marke | null
+  palette: readonly PalettenFarbe[]
+  letzteFarben: readonly string[]
   /** Setzt den GANZEN Record - der Entwurf ist die einzige Wahrheit (s. Modulkopf). */
   aufAendern: (gestaltung: Record<string, ZonenGestaltung>) => void
+  aufFarbeMerken: (farbe: string) => void
 }): JSX.Element {
   const gestaltung = entwurf.zonenGestaltung ?? {}
 
@@ -76,7 +81,7 @@ export function ZonenGestaltung({
   if (vorlage === null) {
     return (
       <p style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}>
-        Zonen erscheinen, sobald die Vorlage geladen ist.
+        Objekte erscheinen, sobald die Vorlage geladen ist.
       </p>
     )
   }
@@ -95,27 +100,33 @@ export function ZonenGestaltung({
   }
 
   return (
-    <div data-testid="aktion-zonen" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div data-testid="aktion-zonen" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {zonen.map((zone) => {
         const kann = einstellbar(zone)
         const name = zonenText(zone.id).name
         const eigen = gestaltung[zone.id] ?? {}
-        const eigeneTextfarbe = typeof eigen.textfarbe === 'string' ? eigen.textfarbe : null
+        const eigeneSchrift = typeof eigen.textfarbe === 'string' ? eigen.textfarbe : null
         const eigeneFlaeche = typeof eigen.flaechefarbe === 'string' ? eigen.flaechefarbe : null
         const groesse = eigen.groesseProzent ?? 100
         const ausrichtung = eigen.ausrichtung ?? zone.ausrichtung.horizontal
-        const hatEigeneWahl =
-          Object.keys(eigen).length > 0
+        const hatEigeneWahl = Object.keys(eigen).length > 0
 
         return (
-          <div key={zone.id} data-testid={`aktion-zone-${zone.id}`} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <strong style={{ fontSize: 12 }}>{name}</strong>
+          <div
+            key={zone.id}
+            data-testid={`aktion-zone-${zone.id}`}
+            style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+              <strong style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {name}
+              </strong>
               <span style={{ flex: '1 1 auto' }} />
               {hatEigeneWahl && (
                 <button
                   type="button"
                   data-testid={`aktion-zone-${zone.id}-zuruecksetzen`}
+                  style={{ flex: '0 0 auto' }}
                   onClick={() => {
                     const naechster = { ...gestaltung }
                     delete naechster[zone.id]
@@ -128,70 +139,47 @@ export function ZonenGestaltung({
             </div>
 
             {kann.text && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-                Schrift
-                <input
-                  key={`textfarbe-${eigeneTextfarbe ?? markenFarbe(marke, zone.text?.farbRolle)}`}
-                  type="color"
-                  data-testid={`aktion-zone-${zone.id}-textfarbe`}
-                  aria-label={`Schriftfarbe ${name}`}
-                  defaultValue={eigeneTextfarbe ?? markenFarbe(marke, zone.text?.farbRolle)}
-                  // Bewusst `onBlur` und nicht `onChange`: Ein Farbwaehler feuert beim
-                  // Ziehen viele Aenderungen, und jede zeichnet die 1920x1080-Vorschau
-                  // neu. Dieselbe Ueberlegung wie beim Akzentfeld (03.11.2026).
-                  onBlur={(ereignis) => {
-                    const farbe = ereignis.target.value
-                    const markeWert = markenFarbe(marke, zone.text?.farbRolle)
-                    setze(zone.id, 'textfarbe', farbe.toLowerCase() === markeWert.toLowerCase() ? null : farbe)
-                  }}
-                />
-                {eigeneTextfarbe !== null && (
-                  <button
-                    type="button"
-                    data-testid={`aktion-zone-${zone.id}-textfarbe-marke`}
-                    onClick={() => {
-                      setze(zone.id, 'textfarbe', null)
-                    }}
-                  >
-                    Markenwert
-                  </button>
-                )}
-              </label>
+              <FarbWahl
+                testid={`aktion-zone-${zone.id}-schrift`}
+                beschriftung="Schrift"
+                wert={eigeneSchrift}
+                markenWert={markenFarbe(marke, zone.text?.farbRolle)}
+                palette={palette}
+                letzteFarben={letzteFarben}
+                aufWahl={(farbe) => {
+                  setze(zone.id, 'textfarbe', farbe)
+                }}
+                aufFarbeMerken={aufFarbeMerken}
+              />
             )}
 
             {kann.flaeche && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-                Fläche
-                <input
-                  key={`flaeche-${eigeneFlaeche ?? markenFarbe(marke, zone.deko?.füllungFarbRolle)}`}
-                  type="color"
-                  data-testid={`aktion-zone-${zone.id}-flaeche`}
-                  aria-label={`Flächenfarbe ${name}`}
-                  defaultValue={eigeneFlaeche ?? markenFarbe(marke, zone.deko?.füllungFarbRolle)}
-                  onBlur={(ereignis) => {
-                    const farbe = ereignis.target.value
-                    const markeWert = markenFarbe(marke, zone.deko?.füllungFarbRolle)
-                    setze(zone.id, 'flaechefarbe', farbe.toLowerCase() === markeWert.toLowerCase() ? null : farbe)
-                  }}
-                />
-                {eigeneFlaeche !== null && (
-                  <button
-                    type="button"
-                    data-testid={`aktion-zone-${zone.id}-flaeche-marke`}
-                    onClick={() => {
-                      setze(zone.id, 'flaechefarbe', null)
-                    }}
-                  >
-                    Markenwert
-                  </button>
-                )}
-              </label>
+              <FarbWahl
+                testid={`aktion-zone-${zone.id}-flaeche`}
+                beschriftung="Fläche"
+                wert={eigeneFlaeche}
+                markenWert={markenFarbe(marke, zone.deko?.füllungFarbRolle)}
+                palette={palette}
+                letzteFarben={letzteFarben}
+                aufWahl={(farbe) => {
+                  setze(zone.id, 'flaechefarbe', farbe)
+                }}
+                aufFarbeMerken={aufFarbeMerken}
+              />
             )}
 
             {kann.text && (
               <>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-                  Größe
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 11,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={{ flex: '0 0 auto' }}>Größe</span>
                   <input
                     type="range"
                     data-testid={`aktion-zone-${zone.id}-groesse`}
@@ -200,28 +188,34 @@ export function ZonenGestaltung({
                     max={GESTALTUNG_GRENZEN.groesseProzent.max}
                     step={5}
                     value={groesse}
+                    // `minWidth: 0` ist der Grund, warum die Leiste NICHT waagerecht
+                    // scrollt: Ein Flex-Kind schrumpft sonst nur bis zu seiner
+                    // Inhaltsbreite, und die ist beim Schieberegler 129 px.
+                    style={{ flex: '1 1 auto', minWidth: 0 }}
                     onChange={(ereignis) => {
                       const wert = Number(ereignis.target.value)
                       setze(zone.id, 'groesseProzent', wert === 100 ? null : wert)
                     }}
                   />
-                  <span style={{ color: '#9aa4b2' }}>{`${String(groesse)} %`}</span>
+                  <span style={{ flex: '0 0 auto', color: '#9aa4b2' }}>{`${String(groesse)} %`}</span>
                 </label>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
-                  <span>Ausrichtung</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, minWidth: 0 }}>
+                  <span style={{ flex: '0 0 auto' }}>Ausrichtung</span>
                   {(['links', 'mitte', 'rechts'] as const).map((wert) => (
                     <button
                       key={wert}
                       type="button"
                       data-testid={`aktion-zone-${zone.id}-ausrichtung-${wert}`}
                       aria-pressed={ausrichtung === wert}
-                      onClick={() => {
-                        setze(zone.id, 'ausrichtung', wert === zone.ausrichtung.horizontal ? null : wert)
-                      }}
                       style={{
+                        flex: '1 1 0',
+                        minWidth: 0,
                         fontWeight: ausrichtung === wert ? 700 : 400,
                         border: ausrichtung === wert ? '2px solid #6ea8fe' : '1px solid #444',
+                      }}
+                      onClick={() => {
+                        setze(zone.id, 'ausrichtung', wert === zone.ausrichtung.horizontal ? null : wert)
                       }}
                     >
                       {wert === 'links' ? 'Links' : wert === 'mitte' ? 'Mitte' : 'Rechts'}

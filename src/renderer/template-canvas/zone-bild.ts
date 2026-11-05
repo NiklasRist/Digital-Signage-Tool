@@ -95,13 +95,18 @@ export function zeichneBildZone(
     const rb = zone.rahmen.breite
     const rh = zone.rahmen.höhe
 
-    // SEIT 05.11.2026: Zoom und Position (TK 9.8.8). Ohne eigene Einstellung ist
-    // `zoom === 1` und der Versatz 0 - dann laufen die beiden Wege unten UNVERAENDERT,
-    // und das Bild ist Pixel fuer Pixel dasselbe wie vor dieser Fassung.
+    // SEIT 05.11.2026: Zoom und Position (TK 9.8.8) - NUR fuer das BILD DER AKTION.
+    //
+    // WARUM DIE BINDUNG GEPRUEFT WIRD (Niklas, 05.11.2026: „die bildausschnitt regler
+    // können komische effekte auf das logo haben"): Der Zoom gilt dem Motiv, das die
+    // Aktion mitbringt. Er darf NICHT das Logo treffen - das ist ein Markenzeichen und
+    // sitzt in seiner eigenen Zone. Ein beschnittenes oder verschobenes Logo ist ein
+    // Markenfehler, kein Gestaltungswunsch.
     const zoom = zoomFaktor(aktion.bildAusschnitt?.zoom)
     const versatzX = versatzProzent(aktion.bildAusschnitt?.versatzX)
     const versatzY = versatzProzent(aktion.bildAusschnitt?.versatzY)
-    const eigenerAusschnitt = zoom !== 1 || versatzX !== 0 || versatzY !== 0
+    const eigenerAusschnitt =
+      zone.bindung === 'bild' && (zoom !== 1 || versatzX !== 0 || versatzY !== 0)
 
     if (eigenerAusschnitt) {
       zeichneMitAusschnitt(einpassung, zoom, versatzX, versatzY)
