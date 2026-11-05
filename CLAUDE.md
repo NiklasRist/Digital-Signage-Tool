@@ -39,7 +39,7 @@
 - **GEGENPROBEN:** 4, jede rot und **byte-identisch** zurückgenommen (SHA-256 vorher = nachher).
 - **FENSTER-BELEG (`4g7`):** `{"zonenAnzahl":5,"textfarben":4,"flaechen":5,"groessenRegler":4,
   "zoomTyp":"range","vorlagenKacheln":8}`.
-- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5572/5572** (366),
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5573/5573** (366),
   Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
   Export-Dialog).
 - **Doku:** TK **v3.48** (9.8.2/9.8.8/9.10.9/9.11.1), `.docx` im selben Commit neu erzeugt

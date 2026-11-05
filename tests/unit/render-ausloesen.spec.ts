@@ -402,6 +402,31 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
 
 })
 
+describe('loeseRenderAus - Zonen-Gestaltung und Bildausschnitt (05.11.2026, TK 9.8.8)', () => {
+  it('die Gestaltung der Aktion erreicht zeichneSegment UNVERAENDERT - der Render sieht sie', () => {
+    // Die Gegenprobe zum haeufigsten Fehler dieses Projekts: „fertige Funktion ohne
+    // Aufrufer". Der Bildschirm kann noch so viele Regler haben - wenn der Render-Weg die
+    // Felder nicht mitnimmt, zeigt das fertige Video die Vorlage.
+    const gestaltung = { preis: { flaechefarbe: '#00FF00' } }
+    const ausschnitt = { zoom: 150, versatzX: 10, versatzY: 0 }
+    return loeseRenderAus(
+      projekt([segment('e1', 'a-1', 10)], [{ ...AKTION_OK, zonenGestaltung: gestaltung, bildAusschnitt: ausschnitt }], []),
+      'sommer',
+      marke(),
+      VORLAGEN_OK,
+      null,
+    ).then((antwort) => {
+      expect(antwort.ok).toBe(true)
+      const calls = vi.mocked(zeichneSegment).mock.calls
+      expect(calls).toHaveLength(1)
+      expect(calls[0]?.[0]).toMatchObject({
+        zonenGestaltung: gestaltung,
+        bildAusschnitt: ausschnitt,
+      })
+    })
+  })
+})
+
 describe('loeseExportAus (#134)', () => {
   it('reichtig e über queue:reiheEin, payload mit projektId/dateiname/zielPfad; kein Dialog', async () => {
     const antwort = await loeseExportAus('p-1', 'sommer.mp4', 'E:\\Stick')

@@ -1745,6 +1745,11 @@ Flächen-Überschreibung müsste in `zone-deko.ts` ein zweites Mal geschrieben w
 größer als die Zone und dann **auf die Zone beschnitten** – sonst liefe das Bild bei „Zwei Spalten"
 in die Textspalte. Der Rahmen wandert dabei **nicht**: Bewegt wird der Inhalt, nie das Layout.
 
+**Der Render sieht dieselben Werte.** Der Auslöse-Weg (`composer/render-ausloesen.ts`) reicht die
+**gespeicherte Aktion als Ganzes** an `zeichneSegment` — es gibt keine zweite Stapelstelle, an der ein
+neues Feld vergessen werden könnte. Ein Unit-Test hält genau das fest („die Gestaltung der Aktion
+erreicht zeichneSegment UNVERAENDERT"); ohne ihn wäre ein Regler denkbar, der nur die Vorschau bewegt.
+
 **Grenzen und Rückfall.** Die Zahlen stehen EINMAL in `shared/gestaltung.ts` (`GESTALTUNG_GRENZEN`),
 weil Main, Editor und Zeichenweg sie kennen müssen. Ein unbrauchbarer Teil wird **verworfen**, nicht
 ersetzt – dieselbe Haltung wie bei `brauchbareDauer`: Eine kaputte Größe darf nicht auch noch eine

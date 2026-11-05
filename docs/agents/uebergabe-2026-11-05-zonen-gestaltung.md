@@ -107,7 +107,7 @@ da; auf die Platte kommen sie mit dem nächsten regulären Schreibvorgang.
 - **Tests:** neu `tests/unit/gestaltung.spec.ts` (20 Fälle); dazu Fälle in `farben`, `zone-text`,
   `zone-bild`, `aktions-entwurf`, `aktion-bearbeiten`, `erstelle-aktion`, `bearbeite-aktion`,
   `eingebaute-vorlagen`, `action-editor-neue-aktion`. **+61 Tests** gegenüber der Vorsitzung.
-- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5572/5572** (366 Dateien),
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5573/5573** (366 Dateien),
   Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
   Export-Dialog).
 
