@@ -11,7 +11,34 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (04.11.2026, neunundvierzigste Sitzung: der Aktions-Editor ist umgebaut — ein Speichermodell, Bildstreifen, „Fertig & ins Video")
+## STAND HEUTE (05.11.2026, fünfzigste Sitzung: der Bild-Import kommt im offenen Aktions-Editor an)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-05-bild-import.md`](docs/agents/uebergabe-2026-11-05-bild-import.md).**
+
+- **BEFUND (Niklas, 05.11.2026: „bilder gehen bei aktionen nicht"):** Auswahl, Vorschau und
+  Speichern eines Bildes waren heil (an der gebauten App gemessen). Der Fehler lag davor:
+  **„Bild importieren" im offenen Editor** ließ die Bildliste stehen — `project.json` hatte nach
+  dem Import 5 Assets, die Liste weiter 4 Einträge. Ursache: Der Aktions-Editor abonnierte
+  `projekt.aufGeaendert` **nicht** (der Vorlagen-Editor tut es).
+- **BEHOBEN:** Projekt-Abo in `action-editor/index.tsx` (Zähler → Neu-Rendern; gelesen wird
+  ohnehin frisch aus `hole()`) und eine **sichtbare Import-Rückmeldung** am Bild-Schritt
+  („1 Bild wird importiert … erscheint gleich", „Kein Bild gewählt", Fehler; Knopf gesperrt).
+- **FENSTER-BELEG:** vorher `Liste 4 | Assets 5`; nachher `Liste 5 (probe-neu.jpeg) | Assets 5`.
+  Mit einer Kopie des Projekts gemessen, `config.json` zurückgesetzt, Kopie gelöscht.
+- **Tests:** drei neue Fälle in `action-editor-neue-aktion.spec.ts`; der Projektzugang im Test
+  ist jetzt ein kleiner Speicher mit `aufGeaendert`. **Zwei Gegenproben**, jede rot und
+  byte-identisch zurückgenommen (Prüfsumme `95bcfec4…`).
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5495/5495** (364),
+  Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl;
+  1 MANUELL: Export-Dialog).
+- **NÄCHSTER PUNKT (Niklas, 05.11.2026, noch NICHT gebaut):** *„der aktionseditor ist nicht
+  selbsterklärend genug und man versteht das potential von dem was man machen könnte nicht. es
+  sieht einfach aus wie eine langweilige powerpoint folie"*. Das ist ein Gestaltungsauftrag —
+  was der Editor zeigen muss, ist **nicht entschieden**; als Nächstes eine Skizze/Frage, kein Bau.
+- **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen.
+  **Push nur auf Anweisung.**
+
+## STAND HEUTE (04.11.2026, neunundvierzigste Sitzung: der Aktions-Editor ist umgebaut — ein Speichermodell, Bildstreifen, „Fertig & ins Video") – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-04-aktionseditor.md`](docs/agents/uebergabe-2026-11-04-aktionseditor.md).**
 

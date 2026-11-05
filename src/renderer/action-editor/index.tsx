@@ -171,6 +171,18 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
     })()
   }, [p, p.projekt])
 
+  // 05.11.2026: Der Editor folgt dem PROJEKTBESTAND - wie der Vorlagen-Editor
+  // (`vorlagen-editor/index.tsx`). Ohne dieses Abo blieb die Bildliste nach einem
+  // Import stehen: am Fenster gemessen 4 -> 5 Assets in `project.json`, aber weiter
+  // 4 Eintraege im offenen Editor. „Bild importieren" sah damit aus, als taete es
+  // nichts. Der Zaehler erzwingt das Neu-Rendern; gelesen wird der Stand ohnehin
+  // bei jedem Rendern frisch aus `p.projekt.hole()`.
+  useEffect(() => {
+    return p.projekt.aufGeaendert(() => {
+      setzeTakt((takt) => takt + 1)
+    })
+  }, [p.projekt])
+
   // Das Neuladen der Vorlagen-Auswahl (ENTSCHIEDEN 10): je Aenderung der Sicht.
   useEffect(() => {
     void ladeWaehlbareVorlagen().then((antwort) => {
@@ -798,6 +810,12 @@ function Inspector({
   aufBild: (bildRef: string | null) => void
 }): JSX.Element {
   const assets: Asset[] = projekt.assets
+  // 05.11.2026: Der Import ist ein AUFTRAG (TK 9.3.4) - er kann nicht sofort fertig
+  // sein. Ohne sichtbare Meldung sah der Klick aus, als taete er nichts. Der Hinweis
+  // steht bis zur naechsten Aktion; die Liste aktualisiert sich ueber das Projekt-Abo
+  // der Wurzel, sobald der Auftrag durchgelaufen ist.
+  const [importHinweis, setzeImportHinweis] = useState<string | null>(null)
+  const [importLaeuft, setzeImportLaeuft] = useState(false)
   // Welche Felder die GEWAEHLTE Vorlage ueberhaupt benutzt (03.11.2026): Bei
   // „Band-Standard" gibt es bewusst keine Beschreibungs-Zone (TK 9.11.1).
   const gewaehlteVorlage = waehlbare?.find((vorlage) => vorlage.id === entwurf.vorlagenId) ?? null
@@ -898,21 +916,41 @@ function Inspector({
             <button
               type="button"
               data-testid="aktion-bild-import"
+              disabled={importLaeuft}
               onClick={() => {
                 void (async () => {
+                  setzeImportHinweis(null)
+                  setzeImportLaeuft(true)
                   const antwort = await starteBildImport(projekt.id)
-                  if (antwort.ok && antwort.wert.auftragIds.length > 0) {
-                    console.info(
-                      antwort.wert.abbruchGrund === null
-                        ? `${String(antwort.wert.auftragIds.length)} Import(e) gestartet.`
-                        : `${String(antwort.wert.auftragIds.length)} gestartet; abgebrochen wegen ${antwort.wert.abbruchGrund}.`,
-                    )
+                  setzeImportLaeuft(false)
+                  if (!antwort.ok) {
+                    setzeImportHinweis(`Import nicht gestartet: ${antwort.fehler.meldung}`)
+                    return
                   }
+                  const anzahl = antwort.wert.auftragIds.length
+                  if (anzahl === 0) {
+                    setzeImportHinweis('Kein Bild gewählt - es wurde nichts importiert.')
+                    return
+                  }
+                  const abbruch = antwort.wert.abbruchGrund
+                  setzeImportHinweis(
+                    `${String(anzahl)} ${anzahl === 1 ? 'Bild wird' : 'Bilder werden'} importiert` +
+                      `${abbruch === null ? '' : `; abgebrochen wegen ${abbruch}`} – ` +
+                      'erscheint gleich in dieser Liste.',
+                  )
                 })()
               }}
             >
-              Bild importieren
+              {importLaeuft ? 'Import läuft …' : 'Bild importieren'}
             </button>
+            {importHinweis !== null && (
+              <p
+                data-testid="aktion-bild-hinweis"
+                style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}
+              >
+                {importHinweis}
+              </p>
+            )}
           </div>
         </Schritt>
       )}

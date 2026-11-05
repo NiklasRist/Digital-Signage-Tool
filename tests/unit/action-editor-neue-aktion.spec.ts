@@ -50,6 +50,18 @@ vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
   },
 }))
 
+// 05.11.2026: Der Bild-Import ist ein AUFTRAG - die Rückmeldung ist der Beleg, dass
+// der Knopf etwas tut. Nur `starteBildImport` wird ersetzt; Prüfung und Filter der
+// Bildwahl bleiben die echten Funktionen.
+const importDoppel = vi.hoisted(() => ({
+  antwort: { ok: true, wert: { auftragIds: [] as string[], abbruchGrund: null } } as unknown,
+}))
+
+vi.mock('../../src/renderer/action-editor/bild-zuweisen', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/renderer/action-editor/bild-zuweisen')>()),
+  starteBildImport: async () => importDoppel.antwort,
+}))
+
 import { ActionEditorWurzel } from '../../src/renderer/action-editor/index.tsx'
 import { ladeWaehlbareVorlagen } from '../../src/renderer/action-editor/vorlage-waehlen'
 import { bereiteMotivVorFuer, zeichneVorschau } from '../../src/renderer/action-editor/live-vorschau'
@@ -73,6 +85,7 @@ function montiere(element: JSX.Element): HTMLDivElement {
 beforeEach(() => {
   doppel.aufrufe.length = 0
   doppel.antwort = { ok: true, wert: null }
+  importDoppel.antwort = { ok: true, wert: { auftragIds: [], abbruchGrund: null } }
   // Der Vorlagen-Speicher ist Sitzungsspeicher - jede Pruefung startet ohne ihn.
   merkeLetzteVorlage(null)
   vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [] })
@@ -122,19 +135,35 @@ function editor(
   hervorgehoben: string | null = null,
   /** 03.11.2026 (Entscheidung 29.4): Einstieg „+ Neue Aktion" aus dem Composer. */
   starteNeu = false,
-): { behaelter: HTMLDivElement; setzeProjekt: ReturnType<typeof vi.fn> } {
+): {
+  behaelter: HTMLDivElement
+  setzeProjekt: ReturnType<typeof vi.fn>
+  /** 05.11.2026: Meldet einen BESTANDSWECHSEL von aussen - der Weg, den ein
+   *  abgeschlossener Bild-Import geht. */
+  meldeProjektAenderung: (neu: Project) => void
+} {
   const setzeProjekt = vi.fn()
+  // Der Zugang ist ein kleiner Speicher: `hole()` liest den AKTUELLEN Stand, und
+  // `aufGeaendert` haelt die Hoerer. So laesst sich ein Import nachstellen, ohne
+  // einen echten Kanal zu bemuehen.
+  let aktuell = p
+  const hoerer = new Set<() => void>()
   const behaelter = montiere(
     createElement(ActionEditorWurzel, {
       sichtbar: true,
       projekt: {
-        hole: () => ({ projekt: p, ladefehler: null }),
+        hole: () => ({ projekt: aktuell, ladefehler: null }),
         setzeProjekt,
         lade: vi.fn(),
         setzeListe: vi.fn(),
         gleicheElementAb: vi.fn(),
         leere: vi.fn(),
-        aufGeaendert: vi.fn(() => () => {}),
+        aufGeaendert: (hoererNeu: () => void) => {
+          hoerer.add(hoererNeu)
+          return () => {
+            hoerer.delete(hoererNeu)
+          }
+        },
       },
       zeichnen: {
         bereiteVor: vi.fn(),
@@ -151,7 +180,14 @@ function editor(
       starteNeu,
     } as unknown as Parameters<typeof ActionEditorWurzel>[0]),
   )
-  return { behaelter, setzeProjekt }
+  return {
+    behaelter,
+    setzeProjekt,
+    meldeProjektAenderung: (neu) => {
+      aktuell = neu
+      for (const eintrag of hoerer) eintrag()
+    },
+  }
 }
 
 async function klicke(behaelter: HTMLDivElement, testid: string): Promise<void> {
@@ -560,5 +596,73 @@ describe('Felder richten sich nach der Vorlage', () => {
     expect(feld?.value.toLowerCase()).toBe('#ff4040')
     // Das alte Schein-Select ist weg.
     expect(behaelter.querySelector('[data-testid="aktion-akzent-vorschlag"]')).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 05.11.2026: Der Editor folgt dem Projektbestand - ein Import kommt an
+// ---------------------------------------------------------------------------
+// Befund am Fenster: `project.json` hatte nach dem Import 5 Assets, die offene
+// Bildliste weiter 4 Eintraege. Ursache: Der Editor abonnierte `projekt.aufGeaendert`
+// nicht. Diese Pruefung ist der Waechter gegen den Rueckfall.
+
+describe('Bestandswechsel von aussen (Bild-Import)', () => {
+  function mitBildzone(): Vorlage {
+    return vorlageMitZonen('ganz', null, [zone('bild')])
+  }
+
+  it('ein WAEHREND des Editors importiertes Bild erscheint in der Auswahl', async () => {
+    const vorlagen = [mitBildzone()]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const start = projekt([])
+    const { behaelter, meldeProjektAenderung } = editor(start, vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    // Nur der leere Eintrag "– kein Bild –".
+    expect(behaelter.querySelectorAll('[data-testid="aktion-bild-wahl"] option')).toHaveLength(1)
+
+    // Der Import ist fertig: das Projekt traegt ein neues Bild-Asset.
+    act(() => {
+      meldeProjektAenderung({ ...start, assets: [bildAsset('frisch-importiert')] })
+    })
+    await laufen()
+
+    const werte = Array.from(
+      behaelter.querySelectorAll<HTMLOptionElement>('[data-testid="aktion-bild-wahl"] option'),
+    ).map((option) => option.value)
+    expect(werte).toContain('frisch-importiert')
+  })
+
+  it('„Bild importieren" meldet den Auftrag sichtbar - nicht nur in der Konsole', async () => {
+    const vorlagen = [mitBildzone()]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    importDoppel.antwort = { ok: true, wert: { auftragIds: ['q1'], abbruchGrund: null } }
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await klicke(behaelter, 'aktion-bild-import')
+
+    const hinweis = behaelter.querySelector('[data-testid="aktion-bild-hinweis"]')?.textContent ?? ''
+    expect(hinweis).toContain('1 Bild wird importiert')
+    expect(hinweis).toContain('erscheint gleich')
+  })
+
+  it('ein abgebrochener Import (kein Bild gewaehlt) sagt es, statt zu schweigen', async () => {
+    const vorlagen = [mitBildzone()]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    importDoppel.antwort = { ok: true, wert: { auftragIds: [], abbruchGrund: null } }
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await klicke(behaelter, 'aktion-bild-import')
+
+    const hinweis = behaelter.querySelector('[data-testid="aktion-bild-hinweis"]')?.textContent ?? ''
+    expect(hinweis).toContain('Kein Bild gewählt')
   })
 })
