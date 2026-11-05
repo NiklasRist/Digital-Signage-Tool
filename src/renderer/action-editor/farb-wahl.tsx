@@ -233,7 +233,9 @@ export function FarbWahl({
               Wert aus einer Vorlage einsetzen. Beide stehen gleichzeitig mit der Palette
               hier; es gibt keinen zweiten Zustand fuer dieselbe Handlung. */}
           <span style={{ fontSize: 11, color: '#9aa4b2' }}>Freie Farbe</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* `flexWrap` ist die Versicherung: Mit „Markenwert" daneben kann die Zeile bei
+              250 px Popup-Breite sonst ueberlaufen. */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
             <input
               key={`${testid}-${angezeigt}`}
               type="color"
