@@ -31,14 +31,22 @@
   "unterbrechungen":"0 -> 0","ansichtZu":true,"dauerMs":4044}`.
 - **FENSTER-BELEG:** `{"beispielHinweis":true,"titelImFormular":true,"titelImKopf":false,
   "insVideoKnopf":false,"bildBeispiel":true,"vorlagenBilder":2,"canvas":950×534}`.
+- **FARBAUSWAHL (Nachtrag 05.11.2026):** Unter dem freien Farbwähler steht die **Markenpalette**
+  (13 Rollen, doppelte Hex-Werte als EIN Swatch, 8-stellige Scrim-Werte fallen heraus → 10) und
+  **„Zuletzt verwendet"** mit den letzten **20** Farben. Die Historie liegt app-weit in `config.json`
+  (`uiVoreinstellungen['action-editor.letzteFarben']`) — UI-Voreinstellung, kein
+  Projekt-Schreibweg. Fenster: `markenFarben 10`, Klick auf „Akzent kräftig" → `#df3131`,
+  Historie `["#DF3131"]`. **Treiber `4g7`** misst Palette + „Zuletzt verwendet". Tests:
+  `letzte-farben.spec.ts` (7) + 3 UI-Fälle.
+  **Offen:** Die Farbe wirkt nur als **Akzentfarbe** (Preis-Pille/Knopf); **Pro-Zone-Farben** fehlen.
 - **Gegenproben:** 3, jede rot und byte-identisch zurückgenommen (Prüfsumme `3c1736c1…`). **Eine
   blieb zuerst grün**, weil der Test den letzten statt des ersten Zeichenaufrufs prüfte (Kachel
   statt Bühne) — Test geschärft, danach rot. **Lehre: eine grüne Probe sagt etwas über den Test.**
 - **Doku:** TK **v3.46** (9.8.7 neu; 9.8.1/9.8.6 mit Nachtrag abgelöst), `.docx` im selben Commit
   neu erzeugt (2235 Absätze, `unzip -t`, 0 Backticks). `treiber-matrix.md` FA-02/`4g9` nachgezogen.
-- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5501/5501** (364),
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5511/5511** (365),
   Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
-  Export-Dialog).
+  Export-Dialog). Treiber `4g7`: `{"markenFarben":10,"letzteFarben":true}`.
 - **Ehrlich offen:** **Schritt 2 (Einfluss)** ist NICHT gebaut — Bildausschnitt, Textgröße und
   weitere Looks fehlen. Das Beispielmotiv ist das erste Projektbild; ohne Bilder bleibt die
   Vorschau textlich.

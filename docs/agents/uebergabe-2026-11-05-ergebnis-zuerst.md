@@ -59,9 +59,37 @@ Die Felder haben Beispiel-Platzhalter.
   `zeichneVorschau`-Aufruf prüfte — das war die Vorlagen-Kachel, nicht die Bühne. Der Test prüft
   jetzt den **ersten** Aufruf nach dem Öffnen. *Eine grüne Probe ist eine Aussage über den Test,
   nicht über den Code.*
-- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5501/5501** (364 Dateien),
+- **Treiber `4g7`:** `{"typ":"color","altesSelect":false,"markenFarben":10,"letzteFarben":true}` —
+  Palette und „Zuletzt verwendet" sind am Fenster da.
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5511/5511** (365 Dateien),
   Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
   Export-Dialog).
+
+## Nachtrag (05.11.2026): Farbauswahl
+
+**Auftrag (Niklas):** *„warum kann man nur von dem Preis die frabe anpassen … es muss unter der
+freien farbauswahl eine auswahl an farben geben und die letzten 20 verwendeten farben werden
+gespeichert."*
+
+- Unter dem freien Farbwähler steht jetzt die **Markenpalette**: alle Farbrollen der bereiten Marke,
+  **doppelte Hex-Werte als ein Swatch** (13 Rollen → 10 Swatches bei Fitnessworld24). **8-stellige
+  Werte** (die beiden Scrim-Rollen mit Alpha) fallen heraus — `Aktion.akzentfarbe` ist laut Vertrag
+  `#RRGGBB`; ein Klick darauf würde erst beim Speichern als `kein_hex` abgelehnt.
+- Darunter **„Zuletzt verwendet"**: die letzten **20** Farben, neueste zuerst, ohne Doppel
+  (Groß/Klein gleich), ungültige Werte verworfen.
+- Gespeichert wird **app-weit** in `config.json` unter
+  `uiVoreinstellungen['action-editor.letzteFarben']` — eine UI-Voreinstellung, **kein**
+  Projekt-Schreibweg. Ein Klick setzt `akzentfarbe` im Entwurf; „Markenwert" setzt sie auf `null`.
+- **Fenster-Beleg (Probe):** `{"markenFarben":10,"letzteFarben":0,"farbe":"#ff4040"}` vor dem
+  Klick; nach Klick auf „Akzent kräftig": `{"farbe":"#df3131","letzteFarben":1}` und in
+  `config.json` `"action-editor.letzteFarben":["#DF3131"]`.
+- **Tests:** `tests/unit/letzte-farben.spec.ts` (7 Fälle, reine Regeln + config-Weg) und drei
+  UI-Fälle in `action-editor-neue-aktion.spec.ts` (Palette, letzte Farben, Markenwert).
+- **Treiber `4g7`** misst zusätzlich `markenFarben` und den Bereich „Zuletzt verwendet"; ein
+  fehlender Bereich oder weniger als 8 Swatches ist ein Befund.
+- **Ehrlich offen:** Die Farbe wirkt weiterhin nur als **Akzentfarbe** — also auf die
+  Akzentflächen der Vorlage (Preis-Pille, Knopf). **Pro-Zone-Farben** (Text, Fläche, Abdunkelung)
+  sind nicht gebaut; das ist der nächste Kontroll-Schritt.
 
 ## Ehrlich offen
 

@@ -33,20 +33,40 @@ vi.mock('../../src/renderer/action-editor/vorlage-waehlen', async (importOrigina
 
 vi.mock('../../src/renderer/gemeinsam/marken-bereitstellung', () => ({
   // Die Marke braucht seit 03.11.2026 ihre Farben: der Farbwaehler zeigt ohne eigenen
-  // Wert den Markenwert der Rolle `akzent`.
-  holeBereiteMarke: vi.fn(() => ({ id: 'm1', farben: { akzent: '#ff4040' } })),
+  // Wert den Markenwert der Rolle `akzent`. 05.11.2026: die volle Palette fuer die
+  // Farbauswahl (alle 13 Rollen).
+  holeBereiteMarke: vi.fn(() => ({
+    id: 'm1',
+    farben: {
+      akzent: '#ff4040',
+      akzentKraeftig: '#df3131',
+      akzentTief: '#971316',
+      flaecheDunkel: '#2f2e2e',
+      flaecheSehrDunkel: '#202020',
+      flaecheHell: '#ffffff',
+      flaecheAkzentZart: '#f5aeaf',
+      textAufDunkel: '#ffffff',
+      textAufHell: '#202020',
+      textSekundaer: '#8f8f8f',
+      linie: '#cccccc',
+      scrimStart: '#000000',
+      scrimEnde: '#000000',
+    },
+  })),
 }))
 
 // Der Kanal-Doppel: JEDER Schreibweg des Editors laeuft hier durch.
 const doppel = vi.hoisted(() => ({
   aufrufe: [] as Array<{ kanal: string; nutzlast: unknown }>,
   antwort: { ok: true, wert: null } as unknown,
+  /** 05.11.2026: Antworten je Kanal - die Farbhistorie liest `config:leseKonfig`. */
+  antworten: {} as Record<string, unknown>,
 }))
 
 vi.mock('../../src/renderer/ipc-client/rufe-auf', () => ({
   rufeAuf: async (kanal: string, nutzlast?: unknown) => {
     doppel.aufrufe.push({ kanal, nutzlast })
-    return doppel.antwort
+    return doppel.antworten[kanal] ?? doppel.antwort
   },
 }))
 
@@ -64,6 +84,7 @@ vi.mock('../../src/renderer/action-editor/bild-zuweisen', async (importOriginal)
 
 import { ActionEditorWurzel } from '../../src/renderer/action-editor/index.tsx'
 import { BEISPIEL_INHALT } from '../../src/renderer/action-editor/beispiel-inhalt'
+import { LETZTE_FARBEN_SCHLUESSEL } from '../../src/renderer/action-editor/letzte-farben'
 import { ladeWaehlbareVorlagen } from '../../src/renderer/action-editor/vorlage-waehlen'
 import { bereiteMotivVorFuer, zeichneVorschau } from '../../src/renderer/action-editor/live-vorschau'
 import { merkeLetzteVorlage } from '../../src/renderer/gemeinsam/vorlage-vorbelegung'
@@ -86,6 +107,7 @@ function montiere(element: JSX.Element): HTMLDivElement {
 beforeEach(() => {
   doppel.aufrufe.length = 0
   doppel.antwort = { ok: true, wert: null }
+  doppel.antworten = {}
   importDoppel.antwort = { ok: true, wert: { auftragIds: [], abbruchGrund: null } }
   // Der Vorlagen-Speicher ist Sitzungsspeicher - jede Pruefung startet ohne ihn.
   merkeLetzteVorlage(null)
@@ -236,6 +258,12 @@ function befunde(behaelter: HTMLDivElement): string[] {
   )
 }
 
+/** 05.11.2026: Seit der Farbhistorie liest der Editor `config:leseKonfig`. Die Tests
+ *  „kein Projekt-Schreibweg" meinen PROJEKT-Kanaele - nicht jeden IPC-Aufruf. */
+function projektAufrufe(): Array<{ kanal: string; nutzlast: unknown }> {
+  return doppel.aufrufe.filter((aufruf) => aufruf.kanal.startsWith('project:'))
+}
+
 describe('#445: „Neue Aktion" schreibt getippte Werte in den Entwurf', () => {
   it('der getippte Titel erreicht project:erstelleAktion (nicht "")', async () => {
     doppel.antwort = { ok: true, wert: aktion('neu-1', 'Durchlauf-Neu') }
@@ -246,8 +274,9 @@ describe('#445: „Neue Aktion" schreibt getippte Werte in den Entwurf', () => {
     await klickeAnlegen(behaelter)
 
     // Kein Schreibweg im Modus "neu" ausser dem Anlegen - und der traegt den Titel.
-    expect(doppel.aufrufe).toHaveLength(1)
-    const erster = doppel.aufrufe[0]
+    const projektKanaele = projektAufrufe()
+    expect(projektKanaele).toHaveLength(1)
+    const erster = projektKanaele[0]
     expect(erster?.kanal).toBe(KANAELE.project.erstelleAktion)
     const nutzlast = erster?.nutzlast as { aktionsdaten: { titel: string } }
     expect(nutzlast.aktionsdaten.titel).toBe('Durchlauf-Neu')
@@ -261,8 +290,8 @@ describe('#445: „Neue Aktion" schreibt getippte Werte in den Entwurf', () => {
     await klicke(behaelter, 'aktion-neu')
     await klickeAnlegen(behaelter)
 
-    // Kein IPC-Aufruf: die Pruefung greift VOR dem Kanal.
-    expect(doppel.aufrufe).toHaveLength(0)
+    // Kein Projekt-Schreibweg: die Pruefung greift VOR dem Kanal.
+    expect(projektAufrufe()).toHaveLength(0)
     expect(befunde(behaelter).join(' ')).toContain('Der Titel fehlt')
   })
 
@@ -289,7 +318,7 @@ describe('#445: „Neue Aktion" schreibt getippte Werte in den Entwurf', () => {
     await verlasseFeld(behaelter, 'aktion-titel', 'Nur getippt')
     await verlasseFeld(behaelter, 'aktion-cta', 'Jetzt anmelden')
 
-    expect(doppel.aufrufe).toHaveLength(0)
+    expect(projektAufrufe()).toHaveLength(0)
   })
 })
 
@@ -412,8 +441,9 @@ describe('starteNeu: der Editor oeffnet im Modus "neu"', () => {
     await verlasseFeld(behaelter, 'aktion-titel', 'Aus dem Composer')
     await klickeAnlegen(behaelter)
 
-    expect(doppel.aufrufe).toHaveLength(1)
-    expect(doppel.aufrufe[0]?.kanal).toBe(KANAELE.project.erstelleAktion)
+    const projektKanaele = projektAufrufe()
+    expect(projektKanaele).toHaveLength(1)
+    expect(projektKanaele[0]?.kanal).toBe(KANAELE.project.erstelleAktion)
     expect(setzeProjekt).toHaveBeenCalledTimes(1)
   })
 })
@@ -522,8 +552,8 @@ describe('Anlegen mit Vorschau und Bild', () => {
     await laufen()
     await waehleImFeld(behaelter, 'aktion-bild-wahl', 'a1')
 
-    // Kein Schreibweg im Modus „neu": der Entwurf traegt das Bild.
-    expect(doppel.aufrufe).toHaveLength(0)
+    // Kein Projekt-Schreibweg im Modus „neu": der Entwurf traegt das Bild.
+    expect(projektAufrufe()).toHaveLength(0)
     // Das Motiv wird VOR dem Zeichnen vorbereitet, sonst stuende der Platzhalter da.
     expect(bereiteMotivVorFuer).toHaveBeenCalledWith('p1', 'a1', [bildAsset('a1')])
     // Der LETZTE Zeichenaufruf ist die grosse Vorschau mit dem neuen Bild - nicht
@@ -740,5 +770,101 @@ describe('Ergebnis zuerst', () => {
 
     const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
     expect(gezeichnet?.bildRef).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 05.11.2026: Farbauswahl - Markenpalette plus die letzten 20 Farben
+// ---------------------------------------------------------------------------
+
+describe('Farbauswahl', () => {
+  function mitAkzent(): Vorlage {
+    return vorlageMitZonen('ganz', null, [zone('titel'), AKZENT_ZONE])
+  }
+
+  it('zeigt die Markenpalette und ein Klick setzt die Akzentfarbe in den Entwurf', async () => {
+    const vorlagen = [mitAkzent()]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    const swatches = behaelter.querySelectorAll('[data-testid^="aktion-farbe-marke-"]')
+    // 13 Rollen, aber doppelte Hex-Werte (Weiß, Schwarz, #202020) sind EIN Swatch.
+    expect(swatches).toHaveLength(10)
+
+    vi.mocked(zeichneVorschau).mockClear()
+    act(() => {
+      ;(swatches[1] as HTMLButtonElement).click()
+    })
+    await laufen()
+
+    // Object.entries-Reihenfolge der Marke: akzent, akzentKraeftig, ...
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.akzentfarbe).toBe('#df3131')
+
+    // Die Historie ist eine UI-Voreinstellung, kein Projekt-Schreibweg.
+    const schreiben = doppel.aufrufe.filter(
+      (aufruf) => aufruf.kanal === KANAELE.config.setzeUIVoreinstellung,
+    )
+    expect(schreiben.at(-1)?.nutzlast).toEqual({
+      schlüssel: LETZTE_FARBEN_SCHLUESSEL,
+      wert: ['#df3131'],
+    })
+  })
+
+  it('lädt die letzten Farben und zeigt sie unter dem Wähler', async () => {
+    doppel.antworten[KANAELE.config.leseKonfig] = {
+      ok: true,
+      wert: {
+        aktivesProjektId: null,
+        letztesExportZiel: null,
+        uiVoreinstellungen: {
+          [LETZTE_FARBEN_SCHLUESSEL]: ['#112233', '#aabbcc'],
+        },
+      },
+    }
+    const vorlagen = [mitAkzent()]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    const letzte = behaelter.querySelector('[data-testid="aktion-farbe-letzte-#112233"]')
+    expect(letzte).not.toBeNull()
+
+    vi.mocked(zeichneVorschau).mockClear()
+    act(() => {
+      ;(letzte as HTMLButtonElement).click()
+    })
+    await laufen()
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.akzentfarbe).toBe('#112233')
+  })
+
+  it('ein Klick auf „Markenwert" nimmt den eigenen Wert zurück', async () => {
+    const vorlagen = [mitAkzent()]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    act(() => {
+      ;(behaelter.querySelector('[data-testid="aktion-farbe-marke-akzent"]') as HTMLButtonElement).click()
+    })
+    await laufen()
+    expect(behaelter.querySelector('[data-testid="aktion-akzent-marke"]')).not.toBeNull()
+
+    act(() => {
+      ;(behaelter.querySelector('[data-testid="aktion-akzent-marke"]') as HTMLButtonElement).click()
+    })
+    await laufen()
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.akzentfarbe).toBeNull()
   })
 })

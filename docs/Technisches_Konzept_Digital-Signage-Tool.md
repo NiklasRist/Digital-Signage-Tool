@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.46 (9.8.7: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt; 05.11.2026. Vorher 3.45: 9.5.6 Start übernimmt das vom Main geöffnete Projekt; 04.11.2026)
+**Version:** 3.47 (9.8.7: Farbauswahl — Markenpalette und die letzten 20 Farben; 05.11.2026. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1682,6 +1682,13 @@ räumliche Entscheidung und gehört nicht in den Aktions-Editor.
 abgeschlossener Import erscheint in der Bildliste; der Knopf meldet den Auftrag sichtbar
 („N Bild(er) werden importiert …"). Ohne das Abo blieb die Liste stehen (am Fenster gemessen:
 Datei 5 Assets, Liste 4).
+
+**Farbauswahl (05.11.2026).** Unter dem freien Farbwähler steht die **Markenpalette** (alle
+Farbrollen der bereiten Marke; doppelte Hex-Werte sind EIN Swatch) und der Bereich **„Zuletzt
+verwendet"** mit den letzten **20** Farben. Die Historie liegt app-weit in `config.json` unter
+`uiVoreinstellungen['action-editor.letzteFarben']` — eine **UI-Voreinstellung**, kein
+Projekt-Schreibweg; die Aktion selbst schreibt weiterhin nur der Entwurf beim Abschluss. Ein Klick
+auf einen Swatch setzt `akzentfarbe`; „Markenwert" setzt sie auf `null` zurück.
 
 ---
 

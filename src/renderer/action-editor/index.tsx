@@ -58,6 +58,8 @@ import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
 import { VorlagenWahl } from './vorlagen-wahl'
 import { feldBedarf } from './feld-bedarf'
 import { BEISPIEL_INHALT, erstesBild, mitBeispielinhalt } from './beispiel-inhalt'
+import { istAkzentfarbe } from './akzentfarbe'
+import { ladeLetzteFarben, mitFarbe, speichereLetzteFarben } from './letzte-farben'
 import { pruefeBildWahl, starteBildImport, waehlbareBilder } from './bild-zuweisen'
 import {
   bereiteMotivVorFuer,
@@ -843,6 +845,16 @@ function Inspector({
   // der Wurzel, sobald der Auftrag durchgelaufen ist.
   const [importHinweis, setzeImportHinweis] = useState<string | null>(null)
   const [importLaeuft, setzeImportLaeuft] = useState(false)
+  // 05.11.2026: Die letzten 20 Farben - app-weit in `config.json` (`uiVoreinstellungen`).
+  // Der Ref haelt den Stand fuer schnelle Klicks; der State zeichnet die Swatches.
+  const [letzteFarben, setzeLetzteFarben] = useState<string[]>([])
+  const letzteFarbenRef = useRef<string[]>([])
+  useEffect(() => {
+    void ladeLetzteFarben().then((farben) => {
+      letzteFarbenRef.current = farben
+      setzeLetzteFarben(farben)
+    })
+  }, [])
   // Welche Felder die GEWAEHLTE Vorlage ueberhaupt benutzt (03.11.2026): Bei
   // „Band-Standard" gibt es bewusst keine Beschreibungs-Zone (TK 9.11.1).
   const gewaehlteVorlage = waehlbare?.find((vorlage) => vorlage.id === entwurf.vorlagenId) ?? null
@@ -851,6 +863,30 @@ function Inspector({
   // Was der Farbwaehler zeigt: der EIGENE Wert, sonst der Markenwert. `null` heisst:
   // weder eigener Wert noch bereite Marke - dann gibt es nichts Sinnvolles zu zeigen.
   const angezeigteFarbe = entwurf.akzentfarbe ?? markeDesEntwurfs?.farben.akzent ?? null
+  // Die Markenpalette: alle 13 Rollen, wie sie die Marke traegt. Kein zweiter
+  // Farbspeicher - die Werte kommen aus der BEREITEN Marke des Entwurfs.
+  // Doppelte Hex-Werte (z. B. Weiß als Text- und Flächenrolle) sind EIN Swatch:
+  // Eine Auswahl soll Farben zeigen, nicht Rollen. 8-stellige Werte (Scrim mit Alpha)
+  // fallen heraus - `Aktion.akzentfarbe` ist laut Vertrag `#RRGGBB`; ein Klick darauf
+  // wuerde erst beim Speichern als `kein_hex` abgelehnt.
+  const markenFarben: Array<[string, string]> =
+    markeDesEntwurfs === null
+      ? []
+      : Object.entries(markeDesEntwurfs.farben)
+          .filter(([, hex]) => istAkzentfarbe(hex))
+          .filter(
+            ([, hex], stelle, alle) =>
+              alle.findIndex(([, vergleich]) => vergleich.toLowerCase() === hex.toLowerCase()) === stelle,
+          )
+
+  /** Eine Farbe in die app-weite Historie heben. Der Entwurf schreibt NICHT mit -
+   *  das macht der Aufrufer ueber `aufAenderung`. */
+  function merkeFarbe(farbe: string): void {
+    const neu = mitFarbe(letzteFarbenRef.current, farbe)
+    letzteFarbenRef.current = neu
+    setzeLetzteFarben(neu)
+    void speichereLetzteFarben(neu)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1013,7 +1049,7 @@ function Inspector({
       )}
 
       {bedarf.akzent && (
-        <Schritt titel="Farbe">
+        <Schritt titel="Akzentfarbe">
           <div data-testid="aktion-akzent" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {angezeigteFarbe === null ? (
               <span data-testid="aktion-akzent-unbekannt">Marke wird geladen …</span>
@@ -1024,8 +1060,10 @@ function Inspector({
                 data-testid="aktion-akzent-farbe"
                 defaultValue={angezeigteFarbe}
                 onBlur={(ereignis) => {
-                  if (ereignis.target.value.toLowerCase() === angezeigteFarbe.toLowerCase()) return
-                  aufAenderung('akzentfarbe', ereignis.target.value)
+                  const farbe = ereignis.target.value
+                  if (farbe.toLowerCase() === angezeigteFarbe.toLowerCase()) return
+                  aufAenderung('akzentfarbe', farbe)
+                  merkeFarbe(farbe)
                 }}
               />
             )}
@@ -1039,6 +1077,78 @@ function Inspector({
               >
                 Markenwert
               </button>
+            )}
+          </div>
+          <p style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}>
+            Färbt die Akzentflächen der Vorlage – zum Beispiel Preis-Pille und Knopf.
+          </p>
+
+          {markenFarben.length > 0 && (
+            <div data-testid="aktion-farben-marke" style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {markenFarben.map(([rolle, hex]) => {
+                const gewaehlt = angezeigteFarbe !== null && angezeigteFarbe.toLowerCase() === hex.toLowerCase()
+                return (
+                  <button
+                    key={rolle}
+                    type="button"
+                    data-testid={`aktion-farbe-marke-${rolle}`}
+                    title={`${rolle} ${hex}`}
+                    aria-label={`${rolle} ${hex}`}
+                    onClick={() => {
+                      aufAenderung('akzentfarbe', hex)
+                      merkeFarbe(hex)
+                    }}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      padding: 0,
+                      boxSizing: 'border-box',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      background: hex,
+                      border: gewaehlt ? '2px solid #6ea8fe' : '1px solid #444',
+                    }}
+                  />
+                )
+              })}
+            </div>
+          )}
+
+          <div data-testid="aktion-farben-letzte" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ color: '#9aa4b2', fontSize: 11 }}>Zuletzt verwendet</span>
+            {letzteFarben.length === 0 ? (
+              <span style={{ color: '#9aa4b2', fontSize: 11 }}>
+                Noch keine eigene Farbe gewählt – die letzten 20 erscheinen hier.
+              </span>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {letzteFarben.map((hex) => {
+                  const gewaehlt = angezeigteFarbe !== null && angezeigteFarbe.toLowerCase() === hex.toLowerCase()
+                  return (
+                    <button
+                      key={hex}
+                      type="button"
+                      data-testid={`aktion-farbe-letzte-${hex}`}
+                      title={`Zuletzt verwendet: ${hex}`}
+                      aria-label={`Zuletzt verwendet: ${hex}`}
+                      onClick={() => {
+                        aufAenderung('akzentfarbe', hex)
+                        merkeFarbe(hex)
+                      }}
+                      style={{
+                        width: 22,
+                        height: 22,
+                        padding: 0,
+                        boxSizing: 'border-box',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        background: hex,
+                        border: gewaehlt ? '2px solid #6ea8fe' : '1px solid #444',
+                      }}
+                    />
+                  )
+                })}
+              </div>
             )}
           </div>
         </Schritt>

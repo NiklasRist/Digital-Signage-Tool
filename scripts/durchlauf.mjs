@@ -6360,6 +6360,10 @@ const main = async () => {
         return {
           typ: akzent === null ? null : akzent.getAttribute("type"),
           altesSelect: document.querySelector('[data-testid="aktion-akzent-vorschlag"]') !== null,
+          // 05.11.2026: unter dem freien Waehler steht die Markenpalette (doppelte
+          // Hex-Werte sind EIN Swatch) und der Bereich der letzten 20 Farben.
+          markenFarben: document.querySelectorAll('[data-testid^="aktion-farbe-marke-"]').length,
+          letzteFarben: document.querySelector('[data-testid="aktion-farben-letzte"]') !== null,
         };
       });
       console.log(`[schritt-4g7] Akzentfarbe: ${JSON.stringify(akzent4g7)}.`);
@@ -6367,8 +6371,12 @@ const main = async () => {
         fund("Felder nach Vorlage", "die Akzentfarbe ist ein echter Farbwaehler (#325)",
           `typ=${String(akzent4g7.typ)}, altes Select=${String(akzent4g7.altesSelect)}`,
           "Befund", "action-editor/index.tsx");
+      } else if (akzent4g7.markenFarben < 8 || !akzent4g7.letzteFarben) {
+        fund("Felder nach Vorlage", "unter dem Waehler stehen Markenpalette und die letzten Farben",
+          `Markenfarben=${String(akzent4g7.markenFarben)}, letzteFarben=${String(akzent4g7.letzteFarben)}`,
+          "Befund", "action-editor/index.tsx");
       } else {
-        console.log("[schritt-4g7] AKZENTFARBE GEMESSEN: input type=color, kein Schein-Select (03.11.2026).");
+        console.log(`[schritt-4g7] AKZENTFARBE GEMESSEN: input type=color, kein Schein-Select, ${String(akzent4g7.markenFarben)} Markenfarben, Bereich "Zuletzt verwendet" (05.11.2026).`);
       }
 
       // Kein Datensatz entstanden - der Entwurf bleibt einfach stehen; zurueck auf den
