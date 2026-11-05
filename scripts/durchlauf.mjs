@@ -6374,6 +6374,11 @@ const main = async () => {
           popup: document.querySelector('[data-testid="aktion-akzent-popup"]') !== null,
           // NACHARBEIT 3 (05.11.2026): Die freie Wahl ist Farbfeld UND Hex-Feld.
           hexFeld: document.querySelector('[data-testid="aktion-akzent-hex"]') !== null,
+          // NACHARBEIT 4: Die freie Wahl ist ein BESCHRIFTETER Knopf - ein Farbkaestchen
+          // allein war nicht als „hier geht jede Farbe" zu erkennen.
+          freiKnopf:
+            document.querySelector('[data-testid="aktion-akzent-waehlen"]')?.textContent
+              ?.includes('Farbe wählen') ?? false,
           markenFarben: document.querySelectorAll('[data-testid^="aktion-akzent-palette-"]').length,
           letzteFarben: document.querySelector('[data-testid="aktion-akzent-letzte"]') !== null,
         };
@@ -6383,6 +6388,10 @@ const main = async () => {
         fund("Felder nach Vorlage", "die Akzentfarbe ist ein echter Farbwaehler (#325)",
           `typ=${String(akzent4g7.typ)}, altes Select=${String(akzent4g7.altesSelect)}`,
           "Befund", "action-editor/index.tsx");
+      } else if (!akzent4g7.freiKnopf) {
+        fund('Felder nach Vorlage', 'die freie Farbwahl ist ein beschrifteter Knopf („Farbe wählen …")',
+          `freiKnopf=${String(akzent4g7.freiKnopf)}`,
+          "Befund", "action-editor/farb-wahl.tsx");
       } else if (!akzent4g7.hexFeld) {
         fund('Felder nach Vorlage', 'die freie Farbwahl steht im Popup (Farbfeld UND Hex-Feld)',
           `popup=${String(akzent4g7.popup)}, hexFeld=${String(akzent4g7.hexFeld)}`,

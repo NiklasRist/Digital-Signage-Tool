@@ -166,8 +166,13 @@ deshalb unter **„Freie Farbe"** neben dem Farbfeld ein **Hex-Feld**:
 - ein unbrauchbarer Wert ändert **nichts**: Das Feld springt auf den geltenden Wert zurück und zeigt
   „Ungültig – erwartet wird #RRGGBB."; Farbnamen werden bewusst nicht angenommen.
 
+**Nacharbeit 4 (gleiche Sitzung):** *„es ist nicht klar dass man eine freie farbe auswählen kann außer
+du kannst hex values"* — ein Farbkästchen ist keine sichtbare Einladung. Im Popup steht jetzt der
+**beschriftete Knopf „Farbe wählen …"** (öffnet den System-Farbwähler), darunter **„oder Wert"** mit
+dem Hex-Feld. Beide Wege sind sichtbar, keiner versteckt sich.
+
 **Gegenprobe:** Hex-Übernahme entfernt → 2 Tests rot, byte-identisch zurückgenommen.
-**Gate:** Unit **5594/5594**, Treiber `hexFeld: true`, TK **v3.51**, `.docx` 2454 Absätze.
+**Gate:** Unit **5595/5595**, Treiber `hexFeld: true`, `freiKnopf: true`, TK **v3.52**, `.docx` 2458 Absätze.
 
 ## Ehrlich offen
 

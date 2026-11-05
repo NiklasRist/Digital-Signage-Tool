@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.51 (9.8.9: freie Farbwahl im Popup; 05.11.2026. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.52 (9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1826,10 +1826,16 @@ gehandelt werden"*
   Dateiname in den Ausgaben, Zonenname und Farbzeile im Inspector. Ausgenommen bleibt allein die
   Zeitachse — dort ist die Breite eines Clips die Aussage, Umbrechen wäre falsch.
 
-**Nacharbeit 3: freie Farbwahl (Niklas, 05.11.2026):** *„jz fehlt nur noch die freie farbwahl in dem
-popup"*. Das native Farbfeld allein ist keine freie Wahl — man kann dort nichts eintippen und keinen
-Wert aus einer Vorlage einsetzen. Im Popup steht deshalb unter der Überschrift **„Freie Farbe"**
-neben dem Farbfeld ein **Hex-Feld**:
+**Nacharbeit 3+4: freie Farbwahl (Niklas, 05.11.2026):** *„jz fehlt nur noch die freie farbwahl in dem
+popup"* und *„es ist nicht klar dass man eine freie farbe auswählen kann außer du kannst hex values"*.
+Ein Farbkästchen sieht nicht aus wie „hier gibt es jede Farbe", und ein Hex-Feld allein verlangt,
+dass man einen Wert im Kopf hat. Im Popup steht deshalb unter der Überschrift **„Freie Farbe"**:
+
+- ein **beschrifteter Knopf „Farbe wählen …"** mit Farbvorschau, der den System-Farbwähler öffnet —
+  das ist der Weg für alle, die eine Farbe sehen und anklicken wollen;
+- daneben **„oder Wert"** mit dem **Hex-Feld**.
+
+Das Hex-Feld:
 
 - Es zeigt den geltenden Wert (`#RRGGBB`), übernimmt bei **Enter** oder Fokusverlust und versteht
   `#RRGGBB`, `RRGGBB` sowie die Kurzform `#RGB` — normalisiert wird immer auf `#RRGGBB` (Großbuchstaben).

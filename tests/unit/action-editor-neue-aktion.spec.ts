@@ -1224,6 +1224,17 @@ describe('Nacharbeit 3: freie Farbwahl im Popup (05.11.2026)', () => {
     expect(behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche-farbe"]')).not.toBeNull()
   })
 
+  it('die freie Wahl ist ein BESCHRIFTETER Knopf - kein nacktes Farbkaestchen', async () => {
+    // Niklas, 05.11.2026: „es ist nicht klar dass man eine freie farbe auswählen kann".
+    const behaelter = await oeffne()
+    const knopf = behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche-waehlen"]')
+    expect(knopf).not.toBeNull()
+    expect(knopf?.textContent ?? '').toContain('Farbe wählen')
+    // Der System-Dialog haengt an einem echten Farbfeld.
+    const feld = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-zone-preis-flaeche-farbe"]')
+    expect(feld?.getAttribute('type')).toBe('color')
+  })
+
   it('ein eingetippter Hex-Wert setzt die Farbe', async () => {
     const behaelter = await oeffne()
     await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche-hex', '00ff00')

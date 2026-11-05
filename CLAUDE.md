@@ -85,6 +85,11 @@
   springt zurück und sagt „Ungültig – erwartet wird #RRGGBB." Farbnamen werden nicht angenommen
   (zweiter Farbraum neben `farben.ts`). **TK v3.51**, `.docx` 2454 Absätze, Unit **5594/5594**,
   Treiber `hexFeld: true`. Gegenprobe: Hex-Übernahme entfernt → 2 Tests rot, byte-identisch zurück.
+- **NACHARBEIT 4 (Niklas, 05.11.2026):** *„es ist nicht klar dass man eine freie farbe auswählen kann
+  außer du kannst hex values"*. Ein Farbkästchen ist keine sichtbare Einladung. Im Popup steht jetzt
+  ein **beschrifteter Knopf „Farbe wählen …"** (öffnet den System-Farbwähler), darunter
+  **„oder Wert"** mit dem Hex-Feld. **TK v3.52**, `.docx` 2458 Absätze, Unit **5595/5595**,
+  Treiber `freiKnopf: true`.
 - **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen.
   **Push nur auf Anweisung.**
 

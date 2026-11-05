@@ -63,6 +63,7 @@ export function FarbWahl({
   const [lage, setzeLage] = useState<{ links: number; oben: number }>({ links: 0, oben: 0 })
   const knopf = useRef<HTMLButtonElement | null>(null)
   const popup = useRef<HTMLDivElement | null>(null)
+  const farbFeld = useRef<HTMLInputElement | null>(null)
 
   // Das Popup haengt an `position: fixed` und wird am KNOPF ausgerichtet. Das ist noetig,
   // weil die Inspector-Flaeche waagerecht und senkrecht scrollt (`overflow: auto`) - ein
@@ -228,21 +229,52 @@ export function FarbWahl({
             boxShadow: '0 6px 20px rgba(0, 0, 0, 0.5)',
           }}
         >
-          {/* DIE FREIE WAHL (Nacharbeit 3, 05.11.2026): Farbfeld UND Hex-Feld. Das
-              Feld allein war keine freie Wahl - man konnte nichts eintippen und keinen
-              Wert aus einer Vorlage einsetzen. Beide stehen gleichzeitig mit der Palette
-              hier; es gibt keinen zweiten Zustand fuer dieselbe Handlung. */}
+          {/* DIE FREIE WAHL (Nacharbeit 3+4, 05.11.2026): Ein Farbkaestchen sieht nicht
+              aus wie „hier kannst du jede Farbe waehlen" (Niklas: „es ist nicht klar dass
+              man eine freie farbe auswählen kann"). Deshalb ein BESCHRIFTETER Knopf, der
+              den System-Farbwaehler oeffnet, und daneben das Hex-Feld fuer alle, die einen
+              Wert zur Hand haben. Beide Wege sind sichtbar - keiner versteckt sich. */}
           <span style={{ fontSize: 11, color: '#9aa4b2' }}>Freie Farbe</span>
-          {/* `flexWrap` ist die Versicherung: Mit „Markenwert" daneben kann die Zeile bei
-              250 px Popup-Breite sonst ueberlaufen. */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              data-testid={`${testid}-waehlen`}
+              aria-label={`Freie Farbe wählen (${beschriftung})`}
+              onClick={() => {
+                // Der Klick auf den Knopf ist die Nutzer-Handlung; `click()` auf das
+                // verborgene Feld oeffnet denselben System-Dialog.
+                if (typeof farbFeld.current?.click === 'function') farbFeld.current.click()
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                flex: '0 0 auto',
+                fontSize: 11,
+                padding: '2px 6px',
+                cursor: 'pointer',
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 3,
+                  background: angezeigt,
+                  border: '1px solid #888',
+                }}
+              />
+              Farbe wählen …
+            </button>
             <input
+              ref={farbFeld}
               key={`${testid}-${angezeigt}`}
               type="color"
               data-testid={`${testid}-farbe`}
               aria-label={`${beschriftung} frei wählen`}
               defaultValue={angezeigt}
-              style={{ flex: '0 0 auto', width: 44, height: 28, padding: 0 }}
+              style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
               // `onChange` ist im Popup richtig: Man sieht das Ergebnis sofort, und der
               // Popup-Zustand wird beim Ziehen nicht neu aufgebaut (anders als ein Feld,
               // das dauerhaft im Formular steht).
@@ -250,7 +282,28 @@ export function FarbWahl({
                 waehle(ereignis.target.value)
               }}
             />
+            {wert !== null && (
+              <button
+                type="button"
+                data-testid={`${testid}-marke`}
+                onClick={() => {
+                  aufWahl(null)
+                }}
+              >
+                Markenwert
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+            <label
+              htmlFor={`${testid}-hex`}
+              style={{ fontSize: 11, color: '#9aa4b2', flex: '0 0 auto' }}
+            >
+              oder Wert
+            </label>
             <input
+              id={`${testid}-hex`}
               type="text"
               data-testid={`${testid}-hex`}
               aria-label={`Farbe als Hex-Wert (${beschriftung})`}
@@ -258,7 +311,7 @@ export function FarbWahl({
               placeholder="#RRGGBB"
               spellCheck={false}
               style={{
-                flex: '1 1 auto',
+                flex: '1 1 80px',
                 minWidth: 0,
                 fontFamily: 'Menlo, Consolas, monospace',
                 fontSize: 12,
@@ -272,17 +325,6 @@ export function FarbWahl({
               }}
               onBlur={uebernehmeHex}
             />
-            {wert !== null && (
-              <button
-                type="button"
-                data-testid={`${testid}-marke`}
-                onClick={() => {
-                  aufWahl(null)
-                }}
-              >
-                Markenwert
-              </button>
-            )}
           </div>
           {hexFehler !== null && (
             <span data-testid={`${testid}-hex-fehler`} style={{ fontSize: 11, color: '#e5634d' }}>
