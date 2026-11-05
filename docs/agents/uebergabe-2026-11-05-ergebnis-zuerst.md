@@ -103,9 +103,29 @@ gespeichert."*
 - Die Kacheln zeichnen den Stand **beim Öffnen** (kein Live-Bild) — bewusst, sonst entstünde je
   Feldwechsel ein 1920×1080-Canvas pro Vorlage.
 
-## Nächster Punkt
+## Nächste Sitzung (Stand Sitzungsende, 05.11.2026)
 
-**Schritt 2 — „Man hat Einfluss":** Bildausschnitt, Textgröße/Ausrichtung, weitere Looks. Erst
-danach Bewegung/Effekte (weiter geparkt).
+**Niklas' letzter Auftrag:** *„außerdem kann man so viele andere sachen die ursprünglich
+spezifiziert waren nicht machen […] es fehlen noch mehr richtig krasse vorlagen […] man hat
+momentan einfach keine kontrolle."* Danach: *„mach die übergabe das ist zu viel die restliche
+session."* **Davon ist NICHTS gebaut** — die Farbauswahl war der letzte Schritt.
+
+**Vier Arbeitspakete, Reihenfolge NICHT entschieden:**
+
+1. **Mehr Vorlagen** — 4–6 neue, deutlich unterschiedliche Ganzbild-Looks (eingebaute
+   Vorlagen-Datensätze mit Zonen). Bestehende Projekte bleiben gültig; die Vorlagen sind app-weit.
+2. **Pro-Zone-Farben** — Text-, Flächen-, Akzent- und Scrim-Farbe je Aktion überschreiben. Braucht
+   ein neues Feld im `Aktion`-Vertrag, die Auflösung in `zeichneSegment` **vor** der Marke und eine
+   UI je Rolle. Heute gibt es nur **eine** eigene Farbe (`akzentfarbe`).
+3. **Textkontrolle** — Größe und Ausrichtung je Zone; ebenfalls neue Aktionsfelder (die Vorlage
+   liefert heute `größeMax`/`größeMin` und die Ausrichtung fest).
+4. **Bildausschnitt** — Zoom/Position im Rahmen; neues Feld plus Zeichnen.
+
+**Warum die Akzentfarbe nur den Preis färbt:** Die Vorlage entscheidet, welche Zonen die Rolle
+`akzent` benutzen; in „Ganzflächig" ist das die Preis-Pille. Text, Fläche und Knopf kommen aus der
+**Marke**. Das ist das heutige Datenmodell, keine UI-Lücke — mehr geht nur über Paket 2/3.
+
+**Empfehlung für den Start:** Paket 1 (Vorlagen) — schnellster sichtbarer Effekt; danach 2 + 3
+(Kontrolle), dann 4. **Niklas hat die Reihenfolge nicht bestätigt.** Effekte bleiben geparkt.
 
 **Nicht gepusht.** Zahl mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**

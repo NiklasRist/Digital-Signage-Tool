@@ -47,9 +47,16 @@
 - **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5511/5511** (365),
   Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
   Export-Dialog). Treiber `4g7`: `{"markenFarben":10,"letzteFarben":true}`.
-- **Ehrlich offen:** **Schritt 2 (Einfluss)** ist NICHT gebaut — Bildausschnitt, Textgröße und
-  weitere Looks fehlen. Das Beispielmotiv ist das erste Projektbild; ohne Bilder bleibt die
-  Vorschau textlich.
+- **NÄCHSTER PUNKT (Niklas, Sitzungsende 05.11.2026):** *„man hat momentan einfach keine
+  kontrolle"* + *„es fehlen noch mehr richtig krasse vorlagen"*. **Nichts davon ist gebaut.**
+  Vier Pakete, **Reihenfolge nicht entschieden:** (1) **4–6 neue Vorlagen** (neue eingebaute
+  Ganzbild-Looks), (2) **Pro-Zone-Farben** (Text/Fläche/Akzent/Scrim je Aktion — neues
+  `Aktion`-Feld + Auflösung vor der Marke), (3) **Textgröße/Ausrichtung je Zone**, (4)
+  **Bildausschnitt/Zoom**. Empfehlung: 1, dann 2+3, dann 4; Effekte bleiben geparkt. **Warum nur
+  der Preis:** Die Vorlage entscheidet, welche Zonen `akzent` nutzen; Text/Fläche/Knopf kommen aus
+  der Marke — das ist das Modell, keine UI-Lücke.
+- **Ehrlich offen:** Das Beispielmotiv ist das erste Projektbild; ohne Bilder bleibt die Vorschau
+  textlich. Die Beispieltexte sind Fitnessworld24-nah und änderbar.
 - **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen.
   **Push nur auf Anweisung.**
 
