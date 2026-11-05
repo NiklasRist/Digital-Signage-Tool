@@ -17,6 +17,7 @@ vi.mock('../../src/renderer/template-canvas/farben', async (importOriginal) => {
   const echt = await importOriginal<typeof import('../../src/renderer/template-canvas/farben')>()
   return {
     loeseFarbe: vi.fn(echt.loeseFarbe),
+    loeseFarbeInZone: vi.fn(echt.loeseFarbeInZone),
     loeseSchrift: vi.fn(echt.loeseSchrift),
   };
 });
@@ -26,7 +27,7 @@ vi.mock('../../src/renderer/template-canvas/zone-text', () => ({
   zeichneTextZone: vi.fn(),
 }));
 
-import { loeseFarbe } from '../../src/renderer/template-canvas/farben'
+import { loeseFarbe, loeseFarbeInZone } from '../../src/renderer/template-canvas/farben'
 import { zeichneTextZone } from '../../src/renderer/template-canvas/zone-text'
 
 // ---------------- Aufzeichnungs-Doppel ----------------
@@ -316,25 +317,35 @@ describe('zeichneDekoZone (#116) - Reihenfolge und Werthaltung', () => {
     expect(ersteFuellung[1]?.wert).toMatchObject({ name: 'verlauf-0' })
   })
 
-  it('loeseFarbe wird mit (marke, rolle, aktion) gerufen - an Fuellung UND beiden Stopp - die aktion ist DIESELBE Referenz', () => {
+  it('die FUELLUNG geht durch loeseFarbeInZone, die beiden Stopps durch loeseFarbe - die aktion ist DIESELBE Referenz', () => {
     const doppel = baueKontextDoppel()
     const m = marke()
-    zeichneDekoZone(
-      doppel.kontext,
-      zone(HINTERGRUND, {
-        füllungFarbRolle: 'akzent',
-        verlauf: { vonFarbRolle: 'akzentKraeftig', bisFarbRolle: 'akzentTief', richtung: 'rechts' },
-      }),
-      m,
-      MIT_WAHL,
-    )
+    const z = zone(HINTERGRUND, {
+      füllungFarbRolle: 'akzent',
+      verlauf: { vonFarbRolle: 'akzentKraeftig', bisFarbRolle: 'akzentTief', richtung: 'rechts' },
+    })
+    // Die Spione sammeln ueber den ganzen Lauf; hier zaehlt NUR dieser Aufruf.
+    vi.mocked(loeseFarbeInZone).mockClear()
+    vi.mocked(loeseFarbe).mockClear()
+    zeichneDekoZone(doppel.kontext, z, m, MIT_WAHL)
+
+    // SEIT 05.11.2026 (TK 9.8.8) nimmt die FUELLUNG `loeseFarbeInZone` (eigene
+    // Flaechenfarbe der Zone); der VERLAUF bleibt bei `loeseFarbe`, weil ein Verlauf zwei
+    // Stopps hat und ein einziger Farbregler den anderen raten muesste.
+    const fuellung = vi.mocked(loeseFarbeInZone).mock.calls
+    expect(fuellung).toHaveLength(1)
+    expect(fuellung[0]?.[0]).toBe(m)
+    expect(fuellung[0]?.[1]).toBe('akzent')
+    expect(fuellung[0]?.[2]).toBe(MIT_WAHL)
+    expect(fuellung[0]?.[3]).toBe(z)
+
     const rufe = vi.mocked(loeseFarbe).mock.calls
-    expect(rufe).toHaveLength(3) // Füllung + 2 Stopp
+    expect(rufe).toHaveLength(2) // nur die beiden Verlaufs-Stopps
     for (const ruf of rufe) {
       expect(ruf[0]).toBe(m)
       expect(ruf[2]).toBe(MIT_WAHL)
     }
-    expect(rufe.map((ruf) => ruf[1])).toEqual(['akzent', 'akzentKraeftig', 'akzentTief'])
+    expect(rufe.map((ruf) => ruf[1])).toEqual(['akzentKraeftig', 'akzentTief'])
   })
 
   it('die Füllung folgt der Akzent-Auswahl nur ueber loeseFarbe - die Datei wertet nichts selbst aus', () => {

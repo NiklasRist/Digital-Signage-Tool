@@ -230,3 +230,45 @@ describe("bearbeiteAktion (#319) - markeId", () => {
     }
   });
 });
+
+describe("bearbeiteAktion - Gestaltung je Zone und Bildausschnitt (05.11.2026, TK 9.8.8)", () => {
+  it("uebernimmt die Gestaltung normalisiert", async () => {
+    const antwort = await bearbeiteAktion("a1", {
+      zonenGestaltung: { preis: { flaechefarbe: "#00FF00", groesseProzent: 500 } },
+      bildAusschnitt: { zoom: 150 },
+    });
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.zonenGestaltung).toEqual({
+      preis: { flaechefarbe: "#00FF00", groesseProzent: 200 },
+    });
+    expect(antwort.wert.bildAusschnitt).toEqual({ zoom: 150, versatzX: 0, versatzY: 0 });
+  });
+
+  it("ein NICHT mitgeschicktes Feld bleibt unangetastet", async () => {
+    // Dieselbe Zusage wie fuer jedes andere Feld: Was nicht im Auftrag steht, aendert sich
+    // nicht. Fuer einen Record ist das nicht selbstverstaendlich - ein Mischen wollte
+    // niemand.
+    await bearbeiteAktion("a1", { zonenGestaltung: { preis: { textfarbe: "#123456" } } });
+    const antwort = await bearbeiteAktion("a1", { titel: "Neuer Titel" });
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.zonenGestaltung).toEqual({ preis: { textfarbe: "#123456" } });
+  });
+
+  it('ein leerer Record LOESCHT die Gestaltung - „keine Angabe“ ist ein Zustand', async () => {
+    await bearbeiteAktion("a1", { zonenGestaltung: { preis: { textfarbe: "#123456" } } });
+    const antwort = await bearbeiteAktion("a1", { zonenGestaltung: {} });
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.zonenGestaltung).toEqual({});
+  });
+
+  it("bildAusschnitt null nimmt den eigenen Ausschnitt zurueck", async () => {
+    await bearbeiteAktion("a1", { bildAusschnitt: { zoom: 200 } });
+    const antwort = await bearbeiteAktion("a1", { bildAusschnitt: null });
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.bildAusschnitt).toBeNull();
+  });
+});

@@ -17,6 +17,7 @@ vi.mock("../../src/renderer/template-canvas/farben", async (importOriginal) => {
   const echt = await importOriginal<typeof import("../../src/renderer/template-canvas/farben")>();
   return {
     loeseFarbe: vi.fn(echt.loeseFarbe),
+    loeseFarbeInZone: vi.fn(echt.loeseFarbeInZone),
     loeseSchrift: vi.fn(echt.loeseSchrift),
   };
 });
@@ -98,6 +99,13 @@ function baueKontextDoppel(zeicheFehlerBeiDrawImage = false): {
     },
     beginPath() {
       ereignisse.push({ art: "rufe", name: "beginPath" });
+    },
+    // SEIT 05.11.2026 (TK 9.8.8): Der Bildausschnitt beschneidet an der Zonengrenze.
+    rect(...argumente: unknown[]) {
+      ereignisse.push({ art: "rufe", name: "rect", argumente });
+    },
+    clip() {
+      ereignisse.push({ art: "rufe", name: "clip" });
     },
     moveTo(x: number, y: number) {
       ereignisse.push({ art: "rufe", name: "moveTo", argumente: [x, y] });
@@ -535,5 +543,92 @@ describe("zeichneBildZone (#115) - Abbruch und Fallbacks", () => {
       ),
     ).not.toThrow();
     expect(doppel.ereignisse.filter((e) => e.art === "rufe" && e.name === "save")).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SEIT 05.11.2026 (TK 9.8.8): Zoom und Position des Motivs.
+//
+// Der Rahmen bleibt, wo die Vorlage ihn hat; bewegt wird der INHALT, und an der
+// Zonengrenze wird beschnitten. Ohne eigene Einstellung laeuft der alte Weg (unten in der
+// Datei geprueft) - deshalb sind diese Tests die einzigen, die den Beschnitt erwarten.
+// ---------------------------------------------------------------------------
+
+const mitAusschnitt = (ausschnitt: Aktion["bildAusschnitt"]): Aktion => ({
+  ...OHNE_WAHL,
+  bildAusschnitt: ausschnitt,
+});
+
+describe("zeichneBildZone - Bildausschnitt (TK 9.8.8)", () => {
+  it("ohne eigene Einstellung wird NICHT beschnitten (der alte Weg bleibt unangetastet)", () => {
+    const { kontext, ereignisse, drawImageAufrufe } = baueKontextDoppel();
+    zeichneBildZone(kontext, zone({ x: 0, y: 0, breite: 960, höhe: 540 }, "cover"), MOTIV, marke(), OHNE_WAHL);
+
+    expect(ereignisse.some((e) => e.art === "rufe" && e.name === "clip")).toBe(false);
+    expect(drawImageAufrufe[0]).toHaveLength(9);
+  });
+
+  it("Zoom 200 zieht das Zielrechteck auf die doppelte Groesse", () => {
+    const { kontext, drawImageAufrufe } = baueKontextDoppel();
+    zeichneBildZone(
+      kontext,
+      zone({ x: 0, y: 0, breite: 960, höhe: 540 }, "cover"),
+      MOTIV,
+      marke(),
+      mitAusschnitt({ zoom: 200 }),
+    );
+
+    // Basis (cover) 0.6 * 1.0 -> 960x720; Zoom 200 -> 1920x1440; zentriert in 960x540.
+    expect(drawImageAufrufe[0]).toEqual([ATTRAPPE, -480, -450, 1920, 1440]);
+  });
+
+  it("beschneidet auf die ZONE, damit das Bild nicht in die Nachbarzone laeuft", () => {
+    const { kontext, ereignisse } = baueKontextDoppel();
+    zeichneBildZone(
+      kontext,
+      zone({ x: 96, y: 40, breite: 960, höhe: 540 }, "cover"),
+      MOTIV,
+      marke(),
+      mitAusschnitt({ zoom: 200 }),
+    );
+
+    const clip = ereignisse.findIndex((e) => e.art === "rufe" && e.name === "clip");
+    expect(clip).toBeGreaterThan(-1);
+    const rect = ereignisse
+      .slice(0, clip)
+      .filter((e) => e.art === "rufe" && e.name === "rect")
+      .at(-1);
+    expect(rect?.argumente).toEqual([96, 40, 960, 540]);
+  });
+
+  it("der Versatz ist in PROZENT der Zonengroesse angegeben", () => {
+    const { kontext, drawImageAufrufe } = baueKontextDoppel();
+    zeichneBildZone(
+      kontext,
+      zone({ x: 0, y: 0, breite: 1000, höhe: 500 }, "cover"),
+      MOTIV,
+      marke(),
+      mitAusschnitt({ zoom: 100, versatzX: 10, versatzY: -10 }),
+    );
+
+    // Basis 0.625 -> 1000x750; dy = (500-750)/2 = -125, minus 10 % von 500 = -50 -> -175.
+    // dx = 0 + 10 % von 1000 = +100.
+    expect(drawImageAufrufe[0]).toEqual([ATTRAPPE, 100, -175, 1000, 750]);
+  });
+
+  it("die Zonenfarbe der Bildzone faerbt NICHT das Bild - nur den Platzhalter", () => {
+    // Eine Bildzone hat keine Text- und keine Fuellungs-Rolle; eine Angabe fuer sie bleibt
+    // deshalb ohne Wirkung. Der Test haelt fest, dass hier keine zweite Regel entsteht.
+    const { kontext, drawImageAufrufe } = baueKontextDoppel();
+    zeichneBildZone(
+      kontext,
+      zone({ x: 0, y: 0, breite: 960, höhe: 540 }, "cover"),
+      MOTIV,
+      marke(),
+      { ...OHNE_WAHL, zonenGestaltung: { motiv: { flaechefarbe: "#00ff00" } } },
+    );
+
+    // Kein eigener Ausschnitt -> alter Weg, 9 Argumente, keine Zusatzflaeche.
+    expect(drawImageAufrufe[0]).toHaveLength(9);
   });
 });

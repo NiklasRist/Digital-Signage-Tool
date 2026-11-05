@@ -22,7 +22,23 @@ import type { Vorlage } from '../../shared/contracts/vorlage'
 //   (v3.31: `art` ist entfallen - `höhe === null` heisst Ganzbild, eine Zahl heisst Band.)
 
 /** Die IDs der mitgelieferten Vorlagen – Reihenfolge = Reihenfolge im Anfangsbestand. */
-export const EINGEBAUTE_VORLAGEN_IDS = ['vollbild', 'split', 'band-standard'] as const
+export const EINGEBAUTE_VORLAGEN_IDS = [
+  // Die drei aus der ersten Fassung. Sie stehen VORN, damit ein bestehendes Projekt seine
+  // gewohnte Auswahl behaelt (`vorlageFuerNeueAktion` nimmt die erste waehlbare).
+  'vollbild',
+  'split',
+  'band-standard',
+  // SEIT 05.11.2026 (Niklas: „es fehlen noch mehr richtig krasse vorlagen"): sechs weitere
+  // Ganzbild-Looks. Sie kommen HINTEN dazu; der Laden-Vorgang haengt fehlende eingebaute
+  // Vorlagen an das Ende an (`schreibe-vorlagen.ts`), bestehende Eintraege bleiben
+  // unangetastet (TK 9.11.1.1). KEINE ID wird umbenannt - sie ist gespeicherter Bestand.
+  'riesig',
+  'farbband',
+  'zentriert',
+  'ecke',
+  'kopf-fuss',
+  'grosser-preis',
+] as const
 
 /**
  * Liefert bei JEDEM Aufruf eine frische, TIEFE Kopie der drei mitgelieferten Vorlagen.
@@ -32,7 +48,17 @@ export const EINGEBAUTE_VORLAGEN_IDS = ['vollbild', 'split', 'band-standard'] as
  * deshalb praktisch nicht reproduzierbar ist.
  */
 export function eingebauteVorlagen(): Vorlage[] {
-  return [vollbild(), split(), bandStandard()]
+  return [
+    vollbild(),
+    split(),
+    bandStandard(),
+    riesig(),
+    farbband(),
+    zentriert(),
+    ecke(),
+    kopfUndFuss(),
+    grosserPreis(),
+  ]
 }
 
 // WIE DIE TIEFE KOPIE ZUSTANDE KOMMT - und warum hier keine Kopierroutine steht:
@@ -413,6 +439,718 @@ function bandStandard(): Vorlage {
           maxZeilen: 1,
         },
         deko: { füllungFarbRolle: 'flaecheHell', radius: 36 },
+      },
+    ],
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SEIT 05.11.2026: sechs weitere Ganzbild-Looks (Niklas: „es fehlen noch mehr
+// richtig krasse vorlagen"). Alle sechs sind 1920 x 1080 (`höhe: null`) und
+// benutzen AUSSCHLIESSLICH das bestehende Zonen-Modell – keine neue Zonenart,
+// kein Sonderfall im Zeichenweg. Ein neuer Look ist damit ein Datensatz, und
+// genau das verlangt FA-13.
+//
+// DIE ZAHLEN FOLGEN DENSELBEN REGELN wie oben: Inhaltskanten 96 / 1824 und
+// 54 / 1026 (Sicherheitsabstand, TK 9.10.5). Die Flaechen-Zonen (`band`,
+// `kopf`, `fuss`, `scrim`) duerfen darueber hinausgehen – sie tragen keinen
+// Inhalt, sondern Farbe. Neue Eintraege in `zonen-texte.ts` sorgen fuer ihren
+// Anzeigenamen im Vorlagen-Editor.
+// ---------------------------------------------------------------------------
+
+/** „Riesig" – der Titel ist das Bild; Text unten links, Pillen rechts. */
+function riesig(): Vorlage {
+  return {
+    id: 'riesig',
+    name: 'Riesig',
+    höhe: null,
+    parent: null,
+    eingebaut: true,
+    zonen: [
+      {
+        id: 'hintergrund',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'flaecheDunkel' },
+      },
+      {
+        id: 'motiv',
+        rolle: 'frei',
+        bindung: 'bild',
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'cover' },
+      },
+      // Abdunkelung OBEN: Der Titel steht auf dem oberen Drittel, der Verlauf macht ihn
+      // dort lesbar. "oben" heisst bei `baueVerlauf`: Stop 0 an der Unterkante
+      // (durchsichtig), Stop 1 an der Oberkante (dunkel).
+      {
+        id: 'scrim',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 700 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: {
+          verlauf: { vonFarbRolle: 'scrimStart', bisFarbRolle: 'scrimEnde', richtung: 'oben' },
+        },
+      },
+      {
+        id: 'logo',
+        rolle: 'fest',
+        bindung: 'logo',
+        rahmen: { x: 96, y: 54, breite: 360, höhe: 100 },
+        ausrichtung: { horizontal: 'links', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'contain' },
+      },
+      {
+        id: 'ueberschrift',
+        rolle: 'frei',
+        bindung: 'titel',
+        rahmen: { x: 96, y: 190, breite: 1728, höhe: 400 },
+        ausrichtung: { horizontal: 'links', vertikal: 'unten' },
+        wennLeer: 'leer',
+        // 190 px: knapp ein Fuenftel der Bildhoehe. Darunter waere es kein "Riesig".
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 190,
+          größeMin: 110,
+          maxZeilen: 2,
+        },
+      },
+      {
+        id: 'beschreibung',
+        rolle: 'frei',
+        bindung: 'beschreibung',
+        rahmen: { x: 96, y: 610, breite: 1000, höhe: 90 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'fliesstext',
+          farbRolle: 'textAufDunkel',
+          größeMax: 44,
+          größeMin: 32,
+          maxZeilen: 2,
+        },
+      },
+      {
+        id: 'preis',
+        rolle: 'frei',
+        bindung: 'preis',
+        rahmen: { x: 96, y: 860, breite: 480, höhe: 130 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 64,
+          größeMin: 40,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'akzent', radius: 40 },
+      },
+      {
+        id: 'cta',
+        rolle: 'frei',
+        bindung: 'cta',
+        rahmen: { x: 1300, y: 860, breite: 524, höhe: 120 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufHell',
+          größeMax: 52,
+          größeMin: 34,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'flaecheHell', radius: 40 },
+      },
+    ],
+  }
+}
+
+/** „Farbband unten" – Bild oben, darunter ein deckender Farbblock mit dem Text. */
+function farbband(): Vorlage {
+  return {
+    id: 'farbband',
+    name: 'Farbband unten',
+    höhe: null,
+    parent: null,
+    eingebaut: true,
+    zonen: [
+      {
+        id: 'hintergrund',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'flaecheDunkel' },
+      },
+      {
+        id: 'motiv',
+        rolle: 'frei',
+        bindung: 'bild',
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 700 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'cover' },
+      },
+      // Die Farbflaeche liegt UEBER dem Bild (Array-Reihenfolge = Zeichenreihenfolge) und
+      // deckt dessen untere Kante ab. Sie traegt keinen Inhalt - deshalb `bindung: null`
+      // und kein Sicherheitsabstand.
+      {
+        id: 'band',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 700, breite: 1920, höhe: 380 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'flaecheSehrDunkel' },
+      },
+      {
+        id: 'logo',
+        rolle: 'fest',
+        bindung: 'logo',
+        rahmen: { x: 96, y: 724, breite: 280, höhe: 84 },
+        ausrichtung: { horizontal: 'links', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'contain' },
+      },
+      {
+        id: 'ueberschrift',
+        rolle: 'frei',
+        bindung: 'titel',
+        rahmen: { x: 96, y: 824, breite: 1100, höhe: 110 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 96,
+          größeMin: 64,
+          maxZeilen: 1,
+        },
+      },
+      {
+        id: 'beschreibung',
+        rolle: 'frei',
+        bindung: 'beschreibung',
+        rahmen: { x: 96, y: 946, breite: 1100, höhe: 60 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'fliesstext',
+          farbRolle: 'textSekundaer',
+          größeMax: 38,
+          größeMin: 28,
+          maxZeilen: 1,
+        },
+      },
+      {
+        id: 'preis',
+        rolle: 'frei',
+        bindung: 'preis',
+        rahmen: { x: 1400, y: 760, breite: 424, höhe: 120 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 64,
+          größeMin: 40,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'akzent', radius: 40 },
+      },
+      {
+        id: 'cta',
+        rolle: 'frei',
+        bindung: 'cta',
+        rahmen: { x: 1400, y: 900, breite: 424, höhe: 100 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufHell',
+          größeMax: 44,
+          größeMin: 30,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'flaecheHell', radius: 40 },
+      },
+    ],
+  }
+}
+
+/** „Zentriert" – alles mittig untereinander, auf einer gleichmaessig abgedunkelten Flaeche. */
+function zentriert(): Vorlage {
+  return {
+    id: 'zentriert',
+    name: 'Zentriert',
+    höhe: null,
+    parent: null,
+    eingebaut: true,
+    zonen: [
+      {
+        id: 'hintergrund',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'flaecheDunkel' },
+      },
+      {
+        id: 'motiv',
+        rolle: 'frei',
+        bindung: 'bild',
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'cover' },
+      },
+      // GLEICHMAESSIGE Abdunkelung statt Verlauf: Bei mittigem Text weiss niemand, ueber
+      // welcher Bildstelle er landet - ein Verlauf haette oben oder unten eine helle
+      // Ecke, in der die Schrift verschwindet. `scrimEnde` ist die deckende Scrim-Rolle
+      // der Marke (TK 9.11.1) und laesst das Foto noch durchscheinen.
+      {
+        id: 'scrim',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'scrimEnde' },
+      },
+      {
+        id: 'logo',
+        rolle: 'fest',
+        bindung: 'logo',
+        rahmen: { x: 760, y: 54, breite: 400, höhe: 100 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'contain' },
+      },
+      {
+        id: 'ueberschrift',
+        rolle: 'frei',
+        bindung: 'titel',
+        rahmen: { x: 260, y: 280, breite: 1400, höhe: 240 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 140,
+          größeMin: 84,
+          maxZeilen: 2,
+        },
+      },
+      {
+        id: 'beschreibung',
+        rolle: 'frei',
+        bindung: 'beschreibung',
+        rahmen: { x: 360, y: 560, breite: 1200, höhe: 80 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'oben' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'fliesstext',
+          farbRolle: 'textSekundaer',
+          größeMax: 48,
+          größeMin: 34,
+          maxZeilen: 2,
+        },
+      },
+      {
+        id: 'preis',
+        rolle: 'frei',
+        bindung: 'preis',
+        rahmen: { x: 760, y: 700, breite: 400, höhe: 130 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 72,
+          größeMin: 44,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'akzent', radius: 40 },
+      },
+      {
+        id: 'cta',
+        rolle: 'frei',
+        bindung: 'cta',
+        rahmen: { x: 700, y: 870, breite: 520, höhe: 110 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufHell',
+          größeMax: 50,
+          größeMin: 32,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'flaecheHell', radius: 40 },
+      },
+    ],
+  }
+}
+
+/** „Ecke" – Textblock unten links auf der Abdunkelung, Bild laeuft ueber die ganze Flaeche. */
+function ecke(): Vorlage {
+  return {
+    id: 'ecke',
+    name: 'Ecke',
+    höhe: null,
+    parent: null,
+    eingebaut: true,
+    zonen: [
+      {
+        id: 'hintergrund',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'flaecheDunkel' },
+      },
+      {
+        id: 'motiv',
+        rolle: 'frei',
+        bindung: 'bild',
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'cover' },
+      },
+      // Nur die linke untere Ecke wird abgedunkelt - der Rest des Fotos bleibt sichtbar.
+      {
+        id: 'scrim',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 520, breite: 1100, höhe: 560 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: {
+          verlauf: { vonFarbRolle: 'scrimStart', bisFarbRolle: 'scrimEnde', richtung: 'unten' },
+        },
+      },
+      {
+        id: 'logo',
+        rolle: 'fest',
+        bindung: 'logo',
+        rahmen: { x: 96, y: 54, breite: 320, höhe: 90 },
+        ausrichtung: { horizontal: 'links', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'contain' },
+      },
+      {
+        id: 'ueberschrift',
+        rolle: 'frei',
+        bindung: 'titel',
+        rahmen: { x: 96, y: 640, breite: 900, höhe: 150 },
+        ausrichtung: { horizontal: 'links', vertikal: 'unten' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 110,
+          größeMin: 70,
+          maxZeilen: 2,
+        },
+      },
+      {
+        id: 'beschreibung',
+        rolle: 'frei',
+        bindung: 'beschreibung',
+        rahmen: { x: 96, y: 800, breite: 900, höhe: 70 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'fliesstext',
+          farbRolle: 'textSekundaer',
+          größeMax: 38,
+          größeMin: 28,
+          maxZeilen: 2,
+        },
+      },
+      {
+        id: 'preis',
+        rolle: 'frei',
+        bindung: 'preis',
+        rahmen: { x: 96, y: 890, breite: 380, höhe: 110 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 60,
+          größeMin: 38,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'akzent', radius: 40 },
+      },
+      {
+        id: 'cta',
+        rolle: 'frei',
+        bindung: 'cta',
+        rahmen: { x: 500, y: 890, breite: 380, höhe: 110 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufHell',
+          größeMax: 44,
+          größeMin: 30,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'flaecheHell', radius: 40 },
+      },
+    ],
+  }
+}
+
+/** „Kopf und Fuß" – Titel oben auf einer Leiste, Bild in der Mitte, Angebot unten. */
+function kopfUndFuss(): Vorlage {
+  return {
+    id: 'kopf-fuss',
+    name: 'Kopf und Fuß',
+    höhe: null,
+    parent: null,
+    eingebaut: true,
+    zonen: [
+      {
+        id: 'hintergrund',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'flaecheDunkel' },
+      },
+      {
+        id: 'kopf',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 220 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'flaecheSehrDunkel' },
+      },
+      {
+        id: 'logo',
+        rolle: 'fest',
+        bindung: 'logo',
+        rahmen: { x: 1500, y: 60, breite: 324, höhe: 100 },
+        ausrichtung: { horizontal: 'links', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'contain' },
+      },
+      {
+        id: 'ueberschrift',
+        rolle: 'frei',
+        bindung: 'titel',
+        rahmen: { x: 96, y: 60, breite: 1300, höhe: 100 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 96,
+          größeMin: 64,
+          maxZeilen: 1,
+        },
+      },
+      // `cover` und nicht `contain`: Die Mittelspalte ist ein 1920 x 560 breiter Streifen.
+      // Mit `contain` entstuenden links und rechts zwei Balken in Hintergrundfarbe; der
+      // Look lebt davon, dass das Bild die volle Breite traegt.
+      {
+        id: 'motiv',
+        rolle: 'frei',
+        bindung: 'bild',
+        rahmen: { x: 0, y: 220, breite: 1920, höhe: 560 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'cover' },
+      },
+      {
+        id: 'fuss',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 780, breite: 1920, höhe: 300 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'flaecheDunkel' },
+      },
+      {
+        id: 'beschreibung',
+        rolle: 'frei',
+        bindung: 'beschreibung',
+        rahmen: { x: 96, y: 810, breite: 1100, höhe: 70 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'fliesstext',
+          farbRolle: 'textSekundaer',
+          größeMax: 38,
+          größeMin: 28,
+          maxZeilen: 1,
+        },
+      },
+      {
+        id: 'preis',
+        rolle: 'frei',
+        bindung: 'preis',
+        rahmen: { x: 96, y: 900, breite: 420, höhe: 110 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 60,
+          größeMin: 38,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'akzent', radius: 40 },
+      },
+      {
+        id: 'cta',
+        rolle: 'frei',
+        bindung: 'cta',
+        rahmen: { x: 560, y: 900, breite: 420, höhe: 110 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufHell',
+          größeMax: 44,
+          größeMin: 30,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'flaecheHell', radius: 40 },
+      },
+    ],
+  }
+}
+
+/** „Großer Preis" – die Zahl ist das Plakat; Titel und Beschreibung treten zurueck. */
+function grosserPreis(): Vorlage {
+  return {
+    id: 'grosser-preis',
+    name: 'Großer Preis',
+    höhe: null,
+    parent: null,
+    eingebaut: true,
+    zonen: [
+      {
+        id: 'hintergrund',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: { füllungFarbRolle: 'flaecheDunkel' },
+      },
+      {
+        id: 'motiv',
+        rolle: 'frei',
+        bindung: 'bild',
+        rahmen: { x: 0, y: 0, breite: 1920, höhe: 1080 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'cover' },
+      },
+      {
+        id: 'scrim',
+        rolle: 'fest',
+        bindung: null,
+        rahmen: { x: 0, y: 300, breite: 1920, höhe: 780 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        deko: {
+          verlauf: { vonFarbRolle: 'scrimStart', bisFarbRolle: 'scrimEnde', richtung: 'unten' },
+        },
+      },
+      {
+        id: 'logo',
+        rolle: 'fest',
+        bindung: 'logo',
+        rahmen: { x: 96, y: 54, breite: 320, höhe: 90 },
+        ausrichtung: { horizontal: 'links', vertikal: 'mitte' },
+        wennLeer: 'leer',
+        bild: { einpassung: 'contain' },
+      },
+      {
+        id: 'ueberschrift',
+        rolle: 'frei',
+        bindung: 'titel',
+        rahmen: { x: 96, y: 560, breite: 1200, höhe: 140 },
+        ausrichtung: { horizontal: 'links', vertikal: 'unten' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 88,
+          größeMin: 56,
+          maxZeilen: 2,
+        },
+      },
+      {
+        id: 'beschreibung',
+        rolle: 'frei',
+        bindung: 'beschreibung',
+        rahmen: { x: 96, y: 720, breite: 1100, höhe: 70 },
+        ausrichtung: { horizontal: 'links', vertikal: 'oben' },
+        wennLeer: 'leer',
+        text: {
+          schriftRolle: 'fliesstext',
+          farbRolle: 'textSekundaer',
+          größeMax: 36,
+          größeMin: 28,
+          maxZeilen: 1,
+        },
+      },
+      {
+        id: 'preis',
+        rolle: 'frei',
+        bindung: 'preis',
+        rahmen: { x: 96, y: 800, breite: 900, höhe: 200 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        // 190 px Startgroesse mit `maxZeilen: 1`: Die Kaskade verkleinert, wenn die Zahl
+        // laenger ist als der Rahmen - lieber kleiner als abgeschnitten.
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufDunkel',
+          größeMax: 190,
+          größeMin: 110,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'akzent', radius: 60 },
+      },
+      {
+        id: 'cta',
+        rolle: 'frei',
+        bindung: 'cta',
+        rahmen: { x: 1100, y: 850, breite: 524, höhe: 120 },
+        ausrichtung: { horizontal: 'mitte', vertikal: 'mitte' },
+        wennLeer: 'ausblenden',
+        text: {
+          schriftRolle: 'headlinePlakativ',
+          farbRolle: 'textAufHell',
+          größeMax: 50,
+          größeMin: 32,
+          maxZeilen: 1,
+        },
+        deko: { füllungFarbRolle: 'flaecheHell', radius: 40 },
       },
     ],
   }

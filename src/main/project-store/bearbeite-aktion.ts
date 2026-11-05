@@ -6,6 +6,10 @@
 import { holeAktivesProjekt } from './aktives-projekt'              // #192
 import { planeAutoSpeicherung } from './auto-speichern'             // #47
 import { mitD1Lock } from './d1-lock'                               // #32
+import {
+  normalisiereBildAusschnitt,
+  normalisiereZonenGestaltung,
+} from '../../shared/gestaltung'
 import type { Aktion } from '../../shared/contracts/aktion'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { ProjectStoreFehlercode } from './assets'            // #72
@@ -235,6 +239,20 @@ export async function bearbeiteAktion(
     // Markenwert" und ist ein zugesagter Zustand, kein Fehler.
     if (aktionsdaten.akzentfarbe !== undefined) {
       aktion.akzentfarbe = aktionsdaten.akzentfarbe
+    }
+
+    // SEIT 05.11.2026 (TK 9.8.8): Gestaltung je Zone und Bildausschnitt. Beide werden
+    // NORMALISIERT uebernommen; ein Fremdfeld aus einer anderen Fassung faellt weg, und
+    // das ist hier besonders wichtig: Ein Spread ist in dieser Funktion verboten (s. o.),
+    // also muss jedes Feld, das dauerhaft in `project.json` stehen darf, HIER stehen.
+    // `zonenGestaltung` ist ein Record und wird als GANZES ersetzt, nicht je Zone
+    // gemischt: Der Editor schickt immer den vollstaendigen Stand, und ein Mischen
+    // koennte eine bewusst geloeschte Angabe nicht ausdruecken.
+    if (aktionsdaten.zonenGestaltung !== undefined) {
+      aktion.zonenGestaltung = normalisiereZonenGestaltung(aktionsdaten.zonenGestaltung)
+    }
+    if (aktionsdaten.bildAusschnitt !== undefined) {
+      aktion.bildAusschnitt = normalisiereBildAusschnitt(aktionsdaten.bildAusschnitt)
     }
 
     // VORGEMERKT WIRD UNBEDINGT - auch wenn `aktionsdaten` leer war oder jedes Feld seinen

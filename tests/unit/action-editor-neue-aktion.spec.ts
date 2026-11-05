@@ -868,3 +868,137 @@ describe('Farbauswahl', () => {
     expect(gezeichnet?.akzentfarbe).toBeNull()
   })
 })
+
+// ---------------------------------------------------------------------------
+// SEIT 05.11.2026 (TK 9.8.8): Gestaltung je Zone und Bildausschnitt im Inspector.
+// ---------------------------------------------------------------------------
+
+/** Einen Regler (input type=range) bewegen - Reacts onChange haengt an `input`. */
+async function setzeRegler(behaelter: HTMLDivElement, testid: string, wert: number): Promise<void> {
+  const feld = behaelter.querySelector(`[data-testid="${testid}"]`) as HTMLInputElement | null
+  if (feld === null) throw new Error(`Regler ${testid} fehlt`)
+  const setzeWert = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+  await act(async () => {
+    setzeWert?.call(feld, String(wert))
+    feld.dispatchEvent(new Event('input', { bubbles: true }))
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+}
+
+const GESTALTUNGS_VORLAGE = vorlageMitZonen('gestaltbar', null, [
+  zone('titel', {
+    id: 'ueberschrift',
+    text: {
+      schriftRolle: 'headlinePlakativ',
+      farbRolle: 'textAufDunkel',
+      größeMax: 96,
+      größeMin: 56,
+      maxZeilen: 2,
+    },
+  }),
+  zone('preis', {
+    id: 'preis',
+    deko: { füllungFarbRolle: 'akzent', radius: 40 },
+  }),
+  zone('bild', { id: 'motiv', bild: { einpassung: 'cover' } }),
+])
+
+describe('Gestaltung je Zone (05.11.2026)', () => {
+  it('zeigt nur Zonen, die Text oder Flaeche tragen - und je Zone die passenden Regler', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [GESTALTUNGS_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [GESTALTUNGS_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    const titelZone = behaelter.querySelector('[data-testid="aktion-zone-ueberschrift"]')
+    expect(titelZone).not.toBeNull()
+    // Die Titelzone hat Text: Schriftfarbe, Groesse, Ausrichtung.
+    expect(behaelter.querySelector('[data-testid="aktion-zone-ueberschrift-textfarbe"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-zone-ueberschrift-groesse"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-zone-ueberschrift-ausrichtung-mitte"]')).not.toBeNull()
+    // Sie hat KEINE Flaeche.
+    expect(behaelter.querySelector('[data-testid="aktion-zone-ueberschrift-flaeche"]')).toBeNull()
+
+    // Die Preiszone hat beides.
+    expect(behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche"]')).not.toBeNull()
+  })
+
+  it('eine Flaechenwahl landet im ENTWURF (kein Projekt-Kanal) und erreicht die Vorschau', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [GESTALTUNGS_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [GESTALTUNGS_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche', '#00ff00')
+
+    expect(projektAufrufe()).toHaveLength(0)
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.preis?.flaechefarbe).toBe('#00ff00')
+  })
+
+  it('Groesse und Ausrichtung gehen in den Entwurf', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [GESTALTUNGS_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [GESTALTUNGS_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await setzeRegler(behaelter, 'aktion-zone-ueberschrift-groesse', 150)
+    await klicke(behaelter, 'aktion-zone-ueberschrift-ausrichtung-rechts')
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.ueberschrift).toMatchObject({
+      groesseProzent: 150,
+      ausrichtung: 'rechts',
+    })
+    expect(projektAufrufe()).toHaveLength(0)
+  })
+
+  it('„Zuruecksetzen" nimmt die Angaben der Zone wieder heraus', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [GESTALTUNGS_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [GESTALTUNGS_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche', '#00ff00')
+    await klicke(behaelter, 'aktion-zone-preis-zuruecksetzen')
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.preis).toBeUndefined()
+  })
+})
+
+describe('Bildausschnitt (05.11.2026)', () => {
+  it('Zoom und Versatz landen im Entwurf und in der Vorschau', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [GESTALTUNGS_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [GESTALTUNGS_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await setzeRegler(behaelter, 'aktion-ausschnitt-zoom', 150)
+    await setzeRegler(behaelter, 'aktion-ausschnitt-x', 20)
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.bildAusschnitt).toMatchObject({ zoom: 150, versatzX: 20, versatzY: 0 })
+    expect(projektAufrufe()).toHaveLength(0)
+  })
+
+  it('„Wie die Vorlage" nimmt den Ausschnitt zurueck', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [GESTALTUNGS_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [GESTALTUNGS_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await setzeRegler(behaelter, 'aktion-ausschnitt-zoom', 200)
+    await klicke(behaelter, 'aktion-ausschnitt-zuruecksetzen')
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.bildAusschnitt).toBeNull()
+  })
+})

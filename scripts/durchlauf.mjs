@@ -6379,6 +6379,47 @@ const main = async () => {
         console.log(`[schritt-4g7] AKZENTFARBE GEMESSEN: input type=color, kein Schein-Select, ${String(akzent4g7.markenFarben)} Markenfarben, Bereich "Zuletzt verwendet" (05.11.2026).`);
       }
 
+      // Schritt 4g7 c (05.11.2026, TK 9.8.8): Gestaltung je Zone und Bildausschnitt.
+      // Gemessen wird, dass die Regler AM FENSTER da sind und dass die neuen Looks
+      // angeboten werden - die Wirkung selbst ist in den Unit-Tests belegt.
+      const gestaltung4g7 = await seite.evaluate(() => {
+        const zonen = document.querySelector('[data-testid="aktion-zonen"]');
+        const ausschnitt = document.querySelector('[data-testid="aktion-ausschnitt"]');
+        const zoom = document.querySelector('[data-testid="aktion-ausschnitt-zoom"]');
+        return {
+          zonenBereich: zonen !== null,
+          zonenAnzahl: zonen === null ? 0 : zonen.querySelectorAll(":scope > div").length,
+          textfarben: document.querySelectorAll('[data-testid$="-textfarbe"]').length,
+          flaechen: document.querySelectorAll('[data-testid$="-flaeche"]').length,
+          groessenRegler: document.querySelectorAll('[data-testid$="-groesse"]').length,
+          ausschnitt: ausschnitt !== null,
+          zoomTyp: zoom === null ? null : zoom.getAttribute("type"),
+          vorlagenKacheln: document.querySelectorAll('[data-testid^="aktion-vorlage-"]').length,
+        };
+      });
+      console.log(`[schritt-4g7] Zonen und Ausschnitt: ${JSON.stringify(gestaltung4g7)}.`);
+      if (!gestaltung4g7.zonenBereich || gestaltung4g7.zonenAnzahl === 0) {
+        fund('Gestaltung je Zone', 'der Schritt „Zonen“ zeigt die Zonen der Vorlage',
+          `Bereich=${String(gestaltung4g7.zonenBereich)}, Eintraege=${String(gestaltung4g7.zonenAnzahl)}`,
+          "Befund", "action-editor/zonen-gestaltung.tsx");
+      } else if (gestaltung4g7.textfarben === 0 || gestaltung4g7.flaechen === 0 || gestaltung4g7.groessenRegler === 0) {
+        fund('Gestaltung je Zone', 'je Zone stehen Schriftfarbe, Flaechenfarbe, Groesse und Ausrichtung',
+          `Textfarben=${String(gestaltung4g7.textfarben)}, Flaechen=${String(gestaltung4g7.flaechen)}, Groessen=${String(gestaltung4g7.groessenRegler)}`,
+          "Befund", "action-editor/zonen-gestaltung.tsx");
+      } else if (!gestaltung4g7.ausschnitt || gestaltung4g7.zoomTyp !== "range") {
+        fund('Bildausschnitt', 'Zoom und Position sind Regler am Fenster',
+          `Bereich=${String(gestaltung4g7.ausschnitt)}, Zoom-Typ=${String(gestaltung4g7.zoomTyp)}`,
+          "Befund", "action-editor/bild-ausschnitt.tsx");
+      } else if (gestaltung4g7.vorlagenKacheln < 8) {
+        // Acht = die acht waehlbaren Ganzbild-Vorlagen (drei alte ohne das Band + sechs
+        // neue, Stand 05.11.2026). Weniger heisst: die neuen Looks fehlen im Bestand.
+        fund('Neue Vorlagen', 'die sechs neuen Looks stehen in der Vorlagen-Auswahl',
+          `Kacheln=${String(gestaltung4g7.vorlagenKacheln)}, erwartet mindestens 8`,
+          "Befund", "vorlagen-store/eingebaute-vorlagen.ts");
+      } else {
+        console.log(`[schritt-4g7] GESTALTUNG GEMESSEN: ${String(gestaltung4g7.zonenAnzahl)} Zonen mit Schrift-/Flaechenreglern, Bildausschnitt als Regler, ${String(gestaltung4g7.vorlagenKacheln)} Vorlagen-Kacheln.`);
+      }
+
       // Kein Datensatz entstanden - der Entwurf bleibt einfach stehen; zurueck auf den
       // Reiter, den die Aufraeum-Schritte erwarten.
       await klick('[data-testid="reiter-zusammenstellen"]');

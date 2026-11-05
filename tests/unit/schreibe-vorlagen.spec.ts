@@ -5,6 +5,10 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Vorlage } from "../../src/shared/contracts/vorlage";
+// SEIT 05.11.2026 sind es NEUN eingebaute Vorlagen (sechs neue Looks). Die Tests zaehlen
+// sie deshalb ueber die Konstante und nicht ueber eine abgeschriebene Liste: Eine vierte
+// eingebaute Vorlage soll hier nicht elf Tests rot machen, ohne dass sich Verhalten aendert.
+import { EINGEBAUTE_VORLAGEN_IDS } from "../../src/main/vorlagen-store/eingebaute-vorlagen";
 
 // Unit-Test zu #98. Er prueft VERHALTEN auf einer echten Platte, in einem eigenen
 // Temp-Ordner - nicht die Deklarationen.
@@ -119,16 +123,16 @@ afterEach(async () => {
 });
 
 describe("ladeBestand (#98)", () => {
-  it("legt bei fehlender vorlagen.json die drei eingebauten an", async () => {
+  it("legt bei fehlender vorlagen.json alle eingebauten an", async () => {
     const ergebnis = await modul.ladeBestand();
 
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
-    expect(ids(ergebnis.wert)).toEqual(["vollbild", "split", "band-standard"]);
+    expect(ids(ergebnis.wert)).toEqual([...EINGEBAUTE_VORLAGEN_IDS]);
 
     const datei = await liesDatei();
     expect(datei.schemaVersion).toBe(2);
-    expect(ids(datei.vorlagen)).toEqual(["vollbild", "split", "band-standard"]);
+    expect(ids(datei.vorlagen)).toEqual([...EINGEBAUTE_VORLAGEN_IDS]);
   });
 
   it("migriert v1 -> v2: entfernt `art`, setzt die neuen Namen, loescht NICHTS und schreibt v2", async () => {
@@ -149,9 +153,16 @@ describe("ladeBestand (#98)", () => {
 
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
-    // Drei eingebaute + die eigene: KEINE Vorlage wird geloescht.
-    expect(ergebnis.wert.map((v) => v.id)).toEqual(["vollbild", "split", "band-standard", "eigene-1"]);
-    expect(ergebnis.wert.map((v) => v.name)).toEqual([
+    // Die eigenen und die vorhandenen eingebauten bleiben, die FEHLENDEN eingebauten
+    // kommen hinten dazu: KEINE Vorlage wird geloescht.
+    // Die vorhandenen Eintraege bleiben VORN und in ihrer Reihenfolge; die fehlenden
+    // eingebauten werden hinten angehaengt (TK 9.11.1.1).
+    expect(ergebnis.wert.map((v) => v.id)).toEqual([
+      ...EINGEBAUTE_VORLAGEN_IDS.slice(0, 3),
+      "eigene-1",
+      ...EINGEBAUTE_VORLAGEN_IDS.slice(3),
+    ]);
+    expect(ergebnis.wert.slice(0, 4).map((v) => v.name)).toEqual([
       "Ganzflächig",
       "Zwei Spalten",
       "Band-Standard",
@@ -203,7 +214,7 @@ describe("ladeBestand (#98)", () => {
 
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
-    expect(ids(ergebnis.wert)).toEqual(["vollbild", "split", "band-standard"]);
+    expect(ids(ergebnis.wert)).toEqual([...EINGEBAUTE_VORLAGEN_IDS]);
     expect(ergebnis.wert[0]).toEqual(abgeaendert);
 
     // Und dasselbe auf der Platte: Der Eintrag ist byte-identisch geblieben.
@@ -236,7 +247,7 @@ describe("ladeBestand (#98)", () => {
     expect(ergebnis.ok).toBe(true);
     if (!ergebnis.ok) return;
     // Die eigene Vorlage ist da; die fehlenden eingebauten sind hinten ergaenzt.
-    expect(ids(ergebnis.wert)).toEqual(["eigene-1", "vollbild", "split", "band-standard"]);
+    expect(ids(ergebnis.wert)).toEqual(["eigene-1", ...EINGEBAUTE_VORLAGEN_IDS]);
   });
 
   it("laesst die defekte Datei byte-identisch, wenn nichts zu ergaenzen ist", async () => {
@@ -246,7 +257,7 @@ describe("ladeBestand (#98)", () => {
       "vorlagen.json.bak",
       JSON.stringify({
         schemaVersion: 1,
-        vorlagen: [eigene("vollbild"), eigene("split"), eigene("band-standard")],
+        vorlagen: EINGEBAUTE_VORLAGEN_IDS.map((id) => eigene(id)),
       }),
     );
 
@@ -318,7 +329,7 @@ describe("aendereBestand (#98)", () => {
     const gerettet = eigene("eigene-1");
     const heilesBak = JSON.stringify({
       schemaVersion: 1,
-      vorlagen: [gerettet, eigene("vollbild"), eigene("split"), eigene("band-standard")],
+      vorlagen: [gerettet, ...EINGEBAUTE_VORLAGEN_IDS.map((id) => eigene(id))],
     });
     // ABSICHTLICH GUELTIGES JSON mit KAPUTTER Form: `vorlagen` ist kein Array. Dieser Fall
     // trifft die Ausnahme haerter als eine abgeschnittene Datei - eine solche faellt schon
@@ -375,7 +386,7 @@ describe("aendereBestand (#98)", () => {
     const danach = await modul.ladeBestand();
     expect(danach.ok).toBe(true);
     if (!danach.ok) return;
-    expect(ids(danach.wert)).toEqual(["vollbild", "split", "band-standard"]);
+    expect(ids(danach.wert)).toEqual([...EINGEBAUTE_VORLAGEN_IDS]);
   });
 
   it("faengt eine werfende Aenderung als unbekannter_fehler ab", async () => {

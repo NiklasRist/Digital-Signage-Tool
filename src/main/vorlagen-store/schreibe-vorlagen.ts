@@ -402,8 +402,16 @@ async function ladeVonPlatte(): Promise<Ergebnis<Vorlage[], VorlagenFehlercode>>
   // EINE MIGRATION WIRD FESTGESCHRIEBEN - ausser der Bestand stammt aus der .bak-Rettung:
   // Dann bleibt die defekte Datei unangetastet liegen und wird erst beim naechsten
   // regulaeren Schreiben ersetzt (dieselbe Regel wie oben).
+  //
+  // SEIT 05.11.2026 GILT DIE AUSNAHME AUCH FUER FEHLENDE EINGEBAUTE VORLAGEN. Der Anlass
+  // ist echt: Mit den sechs neuen Looks fehlten nach einer .bak-Rettung regelmaessig
+  // eingebaute Vorlagen (eine aeltere Sicherung kennt sie nicht). Die fehlenden wurden
+  // ergaenzt - und dabei die DEFEKTE Datei ueberschrieben, obwohl die Rettung sie
+  // ausdruecklich liegen lassen soll. Im Speicher sind die neuen Vorlagen sofort da; auf
+  // die Platte kommen sie mit dem naechsten regulaeren Schreibvorgang.
+  const fehlendeSchreiben = fehlendeIds.length > 0 && !ausBakGerettet
   const migrationSchreiben = anfang.wert.migriert && !ausBakGerettet
-  if (anfang.wert.neuAngelegt || migrationSchreiben || fehlendeIds.length > 0) {
+  if (anfang.wert.neuAngelegt || migrationSchreiben || fehlendeSchreiben) {
     const geschrieben = await schreibeUndMelde(vorlagen)
     if (!geschrieben.ok) {
       return geschrieben

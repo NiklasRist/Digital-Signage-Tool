@@ -4,7 +4,7 @@ import { SICHERHEITSABSTAND_PX } from "../../src/shared/contracts/konstanten";
 import { zeichneTextZone } from "../../src/renderer/template-canvas/zone-text";
 import { schriftKurzform } from "../../src/renderer/template-canvas/schriften";
 import { ZEILENHOEHE_FAKTOR } from "../../src/renderer/template-canvas/text-kaskade";
-import { loeseFarbe, loeseSchrift } from "../../src/renderer/template-canvas/farben";
+import { loeseFarbe, loeseFarbeInZone, loeseSchrift } from "../../src/renderer/template-canvas/farben";
 import { passeTextEin } from "../../src/renderer/template-canvas/text-kaskade";
 
 import type { Aktion, AktionsInhalt } from "../../src/shared/contracts/aktion";
@@ -20,6 +20,7 @@ vi.mock("../../src/renderer/template-canvas/farben", async (importOriginal) => {
   const echt = await importOriginal<typeof import("../../src/renderer/template-canvas/farben")>();
   return {
     loeseFarbe: vi.fn(echt.loeseFarbe),
+    loeseFarbeInZone: vi.fn(echt.loeseFarbeInZone),
     loeseSchrift: vi.fn(echt.loeseSchrift),
   };
 });
@@ -400,17 +401,22 @@ function letzter(ereignisse: Ereignis[], name: string): number {
 }
 
 describe("zeichneTextZone (#114) - Farbe und Schrift nur über #112/#110", () => {
-  it("ruft loeseFarbe mit (marke, rolle, aktion) in dieser Reihenfolge", () => {
+  it("ruft loeseFarbeInZone mit (marke, rolle, aktion, zone) in dieser Reihenfolge", () => {
+    // SEIT 05.11.2026 ist `loeseFarbeInZone` die Naht der Textzone (TK 9.8.8): Sie wertet
+    // die Gestaltung der Zone aus und reicht sonst an `loeseFarbe` weiter. Die ZONE gehoert
+    // dazu, weil die eigene Textfarbe an ihrer Kennung haengt.
     const { kontext } = baueKontextDoppel();
     const m = marke();
     const a = aktion(null);
-    zeichneTextZone(kontext, zone({}, { farbRolle: "textAufHell" }), "Beispiel", m, a);
+    const z = zone({}, { farbRolle: "textAufHell" });
+    zeichneTextZone(kontext, z, "Beispiel", m, a);
 
-    const ruf = vi.mocked(loeseFarbe).mock.calls.at(-1);
+    const ruf = vi.mocked(loeseFarbeInZone).mock.calls.at(-1);
     expect(ruf?.[0]).toBe(m);
     expect(ruf?.[1]).toBe("textAufHell");
     expect(ruf?.[2]).toBe(a);
-    expect(ruf).toHaveLength(3);
+    expect(ruf?.[3]).toBe(z);
+    expect(ruf).toHaveLength(4);
   });
 
   it("ruft loeseSchrift mit (marke, rolle) und liest marke.schriften nicht selbst", () => {
@@ -458,8 +464,8 @@ describe("zeichneTextZone (#114) - Fehlerpfade werfen nicht", () => {
     expect(erster(ereignisse, "restore")).toBeGreaterThan(-1);
   });
 
-  it("loeseFarbe wirft -> kein fillText, keine Ausnahme, restore gelaufen", () => {
-    vi.mocked(loeseFarbe).mockImplementation(() => {
+  it("loeseFarbeInZone wirft -> kein fillText, keine Ausnahme, restore gelaufen", () => {
+    vi.mocked(loeseFarbeInZone).mockImplementation(() => {
       throw new Error("unzulässiges Farbformat");
     });
     const { kontext, fillTextAufrufe, ereignisse } = baueKontextDoppel();
@@ -525,5 +531,102 @@ describe("zeichneTextZone (#114) - leeres Kaskadenergebnis", () => {
     expect(() => zeichneTextZone(kontext, zone(), "Beispiel", marke(), aktion(null))).not.toThrow();
     expect(fillTextAufrufe).toHaveLength(0);
     expect(erster(ereignisse, "restore")).toBeGreaterThan(-1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SEIT 05.11.2026 (TK 9.8.8): Groesse und Ausrichtung je Zone.
+// ---------------------------------------------------------------------------
+
+const mitGestaltung = (gestaltung: Aktion["zonenGestaltung"]): Aktion => ({
+  ...aktion(null),
+  zonenGestaltung: gestaltung,
+});
+
+/** Die Wurf-Attrappen der Fehlerpfade oben gelten sonst weiter - hier zaehlt das echte
+ *  Verhalten. `mockRestore` stellt die beim Anlegen uebergebene echte Funktion wieder her. */
+function frischeMocks(): void {
+  vi.mocked(loeseFarbeInZone).mockRestore();
+  vi.mocked(loeseSchrift).mockRestore();
+  vi.mocked(passeTextEin).mockRestore();
+}
+
+describe("zeichneTextZone - Groesse je Zone (TK 9.8.8)", () => {
+  beforeEach(frischeMocks);
+
+  it("ohne eigene Wahl startet die Kaskade mit den Vorlagenwerten", () => {
+    const { kontext } = baueKontextDoppel();
+    zeichneTextZone(kontext, zone(), "Beispiel", marke(), aktion(null));
+
+    const ruf = vi.mocked(passeTextEin).mock.calls.at(-1);
+    expect(ruf?.[0].größeMax).toBe(72);
+    expect(ruf?.[0].größeMin).toBe(24);
+  });
+
+  it("150 Prozent skalieren groesste UND kleinste Groesse", () => {
+    // Nur das Maximum zu skalieren waere falsch: Der Text liefe sofort in die
+    // Untergrenze, und die Kaskade verkleinerte ihn wieder auf den Vorlagenwert.
+    const { kontext } = baueKontextDoppel();
+    zeichneTextZone(kontext, zone(), "Beispiel", marke(), mitGestaltung({ ueberschrift: { groesseProzent: 150 } }));
+
+    const ruf = vi.mocked(passeTextEin).mock.calls.at(-1);
+    expect(ruf?.[0].größeMax).toBe(108);
+    expect(ruf?.[0].größeMin).toBe(36);
+  });
+
+  it("die Groesse gilt NUR fuer ihre eigene Zone", () => {
+    const { kontext } = baueKontextDoppel();
+    zeichneTextZone(kontext, zone(), "Beispiel", marke(), mitGestaltung({ preis: { groesseProzent: 200 } }));
+
+    const ruf = vi.mocked(passeTextEin).mock.calls.at(-1);
+    expect(ruf?.[0].größeMax).toBe(72);
+  });
+
+  it("ein unbrauchbarer Wert aendert nichts", () => {
+    const { kontext } = baueKontextDoppel();
+    zeichneTextZone(
+      kontext,
+      zone(),
+      "Beispiel",
+      marke(),
+      mitGestaltung({ ueberschrift: { groesseProzent: 1_000_000 } }),
+    );
+
+    // 1000000 wird auf die Reglergrenze 200 gedeckelt - nicht verworfen. Das ist die
+    // bewusste Regel: der Regler kann nicht mehr, aber ein alter Wert soll wirken.
+    const ruf = vi.mocked(passeTextEin).mock.calls.at(-1);
+    expect(ruf?.[0].größeMax).toBe(144);
+  });
+});
+
+describe("zeichneTextZone - Ausrichtung je Zone (TK 9.8.8)", () => {
+  beforeEach(frischeMocks);
+
+  it("eigene Ausrichtung schlaegt die der Vorlage", () => {
+    const { kontext, ereignisse } = baueKontextDoppel();
+    zeichneTextZone(
+      kontext,
+      zone(),
+      "Beispiel",
+      marke(),
+      mitGestaltung({ ueberschrift: { ausrichtung: "rechts" } }),
+    );
+
+    const align = ereignisse.find((e) => e.art === "set" && e.name === "textAlign");
+    expect(align?.wert).toBe("right");
+  });
+
+  it("ohne eigene Wahl gilt die Vorlage", () => {
+    const { kontext, ereignisse } = baueKontextDoppel();
+    zeichneTextZone(
+      kontext,
+      zone({ ausrichtung: { horizontal: "mitte", vertikal: "oben" } }),
+      "Beispiel",
+      marke(),
+      mitGestaltung({ preis: { ausrichtung: "rechts" } }),
+    );
+
+    const align = ereignisse.find((e) => e.art === "set" && e.name === "textAlign");
+    expect(align?.wert).toBe("center");
   });
 });

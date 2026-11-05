@@ -34,6 +34,7 @@ import {
   speichereAktion,
   type AktionsEntwurf,
 } from '../../src/renderer/action-editor/aktion-bearbeiten'
+import { bedienerBefundText } from '../../src/renderer/action-editor/befund-texte'
 
 // ---------------- Bausteine ----------------
 
@@ -132,6 +133,9 @@ describe('leererEntwurf', () => {
       vorlagenId: 'vollbild',
       markeId: 'm1',
       akzentfarbe: '#FF4040',
+      // SEIT 05.11.2026 (TK 9.8.8): leer heisst „die Vorlagen-Gestaltung gilt".
+      zonenGestaltung: {},
+      bildAusschnitt: null,
     })
   })
 
@@ -329,5 +333,40 @@ describe('meldungZuBefunden - jeder Befund nennt Feld und Grund', () => {
     if (antwort.ok) return
     expect(antwort.fehler.meldung).toContain(erwartet)
     expect(doppel.aufrufe).toHaveLength(0)
+  })
+})
+
+describe('pruefeEntwurf - Gestaltung je Zone und Bildausschnitt (05.11.2026, TK 9.8.8)', () => {
+  it('eine unbrauchbare Zonenfarbe ist ein Befund; ein fehlendes Feld nicht', () => {
+    expect(pruefeEntwurf({ zonenGestaltung: { preis: { textfarbe: 'rot' } } })).toEqual([
+      { feld: 'zonenGestaltung', grund: 'kein_hex' },
+    ])
+    expect(pruefeEntwurf({ zonenGestaltung: { preis: { textfarbe: '#123456' } } })).toEqual([])
+    expect(pruefeEntwurf({})).toEqual([])
+  })
+
+  it('eine Groesse ausserhalb der Reglergrenzen ist ein Befund', () => {
+    expect(pruefeEntwurf({ zonenGestaltung: { preis: { groesseProzent: 10 } } })).toEqual([
+      { feld: 'zonenGestaltung', grund: 'ausserhalb_bereich' },
+    ])
+    expect(pruefeEntwurf({ zonenGestaltung: { preis: { groesseProzent: 50 } } })).toEqual([])
+    expect(pruefeEntwurf({ zonenGestaltung: { preis: { groesseProzent: 200 } } })).toEqual([])
+  })
+
+  it('Zoom unter 100 und ein zu grosser Versatz sind ein Befund', () => {
+    expect(pruefeEntwurf({ bildAusschnitt: { zoom: 90 } })).toEqual([
+      { feld: 'bildAusschnitt', grund: 'ausserhalb_bereich' },
+    ])
+    expect(pruefeEntwurf({ bildAusschnitt: { versatzX: 51 } })).toEqual([
+      { feld: 'bildAusschnitt', grund: 'ausserhalb_bereich' },
+    ])
+    expect(pruefeEntwurf({ bildAusschnitt: { zoom: 100, versatzY: -50 } })).toEqual([])
+    expect(pruefeEntwurf({ bildAusschnitt: null })).toEqual([])
+  })
+
+  it('der Befund nennt ein Feld, nicht eine Zone - der Satz steht in befund-texte', () => {
+    // Die Meldung im Formular ist ein Satz; die Zone steht bei den Reglern, nicht im Text.
+    expect(bedienerBefundText({ feld: 'zonenGestaltung', grund: 'kein_hex' })).toContain('Hex')
+    expect(bedienerBefundText({ feld: 'bildAusschnitt', grund: 'ausserhalb_bereich' })).toContain('Zoom')
   })
 })

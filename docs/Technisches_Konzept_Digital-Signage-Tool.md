@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.47 (9.8.7: Farbauswahl — Markenpalette und die letzten 20 Farben; 05.11.2026. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.48 (9.8.8: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks; 05.11.2026. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -49,7 +49,7 @@ Die Lebensdauer entscheidet, was persistent, was temporär und was nur flüchtig
 - **Aktion/Produkt** – ID, Titel (Pflicht), Beschreibung?, Preis?, Bildreferenz?, CTA?, Anzeigedauer?, Vorlagen-ID, Akzentfarbe? (ersetzt die Akzent-Rollen der Vorlage, 9.10.9). *(FA-02, 4.1)*
 - **Medium (Asset)** – ID, Typ (video|image), Dateiname, Maße, Dauer (Video, via ffprobe), Importdatum. *(FA-01)*
 - **Listenelement** – ID, Art (Video|Aktions-Segment – **`bild` ist ab v3.16 gestrichen**, 9.11.3), Referenz, Dauer, Trim-Start/-Ende sowie – **nur bei Video** – optional eine **Einblendung** für die parallele Anzeige: `{ bandVorlageId, abschnitte: [{ aktionRef, dauer }] }` – die `dauer` je Abschnitt ist keine Eingabe, sondern folgt der Dauer-Kette (AD 4.5, v3.36). Die Abschnitte rotieren während des Videos und wiederholen sich, wenn sie kürzer als das Video sind (9.2.8). **Die Reihenfolge ist die Array-Reihenfolge – es gibt kein separates Positions-Feld** (9.11.3). **Nur bei Video** außerdem **Unterbrechungen** für die sequenzielle Anzeige: `{ zeitstelle, aktionRef, dauer }[]` – Einschübe, bei denen das Video pausiert (9.2.9, v3.26). *(FA-04, FA-05, FA-06, FA-14, FA-20)*
-- **Vorlage** – datengetriebene Layout-Definition: `höhe` (`null` = Ganzbild 1920 × 1080, Zahl = Bandhöhe), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Ganzflächig", „Zwei Spalten", „Band-Standard". **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
+- **Vorlage** – datengetriebene Layout-Definition: `höhe` (`null` = Ganzbild 1920 × 1080, Zahl = Bandhöhe), `parent` (Arbeitskopie-Herkunft) und Zonen (feste vs. freie). Eingebaut: „Ganzflächig", „Zwei Spalten", „Band-Standard" sowie seit v3.48 sechs weitere Ganzbild-Looks („Riesig", „Farbband unten", „Zentriert", „Ecke", „Kopf und Fuß", „Großer Preis"). **App-weit** gespeichert, nicht im Projekt (9.11.1, 9.12). *(FA-11, FA-13, FA-20, 4.1)*
 - **Ausführungs-Protokoll / Ausgabe-Historie** – ID, Projekt-ID, Datum, Pfad, Dauer (nur bei Render, sonst leer – 9.3), Größe. Geführt von der Auftragsverwaltung als Speicher **Q3** (append-only, dauerhaft), nicht mehr in D3. *(Abschnitt 7, 9.3)*
 
 **B — App-/Konfigurationsdaten** (persistent, app-weit)
@@ -1521,6 +1521,24 @@ Aktion {
   akzentfarbe:  string | null   // FREIER Hex-Wert (FA-24; bis v3.3 nur Auswahl aus der Palette).
                                 //   ERSETZT beim Zeichnen die Akzent-Rollen der Vorlage (9.10.9).
                                 //   null = Markenwert gilt
+  // SEIT v3.48 (9.8.8). Beide Felder sind OPTIONAL: Fehlt eines, gilt die VORLAGE –
+  // genau der Zustand vor dieser Fassung. Kein Pflichtfeld, weil PROJECT.JSON seit
+  // Monaten im Feld liegt und alle Verbraucher UNDEFINED wie „keine Angabe" lesen.
+  zonenGestaltung?: Record<string, ZonenGestaltung>  // Schlüssel = Zone.id
+  bildAusschnitt?:  BildAusschnitt | null
+}
+
+ZonenGestaltung {
+  textfarbe?:     string | null   // #RRGGBB; gilt NUR für zone.text.farbRolle dieser Zone
+  flaechefarbe?:  string | null   // #RRGGBB; gilt NUR für zone.deko.füllungFarbRolle
+  groesseProzent?:number | null   // 50–200; skaliert größeMax UND größeMin der Zone
+  ausrichtung?:   "links" | "mitte" | "rechts" | null   // waagerecht, schlägt die Vorlage
+}
+
+BildAusschnitt {
+  zoom?:    number | null   // 100–300 (%), 100 = Vorlage
+  versatzX?:number | null   // -50…+50, in Prozent der ZONENBREITE
+  versatzY?:number | null   // -50…+50, in Prozent der ZONENHÖHE
 }
 ```
 
@@ -1690,6 +1708,61 @@ verwendet"** mit den letzten **20** Farben. Die Historie liegt app-weit in `conf
 Projekt-Schreibweg; die Aktion selbst schreibt weiterhin nur der Entwurf beim Abschluss. Ein Klick
 auf einen Swatch setzt `akzentfarbe`; „Markenwert" setzt sie auf `null` zurück.
 
+#### 9.8.8 Zonen-Gestaltung und Bildausschnitt (05.11.2026)
+
+Auslöser (Niklas, 05.11.2026): *„man hat momentan einfach keine kontrolle"* und *„es fehlen noch mehr
+richtig krasse vorlagen"*. Bis hierher ließ sich an einer Aktion **genau eine** Farbe einstellen
+(`akzentfarbe`), und sie wirkte nur dort, wo die **Vorlage** eine Akzent-Rolle benutzt. Größe,
+Ausrichtung und Bildausschnitt kamen ausschließlich aus der Vorlage.
+
+**Die drei Regler, die jetzt dazukommen:**
+
+1. **Farbe je Zone.** Je Zone, die eine Text- oder eine Flächen-Rolle trägt, lässt sich diese **eine**
+   Rolle überschreiben (`textfarbe` / `flaechefarbe`). Die Regel ist bewusst eng: **Eine
+   Überschreibung gilt nur für die Rolle, die die Zone in der Vorlage selbst trägt.** Eine
+   Flächenwahl färbt also **nicht** die Schrift derselben Zone, und eine Textwahl nicht die Pille.
+   Es gibt hier **keine Liste** „das ist eine Textrolle" – solche Listen waren im Projekt schon
+   zweimal still falsch; gefragt wird die Zone selbst.
+2. **Größe je Textzone.** `groesseProzent` (50–200) skaliert `größeMax` **und** `größeMin`. Nur das
+   Maximum zu skalieren wäre falsch: Bei „doppelt so groß" liefe der Text sofort in die Untergrenze
+   und die Kaskade (9.10.6) verkleinerte ihn wieder auf den Vorlagenwert – der Regler wäre
+   wirkungslos.
+3. **Ausrichtung je Textzone.** Waagerecht (`links`/`mitte`/`rechts`), schlägt die Ausrichtung der
+   Vorlage. Die **senkrechte** Ausrichtung bleibt Sache der Vorlage: Zonenrahmen und Vertikalbezug
+   hängen am Layout, nicht am Geschmack.
+4. **Bildausschnitt.** `zoom` (100–300 %) und ein Versatz in **Prozent der Zonengröße** (nicht in
+   Pixeln) gelten für **jede** Bildzone. Der Versatz in Prozent ist die einzige Angabe, die in einer
+   960 breiten Spalte und im 1920 breiten Vollbild gleich weit wirkt.
+
+**Wo die Auflösung sitzt (bindend).** Die Zonenfarbe läuft durch **`loeseFarbeInZone`** in
+`template-canvas/farben.ts` – dieselbe Datei, die 9.10.9 als **die eine** Auflösungsstelle festschreibt.
+Sie wertet zuerst die Gestaltung der Zone aus und reicht sonst unverändert an `loeseFarbe` weiter
+(Akzent-Ersetzung, dann Marke). Ein Auswerten in `zone-text.ts` wäre eine zweite Stelle, und die
+Flächen-Überschreibung müsste in `zone-deko.ts` ein zweites Mal geschrieben werden.
+
+**Der Bildausschnitt.** Ohne eigene Einstellung zeichnet die Bildzone **unverändert** wie bisher
+(contain: Zielrechteck, cover: Quellrechteck). Erst mit Zoom oder Versatz wird das Zielrechteck
+größer als die Zone und dann **auf die Zone beschnitten** – sonst liefe das Bild bei „Zwei Spalten"
+in die Textspalte. Der Rahmen wandert dabei **nicht**: Bewegt wird der Inhalt, nie das Layout.
+
+**Grenzen und Rückfall.** Die Zahlen stehen EINMAL in `shared/gestaltung.ts` (`GESTALTUNG_GRENZEN`),
+weil Main, Editor und Zeichenweg sie kennen müssen. Ein unbrauchbarer Teil wird **verworfen**, nicht
+ersetzt – dieselbe Haltung wie bei `brauchbareDauer`: Eine kaputte Größe darf nicht auch noch eine
+heile Farbe mitnehmen. Fehlt ein Wert, gilt die Vorlage; das ist der reguläre Zustand und kein Fehler.
+
+**Was NICHT dazugehört.** Der **Scrim** (9.11.1: Verlauf `scrimStart` → `scrimEnde`) bekommt keinen
+eigenen Regler: Ein Verlauf hat **zwei** Stopps, und einen davon aus einer einzigen Farbe zu raten wäre
+eine stille Behauptung. Seine Farbe bleibt Sache der Marke. Eine **eigene Bildrahmen-Geometrie**
+(x/y/Breite/Höhe je Aktion) ist ebenfalls nicht gebaut – der Rahmen kommt weiterhin aus der Vorlage.
+
+**Sechs neue Looks (v3.48).** Mit derselben Sitzung sind sechs weitere **eingebaute Ganzbild-Vorlagen**
+dazugekommen (Tabellen in 9.11.1): „Riesig", „Farbband unten", „Zentriert", „Ecke", „Kopf und Fuß",
+„Großer Preis". Sie benutzen **ausschließlich** das bestehende Zonen-Modell – kein neuer Zonen-Typ,
+kein Sonderfall im Zeichenweg. Die IDs sind gespeicherter Bestand; fehlende eingebaute Vorlagen hängt
+der Ladevorgang **hinten** an, bestehende Einträge bleiben unangetastet (9.11.1.1). Nach einer
+`.bak`-Rettung wird dabei **nicht** geschrieben: die defekte Datei bleibt liegen, bis der nächste
+reguläre Schreibvorgang sie ersetzt (9.12.1).
+
 ---
 
 ### 9.9 Modul `preview-player` [P5] (Renderer)
@@ -1803,6 +1876,15 @@ löseFarbe(farbRolle, marke, aktion) →
 **Begründung:** So entstehen aus **einer** Vorlage ohne jede Zusatzarbeit verschiedene Anmutungen – dieselbe „Vollbild"-Vorlage trägt eine rote und eine blaue Aktion. Der **Aufbau** der Vorlage bleibt dabei unangetastet: Sie sagt weiterhin, **welche** Zone Akzentfarbe trägt (Preis-Pille, CTA-Pille, Badge), und diese Aussage gilt unabhängig davon, welche Farbe die einzelne Aktion mitbringt. Die Alternative – Vorlagen je Farbe zu duplizieren – hätte die Bibliothek vervielfacht und jede Layout-Korrektur mehrfach nötig gemacht. **Seit v3.4 ist die Farbwahl NICHT mehr auf die Markenpalette begrenzt** (9.8.4, FA-24): `akzentfarbe` ist ein **freier** Hex-Wert, damit Partner-Hausfarben darstellbar sind. Eine Aktion **kann** damit aus dem Corporate Design ausbrechen; die Gegenmaßnahme ist die **Kontrast-Warnung** (9.15.2), **nicht** die Sperre (Risiko R-08). *Bis v3.3 stand hier: „Zugleich bleibt die Farbwahl auf die Markenpalette begrenzt (9.8.4): Es entsteht kein freier Farbwähler, und keine Aktion kann aus dem Corporate Design ausbrechen." Dieser Satz ist mit v3.4 zurückgenommen; er stand bis v3.5 versehentlich weiter hier und war wörtlich zitierbar.*
 
 **Folge für den Vorlagenbau (bindend):** Eine Vorlage darf sich **nicht auf den Kontrast zwischen zwei Akzent-Rollen verlassen** – etwa Fläche `akzent` mit Text `akzentTief` in derselben Zone. Nach der Ersetzung tragen **alle drei** Rollen denselben Wert, der Text wäre unsichtbar. Wo lesbarer Kontrast auf einer Akzentfläche gebraucht wird, ist der Text eine **Text-Rolle** (`textAufDunkel` / `textAufHell`). Die eingebauten Vorlagen halten das bereits ein (9.11.1): Ihre Akzent-Pillen (`preis`, `cta`) tragen Akzentfarbe **als Fläche**, ihr Text kommt aus einer Text-Rolle.
+
+**Nachtrag v3.48 – die Zone kommt VOR der Akzent-Regel (9.8.8).** Seit 05.11.2026 kann eine Aktion die
+Text- oder Flächenfarbe **einer einzelnen Zone** überschreiben. Damit diese Regel die eine
+Auflösungsstelle nicht verdoppelt, gibt es in derselben Datei genau **eine** weitere Funktion:
+`loeseFarbeInZone(marke, rolle, aktion, zone)`. Sie prüft zuerst, ob die Zone für **genau diese
+Rolle** eine eigene Farbe trägt (`zone.text.farbRolle` → `textfarbe`, `zone.deko.füllungFarbRolle` →
+`flaechefarbe`) und reicht sonst **unverändert** an `loeseFarbe` weiter. Die Reihenfolge lautet damit:
+**Zonenfarbe → Akzentfarbe der Aktion → Markenwert.** Keine Zonen-Sorte liest weiterhin selbst aus der
+Marke, und `deko.verlauf` bleibt vollständig bei `loeseFarbe` (zwei Stopps, ein Regler wäre geraten).
 
 **Abgrenzung – wo die Regel NICHT gilt (zwei Fälle):** Erstens das **Ersatz-Logo** (9.10.10): Es nimmt `marke.farben.akzent` und **nicht** `aktion.akzentfarbe` – ein Logo ist eine Konstante, das ist sein Zweck. Rotieren im Band drei Aktionen desselben Partners mit verschiedenen Akzentfarben, blinkte sein „Logo" sonst in drei Farben, während ein echtes Logo als Bilddatei unverändert bliebe; der Ersatz muss sich verhalten wie das, was er ersetzt. Zweitens: Die Ersetzung geschieht **ausschließlich** in der Zonen-Auflösung von `template-canvas`. Die Restflächen der Split-Komposition (9.2.8) füllt der `render-service` mit `flaecheDunkel` – **keine** Akzent-Rolle, also unverändert der Markenwert. Der `render-service` bekommt dadurch **keine** Kenntnis von Aktionen: Er sieht ohnehin nur fertige Pixel (Variante A, 9.1) und eine einzige Farbe aus der Marke. Ebenso unberührt bleiben Vorschau (9.9) und `composer`-Thumbnails – sie zeichnen über **dieselbe** Routine und bekommen die Ersetzung geschenkt.
 
@@ -1961,6 +2043,96 @@ Alle Ränder liegen exakt auf der Inhaltsbox (rechts 1824, unten 1026). Die Wert
 **Alle Zonen enden bei Band-y 90 – und das ist zwingend:** Das Band sitzt am unteren Rahmenrand (Rahmen-y 918–1080), also fallen die unteren **54 px des Rahmens in das Band**. Sicher nutzbar sind damit nur die oberen **108 px** des Bandes (9.11.2). Inhalt tiefer als Band-y 108 kann am TV abgeschnitten werden.
 
 **Bewusst ohne Beschreibungs-Zone:** In den sicher nutzbaren ~90 px passt genau **eine kompakte Zeile**. Eine Beschreibung wäre unlesbar und ist im Band nicht vorgesehen (Anforderungsdokument 4.5). Seitlich gilt der Sicherheitsabstand (96 px); rechts endet die letzte Zone exakt bei 1824.
+
+**Die sechs Looks seit v3.48 (05.11.2026).** Alle sechs sind **Ganzbilder** (`höhe: null`,
+Fläche 1920 × 1080) und bestehen ausschließlich aus dem Zonen-Modell oben. Die Farbflächen
+(`band`, `kopf`, `fuss`, `scrim`) tragen **keinen Inhalt** (`bindung: null`) und dürfen deshalb
+über die Inhaltsbox hinausgehen; alle Text- und Pillenzonen halten den Sicherheitsabstand ein.
+Die Anzeigenamen der neuen Kennungen stehen in `renderer/gemeinsam/zonen-texte.ts`.
+
+**„Riesig" (ID `riesig`)** – der Titel ist das Plakat; Text unten links, Pillen rechts.
+
+| Zone | bindung | rahmen (x, y, b, h) | Parameter |
+|---|---|---|---|
+| `hintergrund` | – (deko) | 0, 0, 1920, 1080 | `flaecheDunkel` |
+| `motiv` | bild | 0, 0, 1920, 1080 | `cover` |
+| `scrim` | – (deko) | 0, 0, 1920, 700 | Verlauf `scrimStart` → `scrimEnde`, Richtung `oben` (dunkel an der Oberkante) |
+| `logo` | logo | 96, 54, 360, 100 | `contain` |
+| `ueberschrift` | titel | 96, 190, 1728, 400 | 190 → 110 px, max 2 Zeilen, unten ausgerichtet |
+| `beschreibung` | beschreibung | 96, 610, 1000, 90 | 44 → 32 px |
+| `preis` | preis | 96, 860, 480, 130 | Pille (`akzent`), `wennLeer: ausblenden` |
+| `cta` | cta | 1300, 860, 524, 120 | Pille (`flaecheHell`), `wennLeer: ausblenden` |
+
+**„Farbband unten" (ID `farbband`)** – Bild oben, darunter ein deckender Farbblock mit dem Text.
+
+| Zone | bindung | rahmen (x, y, b, h) | Parameter |
+|---|---|---|---|
+| `hintergrund` | – (deko) | 0, 0, 1920, 1080 | `flaecheDunkel` |
+| `motiv` | bild | 0, 0, 1920, 700 | `cover` |
+| `band` | – (deko) | 0, 700, 1920, 380 | `flaecheSehrDunkel`, deckend – trennt Foto und Text |
+| `logo` | logo | 96, 724, 280, 84 | `contain` |
+| `ueberschrift` | titel | 96, 824, 1100, 110 | 96 → 64 px, max 1 Zeile |
+| `beschreibung` | beschreibung | 96, 946, 1100, 60 | 38 → 28 px, `textSekundaer` |
+| `preis` | preis | 1400, 760, 424, 120 | Pille (`akzent`) |
+| `cta` | cta | 1400, 900, 424, 100 | Pille (`flaecheHell`) |
+
+**„Zentriert" (ID `zentriert`)** – alles mittig untereinander auf gleichmäßig abgedunkelter Fläche.
+
+| Zone | bindung | rahmen (x, y, b, h) | Parameter |
+|---|---|---|---|
+| `hintergrund` | – (deko) | 0, 0, 1920, 1080 | `flaecheDunkel` |
+| `motiv` | bild | 0, 0, 1920, 1080 | `cover` |
+| `scrim` | – (deko) | 0, 0, 1920, 1080 | **Fläche** `scrimEnde` – gleichmäßig statt Verlauf, weil mittiger Text über unbekannten Bildstellen landet |
+| `logo` | logo | 760, 54, 400, 100 | `contain`, mittig |
+| `ueberschrift` | titel | 260, 280, 1400, 240 | 140 → 84 px, max 2 Zeilen, mittig |
+| `beschreibung` | beschreibung | 360, 560, 1200, 80 | 48 → 34 px, `textSekundaer`, mittig |
+| `preis` | preis | 760, 700, 400, 130 | Pille (`akzent`) |
+| `cta` | cta | 700, 870, 520, 110 | Pille (`flaecheHell`) |
+
+**„Ecke" (ID `ecke`)** – Textblock unten links auf der Abdunkelung, Bild über die ganze Fläche.
+
+| Zone | bindung | rahmen (x, y, b, h) | Parameter |
+|---|---|---|---|
+| `hintergrund` | – (deko) | 0, 0, 1920, 1080 | `flaecheDunkel` |
+| `motiv` | bild | 0, 0, 1920, 1080 | `cover` |
+| `scrim` | – (deko) | 0, 520, 1100, 560 | Verlauf `scrimStart` → `scrimEnde`, `unten` – nur die linke untere Ecke |
+| `logo` | logo | 96, 54, 320, 90 | `contain` |
+| `ueberschrift` | titel | 96, 640, 900, 150 | 110 → 70 px, max 2 Zeilen |
+| `beschreibung` | beschreibung | 96, 800, 900, 70 | 38 → 28 px, `textSekundaer` |
+| `preis` | preis | 96, 890, 380, 110 | Pille (`akzent`) |
+| `cta` | cta | 500, 890, 380, 110 | Pille (`flaecheHell`) |
+
+**„Kopf und Fuß" (ID `kopf-fuss`)** – Titel oben auf einer Leiste, Bild in der Mitte, Angebot unten.
+
+| Zone | bindung | rahmen (x, y, b, h) | Parameter |
+|---|---|---|---|
+| `hintergrund` | – (deko) | 0, 0, 1920, 1080 | `flaecheDunkel` |
+| `kopf` | – (deko) | 0, 0, 1920, 220 | `flaecheSehrDunkel`, deckend |
+| `logo` | logo | 1500, 60, 324, 100 | `contain` |
+| `ueberschrift` | titel | 96, 60, 1300, 100 | 96 → 64 px, max 1 Zeile |
+| `motiv` | bild | 0, 220, 1920, 560 | **`cover`** – ein 1920 × 560 breiter Streifen; `contain` erzeugte links und rechts zwei Balken |
+| `fuss` | – (deko) | 0, 780, 1920, 300 | `flaecheDunkel`, deckend |
+| `beschreibung` | beschreibung | 96, 810, 1100, 70 | 38 → 28 px, `textSekundaer` |
+| `preis` | preis | 96, 900, 420, 110 | Pille (`akzent`) |
+| `cta` | cta | 560, 900, 420, 110 | Pille (`flaecheHell`) |
+
+**„Großer Preis" (ID `grosser-preis`)** – die Zahl ist das Plakat; Titel und Beschreibung treten zurück.
+
+| Zone | bindung | rahmen (x, y, b, h) | Parameter |
+|---|---|---|---|
+| `hintergrund` | – (deko) | 0, 0, 1920, 1080 | `flaecheDunkel` |
+| `motiv` | bild | 0, 0, 1920, 1080 | `cover` |
+| `scrim` | – (deko) | 0, 300, 1920, 780 | Verlauf `scrimStart` → `scrimEnde`, `unten` |
+| `logo` | logo | 96, 54, 320, 90 | `contain` |
+| `ueberschrift` | titel | 96, 560, 1200, 140 | 88 → 56 px, max 2 Zeilen |
+| `beschreibung` | beschreibung | 96, 720, 1100, 70 | 36 → 28 px, `textSekundaer` |
+| `preis` | preis | 96, 800, 900, 200 | Pille (`akzent`, Radius 60), **190 → 110 px**, max 1 Zeile |
+| `cta` | cta | 1100, 850, 524, 120 | Pille (`flaecheHell`) |
+
+**Warum `sehr dunkel` und `textSekundaer` jetzt von eingebauten Vorlagen benutzt werden:** Bis v3.47
+standen beide Rollen im Marken-Editor mit dem Zusatz „wird von den eingebauten Vorlagen nicht
+benutzt". Das stimmt seit v3.48 nicht mehr; die Sätze sind angepasst (`marken-editor/rollen-texte.ts`),
+und `tests/unit/rollen-texte.spec.ts` hält genau diesen Widerspruch rot.
 
 #### 9.11.1.1 Ablage und Lebenszyklus von Vorlagen
 

@@ -11,7 +11,46 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (05.11.2026, einundfünfzigste Sitzung: „Ergebnis zuerst" — der Editor zeigt ein Beispiel, der Titel steht im Inhalt)
+## STAND HEUTE (05.11.2026, zweiundfünfzigste Sitzung: Kontrolle statt Formular — Zonen-Gestaltung, Bildausschnitt, sechs Looks)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-05-zonen-gestaltung.md`](docs/agents/uebergabe-2026-11-05-zonen-gestaltung.md).**
+
+- **AUFTRAG (Niklas, Sitzungsende der 51.):** *„man hat momentan einfach keine kontrolle"* +
+  *„es fehlen noch mehr richtig krasse vorlagen"*, dazu *„mach bitte alles davon in der session
+  größtenteils selbständig"*. **Alle vier Pakete der offenen Liste sind gebaut.**
+- **NEUES DATENMODELL (TK v3.48, 9.8.2/9.8.8):** `Aktion.zonenGestaltung?` (Record, Schlüssel =
+  `Zone.id`; `textfarbe`, `flaechefarbe`, `groesseProzent` 50–200, `ausrichtung`) und
+  `Aktion.bildAusschnitt?` (`zoom` 100–300, `versatzX`/`versatzY` ±50 %). Beide **optional** —
+  fehlt ein Wert, gilt die Vorlage. Grenzen und Normalisierung in **`shared/gestaltung.ts`**
+  (eine Quelle für Main, Editor, Zeichnen).
+- **ZEICHNEN:** `loeseFarbeInZone` (Reihenfolge **Zonenfarbe → Akzentfarbe → Marke**; gilt NUR für
+  die Rolle, die die Zone selbst trägt — Flächenwahl färbt nicht die Schrift); Größe skaliert
+  `größeMax` UND `größeMin`; Bildausschnitt beschneidet an der Zonengrenze, ohne eigene
+  Einstellung bleibt der alte Weg unverändert.
+- **EDITOR:** neuer Schritt **„Zonen"** (`zonen-gestaltung.tsx`), Bildausschnitt im Schritt
+  **„Bild"** (`bild-ausschnitt.tsx`). Alles in den Entwurf, ein Schreibvorgang beim Abschluss;
+  `unterschiede` vergleicht die verschachtelten Felder inhaltlich.
+- **SECHS LOOKS:** `riesig`, `farbband`, `zentriert`, `ecke`, `kopf-fuss`, `grosser-preis` —
+  ganz aus dem bestehenden Zonen-Modell. Folge: `flaecheSehrDunkel` und `textSekundaer` werden jetzt
+  von eingebauten Vorlagen benutzt; ihre Rollen-Sätze waren falsch und sind korrigiert.
+- **VERHALTEN GEAENDERT, offen benannt:** Nach einer `.bak`-Rettung wird **nicht** geschrieben, nur
+  weil eingebaute Vorlagen fehlen — die defekte Datei bleibt liegen (9.12.1). Vorher überschrieb
+  das Ergänzen die defekte Datei.
+- **GEGENPROBEN:** 4, jede rot und **byte-identisch** zurückgenommen (SHA-256 vorher = nachher).
+- **FENSTER-BELEG (`4g7`):** `{"zonenAnzahl":5,"textfarben":4,"flaechen":5,"groessenRegler":4,
+  "zoomTyp":"range","vorlagenKacheln":8}`.
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5572/5572** (366),
+  Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
+  Export-Dialog).
+- **Doku:** TK **v3.48** (9.8.2/9.8.8/9.10.9/9.11.1), `.docx` im selben Commit neu erzeugt
+  (2388 Absätze, `unzip -t`, 0 Backticks). AD unverändert v1.13 (keine Anforderungsänderung).
+- **Ehrlich offen:** Scrim nicht einstellbar (Verlauf, zwei Stopps), senkrechte Ausrichtung nicht,
+  kein eigener Bildrahmen; die sechs Looks sind **nicht am Fernseher** geprüft. `einzel-instanz`
+  (#289) flaky.
+- **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen.
+  **Push nur auf Anweisung.**
+
+## STAND HEUTE (05.11.2026, einundfünfzigste Sitzung: „Ergebnis zuerst" — der Editor zeigt ein Beispiel, der Titel steht im Inhalt) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-05-ergebnis-zuerst.md`](docs/agents/uebergabe-2026-11-05-ergebnis-zuerst.md).**
 

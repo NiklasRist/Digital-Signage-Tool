@@ -43,6 +43,20 @@ const TEXTE: Readonly<Record<string, ZonenText>> = {
     name: 'Abdunkelung',
     zweck: 'Dunkler Verlauf über dem Bild, damit die Schrift lesbar bleibt.',
   },
+  // SEIT 05.11.2026: die drei reinen Farbflaechen der neuen Looks. Sie tragen keinen
+  // Inhalt (`bindung: null`) und sind im Aktions-Editor als „Fläche" einstellbar.
+  band: {
+    name: 'Farbfläche (Band)',
+    zweck: 'Deckende Fläche unter dem Bild – trennt Foto und Text.',
+  },
+  kopf: {
+    name: 'Kopfleiste',
+    zweck: 'Farbige Leiste oben – trägt den Titel.',
+  },
+  fuss: {
+    name: 'Fußleiste',
+    zweck: 'Farbige Leiste unten – trägt Beschreibung und Angebot.',
+  },
   logo: {
     name: 'Logo',
     zweck: 'Das Markenzeichen.',

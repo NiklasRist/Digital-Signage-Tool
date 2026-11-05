@@ -9,7 +9,10 @@
 //     und nie width/height am Bildobjekt (ImageBitmap hat die nicht, und zwei
 //     Stellen, die dieselbe Groesse ermitteln, driften).
 //   - Das Seitenverhaeltnis bleibt in BEIDEN Einpassungen erhalten; cover laeuft
-//     ueber das Quell-Rechteck (9-Argument-Form), NICHT ueber einen clip.
+//     ueber das Quell-Rechteck (9-Argument-Form), NICHT ueber einen clip - so lange,
+//     wie kein eigener Bildausschnitt gesetzt ist. Mit Zoom/Position (05.11.2026,
+//     TK 9.8.8) wird das Zielrechteck groesser als die Zone und dann BESCHNITTEN,
+//     sonst liefe das Bild in die Nachbarzone.
 //   - Der Platzhalter ist eine Defektanzeige und wird IMMER gezeichnet, wenn das
 //     Motiv fehlt; die Sperre gegen den finalen Render sitzt im composer (M5).
 //   - Farben/Schrift nur ueber loeseFarbe/loeseSchrift (#112) - die Aktion wird
@@ -23,6 +26,7 @@ import type { Motiv } from './bild-laden'
 
 import { loeseFarbe, loeseSchrift } from './farben'
 import { schriftKurzform } from './schriften'
+import { versatzProzent, zoomFaktor } from '../../shared/gestaltung'
 
 // Strichstaerke des Platzhalters (Strich und Diagonalen), in px - festgelegt im Issue.
 const STRICH_PX = 4
@@ -91,6 +95,19 @@ export function zeichneBildZone(
     const rb = zone.rahmen.breite
     const rh = zone.rahmen.höhe
 
+    // SEIT 05.11.2026: Zoom und Position (TK 9.8.8). Ohne eigene Einstellung ist
+    // `zoom === 1` und der Versatz 0 - dann laufen die beiden Wege unten UNVERAENDERT,
+    // und das Bild ist Pixel fuer Pixel dasselbe wie vor dieser Fassung.
+    const zoom = zoomFaktor(aktion.bildAusschnitt?.zoom)
+    const versatzX = versatzProzent(aktion.bildAusschnitt?.versatzX)
+    const versatzY = versatzProzent(aktion.bildAusschnitt?.versatzY)
+    const eigenerAusschnitt = zoom !== 1 || versatzX !== 0 || versatzY !== 0
+
+    if (eigenerAusschnitt) {
+      zeichneMitAusschnitt(einpassung, zoom, versatzX, versatzY)
+      return
+    }
+
     if (einpassung === 'contain') {
       const skalierung = Math.min(rb / iw, rh / ih)
       const zielBreite = iw * skalierung
@@ -113,6 +130,55 @@ export function zeichneBildZone(
     const quellY = (ih - quellHöhe) / 2
     try {
       ctx.drawImage(motiv.bild, quellX, quellY, quellBreite, quellHöhe, x, y, rb, rh)
+    } catch {
+      zeichnePlatzhalter()
+    }
+  }
+
+  /**
+   * Der Weg MIT eigenem Ausschnitt: das Bild wird als Ganzes in ein Zielrechteck
+   * gezeichnet und auf die Zone BESCHNITTEN.
+   *
+   * WARUM HIER EIN BESCHNITT NOETIG IST, obwohl der Kopf dieser Datei "cover ohne clip"
+   * sagt: Zoom > 100 macht das Bild groesser als die Zone, und ein Versatz schiebt es
+   * zur Seite. Ohne Beschnitt liefe es in die Nachbarzone - bei „Zwei Spalten" in die
+   * Textspalte. Der alte Satz gilt weiterhin fuer den UNVERAENDERTEN Fall (oben), weil
+   * dort das Zielrechteck genau die Zone ist.
+   *
+   * Die Skalierung ist dieselbe wie oben (cover: Maximum, contain: Minimum) mal Zoom.
+   * Damit ist „Zoom 100, kein Versatz" dasselbe Bild wie der unveraenderte Weg - der
+   * Unterschied ist allein der Beschnitt, der dort nichts abschneidet.
+   */
+  function zeichneMitAusschnitt(
+    einpassung: 'contain' | 'cover',
+    zoom: number,
+    versatzX: number,
+    versatzY: number,
+  ): void {
+    if (motiv.zustand !== 'geladen') {
+      return
+    }
+    const iw = motiv.breite
+    const ih = motiv.höhe
+    const x = zone.rahmen.x
+    const y = zone.rahmen.y
+    const rb = zone.rahmen.breite
+    const rh = zone.rahmen.höhe
+
+    const basis = einpassung === 'cover' ? Math.max(rb / iw, rh / ih) : Math.min(rb / iw, rh / ih)
+    const skala = basis * zoom
+    const zielBreite = iw * skala
+    const zielHöhe = ih * skala
+    // Der Versatz ist in PROZENT DER ZONENGROESSE angegeben, nicht in Pixeln: derselbe
+    // Reglerwert soll in einer 960 breiten Spalte und im Vollbild gleich weit wirken.
+    const zielX = x + (rb - zielBreite) / 2 + (versatzX / 100) * rb
+    const zielY = y + (rh - zielHöhe) / 2 + (versatzY / 100) * rh
+
+    ctx.beginPath()
+    ctx.rect(x, y, rb, rh)
+    ctx.clip()
+    try {
+      ctx.drawImage(motiv.bild, zielX, zielY, zielBreite, zielHöhe)
     } catch {
       zeichnePlatzhalter()
     }

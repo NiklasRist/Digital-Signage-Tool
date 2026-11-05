@@ -1,6 +1,10 @@
 // [project-store] erstelleAktion implementieren
 
 import { erzeugeId } from '../../shared/contracts/id'
+import {
+  normalisiereBildAusschnitt,
+  normalisiereZonenGestaltung,
+} from '../../shared/gestaltung'
 
 import { holeAktivesProjekt } from './aktives-projekt'
 import { planeAutoSpeicherung } from './auto-speichern'
@@ -170,6 +174,14 @@ export async function erstelleAktion(
       // Die Gegenmassnahme gegen schlechte Farbwahl ist ohnehin "die Kontrast-Warnung
       // (9.15.2), nicht die Sperre" (TK 9.8.4). Widerspruch gemeldet, s. Bericht/STOPP.
       akzentfarbe: oderNull(aktionsdaten.akzentfarbe),
+
+      // SEIT 05.11.2026 (TK 9.8.8): Gestaltung je Zone und Bildausschnitt. Beide Werte
+      // werden NORMALISIERT uebernommen - dieselbe Haltung wie bei `standardDauer`:
+      // Ein unbrauchbarer Teil faellt weg, statt die ganze Anlage abzulehnen. Ein
+      // Fremdfeld aus einer anderen Fassung landet dadurch nicht in `project.json`,
+      // denn #46 serialisiert das GANZE Projekt.
+      zonenGestaltung: normalisiereZonenGestaltung(aktionsdaten.zonenGestaltung),
+      bildAusschnitt: normalisiereBildAusschnitt(aktionsdaten.bildAusschnitt),
     }
 
     // ANS ENDE DER BIBLIOTHEK. Die Reihenfolge des Arrays ist auch hier die Reihenfolge

@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SICHERHEITSABSTAND_PX } from "../../src/shared/contracts/konstanten";
-import { loeseFarbe, loeseSchrift } from "../../src/renderer/template-canvas/farben";
+import { loeseFarbe, loeseFarbeInZone, loeseSchrift } from "../../src/renderer/template-canvas/farben";
+import type { Zone } from "../../src/shared/contracts/vorlage";
 
 import type { Aktion } from "../../src/shared/contracts/aktion";
 import type { FarbRolle, Marke, SchriftRolle } from "../../src/shared/contracts/marke";
@@ -243,5 +244,116 @@ describe("loeseSchrift", () => {
     const { fliesstext: _entfernt, ...rest } = marke().schriften;
     const m = { ...marke(), schriften: rest } as Marke;
     expect(() => loeseSchrift(m, "fliesstext")).toThrow(/fliesstext/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SEIT 05.11.2026 (TK 9.8.8): eigene Text- und Flaechenfarbe je Zone.
+//
+// Die Regel ist eng und wird hier genau so geprueft: Eine Ueberschreibung gilt NUR fuer
+// die Rolle, die die Zone in der Vorlage selbst traegt. Eine Zone, die nach einer anderen
+// Rolle fragt, bekommt die Marke - sonst faerbte eine Flaechenwahl die Schrift.
+// ---------------------------------------------------------------------------
+
+function textZone(id: string, farbRolle: FarbRolle): Zone {
+  return {
+    id,
+    rolle: "frei",
+    bindung: "titel",
+    rahmen: { x: 0, y: 0, breite: 100, höhe: 100 },
+    ausrichtung: { horizontal: "links", vertikal: "oben" },
+    wennLeer: "leer",
+    text: { schriftRolle: "fliesstext", farbRolle, größeMax: 40, größeMin: 20, maxZeilen: 1 },
+  };
+}
+
+function flaechenZone(id: string, fuellRolle: FarbRolle): Zone {
+  return {
+    id,
+    rolle: "fest",
+    bindung: null,
+    rahmen: { x: 0, y: 0, breite: 100, höhe: 100 },
+    ausrichtung: { horizontal: "links", vertikal: "oben" },
+    wennLeer: "leer",
+    deko: { füllungFarbRolle: fuellRolle },
+  };
+}
+
+const mitGestaltung = (gestaltung: Aktion["zonenGestaltung"]): Aktion => ({
+  ...OHNE_WAHL,
+  zonenGestaltung: gestaltung,
+});
+
+describe("loeseFarbeInZone - eigene Farbe je Zone (TK 9.8.8)", () => {
+  it("ohne eigene Wahl gilt unveraendert die Marke", () => {
+    const zone = textZone("ueberschrift", "textAufDunkel");
+    expect(loeseFarbeInZone(marke(), "textAufDunkel", OHNE_WAHL, zone)).toBe(FARBEN.textAufDunkel);
+  });
+
+  it("eigene Textfarbe schlaegt die Markenrolle - aber nur bei der eigenen Textzone", () => {
+    const a = mitGestaltung({ ueberschrift: { textfarbe: "#123456" } });
+    expect(loeseFarbeInZone(marke(), "textAufDunkel", a, textZone("ueberschrift", "textAufDunkel"))).toBe(
+      "#123456",
+    );
+    // Andere Zone, gleiche Rolle: keine Wirkung.
+    expect(loeseFarbeInZone(marke(), "textAufDunkel", a, textZone("beschreibung", "textAufDunkel"))).toBe(
+      FARBEN.textAufDunkel,
+    );
+  });
+
+  it("eigene Flaechenfarbe schlaegt die Markenrolle der Pille", () => {
+    const a = mitGestaltung({ preis: { flaechefarbe: "#00ff00" } });
+    expect(loeseFarbeInZone(marke(), "akzent", a, flaechenZone("preis", "akzent"))).toBe("#00ff00");
+  });
+
+  it("eine Flaechenwahl faerbt NICHT die Schrift derselben Zone", () => {
+    // Genau dieser Fall waere die naheliegende Verwechslung: „Preis-Flaeche grau" darf
+    // nicht „Preis-Schrift grau" bedeuten.
+    const a = mitGestaltung({ preis: { flaechefarbe: "#00ff00" } });
+    const zone: Zone = {
+      ...flaechenZone("preis", "akzent"),
+      bindung: "preis",
+      text: { schriftRolle: "fliesstext", farbRolle: "textAufDunkel", größeMax: 40, größeMin: 20, maxZeilen: 1 },
+    };
+    expect(loeseFarbeInZone(marke(), "textAufDunkel", a, zone)).toBe(FARBEN.textAufDunkel);
+  });
+
+  it("eine Textwahl faerbt NICHT die Flaeche derselben Zone", () => {
+    const a = mitGestaltung({ preis: { textfarbe: "#123456" } });
+    const zone: Zone = {
+      ...flaechenZone("preis", "akzent"),
+      bindung: "preis",
+      text: { schriftRolle: "fliesstext", farbRolle: "textAufDunkel", größeMax: 40, größeMin: 20, maxZeilen: 1 },
+    };
+    expect(loeseFarbeInZone(marke(), "akzent", a, zone)).toBe(FARBEN.akzent);
+  });
+
+  it("die AKZENT-Ersetzung der Aktion gilt weiter, wenn die Zone nichts Eigenes hat", () => {
+    const a = { ...aktion("#971316") };
+    expect(loeseFarbeInZone(marke(), "akzent", a, flaechenZone("preis", "akzent"))).toBe("#971316");
+  });
+
+  it("ein unbrauchbarer Hex-Wert wirft, statt eine Ersatzfarbe zu liefern", () => {
+    const a = mitGestaltung({ ueberschrift: { textfarbe: "rot" } });
+    expect(() =>
+      loeseFarbeInZone(marke(), "textAufDunkel", a, textZone("ueberschrift", "textAufDunkel")),
+    ).toThrow(/textfarbe/);
+  });
+
+  it("ein Verlauf bekommt KEINE Zonenfarbe - die Abdunkelung bleibt aus der Marke", () => {
+    // `deko.verlauf` hat zwei Stopps; ein einziger Regler muesste den anderen raten.
+    const a = mitGestaltung({ scrim: { flaechefarbe: "#00ff00" } });
+    const scrim: Zone = {
+      id: "scrim",
+      rolle: "fest",
+      bindung: null,
+      rahmen: { x: 0, y: 0, breite: 100, höhe: 100 },
+      ausrichtung: { horizontal: "links", vertikal: "oben" },
+      wennLeer: "leer",
+      deko: {
+        verlauf: { vonFarbRolle: "scrimStart", bisFarbRolle: "scrimEnde", richtung: "unten" },
+      },
+    };
+    expect(loeseFarbeInZone(marke(), "scrimEnde", a, scrim)).toBe("rgba(0, 0, 0, 0.702)");
   });
 });

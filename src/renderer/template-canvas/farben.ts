@@ -2,13 +2,16 @@
 
 import type { Marke, FarbRolle, SchriftRolle, Schrift } from '../../shared/contracts/marke'
 import type { AktionsInhalt } from '../../shared/contracts/aktion'
+import type { Zone } from '../../shared/contracts/vorlage'
 
 // DIE EINE AUFLOESUNGSSTELLE FUER FARB- UND SCHRIFTROLLEN.
 //
 // "Es gibt genau eine Aufloesungsstelle. Keine Zonen-Sorte (Text, Bild, Deko, Verlauf)
 // darf `marke.farben[...]` direkt lesen - sonst wirkt die Akzentfarbe in der Pille, aber
 // nicht im Verlauf dahinter, und niemand faende den Grund." (TK 9.10.9) Wer eine Farbe
-// braucht, ruft `loeseFarbe`; wer eine Schrift braucht, ruft `loeseSchrift`.
+// braucht, ruft `loeseFarbe`; wer sie FUER EINE ZONE braucht, ruft `loeseFarbeInZone`
+// (seit 05.11.2026 - sie wertet die Gestaltung der Zone aus und reicht sonst an
+// `loeseFarbe` weiter). Wer eine Schrift braucht, ruft `loeseSchrift`.
 //
 // KEIN CANVAS, KEIN DOM, KEIN NODE. Diese Datei rechnet ausschliesslich auf Zeichenketten
 // und ist deshalb ohne Browser pruefbar. Sie setzt selbst nie eine Fuell- oder Strichfarbe;
@@ -180,6 +183,59 @@ export function loeseFarbe(marke: Marke, rolle: FarbRolle, aktion: AktionsInhalt
     throw new Error(`Farb-Rolle "${rolle}" ist in der Marke nicht belegt.`)
   }
   return alsCanvasFarbe(marke.farben[rolle], `Farb-Rolle "${rolle}"`)
+}
+
+/**
+ * Loest die Farbe EINER ZONE auf – der Weg, den jede Zone nehmen muss (05.11.2026).
+ *
+ * WARUM ES DIESE FUNKTION GIBT UND NICHT EIN ZWEITER AUFRUF IN DEN ZONEN: Seit 05.11.2026
+ * kann der Nutzer die Text- und die Flaechenfarbe je Zone ueberschreiben. Laege das
+ * Auswerten in `zone-text.ts`, waere `farben.ts` nicht mehr die eine Aufloesungsstelle
+ * (TK 9.10.9), und die Flaechen-Ueberschreibung muesste in `zone-deko.ts` ein ZWEITES Mal
+ * geschrieben werden – die erste Stelle, die jemand beim naechsten Umbau vergisst.
+ *
+ * DIE REGEL IST ABSICHTLICH ENG: Eine Ueberschreibung gilt nur fuer die Rolle, die die
+ * Zone in der VORLAGE selbst traegt (`zone.text.farbRolle` bzw.
+ * `zone.deko.füllungFarbRolle`). Es gibt hier KEINE Liste „das ist eine Textrolle": Solche
+ * Listen waren im Projekt schon zweimal still falsch, und eine neue Vorlage mit einer
+ * anderen Rolle waere ohne Zutun ausgenommen.
+ *
+ * Ein Verlauf (`deko.verlauf`) bekommt KEINE eigene Farbe. Zwei Stopps mit einem Regler
+ * zu bedienen hiesse, den einen zu raten; die Abdunkelung bleibt deshalb Sache der Marke.
+ *
+ * Sonst gilt unveraendert `loeseFarbe`: erst die Akzent-Ersetzung der Aktion, dann die
+ * Marke. Diese Funktion ist KEIN zweiter Rueckfallweg, sondern eine Vorschaltung.
+ */
+export function loeseFarbeInZone(
+  marke: Marke,
+  rolle: FarbRolle,
+  aktion: AktionsInhalt,
+  zone: Zone,
+): string {
+  pruefePflichteingang(marke, 'marke')
+  pruefePflichteingang(aktion, 'aktion')
+  pruefePflichteingang(zone, 'zone')
+
+  const gestaltung = aktion.zonenGestaltung?.[zone.id]
+  if (gestaltung !== null && gestaltung !== undefined) {
+    // Text zuerst: Eine Zone mit eigener Schrift ist eine Textzone; ihre Flaechen-Rolle
+    // (Pille) ist die Ausnahme, nicht die Regel.
+    if (zone.text !== undefined && zone.text.farbRolle === rolle) {
+      if (typeof gestaltung.textfarbe === 'string' && gestaltung.textfarbe.length > 0) {
+        return alsCanvasFarbe(gestaltung.textfarbe, `zonenGestaltung["${zone.id}"].textfarbe`)
+      }
+    }
+    if (zone.deko?.füllungFarbRolle === rolle) {
+      if (typeof gestaltung.flaechefarbe === 'string' && gestaltung.flaechefarbe.length > 0) {
+        return alsCanvasFarbe(
+          gestaltung.flaechefarbe,
+          `zonenGestaltung["${zone.id}"].flaechefarbe`,
+        )
+      }
+    }
+  }
+
+  return loeseFarbe(marke, rolle, aktion)
 }
 
 /**

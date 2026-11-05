@@ -17,6 +17,7 @@
 // abgeschrieben: Aendert sich der Bereich, haelt der Satz mit.
 
 import { DAUER_BEREICH } from '../../shared/contracts/konstanten'
+import { GESTALTUNG_GRENZEN } from '../../shared/gestaltung'
 
 import type { EntwurfBefund } from './aktion-bearbeiten'
 import type { JSX } from 'react'
@@ -44,6 +45,21 @@ const TEXTE_FARBE: Record<Extract<EntwurfBefund, { feld: 'akzentfarbe' }>['grund
     'Die Akzentfarbe muss ein sechsstelliger Hex-Wert mit # sein (z. B. #FF4040).',
 }
 
+const TEXTE_ZONEN: Record<Extract<EntwurfBefund, { feld: 'zonenGestaltung' }>['grund'], string> = {
+  kein_hex:
+    'Eine Zonenfarbe muss ein sechsstelliger Hex-Wert mit # sein (z. B. #FF4040).',
+  ausserhalb_bereich:
+    `Die Textgroesse einer Zone liegt ausserhalb des zulaessigen Bereichs ` +
+    `(${GESTALTUNG_GRENZEN.groesseProzent.min} bis ${GESTALTUNG_GRENZEN.groesseProzent.max} Prozent).`,
+}
+
+const TEXTE_AUSSCHNITT: Record<Extract<EntwurfBefund, { feld: 'bildAusschnitt' }>['grund'], string> = {
+  ausserhalb_bereich:
+    `Zoom und Position des Bildes liegen ausserhalb des zulaessigen Bereichs ` +
+    `(Zoom ${GESTALTUNG_GRENZEN.zoom.min} bis ${GESTALTUNG_GRENZEN.zoom.max} Prozent, ` +
+    `Versatz ${GESTALTUNG_GRENZEN.versatz.min} bis +${GESTALTUNG_GRENZEN.versatz.max} Prozent).`,
+}
+
 /** Ein Befund, ein Satz fuer den Nutzer - Codes stehen auf dem Feld nie. */
 export function bedienerBefundText(befund: EntwurfBefund): string {
   switch (befund.feld) {
@@ -57,6 +73,10 @@ export function bedienerBefundText(befund: EntwurfBefund): string {
       return TEXTE_DAUER[befund.grund]
     case 'akzentfarbe':
       return TEXTE_FARBE[befund.grund]
+    case 'zonenGestaltung':
+      return TEXTE_ZONEN[befund.grund]
+    case 'bildAusschnitt':
+      return TEXTE_AUSSCHNITT[befund.grund]
   }
 }
 

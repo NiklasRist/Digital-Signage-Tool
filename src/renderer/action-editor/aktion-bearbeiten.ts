@@ -30,6 +30,7 @@ import { KANAELE } from '../../shared/contracts/kanaele'
 import { DAUER_BEREICH } from '../../shared/contracts/konstanten'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { istAkzentfarbe } from './akzentfarbe'
+import { GESTALTUNG_GRENZEN, istHexFarbe } from '../../shared/gestaltung'
 
 /** Der Entwurf im Formular: alle Felder der Aktion außer der ID, die der Main vergibt. */
 export type AktionsEntwurf = AktionsInhalt
@@ -41,6 +42,10 @@ export type EntwurfBefund =
   | { feld: 'markeId'; grund: 'leer' }   // NEU mit #319 (FA-23)
   | { feld: 'standardDauer'; grund: 'ausserhalb_bereich' }
   | { feld: 'akzentfarbe'; grund: 'kein_hex' }
+  // NEU 05.11.2026 (TK 9.8.8). EIN Befund je Feld, nicht je Zone: Der Editor zeigt die
+  // Meldung am Schritt, und die Zone steht darin im Text (`befund-texte.tsx`).
+  | { feld: 'zonenGestaltung'; grund: 'kein_hex' | 'ausserhalb_bereich' }
+  | { feld: 'bildAusschnitt'; grund: 'ausserhalb_bereich' }
 
 /** Reine, synchrone Vorabprüfung. Geprüft wird AUSSCHLIESSLICH, was im übergebenen Objekt
  *  tatsächlich vorkommt – ein fehlendes Feld erzeugt KEINEN Befund. Leeres Array heißt
@@ -91,6 +96,42 @@ export function pruefeEntwurf(entwurf: Partial<AktionsEntwurf>): EntwurfBefund[]
     }
   }
 
+  // SEIT 05.11.2026 (TK 9.8.8): Gestaltung je Zone und Bildausschnitt.
+  // Geprueft werden NUR die Werte, die da sind - ein fehlendes Feld ist kein Befund
+  // (dieselbe Regel wie oben). Die Zonen-KENNUNG wird nicht geprueft: Welche Zonen es
+  // gibt, weiss allein die Vorlage, und eine Angabe fuer eine Zone, die eine andere
+  // Vorlage hat, ist beim Zurueckwechseln wieder da.
+  if ('zonenGestaltung' in entwurf && entwurf.zonenGestaltung !== undefined) {
+    for (const gestaltung of Object.values(entwurf.zonenGestaltung ?? {})) {
+      for (const farbe of [gestaltung?.textfarbe, gestaltung?.flaechefarbe]) {
+        if (typeof farbe === 'string' && !istHexFarbe(farbe)) {
+          befunde.push({ feld: 'zonenGestaltung', grund: 'kein_hex' })
+          break
+        }
+      }
+      const groesse = gestaltung?.groesseProzent
+      if (
+        typeof groesse === 'number' &&
+        (groesse < GESTALTUNG_GRENZEN.groesseProzent.min || groesse > GESTALTUNG_GRENZEN.groesseProzent.max)
+      ) {
+        befunde.push({ feld: 'zonenGestaltung', grund: 'ausserhalb_bereich' })
+      }
+    }
+  }
+
+  if ('bildAusschnitt' in entwurf && entwurf.bildAusschnitt !== null && entwurf.bildAusschnitt !== undefined) {
+    const { zoom, versatzX, versatzY } = entwurf.bildAusschnitt
+    const zahlAusserhalb = (wert: unknown, min: number, max: number): boolean =>
+      typeof wert === 'number' && (wert < min || wert > max)
+    if (
+      zahlAusserhalb(zoom, GESTALTUNG_GRENZEN.zoom.min, GESTALTUNG_GRENZEN.zoom.max) ||
+      zahlAusserhalb(versatzX, GESTALTUNG_GRENZEN.versatz.min, GESTALTUNG_GRENZEN.versatz.max) ||
+      zahlAusserhalb(versatzY, GESTALTUNG_GRENZEN.versatz.min, GESTALTUNG_GRENZEN.versatz.max)
+    ) {
+      befunde.push({ feld: 'bildAusschnitt', grund: 'ausserhalb_bereich' })
+    }
+  }
+
   return befunde
 }
 
@@ -123,6 +164,9 @@ export function leererEntwurf(
     vorlagenId,
     markeId,
     akzentfarbe,
+    // SEIT 05.11.2026 (TK 9.8.8): leer heisst „die Vorlage gilt" - nicht „null Farben".
+    zonenGestaltung: {},
+    bildAusschnitt: null,
   }
 }
 
@@ -212,6 +256,12 @@ function meldungZuBefunden(befunde: EntwurfBefund[]): string {
         return `standardDauer: Der Wert liegt außerhalb des erlaubten Bereichs (${DAUER_BEREICH.min}–${DAUER_BEREICH.max} Sekunden).`
       case 'akzentfarbe':
         return 'akzentfarbe: Der Wert ist kein gültiger Hex-Wert (#RRGGBB).'
+      case 'zonenGestaltung':
+        return befund.grund === 'kein_hex'
+          ? 'zonenGestaltung: Eine Zonenfarbe ist kein gültiger Hex-Wert (#RRGGBB).'
+          : 'zonenGestaltung: Die Textgröße einer Zone liegt außerhalb des erlaubten Bereichs.'
+      case 'bildAusschnitt':
+        return 'bildAusschnitt: Zoom oder Position liegen außerhalb des erlaubten Bereichs.'
     }
   })
   return texte.join(' ') + ' Es wurde nichts gespeichert.'

@@ -50,7 +50,10 @@ const FARB_TEXTE: Readonly<Record<FarbRolle, RollenText>> = {
   },
   flaecheSehrDunkel: {
     name: 'Sehr dunkle Fläche',
-    zweck: 'Dunklerer Grund für eigene Vorlagen. Wird von den eingebauten nicht benutzt.',
+    // SEIT 05.11.2026 von den eingebauten Looks benutzt: „Farbband unten" (Band) und
+    // „Kopf und Fuß" (Kopfleiste). Der Satz sagt das jetzt - der Test in
+    // `rollen-texte.spec.ts` haelt ihn sonst fuer falsch.
+    zweck: 'Dunklerer Grund – trennt Flächen von der Grundfläche, z. B. im Band.',
   },
   flaecheHell: {
     name: 'Helle Fläche',
@@ -70,7 +73,9 @@ const FARB_TEXTE: Readonly<Record<FarbRolle, RollenText>> = {
   },
   textSekundaer: {
     name: 'Text sekundär',
-    zweck: 'Zurückgenommene Schrift. Wird von den eingebauten Vorlagen nicht benutzt.',
+    // SEIT 05.11.2026 von den eingebauten Looks benutzt (Beschreibung in „Farbband unten",
+    // „Zentriert", „Ecke", „Kopf und Fuß", „Großer Preis").
+    zweck: 'Zurückgenommene Schrift für Nebensätze – z. B. die Beschreibung.',
   },
   linie: {
     name: 'Linie',

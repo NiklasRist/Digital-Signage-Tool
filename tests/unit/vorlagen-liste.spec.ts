@@ -5,6 +5,7 @@ import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Vorlage } from '../../src/shared/contracts/vorlage'
+import { EINGEBAUTE_VORLAGEN_IDS } from '../../src/main/vorlagen-store/eingebaute-vorlagen'
 
 // Verhaltenstest zu #99, gegen den ECHTEN Lader aus #98 in einem eigenen Temp-Ordner.
 //
@@ -28,7 +29,10 @@ type ListeModul = typeof import('../../src/main/vorlagen-store/liste')
 // einem Test in den naechsten.
 let liste: ListeModul
 
-const EINGEBAUTE = ['vollbild', 'split', 'band-standard']
+// SEIT 05.11.2026 neun statt drei (TK 9.8.8, sechs neue Looks). Die Liste kommt aus der
+// Quelle, nicht aus einer Abschrift: Sonst muesste sie beim naechsten Look wieder von Hand
+// wachsen.
+const EINGEBAUTE = [...EINGEBAUTE_VORLAGEN_IDS]
 
 function vorlage(id: string, parent: string | null): Vorlage {
   return {
@@ -80,7 +84,7 @@ afterEach(async () => {
 })
 
 describe('listeVorlagen', () => {
-  it('liefert bei frisch angelegter vorlagen.json genau die drei eingebauten in ihrer Reihenfolge', async () => {
+  it('liefert bei frisch angelegter vorlagen.json genau die eingebauten in ihrer Reihenfolge', async () => {
     expect(ids(await liste.listeVorlagen())).toEqual(EINGEBAUTE)
   })
 

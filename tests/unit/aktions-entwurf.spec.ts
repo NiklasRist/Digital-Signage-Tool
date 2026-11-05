@@ -87,3 +87,57 @@ describe('istNeuerEntwurfLeer', () => {
     expect(istNeuerEntwurfLeer({ ...entwurfAus(aktion()), titel: 'Ab' })).toBe(false)
   })
 })
+
+// ---------------------------------------------------------------------------
+// SEIT 05.11.2026 (TK 9.8.8): `zonenGestaltung` und `bildAusschnitt` sind VERSCACHTELT.
+// Ein `!==` waere hier immer wahr (neue Referenz nach jedem Rendern) und jedes „Fertig"
+// schriebe samt Undo-Schritt, obwohl niemand etwas geaendert hat.
+// ---------------------------------------------------------------------------
+
+describe('unterschiede - Gestaltung je Zone und Bildausschnitt', () => {
+  it('gleicher Inhalt, neue Referenz -> KEINE Aenderung', () => {
+    const gespeichert = aktion({
+      zonenGestaltung: { preis: { flaechefarbe: '#FF4040' } },
+      bildAusschnitt: { zoom: 150, versatzX: 10, versatzY: 0 },
+    })
+    const entwurf: AktionsInhalt = {
+      ...entwurfAus(gespeichert),
+      zonenGestaltung: { preis: { flaechefarbe: '#FF4040' } },
+      bildAusschnitt: { zoom: 150, versatzX: 10, versatzY: 0 },
+    }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({})
+  })
+
+  it('eine geaenderte Zonenfarbe steht im Ergebnis - und nur sie', () => {
+    const gespeichert = aktion({ zonenGestaltung: { preis: { flaechefarbe: '#FF4040' } } })
+    const entwurf: AktionsInhalt = {
+      ...entwurfAus(gespeichert),
+      zonenGestaltung: { preis: { flaechefarbe: '#00FF00' } },
+    }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({
+      zonenGestaltung: { preis: { flaechefarbe: '#00FF00' } },
+    })
+  })
+
+  it('zurueckgesetzt (leerer Record) gegen einen gesetzten Wert ist eine Aenderung', () => {
+    const gespeichert = aktion({ zonenGestaltung: { preis: { textfarbe: '#FFFFFF' } } })
+    const entwurf: AktionsInhalt = { ...entwurfAus(gespeichert), zonenGestaltung: {} }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({ zonenGestaltung: {} })
+  })
+
+  it('ein altes Projekt OHNE die Felder meldet keine Aenderung', () => {
+    // Genau dieser Fall entstuende beim ersten Oeffnen einer Aktion aus der Zeit vor
+    // dieser Fassung: Der Entwurf traegt die Felder nicht, gespeichert sind sie auch nicht.
+    const gespeichert = aktion()
+    const entwurf: AktionsInhalt = { ...entwurfAus(gespeichert), zonenGestaltung: {} }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({})
+  })
+
+  it('ein neuer Bildausschnitt wird gemeldet, ein gleich gebliebener nicht', () => {
+    const gespeichert = aktion({ bildAusschnitt: null })
+    expect(unterschiede({ ...entwurfAus(gespeichert), bildAusschnitt: { zoom: 200 } }, gespeichert)).toEqual({
+      bildAusschnitt: { zoom: 200 },
+    })
+    expect(unterschiede({ ...entwurfAus(gespeichert), bildAusschnitt: null }, gespeichert)).toEqual({})
+  })
+})

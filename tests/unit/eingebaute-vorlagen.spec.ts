@@ -57,13 +57,92 @@ const BAND: Zeile[] = [
   ["cta", "frei", "cta", 1590, 18, 234, 72],
 ];
 
+// SEIT 05.11.2026: die sechs neuen Looks. Auch hier Zeile fuer Zeile - die Zahlen sind
+// die einzige Beschreibung des Layouts, die es gibt.
+const RIESIG: Zeile[] = [
+  ["hintergrund", "fest", null, 0, 0, 1920, 1080],
+  ["motiv", "frei", "bild", 0, 0, 1920, 1080],
+  ["scrim", "fest", null, 0, 0, 1920, 700],
+  ["logo", "fest", "logo", 96, 54, 360, 100],
+  ["ueberschrift", "frei", "titel", 96, 190, 1728, 400],
+  ["beschreibung", "frei", "beschreibung", 96, 610, 1000, 90],
+  ["preis", "frei", "preis", 96, 860, 480, 130],
+  ["cta", "frei", "cta", 1300, 860, 524, 120],
+];
+
+const FARBBAND: Zeile[] = [
+  ["hintergrund", "fest", null, 0, 0, 1920, 1080],
+  ["motiv", "frei", "bild", 0, 0, 1920, 700],
+  ["band", "fest", null, 0, 700, 1920, 380],
+  ["logo", "fest", "logo", 96, 724, 280, 84],
+  ["ueberschrift", "frei", "titel", 96, 824, 1100, 110],
+  ["beschreibung", "frei", "beschreibung", 96, 946, 1100, 60],
+  ["preis", "frei", "preis", 1400, 760, 424, 120],
+  ["cta", "frei", "cta", 1400, 900, 424, 100],
+];
+
+const ZENTRIERT: Zeile[] = [
+  ["hintergrund", "fest", null, 0, 0, 1920, 1080],
+  ["motiv", "frei", "bild", 0, 0, 1920, 1080],
+  ["scrim", "fest", null, 0, 0, 1920, 1080],
+  ["logo", "fest", "logo", 760, 54, 400, 100],
+  ["ueberschrift", "frei", "titel", 260, 280, 1400, 240],
+  ["beschreibung", "frei", "beschreibung", 360, 560, 1200, 80],
+  ["preis", "frei", "preis", 760, 700, 400, 130],
+  ["cta", "frei", "cta", 700, 870, 520, 110],
+];
+
+const ECKE: Zeile[] = [
+  ["hintergrund", "fest", null, 0, 0, 1920, 1080],
+  ["motiv", "frei", "bild", 0, 0, 1920, 1080],
+  ["scrim", "fest", null, 0, 520, 1100, 560],
+  ["logo", "fest", "logo", 96, 54, 320, 90],
+  ["ueberschrift", "frei", "titel", 96, 640, 900, 150],
+  ["beschreibung", "frei", "beschreibung", 96, 800, 900, 70],
+  ["preis", "frei", "preis", 96, 890, 380, 110],
+  ["cta", "frei", "cta", 500, 890, 380, 110],
+];
+
+const KOPF_FUSS: Zeile[] = [
+  ["hintergrund", "fest", null, 0, 0, 1920, 1080],
+  ["kopf", "fest", null, 0, 0, 1920, 220],
+  ["logo", "fest", "logo", 1500, 60, 324, 100],
+  ["ueberschrift", "frei", "titel", 96, 60, 1300, 100],
+  ["motiv", "frei", "bild", 0, 220, 1920, 560],
+  ["fuss", "fest", null, 0, 780, 1920, 300],
+  ["beschreibung", "frei", "beschreibung", 96, 810, 1100, 70],
+  ["preis", "frei", "preis", 96, 900, 420, 110],
+  ["cta", "frei", "cta", 560, 900, 420, 110],
+];
+
+const GROSSER_PREIS: Zeile[] = [
+  ["hintergrund", "fest", null, 0, 0, 1920, 1080],
+  ["motiv", "frei", "bild", 0, 0, 1920, 1080],
+  ["scrim", "fest", null, 0, 300, 1920, 780],
+  ["logo", "fest", "logo", 96, 54, 320, 90],
+  ["ueberschrift", "frei", "titel", 96, 560, 1200, 140],
+  ["beschreibung", "frei", "beschreibung", 96, 720, 1100, 70],
+  ["preis", "frei", "preis", 96, 800, 900, 200],
+  ["cta", "frei", "cta", 1100, 850, 524, 120],
+];
+
 describe("eingebauteVorlagen (#96)", () => {
-  it("liefert genau drei mitgelieferte Vorlagen in der festgelegten Reihenfolge", () => {
+  it("liefert alle mitgelieferten Vorlagen in der festgelegten Reihenfolge", () => {
     const v = eingebauteVorlagen();
     expect(v.map((e) => e.id)).toEqual([...EINGEBAUTE_VORLAGEN_IDS]);
-    expect(v.map((e) => e.name)).toEqual(["Ganzflächig", "Zwei Spalten", "Band-Standard"]);
-    expect(v.map((e) => e.parent)).toEqual([null, null, null]);
-    expect(v.map((e) => e.eingebaut)).toEqual([true, true, true]);
+    expect(v.map((e) => e.name)).toEqual([
+      "Ganzflächig",
+      "Zwei Spalten",
+      "Band-Standard",
+      "Riesig",
+      "Farbband unten",
+      "Zentriert",
+      "Ecke",
+      "Kopf und Fuß",
+      "Großer Preis",
+    ]);
+    expect(v.map((e) => e.parent)).toEqual(v.map(() => null));
+    expect(v.map((e) => e.eingebaut)).toEqual(v.map(() => true));
   });
 
   it("traegt die neuen Anzeigenamen; die Flaeche steht allein in höhe (v3.31)", () => {
@@ -89,6 +168,12 @@ describe("eingebauteVorlagen (#96)", () => {
     expect(hole("vollbild").zonen.map(zeile)).toEqual(VOLLBILD);
     expect(hole("split").zonen.map(zeile)).toEqual(SPLIT);
     expect(hole("band-standard").zonen.map(zeile)).toEqual(BAND);
+    expect(hole("riesig").zonen.map(zeile)).toEqual(RIESIG);
+    expect(hole("farbband").zonen.map(zeile)).toEqual(FARBBAND);
+    expect(hole("zentriert").zonen.map(zeile)).toEqual(ZENTRIERT);
+    expect(hole("ecke").zonen.map(zeile)).toEqual(ECKE);
+    expect(hole("kopf-fuss").zonen.map(zeile)).toEqual(KOPF_FUSS);
+    expect(hole("grosser-preis").zonen.map(zeile)).toEqual(GROSSER_PREIS);
   });
 
   it("zeichnet hintergrund in jeder Vorlage als erstes", () => {

@@ -12,11 +12,13 @@
 //     Ausnahme liesse das ganze Segment leer. Jeder loeseFarbe-Aufruf ist gefangen;
 //     faellt er aus, fehlt GENAU der betroffene Teilschritt - keine Ersatzfarbe,
 //     kein Schwarz, kein Magenta. restore() laeuft trotzdem.
-//   - Farben NUR ueber loeseFarbe (#112), die Aktion wird als DRITTES Argument
+//   - Farben NUR ueber `farben.ts` (#112), die Aktion wird als DRITTES Argument
 //     durchgereicht - bei der Fuellung UND bei beiden Verlaufs Stoppen:
 //     "Auch deko.verlauf (vonFarbRolle/bisFarbRolle) laeuft durch dieselbe
 //     Funktion." (TK 9.10.9) Der Verlauf ist kein Sonderfall und diese Datei
-//     liest aktion.akzentfarbe NICHT selbst.
+//     liest aktion.akzentfarbe NICHT selbst. Die FUELLUNG nimmt seit 05.11.2026
+//     `loeseFarbeInZone` (eigene Flaechenfarbe der Zone); der VERLAUF nimmt
+//     weiterhin `loeseFarbe`.
 //   - Statischer Text geht AUSSNAHMSLOS durch zeichneTextZone (#114): kein eigenes
 //     fillText, kein eigener Umbrauch - sonst waere das der zweite Zeichenpfad,
 //     den TK 9.10.1 verbietet. Gebundene Zonen (bindung !== null) ignorieren
@@ -38,7 +40,7 @@ import type { Zone, VerlaufRichtung } from '../../shared/contracts/vorlage'
 import type { FarbRolle, Marke } from '../../shared/contracts/marke'
 import type { AktionsInhalt } from '../../shared/contracts/aktion'
 
-import { loeseFarbe } from './farben'
+import { loeseFarbe, loeseFarbeInZone } from './farben'
 import { zeichneTextZone } from './zone-text'
 
 export function zeichneDekoZone(
@@ -85,7 +87,7 @@ export function zeichneDekoZone(
     ctx.beginPath()
     baueZonenPfad(ctx, rahmen, radius)
     try {
-      ctx.fillStyle = loeseFarbe(marke, deko.füllungFarbRolle, aktion)
+      ctx.fillStyle = loeseFarbeInZone(marke, deko.füllungFarbRolle, aktion, zone)
       ctx.fill()
     } catch {
       // Teilschritt uebersprungen - keine Ersatzfarbe.

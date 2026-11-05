@@ -56,6 +56,8 @@ import { istNeuerEntwurfLeer, unterschiede } from './aktions-entwurf'
 import { BefundAnzeige } from './befund-texte'
 import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
 import { VorlagenWahl } from './vorlagen-wahl'
+import { ZonenGestaltung } from './zonen-gestaltung'
+import { BildAusschnittRegler } from './bild-ausschnitt'
 import { feldBedarf } from './feld-bedarf'
 import { BEISPIEL_INHALT, erstesBild, mitBeispielinhalt } from './beispiel-inhalt'
 import { istAkzentfarbe } from './akzentfarbe'
@@ -433,8 +435,12 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
   }
 
   /** Ein Feld des Entwurfs aendern - KEIN IPC (s. Kopf). Die Pruefung laeuft sofort,
-   *  damit ein leerer Titel nicht erst beim Abschluss auffaellt. */
-  function aendere(feld: keyof AktionsEntwurf, wert: string | number | null): void {
+   *  damit ein leerer Titel nicht erst beim Abschluss auffaellt.
+   *
+   *  SEIT 05.11.2026 generisch: `zonenGestaltung` ist ein Record und `bildAusschnitt`
+   *  ein Objekt - die alte Signatur `string | number | null` haette beide nicht
+   *  angenommen und jeden Aufruf zu einem Cast gezwungen. */
+  function aendere<K extends keyof AktionsEntwurf>(feld: K, wert: AktionsEntwurf[K]): void {
     if (entwurf === null) return
     // SAFETY: `feld` ist ein Schluessel von `AktionsEntwurf`, `wert` der Wert dieses
     // Feldes (der Parameter ist `keyof`-typisiert); `pruefeEntwurf` prueft den Wert
@@ -835,7 +841,7 @@ function Inspector({
   waehlbare: Vorlage[] | null
   befunde: EntwurfBefund[]
   meldung: string | null
-  aufAenderung: (feld: keyof AktionsEntwurf, wert: string | number | null) => void
+  aufAenderung: <K extends keyof AktionsEntwurf>(feld: K, wert: AktionsEntwurf[K]) => void
   aufBild: (bildRef: string | null) => void
 }): JSX.Element {
   const assets: Asset[] = projekt.assets
@@ -1044,6 +1050,15 @@ function Inspector({
                 {importHinweis}
               </p>
             )}
+            {/* SEIT 05.11.2026 (TK 9.8.8): Zoom und Position des Motivs. Sie bewegen den
+                BILDINHALT innerhalb der Zone, nicht die Zone selbst - deshalb steht der
+                Regler hier beim Bild und nicht bei der Vorlage. */}
+            <BildAusschnittRegler
+              ausschnitt={entwurf.bildAusschnitt}
+              aufAendern={(ausschnitt) => {
+                aufAenderung('bildAusschnitt', ausschnitt)
+              }}
+            />
           </div>
         </Schritt>
       )}
@@ -1153,6 +1168,20 @@ function Inspector({
           </div>
         </Schritt>
       )}
+
+      {/* SEIT 05.11.2026 (TK 9.8.8): Farbe, Groesse und Ausrichtung JE ZONE. Der Schritt
+          steht hinter dem Akzent, weil er feiner ist: Der Akzent faerbt die Rollen, die
+          die Vorlage als Akzent vorsieht; hier bekommt EINE Zone ihre eigene Farbe. */}
+      <Schritt titel="Zonen">
+        <ZonenGestaltung
+          vorlage={gewaehlteVorlage}
+          entwurf={entwurf}
+          marke={markeDesEntwurfs}
+          aufAendern={(gestaltung) => {
+            aufAenderung('zonenGestaltung', gestaltung)
+          }}
+        />
+      </Schritt>
 
       <Schritt titel="Dauer">
         <label>Standarddauer{' '}

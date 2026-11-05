@@ -204,3 +204,48 @@ describe("erstelleAktion (#319) - markeId als Pflicht", () => {
     expect(drin.length).toBeGreaterThan(0);
   });
 });
+
+describe("erstelleAktion - Gestaltung je Zone und Bildausschnitt (05.11.2026, TK 9.8.8)", () => {
+  it("uebernimmt die Gestaltung und NORMALISIERT sie (kaputter Teil faellt weg, heiler bleibt)", async () => {
+    const antwort = await erstelleAktion(
+      entwurf({
+        zonenGestaltung: {
+          preis: { flaechefarbe: "#00FF00", groesseProzent: 120 },
+          ueberschrift: { textfarbe: "rot" },
+        },
+        bildAusschnitt: { zoom: 9999, versatzX: -10 },
+      }),
+    );
+
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    // Die kaputte Textfarbe verschwindet, die heile Flaechenfarbe bleibt.
+    expect(antwort.wert.zonenGestaltung).toEqual({
+      preis: { flaechefarbe: "#00FF00", groesseProzent: 120 },
+      ueberschrift: {},
+    });
+    // Der Zoom wird auf die Reglergrenze gedeckelt, nicht verworfen.
+    expect(antwort.wert.bildAusschnitt).toEqual({ zoom: 300, versatzX: -10, versatzY: 0 });
+  });
+
+  it("ohne Angaben steht ein leerer Record bzw. null - kein Feld mit Zufallswert", async () => {
+    const antwort = await erstelleAktion(entwurf());
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.zonenGestaltung).toEqual({});
+    expect(antwort.wert.bildAusschnitt).toBeNull();
+  });
+
+  it("Fremdfelder aus einer anderen Fassung landen NICHT in der Aktion", async () => {
+    // `project.json` wird als Ganzes serialisiert (#46) - ein Fremdkoerper ueberlebte
+    // jeden Neustart. Dieselbe Sorge wie beim Verbot des Spreads im Rumpf.
+    const antwort = await erstelleAktion(
+      entwurf({
+        zonenGestaltung: { preis: { textfarbe: "#123456", geheim: "weg" } } as never,
+      }),
+    );
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.zonenGestaltung).toEqual({ preis: { textfarbe: "#123456" } });
+  });
+});

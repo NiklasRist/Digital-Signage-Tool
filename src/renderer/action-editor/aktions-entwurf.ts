@@ -19,6 +19,7 @@
 // ohne React geprueft.
 
 import type { Aktion, AktionsInhalt } from '../../shared/contracts/aktion'
+import { gleicheGestaltung } from '../../shared/gestaltung'
 
 /** Der Entwurf ist der Aktionsinhalt ohne Kennung (dieselbe Form wie in `aktion-bearbeiten`). */
 export type AktionsEntwurf = AktionsInhalt
@@ -43,6 +44,16 @@ export function unterschiede(
   if (entwurf.vorlagenId !== gespeichert.vorlagenId) aenderungen.vorlagenId = entwurf.vorlagenId
   if (entwurf.markeId !== gespeichert.markeId) aenderungen.markeId = entwurf.markeId
   if (entwurf.akzentfarbe !== gespeichert.akzentfarbe) aenderungen.akzentfarbe = entwurf.akzentfarbe
+  // SEIT 05.11.2026 (TK 9.8.8): Zwei VERSCACHTELTE Felder. Ein `!==` waere hier immer
+  // wahr - das Objekt ist nach jedem Rendern eine neue Referenz - und damit erzeugte
+  // jedes „Fertig" einen Schreibvorgang samt Undo-Schritt fuer nichts. Verglichen wird
+  // deshalb der Inhalt (`gleicheGestaltung`, sortierte Schluessel).
+  if (!gleicheGestaltung(entwurf.zonenGestaltung, gespeichert.zonenGestaltung)) {
+    aenderungen.zonenGestaltung = entwurf.zonenGestaltung ?? {}
+  }
+  if (!gleicheGestaltung(entwurf.bildAusschnitt, gespeichert.bildAusschnitt)) {
+    aenderungen.bildAusschnitt = entwurf.bildAusschnitt ?? null
+  }
   return aenderungen
 }
 
