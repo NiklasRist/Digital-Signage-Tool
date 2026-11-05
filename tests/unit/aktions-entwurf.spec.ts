@@ -133,6 +133,19 @@ describe('unterschiede - Gestaltung je Zone und Bildausschnitt', () => {
     expect(unterschiede(entwurf, gespeichert)).toEqual({})
   })
 
+  it('eine geaenderte Abdunkelung wird gemeldet - auch verschachtelt', () => {
+    const gespeichert = aktion({
+      zonenGestaltung: { scrim: { scrim: { bisDeckkraft: 70 } } },
+    })
+    const entwurf: AktionsInhalt = {
+      ...entwurfAus(gespeichert),
+      zonenGestaltung: { scrim: { scrim: { bisDeckkraft: 40 } } },
+    }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({
+      zonenGestaltung: { scrim: { scrim: { bisDeckkraft: 40 } } },
+    })
+  })
+
   it('ein neuer Bildausschnitt wird gemeldet, ein gleich gebliebener nicht', () => {
     const gespeichert = aktion({ bildAusschnitt: null })
     expect(unterschiede({ ...entwurfAus(gespeichert), bildAusschnitt: { zoom: 200 } }, gespeichert)).toEqual({

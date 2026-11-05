@@ -9,9 +9,10 @@
 //
 // DIE QUELLE IST DIE VORLAGE, NICHT EINE LISTE HIER: Angezeigt wird je Zone, was die Zone
 // selbst trägt - eine Schriftfarbe nur bei `zone.text`, eine Flächenfarbe nur bei
-// `zone.deko.füllungFarbRolle`. Ein Verlauf (`deko.verlauf`) bekommt bewusst keinen Regler:
-// zwei Stopps mit einer Farbe zu bedienen hiesse, den anderen zu raten. Dieselbe Regel
-// wertet `template-canvas/farben.ts` aus - Anzeige und Wirkung können nicht auseinanderlaufen.
+// `zone.deko.füllungFarbRolle`. Eine Abdunkelung (`scrimStart`/`scrimEnde`) bekommt SEIT
+// 05.11.2026 ihre beiden Stopps mit je Farbe und Deckkraft - der eine Regler von vorher
+// hätte den anderen Stopp raten müssen. Dieselbe Regel wertet `template-canvas/farben.ts`
+// aus - Anzeige und Wirkung können nicht auseinanderlaufen.
 //
 // DER WAHLER IST OBJEKTUNABHAENGIG (`farb-wahl.tsx`): ein Bedienelement für jede Farbe,
 // der WERT bleibt beim Objekt. Kein Zustand hier außer dem Entwurf, den der Aufrufer hält.
@@ -19,9 +20,19 @@
 import type { JSX } from 'react'
 
 import type { Vorlage, Zone } from '../../shared/contracts/vorlage'
-import type { Marke } from '../../shared/contracts/marke'
-import type { AktionsInhalt, ZonenGestaltung } from '../../shared/contracts/aktion'
-import { GESTALTUNG_GRENZEN, SCHRIFT_ROLLEN } from '../../shared/gestaltung'
+import type { FarbRolle, Marke } from '../../shared/contracts/marke'
+import type {
+  AktionsInhalt,
+  ScrimGestaltung,
+  ZonenGestaltung,
+} from '../../shared/contracts/aktion'
+import {
+  GESTALTUNG_GRENZEN,
+  SCHRIFT_ROLLEN,
+  hexDeckkraftProzent,
+  istScrimRolle,
+  istScrimZone,
+} from '../../shared/gestaltung'
 import { zonenText } from '../gemeinsam/zonen-texte'
 import { schriftRollenText } from '../marken-editor/rollen-texte'
 
@@ -37,11 +48,46 @@ function markenFarbe(marke: Marke | null, rolle: string | undefined): string | n
   return typeof wert === 'string' ? wert : null
 }
 
-/** Kann an dieser Zone etwas eingestellt werden - und wenn ja, was? */
-function einstellbar(zone: Zone): { text: boolean; flaeche: boolean } {
+/** Der Farbton ohne Alpha – der Waehler kennt nur `#RRGGBB` (TK 9.11.2). */
+function ohneAlpha(hex: string | null): string | null {
+  if (hex === null) return null
+  return /^#[0-9a-fA-F]{8}$/.test(hex) ? hex.slice(0, 7) : hex
+}
+
+/** Die Deckkraft, die ohne eigene Wahl gilt (Alpha der Markenrolle, 6-stellig = 100). */
+function markenDeckkraft(marke: Marke | null, rolle: FarbRolle | undefined): number {
+  if (marke === null || rolle === undefined) return 100
+  const wert = marke.farben[rolle]
+  if (typeof wert !== 'string') return 100
+  return hexDeckkraftProzent(wert) ?? 100
+}
+
+/**
+ * Was lässt sich an dieser Zone einstellen? Die Quelle ist die VORLAGE.
+ *
+ * Scrim (05.11.2026): Eine Abdunkelungs-Zone bekommt ZWEI Stopps mit je Farbe und
+ * Deckkraft. Ihre Fuellung ist kein gewoehnlicher Flaechen-Regler mehr – sonst stuenden
+ * zwei Bedienelemente fuer dieselbe Flaeche nebeneinander. Welcher Stopp existiert, sagt
+ * der Verlauf der Vorlage (`scrimStart` = Anfang, `scrimEnde` = Ende); eine deckende
+ * Abdunkelung (Fuellung `scrimEnde`) hat genau einen Stopp.
+ */
+function einstellbar(zone: Zone): {
+  text: boolean
+  flaeche: boolean
+  scrim: { von: boolean; bis: boolean }
+} {
+  const verlauf = zone.deko?.verlauf
+  const scrim = {
+    von: verlauf !== undefined && istScrimRolle(verlauf.vonFarbRolle),
+    bis:
+      (verlauf !== undefined && istScrimRolle(verlauf.bisFarbRolle)) ||
+      istScrimRolle(zone.deko?.füllungFarbRolle),
+  }
   return {
     text: zone.text !== undefined,
-    flaeche: zone.deko?.füllungFarbRolle !== undefined,
+    // Eine Scrim-Fuellung wird ausschliesslich ueber den Abdunkelungs-Block bedient.
+    flaeche: zone.deko?.füllungFarbRolle !== undefined && !scrim.bis,
+    scrim,
   }
 }
 
@@ -79,6 +125,28 @@ export function ZonenGestaltung({
     aufAendern(naechster)
   }
 
+  /** EIN Feld EINES Scrim-Stopps setzen oder entfernen. Dieselbe Haltung wie `setze`:
+   *  `null` heisst „die Marke gilt" und wird nicht als Wert gespeichert. */
+  function setzeScrim(
+    zoneId: string,
+    feld: keyof ScrimGestaltung,
+    wert: string | number | null,
+  ): void {
+    const bisher = gestaltung[zoneId] ?? {}
+    const bisherScrim = bisher.scrim ?? {}
+    // SAFETY: `feld` ist ein Schluessel von `ScrimGestaltung` und `wert` traegt genau den
+    // Typ dieses Feldes (der Aufrufer ist typisiert); `null` wird direkt danach entfernt.
+    const neuerScrim = { ...bisherScrim, [feld]: wert } as ScrimGestaltung
+    if (wert === null) delete neuerScrim[feld]
+    const naechsteZone = { ...bisher }
+    if (Object.keys(neuerScrim).length === 0) delete naechsteZone.scrim
+    else naechsteZone.scrim = neuerScrim
+    const naechster = { ...gestaltung }
+    if (Object.keys(naechsteZone).length === 0) delete naechster[zoneId]
+    else naechster[zoneId] = naechsteZone
+    aufAendern(naechster)
+  }
+
   if (vorlage === null) {
     return (
       <p style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}>
@@ -89,7 +157,9 @@ export function ZonenGestaltung({
 
   const zonen = vorlage.zonen.filter((zone) => {
     const kann = einstellbar(zone)
-    return kann.text || kann.flaeche
+    // `istScrimZone` fragt die VORLAGE (Rollen), nicht die Liste hier - dieselbe Quelle
+    // wie der Zeichenweg. Welche Stopps es gibt, sagt danach `kann.scrim`.
+    return kann.text || kann.flaeche || istScrimZone(zone)
   })
 
   if (zonen.length === 0) {
@@ -112,6 +182,18 @@ export function ZonenGestaltung({
         const ausrichtung = eigen.ausrichtung ?? zone.ausrichtung.horizontal
         const schrift = eigen.schriftRolle ?? zone.text?.schriftRolle ?? 'fliesstext'
         const hatEigeneWahl = Object.keys(eigen).length > 0
+        // Scrim: Der Verlauf der Vorlage sagt, welcher Stopp welche Rolle traegt; eine
+        // deckende Abdunkelung hat nur den zweiten. Die Rolle liefert Farbton UND
+        // Standard-Deckkraft (Alpha der Marke).
+        const scrimVonRolle = zone.deko?.verlauf?.vonFarbRolle
+        const scrimBisRolle =
+          zone.deko?.verlauf?.bisFarbRolle ?? zone.deko?.füllungFarbRolle
+        const scrimVonFarbe = eigen.scrim?.vonFarbe ?? null
+        const scrimBisFarbe = eigen.scrim?.bisFarbe ?? null
+        const scrimVonDeckkraft =
+          eigen.scrim?.vonDeckkraft ?? markenDeckkraft(marke, scrimVonRolle)
+        const scrimBisDeckkraft =
+          eigen.scrim?.bisDeckkraft ?? markenDeckkraft(marke, scrimBisRolle)
 
         return (
           <div
@@ -165,6 +247,54 @@ export function ZonenGestaltung({
                 letzteFarben={letzteFarben}
                 aufWahl={(farbe) => {
                   setze(zone.id, 'flaechefarbe', farbe)
+                }}
+                aufFarbeMerken={aufFarbeMerken}
+              />
+            )}
+
+            {/* ABDUNKELUNG (05.11.2026): Die beiden Stopps des Verlaufs, je mit Farbe
+                und Deckkraft. Kein einzelner „Stärke"-Regler: Der muesste den anderen
+                Stopp raten. Nur die Stopps, die die Vorlage wirklich traegt. */}
+            {kann.scrim.von && scrimVonRolle !== undefined && (
+              <ScrimStopp
+                testid={`aktion-zone-${zone.id}-anfang`}
+                beschriftung="Anfang"
+                farbe={scrimVonFarbe}
+                markenWert={ohneAlpha(markenFarbe(marke, scrimVonRolle))}
+                deckkraft={scrimVonDeckkraft}
+                palette={palette}
+                letzteFarben={letzteFarben}
+                aufFarbe={(farbe) => {
+                  setzeScrim(zone.id, 'vonFarbe', farbe)
+                }}
+                aufDeckkraft={(prozent) => {
+                  setzeScrim(
+                    zone.id,
+                    'vonDeckkraft',
+                    prozent === markenDeckkraft(marke, scrimVonRolle) ? null : prozent,
+                  )
+                }}
+                aufFarbeMerken={aufFarbeMerken}
+              />
+            )}
+            {kann.scrim.bis && scrimBisRolle !== undefined && (
+              <ScrimStopp
+                testid={`aktion-zone-${zone.id}-ende`}
+                beschriftung={zone.deko?.verlauf === undefined ? 'Farbe' : 'Ende'}
+                farbe={scrimBisFarbe}
+                markenWert={ohneAlpha(markenFarbe(marke, scrimBisRolle))}
+                deckkraft={scrimBisDeckkraft}
+                palette={palette}
+                letzteFarben={letzteFarben}
+                aufFarbe={(farbe) => {
+                  setzeScrim(zone.id, 'bisFarbe', farbe)
+                }}
+                aufDeckkraft={(prozent) => {
+                  setzeScrim(
+                    zone.id,
+                    'bisDeckkraft',
+                    prozent === markenDeckkraft(marke, scrimBisRolle) ? null : prozent,
+                  )
                 }}
                 aufFarbeMerken={aufFarbeMerken}
               />
@@ -263,6 +393,77 @@ export function ZonenGestaltung({
           </div>
         )
       })}
+    </div>
+  )
+}
+
+/**
+ * EIN Stopp der Abdunkelung: Farbe (derselbe Waehler wie ueberall) und Deckkraft.
+ *
+ * Die Deckkraft steht als eigener Regler, weil `#RRGGBB` keinen Alpha-Wert traegt und
+ * der System-Farbwaehler keinen kennt. Der Regler zeigt den GELTENDEN Wert: ohne eigene
+ * Wahl den Alpha-Wert der Markenrolle, sonst die eigene Zahl.
+ */
+function ScrimStopp({
+  testid,
+  beschriftung,
+  farbe,
+  markenWert,
+  deckkraft,
+  palette,
+  letzteFarben,
+  aufFarbe,
+  aufDeckkraft,
+  aufFarbeMerken,
+}: {
+  testid: string
+  beschriftung: string
+  farbe: string | null
+  markenWert: string | null
+  deckkraft: number
+  palette: readonly PalettenFarbe[]
+  letzteFarben: readonly string[]
+  aufFarbe: (farbe: string | null) => void
+  aufDeckkraft: (prozent: number) => void
+  aufFarbeMerken: (farbe: string) => void
+}): JSX.Element {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+      <FarbWahl
+        testid={testid}
+        beschriftung={beschriftung}
+        wert={farbe}
+        markenWert={markenWert}
+        palette={palette}
+        letzteFarben={letzteFarben}
+        aufWahl={aufFarbe}
+        aufFarbeMerken={aufFarbeMerken}
+      />
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 11,
+          minWidth: 0,
+        }}
+      >
+        <span style={{ flex: '0 0 auto' }}>Deckkraft</span>
+        <input
+          type="range"
+          data-testid={`${testid}-deckkraft`}
+          aria-label={`Deckkraft ${beschriftung}`}
+          min={GESTALTUNG_GRENZEN.deckkraft.min}
+          max={GESTALTUNG_GRENZEN.deckkraft.max}
+          step={5}
+          value={deckkraft}
+          style={{ flex: '1 1 auto', minWidth: 0 }}
+          onChange={(ereignis) => {
+            aufDeckkraft(Number(ereignis.target.value))
+          }}
+        />
+        <span style={{ flex: '0 0 auto', color: '#9aa4b2' }}>{`${String(deckkraft)} %`}</span>
+      </label>
     </div>
   )
 }

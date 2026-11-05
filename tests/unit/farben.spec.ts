@@ -357,3 +357,91 @@ describe("loeseFarbeInZone - eigene Farbe je Zone (TK 9.8.8)", () => {
     expect(loeseFarbeInZone(marke(), "scrimEnde", a, scrim)).toBe("rgba(0, 0, 0, 0.702)");
   });
 });
+
+// ---------------------------------------------------------------------------
+// SEIT 05.11.2026: Die Abdunkelung je Zone. Zwei Stopps, je Farbe und Deckkraft.
+// Die Zuordnung haengt an der Rolle: scrimStart = erster, scrimEnde = zweiter.
+// ---------------------------------------------------------------------------
+
+function scrimZone(id = "scrim"): Zone {
+  return {
+    id,
+    rolle: "fest",
+    bindung: null,
+    rahmen: { x: 0, y: 432, breite: 1920, höhe: 648 },
+    ausrichtung: { horizontal: "links", vertikal: "oben" },
+    wennLeer: "leer",
+    deko: {
+      verlauf: { vonFarbRolle: "scrimStart", bisFarbRolle: "scrimEnde", richtung: "unten" },
+    },
+  };
+}
+
+describe("loeseFarbeInZone - Abdunkelung je Zone (05.11.2026)", () => {
+  it("ohne eigene Angabe bleibt der Verlauf der Marke", () => {
+    expect(loeseFarbeInZone(marke(), "scrimStart", OHNE_WAHL, scrimZone())).toBe(
+      "rgba(0, 0, 0, 0)",
+    );
+    expect(loeseFarbeInZone(marke(), "scrimEnde", OHNE_WAHL, scrimZone())).toBe(
+      "rgba(0, 0, 0, 0.702)",
+    );
+  });
+
+  it("vonFarbe faerbt NUR den ersten Stopp - der zweite bleibt der Markenwert", () => {
+    const a = mitGestaltung({ scrim: { scrim: { vonFarbe: "#112233" } } });
+    // Der erste Stopp ist im Markenwert durchsichtig; der Farbton aendert den Alpha nicht.
+    expect(loeseFarbeInZone(marke(), "scrimStart", a, scrimZone())).toBe(
+      "rgba(17, 34, 51, 0)",
+    );
+    expect(loeseFarbeInZone(marke(), "scrimEnde", a, scrimZone())).toBe(
+      "rgba(0, 0, 0, 0.702)",
+    );
+  });
+
+  it("bisFarbe und bisDeckkraft ersetzen Farbton UND Alpha des zweiten Stopps", () => {
+    const a = mitGestaltung({ scrim: { scrim: { bisFarbe: "#112233", bisDeckkraft: 100 } } });
+    expect(loeseFarbeInZone(marke(), "scrimEnde", a, scrimZone())).toBe(
+      "rgba(17, 34, 51, 1)",
+    );
+    // Der erste Stopp ist unberuehrt.
+    expect(loeseFarbeInZone(marke(), "scrimStart", a, scrimZone())).toBe("rgba(0, 0, 0, 0)");
+  });
+
+  it("eine eigene Deckkraft ohne Farbe behaelt den Farbton der Marke", () => {
+    const a = mitGestaltung({ scrim: { scrim: { bisDeckkraft: 50 } } });
+    expect(loeseFarbeInZone(marke(), "scrimEnde", a, scrimZone())).toBe(
+      "rgba(0, 0, 0, 0.502)",
+    );
+  });
+
+  it("eine deckende Abdunkelung (Fuellung scrimEnde) nimmt die Werte des zweiten Stopps", () => {
+    const a = mitGestaltung({ scrim: { scrim: { bisFarbe: "#112233", bisDeckkraft: 40 } } });
+    const flaeche: Zone = {
+      ...scrimZone(),
+      deko: { füllungFarbRolle: "scrimEnde" },
+    };
+    expect(loeseFarbeInZone(marke(), "scrimEnde", a, flaeche)).toBe(
+      "rgba(17, 34, 51, 0.4)",
+    );
+  });
+
+  it("ein gewoehnlicher Verlauf bleibt bei der Marke - Scrim-Werte gelten nur fuer Scrim-Rollen", () => {
+    const a = mitGestaltung({ scrim: { scrim: { vonFarbe: "#112233", bisFarbe: "#445566" } } });
+    // `akzentKraeftig` ist keine Scrim-Rolle. Ein gesetzter Scrim darf sie nicht faerben.
+    expect(loeseFarbeInZone(marke(), "akzentKraeftig", a, scrimZone())).toBe(
+      FARBEN.akzentKraeftig,
+    );
+  });
+
+  it("die Werte gelten nur fuer die Zone mit dieser Kennung", () => {
+    const a = mitGestaltung({ andere: { scrim: { bisFarbe: "#112233", bisDeckkraft: 100 } } });
+    expect(loeseFarbeInZone(marke(), "scrimEnde", a, scrimZone("scrim"))).toBe(
+      "rgba(0, 0, 0, 0.702)",
+    );
+  });
+
+  it("ein unbrauchbarer Wert wirft, statt eine Ersatzfarbe zu liefern", () => {
+    const a = mitGestaltung({ scrim: { scrim: { bisFarbe: "blau" } } });
+    expect(() => loeseFarbeInZone(marke(), "scrimEnde", a, scrimZone())).toThrow(/scrim/);
+  });
+});

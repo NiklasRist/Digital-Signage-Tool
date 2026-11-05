@@ -229,6 +229,23 @@ describe('zeichneDekoZone (#116) - die echten eingebauten Zonen', () => {
     expect(vi.mocked(zeichneTextZone)).not.toHaveBeenCalled()
   })
 
+  it("die Verlaufs-Stopps bekommen die ZONE als viertes Argument - nur so findet loeseFarbe die eigene Abdunkelung", () => {
+    // Die WIRKUNG der Scrim-Werte steht in `farben.spec.ts` (die Aufloesung ist dort
+    // ohne Canvas pruefbar). Hier wird die Naht gemessen: Ohne die Zone kaeme
+    // `loeseFarbe` an `aktion.zonenGestaltung[zone.id].scrim` gar nicht heran.
+    const doppel = baueKontextDoppel()
+    const mitScrim = zone(SCRIM, {
+      verlauf: { vonFarbRolle: 'scrimStart', bisFarbRolle: 'scrimEnde', richtung: 'unten' },
+    })
+    vi.mocked(loeseFarbe).mockClear()
+    zeichneDekoZone(doppel.kontext, mitScrim, marke(), OHNE_WAHL)
+    const rufe = vi.mocked(loeseFarbe).mock.calls
+    expect(rufe).toHaveLength(2)
+    for (const ruf of rufe) {
+      expect(ruf[3]).toBe(mitScrim)
+    }
+  })
+
   it("Zone scrim (0,432,1920,648, richtung unten): createLinearGradient(0,432,0,1080); Stopp 0 = scrimStart, Stopp 1 = scrimEnde", () => {
     const doppel = baueKontextDoppel()
     zeichneDekoZone(

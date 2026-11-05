@@ -14,8 +14,9 @@
 // DIE GRUNDREGEL: Fehlt ein Wert oder ist er unbrauchbar, gilt die VORLAGE. Es gibt
 // keinen Ersatzwert „irgendwas Dunkles" – dieselbe Haltung wie in `farben.ts`.
 
-import type { BildAusschnitt, ZonenGestaltung } from './contracts/aktion'
+import type { BildAusschnitt, ScrimGestaltung, ZonenGestaltung } from './contracts/aktion'
 import type { SchriftRolle } from './contracts/marke'
+import type { Zone } from './contracts/vorlage'
 
 /**
  * Die Grenzen der Regler. Sie stehen hier und NICHT im Formular:
@@ -33,7 +34,51 @@ export const GESTALTUNG_GRENZEN = {
   groesseProzent: { min: 50, max: 200 },
   zoom: { min: 100, max: 300 },
   versatz: { min: -50, max: 50 },
+  // Die Deckkraft eines Scrim-Stopps (05.11.2026): 0 = unsichtbar, 100 = deckend.
+  // Mehr als 100 gibt es nicht; ein Wert darunter ist eine bewusste Entscheidung.
+  deckkraft: { min: 0, max: 100 },
 } as const
+
+/**
+ * Die beiden Rollen der Abdunkelung (TK 9.11.1). Sie stehen als WERTE hier, weil die
+ * Zuordnung „erster/zweiter Stopp" an genau diesen zwei Namen haengt: `scrimStart` ist
+ * der Anfang des Verlaufs, `scrimEnde` das Ende. Eine Ableitung ueber den Namensanfang
+ * waere eine Liste, die beim naechsten Rollen-Namen still falsch liegt.
+ */
+export const SCRIM_ROLLEN = ['scrimStart', 'scrimEnde'] as const
+
+/** Ist `rolle` eine der beiden Scrim-Rollen? `unknown`-Eingang: der Wert kommt aus JSON. */
+export function istScrimRolle(rolle: unknown): rolle is (typeof SCRIM_ROLLEN)[number] {
+  return SCRIM_ROLLEN.some((bekannt) => bekannt === rolle)
+}
+
+/**
+ * Traegt diese Zone eine Abdunkelung? Gefragt wird die VORLAGE, nicht eine Liste im
+ * Editor: Ein Verlauf mit einer Scrim-Rolle oder eine Fuellung mit `scrimStart`/`scrimEnde`
+ * ist eine Abdunkelung. Ein gewoehnlicher Verlauf (z. B. Akzent -> Akzent tief) ist keine
+ * und bekommt deshalb keine Deckkraft-Regler.
+ */
+export function istScrimZone(zone: Zone): boolean {
+  const verlauf = zone.deko?.verlauf
+  if (verlauf !== undefined) {
+    return istScrimRolle(verlauf.vonFarbRolle) || istScrimRolle(verlauf.bisFarbRolle)
+  }
+  return istScrimRolle(zone.deko?.füllungFarbRolle)
+}
+
+/**
+ * Die Deckkraft eines Hex-Werts in Prozent (0–100). Sechsstellig heisst „deckend" (100).
+ * Unbrauchbare Werte liefern `null` – der Aufrufer zeigt dann keine erfundene Zahl.
+ *
+ * WARUM HIER UND NICHT IM EDITOR: Dieselbe Umrechnung entscheidet im Zeichenweg, ob ein
+ * Regler ueberhaupt etwas aendert, und im Formular, welchen Wert er anzeigt. Zwei
+ * Rundungen waeren zwei Wahrheiten (70 % -> 179 vs. 178 Byte).
+ */
+export function hexDeckkraftProzent(hex: string): number | null {
+  if (!/^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(hex)) return null
+  if (hex.length === 7) return 100
+  return Math.round((parseInt(hex.slice(7, 9), 16) / 255) * 100)
+}
 
 /**
  * Die vier Schrift-Rollen der Marke (TK 9.11.2). Sie stehen hier als WERTE und nicht nur
@@ -104,6 +149,39 @@ export function versatzProzent(versatz: unknown): number {
   )
 }
 
+/**
+ * Nur die Felder, die der Vertrag kennt – ein Fremdfeld aus einer aelteren Fassung
+ * faellt weg. `null` heisst: keine brauchbare Angabe, die Zone bleibt unveraendert.
+ */
+function leseScrim(roh: unknown): ScrimGestaltung | null {
+  if (typeof roh !== 'object' || roh === null || Array.isArray(roh)) return null
+  // SAFETY: Die Zeile davor hat `roh` als nicht-null Objekt belegt; der Cast macht die
+  // Felder als `unknown` LESBAR - jedes wird danach einzeln geprueft.
+  const quelle = roh as Record<string, unknown>
+  const ziel: ScrimGestaltung = {}
+
+  if (typeof quelle.vonFarbe === 'string' && istHexFarbe(quelle.vonFarbe)) {
+    ziel.vonFarbe = quelle.vonFarbe
+  }
+  if (typeof quelle.bisFarbe === 'string' && istHexFarbe(quelle.bisFarbe)) {
+    ziel.bisFarbe = quelle.bisFarbe
+  }
+  const vonDeckkraft = begrenzeZahl(
+    quelle.vonDeckkraft,
+    GESTALTUNG_GRENZEN.deckkraft.min,
+    GESTALTUNG_GRENZEN.deckkraft.max,
+  )
+  if (vonDeckkraft !== null) ziel.vonDeckkraft = vonDeckkraft
+  const bisDeckkraft = begrenzeZahl(
+    quelle.bisDeckkraft,
+    GESTALTUNG_GRENZEN.deckkraft.min,
+    GESTALTUNG_GRENZEN.deckkraft.max,
+  )
+  if (bisDeckkraft !== null) ziel.bisDeckkraft = bisDeckkraft
+
+  return Object.keys(ziel).length === 0 ? null : ziel
+}
+
 /** Nur die Felder, die der Vertrag kennt – ein Fremdfeld aus einer aelteren Fassung faellt weg. */
 function leseEineGestaltung(roh: unknown): ZonenGestaltung | null {
   if (typeof roh !== 'object' || roh === null || Array.isArray(roh)) return null
@@ -138,6 +216,10 @@ function leseEineGestaltung(roh: unknown): ZonenGestaltung | null {
   if (istSchriftRolle(quelle.schriftRolle)) {
     ziel.schriftRolle = quelle.schriftRolle
   }
+  // Die Abdunkelung ist ein eigener Block, weil sie ZWEI Stopps hat; ein flaches Feld
+  // haette die Zuordnung „welcher Stopp?" nicht getragen (05.11.2026).
+  const scrim = leseScrim(quelle.scrim)
+  if (scrim !== null) ziel.scrim = scrim
   return ziel
 }
 

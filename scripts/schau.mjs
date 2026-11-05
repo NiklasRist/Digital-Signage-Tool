@@ -6,7 +6,7 @@
 // steuert die App laengst ueber CDP - dasselbe hier, nur zum Schauen statt zum Messen.
 //
 // Aufruf:
-//   node scripts/schau.mjs [ziel.png] [--editor|--start|--aktion <id>]
+//   node scripts/schau.mjs [ziel.png] [--editor|--start|--aktion <id>] [--gross] [--gestaltung]
 //
 // Vorbedingung: `npm run build` (dist/main/index.cjs + dist/renderer/index.html).
 
@@ -62,9 +62,18 @@ const main = async () => {
 
     if (!projektOffen) {
       const konfig = JSON.parse(fs.readFileSync(path.join(WURZEL, "config.json"), "utf-8"));
-      const id = konfig.aktivesProjektId;
+      let id = konfig.aktivesProjektId;
       await seite.click('[data-testid="reiter-projekte"]');
       await schlafe(600);
+      if (id === null || id === undefined) {
+        // 05.11.2026: Nach einem Treiber-Lauf ist `aktivesProjektId` leer. Dann ist die
+        // ERSTE sichtbare Projektzeile die einzige sinnvolle Wahl (die Zeilen sind <li>).
+        id = await seite.evaluate(() => {
+          const eintrag = document.querySelector('li[data-testid^="projekt-"]');
+          if (eintrag === null) return null;
+          return (eintrag.getAttribute("data-testid") ?? "").replace("projekt-", "");
+        });
+      }
       const zeile = `[data-testid="projekt-${id}"] button`;
       if (!(await da(zeile))) {
         console.error(`[schau] Projektzeile ${id} nicht gefunden.`);
@@ -108,6 +117,19 @@ const main = async () => {
     if (args.includes("--gross")) {
       await seite.setViewport({ width: 1440, height: 900 });
       await schlafe(600);
+    }
+
+    // 05.11.2026: Fuer die Sichtpruefung der Gestaltung (Scrim, Farben) muss der
+    // Inspector bis zum Schritt „Gestaltung" scrollen - sonst zeigt das Bild nur die
+    // Vorlagen-Galerie. `--gestaltung` ist reine Anzeige, es wird nichts geklickt.
+    if (args.includes("--gestaltung")) {
+      await seite.evaluate(() => {
+        const form = document.querySelector('[data-testid="aktion-formular"]');
+        const summaries = Array.from(form?.querySelectorAll("summary") ?? []);
+        const ziel = summaries.find((s) => (s.textContent ?? "").startsWith("Gestaltung"));
+        ziel?.scrollIntoView({ block: "start" });
+      });
+      await schlafe(500);
     }
 
     // Masse statt Augenmass: zwei dunkle Flaechen uebereinander sind im Bild nicht zu

@@ -5,13 +5,18 @@ import {
   begrenzeZahl,
   gleicheGestaltung,
   groessenFaktor,
+  hexDeckkraftProzent,
   istHexFarbe,
+  istScrimRolle,
+  istScrimZone,
   normalisiereBildAusschnitt,
   istSchriftRolle,
   normalisiereZonenGestaltung,
   versatzProzent,
   zoomFaktor,
 } from "../../src/shared/gestaltung";
+
+import type { Zone } from "../../src/shared/contracts/vorlage";
 
 // Die Regeln der Zonen-Gestaltung (05.11.2026, TK 9.8.8) - ohne Canvas, ohne DOM, ohne
 // Dateisystem. Genau darum steht die Datei in `shared`: Main, Editor und Zeichenweg
@@ -191,5 +196,109 @@ describe("Schrift je Zone (Nacharbeit 05.11.2026)", () => {
       preis: { schriftRolle: "fliesstextFett" },
     });
     expect(normalisiereZonenGestaltung({ preis: { schriftRolle: "Comic Sans" } })).toEqual({ preis: {} });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SEIT 05.11.2026: Die Abdunkelung (Scrim) ist einstellbar - ZWEI Stopps,
+// je Farbe und Deckkraft. Ein einzelner Regler haette den anderen Stopp
+// raten muessen; das ist genau die stille Behauptung, die hier nicht steht.
+// ---------------------------------------------------------------------------
+
+/** Eine Zone mit genau der Deko, um die es in diesen Faellen geht. */
+function dekoZone(deko: Zone["deko"]): Zone {
+  return {
+    id: "scrim",
+    rolle: "fest",
+    bindung: null,
+    rahmen: { x: 0, y: 0, breite: 1920, höhe: 648 },
+    ausrichtung: { horizontal: "links", vertikal: "oben" },
+    wennLeer: "leer",
+    deko,
+  };
+}
+
+describe("Abdunkelung je Zone (05.11.2026)", () => {
+  it("erkennt genau die beiden Scrim-Rollen", () => {
+    expect(istScrimRolle("scrimStart")).toBe(true);
+    expect(istScrimRolle("scrimEnde")).toBe(true);
+    expect(istScrimRolle("akzent")).toBe(false);
+    expect(istScrimRolle("flaecheDunkel")).toBe(false);
+    expect(istScrimRolle(null)).toBe(false);
+  });
+
+  it("eine Scrim-Zone ist ein Verlauf mit Scrim-Rolle oder eine Scrim-Fuellung", () => {
+    expect(
+      istScrimZone(
+        dekoZone({
+          verlauf: { vonFarbRolle: "scrimStart", bisFarbRolle: "scrimEnde", richtung: "unten" },
+        }),
+      ),
+    ).toBe(true);
+    expect(istScrimZone(dekoZone({ füllungFarbRolle: "scrimEnde" }))).toBe(true);
+    expect(
+      istScrimZone(
+        dekoZone({
+          verlauf: { vonFarbRolle: "akzent", bisFarbRolle: "akzentTief", richtung: "rechts" },
+        }),
+      ),
+    ).toBe(false);
+    expect(istScrimZone(dekoZone({ füllungFarbRolle: "akzent" }))).toBe(false);
+  });
+
+  it("liest die Deckkraft aus dem Alpha der Markenrolle", () => {
+    expect(hexDeckkraftProzent("#000000B3")).toBe(70);
+    expect(hexDeckkraftProzent("#00000000")).toBe(0);
+    expect(hexDeckkraftProzent("#FFFFFF")).toBe(100);
+    expect(hexDeckkraftProzent("rot")).toBeNull();
+    expect(hexDeckkraftProzent("#FFF")).toBeNull();
+  });
+
+  it("nimmt Farbe und Deckkraft beider Stopps unveraendert", () => {
+    expect(
+      normalisiereZonenGestaltung({
+        abdunkelung: {
+          scrim: {
+            vonFarbe: "#112233",
+            vonDeckkraft: 30,
+            bisFarbe: "#AABBCC",
+            bisDeckkraft: 80,
+          },
+        },
+      }),
+    ).toEqual({
+      abdunkelung: {
+        scrim: {
+          vonFarbe: "#112233",
+          vonDeckkraft: 30,
+          bisFarbe: "#AABBCC",
+          bisDeckkraft: 80,
+        },
+      },
+    });
+  });
+
+  it("begrenzt die Deckkraft auf 0-100 und verwirft achtstellige Farben", () => {
+    // Achtstellig ist der Marke vorbehalten; der Zonen-Vertrag ist #RRGGBB.
+    expect(
+      normalisiereZonenGestaltung({
+        a: { scrim: { vonFarbe: "#000000B3", vonDeckkraft: 200, bisDeckkraft: -5 } },
+      }),
+    ).toEqual({ a: { scrim: { vonDeckkraft: 100, bisDeckkraft: 0 } } });
+  });
+
+  it("ein Scrim ohne brauchbares Feld hinterlaesst keine leere Angabe", () => {
+    expect(
+      normalisiereZonenGestaltung({
+        a: { scrim: { vonFarbe: "blau", vonDeckkraft: "70" } },
+      }),
+    ).toEqual({ a: {} });
+  });
+
+  it("gleiche Stopps sind keine Aenderung, ein anderer Wert schon", () => {
+    const a = { scrim: { scrim: { bisDeckkraft: 70, bisFarbe: "#000000" } } };
+    const b = { scrim: { scrim: { bisFarbe: "#000000", bisDeckkraft: 70 } } };
+    expect(gleicheGestaltung(a, b)).toBe(true);
+    expect(gleicheGestaltung(a, { scrim: { scrim: { bisDeckkraft: 40 } } })).toBe(false);
   });
 });

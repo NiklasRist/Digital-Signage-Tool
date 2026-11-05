@@ -264,6 +264,21 @@ describe("bearbeiteAktion - Gestaltung je Zone und Bildausschnitt (05.11.2026, T
     expect(antwort.wert.zonenGestaltung).toEqual({});
   });
 
+  it("eine Abdunkelung wird normalisiert uebernommen (Deckkraft 0-100, Farbe #RRGGBB)", async () => {
+    const antwort = await bearbeiteAktion("a1", {
+      zonenGestaltung: {
+        scrim: {
+          scrim: { vonFarbe: "#112233", vonDeckkraft: 500, bisDeckkraft: 70 },
+        },
+      },
+    });
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.zonenGestaltung).toEqual({
+      scrim: { scrim: { vonFarbe: "#112233", vonDeckkraft: 100, bisDeckkraft: 70 } },
+    });
+  });
+
   it("bildAusschnitt null nimmt den eigenen Ausschnitt zurueck", async () => {
     await bearbeiteAktion("a1", { bildAusschnitt: { zoom: 200 } });
     const antwort = await bearbeiteAktion("a1", { bildAusschnitt: null });

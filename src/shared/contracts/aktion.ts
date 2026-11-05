@@ -27,6 +27,32 @@ export interface ZonenGestaltung {
   ausrichtung?: 'links' | 'mitte' | 'rechts' | null
   /** Schrift dieser Zone (eine der vier Rollen der Marke). null/undefined = Vorlage. */
   schriftRolle?: SchriftRolle | null
+  /** Abdunkelung dieser Zone (05.11.2026). null/undefined = Verlauf der Marke. */
+  scrim?: ScrimGestaltung | null
+}
+
+/**
+ * Die Abdunkelung („Scrim") einer Zone (05.11.2026, TK 9.10.9).
+ *
+ * WARUM ZWEI STOPPS UND NICHT EIN REGLER: Ein Verlauf hat einen Anfang und ein Ende. Ein
+ * einzelner Regler muesste einen der beiden raten – genau die stille Behauptung, die
+ * dieses Projekt an anderen Stellen schon teuer bezahlt hat. Hier stehen deshalb BEIDE
+ * Stopps: Farbe und Deckkraft, je einzeln.
+ *
+ * Die Felder sind optional und bedeuten „die Marke gilt": `vonFarbe`/`bisFarbe` ersetzen
+ * den Farbton (`#RRGGBB`, ohne Alpha – der Waehler kennt keinen), `vonDeckkraft`/
+ * `bisDeckkraft` die Deckkraft in Prozent. Fehlt nur die Deckkraft, bleibt der Alpha-Wert
+ * der Markenrolle; fehlt nur die Farbe, bleibt deren Farbton.
+ */
+export interface ScrimGestaltung {
+  /** Farbton des ersten Stopps (`#RRGGBB`). null/undefined = `vonFarbRolle` der Marke. */
+  vonFarbe?: string | null
+  /** Deckkraft des ersten Stopps in Prozent (0–100). null/undefined = Alpha der Marke. */
+  vonDeckkraft?: number | null
+  /** Farbton des zweiten Stopps (`#RRGGBB`). null/undefined = `bisFarbRolle` der Marke. */
+  bisFarbe?: string | null
+  /** Deckkraft des zweiten Stopps in Prozent (0–100). null/undefined = Alpha der Marke. */
+  bisDeckkraft?: number | null
 }
 
 /**

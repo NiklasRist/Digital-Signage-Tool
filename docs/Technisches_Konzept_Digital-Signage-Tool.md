@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.52 (9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.53 (9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1755,10 +1755,10 @@ weil Main, Editor und Zeichenweg sie kennen müssen. Ein unbrauchbarer Teil wird
 ersetzt – dieselbe Haltung wie bei `brauchbareDauer`: Eine kaputte Größe darf nicht auch noch eine
 heile Farbe mitnehmen. Fehlt ein Wert, gilt die Vorlage; das ist der reguläre Zustand und kein Fehler.
 
-**Was NICHT dazugehört.** Der **Scrim** (9.11.1: Verlauf `scrimStart` → `scrimEnde`) bekommt keinen
-eigenen Regler: Ein Verlauf hat **zwei** Stopps, und einen davon aus einer einzigen Farbe zu raten wäre
-eine stille Behauptung. Seine Farbe bleibt Sache der Marke. Eine **eigene Bildrahmen-Geometrie**
-(x/y/Breite/Höhe je Aktion) ist ebenfalls nicht gebaut – der Rahmen kommt weiterhin aus der Vorlage.
+**Was NICHT dazugehört.** Eine **eigene Bildrahmen-Geometrie** (x/y/Breite/Höhe je Aktion) ist nicht
+gebaut – der Rahmen kommt weiterhin aus der Vorlage. Der **Scrim** war bis v3.52 ausgenommen; seit
+**v3.53** ist er mit **zwei** Stopps einstellbar (9.8.10) – nicht mit einem einzelnen Regler, der einen
+der beiden Stopps hätte raten müssen.
 
 **Sechs neue Looks (v3.48).** Mit derselben Sitzung sind sechs weitere **eingebaute Ganzbild-Vorlagen**
 dazugekommen (Tabellen in 9.11.1): „Riesig", „Farbband unten", „Zentriert", „Ecke", „Kopf und Fuß",
@@ -1847,6 +1847,49 @@ Das Hex-Feld:
 **Kein waagerechtes Scrollen.** Die Inspector-Fläche trägt `overflowX: 'hidden'`; Schieberegler und
 Flex-Kinder tragen `minWidth: 0`, damit sie schrumpfen statt die Fläche zu sprengen. Der Treiber
 `4g7` misst den Überlauf (`formularQuer`) und meldet jeden Wert über 1 px als Befund — gemessen: **0**.
+
+#### 9.8.10 Abdunkelung je Zone: zwei Stopps (05.11.2026)
+
+Auslöser (Niklas, 05.11.2026): *„mach scrim"*. Bis v3.52 war die Abdunkelung (`scrimStart` →
+`scrimEnde`) ausschließlich Sache der Marke. Ein einzelner Regler war bewusst **nicht** gebaut: Ein
+Verlauf hat zwei Stopps, und einen davon zu raten wäre eine stille Behauptung (9.8.8 a. F.). Jetzt
+sind **beide** Stopps einstellbar — Farbe **und** Deckkraft, je einzeln.
+
+**Datenmodell.** `ZonenGestaltung.scrim?: ScrimGestaltung | null`; `ScrimGestaltung` trägt
+`vonFarbe`, `vonDeckkraft`, `bisFarbe`, `bisDeckkraft` (alle optional, `null` = Marke). Die Zuordnung
+hängt an der **Rolle**, nicht an der Reihenfolge im Array: `scrimStart` ist der erste Stopp,
+`scrimEnde` der zweite. Eine **deckende** Abdunkelung (Fuellung `scrimEnde`, Vorlage „Zentriert") hat
+genau einen Stopp und nimmt die `bis`-Werte.
+
+**Farbe und Deckkraft sind zwei Angaben.** `vonFarbe`/`bisFarbe` sind `#RRGGBB` (der Farbwähler kennt
+keinen Alpha-Wert); `vonDeckkraft`/`bisDeckkraft` sind Prozent **0–100** (`GESTALTUNG_GRENZEN.deckkraft`).
+Fehlt nur die Farbe, bleibt der Farbton der Markenrolle; fehlt nur die Deckkraft, bleibt deren
+Alpha-Wert. Der Editor zeigt deshalb je Stopp **einen Farbwähler und einen Regler** — die
+Standard-Deckkraft ist der Alpha-Wert der Marke (z. B. `#B00B00B3` → **70 %**), nicht 100 %.
+
+**Auflösung (bindend).** `loeseFarbe` bekommt einen **optionalen vierten Parameter** `zone`:
+`loeseFarbe(marke, rolle, aktion, zone?)`. Ist `rolle` eine Scrim-Rolle und trägt die Zone eine eigene
+Angabe, ersetzen `vonFarbe`/`bisFarbe` den Farbton und `vonDeckkraft`/`bisDeckkraft` den Alpha-Anteil;
+sonst gilt unverändert die Marke. `loeseFarbeInZone` reicht die Zone durch — damit nehmen **Fuellung
+und beide Verlaufs-Stopps** denselben Weg. Ein gewöhnlicher Verlauf (z. B. `akzentKraeftig` →
+`akzentTief`) bleibt bei der Marke: Scrim-Werte gelten nur für die beiden Scrim-Rollen.
+
+**Grenzen und Rückfall.** Ein achtstelliger Wert in `vonFarbe`/`bisFarbe` wird beim Normalisieren
+**verworfen** (der Zonen-Vertrag ist `#RRGGBB`); eine Deckkraft außerhalb 0–100 wird **begrenzt**.
+Ein von Hand editierter, unbrauchbarer Wert **wirft** beim Zeichnen, statt eine Ersatzfarbe zu
+liefern — dieselbe Haltung wie bei `textfarbe`/`flaechefarbe`. Fehlt der ganze Block, gilt die
+Vorlage; ein leeres `scrim` wird nicht gespeichert.
+
+**Editor.** Die Zone „Abdunkelung" steht in der Gruppe **Gestaltung** und zeigt nur die Stopps, die
+die Vorlage wirklich trägt: bei einem Verlauf **Anfang** und **Ende**, bei einer deckenden Abdunkelung
+**Farbe** und **Deckkraft**. Der gewöhnliche Flächen-Regler entfällt für diese Zone — sonst stünden
+zwei Bedienelemente für dieselbe Fläche nebeneinander. „Zurücksetzen" entfernt die ganze Angabe.
+
+**Belege.** Unit: `gestaltung.spec.ts` (Normalisierung, Grenzen, Rollen), `farben.spec.ts`
+(Farbton/Alpha je Stopp, Fuellung, Fremdrolle), `zone-deko.spec.ts` (die Zone wird als viertes Argument
+an `loeseFarbe` gereicht), `action-editor-neue-aktion.spec.ts` (zwei Stopps, Entwurf, Zurücksetzen),
+`bearbeite-aktion.spec.ts` (Normalisierung über den Speicherweg). Fenster: Treiber `4g7` misst
+`scrimFarben: 2`, `scrimDeckkraft: 2` am echten Inspector.
 
 ---
 
@@ -1954,9 +1997,9 @@ löseFarbe(farbRolle, marke, aktion) →
 ```
 
 - **Die drei Akzent-Rollen** sind `akzent`, `akzentKraeftig` und `akzentTief` (9.11.2). **`flaecheAkzentZart` gehört NICHT dazu** – trotz des Namens ist es eine **Flächen**-Rolle für dezente Hintergründe, und ein Hintergrund, der bei jeder Aktion die Farbe wechselt, war nie gemeint.
-- **Alle übrigen Rollen bleiben unberührt** – Text-Rollen (`textAufDunkel`, `textAufHell`, `textSekundaer`), Flächen-Rollen (`flaecheDunkel`, `flaecheSehrDunkel`, `flaecheHell`, `flaecheAkzentZart`), `linie` sowie `scrimStart`/`scrimEnde`. Sie kommen **immer** aus der `Marke`.
+- **Alle übrigen Rollen bleiben unberührt** – Text-Rollen (`textAufDunkel`, `textAufHell`, `textSekundaer`), Flächen-Rollen (`flaecheDunkel`, `flaecheSehrDunkel`, `flaecheHell`, `flaecheAkzentZart`), `linie` sowie `scrimStart`/`scrimEnde`. Sie kommen aus der `Marke`, **sofern** die Zone für einen Scrim-Stopp keine eigene Angabe trägt (9.8.10); dann gilt der Zonenwert.
 - **Ist `aktion.akzentfarbe` nicht gesetzt, gilt der Markenwert** der jeweiligen Rolle. Das ist der reguläre Rückfall und **kein** Fehler; eine Aktion ohne gewählte Akzentfarbe sieht aus wie die Vorlage sie vorsieht.
-- **Es gibt genau eine Auflösungsstelle.** Keine Zonen-Sorte (Text, Bild, Deko, Verlauf) darf `marke.farben[...]` direkt lesen – sonst wirkt die Akzentfarbe in der Pille, aber nicht im Verlauf dahinter, und niemand fände den Grund. Auch `deko.verlauf` (`vonFarbRolle`/`bisFarbRolle`) läuft durch dieselbe Funktion.
+- **Es gibt genau eine Auflösungsstelle.** Keine Zonen-Sorte (Text, Bild, Deko, Verlauf) darf `marke.farben[...]` direkt lesen – sonst wirkt die Akzentfarbe in der Pille, aber nicht im Verlauf dahinter, und niemand fände den Grund. Auch `deko.verlauf` (`vonFarbRolle`/`bisFarbRolle`) läuft durch dieselbe Funktion; seit v3.53 mit der **Zone** als viertem Argument, damit jeder Scrim-Stopp seine eigene Farbe und Deckkraft findet (9.8.10).
 
 **Begründung:** So entstehen aus **einer** Vorlage ohne jede Zusatzarbeit verschiedene Anmutungen – dieselbe „Vollbild"-Vorlage trägt eine rote und eine blaue Aktion. Der **Aufbau** der Vorlage bleibt dabei unangetastet: Sie sagt weiterhin, **welche** Zone Akzentfarbe trägt (Preis-Pille, CTA-Pille, Badge), und diese Aussage gilt unabhängig davon, welche Farbe die einzelne Aktion mitbringt. Die Alternative – Vorlagen je Farbe zu duplizieren – hätte die Bibliothek vervielfacht und jede Layout-Korrektur mehrfach nötig gemacht. **Seit v3.4 ist die Farbwahl NICHT mehr auf die Markenpalette begrenzt** (9.8.4, FA-24): `akzentfarbe` ist ein **freier** Hex-Wert, damit Partner-Hausfarben darstellbar sind. Eine Aktion **kann** damit aus dem Corporate Design ausbrechen; die Gegenmaßnahme ist die **Kontrast-Warnung** (9.15.2), **nicht** die Sperre (Risiko R-08). *Bis v3.3 stand hier: „Zugleich bleibt die Farbwahl auf die Markenpalette begrenzt (9.8.4): Es entsteht kein freier Farbwähler, und keine Aktion kann aus dem Corporate Design ausbrechen." Dieser Satz ist mit v3.4 zurückgenommen; er stand bis v3.5 versehentlich weiter hier und war wörtlich zitierbar.*
 
@@ -1969,7 +2012,9 @@ Auflösungsstelle nicht verdoppelt, gibt es in derselben Datei genau **eine** we
 Rolle** eine eigene Farbe trägt (`zone.text.farbRolle` → `textfarbe`, `zone.deko.füllungFarbRolle` →
 `flaechefarbe`) und reicht sonst **unverändert** an `loeseFarbe` weiter. Die Reihenfolge lautet damit:
 **Zonenfarbe → Akzentfarbe der Aktion → Markenwert.** Keine Zonen-Sorte liest weiterhin selbst aus der
-Marke, und `deko.verlauf` bleibt vollständig bei `loeseFarbe` (zwei Stopps, ein Regler wäre geraten).
+Marke. `deko.verlauf` läuft über `loeseFarbe`; seit v3.53 bekommt `loeseFarbe` die **Zone** als
+viertes Argument, damit jeder der beiden Scrim-Stopps seine eigene Farbe und Deckkraft findet
+(9.8.10). Ein gewöhnlicher Verlauf bleibt unverändert bei der Marke.
 
 **Abgrenzung – wo die Regel NICHT gilt (zwei Fälle):** Erstens das **Ersatz-Logo** (9.10.10): Es nimmt `marke.farben.akzent` und **nicht** `aktion.akzentfarbe` – ein Logo ist eine Konstante, das ist sein Zweck. Rotieren im Band drei Aktionen desselben Partners mit verschiedenen Akzentfarben, blinkte sein „Logo" sonst in drei Farben, während ein echtes Logo als Bilddatei unverändert bliebe; der Ersatz muss sich verhalten wie das, was er ersetzt. Zweitens: Die Ersetzung geschieht **ausschließlich** in der Zonen-Auflösung von `template-canvas`. Die Restflächen der Split-Komposition (9.2.8) füllt der `render-service` mit `flaecheDunkel` – **keine** Akzent-Rolle, also unverändert der Markenwert. Der `render-service` bekommt dadurch **keine** Kenntnis von Aktionen: Er sieht ohnehin nur fertige Pixel (Variante A, 9.1) und eine einzige Farbe aus der Marke. Ebenso unberührt bleiben Vorschau (9.9) und `composer`-Thumbnails – sie zeichnen über **dieselbe** Routine und bekommen die Ersetzung geschenkt.
 
@@ -2100,6 +2145,9 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 | `beschreibung` | frei | beschreibung | 96, 850, 1150, 100 | 48 → 34 px, max **2** Zeilen |
 | `preis` | frei | preis | 1300, 660, 524, 150 | Pille (Akzent), `wennLeer: ausblenden` |
 | `cta` | frei | cta | 1300, 830, 524, 120 | Pille, `wennLeer: ausblenden` |
+
+**Der `scrim`-Verlauf** ist seit v3.53 je Aktion in **beiden** Stopps überschreibbar (Farbe und
+Deckkraft, 9.8.10). Der Rahmen der Zone bleibt dabei der der Vorlage.
 
 **Eingebaute Vorlage „Zwei Spalten"** *(ID `split` – die Kennung ist historisch und irreführend: gemeint ist ein **zweispaltiges Ganzbild**, Motiv links, Text rechts; Trennung bei x = 960. Nicht zu verwechseln mit dem gestrichenen Split-Screen, TK 9.2.8. Anzeigename seit 29.10.2026.)*
 

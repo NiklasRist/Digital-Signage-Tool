@@ -988,6 +988,77 @@ describe('Gestaltung je Zone (05.11.2026)', () => {
   })
 })
 
+const SCRIM_VORLAGE = vorlageMitZonen('mit-abdunkelung', null, [
+  zone(null, {
+    id: 'scrim',
+    deko: {
+      verlauf: { vonFarbRolle: 'scrimStart', bisFarbRolle: 'scrimEnde', richtung: 'unten' },
+    },
+  }),
+])
+
+describe('Abdunkelung je Zone (05.11.2026)', () => {
+  it('zeigt die ZWEI Stopps mit Farbe und Deckkraft - und keinen gewoehnlichen Flaechen-Regler', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [SCRIM_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [SCRIM_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    const zoneBlock = behaelter.querySelector('[data-testid="aktion-zone-scrim"]')
+    expect(zoneBlock).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-zone-scrim-anfang-oeffnen"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-zone-scrim-ende-oeffnen"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-zone-scrim-anfang-deckkraft"]')).not.toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-zone-scrim-ende-deckkraft"]')).not.toBeNull()
+    // Die Abdunkelung ist KEINE gewoehnliche Flaeche: nur EIN Bedienweg je Stopp.
+    expect(behaelter.querySelector('[data-testid="aktion-zone-scrim-flaeche"]')).toBeNull()
+  })
+
+  it('die Deckkraft des zweiten Stopps landet im Entwurf und in der Vorschau', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [SCRIM_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [SCRIM_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await setzeRegler(behaelter, 'aktion-zone-scrim-ende-deckkraft', 30)
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.scrim?.scrim?.bisDeckkraft).toBe(30)
+    expect(projektAufrufe()).toHaveLength(0)
+  })
+
+  it('die Farbe des ersten Stopps landet im Entwurf', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [SCRIM_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [SCRIM_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await oeffneFarbe(behaelter, 'aktion-zone-scrim-anfang')
+    await verlasseFeld(behaelter, 'aktion-zone-scrim-anfang-hex', '#112233')
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.scrim?.scrim?.vonFarbe).toBe('#112233')
+    expect(gezeichnet?.zonenGestaltung?.scrim?.scrim?.bisFarbe).toBeUndefined()
+  })
+
+  it('„Zuruecksetzen" nimmt die ganze Abdunkelung wieder heraus', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [SCRIM_VORLAGE] })
+    const { behaelter } = editor(projekt([]), [SCRIM_VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await setzeRegler(behaelter, 'aktion-zone-scrim-ende-deckkraft', 30)
+    await klicke(behaelter, 'aktion-zone-scrim-zuruecksetzen')
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.scrim).toBeUndefined()
+  })
+})
+
 describe('Bildausschnitt (05.11.2026)', () => {
   it('Zoom und Versatz landen im Entwurf und in der Vorschau', async () => {
     vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [GESTALTUNGS_VORLAGE] })

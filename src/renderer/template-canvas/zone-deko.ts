@@ -17,8 +17,9 @@
 //     "Auch deko.verlauf (vonFarbRolle/bisFarbRolle) laeuft durch dieselbe
 //     Funktion." (TK 9.10.9) Der Verlauf ist kein Sonderfall und diese Datei
 //     liest aktion.akzentfarbe NICHT selbst. Die FUELLUNG nimmt seit 05.11.2026
-//     `loeseFarbeInZone` (eigene Flaechenfarbe der Zone); der VERLAUF nimmt
-//     weiterhin `loeseFarbe`.
+//     `loeseFarbeInZone` (eigene Flaechenfarbe); die beiden VERLAUFS-STOPPS nehmen
+//     `loeseFarbe` MIT der Zone als viertem Argument - nur so findet sie die
+//     eigene Abdunkelung des Stopps (ScrimGestaltung).
 //   - Statischer Text geht AUSSNAHMSLOS durch zeichneTextZone (#114): kein eigenes
 //     fillText, kein eigener Umbrauch - sonst waere das der zweite Zeichenpfad,
 //     den TK 9.10.1 verbietet. Gebundene Zonen (bindung !== null) ignorieren
@@ -100,7 +101,16 @@ export function zeichneDekoZone(
     ctx.beginPath()
     baueZonenPfad(ctx, rahmen, radius)
     try {
-      const verlauf = baueVerlauf(ctx, deko.verlauf.vonFarbRolle, deko.verlauf.bisFarbRolle, deko.verlauf.richtung, rahmen, marke, aktion)
+      const verlauf = baueVerlauf(
+        ctx,
+        deko.verlauf.vonFarbRolle,
+        deko.verlauf.bisFarbRolle,
+        deko.verlauf.richtung,
+        rahmen,
+        marke,
+        aktion,
+        zone,
+      )
       ctx.fillStyle = verlauf
       ctx.fill()
     } catch {
@@ -152,6 +162,7 @@ function baueVerlauf(
   rahmen: Zone['rahmen'],
   marke: Marke,
   aktion: AktionsInhalt,
+  zone: Zone,
 ): CanvasGradient {
   // Die Tabelle ist an den echten scrim-Daten geprueft (Vollbild 0,432,1920,648,
   // richtung unten -> oben durchsichtig, unten dunkel); sie wird nicht umgedeutet.
@@ -163,10 +174,11 @@ function baueVerlauf(
   }
   const [x0, y0, x1, y1] = koordinaten[richtung]
   const verlauf = ctx.createLinearGradient(x0, y0, x1, y1)
-  // Beide Aufloesungen laufen durch loeseFarbe - auch der Verlauf ist kein
-  // Sonderfall. Wirft eine der beiden, bricht der AUFRUF mit; der Aufrufende
-  // (zeichneDekoZone) faengt und fuellt den Verlauf nicht dezent nach.
-  verlauf.addColorStop(0, loeseFarbe(marke, vonRolle, aktion))
-  verlauf.addColorStop(1, loeseFarbe(marke, bisRolle, aktion))
+  // Beide Aufloesungen laufen durch dieselbe zonensensitive Stelle - auch der
+  // Verlauf ist kein Sonderfall. Wirft eine der beiden, bricht der AUFRUF mit;
+  // der Aufrufende (zeichneDekoZone) faengt und fuellt den Verlauf nicht
+  // dezent nach.
+  verlauf.addColorStop(0, loeseFarbe(marke, vonRolle, aktion, zone))
+  verlauf.addColorStop(1, loeseFarbe(marke, bisRolle, aktion, zone))
   return verlauf
 }

@@ -3,6 +3,12 @@
 import type { Marke, FarbRolle, SchriftRolle, Schrift } from '../../shared/contracts/marke'
 import type { AktionsInhalt } from '../../shared/contracts/aktion'
 import type { Zone } from '../../shared/contracts/vorlage'
+import {
+  GESTALTUNG_GRENZEN,
+  begrenzeZahl,
+  istHexFarbe,
+  istScrimRolle,
+} from '../../shared/gestaltung'
 
 // DIE EINE AUFLOESUNGSSTELLE FUER FARB- UND SCHRIFTROLLEN.
 //
@@ -109,16 +115,96 @@ function alsCanvasFarbe(hex: string, woher: string): string {
   // zweite Wahrheit ueber den Farbwert ohne Nutzen.
   if (hex.length === 7) return hex
 
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
+  return rgbaAus(zerlegeFarbe(hex, woher))
+}
 
-  // Der Canvas quantisiert Alpha ohnehin auf 8 Bit; drei Nachkommastellen sind exakt genug
-  // und ergeben einen kurzen, stabilen, vergleichbaren Wert statt 0.7019607843137254.
+/** Ein Farbwert als vier Kanaele – fuer die Scrim-Deckkraft braucht es den Alpha-Anteil. */
+interface FarbTeile {
+  r: number
+  g: number
+  b: number
+  a: number
+}
+
+/** Zerlegt `#RRGGBB` oder `#RRGGBBAA`; Alpha steht hinten (s. `alsCanvasFarbe`). */
+function zerlegeFarbe(hex: string, woher: string): FarbTeile {
+  if (!HEX_FORM.test(hex)) {
+    throw new Error(
+      `Unzulaessiger Farbwert "${hex}" (${woher}) - erwartet wird #RRGGBB oder #RRGGBBAA.`,
+    )
+  }
+  return {
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+    a: hex.length === 7 ? 255 : parseInt(hex.slice(7, 9), 16),
+  }
+}
+
+/** Der Canvas-Wert aus vier Kanaelen; Alpha mit drei Nachkommastellen (Festlegung 2+3). */
+function rgbaAus(teile: FarbTeile): string {
   const faktor = 10 ** ALPHA_NACHKOMMASTELLEN
-  const a = Math.round((parseInt(hex.slice(7, 9), 16) / 255) * faktor) / faktor
+  const a = Math.round((teile.a / 255) * faktor) / faktor
+  return `rgba(${teile.r}, ${teile.g}, ${teile.b}, ${a})`
+}
 
-  return `rgba(${r}, ${g}, ${b}, ${a})`
+/**
+ * Die eigene Abdunkelung einer Zone (05.11.2026): Farbe und Deckkraft des Stopps, der zu
+ * `rolle` gehoert (`scrimStart` = erster, `scrimEnde` = zweiter).
+ *
+ * Liefert `null`, wenn die Zone keine eigene Angabe fuer diesen Stopp traegt – dann gilt
+ * unveraendert `loeseFarbe`. Die Deckkraft wird NICHT aus der Farbe abgeleitet: Sie ist
+ * ein eigener Regler, und `#RRGGBB` traegt keinen Alpha-Wert.
+ */
+function loeseScrimStopp(
+  marke: Marke,
+  rolle: FarbRolle,
+  aktion: AktionsInhalt,
+  zone: Zone,
+): string | null {
+  const scrim = aktion.zonenGestaltung?.[zone.id]?.scrim
+  if (scrim === null || scrim === undefined) return null
+
+  const stopp =
+    rolle === 'scrimStart'
+      ? { farbe: scrim.vonFarbe, deckkraft: scrim.vonDeckkraft }
+      : rolle === 'scrimEnde'
+        ? { farbe: scrim.bisFarbe, deckkraft: scrim.bisDeckkraft }
+        : null
+  if (stopp === null) return null
+
+  if (!belegt(marke.farben, rolle)) {
+    throw new Error(`Farb-Rolle "${rolle}" ist in der Marke nicht belegt.`)
+  }
+  const teile = zerlegeFarbe(marke.farben[rolle], `Farb-Rolle "${rolle}"`)
+
+  if (stopp.farbe !== null && stopp.farbe !== undefined) {
+    // Der Vertrag der Zone ist `#RRGGBB` (der Waehler kennt keinen Alpha-Wert). Ein
+    // achtstelliger Wert waere eine zweite Form und wuerde hier still anders wirken.
+    if (typeof stopp.farbe !== 'string' || !istHexFarbe(stopp.farbe)) {
+      throw new Error(
+        `Unzulaessiger Farbwert "${String(stopp.farbe)}" (zonenGestaltung["${zone.id}"].scrim).`,
+      )
+    }
+    const gewaehlt = zerlegeFarbe(stopp.farbe, `zonenGestaltung["${zone.id}"].scrim`)
+    teile.r = gewaehlt.r
+    teile.g = gewaehlt.g
+    teile.b = gewaehlt.b
+  }
+  if (stopp.deckkraft !== null && stopp.deckkraft !== undefined) {
+    const prozent = begrenzeZahl(
+      stopp.deckkraft,
+      GESTALTUNG_GRENZEN.deckkraft.min,
+      GESTALTUNG_GRENZEN.deckkraft.max,
+    )
+    if (prozent === null) {
+      throw new Error(
+        `Unzulaessige Deckkraft "${String(stopp.deckkraft)}" (zonenGestaltung["${zone.id}"].scrim).`,
+      )
+    }
+    teile.a = Math.round((prozent / 100) * 255)
+  }
+  return rgbaAus(teile)
 }
 
 /**
@@ -139,6 +225,11 @@ function alsCanvasFarbe(hex: string, woher: string): string {
  * genau der Zustand, den TK 9.10.9 abschafft - die Farbwahl bliebe an dieser Stelle
  * wirkungslos, OHNE dass irgendwo etwas auffiele.
  *
+ * Der VIERTE Parameter ist seit 05.11.2026 optional: Wer eine Farbe FUER EINE ZONE
+ * aufloest, reicht die Zone herein und bekommt die eigene Abdunkelung (zwei Stopps). Wer
+ * sie nicht hereinreicht, loest wie bisher die Markenrolle auf - das ist kein stiller
+ * Fehler, weil eine Scrim-Angabe ohne Zone gar nicht gefunden werden kann.
+ *
  * WIRFT statt eine `Ergebnis<T>`-Huelle zu liefern (Festlegung 5): TK 9.1.1 gilt fuer jede
  * Operation ueber die Renderer-Main-Grenze, diese Funktion bleibt im Renderer; und
  * `zeichneSegment` liefert laut TK 9.10.1 ein `SegmentBild`, koennte eine Huelle also gar
@@ -146,9 +237,16 @@ function alsCanvasFarbe(hex: string, woher: string): string {
  * Segment, das gerendert, exportiert und auf dem Fernseher gezeigt wird - in der falschen
  * Farbe, ohne dass irgendwo ein Fehler erscheint.
  *
- * Von der `Aktion` wird AUSSCHLIESSLICH `akzentfarbe` gelesen (Festlegung 7).
+ * Von der `Aktion` werden `akzentfarbe` und – wenn eine Zone uebergeben wird – die
+ * `scrim`-Angabe DIESER Zone gelesen (Festlegung 7, seit 05.11.2026 erweitert). Alles
+ * andere der Aktion bleibt unberuehrt.
  */
-export function loeseFarbe(marke: Marke, rolle: FarbRolle, aktion: AktionsInhalt): string {
+export function loeseFarbe(
+  marke: Marke,
+  rolle: FarbRolle,
+  aktion: AktionsInhalt,
+  zone?: Zone,
+): string {
   pruefePflichteingang(marke, 'marke')
   pruefePflichteingang(aktion, 'aktion')
 
@@ -179,6 +277,14 @@ export function loeseFarbe(marke: Marke, rolle: FarbRolle, aktion: AktionsInhalt
     return alsCanvasFarbe(gewaehlt, `aktion.akzentfarbe (angefragte Rolle "${rolle}")`)
   }
 
+  // Die eigene Abdunkelung einer Zone (05.11.2026). Sie gilt nur fuer die beiden
+  // Scrim-Rollen; fuer jede andere Rolle gibt es hier nichts zu lesen. Ohne Zone bleibt
+  // der Weg unveraendert - ein Aufruf ohne Zone kann keine Zonen-Angabe finden.
+  if (zone !== undefined && istScrimRolle(rolle)) {
+    const scrim = loeseScrimStopp(marke, rolle, aktion, zone)
+    if (scrim !== null) return scrim
+  }
+
   if (!belegt(marke.farben, rolle)) {
     throw new Error(`Farb-Rolle "${rolle}" ist in der Marke nicht belegt.`)
   }
@@ -200,8 +306,10 @@ export function loeseFarbe(marke: Marke, rolle: FarbRolle, aktion: AktionsInhalt
  * Listen waren im Projekt schon zweimal still falsch, und eine neue Vorlage mit einer
  * anderen Rolle waere ohne Zutun ausgenommen.
  *
- * Ein Verlauf (`deko.verlauf`) bekommt KEINE eigene Farbe. Zwei Stopps mit einem Regler
- * zu bedienen hiesse, den einen zu raten; die Abdunkelung bleibt deshalb Sache der Marke.
+ * Ein Verlauf bekommt SEIT 05.11.2026 eine eigene Abdunkelung – aber nur ueber die
+ * Scrim-Rollen und mit ZWEI Stopps (Farbe und Deckkraft je Stopp, `ScrimGestaltung`).
+ * Ein gewoehnlicher Verlauf (Akzent -> Akzent tief) bleibt bei der Marke: Fuer ihn gibt
+ * es keinen Regler, und ein geratener Stopp waere schlimmer als keiner.
  *
  * Sonst gilt unveraendert `loeseFarbe`: erst die Akzent-Ersetzung der Aktion, dann die
  * Marke. Diese Funktion ist KEIN zweiter Rueckfallweg, sondern eine Vorschaltung.
@@ -235,7 +343,9 @@ export function loeseFarbeInZone(
     }
   }
 
-  return loeseFarbe(marke, rolle, aktion)
+  // Die Zone wird durchgereicht: Dort liegt die Abdunkelung (ScrimGestaltung), und
+  // `loeseFarbe` ist die Stelle, die sie auswertet.
+  return loeseFarbe(marke, rolle, aktion, zone)
 }
 
 /**

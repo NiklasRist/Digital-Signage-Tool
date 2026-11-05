@@ -6420,6 +6420,11 @@ const main = async () => {
           flaechen: document.querySelectorAll('[data-testid$="-flaeche-oeffnen"]').length,
           groessenRegler: document.querySelectorAll('[data-testid$="-groesse"]').length,
           schriftarten: document.querySelectorAll('[data-testid$="-schriftart"]').length,
+          // ABDUNKELUNG (05.11.2026): Der Scrim hat ZWEI Stopps, je Farbe und
+          // Deckkraft. Die Vorlage "Vollbild" traegt eine Abdunkelungs-Zone; gemessen
+          // wird, dass beide Stopps AM FENSTER bedienbar sind.
+          scrimFarben: document.querySelectorAll('[data-testid^="aktion-zone-scrim-"][data-testid$="-oeffnen"]').length,
+          scrimDeckkraft: document.querySelectorAll('[data-testid^="aktion-zone-scrim-"][data-testid$="-deckkraft"]').length,
           ausschnitt: ausschnitt !== null,
           zoomTyp: zoom === null ? null : zoom.getAttribute("type"),
           vorlagenKacheln: document.querySelectorAll('[data-testid^="aktion-vorlage-"]').length,
@@ -6447,6 +6452,10 @@ const main = async () => {
         fund('Gestaltung je Zone', 'je Zone stehen Schriftart, Schriftfarbe, Flaechenfarbe, Groesse und Ausrichtung',
           `Schriftarten=${String(gestaltung4g7.schriftarten)}, Textfarben=${String(gestaltung4g7.textfarben)}, Flaechen=${String(gestaltung4g7.flaechen)}, Groessen=${String(gestaltung4g7.groessenRegler)}`,
           "Befund", "action-editor/zonen-gestaltung.tsx");
+      } else if (gestaltung4g7.scrimFarben !== 2 || gestaltung4g7.scrimDeckkraft !== 2) {
+        fund('Gestaltung je Zone', 'die Abdunkelung hat ZWEI Stopps mit Farbe und Deckkraft',
+          `Scrim-Farben=${String(gestaltung4g7.scrimFarben)}, Scrim-Deckkraft=${String(gestaltung4g7.scrimDeckkraft)}`,
+          'Befund', 'action-editor/zonen-gestaltung.tsx');
       } else if (!gestaltung4g7.ausschnitt || gestaltung4g7.zoomTyp !== "range") {
         fund('Bildausschnitt', 'Zoom und Position sind Regler am Fenster',
           `Bereich=${String(gestaltung4g7.ausschnitt)}, Zoom-Typ=${String(gestaltung4g7.zoomTyp)}`,
