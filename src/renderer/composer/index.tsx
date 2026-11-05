@@ -121,7 +121,6 @@ import { oeffneMenue, schliesseMenue, type ComposerLage } from './composer-monta
 // 03.11.2026 (Entscheidung 29.4): derselbe Speicher traegt jetzt AUCH den Modus „neu" -
 // „+ Neue Aktion" oeffnet den Editor, statt im Inline-Formular eine halbe Aktion anzulegen.
 import { oeffneAktionenAnsicht, oeffneNeueAktion } from '../gemeinsam/aktionen-ansicht'
-import { aufInsVideoAuftrag, loescheInsVideoAuftrag } from '../gemeinsam/aktion-ins-video'
 import { Seitenleiste, type PanelLage } from './seitenleiste.tsx'
 import { EigenschaftenAnsicht } from './eigenschaften-ansicht.tsx'
 // 02.11.2026 („Ins Video"): der Klick-Weg in dasselbe Video. Die REGEL (Band-Aktion ->
@@ -823,24 +822,8 @@ export function ComposerInterna({
     zug.legeAktionInsVideo(video.id, aktion.id, stelle?.zeitSekunden ?? null)
   }
 
-  // 04.11.2026 („Fertig & ins Video"): Der Aktions-Editor kann nicht platzieren - er
-  // stellt einen AUFTRAG in `gemeinsam/aktion-ins-video.ts`, ausgefuehrt wird er hier.
-  // Der aktuelle Rueckruf steht in einem Ref: eine einmalige Anmeldung mit einem alten
-  // `fuegeAktionInsVideo` wuerde den Zeitleisten-Zug von vorgestern benutzen.
-  const insVideoRef = useRef<(aktionId: string) => void>(() => undefined)
-  useEffect(() => {
-    insVideoRef.current = fuegeAktionInsVideo
-  })
-  useEffect(
-    () =>
-      aufInsVideoAuftrag((aktionId) => {
-        // Der Auftrag gilt EINMAL - auch wenn die Platzierung scheitert; die Meldung
-        // aus `fuegeAktionInsVideo` sagt dann, was fehlt.
-        loescheInsVideoAuftrag()
-        insVideoRef.current(aktionId)
-      }),
-    [],
-  )
+  // 05.11.2026: Der Auftrag des Aktions-Editors („Fertig & ins Video") ist ENTFALLEN.
+  // Der Editor legt nur an; platziert wird hier per Drag oder „Ins Video".
 
   return (
     <DndContext

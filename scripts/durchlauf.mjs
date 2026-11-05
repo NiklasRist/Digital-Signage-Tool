@@ -4605,11 +4605,10 @@ const main = async () => {
       }
     }
 
-    // Schritt 4g9 - „Fertig & ins Video" (04.11.2026): Der zweite Abschluss des
-    // Aktions-Editors schreibt die Aktion UND legt sie auf die Abspielmarke ins Video.
-    // Der Editor platziert nicht selbst - er stellt einen Auftrag, den der Composer
-    // ausfuehrt (`gemeinsam/aktion-ins-video.ts`). Gemessen wird die WIRKUNG in D1:
-    // Aktion da UND eine zusaetzliche Unterbrechung am Video.
+    // Schritt 4g9 - „Anlegen platziert NICHT" (05.11.2026): „Fertig & ins Video" ist
+    // ENTFALLEN (Niklas: „macht keinen sinn so, weil man das dann nicht selber rein
+    // draggen muss"). Der Treiber misst die Gegenprobe: Der zweite Knopf ist weg, und
+    // „Anlegen" schreibt die Aktion, ohne eine Unterbrechung zu erzeugen.
     {
       await klick('[data-testid="reiter-zusammenstellen"]');
       await zeigeAnsicht("aktionen");
@@ -4619,24 +4618,14 @@ const main = async () => {
       const vorher4g9 = lies4g9();
       const erstes4g9 = vorher4g9.liste[0];
       if (erstes4g9 === undefined || erstes4g9.art !== "video") {
-        // Ohne Video an erster Stelle ist die Abspielmarke bei 1 s nicht im Video -
-        // dann waere jede Aussage ueber die Platzierung eine ueber den Messaufbau.
         console.log("[schritt-4g9] uebersprungen: das erste Listenelement ist kein Video.");
       } else {
         const unterVor4g9 = (erstes4g9.unterbrechungen ?? []).length;
-        // Die Marke INS VIDEO setzen: 8 px = 1 s, das Video ist 2 s lang (dieselbe
-        // Rechnung wie 4f8 - ein Klick weiter rechts landete im naechsten Block).
-        const achse4g9 = await seite.$('[data-testid="zeitleiste-zeitachse"]');
-        const box4g9 = achse4g9 === null ? null : await achse4g9.boundingBox();
-        achse4g9?.dispose?.();
-        if (box4g9 !== null) {
-          await seite.mouse.click(box4g9.x + 8, box4g9.y + box4g9.height / 2);
-          await schlafe(600);
-        }
+        const aktionenVor4g9 = vorher4g9.aktionen.length;
         const ANSICHT4G9 = '[data-testid="rahmen-ansicht-aktionen"]';
         await klick('[data-testid="aktion-anlegen-oeffnen"]');
         await schlafe(800);
-        const titel4g9 = `Durchlauf-InsVideo-${Date.now()}`;
+        const titel4g9 = `Durchlauf-NurAnlegen-${Date.now()}`;
         await seite.evaluate((wert, bereich) => {
           const feld = document.querySelector(`${bereich} [data-testid="aktion-titel"]`);
           if (feld === null) return;
@@ -4646,8 +4635,12 @@ const main = async () => {
           feld.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
         }, titel4g9, ANSICHT4G9);
         await schlafe(300);
-        const geklickt4g9 = await klick(`${ANSICHT4G9} [data-testid="aktion-anlegen-und-ins-video"]`);
+        const knopfWeg4g9 = await seite.evaluate(
+          (bereich) => document.querySelector(`${bereich} [data-testid="aktion-anlegen-und-ins-video"]`) === null,
+          ANSICHT4G9,
+        );
         const start4g9 = Date.now();
+        await klick(`${ANSICHT4G9} [data-testid="aktion-anlegen-bestaetigen"]`);
         const frist4g9 = start4g9 + 20_000;
         let nachher4g9 = vorher4g9;
         while (Date.now() < frist4g9) {
@@ -4659,7 +4652,7 @@ const main = async () => {
           const video4g9 = nachher4g9.liste.find((e) => e.id === erstes4g9.id);
           const unter4g9 = (video4g9?.unterbrechungen ?? []).length;
           const aktion4g9 = nachher4g9.aktionen.some((a) => a.titel === titel4g9);
-          if (unter4g9 === unterVor4g9 + 1 && aktion4g9) break;
+          if (unter4g9 === unterVor4g9 && aktion4g9) break;
           await schlafe(250);
         }
         const videoNach4g9 = nachher4g9.liste.find((e) => e.id === erstes4g9.id);
@@ -4669,31 +4662,32 @@ const main = async () => {
           (bereich) => document.querySelector(bereich) === null,
           ANSICHT4G9,
         );
-        console.log(`[schritt-4g9] Fertig & ins Video: ${JSON.stringify({
-          geklickt: geklickt4g9,
+        console.log(`[schritt-4g9] Anlegen ohne ins Video: ${JSON.stringify({
+          zweiterKnopf: !knopfWeg4g9,
           aktion: aktionNach4g9,
+          aktionen: `${String(aktionenVor4g9)} -> ${String(nachher4g9.aktionen.length)}`,
           unterbrechungen: `${String(unterVor4g9)} -> ${String(unterNach4g9)}`,
           ansichtZu: ansichtZu4g9,
           dauerMs: Date.now() - start4g9,
         })}.`);
-        if (!geklickt4g9) {
-          fund("Fertig & ins Video", "der zweite Abschluss ist im Editor bedienbar",
-            "Knopf aktion-anlegen-und-ins-video fehlt oder ist verdeckt",
+        if (!knopfWeg4g9) {
+          fund("Anlegen ohne ins Video", "der zweite Abschluss ist ENTFALLEN",
+            "Knopf aktion-anlegen-und-ins-video ist noch da",
             "Befund", "action-editor/index.tsx");
         } else if (!aktionNach4g9) {
-          fund("Fertig & ins Video", "die Aktion steht danach im project.json",
+          fund("Anlegen ohne ins Video", "die Aktion steht danach im project.json",
             `Titel ${titel4g9} nicht gefunden`, "Befund", "action-editor/index.tsx");
-        } else if (unterNach4g9 !== unterVor4g9 + 1) {
-          fund("Fertig & ins Video", "die Aktion wird an der Abspielmarke zur Unterbrechung",
+        } else if (unterNach4g9 !== unterVor4g9) {
+          fund("Anlegen ohne ins Video", "Anlegen platziert NICHT ins Video",
             `Unterbrechungen ${String(unterVor4g9)} -> ${String(unterNach4g9)}`,
-            "Befund", "gemeinsam/aktion-ins-video.ts");
+            "Befund", "action-editor/index.tsx");
         } else if (!ansichtZu4g9) {
-          fund("Fertig & ins Video", "der Abschluss gibt die Reiterflaeche frei",
+          fund("Anlegen ohne ins Video", "der Abschluss gibt die Reiterflaeche frei",
             "Ansicht noch offen", "Befund", "action-editor/index.tsx");
         } else {
-          console.log("[schritt-4g9] FERTIG & INS VIDEO GEMESSEN: Aktion angelegt und als Unterbrechung platziert.");
+          console.log("[schritt-4g9] ANLEGEN OHNE INS VIDEO GEMESSEN: Aktion angelegt, keine Unterbrechung, Ansicht zu.");
         }
-        // Aufraeumen: die Unterbrechung wieder wegnehmen (ein Cmd+Z).
+        // Aufraeumen: die Aktion wieder wegnehmen (ein Cmd+Z).
         await klick('[data-testid="undo-pfeil"]');
         await schlafe(800);
       }

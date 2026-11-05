@@ -11,7 +11,41 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (05.11.2026, fünfzigste Sitzung: der Bild-Import kommt im offenen Aktions-Editor an)
+## STAND HEUTE (05.11.2026, einundfünfzigste Sitzung: „Ergebnis zuerst" — der Editor zeigt ein Beispiel, der Titel steht im Inhalt)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-05-ergebnis-zuerst.md`](docs/agents/uebergabe-2026-11-05-ergebnis-zuerst.md).**
+
+- **AUFTRAG (Niklas, 05.11.2026):** *„es ist unklar was möglich ist […] man hat zu wenig einfluss
+  […] ein fertiges formular für eine langweilige powerpoint folie statt eine beeindruckende
+  wirksame werbung."* Schritt 1 ist gebaut: **man sieht, was möglich ist.**
+- **BEISPIELINHALT (`action-editor/beispiel-inhalt.ts`, neu):** Leere Felder werden **nur für die
+  Vorschau** gefüllt (Titel, Beschreibung, Preis, Knopf); im Modus „neu" dazu das **erste nutzbare
+  Projektbild**. Der Entwurf bleibt unberührt, das Beispiel wird **nie gespeichert**; „– kein
+  Bild –" nimmt das Beispielbild zurück. Hinweis über dem Canvas; **Vorlagen-Kacheln** zeichnen
+  dasselbe Ergebnis statt einer leeren Fläche.
+- **TITEL** steht jetzt als erstes Feld in **„Inhalt"** (Kopfleiste nur Rückweg/Abschluss); die
+  fünf Schritte tragen **keine Nummern** mehr, die Felder haben Beispiel-Platzhalter.
+- **„FERTIG & INS VIDEO" IST ENTFALLEN:** zweiter Abschluss, `gemeinsam/aktion-ins-video.ts` und
+  der Composer-Zuhörer sind gelöscht. Der Editor legt nur an; platziert wird per Drag oder
+  „Ins Video". **Treiber `4g9` neu:** `{"zweiterKnopf":false,"aktion":true,"aktionen":"2 -> 3",
+  "unterbrechungen":"0 -> 0","ansichtZu":true,"dauerMs":4044}`.
+- **FENSTER-BELEG:** `{"beispielHinweis":true,"titelImFormular":true,"titelImKopf":false,
+  "insVideoKnopf":false,"bildBeispiel":true,"vorlagenBilder":2,"canvas":950×534}`.
+- **Gegenproben:** 3, jede rot und byte-identisch zurückgenommen (Prüfsumme `3c1736c1…`). **Eine
+  blieb zuerst grün**, weil der Test den letzten statt des ersten Zeichenaufrufs prüfte (Kachel
+  statt Bühne) — Test geschärft, danach rot. **Lehre: eine grüne Probe sagt etwas über den Test.**
+- **Doku:** TK **v3.46** (9.8.7 neu; 9.8.1/9.8.6 mit Nachtrag abgelöst), `.docx` im selben Commit
+  neu erzeugt (2235 Absätze, `unzip -t`, 0 Backticks). `treiber-matrix.md` FA-02/`4g9` nachgezogen.
+- **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build 0, Unit **5501/5501** (364),
+  Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
+  Export-Dialog).
+- **Ehrlich offen:** **Schritt 2 (Einfluss)** ist NICHT gebaut — Bildausschnitt, Textgröße und
+  weitere Looks fehlen. Das Beispielmotiv ist das erste Projektbild; ohne Bilder bleibt die
+  Vorschau textlich.
+- **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen.
+  **Push nur auf Anweisung.**
+
+## STAND HEUTE (05.11.2026, fünfzigste Sitzung: der Bild-Import kommt im offenen Aktions-Editor an) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-05-bild-import.md`](docs/agents/uebergabe-2026-11-05-bild-import.md).**
 

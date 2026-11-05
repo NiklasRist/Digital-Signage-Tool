@@ -30,7 +30,8 @@ export interface VorlagenWahlEigenschaften {
   waehlbare: readonly Vorlage[]
   /** Die Kennung, die gerade gilt. */
   aktuell: string
-  /** Der Entwurf - nur fuer die BILDER; er wird hier nicht veraendert. */
+  /** Der Entwurf - nur fuer die BILDER; er wird hier nicht veraendert. Seit 05.11.2026
+   *  kommt er mit BEISPIELINHALT fuer leere Felder, damit die Kacheln ein Ergebnis zeigen. */
   entwurf: AktionsEntwurf
   /** Ein Klick auf eine Vorlage. */
   aufWahl: (vorlagenId: string) => void

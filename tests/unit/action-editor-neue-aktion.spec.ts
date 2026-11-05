@@ -63,6 +63,7 @@ vi.mock('../../src/renderer/action-editor/bild-zuweisen', async (importOriginal)
 }))
 
 import { ActionEditorWurzel } from '../../src/renderer/action-editor/index.tsx'
+import { BEISPIEL_INHALT } from '../../src/renderer/action-editor/beispiel-inhalt'
 import { ladeWaehlbareVorlagen } from '../../src/renderer/action-editor/vorlage-waehlen'
 import { bereiteMotivVorFuer, zeichneVorschau } from '../../src/renderer/action-editor/live-vorschau'
 import { merkeLetzteVorlage } from '../../src/renderer/gemeinsam/vorlage-vorbelegung'
@@ -447,8 +448,7 @@ async function waehleImFeld(behaelter: HTMLDivElement, testid: string, wert: str
 }
 
 describe('Anlegen mit Vorschau und Bild', () => {
-  it('die Vorschau zeichnet den ENTWURF, nicht erst die gespeicherte Aktion', async () => {
-    vi.mocked(zeichneVorschau).mockClear()
+  it('die Vorschau zeichnet den ENTWURF - leere Felder mit Beispielinhalt', async () => {
     const vorlagen = [vorlage('ganz', null)]
     // Dieselben Vorlagen in BEIDEN Quellen: die Auswahl (ladeWaehlbareVorlagen) und der
     // Zeichenbestand (zeichnen.hole). Sonst faellt der Entwurf auf 'vollbild' zurueck und
@@ -457,14 +457,22 @@ describe('Anlegen mit Vorschau und Bild', () => {
     const { behaelter } = editor(projekt([]), vorlagen)
     await laufen()
 
+    // Der Zaehler startet NACH dem Aufbau: Der ERSTE Aufruf nach dem Klick ist die
+    // grosse Vorschau (sie steht im Baum VOR dem Inspector mit den Vorlagen-Kacheln).
+    // Ohne diese Trennung prueft der Test die Kachel statt der Buehne - eine gruene
+    // Probe, die nichts ueber die Hauptvorschau sagt (05.11.2026, Gegenprobe).
+    vi.mocked(zeichneVorschau).mockClear()
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
-    // Ohne diese Aenderung blieb die Flaeche im Modus „neu" leer (`gewaehlt === null`).
+    // 05.11.2026: Die Flaeche ist NICHT mehr leer - leere Felder tragen das Beispiel.
     expect(zeichneVorschau).toHaveBeenCalled()
-    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls[0]?.[0]
     expect(gezeichnet?.vorlagenId).toBe('ganz')
-    expect(gezeichnet?.titel).toBe('')
+    expect(gezeichnet?.titel).toBe(BEISPIEL_INHALT.titel)
+    // Der ENTWURF bleibt leer: das Beispiel ist reine Vorschau, nicht gespeicherter Text.
+    expect(behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')?.value).toBe('')
+    expect(behaelter.querySelector('[data-testid="aktion-beispiel-hinweis"]')).not.toBeNull()
   })
 
   it('die Vorlagen-Auswahl zeigt je Vorlage ein Bild und wechselt die Vorlage per Klick', async () => {
@@ -481,6 +489,12 @@ describe('Anlegen mit Vorschau und Bild', () => {
     const plaetze = behaelter.querySelectorAll('[data-testid="aktion-vorlagen-wahl"] [data-testid="vorlagen-bild"]')
     expect(plaetze).toHaveLength(2)
     expect(behaelter.querySelector('[data-testid="aktion-vorlage-vollbild"]')).toBeNull()
+    // 05.11.2026: Die Kacheln zeigen ein ERGEBNIS, nicht die leere Flaeche - auch die
+    // NICHT gewaehlte Vorlage traegt den Beispielinhalt.
+    const bandKachel = vi.mocked(zeichneVorschau).mock.calls.find(
+      (aufruf) => (aufruf[1] as Vorlage).id === 'band',
+    )
+    expect(bandKachel?.[0].titel).toBe(BEISPIEL_INHALT.titel)
 
     act(() => {
       behaelter.querySelector<HTMLButtonElement>('[data-testid="aktion-vorlage-band"]')?.click()
@@ -664,5 +678,67 @@ describe('Bestandswechsel von aussen (Bild-Import)', () => {
 
     const hinweis = behaelter.querySelector('[data-testid="aktion-bild-hinweis"]')?.textContent ?? ''
     expect(hinweis).toContain('Kein Bild gewählt')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 05.11.2026: Ergebnis zuerst - Titel im Inhalt, Beispiel im Canvas, kein Auto-Platzieren
+// ---------------------------------------------------------------------------
+
+describe('Ergebnis zuerst', () => {
+  it('der Titel steht im INHALT, nicht in der Kopfleiste', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [vorlage('ganz', null)] })
+    const { behaelter } = editor(projekt([]), [vorlage('ganz', null)])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    const feld = behaelter.querySelector('[data-testid="aktion-titel"]')
+    expect(feld).not.toBeNull()
+    expect(feld?.closest('[data-testid="aktion-formular"]')).not.toBeNull()
+    expect(feld?.closest('[data-testid="aktion-editor-kopf"]')).toBeNull()
+  })
+
+  it('„Fertig & ins Video" ist ENTFALLEN - es gibt nur den einen Abschluss', async () => {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [vorlage('ganz', null)] })
+    const { behaelter } = editor(projekt([]), [vorlage('ganz', null)])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    expect(behaelter.querySelector('[data-testid="aktion-anlegen-und-ins-video"]')).toBeNull()
+    expect(behaelter.querySelector('[data-testid="aktion-anlegen-bestaetigen"]')).not.toBeNull()
+  })
+
+  it('das erste Projektbild erscheint als Beispiel - ohne im Entwurf zu stehen', async () => {
+    vi.mocked(zeichneVorschau).mockClear()
+    const vorlagen = [vorlageMitZonen('ganz', null, [zone('bild')])]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor({ ...projekt([]), assets: [bildAsset('a1')] }, vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.bildRef).toBe('a1')
+    // Das Select steht weiter auf „kein Bild" - das Beispiel ist nicht gewaehlt.
+    expect(behaelter.querySelector<HTMLSelectElement>('[data-testid="aktion-bild-wahl"]')?.value).toBe('')
+    expect(behaelter.querySelector('[data-testid="aktion-bild-beispiel"]')).not.toBeNull()
+  })
+
+  it('„– kein Bild –" nimmt das Beispielbild wieder aus der Vorschau', async () => {
+    vi.mocked(zeichneVorschau).mockClear()
+    const vorlagen = [vorlageMitZonen('ganz', null, [zone('bild')])]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor({ ...projekt([]), assets: [bildAsset('a1')] }, vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    await waehleImFeld(behaelter, 'aktion-bild-wahl', 'a1')
+    await waehleImFeld(behaelter, 'aktion-bild-wahl', '')
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.bildRef).toBeNull()
   })
 })

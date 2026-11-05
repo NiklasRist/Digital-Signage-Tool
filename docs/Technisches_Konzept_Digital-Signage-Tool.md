@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.45 (9.5.6: der Start übernimmt das vom Main geöffnete Projekt über einen benannten Weg — FA-15 war am Fenster kaputt; 04.11.2026. Vorher 3.44: 9.8.6 Aktions-Editor-Umbau)
+**Version:** 3.46 (9.8.7: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt; 05.11.2026. Vorher 3.45: 9.5.6 Start übernimmt das vom Main geöffnete Projekt; 04.11.2026)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1501,6 +1501,7 @@ Unterbrechung sind die beiden einzigen Wirkungen einer Aktion auf das Video.
 - **Ist:** Aktionen anlegen/bearbeiten/löschen, Vorlage zuweisen, freie Zonen gestalten, Live-Vorschau der Aktion.
 - **Ist NICHT:** platziert Aktionen **nicht selbst** in die Liste (`composer` [P3]); macht **keinen** finalen Render; **kein** Dateisystem/ffmpeg (alles über `ipc-client` an den Main).
   **Nachtrag 04.11.2026:** Der Editor **beauftragt** das Platzieren („Fertig & ins Video", 9.8.3) — ausgeführt wird es ausschließlich im `composer`. Ein Auftrag ist keine Platzierung: der Editor kennt weder Abspielmarke noch Einfüge-Regel und baut keinen zweiten Schreibweg.
+  **Nachtrag 05.11.2026:** Dieser Auftrag ist **entfallen** (9.8.7). Der Editor legt nur an; platziert wird ausschließlich im `composer` per Drag oder „Ins Video".
 
 #### 9.8.2 Der `Aktion`-Datensatz
 
@@ -1610,6 +1611,9 @@ Aktion {
 
 #### 9.8.6 Der Umbau des Editors (04.11.2026)
 
+**Nachtrag 05.11.2026:** Titel-Platz und „Fertig & ins Video" aus diesem Abschnitt sind
+durch **9.8.7** abgelöst; die Beschreibung bleibt als Beleg stehen.
+
 Auslöser (Niklas, 04.11.2026): *„der aktionseditor muss stark überarbeitet werden"* — und der
 gesamte Kernfluss mit ihm. Vorher standen drei Spalten nebeneinander (Bibliothek 260 px als
 Textliste, Vorschau, Formular 320 px mit acht Blöcken untereinander), und es galten **zwei**
@@ -1645,11 +1649,39 @@ führt ihn über denselben Weg aus wie den Knopf „Ins Video" (`legeAktionInsVi
 Abschnitt, Ganzbild → Unterbrechung an der Abspielmarke). Der Auftrag gilt **genau einmal**. Ohne
 angelegte Aktion (leerer Titel) gibt es nichts zu platzieren — der Editor sagt das, statt zu raten.
 Im Reiter [Aktionen] fehlt der Knopf: dort gibt es keine Ansicht zu schließen und kein Ziel.
+**Nachtrag 05.11.2026: entfallen** — siehe 9.8.7.
 
 **Was entfiel.** `weiseBildZu`/`entferneBild` (der Bildweg schreibt nicht mehr; die Prüfung lebt als
 `pruefeBildWahl` weiter), die zweite Leiste in `App.tsx` und die Schreibwege je Feld. Das Motiv-Modul
 zog von `composer/aktions-vorschau.ts` nach `gemeinsam/aktions-motiv.ts` (der Editor darf den
 Composer nicht importieren).
+
+#### 9.8.7 Ergebnis zuerst (05.11.2026)
+
+Auslöser (Niklas, 05.11.2026): *„der aktionseditor ist nicht selbsterklärend genug und man versteht
+das potential von dem was man machen könnte nicht. es sieht einfach aus wie eine langweilige
+powerpoint folie statt eine beeindruckende wirksame werbung"* — und *„man hat zu wenig einfluss"*.
+
+**Beispielinhalt in der Vorschau.** Bei leeren Feldern zeichnet die Vorschau ein Beispiel
+(`action-editor/beispiel-inhalt.ts`): Titel, Beschreibung, Preis und Knopf; im Modus „neu" zusätzlich
+das erste nutzbare Bild des Projekts. Der **Entwurf bleibt unberührt** — das Beispiel ist reine
+Vorschau und wird nie gespeichert. Ein Hinweis über dem Bild sagt „Beispiel – leere Felder sind mit
+Beispielinhalt gefüllt."; ein bewusst gewähltes „– kein Bild –" nimmt das Beispielbild wieder heraus.
+Die Vorlagen-Kacheln zeichnen denselben Beispielinhalt, damit jede Vorlage ein **Ergebnis** zeigt
+statt einer leeren Fläche.
+
+**Titel bei den Inhaltsfeldern.** Der Titel steht im Schritt „Inhalt" (erstes Feld) statt in der
+Kopfleiste; die Kopfleiste trägt nur Rückweg und Abschluss. Die fünf Schritte tragen keine Nummern
+mehr.
+
+**Kein Auto-Platzieren.** „Fertig & ins Video" ist entfallen (Nachtrag in 9.8.1/9.8.6). Der Editor
+legt nur an; platziert wird im `composer` per Drag oder „Ins Video". Die Platzierung ist eine
+räumliche Entscheidung und gehört nicht in den Aktions-Editor.
+
+**Bild-Import.** Der Editor abonniert `projekt.aufGeaendert`: Ein während der Bearbeitung
+abgeschlossener Import erscheint in der Bildliste; der Knopf meldet den Auftrag sichtbar
+(„N Bild(er) werden importiert …"). Ohne das Abo blieb die Liste stehen (am Fenster gemessen:
+Datei 5 Assets, Liste 4).
 
 ---
 

@@ -39,7 +39,6 @@ import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { ZeichenZugang, VorlagenZugang, ProjektZugang, MarkenZugang } from '../app-shell/sichten'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import { holeMotiv } from '../gemeinsam/aktions-motiv'
-import { merkeInsVideoAuftrag } from '../gemeinsam/aktion-ins-video'
 import { schliesseAktionenAnsicht, setzeSchliessenWaechter } from '../gemeinsam/aktionen-ansicht'
 import { merkeLetzteVorlage, vorlageFuerNeueAktion } from '../gemeinsam/vorlage-vorbelegung'
 import { STANDARD_ANZEIGEDAUER_SEKUNDEN } from '../../shared/contracts/konstanten'
@@ -58,6 +57,7 @@ import { BefundAnzeige } from './befund-texte'
 import { findeZugewiesene, ladeWaehlbareVorlagen } from './vorlage-waehlen'
 import { VorlagenWahl } from './vorlagen-wahl'
 import { feldBedarf } from './feld-bedarf'
+import { BEISPIEL_INHALT, erstesBild, mitBeispielinhalt } from './beispiel-inhalt'
 import { pruefeBildWahl, starteBildImport, waehlbareBilder } from './bild-zuweisen'
 import {
   bereiteMotivVorFuer,
@@ -138,6 +138,10 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
   // ZULETZT geoeffneten Entwurfs - „Neue Aktion" haette die Vorbelegung zwar im
   // Entwurf, aber nicht auf dem Bildschirm.
   const [entwurfZaehler, setzeEntwurfZaehler] = useState(0)
+  // 05.11.2026: „– kein Bild –" ist eine ENTSCHEIDUNG, nicht „noch nichts gewaehlt".
+  // Nur so darf das Beispielbild der Vorschau nach einer bewussten Leerung nicht
+  // zurueckkommen.
+  const [keinBeispielBild, setzeKeinBeispielBild] = useState(false)
   const [waehlbare, setzeWaehlbare] = useState<Vorlage[] | null>(null)
   // Befunde und Meldung gehoeren zum ABSCHLUSS, nicht zum Formular: der Abschluss steht
   // in der Kopfleiste, seine Begruendung muss dort lesbar sein (FA-03-Nachlauf).
@@ -151,25 +155,31 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
 
   // Reaktionskette: Bereitstellung fuer die Vorschau; erneut nach jeder Bestandsaenderung
   // (ENTSCHIEDEN 11: bereiteVorschauVor - NICHT zeichnen.bereiteVor).
+  //
+  // Seit 05.11.2026 haengt der Effekt am PROJEKT-OBJEKT, nicht am Zugang: Ein Import
+  // erzeugt ein neues Projekt und muss die neuen Bilder auch fuer die Vorschau laden.
+  // Dazu wird das Beispielbild (erstes nutzbares Bild) vorbereitet - es steht in der
+  // Vorschau, bevor der Nutzer eines gewaehlt hat.
   useEffect(() => {
+    if (projekt === null) return
     void (async () => {
-      const eintrag = p.projekt.hole().projekt
-      if (eintrag === null) {
-        return
-      }
       // Die Marke fuer die Logo-Vorbereitung: die STABILE Rahmen-Marke (TK 9.15.4).
-      const markeFuerVorbereitung = holeBereiteMarke(eintrag.standardMarkeId)
+      const markeFuerVorbereitung = holeBereiteMarke(projekt.standardMarkeId)
       if (markeFuerVorbereitung === null) {
         // Nicht bereitgestellt heisst: nicht vorbereiten, nicht zeichnen - kein Ersatz
         // und kein Nachladen im Zeichenpfad (TK 9.10.3).
         return
       }
-      await bereiteVorschauVor(eintrag.id, [...eintrag.aktionen], [...eintrag.assets], markeFuerVorbereitung)
+      await bereiteVorschauVor(projekt.id, [...projekt.aktionen], [...projekt.assets], markeFuerVorbereitung)
+      const beispielBild = erstesBild(projekt.assets)
+      if (beispielBild !== null) {
+        await bereiteMotivVorFuer(projekt.id, beispielBild.id, projekt.assets)
+      }
       // Ohne diesen Zaehler bliebe es beim EINEN Zeichenlauf von vor der Vorbereitung:
       // die Motive im Streifen und die grosse Vorschau stuenden als Rahmen ohne Inhalt.
       setzeVorbereitet((zaehler) => zaehler + 1)
     })()
-  }, [p, p.projekt])
+  }, [projekt])
 
   // 05.11.2026: Der Editor folgt dem PROJEKTBESTAND - wie der Vorlagen-Editor
   // (`vorlagen-editor/index.tsx`). Ohne dieses Abo blieb die Bildliste nach einem
@@ -208,6 +218,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
     const treffer = aktionen.find((aktion) => aktion.id === p.hervorgehobeneAktionId)
     if (treffer !== undefined) {
       setzeEntwurf({ ...treffer })
+      setzeKeinBeispielBild(false)
       setzeBefunde([])
       setzeMeldung(null)
     }
@@ -305,19 +316,13 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
   // Der Abschluss steht in der Kopfleiste. Er schreibt und - wenn der Editor ueber der
   // Reiterflaeche liegt - schliesst er die Ansicht. Im Reiter [Aktionen] bleibt er offen.
   //
-  // „Fertig & ins Video" (04.11.2026) stellt nach dem Schreiben einen AUFTRAG an den
-  // Composer (`gemeinsam/aktion-ins-video.ts`): der Editor kennt die Abspielmarke nicht
-  // und baut keinen zweiten Schreibweg. Ohne angelegte Aktion gibt es nichts zu platzieren.
-  async function fertig(undInsVideo: boolean): Promise<void> {
+  // 05.11.2026: „Fertig & ins Video" ist ENTFALLEN (Niklas: „macht keinen sinn so, weil
+  // man das dann nicht selber rein draggen muss"). Der Editor legt nur an; platziert wird
+  // im Composer per Drag oder „Ins Video" - die Platzierung ist eine raeumliche
+  // Entscheidung und gehoert nicht in ein Formular.
+  async function fertig(): Promise<void> {
     const ergebnis = await schreibe()
     if (!ergebnis.ok) return
-    if (undInsVideo) {
-      if (ergebnis.aktionId === null) {
-        setzeMeldung('Die Aktion ist noch nicht gespeichert - ohne Titel gibt es nichts, das ins Video läuft.')
-        return
-      }
-      merkeInsVideoAuftrag(ergebnis.aktionId)
-    }
     if (p.aufSchliessen === undefined) return
     // Der Waechter (s. u.) wuerde sonst ein zweites Mal schreiben wollen - hier ist
     // bereits geschrieben, er darf durchlassen.
@@ -337,6 +342,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
       // „zuletzt benutzt" heisst auch: zuletzt GEOEFFNET (03.11.2026).
       merkeLetzteVorlage(aktion.vorlagenId)
     }
+    setzeKeinBeispielBild(false)
     setzeBefunde([])
     setzeMeldung(null)
   }
@@ -361,6 +367,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
         standDerSicht?.standardSegmentdauer ?? STANDARD_ANZEIGEDAUER_SEKUNDEN,
       ),
     )
+    setzeKeinBeispielBild(false)
     setzeBefunde([])
     setzeMeldung(null)
   }
@@ -404,6 +411,13 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
   const kaputt = zaehleKaputte(bibliothek)
   const zeichenvorlagen = p.zeichnen.hole()?.vorlagen ?? []
 
+  // 05.11.2026: Die Vorschau zeigt bei leeren Feldern ein BEISPIEL. Das Beispielbild
+  // ist das erste nutzbare Bild des Projekts - aber NUR im Modus „neu" und nur, solange
+  // der Nutzer nicht bewusst „– kein Bild –" gewaehlt hat.
+  const beispielBildId =
+    lage.modus === 'neu' && !keinBeispielBild ? (erstesBild(projekt.assets)?.id ?? null) : null
+  const beispiel = entwurf === null ? null : mitBeispielinhalt(entwurf, beispielBildId)
+
   // Die Write-nach der Sicht - DER Weg des ganzen Moduls (ENTSCHIEDEN 1).
   function einspeisen(antwort: Ergebnis<Aktion> | { ok: true; wert: { aktion: Aktion } }): void {
     if (!antwort.ok) {
@@ -442,6 +456,9 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
       }
       await bereiteMotivVorFuer(jetzt.id, bildRef, jetzt.assets)
     }
+    // 05.11.2026: „– kein Bild –" ist eine Entscheidung; das Beispielbild darf danach
+    // nicht wieder in der Vorschau auftauchen.
+    setzeKeinBeispielBild(bildRef === null)
     aendere('bildRef', bildRef)
   }
 
@@ -450,8 +467,8 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
       data-testid="aktion-editor-root"
       style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}
     >
-      {/* = die KOPFLEISTE: Rueckweg, Titel, Abschluss. Der Titel ist die Identitaet der
-          Aktion - er steht immer sichtbar da, nicht als drittes Feld im Formular. */}
+      {/* = die KOPFLEISTE: Rueckweg und Abschluss. Der TITEL steht seit 05.11.2026 bei
+          den Inhaltsfeldern - dort, wo er den Text der Aktion ausmacht. */}
       <div
         data-testid="aktion-editor-kopf"
         style={{
@@ -468,57 +485,32 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
             type="button"
             data-testid="aktionen-zurueck"
             onClick={() => {
-              void fertig(false)
+              void fertig()
             }}
           >
             ← Zurück zum Projekt
           </button>
         )}
-        {entwurf !== null ? (
-          <input
-            key={`titel-${lage.modus === 'neu' ? `neu-${String(entwurfZaehler)}` : (lage.modus === 'bestehend' ? lage.aktionId : 'keine')}`}
-            type="text"
-            data-testid="aktion-titel"
-            aria-label="Titel"
-            placeholder="Titel (Pflicht)"
-            defaultValue={entwurf.titel}
-            onBlur={(ereignis) => {
-              aendere('titel', ereignis.target.value)
-            }}
-            style={{ flex: '1 1 auto', minWidth: 120, maxWidth: 420, fontSize: 15, padding: '2px 6px' }}
-          />
-        ) : (
-          <span style={{ color: '#9aa4b2' }}>Keine Aktion gewählt</span>
-        )}
+        <span style={{ color: '#9aa4b2', fontSize: 12 }}>
+          {entwurf === null
+            ? 'Keine Aktion gewählt'
+            : lage.modus === 'neu'
+              ? 'Neue Aktion'
+              : 'Aktion bearbeiten'}
+        </span>
         <span style={{ flex: '1 1 auto' }} />
         {entwurf !== null && (
-          <>
-            {/* Der zweite Abschluss nur in der ANSICHT: dort gibt es ein Video in der
-                Reiterflaeche dahinter. Im Reiter [Aktionen] waere er ein Knopf ohne Ziel. */}
-            {p.aufSchliessen !== undefined && (
-              <button
-                type="button"
-                data-testid="aktion-anlegen-und-ins-video"
-                disabled={schreibt}
-                onClick={() => {
-                  void fertig(true)
-                }}
-              >
-                {lage.modus === 'neu' ? 'Anlegen & ins Video' : 'Fertig & ins Video'}
-              </button>
-            )}
-            <button
-              type="button"
-              data-testid="aktion-anlegen-bestaetigen"
-              className="knopf-primaer"
-              disabled={schreibt}
-              onClick={() => {
-                void fertig(false)
-              }}
-            >
-              {schreibt ? 'Speichert…' : lage.modus === 'neu' ? 'Anlegen' : 'Fertig'}
-            </button>
-          </>
+          <button
+            type="button"
+            data-testid="aktion-anlegen-bestaetigen"
+            className="knopf-primaer"
+            disabled={schreibt}
+            onClick={() => {
+              void fertig()
+            }}
+          >
+            {schreibt ? 'Speichert…' : lage.modus === 'neu' ? 'Anlegen' : 'Fertig'}
+          </button>
         )}
       </div>
 
@@ -539,8 +531,8 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
           }}
         />
 
-        {/* = Mitte: die BUENNE. Zeichnet IMMER den Entwurf - auch im Modus „bestehend"
-            (das konnte template-canvas seit `AktionsInhalt`, Sitzung 43). */}
+        {/* = Mitte: die BUENNE. Zeichnet den Entwurf - leere Felder mit BEISPIELINHALT,
+            damit man schon beim Anlegen sieht, was moeglich ist (05.11.2026). */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: '1 1 auto', minWidth: 0 }}>
           {gewaehlt !== null && (
             <KaputtAnzeige aktionId={gewaehlt.id} projekt={projekt} onEinspeisen={einspeisen} />
@@ -550,9 +542,40 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
             // Das Feld ist SELBST ein Flex-Container: `height: 100%` am Kind greift in
             // einer Spalte mit `flex: 1` nicht zuverlaessig (am Bild gesehen: die
             // Vorschau hing oben, darunter blieben 220 px leer).
-            style={{ flex: '1 1 auto', minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{
+              flex: '1 1 auto',
+              minHeight: 240,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+            }}
           >
-            <VorschauFlaeche p={p} entwurf={entwurf} vorbereitet={vorbereitet} />
+            {beispiel !== null && beispiel.istBeispiel && (
+              <p
+                data-testid="aktion-beispiel-hinweis"
+                style={{ margin: 0, color: '#9aa4b2', fontSize: 12 }}
+              >
+                Beispiel – leere Felder sind mit Beispielinhalt gefüllt.
+              </p>
+            )}
+            <div
+              style={{
+                flex: '1 1 auto',
+                minHeight: 0,
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <VorschauFlaeche
+                p={p}
+                inhalt={beispiel?.inhalt ?? entwurf}
+                vorbereitet={vorbereitet}
+              />
+            </div>
           </div>
         </div>
 
@@ -576,6 +599,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
               }
               projekt={projekt}
               entwurf={entwurf}
+              beispiel={beispiel?.inhalt ?? entwurf}
               waehlbare={waehlbare}
               befunde={befunde}
               meldung={meldung}
@@ -753,13 +777,13 @@ function StreifenKachel({
 /** Die Vorschauflaeche: zeichnet mit zeichneVorschau (#140) - dem EINZIGEN Zeichenweg. */
 function VorschauFlaeche({
   p,
-  entwurf,
+  inhalt,
   vorbereitet,
 }: {
   p: ActionEditorWurzelProps
-  /** Der ENTWURF, nicht die gespeicherte Aktion: der Editor zeigt immer, was er schreiben
-   *  wuerde (seit 04.11.2026 auch im Modus „bestehend"). */
-  entwurf: AktionsEntwurf | null
+  /** Was GEZEICHNET wird: der Entwurf, bei leeren Feldern mit Beispielinhalt gefuellt.
+   *  Gespeichert wird nur der Entwurf - das Beispiel ist reine Vorschau. */
+  inhalt: AktionsEntwurf | null
   /** Steigt, sobald Motive/Schriften bereit sind - dann wird neu gezeichnet. */
   vorbereitet: number
 }): JSX.Element {
@@ -769,16 +793,16 @@ function VorschauFlaeche({
 
   useEffect(() => {
     const ziel = containerBezug[0]
-    if (ziel !== null && entwurf !== null) {
+    if (ziel !== null && inhalt !== null) {
       const zeichenv = p.zeichnen.hole()?.vorlagen ?? []
-      const vorlage = findeZeichenVorlage(entwurf, zeichenv)
+      const vorlage = findeZeichenVorlage(inhalt, zeichenv)
       if (vorlage === null) return
       // Die Marke des ENTWURFS (#313, ENTSCHIEDEN 5). null heisst: nicht zeichnen -
       // keine Ersatzmarke, kein Nachladen im Zeichenpfad (TK 9.10.3).
-      const marke = holeBereiteMarke(entwurf.markeId)
+      const marke = holeBereiteMarke(inhalt.markeId)
       if (marke === null) return
       try {
-        const bild = zeichneVorschau(entwurf, vorlage, marke)
+        const bild = zeichneVorschau(inhalt, vorlage, marke)
         haengeVorschauEin(ziel, bild)
         setzeFehlertext(null)
       } catch (ausnahme) {
@@ -786,7 +810,7 @@ function VorschauFlaeche({
         setzeFehlertext(ausnahme instanceof Error ? ausnahme.message : 'Zeichenfehler')
       }
     }
-  }, [entwurf, p, vorbereitet])
+  }, [inhalt, p, vorbereitet])
 
   return <div ref={(el) => setzeContainer(el)} data-testid="aktion-vorschau-flaeche" style={{ border: '1px solid #444', minHeight: 200, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
 }
@@ -795,6 +819,7 @@ function VorschauFlaeche({
 function Inspector({
   projekt,
   entwurf,
+  beispiel,
   waehlbare,
   befunde,
   meldung,
@@ -803,6 +828,8 @@ function Inspector({
 }: {
   projekt: Project
   entwurf: AktionsEntwurf
+  /** Derselbe Entwurf, aber leere Felder mit Beispielinhalt - NUR fuer die Vorlagenbilder. */
+  beispiel: AktionsEntwurf
   waehlbare: Vorlage[] | null
   befunde: EntwurfBefund[]
   meldung: string | null
@@ -836,13 +863,13 @@ function Inspector({
         <BefundAnzeige key={stelle} befund={befund} />
       ))}
 
-      <Schritt nummer={1} titel="Vorlage">
+      <Schritt titel="Vorlage">
         <div data-testid="aktion-vorlage">
           {waehlbare === null ? null : (
             <VorlagenWahl
               waehlbare={waehlbare}
               aktuell={entwurf.vorlagenId}
-              entwurf={entwurf}
+              entwurf={beispiel}
               aufWahl={(vorlagenId) => {
                 aufAenderung('vorlagenId', vorlagenId)
               }}
@@ -856,12 +883,28 @@ function Inspector({
         </div>
       </Schritt>
 
-      <Schritt nummer={2} titel="Inhalt">
+      <Schritt titel="Inhalt">
+        {/* 05.11.2026: Der TITEL steht bei den Inhaltsfeldern, nicht mehr in der
+            Kopfleiste. Er ist der Text, den die Aktion zeigt - dort gehoert er hin. */}
+        <label style={{ display: 'block' }}>Titel (Pflicht){' '}
+          <input
+            type="text"
+            data-testid="aktion-titel"
+            aria-label="Titel"
+            placeholder={`z. B. ${BEISPIEL_INHALT.titel}`}
+            defaultValue={entwurf.titel}
+            style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
+            onBlur={(ereignis) => {
+              aufAenderung('titel', ereignis.target.value)
+            }}
+          />
+        </label>
         {bedarf.beschreibung && (
           <label style={{ display: 'block' }}>Beschreibung{' '}
             <input
               type="text"
               defaultValue={entwurf.beschreibung ?? ''}
+              placeholder={BEISPIEL_INHALT.beschreibung}
               data-testid="aktion-beschreibung"
               style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
               onBlur={(ereignis) => {
@@ -875,6 +918,7 @@ function Inspector({
             <input
               type="text"
               defaultValue={entwurf.preis ?? ''}
+              placeholder={BEISPIEL_INHALT.preis}
               data-testid="aktion-preis"
               style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
               onBlur={(ereignis) => {
@@ -888,6 +932,7 @@ function Inspector({
             <input
               type="text"
               defaultValue={entwurf.cta ?? ''}
+              placeholder={BEISPIEL_INHALT.cta}
               data-testid="aktion-cta"
               style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
               onBlur={(ereignis) => {
@@ -899,7 +944,7 @@ function Inspector({
       </Schritt>
 
       {bedarf.bild && (
-        <Schritt nummer={3} titel="Bild">
+        <Schritt titel="Bild">
           <div data-testid="aktion-bild" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <select
               data-testid="aktion-bild-wahl"
@@ -913,6 +958,18 @@ function Inspector({
                 <option key={asset.id} value={asset.id}>{asset.originalname}</option>
               ))}
             </select>
+            {waehlbareBilder(assets).length === 0 && (
+              <p style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}>
+                Noch kein Bild im Projekt – „Bild importieren" legt eines an.
+              </p>
+            )}
+            {entwurf.bildRef === null && beispiel.bildRef !== null && (
+              <p data-testid="aktion-bild-beispiel" style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}>
+                Die Vorschau zeigt als Beispiel „
+                {assets.find((asset) => asset.id === beispiel.bildRef)?.originalname ?? 'ein Projektbild'}
+                " – wähle eines, um es zu übernehmen.
+              </p>
+            )}
             <button
               type="button"
               data-testid="aktion-bild-import"
@@ -956,7 +1013,7 @@ function Inspector({
       )}
 
       {bedarf.akzent && (
-        <Schritt nummer={4} titel="Farbe">
+        <Schritt titel="Farbe">
           <div data-testid="aktion-akzent" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {angezeigteFarbe === null ? (
               <span data-testid="aktion-akzent-unbekannt">Marke wird geladen …</span>
@@ -987,7 +1044,7 @@ function Inspector({
         </Schritt>
       )}
 
-      <Schritt nummer={5} titel="Dauer">
+      <Schritt titel="Dauer">
         <label>Standarddauer{' '}
           <input
             type="number"
@@ -1006,20 +1063,20 @@ function Inspector({
   )
 }
 
-/** Ein nummerierter Schritt des Inspectors - Ueberschrift plus Inhalt. */
+/** Ein Abschnitt des Inspectors - Ueberschrift plus Inhalt. Die Nummern sind
+ *  seit 05.11.2026 weg: Sie liessen die Flaeche wie ein Formular aussehen; die
+ *  Reihenfolge ergibt sich aus dem Aufbau (Vorlage -> Inhalt -> Bild -> Farbe -> Dauer). */
 function Schritt({
-  nummer,
   titel,
   children,
 }: {
-  nummer: number
   titel: string
   children: JSX.Element | (JSX.Element | null | false)[]
 }): JSX.Element {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <h3 style={{ margin: 0, fontSize: 12, color: '#9aa4b2', letterSpacing: 0.4 }}>
-        {nummer}. {titel}
+        {titel}
       </h3>
       {children}
     </section>
