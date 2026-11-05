@@ -243,9 +243,9 @@ function Videozeile(p: VideozeileEigenschaften): JSX.Element {
           style={{
             flex: '1 1 auto',
             minWidth: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            // NACHARBEIT 05.11.2026: Der Name einer Aktion wird UMBROCHEN - ein
+            // abgeschnittener Titel sagt nicht, welche Aktion gemeint ist.
+            overflowWrap: 'anywhere',
           }}
           title={p.eintrag.bezeichnung}
         >

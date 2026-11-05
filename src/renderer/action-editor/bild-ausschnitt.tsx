@@ -1,19 +1,16 @@
-// [action-editor] Bildausschnitt: Zoom und Position des Motivs (05.11.2026, TK 9.8.8)
+// [action-editor] Bildausschnitt: Zoom und Richtung (05.11.2026, Nacharbeit 2)
 //
-// WARUM ES DIESE DATEI GIBT: Bis hierher bestimmte allein die VORLAGE, wie das Bild in
-// seiner Zone sitzt - „Ganzflächig" fuellt die Flaeche, „Zwei Spalten" zeigt das ganze
-// Produkt. Ein Produktfoto, das im Original viel Rand hat, war damit nicht zu retten.
-// Niklas, 05.11.2026: „man hat momentan einfach keine Kontrolle".
+// WARUM DIE SCHIEBEREGLER WEG SIND: Niklas, 05.11.2026: „seitlich und hoch tief bei dem
+// bildausschnitt sind fucking weird". Sie waren es aus zwei Gründen: Bei Zoom 100 % hat das
+// Verschieben KEINE Wirkung (das Bild ist genau so groß wie die Zone), und zwei Prozent-
+// Schieberegler sagen nicht, wohin das Bild eigentlich wandert.
 //
-// DIE REGLER BEWEGEN DAS BILD, NICHT DIE ZONE: Der Rahmen bleibt, wo die Vorlage ihn
-// hat; gezoomt und verschoben wird der INHALT. Deshalb kann kein Regler Inhalte in die
-// Nachbarzone schieben - das Zeichnen beschneidet an der Zonengrenze
-// (`template-canvas/zone-bild.ts`).
+// JETZT: ein Zoom-Regler und ein RICHTUNGSFELD mit neun Pfeilen. Ein Pfeil heisst „schieb
+// das Bild dorthin" - dieselbe Handbewegung wie beim Ziehen eines Fotos. Das Feld ist
+// gesperrt, solange nicht gezoomt ist, und sagt dann auch warum.
 //
-// Der Versatz ist in PROZENT der Zonengroesse angegeben, nicht in Pixeln: Derselbe Wert
-// soll in der 960 breiten Spalte von „Zwei Spalten" und im 1920 breiten Vollbild gleich
-// weit wirken. Die Grenzen stehen in `shared/gestaltung.ts` - dieselbe Quelle, die der
-// Speicher prueft.
+// Der Versatz bleibt im Datenmodell prozentual (`versatzX`/`versatzY`, ±50 % der
+// Zonengroesse): Derselbe Wert wirkt in der 960 breiten Spalte und im Vollbild gleich weit.
 
 import type { BildAusschnitt } from '../../shared/contracts/aktion'
 import type { JSX } from 'react'
@@ -21,6 +18,33 @@ import { GESTALTUNG_GRENZEN } from '../../shared/gestaltung'
 
 /** Der Wert, den die Vorlage ohne eigene Wahl zeichnet: Zoom 100 %, Mitte. */
 const OHNE_WAHL = { zoom: GESTALTUNG_GRENZEN.zoom.min, versatzX: 0, versatzY: 0 } as const
+
+/** Ein Klick auf einen Pfeil setzt den vollen Ausschlag - die Mitte ist 0. */
+const AUSSCHLAG = GESTALTUNG_GRENZEN.versatz.max
+
+type Waagerecht = 'links' | 'mitte' | 'rechts'
+type Senkrecht = 'oben' | 'mitte' | 'unten'
+
+const PFEILE: Record<Waagerecht, Record<Senkrecht, { zeichen: string; x: number; y: number }>> = {
+  links: {
+    oben: { zeichen: '↖', x: -AUSSCHLAG, y: -AUSSCHLAG },
+    mitte: { zeichen: '←', x: -AUSSCHLAG, y: 0 },
+    unten: { zeichen: '↙', x: -AUSSCHLAG, y: AUSSCHLAG },
+  },
+  mitte: {
+    oben: { zeichen: '↑', x: 0, y: -AUSSCHLAG },
+    mitte: { zeichen: '·', x: 0, y: 0 },
+    unten: { zeichen: '↓', x: 0, y: AUSSCHLAG },
+  },
+  rechts: {
+    oben: { zeichen: '↗', x: AUSSCHLAG, y: -AUSSCHLAG },
+    mitte: { zeichen: '→', x: AUSSCHLAG, y: 0 },
+    unten: { zeichen: '↘', x: AUSSCHLAG, y: AUSSCHLAG },
+  },
+}
+
+const ZEILEN: readonly Senkrecht[] = ['oben', 'mitte', 'unten']
+const SPALTEN: readonly Waagerecht[] = ['links', 'mitte', 'rechts']
 
 export function BildAusschnittRegler({
   ausschnitt,
@@ -33,25 +57,21 @@ export function BildAusschnittRegler({
   const versatzX = ausschnitt?.versatzX ?? OHNE_WAHL.versatzX
   const versatzY = ausschnitt?.versatzY ?? OHNE_WAHL.versatzY
   const eigeneWahl = zoom !== OHNE_WAHL.zoom || versatzX !== 0 || versatzY !== 0
+  // Ohne Zoom hat das Verschieben keine Wirkung - dann ist das Feld gesperrt und sagt es.
+  const verschiebbar = zoom > OHNE_WAHL.zoom
 
-  /** EINEN Regler setzen. Stehen danach alle drei auf dem Vorlagenwert, faellt der
-   *  ganze Ausschnitt weg - „nichts eingestellt" ist kein gespeicherter Zustand. */
+  /** EINEN Wert setzen. Stehen danach alle drei auf dem Vorlagenwert, faellt der ganze
+   *  Ausschnitt weg - „nichts eingestellt" ist kein gespeicherter Zustand. */
   function setze(feld: keyof BildAusschnitt, wert: number): void {
-    const neu: Required<BildAusschnitt> = {
-      zoom,
-      versatzX,
-      versatzY,
-      [feld]: wert,
-    }
-    const istVorlage =
-      neu.zoom === OHNE_WAHL.zoom && neu.versatzX === 0 && neu.versatzY === 0
+    const neu = { zoom, versatzX, versatzY, [feld]: wert }
+    const istVorlage = neu.zoom === OHNE_WAHL.zoom && neu.versatzX === 0 && neu.versatzY === 0
     aufAendern(istVorlage ? null : neu)
   }
 
   return (
     <div data-testid="aktion-ausschnitt" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <span style={{ fontSize: 12, fontWeight: 600 }}>Bildausschnitt</span>
-      {/* Der Satz stand hier, weil die Regler zuerst AUCH das Logo bewegten (Niklas,
+      {/* Der Satz steht hier, weil die Regler zuerst AUCH das Logo bewegten (Niklas,
           05.11.2026). Seit der Korrektur gilt der Ausschnitt nur noch fuer das Motiv der
           Aktion - der Satz sagt das, damit niemand es fuer einen Fehler haelt. */}
       <span style={{ fontSize: 11, color: '#9aa4b2' }}>
@@ -70,47 +90,62 @@ export function BildAusschnittRegler({
           value={zoom}
           style={{ flex: '1 1 auto', minWidth: 0 }}
           onChange={(ereignis) => {
-            setze('zoom', Number(ereignis.target.value))
+            const wert = Number(ereignis.target.value)
+            // Zurueck auf 100 % heisst: es gibt keinen Ausschnitt mehr. Ein Versatz ohne
+            // Zoom waere ein gespeicherter Wert ohne Wirkung.
+            if (wert === OHNE_WAHL.zoom) {
+              aufAendern(null)
+              return
+            }
+            setze('zoom', wert)
           }}
         />
         <span style={{ color: '#9aa4b2' }}>{`${String(zoom)} %`}</span>
       </label>
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-        Seitlich
-        <input
-          type="range"
-          data-testid="aktion-ausschnitt-x"
-          aria-label="Bild seitlich verschieben"
-          min={GESTALTUNG_GRENZEN.versatz.min}
-          max={GESTALTUNG_GRENZEN.versatz.max}
-          step={5}
-          value={versatzX}
-          style={{ flex: '1 1 auto', minWidth: 0 }}
-          onChange={(ereignis) => {
-            setze('versatzX', Number(ereignis.target.value))
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{ fontSize: 11, color: verschiebbar ? '#e6e6e6' : '#9aa4b2' }}>
+          {verschiebbar ? 'Bild verschieben' : 'Bild verschieben – erst zoomen'}
+        </span>
+        <div
+          data-testid="aktion-ausschnitt-richtung"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 2,
+            width: 108,
+            opacity: verschiebbar ? 1 : 0.4,
           }}
-        />
-        <span style={{ color: '#9aa4b2' }}>{`${String(versatzX)} %`}</span>
-      </label>
-
-      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-        Hoch/tief
-        <input
-          type="range"
-          data-testid="aktion-ausschnitt-y"
-          aria-label="Bild hoch oder tief verschieben"
-          min={GESTALTUNG_GRENZEN.versatz.min}
-          max={GESTALTUNG_GRENZEN.versatz.max}
-          step={5}
-          value={versatzY}
-          style={{ flex: '1 1 auto', minWidth: 0 }}
-          onChange={(ereignis) => {
-            setze('versatzY', Number(ereignis.target.value))
-          }}
-        />
-        <span style={{ color: '#9aa4b2' }}>{`${String(versatzY)} %`}</span>
-      </label>
+        >
+          {ZEILEN.map((zeile) =>
+            SPALTEN.map((spalte) => {
+              const pfeil = PFEILE[spalte][zeile]
+              const aktiv = versatzX === pfeil.x && versatzY === pfeil.y
+              return (
+                <button
+                  key={`${spalte}-${zeile}`}
+                  type="button"
+                  data-testid={`aktion-ausschnitt-richtung-${spalte}-${zeile}`}
+                  aria-label={`Bild ${zeile} ${spalte} verschieben`}
+                  aria-pressed={aktiv}
+                  disabled={!verschiebbar}
+                  onClick={() => {
+                    aufAendern({ zoom, versatzX: pfeil.x, versatzY: pfeil.y })
+                  }}
+                  style={{
+                    height: 24,
+                    padding: 0,
+                    border: aktiv ? '2px solid #6ea8fe' : '1px solid #444',
+                    cursor: verschiebbar ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {pfeil.zeichen}
+                </button>
+              )
+            }),
+          )}
+        </div>
+      </div>
 
       {eigeneWahl && (
         <button

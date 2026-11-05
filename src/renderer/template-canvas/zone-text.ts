@@ -23,7 +23,7 @@ import { loeseFarbeInZone, loeseSchrift } from './farben'
 import { schriftKurzform } from './schriften'
 import { ZEILENHOEHE_FAKTOR, passeTextEin } from './text-kaskade'
 import type { KaskadenEingang, KaskadenErgebnis } from './text-kaskade'
-import type { Schrift } from '../../shared/contracts/marke'
+import type { Schrift, SchriftRolle } from '../../shared/contracts/marke'
 import { groessenFaktor } from '../../shared/gestaltung'
 
 /**
@@ -44,6 +44,20 @@ export function zonenGroessen(zone: Zone, aktion: AktionsInhalt): { max: number;
     max: Math.max(8, Math.round(zone.text.größeMax * faktor)),
     min: Math.max(6, Math.round(zone.text.größeMin * faktor)),
   }
+}
+
+/**
+ * Die Schrift dieser Zone: eigene Wahl, sonst die der Vorlage.
+ *
+ * Die Rolle ist ein Verweis in die Marke (TK 9.11.1 Punkt 7) - NIE ein Font-Name. Eine
+ * unbekannte Rolle wird hier NICHT ersetzt: `loeseSchrift` wirft, `zeichneTextZone` faengt
+ * und zeichnet nichts (keine Ersatzschrift, #114). Was beim Speichern schon auffallen
+ * kann, faellt dort auf (`normalisiereZonenGestaltung`).
+ */
+export function zonenSchriftRolle(zone: Zone, aktion: AktionsInhalt): SchriftRolle | null {
+  const eigene = aktion.zonenGestaltung?.[zone.id]?.schriftRolle
+  if (eigene !== undefined && eigene !== null) return eigene
+  return zone.text?.schriftRolle ?? null
 }
 
 /** Die waagerechte Ausrichtung dieser Zone: eigene Wahl, sonst die der Vorlage. */
@@ -97,7 +111,12 @@ export function zeichneTextZone(
   // ohne Text, KEINE Ersatzschrift.
   let schrift: Schrift
   try {
-    schrift = loeseSchrift(marke, zone.text.schriftRolle)
+    const rolle = zonenSchriftRolle(zone, aktion)
+    if (rolle === null) {
+      ctx.restore()
+      return
+    }
+    schrift = loeseSchrift(marke, rolle)
   } catch {
     ctx.restore()
     return

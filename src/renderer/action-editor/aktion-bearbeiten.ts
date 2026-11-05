@@ -30,7 +30,7 @@ import { KANAELE } from '../../shared/contracts/kanaele'
 import { DAUER_BEREICH } from '../../shared/contracts/konstanten'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { istAkzentfarbe } from './akzentfarbe'
-import { GESTALTUNG_GRENZEN, istHexFarbe } from '../../shared/gestaltung'
+import { GESTALTUNG_GRENZEN, istHexFarbe, istSchriftRolle } from '../../shared/gestaltung'
 
 /** Der Entwurf im Formular: alle Felder der Aktion außer der ID, die der Main vergibt. */
 export type AktionsEntwurf = AktionsInhalt
@@ -44,7 +44,7 @@ export type EntwurfBefund =
   | { feld: 'akzentfarbe'; grund: 'kein_hex' }
   // NEU 05.11.2026 (TK 9.8.8). EIN Befund je Feld, nicht je Zone: Der Editor zeigt die
   // Meldung am Schritt, und die Zone steht darin im Text (`befund-texte.tsx`).
-  | { feld: 'zonenGestaltung'; grund: 'kein_hex' | 'ausserhalb_bereich' }
+  | { feld: 'zonenGestaltung'; grund: 'kein_hex' | 'ausserhalb_bereich' | 'unbekannte_schrift' }
   | { feld: 'bildAusschnitt'; grund: 'ausserhalb_bereich' }
 
 /** Reine, synchrone Vorabprüfung. Geprüft wird AUSSCHLIESSLICH, was im übergebenen Objekt
@@ -108,6 +108,9 @@ export function pruefeEntwurf(entwurf: Partial<AktionsEntwurf>): EntwurfBefund[]
           befunde.push({ feld: 'zonenGestaltung', grund: 'kein_hex' })
           break
         }
+      }
+      if (gestaltung?.schriftRolle !== undefined && !istSchriftRolle(gestaltung.schriftRolle)) {
+        befunde.push({ feld: 'zonenGestaltung', grund: 'unbekannte_schrift' })
       }
       const groesse = gestaltung?.groesseProzent
       if (

@@ -7,6 +7,7 @@ import {
   groessenFaktor,
   istHexFarbe,
   normalisiereBildAusschnitt,
+  istSchriftRolle,
   normalisiereZonenGestaltung,
   versatzProzent,
   zoomFaktor,
@@ -169,5 +170,26 @@ describe("gleicheGestaltung", () => {
 
   it('eine gesetzte Angabe ist NICHT „keine Angabe“', () => {
     expect(gleicheGestaltung({ a: { textfarbe: "#123456" } }, undefined)).toBe(false);
+  });
+});
+
+describe("Schrift je Zone (Nacharbeit 05.11.2026)", () => {
+  it("nimmt genau die vier Rollen der Marke", () => {
+    for (const rolle of ["headlineElegant", "headlinePlakativ", "fliesstext", "fliesstextFett"]) {
+      expect(istSchriftRolle(rolle), rolle).toBe(true);
+    }
+  });
+
+  it("lehnt Font-Namen und Unbekanntes ab - die Rolle ist ein VERWEIS, kein Name", () => {
+    for (const wert of ["Arial", "arial", "", null, 42, {}]) {
+      expect(istSchriftRolle(wert), String(wert)).toBe(false);
+    }
+  });
+
+  it("behaelt eine bekannte Schrift und verwirft eine erfundene", () => {
+    expect(normalisiereZonenGestaltung({ preis: { schriftRolle: "fliesstextFett" } })).toEqual({
+      preis: { schriftRolle: "fliesstextFett" },
+    });
+    expect(normalisiereZonenGestaltung({ preis: { schriftRolle: "Comic Sans" } })).toEqual({ preis: {} });
   });
 });

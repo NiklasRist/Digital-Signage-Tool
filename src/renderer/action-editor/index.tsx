@@ -783,9 +783,11 @@ function StreifenKachel({
           display: 'block',
           fontSize: 10,
           color: eintrag.kaputt ? '#e5634d' : '#9aa4b2',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          // NACHARBEIT 05.11.2026: Ein Titel wird UMBROCHEN, nicht abgeschnitten
+          // („text der abgeschnitten wird … muss anders gehandelt werden"). Der Streifen
+          // ist schmal; zwei Zeilen lesen sich besser als „Sommerak…".
+          overflowWrap: 'anywhere',
+          lineHeight: 1.25,
         }}
       >
         {eintrag.aktion.titel === '' ? '(ohne Titel)' : eintrag.aktion.titel}

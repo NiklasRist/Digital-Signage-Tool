@@ -1,5 +1,7 @@
 // [contracts] Typ Aktion definieren
 
+import type { SchriftRolle } from './marke'
+
 /**
  * Wie eine EINZELNE Zone gestaltet wird (05.11.2026).
  *
@@ -23,6 +25,8 @@ export interface ZonenGestaltung {
   groesseProzent?: number | null
   /** Waagerechte Ausrichtung. null/undefined = `zone.ausrichtung.horizontal`. */
   ausrichtung?: 'links' | 'mitte' | 'rechts' | null
+  /** Schrift dieser Zone (eine der vier Rollen der Marke). null/undefined = Vorlage. */
+  schriftRolle?: SchriftRolle | null
 }
 
 /**

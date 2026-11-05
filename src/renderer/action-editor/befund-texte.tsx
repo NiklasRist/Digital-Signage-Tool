@@ -51,6 +51,8 @@ const TEXTE_ZONEN: Record<Extract<EntwurfBefund, { feld: 'zonenGestaltung' }>['g
   ausserhalb_bereich:
     `Die Textgroesse einer Zone liegt ausserhalb des zulaessigen Bereichs ` +
     `(${GESTALTUNG_GRENZEN.groesseProzent.min} bis ${GESTALTUNG_GRENZEN.groesseProzent.max} Prozent).`,
+  unbekannte_schrift:
+    'Eine Zone nennt eine Schrift, die es nicht gibt – bitte neu wählen.',
 }
 
 const TEXTE_AUSSCHNITT: Record<Extract<EntwurfBefund, { feld: 'bildAusschnitt' }>['grund'], string> = {

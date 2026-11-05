@@ -633,6 +633,7 @@ describe('Felder richten sich nach der Vorlage', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
+    await oeffneFarbe(behaelter, 'aktion-akzent')
     const feld = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-akzent-farbe"]')
     expect(feld).not.toBeNull()
     expect(feld?.getAttribute('type')).toBe('color')
@@ -790,6 +791,7 @@ describe('Farbauswahl', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
+    await oeffneFarbe(behaelter, 'aktion-akzent')
     const swatches = behaelter.querySelectorAll('[data-testid^="aktion-akzent-palette-"]')
     // 13 Rollen, aber doppelte Hex-Werte (Weiß, Schwarz, #202020) sind EIN Swatch.
     expect(swatches).toHaveLength(10)
@@ -832,6 +834,7 @@ describe('Farbauswahl', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
+    await oeffneFarbe(behaelter, 'aktion-akzent')
     const letzte = behaelter.querySelector('[data-testid="aktion-akzent-letzte-#112233"]')
     expect(letzte).not.toBeNull()
 
@@ -853,8 +856,11 @@ describe('Farbauswahl', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
+    await oeffneFarbe(behaelter, 'aktion-akzent')
+    // „Akzent kräftig" statt „Akzent": Der Markenwert selbst ist KEINE eigene Wahl
+    // (`waehle` setzt dann null) - der Test braucht einen abweichenden Wert.
     act(() => {
-      ;(behaelter.querySelector('[data-testid="aktion-akzent-palette-akzent"]') as HTMLButtonElement).click()
+      ;(behaelter.querySelector('[data-testid="aktion-akzent-palette-akzentKraeftig"]') as HTMLButtonElement).click()
     })
     await laufen()
     expect(behaelter.querySelector('[data-testid="aktion-akzent-marke"]')).not.toBeNull()
@@ -872,6 +878,12 @@ describe('Farbauswahl', () => {
 // ---------------------------------------------------------------------------
 // SEIT 05.11.2026 (TK 9.8.8): Gestaltung je Zone und Bildausschnitt im Inspector.
 // ---------------------------------------------------------------------------
+
+/** Ein Farb-Popup oeffnen (05.11.2026): Farbfeld, Palette und „Zuletzt verwendet"
+ *  stehen erst NACH dem Klick im DOM - alles zusammen offen oder zusammen zu. */
+async function oeffneFarbe(behaelter: HTMLDivElement, praefix: string): Promise<void> {
+  await klicke(behaelter, `${praefix}-oeffnen`)
+}
 
 /** Einen Regler (input type=range) bewegen - Reacts onChange haengt an `input`. */
 async function setzeRegler(behaelter: HTMLDivElement, testid: string, wert: number): Promise<void> {
@@ -912,6 +924,8 @@ describe('Gestaltung je Zone (05.11.2026)', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
+    await oeffneFarbe(behaelter, 'aktion-zone-ueberschrift-schrift')
+    await oeffneFarbe(behaelter, 'aktion-zone-preis-flaeche')
     const titelZone = behaelter.querySelector('[data-testid="aktion-zone-ueberschrift"]')
     expect(titelZone).not.toBeNull()
     // Die Titelzone hat Text: Schriftfarbe, Groesse, Ausrichtung.
@@ -932,6 +946,7 @@ describe('Gestaltung je Zone (05.11.2026)', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
+    await oeffneFarbe(behaelter, 'aktion-zone-preis-flaeche')
     await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche-farbe', '#00ff00')
 
     expect(projektAufrufe()).toHaveLength(0)
@@ -964,6 +979,7 @@ describe('Gestaltung je Zone (05.11.2026)', () => {
     await klicke(behaelter, 'aktion-neu')
     await laufen()
 
+    await oeffneFarbe(behaelter, 'aktion-zone-preis-flaeche')
     await verlasseFeld(behaelter, 'aktion-zone-preis-flaeche-farbe', '#00ff00')
     await klicke(behaelter, 'aktion-zone-preis-zuruecksetzen')
 
@@ -981,10 +997,11 @@ describe('Bildausschnitt (05.11.2026)', () => {
     await laufen()
 
     await setzeRegler(behaelter, 'aktion-ausschnitt-zoom', 150)
-    await setzeRegler(behaelter, 'aktion-ausschnitt-x', 20)
+    // NACHARBEIT 05.11.2026: Das Richtungsfeld ersetzt die zwei Prozent-Regler.
+    await klicke(behaelter, 'aktion-ausschnitt-richtung-rechts-mitte')
 
     const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
-    expect(gezeichnet?.bildAusschnitt).toMatchObject({ zoom: 150, versatzX: 20, versatzY: 0 })
+    expect(gezeichnet?.bildAusschnitt).toMatchObject({ zoom: 150, versatzX: 50, versatzY: 0 })
     expect(projektAufrufe()).toHaveLength(0)
   })
 
@@ -1030,6 +1047,8 @@ describe('Nacharbeit 05.11.2026: EIN Farbwaehler, unabhaengige Werte je Objekt',
   it('Akzentfarbe und Zonenfarbe benutzen DENSELBEN Baustein - gleiche Palette, gleiche Struktur', async () => {
     const behaelter = await oeffne()
 
+    await oeffneFarbe(behaelter, 'aktion-akzent')
+    await oeffneFarbe(behaelter, 'aktion-zone-preis-flaeche')
     const akzent = behaelter.querySelector('[data-testid="aktion-akzent"]')
     const zone = behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche"]')
     expect(akzent).not.toBeNull()
@@ -1048,18 +1067,20 @@ describe('Nacharbeit 05.11.2026: EIN Farbwaehler, unabhaengige Werte je Objekt',
   it('ein Klick auf die Zonenfarbe laesst die Akzentfarbe unberuehrt', async () => {
     const behaelter = await oeffne()
 
+    await oeffneFarbe(behaelter, 'aktion-zone-preis-flaeche')
     act(() => {
-      ;(behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche-palette-akzent"]') as HTMLButtonElement).click()
+      ;(behaelter.querySelector('[data-testid="aktion-zone-preis-flaeche-palette-akzentKraeftig"]') as HTMLButtonElement).click()
     })
     await laufen()
 
     const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
-    expect(gezeichnet?.zonenGestaltung?.preis?.flaechefarbe).toBe('#ff4040')
+    expect(gezeichnet?.zonenGestaltung?.preis?.flaechefarbe).toBe('#df3131')
     expect(gezeichnet?.akzentfarbe).toBeNull()
   })
 
   it('ein Klick auf die Akzentfarbe laesst die Zonenfarbe unberuehrt', async () => {
     const behaelter = await oeffne()
+    await oeffneFarbe(behaelter, 'aktion-akzent')
 
     act(() => {
       ;(behaelter.querySelector('[data-testid="aktion-akzent-palette-akzentKraeftig"]') as HTMLButtonElement).click()
@@ -1084,5 +1105,97 @@ describe('Nacharbeit 05.11.2026: EIN Farbwaehler, unabhaengige Werte je Objekt',
     const titel = Array.from(behaelter.querySelectorAll('summary')).map((e) => e.textContent ?? '')
     expect(titel.some((t) => t.startsWith('Akzentfarbe'))).toBe(false)
     expect(titel.some((t) => t.startsWith('Zonen'))).toBe(false)
+  })
+})
+
+describe('Nacharbeit 05.11.2026: Schriftart und Richtungsfeld', () => {
+  const VORLAGE = vorlageMitZonen('schrift', null, [
+    zone('titel', {
+      id: 'ueberschrift',
+      text: {
+        schriftRolle: 'headlinePlakativ',
+        farbRolle: 'textAufDunkel',
+        größeMax: 96,
+        größeMin: 56,
+        maxZeilen: 2,
+      },
+    }),
+    zone('bild', { id: 'motiv', bild: { einpassung: 'contain' } }),
+  ])
+
+  async function oeffne(): Promise<HTMLDivElement> {
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [VORLAGE] })
+    const { behaelter } = editor(projekt([]), [VORLAGE])
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+    return behaelter
+  }
+
+  it('je Textzone gibt es eine Schriftarten-Auswahl mit den vier Rollen', async () => {
+    const behaelter = await oeffne()
+    const feld = behaelter.querySelector<HTMLSelectElement>(
+      '[data-testid="aktion-zone-ueberschrift-schriftart"]',
+    )
+    expect(feld).not.toBeNull()
+    expect(Array.from(feld?.options ?? []).map((o) => o.value)).toEqual([
+      'headlineElegant',
+      'headlinePlakativ',
+      'fliesstext',
+      'fliesstextFett',
+    ])
+    // Die Vorlage traegt `headlinePlakativ` - das Feld zeigt den geltenden Wert.
+    expect(feld?.value).toBe('headlinePlakativ')
+  })
+
+  it('eine gewaehlte Schrift landet im Entwurf und erreicht die Vorschau', async () => {
+    const behaelter = await oeffne()
+    const feld = behaelter.querySelector<HTMLSelectElement>(
+      '[data-testid="aktion-zone-ueberschrift-schriftart"]',
+    ) as HTMLSelectElement
+    const setzeWert = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
+    await act(async () => {
+      setzeWert?.call(feld, 'fliesstextFett')
+      feld.dispatchEvent(new Event('change', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    const gezeichnet = vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]
+    expect(gezeichnet?.zonenGestaltung?.ueberschrift?.schriftRolle).toBe('fliesstextFett')
+    expect(projektAufrufe()).toHaveLength(0)
+  })
+
+  it('das Richtungsfeld ist ohne Zoom GESPERRT und sagt warum', async () => {
+    const behaelter = await oeffne()
+    const rechts = behaelter.querySelector<HTMLButtonElement>(
+      '[data-testid="aktion-ausschnitt-richtung-rechts-mitte"]',
+    )
+    expect(rechts).not.toBeNull()
+    expect(rechts?.disabled).toBe(true)
+    expect(behaelter.textContent ?? '').toContain('erst zoomen')
+
+    await setzeRegler(behaelter, 'aktion-ausschnitt-zoom', 150)
+    const nachher = behaelter.querySelector<HTMLButtonElement>(
+      '[data-testid="aktion-ausschnitt-richtung-rechts-mitte"]',
+    )
+    expect(nachher?.disabled).toBe(false)
+  })
+
+  it('ein Pfeil setzt BEIDE Achsen - die Mitte ist 0', async () => {
+    const behaelter = await oeffne()
+    await setzeRegler(behaelter, 'aktion-ausschnitt-zoom', 150)
+    await klicke(behaelter, 'aktion-ausschnitt-richtung-links-oben')
+    expect(vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]?.bildAusschnitt).toMatchObject({
+      zoom: 150,
+      versatzX: -50,
+      versatzY: -50,
+    })
+
+    await klicke(behaelter, 'aktion-ausschnitt-richtung-mitte-mitte')
+    expect(vi.mocked(zeichneVorschau).mock.calls.at(-1)?.[0]?.bildAusschnitt).toMatchObject({
+      zoom: 150,
+      versatzX: 0,
+      versatzY: 0,
+    })
   })
 })

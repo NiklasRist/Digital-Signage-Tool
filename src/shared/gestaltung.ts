@@ -15,6 +15,7 @@
 // keinen Ersatzwert „irgendwas Dunkles" – dieselbe Haltung wie in `farben.ts`.
 
 import type { BildAusschnitt, ZonenGestaltung } from './contracts/aktion'
+import type { SchriftRolle } from './contracts/marke'
 
 /**
  * Die Grenzen der Regler. Sie stehen hier und NICHT im Formular:
@@ -33,6 +34,23 @@ export const GESTALTUNG_GRENZEN = {
   zoom: { min: 100, max: 300 },
   versatz: { min: -50, max: 50 },
 } as const
+
+/**
+ * Die vier Schrift-Rollen der Marke (TK 9.11.2). Sie stehen hier als WERTE und nicht nur
+ * als Typ, weil `project.json` von Hand editierbar ist: Eine erfundene Rolle muss beim
+ * Laden auffallen und nicht erst beim Zeichnen.
+ */
+export const SCHRIFT_ROLLEN = [
+  'headlineElegant',
+  'headlinePlakativ',
+  'fliesstext',
+  'fliesstextFett',
+] as const satisfies readonly SchriftRolle[]
+
+/** Ist `wert` eine der vier Schrift-Rollen? `unknown`-Eingang: der Wert kommt aus JSON. */
+export function istSchriftRolle(wert: unknown): wert is SchriftRolle {
+  return SCHRIFT_ROLLEN.some((rolle) => rolle === wert)
+}
 
 /**
  * Ist `wert` ein Farbwert, den die Aktion tragen darf? Genau `#` + SECHS Hex-Ziffern.
@@ -113,6 +131,12 @@ function leseEineGestaltung(roh: unknown): ZonenGestaltung | null {
     quelle.ausrichtung === 'rechts'
   ) {
     ziel.ausrichtung = quelle.ausrichtung
+  }
+  // Die Schrift ist ein ROLLEN-Verweis in die Marke, kein Font-Name (TK 9.11.1 Punkt 7).
+  // Eine unbekannte Rolle faellt weg - sie wuerde beim Zeichnen werfen, und `zone-text`
+  // zeichnet dann GAR NICHTS (keine Ersatzschrift, #114).
+  if (istSchriftRolle(quelle.schriftRolle)) {
+    ziel.schriftRolle = quelle.schriftRolle
   }
   return ziel
 }

@@ -137,6 +137,24 @@ Vier Beschwerden, alle vier behoben (TK **v3.49**, 9.8.9):
 **Gegenproben:** 2 (Logo-Ausschnitt entfernt; Akzent aus der Gruppe genommen) — jede rot und
 byte-identisch zurückgenommen. **Gate:** Unit **5579/5579**, Integration 51/51, Treiber 0 Befunde.
 
+## Nacharbeit 2 derselben Sitzung (Niklas, 05.11.2026)
+
+- **Schriftarten-Auswahl** fehlte ganz: `zonenGestaltung.schriftRolle` wählt eine der vier Rollen der
+  Marke; sie ist ein **Rollen-Verweis**, nie ein Font-Name. Unbekannte Rollen fallen beim Normalisieren
+  weg und werden im Formular gemeldet.
+- **Farb-Popup:** Farbfeld, Markenpalette, „Zuletzt verwendet" und „Markenwert" stehen **gleichzeitig**
+  in EINEM Popup (vorher: Feld immer da, Palette zugeklappt). Es wird am Fenster gehalten — vorher
+  stand es am unteren Rand **unter** dem Bildschirm (gemessen y = 920 bei 900 px → 683).
+- **Richtungsfeld statt zweier Prozent-Regler:** Bei Zoom 100 % bewirkte der Versatz nichts, und die
+  Regler sagten nicht, wohin das Bild wandert. Jetzt: Zoom-Regler + 3 × 3-Pfeile, ohne Zoom gesperrt
+  mit dem Satz „Bild verschieben – erst zoomen".
+- **Umbruch statt Abschneiden:** Aktionsname im Bildstreifen und in der Bibliothek, Statistik
+  („30-Minuten-War…"), Dateiname, Zonenname, Farbzeile. Die Zeitachse bleibt bei Auslassungspunkten —
+  dort ist die Clipbreite die Aussage.
+
+**Gegenproben:** 2 (Schriftart ignoriert; Pfeil setzt nur eine Achse) — beide rot und byte-identisch
+zurückgenommen. **Gate:** Unit **5590/5590**, Treiber 0 Befunde, TK v3.50, `.docx` 2444 Absätze.
+
 ## Ehrlich offen
 
 - **Der Scrim ist nicht einstellbar** (Verlauf, zwei Stopps). Wer ihn tönen will, braucht einen

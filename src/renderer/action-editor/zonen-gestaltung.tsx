@@ -21,8 +21,9 @@ import type { JSX } from 'react'
 import type { Vorlage, Zone } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
 import type { AktionsInhalt, ZonenGestaltung } from '../../shared/contracts/aktion'
-import { GESTALTUNG_GRENZEN } from '../../shared/gestaltung'
+import { GESTALTUNG_GRENZEN, SCHRIFT_ROLLEN } from '../../shared/gestaltung'
 import { zonenText } from '../gemeinsam/zonen-texte'
+import { schriftRollenText } from '../marken-editor/rollen-texte'
 
 import { FarbWahl, type PalettenFarbe } from './farb-wahl'
 
@@ -109,6 +110,7 @@ export function ZonenGestaltung({
         const eigeneFlaeche = typeof eigen.flaechefarbe === 'string' ? eigen.flaechefarbe : null
         const groesse = eigen.groesseProzent ?? 100
         const ausrichtung = eigen.ausrichtung ?? zone.ausrichtung.horizontal
+        const schrift = eigen.schriftRolle ?? zone.text?.schriftRolle ?? 'fliesstext'
         const hatEigeneWahl = Object.keys(eigen).length > 0
 
         return (
@@ -118,7 +120,7 @@ export function ZonenGestaltung({
             style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-              <strong style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <strong style={{ fontSize: 12, overflowWrap: 'anywhere' }}>
                 {name}
               </strong>
               <span style={{ flex: '1 1 auto' }} />
@@ -170,6 +172,40 @@ export function ZonenGestaltung({
 
             {kann.text && (
               <>
+                {/* SEIT 05.11.2026 (Nacharbeit): Die Schrift fehlte ganz. Sie ist ein
+                    ROLLEN-Verweis in die Marke - nie ein Font-Name. */}
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 11,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={{ flex: '0 0 auto' }}>Schriftart</span>
+                  <select
+                    data-testid={`aktion-zone-${zone.id}-schriftart`}
+                    aria-label={`Schriftart ${name}`}
+                    value={schrift}
+                    style={{ flex: '1 1 auto', minWidth: 0 }}
+                    onChange={(ereignis) => {
+                      const rolle = ereignis.target.value
+                      setze(
+                        zone.id,
+                        'schriftRolle',
+                        rolle === zone.text?.schriftRolle ? null : rolle,
+                      )
+                    }}
+                  >
+                    {SCHRIFT_ROLLEN.map((rolle) => (
+                      <option key={rolle} value={rolle}>
+                        {schriftRollenText(rolle).name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
                 <label
                   style={{
                     display: 'flex',

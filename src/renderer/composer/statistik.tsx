@@ -74,9 +74,9 @@ export function baueStatistik(liste: readonly Listenelement[]): StatistikAusgabe
               color: '#8f8f8f',
               flex: '1 1 auto',
               minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              // NACHARBEIT 05.11.2026: „30-Minuten-War…" war nicht lesbar. Die
+              // Bezeichnung bricht um, statt abgeschnitten zu werden.
+              overflowWrap: 'anywhere',
             }}
             title={zeile.bezeichnung}
           >

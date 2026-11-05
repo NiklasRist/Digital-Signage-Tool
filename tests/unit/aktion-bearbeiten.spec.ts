@@ -370,3 +370,18 @@ describe('pruefeEntwurf - Gestaltung je Zone und Bildausschnitt (05.11.2026, TK 
     expect(bedienerBefundText({ feld: 'bildAusschnitt', grund: 'ausserhalb_bereich' })).toContain('Zoom')
   })
 })
+
+describe('pruefeEntwurf - Schrift je Zone (Nacharbeit 05.11.2026)', () => {
+  it('eine erfundene Schrift ist ein Befund; die vier Rollen sind es nicht', () => {
+    expect(pruefeEntwurf({ zonenGestaltung: { preis: { schriftRolle: 'Comic Sans' as never } } })).toEqual([
+      { feld: 'zonenGestaltung', grund: 'unbekannte_schrift' },
+    ])
+    expect(pruefeEntwurf({ zonenGestaltung: { preis: { schriftRolle: 'fliesstextFett' } } })).toEqual([])
+  })
+
+  it('der Satz nennt die Schrift, nicht den Code', () => {
+    expect(
+      bedienerBefundText({ feld: 'zonenGestaltung', grund: 'unbekannte_schrift' }),
+    ).toContain('Schrift')
+  })
+})

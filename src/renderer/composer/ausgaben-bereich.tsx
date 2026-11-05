@@ -52,7 +52,7 @@ export function AusgabenBereich(p: AusgabenBereichEigenschaften): JSX.Element {
         {!offen && neueste !== null && (
           <>
             <span
-              style={{ flex: '1 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              style={{ flex: '1 1 auto', minWidth: 0, overflowWrap: 'anywhere' }}
               title={neueste.dateiname}
             >
               {neueste.dateiname}

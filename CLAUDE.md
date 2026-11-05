@@ -65,6 +65,20 @@
   - **Gate:** Unit **5579/5579**, Integration **51/51**, Treiber **0 Befunde**. TK **v3.49**,
     `.docx` 2420 Absätze, 0 Backticks. Zwei Gegenproben (Logo-Ausschnitt, Akzent in der Gruppe),
     jede rot und byte-identisch zurückgenommen.
+- **NACHARBEIT 2 (Niklas, 05.11.2026, gleiche Sitzung):** Schriftarten-Auswahl fehlte, die zwei
+  Prozent-Regler des Bildausschnitts waren unbrauchbar, Palette und Farbfeld sollten **zusammen** in
+  einem Popup stehen, abgeschnittener Text störte. **Alles gebaut (TK v3.50, 9.8.9):**
+  - **Schriftart je Objekt:** `zonenGestaltung.schriftRolle` (eine der vier Marken-Rollen; ROLLEN-Verweis,
+    nie ein Font-Name). Feld steht bei den Textzonen.
+  - **Farb-Popup:** Farbfeld, Markenpalette, „Zuletzt verwendet" und „Markenwert" **gleichzeitig** in
+    einem Popup; am Fenster gehalten (stand vorher unter dem Bildschirm: y 920 → 683).
+  - **Richtungsfeld statt Regler:** Zoom-Regler + 3×3-Pfeile („Bild verschieben"); ohne Zoom
+    **gesperrt** mit Hinweis. Ein Pfeil setzt beide Achsen (−50/0/+50 %).
+  - **Umbruch statt Abschneiden:** Aktionsname (Streifen + Bibliothek), Statistik, Dateiname,
+    Zonenname, Farbzeile. Ausnahme: Zeitachse (Clipbreite ist die Aussage).
+  - **Gate:** Unit **5590/5590**, Integration 51/51, Treiber 0 Befunde (`formularQuer 0`), TK **v3.50**,
+    `.docx` 2444 Absätze, 0 Backticks. Zwei Gegenproben (Schriftart, Richtungsfeld), beide rot und
+    byte-identisch zurückgenommen.
 - **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen.
   **Push nur auf Anweisung.**
 

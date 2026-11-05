@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.49 (9.8.8: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.50 (9.8.9: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1798,6 +1798,33 @@ auch zugeklappt im DOM (messbar, ohne Zustand). „Markenwert" entfernt die eige
 Nacharbeit lief der Zoom über **jede** Bildzone — also auch über das **Logo**, das damit beschnitten
 und verschoben werden konnte. Das ist ein Markenfehler, kein Gestaltungswunsch: Ein Logo ist eine
 Konstante (dieselbe Begründung wie beim Ersatz-Logo, 9.10.10).
+
+**Nacharbeit 2 (Niklas, 05.11.2026).**
+
+*„was außerdem noch fehlt ist die schriftarten auswahl … seitlich und hoch tief bei dem bildausschnitt
+sind fucking weird … die palette und der color selektor müssen parallel aktiv oder deaktiviert sein
+… und es soll alles ein Popup sein … text der abgeschnitten wird weil er zu lang ist muss anders
+gehandelt werden"*
+
+- **Schriftart je Objekt.** `ZonenGestaltung.schriftRolle` wählt eine der **vier** Rollen der Marke
+  (`headlineElegant`, `headlinePlakativ`, `fliesstext`, `fliesstextFett`). Sie ist ein
+  **Rollen-Verweis**, nie ein Font-Name (9.11.1 Punkt 7); `zone-text.ts` löst sie über
+  `loeseSchrift` auf, eine unbekannte Rolle fällt beim Normalisieren weg (und `pruefeEntwurf` meldet
+  sie). Das Feld steht bei den Textzonen zwischen Farbe und Größe.
+- **Ein Farb-Popup.** Farbfeld, Markenpalette, „Zuletzt verwendet" und „Markenwert" stehen
+  GLEICHZEITIG in einem Popup — „parallel aktiv oder deaktiviert", wie gefordert. Die Zeile davor ist
+  ein Knopf (Farbfläche + Name + Wert). Das Popup liegt `position: fixed`, wird am Knopf ausgerichtet
+  und am Fenster gehalten (ein Popup am unteren Rand stand vorher **unter** dem Bildschirm:
+  gemessen y = 920 bei 900 px Höhe → jetzt 683).
+- **Richtungsfeld statt zweier Prozent-Regler.** Der Bildausschnitt hat einen Zoom-Regler und ein
+  3 × 3-Pfeilfeld („Bild verschieben"). Die zwei Schieberegler waren aus zwei Gründen unbrauchbar:
+  Bei Zoom 100 % hat ein Versatz **keine Wirkung**, und sie sagten nicht, wohin das Bild wandert.
+  Das Feld ist ohne Zoom **gesperrt** und sagt „erst zoomen"; ein Pfeil setzt beide Achsen
+  (−50 / 0 / +50 %), die Mitte ist 0. Der `versatzX`/`versatzY`-Vertrag bleibt unverändert.
+- **Umbruch statt Abschneiden.** Wo Text bisher mit Auslassungspunkten endete, bricht er um:
+  Aktionsname im Bildstreifen und in der Bibliothek, Statistik-Bezeichnung („30-Minuten-War…"),
+  Dateiname in den Ausgaben, Zonenname und Farbzeile im Inspector. Ausgenommen bleibt allein die
+  Zeitachse — dort ist die Breite eines Clips die Aussage, Umbrechen wäre falsch.
 
 **Kein waagerechtes Scrollen.** Die Inspector-Fläche trägt `overflowX: 'hidden'`; Schieberegler und
 Flex-Kinder tragen `minWidth: 0`, damit sie schrumpfen statt die Fläche zu sprengen. Der Treiber

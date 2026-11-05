@@ -630,3 +630,35 @@ describe("zeichneTextZone - Ausrichtung je Zone (TK 9.8.8)", () => {
     expect(align?.wert).toBe("center");
   });
 });
+
+describe("zeichneTextZone - Schrift je Zone (Nacharbeit 05.11.2026)", () => {
+  beforeEach(frischeMocks);
+
+  it("eigene Schriftrolle schlaegt die der Vorlage", () => {
+    const { kontext } = baueKontextDoppel();
+    zeichneTextZone(
+      kontext,
+      zone({}, { schriftRolle: "headlineElegant" }),
+      "Beispiel",
+      marke(),
+      mitGestaltung({ ueberschrift: { schriftRolle: "fliesstextFett" } }),
+    );
+
+    const ruf = vi.mocked(loeseSchrift).mock.calls.at(-1);
+    expect(ruf?.[0]).toBeDefined();
+    expect(ruf?.[1]).toBe("fliesstextFett");
+  });
+
+  it("ohne eigene Wahl gilt die Vorlage", () => {
+    const { kontext } = baueKontextDoppel();
+    zeichneTextZone(
+      kontext,
+      zone({}, { schriftRolle: "headlinePlakativ" }),
+      "Beispiel",
+      marke(),
+      mitGestaltung({ preis: { schriftRolle: "fliesstextFett" } }),
+    );
+
+    expect(vi.mocked(loeseSchrift).mock.calls.at(-1)?.[1]).toBe("headlinePlakativ");
+  });
+});

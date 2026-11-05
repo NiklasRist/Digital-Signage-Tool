@@ -6355,6 +6355,13 @@ const main = async () => {
       // Aktions-Editor bietet nur Ganzbild-Vorlagen an (istWaehlbar: parent === null &&
       // hoehe === null), „Band-Standard" steht dort gar nicht. Der Fall ist mit der
       // ECHTEN Band-Vorlage im Unit-Test belegt (feld-bedarf.spec.ts).
+      // NACHARBEIT 05.11.2026: Farbfeld, Palette und „Zuletzt verwendet" stehen in EINEM
+      // Popup - es muss zuerst geoeffnet werden, sonst ist nichts davon im DOM.
+      await seite.evaluate(() => {
+        const oeffner = document.querySelector('[data-testid="aktion-akzent-oeffnen"]');
+        if (oeffner !== null) oeffner.click();
+      });
+      await schlafe(250);
       const akzent4g7 = await seite.evaluate(() => {
         const akzent = document.querySelector('[data-testid="aktion-akzent-farbe"]');
         return {
@@ -6364,6 +6371,7 @@ const main = async () => {
           // Hex-Werte sind EIN Swatch) und der Bereich der letzten 20 Farben.
           // SEIT 05.11.2026 (Nacharbeit): JEDER Farbwaehler ist derselbe Baustein
           // (`farb-wahl.tsx`); die Akzentfarbe hat den Praefix `aktion-akzent-`.
+          popup: document.querySelector('[data-testid="aktion-akzent-popup"]') !== null,
           markenFarben: document.querySelectorAll('[data-testid^="aktion-akzent-palette-"]').length,
           letzteFarben: document.querySelector('[data-testid="aktion-akzent-letzte"]') !== null,
         };
@@ -6391,9 +6399,12 @@ const main = async () => {
         return {
           zonenBereich: zonen !== null,
           zonenAnzahl: zonen === null ? 0 : zonen.querySelectorAll(":scope > div").length,
-          textfarben: document.querySelectorAll('[data-testid$="-schrift-farbe"]').length,
-          flaechen: document.querySelectorAll('[data-testid$="-flaeche"]').length,
+          // Seit dem Popup (Nacharbeit 05.11.2026) ist das FarbFELD erst nach dem Oeffnen
+          // im DOM - gemessen wird der Oeffner, der immer da ist.
+          textfarben: document.querySelectorAll('[data-testid$="-schrift-oeffnen"]').length,
+          flaechen: document.querySelectorAll('[data-testid$="-flaeche-oeffnen"]').length,
           groessenRegler: document.querySelectorAll('[data-testid$="-groesse"]').length,
+          schriftarten: document.querySelectorAll('[data-testid$="-schriftart"]').length,
           ausschnitt: ausschnitt !== null,
           zoomTyp: zoom === null ? null : zoom.getAttribute("type"),
           vorlagenKacheln: document.querySelectorAll('[data-testid^="aktion-vorlage-"]').length,
@@ -6412,9 +6423,14 @@ const main = async () => {
         fund('Gestaltung je Zone', 'der Schritt „Zonen“ zeigt die Zonen der Vorlage',
           `Bereich=${String(gestaltung4g7.zonenBereich)}, Eintraege=${String(gestaltung4g7.zonenAnzahl)}`,
           "Befund", "action-editor/zonen-gestaltung.tsx");
-      } else if (gestaltung4g7.textfarben === 0 || gestaltung4g7.flaechen === 0 || gestaltung4g7.groessenRegler === 0) {
-        fund('Gestaltung je Zone', 'je Zone stehen Schriftfarbe, Flaechenfarbe, Groesse und Ausrichtung',
-          `Textfarben=${String(gestaltung4g7.textfarben)}, Flaechen=${String(gestaltung4g7.flaechen)}, Groessen=${String(gestaltung4g7.groessenRegler)}`,
+      } else if (
+        gestaltung4g7.textfarben === 0 ||
+        gestaltung4g7.flaechen === 0 ||
+        gestaltung4g7.groessenRegler === 0 ||
+        gestaltung4g7.schriftarten === 0
+      ) {
+        fund('Gestaltung je Zone', 'je Zone stehen Schriftart, Schriftfarbe, Flaechenfarbe, Groesse und Ausrichtung',
+          `Schriftarten=${String(gestaltung4g7.schriftarten)}, Textfarben=${String(gestaltung4g7.textfarben)}, Flaechen=${String(gestaltung4g7.flaechen)}, Groessen=${String(gestaltung4g7.groessenRegler)}`,
           "Befund", "action-editor/zonen-gestaltung.tsx");
       } else if (!gestaltung4g7.ausschnitt || gestaltung4g7.zoomTyp !== "range") {
         fund('Bildausschnitt', 'Zoom und Position sind Regler am Fenster',
