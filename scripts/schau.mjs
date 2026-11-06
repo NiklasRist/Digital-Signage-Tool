@@ -7,6 +7,7 @@
 //
 // Aufruf:
 //   node scripts/schau.mjs [ziel.png] [--editor|--start|--aktion <id>] [--gross] [--gestaltung]
+//                             [--panel video|aktionen|eigenschaften]
 //
 // Vorbedingung: `npm run build` (dist/main/index.cjs + dist/renderer/index.html).
 
@@ -24,6 +25,8 @@ const ziel = zielIndex === -1 ? "/tmp/schau.png" : args[zielIndex];
 const modusIndex = args.findIndex((a) => a === "--editor" || a === "--start" || a === "--aktion");
 const modus = modusIndex === -1 ? "--editor" : args[modusIndex];
 const aktionId = modus === "--aktion" ? args[modusIndex + 1] : null;
+const panelIndex = args.indexOf("--panel");
+const panel = panelIndex === -1 ? null : args[panelIndex + 1];
 
 const schlafe = (ms) => new Promise((w) => setTimeout(w, ms));
 
@@ -83,7 +86,19 @@ const main = async () => {
       }
     }
 
-    if (modus !== "--start") {
+    // 06.11.2026: Ein Panel des Projekteditors anzeigen (Video/Aktionen/Eigenschaften) -
+    // ohne den Aktions-Editor zu oeffnen. Fuer Sichtpruefungen der Bibliothek.
+    if (panel !== null) {
+      const knopf = `[data-testid="sidepanel-ansicht-${panel}"]`;
+      if (await da(knopf)) {
+        await seite.click(knopf);
+        await schlafe(500);
+      } else {
+        console.error(`[schau] Panel-Knopf ${panel} fehlt.`);
+      }
+    }
+
+    if (modus !== "--start" && panel === null) {
       await seite.click('[data-testid="reiter-zusammenstellen"]');
       await schlafe(600);
       // Die Rail faellt beim Oeffnen auf „Video" zurueck (Panel-Zustand ueberlebt kein

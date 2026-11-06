@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState, type JSX } from "react";
 
 import {
+  useDndMonitor,
   useDroppable,
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import type { Listenelement, Project, Einblendung } from "../../shared/contracts/project";
+import type { Vorlage } from "../../shared/contracts/vorlage";
+import type { Marke } from "../../shared/contracts/marke";
+import type { Aktion } from "../../shared/contracts/aktion";
+import { baueMotivEintraege, holeMotiv } from "../gemeinsam/aktions-motiv";
+import { bereiteMotiveVor } from "../template-canvas/bild-laden";
+import { autoScrollSchritt } from "./zeit-autoscroll";
 import { frameDauer } from "./gesamtlaenge";
 import { RENDER_PROFILE } from "../../shared/contracts/render-profile";
 import { EA_PX_PRO_SEKUNDE, baueZeitachse, baueBandspur, frameAusXPx } from "./zeitband";
@@ -103,6 +110,12 @@ export interface ZeitleistenEigenschaften {
   ausgewaehlteIds?: readonly string[]
   /** #392: ein Klick auf einen Block meldet die Auswahl nach oben (Bedienart inklusive). */
   aufElementGewaehlt?: (elementId: string, modus: KlickModus) => void
+  /** 06.11.2026: die nutzbaren Vorlagen fuer das Motiv der Aktions-Boxen. Fehlt die
+   *  Liste, bleibt die Box eine Farbflaeche - kein erfundenes Bild. */
+  vorlagen?: readonly Vorlage[]
+  /** 06.11.2026: die Marke einer Aktion fuer ihr Motiv. Fehlt der Zugang, bleibt die
+   *  Box eine Farbflaeche (dieselbe Haltung wie in der Bibliothek). */
+  holeMarke?: (markeId: string) => Marke | null
 }
 
 export function Zeitleiste({
@@ -118,10 +131,92 @@ export function Zeitleiste({
   aufUnterbrechungVerschieben,
   ausgewaehlteIds = [],
   aufElementGewaehlt,
+  vorlagen,
+  holeMarke,
 }: ZeitleistenEigenschaften): JSX.Element {
   // #457: der Scroll-Container. Die Abspielmarke sitzt IM Inhalt (absolute), der
   // Ausschnitt folgt ihr nur bei laufender Uhr.
   const scrollRef = useRef<HTMLDivElement | null>(null)
+
+  // 06.11.2026: Auto-Scroll beim Ziehen. dnd-kit scrollt den Container zwar auch, aber
+  // erst an der FENSTERkante und ohne eigene Geschwindigkeit; die Regel in
+  // `zeit-autoscroll.ts` macht die Kante der ZEITLEISTE zum Ausloeser. Am Fenster
+  // gemessen (dieselbe Geste): ohne die Regel 2112 px in 1,2 s, mit ihr 3380 px.
+  // Der Zeiger kommt aus dem Drag-START plus Delta - dafuer gibt es kein zweites
+  // Maus-Listener-Paar neben dnd-kit.
+  const zeigerRef = useRef<{ x: number; y: number } | null>(null)
+  const [zieht, setzeZieht] = useState(false)
+  useDndMonitor({
+    onDragStart: () => {
+      zeigerRef.current = null
+      setzeZieht(true)
+    },
+    onDragMove: (ereignis) => {
+      // `activatorEvent` ist der urspruengliche Zeigerdruck; `delta` der Weg seitdem.
+      // Ein Tastatur-Drag hat keinen Zeiger - dann bleibt der Wert null (kein Scrollen).
+      const start = ereignis.activatorEvent
+      if (start instanceof MouseEvent) {
+        zeigerRef.current = {
+          x: start.clientX + ereignis.delta.x,
+          y: start.clientY + ereignis.delta.y,
+        }
+      }
+    },
+    onDragEnd: () => {
+      zeigerRef.current = null
+      setzeZieht(false)
+    },
+    onDragCancel: () => {
+      zeigerRef.current = null
+      setzeZieht(false)
+    },
+  })
+  useEffect(() => {
+    if (!zieht) return
+    const behaelter = scrollRef.current
+    if (behaelter === null) return
+    let raf = 0
+    let letzteZeit = 0
+    const lauf = (zeit: number): void => {
+      raf = requestAnimationFrame(lauf)
+      // ~60 Bilder/s reichen; ein zweiter Lauf je Bild waere nur Rechenzeit.
+      if (zeit - letzteZeit < 16) return
+      letzteZeit = zeit
+      const zeiger = zeigerRef.current
+      if (zeiger === null) return
+      const kasten = behaelter.getBoundingClientRect()
+      const schritt = autoScrollSchritt(zeiger, {
+        links: kasten.left,
+        rechts: kasten.right,
+        oben: kasten.top,
+        unten: kasten.bottom,
+      })
+      if (schritt !== 0) behaelter.scrollLeft += schritt
+    }
+    raf = requestAnimationFrame(lauf)
+    return () => cancelAnimationFrame(raf)
+  }, [zieht])
+
+  // 06.11.2026: Die Motive der Aktions-Boxen brauchen geladene Bilder. Dieselbe
+  // Vorbereitung wie in der Bibliothek; der Zaehler loest EINEN Zeichenlauf aus.
+  const [motivBereit, setzeMotivBereit] = useState(0)
+  useEffect(() => {
+    if (projekt === null || holeMarke === undefined) return
+    const eintraege = baueMotivEintraege(projekt)
+    if (eintraege.length === 0) return
+    let abgemeldet = false
+    bereiteMotiveVor(projekt.id, eintraege)
+      .then(() => {
+        if (!abgemeldet) setzeMotivBereit((stand) => stand + 1)
+      })
+      .catch(() => {
+        // Kein Bild ist ein sichtbarer Zustand; ein Wurf waere ein Absturz der Leiste.
+      })
+    return () => {
+      abgemeldet = true
+    }
+  }, [projekt?.id, projekt?.aktionen, projekt?.assets, holeMarke])
+
   if (projekt === null) {
     return <div data-testid="zeitleiste-kein-projekt" />
   }
@@ -245,6 +340,9 @@ export function Zeitleiste({
                 pxProSekunde={pxProSekunde}
                 projekt={projekt}
                 element={elementeNachId.get(zeile.elementId) ?? null}
+                vorlagen={vorlagen}
+                holeMarke={holeMarke}
+                motivBereit={motivBereit}
                 aufUnterbrechungEntfernen={aufUnterbrechungEntfernen}
                 aufUnterbrechungVerschieben={aufUnterbrechungVerschieben}
                 ausgewaehlt={ausgewaehlteIds.includes(zeile.elementId)}
@@ -270,6 +368,67 @@ export function Zeitleiste({
       </SortableContext>
     </div>
   );
+}
+
+/**
+ * Das Motiv einer Aktion als Flaeche in einem Zeitleisten-Block (06.11.2026).
+ *
+ * WARUM EIN LOKALES CANVAS UND NICHT DAS GEMERKTE: `holeMotiv` liefert ein Canvas aus
+ * dem Speicher. Dieselbe Aktion kann in mehreren Bloecken stehen (Unterbrechung + eigener
+ * Block); ein Canvas kann nur an EINER Stelle im DOM haengen. Deshalb wird das gemerkte
+ * Bild in ein eigenes Canvas kopiert - dieselbe Loesung wie in der Bibliothek.
+ *
+ * `cover` ist bindend: Ein 16:9-Motiv in einer 80 x 64 breiten Box wuerde sonst gequetscht.
+ */
+function AktionsMotiv({
+  aktion,
+  vorlagen,
+  marke,
+  bereit,
+  hoehe = ZEILE_HOEHE_PX,
+}: {
+  aktion: Aktion
+  vorlagen?: readonly Vorlage[]
+  marke: Marke | null
+  bereit: number
+  hoehe?: number
+}): JSX.Element {
+  const flaeche = useRef<HTMLSpanElement | null>(null)
+  // Die KONKRETE Vorlage haengt am Effekt, nicht die Liste: Der Composer reicht bei
+  // jedem Rendern eine neue Liste herein; die Vorlagen-Objekte selbst bleiben stabil.
+  const vorlage = vorlagen?.find((eintrag) => eintrag.id === aktion.vorlagenId) ?? null
+  useEffect(() => {
+    const ziel = flaeche.current
+    if (ziel === null) return
+    ziel.replaceChildren()
+    if (vorlage === null || marke === null) return
+    const klein = holeMotiv(aktion, vorlage, marke, hoehe)
+    if (klein === null) return
+    const eigen = document.createElement('canvas')
+    eigen.width = klein.width
+    eigen.height = klein.height
+    eigen.getContext('2d')?.drawImage(klein, 0, 0)
+    eigen.style.width = '100%'
+    eigen.style.height = '100%'
+    eigen.style.objectFit = 'cover'
+    eigen.style.display = 'block'
+    ziel.append(eigen)
+  }, [aktion, vorlage, marke, bereit, hoehe])
+
+  return (
+    <span
+      ref={flaeche}
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 0,
+        overflow: 'hidden',
+        background: '#0d0d10',
+        pointerEvents: 'none',
+      }}
+    />
+  )
 }
 
 /** #412 - Die EINE Einfüge-Kante als Drop-Ziel: unsichtbar in der Ruhelage, beim
@@ -322,6 +481,9 @@ function ZeilenBlock({
   aufUnterbrechungVerschieben,
   ausgewaehlt = false,
   aufGewaehlt,
+  vorlagen,
+  holeMarke,
+  motivBereit = 0,
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
@@ -332,6 +494,10 @@ function ZeilenBlock({
   projekt?: Project | null;
   /** #433: das Listenelement selbst (Filmstreifen braucht `ref`/`trim`). */
   element?: Listenelement | null;
+  /** 06.11.2026: Motiv der Aktions-Boxen (dieselbe Quelle wie die Bibliothek). */
+  vorlagen?: readonly Vorlage[];
+  holeMarke?: (markeId: string) => Marke | null;
+  motivBereit?: number;
   /** #437: Unterbrechung entfernen (Index in `element.unterbrechungen`). */
   aufUnterbrechungEntfernen?: (elementId: string, index: number) => void;
   /** #442: Unterbrechung an eine neue gespielte Zeitstelle schieben. */
@@ -346,9 +512,15 @@ function ZeilenBlock({
   // SELBSTERKLAEREND (01.11.2026): Ein Block sagt, WAS er ist, nicht wie die Datenart
   // heisst. Vorher stand dort "segment"/"video" - die Sprache des Vertrags, nicht die
   // des Nutzers. Jetzt der Titel der Aktion; beim Video bleibt "Video".
+  const aktionSegment =
+    zeile.art === 'segment'
+      ? (projekt?.aktionen.find((eintrag) => eintrag.id === zeile.ref) ?? null)
+      : null
+  const markeSegment =
+    aktionSegment === null ? null : (holeMarke?.(aktionSegment.markeId) ?? null)
   const blockName =
     zeile.art === 'segment'
-      ? (projekt?.aktionen.find((eintrag) => eintrag.id === zeile.ref)?.titel ?? 'Aktion')
+      ? (aktionSegment?.titel ?? 'Aktion')
       : zeile.art === 'video'
         ? 'Video'
         : null
@@ -441,12 +613,38 @@ function ZeilenBlock({
           hoehePx={ZEILE_HOEHE_PX}
         />
       )}
+      {/* 06.11.2026: Ein eigener Aktions-Block traegt sein MOTIV, nicht nur seine Farbe.
+          Niklas: „die aktionen sind schon in der leiste ... nur als lila boxen". Das Motiv
+          kommt aus derselben Quelle wie die Bibliothek (`holeMotiv`). */}
+      {aktionSegment !== null && (
+        <>
+          <AktionsMotiv
+            aktion={aktionSegment}
+            vorlagen={vorlagen}
+            marke={markeSegment}
+            bereit={motivBereit}
+          />
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 0,
+              pointerEvents: 'none',
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.58) 100%)',
+            }}
+          />
+        </>
+      )}
       {/* #437/#442: die Unterbrechungen als sichtbare Aktions-Kaesten ueber dem
           Filmstreifen - Video | Aktion | Video. Der Kasten selbst startet keinen Drag
           (stopPropagation); entfernt wird NUR ueber sein × (ein Fehlklick auf den
           Kasten loescht nichts mehr). */}
       {marken.map((marke) => {
-        const titel = projekt?.aktionen.find((eintrag) => eintrag.id === marke.aktionRef)?.titel ?? 'Aktion'
+        const aktion =
+          projekt?.aktionen.find((eintrag) => eintrag.id === marke.aktionRef) ?? null
+        const aktionMarke = aktion === null ? null : (holeMarke?.(aktion.markeId) ?? null)
+        const titel = aktion?.titel ?? 'Aktion'
         return (
           <span
             key={marke.index}
@@ -501,7 +699,38 @@ function ZeilenBlock({
                     : undefined,
             }}
           >
-            <span style={{ fontSize: 9, color: '#efe6fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {aktion !== null && (
+              <>
+                <AktionsMotiv
+                  aktion={aktion}
+                  vorlagen={vorlagen}
+                  marke={aktionMarke}
+                  bereit={motivBereit}
+                />
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 0,
+                    pointerEvents: 'none',
+                    background:
+                      'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.62) 100%)',
+                  }}
+                />
+              </>
+            )}
+            <span
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                fontSize: 9,
+                color: '#efe6fb',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {titel}
             </span>
             <button
@@ -515,6 +744,8 @@ function ZeilenBlock({
                 aufUnterbrechungEntfernen?.(zeile.elementId, marke.index)
               }}
               style={{
+                position: 'relative',
+                zIndex: 1,
                 marginLeft: 'auto',
                 flex: '0 0 auto',
                 width: 14,

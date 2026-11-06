@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.53 (9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.54 (9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 03.11.2026
 **Status:** In Planung
 
@@ -1489,6 +1489,48 @@ Eine verwandte **„Banner-Spur"** gibt es **nicht** (v3.33, Entscheidung 31.10.
 läuft eine **Aktion** – es gibt kein eigenes Banner-Objekt `BannerSchild` und keinen zweiten
 Abschnitts-Typ. Der Abschnitt trägt `aktionRef` (9.11.3); `schildRef` ist verworfen. Band und
 Unterbrechung sind die beiden einzigen Wirkungen einer Aktion auf das Video.
+
+#### 9.7.8 Zeitband: Aktions-Boxen mit Motiv und Auto-Scroll (06.11.2026)
+
+Auslöser (Niklas, 06.11.2026): *„die aktionen sind schon in der leiste ... nur als lila boxen"* und
+*„beim drag and drop muss die zeileiste automatisch scrollable sein"*.
+
+**Das Motiv in der Box (Anzeige, kein neues Feld).** Ein eigener Aktions-Block (`segment`) und jede
+Unterbrechung im Video-Block zeigen ihr **gezeichnetes Motiv** statt einer reinen Farbfläche. Die
+Quelle ist **dieselbe** wie in der Bibliothek: `gemeinsam/aktions-motiv.ts` (`holeMotiv`) — es gibt
+keinen zweiten Zeichenweg. Das gemerkte Canvas wird in ein **lokales** Canvas kopiert, bevor es in
+den Block gehängt wird: Dieselbe Aktion kann in mehreren Blöcken stehen, ein Canvas kann aber nur an
+einer Stelle im DOM hängen. `object-fit: cover` beschneidet, statt ein 16:9-Motiv in einer 80 × 64
+breiten Box zu quetschen; ein dunkler Verlauf sichert die Lesbarkeit von Titel und Dauer. Fehlt
+Vorlage oder Marke, bleibt die Farbfläche — **kein erfundenes Bild** (dieselbe Haltung wie in der
+Bibliothek). Die Bilder werden über `bereiteMotiveVor` vorbereitet; der Composer reicht `vorlagen`
+und `holeMarke` an die Zeitleiste.
+
+**Der Auto-Scroll (reine Regel + Lauf).** Die Zeitleiste ist ein eigener horizontaler
+Scroll-Container (`overflowX: auto`). Die Richtung und Stärke rechnet `composer/zeit-autoscroll.ts`
+(`autoScrollSchritt`, ohne DOM): Der Zeiger nahe der **Kante der Zeitleiste** verschiebt den Inhalt,
+je näher am Rand, desto schneller (48 px Auslösebereich, höchstens 18 px je Bild). Der Zeiger wird
+auf den Kasten geklemmt — wer über den Rand hinauszieht, scrollt weiter; über oder unter dem Band
+wird **nicht** gescrollt. Der Lauf (`requestAnimationFrame`, ~60 Bilder/s) hängt an
+`useDndMonitor`; die Zeigerposition ist **Drag-Start plus Delta**, kein zweites Maus-Listener-Paar
+neben dnd-kit.
+
+**dnd-kit scrollt bereits — aber an der falschen Kante.** Am Fenster gemessen (dieselbe Geste,
+20:42-Projekt): ohne die eigene Regel **2112 px in 1,2 s**, mit ihr **3380 px**. Der Unterschied ist
+der Auslöser: dnd-kit reagiert an der **Fensterkante**, die Regel an der **Kante der Zeitleiste** —
+und die liegt bei 1440 px rund 16 px davor, bei kleineren Fenstern deutlich weiter innen. Die
+Geschwindigkeit ist damit eine Produktentscheidung und keine Zufallszahl des Fremdmoduls.
+
+**Was NICHT dazugehört.** Kein neues Datenfeld, kein Schreibweg: Das Motiv ist reine Anzeige. Kein
+eigener Filmstreifen je Aktion — eine Aktion ist ein Standbild, ein Motiv je Box ist die richtige
+Auflösung. Die Drop-Regeln (Band/Unterbrechung, 9.7.7) bleiben unverändert.
+
+**Belege.** Unit: `zeit-autoscroll.spec.ts` (7 Fälle, reine Regel), `zeitleiste-motiv.spec.ts`
+(Block hängt ein Canvas ein, `holeMotiv` wird mit Aktion/Vorlage/Marke gerufen). Fenster:
+`scrollLeft` **0 → 140 → 3470** in 1,2 s Halten; der Sichtvergleich zeigt die Motive in den
+Aktions-Boxen. Treiber: **0 Befunde**. Gegenproben: Regel nie scrollen → 3 Tests rot; Motiv aus dem
+Block entfernt → Test rot; `scrollLeft`-Schreiben entfernt → Fensterprobe **ohne** eigenen Scroll
+(2112 px = dnd-kit), jede byte-identisch zurückgenommen.
 
 ---
 

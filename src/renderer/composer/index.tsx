@@ -1000,6 +1000,8 @@ export function ComposerInterna({
           aufUnterbrechungVerschieben={verschiebeUnterbrechungAmVideo}
           ausgewaehlteIds={auswahl.ids}
           aufElementGewaehlt={waehleElement}
+          vorlagen={(vorlagen.hole()?.nutzbare ?? []).map((eintrag) => eintrag.vorlage)}
+          holeMarke={holeBereiteMarke}
         />
       )}
 
