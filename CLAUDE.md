@@ -11,7 +11,36 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (05.11.2026, zweiundfünfzigste Sitzung: Kontrolle statt Formular — Zonen-Gestaltung, Bildausschnitt, sechs Looks, danach Nacharbeit an der Seitenleiste)
+## STAND HEUTE (06.11.2026, dreiundfünfzigste Sitzung: Die Zeitleiste zeigt Aktions-Motive, Auto-Scroll beim Ziehen)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-06-zeitleiste.md`](docs/agents/uebergabe-2026-11-06-zeitleiste.md).**
+
+- **AUFTRAG (Niklas, 06.11.2026):** *„im projekteditor die aktionen in der frameleiste sein"* +
+  *„beim drag and drop muss die zeileiste automatisch scrollable sein"*. Nach der Rückfrage:
+  *„die aktionen sind schon in der leiste ... nur als lila boxen"*.
+- **MOTIV:** Eigene Aktions-Blöcke und Unterbrechungen in der Zeitleiste zeigen jetzt das
+  **gezeichnete Motiv** (`holeMotiv`, dieselbe Quelle wie die Bibliothek) statt einer Farbfläche.
+  `object-fit: cover`, dunkler Verlauf für die Beschriftung, **lokales** Canvas (dieselbe Aktion
+  kann in mehreren Blöcken stehen). Fehlt Vorlage/Marke, bleibt die Farbfläche. **Kein neues Feld,
+  kein Schreibweg.**
+- **AUTO-SCROLL:** `composer/zeit-autoscroll.ts` (rein, 7 Tests), Lauf über `useDndMonitor` +
+  `requestAnimationFrame`; die **Kante der Zeitleiste** ist der Auslöser, nicht die Fensterkante.
+  Fensterprobe (20:42): `scrollLeft` **0 → 140 → 3470** in 1,2 s; ohne die eigene Schreibzeile
+  **2112 px** (dnd-kit allein) — der Unterschied ist gemessen.
+- **GEGENPROBEN:** 3, jede rot und byte-identisch zurück (Regel immer 0 → 3 Tests; Motiv entfernt →
+  Test; `scrollLeft` entfernt → Fensterprobe 2112 px).
+- **GATE:** Typecheck 0, Lint 0, Build 0, Unit **5625/5625** (368), Integration 51/51, Treiber
+  **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL: Export-Dialog).
+- **DOKU:** TK **v3.54** (9.7.8), `.docx` **2533 Absätze**, `unzip -t` heil, 0 Backticks. AD v1.13
+  unverändert.
+- **Ehrlich offen:** Das Motiv ist bei 8 px/s klein (eine 10-s-Box ist 80 px breit, sichtbar ist der
+  linke Teil); dnd-kit scrollt weiter mit (die Summe ist gemessen); ein Drop außerhalb der Zeitleiste
+  kann am nächsten Ziel landen (bestehende `closestCenter`-Erkennung, nicht behoben); kein
+  Treiber-Schritt für die neuen Dinge (Unit + zwei Fensterproben + Sichtvergleich).
+- **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf
+  Anweisung.**
+
+## STAND HEUTE (05.11.2026, zweiundfünfzigste Sitzung: Kontrolle statt Formular — Zonen-Gestaltung, Bildausschnitt, sechs Looks, danach Nacharbeit an der Seitenleiste) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-05-zonen-gestaltung.md`](docs/agents/uebergabe-2026-11-05-zonen-gestaltung.md).**
 

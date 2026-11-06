@@ -1,0 +1,81 @@
+# Übergabe 06.11.2026 — die Zeitleiste zeigt Aktionen als Motive (dreiundfünfzigste Sitzung)
+
+**Auftrag (Niklas, 06.11.2026):** *„im projekteditor die aktionen in der frameleiste sein"* und
+*„beim drag and drop muss die zeileiste automatisch scrollable sein"*. Nach der Rückfrage, was mit
+„Frameleiste" gemeint ist: *„die aktionen sind schon in der leiste ... nur als lila boxen"*.
+
+Damit war die Aufgabe klar: Die Aktionen **sind** in der Zeitleiste — aber als farbige Boxen. Sie
+sollen dort ihr **Motiv** zeigen. Dazu der Auto-Scroll beim Ziehen.
+
+## 1. Das Motiv in den Aktions-Boxen
+
+- **Eigene Aktions-Blöcke** (`art: 'segment'`, bisher petrol) und **Unterbrechungen** im Video-Block
+  (bisher lila) tragen jetzt das **gezeichnete Motiv** der Aktion.
+- **Dieselbe Quelle wie die Bibliothek:** `gemeinsam/aktions-motiv.ts` (`holeMotiv`). Kein zweiter
+  Zeichenweg, keine eigene Malroutine. Das gemerkte Canvas wird in ein **lokales** Canvas kopiert,
+  bevor es in den Block gehängt wird: Dieselbe Aktion kann in mehreren Blöcken stehen, ein Canvas
+  kann aber nur an **einer** Stelle im DOM hängen.
+- **`object-fit: cover`:** Ein 16:9-Motiv in einer 80 × 64 breiten Box wird beschnitten, nicht
+  gequetscht. Ein dunkler Verlauf sichert Titel und Dauer die Lesbarkeit; die Farbe des Blocks
+  bleibt als Rahmen/Fallback (petrol für Segment, violett für Unterbrechung).
+- **Kein erfundenes Bild:** Fehlt die Vorlage oder die Marke, bleibt die Farbfläche — dieselbe
+  Haltung wie in der Bibliothek. Die Bilder werden über `bereiteMotiveVor` vorbereitet; der
+  Composer reicht `vorlagen` und `holeMarke` an die Zeitleiste.
+- **Kein neues Datenfeld, kein Schreibweg.** Das Motiv ist reine Anzeige.
+
+## 2. Auto-Scroll beim Ziehen
+
+- **Die reine Regel** steht in `composer/zeit-autoscroll.ts` (`autoScrollSchritt`, ohne DOM):
+  Der Zeiger nahe der **Kante der Zeitleiste** verschiebt den Inhalt, je näher am Rand, desto
+  schneller (48 px Auslösebereich, höchstens 18 px je Bild). Der Zeiger wird auf den Kasten
+  geklemmt: Wer über den Rand hinauszieht, scrollt weiter; über oder unter dem Band wird **nicht**
+  gescrollt.
+- **Der Lauf** hängt an `useDndMonitor` und `requestAnimationFrame` (~60 Bilder/s). Die
+  Zeigerposition ist **Drag-Start (`activatorEvent`) plus `delta`** — kein zweites
+  Maus-Listener-Paar neben dnd-kit.
+- **dnd-kit scrollt bereits — aber an der falschen Kante.** Am Fenster gemessen (dieselbe Geste,
+  20:42-Projekt): ohne die eigene Regel **2112 px in 1,2 s**, mit ihr **3380 px**. Der Unterschied
+  ist der Auslöser: dnd-kit reagiert an der **Fensterkante**, die Regel an der **Kante der
+  Zeitleiste** — und die liegt bei 1440 px rund 16 px davor, bei kleineren Fenstern deutlich weiter
+  innen.
+- **Ein Nebenbefund, offen:** Ein Drag, der außerhalb der Zeitleiste losgelassen wird, kann trotzdem
+  am zuletzt nächstgelegenen Ziel landen (die Probe legte eine Unterbrechung an, obwohl sie auf der
+  Quellzeile losließ). Das ist die bestehende `closestCenter`-Erkennung, nicht Teil dieses Auftrags;
+  die Probe hat das Projekt danach aus der `.bak` zurückgesetzt.
+
+## 3. Belege
+
+- **Unit:** `tests/unit/zeit-autoscroll.spec.ts` (7 Fälle, reine Regel) und
+  `tests/unit/zeitleiste-motiv.spec.ts` (der Block hängt ein Canvas ein; `holeMotiv` wird mit
+  Aktion/Vorlage/Marke gerufen). Zusammen **+8** Fälle: **5625/5625**.
+- **Fenster (Auto-Scroll):** `scrollLeft` **0 → 140 → 3470** in 1,2 s Halten an der rechten Kante
+  des 20:42-Projekts; mit entfernter Schreibzeile **2112 px** (dnd-kit allein), also ein
+  nachweisbarer Unterschied.
+- **Fenster (Motiv):** Der Sichtvergleich (`scripts/schau.mjs --start --gross`) zeigt die
+  Aktions-Boxen mit Motiv statt lila Fläche; das Bild ist der Beleg, nicht die Behauptung.
+- **Treiber:** `npm run durchlauf` **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
+  Export-Dialog).
+- **Gegenproben:** 3, jede rot und **byte-identisch** zurückgenommen (SHA-256 vorher = nachher):
+  1. `autoScrollSchritt` immer 0 → 3 Tests rot.
+  2. Motiv aus dem Segment-Block entfernt → `zeitleiste-motiv` rot.
+  3. `scrollLeft`-Schreiben entfernt → Fensterprobe **ohne** eigenen Scroll (2112 px = dnd-kit).
+- **Werkzeug:** `scripts/schau.mjs` hat `--panel video|aktionen|eigenschaften` bekommen (zeigt ein
+  Sidepanel ohne den Aktions-Editor); die Sichtprüfung der Bibliothek war vorher nicht möglich.
+
+## 4. Ehrlich offen
+
+- **Das Motiv ist klein:** Bei 8 px/s ist eine 10-s-Unterbrechung 80 px breit; sichtbar ist der
+  linke Teil des Motivs (Logo/Titel). Das ist der Preis dafür, dass die Box die **Dauer** trägt;
+  ein eigener, breiterer Aktionsstreifen war nicht der Auftrag.
+- **dnd-kit scrollt weiter mit:** Die eigene Regel ersetzt den AutoScroller nicht, sie ergänzt ihn.
+  Am Fenster ist die Summe gemessen (3380 px), nicht getrennt.
+- **Der Drop außerhalb** (siehe 2., Nebenbefund) ist nicht behoben.
+- **Kein Treiber-Schritt** für Motiv/Auto-Scroll: Der Treiber misst die neuen Dinge nicht, die
+  Belege sind Unit + zwei Fensterproben + Sichtvergleich.
+
+## 5. Doku
+
+- TK **v3.54** (9.7.8), `.docx` **2533 Absätze**, `unzip -t` heil, **0 Backticks**, mit `--dfd`
+  erzeugt. AD unverändert v1.13 (keine Anforderungsänderung).
+
+**Nicht gepusht** — mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
