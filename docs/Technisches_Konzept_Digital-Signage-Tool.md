@@ -1523,8 +1523,8 @@ Zeitstelle, während die Leiste unter ihm wegscrollt — er würde beim Loslasse
 landen. Der Versatz steuert **Anzeige und Schreibwert**; beide sind derselbe Wert.
 
 **dnd-kit scrollt bereits — aber an der falschen Kante.** Am Fenster gemessen (dieselbe Geste,
-20:42-Projekt): ohne die eigene Regel **2112 px in 1,2 s**, mit ihr **3380 px**. Der Unterschied ist
-der Auslöser: dnd-kit reagiert an der **Fensterkante**, die Regel an der **Kante der Zeitleiste** —
+20:42-Projekt): ohne die eigene Regel **2112 px in 1,2 s**, mit ihr **rund 3400 px**. Der Unterschied
+ist der Auslöser: dnd-kit reagiert an der **Fensterkante**, die Regel an der **Kante der Zeitleiste** —
 und die liegt bei 1440 px rund 16 px davor, bei kleineren Fenstern deutlich weiter innen. Die
 Geschwindigkeit ist damit eine Produktentscheidung und keine Zufallszahl des Fremdmoduls.
 

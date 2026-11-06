@@ -40,14 +40,14 @@ sollen dort ihr **Motiv** zeigen. Dazu der Auto-Scroll beim Ziehen.
   während die Leiste unter ihm wegscrollt — er landete beim Loslassen an der falschen Zeit. Der
   Versatz steuert **Anzeige und Schreibwert**; beide sind derselbe Wert.
 - **dnd-kit scrollt bereits — aber an der falschen Kante.** Am Fenster gemessen (dieselbe Geste,
-  20:42-Projekt): ohne die eigene Regel **2112 px in 1,2 s**, mit ihr **3380 px**. Der Unterschied
-  ist der Auslöser: dnd-kit reagiert an der **Fensterkante**, die Regel an der **Kante der
-  Zeitleiste** — und die liegt bei 1440 px rund 16 px davor, bei kleineren Fenstern deutlich weiter
-  innen.
+  20:42-Projekt): ohne die eigene Regel **2112 px in 1,2 s**, mit ihr **rund 3400 px**. Der
+  Unterschied ist der Auslöser: dnd-kit reagiert an der **Fensterkante**, die Regel an der **Kante
+  der Zeitleiste** — und die liegt bei 1440 px rund 16 px davor, bei kleineren Fenstern deutlich
+  weiter innen.
 - **Ein Nebenbefund, offen:** Ein Drag, der außerhalb der Zeitleiste losgelassen wird, kann trotzdem
   am zuletzt nächstgelegenen Ziel landen (die Probe legte eine Unterbrechung an, obwohl sie auf der
   Quellzeile losließ). Das ist die bestehende `closestCenter`-Erkennung, nicht Teil dieses Auftrags;
-  die Probe hat das Projekt danach aus der `.bak` zurückgesetzt.
+  die Probe hat das Projekt danach auf den Stand mit **3** Unterbrechungen zurückgesetzt.
 
 ## 3. Belege
 
@@ -78,7 +78,7 @@ sollen dort ihr **Motiv** zeigen. Dazu der Auto-Scroll beim Ziehen.
   linke Teil des Motivs (Logo/Titel). Das ist der Preis dafür, dass die Box die **Dauer** trägt;
   ein eigener, breiterer Aktionsstreifen war nicht der Auftrag.
 - **dnd-kit scrollt weiter mit:** Die eigene Regel ersetzt den AutoScroller nicht, sie ergänzt ihn.
-  Am Fenster ist die Summe gemessen (3380 px), nicht getrennt.
+  Am Fenster ist die Summe gemessen (rund 3400 px), nicht getrennt.
 - **Der Drop außerhalb** (siehe 2., Nebenbefund) ist nicht behoben.
 - **Kein Treiber-Schritt** für Motiv/Auto-Scroll: Der Treiber misst die neuen Dinge nicht, die
   Belege sind Unit + zwei Fensterproben + Sichtvergleich.
@@ -88,4 +88,15 @@ sollen dort ihr **Motiv** zeigen. Dazu der Auto-Scroll beim Ziehen.
 - TK **v3.54** (9.7.8), `.docx` **2541 Absätze**, `unzip -t` heil, **0 Backticks**, mit `--dfd`
   erzeugt. AD unverändert v1.13 (keine Anforderungsänderung).
 
-**Nicht gepusht** — mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
+## Stand am Sitzungsende
+
+**Gebaut:** Aktions-Motive in der Zeitleiste (eigener Block und Unterbrechung) und Auto-Scroll beim
+Ziehen — Bibliothek (dnd-kit), sortierbare Blöcke (dnd-kit) und der **eigene Unterbrechungs-Zug**
+(Pointer-Handling, Scroll-Weg im Versatz). **Gate:** Typecheck 0 (auch tests), ESLint/oxlint 0, Build
+0, Unit **5625/5625** (368), Integration **51/51** (13), Treiber **0 Befunde** (1 Untersuchung:
+Mehrfachauswahl; 1 MANUELL: Export-Dialog). **Doku:** TK **v3.54** (9.7.8), `.docx` **2541 Absätze**,
+0 Backticks, `unzip -t` heil; AD v1.13 unverändert.
+
+**Nicht gepusht:** **6 Commits** vor `origin/main` **vor** diesem Übergabe-Commit (`d02e56b`,
+`73691fe`, `4f53b24`, `07da2a6`, `0e94615`, `f70b6e0`); mit diesem Commit **7**. Die Zahl wächst mit
+jedem Doku-Commit — mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**

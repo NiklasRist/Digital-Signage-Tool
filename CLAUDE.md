@@ -40,7 +40,9 @@
   linke Teil); dnd-kit scrollt weiter mit (die Summe ist gemessen); ein Drop außerhalb der Zeitleiste
   kann am nächsten Ziel landen (bestehende `closestCenter`-Erkennung, nicht behoben); kein
   Treiber-Schritt für die neuen Dinge (Unit + zwei Fensterproben + Sichtvergleich).
-- **Nicht gepusht** — Zahl mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf
+- **Nicht gepusht:** **6 Commits** vor `origin/main` **vor** diesem Übergabe-Commit (`d02e56b`,
+  `73691fe`, `4f53b24`, `07da2a6`, `0e94615`, `f70b6e0`); mit diesem Commit **7**. Die Zahl wächst
+  mit jedem Doku-Commit — mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf
   Anweisung.**
 
 ## STAND HEUTE (05.11.2026, zweiundfünfzigste Sitzung: Kontrolle statt Formular — Zonen-Gestaltung, Bildausschnitt, sechs Looks, danach Nacharbeit an der Seitenleiste) – historisiert durch den Abschnitt darueber
