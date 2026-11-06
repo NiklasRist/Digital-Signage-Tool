@@ -25,13 +25,16 @@
   kein Schreibweg.**
 - **AUTO-SCROLL:** `composer/zeit-autoscroll.ts` (rein, 7 Tests), Lauf über `useDndMonitor` +
   `requestAnimationFrame`; die **Kante der Zeitleiste** ist der Auslöser, nicht die Fensterkante.
-  Fensterprobe (20:42): `scrollLeft` **0 → 140 → 3470** in 1,2 s; ohne die eigene Schreibzeile
-  **2112 px** (dnd-kit allein) — der Unterschied ist gemessen.
-- **GEGENPROBEN:** 3, jede rot und byte-identisch zurück (Regel immer 0 → 3 Tests; Motiv entfernt →
-  Test; `scrollLeft` entfernt → Fensterprobe 2112 px).
+  Fensterprobe (20:42): `scrollLeft` **0 → 140 → 3470** in 1,2 s (Bibliotheks-Zug); ohne die eigene
+  Schreibzeile **2112 px** (dnd-kit allein). **Auch der eigene Unterbrechungs-Zug** (lila Aktions-
+  Kästen, kein dnd-kit) scrollt: **0 → 28 → 1008**; der Versatz enthält den **Scroll-Weg**
+  (`pointerDelta + scrollDelta`), sonst landete der Kasten an der alten Zeit.
+- **GEGENPROBEN:** 4, jede rot und byte-identisch zurück (Regel immer 0 → 3 Tests; Motiv entfernt →
+  Test; `scrollLeft` im dnd-kit-Lauf entfernt → Fensterprobe 2112 px; lokales Scrollen im
+  Unterbrechungs-Zug entfernt → Fensterprobe 0 px).
 - **GATE:** Typecheck 0, Lint 0, Build 0, Unit **5625/5625** (368), Integration 51/51, Treiber
   **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL: Export-Dialog).
-- **DOKU:** TK **v3.54** (9.7.8), `.docx` **2533 Absätze**, `unzip -t` heil, 0 Backticks. AD v1.13
+- **DOKU:** TK **v3.54** (9.7.8), `.docx` **2541 Absätze**, `unzip -t` heil, 0 Backticks. AD v1.13
   unverändert.
 - **Ehrlich offen:** Das Motiv ist bei 8 px/s klein (eine 10-s-Box ist 80 px breit, sichtbar ist der
   linke Teil); dnd-kit scrollt weiter mit (die Summe ist gemessen); ein Drop außerhalb der Zeitleiste

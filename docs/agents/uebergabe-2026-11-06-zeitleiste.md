@@ -33,6 +33,12 @@ sollen dort ihr **Motiv** zeigen. Dazu der Auto-Scroll beim Ziehen.
 - **Der Lauf** hängt an `useDndMonitor` und `requestAnimationFrame` (~60 Bilder/s). Die
   Zeigerposition ist **Drag-Start (`activatorEvent`) plus `delta`** — kein zweites
   Maus-Listener-Paar neben dnd-kit.
+- **Auch der eigene Unterbrechungs-Zug.** Die lila Aktions-Kästen im Video ziehen mit **eigenem
+  Pointer-Handling** (kein dnd-kit, `stopPropagation`). Sie starten denselben Lauf im `ZeilenBlock`;
+  der Zug hält den **Scroll-Stand beim Start** fest und rechnet den **Scroll-Weg** in den Versatz
+  ein (`pointerDelta + scrollDelta`). Ohne diesen Anteil bliebe der Kasten an der alten Zeitstelle,
+  während die Leiste unter ihm wegscrollt — er landete beim Loslassen an der falschen Zeit. Der
+  Versatz steuert **Anzeige und Schreibwert**; beide sind derselbe Wert.
 - **dnd-kit scrollt bereits — aber an der falschen Kante.** Am Fenster gemessen (dieselbe Geste,
   20:42-Projekt): ohne die eigene Regel **2112 px in 1,2 s**, mit ihr **3380 px**. Der Unterschied
   ist der Auslöser: dnd-kit reagiert an der **Fensterkante**, die Regel an der **Kante der
@@ -49,16 +55,20 @@ sollen dort ihr **Motiv** zeigen. Dazu der Auto-Scroll beim Ziehen.
   `tests/unit/zeitleiste-motiv.spec.ts` (der Block hängt ein Canvas ein; `holeMotiv` wird mit
   Aktion/Vorlage/Marke gerufen). Zusammen **+8** Fälle: **5625/5625**.
 - **Fenster (Auto-Scroll):** `scrollLeft` **0 → 140 → 3470** in 1,2 s Halten an der rechten Kante
-  des 20:42-Projekts; mit entfernter Schreibzeile **2112 px** (dnd-kit allein), also ein
-  nachweisbarer Unterschied.
+  des 20:42-Projekts (Bibliotheks-Zug); mit entfernter Schreibzeile **2112 px** (dnd-kit allein),
+  also ein nachweisbarer Unterschied. **Unterbrechungs-Zug:** **0 → 28 → 1008**; ohne das lokale
+  Scrollen **0 px**. Das Projekt blieb nach der Probe bei **3** Unterbrechungen (Fenster mit
+  gedrückter Maustaste geschlossen, kein `pointerup`).
 - **Fenster (Motiv):** Der Sichtvergleich (`scripts/schau.mjs --start --gross`) zeigt die
   Aktions-Boxen mit Motiv statt lila Fläche; das Bild ist der Beleg, nicht die Behauptung.
 - **Treiber:** `npm run durchlauf` **0 Befunde** (1 Untersuchung: Mehrfachauswahl; 1 MANUELL:
   Export-Dialog).
-- **Gegenproben:** 3, jede rot und **byte-identisch** zurückgenommen (SHA-256 vorher = nachher):
+- **Gegenproben:** 4, jede rot und **byte-identisch** zurückgenommen (SHA-256 vorher = nachher):
   1. `autoScrollSchritt` immer 0 → 3 Tests rot.
   2. Motiv aus dem Segment-Block entfernt → `zeitleiste-motiv` rot.
-  3. `scrollLeft`-Schreiben entfernt → Fensterprobe **ohne** eigenen Scroll (2112 px = dnd-kit).
+  3. `scrollLeft`-Schreiben im dnd-kit-Lauf entfernt → Fensterprobe **ohne** eigenen Scroll
+     (2112 px = dnd-kit).
+  4. Lokales Scrollen im Unterbrechungs-Zug entfernt → Fensterprobe **0 px**.
 - **Werkzeug:** `scripts/schau.mjs` hat `--panel video|aktionen|eigenschaften` bekommen (zeigt ein
   Sidepanel ohne den Aktions-Editor); die Sichtprüfung der Bibliothek war vorher nicht möglich.
 
@@ -75,7 +85,7 @@ sollen dort ihr **Motiv** zeigen. Dazu der Auto-Scroll beim Ziehen.
 
 ## 5. Doku
 
-- TK **v3.54** (9.7.8), `.docx` **2533 Absätze**, `unzip -t` heil, **0 Backticks**, mit `--dfd`
+- TK **v3.54** (9.7.8), `.docx` **2541 Absätze**, `unzip -t` heil, **0 Backticks**, mit `--dfd`
   erzeugt. AD unverändert v1.13 (keine Anforderungsänderung).
 
 **Nicht gepusht** — mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**

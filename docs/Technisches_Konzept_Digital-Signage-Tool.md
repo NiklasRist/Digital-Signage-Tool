@@ -1515,6 +1515,13 @@ wird **nicht** gescrollt. Der Lauf (`requestAnimationFrame`, ~60 Bilder/s) häng
 `useDndMonitor`; die Zeigerposition ist **Drag-Start plus Delta**, kein zweites Maus-Listener-Paar
 neben dnd-kit.
 
+**Auch der eigene Zug einer Unterbrechung.** Die lila Aktions-Kästen im Video ziehen mit **eigenem
+Pointer-Handling** (kein dnd-kit, `stopPropagation` am Kasten). Sie melden den Zeiger an denselben
+Lauf; zusätzlich hält der Zug den **Scroll-Stand beim Start** fest und rechnet den **Scroll-Weg** in
+den Versatz ein (`pointerDelta + scrollDelta`). Ohne diesen Anteil bliebe der Kasten an der alten
+Zeitstelle, während die Leiste unter ihm wegscrollt — er würde beim Loslassen an der falschen Zeit
+landen. Der Versatz steuert **Anzeige und Schreibwert**; beide sind derselbe Wert.
+
 **dnd-kit scrollt bereits — aber an der falschen Kante.** Am Fenster gemessen (dieselbe Geste,
 20:42-Projekt): ohne die eigene Regel **2112 px in 1,2 s**, mit ihr **3380 px**. Der Unterschied ist
 der Auslöser: dnd-kit reagiert an der **Fensterkante**, die Regel an der **Kante der Zeitleiste** —
@@ -1527,10 +1534,12 @@ Auflösung. Die Drop-Regeln (Band/Unterbrechung, 9.7.7) bleiben unverändert.
 
 **Belege.** Unit: `zeit-autoscroll.spec.ts` (7 Fälle, reine Regel), `zeitleiste-motiv.spec.ts`
 (Block hängt ein Canvas ein, `holeMotiv` wird mit Aktion/Vorlage/Marke gerufen). Fenster:
-`scrollLeft` **0 → 140 → 3470** in 1,2 s Halten; der Sichtvergleich zeigt die Motive in den
-Aktions-Boxen. Treiber: **0 Befunde**. Gegenproben: Regel nie scrollen → 3 Tests rot; Motiv aus dem
-Block entfernt → Test rot; `scrollLeft`-Schreiben entfernt → Fensterprobe **ohne** eigenen Scroll
-(2112 px = dnd-kit), jede byte-identisch zurückgenommen.
+`scrollLeft` **0 → 140 → 3470** in 1,2 s Halten (Bibliotheks-Zug) und **0 → 28 → 1008**
+(Unterbrechungs-Zug); der Sichtvergleich zeigt die Motive in den Aktions-Boxen. Treiber:
+**0 Befunde**. Gegenproben (4): Regel nie scrollen → 3 Tests rot; Motiv aus dem Block entfernt →
+Test rot; `scrollLeft`-Schreiben im dnd-kit-Lauf entfernt → Fensterprobe **ohne** eigenen Scroll
+(2112 px = dnd-kit); lokales Scrollen im Unterbrechungs-Zug entfernt → Fensterprobe **0 px**. Jede
+byte-identisch zurückgenommen.
 
 ---
 

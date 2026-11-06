@@ -343,6 +343,7 @@ export function Zeitleiste({
                 vorlagen={vorlagen}
                 holeMarke={holeMarke}
                 motivBereit={motivBereit}
+                scrollRef={scrollRef}
                 aufUnterbrechungEntfernen={aufUnterbrechungEntfernen}
                 aufUnterbrechungVerschieben={aufUnterbrechungVerschieben}
                 ausgewaehlt={ausgewaehlteIds.includes(zeile.elementId)}
@@ -484,6 +485,7 @@ function ZeilenBlock({
   vorlagen,
   holeMarke,
   motivBereit = 0,
+  scrollRef,
 }: {
   zeile: Awaited<ReturnType<typeof baueZeitleistenZeilen>>[number];
   index: number;
@@ -498,6 +500,8 @@ function ZeilenBlock({
   vorlagen?: readonly Vorlage[];
   holeMarke?: (markeId: string) => Marke | null;
   motivBereit?: number;
+  /** 06.11.2026: der Scroll-Container - der eigene Unterbrechungs-Zug scrollt ihn. */
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
   /** #437: Unterbrechung entfernen (Index in `element.unterbrechungen`). */
   aufUnterbrechungEntfernen?: (elementId: string, index: number) => void;
   /** #442: Unterbrechung an eine neue gespielte Zeitstelle schieben. */
@@ -527,8 +531,54 @@ function ZeilenBlock({
   // #437: die Unterbrechungs-Marken des Video-Blocks (sequenzielle Positionen).
   const marken = zeile.art === 'video' && element !== null ? unterbrechungsMarken(element) : []
   // #442: welcher Kasten gerade am Zeiger haengt (nur Bild) - der Schreibvorgang
-  // passiert EINMAL beim Loslassen.
-  const [zug, setzeZug] = useState<{ index: number; startX: number; versatz: number } | null>(null)
+  // passiert EINMAL beim Loslassen. Seit 06.11.2026 traegt der Zug den Scroll-Stand
+  // beim Start: Die Zeitleiste scrollt beim Ziehen, und der Kasten muss diesem Weg
+  // folgen (sonst landete er an der alten Zeitstelle).
+  const [zug, setzeZug] = useState<{
+    index: number
+    startX: number
+    startScroll: number
+    versatz: number
+  } | null>(null)
+  const zeigerRef = useRef<{ x: number; y: number } | null>(null)
+  const ziehtAktion = zug !== null
+  // 06.11.2026: Der EIGENE Zug einer Unterbrechung ist kein dnd-kit-Drag - der
+  // Auto-Scroll der Zeitleiste sieht ihn nicht. Deshalb derselbe Lauf hier, mit dem
+  // selben reinen `autoScrollSchritt`; der Versatz wird je Bild um den Scroll-Weg
+  // ergaenzt, damit der Kasten unter dem Zeiger bleibt.
+  useEffect(() => {
+    if (!ziehtAktion) return
+    const behaelter = scrollRef?.current ?? null
+    if (behaelter === null) return
+    let raf = 0
+    let letzteZeit = 0
+    const lauf = (zeit: number): void => {
+      raf = requestAnimationFrame(lauf)
+      if (zeit - letzteZeit < 16) return
+      letzteZeit = zeit
+      const zeiger = zeigerRef.current
+      if (zeiger === null) return
+      const kasten = behaelter.getBoundingClientRect()
+      const schritt = autoScrollSchritt(zeiger, {
+        links: kasten.left,
+        rechts: kasten.right,
+        oben: kasten.top,
+        unten: kasten.bottom,
+      })
+      if (schritt === 0) return
+      behaelter.scrollLeft += schritt
+      setzeZug((alt) =>
+        alt === null
+          ? null
+          : {
+              ...alt,
+              versatz: zeiger.x - alt.startX + (behaelter.scrollLeft - alt.startScroll),
+            },
+      )
+    }
+    raf = requestAnimationFrame(lauf)
+    return () => cancelAnimationFrame(raf)
+  }, [ziehtAktion, scrollRef])
   // #442: Nach dem Loslassen bleibt der Kasten an der NEUEN Stelle, bis der Main den
   // neuen Stand liefert. Ohne das springt er fuer einen Frame auf die alte Zeitstelle
   // zurueck ("glitcht kurz") - der Schreibweg ist asynchron.
@@ -655,26 +705,48 @@ function ZeilenBlock({
               // Kein Sortier-Drag des Blocks, kein Drop: der Kasten zieht sich selbst.
               ereignis.stopPropagation()
               if (aufUnterbrechungVerschieben === undefined) return
+              zeigerRef.current = { x: ereignis.clientX, y: ereignis.clientY }
               ereignis.currentTarget.setPointerCapture?.(ereignis.pointerId)
               setzeSchwebend(null)
-              setzeZug({ index: marke.index, startX: ereignis.clientX, versatz: 0 })
+              setzeZug({
+                index: marke.index,
+                startX: ereignis.clientX,
+                startScroll: scrollRef?.current?.scrollLeft ?? 0,
+                versatz: 0,
+              })
             }}
             onPointerMove={(ereignis) => {
               if (zug === null || zug.index !== marke.index) return
               ereignis.stopPropagation()
-              setzeZug({ index: marke.index, startX: zug.startX, versatz: ereignis.clientX - zug.startX })
+              zeigerRef.current = { x: ereignis.clientX, y: ereignis.clientY }
+              setzeZug({
+                ...zug,
+                versatz:
+                  ereignis.clientX -
+                  zug.startX +
+                  ((scrollRef?.current?.scrollLeft ?? 0) - zug.startScroll),
+              })
             }}
             onPointerUp={(ereignis) => {
               if (zug === null || zug.index !== marke.index) return
               ereignis.stopPropagation()
-              const versatz = ereignis.clientX - zug.startX
+              zeigerRef.current = null
+              // Der Versatz enthaelt den SCROLL-Weg: Die Leiste hat waehrend des Zugs
+              // gescrollt, und der Kasten hat sich mit ihr bewegt.
+              const versatz =
+                ereignis.clientX -
+                zug.startX +
+                ((scrollRef?.current?.scrollLeft ?? 0) - zug.startScroll)
               setzeZug(null)
               // Ein Klick ist kein Zug: unter 2 px passiert nichts.
               if (Math.abs(versatz) < 2) return
               setzeSchwebend({ index: marke.index, versatz, alteZeit: marke.zeitstelle })
               aufUnterbrechungVerschieben?.(zeile.elementId, marke.index, marke.zeitstelle + versatz / pxProSekunde)
             }}
-            onPointerCancel={() => setzeZug(null)}
+            onPointerCancel={() => {
+              zeigerRef.current = null
+              setzeZug(null)
+            }}
             style={{
               position: 'absolute',
               left: Math.max(0, Math.round(marke.startSekunden * pxProSekunde)),
