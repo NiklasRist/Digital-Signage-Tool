@@ -127,8 +127,11 @@ Mehrfachauswahl). `einzel-instanz` (#289) bleibt flaky.
 ## 9. Ehrlich offen
 
 - **Kein Komponententest** für die Effekt-Gruppe (nur `unterschiede`).
-- `bereitschaft.py` meldet #464 weiter **UNKLAR** — die Regex liest nur eine einzeilige
-  `Datei:`-Angabe, nicht die `Dateien:`-Liste. Werkzeuggrenze, kein Bauzustand.
+- **KORRIGIERT bei der Übergabe:** `bereitschaft.py` meldet **0 UNKLAR** (M0–M10 vollständig
+  „gebaut"). Die frühere Sorge war gegenstandslos — ein **geschlossenes** Issue zählt als
+  „gebaut", bevor die Dateizeile überhaupt gelesen wird (`tools/bereitschaft.py`,
+  `state == "CLOSED"`). Die Regex-Grenze (nur einzeilige `Datei:`-Angabe, nicht
+  `Dateien:`-Listen) bleibt für **offene** Issues bestehen. Werkzeuggrenze, kein Bauzustand.
 - **71 Dependabot-Findings** (33 high, 25 moderate, 13 low), nicht angefasst.
 - Der Treiber-Schritt rendert das **ganze** 70-s-Projekt zweimal (~2× 70 s). Das ist korrekt, aber
   teuer; ein eigener Kurzprojekt-Aufbau wäre schneller und ist nicht gebaut.
