@@ -206,10 +206,17 @@ def main():
 
     # M9 traegt den Umbau v3.31 (Split-Screen gestrichen). Ohne ihn faellt der ganze
     # Meilenstein lautlos aus der Ausgabe - dieselbe Luecke wie oben bei den Zweigen.
-    for praefix in ("M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"):
+    #
+    # 09.11.2026: Die Zuordnung darf NICHT mit startswith(praefix) arbeiten - "M1" ist
+    # ein Praefix von "M10 - Effekte". Mit dem M10-Lauf zaehlte das Werkzeug dessen
+    # sechs Issues zu M1 (18 statt 12) und meldete dort 5 als ungebaut. Die Grenze ist
+    # eine Ziffer: "M1 " trifft, "M10" nicht.
+    for praefix in ("M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9",
+                    "M10", "M11", "M12"):
         nummern = sorted(
             i["number"] for i in issues
-            if (i.get("milestone") or {}).get("title", "").startswith(praefix)
+            if re.match(rf"^{re.escape(praefix)}(?![0-9])",
+                        (i.get("milestone") or {}).get("title", ""))
         )
         if not nummern:
             continue

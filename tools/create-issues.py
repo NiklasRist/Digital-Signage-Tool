@@ -609,6 +609,28 @@ def labels_fuer(nr, titel, body):
     if nr in BLOCKIEREND: L.append("braucht-entscheidung")
     return L
 
+# ---------------------------------------------------------------- M10 (Effekte)
+# Profil fuer FA-25 / TK 9.16. Sechs Issues; 1–3 und 6 tragen Pixelgleichheit,
+# 4 und 5 sind UI. Kein braucht-entscheidung: AD 4.10 und TK 9.16 sind entschieden.
+M10_UI = {4, 5}
+M10_PIXEL = {1, 2, 3, 4, 6}
+
+def labels_m10(nr, titel, body):
+    L = []
+    if "[shared]" in titel:
+        L += ["modul:contracts", "ebene:geteilt", "art:logik"]
+    elif "[template-canvas]" in titel:
+        L += ["modul:template-canvas", "ebene:renderer"]
+    elif "[action-editor]" in titel:
+        L += ["modul:action-editor", "ebene:renderer"]
+    elif "[render-service]" in titel:
+        L += ["modul:render-service", "ebene:main", "art:logik"]
+    if "ebene:renderer" in L and "art:logik" not in L:
+        L.append("art:ui" if nr in M10_UI else "art:logik")
+    if nr in M10_PIXEL:
+        L.append("risiko:pixelgleichheit")
+    return L
+
 def sx_zu_nr(text):
     """Sx-Verweise (M0-Issues) auf echte #x umstellen + zwei Redundanzen glätten."""
     t = re.sub(r"(?<![#\w])S(1[0-2]|[1-9])\b", lambda m: "#" + m.group(1), text)
@@ -629,10 +651,10 @@ if len(PRAEFIXE) != 1:
 PRAEFIX = PRAEFIXE.pop()
 PROFIL = {"M1": labels_fuer, "M2": labels_m2, "M3": labels_m3,
           "M4": labels_m4, "M5": labels_m5, "M6": labels_m6,
-          "M7": labels_m7, "M8": labels_m8}.get(PRAEFIX)
+          "M7": labels_m7, "M8": labels_m8, "M10": labels_m10}.get(PRAEFIX)
 if PROFIL is None:
     print(f"ABBRUCH: kein Label-Profil fuer Praefix '{PRAEFIX}'."
-          f" Bekannt: M1, M2, M3, M4, M5, M6, M7. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
+          f" Bekannt: M1, M2, M3, M4, M5, M6, M7, M10. Neues Profil im Skript anlegen, nicht raten."); sys.exit(1)
 print(f"Profil: {PRAEFIX}  |  Milestone: {MILE}  |  {len(dateien)} Dateien aus {B}\n")
 
 eintraege = []

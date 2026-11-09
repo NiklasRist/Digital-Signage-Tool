@@ -66,7 +66,7 @@ def main():
             continue
         treffer = [z for z in text.split("\n") if ELEMENTART.search(z)]
         if treffer:
-            m = (i.get("milestone") or {}).get("title", "?")[:2]
+            m = (i.get("milestone") or {}).get("title", "?").split(" ")[0]
             betroffen.append((i["number"], m, i["title"][:44], len(treffer), treffer[0].strip()[:90]))
         elif ASSETTYP.search(text):
             nur_asset.append(i["number"])
