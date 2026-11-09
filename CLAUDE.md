@@ -11,6 +11,23 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
+## STAND HEUTE (09.11.2026, vierundfünfzigste Sitzung: Effekte — von der Entscheidung bis zum Fensterbeleg)
+
+**Auftrag:** Niklas, 06.11.: *„es gibt so tolle Effekte um Bilder so wirken zu lassen wie als würden sie sich bewegen"*. Am 09.11. entschieden: **Option B** (Ken Burns, Text-Einblendung, Preis-Pop) **plus** Glanz-Sweep, hochzählender Preis, Bild-Reveal, Puls, Zoom-Atmen, Drift, Parallax — **einzeln schaltbar**, nicht als Paket.
+
+- **DOKU:** AD **v1.14** (neuer Abschnitt **4.10**, **FA-25**, Akzeptanzkriterium 11, Glossar) und TK **v3.55** (neuer Abschnitt **9.16** mit acht Unterabschnitten). Fundstellen mitgezogen: 9.2.2 (`RenderItemSegment` trägt `png` **oder** `bildplan`), 9.8.2 (`Aktion.effekte`), 9.9.2, Modulübersicht, Stand der Verträge. `.docx` beider Dokumente im selben Commit neu erzeugt (AD 420 Absätze, TK 2653, 0 Backticks, TK mit DFD).
+- **GEBAUT UND GESCHLOSSEN: #459–#463.**
+  - **#459** `src/shared/effekte.ts` + `Aktion.effekte` — 29 Tests.
+  - **#460** `src/shared/bildplan.ts` — 11 Tests. 10-s-Segment = **60 gezeichnete Frames** statt 300.
+  - **#461** `zeichneSegment(..., zustand?)`; Zonen rechnen ihre eigenen Werte. Ohne Zustand **exakt** der alte Weg.
+  - **#462** Vorschau in `requestAnimationFrame`, `preview-player` mit `bild`.
+  - **#463** Gruppe „Effekte" im Inspector; `unterschiede` vergleicht **inhaltlich**.
+- **FENSTERBELEG (`16439ec`, `scripts/beleg-effekt.mjs`):** `{"vorherGleich":true,"nachherGleich":false,"groesse":53751}` — **ohne** Effekt sind zwei Aufnahmen im Abstand von 0,5 s byte-gleich, **mit** „Zoom-Atmen" nicht. Die Gegenprobe ist der Kern.
+- **BEFUND, entschieden:** Die Zone `hintergrund` ist in **allen acht** Vorlagen eine Farbfläche — ein Zoom darauf wäre unsichtbar, Parallax hätte keine zweite Ebene. **Deshalb wirken Zoom-Atmen, Drift und Parallax auf das MOTIV**; Parallax nimmt die Hintergrundfläche als Gegenspieler (0,6×). AD 4.10 / TK 9.16.2 korrigiert und committet (`a423bb4`).
+- **GATE:** Typecheck 0, Lint 0, Build 0, Unit **5673/5673**, Integration 51/51, Treiber 0 Befunde. `einzel-instanz` (#289) fiel in einem Lauf, einzeln **3/3 grün**.
+- **EHRLICH OFFEN:** **#464 fehlt** (Bildplan im Render, `bildfolge.ts`) — deshalb ist die **Dauer** eines gerenderten Effekt-Segments **nicht gemessen**; der Beleg zeigt nur die Vorschau. **Kein Komponententest** für die Effekt-Gruppe (nur `unterschiede`). **Kein Treiber-Schritt FA-25** — die Matrix führt ihn als **Lücke**. `bereitschaft.py` zählt **#461 fälschlich als gebaut**, weil `zeichne-segment.ts` schon existiert.
+- **NICHT GEPUSHT:** **18 Commits** vor `origin/main` — mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
+
 ## STAND HEUTE (06.11.2026, dreiundfünfzigste Sitzung: Die Zeitleiste zeigt Aktions-Motive, Auto-Scroll beim Ziehen)
 
 **Volltext: [`docs/agents/uebergabe-2026-11-06-zeitleiste.md`](docs/agents/uebergabe-2026-11-06-zeitleiste.md).**
