@@ -37,9 +37,12 @@
 - **DOKU:** TK **v3.54** (9.7.8), `.docx` **2541 Absätze**, `unzip -t` heil, 0 Backticks. AD v1.13
   unverändert.
 - **Ehrlich offen:** Das Motiv ist bei 8 px/s klein (eine 10-s-Box ist 80 px breit, sichtbar ist der
-  linke Teil); dnd-kit scrollt weiter mit (die Summe ist gemessen); ein Drop außerhalb der Zeitleiste
-  kann am nächsten Ziel landen (bestehende `closestCenter`-Erkennung, nicht behoben); kein
-  Treiber-Schritt für die neuen Dinge (Unit + zwei Fensterproben + Sichtvergleich).
+  linke Teil); dnd-kit scrollt weiter mit (die Summe ist gemessen); kein Treiber-Schritt für die
+  neuen Dinge (Unit + zwei Fensterproben + Sichtvergleich).
+- **NACHTRAG (Niklas, 06.11.2026): Der Drop neben der Zeitleiste bleibt.** *„das sollst ganz normal
+  einfügen weil die aktionen sind teil des videos"* — eingefügt wird **auf** der Zeitleiste (auch
+  zwischen zwei Blöcken), und auch ein Loslassen **daneben** fügt am nächstgelegenen Ziel ein. Der
+  frühere Nebenbefund ist damit **kein Fehler**: kein Bau, kein Sonderfall, TK/AD unverändert.
 - **Nicht gepusht:** **6 Commits** vor `origin/main` **vor** diesem Übergabe-Commit (`d02e56b`,
   `73691fe`, `4f53b24`, `07da2a6`, `0e94615`, `f70b6e0`); mit diesem Commit **7**. Die Zahl wächst
   mit jedem Doku-Commit — mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf

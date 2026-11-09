@@ -44,10 +44,12 @@ sollen dort ihr **Motiv** zeigen. Dazu der Auto-Scroll beim Ziehen.
   Unterschied ist der Auslöser: dnd-kit reagiert an der **Fensterkante**, die Regel an der **Kante
   der Zeitleiste** — und die liegt bei 1440 px rund 16 px davor, bei kleineren Fenstern deutlich
   weiter innen.
-- **Ein Nebenbefund, offen:** Ein Drag, der außerhalb der Zeitleiste losgelassen wird, kann trotzdem
-  am zuletzt nächstgelegenen Ziel landen (die Probe legte eine Unterbrechung an, obwohl sie auf der
-  Quellzeile losließ). Das ist die bestehende `closestCenter`-Erkennung, nicht Teil dieses Auftrags;
-  die Probe hat das Projekt danach auf den Stand mit **3** Unterbrechungen zurückgesetzt.
+- **Ein Nebenbefund — entschieden (Niklas, 06.11.2026):** Ein Drag, der außerhalb der Zeitleiste
+  losgelassen wird, landet am zuletzt nächstgelegenen Ziel (die Probe legte eine Unterbrechung an,
+  obwohl sie auf der Quellzeile losließ). **Das bleibt so:** *„das sollst ganz normal einfügen weil
+  die aktionen sind teil des videos"*. Eingefügt wird auf der Zeitleiste (auch zwischen zwei
+  Blöcken), und auch daneben wird eingefügt — **kein Sonderfall, keine Änderung**. Die Probe hatte
+  das Projekt danach auf den Stand mit **3** Unterbrechungen zurückgesetzt.
 
 ## 3. Belege
 
@@ -79,7 +81,8 @@ sollen dort ihr **Motiv** zeigen. Dazu der Auto-Scroll beim Ziehen.
   ein eigener, breiterer Aktionsstreifen war nicht der Auftrag.
 - **dnd-kit scrollt weiter mit:** Die eigene Regel ersetzt den AutoScroller nicht, sie ergänzt ihn.
   Am Fenster ist die Summe gemessen (rund 3400 px), nicht getrennt.
-- **Der Drop außerhalb** (siehe 2., Nebenbefund) ist nicht behoben.
+- **Der Drop außerhalb** (siehe 2.) ist **entschieden**, kein Mangel: Er fügt am nächsten Ziel ein,
+  weil die Aktionen Teil des Videos sind.
 - **Kein Treiber-Schritt** für Motiv/Auto-Scroll: Der Treiber misst die neuen Dinge nicht, die
   Belege sind Unit + zwei Fensterproben + Sichtvergleich.
 
