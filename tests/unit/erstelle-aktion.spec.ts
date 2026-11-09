@@ -167,6 +167,32 @@ describe("erstelleAktion (#38)", () => {
   });
 });
 
+describe("erstelleAktion - Effekte (09.11.2026, TK 9.16.1)", () => {
+  it("uebernimmt den Effekt-Satz und NORMALISIERT ihn auf die Wirksamkeitsdauer", async () => {
+    const ergebnis = await erstelleAktion(
+      entwurf({
+        standardDauer: 15,
+        effekte: { preisZaehlt: { staerke: 150, vonSekunden: 0, bisSekunden: 99 } },
+      }),
+    );
+
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+    // Staerke auf 100 geklemmt, Fenster auf hoechstens 3 s (EFFEKT_GRENZEN).
+    expect(ergebnis.wert.effekte).toEqual({
+      preisZaehlt: { staerke: 100, vonSekunden: 0, bisSekunden: 3 },
+    });
+  });
+
+  it("ohne Effekte steht null - kein Zufallssatz und kein fehlendes Feld", async () => {
+    const ergebnis = await erstelleAktion(entwurf());
+
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+    expect(ergebnis.wert.effekte).toBeNull();
+  });
+});
+
 describe("erstelleAktion (#319) - markeId als Pflicht", () => {
   it("leert markeId wird mit ungueltige_eingabe abgewiesen, ohne Project.aktionen zu veraendern", async () => {
     const vorher = offen.aktionen.map((a) => a.id);

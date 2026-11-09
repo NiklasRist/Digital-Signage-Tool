@@ -231,6 +231,50 @@ describe("bearbeiteAktion (#319) - markeId", () => {
   });
 });
 
+describe("bearbeiteAktion - Effekte (09.11.2026, TK 9.16.1)", () => {
+  it("uebernimmt einen Effekt-Satz normalisiert", async () => {
+    const ergebnis = await bearbeiteAktion("a1", {
+      effekte: { zoomAtmen: { staerke: 100 } },
+    });
+
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+    expect(ergebnis.wert.effekte).toEqual({ zoomAtmen: { staerke: 100 } });
+    expect(offen.aktionen[0]?.effekte).toEqual({ zoomAtmen: { staerke: 100 } });
+  });
+
+  it("klemmt ein Fenster auf die Wirksamkeitsdauer", async () => {
+    const ergebnis = await bearbeiteAktion("a1", {
+      effekte: { textEinblendung: { staerke: 100, vonSekunden: 0, bisSekunden: 10 } },
+    });
+
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+    // Hoechstens 3 s (EFFEKT_GRENZEN), nicht die 10 aus dem Aufruf.
+    expect(ergebnis.wert.effekte).toEqual({
+      textEinblendung: { staerke: 100, vonSekunden: 0, bisSekunden: 3 },
+    });
+  });
+
+  it("ein NICHT mitgeschickter Satz bleibt unangetastet", async () => {
+    await bearbeiteAktion("a1", { effekte: { zoomAtmen: { staerke: 60 } } });
+    const ergebnis = await bearbeiteAktion("a1", { preis: "29,90 EUR" });
+
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+    expect(ergebnis.wert.effekte).toEqual({ zoomAtmen: { staerke: 60 } });
+  });
+
+  it("effekte null LOESCHT den Satz - der Zustand ohne Effekt", async () => {
+    await bearbeiteAktion("a1", { effekte: { zoomAtmen: { staerke: 60 } } });
+    const ergebnis = await bearbeiteAktion("a1", { effekte: null });
+
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+    expect(ergebnis.wert.effekte).toBeNull();
+  });
+});
+
 describe("bearbeiteAktion - Gestaltung je Zone und Bildausschnitt (05.11.2026, TK 9.8.8)", () => {
   it("uebernimmt die Gestaltung normalisiert", async () => {
     const antwort = await bearbeiteAktion("a1", {

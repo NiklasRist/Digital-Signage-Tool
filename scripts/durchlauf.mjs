@@ -76,6 +76,19 @@ const main = async () => {
     executablePath: ELEKTRON,
     args: [path.join(WURZEL, "dist", "main", "index.cjs")],
     defaultViewport: null,
+    // Der Lauf enthaelt seit 09.11.2026 zwei ECHTE Render von je ~70 s (#FA-25).
+    // Nach dem zweiten Lauf hat die Standardfrist von 180 s einmal nicht gereicht
+    // (ProtocolError "Runtime.callFunctionOn timed out", 09.11.2026) - die Frist ist
+    // ein Messwerkzeug, kein Produktverhalten; sie darf den Beleg nicht abschneiden.
+    protocolTimeout: 900_000,
+  });
+  browser.on("disconnected", () => console.log("[puppeteer] Browser getrennt."));
+  // Die App schreibt ihre Main-Meldungen auf stderr. Ohne diese Zeilen ist ein
+  // stiller Abbruch des Fensters im Protokoll unsichtbar (Befund 09.11.2026).
+  const electronProzess = browser.process();
+  electronProzess?.stderr?.on("data", (stueck) => {
+    const text = String(stueck).trim();
+    if (text !== "") console.log("[electron-err] " + text.slice(0, 500));
   });
 
   // Am Funktionsumfang, damit das finally ihn setzen kann.
@@ -85,6 +98,7 @@ const main = async () => {
     const erlebteFehler = [];
     seite.on("pageerror", (tu) => erlebteFehler.push(String(tu)));
     seite.on("error", (tu) => console.log("[fenster crash] " + String(tu)));
+    seite.on("close", () => console.log("[puppeteer] Seite geschlossen."));
     seite.on("close", () => {
       // Nur ein UNERWARTETES Schliessen ist ein Befund fuer das Log; der Abschluss
       // schliesst den Browser selbst (finally).
@@ -123,12 +137,19 @@ const main = async () => {
     await schlafe(2_500);
 
     // Instrumentation: Ereigniskanaele in den Fensterspeicher sammeln.
+    // OHNE NUTZLAST (Befund 09.11.2026): `queue:geaendert` traegt `Auftrag[]`, und ein
+    // Render-Auftrag enthaelt den vollstaendigen `RenderRequest` mit allen PNGs. Wer
+    // `wert: d` mitschreibt, haelt JEDEN Render fuer immer im Fenster - gemessen nach
+    // zwei 70-s-Renders: 292 MB, die ueber die CDP-Verbindung gehen sollten
+    // ("Too large write data is pending", max 256 MB), danach riss die Verbindung ab.
+    // Gebraucht wird von diesem Speicher nur `kanal` (Zaehlung) - also wird nur der
+    // Kanalname abgelegt.
     await seite.evaluate(() => {
       const sammel = [];
       for (const kanal of ["queue:geaendert", "render:fortschritt"]) {
         try {
-          window.api.on(kanal, (d) =>
-            sammel.push({ kanal: kanal, zeit: new Date().toISOString(), wert: d }));
+          window.api.on(kanal, () =>
+            sammel.push({ kanal: kanal, zeit: new Date().toISOString() }));
         } catch (tu) {
           sammel.push({ kanal: kanal, fehler: String(tu) });
         }
@@ -6520,6 +6541,329 @@ const main = async () => {
         } else {
           console.log("[schritt-4g8] VORLAGEN AUS DEM PROJEKTEDITOR GEMESSEN: Ansicht ueber der Reiterflaeche, Rueckweg schliesst (03.11.2026).");
         }
+      }
+    }
+
+    // Schritt 4s - FA-25: Ein Segment mit Effekt wird ueber die ECHTE Oberflaeche
+    // angelegt, ins Video gelegt und gerendert. Gemessen wird die DATEI: Bildzahl und
+    // Dauer unveraendert, und die Preiszone in Bild 0 vs. Bild 30 verschieden.
+    // GEGENPROBE: derselbe Weg ohne Effekt - dann sind die beiden Bilder gleich.
+    if (typeof aktivesProjektId !== "string" || aktivesProjektId.length === 0) {
+      fund("Effekte", "aktives Projekt fuer den Effekt-Beleg",
+        "aktivesProjektId fehlt", "Untersuchung", "config.json");
+    } else {
+      const projektDatei4n = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      const ffmpegPfad4n = path.join(WURZEL, "node_modules", "ffmpeg-static", "ffmpeg");
+      const liesProjekt4n = () => JSON.parse(fs.readFileSync(projektDatei4n, "utf-8"));
+      const warteAuf4n = async (pruefe, frist = 20_000) => {
+        const start = Date.now();
+        while (Date.now() - start < frist) {
+          const wert = pruefe();
+          if (wert !== null && wert !== undefined && wert !== false) return wert;
+          await schlafe(250);
+        }
+        return null;
+      };
+      const klicke4n = async (testid) => seite.evaluate((t) => {
+        const knopf = document.querySelector(`[data-testid="${t}"]`);
+        if (knopf === null) return false;
+        knopf.scrollIntoView({ block: "center" });
+        knopf.click();
+        return true;
+      }, testid);
+      // Felder schreiben beim VERLASSEN (onBlur, TK 9.8.6): Wert setzen, fokussieren,
+      // Blur ausloesen - genau der Weg, den ein Mensch geht.
+      const setzeFeld4n = async (testid, wert) => seite.evaluate(({ t, w }) => {
+        const feld = document.querySelector(`[data-testid="${t}"]`);
+        if (feld === null) return false;
+        const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        feld.focus();
+        setzeWert.call(feld, w);
+        feld.dispatchEvent(new Event("input", { bubbles: true }));
+        feld.blur();
+        return true;
+      }, { t: testid, w: wert });
+      const ffprobe4n = (datei, eintrag, zaehlen = false) => new Promise((fertig) => {
+        const argumente = ["-v", "error", "-select_streams", "v:0"];
+        if (zaehlen) argumente.push("-count_frames");
+        argumente.push("-show_entries", eintrag, "-of", "default=nw=1:nk=1", datei);
+        const prozess = spawn(ffprobeStatic.path, argumente);
+        let aus = "";
+        prozess.stdout.on("data", (d) => { aus += String(d); });
+        prozess.on("exit", () => fertig(aus.trim()));
+      });
+      const ausschnitt4n = (datei, bild) => new Promise((fertig) => {
+        const prozess = spawn(ffmpegPfad4n, [
+          "-hide_banner", "-v", "error", "-i", datei,
+          "-vf", `select=eq(n\\,${String(bild)}),crop=524:150:1300:660`,
+          "-frames:v", "1", "-pix_fmt", "rgb24", "-f", "rawvideo", "-",
+        ]);
+        const teile = [];
+        prozess.stdout.on("data", (d) => teile.push(d));
+        prozess.on("exit", () => fertig(Buffer.concat(teile)));
+      });
+      const unterschied4n = (a, b) => {
+        const laenge = Math.min(a.length, b.length);
+        let zahl = 0;
+        for (let i = 0; i < laenge; i += 1) {
+          if (Math.abs(a[i] - b[i]) > 16) zahl += 1;
+        }
+        return zahl;
+      };
+      const diagnose4n = async (stelle) => {
+        const stand = await seite.evaluate(() => {
+          const oeffner = document.querySelector('[data-testid="composer-render-oefnen"]');
+          const knopf = document.querySelector('[data-testid="render-dialog-ausloeser"]');
+          const feld = document.querySelector('[data-testid="render-dialog-name"]');
+          return {
+            dialog: document.querySelector('[data-testid="render-dialog"]') !== null,
+            feldwert: feld === null ? null : feld.value,
+            knopfGesperrt: knopf === null ? null : knopf.disabled,
+            oeffnerGesperrt: oeffner === null ? null : oeffner.disabled,
+            befund: document.querySelector('[data-testid="render-dialog-befund"]')?.textContent ?? null,
+            meldung: document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? null,
+          };
+        });
+        console.log(`[schritt-4s] Render-Diagnose (${stelle}): ${JSON.stringify(stand)}`);
+        return stand;
+      };
+      const rendere4n = async (name) => {
+        const geoeffnet = await klicke4n("composer-render-oefnen");
+        if (!geoeffnet) {
+          await diagnose4n("Oeffner fehlt");
+          return null;
+        }
+        await schlafe(400);
+        const gesetzt = await seite.evaluate((n) => {
+          const feld = document.querySelector('[data-testid="render-dialog-name"]');
+          if (feld === null) return false;
+          const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+          setzeWert.call(feld, n);
+          feld.dispatchEvent(new Event("input", { bubbles: true }));
+          return true;
+        }, name);
+        if (!gesetzt) {
+          await diagnose4n("Namensfeld fehlt");
+          return null;
+        }
+        await schlafe(200);
+        await seite.evaluate(() => {
+          const knopf = document.querySelector('[data-testid="render-dialog-ausloeser"]');
+          if (knopf !== null) knopf.click();
+        });
+        const ziel = path.join(WURZEL, "projects", aktivesProjektId, "output", `${name}.mp4`);
+        const frist = Date.now() + 150_000;
+        while (Date.now() < frist) {
+          const ordner = path.dirname(ziel);
+          const dateien = fs.existsSync(ordner) ? fs.readdirSync(ordner) : [];
+          if (dateien.includes(`${name}.mp4`) && !dateien.includes(`${name}.mp4.part`)) return ziel;
+          await schlafe(1_000);
+        }
+        await diagnose4n("Datei kam nicht");
+        const queue4n = await seite.evaluate(async () => {
+          const antwort = await window.api.invoke("queue:holeStand");
+          const auftraege = antwort && antwort.ok ? antwort.wert : [];
+          return auftraege.map((auftrag) => ({
+            art: auftrag.art,
+            status: auftrag.status,
+            fehler: auftrag.fehler ?? null,
+          }));
+        });
+        const ordner4n = path.dirname(ziel);
+        const dateien4n = fs.existsSync(ordner4n) ? fs.readdirSync(ordner4n) : [];
+        console.log(`[schritt-4s] Render-Queue: ${JSON.stringify(queue4n)}, Dateien: ${JSON.stringify(dateien4n)}`);
+        return null;
+      };
+      const messe4n = async (datei) => {
+        const bilder = Number(await ffprobe4n(datei, "stream=nb_read_frames", true));
+        const dauer = Number(await ffprobe4n(datei, "format=duration"));
+        return { bilder, dauer };
+      };
+
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(500);
+
+      // Die Bibliothek steht in der Seitenleiste; sie muss auf "Aktionen" stehen,
+      // sonst gibt es den Einstieg nicht (dieselbe Vorbedingung wie beleg-effekt.mjs).
+      const rail4n = '[data-testid="sidepanel-ansicht-aktionen"]';
+      const gedrueckt4n = await seite.evaluate(
+        (a) => document.querySelector(a)?.getAttribute("aria-pressed") === "true", rail4n);
+      if (!gedrueckt4n) {
+        await seite.evaluate((a) => {
+          const knopf = document.querySelector(a);
+          if (knopf !== null) knopf.click();
+        }, rail4n);
+        await schlafe(600);
+      }
+
+      // 1. Neue Aktion ueber die echte Oberflaeche.
+      const angelegt4n = await klicke4n("aktion-anlegen-oeffnen");
+      // Der Selektor laeuft im Fenster; `warteAuf4n` laeuft in Node - deshalb hier
+      // eine eigene Warteschleife mit `seite.evaluate`.
+      let editorDa4n = false;
+      if (angelegt4n) {
+        const frist = Date.now() + 10_000;
+        while (Date.now() < frist && !editorDa4n) {
+          editorDa4n = await seite.evaluate(
+            () => document.querySelector('[data-testid="aktion-titel"]') !== null,
+          );
+          if (!editorDa4n) await schlafe(250);
+        }
+      }
+
+      let aktionId4n = null;
+      let effektAn4n = null;
+      if (!editorDa4n) {
+        fund("Effekte", "der Einstieg Neue Aktion oeffnet den Editor",
+          "aktion-titel fehlt", "Befund", "action-editor/index.tsx");
+      } else {
+        const titel4n = `DurchlaufEffekt ${String(Date.now())}`;
+        await setzeFeld4n("aktion-titel", titel4n);
+        // ERST die Vorlage: Das Preisfeld erscheint nur, wenn die Vorlage eine
+        // Preis-Zone hat (`feld-bedarf`). Danach Preis und Effekt.
+        await klicke4n("aktion-vorlage-vollbild");
+        await schlafe(400);
+        await setzeFeld4n("aktion-preis", "199");
+        await schlafe(200);
+        effektAn4n = await seite.evaluate(() => {
+          const box = document.querySelector('[data-testid="effekt-preisZaehlt"] input[type="checkbox"]');
+          if (box === null) return null;
+          if (!box.checked) box.click();
+          return box.checked;
+        });
+        await schlafe(300);
+        await klicke4n("aktion-anlegen-bestaetigen");
+        aktionId4n = await warteAuf4n(() => {
+          if (!fs.existsSync(projektDatei4n)) return null;
+          const gefunden = liesProjekt4n().aktionen.find((a) => a.titel === titel4n);
+          return gefunden === undefined ? null : gefunden.id;
+        }, 25_000);
+      }
+
+      let unter4n = null;
+      if (aktionId4n === null || effektAn4n !== true) {
+        fund("Effekte", "die neue Aktion wird mit dem Effekt Preis zaehlt gespeichert",
+          `aktionId=${String(aktionId4n)}, effektAn=${JSON.stringify(effektAn4n)}`,
+          "Befund", "action-editor/index.tsx");
+      } else {
+        const gespeichert4n = liesProjekt4n().aktionen.find((a) => a.id === aktionId4n);
+        // DIE ABSPIELMARKE AUF EINE SAUBERE ZEITSTELLE (1 s, Frame 30): „Ins Video"
+        // legt das Segment an die Marke. Bei Frame 1 entstuende ein 1-Bild-Videoteil
+        // vor dem Einschub - gemessen 09.11.2026 scheitert daran die Pruefung der
+        // mittleren Bildrate der fertigen Datei (31500/1049 statt 30/1).
+        const achse4s = await seite.$('[data-testid="zeitleiste-zeitachse"]');
+        const achsenBox4s = achse4s === null ? null : await achse4s.boundingBox();
+        achse4s?.dispose?.();
+        if (achsenBox4s !== null) {
+          await seite.mouse.click(achsenBox4s.x + 8, achsenBox4s.y + achsenBox4s.height / 2);
+          await schlafe(600);
+        }
+        const marke4s = await seite.evaluate(() => {
+          const marke = document.querySelector('[data-testid="zeitleiste-playhead"]');
+          return marke === null ? null : Number(marke.getAttribute("data-frame"));
+        });
+        console.log(`[schritt-4s] Abspielmarke vor dem Einschub: ${JSON.stringify(marke4s)}`);
+        const unterVor4n = (liesProjekt4n().liste.find((e) => e.art === "video")?.unterbrechungen ?? []).length;
+        await klicke4n(`aktion-ins-video-${aktionId4n}`);
+        unter4n = await warteAuf4n(() => {
+          const video = liesProjekt4n().liste.find((e) => e.art === "video");
+          const unterbrechungen = video?.unterbrechungen ?? [];
+          if (unterbrechungen.length <= unterVor4n) return null;
+          return unterbrechungen[unterbrechungen.length - 1] ?? null;
+        }, 25_000);
+        if (unter4n === null) {
+          fund("Effekte", "die Aktion laesst sich als Segment ins Video legen",
+            `Unterbrechungen vorher ${String(unterVor4n)}`, "Befund", "composer/index.tsx");
+        } else if (gespeichert4n?.effekte?.preisZaehlt?.staerke !== 100) {
+          fund("Effekte", "der Effekt steht im gespeicherten Projekt",
+            JSON.stringify(gespeichert4n?.effekte ?? null), "Befund", "action-editor/aktions-entwurf.ts");
+          unter4n = null;
+        }
+      }
+
+      if (unter4n !== null && aktionId4n !== null) {
+        const startBild4n = Math.round(Number(unter4n.zeitstelle) * 30);
+
+        const dateiMit4n = await rendere4n("durchlauf-effekt-mit-" + Date.now());
+        const mit4n = dateiMit4n === null ? null : await messe4n(dateiMit4n);
+        const mitAbw4n = dateiMit4n === null
+          ? null
+          : unterschied4n(
+              await ausschnitt4n(dateiMit4n, startBild4n),
+              await ausschnitt4n(dateiMit4n, startBild4n + 30),
+            );
+
+        // 2. GEGENPROBE: denselben Effekt ausschalten, erneut rendern.
+        await klicke4n(`aktion-bearbeiten-${aktionId4n}`);
+        let editorNochmal4n = false;
+        const fristEditor4n = Date.now() + 10_000;
+        while (Date.now() < fristEditor4n && !editorNochmal4n) {
+          editorNochmal4n = await seite.evaluate(
+            () => document.querySelector('[data-testid="aktion-titel"]') !== null,
+          );
+          if (!editorNochmal4n) await schlafe(250);
+        }
+        let effektAus4n = null;
+        if (editorNochmal4n) {
+          effektAus4n = await seite.evaluate(() => {
+            const box = document.querySelector('[data-testid="effekt-preisZaehlt"] input[type="checkbox"]');
+            if (box === null) return null;
+            if (box.checked) box.click();
+            return !box.checked;
+          });
+          await schlafe(300);
+          await klicke4n("aktion-anlegen-bestaetigen");
+          await warteAuf4n(() => {
+            if (!fs.existsSync(projektDatei4n)) return null;
+            const a = liesProjekt4n().aktionen.find((x) => x.id === aktionId4n);
+            if (a === undefined) return null;
+            return a.effekte === null || a.effekte === undefined ? true : null;
+          }, 25_000);
+        }
+        const dateiOhne4n = effektAus4n === true
+          ? await rendere4n("durchlauf-effekt-ohne-" + Date.now())
+          : null;
+        const ohne4n = dateiOhne4n === null ? null : await messe4n(dateiOhne4n);
+        const ohneAbw4n = dateiOhne4n === null
+          ? null
+          : unterschied4n(
+              await ausschnitt4n(dateiOhne4n, startBild4n),
+              await ausschnitt4n(dateiOhne4n, startBild4n + 30),
+            );
+
+        console.log(`[schritt-4s] Effekt-Render: mit=${JSON.stringify(mit4n)}, ` +
+          `abweichend=${String(mitAbw4n)}, ohne=${JSON.stringify(ohne4n)}, ` +
+          `abweichend=${String(ohneAbw4n)}, Startbild=${String(startBild4n)}`);
+
+        // DIE DAUER-ZUSAGE IST EIN VERGLEICH: dasselbe Projekt einmal MIT und einmal
+        // OHNE Effekt. Nur so haengt sie nicht an der Gesamtlaenge des Projekts (der
+        // Treiber hat an dieser Stelle weitere Elemente in der Liste).
+        const dauerOk4n = mit4n !== null && ohne4n !== null &&
+          Math.abs(mit4n.dauer - ohne4n.dauer) < 0.15;
+        const bilderOk4n = mit4n !== null && ohne4n !== null &&
+          mit4n.bilder === ohne4n.bilder;
+        if (!bilderOk4n || !dauerOk4n) {
+          fund("Effekte", "ein Segment mit Effekt aendert Dauer und Bildzahl nicht",
+            `mit=${JSON.stringify(mit4n)}, ohne=${JSON.stringify(ohne4n)}`,
+            "Befund", "render-service/validierung.ts");
+        } else if (mitAbw4n === null || mitAbw4n <= 100) {
+          fund("Effekte", "der Effekt ist im gerenderten Video sichtbar (Preiszone Bild 0 vs. 30)",
+            `abweichende Bytes=${String(mitAbw4n)}`, "Befund",
+            "renderer/composer/render-ausloesen.ts");
+        } else if (ohneAbw4n === null || ohneAbw4n > 20) {
+          fund("Effekte", "GEGENPROBE: ohne Effekt sind Bild 0 und Bild 30 gleich",
+            `abweichende Bytes=${String(ohneAbw4n)}`, "Befund",
+            "renderer/composer/render-ausloesen.ts");
+        } else {
+          console.log(`[schritt-4s] EFFEKT-RENDER GEMESSEN: ${String(mit4n?.bilder)} Bilder / ` +
+            `${String(mit4n?.dauer)} s mit UND ohne Effekt (unveraendert), ` +
+            `Preiszone mit Effekt ${String(mitAbw4n)} Bytes, ohne Effekt ${String(ohneAbw4n)} Bytes (FA-25).`);
+        }
+
+        // AUFRAEUMEN: die Unterbrechung ist EIN Undo-Schritt; die angelegte Aktion
+        // verschwindet mit dem Projekt in Schritt 5.
+        await klick('[data-testid="undo-pfeil"]');
+        await schlafe(800);
       }
     }
 

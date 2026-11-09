@@ -1,6 +1,7 @@
 // [project-store] erstelleAktion implementieren
 
 import { erzeugeId } from '../../shared/contracts/id'
+import { normalisiereEffekte } from '../../shared/effekte'
 import {
   normalisiereBildAusschnitt,
   normalisiereZonenGestaltung,
@@ -121,6 +122,12 @@ export async function erstelleAktion(
     //    uebernimmt hier der Typechecker: Das Literal ist als `Aktion` deklariert, kommt ein
     //    Pflichtfeld zum Typ hinzu (M8 sieht `markeId` vor, s. unten), bricht DIESE Datei
     //    sofort - laut und an der richtigen Stelle, statt das Feld lautlos wegzuwerfen.
+    // DIE WIRKSAMKEITSDAUER FUER DIE EFFEKTE: dieselbe Basis wie im Editor
+    // (`standardDauer ?? 10`, TK 9.16.6). Waere sie hier eine andere, klemmten
+    // Renderer und Store die Fenster unterschiedlich - und niemand saehe es.
+    const standardDauer = dauerOderNull(aktionsdaten.standardDauer)
+    const effektDauer = standardDauer ?? 10
+
     const aktion: Aktion = {
       id: erzeugeId(),
       titel,
@@ -154,7 +161,7 @@ export async function erstelleAktion(
       // vorab als `standardDauer: 'ausserhalb_bereich'`, #136) NOCH ein Ersatzwert
       // erfunden: `null`
       // heisst "keine Vorgabe", und das Platzieren nimmt dann seinen eigenen Standard.
-      standardDauer: dauerOderNull(aktionsdaten.standardDauer),
+      standardDauer,
       vorlagenId,
 
       // NEU mit #320 (TK 9.8.2): Pflichtfeld. Ueber IPC kann es als `undefined` ankommen -
@@ -182,6 +189,10 @@ export async function erstelleAktion(
       // denn #46 serialisiert das GANZE Projekt.
       zonenGestaltung: normalisiereZonenGestaltung(aktionsdaten.zonenGestaltung),
       bildAusschnitt: normalisiereBildAusschnitt(aktionsdaten.bildAusschnitt),
+
+      // SEIT 09.11.2026 (TK 9.16.1): der Effekt-Satz. NORMALISIERT uebernommen wie die
+      // Gestaltung; `null` heisst "kein Effekt" und ist der Zustand von heute (9.16.4).
+      effekte: normalisiereEffekte(aktionsdaten.effekte, effektDauer),
     }
 
     // ANS ENDE DER BIBLIOTHEK. Die Reihenfolge des Arrays ist auch hier die Reihenfolge

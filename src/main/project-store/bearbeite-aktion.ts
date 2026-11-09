@@ -6,6 +6,7 @@
 import { holeAktivesProjekt } from './aktives-projekt'              // #192
 import { planeAutoSpeicherung } from './auto-speichern'             // #47
 import { mitD1Lock } from './d1-lock'                               // #32
+import { normalisiereEffekte } from '../../shared/effekte'
 import {
   normalisiereBildAusschnitt,
   normalisiereZonenGestaltung,
@@ -253,6 +254,14 @@ export async function bearbeiteAktion(
     }
     if (aktionsdaten.bildAusschnitt !== undefined) {
       aktion.bildAusschnitt = normalisiereBildAusschnitt(aktionsdaten.bildAusschnitt)
+    }
+
+    // SEIT 09.11.2026 (TK 9.16.1): Effekte. Wie die Gestaltung NORMALISIERT uebernommen;
+    // die Fenster klemmen auf die Wirksamkeitsdauer (`standardDauer ?? 10` - dieselbe
+    // Basis wie der Editor, TK 9.16.6). `null` loescht den Satz: "Ohne Effekt gibt es
+    // keinen Plan" (TK 9.16.4), das ist ein gueltiger Zustand.
+    if (aktionsdaten.effekte !== undefined) {
+      aktion.effekte = normalisiereEffekte(aktionsdaten.effekte, aktion.standardDauer ?? 10)
     }
 
     // VORGEMERKT WIRD UNBEDINGT - auch wenn `aktionsdaten` leer war oder jedes Feld seinen
