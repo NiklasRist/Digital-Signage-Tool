@@ -126,7 +126,6 @@ Mehrfachauswahl). `einzel-instanz` (#289) bleibt flaky.
 
 ## 9. Ehrlich offen
 
-- **Kein Komponententest** für die Effekt-Gruppe (nur `unterschiede`).
 - **KORRIGIERT bei der Übergabe:** `bereitschaft.py` meldet **0 UNKLAR** (M0–M10 vollständig
   „gebaut"). Die frühere Sorge war gegenstandslos — ein **geschlossenes** Issue zählt als
   „gebaut", bevor die Dateizeile überhaupt gelesen wird (`tools/bereitschaft.py`,
@@ -144,5 +143,38 @@ Mehrfachauswahl). `einzel-instanz` (#289) bleibt flaky.
 Die Commits dieser Sitzung: `1e23754` (#464), `7b19f03` (Produzent), `0d934e4` (Motiv-Blob),
 `725fce7` (CLAUDE-Stand), `f2871a2` (FA-25-Treiber + Store-Fix). #459–#464 sind geschlossen.
 
-**Nächster Schritt:** es gibt keinen offenen Bauauftrag. Offen sind die Punkte aus Abschnitt 9;
-der Komponententest für die Effekt-Gruppe ist der kleinste davon.
+**Nächster Schritt:** es gibt keinen offenen Bauauftrag. Der Komponententest für die
+Effekt-Gruppe ist in **Nachtrag 11** nachgezogen; offen sind die Punkte aus Abschnitt 9.
+
+## 11. Nachtrag: Doku-Abgleich und Komponententest (09.11.2026)
+
+**Doku-Abgleich** (`e0d4573`). Zwei Stellen waren nicht mehr wahr:
+
+- `CLAUDE.md` nannte für den Motiv-Beleg **14959** abweichende Bytes; diese Übergabe, Commit
+  `0d934e4` und der #464-Kommentar sagen **14972**. Auf 14972 gezogen.
+- Die Behauptung „`bereitschaft.py` meldet #464 weiter UNKLAR" war überholt: ein geschlossenes
+  Issue zählt als gebaut, das Werkzeug meldet **0 UNKLAR**. Korrigiert.
+
+**Komponententest.** `tests/unit/effekt-gruppe.spec.ts` (15 Fälle, jsdom) prüft: zehn
+Einzelschalter (kein Effekt bringt einen anderen mit), die Vorgaben beim Einschalten, die
+Normalisierung über `normalisiereEffekte` (Stärke 0–100, Fenster 1–3 s, Segmentende,
+Stärke 0 = AUS) und die Hinweise ohne Preis/Bild.
+
+**Gegenproben** — jede rot, die Datei danach byte-identisch zurück (SHA-256 `874e2267…`):
+
+| Eingriff | Ergebnis |
+|---|---|
+| `normalisiereEffekte` beim Schreiben entfernt | 7 Tests rot |
+| Hinweise nie angezeigt | 2 Tests rot |
+| jeder Schalter setzt zusätzlich `drift` | 6 Tests rot |
+
+**Gate nach dem Test:** Unit **5733/5733** (373 Dateien), Typecheck tests 0, ESLint/oxlint 0.
+Build, Integration und Treiber **nicht erneut gelaufen** — keine Produktivdatei geändert.
+
+**BEFUND, OFFEN — Fensterlänge:** AD 4.10 nennt 0,4 s (Text-Einblendung), 0,33 s (Preis-Pop),
+0,6 s (Glanz-Sweep) und 0,5 s (Bild-Reveal); TK 9.16.7 setzt **mindestens 1 s**. Der Editor
+folgt TK: Beim Einschalten dieser vier steht das Fenster auf **1 s**, nicht auf der AD-Zahl.
+Entscheidung nötig — AD-Zahlen oder TK-Untergrenze; der Test hält das gebaute Verhalten fest.
+
+**Stand danach:** **27 Commits** vor `origin/main` (25 + `e0d4573` + dieser Commit), nicht
+gepusht — Push nur auf Anweisung.
