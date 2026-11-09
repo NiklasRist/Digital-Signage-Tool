@@ -1869,6 +1869,17 @@ const main = async () => {
         }
         return letzte;
       };
+      const warteKopie4n = async (id, pruefung, fristMs = 12_000) => {
+        const frist = Date.now() + fristMs;
+        let letzte = null;
+        while (Date.now() < frist) {
+          const kopien = await leseArbeitskopien4n();
+          letzte = kopien === null ? null : kopien.find((v) => v.parent === id) ?? null;
+          if (letzte !== null && pruefung(letzte)) return letzte;
+          await schlafe(250);
+        }
+        return letzte;
+      };
       let id4n = null;
       try {
         await klick('[data-testid="reiter-vorlagen"]');
@@ -1938,6 +1949,48 @@ const main = async () => {
                 `Parent=${String(zonenVor4n)}, Kopie=${String(kopie4n?.zonen.length)}`,
                 "Befund", "vorlagen-editor/index.tsx");
             } else {
+              // FA-21: Undo/Redo im Vorlagen-Editor - der sichtbare Pfeil UND die
+              // Tastatur. Die Zone ist gerade hinzugekommen; ein Rueckgaengig muss sie
+              // aus der Arbeitskopie nehmen, ein Wiederherstellen zurueckbringen.
+              let undoRedoOk4n = false;
+              try {
+                const undoAktiv4n = await seite.evaluate(() => {
+                  const k = document.querySelector('[data-testid="undo-pfeil"]');
+                  return k === null ? null : k.disabled === false;
+                });
+                if (undoAktiv4n === true) {
+                  await seite.evaluate(() => document.querySelector('[data-testid="undo-pfeil"]')?.click());
+                  const nachUndo4n = await warteKopie4n(id4n, (v) => v.zonen.length === zonenVor4n);
+                  await seite.keyboard.down("Shift");
+                  await seite.keyboard.down("Meta");
+                  await seite.keyboard.press("z");
+                  await seite.keyboard.up("Meta");
+                  await seite.keyboard.up("Shift");
+                  const nachRedo4n = await warteKopie4n(id4n, (v) => v.zonen.length === zonenVor4n + 1);
+                  undoRedoOk4n = nachUndo4n !== null &&
+                    nachUndo4n.zonen.length === zonenVor4n &&
+                    nachRedo4n !== null &&
+                    nachRedo4n.zonen.length === zonenVor4n + 1;
+                  console.log(`[schritt-4n] Undo/Redo (FA-21): Pfeil aktiv=${String(undoAktiv4n)}, nach Undo=${String(nachUndo4n?.zonen.length)} (erwartet ${String(zonenVor4n)}), nach Redo=${String(nachRedo4n?.zonen.length)} (erwartet ${String(zonenVor4n + 1)}).`);
+                } else {
+                  console.log(`[schritt-4n] Undo/Redo (FA-21): Pfeil aktiv=${String(undoAktiv4n)}.`);
+                }
+              } catch (ursache) {
+                console.log(`[schritt-4n] Undo/Redo (FA-21) warf: ${String(ursache)}`);
+              }
+              if (!undoRedoOk4n) {
+                fund("Vorlagen (FA-21)", "Undo/Redo nimmt die Zone zurueck und stellt sie wieder her",
+                  "Pfeil oder Tastatur ohne Wirkung", "Befund", "app-shell/undo-pfeile.tsx");
+                // Den Zustand fuer den restlichen 4n-Lauf wiederherstellen: erneut eine
+                // Textzone. Ohne das laege die Kopie nach einem halben Undo bei zonenVor4n
+                // und der spaetere FA-13-Beleg wuerde am falschen Schritt rot.
+                await seite.evaluate(() => {
+                  const knopf = [...document.querySelectorAll('[data-testid="zone-hinzufuegen"] button')]
+                    .find((b) => (b.textContent ?? "").includes("Textzone"));
+                  if (knopf !== undefined) knopf.click();
+                });
+                await schlafe(1_200);
+              }
               await seite.evaluate(() => document.querySelector('[data-testid="vorlage-uebernehmen"]')?.click());
               const gespeichert4n = await warteVorlage4n(id4n, (v) => v.zonen.length === zonenVor4n + 1);
               // Die Sitzung schliesst NACH dem Schreibvorgang: Der Bestand ist schon

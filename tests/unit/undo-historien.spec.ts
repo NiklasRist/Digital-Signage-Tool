@@ -8,6 +8,7 @@ import {
   projektHistorie,
   setzeHistorienZurueck,
   vorlagenHistorie,
+  wirksamerUndoBereich,
   type ProjektStand,
 } from '../../src/renderer/app-shell/undo-historien'
 
@@ -60,6 +61,36 @@ describe('bereichFuerReiter (#234) – die Zuordnung', () => {
   it('liefert null fuer einen unbekannten Wert und wirft nicht', () => {
     const fremd = 'unbekannt' as 'zusammenstellen'
     expect(bereichFuerReiter(fremd)).toBeNull()
+  })
+})
+
+describe('wirksamerUndoBereich (FA-21) – offene Ansicht vor Reiter', () => {
+  const ohneAnsicht = { marken: false, aktionen: false, vorlagen: false }
+
+  it('die Vorlagen-Ansicht gewinnt ueber den Reiter Zusammenstellen', () => {
+    // Der Fall, den der alte feste Reiter-Weg falsch bediente: Die Ansicht liegt
+    // ueber der Reiterflaeche, der aktive Reiter ist aber weiterhin Zusammenstellen.
+    expect(wirksamerUndoBereich({ ...ohneAnsicht, vorlagen: true, reiter: 'zusammenstellen' }))
+      .toBe('vorlagen-editor')
+  })
+
+  it('die Aktions-Ansicht arbeitet auf dem Projekt - auch ueber dem Vorlagen-Reiter', () => {
+    expect(wirksamerUndoBereich({ ...ohneAnsicht, aktionen: true, reiter: 'vorlagen' }))
+      .toBe('projekt-bearbeitung')
+  })
+
+  it('die Marken-Ansicht hat keine Historie und gewinnt gegen die anderen', () => {
+    expect(wirksamerUndoBereich({
+      marken: true, aktionen: true, vorlagen: true, reiter: 'zusammenstellen',
+    })).toBeNull()
+  })
+
+  it('ohne offene Ansicht entscheidet der Reiter (bereichFuerReiter)', () => {
+    expect(wirksamerUndoBereich({ ...ohneAnsicht, reiter: 'zusammenstellen' }))
+      .toBe('projekt-bearbeitung')
+    expect(wirksamerUndoBereich({ ...ohneAnsicht, reiter: 'vorlagen' }))
+      .toBe('vorlagen-editor')
+    expect(wirksamerUndoBereich({ ...ohneAnsicht, reiter: 'projekte' })).toBeNull()
   })
 })
 

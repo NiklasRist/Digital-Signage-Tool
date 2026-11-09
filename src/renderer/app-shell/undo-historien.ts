@@ -47,6 +47,29 @@ export function bereichFuerReiter(reiter: ReiterId): Historienbereich | null {
   }
 }
 
+/**
+ * Der WIRKSAME Undo-Bereich: Eine offene Ansicht gewinnt ueber den Reiter (FA-21).
+ *
+ * WARUM DAS HIER STEHT UND NICHT IM RAHMEN: Die Regel ist eine reine Funktion ohne
+ * DOM und ohne Zustand - genau wie `bereichFuerReiter`. Der Rahmen kennt die offenen
+ * Ansichten, diese Datei entscheidet, welche Historie daraus folgt. Nur so ist die
+ * Regel ohne gerendertes Fenster pruefbar (und der Treiber belegt den Weg am Fenster).
+ *
+ * Vorrang: Marken (keine Historie) -> Aktionen (Projekt) -> Vorlagen (Arbeitskopie)
+ * -> aktiver Reiter. Es liegt immer nur EINE Ansicht ueber der Reiterflaeche (9.14.2).
+ */
+export function wirksamerUndoBereich(offen: {
+  marken: boolean
+  aktionen: boolean
+  vorlagen: boolean
+  reiter: ReiterId
+}): Historienbereich | null {
+  if (offen.marken) return null
+  if (offen.aktionen) return 'projekt-bearbeitung'
+  if (offen.vorlagen) return 'vorlagen-editor'
+  return bereichFuerReiter(offen.reiter)
+}
+
 /** Die EINE Historie der Projekt-Bearbeitung (composer + action-editor). */
 export function projektHistorie(): UndoStapel<ProjektStand> {
   return projektStapel

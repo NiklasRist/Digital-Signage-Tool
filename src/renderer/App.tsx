@@ -88,11 +88,10 @@ import {
 } from './composer/reparatur-optionen'
 import type { SichtSchreiber } from './composer/projektzustand'
 import { aktualisiereReparatur } from './composer/reparatur-fuehrung'
-import { sitzungshalter } from './app-shell/undo-aufzeichnung-vorlage'
+import { baueVorlagenUndoZugang, sitzungshalter } from './app-shell/undo-aufzeichnung-vorlage'
 import { wechsleReiter, holeReiter, type ReiterId } from './app-shell/reiter'
-import { registriereTastaturHandler } from './app-shell/tastatur'
-import { macheRueckgaengig, stelleWiederHer } from './app-shell/undo-projekt'
 import { Rahmen } from './app-shell/rahmen'
+import { sichereStand } from './vorlagen-editor/arbeitskopie'
 import { Projektleiste } from './app-shell/projektleiste'
 import { wechsleStandardMarke } from './projekt-verwaltung/standardmarke'
 import { ladeProjektliste } from './projekt-verwaltung/liste'
@@ -275,36 +274,18 @@ export function App(): JSX.Element | null {
 
   useEffect(() => laufe(), [laufe])
 
-  // #350: Die Tastatur wird angeschlossen - ihre Vorgaben sind optional, unverdrahtete
-  // Tasten werden NICHT abgefangen. Verdrahtet hier: Rueckgaengig (Ctrl/Cmd+Z) und
-  // Wiederherstellen (Shift) ueber den Projekt-Zugang des Bootstrap-Laufs (9.13:
-  // nur die gemeinsame Projekt-Historie). Pfeile/Space/Delete haben heute keine
-  // von der Shell aus erreichbaren Ziele (E1: nur Typen ueber Modulgrenzen) - sie
-  // bleiben UNVERDRAHTET und werden nicht abgefangen (siehe Issue-Nachtrag).
-  useEffect(() => {
-    const abmelden = registriereTastaturHandler({
-      rueckgaengig: () => {
-        const zug = zugaengeRef.current
-        if (zug === null) return
-        void macheRueckgaengig({ holeProjekt: () => zug.projektRoh.hole().projekt, setzeProjekt: zug.projektRoh.setzeProjekt }).then((antwort) => {
-          if (!antwort.ok) meldeFehler(antwort.fehler.code, antwort.fehler.meldung)
-        })
-      },
-      wiederherstellen: () => {
-        const zug = zugaengeRef.current
-        if (zug === null) return
-        void stelleWiederHer({ holeProjekt: () => zug.projektRoh.hole().projekt, setzeProjekt: zug.projektRoh.setzeProjekt }).then((antwort) => {
-          if (!antwort.ok) meldeFehler(antwort.fehler.code, antwort.fehler.meldung)
-        })
-      },
-    })
-    return abmelden
-  }, [meldeFehler])
-
   // #424: stabiler Zugang fuer die Undo/Redo-Pfeile - `useCallback` mit leerer
   // Abhaengigkeit, damit die Leiste ihr Abo NICHT bei jedem Render neu aufbaut.
   const holeProjektzugang = useCallback(
     () => (zugaengeRef.current === null ? null : zugaengeRef.current.projektRoh),
+    [],
+  )
+
+  // FA-21: Derselbe Sitzungshalter wie der Vorlagen-Editor (#245). Der Speicherweg ist
+  // `sichereStand` aus dem Editor - die Shell baut den Zugang nur zusammen, sie ruft
+  // keine Vorlagen-Funktion selbst auf. Tastatur und Pfeile liegen in `UndoPfeile`.
+  const holeVorlagenzugang = useCallback(
+    () => baueVorlagenUndoZugang(sitzungshalter(), sichereStand),
     [],
   )
 
@@ -464,9 +445,15 @@ export function App(): JSX.Element | null {
     aktionenAnsicht,
     vorlagenAnsicht,
     warteschlangenLeiste: () => <WarteschlangenLeiste />,
-    // #424: die sichtbaren Undo/Redo-Pfeile in der Reiterleiste.
-    undoRedo: (reiter: ReiterId) => (
-      <UndoPfeile reiter={reiter} holeProjektzugang={holeProjektzugang} meldeFehler={meldeFehler} />
+    // #424/FA-21: die sichtbaren Undo/Redo-Pfeile in der Reiterleiste. Der Rahmen
+    // reicht den WIRKSAMEN Bereich herein (Projekt oder Vorlagen-Editor).
+    undoRedo: (bereich: 'projekt-bearbeitung' | 'vorlagen-editor' | null) => (
+      <UndoPfeile
+        bereich={bereich}
+        holeProjektzugang={holeProjektzugang}
+        holeVorlagenzugang={holeVorlagenzugang}
+        meldeFehler={meldeFehler}
+      />
     ),
     speicherHinweis: () => (
       <>

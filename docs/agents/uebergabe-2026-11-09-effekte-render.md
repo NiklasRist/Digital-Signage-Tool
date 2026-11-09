@@ -207,3 +207,50 @@ Treiber-Schritt `4s` nutzt „Preis zählt" (1 s, unverändert).
 
 **Stand danach:** **28 Commits** vor `origin/main`, Arbeitsbaum sauber, nicht gepusht —
 Push nur auf Anweisung.
+
+## 13. FA-21 nachgezogen: Undo/Redo im Vorlagen-Editor (09.11.2026)
+
+**Der Befund.** FA-21 ist ein **Muss** und verlangt Undo/Redo in **beiden** Editoren. Im
+Vorlagen-Editor war die Logik vollständig gebaut — `macheVorlageRueckgaengig`,
+`stelleVorlageWiederHer`, `baueVorlagenUndoZugang` —, aber **nur von Tests importiert**.
+Die sichtbaren Pfeile waren im Vorlagen-Bereich abgeschaltet
+(`undo-pfeile.tsx`: `aktiv = bereich === 'projekt-bearbeitung'`), und Cmd+Z in `App.tsx`
+lief fest auf die Projekt-Historie. Die Schnappschüsse entstanden dagegen sehr wohl
+(`vorlagen-editor/index.tsx` ruft `uebernimmAenderung`): eine fertige Funktion ohne
+Aufrufer.
+
+**Gebaut.**
+
+- `rahmen.tsx` bestimmt den **wirksamen Bereich**: offene Ansicht vor Reiter. Marken-Ansicht
+  → keine Historie; Aktions-Ansicht → Projekt; Vorlagen-Ansicht → Vorlagen-Editor; sonst der
+  aktive Reiter (`bereichFuerReiter`). Der `undoRedo`-Slot bekommt jetzt diesen Bereich.
+- `undo-pfeile.tsx` wählt danach den Zugang (Projekt oder Vorlagen), zeigt die richtigen
+  Zustände und registriert **Cmd/Strg+Z** und **Shift+Cmd/Strg+Z** selbst — Pfeile und
+  Tastatur laufen über **denselben** `tue`-Weg. In Textfeldern bleibt Cmd+Z dem Feld (#431).
+- `App.tsx` baut den Vorlagen-Zugang mit `baueVorlagenUndoZugang(sitzungshalter(), sichereStand)`
+  — derselbe Sitzungshalter wie der Editor, kein zweiter Stapel. Die alte Tastatur-Verdrahtung
+  nur für das Projekt ist entfallen.
+
+**Tests.** `tests/unit/undo-pfeile.spec.ts` prüft 7 Fälle: kein Bereich → aus; Projekt ohne
+Schnappschuss → aus; Projekt mit Schnappschuss → Klick **und** Cmd+Z; Vorlagen ohne Historie
+→ aus; Vorlagen mit Historie → Klick nimmt zurück, Shift+Cmd+Z stellt wieder her; Cmd+Z im
+Textfeld bleibt beim Feld. `tests/unit/undo-historien.spec.ts` prüft 4 Fälle der reinen
+Regel `wirksamerUndoBereich`: Vorlagen-Ansicht gewinnt über den Reiter, Aktions-Ansicht
+arbeitet auf dem Projekt, Marken-Ansicht hat keine Historie, sonst entscheidet der Reiter.
+
+**Treiber.** Schritt `4n` misst jetzt zusätzlich am echten Fenster: Textzone hinzufügen →
+der sichtbare **Undo-Pfeil** nimmt sie aus der Arbeitskopie zurück → **Shift+Cmd+Z** stellt
+sie wieder her. Lauf vom 09.11.2026: **kein Befund**.
+
+**Doku.** TK **v3.58** (9.14.2: wirksamer Bereich; Pfeile und Tastatur derselbe Weg),
+`.docx` im selben Commit: **2654 Absätze**, `unzip -t` heil, 0 Backticks, zwei Bilder.
+Matrix FA-21 auf **gemessen**: **12 gemessen, 9 teilweise, 3 manuell**; bei den Muss
+**9 gemessen, 5 teilweise, 1 manuell**.
+
+**Gate:** Unit **5741/5741** (373 Dateien), Integration **54/54**, Build 0, Typecheck 0
+(auch tests), ESLint/oxlint 0 (eine bestehende Warnung in `scripts/beleg-effekt-render.mjs`),
+Treiber **0 Befunde** (zwei Läufe: vor und nach der reinen Bereichs-Regel).
+
+**Stand danach:** **1 Commit** vor `origin/main` (dieser FA-21-Commit); die 28 Commits davor
+wurden am 09.11.2026 gepusht (`1569d36..1764274`). Arbeitsbaum sauber, nicht gepusht —
+Push nur auf Anweisung.

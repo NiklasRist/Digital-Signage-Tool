@@ -21,6 +21,7 @@ import {
   oeffneVorlagenAnsicht,
   schliesseVorlagenAnsicht,
 } from '../gemeinsam/vorlagen-ansicht'
+import { wirksamerUndoBereich, type Historienbereich } from './undo-historien'
 
 /** Ein Reiterinhalt. Er bekommt gesagt, ob er gerade sichtbar ist – abgebaut wird er NICHT. */
 export type ReiterInhalt = (eigenschaften: { sichtbar: boolean }) => JSX.Element
@@ -40,9 +41,10 @@ export interface RahmenEigenschaften {
   meldungsFlaeche?: () => JSX.Element
   /** #424: Die sichtbaren Undo/Redo-Pfeile. Sitzen in der Reiterleiste und überleben den
    *  Reiterwechsel (TK 9.14.2: im Marken-Reiter abgeschaltet, nicht an einen fremden Stapel
-   *  gebunden). Der SLOT bekommt den aktiven Reiter, weil nur der Rahmen ihn kennt. Fehlt er,
-   *  bleibt der Platz leer – es wird NICHTS ersatzweise gezeigt. */
-  undoRedo?: (reiter: ReiterId) => JSX.Element
+   *  gebunden). Der SLOT bekommt den WIRKSAMEN Bereich, weil nur der Rahmen die offenen
+   *  Ansichten kennt: Die Vorlagen-Ansicht liegt ueber der Reiterflaeche und arbeitet auf
+   *  einer EIGENEN Historie (FA-21/TK 9.13). Fehlt der Slot, bleibt der Platz leer. */
+  undoRedo?: (bereich: Historienbereich | null) => JSX.Element
   /** #456: Die Projektleiste über der Reiterfläche (TK 9.14.1, v3.32). Sie erscheint nur,
    *  solange ein Projekt offen ist – das entscheidet ihr Träger, nicht der Rahmen. Fehlt der
    *  Slot, bleibt die Fläche leer; es wird NICHTS ersatzweise gezeigt. */
@@ -176,6 +178,15 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
   // Vorlagen - in dieser Reihenfolge wird gerendert; die Oeffnen-Wege schliessen die
   // jeweils anderen (Projektleiste unten, Composer-Effekt oben).
   const ansichtAktiv = markenAktiv || aktionenAktiv || vorlagenAktiv
+  // FA-21: Welche Historie gilt? Eine offene Ansicht gewinnt ueber den Reiter. Die
+  // Regel selbst ist rein und in `undo-historien.ts` geprueft (wirksamerUndoBereich):
+  // Marken ohne Historie, Aktionen auf dem Projekt, Vorlagen auf der Arbeitskopie.
+  const undoBereich: Historienbereich | null = wirksamerUndoBereich({
+    marken: markenAktiv,
+    aktionen: aktionenAktiv,
+    vorlagen: vorlagenAktiv,
+    reiter: zustand.aktiv,
+  })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -202,7 +213,7 @@ export function Rahmen(eigenschaften: RahmenEigenschaften): JSX.Element {
             {REITER_BESCHRIFTUNG[reiter]}
           </button>
         ))}
-        {eigenschaften.undoRedo ? eigenschaften.undoRedo(zustand.aktiv) : null}
+        {eigenschaften.undoRedo ? eigenschaften.undoRedo(undoBereich) : null}
         {eigenschaften.speicherHinweis ? eigenschaften.speicherHinweis() : null}
       </nav>
 

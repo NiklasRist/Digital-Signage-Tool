@@ -1,9 +1,8 @@
 # Treiber-Matrix: Anforderung -> Szenario
 
-**Stand:** 28.10.2026. Letzte Messung am Fenster: Lauf vom **28.10.2026** - neu darin sind
-**4o** (Statistik-Leiste, #394), **4p** (Canvas-Pixel/Blob-URL, #364), **4q** ("Neue Aktion"
-anlegen, #445) und **4r** (Einblendung anlegen, #100); alle uebrigen Messungen stammen vom
-22.10.2026.
+**Stand:** 09.11.2026. Letzte Messung am Fenster: Lauf vom **09.11.2026** - neu darin sind
+**4s** (Effekte, FA-25) und der Undo/Redo-Teil in **4n** (Vorlagen-Editor, FA-21); die
+uebrigen Messungen stammen aus den Laeufen vom 22.10., 28.10. und den Nachlaeufen bis 09.11.
 **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
 **Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-25),
 `scripts/durchlauf.mjs` (Treiber, echter Fensterlauf), `docs/agents/q4-test-audit.md` (Q4-3).
@@ -62,22 +61,23 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-18 | Auftrag entfernen, laufenden Render abbrechen (Soll) | 4l | Ein 30-Elemente-Render laeuft; ein dahinter eingereihter Import steht als `wartet` und wird ueber "Aus der Warteschlange nehmen" entfernt (Zeile weg, Render laeuft weiter). Danach "Render abbrechen": die Rueckfrage erscheint mit Klartext ("keine Ausgabedatei"), Bestaetigen beendet den Render, die Zeile verschwindet, kein Auftrag bleibt im Stand, keine Ausgabedatei entsteht. **Seit 21.10.2026.** | gemessen |
 | FA-19 | Gefuehrte Reparatur; Render erst frei, wenn alles behoben | 4h, 4i | Kaputte Stelle erzeugt und Projekt neu geoeffnet: Panel da, Fortschritt "0 von N behoben", Render-Knopf `disabled`; Fix "Element entfernen" schrumpft die Liste, Cmd+Z stellt in EINEM Schritt her. Vierter Fall (#438) als `unterbrechung` belegt. | gemessen |
 | FA-20 | Split-Screen/Einblendung, Rotation, Unterbrechung (Muss) | 4b5, 4b6, 4f2, 4f7, 4f4b, 4f8 | Unterbrechung pausiert das Video an der Zeitstelle und laeuft danach weiter; ein Drop auf den Video-Koerper erzeugt EINE Marke; ein Band-Drop legt einen Abschnitt im Store an, ohne die Blockzahl zu aendern, und ist ein Undo-Schritt. **4f7 (#457):** Die Abspielmarke der Zeitleiste folgt der Wiedergabe (Frame und `left` wachsen) und steht bei Pause still. **4f4b (01.11.2026):** die GEGENRICHTUNG - ein Klick auf die Zeitachse setzt Marke UND `video.currentTime` (gemessen: Frame 60 -> 30, Videozeit 1 s). **4f8 (02.11.2026, „Ins Video" als Klick):** eine GANZBILD-Aktion wird als Unterbrechung an die **Abspielmarke** gelegt (Marke Frame 30 -> `zeitstelle` **1,00 s**, Store nach 4270 ms, kein neues Listenelement); eine BAND-Aktion haengt einen **Abschnitt** ans Werbeband (1 -> 2, Liste unveraendert, Zeile sagt „Band ab 0:00"). Beide Wirkungen danach per Cmd+Z zurueckgenommen. **Rotation mehrerer Aktionen** und die **Render-Ausgabe** von Band/Einblendung sind ungemessen - und fuer die Unterbrechung **belegt kaputt**: `render-ausloesen.ts:189` vergibt jedem Video-Teil dieselbe Element-Kennung, `validierung.ts:524` verlangt eindeutige Kennungen (Befund 02.11.2026, offen). | teilweise |
-| FA-21 | Undo/Redo in beiden Editoren | 4f3, 4f, 4f2, 4f4, 4g2, 4g4, 4g5, 4h | Pfeile sichtbar und aktiv; Undo schrumpft, Redo waechst; je eine Aktion ist EIN Schritt (Einfuegen, Band, Dauer/Trim, Anlage, Loeschen, Reparatur). **4g5 (#392):** Shift-Bereich zweier Bloecke, Gruppen-Entfernen senkt die Liste um zwei, **ein** Cmd+Z stellt beide wieder her. Der **Vorlagen-Editor** hat kein Undo-Szenario. | teilweise |
+| FA-21 | Undo/Redo in beiden Editoren | 4f3, 4f, 4f2, 4f4, 4g2, 4g4, 4g5, 4h, 4n | Pfeile sichtbar und aktiv; Undo schrumpft, Redo waechst; je eine Aktion ist EIN Schritt (Einfuegen, Band, Dauer/Trim, Anlage, Loeschen, Reparatur). **4g5 (#392):** Shift-Bereich zweier Bloecke, Gruppen-Entfernen senkt die Liste um zwei, **ein** Cmd+Z stellt beide wieder her. **4n (09.11.2026, Vorlagen-Editor):** Textzone hinzugefuegt, der sichtbare **Undo-Pfeil** nimmt sie aus der Arbeitskopie zurueck, **Shift+Cmd+Z** stellt sie wieder her - kein Befund. | gemessen |
 | FA-22 | Mehrere benannte Ausgaben; Vorbelegung = letzter Name | 4c, 4c2 | Der Name wird ohne Endung eingetippt, der Dialog prueft, die Ausgabe steht danach in der Liste. **4c2:** erneut oeffnen -> Feld traegt den **letzten Namen**; derselbe Name **ersetzt** (mtime neu, eine Datei, eine Listenzeile); ein neuer Name legt eine **zweite** Datei und Zeile an. **Seit 22.10.2026.** | gemessen |
 | FA-23 | Marken-Bestand, Standardmarke je Projekt, Loeschsperre (Muss) | 4a, 4a0, 4a2 | Eine **zweite Marke** wird ueber die echte Oberflaeche angelegt (4a0; vorher lag genau eine im Bestand - B2). 4a wechselt die Standardmarke am echten `<select>` **gezielt auf diese Marke** und belegt den Wert zusaetzlich in `project:listeProjekte` (D1). 4a2 versucht, die nun genutzte Marke zu loeschen: **gesperrt** mit Klartext-Grund (`loesch-standard` nennt das Projekt) und Ausweg; nach dem Zurueckstellen der Standardmarke wird sie **geloescht** (Sperre = Nutzung, nicht Zufall). **Seit 21.10.2026.** | gemessen |
 | FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | 4m, 4m2 | **4m:** Marke ueber die echte Oberflaeche **anlegen/oeffnen**, **Akzentfarbe frei** setzen (Wert im Bestand V2), **Kontrast-Warnung** am Grenzwert ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, Warnung weg bei ausreichendem Kontrast, Felder zeigen die **neu geoeffnete** Marke, **Ableiten** mit `abgeleitet` und Herkunftszeilen. **4m2:** **alle dreizehn Farbrollen** schreiben (13/13 im Bestand), **Slogan** (Text + Schalter) und **Sicherheitsabstand** (80/40) schreiben, **Wachsens-Hinweis** vor dem Speichern, **Bearbeiten einer abgeleiteten Marke** (eigen -> "Eigener Wert" -> Vererbung wiederherstellen -> geerbt), **Import-Pipeline** fuer Schrift und Logo mit echten Dateien (`herkunft: importiert`, Anzeige "(importiert)") und **Logo entfernen**. **MANUELL bleibt nur der native Dateidialog** (Klick auf "Eigene Schrift/Logo waehlen"), wie FA-09/Export; die Pipeline danach ist gemessen. **Live-Vorschau** (TK 9.14.1/9.15.2) ist seit 22.10.2026 montiert und wird in **4m** mitgemessen (B11). **Logo entfernen** ist seit #440 entschieden und gemessen (B12). **Seit 22.10.2026.** | gemessen |
 | FA-25 | Effekte: zehn einzeln schaltbare Bewegungen je Ganzbild-Segment (Soll) | 4s | **4s (09.11.2026):** Ueber die echte Oberflaeche eine neue Aktion mit „Preis zählt" (Preis 199) angelegt, als Segment an die Abspielmarke (Frame 30) gelegt und **zweimal** gerendert. Mit und ohne Effekt **je 2100 Bilder / 70,022 s** - die Dauer aendert sich nicht. Die Preiszone zeigt in Bild 30 vs. 60 mit Effekt **2109 abweichende Bytes**, ohne Effekt **1 Byte** (Kodierrauschen): der Effekt steckt im Video, und die Gegenprobe traegt. Der Schritt belegt zugleich, dass `Aktion.effekte` den Speicherweg uebersteht (Befund 09.11.2026: der `project-store` verwarf das Feld - behoben). | gemessen |
 
-**Zaehlung:** 11 x gemessen (FA-01, FA-03, FA-05, FA-08, FA-17, FA-18, FA-19, FA-22, FA-23, FA-24, FA-25),
-10 x teilweise, 0 x Luecke, 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
+**Zaehlung:** 12 x gemessen (FA-01, FA-03, FA-05, FA-08, FA-17, FA-18, FA-19, FA-21,
+FA-22, FA-23, FA-24, FA-25), 9 x teilweise, 0 x Luecke, 0 x blockiert, 3 x manuell
+(FA-09, FA-11, FA-12).
 
 Aufgeteilt nach Prioritaet (AD Abschnitt 4): **15 Muss**, 10 Soll.
-- **Muss:** 8 gemessen (FA-01, FA-03, FA-05, FA-08, FA-17, FA-22, FA-23, FA-24), 6 teilweise,
-  0 Luecke, 1 manuell (FA-09).
+- **Muss:** 9 gemessen (FA-01, FA-03, FA-05, FA-08, FA-17, FA-21, FA-22, FA-23, FA-24),
+  5 teilweise, 0 Luecke, 1 manuell (FA-09).
 - **Soll:** 3 gemessen (FA-18, FA-19, FA-25), 4 teilweise, 0 Luecke, 2 manuell (FA-11/12).
 
-Damit sind **4 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-05,
-FA-17, FA-23, FA-24). FA-16/17/18 hatten beim Aufstellen der Matrix **keine Oberflaeche** - das ist mit
+Damit sind **9 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-01,
+FA-03, FA-05, FA-08, FA-17, FA-21, FA-22, FA-23, FA-24). FA-16/17/18 hatten beim Aufstellen der Matrix **keine Oberflaeche** - das ist mit
 #257 behoben (B1); 4j misst die Leiste, 4k/4l die drei Bedienwege Fehlschlag/Entfernen/Abbruch.
 
 ---
