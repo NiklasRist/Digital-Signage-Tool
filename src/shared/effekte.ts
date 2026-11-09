@@ -59,8 +59,10 @@ export interface EffektZustand {
  * - `schleifeBilder` 60: die Schleifen-Periode (2 s). Bild 0 und Bild 60 sind identisch,
  *   sonst gaebe es an der Naht einen Sprung.
  * - `staerke` 0–100: Prozent der Vorgabe aus Anforderungsdokument 4.10.
- * - `fensterSekunden` 1–3: ein Fenster ist eine Einblendung, kein Dauerlauf. Unter 1 s
- *   sieht man nichts, ueber 3 s waeren es mehr als 90 gezeichnete Frames.
+ * - `fensterSekunden` 0,3–3: ein Fenster ist eine Einblendung, kein Dauerlauf. Die
+ *   Untergrenze deckt die kuerzeste Vorgabe aus Anforderungsdokument 4.10 (Preis-Pop
+ *   0,33 s) und faengt zugleich ein versehentliches Null-Fenster ab; ueber 3 s waeren
+ *   es mehr als 90 gezeichnete Frames.
  * - `maxEindeutigeBilder` 180: die Frames liegen als PNG im Speicher; Schleife (60) plus
  *   3-s-Fenster bleiben darunter.
  */
@@ -68,7 +70,7 @@ export const EFFEKT_GRENZEN = {
   bilderProSekunde: 30,
   schleifeBilder: 60,
   staerke: { min: 0, max: 100 },
-  fensterSekunden: { min: 1, max: 3 },
+  fensterSekunden: { min: 0.3, max: 3 },
   maxEindeutigeBilder: 180,
 } as const
 
@@ -151,7 +153,7 @@ function fensterLage(
 
 /**
  * Raeumt einen Effekt-Satz auf: begrenzt die Staerke, klemmt die Fenster auf die Dauer
- * und auf 1–3 s, wirft Eintraege mit Staerke 0 und unbrauchbare Fenster weg.
+ * und auf 0,3–3 s, wirft Eintraege mit Staerke 0 und unbrauchbare Fenster weg.
  *
  * WARUM AUFRAEUMEN UND NICHT BEIM ZEICHNEN PRUEFEN: Der Satz kommt aus einem Formular
  * und landet in `project.json`. Was hier verschwindet, waechst nicht in die Datei – und

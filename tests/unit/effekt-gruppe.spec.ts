@@ -5,7 +5,7 @@
 //   1. ZEHN EINZELNE SCHALTER: kein Effekt bringt einen anderen mit (AD 4.10).
 //   2. Jeder Schreibvorgang geht als GANZER Satz in den Entwurf - hier gibt es keinen
 //      IPC-Aufruf (TK 9.8.6).
-//   3. Geschrieben wird NORMALISIERT: Staerke 0-100, Fenster 1-3 s und nie ueber das
+//   3. Geschrieben wird NORMALISIERT: Staerke 0-100, Fenster 0,3-3 s und nie ueber das
 //      Segmentende hinaus (dieselbe Quelle wie Vorschau und Render, TK 9.16.7).
 //   4. Ein Effekt ohne Ziel bleibt sichtbar und SAGT es (TK 9.16.6).
 // @vitest-environment jsdom
@@ -144,9 +144,10 @@ describe('Die Gruppe zeigt zehn einzelne Schalter', () => {
 })
 
 describe('Einschalten schreibt die Vorgabe, normalisiert', () => {
-  // Die Vorgaben aus AD 4.10. Vier davon liegen unter 1 s; TK 9.16.7 hebt ein Fenster
-  // auf mindestens 1 s. Geschrieben wird die Grenze - die Zahl im Formular ist nur
-  // ein Vorschlag, der durch dieselbe Normalisierung geht wie jede spaetere Aenderung.
+  // Die Vorgaben aus AD 4.10 gelten woertlich (Entscheidung 09.11.2026). TK 9.16.7
+  // setzt nur die Untergrenze 0,3 s - sie faengt ein versehentliches Null-Fenster ab,
+  // hebt aber keine kurze Vorgabe an. Jeder Wert geht durch dieselbe Normalisierung
+  // wie jede spaetere Aenderung.
   const FENSTER_VORGABEN = [
     ['kenBurns', 1.5],
     ['textEinblendung', 0.4],
@@ -157,13 +158,13 @@ describe('Einschalten schreibt die Vorgabe, normalisiert', () => {
     ['puls', 1.5],
   ] as const
 
-  it('setzt Staerke 100 und das Vorgabe-Fenster, mindestens 1 s', async () => {
+  it('setzt Staerke 100 und die Vorgabe aus AD 4.10', async () => {
     for (const [name, vorgabe] of FENSTER_VORGABEN) {
       const { behaelter, aenderungen } = montiere(inhalt())
       await schalte(behaelter, name)
 
       expect(aenderungen[0], name).toEqual({
-        [name]: { staerke: 100, vonSekunden: 0, bisSekunden: Math.max(1, vorgabe) },
+        [name]: { staerke: 100, vonSekunden: 0, bisSekunden: vorgabe },
       })
     }
   })
@@ -248,12 +249,12 @@ describe('Regler schreiben normalisiert', () => {
     expect(aenderungen[0]).toBeNull()
   })
 
-  it('hebt ein zu kurzes Fenster auf 1 s', async () => {
+  it('hebt ein zu kurzes Fenster auf 0,3 s', async () => {
     const { behaelter, aenderungen } = montiere(aktiv('puls'))
     await setzeZahl(behaelter, 'Puls bis', 0.1)
 
     expect(aenderungen[0]).toEqual({
-      puls: { staerke: 100, vonSekunden: 0, bisSekunden: 1 },
+      puls: { staerke: 100, vonSekunden: 0, bisSekunden: 0.3 },
     })
   })
 

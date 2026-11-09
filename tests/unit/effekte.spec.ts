@@ -272,10 +272,28 @@ describe("normalisiereEffekte", () => {
     expect(satz?.kenBurns?.bisSekunden).toBe(4);
   });
 
-  it("hebt ein zu kurzes Fenster auf 1 Sekunde", () => {
+  it("hebt ein zu kurzes Fenster auf 0,3 Sekunden", () => {
     const satz = normalisiereEffekte({ puls: { staerke: 100, vonSekunden: 2, bisSekunden: 2.1 } }, 10);
     expect(satz?.puls?.vonSekunden).toBe(2);
-    expect(satz?.puls?.bisSekunden).toBe(3);
+    expect(satz?.puls?.bisSekunden).toBe(2.3);
+  });
+
+  it("laesst die kurzen Vorgaben aus AD 4.10 unveraendert", () => {
+    // Entscheidung 09.11.2026: AD gewinnt - Preis-Pop 0,33 s, Text-Einblendung 0,4 s,
+    // Bild-Reveal 0,5 s und Glanz-Sweep 0,6 s sind Fenster, keine Rundungsfehler.
+    const vorgaben = [
+      ["textEinblendung", 0.4],
+      ["preisPop", 0.33],
+      ["glanzSweep", 0.6],
+      ["bildReveal", 0.5],
+    ] as const
+    for (const [name, bis] of vorgaben) {
+      const satz = normalisiereEffekte(
+        { [name]: { staerke: 100, vonSekunden: 0, bisSekunden: bis } },
+        10,
+      );
+      expect(satz?.[name]?.bisSekunden, name).toBe(bis);
+    }
   });
 
   it("wirft ein Fenster weg, das nach dem Segmentende beginnt", () => {

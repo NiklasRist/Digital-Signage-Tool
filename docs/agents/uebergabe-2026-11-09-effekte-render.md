@@ -171,10 +171,39 @@ Stärke 0 = AUS) und die Hinweise ohne Preis/Bild.
 **Gate nach dem Test:** Unit **5733/5733** (373 Dateien), Typecheck tests 0, ESLint/oxlint 0.
 Build, Integration und Treiber **nicht erneut gelaufen** — keine Produktivdatei geändert.
 
-**BEFUND, OFFEN — Fensterlänge:** AD 4.10 nennt 0,4 s (Text-Einblendung), 0,33 s (Preis-Pop),
-0,6 s (Glanz-Sweep) und 0,5 s (Bild-Reveal); TK 9.16.7 setzt **mindestens 1 s**. Der Editor
-folgt TK: Beim Einschalten dieser vier steht das Fenster auf **1 s**, nicht auf der AD-Zahl.
-Entscheidung nötig — AD-Zahlen oder TK-Untergrenze; der Test hält das gebaute Verhalten fest.
+**BEFUND — Fensterlänge (ENTSCHIEDEN in Abschnitt 12):** AD 4.10 nennt 0,4 s
+(Text-Einblendung), 0,33 s (Preis-Pop), 0,6 s (Glanz-Sweep) und 0,5 s (Bild-Reveal);
+TK 9.16.7 setzte **mindestens 1 s**. Der Editor folgte TK: Beim Einschalten dieser vier stand
+das Fenster auf **1 s**, nicht auf der AD-Zahl. Niklas hat am 09.11.2026 **A (AD gewinnt)**
+entschieden.
 
 **Stand danach:** **27 Commits** vor `origin/main` (25 + `e0d4573` + dieser Commit), nicht
 gepusht — Push nur auf Anweisung.
+
+## 12. Entscheidung 09.11.2026: AD gewinnt — Fenster ab 0,3 s
+
+**Niklas: „ja dann a".** Die Vorgaben aus AD 4.10 gelten wörtlich; TK 9.16.7 war die
+strengere Regel. Gebaut:
+
+- `EFFEKT_GRENZEN.fensterSekunden.min` **1 → 0,3 s** (`src/shared/effekte.ts`). Die Grenze
+  deckt die kürzeste Vorgabe (Preis-Pop 0,33 s) und fängt zugleich ein versehentliches
+  Null-Fenster ab; die Obergrenze 3 s bleibt.
+- **TK v3.57** (9.16.7 + Versionszeile); `.docx` im selben Commit neu erzeugt: **2654
+  Absätze**, `unzip -t` heil, 0 Backticks, zwei Bilder. **AD v1.14 unverändert.**
+- **Tests:** `effekte.spec.ts` hebt ein 0,1-s-Fenster jetzt auf **0,3 s** und hält fest, dass
+  0,33/0,4/0,5/0,6 s unverändert bleiben; der Komponententest erwartet die AD-Vorgaben
+  wörtlich. **Unit 5734/5734** (373 Dateien), Integration **54/54**, Build 0, Typecheck 0
+  (auch tests), ESLint/oxlint 0 — eine bestehende Warnung in `scripts/beleg-effekt-render.mjs`.
+
+**Gegenproben** — jede rot, die Datei danach byte-identisch zurück:
+
+| Eingriff | Ergebnis | SHA-256 vorher = nachher |
+|---|---|---|
+| `fensterSekunden.min` zurück auf 1 | 4 Tests rot | `425a760a…` ✔ |
+| Preis-Pop-Vorgabe 1 statt 0,33 | 1 Test rot | `d066fa41…` ✔ |
+
+**Nicht erneut gelaufen:** der Treiber — die Änderung betrifft nur die Normalisierung; der
+Treiber-Schritt `4s` nutzt „Preis zählt" (1 s, unverändert).
+
+**Stand danach:** **28 Commits** vor `origin/main`, Arbeitsbaum sauber, nicht gepusht —
+Push nur auf Anweisung.

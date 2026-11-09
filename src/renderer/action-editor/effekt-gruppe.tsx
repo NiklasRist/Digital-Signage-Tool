@@ -5,7 +5,7 @@
 // gibt es keinen IPC-Aufruf.
 //
 // NORMALISIERT WIRD BEIM SCHREIBEN, nicht beim Zeichnen: Was hier entsteht, ist schon
-// geklemmt (Staerke 0–100, Fenster 1–3 s und nicht laenger als das Segment). Sonst
+// geklemmt (Staerke 0–100, Fenster 0,3–3 s und nicht laenger als das Segment). Sonst
 // stuende in `project.json` ein Wert, den niemand so gemeint hat.
 
 import type { JSX } from 'react'
