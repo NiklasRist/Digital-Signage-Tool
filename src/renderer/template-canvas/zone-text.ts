@@ -16,8 +16,9 @@
 //     ein Clip oder eine Fuellfarbe auf die NAECHSTE Zone ab.
 
 import type { Zone } from '../../shared/contracts/vorlage'
-import type { Marke } from '../../shared/contracts/marke'
+import type { EffektZustand } from '../../shared/effekte'
 import type { AktionsInhalt } from '../../shared/contracts/aktion'
+import type { Marke } from '../../shared/contracts/marke'
 
 import { loeseFarbeInZone, loeseSchrift } from './farben'
 import { schriftKurzform } from './schriften'
@@ -76,6 +77,7 @@ export function zeichneTextZone(
   text: string,
   marke: Marke,
   aktion: AktionsInhalt,
+  zustand?: EffektZustand,
 ): void {
   // SCHRITT 1 - Abbruchbedingungen, und zwar BEVOR irgendetwas am Kontext steht.
   // Kein ctx.save() auf diesen Pfaden (das verlangt der Abrechnungstest "genau
@@ -106,6 +108,29 @@ export function zeichneTextZone(
   ctx.beginPath()
   ctx.rect(zone.rahmen.x, zone.rahmen.y, zone.rahmen.breite, zone.rahmen.höhe)
   ctx.clip()
+
+  // Effekte (09.11.2026, TK 9.16.3): Deckkraft, Versatz nach oben und – fuer Preis und
+  // Call-to-Action – eine Skala um die Zonenmitte. Der Beschnitt oben bleibt in
+  // Geraetekoordinaten: Auch skaliert laeuft der Text nicht in die Nachbarzone.
+  if (zustand !== undefined) {
+    ctx.globalAlpha = Math.min(1, Math.max(0, zustand.textAlpha))
+    const skala =
+      zone.bindung === 'preis'
+        ? zustand.preisSkala
+        : zone.bindung === 'cta'
+          ? zustand.pulsSkala
+          : 1
+    if (skala !== 1) {
+      const cx = zone.rahmen.x + zone.rahmen.breite / 2
+      const cy = zone.rahmen.y + zone.rahmen.höhe / 2
+      ctx.translate(cx, cy)
+      ctx.scale(skala, skala)
+      ctx.translate(-cx, -cy)
+    }
+    if (zustand.textVersatzY !== 0) {
+      ctx.translate(0, zustand.textVersatzY)
+    }
+  }
 
   // SCHRITT 4 - Schrift auflösen. Unbekannte Rolle in einer eigenen Vorlage:
   // ohne Text, KEINE Ersatzschrift.

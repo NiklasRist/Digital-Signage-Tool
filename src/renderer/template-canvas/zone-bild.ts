@@ -23,6 +23,7 @@ import type { Zone } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
 import type { AktionsInhalt } from '../../shared/contracts/aktion'
 import type { Motiv } from './bild-laden'
+import type { EffektZustand } from '../../shared/effekte'
 
 import { loeseFarbe, loeseSchrift } from './farben'
 import { schriftKurzform } from './schriften'
@@ -33,12 +34,22 @@ const STRICH_PX = 4
 // Einrueckung des umlaufenden Strichs, damit er vollstaendig in der Zone liegt, in px.
 const INNEN_VERSATZ_PX = 2
 
+/**
+ * Versatz in Prozent der Zonengroesse, begrenzt auf ±50 % (GESTALTUNG_GRENZEN).
+ * Darueber staende die Bildkante in der Zonenmitte – sichtbarer Rand statt Ausschnitt.
+ * Bildausschnitt UND Effekt kommen hier zusammen; die Summe darf nicht entkommen.
+ */
+function begrenzeVersatz(prozent: number): number {
+  return Math.min(50, Math.max(-50, prozent))
+}
+
 export function zeichneBildZone(
   ctx: CanvasRenderingContext2D,
   zone: Zone,
   motiv: Motiv,
   marke: Marke,
   aktion: AktionsInhalt,
+  zustand?: EffektZustand,
 ): void {
   // SCHRITT 1 - Abbruchbedingungen VOR dem save(): Eine Zone ohne Flaeche kann
   // nichts anzeigen - auch keinen Platzhalter.
@@ -51,7 +62,23 @@ export function zeichneBildZone(
     return
   }
 
+  // Effekte treffen NUR das Bild der Aktion, nie das Logo - dieselbe Regel wie beim
+  // Bildausschnitt (05.11.2026: „die bildausschnitt regler koennen komische effekte auf
+  // das logo haben"). Ein beschnittenes Logo ist ein Markenfehler.
+  const wirkt = zone.bindung === 'bild' ? zustand : undefined
+
   ctx.save()
+
+  // Bild-Reveal (09.11.2026, TK 9.16.3): Das Bild schiebt sich von RECHTS herein -
+  // sichtbar ist ein Streifen an der rechten Kante, der nach links waechst. Der
+  // Beschnitt sitzt VOR dem Zeichnen, damit auch der Platzhalter ihn traegt.
+  if (wirkt !== undefined && wirkt.revealAnteil < 1) {
+    const anteil = Math.min(1, Math.max(0, wirkt.revealAnteil))
+    const rb = zone.rahmen.breite
+    ctx.beginPath()
+    ctx.rect(zone.rahmen.x + rb * (1 - anteil), zone.rahmen.y, rb * anteil, zone.rahmen.höhe)
+    ctx.clip()
+  }
 
   const zeichnung: 'motiv' | 'platzhalter' =
     motiv.zustand === 'geladen' &&
@@ -66,6 +93,35 @@ export function zeichneBildZone(
     zeichneMotiv()
   } else {
     zeichnePlatzhalter()
+  }
+
+  // Glanz-Sweep (09.11.2026, TK 9.16.3): eine helle Bahn zieht EINMAL ueber das Bild.
+  // Nur ueber dem Motiv - ueber dem Platzhalter waere sie eine Defektanzeige.
+  if (zeichnung === 'motiv' && wirkt !== undefined && wirkt.glanzFortschritt !== null) {
+    const x = zone.rahmen.x
+    const y = zone.rahmen.y
+    const rb = zone.rahmen.breite
+    const rh = zone.rahmen.höhe
+    const t = wirkt.glanzFortschritt
+    const bahn = rb * 0.25
+    const kipp = rh * 0.36 // 20 Grad
+    const mitte = x - bahn + (rb + 2 * bahn) * t
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(x, y, rb, rh)
+    ctx.clip()
+    // Maximal 35 % (Anforderungsdokument 4.10); an den Enden 0, damit der Wechsel
+    // unsichtbar beginnt und endet.
+    ctx.globalAlpha = 0.35 * Math.sin(Math.PI * t)
+    ctx.fillStyle = '#FFFFFF'
+    ctx.beginPath()
+    ctx.moveTo(mitte, y)
+    ctx.lineTo(mitte + bahn, y)
+    ctx.lineTo(mitte + bahn - kipp, y + rh)
+    ctx.lineTo(mitte - kipp, y + rh)
+    ctx.closePath()
+    ctx.fill()
+    ctx.restore()
   }
 
   ctx.restore()
@@ -102,9 +158,13 @@ export function zeichneBildZone(
     // Aktion mitbringt. Er darf NICHT das Logo treffen - das ist ein Markenzeichen und
     // sitzt in seiner eigenen Zone. Ein beschnittenes oder verschobenes Logo ist ein
     // Markenfehler, kein Gestaltungswunsch.
-    const zoom = zoomFaktor(aktion.bildAusschnitt?.zoom)
-    const versatzX = versatzProzent(aktion.bildAusschnitt?.versatzX)
-    const versatzY = versatzProzent(aktion.bildAusschnitt?.versatzY)
+    const zoom = zoomFaktor(aktion.bildAusschnitt?.zoom) * ((wirkt?.zoomBild ?? 100) / 100)
+    const versatzX = begrenzeVersatz(
+      versatzProzent(aktion.bildAusschnitt?.versatzX) + (wirkt?.versatzBildX ?? 0),
+    )
+    const versatzY = begrenzeVersatz(
+      versatzProzent(aktion.bildAusschnitt?.versatzY) + (wirkt?.versatzBildY ?? 0),
+    )
     const eigenerAusschnitt =
       zone.bindung === 'bild' && (zoom !== 1 || versatzX !== 0 || versatzY !== 0)
 

@@ -351,8 +351,17 @@ describe('zeichneSegment (#117/#294)', () => {
       ]
       zeichneSegment(a, vorlage(zonen), marke(), marke())
 
-      for (const ruf of [...aufrufe.text, ...aufrufe.bild, ...aufrufe.deko]) {
-        expect(ruf[ruf.length - 1]).toBe(a) // toBe, nicht toEqual
+      for (const ruf of [...aufrufe.text, ...aufrufe.bild]) {
+        // Seit TK 9.16 ist `zustand` das sechste Argument - die AKTION bleibt die
+        // Referenz, die durchgereicht werden MUSS (keine Kopie, kein Neuaufbau).
+        expect(ruf).toContain(a)
+        // Ohne Zustand darf KEIN Zustand ankommen: das ist der Beweis, dass der alte
+        // Weg unveraendert bleibt.
+        expect(ruf[ruf.length - 1]).toBeUndefined()
+      }
+      // Die Deko-Zone hat kein sechstes Argument - dort bleibt die Aktion das letzte.
+      for (const ruf of aufrufe.deko) {
+        expect(ruf[ruf.length - 1]).toBe(a)
       }
       for (const ruf of aufrufe.loeseFarbe) {
         expect(ruf[ruf.length - 1]).toBe(a)

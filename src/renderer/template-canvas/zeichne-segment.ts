@@ -30,6 +30,7 @@
 import type { AktionsInhalt } from '../../shared/contracts/aktion'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
+import type { EffektZustand } from '../../shared/effekte'
 
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 
@@ -51,6 +52,28 @@ export interface SegmentBild {
   canvas: HTMLCanvasElement
   breite: number
   höhe: number
+}/**
+ * Der hochzaehlende Preis (09.11.2026, TK 9.16.2): Die Zahl im Text wird mit dem Anteil
+ * multipliziert, die Nachkommastellen der Vorlage bleiben erhalten. Bei Anteil 1 kommt der
+ * ORIGINAL-Text zurueck – am Ende steht exakt, was der Nutzer eingegeben hat.
+ *
+ * Nur wenn der Preis mit einer Zahl beginnt (`^\s*\d+…`); sonst bleibt er unveraendert –
+ * statt eine Bedeutung zu erfinden (Anforderungsdokument 4.10, letzter Punkt).
+ */
+export function zaehlePreis(preis: string, anteil: number): string {
+  if (anteil >= 1) return preis
+  const treffer = /^(\s*)(\d+)(?:([.,])(\d+))?/.exec(preis)
+  if (treffer === null) return preis
+  const ganz = Number(treffer[2])
+  const nach = treffer[4] ?? ''
+  if (!Number.isFinite(ganz)) return preis
+  const ziel = nach === '' ? ganz : Number(`${ganz}.${nach}`)
+  const wert = ziel * Math.max(0, anteil)
+  const zahl =
+    nach === ''
+      ? String(Math.round(wert))
+      : wert.toFixed(nach.length).replace('.', treffer[3] ?? ',')
+  return `${treffer[1] ?? ''}${zahl}${preis.slice(treffer[0].length)}`
 }
 
 export function zeichneSegment(
@@ -58,6 +81,7 @@ export function zeichneSegment(
   vorlage: Vorlage,
   marke: Marke,
   rahmenMarke: Marke,
+  zustand?: EffektZustand,
 ): SegmentBild {
   if (marke === null || marke === undefined || rahmenMarke === null || rahmenMarke === undefined) {
     throw new Error('zeichneSegment: marke oder rahmenMarke fehlt (Programmierfehler).')
@@ -87,6 +111,9 @@ export function zeichneSegment(
   // Project.standardMarkeId"), die uebrigen Zonen zum Inhalt. `höhe !== null` erkennt
   // das Band; die Flaeche IST die Art (TK 9.11.1 Punkt 0, v3.31).
   const istBand = vorlage.höhe !== null
+  // Effekte gibt es NUR im Ganzbild (Anforderungsdokument 4.10, TK 9.16.3): Das Band
+  // liegt ueber bewegtem Videobild, dort kostet zusaetzliche Bewegung die Lesbarkeit.
+  const wirksam = istBand ? undefined : zustand
   const hintergrundVorhanden = istBand && vorlage.zonen.some((z) => z.id === 'hintergrund')
   const rahmenMarkeBenutzt = istBand && rahmenMarke !== marke && hintergrundVorhanden
   if (rahmenMarkeBenutzt && !sindMarkenSchriftenBereit(rahmenMarke)) {
@@ -190,7 +217,25 @@ export function zeichneSegment(
 
     // d. Dekoration - immer, auch ohne zone.deko und auch bei leer + 'leer'; bei der
     //    Hintergrund-Zone mit der Rahmen-Marke (M4-22 kennt den Unterschied nicht).
-    zeichneDekoZone(ctx, zone, markeDieserZone, aktion)
+    //
+    //    Parallax (09.11.2026, TK 9.16.3): Die Hintergrundflaeche laeuft mit 0,6x der
+    //    Bildbewegung - sie wird dafuer VERSCHOBEN gezeichnet. Der freie Streifen zeigt
+    //    die Grundflaeche (flaecheDunkel), die ohnehin darunter liegt.
+    if (
+      zone.id === 'hintergrund' &&
+      wirksam !== undefined &&
+      (wirksam.versatzHintergrundX !== 0 || wirksam.versatzHintergrundY !== 0)
+    ) {
+      ctx.save()
+      ctx.translate(
+        (wirksam.versatzHintergrundX / 100) * zone.rahmen.breite,
+        (wirksam.versatzHintergrundY / 100) * zone.rahmen.höhe,
+      )
+      zeichneDekoZone(ctx, zone, markeDieserZone, aktion)
+      ctx.restore()
+    } else {
+      zeichneDekoZone(ctx, zone, markeDieserZone, aktion)
+    }
 
     // e. Ohne Bindung (oder leer) ist die Zone hier fertig.
     if (zone.bindung === null || leer || wert === undefined) {
@@ -205,13 +250,18 @@ export function zeichneSegment(
       // SAFETY: Eine Zone mit Bindung `bild` zeigt das Motiv der Aktion; `bildRef` ist
       // laut Vertrag `string | null` (Aktion ohne Bild). `holeMotiv` liefert fuer einen
       // fehlenden Schluessel ein "nicht da"-Motiv - der Cast reicht nur den Wert durch.
-      zeichneBildZone(ctx, zone, holeMotiv(aktion.bildRef as string), markeDieserZone, aktion)
+      zeichneBildZone(ctx, zone, holeMotiv(aktion.bildRef as string), markeDieserZone, aktion, wirksam)
     } else if (zone.bindung === 'logo' && markeDieserZone.logo === null) {
       zeichneErsatzLogo(ctx, zone, markeDieserZone, aktion)
     } else if (zone.bindung === 'logo') {
+      // Das Logo bekommt NIE einen Zustand - dieselbe Regel wie beim Bildausschnitt.
       zeichneBildZone(ctx, zone, holeLogo(markeDieserZone.id), markeDieserZone, aktion)
     } else {
-      zeichneTextZone(ctx, zone, String(wert), markeDieserZone, aktion)
+      const anzeige =
+        zone.bindung === 'preis' && wirksam?.zaehlAnteil != null
+          ? zaehlePreis(String(wert), wirksam.zaehlAnteil)
+          : String(wert)
+      zeichneTextZone(ctx, zone, anzeige, markeDieserZone, aktion, wirksam)
     }
   }
 
