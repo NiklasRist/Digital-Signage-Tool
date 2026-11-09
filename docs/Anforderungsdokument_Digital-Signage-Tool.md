@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 03.11.2026
-**Version:** 1.13 (4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026, s. 4.5. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
+**Datum:** 09.11.2026
+**Version:** 1.14 (4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
 **Status:** In Abstimmung
 
 ---
@@ -98,6 +98,7 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-22 | Mehrere benannte Ausgabedateien | Ein Projekt kann **mehrere** gerenderte MP4-Dateien vorhalten. Beim Speichern eines Renders vergibt der Nutzer den Dateinamen; vorbelegt ist der **zuletzt verwendete** Name, sodass wiederholtes Rendern die vorige Fassung standardmäßig **ersetzt** und der Ordner nicht zuläuft. Ein abweichender Name legt eine zusätzliche Datei an. Datum und Uhrzeit stehen in der Ausgabe-Liste der Anwendung, **nicht** im Dateinamen. | Muss |
 | FA-23 | Marken-Bestand | Die Anwendung führt **mehrere Marken** in einem **app-weiten, projektunabhängigen** Bestand. Ein Projekt darf mehrere Marken verwenden; eine **Aktion** trägt **genau eine**. Eine Marke kann von einer anderen **abgeleitet** sein und einzelne Werte überschreiben (Saison- oder Kampagnen-Look). Die Fitnessworld24-Marke ist immer vorhanden und **nicht löschbar**. Jedes Projekt führt zusätzlich eine **Standardmarke**, die den Rahmen färbt (Band-Hintergrund, Restflächen; s. 4.8); sie ist in der **Projektverwaltung wechselbar**. Eine Marke lässt sich nur löschen, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als Standardmarke** sie mehr nutzt. | Muss |
 | FA-24 | Marken-Editor | Marken lassen sich in der Anwendung **anlegen, bearbeiten und ableiten**: Farben, Slogan, Sicherheitsabstände sowie **Import** von Logo und Schriftdateien. Bei zu geringem Kontrast zwischen Akzentfläche und darauf liegendem Text **warnt** die Anwendung sichtbar, verhindert die Wahl aber nicht. | Muss |
+| FA-25 | Effekte | Ein Ganzbild-Segment (1920 × 1080) kann **bewegt** wirken: **zehn einzeln schaltbare** Effekte – Ken Burns, Zoom-Atmen, Drift, Parallax, Text-Einblendung, Preis-Pop, Glanz-Sweep, hochzählender Preis, Bild-Reveal, Puls – je mit **Fenster** und **Stärke**, frei kombinierbar. Effekte ändern **nie** die Anzeigedauer und **nie** die Bildrate; zwischen Segmenten bleibt es beim **harten Schnitt**; das **Band bleibt still**. Die Vorschau zeigt **dieselbe** Bewegung wie die Ausgabe. Ohne Angaben bleibt das Segment das Standbild von heute. Details: 4.10. | Soll |
 
 **Ein Bild ist kein Listenelement (ab v1.5).** Eine Wiedergabeliste besteht aus genau zwei Arten von
 Elementen: **Videos** und **Aktions-Segmente**. Ein fertig gestaltetes Bild von außen direkt in die Liste
@@ -376,6 +377,55 @@ Das ist die Grundannahme des Werkzeugs: gepflegt wird **ein** Hauptvideo, dazu d
 
 ---
 
+### 4.10 Effekte: das Segment wirkt bewegt (FA-25)
+
+Ein Aktions-Segment ist bisher ein **Standbild**: es steht für seine Dauer still. Aus der Entfernung
+eines Studio-Fernsehers ist das der Unterschied zwischen „Folie" und „Spot" – und einer der Gründe,
+warum eine Vorschau wie eine PowerPoint-Seite wirkt. Deshalb trägt jede Aktion einen **Satz von
+Effekten**.
+
+**Einzeln, nicht als Paket.** Jeder Effekt ist ein **eigener Schalter**; mehrere dürfen **gleichzeitig**
+laufen. Es gibt kein „Effekt-Paket", das nur gemeinsam wirkt.
+
+**Nur Ganzbild.** Effekte gibt es ausschließlich für Segmente mit **1920 × 1080**. Ein **Band**
+(1920 × 162) bleibt still: es liegt über bewegtem Videobild, zusätzliche Bewegung wäre dort unruhig
+und würde die Lesbarkeit aus der Entfernung kosten (4.5).
+
+**Die zehn Effekte.** Jeder hat ein **Fenster** (wann er im Segment läuft) und eine **Stärke**; beides
+ist einstellbar. Ein Fenster ist eine **einmalige** Bewegung, eine **Schleife** läuft über die ganze
+Segmentdauer.
+
+| Effekt | wirkt auf | Vorgabe |
+|---|---|---|
+| **Ken Burns** | Bild | Push-in von 0,0 bis 1,5 s: Zoom 100 → 108 %, Drift höchstens 2 %; danach hält das Bild ruhig |
+| **Zoom-Atmen** | Hintergrund | Schleife über 2 s: 100 → 104 → 100 %, nahtlos |
+| **Drift** | Hintergrund | Schleife über 2 s: hin und zurück, x ±1,5 %, y ±1 % |
+| **Parallax** | Hintergrund gegenüber Bild | Hintergrund bewegt sich mit 0,6× der Bild-Bewegung, eigene Stärke. **Wirkt nur, wenn sich etwas bewegt** (Ken Burns, Zoom-Atmen oder Drift) |
+| **Text-Einblendung** | Textzonen | 0,4 s: 12 px von unten, Deckkraft 0 → 1 |
+| **Preis-Pop** | Preis | 0,33 s: 0,85 → 1,00 mit Überschwingen auf 1,04 |
+| **Glanz-Sweep** | Bild oder Preis | 0,6 s: ein Lichtstreifen, 25 % breit, 20° geneigt, Deckkraft höchstens 35 % |
+| **Preis zählt hoch** | Preis | 1,0 s: 80 → 100 % des Preises, ganze Euro |
+| **Bild-Reveal** | Bild | 0,5 s: das Bild schiebt sich von rechts herein, harte Kante |
+| **Puls** | Call-to-Action | letzte 1,5 s: drei Schläge, 1,00 → 1,03 |
+
+**Grenzen, die für alle Effekte gelten:**
+
+- **Die Dauer ist unantastbar.** Ein Effekt ändert weder die Anzeigedauer noch die Bildrate: ein
+  Segment bleibt bei **30 Bildern je Sekunde**. Kürzen und Verlängern (4.4) verhält sich unverändert.
+- **Kein Übergang.** Zwischen zwei Segmenten bleibt es beim **harten Schnitt**; Effekte sind Bewegung
+  *innerhalb* eines Segments, keine Blende (4.5).
+- **Eine Aktion – ein Aussehen.** Die Effekte hängen an der **Aktion**, nicht an ihrer Stelle im
+  Video: dieselbe Aktion sieht in jedem Segment gleich aus – vor dem Video, als Unterbrechung oder
+  mehrfach platziert.
+- **Ohne Effekt alles wie bisher.** Fehlen die Angaben, ist das Segment das Standbild von heute. Ein
+  bestehendes Projekt ändert sein Aussehen nicht.
+- **Vorschau zeigt, was gerendert wird.** Die Bewegung ist in der Vorschau dieselbe wie in der
+  Ausgabe – nicht „ähnlich".
+- **Effekte sind Gestaltung, kein Inhalt.** Es entstehen keine neuen Pflichtfelder: ein Effekt ohne
+  passendes Feld (Preis-Pop ohne Preis, Bild-Reveal ohne Bild) läuft einfach nicht.
+
+---
+
 ## 5. Nicht-funktionale Anforderungen
 
 | ID | Anforderung | Beschreibung | Priorität |
@@ -477,6 +527,7 @@ Die erste Version gilt als erfolgreich, wenn:
 8. Werbeinhalte können **parallel** während eines Videos als Band unten angezeigt werden, mit mehreren rotierenden Aktionen (FA-20, Abschnitt 4.5).
 9. Ein Projekt kann mehrere benannte Ausgabedateien vorhalten; erneutes Rendern unter demselben Namen ersetzt die vorige Fassung, ohne sie bei einem Fehlschlag zu beschädigen (FA-22, Abschnitt 4.7).
 10. Eine Aktion kann eine andere als die eingebaute Marke tragen; das gerenderte Video zeigt deren Logo und Farben, während Band-Hintergrund und Restflächen in der Projekt-Standardmarke bleiben; diese Standardmarke lässt sich in der Projektverwaltung wechseln (FA-23, FA-24, Abschnitt 4.8).
+11. Ein Ganzbild-Segment kann **bewegt** wirken, ohne dass sich Dauer oder Bildrate ändern: die zehn Effekte sind **einzeln** schaltbar und frei kombinierbar, das Band bleibt still, und die Vorschau zeigt **dieselbe** Bewegung wie die Ausgabe (FA-25, Abschnitt 4.10).
 
 ---
 
@@ -490,3 +541,4 @@ Die erste Version gilt als erfolgreich, wenn:
 - **Vorlage:** Datengetriebene Layout-Definition aus Zonen (feste Markenzonen + freie Zonen). Ihre **Fläche** bestimmt, wofür sie taugt: **Ganzbild (1920 × 1080)** für ein vollflächiges Segment oder **Band (1920 × 162)** für die parallele Anzeige. Eine *Art* wird nicht mehr gewählt (FA-13).
 - **Arbeitskopie:** Bearbeitungsstand einer Vorlage. Wird automatisch gesichert, verändert die genutzte Vorlage aber erst beim expliziten Speichern (4.6).
 - **Auftrag / Auftrags-Queue:** Ein länger laufender oder dateiverändernder Vorgang (Import, Löschen, Render, Export) wird als *Auftrag* in einer *Warteschlange* (Queue) geführt. Aufträge werden nacheinander abgearbeitet und sind für den Nutzer sichtbar (laufend, anstehend, fehlgeschlagen).
+- **Effekt:** Eine **Bewegung innerhalb** eines Aktions-Segments (z. B. Ken Burns, Text-Einblendung), die nur die Darstellung betrifft – nie die Dauer. Effekte sind einzeln schaltbar und an die **Aktion** gebunden, nicht an ihre Stelle im Video (4.10).

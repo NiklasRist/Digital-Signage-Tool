@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.54 (9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
-**Datum:** 03.11.2026
+**Version:** 3.55 (9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwaehler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Datum:** 09.11.2026
 **Status:** In Planung
 
 ---
@@ -325,9 +325,9 @@ Dieser Abschnitt übersetzt die Prozesse **P1–P7** in konkrete Module mit scha
 
 - **Renderer (React-UI):** `ipc-client`, `app-shell` (Rahmen + Navigation, 9.14), `composer` [P3], `action-editor` [P2], `template-canvas` (geteilt: Segment → PNG, **einzige Pixelquelle**, 9.10), `preview-player` [P5], `vorlagen-editor` (9.12.2), `marken-editor` (9.15.2), `projekt-verwaltung` (Projektverwaltung FA-10, 9.14.3), `queue-panel` (Sicht auf die Auftrags-Queue). **Dazu `gemeinsam` – kein Modul, sondern der geteilte Renderer-Bereich:** ein Ort ohne Eigentümer, aus dem **jedes** Renderer-Modul direkt importieren darf. Er trägt, was mehrere Module benutzen und keines besitzt – heute das Register der offenen `<video>`-Handles, das vor dem Löschen eines Mediums freigegeben werden muss (9.4.6). *Warum nicht `src/shared/`:* Dort läge **Modul-Zustand**, und der Main-Prozess bekäme beim Import eine **zweite, eigene** Instanz davon – ein Register, das nie etwas enthält und niemandem auffällt. *Warum kein Durchreichen als Parameter:* Der Eintrag entsteht am **unteren Ende** zweier Bauteilketten (Vorschau-Video und Vorschaubild); ein Register, dessen Inhalt davon abhängt, ob jede Zwischenstufe die Funktion weitergereicht hat, ist keins.
 - **Main (Node):** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher Q1–Q4, 9.3), `media-service` [P1] (9.4), `project-store` [D1] (besitzt das eine D1-Schreib-Lock **und** ist Pfad-Autorität + trägt das `media://`-Protokoll, 9.5.7), `config-store` [D3], `vorlagen-store` (app-weite Vorlagen-Bibliothek, 9.12.1), `marken-store` [V2] (app-weiter Marken-Bestand, **löst die Marken-Vererbung als einzige Stelle auf**, 9.15.1), `render-service` [P4] (9.2), `export-service`, `ffmpeg-adapter` (enthält den getesteten `buildReel`-Kern).
-- **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …). Die reine Bandgeometrie-Rechnung `berechneBandGeometrie` ist mit dem Split-Screen **entfallen** (v3.31, 9.2.8). Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag.
+- **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …). Die reine Bandgeometrie-Rechnung `berechneBandGeometrie` ist mit dem Split-Screen **entfallen** (v3.31, 9.2.8). Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag. **Die Effekt-Rechnung** (`shared/effekte.ts`) und **der Bildplan** (`shared/bildplan.ts`) liegen ebenfalls hier – rein, ohne DOM, von Renderer und Main lesbar (9.16).
 
-**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1), die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3) sowie die **Marken-Verwaltung** `marken-store`/`marken-editor` (9.15). **Speicher `V2`** (Marken-Bestand) tritt neben `V1` (Vorlagen). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
+**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1), die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3), die **Marken-Verwaltung** `marken-store`/`marken-editor` (9.15) sowie die **Effekte** (9.16). **Speicher `V2`** (Marken-Bestand) tritt neben `V1` (Vorlagen). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
 
 ### 9.1 IPC-Vertrag: Granularität (Variante A) und Konventionen
 
@@ -427,9 +427,11 @@ Der Ausgabe-**Pfad** ist **nicht** Teil der Anfrage – nur der **Name**: Der Ma
 | `art` | Nutzdaten | Herkunft der Pixel | über IPC? |
 |---|---|---|---|
 | `"video"` | `medienRef` (relativer Pfad in `media/`), `trimStart`, `trimEnde` (Sekunden; **framegenauer** Schnitt s. 9.2.6), optional `einblendung` (**`höhe`** und die Band-Abschnitte als PNG-Puffer + Dauern, s. u. und 9.2.8) | Datei in D2; Band-Pixel vom Renderer | **teilweise** – Video per Pfad, Band-PNGs über IPC |
-| `"segment"` | `png` (Binärpuffer), `dauer` | Renderer via `template-canvas` | **ja** – einziger Pixel-Transport |
+| `"segment"` | `png` (Binärpuffer) **oder** `bildplan` (Bildfolge, 9.16.4), `dauer` | Renderer via `template-canvas` | **ja** – einziger Pixel-Transport |
 
 Gemeinsam je Item: `id` (Rückverfolgung/Fehlerzuordnung). Bei `"segment"` werden **keine** Aktions-/Vorlagendaten mitgeschickt – die Pixel sind bereits final; das ist der Kern von Variante A.
+
+**`png` oder `bildplan` – genau eines (v3.55).** Ein Segment **ohne** Effekte trägt weiterhin **ein** `png`; dieser Weg ist unverändert (9.2.6). Ein Segment **mit** Effekten trägt statt dessen einen **`bildplan`** (9.16.4): die **eindeutigen** Frames plus die Läufe, aus denen sich die Bildfolge des Segments ergibt. Beides zugleich oder keines von beiden ist `ungueltiges_element` (9.2.3). Der Grund für den zweiten Weg: Die Bewegung entsteht **im Renderer** – der Main bekommt fertige Pixel und rechnet **keine** Bewegung (Variante A bleibt unangetastet).
 
 **Die dritte Variante `"bild"` ist mit v3.16 entfallen.** Sie trug `medienRef` + `dauer` und wurde vom Main per Pfad gelesen. Sie fällt **nicht** eigenständig weg, sondern als Folge: `RenderItem.art` wird aus `Listenelement.art` gebildet, und dort gibt es die Art `bild` nicht mehr (9.11.3). Ein `"bild"`-Item könnte also gar nicht mehr entstehen. Ein Zweig, den kein Aufrufer erreicht, ist im Vertrag kein Reservepolster, sondern eine Einladung: Der Nächste, der ihn liest, hält den Weg „Bild direkt in die Liste" für vorgesehen und baut die Oberfläche dazu. **Nicht betroffen ist `Asset.typ: "video" | "bild"`** (9.4.4) – Bilder werden weiterhin importiert und verwaltet; sie erreichen den Render ausschließlich als **Motiv einer Aktion** (`Aktion.bildRef`, 9.8.2), also innerhalb eines `"segment"`-PNG.
 
@@ -1577,6 +1579,9 @@ Aktion {
   // Monaten im Feld liegt und alle Verbraucher UNDEFINED wie „keine Angabe" lesen.
   zonenGestaltung?: Record<string, ZonenGestaltung>  // Schlüssel = Zone.id
   bildAusschnitt?:  BildAusschnitt | null
+  // SEIT v3.55 (9.16). OPTIONAL: fehlt das Feld, bleibt das Segment das Standbild von heute –
+  // genau der Zustand vor dieser Fassung. Kein Pflichtfeld, aus demselben Grund wie oben.
+  effekte?:         EffektSatz | null
 }
 
 ZonenGestaltung {
@@ -1590,6 +1595,29 @@ BildAusschnitt {
   zoom?:    number | null   // 100–300 (%), 100 = Vorlage
   versatzX?:number | null   // -50…+50, in Prozent der ZONENBREITE
   versatzY?:number | null   // -50…+50, in Prozent der ZONENHÖHE
+}
+
+EffektSatz {                        // je Eintrag: vorhanden = an, fehlt = aus
+  kenBurns?:        FensterEffekt
+  textEinblendung?: FensterEffekt
+  preisPop?:        FensterEffekt
+  glanzSweep?:      FensterEffekt
+  preisZaehlt?:     FensterEffekt
+  bildReveal?:      FensterEffekt
+  puls?:            FensterEffekt
+  zoomAtmen?:       SchleifenEffekt   // läuft über die ganze Dauer
+  drift?:           SchleifenEffekt
+  parallax?:        SchleifenEffekt
+}
+
+FensterEffekt {                     // einmalige Bewegung
+  staerke:      number              // 0–100 (% der Vorgabe; 0 = aus)
+  vonSekunden:  number              // Beginn im Segment, 0 … dauer
+  bisSekunden:  number              // Ende im Segment, > von, ≤ dauer
+}
+
+SchleifenEffekt {
+  staerke: number                   // 0–100 (% der Vorgabe; 0 = aus)
 }
 ```
 
@@ -1955,7 +1983,7 @@ an `loeseFarbe` gereicht), `action-editor-neue-aktion.spec.ts` (zwei Stopps, Ent
 
 #### 9.9.2 Darstellung je Elementtyp
 
-- **Aktions-Segment:** exakt dasselbe `template-canvas`-Bild wie der finale Render → **pixelgleich** (Variante A).
+- **Aktions-Segment:** exakt dasselbe `template-canvas`-Bild wie der finale Render → **pixelgleich** (Variante A). **Mit Effekten** (9.16) ist es das Bild **an der Abspielposition**: `effektZustand` + `zeichneSegment` liefern genau den Frame, den der Render als PNG bekommt (9.16.6).
 - **Video:** natives `<video>` von `trimStart` bis `trimEnde`.
 - **Medienzugriff ausschließlich über `media://`** (9.5.7) – der `preview-player` sieht **nie** absolute Pfade, sondern lädt `media://<projektId>/<dateiname>` in `<video>`/`<img>`.
 - **Parallele Anzeige (FA-20, 9.2.8):** Trägt ein Video eine Einblendung, simuliert die Bühne das Band **genau wie im Render** – deckend über dem vollflächigen Video. Die Bandhöhe `H` kommt aus der Vorlage, nie hartkodiert:
@@ -3091,9 +3119,131 @@ Identität und Rahmen sind stabil.
 
 ---
 
+### 9.16 Effekte: Bewegung in einem Ganzbild-Segment (FA-25)
+
+**Fachlich:** Ein Aktions-Segment ist heute ein **Standbild**: `template-canvas` zeichnet es **einmal**, der `render-service` spielt genau dieses eine PNG für die Dauer ab (9.2.6). FA-25 verlangt **Bewegung innerhalb** des Segments – ohne die Dauer und ohne die Bildrate anzutasten. „Vorschau = Ausgabe" bleibt bindend; genau deshalb gibt es **keinen** ffmpeg-Effekt (9.16.8).
+
+#### 9.16.1 Der Effekt-Satz am `Aktion`-Datensatz
+
+Das Feld steht in **9.8.2** (`Aktion.effekte?: EffektSatz | null`). **Fehlt es, ist alles wie heute** – ein Bestandsprojekt ändert sein Aussehen nicht. Ein vorhandener Eintrag heißt **an**; `staerke: 0` heißt **aus** und darf **keinen** Frame erzeugen.
+
+**Grenzen und Normalisierung stehen an EINER Stelle:** `src/shared/effekte.ts` – `EFFEKT_GRENZEN`, `normalisiereEffekte`, die Vorgabewerte aus Anforderungsdokument 4.10. Gelesen wird sie vom Editor, vom Zeichnen und vom Bildplan; dieselbe Linie wie `shared/gestaltung.ts` (9.8.8). **Der Main liest `EffektSatz` nie** – er bekommt fertige Pixel (Variante A, 9.1).
+
+#### 9.16.2 Die reine Rechnung: Bild → Zustand
+
+Eine Funktion, **ohne DOM**, ohne Zeit, ohne Zufall:
+
+```
+effektZustand(effekte: EffektSatz | null, bild: number, bilderGesamt: number) → EffektZustand
+
+EffektZustand {
+  zoomBild, zoomHintergrund            // %, 100 = Ruhezustand
+  versatzBildX, versatzBildY           // % der Zonenbreite/-höhe
+  versatzHintergrundX, versatzHintergrundY
+  textAlpha                            // 0…1
+  textVersatzY                         // px
+  preisSkala                           // 1 = voll
+  zaehlAnteil: number | null           // 0…1 beim Hochzählen, sonst null
+  glanzFortschritt: number | null      // 0…1; null = aus
+  revealAnteil                         // 0 = verdeckt, 1 = ganz da
+  pulsSkala                            // 1 = Ruhezustand
+}
+```
+
+`bilderGesamt = dauer × 30`; `bild` läuft `0 … bilderGesamt − 1`. **Alle Fenster werden vorher auf ganze Frames gerundet** (`Math.round(sekunde × 30)`, geklemmt auf `0 … bilderGesamt`) – die Rechnung selbst kennt keine Sekunden mehr.
+
+Zwei Kurven, mehr nicht: `weich(t) = 1 − (1 − t)³` und `dreieck(t) = 1 − |2t − 1|` (0 → 1 → 0). `tFenster` ist der Fortschritt im Fenster, geklemmt auf `0 … 1`; `s` ist `staerke / 100`.
+
+| Effekt | Verlauf | Endpunkte (Vertrag) |
+|---|---|---|
+| **Ken Burns** | `zoomBild = 100 + 8·s·weich(t)`, `versatzBildX = 2·s·weich(t)` | 0: 100 % / 0 – 1: **108 % / 2 %**, danach Ruhe |
+| **Zoom-Atmen** | `zoomHintergrund = 100 + 4·s·dreieck(t60)` | nahtlos: Bild 0 = Bild 60 |
+| **Drift** | `x = 1,5·s·dreieck(t60)`, `y = 1·s·dreieck(t30)` – **verschiedene Perioden** | nahtlos, keine Gerade |
+| **Parallax** | `versatzHintergrund = versatzBild · (1 − 0,4·s)` | ohne Bildbewegung **unsichtbar** (gewollt) |
+| **Text-Einblendung** | `textAlpha = weich(t)`, `textVersatzY = 12·(1 − weich(t))` | 1: Deckkraft 1, Versatz 0 |
+| **Preis-Pop** | steigt von 0,85 über **1,04** und endet bei **1,00** | Anfang 0,85 – Ende exakt 1,00 |
+| **Glanz-Sweep** | `glanzFortschritt = t`, Deckkraft `0,35·s·sin(π·t)` | Anfang/Ende unsichtbar |
+| **Preis zählt hoch** | `zaehlAnteil = 0,8 + 0,2·weich(t)`; die Zahl rechnet das **Zeichnen**: `round(ziel · anteil)` | Ende exakt `ziel` |
+| **Bild-Reveal** | `revealAnteil = weich(t)`, Versatz von **rechts** | Ende 1 (Bild vollständig) |
+| **Puls** | `pulsSkala = 1 + 0,03·s·schlag(t)`, drei Schläge | Anfang/Ende exakt 1,00 |
+
+**Vertrag sind die Endpunkte, die Nahtlosigkeit und die Monotonie – nicht einzelne Zwischenwerte.** Ein Fenster endet **exakt im Ruhezustand**, sonst springt das Bild an seiner Grenze.
+
+**Preis zählt hoch** braucht eine Zahl: Es wirkt nur, wenn der Preis mit einer Zahl beginnt (`^\s*(\d+)(?:[.,](\d+))?`). „2 für 1" zählt **nicht** – statt eine Bedeutung zu erfinden, bleibt der Effekt dort wirkungslos (Anforderungsdokument 4.10, letzter Punkt). **Die Zielzahl liest das Zeichnen aus dem Preis**, nicht `effektZustand`: Die Rechnung liefert nur den **Anteil** (0,8 → 1,0) und weiß nichts von Inhalten.
+
+#### 9.16.3 Das Zeichnen
+
+`zeichneSegment(aktion, vorlage, marke, rahmenMarke, zustand?: EffektZustand)`.
+
+- **Ohne `zustand` läuft exakt der heutige Weg**: keine Transformation, keine zusätzliche Deckkraft, dieselbe Reihenfolge der Zonen. Der fünfte Parameter ist optional und ändert keinen bestehenden Aufrufer.
+- **Mit `zustand`** werden die Transformationen **um die betroffene Zone** gelegt; die Zonen-Routinen selbst (`zone-text`, `zone-bild`, `zone-deko`) bleiben unverändert. `hintergrund`: Zoom und Drift · `bild`: Ken Burns, Reveal, Parallax · Textzonen: Deckkraft und Versatz · `preis`: Skala und Anzeige · `glanzSweep`: eine zusätzliche Ebene **über** der Zielzone.
+- **Nur Ganzbild.** Bei `höhe !== null` (Band) wird `zustand` **ignoriert** – das Band bleibt still.
+- **Keine zweite Malroutine.** Vorschau und Render rufen dieselbe Funktion (9.1, Variante A).
+
+#### 9.16.4 Der Bildplan
+
+Ein Segment **mit** Effekten schickt statt eines PNGs einen Plan aus **eindeutigen** Frames:
+
+```
+SegmentBildplan {
+  bilder: Uint8Array[]      // die eindeutigen Frames, in Reihenfolge des ersten Auftretens
+  laeufe: Lauf[]            // in Abspielreihenfolge
+}
+
+Lauf { erstesBild: number, anzahl: number, wiederholungen: number }
+```
+
+Abgespielt wird: für jeden Lauf die Folge `erstesBild … erstesBild + anzahl − 1`, `wiederholungen`-mal.
+
+**Zwei Invarianten, beide prüfbar:**
+
+1. `Σ anzahl × wiederholungen = dauer × 30` – **exakt**, ohne Rundung und ohne Toleranz. Damit ist die Dauer unantastbar.
+2. Für jedes Bild `i` ist das expandierte PNG **genau das** Bild, das `zeichneSegment(…, effektZustand(…, i, …))` liefert.
+
+Erzeugt wird der Plan von `bildplan()` in `src/shared/bildplan.ts` – **rein**, ohne DOM. Er ist die **kürzeste** Darstellung, die beide Invarianten erfüllt: gleiche aufeinanderfolgende Zustände werden zusammengefasst, eine am Ende erkannte Periode als `wiederholungen`. *Beispiel:* 10 s mit nur Zoom-Atmen → **60** eindeutige Bilder, ein Lauf mit `anzahl: 60, wiederholungen: 5` = 300.
+
+**Ohne Effekt gibt es keinen Plan** – dann bleibt es beim einzelnen `png` (9.2.2). Ein Plan ohne Wirkung wäre ein zweiter Weg für dasselbe Ergebnis, und genau die Doppelwege sind in diesem Projekt die teuersten Fehler.
+
+#### 9.16.5 Der Render-Weg
+
+`RenderItemSegment` trägt **`png` oder `bildplan`** (9.2.2). Für den Plan entsteht `src/main/ffmpeg-adapter/bildfolge.ts` nach dem Muster von `bandspur.ts` (9.2.8): je Lauf ein Eingang, die Läufe werden **bildgenau** verkettet.
+
+- **Die Bildzahl ist die Dauer.** Geschrieben wird auf die Summe aus 9.16.4 fest; es gibt keine Toleranz (9.2.6).
+- **Prüfung vor dem Lauf:** Summe = `dauer × 30`, sonst `ungueltiges_element`; **jeder** Frame misst 1920 × 1080 (`liesPngMasse`) – ein Plan mit einem fremden Frame bricht den Lauf, statt ein falsches Bild zu rendern.
+- **Welches ffmpeg-Mittel die Verkettung erzeugt, entscheidet der Bau und belegt es mit einer Gegenprobe** (Framezahl und Dauer der fertigen Datei). Im Vertrag steht das **Ergebnis**, nicht ein Filterknopf – ein ungeprüfter Parameter wäre eine Behauptung.
+- **Kein `zoompan`, keine Filter-Ausdrücke für Bewegung.** Die Pixel kommen aus dem Renderer; der Main rechnet keine Bewegung (9.1).
+
+#### 9.16.6 Vorschau und Editor
+
+- **Vorschau (FA-07):** Der Aktions-Editor spielt das Segment in einer `requestAnimationFrame`-Schleife ab und zeichnet je Bild mit `effektZustand` + `zeichneSegment` – **dieselbe** Rechnung wie der Render. Der `preview-player` (9.9) zeichnet ein Segment an der Abspielposition ebenso. Die **Bühne im `composer`** bleibt beim Ruhebild: Sie ist kein Abspieler (9.7) und zeigt weiterhin, wie das Segment *steht*.
+- **Editor:** eine Gruppe **„Effekte"** im Inspector, zehn Schalter. Je Schalter: Stärke 0–100; bei den sieben Fenster-Effekten zusätzlich Beginn und Ende in Sekunden. Alles geht in den **Entwurf**, geschrieben wird **einmal** beim Abschluss (9.8.6); `unterschiede` vergleicht `effekte` inhaltlich wie die verschachtelten Gestaltungsfelder.
+- **Ein Effekt ohne Ziel bleibt sichtbar und sagt es:** Preis-Pop ohne Preis, Bild-Reveal ohne Bild – der Schalter steht da, mit dem Hinweis, dass er nichts bewirkt. Ihn zu verstecken wäre die stille Variante derselben Wirkungslosigkeit.
+
+#### 9.16.7 Grenzen (eine Quelle: `shared/effekte.ts`)
+
+| Größe | Wert | Warum |
+|---|---|---|
+| Bildrate | **30** | Ausgabe-Profil (9.2.4); die Effekte erfinden keine zweite Zeitbasis |
+| Schleifenperiode | **2 s = 60 Bilder** | nahtlos; kürzer wirkt unruhig, länger kostet Frames |
+| Stärke | **0…100** | 100 = die Vorgabe aus Anforderungsdokument 4.10 |
+| Fensterlänge | **mindestens 1, höchstens 3 s** (90 Bilder) | ein Fenster ist eine Einblendung, kein Dauerlauf |
+| Eindeutige Frames je Segment | **höchstens 180** | sie liegen als PNG im Speicher; ein Segment mit Schleife (60) plus 3-s-Fenster bleibt darunter. **Der Bau misst die echte Größe** – die Zahl ist eine Obergrenze, keine Zusage über den Verbrauch |
+
+#### 9.16.8 Was ausdrücklich NICHT passiert
+
+- **Kein Effekt im Band.** Das Band liegt über bewegtem Videobild; zusätzliche Bewegung kostet dort die Lesbarkeit (Anforderungsdokument 4.5).
+- **Keine Übergänge zwischen Segmenten.** Der harte Schnitt bleibt; ein Fade wäre eine neue Anforderung, nicht ein Effekt.
+- **Kein ffmpeg-Zoom (`zoompan`).** Er wäre billiger und würde Vorschau und Ausgabe auseinanderlaufen lassen – genau die Zusage, um die es FA-25 geht.
+- **Keine Effekte auf Video-Elementen.** FA-25 spricht von Aktions-Segmenten; ein Video trägt seine Bewegung selbst.
+- **Keine neuen Inhaltsfelder.** Effekte sind Gestaltung; sie erzeugen kein Pflichtfeld und keinen zweiten Schreibweg.
+
+**Belege, die der Bau führen muss:** Unit-Fälle für Endpunkte, Nahtlosigkeit und beide Plan-Invarianten; **eine Fensterprobe** (Segment mit Effekt gerendert, `ffprobe`-Dauer unverändert, Framezahl = `dauer × 30`); eine **Gegenprobe** je tragender Zeile (Effekt entfernt → Bildfolge wird zum Standbild; Plan-Invariante gebrochen → Render weist ab).
+
+---
+
 > **Stand des High-Level-Designs.** **Ausgearbeitet:** `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9).
 >
-> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
+> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**, **9.16**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
