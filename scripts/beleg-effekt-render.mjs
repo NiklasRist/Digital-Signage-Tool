@@ -1,16 +1,17 @@
 // Beleg: kommt ein Effekt im GERENDERTEN Video an? (09.11.2026, #464)
 //
 // DER WEG IST DER ECHTE: eine Kopie eines Projekts, in `project.json` ein Segment
-// mit „Preis zaehlt", dann die gebaute App starten, im Composer „Video erzeugen"
-// druecken und die entstandene Datei mit ffprobe/ffmpeg messen.
+// mit „Zoom-Atmen" UND einem Motiv, dann die gebaute App starten, im Composer
+// „Video erzeugen" druecken und die entstandene Datei mit ffprobe/ffmpeg messen.
 //
-// WARUM NICHT „ZOOM-ATMEN": Die Schleifen wirken auf das MOTIV (AD 4.10), und die
-// Beleg-Aktion hat keins. „Preis zaehlt" veraendert den Preis-Text selbst - sichtbar
-// auch in einer reinen Text-Aktion.
+// WARUM MIT MOTIV: Genau dieser Fall war vor dem 09.11.2026 kaputt - ein
+// `media://`-Bild direkt im `<img>` taintet das Canvas, und `toBlob` scheitert mit
+// "Tainted canvases may not be exported". Der Beleg ist damit zugleich die
+// Gegenprobe fuer den Blob-Weg in `bild-laden.ts`.
 //
 // ZWEI PHASEN, eine Gegenprobe:
-//   1. MIT Effekt  -> 300 Bilder (10 s), und die Preiszone in Bild 0 sieht ANDERS
-//      aus als in Bild 30 (der Preis zaehlt hoch).
+//   1. MIT Effekt  -> 300 Bilder (10 s), und die Bildmitte sieht in Bild 0 ANDERS
+//      aus als in Bild 30 (das Motiv atmet).
 //   2. OHNE Effekt -> 300 Bilder (10 s), und Bild 0 sieht aus wie Bild 30.
 // Nur zusammen traegt das: Phase 1 allein koennte auch ein anderer Unterschied sein,
 // Phase 2 allein sagt nichts ueber den Effekt.
@@ -49,15 +50,12 @@ function baueProjekt(mitEffekt) {
   const aktion = projekt.aktionen.find((a) => a.titel === "Fill in");
   if (aktion === undefined) throw new Error("Aktion 'Fill in' fehlt in der Quelle");
 
-  // DER EFFEKT MUSS OHNE MOTIV SICHTBAR SEIN: „Zoom-Atmen" wirkt auf das Motiv
-  // (AD 4.10), die Aktion hat keins. „Preis zaehlt" veraendert den Preis-Text
-  // selbst - sichtbar auch in einer reinen Text-Aktion.
-  aktion.effekte = mitEffekt
-    ? { preisZaehlt: { staerke: 100, vonSekunden: 0, bisSekunden: 1 } }
-    : null;
-  // Ein Preis mit drei Stellen: Der Zaehl-Effekt startet bei 80 % (0,8 x 199 =
-  // 159). Bei „1" waere 0,8 auf 1 gerundet - der Unterschied unsichtbar.
-  aktion.preis = "199";
+  // Ein Motiv, damit „Zoom-Atmen" etwas zu bewegen hat (AD 4.10: die Schleifen
+  // wirken aufs Motiv). Die Datei liegt in der Kopie unter media/.
+  const bild = projekt.assets.find((a) => a.typ === "bild");
+  if (bild === undefined) throw new Error("Kein Bild-Asset in der Quelle");
+  aktion.bildRef = bild.id;
+  aktion.effekte = mitEffekt ? { zoomAtmen: { staerke: 100 } } : null;
 
   projekt.id = NEUE_ID;
   projekt.name = "beleg-effekt-render";
@@ -145,8 +143,18 @@ async function rendere(name) {
 
     const datei = path.join(ziel, "output", `${name}.mp4`);
     const ende = Date.now() + 240_000;
-    while (Date.now() < ende && !fs.existsSync(datei)) await schlafe(500);
+    let meldung = "";
+    while (Date.now() < ende && !fs.existsSync(datei)) {
+      // Eine Ablehnung (z. B. "Tainted canvases ...") steht als Meldung im Fenster -
+      // dann NICHT vier Minuten auf eine Datei warten, die nie kommt.
+      meldung = await seite.evaluate(
+        () => document.querySelector('[data-testid="composer-wurzel-meldung"]')?.textContent ?? "",
+      );
+      if (meldung !== "") break;
+      await schlafe(500);
+    }
     if (!fs.existsSync(datei)) {
+      if (meldung !== "") throw new Error(`Render ${name} abgelehnt: ${meldung}`);
       const text = await seite.evaluate(() => document.body.innerText.slice(0, 3000));
       throw new Error(`Render ${name} wurde nicht fertig. Fenstertext:\n${text}`);
     }
@@ -164,16 +172,15 @@ function ffprobeFeld(datei, feld) {
 }
 
 /**
- * Ein RGB-Ausschnitt der PREISZONE (x 1300, y 660, 524 x 150 - die Zone der
- * Vorlage `vollbild`). Nur dieser Ausschnitt wird verglichen: Der Preis-Effekt
- * aendert genau dort etwas, und der Rest des Bildes bleibt gleich.
+ * Ein RGB-Ausschnitt aus der BILDMITTE (760, 390, 400 x 300). Dort liegt das Motiv;
+ * „Zoom-Atmen" veraendert genau diesen Ausschnitt, waehrend der Rand gleich bleibt.
  */
 function ausschnitt(datei, bild) {
   return execFileSync(FFMPEG, [
     "-hide_banner", "-v", "error", "-i", datei,
-    "-vf", `select=eq(n\\,${bild}),crop=524:150:1300:660`,
+    "-vf", `select=eq(n\\,${bild}),crop=400:300:760:390`,
     "-frames:v", "1", "-pix_fmt", "rgb24", "-f", "rawvideo", "-",
-  ], { maxBuffer: 524 * 150 * 3 + 4096 });
+  ], { maxBuffer: 400 * 300 * 3 + 4096 });
 }
 
 /** So viele Bytes des Ausschnitts weichen um mehr als 16 Stufen ab. */

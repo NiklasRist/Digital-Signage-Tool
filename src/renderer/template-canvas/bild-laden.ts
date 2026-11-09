@@ -14,8 +14,26 @@
 // ueber `media://` (9.5.7)." (TK 9.10.8) Die einzige Bildquelle dieser Datei ist die
 // URL `media://<projektId>/<dateiname>`, die der Main bedient (#9 registriert das
 // Schema, #50 loest ueber die Pfad-Autoritaet #49 auf). Kein `fs`, kein `path`, kein
-// `file://`, kein `fetch`, kein IPC-Kanal fuer Bilddaten - IPC transportiert laut
-// TK 9.1.1 Punkt 1 ausschliesslich gerenderte Segment-PNGs.
+// `file://`, kein IPC-Kanal fuer Bilddaten - IPC transportiert laut TK 9.1.1 Punkt 1
+// ausschliesslich gerenderte Segment-PNGs.
+//
+// NACHTRAG 09.11.2026 - BYTES ALS BLOB-URL (BEFUND AUS #464):
+// Ein `media://`-Bild direkt in `<img>` TAINTET das Canvas. Anzeigen geht, aber
+// `toBlob` scheitert mit "Tainted canvases may not be exported" - und damit jeder
+// Render einer Aktion mit Motiv, nicht nur ein Effekt. GEMESSEN am 09.11.2026 am
+// gebauten Fenster (scripts/beleg-effekt-render.mjs, erste Fassung mit Motiv).
+//
+// DERSELBE WEG WIE #315/NACHTRAG II (`marken://`) UND #364 (`media://` fuer den
+// Filmstreifen): Die Bytes kommen ueber den Speicherort-Vertrag (TK 9.5.7,
+// `media://` bleibt unveraendert), gebunden wird aber eine Objekt-URL. Blob-URLs
+// sind same-origin und tainen nicht. Die eine Stelle dafuer ist
+// `gemeinsam/media-blob-url.ts` - hier steht KEINE zweite Kopie des Wegs.
+//
+// FESTLEGUNG 2 BLEIBT: Die Adresse wird roh zusammengesetzt (kein
+// `encodeURIComponent`) - nur jetzt in `mediaBlobUrl`, das denselben Vertrag haelt.
+// FESTLEGUNG 8 BLEIBT: kein `crossOrigin`, keine Groessenattribute; das Bild dient
+// allein als Quelle fuer `ctx.drawImage`. Die Objekt-URL wird nach dem `decode()`
+// widerrufen - das dekodierte Bild bleibt gueltig (im Logo-Weg seit 23.08.2026 so).
 //
 // `fehlt` IST KEIN FEHLER, SONDERN EIN ZUSTAND. "Ist `aktion.bildRef` ein
 // `fehlt`-Asset (9.4.7), zeichnet `template-canvas` einen Platzhalter an der
@@ -29,6 +47,10 @@
 export type Motiv =
   | { zustand: 'geladen'; bild: ImageBitmap | HTMLImageElement; breite: number; höhe: number }
   | { zustand: 'fehlt' }
+
+// Die EINE Stelle fuer media://-Bytes als Blob-URL (#364) - hier keine zweite Kopie
+// des Wegs. Blob-URLs sind same-origin und tainen das Canvas nicht.
+import { gibMediaBlobUrlFrei, mediaBlobUrl } from '../gemeinsam/media-blob-url'
 // Das unterscheidende Feld heißt `zustand` (nicht `status`). Diese Datei ist für den Typ
 // DEFINIEREND; #115, #117 und #119 übernehmen ihn zeichengenau.
 // breite/höhe = naturalWidth/naturalHeight des dekodierten Bildes (native Pixelmaße).
@@ -100,58 +122,49 @@ export async function ladeMotiv(projektId: string, dateiname: string): Promise<M
   pruefeNichtLeer('projektId', projektId)
   pruefeNichtLeer('dateiname', dateiname)
 
-  // DIE URL WIRD ROH ZUSAMMENGESETZT - kein `encodeURIComponent`, keine eigene
-  // Pfad- oder Musterpruefung (Festlegung 2). Zwei Gruende:
+  // Die Adresse `media://<projektId>/<dateiname>` baut `mediaBlobUrl` - roh, ohne
+  // `encodeURIComponent`. Ueber Gueltigkeit entscheidet EINE Instanz, der Main
+  // (#49/#50); eine zweite Pruefung hier waere eine zweite Pfad-Autoritaet.
   //
-  // 1. Es gibt nichts zu kodieren. `dateiname` ist laut TK 9.4.8 Punkt 1
-  //    `<uuid>.<ext_kleingeschrieben>` OHNE Verzeichnisanteil, `projektId` eine UUID -
-  //    beides enthaelt nur Zeichen, die in einer URL unveraendert stehen duerfen.
-  // 2. Wichtiger: Ueber Gueltigkeit entscheidet EINE Instanz, der Main (#49/#50). Eine
-  //    zweite Pruefung hier waere eine zweite Pfad-Autoritaet - und jede spaetere
-  //    Verschaerfung dort erreichte diesen Code dann nicht mehr. Ungueltiges wird vom
-  //    Main abgewiesen und kommt hier als `fehlt` an.
-  //
-  // Ohne Query, ohne Fragment, ohne fuehrenden oder doppelten Schraegstrich im
-  // Pfadteil: #50 weist genau solche Adressen ab (geprueft in
-  // tests/unit/project-store-media-protokoll.spec.ts).
-  const url = `media://${projektId}/${dateiname}`
+  // `''` heisst: nicht ladbar (abgewiesen, fehlend, Handler-/Lesefehler). Das ist eine
+  // Ladelage, kein Programmierfehler - und endet wie jeder Ladefehler als `fehlt`.
+  const objektUrl = await mediaBlobUrl(projektId, dateiname)
+  if (objektUrl === '') {
+    return FEHLT
+  }
 
-  // `new Image()` steht ABSICHTLICH VOR dem try: Fehlt der Konstruktor, ist das keine
-  // Ladelage, sondern eine kaputte Umgebung (diese Datei laeuft nur im Renderer). Ein
-  // solcher Fehler soll auffallen und nicht als Platzhalter im Bild landen.
-  const bild = new Image()
-
-  // Reihenfolge nach Festlegung 1: Element erzeugen, `src` setzen, DANN `decode()`
-  // awaiten - `decode()` auf einem Bild ohne `src` lehnt ab.
-  //
-  // Das Bild wird NICHT in den DOM gehaengt und bekommt kein `crossOrigin`, kein
-  // `loading` und keine Groessenattribute (Festlegung 8). Es dient allein als Quelle
-  // fuer `ctx.drawImage`.
-  bild.src = url
-
+  let bild: HTMLImageElement
   try {
+    // Reihenfolge nach Festlegung 1: Element erzeugen, `src` setzen, DANN `decode()`
+    // awaiten - `decode()` auf einem Bild ohne `src` lehnt ab.
+    //
+    // Das Bild wird NICHT in den DOM gehaengt und bekommt kein `crossOrigin`, kein
+    // `loading` und keine Groessenattribute (Festlegung 8). Es dient allein als Quelle
+    // fuer `ctx.drawImage`.
+    bild = new Image()
+    bild.src = objektUrl
+
     // `await img.decode()` UND NICHT `onload` (Festlegung 1). `onload` bedeutet "die
     // Bytes sind da", NICHT "das Bild ist dekodiert". Wer nach `onload` zeichnet,
-    // erzeugt ein Segment mit leerer oder halber Bildflaeche - in der Vorschau
-    // vielleicht unauffaellig, im Endvideo aber dauerhaft. Genau diese Zusicherung
-    // verlangt TK 9.10.3 Punkt 4: "Bilder sind vor dem Zeichnen dekodiert."
+    // erzeugt ein Segment mit leerer oder halber Bildflaeche.
     //
     // KEIN eigener Timeout (Festlegung 5): `media://` liest eine LOKALE Datei, keine
     // Netzwerkressource. Ein Abbruch nach n Millisekunden machte das Ergebnis
-    // zeitabhaengig - derselbe Aufruf liefe auf einem langsamen Rechner auf `fehlt`,
-    // auf einem schnellen auf das Motiv, und "gleiche Eingabe -> gleiches Bild" waere
-    // gebrochen.
+    // zeitabhaengig - "gleiche Eingabe -> gleiches Bild" waere gebrochen.
     await bild.decode()
   } catch {
     // HIER ENDET JEDER LADEFEHLER: Datei nicht vorhanden, `Asset.zustand === "fehlt"`
     // (TK 9.4.7), Traversal-Verdacht, Lesefehler, fremdes Projekt - und ebenso Bytes,
-    // die ankommen, aber kein dekodierbares Bild sind. Der Main antwortet in all diesen
-    // Faellen mit einem Fehlerstatus, nie mit einer `Ergebnis<T>`-Huelle; welcher es
-    // war, ist hier weder erkennbar noch von Belang.
+    // die ankommen, aber kein dekodierbares Bild sind.
     //
-    // KEINE Wiederholungsschleife und KEINE Zusatzmeldung (s. STOPP-Vermerk am
-    // Dateiende): Beides verdeckte die Luecke im Gesamtvertrag, statt sie zu schliessen.
+    // KEINE Wiederholungsschleife und KEINE Zusatzmeldung: Beides verdeckte die Luecke
+    // im Gesamtvertrag, statt sie zu schliessen.
     return FEHLT
+  } finally {
+    // Die Objekt-URL wird NACH dem decode() freigegeben; das dekodierte Bild bleibt
+    // gueltig (derselbe Weg wie im Logo-Ladeweg, #315/Nachtrag II). Ohne das Freigeben
+    // bliebe je Vorbereitung ein Blob im Speicher des Renderers liegen.
+    gibMediaBlobUrlFrei(objektUrl)
   }
 
   return {
@@ -165,9 +178,9 @@ export async function ladeMotiv(projektId: string, dateiname: string): Promise<M
     höhe: bild.naturalHeight,
   }
 }
-// Baut die URL `media://${projektId}/${dateiname}`, lädt sie mit new Image() + await img.decode()
-// und liefert das Ergebnis. Wirft NIE wegen eines Ladefehlers – jeder Ladefehler ist
-// { zustand: 'fehlt' }.
+// Holt die Bytes ueber `mediaBlobUrl` (Blob-URL, taintet nicht) und dekodiert sie mit
+// new Image() + await img.decode(). Wirft NIE wegen eines Ladefehlers – jeder
+// Ladefehler ist { zustand: 'fehlt' }.
 
 export async function bereiteMotiveVor(
   projektId: string,

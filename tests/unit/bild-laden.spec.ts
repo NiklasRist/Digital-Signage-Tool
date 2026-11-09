@@ -1,5 +1,5 @@
 
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   bereiteMotiveVor,
@@ -32,6 +32,33 @@ type Antwort =
 const antworten = new Map<string, Antwort>();
 const erzeugte: Doppelgaenger[] = [];
 
+/**
+ * Der Blob-Weg (#364, seit 09.11.2026 auch fuer Motive): `bild-laden` holt die Bytes
+ * ueber `mediaBlobUrl` und bindet eine Objekt-URL. Der Baustein hat eigene Tests
+ * (`media-blob-url.spec.ts`); hier wird ER gestubbt, damit dieser Test die SEMANTIK
+ * von `ladeMotiv` prueft und nicht noch einmal den fetch-Weg.
+ *
+ * `blob:<media-url>` ist Absicht: Der Bild-Doppelgaenger kann so dieselbe Antwort-Tabelle
+ * benutzen wie zuvor.
+ */
+const blobs = vi.hoisted(() => ({
+  angefragt: [] as string[],
+  freigegeben: [] as string[],
+  nichtLadbar: new Set<string>(),
+}));
+
+vi.mock("../../src/renderer/gemeinsam/media-blob-url", () => ({
+  mediaBlobUrl: async (projektId: string, dateiname: string) => {
+    const url = `media://${projektId}/${dateiname}`;
+    blobs.angefragt.push(url);
+    if (blobs.nichtLadbar.has(url)) return "";
+    return `blob:${url}`;
+  },
+  gibMediaBlobUrlFrei: (url: string) => {
+    if (url !== "") blobs.freigegeben.push(url);
+  },
+}));
+
 class Doppelgaenger {
   src = "";
   naturalWidth = 0;
@@ -50,7 +77,10 @@ class Doppelgaenger {
     if (this.src === "") {
       return Promise.reject(new Error("decode() ohne src"));
     }
-    const antwort = antworten.get(this.src) ?? { art: "fehler" };
+    // Die Quelle ist die Objekt-URL `blob:<media-url>`; die Antwort-Tabelle ist nach
+    // der media://-Adresse geschluesselt.
+    const schluessel = this.src.startsWith("blob:") ? this.src.slice("blob:".length) : this.src;
+    const antwort = antworten.get(schluessel) ?? { art: "fehler" };
     if (antwort.art === "fehler") {
       return Promise.reject(new Error("Ladefehler"));
     }
@@ -74,6 +104,9 @@ const globalMitImage = globalThis as unknown as { Image?: unknown };
 beforeEach(() => {
   antworten.clear();
   erzeugte.length = 0;
+  blobs.angefragt.length = 0;
+  blobs.freigegeben.length = 0;
+  blobs.nichtLadbar.clear();
   globalMitImage.Image = Doppelgaenger;
   leereMotivBestand();
 });
@@ -111,13 +144,15 @@ describe("ladeMotiv", () => {
     expect(motiv.bild).toBe(erzeugte[0]);
   });
 
-  it("baut die URL genau als media://<projektId>/<dateiname>", async () => {
+  it("fragt die Bytes genau als media://<projektId>/<dateiname> an", async () => {
     eintragen("media://p1/x.jpg", { art: "ok", breite: 1, höhe: 1 });
 
     await ladeMotiv("p1", "x.jpg");
 
-    expect(erzeugte).toHaveLength(1);
-    expect(erzeugte[0]?.src).toBe("media://p1/x.jpg");
+    expect(blobs.angefragt).toEqual(["media://p1/x.jpg"]);
+    // Gebunden wird eine Objekt-URL, NICHT die media://-Adresse: Letztere taintet das
+    // Canvas und liesse `toBlob` scheitern (Befund 09.11.2026, #464).
+    expect(erzeugte[0]?.src).toBe("blob:media://p1/x.jpg");
   });
 
   it("kodiert den Dateinamen nicht und hängt nichts an", async () => {
@@ -126,8 +161,24 @@ describe("ladeMotiv", () => {
     const roh = "3f2a1c4e-0000-4000-8000-0123456789ab.jpg";
     await ladeMotiv("p1", roh);
 
-    expect(erzeugte[0]?.src).toBe(`media://p1/${roh}`);
-    expect(erzeugte[0]?.src).not.toMatch(/[?#]|%[0-9a-fA-F]{2}/);
+    expect(blobs.angefragt).toEqual([`media://p1/${roh}`]);
+    expect(blobs.angefragt[0]).not.toMatch(/[?#]|%[0-9a-fA-F]{2}/);
+  });
+
+  it("gibt die Objekt-URL nach dem Laden wieder frei", async () => {
+    eintragen("media://p1/x.jpg", { art: "ok", breite: 1, höhe: 1 });
+
+    await ladeMotiv("p1", "x.jpg");
+
+    expect(blobs.freigegeben).toEqual(["blob:media://p1/x.jpg"]);
+  });
+
+  it("liefert fehlt, wenn die Bytes gar nicht kommen - ohne ein Bild zu erzeugen", async () => {
+    // Abgewiesen (403), fehlend (404) oder Handler-Fehler: `mediaBlobUrl` gibt '' zurueck.
+    blobs.nichtLadbar.add("media://p1/weg.jpg");
+
+    await expect(ladeMotiv("p1", "weg.jpg")).resolves.toEqual({ zustand: "fehlt" });
+    expect(erzeugte).toHaveLength(0);
   });
 
   it("liefert fehlt, wenn der Main die Anfrage ablehnt", async () => {
@@ -139,6 +190,8 @@ describe("ladeMotiv", () => {
     eintragen("media://p1/kaputt.jpg", { art: "fehler" });
 
     await expect(ladeMotiv("p1", "kaputt.jpg")).resolves.toEqual({ zustand: "fehlt" });
+    // Auch der Fehlerweg gibt die Objekt-URL frei - sonst bliebe der Blob liegen.
+    expect(blobs.freigegeben).toEqual(["blob:media://p1/kaputt.jpg"]);
   });
 
   it("wartet auf decode() und liefert vorher nichts", async () => {
