@@ -198,6 +198,70 @@ describe('loeseRenderAus (#134) - die Items', () => {
     expect(Array.from((nutzlast.payload.elemente as unknown as Array<{ png: Uint8Array; dauer: number; art: string; id: string }>)).length).toBe(1)
   })
 
+  it("segment mit Effekt -> Bildplan statt Einzel-PNG: 60 gezeichnete Frames (#464)", async () => {
+    // 10 s mit nur "Zoom-Atmen": 300 Bilder, aber die Schleife ist 60 lang
+    // (TK 9.16.4) - gezeichnet werden 60, gespielt 300. Genau das ist der Grund
+    // fuer den Plan; ohne ihn waeren es 300 Zeichenvorgaenge.
+    const mitEffekt = { ...AKTION_OK, effekte: { zoomAtmen: { staerke: 100 } } }
+    const p = projekt([segment('e1', 'a-1', 10)], [mitEffekt], [])
+
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
+    expect(antwort.ok).toBe(true)
+
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as {
+      payload: { elemente: Array<{ png?: Uint8Array; bildplan?: { bilder: Uint8Array[]; laeufe: unknown[] }; dauer: number }> }
+    }
+    const item = nutzlast.payload.elemente[0]
+    expect(item).toBeDefined()
+    if (item === undefined) return
+
+    expect(item.png).toBeUndefined()
+    expect(item.bildplan?.bilder).toHaveLength(60)
+    expect(item.bildplan?.laeufe).toEqual([{ erstesBild: 0, anzahl: 60, wiederholungen: 5 }])
+    expect(item.dauer).toBe(10)
+
+    // 60 Zeichenvorgaenge, NICHT 300.
+    expect(vi.mocked(zeichneSegment)).toHaveBeenCalledTimes(60)
+    expect(vi.mocked(alsPng)).toHaveBeenCalledTimes(60)
+    // Jeder Aufruf traegt einen Zustand, und Anfang und Ende der Schleife sind
+    // NICHT identisch - sonst waere "Bewegung" ein Standbild.
+    const erster = vi.mocked(zeichneSegment).mock.calls[0]?.[4]
+    const letzter = vi.mocked(zeichneSegment).mock.calls[59]?.[4]
+    expect(erster).toBeDefined()
+    expect(letzter).not.toEqual(erster)
+  })
+
+  it("alle Staerken 0 -> KEIN Plan, genau ein PNG (der alte Weg)", async () => {
+    const ohneWirkung = { ...AKTION_OK, effekte: { zoomAtmen: { staerke: 0 } } }
+    const p = projekt([segment('e1', 'a-1', 10)], [ohneWirkung], [])
+
+    await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
+
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as {
+      payload: { elemente: Array<{ png?: Uint8Array; bildplan?: unknown }> }
+    }
+    const item = nutzlast.payload.elemente[0]
+    expect(item?.png).toBeInstanceOf(Uint8Array)
+    expect(item?.bildplan).toBeUndefined()
+    expect(vi.mocked(zeichneSegment)).toHaveBeenCalledTimes(1)
+  })
+
+  it("NAHT: ein Auftrag mit Bildplan besteht die Pruefung des render-service", async () => {
+    // Derselbe Weg wie der Naht-Test unten, nur mit Effekt: Der Renderer baut den
+    // Plan, der Main prueft Summe und Frame-Masse. Weichen die beiden Rundungen
+    // voneinander ab, faellt es HIER auf und nicht erst am Fernseher.
+    const { pruefeRenderRequest } = await import('../../src/main/render-service/validierung')
+    const mitEffekt = { ...AKTION_OK, effekte: { zoomAtmen: { staerke: 100 } } }
+    const p = projekt([segment('e1', 'a-1', 10)], [mitEffekt], [])
+
+    const antwort = await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
+    expect(antwort.ok).toBe(true)
+
+    const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: RenderRequest }
+    const geprueft = pruefeRenderRequest(nutzlast.payload)
+    expect(geprueft.ok ? null : geprueft.fehler.meldung).toBeNull()
+  })
+
   it("video ohne einblendung -> RenderItemVideo mit einblendung null; trimStart aus null -> 0; trimEnde aus null / asset.dauer", async () => {
     const asset = { id: 'v1', typ: 'video', dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 10, höhe: 10 }, dauer: 12.5, importdatum: 'x', zustand: 'ok' } as never as Project['assets'][number]
     const p = projekt([video('e1', 'v1', null)], [], [asset])

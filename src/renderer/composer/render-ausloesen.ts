@@ -36,6 +36,8 @@
 import { RENDER_PROFILE } from '../../shared/contracts/render-profile'
 import { erzeugeId } from '../../shared/contracts/id'
 import { KANAELE } from '../../shared/contracts/kanaele'
+import { rahmenplan } from '../../shared/bildplan'
+import { effektZustand } from '../../shared/effekte'
 import { rufeAuf } from '../ipc-client/rufe-auf'
 import { findeKaputteStellen } from './kaputt-erkennung'
 import { pruefeAusgabeName } from './render-dialog'
@@ -43,10 +45,17 @@ import { zeichneSegment } from '../template-canvas/zeichne-segment'
 import { alsPng } from '../template-canvas/als-png'
 import { stelleMarkeBereit } from '../gemeinsam/marken-bereitstellung'
 
+import type { Aktion } from '../../shared/contracts/aktion'
 import type { Project, Listenelement } from '../../shared/contracts/project'
 import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage } from '../../shared/contracts/vorlage'
-import type { RenderRequest, RenderItem, RenderItemVideo } from '../../shared/contracts/render-request'
+import type {
+  RenderRequest,
+  RenderItem,
+  RenderItemSegment,
+  RenderItemVideo,
+  SegmentBildplan,
+} from '../../shared/contracts/render-request'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { zerlegeVideo, rotiereBand } from './unterbrechungs-zerlegung'
 
@@ -136,23 +145,18 @@ export async function loeseRenderAus(
           fehler: { code: 'ungueltige_eingabe' as const, meldung: `Aktion "${aktion.titel}" verwendet eine unbekannte Vorlage.`, daten: undefined },
         }
       }
-      // Der Wurf von zeichneSegment wird NICHT gefangen (E-7 des Issues).
-      // rahmenMarke === marke (TK v3.18 / M8-21).
-      const bild = zeichneSegment(aktion, zeichenvorlage, marke, marke)
-      const png = await alsPng(bild)
-      if (!png.ok) {
-        // Ein halb bestücktes elemente-Array MUSS NICHT in die Queue.
-        return { ok: false, fehler: { code: 'png_export_fehler', meldung: png.fehler.meldung, daten: undefined } }
-      }
+      // Der geforderte Typ #17 verlangt number; es wird NICHTS geraten oder
+      // ersetzt - ein erfundener Wert lief falsch lange aus dem Video (TK 9.1.1).
       if (element.dauer === null) {
-        // Der geforderte Typ #17 verlangt number; es wird NICHTS geraten oder
-        // ersetzt - ein erfundener Wert lief falsch lange aus dem Video (TK 9.1.1).
         return {
           ok: false,
           fehler: { code: 'ungueltige_eingabe', meldung: `Listenelement "${element.id}" ist unbrauchbar, Dauer fehlt; als Art 'segment' aber verlangt.`, daten: undefined },
         }
       }
-      elemente.push({ id: element.id, art: 'segment', png: png.wert, dauer: element.dauer })
+      // Der EINZIGE Zeichenaufruf im Auslöse-Weg; die Vorlage holt die Aktion.
+      const bild = await baueSegmentItem(element.id, aktion, zeichenvorlage, marke, element.dauer)
+      if (!bild.ok) return bild
+      elemente.push(bild.wert)
     } else {
       // art 'video': Der Quelldatei-Auflösung über die Asset-ID
       const asset = projekt.assets.find((b) => b.id === element.ref)
@@ -228,12 +232,9 @@ export async function loeseRenderAus(
             fehler: { code: 'ungueltige_eingabe' as const, meldung: `Aktion "${aktion.titel}" verwendet eine unbekannte Vorlage.`, daten: undefined },
           }
         }
-        // Der Wurf von zeichneSegment wird NICHT gefangen (E-7). rahmenMarke === marke.
-        const png = await alsPng(zeichneSegment(aktion, zeichenvorlage, marke, marke))
-        if (!png.ok) {
-          return { ok: false, fehler: { code: 'png_export_fehler', meldung: png.fehler.meldung, daten: undefined } }
-        }
-        elemente.push({ id: teilKennung, art: 'segment', png: png.wert, dauer: stueck.dauer })
+        const bild = await baueSegmentItem(teilKennung, aktion, zeichenvorlage, marke, stueck.dauer)
+        if (!bild.ok) return bild
+        elemente.push(bild.wert)
       }
     }
   }
@@ -248,6 +249,65 @@ export async function loeseRenderAus(
     ausgabeName,
   }
   return rufeAuf<{ auftragId: string }>(KANAELE.queue.reiheEin, { art: 'render', payload: request })
+}
+
+/**
+ * Baut das RenderItem EINES Segments - Standbild oder Bildfolge (seit #464).
+ *
+ * OHNE EFFEKT BLEIBT ES BEIM EINEN PNG (TK 9.2.2): `rahmenplan` liefert dann `null`,
+ * und dieser Weg ist Zeichen fuer Zeichen der bisherige. Mit Effekt entsteht der
+ * Plan aus den EINDEUTIGEN Frames: 10 s mit Schleife kosten 60 Zeichenvorgaenge
+ * statt 300 (TK 9.16.4). Gezeichnet wird mit `effektZustand(bildNummer)` - DERSELBE
+ * Zustand, den die Vorschau an dieser Position zeigt (TK 9.16.6); der Main rechnet
+ * keine Bewegung.
+ *
+ * DIE BILDZAHL KOMMT AUS `dauer x 30` - derselben Formel wie `zuFrames` im Main
+ * (#174). Weichen die beiden ab, weist `validierung.ts` den Auftrag ab
+ * (`ungueltiges_element`); still eine andere Laenge zu rendern ist damit unmoeglich.
+ *
+ * Der Wurf von `zeichneSegment` wird NICHT gefangen (E-7 des Issues): Ein mit
+ * Systemschrift gemaltes Segment saehe gueltig aus und masse andere Breiten.
+ */
+async function baueSegmentItem(
+  id: string,
+  aktion: Aktion,
+  vorlage: Vorlage,
+  marke: Marke,
+  dauer: number,
+): Promise<Ergebnis<RenderItemSegment, AusloeseFehlercode>> {
+  const bilderGesamt = Math.max(1, Math.round(dauer * RENDER_PROFILE.fps))
+  const satz = aktion.effekte ?? null
+  const plan = rahmenplan(satz, bilderGesamt)
+
+  if (plan === null) {
+    // rahmenMarke === marke (TK v3.18 / M8-21).
+    const png = await alsPng(zeichneSegment(aktion, vorlage, marke, marke))
+    if (!png.ok) {
+      return {
+        ok: false,
+        fehler: { code: 'png_export_fehler', meldung: png.fehler.meldung, daten: undefined },
+      }
+    }
+    return { ok: true, wert: { id, art: 'segment', png: png.wert, dauer } }
+  }
+
+  const bilder: Uint8Array[] = []
+  for (const bildNummer of plan.bildNummern) {
+    const zustand = effektZustand(satz, bildNummer, bilderGesamt)
+    const png = await alsPng(zeichneSegment(aktion, vorlage, marke, marke, zustand))
+    if (!png.ok) {
+      return {
+        ok: false,
+        fehler: { code: 'png_export_fehler', meldung: png.fehler.meldung, daten: undefined },
+      }
+    }
+    bilder.push(png.wert)
+  }
+
+  // `plan.laeufe` zeigt mit `erstesBild` in `plan.bildNummern` - und die PNGs sind in
+  // GENAU dieser Reihenfolge abgelegt. Eine Umsortierung waere eine andere Bewegung.
+  const bildplan: SegmentBildplan = { bilder, laeufe: plan.laeufe }
+  return { ok: true, wert: { id, art: 'segment', bildplan, dauer } }
 }
 
 /**
