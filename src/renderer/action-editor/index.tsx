@@ -69,6 +69,7 @@ import {
   haengeVorschauEin,
   zeichneVorschau,
 } from './live-vorschau'
+import { effektZustand } from '../../shared/effekte'
 import {
   anzahlStellen,
   behebeAktionsBild,
@@ -815,16 +816,27 @@ function VorschauFlaeche({
 
   useEffect(() => {
     const ziel = containerBezug[0]
-    if (ziel !== null && inhalt !== null) {
-      const zeichenv = p.zeichnen.hole()?.vorlagen ?? []
-      const vorlage = findeZeichenVorlage(inhalt, zeichenv)
-      if (vorlage === null) return
-      // Die Marke des ENTWURFS (#313, ENTSCHIEDEN 5). null heisst: nicht zeichnen -
-      // keine Ersatzmarke, kein Nachladen im Zeichenpfad (TK 9.10.3).
-      const marke = holeBereiteMarke(inhalt.markeId)
-      if (marke === null) return
+    if (ziel === null || inhalt === null) return
+    const zeichenv = p.zeichnen.hole()?.vorlagen ?? []
+    const vorlage = findeZeichenVorlage(inhalt, zeichenv)
+    if (vorlage === null) return
+    // Die Marke des ENTWURFS (#313, ENTSCHIEDEN 5). null heisst: nicht zeichnen -
+    // keine Ersatzmarke, kein Nachladen im Zeichenpfad (TK 9.10.3).
+    const marke = holeBereiteMarke(inhalt.markeId)
+    if (marke === null) return
+
+    // Effekte (09.11.2026, TK 9.16.6): Die Vorschau spielt das Segment in einer
+    // requestAnimationFrame-Schleife und zeichnet je Bild mit DEMSELBEN Zustand, den
+    // auch der Render bekommt. Ohne Effekt bleibt es beim einen Standbild.
+    const bilderGesamt = Math.max(1, Math.round((inhalt.standardDauer ?? 10) * 30))
+    const satz = inhalt.effekte ?? null
+    const hatEffekt =
+      satz !== null && Object.values(satz).some((e) => e !== undefined && e.staerke > 0)
+
+    const zeichne = (bildIndex: number): void => {
       try {
-        const bild = zeichneVorschau(inhalt, vorlage, marke)
+        const zustand = hatEffekt ? effektZustand(satz, bildIndex, bilderGesamt) : undefined
+        const bild = zeichneVorschau(inhalt, vorlage, marke, zustand)
         haengeVorschauEin(ziel, bild)
         setzeFehlertext(null)
       } catch (ausnahme) {
@@ -832,6 +844,21 @@ function VorschauFlaeche({
         setzeFehlertext(ausnahme instanceof Error ? ausnahme.message : 'Zeichenfehler')
       }
     }
+
+    if (!hatEffekt) {
+      zeichne(0)
+      return
+    }
+
+    let raf = 0
+    const start = performance.now()
+    const schleife = (): void => {
+      const bildIndex = Math.floor((performance.now() - start) / (1000 / 30)) % bilderGesamt
+      zeichne(bildIndex)
+      raf = requestAnimationFrame(schleife)
+    }
+    raf = requestAnimationFrame(schleife)
+    return () => cancelAnimationFrame(raf)
   }, [inhalt, p, vorbereitet])
 
   return <div ref={(el) => setzeContainer(el)} data-testid="aktion-vorschau-flaeche" style={{ border: '1px solid #444', minHeight: 200, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} />

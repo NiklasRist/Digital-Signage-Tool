@@ -19,6 +19,7 @@
 
 import type { AktionsInhalt } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
+import type { EffektZustand } from '../../shared/effekte'
 import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { SegmentBild } from '../template-canvas/zeichne-segment'
@@ -65,10 +66,15 @@ export async function bereiteVorschauVor(
 }
 
 /** Die Vorschau: EIN Aufruf von zeichneSegment, sonst nichts. Synchron. */
-export function zeichneVorschau(aktion: AktionsInhalt, vorlage: Vorlage, marke: Marke): SegmentBild {
+export function zeichneVorschau(
+  aktion: AktionsInhalt,
+  vorlage: Vorlage,
+  marke: Marke,
+  zustand?: EffektZustand,
+): SegmentBild {
   // rahmenMarke === marke (TK v3.18 / M8-21): bis auf den Hintergrund einer
   // EinblendungRunWith gilt dieselbe Marke.
-  return zeichneSegment(aktion, vorlage, marke, marke)
+  return zeichneSegment(aktion, vorlage, marke, marke, zustand)
 }
 
 /**

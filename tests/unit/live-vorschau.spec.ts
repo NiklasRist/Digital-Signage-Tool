@@ -87,7 +87,15 @@ describe("zeichneVorschau (#140)", () => {
     const bild = zeichneVorschau(AKTION(), vorlage, marke())
     expect(bild).toBe(ENTWURFSBILD)
     // #294 (TK v3.18): rahmenMarke === marke - dieselbe Referenz.
-    expect(vi.mocked(zeichneSegment)).toHaveBeenCalledWith(AKTION(), vorlage, marke(), marke())
+    // Seit TK 9.16 ist das FUENFTE Argument der Effekt-Zustand; ohne Angabe `undefined`.
+    expect(vi.mocked(zeichneSegment)).toHaveBeenCalledWith(AKTION(), vorlage, marke(), marke(), undefined)
+  })
+
+  it("reicht den Effekt-Zustand unveraendert durch (TK 9.16.6)", () => {
+    const vorlage = { id: 'vollbild' } as never
+    const zustand = { zoomBild: 104 } as never
+    zeichneVorschau(AKTION(), vorlage, marke(), zustand)
+    expect(vi.mocked(zeichneSegment)).toHaveBeenCalledWith(AKTION(), vorlage, marke(), marke(), zustand)
   })
 })
 

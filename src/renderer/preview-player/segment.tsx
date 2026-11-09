@@ -29,6 +29,7 @@ import type { Aktion } from '../../shared/contracts/aktion'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { Marke } from '../../shared/contracts/marke'
 import { zeichneSegment } from '../template-canvas/zeichne-segment'
+import { effektZustand } from '../../shared/effekte'
 import { sindSchriftenBereit } from '../template-canvas/schriften'
 
 export interface SegmentProps {
@@ -42,10 +43,15 @@ export interface SegmentProps {
    * Das Werbeband setzt hier bandY - die Groesse kommt NIE von hier, sondern aus dem Canvas.
    */
   y?: number
+  /**
+   * Segment-Bild an dieser Abspielposition (09.11.2026, TK 9.16.6). Fehlt es, wird das
+   * RUHEBILD gezeichnet - der Zustand von vor den Effekten.
+   */
+  bild?: number
 }
 
 export function Segment(props: SegmentProps): JSX.Element {
-  const { aktion, vorlage, marke, x = 0, y = 0 } = props
+  const { aktion, vorlage, marke, x = 0, y = 0, bild } = props
   const behaelter = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -57,19 +63,29 @@ export function Segment(props: SegmentProps): JSX.Element {
     // DAS Zeichen. Kein zweiter Zeichenpfad in irgendeiner Form (Verbot):
     // Dieses Objekt ist genau die Referenz der Pixelquelle; nichts hier schreibt
     // canvas.width/canvas.height oder liest die Geraete-Pixel-Groesse.
-    const bild = zeichneSegment(aktion, vorlage, marke, marke)
+    // Effekte (09.11.2026, TK 9.16.6): An einer Abspielposition zeichnet die Buehne
+    // denselben Frame, den der Render bekommt. Ohne `bild` bleibt es beim Ruhebild.
+    const zustand =
+      bild === undefined
+        ? undefined
+        : effektZustand(
+            aktion.effekte ?? null,
+            bild,
+            Math.max(1, Math.round((aktion.standardDauer ?? 10) * 30)),
+          )
+    const segmentBild = zeichneSegment(aktion, vorlage, marke, marke, zustand)
     const knoten = behaelter.current
     if (knoten === null) return
     // Der Behaelter enthaelt GENAU EIN Kind: das Canvas der Zeichenroutine.
     while (knoten.firstChild !== null) {
       knoten.removeChild(knoten.firstChild)
     }
-    knoten.appendChild(bild.canvas)
+    knoten.appendChild(segmentBild.canvas)
     // Nur die CSS-Anzeigegroesse wird gesetzt, EXAKT auf die native Flaeche;
     // die Verkleinerung besorgt die Buehne, nicht dieses Bauteil.
-    knoten.style.width = `${bild.breite}px`
-    knoten.style.height = `${bild.höhe}px`
-  }, [aktion, vorlage, marke])
+    knoten.style.width = `${segmentBild.breite}px`
+    knoten.style.height = `${segmentBild.höhe}px`
+  }, [aktion, vorlage, marke, bild])
 
   return (
     <div ref={behaelter} style={{ position: 'absolute', left: `${x}px`, top: `${y}px` }} />
