@@ -70,6 +70,7 @@ import {
   zeichneVorschau,
 } from './live-vorschau'
 import { effektZustand } from '../../shared/effekte'
+import { EffektGruppe } from './effekt-gruppe'
 import {
   anzahlStellen,
   behebeAktionsBild,
@@ -1157,6 +1158,18 @@ function Inspector({
           aufFarbeMerken={merkeFarbe}
         />
       </Schritt>
+
+      {gewaehlteVorlage !== null && gewaehlteVorlage.höhe === null && (
+        <Schritt titel="Effekte">
+          <EffektGruppe
+            entwurf={entwurf}
+            dauer={entwurf.standardDauer ?? 10}
+            aufAendern={(effekte) => {
+              aufAenderung('effekte', effekte)
+            }}
+          />
+        </Schritt>
+      )}
 
       <Schritt titel="Dauer">
         <label>Standarddauer{' '}

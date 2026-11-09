@@ -154,3 +154,24 @@ describe('unterschiede - Gestaltung je Zone und Bildausschnitt', () => {
     expect(unterschiede({ ...entwurfAus(gespeichert), bildAusschnitt: null }, gespeichert)).toEqual({})
   })
 })
+
+// Effekte (09.11.2026, TK 9.16.6): Auch dieses Feld ist VERSCHACHTELT - ein `!==` waere
+// immer wahr und erzeugte fuer jedes "Fertig" einen Schreibvorgang samt Undo-Schritt.
+describe('unterschiede - Effekte', () => {
+  it('erkennt eine reine Effekt-Aenderung', () => {
+    const gespeichert = aktion()
+    const entwurf: AktionsInhalt = { ...gespeichert, effekte: { zoomAtmen: { staerke: 80 } } }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({ effekte: { zoomAtmen: { staerke: 80 } } })
+  })
+
+  it('meldet nichts, wenn der Satz inhaltlich gleich ist', () => {
+    const gespeichert = aktion({
+      effekte: { puls: { staerke: 100, vonSekunden: 0, bisSekunden: 1.5 } },
+    })
+    const entwurf: AktionsInhalt = {
+      ...gespeichert,
+      effekte: { puls: { staerke: 100, vonSekunden: 0, bisSekunden: 1.5 } },
+    }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({})
+  })
+})

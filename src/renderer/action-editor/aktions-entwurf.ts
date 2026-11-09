@@ -54,6 +54,11 @@ export function unterschiede(
   if (!gleicheGestaltung(entwurf.bildAusschnitt, gespeichert.bildAusschnitt)) {
     aenderungen.bildAusschnitt = entwurf.bildAusschnitt ?? null
   }
+  // SEIT 09.11.2026 (TK 9.16.6): Effekte ebenso INHALTLICH vergleichen. Ein `!==` waere
+  // immer wahr und erzeugte fuer jedes „Fertig" einen Schreibvorgang samt Undo-Schritt.
+  if (!gleicheGestaltung(entwurf.effekte, gespeichert.effekte)) {
+    aenderungen.effekte = entwurf.effekte ?? null
+  }
   return aenderungen
 }
 
