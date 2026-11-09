@@ -72,6 +72,56 @@ export interface BildAusschnitt {
   versatzY?: number | null
 }
 
+/**
+ * Ein Effekt mit FENSTER (09.11.2026, FA-25 / TK 9.16). Er laeuft EINMAL innerhalb des
+ * Segments; danach bleibt der Endzustand stehen.
+ *
+ * `staerke` ist der Prozentsatz der Vorgabe aus Anforderungsdokument 4.10 (100 = Vorgabe,
+ * 0 = aus). Die Grenzen in SEKUNDEN stehen hier, weil der Nutzer sie so eingibt; die
+ * Umrechnung in Bilder macht allein `shared/effekte.ts` (30/s, TK 9.16.2).
+ */
+export interface FensterEffekt {
+  /** 0–100 (% der Vorgabe; 0 = aus – dann darf KEIN Frame entstehen, TK 9.16.1). */
+  staerke: number
+  /** Beginn im Segment in Sekunden (0 … dauer). */
+  vonSekunden: number
+  /** Ende im Segment in Sekunden (> von, ≤ dauer). */
+  bisSekunden: number
+}
+
+/**
+ * Ein Effekt als SCHLEIFE (09.11.2026, TK 9.16): Er laeuft ueber die GANZE Segmentdauer
+ * und ist nahtlos (2 s = 60 Bilder). Deshalb hat er kein Fenster – ein zweites Feld
+ * waere eine zweite Angabe fuer dieselbe Sache.
+ */
+export interface SchleifenEffekt {
+  /** 0–100 (% der Vorgabe; 0 = aus). */
+  staerke: number
+}
+
+/**
+ * Die Effekte EINER Aktion (09.11.2026, FA-25 / TK 9.16.1).
+ *
+ * WARUM DIE SCHLUESSEL FEST SIND UND NICHT `Record<string, …>`: Ein Effekt ist keine
+ * Datenzeile, sondern eine benannte Rechnung im Zeichenweg. Ein freier Schluessel waere
+ * ein Effekt, den niemand zeichnet – er saehe gespeichert aus und bliebe unsichtbar.
+ *
+ * Fehlt ein Eintrag, ist dieser Effekt AUS. `staerke: 0` ist ebenfalls AUS (TK 9.16.1);
+ * ein solcher Eintrag darf keinen Frame erzeugen.
+ */
+export interface EffektSatz {
+  kenBurns?: FensterEffekt
+  textEinblendung?: FensterEffekt
+  preisPop?: FensterEffekt
+  glanzSweep?: FensterEffekt
+  preisZaehlt?: FensterEffekt
+  bildReveal?: FensterEffekt
+  puls?: FensterEffekt
+  zoomAtmen?: SchleifenEffekt
+  drift?: SchleifenEffekt
+  parallax?: SchleifenEffekt
+}
+
 export interface Aktion {
   id: string
   titel: string                    // Pflicht
@@ -94,6 +144,10 @@ export interface Aktion {
   // Zoom und Position des Motivs (05.11.2026, TK 9.8.8). Fehlt der Wert, gilt die
   // Einpassung der Vorlage unveraendert.
   bildAusschnitt?: BildAusschnitt | null
+  // Effekte (09.11.2026, FA-25 / TK 9.16.1). Fehlt der Satz, ist das Segment das
+  // Standbild von heute – der Zustand vor dieser Fassung. Kein Pflichtfeld, damit
+  // jede bestehende `project.json` ohne Migration weiterlesbar bleibt.
+  effekte?: EffektSatz | null
 }
 
 /**

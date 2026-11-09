@@ -5,7 +5,7 @@
 anlegen, #445) und **4r** (Einblendung anlegen, #100); alle uebrigen Messungen stammen vom
 22.10.2026.
 **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
-**Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-24),
+**Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-25),
 `scripts/durchlauf.mjs` (Treiber, echter Fensterlauf), `docs/agents/q4-test-audit.md` (Q4-3).
 
 ---
@@ -66,14 +66,15 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-22 | Mehrere benannte Ausgaben; Vorbelegung = letzter Name | 4c, 4c2 | Der Name wird ohne Endung eingetippt, der Dialog prueft, die Ausgabe steht danach in der Liste. **4c2:** erneut oeffnen -> Feld traegt den **letzten Namen**; derselbe Name **ersetzt** (mtime neu, eine Datei, eine Listenzeile); ein neuer Name legt eine **zweite** Datei und Zeile an. **Seit 22.10.2026.** | gemessen |
 | FA-23 | Marken-Bestand, Standardmarke je Projekt, Loeschsperre (Muss) | 4a, 4a0, 4a2 | Eine **zweite Marke** wird ueber die echte Oberflaeche angelegt (4a0; vorher lag genau eine im Bestand - B2). 4a wechselt die Standardmarke am echten `<select>` **gezielt auf diese Marke** und belegt den Wert zusaetzlich in `project:listeProjekte` (D1). 4a2 versucht, die nun genutzte Marke zu loeschen: **gesperrt** mit Klartext-Grund (`loesch-standard` nennt das Projekt) und Ausweg; nach dem Zurueckstellen der Standardmarke wird sie **geloescht** (Sperre = Nutzung, nicht Zufall). **Seit 21.10.2026.** | gemessen |
 | FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | 4m, 4m2 | **4m:** Marke ueber die echte Oberflaeche **anlegen/oeffnen**, **Akzentfarbe frei** setzen (Wert im Bestand V2), **Kontrast-Warnung** am Grenzwert ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, Warnung weg bei ausreichendem Kontrast, Felder zeigen die **neu geoeffnete** Marke, **Ableiten** mit `abgeleitet` und Herkunftszeilen. **4m2:** **alle dreizehn Farbrollen** schreiben (13/13 im Bestand), **Slogan** (Text + Schalter) und **Sicherheitsabstand** (80/40) schreiben, **Wachsens-Hinweis** vor dem Speichern, **Bearbeiten einer abgeleiteten Marke** (eigen -> "Eigener Wert" -> Vererbung wiederherstellen -> geerbt), **Import-Pipeline** fuer Schrift und Logo mit echten Dateien (`herkunft: importiert`, Anzeige "(importiert)") und **Logo entfernen**. **MANUELL bleibt nur der native Dateidialog** (Klick auf "Eigene Schrift/Logo waehlen"), wie FA-09/Export; die Pipeline danach ist gemessen. **Live-Vorschau** (TK 9.14.1/9.15.2) ist seit 22.10.2026 montiert und wird in **4m** mitgemessen (B11). **Logo entfernen** ist seit #440 entschieden und gemessen (B12). **Seit 22.10.2026.** | gemessen |
+| FA-25 | Effekte: zehn einzeln schaltbare Bewegungen je Ganzbild-Segment (Soll) | - | **Luecke (09.11.2026):** Es gibt noch **keinen** Treiber-Schritt. Der Bau steht in #459–#464; fuer den Fensterbeleg fehlt eine Probe, die ein Segment mit Effekt rendert und sowohl die **unveraenderte Dauer** (`ffprobe`) als auch die **bewegten Frames** misst. Unit-Tests allein tragen diese Zusage nicht (Q4-Befund). | Luecke |
 
 **Zaehlung:** 10 x gemessen (FA-01, FA-03, FA-05, FA-08, FA-17, FA-18, FA-19, FA-22, FA-23, FA-24),
-11 x teilweise, 0 x Luecke, 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
+11 x teilweise, 1 x Luecke, 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
 
-Aufgeteilt nach Prioritaet (AD Abschnitt 4): **15 Muss**, 9 Soll.
+Aufgeteilt nach Prioritaet (AD Abschnitt 4): **15 Muss**, 10 Soll.
 - **Muss:** 8 gemessen (FA-01, FA-03, FA-05, FA-08, FA-17, FA-22, FA-23, FA-24), 6 teilweise,
   0 Luecke, 1 manuell (FA-09).
-- **Soll:** 2 gemessen (FA-18, FA-19), 5 teilweise, 0 Luecke, 2 manuell (FA-11/12).
+- **Soll:** 2 gemessen (FA-18, FA-19), 5 teilweise, 1 Luecke (FA-25), 2 manuell (FA-11/12).
 
 Damit sind **4 von 15 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-05,
 FA-17, FA-23, FA-24). FA-16/17/18 hatten beim Aufstellen der Matrix **keine Oberflaeche** - das ist mit
