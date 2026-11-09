@@ -11,9 +11,10 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (09.11.2026, vierundfünfzigste Sitzung: Effekte — von der Entscheidung bis zum Fensterbeleg)
+## STAND HEUTE (09.11.2026, fünfundfünfzigste Sitzung: Effekte — vom Bildplan bis zum gemessenen Video)
 
-**Volltext: [`docs/agents/uebergabe-2026-11-09-effekte.md`](docs/agents/uebergabe-2026-11-09-effekte.md).**
+**Volltext: [`docs/agents/uebergabe-2026-11-09-effekte-render.md`](docs/agents/uebergabe-2026-11-09-effekte-render.md).**
+**Vorgeschichte (54. Sitzung, vormittags): [`docs/agents/uebergabe-2026-11-09-effekte.md`](docs/agents/uebergabe-2026-11-09-effekte.md).**
 
 **Auftrag:** Niklas, 06.11.: *„es gibt so tolle Effekte um Bilder so wirken zu lassen wie als würden sie sich bewegen"*. Am 09.11. entschieden: **Option B** (Ken Burns, Text-Einblendung, Preis-Pop) **plus** Glanz-Sweep, hochzählender Preis, Bild-Reveal, Puls, Zoom-Atmen, Drift, Parallax — **einzeln schaltbar**, nicht als Paket.
 
@@ -33,7 +34,7 @@
 - **BEFUND, BEHOBEN (vom Treiber aufgedeckt):** `Aktion.effekte` wurde im **`project-store` verworfen** — weder `erstelle-aktion.ts` noch `bearbeite-aktion.ts` übernahmen das Feld. Effekte ließen sich über die Oberfläche also **nie speichern**; nur das Beleg-Skript kam direkt an `project.json` vorbei. Beide Stellen übernehmen und normalisieren den Satz jetzt (Fenster auf `standardDauer ?? 10`, wie der Editor); 6 neue Tests. **Zweiter Befund (Treiberwerkzeug):** die Instrumentierung speicherte die volle `queue:geaendert`-Nutzlast (jeder RenderRequest mit allen PNGs) — nach zwei 70-s-Renders **292 MB** über CDP (`Too large write data is pending`), die Verbindung riss ab. Jetzt wird nur der Kanalname gespeichert.
 - **GATE:** Typecheck 0, Lint 0, Build 0, Unit **5718/5718**, Integration 54/54, Treiber **0 Befunde**. `einzel-instanz` (#289) flaky.
 - **EHRLICH OFFEN:** **Kein Komponententest** für die Effekt-Gruppe (nur `unterschiede`). `bereitschaft.py` meldet #464 weiter **UNKLAR** (Regex liest nur einzeilige `Datei:`-Angabe, nicht die `Dateien:`-Liste).
-- **NICHT GEPUSHT:** **24 Commits** vor `origin/main` (mit diesem Doku-Commit) — mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
+- **NICHT GEPUSHT:** **25 Commits** vor `origin/main` (mit diesem Doku-Commit) — mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (06.11.2026, dreiundfünfzigste Sitzung: Die Zeitleiste zeigt Aktions-Motive, Auto-Scroll beim Ziehen)
 
