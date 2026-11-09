@@ -131,13 +131,17 @@ import { baueStandbildArgumente } from '../ffmpeg-adapter/standbild'            
 import { baueVideoAusschnittArgumente } from '../ffmpeg-adapter/video-ausschnitt'  // #167
 import { baueBandspur } from '../ffmpeg-adapter/bandspur'                       // #168
 import type { BandAbschnitt } from '../ffmpeg-adapter/bandspur'                 // #168
+import { baueBildfolgeArgumente } from '../ffmpeg-adapter/bildfolge'            // #464
+import type { BildfolgeLauf } from '../ffmpeg-adapter/bildfolge'                // #464
 import { frameDauer, trimFrames, zuFrames } from './frames'                     // #174
 import { bestimmeBandgeometrie } from './band-geometrie'                        // #176
 
 /** Die in T1 abgelegten PNGs GENAU DIESES Elements (aus PngAblage, #175). */
 export interface ElementPngs {
-  /** Pfad des Segment-PNG; `null` bei `video`. */
+  /** Pfad des Segment-PNG; `null` bei `video` und bei einem Bildplan. */
   segment: string | null
+  /** Pfade der Plan-Frames in Plan-Reihenfolge; leer ohne Bildplan (#464). */
+  bildfolge?: readonly string[]
   /** Pfade der Band-Abschnitte in Abschnittsreihenfolge; leeres Array ohne Einblendung. */
   band: readonly string[]
 }
@@ -286,7 +290,7 @@ export async function pruefeMedienVorhanden(
 export async function normalisiereElement(
   element: RenderItem,
   index: number,                 // 0-basiert; bestimmt den Dateinamen
-  pngs: ElementPngs,             // aus PngAblage.segmentPngs[index] / .bandPngs[index] (#175)
+  pngs: ElementPngs,             // aus PngAblage.segmentPngs / .segmentBildfolgen / .bandPngs (#175)
   kontext: NormalisierKontext,
 ): Promise<Ergebnis<string, RenderFehlercode>> {
   const bezug = bilde(element, index)
@@ -348,7 +352,7 @@ export async function normalisiereElement(
 // Die vier Faelle der Weiche
 // ===========================================================================
 
-/** Fall 1: `art === 'segment'` - die Pixel liegen als PNG in T1 (#175). */
+/** Fall 1: `art === 'segment'` - die Pixel liegen als PNG(s) in T1 (#175). */
 async function ausSegment(
   element: RenderItem,
   pngs: ElementPngs,
@@ -356,6 +360,17 @@ async function ausSegment(
   bezug: Elementbezug,
   kontext: NormalisierKontext,
 ): Promise<Ergebnis<string, RenderFehlercode>> {
+  // SEIT v3.55 GIBT ES ZWEI FORMEN (TK 9.2.2): ein einzelnes PNG (Standbild-Weg,
+  // unveraendert) oder einen Bildplan mit den eindeutigen Frames (Effekt-Weg, #464).
+  // Welche gilt, hat #173 bereits entschieden; hier wird derselbe Weg gewaehlt wie in
+  // `png-ablage.ts`: ein vorhandenes PNG gewinnt.
+  const pngFeld = feld(element, 'png')
+  const bildplan = feld(element, 'bildplan')
+
+  if (!(pngFeld instanceof Uint8Array) && bildplan !== undefined && bildplan !== null) {
+    return await ausBildfolge(element, bildplan, pngs, zielPfad, bezug, kontext)
+  }
+
   // SAFETY: pngs reist ueber die IPC-Grenze und kann null sein; der Cast erweitert den
   // Typ, und der unmittelbar folgende typeof-Check prueft diese Invariante zur Laufzeit.
   const segmentPfad = (pngs as ElementPngs | null | undefined)?.segment
@@ -368,6 +383,100 @@ async function ausSegment(
     )
   }
   return await ausStandbild(element, segmentPfad, zielPfad, bezug, kontext)
+}
+
+/**
+ * Der Effekt-Weg: aus den abgelegten Plan-Frames wird EIN Zwischenclip.
+ *
+ * "`RenderItemSegment` trägt **`png` oder `bildplan`** (9.2.2). Für den Plan entsteht
+ * `src/main/ffmpeg-adapter/bildfolge.ts` … je Lauf ein Eingang, die Läufe werden
+ * **bildgenau** verkettet." (TK 9.16.5)
+ *
+ * Die Bildzahl kommt aus `frameDauer` – DIESELBE Zahl, gegen die `validierung.ts` die
+ * Plansumme geprueft hat (#464). Eine zweite Umrechnung `dauer × 30` hier waere eine
+ * zweite Rundungsstelle; die erste steht in #174.
+ */
+async function ausBildfolge(
+  element: RenderItem,
+  bildplan: unknown,
+  pngs: ElementPngs,
+  zielPfad: string,
+  bezug: Elementbezug,
+  kontext: NormalisierKontext,
+): Promise<Ergebnis<string, RenderFehlercode>> {
+  const frames = frameDauer(element)
+  if (!frames.ok) return uebernimm(frames.fehler, bezug)
+
+  // SAFETY: pngs reist ueber die IPC-Grenze und kann null sein; der Cast erweitert den
+  // Typ, die Pruefung folgt unmittelbar darunter.
+  const pfade = (pngs as ElementPngs | null | undefined)?.bildfolge
+  const bilder = feld(bildplan, 'bilder')
+  const bilderAnzahl = Array.isArray(bilder) ? bilder.length : 0
+
+  if (!Array.isArray(pfade) || pfade.length !== bilderAnzahl) {
+    return fehler(
+      'ungueltiges_element',
+      `${bezug.text}: Zu ${String(bilderAnzahl)} Plan-Frames liegen ` +
+        `${String(Array.isArray(pfade) ? pfade.length : 0)} PNG-Pfade in T1 vor.`,
+      bezug.daten,
+    )
+  }
+
+  const laeufeRoh = feld(bildplan, 'laeufe')
+  if (!Array.isArray(laeufeRoh) || laeufeRoh.length === 0) {
+    return fehler(
+      'ungueltiges_element',
+      `${bezug.text}: Der Bildplan hat keinen Lauf; ohne Lauf wuerde kein Bild abgespielt.`,
+      bezug.daten,
+    )
+  }
+
+  const laeufe: BildfolgeLauf[] = []
+  for (const [laufIndex, lauf] of laeufeRoh.entries()) {
+    // `erstesBild`, `anzahl` und `wiederholungen` hat #173 bereits geprueft; hier
+    // werden sie nur noch in die Form des Adapters gebracht. Eine zweite Pruefung mit
+    // womoeglich anderen Regeln waere eine zweite Wahrheit.
+    const erstesBild = feld(lauf, 'erstesBild')
+    const anzahl = feld(lauf, 'anzahl')
+    const wiederholungen = feld(lauf, 'wiederholungen')
+
+    if (
+      typeof erstesBild !== 'number' ||
+      typeof anzahl !== 'number' ||
+      typeof wiederholungen !== 'number'
+    ) {
+      return fehler(
+        'ungueltiges_element',
+        `${bezug.text}: Der Bildplan-Lauf ${String(laufIndex)} ist unvollstaendig.`,
+        bezug.daten,
+      )
+    }
+
+    const pngPfade: string[] = []
+    for (let versatz = 0; versatz < anzahl; versatz++) {
+      const pfad = pfade[erstesBild + versatz]
+      if (typeof pfad !== 'string' || pfad === '') {
+        return fehler(
+          'ungueltiges_element',
+          `${bezug.text}: Der PNG-Pfad des Plan-Frames ${String(erstesBild + versatz)} fehlt.`,
+          bezug.daten,
+        )
+      }
+      pngPfade.push(pfad)
+    }
+    laeufe.push({ pngPfade, wiederholungen })
+  }
+
+  const argumente = baueBildfolgeArgumente(
+    { laeufe, gesamtFrames: frames.wert, zielPfad },
+    kontext.profil,
+  )
+  if (!argumente.ok) return uebernimm(argumente.fehler, bezug)
+
+  const lauf = await starteFfmpeg(argumente.wert, kontext, frames.wert)
+  if (!lauf.ok) return ausFfmpeg(lauf.fehler, bezug)
+
+  return { ok: true, wert: zielPfad }
 }
 
 /**

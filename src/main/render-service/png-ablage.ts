@@ -45,7 +45,8 @@ import type { RenderFehlercode } from './fehlercodes'
 
 // Fremde Typen - vollstaendig ausgeschrieben, damit hier nichts geraten wird:
 //   #17:     type RenderItem = RenderItemVideo | RenderItemSegment
-//            RenderItemSegment { id; art: 'segment'; png: Uint8Array; dauer }
+//            RenderItemSegment { id; art: 'segment'; png?: Uint8Array;
+//                                bildplan?: SegmentBildplan; dauer }   (seit v3.55: genau eines)
 //            RenderItemVideo   { id; art: 'video'; medienRef; trimStart; trimEnde;
 //                                einblendung: { art; höhe; bandVorlageId;
 //                                  abschnitte: Array<{ png: Uint8Array; dauer }> } | null }
@@ -61,10 +62,12 @@ import type { RenderFehlercode } from './fehlercodes'
 // Medien- oder Ausgabeordnern - und NICHT `verwirfArbeitsbereich` (#172):
 // Aufgeraeumt wird vom Aufrufer, als Ganzes (ENTSCHIEDEN 7).
 
-/** Wo die geschriebenen PNGs liegen – beide Felder sind index-parallel zu `elemente`. */
+/** Wo die geschriebenen PNGs liegen – alle drei Felder sind index-parallel zu `elemente`. */
 export interface PngAblage {
-  /** Je Listenindex der absolute Pfad des Segment-PNGs; `null` bei `video` und `bild`. */
+  /** Je Listenindex der absolute Pfad des Segment-PNGs; `null` bei `video` und bei einem Bildplan. */
   segmentPngs: ReadonlyArray<string | null>
+  /** Je Listenindex die absoluten Pfade der Plan-Frames in Plan-Reihenfolge; leer ohne Bildplan. */
+  segmentBildfolgen: ReadonlyArray<readonly string[]>
   /** Je Listenindex die absoluten Pfade der Band-Abschnitte in Abschnittsreihenfolge; leeres Array ohne Einblendung. */
   bandPngs: ReadonlyArray<readonly string[]>
 }
@@ -100,6 +103,18 @@ export function bandDateiname(elementIndex: number, abschnittIndex: number): str
   // Stellenzahl steht `band-0003-0002` im Ordner VOR `band-0003-0012`, und genau
   // diese Reihenfolge braucht, wer beim Fehlersuchen von Hand hineinsieht.
   return `band-${aufStellen(elementIndex)}-${aufStellen(abschnittIndex)}.png`
+}
+
+/**
+ * Dateiname eines Plan-Frames, allein aus Listen- und Frame-Index.
+ *
+ * WARUM EIN ZWEITER INDEX (09.11.2026, #464): Ein Segment mit Effekten traegt bis zu
+ * 180 eindeutige Frames (TK 9.16.7). Sie brauchen eigene Namen, sonst ueberschrieben
+ * sie einander – und `segment-0007.png` bleibt dem Einzelbild-Weg vorbehalten, damit
+ * die beiden Wege nicht kollidieren.
+ */
+export function bildfolgeDateiname(elementIndex: number, bildIndex: number): string {
+  return `segment-${aufStellen(elementIndex)}-${aufStellen(bildIndex)}.png`
 }
 
 /** Ein Index als Zeichenkette, links mit Nullen auf NAMENS_STELLEN aufgefuellt. */
@@ -138,6 +153,7 @@ export async function legePngsAb(
     }
 
     const segmentPngs: (string | null)[] = []
+    const segmentBildfolgen: string[][] = []
     const bandPngs: string[][] = []
 
     // DER REIHE NACH, nicht gleichzeitig (ENTSCHIEDEN 8). Eine Wiedergabeliste kann
@@ -148,23 +164,58 @@ export async function legePngsAb(
     // Element, an dem es scheiterte.
     for (const [index, element] of elemente.entries()) {
       let segmentPfad: string | null = null
+      const bildfolge: string[] = []
       const bandPfade: string[] = []
 
       // Nur `segment` und die `abschnitte` einer `einblendung` tragen Pixel (#17).
       // `bild` und `video` verweisen per `medienRef` auf Dateien in media/ - die
       // gehen NIE ueber IPC und werden hier NICHT angefasst; ihr Eintrag bleibt
-      // `null` bzw. leer, damit beide Felder index-parallel zur Liste bleiben.
+      // `null` bzw. leer, damit alle Felder index-parallel zur Liste bleiben.
       if (element.art === 'segment') {
-        const geschrieben = await schreibePng(
-          arbeitsbereich,
-          segmentPngDateiname(index),
-          element.png,
-          element,
-        )
-        if (!geschrieben.ok) {
-          return geschrieben
+        // SEIT v3.55 GIBT ES ZWEI FORMEN (TK 9.2.2): ein einzelnes PNG wie bisher
+        // oder einen Bildplan mit den eindeutigen Frames. Welche der beiden gilt,
+        // hat #173 bereits entschieden (genau eines); hier wird die Form nur noch
+        // abgelegt. `png` gewinnt, falls doch beide da sind - dann entscheidet
+        // `normalisieren.ts` denselben Weg, und die Datei passt zum Auftrag.
+        if (element.png instanceof Uint8Array) {
+          const geschrieben = await schreibePng(
+            arbeitsbereich,
+            segmentPngDateiname(index),
+            element.png,
+            element,
+          )
+          if (!geschrieben.ok) {
+            return geschrieben
+          }
+          segmentPfad = geschrieben.wert
+        } else if (element.bildplan !== undefined && element.bildplan !== null) {
+          // Die Reihenfolge der Frames IST ihre Nummer: Der Plan zeigt mit
+          // `erstesBild` in diese Liste, und ein vertauschter Frame zeigte eine
+          // andere Bewegung, ohne dass irgendetwas scheiterte.
+          const bilder = element.bildplan.bilder
+          if (!Array.isArray(bilder)) {
+            // Kein eigener Fehlercode fuer einen Vertragsbruch dieser Stelle
+            // (s. Punkt 1 im Kopf): Das faengt der aeussere Fangzweig als
+            // `unbekannter_fehler` und es ist zu MELDEN, nicht zu ueberdecken.
+            throw new Error(
+              `Der Bildplan des "segment"-Elements (Index ${String(index)}) hat keine Bildliste.`,
+            )
+          }
+          for (const [bildIndex, png] of bilder.entries()) {
+            const geschrieben = await schreibePng(
+              arbeitsbereich,
+              bildfolgeDateiname(index, bildIndex),
+              png,
+              element,
+            )
+            if (!geschrieben.ok) {
+              return geschrieben
+            }
+            bildfolge.push(geschrieben.wert)
+          }
         }
-        segmentPfad = geschrieben.wert
+        // Weder PNG noch Plan: #173 hat das bereits abgewiesen; hier entsteht
+        // kein zweiter Fehlerfall (Punkt 1 im Kopf).
       } else if (element.art === 'video' && element.einblendung !== null) {
         // Die Abschnitte behalten ihre Reihenfolge - aus ihr entsteht die Bandspur
         // (#168), und ein vertauschter Abschnitt zeigte am Fernseher den falschen
@@ -184,10 +235,11 @@ export async function legePngsAb(
       }
 
       segmentPngs.push(segmentPfad)
+      segmentBildfolgen.push(bildfolge)
       bandPngs.push(bandPfade)
     }
 
-    return { ok: true, wert: { segmentPngs, bandPngs } }
+    return { ok: true, wert: { segmentPngs, segmentBildfolgen, bandPngs } }
   } catch (ursache) {
     // Alles, was kein Schreibfehler war - etwa eine Liste, deren Eintrag gar kein
     // Element ist. "Eine rohe Exception-Meldung wird nie zum Code" (TK 9.1.1): Der
@@ -199,7 +251,7 @@ export async function legePngsAb(
   }
 }
 // - schreibt AUSSCHLIESSLICH PNGs, flach, unmittelbar in den uebergebenen Ordner
-// - beide Felder haben genau so viele Eintraege wie `elemente`, index-parallel
+// - alle Felder haben genau so viele Eintraege wie `elemente`, index-parallel
 // - bricht beim ERSTEN Fehler ab und raeumt nichts weg (ENTSCHIEDEN 7)
 // - wirft nie; jeder Fehler wird zum Ergebnis (TK 9.1.1)
 

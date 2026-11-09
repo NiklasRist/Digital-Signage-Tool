@@ -10,10 +10,10 @@
 //    Zugriff auf `höhe` ergaebe `undefined`, die Bandhoehe waere NaN, und die
 //    Filterkette rechnete mit einem Wert, den niemand gesetzt hat.
 //
-// DoD 4: `RenderItemSegment` traegt NUR `png`, `dauer` und `id` (plus `art` als
-// Unterscheider). Aktions- oder Vorlagendaten haben hier nichts zu suchen - das
-// Segment ist zum Zeitpunkt des Renderns bereits ein fertiges Bild (Variante A,
-// TK 9.1/9.2): Der Renderer hat gezeichnet, der Main bekommt Pixel.
+// DoD 4: `RenderItemSegment` traegt NUR `png` ODER `bildplan`, `dauer` und `id`
+// (plus `art` als Unterscheider). Aktions- oder Vorlagendaten haben hier nichts zu
+// suchen - das Segment ist zum Zeitpunkt des Renderns bereits fertige Pixel bzw. ein
+// fertiger Bildplan (Variante A, TK 9.1/9.2).
 import { describe, expect, it } from "vitest";
 
 import type {
@@ -21,6 +21,7 @@ import type {
   RenderItemSegment,
   RenderItemVideo,
   RenderRequest,
+  SegmentBildplan,
 } from "../../src/shared/contracts/render-request";
 import type { Behaupte, Gleich } from "../typ-gleich";
 
@@ -38,15 +39,21 @@ type T3 = Behaupte<Gleich<Extract<keyof Einblendung, "hoehe">, never>>;
 type T5 = Behaupte<Gleich<Extract<keyof Einblendung, "flaecheDunkel">, never>>;
 type T6 = Behaupte<Gleich<Extract<keyof Einblendung, "markeId" | "flaecheDunkelRolle">, never>>;
 
-// --- DoD 4: das Segment traegt nur Pixel und Dauer ---------------------------
-type T4 = Behaupte<Gleich<keyof RenderItemSegment, "id" | "art" | "png" | "dauer">>;
+// --- DoD 4: das Segment traegt nur Pixel, Plan und Dauer ---------------------
+// SEIT v3.55 (TK 9.2.2, #464): `png` ODER `bildplan` – beide optional, genau eines
+// gesetzt. Der Test haelt beide Felder fest; ein drittes waere ein zweiter Weg.
+type T4 = Behaupte<
+  Gleich<keyof RenderItemSegment, "id" | "art" | "png" | "bildplan" | "dauer">
+>;
+type T4b = Behaupte<Gleich<RenderItemSegment["png"], Uint8Array | undefined>>;
+type T4c = Behaupte<Gleich<RenderItemSegment["bildplan"], SegmentBildplan | undefined>>;
 
 // --- DoD 3: Verengung ueber `art` --------------------------------------------
 // Nur im segment-Zweig gibt es `.png`. Die Funktion ist der Nachweis: Sie
 // uebersetzt NUR, weil TypeScript nach der Pruefung auf `art` genau eine Variante
 // uebrig laesst.
 function pixelGroesse(element: RenderItem): number {
-  if (element.art === "segment") return element.png.byteLength;
+  if (element.art === "segment") return element.png?.byteLength ?? 0;
   return element.trimEnde - element.trimStart;
 }
 
@@ -107,7 +114,7 @@ const anfrage: RenderRequest = {
   ausgabeName: "sommeraktion",
 };
 
-export type { T1, T2, T3, T4, T5, T6 };
+export type { T1, T2, T3, T4, T4b, T4c, T5, T6 };
 
 describe("RenderRequest / RenderItem (#17)", () => {
   it("verengt ueber `art` auf genau eine Variante", () => {

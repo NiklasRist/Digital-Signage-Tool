@@ -35,9 +35,26 @@ export interface RenderItemVideo {
   } | null
 }
 
+/**
+ * Der Bildplan eines Segments MIT Effekten (TK 9.16.4, seit v3.55).
+ *
+ * WARUM ES IHN GIBT: Die Bewegung entsteht im Renderer (#459–#463) – der Main bekommt
+ * fertige Pixel und rechnet keine Bewegung. Ein 10-s-Segment mit Schleife braucht dafuer
+ * nur die EINDEUTIGEN Frames (60) statt aller 300; `laeufe` sagt, wie sie abgespielt
+ * werden: je Lauf die Folge `erstesBild … erstesBild + anzahl − 1`, `wiederholungen`-mal.
+ *
+ * `bilder` hat genau die Form der Segment-PNGs von heute (1920 × 1080) – der Main prueft
+ * das je Bild, bevor er einen ffmpeg-Prozess startet (9.16.5).
+ */
+export interface SegmentBildplan {
+  bilder: Uint8Array[]             // die eindeutigen Frames, in Reihenfolge des ersten Auftretens
+  laeufe: Array<{ erstesBild: number; anzahl: number; wiederholungen: number }>
+}
+
 export interface RenderItemSegment {
   id: string
   art: 'segment'
-  png: Uint8Array                  // Binärpuffer, vom Renderer via template-canvas gerendert
+  png?: Uint8Array                 // genau EINES von png / bildplan (TK 9.2.2)
+  bildplan?: SegmentBildplan
   dauer: number
 }

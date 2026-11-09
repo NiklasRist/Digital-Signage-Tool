@@ -17,6 +17,7 @@ import type {
   RenderItemSegment,
   RenderItemVideo,
   RenderRequest,
+  SegmentBildplan,
 } from '../../src/shared/contracts/render-request'
 
 // Der Datenort wird gemockt, weil `pfade.ts` sonst ueber `datenort.ts` an `electron`
@@ -453,6 +454,115 @@ describe('Stufe 2 - Maengel eines ELEMENTS (ungueltiges_element, mit daten)', ()
         's-x',
       )
     }
+  })
+})
+
+describe('Der Bildplan (#464, TK 9.16.4/9.16.5)', () => {
+  // 10 s bei 30 fps = 300 Bilder; 60 eindeutige Frames, fuenfmal gespielt - genau das
+  // Beispiel aus TK 9.16.4.
+  function plan(bilder: Uint8Array[], laeufe: SegmentBildplan['laeufe']): SegmentBildplan {
+    return { bilder, laeufe }
+  }
+
+  function planSegment(
+    bildplan: SegmentBildplan,
+    ueber: Partial<RenderItemSegment> = {},
+  ): RenderItemSegment {
+    // OHNE `png`: Der Plan ist der einzige Pixelweg dieses Elements.
+    return { id: 'p1', art: 'segment', bildplan, dauer: 10, ...ueber }
+  }
+
+  function sechzigFrames(): Uint8Array[] {
+    return Array.from({ length: 60 }, () => png(RENDER_PROFILE.breite, RENDER_PROFILE.hoehe))
+  }
+
+  it('nimmt den Plan aus 60 Frames x 5 Wiederholungen an (Summe = 300)', () => {
+    const element = planSegment(plan(sechzigFrames(), [{ erstesBild: 0, anzahl: 60, wiederholungen: 5 }]))
+    expect(pruefeRenderRequest(anfrage({ elemente: [element] }))).toEqual({
+      ok: true,
+      wert: undefined,
+    })
+  })
+
+  it('weist png UND bildplan zugleich ab', () => {
+    const element = planSegment(
+      plan(sechzigFrames(), [{ erstesBild: 0, anzahl: 60, wiederholungen: 5 }]),
+      { png: png(1920, 1080) },
+    )
+    const meldung = elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
+    expect(meldung).toContain('genau eines')
+  })
+
+  it('weist ein Element ohne png UND ohne bildplan ab', () => {
+    const element: RenderItemSegment = { id: 'p1', art: 'segment', dauer: 10 }
+    const meldung = elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
+    expect(meldung).toContain('weder')
+  })
+
+  it('weist einen leeren Plan ab (kein Bild)', () => {
+    const element = planSegment(plan([], []))
+    const meldung = elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
+    expect(meldung).toContain('kein einziges Bild')
+  })
+
+  it('weist einen Plan ohne Lauf ab', () => {
+    const element = planSegment(plan(sechzigFrames(), []))
+    const meldung = elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
+    expect(meldung).toContain('keinen Lauf')
+  })
+
+  it('weist einen fremden Frame ab und nennt seine Position', () => {
+    const bilder = sechzigFrames()
+    bilder[7] = png(1920, 1081)
+    const element = planSegment(plan(bilder, [{ erstesBild: 0, anzahl: 60, wiederholungen: 5 }]))
+    const meldung = elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
+    expect(meldung).toContain('Position 7')
+    expect(meldung).toContain('1081')
+  })
+
+  it('weist einen kaputten Frame-Kopf ab', () => {
+    const bilder = sechzigFrames()
+    bilder[3] = png(1920, 1080).slice(0, 23)
+    const element = planSegment(plan(bilder, [{ erstesBild: 0, anzahl: 60, wiederholungen: 5 }]))
+    elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
+  })
+
+  it('weist eine Plansumme ungleich dauer x 30 ab und nennt beide Zahlen', () => {
+    const element = planSegment(
+      plan(sechzigFrames(), [{ erstesBild: 0, anzahl: 60, wiederholungen: 4 }]),
+    )
+    const meldung = elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
+    expect(meldung).toContain('240')
+    expect(meldung).toContain('300')
+  })
+
+  it('weist einen Lauf ab, der ueber die Bildliste hinauszeigt', () => {
+    const element = planSegment(
+      plan(sechzigFrames(), [{ erstesBild: 50, anzahl: 20, wiederholungen: 5 }]),
+    )
+    const meldung = elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
+    expect(meldung).toContain('nur 60')
+  })
+
+  it('weist anzahl 0, wiederholungen 0 und nicht-ganzzahlige Werte ab', () => {
+    const kaputt: SegmentBildplan['laeufe'] = [
+      { erstesBild: 0, anzahl: 0, wiederholungen: 5 },
+      { erstesBild: 0, anzahl: 60, wiederholungen: 0 },
+      { erstesBild: 0, anzahl: 60.5, wiederholungen: 5 },
+      { erstesBild: -1, anzahl: 60, wiederholungen: 5 },
+    ]
+    for (const lauf of kaputt) {
+      const element = planSegment(plan(sechzigFrames(), [lauf]))
+      elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
+    }
+  })
+
+  it('die Dauer-Grenzen gelten auch fuer den Plan', () => {
+    const element = planSegment(
+      plan(sechzigFrames(), [{ erstesBild: 0, anzahl: 60, wiederholungen: 5 }]),
+      { dauer: 7.99 },
+    )
+    elementFehler(pruefeRenderRequest(anfrage({ elemente: [element] })), 'p1')
   })
 })
 

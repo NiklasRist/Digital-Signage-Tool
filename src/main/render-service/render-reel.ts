@@ -229,7 +229,11 @@ export async function renderReel(
           // Index-parallel durchgereicht, ohne Umformung in eine Abbildung nach
           // Element-ID: Zwei Darstellungen derselben Information laufen auseinander,
           // sobald jemand die Liste umsortiert.
-          { segment: ablage.wert.segmentPngs[index] ?? null, band: ablage.wert.bandPngs[index] ?? [] },
+          {
+            segment: ablage.wert.segmentPngs[index] ?? null,
+            bildfolge: ablage.wert.segmentBildfolgen[index] ?? [],
+            band: ablage.wert.bandPngs[index] ?? [],
+          },
           kontext,
         )
 

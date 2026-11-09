@@ -402,6 +402,156 @@ function pruefeEinblendung(
 }
 
 /**
+ * Den Bildplan eines Segments pruefen (TK 9.16.4/9.16.5, seit v3.55).
+ *
+ * GEPRUEFT WIRD, WAS DER MAIN NICHT GLAUBEN DARF: dass der Plan vollstaendig ist und
+ * dass seine Bildzahl die Dauer ergibt. "Prüfung vor dem Lauf: Summe = `dauer × 30`,
+ * sonst `ungueltiges_element`; jeder Frame misst 1920 × 1080 (`liesPngMasse`) – ein
+ * Plan mit einem fremden Frame bricht den Lauf, statt ein falsches Bild zu rendern."
+ * (TK 9.16.5)
+ *
+ * Ein Plan mit falscher Summe waere der stille Fehler dieser Funktion: ffmpeg liefe
+ * durch, die Datei entstuende, und die Gesamtdauer des Reels verschöbe sich – am
+ * Ende reisst die Verifikation der fertigen Datei (9.2.6), und niemand wuesste, an
+ * welchem Element es lag.
+ *
+ * `frames` ist die bereits gerundete Dauer des Elements aus `frameDauer` (#174) –
+ * DIESELBE Zahl, gegen die auch `gesamtdauer` rechnet. Eine zweite Umrechnung
+ * `dauer × 30` hier waere eine zweite Rundungsstelle.
+ */
+function pruefeBildplan(
+  elementId: string,
+  bildplan: unknown,
+  frames: number,
+): Ergebnis<void, RenderFehlercode> {
+  const bilder = lies(bildplan, 'bilder')
+  if (!Array.isArray(bilder)) {
+    return elementFehler(
+      elementId,
+      `Der Bildplan hat keine Bildliste, vorgefunden: ${beschreibe(bilder)}.`,
+    )
+  }
+  if (bilder.length === 0) {
+    return elementFehler(
+      elementId,
+      'Der Bildplan enthaelt kein einziges Bild; ein Segment ohne Bild zeigte nichts.',
+    )
+  }
+
+  // JEDER Frame, nicht nur der erste: Ein Plan mit einem fremden Frame bricht den
+  // Lauf, statt ein falsches Bild zu rendern (TK 9.16.5). Der Index steht in der
+  // Meldung, sonst waere bei 180 Frames nicht behebbar, welcher gemeint ist.
+  for (let i = 0; i < bilder.length; i++) {
+    const png: unknown = bilder[i]
+    if (!(png instanceof Uint8Array) || png.byteLength === 0) {
+      return elementFehler(
+        elementId,
+        `Der Bildplan-Frame an Position ${String(i)} hat keinen brauchbaren PNG-Puffer, ` +
+          `vorgefunden: ${beschreibe(png)}.`,
+      )
+    }
+    const masse = liesPngMasse(png)
+    if (!masse.ok) {
+      return {
+        ok: false,
+        fehler: {
+          ...masse.fehler,
+          meldung: `Bildplan-Frame an Position ${String(i)}: ${masse.fehler.meldung}`,
+          daten: { elementId },
+        },
+      }
+    }
+    if (masse.wert.breite !== RENDER_PROFILE.breite || masse.wert.höhe !== RENDER_PROFILE.hoehe) {
+      return elementFehler(
+        elementId,
+        `Der Bildplan-Frame an Position ${String(i)} hat die Masse ` +
+          `${String(masse.wert.breite)} x ${String(masse.wert.höhe)}; erwartet waren ` +
+          `${String(RENDER_PROFILE.breite)} x ${String(RENDER_PROFILE.hoehe)}.`,
+      )
+    }
+  }
+
+  const laeufe = lies(bildplan, 'laeufe')
+  if (!Array.isArray(laeufe)) {
+    return elementFehler(
+      elementId,
+      `Der Bildplan hat keine Lauf-Liste, vorgefunden: ${beschreibe(laeufe)}.`,
+    )
+  }
+  if (laeufe.length === 0) {
+    return elementFehler(
+      elementId,
+      'Der Bildplan hat keinen Lauf; ohne Lauf wuerde kein Bild abgespielt.',
+    )
+  }
+
+  let summe = 0
+  for (let i = 0; i < laeufe.length; i++) {
+    const lauf: unknown = laeufe[i]
+    const erstesBild = lies(lauf, 'erstesBild')
+    const anzahl = lies(lauf, 'anzahl')
+    const wiederholungen = lies(lauf, 'wiederholungen')
+
+    if (!istGanzeZahlAbNull(erstesBild)) {
+      return elementFehler(
+        elementId,
+        `Der Bildplan-Lauf an Position ${String(i)} hat kein gueltiges "erstesBild" ` +
+          `(ganze Zahl ab 0), vorgefunden: ${beschreibe(erstesBild)}.`,
+      )
+    }
+    if (!istGanzeZahlUeberNull(anzahl) || !istGanzeZahlUeberNull(wiederholungen)) {
+      return elementFehler(
+        elementId,
+        `Der Bildplan-Lauf an Position ${String(i)} braucht "anzahl" und "wiederholungen" ` +
+          `als ganze Zahlen ab 1, vorgefunden: ${beschreibe(anzahl)} und ` +
+          `${beschreibe(wiederholungen)}.`,
+      )
+    }
+    if (erstesBild + anzahl > bilder.length) {
+      return elementFehler(
+        elementId,
+        `Der Bildplan-Lauf an Position ${String(i)} zeigt auf die Bilder ` +
+          `${String(erstesBild)} bis ${String(erstesBild + anzahl - 1)}, der Plan hat aber ` +
+          `nur ${String(bilder.length)}.`,
+      )
+    }
+
+    summe += anzahl * wiederholungen
+    if (summe > frames) {
+      // Frueh abbrechen statt auf einen Laufe zu rechnen: Eine Summe ueber viele
+      // Laeufe liefe sonst in einen Bereich, in dem die Zahl nicht mehr exakt ist,
+      // und die Meldung nennte eine sinnlose Differenz.
+      return elementFehler(
+        elementId,
+        `Die Laeufe des Bildplans ergeben mehr als die ${String(frames)} Bilder, die die ` +
+          `Dauer verlangt (überschritten bei Lauf ${String(i)}). Die Bildzahl ist die Dauer.`,
+      )
+    }
+  }
+
+  if (summe !== frames) {
+    return elementFehler(
+      elementId,
+      `Die Laeufe des Bildplans ergeben ${String(summe)} Bilder, die Dauer verlangt ` +
+        `${String(frames)} (${String(frames)} / ${String(RENDER_PROFILE.fps)} s). ` +
+        'Die Bildzahl ist die Dauer – hier gibt es keine Toleranz.',
+    )
+  }
+
+  return { ok: true, wert: undefined }
+}
+
+/** Ganze Zahl ab 0 (Frame-Indizes duerfen 0 sein). `isSafeInteger` haelt Summen exakt. */
+function istGanzeZahlAbNull(wert: unknown): wert is number {
+  return typeof wert === 'number' && Number.isSafeInteger(wert) && wert >= 0
+}
+
+/** Ganze Zahl ab 1 (Laengen und Wiederholungen). */
+function istGanzeZahlUeberNull(wert: unknown): wert is number {
+  return typeof wert === 'number' && Number.isSafeInteger(wert) && wert >= 1
+}
+
+/**
  * STUFE 2 - ein einzelnes Element. Verstoss immer `ungueltiges_element` MIT
  * `daten: { elementId }`, ausser der durchgereichte Code von `frameDauer` (#174) sagt
  * etwas anderes.
@@ -437,7 +587,35 @@ function pruefeElement(element: RenderItem, elementId: string): Ergebnis<void, R
 
   // `segment`: Die `art` ist in Stufe 1 bereits auf die zwei zulaessigen Werte
   // eingegrenzt worden, ein dritter Zweig kann hier nicht ankommen.
+  //
+  // SEIT v3.55 TRAEGT EIN SEGMENT `png` ODER `bildplan` – genau eines (TK 9.2.2).
+  // Beides zugleich oder keines von beiden ist ein Mangel des ELEMENTS; das ist die
+  // Grenze zwischen „ein Bild ohne Pixel" und „ein Auftrag mit unbekannter Art".
   const png = lies(roh, 'png')
+  const bildplan = lies(roh, 'bildplan')
+  const hatPng = png !== undefined && png !== null
+  const hatPlan = bildplan !== undefined && bildplan !== null
+
+  if (hatPng && hatPlan) {
+    return elementFehler(
+      elementId,
+      'Das "segment"-Element traegt sowohl ein PNG als auch einen Bildplan. Zulaessig ist ' +
+        'genau eines von beiden.',
+    )
+  }
+  if (!hatPng && !hatPlan) {
+    return elementFehler(
+      elementId,
+      'Das "segment"-Element traegt weder ein PNG noch einen Bildplan; es hat keine Pixel.',
+    )
+  }
+
+  if (hatPlan) {
+    const plan = pruefeBildplan(elementId, bildplan, frames.wert)
+    if (!plan.ok) return plan
+    return pruefeDauerBereich(elementId, lies(roh, 'dauer'))
+  }
+
   if (!(png instanceof Uint8Array) || png.byteLength === 0) {
     // „Bei `"segment"` werden keine Aktions-/Vorlagendaten mitgeschickt - die Pixel
     // sind bereits final; das ist der Kern von Variante A." (TK 9.2.2) Ein `segment`

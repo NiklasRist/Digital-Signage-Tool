@@ -34,7 +34,7 @@ vi.mock("node:fs/promises", async (echtLaden) => {
 });
 
 const { writeFile } = await import("node:fs/promises");
-const { bandDateiname, legePngsAb, segmentPngDateiname } = await import(
+const { bandDateiname, bildfolgeDateiname, legePngsAb, segmentPngDateiname } = await import(
   "../../src/main/render-service/png-ablage"
 );
 
@@ -330,6 +330,60 @@ describe("legePngsAb (#175) wandelt jeden Schreibfehler in ein Ergebnis", () => 
     expect(ergebnis.ok).toBe(false);
     expect(writeFile).toHaveBeenCalledTimes(3);
     expect(readdirSync(bereich).sort()).toEqual(["segment-0000.png", "segment-0001.png"]);
+  });
+});
+
+describe("legePngsAb (#464) legt die Frames eines Bildplans ab", () => {
+  it("bildfolgeDateiname trennt Element und Frame, vierstellig wie die Elemente", () => {
+    expect(bildfolgeDateiname(7, 0)).toBe("segment-0007-0000.png");
+    expect(bildfolgeDateiname(7, 42)).toBe("segment-0007-0042.png");
+    // Ab 10000 wird NIE abgeschnitten - sonst faenden 10000 und 0000 zusammen.
+    expect(bildfolgeDateiname(10000, 12345)).toBe("segment-10000-12345.png");
+    // Und der Einzelbild-Name bleibt davon unberuehrt.
+    expect(segmentPngDateiname(7)).toBe("segment-0007.png");
+  });
+
+  it("schreibt jeden Frame unter eigenem Namen, in Plan-Reihenfolge", async () => {
+    const bilder = [pngBytes(0x51), pngBytes(0x52), pngBytes(0x53)];
+    const element: RenderItem = {
+      id: "p1",
+      art: "segment",
+      bildplan: { bilder, laeufe: [{ erstesBild: 0, anzahl: 3, wiederholungen: 1 }] },
+      dauer: 10,
+    };
+
+    const ergebnis = await legePngsAb(bereich, [element]);
+
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+
+    // Kein Einzelbild-Pfad - der Plan ist der einzige Pixelweg dieses Elements.
+    expect(ergebnis.wert.segmentPngs).toEqual([null]);
+    expect(ergebnis.wert.segmentBildfolgen).toEqual([
+      [
+        path.join(bereich, "segment-0000-0000.png"),
+        path.join(bereich, "segment-0000-0001.png"),
+        path.join(bereich, "segment-0000-0002.png"),
+      ],
+    ]);
+
+    // Der Beweis auf der Platte: drei Dateien, jede mit IHREN Bytes.
+    expect(readdirSync(bereich).sort()).toEqual([
+      "segment-0000-0000.png",
+      "segment-0000-0001.png",
+      "segment-0000-0002.png",
+    ]);
+    for (const [i, fuellung] of [0x51, 0x52, 0x53].entries()) {
+      const datei = path.join(bereich, `segment-0000-000${String(i)}.png`);
+      expect([...readFileSync(datei)]).toEqual([...pngBytes(fuellung)]);
+    }
+  });
+
+  it("haelt die Felder auch ohne Plan index-parallel", async () => {
+    const ergebnis = await legePngsAb(bereich, [segment("a", pngBytes(0x11)), video("b", null)]);
+    expect(ergebnis.ok).toBe(true);
+    if (!ergebnis.ok) return;
+    expect(ergebnis.wert.segmentBildfolgen).toEqual([[], []]);
   });
 });
 

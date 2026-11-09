@@ -290,6 +290,71 @@ describe("Die fuenf Faelle der Weiche", () => {
     expect(attrappe.fuehreFfmpegAus).toHaveBeenCalledTimes(1);
   });
 
+  it("Fall 1b - segment mit Bildplan: die Laeufe gehen an den Adapter, kein Standbild", async () => {
+    // Seit v3.55 (#464): `png` ODER `bildplan`; der Plan traegt mehrere Frames.
+    // 0,1 s = 3 Frames, drei eindeutige Bilder, ein Lauf - die kleinste echte Folge.
+    const plan = {
+      id: "e-plan",
+      art: "segment",
+      dauer: 0.1,
+      bildplan: {
+        bilder: [new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])],
+        laeufe: [{ erstesBild: 0, anzahl: 3, wiederholungen: 1 }],
+      },
+    } as unknown as RenderItem;
+    const pfade = [
+      "/t1/segment-0000-000.png",
+      "/t1/segment-0000-001.png",
+      "/t1/segment-0000-002.png",
+    ];
+
+    const ergebnis = await normalisiereElement(
+      plan,
+      0,
+      { segment: null, bildfolge: pfade, band: [] },
+      kontext(),
+    );
+
+    expect(ergebnis).toEqual({ ok: true, wert: path.join(T1, "seg_0000.mp4") });
+    expect(attrappe.baueStandbildArgumente).not.toHaveBeenCalled();
+    expect(attrappe.fuehreFfmpegAus).toHaveBeenCalledTimes(1);
+
+    const lauf = attrappe.fuehreFfmpegAus.mock.calls[0]?.[0] as { argumente: string[] };
+    // Drei PNG-Eingaenge plus die stille Tonspur (#162).
+    expect(lauf.argumente.filter((wert) => wert === "-i")).toHaveLength(4);
+    for (const pfad of pfade) expect(lauf.argumente).toContain(pfad);
+    // Die Bildzahl ist die Dauer - 0,1 s x 30 fps = 3.
+    const stelle = lauf.argumente.indexOf("-frames:v");
+    expect(stelle).toBeGreaterThan(-1);
+    expect(lauf.argumente[stelle + 1]).toBe("3");
+  });
+
+  it("Fall 1c - Bildplan ohne passende PNG-Pfade: ungueltiges_element, kein ffmpeg", async () => {
+    const plan = {
+      id: "e-plan",
+      art: "segment",
+      dauer: 0.1,
+      bildplan: {
+        bilder: [new Uint8Array([1]), new Uint8Array([2])],
+        laeufe: [{ erstesBild: 0, anzahl: 2, wiederholungen: 1 }],
+      },
+    } as unknown as RenderItem;
+
+    const ergebnis = await normalisiereElement(
+      plan,
+      0,
+      { segment: null, bildfolge: ["/t1/segment-0000-000.png"], band: [] },
+      kontext(),
+    );
+
+    expect(ergebnis.ok).toBe(false);
+    if (ergebnis.ok) return;
+    expect(ergebnis.fehler.code).toBe("ungueltiges_element");
+    expect(ergebnis.fehler.meldung).toContain("1");
+    expect(ergebnis.fehler.meldung).toContain("2");
+    expect(attrappe.fuehreFfmpegAus).not.toHaveBeenCalled();
+  });
+
   it("Fall 3 - video ohne Band: Vollbild, bandSpurPfad null, keine Bandspur", async () => {
     const ergebnis = await normalisiereElement(VIDEO_OHNE_BAND, 2, KEINE_PNGS, kontext());
 

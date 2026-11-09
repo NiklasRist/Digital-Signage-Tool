@@ -163,7 +163,11 @@ beforeEach(() => {
   attrappe.verwirfArbeitsbereich.mockResolvedValue(undefined);
   attrappe.legePngsAb.mockResolvedValue({
     ok: true,
-    wert: { segmentPngs: ["/t1/segment-0000.png", "/t1/segment-0001.png"], bandPngs: [[], []] },
+    wert: {
+      segmentPngs: ["/t1/segment-0000.png", "/t1/segment-0001.png"],
+      segmentBildfolgen: [[], []],
+      bandPngs: [[], []],
+    },
   });
   attrappe.gesamtdauer.mockReturnValue({ ok: true, wert: 20 });
   attrappe.normalisiereElement.mockImplementation((_e: RenderItem, index: number) =>
@@ -279,10 +283,12 @@ describe("renderReel - Erfolg", () => {
 
     expect(attrappe.normalisiereElement.mock.calls[0]?.[2]).toEqual({
       segment: "/t1/segment-0000.png",
+      bildfolge: [],
       band: [],
     });
     expect(attrappe.normalisiereElement.mock.calls[1]?.[2]).toEqual({
       segment: "/t1/segment-0001.png",
+      bildfolge: [],
       band: [],
     });
   });
@@ -351,7 +357,7 @@ describe("renderReel - Abbruch-Kette", () => {
     const request = anfrage({ elemente: [element("e-1"), element("e-2"), element("e-3")] });
     attrappe.legePngsAb.mockResolvedValue({
       ok: true,
-      wert: { segmentPngs: [null, null, null], bandPngs: [[], [], []] },
+      wert: { segmentPngs: [null, null, null], segmentBildfolgen: [[], [], []], bandPngs: [[], [], []] },
     });
     attrappe.normalisiereElement.mockImplementation((_e: RenderItem, index: number) => {
       if (index === 1) {
@@ -383,7 +389,7 @@ describe("renderReel - Abbruch-Kette", () => {
       cancelRender(request.renderId);
       return Promise.resolve({
         ok: true,
-        wert: { segmentPngs: [null, null], bandPngs: [[], []] },
+        wert: { segmentPngs: [null, null], segmentBildfolgen: [[], []], bandPngs: [[], []] },
       });
     });
 
