@@ -24,17 +24,15 @@ import type { EffektSatz, FensterEffekt, SchleifenEffekt } from './contracts/akt
  * scheidung anwenden – und der Ruhezustand ist exakt der Stand von vorher.
  */
 export interface EffektZustand {
-  /** Zoom der Bildzone in Prozent, 100 = Einpassung der Vorlage. */
+  /** Zoom der Bildzone in Prozent, 100 = Einpassung der Vorlage. Ken Burns + Zoom-Atmen. */
   zoomBild: number
-  /** Zoom der Hintergrundzone in Prozent, 100 = unveraendert. */
-  zoomHintergrund: number
-  /** Versatz der Bildzone in Prozent ihrer Breite. */
+  /** Versatz der Bildzone in Prozent ihrer Breite. Ken Burns + Drift. */
   versatzBildX: number
-  /** Versatz der Bildzone in Prozent ihrer Hoehe. */
+  /** Versatz der Bildzone in Prozent ihrer Hoehe. Ken Burns + Drift. */
   versatzBildY: number
-  /** Versatz der Hintergrundzone in Prozent ihrer Breite. */
+  /** Parallax: Versatz der Hintergrundflaeche, aus der Bildbewegung abgeleitet. */
   versatzHintergrundX: number
-  /** Versatz der Hintergrundzone in Prozent ihrer Hoehe. */
+  /** Parallax: Versatz der Hintergrundflaeche, aus der Bildbewegung abgeleitet. */
   versatzHintergrundY: number
   /** Deckkraft der Textzonen, 0…1. */
   textAlpha: number
@@ -81,7 +79,6 @@ export const EFFEKT_GRENZEN = {
  */
 export const RUHE_ZUSTAND: Readonly<EffektZustand> = Object.freeze({
   zoomBild: 100,
-  zoomHintergrund: 100,
   versatzBildX: 0,
   versatzBildY: 0,
   versatzHintergrundX: 0,
@@ -314,31 +311,34 @@ export function effektZustand(
   }
 
   // ---- Schleifen-Effekte: ueber die ganze Dauer, nahtlos -----------------------
+  // ENTSCHEIDEN 09.11.2026: Sie wirken auf das BILD, nicht auf die Hintergrund-Zone.
+  // Die Hintergrund-Zone ist in jeder eingebauten Vorlage eine Farbflaeche – ein Zoom
+  // darauf waere unsichtbar. Das „bewegte Hintergrundbild" ist hier das Motiv.
   const atem = effekte.zoomAtmen
   if (atem !== undefined && atem.staerke > 0) {
     const t = (index % EFFEKT_GRENZEN.schleifeBilder) / EFFEKT_GRENZEN.schleifeBilder
-    zustand.zoomHintergrund = 100 + 4 * (atem.staerke / 100) * dreieck(t)
+    zustand.zoomBild += 4 * (atem.staerke / 100) * dreieck(t)
   }
 
   const drift = effekte.drift
   if (drift !== undefined && drift.staerke > 0) {
     const s = drift.staerke / 100
-    // VERSCHIEDENE Perioden fuer x und y (TK 9.16.2): mit derselben Periode liefe der
-    // Hintergrund auf einer Geraden hin und zurueck – das sieht nach Metronom aus.
+    // VERSCHIEDENE Perioden fuer x und y (TK 9.16.2): mit derselben Periode liefe das
+    // Bild auf einer Geraden hin und zurueck – das sieht nach Metronom aus.
     const tx = (index % EFFEKT_GRENZEN.schleifeBilder) / EFFEKT_GRENZEN.schleifeBilder
     const ty = (index % (EFFEKT_GRENZEN.schleifeBilder / 2)) / (EFFEKT_GRENZEN.schleifeBilder / 2)
-    zustand.versatzHintergrundX = 1.5 * s * dreieck(tx)
-    zustand.versatzHintergrundY = 1 * s * dreieck(ty)
+    zustand.versatzBildX += 1.5 * s * dreieck(tx)
+    zustand.versatzBildY += 1 * s * dreieck(ty)
   }
 
   // ---- Parallax: eine BEZIEHUNG, kein eigener Antrieb --------------------------
   const parallax = effekte.parallax
   if (parallax !== undefined && parallax.staerke > 0) {
-    // 100 % = Hintergrund laeuft mit 0,6× der Bildbewegung. Ohne Bildbewegung bleibt
-    // das unsichtbar – das ist gewollt und steht so im Vertrag (TK 9.16.2).
+    // 100 % = Hintergrundflaeche laeuft mit 0,6× der Bildbewegung. Ohne Bildbewegung
+    // bleibt das unsichtbar – genauso auf einer Vollton-Flaeche (TK 9.16.2).
     const faktor = 1 - 0.4 * (parallax.staerke / 100)
-    zustand.versatzHintergrundX += zustand.versatzBildX * faktor
-    zustand.versatzHintergrundY += zustand.versatzBildY * faktor
+    zustand.versatzHintergrundX = zustand.versatzBildX * faktor
+    zustand.versatzHintergrundY = zustand.versatzBildY * faktor
   }
 
   return zustand

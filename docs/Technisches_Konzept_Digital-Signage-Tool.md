@@ -3137,9 +3137,9 @@ Eine Funktion, **ohne DOM**, ohne Zeit, ohne Zufall:
 effektZustand(effekte: EffektSatz | null, bild: number, bilderGesamt: number) → EffektZustand
 
 EffektZustand {
-  zoomBild, zoomHintergrund            // %, 100 = Ruhezustand
-  versatzBildX, versatzBildY           // % der Zonenbreite/-höhe
-  versatzHintergrundX, versatzHintergrundY
+  zoomBild,                            // %, 100 = Ruhezustand; Ken Burns + Zoom-Atmen
+  versatzBildX, versatzBildY           // % der Zonenbreite/-höhe; Ken Burns + Drift
+  versatzHintergrundX, versatzHintergrundY   // Parallax: Bild-Bewegung × Faktor
   textAlpha                            // 0…1
   textVersatzY                         // px
   preisSkala                           // 1 = voll
@@ -3157,9 +3157,9 @@ Zwei Kurven, mehr nicht: `weich(t) = 1 − (1 − t)³` und `dreieck(t) = 1 − 
 | Effekt | Verlauf | Endpunkte (Vertrag) |
 |---|---|---|
 | **Ken Burns** | `zoomBild = 100 + 8·s·weich(t)`, `versatzBildX = 2·s·weich(t)` | 0: 100 % / 0 – 1: **108 % / 2 %**, danach Ruhe |
-| **Zoom-Atmen** | `zoomHintergrund = 100 + 4·s·dreieck(t60)` | nahtlos: Bild 0 = Bild 60 |
-| **Drift** | `x = 1,5·s·dreieck(t60)`, `y = 1·s·dreieck(t30)` – **verschiedene Perioden** | nahtlos, keine Gerade |
-| **Parallax** | `versatzHintergrund = versatzBild · (1 − 0,4·s)` | ohne Bildbewegung **unsichtbar** (gewollt) |
+| **Zoom-Atmen** | `zoomBild += 4·s·dreieck(t60)` – addiert sich auf Ken Burns | nahtlos: Bild 0 = Bild 60 |
+| **Drift** | `versatzBildX += 1,5·s·dreieck(t60)`, `versatzBildY += 1·s·dreieck(t30)` – **verschiedene Perioden** | nahtlos, keine Gerade |
+| **Parallax** | `versatzHintergrund = versatzBild · (1 − 0,4·s)` | ohne Bildbewegung **unsichtbar** (gewollt); auf einer Vollton-Fläche ebenfalls |
 | **Text-Einblendung** | `textAlpha = weich(t)`, `textVersatzY = 12·(1 − weich(t))` | 1: Deckkraft 1, Versatz 0 |
 | **Preis-Pop** | steigt von 0,85 über **1,04** und endet bei **1,00** | Anfang 0,85 – Ende exakt 1,00 |
 | **Glanz-Sweep** | `glanzFortschritt = t`, Deckkraft `0,35·s·sin(π·t)` | Anfang/Ende unsichtbar |
@@ -3176,7 +3176,8 @@ Zwei Kurven, mehr nicht: `weich(t) = 1 − (1 − t)³` und `dreieck(t) = 1 − 
 `zeichneSegment(aktion, vorlage, marke, rahmenMarke, zustand?: EffektZustand)`.
 
 - **Ohne `zustand` läuft exakt der heutige Weg**: keine Transformation, keine zusätzliche Deckkraft, dieselbe Reihenfolge der Zonen. Der fünfte Parameter ist optional und ändert keinen bestehenden Aufrufer.
-- **Mit `zustand`** werden die Transformationen **um die betroffene Zone** gelegt; die Zonen-Routinen selbst (`zone-text`, `zone-bild`, `zone-deko`) bleiben unverändert. `hintergrund`: Zoom und Drift · `bild`: Ken Burns, Reveal, Parallax · Textzonen: Deckkraft und Versatz · `preis`: Skala und Anzeige · `glanzSweep`: eine zusätzliche Ebene **über** der Zielzone.
+- **Mit `zustand`** werden die Transformationen **um die betroffene Zone** gelegt; die Zonen-Routinen selbst (`zone-text`, `zone-bild`, `zone-deko`) rechnen nur ihre eigenen Werte. `bild`: Zoom (Ken Burns + Zoom-Atmen), Versatz (Ken Burns + Drift) und Reveal · `hintergrund`: **nur** der Parallax-Versatz der Fläche · Textzonen: Deckkraft, Versatz und Skala · `preis`: Skala und Anzeige · `glanzSweep`: eine zusätzliche Ebene **über** der Zielzone.
+- **WARUM DIE SCHLEIFEN AUF DAS BILD GEHEN (entschieden 09.11.2026):** Die Zone `hintergrund` ist in **jeder** eingebauten Vorlage eine Farbfläche oder ein Verlauf – ein Zoom darauf wäre unsichtbar. Das „bewegte Hintergrundbild" ist in diesen Segmenten das **Motiv**; es füllt die Fläche. Parallax braucht eine zweite Ebene und nimmt die Hintergrundfläche als Gegenspieler.
 - **Nur Ganzbild.** Bei `höhe !== null` (Band) wird `zustand` **ignoriert** – das Band bleibt still.
 - **Keine zweite Malroutine.** Vorschau und Render rufen dieselbe Funktion (9.1, Variante A).
 

@@ -398,9 +398,9 @@ Segmentdauer.
 | Effekt | wirkt auf | Vorgabe |
 |---|---|---|
 | **Ken Burns** | Bild | Push-in von 0,0 bis 1,5 s: Zoom 100 → 108 %, Drift höchstens 2 %; danach hält das Bild ruhig |
-| **Zoom-Atmen** | Hintergrund | Schleife über 2 s: 100 → 104 → 100 %, nahtlos |
-| **Drift** | Hintergrund | Schleife über 2 s: hin und zurück, x ±1,5 %, y ±1 % |
-| **Parallax** | Hintergrund gegenüber Bild | Hintergrund bewegt sich mit 0,6× der Bild-Bewegung, eigene Stärke. **Wirkt nur, wenn sich etwas bewegt** (Ken Burns, Zoom-Atmen oder Drift) |
+| **Zoom-Atmen** | Bild | Schleife über 2 s: 100 → 104 → 100 %, nahtlos; addiert sich auf Ken Burns |
+| **Drift** | Bild | Schleife über 2 s: hin und zurück, x ±1,5 %, y ±1 % |
+| **Parallax** | Hintergrund gegenüber Bild | Die Hintergrundfläche bewegt sich mit 0,6× der Bild-Bewegung, eigene Stärke. **Wirkt nur, wenn sich etwas bewegt** (Ken Burns, Zoom-Atmen oder Drift) und die Fläche kein Vollton ist |
 | **Text-Einblendung** | Textzonen | 0,4 s: 12 px von unten, Deckkraft 0 → 1 |
 | **Preis-Pop** | Preis | 0,33 s: 0,85 → 1,00 mit Überschwingen auf 1,04 |
 | **Glanz-Sweep** | Bild oder Preis | 0,6 s: ein Lichtstreifen, 25 % breit, 20° geneigt, Deckkraft höchstens 35 % |

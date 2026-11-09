@@ -179,7 +179,7 @@ describe("Zoom-Atmen (Schleife)", () => {
   it("ist nahtlos: der Sprung an der Naht ist nicht groesser als im Inneren", () => {
     const satz: EffektSatz = { zoomAtmen: { staerke: 100 } };
     const n = EFFEKT_GRENZEN.schleifeBilder;
-    const zoom = (bild: number): number => effektZustand(satz, bild, 1350).zoomHintergrund;
+    const zoom = (bild: number): number => effektZustand(satz, bild, 1350).zoomBild;
 
     let groessterSchrittInnen = 0;
     for (let bild = 0; bild < n - 1; bild += 1) {
@@ -192,8 +192,19 @@ describe("Zoom-Atmen (Schleife)", () => {
 
   it("atmet auf 104 % in der Mitte der Periode", () => {
     const satz: EffektSatz = { zoomAtmen: { staerke: 100 } };
-    expect(effektZustand(satz, 30, 300).zoomHintergrund).toBeCloseTo(104, 10);
-    expect(effektZustand(satz, 0, 300).zoomHintergrund).toBe(100);
+    expect(effektZustand(satz, 30, 300).zoomBild).toBeCloseTo(104, 10);
+    expect(effektZustand(satz, 0, 300).zoomBild).toBe(100);
+  });
+
+  it("addiert sich auf Ken Burns", () => {
+    const nurKenBurns: EffektSatz = {
+      kenBurns: { staerke: 100, vonSekunden: 0, bisSekunden: 1.5 },
+    };
+    const satz: EffektSatz = { ...nurKenBurns, zoomAtmen: { staerke: 100 } };
+    // Bild 30: Atmen steht auf 104 %, Ken Burns ist noch nicht am Ende (weich < 1).
+    const mit = effektZustand(satz, 30, 300).zoomBild;
+    const ohne = effektZustand(nurKenBurns, 30, 300).zoomBild;
+    expect(mit).toBeCloseTo(ohne + 4, 10);
   });
 });
 
@@ -201,15 +212,15 @@ describe("Drift (Schleife)", () => {
   it("nutzt fuer x und y verschiedene Perioden", () => {
     const satz: EffektSatz = { drift: { staerke: 100 } };
     // x bei halber 60er-Periode = 1,5 %; y bei halber 30er-Periode = 1 %
-    expect(effektZustand(satz, 30, 1350).versatzHintergrundX).toBeCloseTo(1.5, 10);
-    expect(effektZustand(satz, 30, 1350).versatzHintergrundY).toBeCloseTo(0, 10);
-    expect(effektZustand(satz, 15, 1350).versatzHintergrundY).toBeCloseTo(1, 10);
+    expect(effektZustand(satz, 30, 1350).versatzBildX).toBeCloseTo(1.5, 10);
+    expect(effektZustand(satz, 30, 1350).versatzBildY).toBeCloseTo(0, 10);
+    expect(effektZustand(satz, 15, 1350).versatzBildY).toBeCloseTo(1, 10);
   });
 
   it("ist nahtlos ueber die volle Periode", () => {
     const satz: EffektSatz = { drift: { staerke: 100 } };
     const n = EFFEKT_GRENZEN.schleifeBilder;
-    const x = (bild: number): number => effektZustand(satz, bild, 1350).versatzHintergrundX;
+    const x = (bild: number): number => effektZustand(satz, bild, 1350).versatzBildX;
     let groessterSchrittInnen = 0;
     for (let bild = 0; bild < n - 1; bild += 1) {
       groessterSchrittInnen = Math.max(groessterSchrittInnen, Math.abs(x(bild + 1) - x(bild)));
