@@ -1,5 +1,9 @@
 # Treiber-Matrix: Anforderung -> Szenario
 
+> **Ab 10.11.2026:** Diese Matrix ist **nicht** die Abnahme der Leitforderung **L-01**
+> (AD 1.1/12.1/14). Sie belegt nur, welche **FA** der Treiber am echten Fenster misst.
+> L-01 wird in **#466** gemessen; die technische Umsetzung von FA-26 steht in **#465**.
+
 **Stand:** 09.11.2026. Letzte Messung am Fenster: Lauf vom **09.11.2026** - neu darin sind
 **4s** (Effekte, FA-25) und der Undo/Redo-Teil in **4n** (Vorlagen-Editor, FA-21); die
 uebrigen Messungen stammen aus den Laeufen vom 22.10., 28.10. und den Nachlaeufen bis 09.11.

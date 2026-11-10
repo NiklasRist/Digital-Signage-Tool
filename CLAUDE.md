@@ -13,13 +13,16 @@
 
 ## STAND HEUTE (10.11.2026, sechsundfünfzigste Sitzung: Leitforderung L-01 — das Produktversprechen)
 
+**Volltext: [`docs/agents/uebergabe-2026-11-10-leitforderung.md`](docs/agents/uebergabe-2026-11-10-leitforderung.md).**
+
 - **AD v2.0** (`docs/Anforderungsdokument_Digital-Signage-Tool.md`): **L-01** in 1.1 — der Output muss **schneller, einfacher und qualitativ besser** sein als eine gute PowerPoint mit Masterfolie. Messlatte: ein Angebot **inklusive Designarbeit ≤ 5 min**; Änderung **≤ 1 min ohne Renderzeit**; **manuelle Varianten** (≥ 3 je Aktion, Wechsel ≤ 1 Klick); **3 Band-Spots + 2 Unterbrecher in 15 min**, ein MP4, keine Naht; **15–30 min pro Projekt**; der Stick darf **mehrere MP4s** enthalten. Ein Projekt bleibt **ein Video** (FA-01/4.9 unverändert).
 - **FA-26 Varianten (Muss, neu):** 4.11; eine Variante ist eine benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, **manuell** gewählt.
 - **Abnahme:** 12.1 (Referenzaufgabe, Stoppuhr, PowerPoint-Baseline) + **14 Heuristik-Bogen** (12 Kriterien, 0/1/2; Tool ≥ 20/24, PowerPoint ≤ 14/24; Gewinn bei Bewegung/Differenzierung, kein Verlust bei TV-Lesbarkeit/Markentreue). Bewertung: Niklas, optional Familie/Freunde, Bögen einzeln.
 - **AD `.docx`** im selben Commit: **500 Absätze**, 0 Backticks, ein Bild, `unzip -t` heil. **TK noch v3.58** — die Umsetzung von L-01/FA-26 ist **nicht** ausgeschrieben; das ist der nächste Doku-Schritt.
 - **NICHT GEBAUT / NICHT GEMESSEN:** FA-26 fehlt; der 5-min-Flow inkl. Designarbeit und die 1-min-Änderung sind unbelegt. **Die Treiber-Matrix (12/9/3) misst die alten FA, nicht L-01.**
-- **Nächster Schritt:** PowerPoint-Referenz einmal echt bauen und stoppen; danach TK für FA-26/L-01, dann Issues.
-- **NICHT GEPUSHT:** **2 Commits** vor `origin/main` (`e37338a` FA-21 + dieser AD-Commit). **Push nur auf Anweisung.**
+- **ISSUES:** **#465** (TK v3.59: L-01/FA-26 — Entscheidungs-Issue, keine Signatur) und **#466** (PowerPoint-Baseline + L-01-Referenzlauf — Mess-Issue, keine Signatur). #466 verweist auf #465. **#458** bleibt offen und überholt.
+- **Nächster Schritt:** #466 (PowerPoint-Baseline bauen/stoppen/bewerten), dann #465 (TK v3.59), dann Bau-Issues für FA-26 und den 5-/1-Minuten-Flow.
+- **NICHT GEPUSHT:** **3 Commits** vor `origin/main` (`e37338a` FA-21, `e11c40d` AD v2.0, dieser Übergabe-Commit). **Push nur auf Anweisung.**
 
 ## STAND HEUTE (09.11.2026, fünfundfünfzigste Sitzung: Effekte — vom Bildplan bis zum gemessenen Video) – historisiert durch den Abschnitt darueber
 
