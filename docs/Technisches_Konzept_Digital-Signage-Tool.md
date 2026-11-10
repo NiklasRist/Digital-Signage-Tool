@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.59 (9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.60 (9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 09.11.2026
 **Status:** In Planung
 
@@ -1582,6 +1582,21 @@ Aktion {
   // SEIT v3.55 (9.16). OPTIONAL: fehlt das Feld, bleibt das Segment das Standbild von heute –
   // genau der Zustand vor dieser Fassung. Kein Pflichtfeld, aus demselben Grund wie oben.
   effekte?:         EffektSatz | null
+  // SEIT v3.60 (9.17, FA-26). OPTIONAL: fehlen beide Felder, hat die Aktion EINEN Look –
+  // genau der Zustand vor dieser Fassung. varianten: [] ist gleichbedeutend mit "fehlt".
+  varianten?:       AktionsVariante[]
+  aktiveVarianteId?:string | null   // null = die Felder DIESER Aktion gelten (9.17.3)
+}
+
+// SEIT v3.60 (9.17.2, FA-26): benannte Kombination aus Look, Effekt-Satz und optional
+// Bildausschnitt/Akzentfarbe. Gestaltung, kein Inhalt - kein Dauerfeld.
+AktionsVariante {
+  id:            string
+  name:          string
+  vorlagenId:    string
+  effekte?:      EffektSatz | null
+  bildAusschnitt?:BildAusschnitt | null
+  akzentfarbe?:  string | null
 }
 
 ZonenGestaltung {
@@ -2602,7 +2617,7 @@ und wird an anderer Stelle abgewiesen.
   }
   ```
 
-- **Dieselbe Prüfung wie die Lösch-Sperre, nur ohne Wirkung.** Sie erfasst **beide** Referenzarten und liest **alle** `project.json` (s. die Lösch-Invariante unten). Es gibt **einen** Prüf-Mechanismus, den die Anzeige und die Sperre gemeinsam benutzen – zwei Zählungen liefen unweigerlich auseinander, und die harmlosere von beiden wäre die falsche.
+- **Dieselbe Prüfung wie die Lösch-Sperre, nur ohne Wirkung.** Sie erfasst **drei** Referenzarten (v3.60, 9.17.8) und liest **alle** `project.json` (s. die Lösch-Invariante unten). Es gibt **einen** Prüf-Mechanismus, den die Anzeige und die Sperre gemeinsam benutzen – zwei Zählungen liefen unweigerlich auseinander, und die harmlosere von beiden wäre die falsche.
 - **Eigener IPC-Kanal** nach 9.1.1 Punkt 4: `vorlagen:pruefeVorlagenReferenzen`. Ohne Anmeldung im `ipc-gateway` bliebe die Operation eine Main-Funktion ohne Aufrufer.
 - **Kein Lock, keine Wirkung:** Sie schreibt nichts, sie reiht nichts ein, sie ist **kein** Auftrag der Queue (9.3.2) – ein Instant-Aufruf wie die übrigen Leseoperationen. Eine **leere** Nutzung (beide Listen leer) ist ein **gültiges Ergebnis**, kein Fehler: Sie bedeutet „diese Vorlage ist frei".
 
@@ -2631,11 +2646,12 @@ Vorlage X bearbeiten
 - **Die Fläche (`höhe`) ist nach dem Anlegen unveränderlich** – auch über die Arbeitskopie. Ein Wechsel würde alle Zonen-Rahmen ungültig machen (andere Fläche); stattdessen neu anlegen.
 - **`höhe` nur bei Band-Vorlagen**, Wertebereich > 0 und < 1080 **und geradzahlig** (9.11.1 Punkt 8, Begründung `yuv420p` in 9.2.8). Bei einer Ganzbild-Vorlage immer `null`. **Angelegt wird über die Oberfläche ausschließlich mit 162 px** (Entscheidung 23.10.2026, 9.11.1); der Wertebereich bleibt als Prüfregel für jeden Schreibweg bestehen. Der Store weist eine ungerade Höhe ab – auf **jedem** Weg, der sie setzen kann (`erstelleVorlage`, `speichereArbeitskopie`, `uebernehmeInParent`); der Editor sperrt sie bereits vorher (9.12.2).
 - **Feste Zonen (`rolle: "fest"`) dürfen nie entfernt oder verschoben werden** – auch nicht in eigenen Vorlagen (Markenrahmen erzwungen, FA-11).
-- **Löschen nur, wenn die Vorlage in *keinem* Projekt mehr benutzt wird.** Die Prüfung muss **beide** Referenzarten erfassen – das ist die entscheidende Feinheit:
+- **Löschen nur, wenn die Vorlage in *keinem* Projekt mehr benutzt wird.** Die Prüfung muss **drei** Referenzarten erfassen – das ist die entscheidende Feinheit:
   1. **`aktion.vorlagenId`** – Aktionen, die die Vorlage als vollflächiges Segment nutzen.
-  2. **`listenelement.einblendung.bandVorlageId`** – Listenelemente, die sie als **Band** nutzen (9.2.8).
+  2. **`aktion.varianten[].vorlagenId`** – Varianten einer Aktion (9.17.2, v3.60). **Neu mit FA-26.**
+  3. **`listenelement.einblendung.bandVorlageId`** – Listenelemente, die sie als **Band** nutzen (9.2.8).
 
-  **Eine Band-Vorlage wird ausschließlich über Weg 2 referenziert.** Wer nur Aktionen prüft, hält sie fälschlich für unbenutzt und löscht sie – der nächste Render bricht dann mit einer verwaisten Referenz. Die Prüfung liest dafür **alle** `project.json`, **nicht nur** das geladene Projekt (nur das aktive liegt im Speicher, 9.5.1). Blockierend, **nicht** kaskadierend.
+  **Eine Band-Vorlage wird ausschließlich über Weg 3 referenziert. Eine Variante hält eine Vorlage genauso am Leben wie die Aktion selbst.** Wer nur Aktionen prüft, hält sie fälschlich für unbenutzt und löscht sie – der nächste Render bricht dann mit einer verwaisten Referenz. Die Prüfung liest dafür **alle** `project.json`, **nicht nur** das geladene Projekt (nur das aktive liegt im Speicher, 9.5.1). Blockierend, **nicht** kaskadierend.
 - **Arbeitskopien blockieren das Löschen nicht** – sie sind kein „Benutzen". Wird der Parent gelöscht, wird deren `parent` genullt (s. u.).
 - **Eine Arbeitskopie hält den Parent nicht am Leben:** Wird der Parent gelöscht, während eine Arbeitskopie existiert, wird deren `parent` auf `null` gesetzt (sie wird zur eigenständigen Vorlage) – **keine** verwaiste Referenz.
 
@@ -3241,9 +3257,198 @@ Erzeugt wird der Plan von `bildplan()` in `src/shared/bildplan.ts` – **rein**,
 
 ---
 
+### 9.17 Varianten: eine Aktion, mehrere Looks (FA-26)
+
+**Anlass:** Anforderungsdokument **v2.0**, **4.11** und **FA-26**. Bis v3.59 hatte eine Aktion genau
+einen Look (`vorlagenId`) und einen Effekt-Satz (`effekte`). Ab v3.60 trägt sie zusätzlich mehrere
+**benannte** Varianten; der Nutzer wählt **manuell**.
+
+#### 9.17.1 Was eine Variante ist – und was sie nicht ist
+
+Eine Variante ist eine **benannte Kombination** aus Vorlage/Look, Effekt-Satz und optional
+Bildausschnitt und Akzentfarbe (AD 4.11: „**Eine Variante** ist eine benannte, gespeicherte
+Kombination aus:" – dort als Liste der drei Bestandteile). Sie ist **Gestaltung, kein Inhalt**: `titel`,
+`beschreibung`, `preis`, `cta`, `bildRef`, `markeId` und `standardDauer` bleiben Felder der
+**Aktion** und werden von keiner Variante berührt.
+
+**Der Nullzustand ist gültig.** AD 4.11: „Fehlt eine Variante, gilt die Aktion wie bisher." Eine
+Aktion ohne `varianten` ist damit kein Sonderfall und braucht **keine** Migration.
+
+**Wer sie anlegt:** AD 4.11: „Der Nutzer legt Varianten an, benennt sie und wählt sie **manuell** aus."
+Es gibt **keine** automatische Erzeugung und **keine** automatische Rotation.
+
+**Auslegung, offen benannt:** FA-26 sagt „mindestens **3** je Aktion". Gelesen wird das als
+**Fähigkeitszusage** – der Vertrag muss drei und mehr tragen, und die Bedienung muss sie zulassen –,
+**nicht** als Pflicht, dass jede neue Aktion drei Varianten mitbringt. Die Gegenlesart widerspräche
+zwei Sätzen derselben Anforderung: „Der Nutzer legt Varianten an" und „Fehlt eine Variante, gilt die
+Aktion wie bisher". Die **Drei** wird in der Abnahme gemessen (9.18), nicht beim Anlegen erzwungen.
+
+#### 9.17.2 Datenmodell
+
+```
+AktionsVariante {
+  id:             string             // UUID (9.11.4), je Aktion eindeutig
+  name:           string             // sichtbar im Editor; leer ist ungueltig
+  vorlagenId:     string             // Pflicht - ohne Vorlage ist die Variante nicht zeichenbar
+  effekte?:       EffektSatz | null  // fehlt -> die Aktion zeigt keine Effekte
+  bildAusschnitt?: BildAusschnitt | null
+  akzentfarbe?:   string | null      // #RRGGBB; null = Markenwert gilt (9.10.9)
+}
+
+Aktion {
+  ...
+  varianten?:        AktionsVariante[]  // fehlt/leer -> die Aktion ist wie vor v3.60
+  aktiveVarianteId?: string | null      // null/fehlt -> die Felder der AKTION gelten
+}
+```
+
+**Warum ein Feld an der Aktion und keine eigene Entität:** `zonenGestaltung`, `bildAusschnitt` und
+`effekte` sind aus demselben Grund Felder an der Aktion (9.8.2, 9.8.8, 9.16.1): Sie sind Gestaltung
+**einer** Aktion, werden mit ihr kopiert, gelöscht und rückgängig gemacht. Eine eigene Entität
+brauchte einen eigenen Speicher, eine eigene Referenzprüfung über alle Projekte und eine eigene
+Lösch-Kaskade – für Daten, die ohne ihre Aktion bedeutungslos sind.
+
+**Warum `aktiveVarianteId` an der Aktion und nicht am Listenelement:** AD 4.11 wörtlich: „Die
+gewählte Variante gilt für die **Aktion** an allen Stellen im Video (dieselbe Aktion sieht überall
+gleich aus, 4.10)." Ein Feld am Listenelement ließe dieselbe Aktion an zwei Stellen verschieden aussehen –
+genau das, was 4.10/4.11 ausschließen.
+
+#### 9.17.3 Auflösung: EINE Stelle
+
+`aktiveVarianteId` wird an **genau einer** Stelle aufgelöst. `loeseAktiveVariante(aktion)` liefert
+die **effektiven** Felder:
+
+```
+{ vorlagenId, effekte, bildAusschnitt, akzentfarbe }
+```
+
+- `aktiveVarianteId` fehlt oder ist `null` → die Felder der **Aktion**.
+- Sie zeigt auf eine vorhandene Variante → deren Felder; ein **fehlendes** Variantenfeld fällt auf
+  die Aktion zurück (`effekte` fehlt → `aktion.effekte`).
+
+**Warum eine Stelle:** Es gibt heute fünf Leser von `aktion.vorlagenId` – Composer-Thumbnail,
+Zeitleisten-Box, Unterbrechungs-Aufnahme, `ins-video`, `render-ausloesen`. Jeder einzelne müsste
+sonst die Variante kennen: fünf Kopien derselben Regel, die auseinanderlaufen. Dieselbe Begründung
+wie bei den Farb-Rollen („Es gibt genau eine Auflösungsstelle", 9.10.9).
+
+#### 9.17.4 Zeichnen
+
+`zeichneSegment` behält seine Signatur (`Aktion`, `Vorlage`, `Marke`, `rahmenMarke`); der Aufrufer
+übergibt die **aufgelösten** Felder. **Keine zweite Zeichenroutine, keine zweite Pixelquelle**
+(9.10.1): Vorschau, Thumbnail, Zeitleiste und Render nehmen denselben Weg und unterscheiden sich nur
+darin, **wer** die Auflösung aufruft.
+
+**Effekte:** Der Effekt-Satz einer Variante durchläuft dieselbe Normalisierung wie heute
+(`normalisiereEffekte`, 9.16.6) mit derselben Fensterbasis (`standardDauer ?? 10`).
+
+#### 9.17.5 Auswahl: ein Klick, Vorschau sofort
+
+Im Aktions-Editor steht über der Vorschau eine **Reihe von Varianten-Kacheln**: je Variante ein
+gezeichnetes Miniaturbild (derselbe Zeichenweg, 9.8.3) und der Name. **Ein** Klick setzt
+`aktiveVarianteId` im Entwurf; die Vorschau zeichnet sofort neu – derselbe Entwurf, kein IPC
+(9.8.6).
+
+- Die Reihe ist **immer sichtbar** (kein Aufklappmenü): damit ist der Wechsel **≤ 1 Klick** (AD 4.11).
+- **„Neue Variante"** übernimmt die aktuell wirksamen Felder als Ausgangspunkt und schlägt einen
+  Namen vor. Umbenennen und Löschen stehen an der Kachel.
+- Anlegen, Umbenennen, Löschen und Wechseln sind **Entwurfsänderungen** und gehen mit dem Abschluss
+  in **einem** Schreibvorgang nach `project.json` (9.8.6).
+
+#### 9.17.6 Speicherweg und Undo
+
+`project-store` (`erstelle-aktion.ts`, `bearbeite-aktion.ts`) übernimmt **beide** Felder und
+normalisiert sie:
+
+- `varianten` fehlt oder ist `[]` → das Feld **entfällt** (`undefined`), es wird nicht `null`
+  geschrieben.
+- Je Variante: `id` nicht leer und je Aktion eindeutig; `name` getrimmt und nicht leer;
+  `vorlagenId` nicht leer; `effekte` über `normalisiereEffekte`; `bildAusschnitt` und `akzentfarbe`
+  über die bestehenden Begrenzungen (9.8.8).
+- `aktiveVarianteId` muss auf eine Variante **derselben** Aktion zeigen; sonst `ungueltige_eingabe`
+  **ohne Wirkung auf die Daten**.
+
+**Warum das hier ausdrücklich steht:** `Aktion.effekte` wurde im `project-store` **verworfen**, weil
+beide Feldlisten es nicht kannten – der Typechecker schweigt bei **optionalen** Feldern (Befund
+09.11.2026, #464). Für zwei neue optionale Felder gilt dieselbe Falle: Jedes braucht einen Test
+**auf dem Speicherweg**; die Vorschau allein beweist nichts.
+
+**Undo:** Varianten liegen in `aktionen` des `Bearbeitungsstands` (9.13.1). Ein Variantenwechsel ist
+damit **ein** Schritt; Anlegen, Umbenennen und Löschen sind je **ein** Schritt.
+
+#### 9.17.7 Grenzen
+
+- **Dauer und Bildrate ändern sich nie** (AD 4.11). Die Dauer steht am Listenelement bzw. in der
+  Dauer-Kette (4.4); eine Variante hat **kein** Dauerfeld.
+- **Keine automatische Rotation** (AD 4.11): kein Zeitgeber wechselt die Variante.
+- **Varianten gelten auch für Band-Aktionen** – sie hängen an der Aktion, nicht am Ort.
+- **Keine neuen Pflichtfelder** (AD 4.11): eine Aktion ohne `varianten` bleibt vollständig gültig.
+- **Die Marke ist keine Varianten-Eigenschaft:** `markeId` bleibt ein Feld der Aktion. Eine Variante
+  trägt die **Akzentfarbe** (AD 4.11), nicht die Marke – sonst wechselte mit dem Look das Logo.
+
+#### 9.17.8 Fehlerpfade
+
+| Situation | Verhalten |
+|---|---|
+| `aktiveVarianteId` zeigt auf keine Variante der Aktion | `ungueltige_eingabe` beim Schreiben, **keine** Wirkung; beim Zeichnen gilt die Aktion (Nullzustand) |
+| `varianten` enthält doppelte `id` | `ungueltige_eingabe` beim Schreiben |
+| `name` nach Trimmen leer | `ungueltige_eingabe` beim Schreiben |
+| Variante ohne `vorlagenId` | `ungueltige_eingabe` beim Schreiben |
+| Variante zeigt auf eine **gelöschte Vorlage** | Die Löschsperre verhindert das (s. u.). Käme es doch vor, bricht `render-ausloesen` mit „verwendet eine unbekannte Vorlage" ab – **sichtbar**, nie still |
+
+**Die dritte Referenzart.** `pruefeVorlagenReferenzen` (9.12.1) kennt heute **zwei** Wege:
+`aktion.vorlagenId` und `listenelement.einblendung.bandVorlageId`. Mit Varianten kommt
+**`aktion.varianten[].vorlagenId`** hinzu. **Wer sie vergisst, hält eine benutzte Vorlage für frei
+und löscht sie** – derselbe Fehler, vor dem 9.12.1 bei der Band-Vorlage ausdrücklich warnt („Wer nur
+Aktionen prüft, hält sie fälschlich für unbenutzt"). 9.12.1 ist entsprechend auf **drei**
+Referenzarten gezogen.
+
+#### 9.17.9 Was ausdrücklich NICHT passiert
+
+- **Keine automatische Erzeugung** von Varianten (AD 4.11: „Der Nutzer legt Varianten an").
+- **Keine Rotation** im Video (AD 4.11).
+- **Keine Variante am Listenelement** (AD 4.11: die Aktion trägt sie).
+- **Kein zweiter Zeichenweg, keine zweite Auflösungsstelle** (9.10.1, 9.10.9).
+- **Kein Variantenfeld an der Marke** – sonst wechselte das Logo mit dem Look.
+
+---
+
+### 9.18 Abnahme der Leitforderung L-01
+
+**Das ist kein Modul.** 9.18 hält fest, was die Software **vorzeigen** muss, damit
+Anforderungsdokument 12.1 und 14 messbar sind; das Verfahren selbst steht im Anforderungsdokument.
+
+- **Referenzaufgabe** (AD 12.1): Projekt A mit 15 min, 5 Angeboten, 3 Band-Spots und 2 Unterbrechern;
+  Projekt B mit 10 min und 3 Angeboten. Beide rendern, beide MP4s auf denselben Stick, jede Datei für
+  sich loopbar.
+- **Zeit:** ein neues Angebot **inklusive Designarbeit** in **≤ 5 min**; danach ein Preis in
+  **≤ 1 min** **ohne Renderzeit**. Die Renderzeit wird **separat** gemessen und **nicht** angerechnet.
+- **Varianten:** mindestens drei je Aktion, Wechsel in **≤ 1 Klick** (9.17.5).
+- **Qualität:** fünf Angebote gegen fünf PowerPoint-Folien mit demselben Inhalt, Etiketten A/B, zwölf
+  Kriterien mit 0/1/2 (AD 14); Startwerte Tool ≥ 20/24, PowerPoint ≤ 14/24.
+- **Was der Bau dafür liefern muss:** Die Messung braucht **keine** eigene Funktion. Sie braucht die
+  vorhandenen: Aktion anlegen, Variante wählen, Preis ändern, rendern, exportieren. **Ein Mess-Schritt,
+  kein Bau-Auftrag.**
+- **Ehrlich offen:** Ohne PowerPoint-Baseline ist „besser" nicht belegbar (#466); ohne den Bau von
+  9.17 ist die Varianten-Zusage nicht erfüllbar. Die Abnahme steht deshalb **hinter** beiden.
+
+**Die Zusagen im Wortlaut** (die Software muss sie vorzeigen können, nicht auslegen):
+
+> „Ein Angebot **inklusive Designarbeit** (Look/Variante, Bild, Farbe, Effekt) in **≤ 5 min**" (AD 1.1)
+
+> „**Zeit:** Stoppuhr. Die Renderzeit wird separat gemessen und **nicht** auf die 1 Minute
+> angerechnet." (AD 12.1)
+
+> „12 Kriterien, je 0/1/2 (max. 24). Startwerte: Tool **≥ 20/24**, PowerPoint **≤ 14/24**; das Tool
+> gewinnt bei „Bewegung" und „Differenzierung" und verliert nicht bei „TV-Lesbarkeit" und
+> „Markentreue"." (AD 12.1)
+
+> „**Skala:** 0 = verletzt, 1 = teilweise, 2 = erfüllt. Maximal **24 Punkte**." (AD 14)
+
+---
+
 > **Stand des High-Level-Designs.** **Ausgearbeitet:** `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9).
 >
-> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**, **9.16**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
+> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**, **9.16**, **9.17**, **9.18**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
