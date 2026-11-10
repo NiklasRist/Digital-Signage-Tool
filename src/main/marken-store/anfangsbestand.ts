@@ -44,11 +44,12 @@ export function eingebauteMarke(): MarkenEintrag {
       fliesstext: { familie: 'Arimo', gewicht: 400, datei: 'Arimo-Regular.woff2', herkunft: 'gebuendelt' },
       fliesstextFett: { familie: 'Arimo', gewicht: 700, datei: 'Arimo-Bold.woff2', herkunft: 'gebuendelt' },
     },
-    // Die STOPP-Frage zum Logo ist durch geBUTEN Code beantwortet: #315 (Nachtrag,
-    // User-Entscheidung vom 23.08.) buendelt PLATZHALTER-420x120 als
-    // src/renderer/assets/marken/logo-fitnessworld24.png (Registry #315), und
-    // lese-marke.ts (#29) traeegt exakt dieses Tupel. Dunkler Balken im Asset
-    // enthalten - es braucht keine eigene Hintergrundzone (TK 9.11.1).
+    // Das Logo ist seit #467 (10.11.2026) das echte Fitnessworld24-Logo als
+    // src/renderer/assets/marken/logo-fitnessworld24.png (Registry, Seitenverhaeltnis
+    // 3.5 = 840/240); lese-marke.ts (#29) traegt exakt dieses Tupel. Das weisse
+    // Traegerfeld steckt im Asset - es braucht keine eigene Hintergrundzone (TK 9.11.1).
+    // Vorher lag hier ein 420x120-Platzhalter; das TK verlangte bis v3.58 sogar
+    // `logo: null` (9.15.1) - mit v3.59 nachgezogen.
     logo: { datei: 'logo-fitnessworld24.png', herkunft: 'gebuendelt', seitenverhaeltnis: 3.5 },
     // Die Konstante selbst (#21), nicht ihr Zahlenpaar kopiert: gleichlautend mit
     // lese-marke.ts (#29) - ein abweichendes Literal faellt im Typecheck durch.

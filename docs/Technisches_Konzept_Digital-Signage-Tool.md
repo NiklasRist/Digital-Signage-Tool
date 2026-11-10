@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v1.13 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.58 (9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.59 (9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 09.11.2026
 **Status:** In Planung
 
@@ -2101,10 +2101,11 @@ viertes Argument, damit jeder der beiden Scrim-Stopps seine eigene Farbe und Dec
 
 #### 9.10.10 Ersatz-Logo, wenn eine Marke keins hat
 
-`Marke.logo` ist seit v3.4 `| null` – bei Werbepartnern der Normalfall. **Seit v3.11 ist es der Normalfall
-beim ersten Start:** Auch die **eingebaute** Marke wird mit `logo: null` angelegt, weil in v1 **kein Logo
-mitgeliefert** wird (9.15.1). Dieser Abschnitt beschreibt damit nicht den Sonderfall, sondern das, was der
-Nutzer als erstes sieht – bis er über den Import ein echtes Logo hinterlegt (9.15.3). Ist es `null`, zeichnet
+`Marke.logo` ist seit v3.4 `| null` – bei Werbepartnern der Normalfall. **Seit v3.59 ist der Ersatz der Normalfall für jede Marke ohne eigenes Logo:** Die eingebaute Marke
+bringt das Fitnessworld24-Logo gebündelt mit (9.15.1); **jede neu angelegte** Marke startet dagegen mit
+`logo: null`, weil `erstelleMarke` das Logo bewusst nicht mitkopiert – ebenso jede Marke, deren Logo
+entfernt wurde. Dieser Abschnitt beschreibt damit nicht den Sonderfall: Wer eine Partner-Marke anlegt,
+sieht sofort den Ersatz – bis er über den Import ein echtes Logo hinterlegt (9.15.3). Ist es `null`, zeichnet
 `template-canvas` in **jeder** Zone mit `bindung: logo` einen **Ersatz**: den **Markennamen**
 (`marke.name`) auf einer Fläche in der **Akzentfarbe der Marke**. Kein leerer Bereich, und **kein**
 fremdes Logo an dieser Stelle – eine geliehene Marke wäre schlimmer als gar keine.
@@ -2209,7 +2210,7 @@ Bindung = "titel" | "beschreibung" | "preis" | "cta" | "bild" | "logo" | "slogan
 **Gemeinsame Basis der eingebauten Vorlagen**
 
 - Raster 1920×1080; Sicherheitsbereich 96/54 → **Inhaltsbox x 96–1824, y 54–1026** (9.10.5).
-- **Logo 420×120**, **oben links** (Seitenverhältnis des Assets ≈ 3,5 : 1; der dunkle Balken ist im Logo-Asset **enthalten** – es braucht keine eigene Hintergrundzone). **Beim ersten Start gibt es kein Logo-Asset:** Die eingebaute Marke startet mit `logo: null` (9.15.1), die Zone trägt dann das **Ersatz-Logo** (9.10.10). Die Fläche bleibt dieselbe; die Angaben zum Asset gelten, sobald eines importiert ist.
+- **Logo 420×120**, **oben links** (Seitenverhältnis des Assets 3,5 : 1; das **weiße Trägerfeld** ist im Logo-Asset **enthalten** – es braucht keine eigene Hintergrundzone, v3.59). Die eingebaute Marke bringt dieses Asset mit (9.15.1). Eine Marke **ohne** Logo trägt in derselben Fläche das **Ersatz-Logo** (9.10.10); die Fläche bleibt dieselbe.
 - Die Zone **`hintergrund`** (fest, dekorativ, Markenfarbe) wird **als erstes** gezeichnet. Grund: das Bild einer Aktion ist **optional** (FA-02) – ohne diese Zone würde eine Aktion ohne Motiv **schwarz** rendern statt markenkonform.
 
 **Eingebaute Vorlage „Ganzflächig"** *(ID `vollbild`; Zeichenreihenfolge = Tabellenreihenfolge. Anzeigename seit 29.10.2026 – vorher „Vollbild", was mit dem Vollbild-Knopf des Players verwechselt wurde.)*
@@ -2944,20 +2945,19 @@ lässt.
   soll das ohne Umweg möglich sein und **in allen abgeleiteten Looks wirken**; ein eingefrorenes
   Original hätte eine Kopie daneben erzeugt und das Original veralten lassen. Preis: Es gibt keinen
   garantierten Urzustand, auf den man zurücksetzen kann.
-- **Auch die EINGEBAUTE Marke startet mit `logo: null` (v3.11).** Im Repository liegt **keine gebündelte
-  Logo-Datei** – `tools/assets/logo.png` gehört zur Word-Erzeugung der Planungsdokumente und ist **kein**
-  App-Bestandteil. Die eingebaute Fitnessworld24-Marke wird deshalb **ohne** Logo angelegt; gezeichnet
-  wird das **Ersatz-Logo** (9.10.10) aus Markenname und Akzentfarbe. Ein echtes Logo kommt später über
-  `importiereMarkenDatei` und trägt dann `herkunft: "importiert"` (9.15.3). Folge für den Stempel:
-  `herkunftJeFeld.logo` ist **`"keins"`** (9.11.2).
-  **Folge, die man kennen muss: `logo.herkunft` kann in v1 praktisch nur `"importiert"` sein.** Der Wert
-  `"gebuendelt"` bleibt im Typ – für **Schriften** ist er der Regelfall (die vier OFL-Schriften werden
-  mitgeliefert, 9.10.4) –, hat aber für **Logos** in v1 **keinen Erzeuger**. Wer einen Zweig „gebündeltes
-  Logo" baut, baut toten Code.
-  *Der Nebeneffekt ist eine Verbesserung:* Der Zweig `logo === null` war bisher **strukturell tot**. Hätte
-  die eingebaute Marke ein Logo mitgebracht und jede abgeleitete es geerbt, wäre der Fall nie eingetreten
-  – der ganze in 9.10.10 spezifizierte Ersatz-Logo-Pfad wäre gebaut und **nie ausgeführt** worden. Jetzt
-  ist er der **Normalfall beim ersten Start**.
+- **Die EINGEBAUTE Marke bringt das Fitnessworld24-Logo gebündelt mit (v3.59).** Die Datei liegt unter
+  `src/renderer/assets/marken/logo-fitnessworld24.png` (840 × 240, Verhältnis 3,5) und wird über
+  `logo-registry.ts` geladen; `logo.herkunft` ist `"gebuendelt"`, `herkunftJeFeld.logo` **`"eigen"`**.
+  Das **weiße Trägerfeld** ist Teil des **Assets**, nicht einer Zone – dadurch bleiben die neun
+  eingebauten Vorlagen markenneutral, und einer zweiten Marke wird kein fremdes Feld aufgezwungen
+  (9.11.1). Entscheidung 10.11.2026, #467.
+  **Überholt (v3.11):** Bis v3.58 stand hier „Auch die EINGEBAUTE Marke startet mit `logo: null` … ein
+  Logo wird nicht mitgeliefert … wer einen Zweig ‚gebündeltes Logo' baut, baut toten Code." Diese Regel
+  ist mit **v3.59 aufgehoben**: Der Zweig ist nicht tot, er ist der Regelfall der eingebauten Marke.
+  **Was unverändert gilt:** Eine **neu angelegte** Marke startet weiterhin mit `logo: null` –
+  `erstelleMarke` kopiert das Logo bewusst nicht mit, sonst trüge jede Partner-Marke ab Sekunde eins das
+  Fitnessworld24-Logo. Damit ist der in **9.10.10** beschriebene Ersatz-Logo-Pfad nicht tot, sondern der
+  Normalfall für jede Marke ohne eigenes Logo; `herkunftJeFeld.logo` ist dort **`"keins"`** (9.11.2).
 - **Eine neu angelegte EIGENSTÄNDIGE Marke bekommt `logo: null` (v3.10).** `erstelleMarke` übernimmt
   die Wertfelder der eingebauten Marke als tiefe Kopie – Farben, Schriften, Abstände, Radien,
   Schatten, Slogan –, **das Logo aber nicht**. *Begründung:* Sonst trüge jede Partner-Marke ab
@@ -3035,10 +3035,9 @@ Bis v3.3 verwiesen `Schrift.datei` und `logo.datei` auf **zur Bauzeit gebündelt
 angelegte Marke hätte dort **keine Datei, auf die sie zeigen könnte**. Deshalb trägt jede Datei-Referenz
 jetzt eine **`herkunft`** (9.11.2).
 
-- **Zwei Herkünfte, eine Auflösung.** `gebuendelt` löst auf den Bundle-Pfad auf – in v1 sind das **die
-  vier OFL-Schriften und sonst nichts**: Ein **Logo wird nicht mitgeliefert**, auch die eingebaute Marke
-  startet mit `logo: null` (9.15.1). `"gebuendelt"` bleibt am Typ `Herkunft` (9.11.2), hat für **Logos**
-  in v1 aber **keinen Erzeuger**; ein Logo trägt praktisch immer `"importiert"`. Dieses löst auf
+- **Zwei Herkünfte, eine Auflösung.** `gebuendelt` löst auf den Bundle-Pfad auf – das sind die
+  vier OFL-Schriften und **genau ein** Logo: das der eingebauten Marke (9.15.1, v3.59). Jedes weitere Logo
+  trägt `"importiert"` (9.11.2); dieses löst auf
   `marken-assets/<markeId>/` auf. Der Renderer bekommt
   importierte Dateien über ein **Lese-Protokoll** wie die Projektmedien (`media://`, 9.5.7) und **nie**
   über absolute Pfade. **Genau eine** Stelle löst auf – nicht jede Zonen-Sorte einzeln.
@@ -3304,7 +3303,7 @@ Erzeugt wird der Plan von `bildplan()` in `src/shared/bildplan.ts` – **rein**,
 >
 > 3. **`erstelleProjekt` bekommt die Marken-Kennung als PARAMETER – der Handler holt sie** (9.5.2, mitgezogen 9.11.3, 9.15.4). *Anlass:* `Project.standardMarkeId` ist ein **Pflichtfeld ohne Befüller** – `erstelleProjekt` baut das initiale `Project` und weiß von keiner Marke. *Warum der naheliegende Ausweg verboten ist:* Der `marken-store` liest **bereits** aus dem `project-store` – `pruefeMarkenReferenzen` geht über `listeProjekte` durch die `project.json` **aller** Projekte. Fragte `erstelleProjekt` seinerseits beim `marken-store` nach, entstünde ein **Ringschluss zwischen zwei Main-Modulen**: weder einzeln prüfbar noch einzeln austauschbar, und die erste geänderte Ladereihenfolge bricht sie. Zusammengesetzt wird deshalb **eine Schicht höher, im Handler** des Kanals `project:erstelleProjekt`; er holt die eingebaute Marke über `listeMarken()` (den Eintrag mit `eingebaut: true`) und reicht die `id` weiter. **Für den Renderer ändert sich nichts** – er ruft weiterhin ohne Marken-Angabe auf. Bindend festgehalten ist die Richtung: **`marken-store` → `project-store`, nie umgekehrt.** Aus demselben Grund prüft auch `setzeStandardMarke` die `markeId` **nicht** selbst – das tut ihr Handler.
 >
-> 4. **Die eingebaute Marke startet mit `logo: null`** (9.15.1, mitgezogen 9.10.10, 9.11.1, 9.11.2, 9.15.3). *Anlass:* Im Repository gibt es **keine gebündelte Logo-Datei** – `tools/assets/logo.png` gehört zur Word-Erzeugung der Planungsdokumente und ist kein App-Bestandteil. Gezeichnet wird das **Ersatz-Logo** (9.10.10) aus Markenname und Akzentfarbe; ein echtes Logo kommt später über den **Import** und trägt dann `herkunft: "importiert"`. **Festgehalten, weil es nicht offensichtlich ist:** In v1 wird **kein Logo gebündelt ausgeliefert**, `logo.herkunft` kann also praktisch nur `"importiert"` sein. Der Wert `"gebuendelt"` bleibt am Typ – für **Schriften** ist er der Regelfall (vier OFL-Schriften) –, hat für **Logos** aber **keinen Erzeuger**; wer dort einen Zweig baut, baut toten Code. *Der Nebeneffekt ist eine Verbesserung:* Der Zweig `logo === null` war bisher **strukturell tot** – hätte die eingebaute Marke ein Logo mitgebracht und jede abgeleitete es geerbt, wäre der Fall nie eingetreten und der ganze in 9.10.10 spezifizierte Pfad gebaut und **nie ausgeführt** worden. Jetzt ist er der **Normalfall beim ersten Start**.
+> 4. **Die eingebaute Marke startet mit `logo: null`** *(durch **v3.59** überholt – die eingebaute Marke bringt das Fitnessworld24-Logo gebündelt mit, s. 9.15.1)* (9.15.1, mitgezogen 9.10.10, 9.11.1, 9.11.2, 9.15.3). *Anlass:* Im Repository gibt es **keine gebündelte Logo-Datei** – `tools/assets/logo.png` gehört zur Word-Erzeugung der Planungsdokumente und ist kein App-Bestandteil. Gezeichnet wird das **Ersatz-Logo** (9.10.10) aus Markenname und Akzentfarbe; ein echtes Logo kommt später über den **Import** und trägt dann `herkunft: "importiert"`. **Festgehalten, weil es nicht offensichtlich ist:** In v1 wird **kein Logo gebündelt ausgeliefert**, `logo.herkunft` kann also praktisch nur `"importiert"` sein. Der Wert `"gebuendelt"` bleibt am Typ – für **Schriften** ist er der Regelfall (vier OFL-Schriften) –, hat für **Logos** aber **keinen Erzeuger**; wer dort einen Zweig baut, baut toten Code. *Der Nebeneffekt ist eine Verbesserung:* Der Zweig `logo === null` war bisher **strukturell tot** – hätte die eingebaute Marke ein Logo mitgebracht und jede abgeleitete es geerbt, wäre der Fall nie eingetreten und der ganze in 9.10.10 spezifizierte Pfad gebaut und **nie ausgeführt** worden. Jetzt ist er der **Normalfall beim ersten Start**.
 >
 > 5. **Das Beenden-Verhalten für `marken.json` ist ausgeschrieben** (9.15.1). 9.15.1 sagte zu den Schreib-Invarianten nur, sie seien „dieselben" wie bei `project.json` – für den **Fehlschlag des Sofort-Flushes beim Beenden** war das zu wenig, und ein Issue führte die Frage bis heute als offen. Es gilt **dasselbe** Verhalten wie in 9.5.4, in derselben Reihenfolge: App schließt nicht; Fehler mit ursachenbezogener Handlungsempfehlung; Knopf „Erneut versuchen"; daneben der benannte Ausweg „Trotzdem schließen und Änderungen verwerfen". **Quelle bleibt 9.5.4** – hier steht kein zweiter Vertrag, nur ein zweiter Fundort, damit die beiden nicht auseinanderlaufen können. **An 9.5.4 ist nichts geändert.**
 >
