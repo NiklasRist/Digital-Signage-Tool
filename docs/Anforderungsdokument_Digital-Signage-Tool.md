@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 09.11.2026
-**Version:** 1.14 (4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
+**Datum:** 10.11.2026
+**Version:** 2.0 (10.11.2026: **Leitforderung L-01** – der Output muss schneller, einfacher und qualitativ besser sein als eine gute PowerPoint; ein Angebot inklusive Designarbeit ≤ 5 min, eine Änderung ≤ 1 min ohne Renderzeit; **FA-26 Varianten** (manuell, mindestens drei je Aktion); Heuristik-Abnahme. Vorher, v1.14: 4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
 **Status:** In Abstimmung
 
 ---
@@ -16,6 +16,31 @@ Im Rahmen des Berufspraktikums bei der Baller Gruppe wird ein Digital-Signage-To
 Der Kern des Werkzeugs ist eine intern genutzte Anwendung, mit der Mitarbeitende verschiedene Medieninhalte (Videos sowie Produkte/Aktionen) strukturiert pflegen, in eine gewünschte Reihenfolge bringen und daraus **ein einziges, fertiges Ausgabevideo** erzeugen. Dieses Video wird auf einem USB-Speicher abgelegt und am Studio-Fernseher als Endlosschleife wiedergegeben.
 
 Im Fokus stehen eine intuitive Bedienbarkeit, eine stabile Systemstruktur sowie eine flexible und visuell ansprechende Ausspielung der Inhalte im Studioalltag.
+
+### 1.1 Leitforderung L-01: schneller, einfacher und besser als eine gute PowerPoint (10.11.2026)
+
+**Die Messlatte ist eine gute PowerPoint mit Masterfolie** – nicht eine leere Präsentation. Mit einer
+guten Masterfolie ist ein Angebot in wenigen Minuten erstellt. Das Tool muss bei der Erstellung
+**mindestens so schnell** sein und den Unterschied über **Varianten, Effekte und Zwischenwerbung**
+gewinnen – Fähigkeiten, die eine PowerPoint nicht hat.
+
+| Teil | Zusage | Messung |
+|---|---|---|
+| **Erstellung** | Ein Angebot **inklusive Designarbeit** (Look/Variante, Bild, Farbe, Effekt) in **≤ 5 min** | Stoppuhr, ohne fremde Hilfe |
+| **Änderung** | Preis, Bild oder Text ändern in **≤ 1 min**, **ohne Renderzeit** | Stoppuhr ab Öffnen bis Speichern |
+| **Varianten** | **Manuell**, mindestens **3 Varianten** je Aktion, Wechsel in **≤ 1 Klick** | Zählung, Vorschau |
+| **Zwischenwerbung** | **3 Band-Spots + 2 Unterbrecher in 15 min**, ein MP4, keine Naht | Beleg am Fenster/ffprobe |
+| **Länge** | **15–30 min pro Projekt**; der Stick darf **mehrere MP4s** enthalten | Dauer je Datei |
+| **Qualität** | Besser als die PowerPoint-Referenz nach **12 Heuristiken** | Bogen in Abschnitt 14 |
+
+**Ein Projekt – ein Video bleibt.** FA-01/4.9 wird durch L-01 nicht geändert: Ein Projekt enthält
+genau ein Video und ergibt eine durchgehende MP4. Die mehreren MP4s auf dem USB-Stick entstehen aus
+**mehreren Projekten bzw. Ausgaben** (FA-22); jede Datei ist für sich loopbar. Sie werden nicht zu
+einem Projekt zusammengefasst.
+
+**Warum diese Leitforderung über den FA steht:** Die bisherigen FA prüfen, **ob** etwas existiert.
+L-01 prüft, **ob das Ergebnis die Arbeit besser macht** als das Werkzeug, das ersetzt wird. Sie ist
+die oberste Abnahme; die FA-01…FA-26 bleiben die funktionalen Randbedingungen.
 
 ---
 
@@ -99,6 +124,7 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-23 | Marken-Bestand | Die Anwendung führt **mehrere Marken** in einem **app-weiten, projektunabhängigen** Bestand. Ein Projekt darf mehrere Marken verwenden; eine **Aktion** trägt **genau eine**. Eine Marke kann von einer anderen **abgeleitet** sein und einzelne Werte überschreiben (Saison- oder Kampagnen-Look). Die Fitnessworld24-Marke ist immer vorhanden und **nicht löschbar**. Jedes Projekt führt zusätzlich eine **Standardmarke**, die den Rahmen färbt (Band-Hintergrund, Restflächen; s. 4.8); sie ist in der **Projektverwaltung wechselbar**. Eine Marke lässt sich nur löschen, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als Standardmarke** sie mehr nutzt. | Muss |
 | FA-24 | Marken-Editor | Marken lassen sich in der Anwendung **anlegen, bearbeiten und ableiten**: Farben, Slogan, Sicherheitsabstände sowie **Import** von Logo und Schriftdateien. Bei zu geringem Kontrast zwischen Akzentfläche und darauf liegendem Text **warnt** die Anwendung sichtbar, verhindert die Wahl aber nicht. | Muss |
 | FA-25 | Effekte | Ein Ganzbild-Segment (1920 × 1080) kann **bewegt** wirken: **zehn einzeln schaltbare** Effekte – Ken Burns, Zoom-Atmen, Drift, Parallax, Text-Einblendung, Preis-Pop, Glanz-Sweep, hochzählender Preis, Bild-Reveal, Puls – je mit **Fenster** und **Stärke**, frei kombinierbar. Effekte ändern **nie** die Anzeigedauer und **nie** die Bildrate; zwischen Segmenten bleibt es beim **harten Schnitt**; das **Band bleibt still**. Die Vorschau zeigt **dieselbe** Bewegung wie die Ausgabe. Ohne Angaben bleibt das Segment das Standbild von heute. Details: 4.10. | Soll |
+| FA-26 | Varianten | Eine Aktion kann mehrere **gespeicherte Varianten** tragen. Eine Variante ist eine benannte Kombination aus Vorlage/Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe. Der Nutzer wählt die Variante **manuell**; mindestens **3** je Aktion, Wechsel in **≤ 1 Klick**, die Vorschau zeigt die gewählte Variante sofort. Details: 4.11. | Muss |
 
 **Ein Bild ist kein Listenelement (ab v1.5).** Eine Wiedergabeliste besteht aus genau zwei Arten von
 Elementen: **Videos** und **Aktions-Segmente**. Ein fertig gestaltetes Bild von außen direkt in die Liste
@@ -424,6 +450,25 @@ Segmentdauer.
 - **Effekte sind Gestaltung, kein Inhalt.** Es entstehen keine neuen Pflichtfelder: ein Effekt ohne
   passendes Feld (Preis-Pop ohne Preis, Bild-Reveal ohne Bild) läuft einfach nicht.
 
+### 4.11 Varianten: eine Aktion, mehrere Looks (FA-26)
+
+**Warum:** Eine gute Masterfolie ist schnell; der Unterschied entsteht durch Abwechslung. Eine
+Aktion soll mehrere Looks tragen können, ohne dass der Nutzer sie mehrfach anlegen muss.
+
+**Eine Variante** ist eine benannte, gespeicherte Kombination aus:
+
+- Vorlage/Look,
+- Effekt-Satz (4.10),
+- optional Bildausschnitt (Zoom/Versatz) und Akzentfarbe.
+
+**Bedienung:** Der Nutzer legt Varianten an, benennt sie und wählt sie **manuell** aus. Es gibt
+**keine automatische Rotation**. Die gewählte Variante gilt für die **Aktion** an allen Stellen im
+Video (dieselbe Aktion sieht überall gleich aus, 4.10). Mindestens **3 Varianten** je Aktion; der
+Wechsel erfolgt in **≤ 1 Klick**, die Vorschau aktualisiert sich sofort.
+
+**Grenzen:** Eine Variante ändert **nie** die Dauer oder die Bildrate. Sie ist Gestaltung, kein
+Inhalt: Es entstehen keine neuen Pflichtfelder. Fehlt eine Variante, gilt die Aktion wie bisher.
+
 ---
 
 ## 5. Nicht-funktionale Anforderungen
@@ -529,6 +574,32 @@ Die erste Version gilt als erfolgreich, wenn:
 10. Eine Aktion kann eine andere als die eingebaute Marke tragen; das gerenderte Video zeigt deren Logo und Farben, während Band-Hintergrund und Restflächen in der Projekt-Standardmarke bleiben; diese Standardmarke lässt sich in der Projektverwaltung wechseln (FA-23, FA-24, Abschnitt 4.8).
 11. Ein Ganzbild-Segment kann **bewegt** wirken, ohne dass sich Dauer oder Bildrate ändern: die zehn Effekte sind **einzeln** schaltbar und frei kombinierbar, das Band bleibt still, und die Vorschau zeigt **dieselbe** Bewegung wie die Ausgabe (FA-25, Abschnitt 4.10).
 
+### 12.1 Abnahme der Leitforderung L-01 (10.11.2026)
+
+Die erste Version gilt **erst** als erfolgreich, wenn zusätzlich zu den Kriterien 1–11 die
+Leitforderung L-01 (1.1) erfüllt ist.
+
+**Referenzaufgabe:**
+
+- **Projekt A:** 15-min-Video, 5 Angebote, 3 Band-Spots, 2 Unterbrecher.
+- **Projekt B:** 10-min-Video, 3 Angebote.
+- Beide rendern, beide MP4s auf denselben USB-Stick; jede Datei ist für sich loopbar.
+- In Projekt A: ein neues Angebot **inklusive Designarbeit** in **≤ 5 min** anlegen; danach einen
+  Preis in **≤ 1 min** ändern (ohne Renderzeit).
+
+**Zeit:** Stoppuhr. Die Renderzeit wird separat gemessen und **nicht** auf die 1 Minute angerechnet.
+
+**Qualität:** 5 Angebote aus Projekt A gegen 5 PowerPoint-Folien mit demselben Inhalt. Die Etiketten
+sind A/B, ohne zu sagen, welches vom Tool ist. Bewertung durch Niklas; Familie und Freunde können
+denselben Bogen ausfüllen. Die Bögen werden **einzeln** berichtet, nicht zu einem Durchschnitt
+verschmolzen. 12 Kriterien, je 0/1/2 (max. 24). Startwerte: Tool **≥ 20/24**, PowerPoint **≤ 14/24**;
+das Tool gewinnt bei „Bewegung" und „Differenzierung" und verliert nicht bei „TV-Lesbarkeit" und
+„Markentreue". Der Bogen steht in Abschnitt 14.
+
+**Die PowerPoint-Referenz** wird einmal echt gebaut und gestoppt: gute Masterfolie, dieselben 5
+Angebote, dieselben Bilder, derselbe Export. Ohne diese Baseline ist „schneller und besser" nicht
+belegbar.
+
 ---
 
 ## 13. Glossar
@@ -542,3 +613,32 @@ Die erste Version gilt als erfolgreich, wenn:
 - **Arbeitskopie:** Bearbeitungsstand einer Vorlage. Wird automatisch gesichert, verändert die genutzte Vorlage aber erst beim expliziten Speichern (4.6).
 - **Auftrag / Auftrags-Queue:** Ein länger laufender oder dateiverändernder Vorgang (Import, Löschen, Render, Export) wird als *Auftrag* in einer *Warteschlange* (Queue) geführt. Aufträge werden nacheinander abgearbeitet und sind für den Nutzer sichtbar (laufend, anstehend, fehlgeschlagen).
 - **Effekt:** Eine **Bewegung innerhalb** eines Aktions-Segments (z. B. Ken Burns, Text-Einblendung), die nur die Darstellung betrifft – nie die Dauer. Effekte sind einzeln schaltbar und an die **Aktion** gebunden, nicht an ihre Stelle im Video (4.10).
+- **Leitforderung L-01:** Die oberste Produktzusage: Der Output ist **schneller, einfacher und qualitativ besser** als eine gute PowerPoint. Sie steht über den FA und wird in 1.1 und 12.1 gemessen.
+- **Designarbeit:** Auswahl und Anpassung von Look/Variante, Bild, Farbe und Effekt – nicht nur das Tippen von Text. Sie ist in der 5-Minuten-Zusage von L-01 enthalten.
+- **Variante:** Eine benannte, gespeicherte Kombination aus Vorlage/Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe. Der Nutzer wählt sie manuell je Aktion (4.11, FA-26).
+
+---
+
+## 14. Heuristik-Bogen L-01
+
+**Skala:** 0 = verletzt, 1 = teilweise, 2 = erfüllt. Maximal **24 Punkte**. Bewertet werden **5
+Angebote** aus Projekt A gegen **5 PowerPoint-Folien** mit demselben Inhalt; die Etiketten sind A/B,
+ohne zu sagen, welches vom Tool ist.
+
+| Block | Kriterium | Beobachtungsfrage |
+|---|---|---|
+| Design | **Fokus in 3 s** | Ist in den ersten 3 Sekunden klar, was beworben wird? |
+| Design | **Preis-Hierarchie** | Ist der Preis der stärkste visuelle Anker – oder bewusst nicht? |
+| Design | **TV-Lesbarkeit** | Aus 3–5 m lesbar: Größe, Kontrast, Sicherheitsabstand? |
+| Design | **Markentreue** | Logo, Farben und Typografie der Marke korrekt und unverfälscht? |
+| Design | **Konsistenz** | Gleiches Raster und gleiche Logo-Position über alle Angebote? |
+| Design | **Komposition** | Ausrichtung, Abstände und Weißraum – oder wirkt es voll/chaotisch? |
+| Design | **Bewegung mit Zweck** | Führt die Bewegung den Blick, statt dauerhaft unruhig zu sein? |
+| Design | **Kontrast** | Text auf Fläche mindestens 4,5:1? |
+| Marketing | **Wertversprechen** | Ist der Nutzen in einem Satz erkennbar? |
+| Marketing | **Call to Action** | Gibt es einen klaren nächsten Schritt? |
+| Marketing | **Zielgruppen-Fit** | Passen Bild und Sprache zu Fitnessworld24? |
+| Marketing | **Differenzierung / Wiedererkennung** | Wirkt es wie ein Spot und nicht wie eine Folie; bleiben Marke und Angebot im Kopf? |
+
+**Rotation (separat, nicht im Bogen):** Die 3 Band-Spots wiederholen sich in 15 Minuten nicht
+unmittelbar; die Reihenfolge ist erkennbar gemischt.
