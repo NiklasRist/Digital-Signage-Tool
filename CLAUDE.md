@@ -11,7 +11,23 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (10.11.2026, sechsundfünfzigste Sitzung: Leitforderung L-01 — das Produktversprechen)
+## STAND HEUTE (11.11.2026, siebenundfünfzigste Sitzung: die Messlatte wird genommen, nicht gebaut)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-11-referenzlauf.md`](docs/agents/uebergabe-2026-11-11-referenzlauf.md).**
+
+- **KORREKTUR (Niklas, 11.11.):** Die PowerPoint-Baseline wird **genommen, nicht gebaut**. *„nimm gute powerpoints als vorlage weil das gilt es zu übertreffen"*. Referenz sind **zwei** frei verfügbare, **markenfremde** Decks: PresentationGO **„Fitness Studio"** und SlidesCarnival **„Salerio"**. Markenfremdheit ist **gewollt** („das soll markenunabhängig sein"); „Markentreue" heißt dort „eigene Identität durchgehalten".
+- **AD v2.1 / TK v3.61** (`2e6979f`): AD 12.1 sagte wörtlich „wird einmal echt **gebaut**" — das widersprach #466. Umgeschrieben; die Startzahl „PowerPoint ≤ 14/24" ist **vorläufig** und wird aus der ersten Messung **abgeleitet, nicht verteidigt** (gute Decks erreichen 17–20/24).
+- **AD v2.2** (`613c03b`): **FA-27** Produktfoto-Abruf + 4.12. Niklas: *„ein wichtiges feature das funktioniert wenn es internet gibt"* — **NFA-06 bleibt Muss** und bekommt genau **eine** benannte Ausnahme. Issue **#469** schreibt es aus (Abruf im **Main**, als **Auftrag über `reiheEin`**).
+- **#467 gebaut** (`6893b53`, TK **v3.59**): Das gebündelte Logo war ein **503-Byte-Platzhalter**, obwohl TK 9.15.1 (v3.11) wörtlich sagt, es werde **kein Logo mitgeliefert** und der Zweig „gebündelt" sei toter Code. **Nur `anfangsbestand.ts` wich ab** (`erstelle-marke.ts` war korrekt). Jetzt: echtes Logo, weißes Trägerfeld, 840 × 240, Verhältnis **unverändert 3,5** — keine Zone, keine Vorlage, kein Test angefasst. **Fensterbeleg:** weiß 82,2 % / orange 3,2 % gegen Platzhalter 0 % / 86,2 % schwarz.
+- **#468 gebaut** (`06e6eab`): FA-26 fehlte in der Treiber-Matrix → Gate war seit AD v2.0 rot (vorbestehend, per `git stash`-Probe belegt). Die Zählung im Abschlussblock war **schon vorher falsch** (sagte 9 teilweise bei 10 Zeilen); neu gezählt: **12 gemessen, 10 teilweise, 1 Lücke, 3 manuell; 16 Muss, 10 Soll**. Gate wieder **5741/5741**.
+- **#465 gebaut** (`9615d1d`, TK **v3.60**): **9.17 Varianten** (FA-26) + 9.18 Abnahme. Drei der fünf offenen Fragen beantwortete die AD selbst. Auslegung offen benannt: „mindestens 3 je Aktion" = **Fähigkeitszusage**, keine Vorbelegung. **Befund:** die Vorlagen-Löschsperre kennt zwei Referenzarten und warnt vor der vergessenen dritten — `varianten[].vorlagenId` ist sie; 9.12.1 auf **drei** gezogen.
+- **Drei Zitatfehler** in TK 9.17 gefunden und behoben (eine Paraphrase war als „AD 4.11 wörtlich" ausgegeben). Danach **9 von 9** Zitaten per Skript geprüft.
+- **Material für den Referenzlauf liegt bereit** (`17e0038`, `21c4115`): `docs/artikel/` mit acht Fotos und **`preise.md`** (Preis je Zeile mit Quelle), dazu `docs/artikel/referenzangebote/` mit den **fünf Angeboten** (Texte, Preise, Bilder). Spanne 0–19,95 € ist Absicht. **Zwei Artikel der alten Liste existieren nicht mehr** im Best-Body-Shop.
+- **NICHT GEBAUT:** Projekt A/B. Aktionen in die Wiedergabeliste zu legen ist **Renderer-Logik ohne IPC-Kanal** — ein Skript würde Drag-and-drop nachspielen, und dann müsste die 5-Minuten-Zusage meine Klickroutine messen, nicht einen Menschen. Der Aufbau gehört in den Referenzlauf.
+- **10 Commits** vor `origin/main`, Arbeitsbaum sauber, **nicht gepusht** — Push nur auf Anweisung. Gate: Unit 5741/5741, Typecheck 0, Lint 0, Build 0.
+- **Offen:** #469 (TK v3.62), #466 (Referenzlauf), #458 (überholt); 71 Dependabot-Findings; `einzel-instanz` (#289) flaky.
+
+## STAND HEUTE (10.11.2026, sechsundfünfzigste Sitzung: Leitforderung L-01 — das Produktversprechen) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-10-leitforderung.md`](docs/agents/uebergabe-2026-11-10-leitforderung.md).**
 
