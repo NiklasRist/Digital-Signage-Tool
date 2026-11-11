@@ -4,14 +4,15 @@
 > (AD 1.1/12.1/14). Sie belegt nur, welche **FA** der Treiber am echten Fenster misst.
 > L-01 wird in **#466** gemessen; die technische Umsetzung von FA-26 steht in **#465**.
 
-**Stand:** 10.11.2026. Neu darin: **FA-26** als eigene Zeile mit Status `Luecke` (AD v2.0). Die
-Zaehlung im Abschlussblock ist an diesem Tag **neu gezaehlt** worden - sie stand vorher auf
+**Stand:** 11.11.2026. Neu darin: **FA-27** als eigene Zeile mit Status `Luecke` (AD v2.2).
+Am 10.11. kam **FA-26** hinzu (AD v2.0). Die
+Zaehlung im Abschlussblock ist an diesen Tagen **neu gezaehlt** worden - sie stand vorher auf
 „9 x teilweise" und „4 teilweise" bei den Soll, waehrend die Tabelle 10 bzw. 5 Zeilen trug.
 Letzte Messung am Fenster: Lauf vom **09.11.2026** - neu darin sind
 **4s** (Effekte, FA-25) und der Undo/Redo-Teil in **4n** (Vorlagen-Editor, FA-21); die
 uebrigen Messungen stammen aus den Laeufen vom 22.10., 28.10. und den Nachlaeufen bis 09.11.
 **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
-**Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-26),
+**Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-27),
 `scripts/durchlauf.mjs` (Treiber, echter Fensterlauf), `docs/agents/q4-test-audit.md` (Q4-3).
 
 ---
@@ -74,15 +75,17 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-24 | Marken anlegen, bearbeiten, ableiten, Kontrastwarnung (Muss) | 4m, 4m2 | **4m:** Marke ueber die echte Oberflaeche **anlegen/oeffnen**, **Akzentfarbe frei** setzen (Wert im Bestand V2), **Kontrast-Warnung** am Grenzwert ("4.13:1 … mindestens 4.50:1") **ohne Sperre**, Warnung weg bei ausreichendem Kontrast, Felder zeigen die **neu geoeffnete** Marke, **Ableiten** mit `abgeleitet` und Herkunftszeilen. **4m2:** **alle dreizehn Farbrollen** schreiben (13/13 im Bestand), **Slogan** (Text + Schalter) und **Sicherheitsabstand** (80/40) schreiben, **Wachsens-Hinweis** vor dem Speichern, **Bearbeiten einer abgeleiteten Marke** (eigen -> "Eigener Wert" -> Vererbung wiederherstellen -> geerbt), **Import-Pipeline** fuer Schrift und Logo mit echten Dateien (`herkunft: importiert`, Anzeige "(importiert)") und **Logo entfernen**. **MANUELL bleibt nur der native Dateidialog** (Klick auf "Eigene Schrift/Logo waehlen"), wie FA-09/Export; die Pipeline danach ist gemessen. **Live-Vorschau** (TK 9.14.1/9.15.2) ist seit 22.10.2026 montiert und wird in **4m** mitgemessen (B11). **Logo entfernen** ist seit #440 entschieden und gemessen (B12). **Seit 22.10.2026.** | gemessen |
 | FA-25 | Effekte: zehn einzeln schaltbare Bewegungen je Ganzbild-Segment (Soll) | 4s | **4s (09.11.2026):** Ueber die echte Oberflaeche eine neue Aktion mit „Preis zählt" (Preis 199) angelegt, als Segment an die Abspielmarke (Frame 30) gelegt und **zweimal** gerendert. Mit und ohne Effekt **je 2100 Bilder / 70,022 s** - die Dauer aendert sich nicht. Die Preiszone zeigt in Bild 30 vs. 60 mit Effekt **2109 abweichende Bytes**, ohne Effekt **1 Byte** (Kodierrauschen): der Effekt steckt im Video, und die Gegenprobe traegt. Der Schritt belegt zugleich, dass `Aktion.effekte` den Speicherweg uebersteht (Befund 09.11.2026: der `project-store` verwarf das Feld - behoben). | gemessen |
 | FA-26 | Varianten: benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewaehlt, >= 3 je Aktion, Wechsel <= 1 Klick (Muss) | - | Kein Treiber-Schritt. FA-26 ist nicht gebaut; die Entscheidung (Datenmodell, Auswahl, Speicherweg, Undo, Migration) steht in #465, die Abnahme der Leitforderung in #466. | Luecke |
+| FA-27 | Produktfoto zu einer Produkt-URL abrufen, Nutzer waehlt aus; optional, ohne Internet entfaellt nur dieser Weg (Soll) | - | Kein Treiber-Schritt. FA-27 ist nicht gebaut; die Umsetzung steht in #469 (TK v3.62, Abruf im Main als Auftrag ueber `reiheEin`). NFA-06 bleibt Muss mit genau EINER benannten Ausnahme. | Luecke |
 
-**Zaehlung (10.11.2026 neu gezaehlt):** 12 x gemessen (FA-01, FA-03, FA-05, FA-08, FA-17,
-FA-18, FA-19, FA-21, FA-22, FA-23, FA-24, FA-25), **10 x teilweise**, **1 x Luecke (FA-26)**,
-0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
+**Zaehlung (11.11.2026 neu gezaehlt):** 12 x gemessen (FA-01, FA-03, FA-05, FA-08, FA-17,
+FA-18, FA-19, FA-21, FA-22, FA-23, FA-24, FA-25), **10 x teilweise**, **2 x Luecke (FA-26,
+FA-27)**, 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
 
-Aufgeteilt nach Prioritaet (AD Abschnitt 4): **16 Muss**, 10 Soll.
+Aufgeteilt nach Prioritaet (AD Abschnitt 4): **16 Muss**, 11 Soll.
 - **Muss:** 9 gemessen (FA-01, FA-03, FA-05, FA-08, FA-17, FA-21, FA-22, FA-23, FA-24),
   5 teilweise, **1 Luecke (FA-26)**, 1 manuell (FA-09).
-- **Soll:** 3 gemessen (FA-18, FA-19, FA-25), **5 teilweise**, 0 Luecke, 2 manuell (FA-11/12).
+- **Soll:** 3 gemessen (FA-18, FA-19, FA-25), **5 teilweise**, **1 Luecke (FA-27)**,
+  2 manuell (FA-11/12).
 
 Damit sind **9 von 16 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-01,
 FA-03, FA-05, FA-08, FA-17, FA-21, FA-22, FA-23, FA-24). FA-16/17/18 hatten beim Aufstellen der Matrix **keine Oberflaeche** - das ist mit
@@ -335,6 +338,7 @@ Reihenfolge nach MoSCoW: **Muss** zuerst. "Treiber" heisst: neuer oder erweitert
 | 7 | FA-08 | "Eine durchgehende Datei" inhaltlich | Treiber: nach dem Render die erzeugte Datei mit `ffprobe` messen (Dauer gegen Listensumme, genau eine Datei). Naeher an der Anforderung als "Datei erscheint in der Liste". |
 | 8 | FA-06/14 | Standarddauer-Kette, Grenzen 10-45 s, Verlaengern | Treiber: Projekt-Standard setzen, Aktion ohne eigene Dauer platzieren -> Startwert; Grenze ziehen -> 10/45 s; Video-Trim gegen Quelllaenge. |
 | 9 | FA-26 | Varianten (Muss, AD 4.11): >= 3 benannte Varianten je Aktion, manuell gewaehlt, Wechsel <= 1 Klick | **Produkt zuerst** (#465 entscheidet Datenmodell, Auswahl, Speicherweg, Undo, Migration); danach ein Treiber-Schritt, der je Aktion drei Varianten anlegt, umschaltet und den Wechsel im `project.json` liest. **Heute kein Schritt - deshalb `Luecke`.** |
+| 10 | FA-27 | Produktfoto zu einer Produkt-URL abrufen (Soll, AD 4.12); optional, ohne Internet entfaellt nur dieser Weg | **Produkt zuerst** (#469, TK v3.62: Abruf im Main, als Auftrag ueber `reiheEin`); danach ein Treiber-Schritt, der einen Abruf ausloest, die Auswahl im Dialog trifft und das uebernommene Asset im Bestand liest. **Heute kein Schritt - deshalb `Luecke`.** |
 
 **Nicht als Treiber-Szenario sinnvoll:** FA-09 (nativer Zielordner-Dialog, User-Entscheidung),
 FA-11/FA-12 (optische Abnahme am gerenderten Bild). Beide bleiben **manuell** - wie die

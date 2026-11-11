@@ -55,7 +55,7 @@ describe("Treiber-Matrix", () => {
     const fremd = [...gezaehlt.keys()].filter((fa) => !gefordert.has(fa));
 
     expect({ fehlend, doppelt, fremd }).toEqual({ fehlend: [], doppelt: [], fremd: [] });
-    expect(gefordert.size).toBe(26);
+    expect(gefordert.size).toBe(27);
   });
 
   it("jede genannte Schritt-Kennung existiert im Treiber", () => {
