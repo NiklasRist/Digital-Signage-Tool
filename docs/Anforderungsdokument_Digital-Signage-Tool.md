@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 10.11.2026
-**Version:** 2.0 (10.11.2026: **Leitforderung L-01** – der Output muss schneller, einfacher und qualitativ besser sein als eine gute PowerPoint; ein Angebot inklusive Designarbeit ≤ 5 min, eine Änderung ≤ 1 min ohne Renderzeit; **FA-26 Varianten** (manuell, mindestens drei je Aktion); Heuristik-Abnahme. Vorher, v1.14: 4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
+**Datum:** 11.11.2026
+**Version:** 2.1 (11.11.2026: **12.1** – die PowerPoint-Referenz wird **genommen, nicht gebaut**: Referenz sind zwei frei verfügbare, **markenfremde** Präsentationen, in die dieselben 5 Angebote geschrieben werden; „Markentreue" heißt bei markenfremder Referenz „eigene visuelle Identität durchgehalten", und die Startzahl „PowerPoint ≤ 14/24" wird nach der ersten Messung **aus den Messwerten abgeleitet, nicht verteidigt**. Vorher 2.0: **Leitforderung L-01** – der Output muss schneller, einfacher und qualitativ besser sein als eine gute PowerPoint; ein Angebot inklusive Designarbeit ≤ 5 min, eine Änderung ≤ 1 min ohne Renderzeit; **FA-26 Varianten** (manuell, mindestens drei je Aktion); Heuristik-Abnahme. Vorher, v1.14: 4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
 **Status:** In Abstimmung
 
 ---
@@ -596,9 +596,22 @@ verschmolzen. 12 Kriterien, je 0/1/2 (max. 24). Startwerte: Tool **≥ 20/24**, 
 das Tool gewinnt bei „Bewegung" und „Differenzierung" und verliert nicht bei „TV-Lesbarkeit" und
 „Markentreue". Der Bogen steht in Abschnitt 14.
 
-**Die PowerPoint-Referenz** wird einmal echt gebaut und gestoppt: gute Masterfolie, dieselben 5
-Angebote, dieselben Bilder, derselbe Export. Ohne diese Baseline ist „schneller und besser" nicht
-belegbar.
+**Die PowerPoint-Referenz wird genommen, nicht gebaut** (Entscheidung 11.11.2026). Es gibt fertige,
+gute Präsentationen; eine selbst gebaute Folie wäre Stunden Arbeit für ein mittelmäßiges Ergebnis und
+damit ein Strohmann – das Tool gewänne gegen etwas, das niemand so einsetzen würde. Referenz sind
+**zwei** frei verfügbare, **markenfremde** Decks; in beide werden dieselben 5 Angebote geschrieben und
+als Video exportiert. Gestoppt wird das **Eintragen** und eine Preisänderung.
+
+**Die Markenfremdheit ist gewollt:** Der Vergleich soll markenunabhängig sein. Deshalb heißt
+**Markentreue** in Abschnitt 14 hier nicht „Fitnessworld24-Logo korrekt", sondern „das Deck hält eine
+eigene, durchgehaltene visuelle Identität durch" – für beide Seiten gleich. **Konsistenz** (gleiches
+Raster über alle fünf Angebote) gilt unverändert für beide Seiten.
+
+**Die Startzahl „PowerPoint ≤ 14/24" steht zur Disposition.** Sie gilt für eine mittelmäßige Folie;
+gute Decks erreichen auf dem Bogen eher 17–20/24. Der belastbare Satz lautet **„das Tool liegt über
+einer guten PowerPoint"**; die Zahl wird nach der ersten Messung **aus den Messwerten abgeleitet,
+nicht verteidigt**. Wird sie nicht erreicht, ist das ein Befund über die Zusage – kein Grund, den
+Bogen zu biegen. Ohne diese Baseline ist „schneller und besser" nicht belegbar.
 
 ---
 
@@ -630,7 +643,7 @@ ohne zu sagen, welches vom Tool ist.
 | Design | **Fokus in 3 s** | Ist in den ersten 3 Sekunden klar, was beworben wird? |
 | Design | **Preis-Hierarchie** | Ist der Preis der stärkste visuelle Anker – oder bewusst nicht? |
 | Design | **TV-Lesbarkeit** | Aus 3–5 m lesbar: Größe, Kontrast, Sicherheitsabstand? |
-| Design | **Markentreue** | Logo, Farben und Typografie der Marke korrekt und unverfälscht? |
+| Design | **Markentreue** | Logo, Farben und Typografie der Marke korrekt und unverfälscht? Bei **markenfremder** Referenz (12.1): Hält das Deck seine **eigene** visuelle Identität durch? |
 | Design | **Konsistenz** | Gleiches Raster und gleiche Logo-Position über alle Angebote? |
 | Design | **Komposition** | Ausrichtung, Abstände und Weißraum – oder wirkt es voll/chaotisch? |
 | Design | **Bewegung mit Zweck** | Führt die Bewegung den Blick, statt dauerhaft unruhig zu sein? |
