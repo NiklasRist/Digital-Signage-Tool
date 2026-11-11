@@ -4,7 +4,7 @@
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
 **Datum:** 11.11.2026
-**Version:** 2.1 (11.11.2026: **12.1** – die PowerPoint-Referenz wird **genommen, nicht gebaut**: Referenz sind zwei frei verfügbare, **markenfremde** Präsentationen, in die dieselben 5 Angebote geschrieben werden; „Markentreue" heißt bei markenfremder Referenz „eigene visuelle Identität durchgehalten", und die Startzahl „PowerPoint ≤ 14/24" wird nach der ersten Messung **aus den Messwerten abgeleitet, nicht verteidigt**. Vorher 2.0: **Leitforderung L-01** – der Output muss schneller, einfacher und qualitativ besser sein als eine gute PowerPoint; ein Angebot inklusive Designarbeit ≤ 5 min, eine Änderung ≤ 1 min ohne Renderzeit; **FA-26 Varianten** (manuell, mindestens drei je Aktion); Heuristik-Abnahme. Vorher, v1.14: 4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
+**Version:** 2.2 (11.11.2026: **FA-27** – optionaler **Produktfoto-Abruf** aus einer Produkt-URL; das Tool bleibt ohne Internet vollständig (NFA-06 unverändert), der Abruf ist ein Zusatz und niemals Voraussetzung. Vorher 2.1: **12.1** – die PowerPoint-Referenz wird **genommen, nicht gebaut**: Referenz sind zwei frei verfügbare, **markenfremde** Präsentationen, in die dieselben 5 Angebote geschrieben werden; „Markentreue" heißt bei markenfremder Referenz „eigene visuelle Identität durchgehalten", und die Startzahl „PowerPoint ≤ 14/24" wird nach der ersten Messung **aus den Messwerten abgeleitet, nicht verteidigt**. Vorher 2.0: **Leitforderung L-01** – der Output muss schneller, einfacher und qualitativ besser sein als eine gute PowerPoint; ein Angebot inklusive Designarbeit ≤ 5 min, eine Änderung ≤ 1 min ohne Renderzeit; **FA-26 Varianten** (manuell, mindestens drei je Aktion); Heuristik-Abnahme. Vorher, v1.14: 4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
 **Status:** In Abstimmung
 
 ---
@@ -73,7 +73,7 @@ Die Wiedergabe erfolgt auf einem vorhandenen Consumer-Fernseher. Es steht **kein
 ### 2.3 Organisatorische Rahmenbedingungen
 
 - Die Anwendung wird **intern** genutzt; es wird maximal **ein Nutzer gleichzeitig** mit dem Tool arbeiten.
-- Es ist **keine Netzwerk- oder Cloud-Anbindung** erforderlich; das Tool arbeitet lokal/offline.
+- Es ist **keine Netzwerk- oder Cloud-Anbindung** erforderlich; das Tool arbeitet lokal. **Erforderlich** ist keine Internetverbindung: Projekt, Aktion, Render und Export laufen vollständig ohne Netz (NFA-06). **Optional** darf das Tool ein Produktfoto zu einer Produkt-URL abrufen (FA-27) – ohne Internet entfällt nur dieser Bequemlichkeitsweg, sonst ändert sich nichts.
 - Die Anwendung läuft auf einem Arbeitsplatzrechner (Laptop), **nicht** auf dem Fernseher.
 
 ---
@@ -124,6 +124,7 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-23 | Marken-Bestand | Die Anwendung führt **mehrere Marken** in einem **app-weiten, projektunabhängigen** Bestand. Ein Projekt darf mehrere Marken verwenden; eine **Aktion** trägt **genau eine**. Eine Marke kann von einer anderen **abgeleitet** sein und einzelne Werte überschreiben (Saison- oder Kampagnen-Look). Die Fitnessworld24-Marke ist immer vorhanden und **nicht löschbar**. Jedes Projekt führt zusätzlich eine **Standardmarke**, die den Rahmen färbt (Band-Hintergrund, Restflächen; s. 4.8); sie ist in der **Projektverwaltung wechselbar**. Eine Marke lässt sich nur löschen, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als Standardmarke** sie mehr nutzt. | Muss |
 | FA-24 | Marken-Editor | Marken lassen sich in der Anwendung **anlegen, bearbeiten und ableiten**: Farben, Slogan, Sicherheitsabstände sowie **Import** von Logo und Schriftdateien. Bei zu geringem Kontrast zwischen Akzentfläche und darauf liegendem Text **warnt** die Anwendung sichtbar, verhindert die Wahl aber nicht. | Muss |
 | FA-25 | Effekte | Ein Ganzbild-Segment (1920 × 1080) kann **bewegt** wirken: **zehn einzeln schaltbare** Effekte – Ken Burns, Zoom-Atmen, Drift, Parallax, Text-Einblendung, Preis-Pop, Glanz-Sweep, hochzählender Preis, Bild-Reveal, Puls – je mit **Fenster** und **Stärke**, frei kombinierbar. Effekte ändern **nie** die Anzeigedauer und **nie** die Bildrate; zwischen Segmenten bleibt es beim **harten Schnitt**; das **Band bleibt still**. Die Vorschau zeigt **dieselbe** Bewegung wie die Ausgabe. Ohne Angaben bleibt das Segment das Standbild von heute. Details: 4.10. | Soll |
+| FA-27 | Produktfoto abrufen | Zu einem Produkt mit hinterlegter Produkt-URL kann die Anwendung ein Produktfoto abrufen und als Asset übernehmen; der Nutzer **wählt** aus, welches Foto in eine Aktion kommt. Der Abruf ist **optional**: ohne Internet bleibt er unbenutzt, alle übrigen Vorgänge laufen unverändert (NFA-06). Kein automatisches Einsetzen – ein Bild wird nie ohne Auswahl einer Aktion zugeordnet. Details: 4.12. | Soll |
 | FA-26 | Varianten | Eine Aktion kann mehrere **gespeicherte Varianten** tragen. Eine Variante ist eine benannte Kombination aus Vorlage/Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe. Der Nutzer wählt die Variante **manuell**; mindestens **3** je Aktion, Wechsel in **≤ 1 Klick**, die Vorschau zeigt die gewählte Variante sofort. Details: 4.11. | Muss |
 
 **Ein Bild ist kein Listenelement (ab v1.5).** Eine Wiedergabeliste besteht aus genau zwei Arten von
@@ -471,6 +472,38 @@ Inhalt: Es entstehen keine neuen Pflichtfelder. Fehlt eine Variante, gilt die Ak
 
 ---
 
+### 4.12 Produktfoto abrufen (FA-27, 11.11.2026)
+
+**Warum:** Zu fast jedem Artikel an Automat, Kühlschrank und Theke gibt es beim Hersteller ein
+Produktfoto. Es von Hand zu suchen, herunterzuladen und zu importieren ist der langsamste Schritt beim
+Anlegen eines Angebots — und die Zusage aus 1.1 misst die Zeit **inklusive** dieser Arbeit.
+
+**Was:** Zu einer **Produkt-URL** kann die Anwendung ein Produktfoto abrufen und als Asset in das
+Projekt übernehmen. Der Nutzer **wählt** aus, welches Foto in eine Aktion kommt.
+
+**Bedienung:** Im Schritt „Bild" des Aktions-Editors steht ein Feld für die Produkt-URL und ein Knopf
+zum Abrufen. Werden mehrere Bilder gefunden, erscheinen sie zur **Auswahl**; erst die Wahl legt das
+Bild als Asset an und setzt `bildRef`. **Ohne Auswahl passiert nichts.**
+
+**Der Abruf ist optional, und das ist die Kernregel:** Ohne Internet entfällt nur dieser Weg. Alle
+übrigen Vorgänge — anlegen, gestalten, rendern, exportieren — laufen unverändert (NFA-06). Das Tool
+**hängt nie** an einer Verbindung: Es gibt keinen Hintergrundabruf, keine Warteschlange, die auf ein
+Netz wartet, und keinen Zustand, der ohne Abruf unvollständig wäre.
+
+**Fehlerpfade:** Kein Netz, Zeitüberschreitung, kein Bild gefunden, kein Bildformat — jeder Fall
+meldet einen **sichtbaren** Grund und lässt das Angebot **unverändert**. Manueller Import bleibt
+jederzeit möglich.
+
+**Abgrenzung:** Der Abruf ist **keine** Synchronisation und **keine** Fernverwaltung (vgl. Abschnitt 6
+„Nicht Bestandteil"): kein Abgleich mit einer Quelle, keine Verwaltung von außen, kein Dauerkanal.
+Er ist ein einmaliger, ausdrücklich ausgelöster Vorgang.
+
+**Offen für das Technische Konzept:** ob die Produkt-URL **gespeichert** wird (neues optionales Feld
+an der Aktion) oder nur als Eingabe für den Abruf dient; woher die Bilder kommen (Herstellerseite,
+Bildersuchdienst) und wie mit Nutzungsrechten umgegangen wird.
+
+---
+
 ## 5. Nicht-funktionale Anforderungen
 
 | ID | Anforderung | Beschreibung | Priorität |
@@ -480,7 +513,7 @@ Inhalt: Es entstehen keine neuen Pflichtfelder. Fehlt eine Variante, gilt die Ak
 | NFA-03 | Ausgabe-Kompatibilität | Das erzeugte Video ist mit dem Media Player des Samsung-Fernsehers kompatibel (Container/Codec: MP4, H.264 High/Level 4.0, `yuv420p`, BT.709, mit **stiller** AAC-Tonspur – verbindlich in 9.2.4). | Muss |
 | NFA-04 | USB-Kompatibilität | Die Ausgabe funktioniert von einem gängig formatierten USB-Speicher (z. B. exFAT/FAT32). | Muss |
 | NFA-05 | Performance | Das Rendern einer üblichen Sequenz erfolgt in vertretbarer Zeit auf dem Arbeitsplatzrechner. | Soll |
-| NFA-06 | Offline-Fähigkeit | Die Anwendung funktioniert vollständig lokal, ohne Internet- oder Serververbindung. | Muss |
+| NFA-06 | Offline-Fähigkeit | Die Anwendung funktioniert vollständig lokal, ohne Internet- oder Serververbindung. **Ausnahme, und nur sie:** der optionale Produktfoto-Abruf (FA-27) braucht Internet; fällt er aus, bleibt jede andere Funktion unberührt. | Muss |
 | NFA-07 | Wartbarkeit | Klar strukturierter, dokumentierter Aufbau, damit das Tool später erweitert werden kann. | Soll |
 | NFA-08 | Portabilität | Die Anwendung lässt sich auf einem Standard-Arbeitsplatzrechner einrichten und betreiben. | Soll |
 | NFA-09 | Serielle Verarbeitung | Länger laufende Vorgänge (Import, Löschen, Render, Export) werden nacheinander ausgeführt; es läuft maximal ein Auftrag gleichzeitig. Das garantiert einen vorhersehbaren, konfliktfreien Ablauf. | Muss |
@@ -516,7 +549,7 @@ Die Wiedergabe der fertigen MP4 erfolgt über den eingebauten Media Player. Folg
 Nicht Bestandteil der ersten Version:
 
 - Entwicklung und Deployment einer App **direkt auf dem Fernseher** (Tizen/Smart-TV-App).
-- Cloud-Anbindung, Netzwerk-Synchronisation oder Fernverwaltung.
+- Cloud-Anbindung, Netzwerk-Synchronisation oder Fernverwaltung. *(Der einmalige Produktfoto-Abruf nach FA-27 ist keine Synchronisation: kein Abgleich, keine Verwaltung von außen, kein Dauerkanal.)*
 - Mehrbenutzerbetrieb bzw. gleichzeitige Bearbeitung.
 - Zeit-/Kalendersteuerung (Scheduling) der Wiedergabe.
 - Verwaltung mehrerer Standorte/Bildschirme von zentraler Stelle.
