@@ -1,9 +1,9 @@
 # Technisches Konzept – Digital-Signage-Tool
 
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
-**Bezug:** Anforderungsdokument v1.13 (das „Was")
+**Bezug:** Anforderungsdokument v2.3 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.61 (9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.62 (1.1/12.1/14: Die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, sechstes Angebot (AD v2.3). Vorher 3.61: 9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 09.11.2026
 **Status:** In Planung
 
@@ -3420,19 +3420,22 @@ Anforderungsdokument 12.1 und 14 messbar sind; das Verfahren selbst steht im Anf
 - **Referenzaufgabe** (AD 12.1): Projekt A mit 15 min, 5 Angeboten, 3 Band-Spots und 2 Unterbrechern;
   Projekt B mit 10 min und 3 Angeboten. Beide rendern, beide MP4s auf denselben Stick, jede Datei für
   sich loopbar.
+- **Beide Seiten erledigen dieselben drei Aufgaben** (AD v2.3): fünf Angebote anlegen, einen Preis
+  ändern, ein sechstes Angebot hinzufügen. Eine **fertige Vorlage** ist auf beiden Seiten erlaubt —
+  der Unterschied soll aus dem Werkzeug kommen, nicht aus einem Vorsprung an Gestaltungsarbeit.
 - **Zeit:** ein neues Angebot **inklusive Designarbeit** in **≤ 5 min**; danach ein Preis in
   **≤ 1 min** **ohne Renderzeit**. Die Renderzeit wird **separat** gemessen und **nicht** angerechnet.
 - **Varianten:** mindestens drei je Aktion, Wechsel in **≤ 1 Klick** (9.17.5).
-- **Qualität:** fünf Angebote gegen fünf PowerPoint-Folien mit demselben Inhalt, Etiketten A/B, zwölf
-  Kriterien mit 0/1/2 (AD 14); Startwerte Tool ≥ 20/24, PowerPoint ≤ 14/24.
+- **Qualität:** fünf Angebote gegen fünf Ergebnisse des **Allzweck-Werkzeugs** mit demselben Inhalt,
+  Etiketten A/B, zwölf Kriterien mit 0/1/2 (AD 14); Startwerte Tool ≥ 20/24, Referenz ≤ 14/24.
 - **Was der Bau dafür liefern muss:** Die Messung braucht **keine** eigene Funktion. Sie braucht die
   vorhandenen: Aktion anlegen, Variante wählen, Preis ändern, rendern, exportieren. **Ein Mess-Schritt,
   kein Bau-Auftrag.**
-- **Ehrlich offen:** Ohne Baseline ist „besser" nicht belegbar (#466). Die Baseline ist eine **fertige,
-  gute** Präsentation – sie wird genommen, nicht gebaut (AD 12.1, v2.1) –, und der Startwert
-  „PowerPoint ≤ 14/24" ist **vorläufig**: er wird nach der ersten Messung abgeleitet, nicht verteidigt.
-  Ohne den Bau von 9.17 ist die Varianten-Zusage nicht erfüllbar. Die Abnahme steht deshalb **hinter**
-  beiden.
+- **Ehrlich offen:** Ohne Baseline ist „besser" nicht belegbar (#466). Die Baseline ist ein gutes
+  Ergebnis aus einem **Allzweck-Werkzeug** – sie wird genommen, nicht gebaut (AD 12.1, v2.3) –, und der
+  Startwert „Referenz ≤ 14/24" ist **vorläufig**: er wird nach der ersten Messung abgeleitet, nicht
+  verteidigt. Ohne den Bau von 9.17 ist die Varianten-Zusage nicht erfüllbar. Die Abnahme steht deshalb
+  **hinter** beiden.
 
 **Die Zusagen im Wortlaut** (die Software muss sie vorzeigen können, nicht auslegen):
 
@@ -3441,9 +3444,15 @@ Anforderungsdokument 12.1 und 14 messbar sind; das Verfahren selbst steht im Anf
 > „**Zeit:** Stoppuhr. Die Renderzeit wird separat gemessen und **nicht** auf die 1 Minute
 > angerechnet." (AD 12.1)
 
-> „12 Kriterien, je 0/1/2 (max. 24). Startwerte: Tool **≥ 20/24**, PowerPoint **≤ 14/24**; das Tool
+> „12 Kriterien, je 0/1/2 (max. 24). Startwerte: Tool **≥ 20/24**, Referenz **≤ 14/24**; das Tool
 > gewinnt bei „Bewegung" und „Differenzierung" und verliert nicht bei „TV-Lesbarkeit" und
 > „Markentreue"." (AD 12.1)
+
+> „Das Tool muss bei der Erstellung **mindestens so schnell** sein und den Unterschied über **die
+> Arbeit** gewinnen, die ein Allzweck-Werkzeug nicht leistet: Produktdaten aus dem System statt aus
+> den Fingern, **Varianten**, **Effekte** und **Zwischenwerbung** in einem durchgehenden MP4." (AD 1.1)
+
+> „**Beide Seiten erledigen dieselben drei Aufgaben.** Sonst ist der Vergleich keine Messung" (AD 12.1)
 
 > „**Skala:** 0 = verletzt, 1 = teilweise, 2 = erfüllt. Maximal **24 Punkte**." (AD 14)
 
