@@ -68,9 +68,28 @@ der Lauf meine Klickroutine.
 
 ### Phase 0 — Material und Vorlage (nicht gemessen)
 
-- [ ] **0.1** Zwei Vorlagen wählen und in Google Slides öffnen (z. B. PresentationGO „Fitness Studio",
-      SlidesCarnival „Salerio"). Eine davon wird die Baseline.
-- [ ] **0.2** **Wirklich öffnen und ansehen.** Eine Vorlage, die nicht lädt, ist keine Baseline.
+> **Vorlage entschieden (11.11.2026): PresentationGO „Fitness Studio".** Gesichtet wurden beide
+> Kandidaten an ihren Vorschaubildern:
+>
+> - **Fitness Studio** – beige/orange, harte Diagonalschnitte, echtes Studiofoto. **Gym-spezifisch**,
+>   also die **konservative** Wahl: die Baseline sieht für diesen Zweck schon richtig aus, das Werkzeug
+>   muss sich daran messen. Schwäche: **jede Inhaltsfolie ist eine Stichpunktliste** — Produktbild,
+>   Preis und Knopf haben keinen vorgesehenen Platz. Der Umbau dauert und **zählt als Arbeitszeit**; genau
+>   das ist der Unterschied, den gemessen wird.
+> - **„Salerio"** – **existiert nicht mehr.** Die URL aus #466 leitet auf ein anderes Deck um
+>   („Professional Business", dunkel/orange). Wer sie benutzt, misst gegen etwas anderes als das
+>   Dokumentierte. Befund, kein Ausfall: das Deck liegt als **zweite Referenz** bereit, falls der erste
+>   Durchgang kein klares Bild gibt.
+
+- [ ] **0.1** „Fitness Studio" beschaffen und öffnen. Die Datei liegt bereit unter
+      `~/Downloads/fitness-studio-vorlage.pptx` (8 Folien, 1,59 MB, gültiges PowerPoint 2007+,
+      Download ohne Konto).
+- [ ] **0.2** Als **Trägerfolie** die **Trennfolie** benutzen („Title of Your Section", Folie 4/5):
+      großer Titel = Produktname, Untertitel = Beschreibung/Preis, **rechte Bildfläche = Produktfoto**
+      statt des Studiofotos. Fünfmal duplizieren, fünfmal tauschen.
+      *Warum nicht die Stichpunktfolie:* sie hat für Bild und Preis keinen Platz, und ein Layout zu
+      erzwingen, das nicht vorgesehen ist, macht die Baseline künstlich schwach — genau der Strohmann,
+      den AD 12.1 verbietet.
 - [ ] **0.3** Prüfen, **was Google Slides exportieren kann** — im Menü nachsehen, nicht annehmen.
       Ergebnis ins Protokoll. (Ein Allzweck-Werkzeug, das kein Video ausgibt, ist ein Befund.)
 - [ ] **0.4** Bilder prüfen — liegen in `docs/artikel/referenzangebote/`

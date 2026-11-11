@@ -67,12 +67,12 @@ gemessen wird die **Arbeit**, nicht die Suche.
 | 4 | Protein Shake to go | 2,50 € | `4-protein-shake.jpg` |
 | 5 | Obstkorb am Eingang | gratis (max. 1 Stück) | `5-obstkorb.jpg` |
 
-**Die Baseline-Vorlagen** (genommen, nicht gebaut — beide frei, beide markenfremd):
+**Die Baseline-Vorlage** (genommen, nicht gebaut — frei und markenfremd):
 
-| Vorlage | Quelle |
-|---|---|
-| **Fitness Studio** | `presentationgo.com/presentation/fitness-studio-presentation-template` |
-| **Salerio** | `slidescarnival.com/template/salerio-free-presentation-template/1875` |
+| Vorlage | Quelle | Stand 11.11.2026 |
+|---|---|---|
+| **Fitness Studio** | `presentationgo.com/presentation/fitness-studio-presentation-template` | **gewählt**, Vorschau geprüft |
+| ~~Salerio~~ | `slidescarnival.com/template/salerio-free-presentation-template/1875` | **leitet um** auf „Professional Business" — nicht mehr das benannte Deck |
 
 **Das Programm ist Nebensache** (AD 12.1, v2.3): gearbeitet wird mit **Google Slides**. Das ist eine
 Bequemlichkeit, keine Aussage über die Messlatte.
