@@ -19,7 +19,7 @@ vi.mock("../../src/renderer/ipc-client/rufe-auf", () => ({
 const { beschriftung, brauchtBestaetigung, fuehreQueueAktionAus, moeglicheAktion, rueckfrageText } =
   await import("../../src/renderer/queue-panel/entfernen");
 
-const ARTEN = ["import", "loeschen", "render", "export"] as const;
+const ARTEN = ["import", "loeschen", "render", "export", "produktfoto-abruf"] as const;
 const STATUS = ["anstehend", "laeuft", "erfolg", "fehlgeschlagen", "abgebrochen"] as const;
 
 /** Eine vollwertige Auftrags-Attrappe je Art - der Rumpf liest nur status/art/label. */
@@ -56,6 +56,12 @@ function auftrag(art: AuftragArt, status: AuftragStatus, auftragId = "a-1"): Auf
         ...gemeinsam,
         art,
         payload: { projektId: "p1", dateiname: "sommer.mp4", zielPfad: "E:/" },
+      };
+    case "produktfoto-abruf":
+      return {
+        ...gemeinsam,
+        art,
+        payload: { projektId: "p1", aktionId: "a1", produktUrl: "https://shop.example/x" },
       };
   }
 }

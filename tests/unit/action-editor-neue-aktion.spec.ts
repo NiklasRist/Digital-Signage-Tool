@@ -17,6 +17,10 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Aktion } from '../../src/shared/contracts/aktion'
 import type { Project } from '../../src/shared/contracts/project'
 import { KANAELE } from '../../src/shared/contracts/kanaele'
+import {
+  meldeProduktfoto,
+  verbraucheProduktfoto,
+} from '../../src/renderer/action-editor/produktfoto-meldung'
 
 // Die Vorschau- und Vorlagenwege laufen ins Leere - hier interessiert nur der Schreibweg.
 vi.mock('../../src/renderer/action-editor/live-vorschau', () => ({
@@ -111,6 +115,8 @@ beforeEach(() => {
   importDoppel.antwort = { ok: true, wert: { auftragIds: [], abbruchGrund: null } }
   // Der Vorlagen-Speicher ist Sitzungsspeicher - jede Pruefung startet ohne ihn.
   merkeLetzteVorlage(null)
+  // FA-27: Die Meldung des Nachlaufs ist Modulzustand - sie darf nicht ueberdauern.
+  verbraucheProduktfoto()
   vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: [] })
 })
 
@@ -177,7 +183,9 @@ function editor(
       projekt: {
         hole: () => ({ projekt: aktuell, ladefehler: null }),
         setzeProjekt,
-        lade: vi.fn(),
+        // FA-27: Nach der Wahl laedt der Editor das Projekt frisch aus dem Main -
+        // der Doppel liefert den zuletzt gemeldeten Stand.
+        lade: vi.fn(async () => ({ ok: true as const, wert: aktuell })),
         setzeListe: vi.fn(),
         gleicheElementAb: vi.fn(),
         leere: vi.fn(),
@@ -462,6 +470,7 @@ function bildAsset(id: string): Asset {
     dauer: null,
     importdatum: '2026-11-03T00:00:00.000Z',
     zustand: 'ok',
+    herkunft: { art: 'manuell' },
   }
 }
 
@@ -1333,5 +1342,130 @@ describe('Nacharbeit 3: freie Farbwahl im Popup (05.11.2026)', () => {
     // Das Feld springt auf den geltenden Wert zurueck - kein halb getippter Zustand.
     const hex = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-zone-preis-flaeche-hex"]')
     expect(hex?.value).toBe('#FF4040')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 12.11.2026 (FA-27, #470): Produkt-URL und „Foto abrufen"
+// ---------------------------------------------------------------------------
+
+describe('Produktfoto-Abruf (FA-27)', () => {
+  function mitBildzone(): Vorlage {
+    return vorlageMitZonen('ganz', null, [zone('bild')])
+  }
+
+  function tippeUrl(behaelter: HTMLDivElement, wert: string): void {
+    const feld = behaelter.querySelector<HTMLInputElement>('[data-testid="produkt-url"]')
+    if (feld === null) throw new Error('Produkt-URL-Feld fehlt')
+    const setzeWert = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    act(() => {
+      setzeWert?.call(feld, wert)
+      feld.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  it('reiht den Auftrag mit der getrimmten Adresse ein und sperrt den Knopf', async () => {
+    const vorlagen = [mitBildzone()]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    doppel.antworten[KANAELE.produkt.abrufen] = { ok: true, wert: { auftragId: 'auftrag-9' } }
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    tippeUrl(behaelter, '  https://shop.example/produkt/42  ')
+    await klicke(behaelter, 'produkt-foto-abrufen')
+    await laufen()
+
+    const aufruf = doppel.aufrufe.find((eintrag) => eintrag.kanal === KANAELE.produkt.abrufen)
+    expect(aufruf?.nutzlast).toEqual({
+      projektId: 'p1',
+      // „neu" - die Aktion existiert noch nicht; der Abruf legt sie nicht an.
+      aktionId: '',
+      produktUrl: 'https://shop.example/produkt/42',
+    })
+    expect(behaelter.querySelector('[data-testid="produkt-foto-abrufen"]')?.textContent).toContain(
+      'wird abgerufen',
+    )
+  })
+
+  it('meldet eine unbrauchbare Adresse am Feld, OHNE einen Auftrag einzureihen', async () => {
+    const vorlagen = [mitBildzone()]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor(projekt([]), vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    tippeUrl(behaelter, 'shop.example/ohne-schema')
+    await klicke(behaelter, 'produkt-foto-abrufen')
+    await laufen()
+
+    expect(
+      doppel.aufrufe.find((eintrag) => eintrag.kanal === KANAELE.produkt.abrufen),
+    ).toBeUndefined()
+    const hinweis = behaelter.querySelector('[data-testid="produkt-abruf-hinweis"]')?.textContent ?? ''
+    expect(hinweis).toContain('gültige http(s)-Adresse')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 12.11.2026 (FA-27, #470): Die Auswahl der Kandidaten fuehrt in den Entwurf.
+// ---------------------------------------------------------------------------
+
+describe('Produktfoto-Auswahl (FA-27)', () => {
+  it('zeigt die Kandidaten mit Quelle und uebernimmt den gewaehlten als bildRef', async () => {
+    const vorlagen = [vorlageMitZonen('ganz', null, [zone('bild')])]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    doppel.antworten[KANAELE.produkt.abrufen] = { ok: true, wert: { auftragId: 'q-foto' } }
+    doppel.antworten[KANAELE.produkt.waehlen] = {
+      ok: true,
+      wert: { assetId: 'neu-1', bildRef: 'neu-1' },
+    }
+    const start = projekt([])
+    const { behaelter, meldeProjektAenderung } = editor(start, vorlagen)
+    await laufen()
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    const feld = behaelter.querySelector<HTMLInputElement>('[data-testid="produkt-url"]')
+    if (feld === null) throw new Error('Produkt-URL-Feld fehlt')
+    const setzeWert = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    act(() => {
+      setzeWert?.call(feld, 'https://shop.example/produkt/42')
+      feld.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await klicke(behaelter, 'produkt-foto-abrufen')
+    await laufen()
+
+    // Der Nachlauf meldet den Erfolg - erst jetzt entstehen die Kandidaten.
+    act(() => {
+      meldeProduktfoto({
+        status: 'erfolg',
+        auftragId: 'q-foto',
+        abrufId: 'ab-1',
+        kandidaten: [
+          { index: 0, url: 'https://cdn.example/hantel.jpg', typ: 'image/jpeg', groesse: 2048 },
+          { index: 1, url: 'https://cdn.example/hantel-2.jpg', typ: 'image/jpeg', groesse: 4096 },
+        ],
+      })
+    })
+    await laufen()
+
+    const quelle = behaelter.querySelector('[data-testid="produkt-herkunft"]')?.textContent ?? ''
+    expect(quelle).toContain('shop.example')
+    expect(quelle).toContain('am Bild gespeichert')
+    expect(behaelter.querySelectorAll('[data-testid^="produkt-kandidat-"]')).toHaveLength(2)
+
+    // Das Uebernehmen legt das Asset im Main an; die Sicht wird frisch geladen.
+    meldeProjektAenderung({ ...start, assets: [bildAsset('neu-1')] })
+    await laufen()
+    await klicke(behaelter, 'produkt-kandidat-1')
+    await laufen()
+
+    const wahl = doppel.aufrufe.find((eintrag) => eintrag.kanal === KANAELE.produkt.waehlen)
+    expect(wahl?.nutzlast).toEqual({ abrufId: 'ab-1', kandidat: 1 })
+    const auswahl = behaelter.querySelector<HTMLSelectElement>('[data-testid="aktion-bild-wahl"]')
+    expect(auswahl?.value).toBe('neu-1')
   })
 })

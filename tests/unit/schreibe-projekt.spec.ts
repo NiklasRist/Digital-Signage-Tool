@@ -69,7 +69,7 @@ describe("schreibeProjekt (#46)", () => {
     const ergebnis = await schreibeProjekt(BASIS);
 
     expect(ergebnis.ok).toBe(true);
-    expect(await lies("project.json")).toEqual({ ...BASIS, schemaVersion: 1 });
+    expect(await lies("project.json")).toEqual({ ...BASIS, schemaVersion: 2 });
   });
 
   it("legt beim ersten Schreiben keine .bak an", async () => {

@@ -131,6 +131,7 @@ function videoAsset(dauer: number | null): Asset {
     dauer,
     importdatum: '2026-08-15T00:00:00.000Z',
     zustand: 'ok',
+    herkunft: { art: 'manuell' },
   }
 }
 

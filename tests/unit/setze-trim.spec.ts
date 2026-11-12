@@ -37,6 +37,7 @@ const VIDEO_ASSET: Asset = {
   dauer: 12.345,
   importdatum: "2026-08-12T08:00:00.000Z",
   zustand: "ok",
+  herkunft: { art: 'manuell' },
 };
 
 function video(): Listenelement {

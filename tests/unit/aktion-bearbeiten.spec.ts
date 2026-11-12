@@ -136,6 +136,8 @@ describe('leererEntwurf', () => {
       // SEIT 05.11.2026 (TK 9.8.8): leer heisst „die Vorlagen-Gestaltung gilt".
       zonenGestaltung: {},
       bildAusschnitt: null,
+      // SEIT 12.11.2026 (FA-27): keine Produktseite hinterlegt.
+      produktUrl: null,
     })
   })
 

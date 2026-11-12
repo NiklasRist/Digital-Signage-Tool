@@ -44,6 +44,7 @@ function asset(id: string, typ: 'video' | 'bild'): Asset {
     dauer: typ === 'video' ? 10 : null,
     importdatum: '2026-10-14T00:00:00.000Z',
     zustand: 'ok',
+    herkunft: { art: 'manuell' },
   }
 }
 

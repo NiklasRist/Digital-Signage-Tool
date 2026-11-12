@@ -17,7 +17,9 @@ import type { Behaupte, Gleich } from "../typ-gleich";
 type T1 = Behaupte<
   Gleich<AuftragStatus, "anstehend" | "laeuft" | "erfolg" | "fehlgeschlagen" | "abgebrochen">
 >;
-type T2 = Behaupte<Gleich<AuftragArt, "import" | "loeschen" | "render" | "export">>;
+type T2 = Behaupte<
+  Gleich<AuftragArt, "import" | "loeschen" | "render" | "export" | "produktfoto-abruf">
+>;
 
 // Geschlossen heisst: `string` ist NICHT dasselbe.
 type T3 = Behaupte<Gleich<Gleich<AuftragStatus, string>, false>>;

@@ -53,6 +53,7 @@ function baueAsset(teil: Partial<Asset> = {}): Asset {
     id: 'asset-1', typ: 'video', dateiname: 'medien-1.mp4', originalname: 'Sommer.mp4',
     maße: { breite: 1920, höhe: 1080 }, dauer: 60, importdatum: '2026-10-06T00:00:00Z',
     zustand: 'ok',
+    herkunft: { art: 'manuell' },
     ...teil,
   }
 }

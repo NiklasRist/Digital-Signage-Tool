@@ -122,6 +122,21 @@ function baueAuftrag<A extends AuftragArt>(art: A, payload: NutzlastVon<A>): Auf
     return { ...basis(), art: 'export', label: `Export: ${payload.dateiname}`, payload }
   }
 
+  if (art === 'produktfoto-abruf') {
+    if (!istProduktAbrufNutzlast(payload)) {
+      return (
+        'Die Nutzlast eines Produktfoto-Abrufs braucht die Textfelder projektId, aktionId ' +
+        'und produktUrl.'
+      )
+    }
+    return {
+      ...basis(),
+      art: 'produktfoto-abruf',
+      label: `Produktfoto: ${hostVon(payload.produktUrl)}`,
+      payload,
+    }
+  }
+
   // Erreichbar, obwohl `art` typisiert ist: Der Aufruf kommt ueber #71 vom Renderer
   // herein, und die Nutzlast eines IPC-Aufrufs ist zur Laufzeit alles Moegliche.
   return `Unbekannte Auftragsart "${String(art)}".`
@@ -270,6 +285,32 @@ function istExportNutzlast(wert: unknown): wert is NutzlastVon<'export'> {
     istText(wert['dateiname']) &&
     istText(wert['zielPfad'])
   )
+}
+
+function istProduktAbrufNutzlast(wert: unknown): wert is NutzlastVon<'produktfoto-abruf'> {
+  // `aktionId` darf LEER sein: Im Editor-Modus „neu" gibt es die Aktion noch nicht, und
+  // der Abruf schreibt sie nicht (TK 9.19.2). `produktId` und `produktUrl` bleiben Pflicht.
+  return (
+    istObjekt(wert) &&
+    istText(wert['projektId']) &&
+    typeof wert['aktionId'] === 'string' &&
+    istText(wert['produktUrl'])
+  )
+}
+
+/**
+ * Der Host einer Produktadresse fuer das Label - reine Anzeige (TK 9.3.1).
+ *
+ * Ein unbrauchbarer Wert ist hier kein Ablehnungsgrund (das tut die Pruefung oben mit
+ * `istText`); er erscheint dann als "unbekannte Adresse". Die Adresse selbst steht im
+ * Label NICHT - sie kann sehr lang sein und ist im Panel nicht lesbar.
+ */
+function hostVon(adresse: string): string {
+  try {
+    return new URL(adresse).host
+  } catch {
+    return 'unbekannte Adresse'
+  }
 }
 
 // -------------------------------------------------------------------------------------------

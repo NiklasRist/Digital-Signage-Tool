@@ -202,6 +202,9 @@ export async function importMedium(
       // "fehlt" setzt ausschliesslich der Reconcile (TK 9.4.4/9.4.7). Eine frisch kopierte und
       // gerade uebernommene Datei ist per Konstruktion da.
       zustand: 'ok',
+      // PFLICHTFELD seit 12.11.2026 (FA-27 / TK 9.19.6). Ein Import von der Platte hat
+      // keine Netzquelle; `manuell` ist die Aussage "keine Quelle", nicht "unbekannt".
+      herkunft: { art: 'manuell' },
     };
 
     // ---------------------------------------------------------------------------------

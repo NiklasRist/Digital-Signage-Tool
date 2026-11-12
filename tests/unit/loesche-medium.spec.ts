@@ -76,6 +76,7 @@ const ASSET: Asset = {
   dauer: 12.5,
   importdatum: '2026-08-01T09:00:00.000Z',
   zustand: 'ok',
+  herkunft: { art: 'manuell' },
 }
 
 const fortschritte: Array<number | null> = []

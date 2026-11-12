@@ -73,6 +73,7 @@ function baueProjekt(ueber: Partial<Project> = {}): Project {
       {
         id: 'asset-1', typ: 'video', dateiname: 'a.mp4', originalname: 'a.mp4',
         maße: { breite: 1920, höhe: 1080 }, dauer: 10, importdatum: '', zustand: 'ok',
+        herkunft: { art: 'manuell' },
       },
     ],
     aktionen: [],
@@ -241,6 +242,7 @@ describe('composer/index.tsx - ein Video (#422)', () => {
             {
               id: 'asset-neu', typ: 'video', dateiname: 'neu.mp4', originalname: 'neu.mp4',
               maße: { breite: 1920, höhe: 1080 }, dauer: 8, importdatum: '', zustand: 'ok',
+              herkunft: { art: 'manuell' },
             },
           ],
         }),
@@ -265,6 +267,7 @@ describe('composer/index.tsx - ein Video (#422)', () => {
             {
               id: 'asset-neu', typ: 'video', dateiname: 'neu.mp4', originalname: 'neu.mp4',
               maße: { breite: 1920, höhe: 1080 }, dauer: 8, importdatum: '', zustand: 'ok',
+              herkunft: { art: 'manuell' },
             },
           ],
           liste: [videoElement('el-alt', 'asset-1')],

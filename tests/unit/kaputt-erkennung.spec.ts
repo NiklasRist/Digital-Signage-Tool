@@ -40,6 +40,7 @@ function asset(id: string, zustand: Asset['zustand'], typ: Asset['typ'] = 'video
     dauer: typ === 'video' ? 12 : null,
     importdatum: '2026-08-13T00:00:00.000Z',
     zustand,
+    herkunft: { art: 'manuell' },
   }
 }
 

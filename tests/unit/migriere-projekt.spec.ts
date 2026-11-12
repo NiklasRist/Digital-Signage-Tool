@@ -64,8 +64,12 @@ function code(ergebnis: Ergebnis<Project>): string {
 }
 
 describe('migriereProjekt (#48)', () => {
-  it('haelt MIGRATIONS_KETTE leer, solange es nur eine schemaVersion gibt', () => {
-    expect(MIGRATIONS_KETTE.size).toBe(0)
+  it('fuehrt seit 12.11.2026 genau den Schritt 1 -> 2 (Asset.herkunft, FA-27)', () => {
+    // Der Schritt selbst wird in `migriere-projekt-herkunft.spec.ts` mit der ECHTEN
+    // Zielversion geprueft; hier steht nur, dass die Kette nicht mehr leer ist und der
+    // Schluessel die alte Version ist (Kettenprinzip: Schluessel = Version VOR dem Schritt).
+    expect(MIGRATIONS_KETTE.size).toBe(1)
+    expect(MIGRATIONS_KETTE.has(1)).toBe(true)
   })
 
   it('hebt mit einem Schritt auf die aktuelle Version und verliert kein unbekanntes Feld', () => {

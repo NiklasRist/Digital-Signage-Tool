@@ -263,7 +263,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
   })
 
   it("video ohne einblendung -> RenderItemVideo mit einblendung null; trimStart aus null -> 0; trimEnde aus null / asset.dauer", async () => {
-    const asset = { id: 'v1', typ: 'video', dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 10, höhe: 10 }, dauer: 12.5, importdatum: 'x', zustand: 'ok' } as never as Project['assets'][number]
+    const asset = { id: 'v1', typ: 'video', dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 10, höhe: 10 }, dauer: 12.5, importdatum: 'x', zustand: 'ok', herkunft: { art: 'manuell' } as const } as never as Project['assets'][number]
     const p = projekt([video('e1', 'v1', null)], [], [asset])
     await loeseRenderAus(p, 'sommer', marke(), VORLAGEN_OK, null)
     const nutzlast = doppel.aufrufe[0]?.nutzlast as { payload: { elemente: Array<{ art: string; medienRef: string; trimStart: number; trimEnde: number; einblendung: unknown }> } }
@@ -278,7 +278,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
 
   it("video mit einblendung -> Höhe aus der SELBEN Band-Vorlage; je Abschnitt ein Band-PNG", async () => {
     const band = { id: 'band-1', name: 'band', höhe: 162, parent: null, eingebaut: true, zonen: [] }
-    const bild = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const }
+    const bild = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const, herkunft: { art: 'manuell' } as const }
     // Das EINBLENDUNG: der Video-Element nutzt die bild-Asset-ID; die Elemente
     // haben kein Dauer (Bild hat keine) aber trimmed Start/Ende CLOCK: 0 - 10
     const p = projekt(
@@ -297,7 +297,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
 
   it("die Hoehe kommt aus der SELBEN Band-Vorlage (120), nicht aus einer festen Zahl", async () => {
     const flach = { id: 'band-2', name: 'flach', höhe: 120, parent: null, eingebaut: false, zonen: [] }
-    const videoAsset = { id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: 9, importdatum: 'x', zustand: 'ok' as const }
+    const videoAsset = { id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: 9, importdatum: 'x', zustand: 'ok' as const, herkunft: { art: 'manuell' } as const }
     const p = projekt(
       [video('e1', 'v1', { bandVorlageId: 'band-2', abschnitte: [{ aktionRef: 'a-1', dauer: 2 }] }, 0, 10)],
       [AKTION_OK],
@@ -317,7 +317,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
   })
 
   it("Band-Vorlage ohne Höhe (vollflaeche) -> ungueltige_eingabe, kein Einreihen", async () => {
-    const bild = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const }
+    const bild = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const, herkunft: { art: 'manuell' } as const }
     const p = projekt(
       [video('e1', 'bild-1', { bandVorlageId: 'vollbild', abschnitte: [{ aktionRef: 'a-1', dauer: 3 }] }, 0, 10)],
       [AKTION_OK],
@@ -344,7 +344,7 @@ describe('loeseRenderAus (#134) - die Items', () => {
 
 describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
   const bandVorlage = { id: 'band-1', name: 'band', höhe: 162, parent: null, eingebaut: true, zonen: [] }
-  const bildAsset = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const }
+  const bildAsset = { id: 'bild-1', typ: 'bild' as const, dateiname: 'aa.png', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: null, importdatum: 'x', zustand: 'ok' as const, herkunft: { art: 'manuell' } as const }
   const band = (id: string) => video(id, 'bild-1', { bandVorlageId: 'band-1', abschnitte: [{ aktionRef: 'a-1', dauer: 5 }] }, 0, 10)
 
   it('Band: stelleMarkeBereit genau einmal mit standardMarkeId; 4. Argument ist die Standardmarke, nicht die Inhaltsmarke', async () => {
@@ -364,7 +364,7 @@ describe('loeseRenderAus (#310) - Rahmen-Marke', () => {
   })
 
   it('Video OHNE Einblendung: stelleMarkeBereit null Mal (nur ein gezeichnetes Band braucht sie)', async () => {
-    const videoAsset = { id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: 9, importdatum: 'x', zustand: 'ok' as const }
+    const videoAsset = { id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa', maße: { breite: 2, höhe: 2 }, dauer: 9, importdatum: 'x', zustand: 'ok' as const, herkunft: { art: 'manuell' } as const }
     const antwort = await loeseRenderAus(projekt([video('e1', 'v1', null)], [], [videoAsset]), 'sommer', marke(), VORLAGEN_OK, null)
     expect(antwort.ok).toBe(true)
     expect(markenDoppel.aufrufe).toEqual([])
@@ -393,6 +393,7 @@ describe('loeseRenderAus (#435) - unterbrochenes Video', () => {
   const videoAsset = {
     id: 'v1', typ: 'video' as const, dateiname: 'aa.mp4', originalname: 'aa',
     maße: { breite: 10, höhe: 10 }, dauer: 12, importdatum: 'x', zustand: 'ok' as const,
+    herkunft: { art: 'manuell' },
   } as never as Project['assets'][number]
   const bandVorlage = { id: 'band-1', name: 'band', höhe: 162, parent: null, eingebaut: true, zonen: [] }
 

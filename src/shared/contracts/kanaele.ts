@@ -268,4 +268,17 @@ export const KANAELE = {
     öffneMarkenDateiDialog: 'marken:öffneMarkenDateiDialog', // #306 (Schlüssel mit Umlaut, Entscheidung 07.10.)
     autoSpeichernStatus:     'marken:autoSpeichernStatus', // Ereignis Main → Renderer, ohne Hülle
   },
+
+  // produktfoto-abruf (FA-27, #470, TK 9.19). DREI Kanaele, nach dem Muster
+  // `<modul>:<operation>`; Schluessel und String sind zeichengleich (Vertragstest #25).
+  //
+  // KEIN Kanal fuer die Bilder: Die Kandidaten liegen im Main unter `abrufId`, und
+  // `produkt:waehlen` schreibt GENAU EIN Asset (TK 9.19.2). Der Abruf selbst laeuft als
+  // Auftrag ueber `queue:reiheEin` - `produkt:abrufen` ist nur die Anfrage, die ihn
+  // einreiht (wie bei `import`/`render`).
+  produkt: {
+    abrufen: 'produkt:abrufen',
+    waehlen: 'produkt:waehlen',
+    verwerfen: 'produkt:verwerfen',
+  },
 } as const

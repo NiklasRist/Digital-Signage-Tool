@@ -8,6 +8,19 @@ export const FORMAT_WHITELIST = {
   bild: ['jpg', 'jpeg', 'png', 'webp'] as const,
 } as const
 
+/**
+ * Woher ein Asset stammt (12.11.2026, FA-27 / TK 9.19.6).
+ *
+ * WARUM PFLICHT UND WARUM ZWEI VARIANTEN: „keine Quelle" (von der Platte importiert) und
+ * „Quelle unbekannt" sind zwei verschiedene Aussagen. Ein leeres Feld würde beide einebnen –
+ * und bei einer Rückfrage zur Nutzung wäre genau dieser Unterschied die Antwort.
+ * Bestand ohne Feld wird beim Laden ergänzt (Migration 1 -> 2); neu gebaute Assets setzen
+ * den Wert immer selbst.
+ */
+export type AssetHerkunft =
+  | { art: 'manuell' }
+  | { art: 'abruf'; url: string; abgerufenAm: string }   // abgerufenAm: ISO-8601 UTC
+
 export interface Asset {
   id: string                                   // UUID
   typ: 'video' | 'bild'
@@ -17,4 +30,5 @@ export interface Asset {
   dauer: number | null                          // Sekunden, 3 Nachkommastellen (Video); null (Bild)
   importdatum: string                           // ISO-8601 UTC
   zustand: 'ok' | 'fehlt'
+  herkunft: AssetHerkunft                       // PFLICHT (TK 9.19.6, FA-27)
 }

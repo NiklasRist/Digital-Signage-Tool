@@ -19,6 +19,7 @@ function bildAsset(id = 'asset-1', zustand: Asset['zustand'] = 'ok', typ: Asset[
     dauer: null,
     importdatum: '2026-08-01T00:00:00.000Z',
     zustand,
+    herkunft: { art: 'manuell' },
   }
 }
 

@@ -92,6 +92,7 @@ function projektMitAsset(assetId: string, originalname: string): Project {
         dauer: 12,
         importdatum: "2026-08-01T10:00:00.000Z",
         zustand: "ok",
+        herkunft: { art: 'manuell' },
       },
     ],
     aktionen: [],

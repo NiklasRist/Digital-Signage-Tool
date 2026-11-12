@@ -48,6 +48,7 @@ const gueltig: Asset = {
   dauer: 12.5,
   importdatum: "2026-08-11T10:00:00.000Z",
   zustand: "ok",
+  herkunft: { art: 'manuell' },
 };
 
 // @ts-expect-error `zustand` kennt nur 'ok' | 'fehlt'.

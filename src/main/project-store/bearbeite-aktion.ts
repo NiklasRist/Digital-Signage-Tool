@@ -7,6 +7,7 @@ import { holeAktivesProjekt } from './aktives-projekt'              // #192
 import { planeAutoSpeicherung } from './auto-speichern'             // #47
 import { mitD1Lock } from './d1-lock'                               // #32
 import { normalisiereEffekte } from '../../shared/effekte'
+import { normalisiereProduktUrl } from '../../shared/produkt-url'
 import {
   normalisiereBildAusschnitt,
   normalisiereZonenGestaltung,
@@ -262,6 +263,13 @@ export async function bearbeiteAktion(
     // keinen Plan" (TK 9.16.4), das ist ein gueltiger Zustand.
     if (aktionsdaten.effekte !== undefined) {
       aktion.effekte = normalisiereEffekte(aktionsdaten.effekte, aktion.standardDauer ?? 10)
+    }
+
+    // SEIT 12.11.2026 (FA-27 / TK 9.19.7): die Produktseite. NORMALISIERT uebernommen wie
+    // beim Anlegen; ein mitgeschicktes `null` LEERT die Adresse (das ist der Weg, eine
+    // falsch eingetragene wieder loszuwerden), ein nicht mitgeschicktes Feld lässt sie stehen.
+    if (aktionsdaten.produktUrl !== undefined) {
+      aktion.produktUrl = normalisiereProduktUrl(aktionsdaten.produktUrl)
     }
 
     // VORGEMERKT WIRD UNBEDINGT - auch wenn `aktionsdaten` leer war oder jedes Feld seinen

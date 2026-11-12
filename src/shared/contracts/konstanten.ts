@@ -28,7 +28,10 @@ export const KONTRAST_SCHWELLE = 4.5
 // Die Schema-Version, auf die `project.json` und `config.json` beim Schreiben gebracht werden.
 // EINE zentrale Stelle – sie wird von öffneProjekt (#34), schreibeProjekt (#46) und
 // migriereProjekt (#48) gelesen; drei eigene Kopien würden unweigerlich auseinanderlaufen.
-export const AKTUELLE_SCHEMA_VERSION = 1
+// Version 2 seit 12.11.2026 (FA-27 / TK 9.19.6): `Asset.herkunft` ist Pflichtfeld; ein
+// fehlendes Feld wird beim Laden ergänzt (Migrationsschritt 1 -> 2), geschrieben beim
+// nächsten echten Änderungsvorgang.
+export const AKTUELLE_SCHEMA_VERSION = 2
 // „Aktuelle schemaVersion | 1 | wird von öffneProjekt, schreibeProjekt und der Migration
 //  gelesen (9.5.5) – eine Stelle, sonst laufen drei Kopien auseinander" (TK 9.11.4, wörtlich)
 export { FORMAT_WHITELIST } from './asset' // Re-Export aus #13 – hier NICHT dupliziert

@@ -44,6 +44,12 @@ export function unterschiede(
   if (entwurf.vorlagenId !== gespeichert.vorlagenId) aenderungen.vorlagenId = entwurf.vorlagenId
   if (entwurf.markeId !== gespeichert.markeId) aenderungen.markeId = entwurf.markeId
   if (entwurf.akzentfarbe !== gespeichert.akzentfarbe) aenderungen.akzentfarbe = entwurf.akzentfarbe
+  // SEIT 12.11.2026 (FA-27 / TK 9.19.7): die Produktseite. `undefined` und `null`
+  // bedeuten beide „keine Adresse" - der Vergleich normalisiert sie, sonst erzeugte
+  // eine frisch geladene Aktion ohne Feld bei jedem „Fertig" einen Schreibvorgang.
+  if ((entwurf.produktUrl ?? null) !== (gespeichert.produktUrl ?? null)) {
+    aenderungen.produktUrl = entwurf.produktUrl ?? null
+  }
   // SEIT 05.11.2026 (TK 9.8.8): Zwei VERSCACHTELTE Felder. Ein `!==` waere hier immer
   // wahr - das Objekt ist nach jedem Rendern eine neue Referenz - und damit erzeugte
   // jedes „Fertig" einen Schreibvorgang samt Undo-Schritt fuer nichts. Verglichen wird

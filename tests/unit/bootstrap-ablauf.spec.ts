@@ -200,6 +200,9 @@ function baueSchritte(automat: Automat,lageTafel: BootstrapLage[] = automat.lage
     meldeImportErgebnis: () => {
       automat.log.push('meldeImportErgebnis')
     },
+    meldeProduktfotoAbruf: () => {
+      automat.log.push('meldeProduktfotoAbruf')
+    },
     meldeFehler: (code: string, meldung: string) => {
       automat.log.push(`meldeFehler/${code}/${meldung}`)
     },
@@ -419,10 +422,11 @@ describe('Alle acht Wirkungen sind verdrahtet (Kernnachweis 2)', () => {
     return { automat, zugaenge, leere, ausgaben, fehl, einImport }
   }
 
-  it('genau acht Schluessel; sechs ToBe-Faesser (setzeProjekt, verwirfMotivBestand, bereiteZeichnenVor, leere, ausgaben, fehl, import)', () => {
+  it('genau neun Schluessel; sechs ToBe-Faesser (setzeProjekt, verwirfMotivBestand, bereiteZeichnenVor, leere, ausgaben, fehl, import)', () => {
     const { automat, zugaenge, leere, ausgaben, fehl, einImport } = baueZugaengeFuerWirkungen()
     const wirkungen = baueNachlaufWirkungen(zugaenge, leere, ausgaben, fehl, einImport)
-    expect(Object.keys(wirkungen)).toHaveLength(8)
+    // Neun seit 12.11.2026: `meldeProduktfotoAbruf` (FA-27, #470) ist dazugekommen.
+    expect(Object.keys(wirkungen)).toHaveLength(9)
     expect(wirkungen.setzeProjekt).toBe(automat.zugangRoh.setzeProjekt)
     expect(wirkungen.verwirfMotivBestand).toBe(automat.zeichnen.verwirfMotivBestand)
     expect(wirkungen.bereiteZeichnenVor).toBe(automat.zeichnen.bereiteVor)

@@ -63,6 +63,10 @@ const h = vi.hoisted(() => {
     verdrahteMarkenSpeicherstatusIPC: vi.fn((): void => {
       protokoll.push("verdrahteMarkenSpeicherstatusIPC");
     }),
+    verdrahteProduktAbrufIPC: vi.fn((uebergebenesFenster: FensterDoppel) => {
+      protokoll.push("verdrahteProduktAbrufIPC");
+      void uebergebenesFenster;
+    }),
     meldeRenderHandlerAn: vi.fn(() => {
       protokoll.push("meldeRenderHandlerAn");
     }),
@@ -74,6 +78,9 @@ const h = vi.hoisted(() => {
     }),
     registriereMedienHandler: vi.fn(() => {
       protokoll.push("registriereMedienHandler");
+    }),
+    registriereProduktfotoHandler: vi.fn(() => {
+      protokoll.push("registriereProduktfotoHandler");
     }),
     meldeExportHandlerAn: vi.fn(() => {
       protokoll.push("meldeExportHandlerAn");
@@ -261,6 +268,14 @@ vi.mock("../../src/main/media-service/handler-registrierung", () => ({
   registriereMedienHandler: h.registriereMedienHandler,
 }));
 
+vi.mock("../../src/main/produktfoto/handler-registrierung", () => ({
+  registriereProduktfotoHandler: h.registriereProduktfotoHandler,
+}));
+
+vi.mock("../../src/main/ipc-gateway/produkt-abruf-verdrahtung", () => ({
+  verdrahteProduktAbrufIPC: h.verdrahteProduktAbrufIPC,
+}));
+
 vi.mock("../../src/main/export-service/handler-anmeldung", () => ({
   meldeExportHandlerAn: h.meldeExportHandlerAn,
 }));
@@ -375,11 +390,13 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       "verdrahteMarkenIPC",
       "verdrahteProjectStoreNachtrag3IPC",
       "verdrahteProjectStoreNachtrag5IPC",
+      "registriereProduktfotoHandler",
       "erstelleHauptfenster",
       "verdrahteQueueIPC",
       "verdrahteExportUndFortschrittIPC",
       "verdrahteSpeicherstatusIPC",
       "verdrahteMarkenSpeicherstatusIPC",
+      "verdrahteProduktAbrufIPC",
       "raeumeVerwaisteArbeitsbereiche",
     ]);
   });
@@ -404,9 +421,11 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       h.verdrahteMarkenIPC,
       h.verdrahteProjectStoreNachtrag3IPC,
       h.verdrahteProjectStoreNachtrag5IPC,
+      h.registriereProduktfotoHandler,
       h.verdrahteQueueIPC,
       h.verdrahteExportUndFortschrittIPC,
       h.verdrahteMarkenSpeicherstatusIPC,
+      h.verdrahteProduktAbrufIPC,
       h.raeumeVerwaisteArbeitsbereiche,
     ]) {
       expect(anmeldung).toHaveBeenCalledTimes(1);
@@ -444,6 +463,7 @@ describe("Main-Bootstrap - Schritt 5: die Anmeldungen OHNE Fenster (#76, #153, #
     expect(h.meldeRenderHandlerAn).toHaveBeenCalledWith();
     expect(h.meldeExportHandlerAn).toHaveBeenCalledWith();
     expect(h.verdrahteMarkenIPC).toHaveBeenCalledWith();
+    expect(h.registriereProduktfotoHandler).toHaveBeenCalledWith();
   });
 
   it("meldet den project-Nachtrag UNMITTELBAR nach dem project-store", async () => {
@@ -509,6 +529,7 @@ describe("Main-Bootstrap - Schritt 7: die Anmeldungen MIT Fenster (#71, #191)", 
     expect(h.verdrahteQueueIPC).toHaveBeenCalledWith(h.fenster[0]);
     expect(h.verdrahteExportUndFortschrittIPC).toHaveBeenCalledWith(h.fenster[0]);
     expect(h.verdrahteMarkenSpeicherstatusIPC).toHaveBeenCalledWith(h.fenster[0]);
+    expect(h.verdrahteProduktAbrufIPC).toHaveBeenCalledWith(h.fenster[0]);
   });
 
   it("verdrahtet beide erst NACH der Fenstererzeugung", async () => {

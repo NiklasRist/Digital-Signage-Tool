@@ -65,6 +65,7 @@ import { waehleVideoPfad, reiheVideoImportEin } from './app-shell/anlegen-video'
 import { loescheAktion } from './action-editor/aktion-loeschen'
 import { ComposerWurzel } from './composer/index'
 import { ActionEditorWurzel } from './action-editor'
+import { meldeProduktfoto } from './action-editor/produktfoto-meldung'
 import { VorlagenEditorWurzel } from './vorlagen-editor'
 import { ProjektVerwaltungWurzel } from './projekt-verwaltung'
 import { Vorschau } from './preview-player/vorschau'
@@ -261,6 +262,9 @@ export function App(): JSX.Element | null {
         // ENTSCHIEDEN 8 - void ist beabsichtigt (total, synchron vertrag):
         if (umgebungRef.current !== null) void schliesseMedienImportAb(umgebungRef.current, assetId)
       },
+      // FA-27 (#470): Der Nachlauf legt das Ergebnis des Abrufs im Editor-Speicher ab;
+      // der Editor liest es dort. Kein zweiter Auswerter von `queue:geaendert`.
+      meldeProduktfotoAbruf: (meldung) => meldeProduktfoto(meldung),
       meldeFehler,
       setzeLage: (neu: BootstrapLage) => {
         if (neu.schritt === 'bereit') zugaengeRef.current = neu.zugaenge

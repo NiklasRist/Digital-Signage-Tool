@@ -58,6 +58,8 @@ import {
 } from "./media-protokoll";
 import { registriereMedienHandler } from "./media-service/handler-registrierung";
 import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
+import { registriereProduktfotoHandler } from "./produktfoto/handler-registrierung"; // #470
+import { verdrahteProduktAbrufIPC } from "./ipc-gateway/produkt-abruf-verdrahtung"; // #470
 import { MARKEN_SCHEMA, registriereMarkenProtokollHandler } from "./marken-store/marken-protokoll"; // #290
 import { flushBestand as flushMarkenBestand } from "./marken-store/schreibe-marken"; // #277, ALIAS-PFLICHT
 import { pruefeBeendenUndFlush, flushesBeimBeendenOhneDialogAus } from "./beenden-ablauf"; // #336, #427
@@ -477,6 +479,13 @@ void app.whenReady().then(async () => {
   //     Argumentlos - kein Fenster, kein Zustand.
   verdrahteProjectStoreNachtrag5IPC();
 
+  // 15. registriereProduktfotoHandler() - #470 (FA-27, TK 9.19.2).
+  //     Traegt beim Auftrags-Dispatcher den Handler fuer art: `produktfoto-abruf` ein.
+  //     Bewusst OHNE Abbrecher (FA-18: nur der Render ist abbrechbar). Kein IPC-Kanal,
+  //     deshalb kein Fenster noetig - die drei Kanaele meldet Position 4 der Gruppe
+  //     MIT Fenster an.
+  registriereProduktfotoHandler();
+
   // SCHRITT 6: Fenster erzeugen und Inhalt laden.
   const fenster = erstelleHauptfenster();
 
@@ -532,6 +541,14 @@ void app.whenReady().then(async () => {
   //    Speichern der marken.json vollstaendig unsichtbar (NFA-02, TK 9.15.1). Kein
   //    try/catch: lautlos zu verlieren ist schlimmer als ein Start, der abbricht.
   verdrahteMarkenSpeicherstatusIPC(fenster);
+
+  // 5. verdrahteProduktAbrufIPC(fenster) - #470 (FA-27, TK 9.19).
+  //    Meldet die drei Kanaele `produkt:abrufen/.waehlen/.verwerfen` an und haengt an
+  //    `closed` das Leeren der Kandidaten im Main (TK 9.19.2). Sie bekommt DASSELBE
+  //    Fenster wie 1. bis 4. Kein try/catch: ohne sie waere der Differenzierer aus
+  //    FA-27 nicht erreichbar, und ein Start, der das lautlos verschweigt, ist schlimmer
+  //    als einer, der abbricht.
+  verdrahteProduktAbrufIPC(fenster);
 
   // SCHRITT 8: raeumeVerwaisteArbeitsbereiche() - #172,
   // src/main/render-service/arbeitsbereich.ts. Entfernt reel-*-Ordner, die ein

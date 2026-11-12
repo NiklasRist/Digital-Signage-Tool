@@ -80,6 +80,7 @@ function asset(): Asset {
     dauer: 30.7,
     importdatum: '2026-08-01T09:00:00Z',
     zustand: 'ok',
+    herkunft: { art: 'manuell' },
   }
 }
 

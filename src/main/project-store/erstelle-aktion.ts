@@ -2,6 +2,7 @@
 
 import { erzeugeId } from '../../shared/contracts/id'
 import { normalisiereEffekte } from '../../shared/effekte'
+import { normalisiereProduktUrl } from '../../shared/produkt-url'
 import {
   normalisiereBildAusschnitt,
   normalisiereZonenGestaltung,
@@ -193,6 +194,12 @@ export async function erstelleAktion(
       // SEIT 09.11.2026 (TK 9.16.1): der Effekt-Satz. NORMALISIERT uebernommen wie die
       // Gestaltung; `null` heisst "kein Effekt" und ist der Zustand von heute (9.16.4).
       effekte: normalisiereEffekte(aktionsdaten.effekte, effektDauer),
+
+      // SEIT 12.11.2026 (FA-27 / TK 9.19.7): die Produktseite. NORMALISIERT uebernommen;
+      // `null` heisst "keine Adresse hinterlegt" und ist ein zugesagter Zustand. Der
+      // Speicherweg ist hier bewusst ausgeschrieben - der Fehler, der bei `Aktion.effekte`
+      // passierte (#464: Feld im Typ, im Store verworfen), darf sich nicht wiederholen.
+      produktUrl: normalisiereProduktUrl(aktionsdaten.produktUrl),
     }
 
     // ANS ENDE DER BIBLIOTHEK. Die Reihenfolge des Arrays ist auch hier die Reihenfolge

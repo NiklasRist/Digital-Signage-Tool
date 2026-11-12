@@ -19,11 +19,40 @@ export type MigrationsSchritt = (
 // bekannte, in der alten Fassung fehlende Felder werden auf einen dokumentierten Vorgabewert
 // gesetzt (nie einfach `undefined` lassen).
 
-export const MIGRATIONS_KETTE: ReadonlyMap<number, MigrationsSchritt> = new Map([
-  // Aktuell LEER: es gibt bislang nur EINE schemaVersion. Der erste Eintrag (Schlüssel = alte
-  // Version, Wert = Schritt auf Version+1) entsteht erst mit der nächsten tatsächlichen
-  // Formatänderung. Die Konstante für „die aktuelle Version" ist AKTUELLE_SCHEMA_VERSION aus
-  // src/shared/contracts/konstanten.ts (#21) – hier NICHT lokal neu definieren.
+export const MIGRATIONS_KETTE: ReadonlyMap<number, MigrationsSchritt> = new Map<number, MigrationsSchritt>([
+  // ---------------------------------------------------------------------------------------
+  // 1 -> 2 (12.11.2026, FA-27 / TK 9.19.6): `Asset.herkunft` wird Pflichtfeld.
+  //
+  // Jedes Element in `assets` bekommt `{ art: 'manuell' }`, SOFERN es das Feld nicht schon
+  // trägt; ein vorhandener Wert wird nicht angefasst (er kann nur aus einer neueren Fassung
+  // stammen – raten wäre hier die falsche Antwort). Alle übrigen Felder reisen per Spread
+  // unverändert mit, die Regel aus dem Dateikopf gilt also auch hier.
+  //
+  // KEIN WERFEN bei kaputtem `assets`: Ist das Feld kein Array, bleibt es unverändert, und
+  // `istProjektForm` lehnt die Datei weiter unten mit Klartext ab. Hier zu werfen ergäbe
+  // dieselbe Ablehnung über den Umweg einer Migrations-Fehlermeldung.
+  // ---------------------------------------------------------------------------------------
+  [
+    1,
+    (alt) => {
+      const roh = alt['assets']
+      const assets = Array.isArray(roh)
+        ? roh.map((eintrag) => {
+            if (typeof eintrag !== 'object' || eintrag === null || Array.isArray(eintrag)) {
+              return eintrag
+            }
+            // SAFETY: die drei Zeilen davor belegen, dass `eintrag` ein nicht-null Objekt
+            // ist; der Cast macht die Index-Form lesbar, ohne ein Feld zu verändern.
+            const datensatz = eintrag as Record<string, unknown>
+            if (datensatz['herkunft'] !== undefined) {
+              return datensatz
+            }
+            return { ...datensatz, herkunft: { art: 'manuell' } }
+          })
+        : roh
+      return { ...alt, assets, schemaVersion: 2 }
+    },
+  ],
 ])
 
 export function migriereProjekt(

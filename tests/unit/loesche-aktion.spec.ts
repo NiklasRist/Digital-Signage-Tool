@@ -73,6 +73,7 @@ const BILD: Asset = {
   dauer: null,
   importdatum: "2026-08-13T08:00:00.000Z",
   zustand: "ok",
+  herkunft: { art: 'manuell' },
 };
 
 const VIDEO_ASSET: Asset = {
@@ -84,6 +85,7 @@ const VIDEO_ASSET: Asset = {
   dauer: 30,
   importdatum: "2026-08-13T08:00:00.000Z",
   zustand: "ok",
+  herkunft: { art: 'manuell' },
 };
 
 function projekt(aktionen: Aktion[], liste: Listenelement[]): Project {

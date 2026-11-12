@@ -29,7 +29,13 @@ import { wiederhole } from './wiederhole'                         // #63
  * Art waere aus dem Renderer unerreichbar - ein Kanal, der genau eine Auftragsart lautlos
  * verschluckt, ist die teuerste Art von Luecke.
  */
-const ARTEN: Record<AuftragArt, true> = { import: true, loeschen: true, render: true, export: true }
+const ARTEN: Record<AuftragArt, true> = {
+  import: true,
+  loeschen: true,
+  render: true,
+  export: true,
+  'produktfoto-abruf': true,
+}
 
 /**
  * `Object.hasOwn` statt `wert in ARTEN`: `in` findet auch Geerbtes, und eine Nutzlast mit
@@ -98,7 +104,9 @@ export function verdrahteQueueIPC(fenster: BrowserWindow): void {
       const art = nutzlast.art
       const payload = nutzlast.payload
       if (!istAuftragArt(art)) {
-        return abgelehnt('reiheEin braucht eine art aus import, loeschen, render oder export.')
+        return abgelehnt(
+          'reiheEin braucht eine art aus import, loeschen, render, export oder produktfoto-abruf.',
+        )
       }
       // NICHT TIEFER (Pruef-Tabelle des Issues): Ob die Felder der Nutzlast zur Art passen,
       // entscheidet #61 - und zwar mit vier getrennten Zweigen, die genau das absichern.

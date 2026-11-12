@@ -51,6 +51,7 @@ function projekt(): Project {
       {
         id: 'asset-1', typ: 'video', dateiname: 'a.mp4', originalname: 'a.mp4',
         maße: { breite: 1920, höhe: 1080 }, dauer: 10, importdatum: '', zustand: 'ok',
+        herkunft: { art: 'manuell' },
       },
     ],
     aktionen: [],

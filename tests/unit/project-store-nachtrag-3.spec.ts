@@ -119,16 +119,16 @@ describe("KANAELE.project (#323)", () => {
 });
 
 describe("index.ts-Verdrahtung (#323)", () => {
-  it("ruft verdrahteProjectStoreNachtrag3IPC GENAU EINMAL; Schritt 5 enthaelt GENAU 14 Aufrufe; Schritt 7 enthaelt 4", async () => {
+  it("ruft verdrahteProjectStoreNachtrag3IPC GENAU EINMAL; Schritt 5 enthaelt GENAU 15 Aufrufe; Schritt 7 enthaelt 5", async () => {
     const fs = await import("node:fs/promises");
     const text = await fs.readFile("src/main/index.ts", "utf8");
     expect((text.match(/^  verdrahteProjectStoreNachtrag3IPC\(\);/gm) ?? [])).toHaveLength(1);
     expect((text.match(/verdrahteProjectStoreNachtrag3IPC/g) ?? [])).toHaveLength(3); // Import + Kommentar (Nummerierung) + Ruf
     const schritt5 = text.slice(text.indexOf("SCHRITT 5"), text.indexOf("SCHRITT 6"));
     const rufeFuenf = (schritt5.match(/^  [a-zA-Z].*\(\);/gm) ?? []);
-    expect(rufeFuenf.length).toBe(14);
+    expect(rufeFuenf.length).toBe(15);
     const schritt7 = text.slice(text.indexOf("SCHRITT 7"), text.indexOf("SCHRITT 8"));
-    expect((schritt7.match(/^  [a-zA-Z].*\(fenster\);/gm) ?? []).length).toBe(4);
+    expect((schritt7.match(/^  [a-zA-Z].*\(fenster\);/gm) ?? []).length).toBe(5);
     void KANAELE;
   });
 });

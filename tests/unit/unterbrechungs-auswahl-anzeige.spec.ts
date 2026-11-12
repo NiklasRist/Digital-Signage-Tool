@@ -27,7 +27,7 @@ function projekt(): Project {
   return {
     id: 'p-1', name: 'Probe', erstelltAm: '2026-08-01T09:00:00Z', geaendertAm: '2026-08-01T09:00:00Z',
     schemaVersion: 1,
-    assets: [{ id: 'b-ok', typ: 'bild', dateiname: 'b.png', originalname: 'b', maße: { breite: 100, höhe: 100 }, dauer: null, importdatum: '2026-08-01T09:00:00Z', zustand: 'ok' }],
+    assets: [{ id: 'b-ok', typ: 'bild', dateiname: 'b.png', originalname: 'b', maße: { breite: 100, höhe: 100 }, dauer: null, importdatum: '2026-08-01T09:00:00Z', zustand: 'ok', herkunft: { art: 'manuell' } }],
     aktionen: [
       { id: 'a-alt', titel: 'Alt', beschreibung: null, preis: null, bildRef: null, cta: null, standardDauer: null, vorlagenId: 'vollbild', markeId: 'm1', akzentfarbe: null },
       { id: 'a-alt2', titel: 'Alt2', beschreibung: null, preis: null, bildRef: null, cta: null, standardDauer: null, vorlagenId: 'vollbild', markeId: 'm1', akzentfarbe: null },

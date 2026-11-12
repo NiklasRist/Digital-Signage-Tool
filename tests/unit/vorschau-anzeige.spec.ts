@@ -112,7 +112,7 @@ function baueProjekt(): Project {
     schemaVersion: 1,
     assets: [
       { id: 'asset-1', typ: 'video', dateiname: 'medien-1.mp4', originalname: 'Sommer.mp4',
-        maße: { breite: 1920, höhe: 1080 }, dauer: 60, importdatum: '2026-10-06T00:00:00Z', zustand: 'ok' },
+        maße: { breite: 1920, höhe: 1080 }, dauer: 60, importdatum: '2026-10-06T00:00:00Z', zustand: 'ok', herkunft: { art: 'manuell' } },
     ],
     aktionen: [
       { id: 'a-1', titel: 'Sommeraktion', beschreibung: null, preis: null, bildRef: null,
@@ -314,7 +314,7 @@ describe('Die Durchreichung der Auswahl', () => {
     neu.assets = [
       ...neu.assets,
       { id: 'asset-2', typ: 'video', dateiname: 'medien-2.mp4', originalname: 'Herbst.mp4',
-        maße: { breite: 1920, höhe: 1080 }, dauer: 30, importdatum: '2026-10-06T00:00:00Z', zustand: 'ok' },
+        maße: { breite: 1920, höhe: 1080 }, dauer: 30, importdatum: '2026-10-06T00:00:00Z', zustand: 'ok', herkunft: { art: 'manuell' } },
     ]
     neu.liste = [baueElement({ id: 'e-9', ref: 'asset-2', trimStart: 0, trimEnde: 1 })]
 

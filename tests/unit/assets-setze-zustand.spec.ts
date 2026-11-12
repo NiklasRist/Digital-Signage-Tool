@@ -61,6 +61,7 @@ function neuesAsset(id: string, wert: Asset["zustand"] = "ok"): Asset {
     dauer: 12.5,
     importdatum: "2026-08-13T09:00:00.000Z",
     zustand: wert,
+    herkunft: { art: 'manuell' },
   };
 }
 

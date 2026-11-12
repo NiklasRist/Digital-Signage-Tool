@@ -36,7 +36,7 @@ const M_NEU = "33333333-3333-4333-8333-333333333333";
 
 function projekt(id: string, standardMarke: string): Project {
   return {
-    id, name: "P-" + id, standardMarkeId: standardMarke, schemaVersion: 1,
+    id, name: "P-" + id, standardMarkeId: standardMarke, schemaVersion: 2,
   } as unknown as Project;
 }
 

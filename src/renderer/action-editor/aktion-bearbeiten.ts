@@ -170,6 +170,10 @@ export function leererEntwurf(
     // SEIT 05.11.2026 (TK 9.8.8): leer heisst „die Vorlage gilt" - nicht „null Farben".
     zonenGestaltung: {},
     bildAusschnitt: null,
+    // SEIT 12.11.2026 (FA-27): keine Produktseite hinterlegt. Das Feld ist optional im
+    // Vertrag; hier steht es ausdruecklich, damit ein neuer Entwurf nicht `undefined`
+    // traegt und der erste Vergleich in `unterschiede` sauber ist.
+    produktUrl: null,
   }
 }
 

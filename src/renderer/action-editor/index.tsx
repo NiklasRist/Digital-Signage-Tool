@@ -36,6 +36,8 @@ import type { Asset } from '../../shared/contracts/asset'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
+import type { ProduktfotoKandidat } from '../../shared/contracts/produktabruf'
+import { normalisiereProduktUrl } from '../../shared/produkt-url'
 import type { ZeichenZugang, VorlagenZugang, ProjektZugang, MarkenZugang } from '../app-shell/sichten'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import { holeMotiv } from '../gemeinsam/aktions-motiv'
@@ -63,6 +65,16 @@ import { feldBedarf } from './feld-bedarf'
 import { BEISPIEL_INHALT, erstesBild, mitBeispielinhalt } from './beispiel-inhalt'
 import { ladeLetzteFarben, mitFarbe, speichereLetzteFarben } from './letzte-farben'
 import { pruefeBildWahl, starteBildImport, waehlbareBilder } from './bild-zuweisen'
+import {
+  starteProduktfotoAbruf,
+  verwirfProduktfoto,
+  waehleProduktfoto,
+} from './produktfoto-abruf'
+import {
+  abonniereProduktfoto,
+  holeProduktfotoMeldung,
+  verbraucheProduktfoto,
+} from './produktfoto-meldung'
 import {
   bereiteMotivVorFuer,
   bereiteVorschauVor,
@@ -472,6 +484,21 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
     aendere('bildRef', bildRef)
   }
 
+  /** FA-27 (#470): Das gewaehlte Produktfoto liegt im Main bereits im Projekt - die
+   *  Sicht ist veraltet. Erst frisch laden, dann durch DENSELBEN Bildweg wie eine Wahl
+   *  aus der Liste (`pruefeBildWahl` + Motiv vorbereiten); kein zweiter Weg. */
+  async function uebernimmGewaehltesBild(assetId: string): Promise<void> {
+    const jetzt = p.projekt.hole().projekt
+    if (jetzt !== null) {
+      const geladen = await p.projekt.lade(jetzt.id)
+      if (!geladen.ok) {
+        setzeMeldung(`Das Foto ist übernommen, aber noch nicht in der Ansicht: ${geladen.fehler.meldung}`)
+        return
+      }
+    }
+    await waehleBild(assetId)
+  }
+
   return (
     <div
       data-testid="aktion-editor-root"
@@ -628,6 +655,8 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
               aufBild={(bildRef) => {
                 void waehleBild(bildRef)
               }}
+              aktionId={lage.modus === 'bestehend' ? lage.aktionId : ''}
+              aufAssetGewaehlt={uebernimmGewaehltesBild}
               neuModus={lage.modus === 'neu'}
             />
           )}
@@ -875,6 +904,8 @@ function Inspector({
   meldung,
   aufAenderung,
   aufBild,
+  aktionId,
+  aufAssetGewaehlt,
   neuModus,
 }: {
   projekt: Project
@@ -886,6 +917,10 @@ function Inspector({
   meldung: string | null
   aufAenderung: <K extends keyof AktionsEntwurf>(feld: K, wert: AktionsEntwurf[K]) => void
   aufBild: (bildRef: string | null) => void
+  /** Die Aktion aus dem Bestand; leer im Modus „neu" (der Abruf legt sie nicht an). */
+  aktionId: string
+  /** Uebernimmt ein bereits angelegtes Asset in den Entwurf (FA-27, #470). */
+  aufAssetGewaehlt: (assetId: string) => Promise<void>
   /** „neu" heisst: hier wird die Vorlage GEWAEHLT - dann steht die Galerie offen.
    *  Beim Bearbeiten einer bestehenden Aktion ist sie zu (s. Schritt „Vorlage"). */
   neuModus: boolean
@@ -897,6 +932,89 @@ function Inspector({
   // der Wurzel, sobald der Auftrag durchgelaufen ist.
   const [importHinweis, setzeImportHinweis] = useState<string | null>(null)
   const [importLaeuft, setzeImportLaeuft] = useState(false)
+  // SEIT 12.11.2026 (FA-27 / TK 9.19.8): Produkt-URL und Kandidaten.
+  const [abrufUrl, setzeAbrufUrl] = useState<string>(entwurf.produktUrl ?? '')
+  const [abruf, setzeAbruf] = useState<{ abrufId: string; kandidaten: ProduktfotoKandidat[] } | null>(
+    null,
+  )
+  const [abrufLaeuft, setzeAbrufLaeuft] = useState(false)
+  const [abrufHinweis, setzeAbrufHinweis] = useState<string | null>(null)
+  const [kandidatLaeuft, setzeKandidatLaeuft] = useState<number | null>(null)
+  // Die `auftragId` ordnet die Meldung des Nachlaufs DIESEM Editor zu - zwei montierte
+  // Editoren (Reiter und Ansicht) duerfen sich nicht gegenseitig bedienen.
+  const abrufAuftragRef = useRef<string | null>(null)
+
+  // Der Feldwert folgt dem Entwurf (Wechsel der Aktion, Uebernahme aus dem Bestand).
+  // Waehrend des Tippens aendert sich `entwurf.produktUrl` nicht - kein Zuruckspringen.
+  useEffect(() => {
+    setzeAbrufUrl(entwurf.produktUrl ?? '')
+  }, [entwurf.produktUrl])
+
+  /** Eine Meldung des Nachlaufs verarbeiten - nur die zu UNSEREM Auftrag. */
+  function verarbeiteMeldung(meldung: NonNullable<ReturnType<typeof holeProduktfotoMeldung>>): void {
+    if (abrufAuftragRef.current === null || meldung.auftragId !== abrufAuftragRef.current) return
+    verbraucheProduktfoto()
+    abrufAuftragRef.current = null
+    setzeAbrufLaeuft(false)
+    if (meldung.status === 'erfolg') {
+      setzeAbruf({ abrufId: meldung.abrufId, kandidaten: meldung.kandidaten })
+      setzeAbrufHinweis(null)
+      return
+    }
+    setzeAbrufHinweis('Der Abruf ist fehlgeschlagen – der Grund steht oben in der Meldung.')
+  }
+
+  useEffect(() => {
+    return abonniereProduktfoto(() => {
+      const meldung = holeProduktfotoMeldung()
+      if (meldung !== null) verarbeiteMeldung(meldung)
+    })
+    // Die Verarbeitung liest nur Refs und Setter - ein Abo je Montage genuegt.
+  }, [])
+
+  async function starteAbruf(): Promise<void> {
+    const adresse = normalisiereProduktUrl(abrufUrl)
+    if (adresse === null) {
+      setzeAbrufHinweis('Bitte eine gültige http(s)-Adresse eintragen.')
+      return
+    }
+    if (adresse !== (entwurf.produktUrl ?? null)) aufAenderung('produktUrl', adresse)
+    setzeAbrufHinweis(null)
+    setzeAbruf(null)
+    setzeAbrufLaeuft(true)
+    const antwort = await starteProduktfotoAbruf(projekt.id, aktionId, adresse)
+    if (!antwort.ok) {
+      setzeAbrufLaeuft(false)
+      setzeAbrufHinweis(`Abruf nicht gestartet: ${antwort.fehler.meldung}`)
+      return
+    }
+    abrufAuftragRef.current = antwort.wert.auftragId
+    // Ein sehr schneller Fehlschlag kann VOR dieser Zeile gemeldet worden sein.
+    const schonDa = holeProduktfotoMeldung()
+    if (schonDa !== null) verarbeiteMeldung(schonDa)
+  }
+
+  async function uebernimmKandidat(kandidat: number): Promise<void> {
+    if (abruf === null) return
+    setzeKandidatLaeuft(kandidat)
+    const antwort = await waehleProduktfoto(abruf.abrufId, kandidat)
+    if (!antwort.ok) {
+      setzeKandidatLaeuft(null)
+      setzeAbrufHinweis(`Nicht übernommen: ${antwort.fehler.meldung}`)
+      return
+    }
+    await aufAssetGewaehlt(antwort.wert.bildRef)
+    setzeKandidatLaeuft(null)
+    setzeAbruf(null)
+    setzeAbrufHinweis('Das Foto ist als Bild im Projekt übernommen.')
+  }
+
+  function verwirfAbruf(): void {
+    if (abruf === null) return
+    void verwirfProduktfoto(abruf.abrufId)
+    setzeAbruf(null)
+    setzeAbrufHinweis('Abruf verworfen – es wurde kein Bild übernommen.')
+  }
   // 05.11.2026: Die letzten 20 Farben - app-weit in `config.json` (`uiVoreinstellungen`).
   // Der Ref haelt den Stand fuer schnelle Klicks; der State zeichnet die Swatches.
   const [letzteFarben, setzeLetzteFarben] = useState<string[]>([])
@@ -1040,7 +1158,11 @@ function Inspector({
           <div data-testid="aktion-bild" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <select
               data-testid="aktion-bild-wahl"
-              defaultValue={entwurf.bildRef ?? ''}
+              // KONTROLLIERT seit 12.11.2026 (FA-27): Ein per Kandidaten-Klick
+              // uebernommenes Foto setzt `bildRef` von AUSSEN - mit `defaultValue`
+              // zeigte die Liste weiter den alten Eintrag, obwohl der Entwurf schon
+              // das neue Bild trug. `onChange` schreibt ohnehin in den Entwurf.
+              value={entwurf.bildRef ?? ''}
               onChange={(ereignis) => {
                 aufBild(ereignis.target.value === '' ? null : ereignis.target.value)
               }}
@@ -1100,6 +1222,86 @@ function Inspector({
                 {importHinweis}
               </p>
             )}
+            {/* SEIT 12.11.2026 (FA-27 / TK 9.19.8): Produkt-URL und „Foto abrufen".
+                Der Abruf ist ein AUFTRAG (Warteschlange zeigt ihn mit Fortschritt);
+                die Kandidaten erscheinen erst, wenn der Nachlauf sie meldet. Ohne Klick
+                auf einen Kandidaten wird kein Bild uebernommen. */}
+            <div
+              data-testid="produkt-abruf"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                borderTop: '1px solid #333',
+                paddingTop: 6,
+              }}
+            >
+              <label style={{ display: 'block' }}>Produkt-URL{' '}
+                <input
+                  type="url"
+                  value={abrufUrl}
+                  placeholder="https://shop.example/produkt"
+                  data-testid="produkt-url"
+                  style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
+                  onChange={(ereignis) => {
+                    setzeAbrufUrl(ereignis.target.value)
+                  }}
+                  onBlur={() => {
+                    const adresse = normalisiereProduktUrl(abrufUrl)
+                    setzeAbrufUrl(adresse ?? '')
+                    if (adresse !== (entwurf.produktUrl ?? null)) aufAenderung('produktUrl', adresse)
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                data-testid="produkt-foto-abrufen"
+                disabled={abrufLaeuft}
+                onClick={() => {
+                  void starteAbruf()
+                }}
+              >
+                {abrufLaeuft ? 'Foto wird abgerufen …' : 'Foto abrufen'}
+              </button>
+              {abrufHinweis !== null && (
+                <p
+                  data-testid="produkt-abruf-hinweis"
+                  style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}
+                >
+                  {abrufHinweis}
+                </p>
+              )}
+              {abruf !== null && (
+                <div
+                  data-testid="produkt-kandidaten"
+                  style={{ display: 'flex', flexDirection: 'column', gap: 3 }}
+                >
+                  <p data-testid="produkt-herkunft" style={{ color: '#9aa4b2', fontSize: 11, margin: 0 }}>
+                    {hostVon(abrufUrl) === null
+                      ? 'Quelle: Produktseite'
+                      : `Quelle: ${hostVon(abrufUrl) ?? ''}`}
+                    {' '}– die Adresse wird am Bild gespeichert.
+                  </p>
+                  {abruf.kandidaten.map((kandidat) => (
+                    <button
+                      key={kandidat.index}
+                      type="button"
+                      data-testid={`produkt-kandidat-${String(kandidat.index)}`}
+                      disabled={kandidatLaeuft !== null}
+                      onClick={() => {
+                        void uebernimmKandidat(kandidat.index)
+                      }}
+                    >
+                      {String(kandidat.index + 1)}. {kurzName(kandidat.url)} ·{' '}
+                      {String(Math.max(1, Math.round(kandidat.groesse / 1024)))} KB
+                    </button>
+                  ))}
+                  <button type="button" data-testid="produkt-verwerfen" onClick={verwirfAbruf}>
+                    Verwerfen
+                  </button>
+                </div>
+              )}
+            </div>
             {/* SEIT 05.11.2026 (TK 9.8.8): Zoom und Position des Motivs. Sie bewegen den
                 BILDINHALT innerhalb der Zone, nicht die Zone selbst - deshalb steht der
                 Regler hier beim Bild und nicht bei der Vorlage. */}
@@ -1333,4 +1535,24 @@ function LoeschBlock({
       </button>
     </div>
   )
+}
+
+/** Der Dateiname einer Kandidaten-Adresse fuer die Auswahl - nur Anzeige, nie ein Pfad. */
+function kurzName(url: string): string {
+  try {
+    const adresse = new URL(url)
+    const name = adresse.pathname.split('/').pop() ?? ''
+    return name.length > 0 ? name : adresse.host
+  } catch {
+    return url
+  }
+}
+
+/** Der Host einer Produktadresse; `null`, wenn das Feld (noch) keine gueltige Adresse traegt. */
+function hostVon(text: string): string | null {
+  try {
+    return new URL(text).host
+  } catch {
+    return null
+  }
 }

@@ -19,6 +19,7 @@ describe('medium-loeschen (Renderer)', () => {
     dauer: 10,
     importdatum: '',
     zustand: 'ok',
+    herkunft: { art: 'manuell' },
   }
 
   const dummyProjekt: Project = {

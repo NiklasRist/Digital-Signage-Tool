@@ -56,7 +56,7 @@ describe("schreibeConfig (#31)", () => {
     const ergebnis = await schreibeConfig(BASIS);
 
     expect(ergebnis.ok).toBe(true);
-    expect(await lies("config.json")).toEqual({ ...BASIS, schemaVersion: 1 });
+    expect(await lies("config.json")).toEqual({ ...BASIS, schemaVersion: 2 });
   });
 
   it("legt beim ersten Schreiben keine .bak an", async () => {

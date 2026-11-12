@@ -33,6 +33,7 @@ function asset(id: string, typ: "video" | "bild"): Asset {
     dauer: typ === "video" ? 42.5 : null,
     importdatum: "2026-08-15T08:00:00.000Z",
     zustand: "ok",
+    herkunft: { art: 'manuell' },
   };
 }
 

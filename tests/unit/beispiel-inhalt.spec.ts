@@ -38,6 +38,7 @@ function asset(id: string, typ: Asset['typ'], zustand: Asset['zustand']): Asset 
     dauer: null,
     importdatum: '2026-11-05T00:00:00.000Z',
     zustand,
+    herkunft: { art: 'manuell' },
   }
 }
 

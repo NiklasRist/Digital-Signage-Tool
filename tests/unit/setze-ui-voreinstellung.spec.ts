@@ -107,6 +107,6 @@ describe("setzeUIVoreinstellung (#30)", () => {
     const konfig = await liesConfig();
     expect(konfig["uiVoreinstellungen"]).toEqual({ "app-shell.aktiverReiter": "projekte" });
     expect(konfig["aktivesProjektId"]).toBeNull();
-    expect(konfig["schemaVersion"]).toBe(1);
+    expect(konfig["schemaVersion"]).toBe(2);
   });
 });

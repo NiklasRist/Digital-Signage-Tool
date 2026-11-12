@@ -85,6 +85,7 @@ function asset(id: string, wert: Asset['zustand'] = 'ok', dateiname = `${id}.mp4
     dauer: 12.5,
     importdatum: '2026-08-13T09:00:00.000Z',
     zustand: wert,
+    herkunft: { art: 'manuell' },
   }
 }
 

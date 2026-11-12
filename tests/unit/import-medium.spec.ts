@@ -260,6 +260,8 @@ describe('importMedium – Erfolgslauf', () => {
       dauer: 12.345,
       importdatum: expect.any(String),
       zustand: 'ok',
+      // PFLICHTFELD seit 12.11.2026 (FA-27 / TK 9.19.6): ein Dateiimport hat keine Netzquelle.
+      herkunft: { art: 'manuell' },
     })
   })
 

@@ -148,6 +148,10 @@ export interface Aktion {
   // Standbild von heute – der Zustand vor dieser Fassung. Kein Pflichtfeld, damit
   // jede bestehende `project.json` ohne Migration weiterlesbar bleibt.
   effekte?: EffektSatz | null
+  // Produktseite, von der ein Foto abgerufen werden kann (12.11.2026, FA-27 / TK 9.19.7).
+  // Getrimmt, nur http/https; alles andere = null (normalisiereProduktUrl in
+  // shared/produkt-url.ts). Optional, damit jede bestehende `project.json` lesbar bleibt.
+  produktUrl?: string | null
 }
 
 /**

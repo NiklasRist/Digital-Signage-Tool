@@ -67,6 +67,7 @@ function quellProjekt(): Project {
         dauer: 12.5,
         importdatum: "2026-01-01T00:00:00.000Z",
         zustand: "ok",
+        herkunft: { art: 'manuell' },
       },
     ],
     aktionen: [],

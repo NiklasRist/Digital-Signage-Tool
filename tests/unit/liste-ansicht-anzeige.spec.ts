@@ -97,6 +97,7 @@ function asset(id: string, original: string): Asset {
   return {
     id, typ: 'video', dateiname: `${id}.mp4`, originalname: original,
     maße: { breite: 1920, höhe: 1080 }, dauer: 30.7, importdatum: '2026-08-01T09:00:00Z', zustand: 'ok',
+    herkunft: { art: 'manuell' },
   }
 }
 

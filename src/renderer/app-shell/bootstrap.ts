@@ -33,7 +33,7 @@ import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { Sichten } from './sichten'
 import type { Reiterzugaenge } from './inhalte-zugaenge'
 import type { StartErgebnis, StartHinweis } from './start'
-import type { NachlaufWirkungen } from './auftrags-nachlauf'
+import type { NachlaufWirkungen, ProduktfotoMeldung } from './auftrags-nachlauf'
 
 /** Der Stand des Renderer-Bootstraps. Ein WERT – keine Funktion mutiert ihn. */
 export type BootstrapLage =
@@ -77,6 +77,8 @@ export interface BootstrapSchritte {
   /** Der Import-Rueckweg der Reparatur (#256) – wird UNVERAENDERT in die Wirkstellen gelegt,
    *  hier NIE gerufen. */
   meldeImportErgebnis: (assetId: string) => void
+  /** FA-27 (#470): das Ergebnis eines Produktfoto-Abrufs – ebenfalls UNVERAENDERT gelegt. */
+  meldeProduktfotoAbruf: (meldung: ProduktfotoMeldung) => void
   /** Meldeweg fuer Fehler des Nachlaufs und des Vorbereitens. Diese Datei zeigt NICHTS selbst an. */
   meldeFehler: (code: string, meldung: string) => void
   /** Rueckkanal in den Zustand des Aufrufers. Wird bei JEDEM Lagewechsel gerufen. */
@@ -94,6 +96,7 @@ export function baueNachlaufWirkungen(
   aktualisiereAusgabenListe: () => void,
   meldeFehler: (code: string, meldung: string) => void,
   meldeImportErgebnis: (assetId: string) => void,
+  meldeProduktfotoAbruf?: (meldung: ProduktfotoMeldung) => void,
 ): NachlaufWirkungen {
   return {
     // Die einzige Umschliessung - sie rechnet NICHTS, sie liest zur
@@ -106,6 +109,7 @@ export function baueNachlaufWirkungen(
     leereProjektHistorie,
     aktualisiereAusgabenListe,
     meldeImportErgebnis,
+    meldeProduktfotoAbruf,
     meldeFehler,
   }
 }
@@ -182,6 +186,7 @@ export function starteRenderer(schritte: BootstrapSchritte): () => void {
             schritte.aktualisiereAusgabenListe,
             schritte.meldeFehler,
             schritte.meldeImportErgebnis,
+            schritte.meldeProduktfotoAbruf,
           ),
         ),
       )

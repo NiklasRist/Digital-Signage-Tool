@@ -2,6 +2,7 @@
 
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { Asset } from '../../shared/contracts/asset'
+import type { ProduktfotoKandidat } from '../../shared/contracts/produktabruf'
 import type { Project } from '../../shared/contracts/project'
 import type { Zeichenvoraussetzungen } from '../composer/zeichen-vorbereitung'
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
@@ -24,10 +25,20 @@ export interface NachlaufWirkungen {
   /** Optional: meldet der Reparatur-Führung die Kennung eines ERFOLGREICH importierten Assets
    *  (#256 `schliesseMedienImportAb`, über #262). NUR bei art 'import' und status 'erfolg'. */
   meldeImportErgebnis?: (assetId: string) => void
+  /** Optional: das Ergebnis eines Produktfoto-Abrufs (FA-27, #470). Der Abruf aendert D1
+   *  NICHT - er meldet nur Kandidaten; deshalb laeuft er nicht durch den D1-Zweig, sondern
+   *  hier. `status: 'fehler'` dient allein dazu, die Sperre im Editor zu loesen; der
+   *  sichtbare Grund kam bereits ueber `meldeFehler`. */
+  meldeProduktfotoAbruf?: (meldung: ProduktfotoMeldung) => void
   /** Meldeweg für Fehler, die beim Nachlauf selbst auftreten. LANDET in der anwendungsweiten
    *  meldungsFlaeche des Rahmens (#195), gehalten von #262 (App.tsx). */
   meldeFehler: (code: string, meldung: string) => void
 }
+
+/** Die Meldung, die der Nachlauf an den Editor weiterreicht (FA-27). */
+export type ProduktfotoMeldung =
+  | { status: 'erfolg'; auftragId: string; abrufId: string; kandidaten: ProduktfotoKandidat[] }
+  | { status: 'fehler'; auftragId: string }
 
 /** Die drei terminalen Zustände (TK 9.3.3). */
 export const TERMINALE_ZUSTAENDE = ['erfolg', 'fehlgeschlagen', 'abgebrochen'] as const
@@ -107,6 +118,37 @@ export function starteAuftragsNachlauf(
       return
     }
 
+    // FA-27 (#470): Der Produktfoto-Abruf aendert D1 NICHT. Sein Ergebnis geht an den
+    // Editor; bei Fehlschlag wurde der Klartext oben bereits gemeldet - hier wird nur
+    // die Sperre geloest.
+    if (auftrag.art === 'produktfoto-abruf') {
+      if (auftrag.status !== 'erfolg') {
+        wirkungen.meldeProduktfotoAbruf?.({ status: 'fehler', auftragId: auftrag.auftragId })
+        return
+      }
+      // SAFETY: `rohErgebnis` ist `unknown` (IPC-Nutzlast); der Cast macht die beiden
+      // Felder lesbar, geprueft werden sie in der Zeile darunter.
+      const ergebnis = rohErgebnis as { abrufId?: unknown; kandidaten?: unknown }
+      if (typeof ergebnis?.abrufId !== 'string' || !Array.isArray(ergebnis.kandidaten)) {
+        wirkungen.meldeFehler(
+          'unbekannter_fehler',
+          `Der Abruf ${auftrag.auftragId} meldet Erfolg ohne Kandidaten.`,
+        )
+        wirkungen.meldeProduktfotoAbruf?.({ status: 'fehler', auftragId: auftrag.auftragId })
+        return
+      }
+      // SAFETY: `Array.isArray` ist oben geprueft; die Elemente stammen aus dem Main,
+      // der sie als `ProduktfotoKandidat` gebaut hat (TK 9.19.2). Der Editor prueft die
+      // Form beim Lesen nicht erneut - er benutzt nur `index`, `url`, `typ`, `groesse`.
+      wirkungen.meldeProduktfotoAbruf?.({
+        status: 'erfolg',
+        auftragId: auftrag.auftragId,
+        abrufId: ergebnis.abrufId,
+        kandidaten: ergebnis.kandidaten as ProduktfotoKandidat[],
+      })
+      return
+    }
+
     // D1-ändernde Arten (import/loeschen) ab hier (M7-06, Schritte 2.1-2.4, 2.6).
     if (!D1_AENDERNDE_ARTEN.some((art) => art === auftrag.art)) return
     if (rohErgebnis === null || rohErgebnis === undefined) {
@@ -173,3 +215,4 @@ export function starteAuftragsNachlauf(
     }
   })
 }
+

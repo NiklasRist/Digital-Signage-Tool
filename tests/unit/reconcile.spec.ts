@@ -69,6 +69,7 @@ function asset(id: string, dateiname: string): Asset {
     dauer: 10,
     importdatum: '2026-08-13T10:00:00.000Z',
     zustand: 'ok',
+    herkunft: { art: 'manuell' },
   }
 }
 

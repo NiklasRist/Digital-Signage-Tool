@@ -19,6 +19,7 @@ function asset(id: string, zustand: 'ok' | 'fehlt' = 'ok'): Asset {
     dauer: null,
     importdatum: '2026-08-01T10:00:00Z',
     zustand,
+    herkunft: { art: 'manuell' },
   }
 }
 

@@ -27,6 +27,7 @@ function asset(ueber: Partial<Asset> & { id: string }): Asset {
     dauer: 10,
     importdatum: '2026-01-01T00:00:00.000Z',
     zustand: 'ok',
+    herkunft: { art: 'manuell' },
     ...ueber,
   }
 }

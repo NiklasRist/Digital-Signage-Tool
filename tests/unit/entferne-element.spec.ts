@@ -36,6 +36,7 @@ const ASSET: Asset = {
   dauer: null,
   importdatum: "2026-08-12T08:00:00.000Z",
   zustand: "fehlt",
+  herkunft: { art: 'manuell' },
 };
 
 const AKTION: Aktion = {

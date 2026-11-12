@@ -38,7 +38,7 @@ describe("Projektweite Konstanten (#21)", () => {
   it("traegt die Werte aus dem Anforderungsdokument", () => {
     expect(STANDARD_ANZEIGEDAUER_SEKUNDEN).toBe(10);
     expect(DAUER_BEREICH).toEqual({ min: 8, max: 45 });
-    expect(AKTUELLE_SCHEMA_VERSION).toBe(1);
+    expect(AKTUELLE_SCHEMA_VERSION).toBe(2);
   });
 
   it("legt die Standarddauer in den erlaubten Bereich", () => {
