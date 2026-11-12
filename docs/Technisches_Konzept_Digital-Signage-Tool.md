@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v2.3 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.63 (12.11.2026: **9.19 Produktfoto-Abruf (FA-27)** – Abruf im **Main**, als Auftrag über `reiheEin`; Quelle sind die strukturierten Produktdaten (`Product.image`), ersatzweise `og:image`; höchstens 5 Kandidaten im Speicher, erst die Wahl legt ein Asset an; **`Asset.herkunft` wird Pflichtfeld** mit den Varianten `{art:'manuell'}` und `{art:'abruf', url, abgerufenAm}`; neues Feld `Aktion.produktUrl`; harte Grenzen gegen lokale Netze. AD v2.4. Vorher 3.62: 1.1/12.1/14: Die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, sechstes Angebot (AD v2.3). Vorher 3.61: 9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.64 (12.11.2026: **9.20 Produktseite finden (FA-30)** – Stichwortsuche, vorbelegt mit dem Aktions-Titel; zuerst in hinterlegten Shops (`ProduktQuellen` im config-store), danach eine allgemeine Websuche als ausdruecklicher NOTWEG ohne Schluessel. Trennt Finden (9.20) von Holen (9.19). Vorher 3.63: **9.19 Produktfoto-Abruf (FA-27)** – Abruf im **Main**, als Auftrag über `reiheEin`; Quelle sind die strukturierten Produktdaten (`Product.image`), ersatzweise `og:image`; höchstens 5 Kandidaten im Speicher, erst die Wahl legt ein Asset an; **`Asset.herkunft` wird Pflichtfeld** mit den Varianten `{art:'manuell'}` und `{art:'abruf', url, abgerufenAm}`; neues Feld `Aktion.produktUrl`; harte Grenzen gegen lokale Netze. AD v2.4. Vorher 3.62: 1.1/12.1/14: Die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, sechstes Angebot (AD v2.3). Vorher 3.61: 9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 09.11.2026
 **Status:** In Planung
 
@@ -327,7 +327,7 @@ Dieser Abschnitt übersetzt die Prozesse **P1–P7** in konkrete Module mit scha
 - **Main (Node):** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher Q1–Q4, 9.3), `media-service` [P1] (9.4), `project-store` [D1] (besitzt das eine D1-Schreib-Lock **und** ist Pfad-Autorität + trägt das `media://`-Protokoll, 9.5.7), `config-store` [D3], `vorlagen-store` (app-weite Vorlagen-Bibliothek, 9.12.1), `marken-store` [V2] (app-weiter Marken-Bestand, **löst die Marken-Vererbung als einzige Stelle auf**, 9.15.1), `render-service` [P4] (9.2), `export-service`, `ffmpeg-adapter` (enthält den getesteten `buildReel`-Kern).
 - **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …). Die reine Bandgeometrie-Rechnung `berechneBandGeometrie` ist mit dem Split-Screen **entfallen** (v3.31, 9.2.8). Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag. **Die Effekt-Rechnung** (`shared/effekte.ts`) und **der Bildplan** (`shared/bildplan.ts`) liegen ebenfalls hier – rein, ohne DOM, von Renderer und Main lesbar (9.16).
 
-**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1), die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3), die **Marken-Verwaltung** `marken-store`/`marken-editor` (9.15), die **Effekte** (9.16) sowie der **Produktfoto-Abruf** (9.19). **Speicher `V2`** (Marken-Bestand) tritt neben `V1` (Vorlagen). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
+**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1), die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3), die **Marken-Verwaltung** `marken-store`/`marken-editor` (9.15), die **Effekte** (9.16) sowie der **Produktfoto-Abruf** (9.19) und die **Produktseiten-Suche** (9.20). **Speicher `V2`** (Marken-Bestand) tritt neben `V1` (Vorlagen). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
 
 ### 9.1 IPC-Vertrag: Granularität (Variante A) und Konventionen
 
@@ -3630,9 +3630,88 @@ Der **manuelle Import bleibt jederzeit möglich** (AD 4.12).
 
 ---
 
+### 9.20 Produktseite finden (FA-30)
+
+**Kein eigenes Modul.** 9.20 ist der **Schritt vor** 9.19: Es liefert die Adresse, die 9.19 als Eingang
+braucht. Beides läuft im **Main**, beides ist ein Auftrag über `reiheEin` (9.3), beides braucht
+Internet und **nur** dafür.
+
+#### 9.20.1 Ablauf
+
+1. Der Nutzer tippt ein **Stichwort** — vorbelegt mit `Aktion.titel`, überschreibbar.
+2. Der Main sucht **zuerst** in den hinterlegten Shops (9.20.2), **danach** — nur wenn dort nichts
+   Brauchbares steht — über den Notweg.
+3. Zurück kommen **höchstens 5 Produktseiten** (Adresse, Titel, Host). Auswahl durch den Nutzer.
+4. Die gewählte Adresse wird `Aktion.produktUrl` (9.19.7) — **und damit beginnt 9.19**.
+
+**Es wird nichts automatisch weiterverarbeitet.** Kein Bild wird geholt, weil eine Seite gefunden
+wurde; erst die Wahl der Seite und dann die Wahl des Bildes führen zu einem Asset. Zwei Auswahlen,
+zwei ausdrückliche Klicks — dieselbe Regel wie in 9.19.2.
+
+#### 9.20.2 Die zwei Quellen
+
+**Primär: hinterlegte Shops.** Eine app-weite Liste von Shop-Adressen (9.20.3). Je Shop wird dessen
+**eigene Produktsuche** befragt; Treffer werden wie in 9.19.3 aus dem Ergebnis gelesen (Titel,
+Produktseite). Das ist der robuste Weg: die Suchseite eines Shops ist stabiler als eine
+Suchergebnisseite im offenen Netz.
+
+**Notweg: allgemeine Websuche ohne Schlüssel.** Nur, wenn die Shops nichts liefern. Sie liest die
+Trefferliste einer öffentlichen Suchseite. **Sie ist ausdrücklich fragil:** ändert der Anbieter sein
+Markup oder sperrt er automatisierte Anfragen, liefert sie nichts mehr — und dann steht im Protokoll
+ein Befund, kein Absturz. Ein Schlüssel wird **nicht** verlangt und **nicht** gespeichert; damit
+braucht das Werkzeug kein Konto und keine Kostenstelle.
+
+**Ein Ausfall des Notwegs ist kein Fehler des Angebots.** Er meldet „nichts gefunden" und der Nutzer
+kann die Adresse immer noch selbst eintragen — dieser Weg bleibt bestehen (9.19.8).
+
+#### 9.20.3 Konfiguration
+
+Neues app-weites Feld im `config-store` (9.5):
+
+```ts
+interface ProduktQuellen {
+  shops: string[];        // Hosts, z. B. ["best-body-shop.de", "all-stars.de"]
+  webSuche: boolean;      // Notweg erlaubt? Standard: true
+}
+```
+
+**App-weit, nicht je Projekt:** die Shops, bei denen eingekauft wird, ändern sich nicht mit dem
+Projekt — dasselbe Muster wie `marken.json` und `vorlagen.json`. Die Liste ist **bearbeitbar**; ohne
+sie bleibt der Notweg.
+
+#### 9.20.4 Grenzen
+
+Es gelten **alle** Regeln aus 9.19.4 unverändert: nur `http`/`https`, keine lokalen Netze (geprüft auf
+der **aufgelösten** Adresse), höchstens 3 Weiterleitungen, Zeit- und Größenlimits, kein HTML-Rendern,
+kein JavaScript.
+
+Zusätzlich:
+
+- **Zeitbudget 20 s** für den gesamten Suchschritt, danach bricht er mit Klartext ab.
+- **Höchstens 5 Treffer** werden angeboten, Duplikate über die normalisierte Adresse entfernt.
+- **Höchstens 3 Shops** werden befragt (die ersten der Liste), damit die Suche nicht linear wächst.
+
+#### 9.20.5 Was das NICHT ist
+
+- **Keine Produktdatenbank.** Es wird keine Liste gepflegt, kein Bestand, kein Preis.
+- **Kein Preisabgleich.** Der Preis ist und bleibt eine Eingabe an der Aktion.
+- **Kein Crawler.** Es wird genau das geholt, was der Nutzer ausgelöst hat, und nichts im Hintergrund.
+- **Keine Synchronisation** (AD Abschnitt 6).
+
+#### 9.20.6 Ehrlich offen
+
+- Der **Notweg ist fragil** und darf nicht als Zusage gelesen werden. Er steht in der Oberfläche als
+  „allgemeine Suche (kann ausfallen)" und nicht als gleichwertige Quelle.
+- **Shop-Suchen sind HTML.** Auch sie können sich ändern; die Liste ist konfigurierbar, damit ein
+  Ausfall nicht das ganze Werkzeug trifft.
+- **Ausprobieren steht aus:** kein Shop ist heute hinterlegt, und keine der beiden Quellen wurde in
+  diesem Projekt je angesprochen. 9.20 beschreibt den Vertrag, nicht ein gemessenes Verhalten.
+
+---
+
 > **Stand des High-Level-Designs.** **Ausgearbeitet:** `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9).
 >
-> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**, **9.16**, **9.17**, **9.18**, **9.19**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
+> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**, **9.16**, **9.17**, **9.18**, **9.19**, **9.20**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >

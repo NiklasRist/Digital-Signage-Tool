@@ -4,7 +4,7 @@
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
 **Datum:** 12.11.2026
-**Version:** 2.4 (12.11.2026: **FA-28 / FA-29** + **4.13** – Produktbild **aufbereiten** (Soll: Zuschnitt, Helligkeit, Kontrast, Schärfe; nicht destruktiv, lokal) und **freistellen** (Kann: transparenter Hintergrund über ein mitgeliefertes Modell, offline). Dazu 4.12 um die im TK entschiedenen Punkte ergänzt. Vorher 2.3: **1.1 / 12.1 / 14** – die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, neues Angebot – und nicht die Folie. Vorher 2.2: **FA-27** – optionaler **Produktfoto-Abruf** aus einer Produkt-URL; das Tool bleibt ohne Internet vollständig (NFA-06 unverändert), der Abruf ist ein Zusatz und niemals Voraussetzung. Vorher 2.1: **12.1** – die PowerPoint-Referenz wird **genommen, nicht gebaut**: Referenz sind zwei frei verfügbare, **markenfremde** Präsentationen, in die dieselben 5 Angebote geschrieben werden; „Markentreue" heißt bei markenfremder Referenz „eigene visuelle Identität durchgehalten", und die Startzahl „PowerPoint ≤ 14/24" wird nach der ersten Messung **aus den Messwerten abgeleitet, nicht verteidigt**. Vorher 2.0: **Leitforderung L-01** – der Output muss schneller, einfacher und qualitativ besser sein als eine gute PowerPoint; ein Angebot inklusive Designarbeit ≤ 5 min, eine Änderung ≤ 1 min ohne Renderzeit; **FA-26 Varianten** (manuell, mindestens drei je Aktion); Heuristik-Abnahme. Vorher, v1.14: 4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
+**Version:** 2.5 (12.11.2026: **FA-30** + **4.14** – **Produktseite finden**: Stichwortsuche (vorbelegt mit dem Aktions-Titel) zuerst in hinterlegten Shops, danach eine allgemeine Websuche als **benannter Notweg**; die gewählte Adresse wird `produktUrl`. Trennt das **Finden** (fragil, 4.14) vom **Holen** (FA-27, 4.12). Vorher 2.4: **FA-28 / FA-29** + **4.13** – Produktbild **aufbereiten** (Soll: Zuschnitt, Helligkeit, Kontrast, Schärfe; nicht destruktiv, lokal) und **freistellen** (Kann: transparenter Hintergrund über ein mitgeliefertes Modell, offline). Dazu 4.12 um die im TK entschiedenen Punkte ergänzt. Vorher 2.3: **1.1 / 12.1 / 14** – die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, neues Angebot – und nicht die Folie. Vorher 2.2: **FA-27** – optionaler **Produktfoto-Abruf** aus einer Produkt-URL; das Tool bleibt ohne Internet vollständig (NFA-06 unverändert), der Abruf ist ein Zusatz und niemals Voraussetzung. Vorher 2.1: **12.1** – die PowerPoint-Referenz wird **genommen, nicht gebaut**: Referenz sind zwei frei verfügbare, **markenfremde** Präsentationen, in die dieselben 5 Angebote geschrieben werden; „Markentreue" heißt bei markenfremder Referenz „eigene visuelle Identität durchgehalten", und die Startzahl „PowerPoint ≤ 14/24" wird nach der ersten Messung **aus den Messwerten abgeleitet, nicht verteidigt**. Vorher 2.0: **Leitforderung L-01** – der Output muss schneller, einfacher und qualitativ besser sein als eine gute PowerPoint; ein Angebot inklusive Designarbeit ≤ 5 min, eine Änderung ≤ 1 min ohne Renderzeit; **FA-26 Varianten** (manuell, mindestens drei je Aktion); Heuristik-Abnahme. Vorher, v1.14: 4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
 **Status:** In Abstimmung
 
 ---
@@ -43,7 +43,7 @@ einem Projekt zusammengefasst.
 
 **Warum diese Leitforderung über den FA steht:** Die bisherigen FA prüfen, **ob** etwas existiert.
 L-01 prüft, **ob das Ergebnis die Arbeit besser macht** als das Werkzeug, das ersetzt wird. Sie ist
-die oberste Abnahme; die FA-01…FA-29 bleiben die funktionalen Randbedingungen.
+die oberste Abnahme; die FA-01…FA-30 bleiben die funktionalen Randbedingungen.
 
 ---
 
@@ -131,6 +131,7 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-27 | Produktfoto abrufen | Zu einem Produkt mit hinterlegter Produkt-URL kann die Anwendung ein Produktfoto abrufen und als Asset übernehmen; der Nutzer **wählt** aus, welches Foto in eine Aktion kommt. Der Abruf ist **optional**: ohne Internet bleibt er unbenutzt, alle übrigen Vorgänge laufen unverändert (NFA-06). Kein automatisches Einsetzen – ein Bild wird nie ohne Auswahl einer Aktion zugeordnet. Details: 4.12. | Soll |
 | FA-28 | Produktbild aufbereiten | Ein Bild einer Aktion lässt sich **vor dem Einsatz** aufbereiten: **Zuschnitt** und **Bildverbesserung** (Helligkeit, Kontrast, Schärfe). Die Aufbereitung ist **nicht destruktiv** — das Original-Asset bleibt unverändert erhalten, die Einstellungen stehen an der Aktion. Alles läuft **lokal**, ohne Netz (NFA-06). Details: 4.13. | Soll |
 | FA-29 | Produktbild freistellen | Ein Produktbild kann **freigestellt** werden (transparenter Hintergrund), damit es vor der Fläche einer Vorlage liegt statt in einem Rechteck. Das Freistellen läuft **lokal über ein mitgeliefertes Modell**, ohne Netz (NFA-06), und ist **optional** — ohne Freistellung bleibt das Bild wie es ist. Details: 4.13. | Kann |
+| FA-30 | Produktseite finden | Zu einem **Stichwort** (vorbelegt mit dem Titel der Aktion) findet die Anwendung **Produktseiten** und bietet sie zur Auswahl. Gesucht wird zuerst in **hinterlegten Shops**, danach über eine allgemeine Websuche als **Notweg**. Die gewählte Adresse wird zur `produktUrl` der Aktion und ist damit der Eingang für FA-27. Ohne Internet entfällt nur dieser Weg. Details: 4.14. | Soll |
 
 **Ein Bild ist kein Listenelement (ab v1.5).** Eine Wiedergabeliste besteht aus genau zwei Arten von
 Elementen: **Videos** und **Aktions-Segmente**. Ein fertig gestaltetes Bild von außen direkt in die Liste
@@ -537,6 +538,36 @@ das ist eine eigene Entscheidung wert und darf FA-28 nicht aufhalten.
 **Offen für das Technische Konzept:** wo die Einstellungen liegen (an der Aktion, wie
 `bildAusschnitt`), ob das aufbereitete Bild als eigenes Asset materialisiert wird oder beim Zeichnen
 entsteht, und **wie das Modell ausgeliefert wird** (Größe, Ladezeit, Plattform).
+
+---
+
+### 4.14 Produktseite finden (FA-30, 12.11.2026)
+
+**Warum:** 4.12 setzt voraus, dass eine Produkt-URL **bekannt** ist. Sie ist es nicht. Niemand kennt die
+Adressen der Herstellerseiten auswendig, und eine Liste davon gibt es im Tool nicht. Ein Feld, in das
+man eine URL einfügt, verlagert die Arbeit nur — und die Zusage aus 1.1 misst genau diese Arbeit.
+
+**Was:** Zu einem **Stichwort** findet die Anwendung **Produktseiten** und bietet sie zur Auswahl. Das
+Feld ist mit dem **Titel der Aktion** vorbelegt und darf überschrieben werden („Whey Crisp" statt
+„Whey Crisp Proteinriegel"). Die gewählte Adresse wird zur `produktUrl` und ist damit der Eingang für
+4.12.
+
+**Reihenfolge der Quellen — und sie ist Absicht:**
+
+1. **Hinterlegte Shops.** Eine app-weite Liste der Shops, bei denen das Studio einkauft. Deren
+   Produktsuche ist stabil und trifft die Artikel, die wirklich im Regal stehen.
+2. **Allgemeine Websuche als Notweg.** Breiter, aber **fragil**: sie hängt an fremdem Seitenaufbau und
+   kann jederzeit still aufhören zu funktionieren. Sie ist der Rückfall, nicht der Hauptweg — und ein
+   Ausfall darf das Angebot nicht blockieren.
+
+**Ohne Internet** entfällt nur dieser Weg; alles andere läuft unverändert (NFA-06).
+
+**Abgrenzung:** Das ist **keine** Produktdatenbank und **kein** Preisabgleich. Übernommen wird eine
+**Adresse**, kein Preis, kein Bestand, kein Lagerstand. Es wird auch nicht im Hintergrund gesucht und
+nichts zwischengespeichert, was nicht der Nutzer ausgelöst hat.
+
+**Offen für das Technische Konzept:** wie die Shop-Liste gepflegt wird, wie viele Treffer angeboten
+werden, und wie der Notweg aussieht, ohne einen Schlüssel zu verlangen.
 
 ---
 
