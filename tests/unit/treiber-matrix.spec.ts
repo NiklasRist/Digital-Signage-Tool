@@ -55,7 +55,10 @@ describe("Treiber-Matrix", () => {
     const fremd = [...gezaehlt.keys()].filter((fa) => !gefordert.has(fa));
 
     expect({ fehlend, doppelt, fremd }).toEqual({ fehlend: [], doppelt: [], fremd: [] });
-    expect(gefordert.size).toBe(27);
+    // 30 seit 12.11.2026: FA-28/FA-29 (AD v2.4, Bildaufbereitung/Freistellen) und
+    // FA-30 (AD v2.5, Produktseite finden) sind dazugekommen - dieselbe Fehlerklasse
+    // wie bei #468 (FA-26) und #470 (FA-27): neues AD, Matrix nicht nachgezogen.
+    expect(gefordert.size).toBe(30);
   });
 
   it("jede genannte Schritt-Kennung existiert im Treiber", () => {

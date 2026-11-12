@@ -1869,6 +1869,29 @@ const main = async () => {
         }
         return letzte;
       };
+      /**
+       * Wartet, bis der OFFENE Editor den Stand auch ANZEIGT (Zonenliste).
+       *
+       * WARUM DAS NOETIG IST (gemessen 12.11.2026): Nach dem Redo per Tastatur war der
+       * STORE schon auf 3 Zonen, der React-Entwurf aber noch auf 2. Ein sofortiger Klick
+       * auf „Vorlage überarbeiten" sicherte dann den ALTEN Entwurf und schrieb ihn in den
+       * Parent - der Beleg war rot, obwohl der Store stimmte (Messfehler, kein Befund;
+       * dieselbe Klasse wie der Einmal-Leser vom 28.10.2026). Gemessen wird deshalb der
+       * Stand, den der Klick wirklich speichern wuerde.
+       */
+      const warteDraft4n = async (anzahl, fristMs = 5_000) => {
+        const frist = Date.now() + fristMs;
+        while (Date.now() < frist) {
+          const zahl = await seite.evaluate(() => {
+            const kopf = document.querySelector('[data-testid="arbeitskopie-kopf"]');
+            const bereich = kopf === null ? null : kopf.closest('[data-testid="verwaltung"]');
+            return bereich === null ? null : bereich.querySelectorAll('[data-testid^="zonen-liste-"]').length;
+          });
+          if (zahl === anzahl) return true;
+          await schlafe(100);
+        }
+        return false;
+      };
       const warteKopie4n = async (id, pruefung, fristMs = 12_000) => {
         const frist = Date.now() + fristMs;
         let letzte = null;
@@ -1990,6 +2013,12 @@ const main = async () => {
                   if (knopf !== undefined) knopf.click();
                 });
                 await schlafe(1_200);
+              }
+              const draftOk4n = await warteDraft4n(zonenVor4n + 1);
+              if (!draftOk4n) {
+                fund("Vorlagen (FA-13)", "der Editor zeigt den uebernommenen Zonenstand an",
+                  `Zonenliste erreicht ${String(zonenVor4n + 1)} nicht`,
+                  "Befund", "vorlagen-editor/index.tsx");
               }
               await seite.evaluate(() => document.querySelector('[data-testid="vorlage-uebernehmen"]')?.click());
               const gespeichert4n = await warteVorlage4n(id4n, (v) => v.zonen.length === zonenVor4n + 1);
@@ -6918,6 +6947,118 @@ const main = async () => {
         await klick('[data-testid="undo-pfeil"]');
         await schlafe(800);
       }
+    }
+
+    // Schritt 4t - FA-27 (#470): Der Produktfoto-Abruf ist am echten Fenster
+    // erreichbar, und die NETZGRENZE greift. Gemessen wird die Abweisung einer
+    // Loopback-Adresse: Klartext-Meldung, kein Asset, kein Projekt-Schreibvorgang.
+    //
+    // WARUM HIER NICHT DER ERFOLGSWEG GEMESSEN WIRD: Der Beweis-Block von #470 nennt
+    // eine "lokale Testseite" - genau das Ziel, das TK 9.19.4 verbietet. Beides ist
+    // nicht gleichzeitig erfuellbar; die Grenze gewinnt (Sicherheit), und der
+    // Erfolgsweg (Seite -> Kandidat -> Wahl -> Asset mit `herkunft`) ist durch die
+    // Integrationstests `produktfoto-abrufen`/`produktfoto-wahl` belegt. Der Widerspruch
+    // steht im Bericht zu #470.
+    {
+      const projektDatei4t = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      const lies4t = () => JSON.parse(fs.readFileSync(projektDatei4t, "utf-8"));
+      const vorher4t = lies4t();
+
+      // DER WEG UEBER DEN AKTIONEN-REITER (wie 4q): Er ist der stabile Einstieg; der
+      // Editor liegt dort im DOM und braucht kein Oeffnen/Schliessen einer Ansicht.
+      await klick('[data-testid="reiter-aktionen"]');
+      await schlafe(600);
+      const neuGeklickt4t = await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="aktion-neu"]');
+        if (knopf === null) return false;
+        knopf.click();
+        return true;
+      });
+
+      // Vorlage MIT Bildzone waehlen - der Schritt "Bild" haengt an `bedarf.bild`.
+      const frist4t = Date.now() + 10_000;
+      let kachel4t = false;
+      while (Date.now() < frist4t && !kachel4t) {
+        kachel4t = await seite.evaluate(
+          () => document.querySelector('[data-testid="aktion-vorlage-vollbild"]') !== null,
+        );
+        if (!kachel4t) await schlafe(250);
+      }
+      if (kachel4t) {
+        await seite.evaluate(() => {
+          document.querySelector('[data-testid="aktion-vorlage-vollbild"]')?.click();
+        });
+      }
+      let offen4t = false;
+      const fristFeld4t = Date.now() + 10_000;
+      while (Date.now() < fristFeld4t && !offen4t) {
+        offen4t = await seite.evaluate(
+          () => document.querySelector('[data-testid="produkt-url"]') !== null,
+        );
+        if (!offen4t) await schlafe(250);
+      }
+
+      const titel4t = `Durchlauf-Foto-${Date.now()}`;
+      const eingabe4t = !offen4t ? false : await seite.evaluate((titel) => {
+        const titelFeld = document.querySelector('[data-testid="aktion-titel"]');
+        const urlFeld = document.querySelector('[data-testid="produkt-url"]');
+        if (titelFeld === null || urlFeld === null) return false;
+        const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setzeWert.call(titelFeld, titel);
+        titelFeld.dispatchEvent(new Event("input", { bubbles: true }));
+        setzeWert.call(urlFeld, "http://127.0.0.1:9/produkt");
+        urlFeld.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      }, titel4t);
+      await schlafe(300);
+      const geklickt4t = !eingabe4t ? false : await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="produkt-foto-abrufen"]');
+        if (knopf === null) return false;
+        knopf.click();
+        return true;
+      });
+      // Frist 20 s: Die Meldung kommt aus dem Auftrags-Nachlauf, nicht aus dem Klick.
+      const fristMeldung4t = Date.now() + 20_000;
+      let sicht4t = { hinweis: null, meldung: null };
+      while (Date.now() < fristMeldung4t) {
+        sicht4t = await seite.evaluate(() => ({
+          hinweis: document.querySelector('[data-testid="produkt-abruf-hinweis"]')?.textContent ?? null,
+          meldung: document.querySelector('[data-testid="meldungs-flaeche"]')?.textContent ?? null,
+        }));
+        if ((sicht4t.hinweis ?? "").length > 0) break;
+        await schlafe(250);
+      }
+      await schlafe(400);
+      const nachher4t = lies4t();
+      const text4t = `${sicht4t.hinweis ?? ""} ${sicht4t.meldung ?? ""}`;
+      const abgewiesen4t = text4t.includes("lokales Netz");
+      const assetsGleich4t = vorher4t.assets.length === nachher4t.assets.length;
+      console.log(`[schritt-4t] Produktfoto-Abruf: Neu=${String(neuGeklickt4t)}, Kachel=${String(kachel4t)}, ` +
+        `Feld=${String(offen4t)}, Klick=${String(geklickt4t)}, ` +
+        `Hinweis=${JSON.stringify(sicht4t.hinweis)}, Meldung=${JSON.stringify(sicht4t.meldung)}, ` +
+        `Assets ${vorher4t.assets.length} -> ${nachher4t.assets.length}.`);
+      if (!neuGeklickt4t || !kachel4t || !offen4t || !eingabe4t || !geklickt4t) {
+        fund("Produktfoto-Abruf", "der Abruf ist im Schritt \"Bild\" bedienbar",
+          `Neu=${String(neuGeklickt4t)}, Kachel=${String(kachel4t)}, Feld=${String(offen4t)}, ` +
+            `Eingabe=${String(eingabe4t)}, Klick=${String(geklickt4t)}`,
+          "Befund", "action-editor/index.tsx");
+      } else if (!abgewiesen4t) {
+        fund("Produktfoto-Abruf", "eine Loopback-Adresse wird mit Klartext abgewiesen (TK 9.19.4)",
+          `Meldung=${JSON.stringify(text4t)}`,
+          "Befund", "produktfoto/netz.ts");
+      } else if (!assetsGleich4t) {
+        fund("Produktfoto-Abruf", "eine abgewiesene Adresse legt kein Asset an",
+          `Assets ${vorher4t.assets.length} -> ${nachher4t.assets.length}`,
+          "Befund", "produktfoto/produktfoto-abrufen.ts");
+      } else {
+        console.log("[schritt-4t] NETZGRENZE GEMESSEN: Loopback-Adresse mit Klartext abgewiesen, " +
+          "kein Asset entstanden (FA-27, TK 9.19.4).");
+      }
+      // Aufraeumen: Der Entwurf wurde nicht abgeschlossen - "Neue Aktion" verwirft ihn
+      // beim naechsten Wechsel. Zusaetzlich den Reiter wechseln, damit kein halber
+      // Entwurf die spaeteren Schritte stoert.
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(400);
     }
 
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.

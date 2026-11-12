@@ -11,7 +11,49 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (12.11.2026, achtundfünfzigste Sitzung: Dependabot auf null — und der Differenzierer wird ausgeschrieben)
+## STAND HEUTE (12.11.2026, neunundfünfzigste Sitzung: FA-27 gebaut — vom Produktfoto zum Asset)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-12-fa27-gebaut.md`](docs/agents/uebergabe-2026-11-12-fa27-gebaut.md).**
+
+- **#470 IST GEBAUT** (nicht committet, nicht gepusht, **nicht geschlossen**): `Asset.herkunft`
+  ist Pflichtfeld, `AKTUELLE_SCHEMA_VERSION` **2**, erster Eintrag in `MIGRATIONS_KETTE`
+  (`1 -> 2`, jedes Asset `{art:'manuell'}`), `Aktion.produktUrl` über `erstelle-` **und**
+  `bearbeite-aktion`, Auftragsart `produktfoto-abruf`, drei Kanäle `produkt:abrufen/.waehlen/
+  .verwerfen`, Kandidaten im Main (max. 5, 8 MB je Bild, 20 MB gesamt, 10 min Verfall), Wahl
+  durch die **bestehende** Import-Pipeline, Editor-Schritt „Bild" mit URL, Knopf, Kandidatenliste.
+- **Netzgrenzen (TK 9.19.4):** nur http/https, **aufgelöste** Adresse über den `lookup`-Haken
+  geprüft (Loopback, private, Link-Local, ULA, 0/8, CGNAT, Multicast; IPv4-mapped eingebettet),
+  max. 3 Weiterleitungen (jede erneut), 15 s gesamt. **Gegenprobe:** Loopback entfernt → Test rot,
+  byte-identisch zurück (`23f56fe7…`).
+- **Die erste Formatmigration ist getestet:** alte `project.json` (Version 1) laden → Feld da,
+  alle übrigen Werte gleich; vorhandene `herkunft` wird nicht überschrieben; kaputtes `assets`
+  wird weiter mit Klartext abgewiesen. **Seiteneffekt:** `config.json` trägt jetzt auch 2 (der
+  Leser ignoriert das Feld; keine Config-Migration nötig).
+- **`produktUrl` überlebt den Speicherweg** (Integrationstest schreiben → Datei → migrieren →
+  lesen, plus Setzen/Leeren) — genau die Lücke von `Aktion.effekte` (#464).
+- **`aktionId` darf im Abruf LEER sein:** Im Modus „neu" existiert die Aktion noch nicht, und der
+  Abruf schreibt sie nicht. Der Handler prüfte zu streng — der **Treiberlauf** hat es aufgedeckt.
+- **Keine Kandidaten-Vorschaubilder:** Das Issue verbietet Bilder über IPC; die Auswahl ist eine
+  Textliste (Dateiname, Größe, Host). Ein Vorschaubild wäre eine Vertragsänderung (vierter Kanal
+  oder zweite Ablage) — nicht gebaut.
+- **Widerspruch im Issue, zugunsten der Sicherheit:** Der Beweis-Block verlangt eine **lokale
+  Testseite**, TK 9.19.4 verbietet lokale Ziele. Treiber **4t** misst deshalb die Abweisung
+  („Diese Adresse zeigt in ein lokales Netz …", **kein** Asset); der Erfolgsweg ist durch die
+  Integrationstests `produktfoto-abrufen`/`produktfoto-wahl` belegt (echtes ffprobe, echte Datei,
+  `herkunft` im `project.json`).
+- **Treiber-4n-Messfehler behoben:** Nach dem Redo war der Store auf 3 Zonen, der React-Entwurf
+  noch auf 2 — der Klick sicherte den alten Entwurf. 4n wartet jetzt auf die **angezeigte**
+  Zonenliste. Messfehler, kein Produktbefund.
+- **Gate:** Unit **5794/5794** (379 Dateien), Integration **59/59** (16), Typecheck 0, Lint 0,
+  Build 0, Treiber **0 Befunde**, `npm run dist` **Exit 0**, gepacktes Bundle startet.
+- **Matrix:** FA-27 `teilweise` (Schritt `4t`), FA-28/29/30 als `Luecke` nachgetragen; Zählung
+  12/11/4/3, **16 Muss, 13 Soll, 1 Kann**.
+- **Offen:** **#470 nicht geschlossen/kommentiert** (GitHub-Schreiben nur auf Anweisung),
+  **#466** Referenzlauf (Phase 1 mit Stoppuhr), **#458** überholt, **FA-28/29/30** brauchen
+  eigene Bau-Issues. **`bereitschaft.py` meldet „0 bereit"**, weil #470 keinen Meilenstein hat.
+- **Nicht gepusht:** Arbeitsbaum mit 14 neuen Dateien + Änderungen; Push nur auf Anweisung.
+
+## STAND HEUTE (12.11.2026, achtundfünfzigste Sitzung: Dependabot auf null — und der Differenzierer wird ausgeschrieben) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-12-dependabot-und-fa27.md`](docs/agents/uebergabe-2026-11-12-dependabot-und-fa27.md).**
 
