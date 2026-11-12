@@ -3,8 +3,8 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Auftraggeber:** Baller Gruppe
 **Bearbeitung:** Niklas Rist, Berufspraktikum
-**Datum:** 11.11.2026
-**Version:** 2.3 (11.11.2026: **1.1 / 12.1 / 14** – die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, neues Angebot – und nicht die Folie. Vorher 2.2: **FA-27** – optionaler **Produktfoto-Abruf** aus einer Produkt-URL; das Tool bleibt ohne Internet vollständig (NFA-06 unverändert), der Abruf ist ein Zusatz und niemals Voraussetzung. Vorher 2.1: **12.1** – die PowerPoint-Referenz wird **genommen, nicht gebaut**: Referenz sind zwei frei verfügbare, **markenfremde** Präsentationen, in die dieselben 5 Angebote geschrieben werden; „Markentreue" heißt bei markenfremder Referenz „eigene visuelle Identität durchgehalten", und die Startzahl „PowerPoint ≤ 14/24" wird nach der ersten Messung **aus den Messwerten abgeleitet, nicht verteidigt**. Vorher 2.0: **Leitforderung L-01** – der Output muss schneller, einfacher und qualitativ besser sein als eine gute PowerPoint; ein Angebot inklusive Designarbeit ≤ 5 min, eine Änderung ≤ 1 min ohne Renderzeit; **FA-26 Varianten** (manuell, mindestens drei je Aktion); Heuristik-Abnahme. Vorher, v1.14: 4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
+**Datum:** 12.11.2026
+**Version:** 2.4 (12.11.2026: **FA-28 / FA-29** + **4.13** – Produktbild **aufbereiten** (Soll: Zuschnitt, Helligkeit, Kontrast, Schärfe; nicht destruktiv, lokal) und **freistellen** (Kann: transparenter Hintergrund über ein mitgeliefertes Modell, offline). Dazu 4.12 um die im TK entschiedenen Punkte ergänzt. Vorher 2.3: **1.1 / 12.1 / 14** – die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, neues Angebot – und nicht die Folie. Vorher 2.2: **FA-27** – optionaler **Produktfoto-Abruf** aus einer Produkt-URL; das Tool bleibt ohne Internet vollständig (NFA-06 unverändert), der Abruf ist ein Zusatz und niemals Voraussetzung. Vorher 2.1: **12.1** – die PowerPoint-Referenz wird **genommen, nicht gebaut**: Referenz sind zwei frei verfügbare, **markenfremde** Präsentationen, in die dieselben 5 Angebote geschrieben werden; „Markentreue" heißt bei markenfremder Referenz „eigene visuelle Identität durchgehalten", und die Startzahl „PowerPoint ≤ 14/24" wird nach der ersten Messung **aus den Messwerten abgeleitet, nicht verteidigt**. Vorher 2.0: **Leitforderung L-01** – der Output muss schneller, einfacher und qualitativ besser sein als eine gute PowerPoint; ein Angebot inklusive Designarbeit ≤ 5 min, eine Änderung ≤ 1 min ohne Renderzeit; **FA-26 Varianten** (manuell, mindestens drei je Aktion); Heuristik-Abnahme. Vorher, v1.14: 4.10: **Effekte** – zehn einzeln schaltbare Bewegungen für Ganzbild-Segmente, FA-25; Entscheidung 06.11./09.11.2026. Vorher, v1.13: 4.5: Die Dauer eines Band-Abschnitts ist **keine Eingabe** mehr – sie folgt der Dauer-Kette des Produkts (4.4). Entscheidung 03.11.2026. Vorher, v1.12: Untergrenze der Segmentdauer **10 → 8 s**, eine Spanne für alle Segmente)
 **Status:** In Abstimmung
 
 ---
@@ -43,7 +43,7 @@ einem Projekt zusammengefasst.
 
 **Warum diese Leitforderung über den FA steht:** Die bisherigen FA prüfen, **ob** etwas existiert.
 L-01 prüft, **ob das Ergebnis die Arbeit besser macht** als das Werkzeug, das ersetzt wird. Sie ist
-die oberste Abnahme; die FA-01…FA-27 bleiben die funktionalen Randbedingungen.
+die oberste Abnahme; die FA-01…FA-29 bleiben die funktionalen Randbedingungen.
 
 ---
 
@@ -127,8 +127,10 @@ Priorität nach MoSCoW: **Muss** (zwingend), **Soll** (wichtig), **Kann** (optio
 | FA-23 | Marken-Bestand | Die Anwendung führt **mehrere Marken** in einem **app-weiten, projektunabhängigen** Bestand. Ein Projekt darf mehrere Marken verwenden; eine **Aktion** trägt **genau eine**. Eine Marke kann von einer anderen **abgeleitet** sein und einzelne Werte überschreiben (Saison- oder Kampagnen-Look). Die Fitnessworld24-Marke ist immer vorhanden und **nicht löschbar**. Jedes Projekt führt zusätzlich eine **Standardmarke**, die den Rahmen färbt (Band-Hintergrund, Restflächen; s. 4.8); sie ist in der **Projektverwaltung wechselbar**. Eine Marke lässt sich nur löschen, wenn **keine Aktion**, **keine abgeleitete Marke** und **kein Projekt als Standardmarke** sie mehr nutzt. | Muss |
 | FA-24 | Marken-Editor | Marken lassen sich in der Anwendung **anlegen, bearbeiten und ableiten**: Farben, Slogan, Sicherheitsabstände sowie **Import** von Logo und Schriftdateien. Bei zu geringem Kontrast zwischen Akzentfläche und darauf liegendem Text **warnt** die Anwendung sichtbar, verhindert die Wahl aber nicht. | Muss |
 | FA-25 | Effekte | Ein Ganzbild-Segment (1920 × 1080) kann **bewegt** wirken: **zehn einzeln schaltbare** Effekte – Ken Burns, Zoom-Atmen, Drift, Parallax, Text-Einblendung, Preis-Pop, Glanz-Sweep, hochzählender Preis, Bild-Reveal, Puls – je mit **Fenster** und **Stärke**, frei kombinierbar. Effekte ändern **nie** die Anzeigedauer und **nie** die Bildrate; zwischen Segmenten bleibt es beim **harten Schnitt**; das **Band bleibt still**. Die Vorschau zeigt **dieselbe** Bewegung wie die Ausgabe. Ohne Angaben bleibt das Segment das Standbild von heute. Details: 4.10. | Soll |
-| FA-27 | Produktfoto abrufen | Zu einem Produkt mit hinterlegter Produkt-URL kann die Anwendung ein Produktfoto abrufen und als Asset übernehmen; der Nutzer **wählt** aus, welches Foto in eine Aktion kommt. Der Abruf ist **optional**: ohne Internet bleibt er unbenutzt, alle übrigen Vorgänge laufen unverändert (NFA-06). Kein automatisches Einsetzen – ein Bild wird nie ohne Auswahl einer Aktion zugeordnet. Details: 4.12. | Soll |
 | FA-26 | Varianten | Eine Aktion kann mehrere **gespeicherte Varianten** tragen. Eine Variante ist eine benannte Kombination aus Vorlage/Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe. Der Nutzer wählt die Variante **manuell**; mindestens **3** je Aktion, Wechsel in **≤ 1 Klick**, die Vorschau zeigt die gewählte Variante sofort. Details: 4.11. | Muss |
+| FA-27 | Produktfoto abrufen | Zu einem Produkt mit hinterlegter Produkt-URL kann die Anwendung ein Produktfoto abrufen und als Asset übernehmen; der Nutzer **wählt** aus, welches Foto in eine Aktion kommt. Der Abruf ist **optional**: ohne Internet bleibt er unbenutzt, alle übrigen Vorgänge laufen unverändert (NFA-06). Kein automatisches Einsetzen – ein Bild wird nie ohne Auswahl einer Aktion zugeordnet. Details: 4.12. | Soll |
+| FA-28 | Produktbild aufbereiten | Ein Bild einer Aktion lässt sich **vor dem Einsatz** aufbereiten: **Zuschnitt** und **Bildverbesserung** (Helligkeit, Kontrast, Schärfe). Die Aufbereitung ist **nicht destruktiv** — das Original-Asset bleibt unverändert erhalten, die Einstellungen stehen an der Aktion. Alles läuft **lokal**, ohne Netz (NFA-06). Details: 4.13. | Soll |
+| FA-29 | Produktbild freistellen | Ein Produktbild kann **freigestellt** werden (transparenter Hintergrund), damit es vor der Fläche einer Vorlage liegt statt in einem Rechteck. Das Freistellen läuft **lokal über ein mitgeliefertes Modell**, ohne Netz (NFA-06), und ist **optional** — ohne Freistellung bleibt das Bild wie es ist. Details: 4.13. | Kann |
 
 **Ein Bild ist kein Listenelement (ab v1.5).** Eine Wiedergabeliste besteht aus genau zwei Arten von
 Elementen: **Videos** und **Aktions-Segmente**. Ein fertig gestaltetes Bild von außen direkt in die Liste
@@ -501,9 +503,40 @@ jederzeit möglich.
 „Nicht Bestandteil"): kein Abgleich mit einer Quelle, keine Verwaltung von außen, kein Dauerkanal.
 Er ist ein einmaliger, ausdrücklich ausgelöster Vorgang.
 
-**Offen für das Technische Konzept:** ob die Produkt-URL **gespeichert** wird (neues optionales Feld
-an der Aktion) oder nur als Eingabe für den Abruf dient; woher die Bilder kommen (Herstellerseite,
-Bildersuchdienst) und wie mit Nutzungsrechten umgegangen wird.
+**Entschieden im Technischen Konzept (v3.63, 12.11.2026):** Die URL wird **gespeichert**
+(`Aktion.produktUrl`), die Bilder kommen aus den **strukturierten Produktdaten** der Seite
+(`Product.image`), ersatzweise aus `og:image`; die Herkunft steht **verpflichtend** am Asset. Kein
+Bildsuchdienst. Details: 9.19.
+
+---
+
+### 4.13 Produktbild aufbereiten und freistellen (FA-28, FA-29, 12.11.2026)
+
+**Warum:** Ein Produktfoto kommt selten so, wie es in die Werbung passt. Es ist zu dunkel, es hat einen
+störenden Rand — oder es steht als hartes Rechteck vor der Fläche, obwohl es freigestellt wirken
+müsste. Von Hand nachbearbeiten heißt heute: aus dem Tool heraus, in ein anderes Programm, wieder
+zurück. Das ist genau die Arbeit, die 1.1 messen will.
+
+**FA-28 — Aufbereiten (Soll):** **Zuschnitt** sowie **Helligkeit, Kontrast und Schärfe**. Die
+Aufbereitung ist **nicht destruktiv**: das Original-Asset bleibt unverändert, die Einstellungen stehen
+an der Aktion (dasselbe Muster wie `bildAusschnitt`, 4.10). Alles läuft **lokal** (NFA-06).
+
+**FA-29 — Freistellen (Kann):** Ein Produktbild kann **freigestellt** werden, damit es vor der Fläche
+einer Vorlage liegt statt in einem Rechteck. Das Freistellen läuft **lokal über ein mitgeliefertes
+Modell** — kein Dienst im Netz, sonst bräche NFA-06. Es ist **optional**: ohne Freistellung bleibt das
+Bild, was es ist.
+
+**Abgrenzung:** Das ist **keine** Bildbearbeitung. Keine Ebenen, keine Masken, keine Retusche, keine
+Farbprofile, keine Stapelverarbeitung. Nur die Eingriffe, die den Unterschied zwischen „Foto" und
+„Angebot" machen.
+
+**Reihenfolge ist Absicht:** **FA-28 vor FA-29.** Enhancement ist ein Regler auf vorhandenen Bytes.
+Freistellen braucht ein Modell, eine Laufzeitumgebung und eine Entscheidung über die Größe des Pakets —
+das ist eine eigene Entscheidung wert und darf FA-28 nicht aufhalten.
+
+**Offen für das Technische Konzept:** wo die Einstellungen liegen (an der Aktion, wie
+`bildAusschnitt`), ob das aufbereitete Bild als eigenes Asset materialisiert wird oder beim Zeichnen
+entsteht, und **wie das Modell ausgeliefert wird** (Größe, Ladezeit, Plattform).
 
 ---
 

@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v2.3 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.62 (1.1/12.1/14: Die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, sechstes Angebot (AD v2.3). Vorher 3.61: 9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.63 (12.11.2026: **9.19 Produktfoto-Abruf (FA-27)** – Abruf im **Main**, als Auftrag über `reiheEin`; Quelle sind die strukturierten Produktdaten (`Product.image`), ersatzweise `og:image`; höchstens 5 Kandidaten im Speicher, erst die Wahl legt ein Asset an; **`Asset.herkunft` wird Pflichtfeld** mit den Varianten `{art:'manuell'}` und `{art:'abruf', url, abgerufenAm}`; neues Feld `Aktion.produktUrl`; harte Grenzen gegen lokale Netze. AD v2.4. Vorher 3.62: 1.1/12.1/14: Die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, sechstes Angebot (AD v2.3). Vorher 3.61: 9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 09.11.2026
 **Status:** In Planung
 
@@ -327,7 +327,7 @@ Dieser Abschnitt übersetzt die Prozesse **P1–P7** in konkrete Module mit scha
 - **Main (Node):** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher Q1–Q4, 9.3), `media-service` [P1] (9.4), `project-store` [D1] (besitzt das eine D1-Schreib-Lock **und** ist Pfad-Autorität + trägt das `media://`-Protokoll, 9.5.7), `config-store` [D3], `vorlagen-store` (app-weite Vorlagen-Bibliothek, 9.12.1), `marken-store` [V2] (app-weiter Marken-Bestand, **löst die Marken-Vererbung als einzige Stelle auf**, 9.15.1), `render-service` [P4] (9.2), `export-service`, `ffmpeg-adapter` (enthält den getesteten `buildReel`-Kern).
 - **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …). Die reine Bandgeometrie-Rechnung `berechneBandGeometrie` ist mit dem Split-Screen **entfallen** (v3.31, 9.2.8). Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag. **Die Effekt-Rechnung** (`shared/effekte.ts`) und **der Bildplan** (`shared/bildplan.ts`) liegen ebenfalls hier – rein, ohne DOM, von Renderer und Main lesbar (9.16).
 
-**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1), die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3), die **Marken-Verwaltung** `marken-store`/`marken-editor` (9.15) sowie die **Effekte** (9.16). **Speicher `V2`** (Marken-Bestand) tritt neben `V1` (Vorlagen). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
+**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1), die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3), die **Marken-Verwaltung** `marken-store`/`marken-editor` (9.15), die **Effekte** (9.16) sowie der **Produktfoto-Abruf** (9.19). **Speicher `V2`** (Marken-Bestand) tritt neben `V1` (Vorlagen). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
 
 ### 9.1 IPC-Vertrag: Granularität (Variante A) und Konventionen
 
@@ -3458,9 +3458,181 @@ Anforderungsdokument 12.1 und 14 messbar sind; das Verfahren selbst steht im Anf
 
 ---
 
+### 9.19 Produktfoto-Abruf (FA-27)
+
+**Kein eigenes Modul.** 9.19 beschreibt einen **Auftrag**, der drei vorhandene Module benutzt: den
+`media-service` (9.4) für die Ablage, die Auftragsverwaltung (9.3) für den Lauf und den
+`action-editor` (9.8) für die Bedienung. Es entsteht **keine** zweite Ablage und **kein** zweiter
+Importweg.
+
+#### 9.19.1 Der Abruf läuft im MAIN, nie im Renderer
+
+Der Renderer hat kein Node und keine Netz-Typen (S1/M0, die Sicherheitsflags in `src/main/index.ts`).
+Ein `fetch` aus dem Renderer bräche die Prozess-Isolation, an der die Architektur hängt. Der Renderer
+**beauftragt**, der Main **lädt**.
+
+#### 9.19.2 Als Auftrag über `reiheEin` (FA-16, FA-17)
+
+Ein Abruf lädt Bytes über das Netz — das ist ein Vorgang wie ein Import und gehört in die vorhandene
+Warteschlange (9.3), nicht daneben:
+
+| Feld | Inhalt |
+|---|---|
+| `art` | `produktfoto-abruf` |
+| `projektId` | Ziel-Projekt |
+| `aktionId` | Aktion, deren `bildRef` später gesetzt werden **kann** |
+| `produktUrl` | die abzurufende Seite |
+
+Fortschritt, Fehlergrund und **Wiederholen** werden von 9.3 geerbt und **nicht** neu erfunden.
+
+**Der Auftrag schreibt keine Aktion.** Er holt Bytes und meldet **Kandidaten**. Erst die Wahl des
+Nutzers legt ein Asset an und setzt `bildRef` (AD 4.12: „erst die Wahl legt das Bild als Asset an").
+Ein abgebrochener Abruf hinterlässt damit **nichts** — kein halbfertiges Angebot, kein verwaistes
+Asset.
+
+**Kandidaten leben im Speicher des Main**, nicht auf der Platte: je Abruf höchstens 5 Bilder à
+höchstens 8 MB, unter einer `abrufId`. Sie verfallen nach **10 Minuten** oder beim Schließen des
+Fensters. Nur das **gewählte** Bild geht durch die Import-Pipeline.
+
+#### 9.19.3 Woher die Bilder kommen
+
+1. **Strukturierte Produktdaten:** `<script type="application/ld+json">` mit `@type: "Product"` —
+   auch innerhalb eines `@graph`-Arrays. Gelesen wird `image` (`string`, `string[]` oder
+   `ImageObject`/`ImageObject[]`).
+2. **Rückfall `og:image`** (und `og:image:secure_url`), wenn keine strukturierten Daten da sind.
+
+**Kein Bildsuchdienst** (AD Abschnitt 6: keine zweite Quelle, kein zweiter Rechtesachverhalt). Wird
+nichts gefunden, ist das ein **Fehler mit Klartext** und kein stiller Rückfall auf etwas anderes.
+
+**Kandidaten:** höchstens **5**, in der Reihenfolge ihres Auftretens in den Daten; Duplikate werden
+über die **normalisierte absolute URL** entfernt. Relative Adressen werden gegen die Seiten-URL
+aufgelöst. Nicht-`http(s)`-Adressen (`data:`, `blob:`, `file:`) werden verworfen.
+
+#### 9.19.4 Grenzen des Abrufs
+
+Ein Abruf auf eine **vom Nutzer eingegebene** Adresse ist der klassische Weg, ein Programm zum Werkzeug
+gegen das eigene Netz zu machen. Deshalb gilt hart:
+
+- **Nur `http` und `https`.**
+- **Keine Ziele im lokalen Netz:** Loopback (`127.0.0.0/8`, `::1`), private Bereiche (`10/8`,
+  `172.16/12`, `192.168/16`), Link-Local (`169.254/16`, `fe80::/10`), Unique-Local (`fc00::/7`) und
+  `0.0.0.0` werden **vor** der Verbindung abgewiesen — geprüft wird die **aufgelöste** Adresse, nicht
+  nur der Name.
+- **Höchstens 3 Weiterleitungen**, danach Fehler; jede Weiterleitung wird erneut gegen die Regel oben
+  geprüft.
+- **Zeitgrenze 15 s** für den gesamten Abruf, **8 MB** je Bild, **20 MB** gesamt.
+- **Kein HTML-Rendern und kein JavaScript.** Gelesen wird der ausgelieferte Text; was erst im Browser
+  entsteht, wird nicht gesehen.
+- **Das Format entscheidet der Inhalt, nicht die Endung:** der `Content-Type` muss zu
+  `FORMAT_WHITELIST.bild` passen (9.4.2); die Endung des Assets wird daraus abgeleitet.
+
+#### 9.19.5 Ablage
+
+Das **gewählte** Bild geht durch die bestehende Import-Pipeline (9.4) nach
+`projects/<id>/media/<uuid>.<ext>` — atomar, mit denselben Prüfungen wie jeder andere Import. Es wird
+ein **Asset wie jedes andere**: keine Sonderform, kein zweiter Speicherort, dieselben Maße-Ermittlung
+(9.4.8) und dieselbe Zustandsprüfung.
+
+#### 9.19.6 Herkunft am Asset — Pflichtfeld mit Variante
+
+`Asset` (9.4.4) bekommt **ein Pflichtfeld**:
+
+```ts
+export type AssetHerkunft =
+  | { art: 'manuell' }
+  | { art: 'abruf'; url: string; abgerufenAm: string };   // ISO-8601 UTC
+
+interface Asset {
+  // ... bestehende Felder (9.4.4)
+  herkunft: AssetHerkunft;
+}
+```
+
+**Warum Pflicht und warum zwei Varianten:** „keine Quelle" (von der Platte importiert) und „Quelle
+unbekannt" sind zwei verschiedene Aussagen. Ein leeres Feld würde beide einebnen — und bei einer
+Rückfrage zur Nutzung wäre genau dieser Unterschied die Antwort.
+
+**Bestand:** Beim **Laden** eines Projekts wird ein fehlendes `herkunft` zu `{ art: 'manuell' }`
+ergänzt. Geschrieben wird das erst mit der **nächsten** Änderung des Projekts — kein Massen-Umschreiben
+beim Start, das bei einem großen Bestand jeden Start verlangsamt.
+
+#### 9.19.7 `Aktion.produktUrl`
+
+Neues optionales Feld an der Aktion (9.8.2): `produktUrl?: string | null`.
+
+- **Normalisierung:** getrimmt; nur `http`/`https`; alles andere → `null`.
+- **Speicherweg:** `erstelle-aktion` und `bearbeite-aktion` müssen das Feld **übernehmen** — genau der
+  Fehler, der bei `Aktion.effekte` passierte (Befund 09.11.2026, #464: das Feld wurde im
+  `project-store` verworfen, obwohl es im Typ stand).
+- **Ein Test auf dem Speicherweg**, nicht nur auf dem Typ: schreiben, neu laden, Wert lesen.
+
+#### 9.19.8 Bedienung
+
+Im Schritt **„Bild"** des Aktions-Editors (9.8.3): ein Feld **Produkt-URL**, vorbelegt mit
+`Aktion.produktUrl`, und ein Knopf **„Foto abrufen"**. Der Knopf ist gesperrt, solange der Auftrag
+läuft; die Warteschlange zeigt ihn mit Fortschritt (9.3). Sind Kandidaten da, erscheinen sie als
+**Auswahl**; ein Klick legt das Asset an und setzt `bildRef`. **Ohne Klick passiert nichts.**
+
+Über der Auswahl steht **ein Satz** zur Herkunft: der Host der Seite und der Hinweis, dass die Quelle
+am Bild gespeichert wird. **Keine Bestätigung** — jede Bestätigung kostet einen Klick und damit Zeit,
+die 1.1 zusagt.
+
+#### 9.19.9 Verhalten ohne Netz und Fehlerpfade
+
+Jeder Fall meldet einen **sichtbaren Klartext-Grund** und lässt das Angebot **unverändert**:
+
+| Fall | Meldung (sinngemäß) |
+|---|---|
+| kein Netz / DNS | „Keine Verbindung — der Abruf braucht Internet. Alles andere funktioniert weiter." |
+| Zeitüberschreitung | „Die Seite hat nicht geantwortet (15 s)." |
+| 4xx / 5xx | „Die Seite lieferte einen Fehler (404)." |
+| kein Bild gefunden | „Auf dieser Seite wurde kein Produktbild gefunden." |
+| Format nicht erlaubt | „Das Bild hat ein Format, das nicht unterstützt wird." |
+| zu groß | „Das Bild ist größer als 8 MB." |
+| lokales Netz | „Diese Adresse zeigt in ein lokales Netz und wird nicht abgerufen." |
+
+Der Auftrag erscheint als **fehlgeschlagen** in der Warteschlange und ist **wiederholbar** (FA-17).
+Der **manuelle Import bleibt jederzeit möglich** (AD 4.12).
+
+#### 9.19.10 Was der Abruf NICHT verändert
+
+- **Prozess-Isolation** — der Renderer sieht kein Netz.
+- **`reiheEin`** — derselbe Weg wie jeder Import, kein Nebenweg.
+- **D1-Lock** — der Auftrag schreibt erst auf der Wahl, dann über den vorhandenen Schreibweg.
+- **Render und Export** — unberührt.
+- **NFA-06** — es gibt keinen Hintergrundabruf, keine Warteschlange, die auf ein Netz wartet, und
+  keinen Zustand, der ohne Abruf unvollständig wäre (AD 4.12).
+
+#### 9.19.11 Die Zusagen im Wortlaut
+
+> „Zu einem Produkt mit hinterlegter Produkt-URL kann die Anwendung ein Produktfoto abrufen und als
+> Asset übernehmen; der Nutzer **wählt** aus, welches Foto in eine Aktion kommt. Der Abruf ist
+> **optional**: ohne Internet bleibt er unbenutzt, alle übrigen Vorgänge laufen unverändert (NFA-06).
+> Kein automatisches Einsetzen – ein Bild wird nie ohne Auswahl einer Aktion zugeordnet." (AD FA-27)
+
+> „Der Abruf ist optional, und das ist die Kernregel: Ohne Internet entfällt nur dieser Weg. Alle
+> übrigen Vorgänge — anlegen, gestalten, rendern, exportieren — laufen unverändert (NFA-06). Das Tool
+> **hängt nie** an einer Verbindung: Es gibt keinen Hintergrundabruf, keine Warteschlange, die auf ein
+> Netz wartet, und keinen Zustand, der ohne Abruf unvollständig wäre." (AD 4.12)
+
+> „Die Anwendung funktioniert vollständig lokal, ohne Internet- oder Serververbindung. **Ausnahme, und
+> nur sie:** der optionale Produktfoto-Abruf (FA-27) braucht Internet; fällt er aus, bleibt jede andere
+> Funktion unberührt." (AD NFA-06)
+
+#### 9.19.12 Ehrlich offen
+
+- **Das Einfügen der URL ist zu aufwendig** (Niklas, 11.11.2026). v1 ist ein Eingabefeld; eine
+  komfortablere Quelle — Produktliste, Mehrfach-Abruf, Übernahme aus einer Bestandsliste — ist
+  **nicht** Teil von FA-27 und nicht gebaut.
+- **FA-28/FA-29** (Produktbild aufbereiten und freistellen, AD 4.13) sind **beschlossen, aber nicht
+  gebaut**. Sie sind **nicht** Teil dieses Abschnitts: der Abruf liefert ein Bild, er bearbeitet es
+  nicht.
+
+---
+
 > **Stand des High-Level-Designs.** **Ausgearbeitet:** `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9).
 >
-> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**, **9.16**, **9.17**, **9.18**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
+> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**, **9.16**, **9.17**, **9.18**, **9.19**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
