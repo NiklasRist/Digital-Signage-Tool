@@ -152,3 +152,25 @@ der Treiber hat damit genau seine Aufgabe erfüllt.
    keinen, deshalb meldet es „0 bereit". Entweder dem Issue einen Meilenstein geben oder das
    Skript um meilensteinlose offene Issues ergänzen.
 6. **Keine Kandidaten-Vorschau** (siehe §5) – Vertragsfrage vor jedem Bau.
+
+---
+
+## 9. Nachtrag 13.11.2026 – #470 kommentiert und geschlossen
+
+Dieser Nachtrag korrigiert die drei Stellen, die den Stand **vor** dem Commit beschreiben (§1, §8
+und Punkt 1 der offenen Liste). Sie bleiben als Sitzungsprotokoll stehen.
+
+- **Committet:** Der Arbeitsbaum steht in **`93db638`** (Code, 98 Dateien) und **`282b8b3`**
+  (Treiber `4t`, Matrix, diese Übergabe). Damit ist „nichts committet" in §1 und §8 überholt.
+- **#470 ist geschlossen** (`completed`, 12.11.2026 22:54) — mit Abschlusskommentar, der die DoD
+  Punkt für Punkt belegt und die zwei Abweichungen aus §5 und §6 offen benennt.
+- **Gate für den Abschluss erneut gefahren: EXIT 0** — Unit **5794/5794** (379 Dateien),
+  Integration **59/59** (16), Typecheck 0, Lint 0, Build 0, Treiber **0 Befunde**; `npm run dist`
+  **Exit 0** (5 Binaries in `app.asar.unpacked`), das Paket läuft nach 8 s noch. **`4t` wiederholt:**
+  Loopback-Adresse abgewiesen, **Assets 4 -> 4**.
+- **Gegenprobe Loopback wiederholt:** `127`-Zeile entfernt -> **3 von 9** Tests rot, byte-identisch
+  zurück (SHA-256 **`c2ce4b06…`** vorher = nachher, `git diff` leer), 9/9 wieder grün.
+  **Korrektur zu §6:** der dort genannte Wert `23f56fe7…` ist nicht reproduzierbar — `netz.ts` ist
+  seit `93db638` unverändert.
+- **Offen bleiben:** #466 (Referenzlauf, Phase 1 mit Stoppuhr), #458 (überholt) und eigene
+  Bau-Issues für FA-28/29/30. **Nicht gepusht** — 9 Commits vor `origin/main`.

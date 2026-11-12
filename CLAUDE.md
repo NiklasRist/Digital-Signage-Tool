@@ -11,20 +11,25 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (12.11.2026, neunundfünfzigste Sitzung: FA-27 gebaut — vom Produktfoto zum Asset)
+## STAND HEUTE (13.11.2026, Nachtrag zur neunundfünfzigsten Sitzung: #470 ist geschlossen — FA-27 vom Produktfoto zum Asset)
 
 **Volltext: [`docs/agents/uebergabe-2026-11-12-fa27-gebaut.md`](docs/agents/uebergabe-2026-11-12-fa27-gebaut.md).**
 
-- **#470 IST GEBAUT** (nicht committet, nicht gepusht, **nicht geschlossen**): `Asset.herkunft`
-  ist Pflichtfeld, `AKTUELLE_SCHEMA_VERSION` **2**, erster Eintrag in `MIGRATIONS_KETTE`
-  (`1 -> 2`, jedes Asset `{art:'manuell'}`), `Aktion.produktUrl` über `erstelle-` **und**
-  `bearbeite-aktion`, Auftragsart `produktfoto-abruf`, drei Kanäle `produkt:abrufen/.waehlen/
-  .verwerfen`, Kandidaten im Main (max. 5, 8 MB je Bild, 20 MB gesamt, 10 min Verfall), Wahl
-  durch die **bestehende** Import-Pipeline, Editor-Schritt „Bild" mit URL, Knopf, Kandidatenliste.
+- **#470 IST GEBAUT, COMMITTET UND GESCHLOSSEN** (Code `93db638`/98 Dateien, Treiber/Matrix/Übergabe
+  `282b8b3`; am 12.11.2026 mit Abschlusskommentar versehen und `completed` geschlossen, GitHub-Schreiben
+  auf Anweisung): `Asset.herkunft` ist Pflichtfeld, `AKTUELLE_SCHEMA_VERSION` **2**, erster Eintrag
+  in `MIGRATIONS_KETTE` (`1 -> 2`, jedes Asset `{art:'manuell'}`), `Aktion.produktUrl` über
+  `erstelle-` **und** `bearbeite-aktion`, Auftragsart `produktfoto-abruf`, drei Kanäle
+  `produkt:abrufen`, `produkt:waehlen`, `produkt:verwerfen`, Kandidaten im Main (max. 5, 8 MB je
+  Bild, 20 MB gesamt, 10 min Verfall), Wahl durch die **bestehende** Import-Pipeline,
+  Editor-Schritt „Bild" mit URL, Knopf, Kandidatenliste.
 - **Netzgrenzen (TK 9.19.4):** nur http/https, **aufgelöste** Adresse über den `lookup`-Haken
   geprüft (Loopback, private, Link-Local, ULA, 0/8, CGNAT, Multicast; IPv4-mapped eingebettet),
-  max. 3 Weiterleitungen (jede erneut), 15 s gesamt. **Gegenprobe:** Loopback entfernt → Test rot,
-  byte-identisch zurück (`23f56fe7…`).
+  max. 3 Weiterleitungen (jede erneut), 15 s gesamt. **Gegenprobe 13.11.2026 erneut:** Loopback-Zeile
+  entfernt → **3 von 9** Tests rot (`expected 'kein_netz' to be 'lokales_netz'`), byte-identisch
+  zurück (SHA-256 `c2ce4b06…` vorher = nachher, `git diff` leer), danach 9/9 grün. **Korrektur:**
+  Die Übergabe nannte für dieselbe Datei `23f56fe7…`; die Datei ist seit `93db638` unverändert,
+  der alte Wert ist also nicht nachvollziehbar — es gilt der heute gemessene.
 - **Die erste Formatmigration ist getestet:** alte `project.json` (Version 1) laden → Feld da,
   alle übrigen Werte gleich; vorhandene `herkunft` wird nicht überschrieben; kaputtes `assets`
   wird weiter mit Klartext abgewiesen. **Seiteneffekt:** `config.json` trägt jetzt auch 2 (der
@@ -45,13 +50,17 @@
   noch auf 2 — der Klick sicherte den alten Entwurf. 4n wartet jetzt auf die **angezeigte**
   Zonenliste. Messfehler, kein Produktbefund.
 - **Gate:** Unit **5794/5794** (379 Dateien), Integration **59/59** (16), Typecheck 0, Lint 0,
-  Build 0, Treiber **0 Befunde**, `npm run dist` **Exit 0**, gepacktes Bundle startet.
+  Build 0, Treiber **0 Befunde** (1 Untersuchung #392, 1 MANUELL Export-Dialog), `npm run dist`
+  **Exit 0** (5 Binaries in `app.asar.unpacked`, Paket läuft nach 8 s noch). Am **13.11.2026** für
+  den Abschluss **erneut vollständig gefahren: EXIT 0**, `4t` wiederholt („…lokales Netz…",
+  **Assets 4 -> 4**).
 - **Matrix:** FA-27 `teilweise` (Schritt `4t`), FA-28/29/30 als `Luecke` nachgetragen; Zählung
   12/11/4/3, **16 Muss, 13 Soll, 1 Kann**.
-- **Offen:** **#470 nicht geschlossen/kommentiert** (GitHub-Schreiben nur auf Anweisung),
-  **#466** Referenzlauf (Phase 1 mit Stoppuhr), **#458** überholt, **FA-28/29/30** brauchen
-  eigene Bau-Issues. **`bereitschaft.py` meldet „0 bereit"**, weil #470 keinen Meilenstein hat.
-- **Nicht gepusht:** Arbeitsbaum mit 14 neuen Dateien + Änderungen; Push nur auf Anweisung.
+- **Offen:** **#466** Referenzlauf (Phase 1 mit Stoppuhr), **#458** überholt, **FA-28/29/30**
+  brauchen eigene Bau-Issues. **`bereitschaft.py` meldet „0 bereit"**, weil #470 keinen
+  Meilenstein hat. Offene Issues im Repo sind nach dem Abschluss **nur noch #466 und #458**.
+- **Nicht gepusht:** **9 Commits** vor `origin/main` (mit diesem Doku-Commit 10); Arbeitsbaum
+  danach sauber. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (12.11.2026, achtundfünfzigste Sitzung: Dependabot auf null — und der Differenzierer wird ausgeschrieben) – historisiert durch den Abschnitt darueber
 
