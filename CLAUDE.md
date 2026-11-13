@@ -11,7 +11,56 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (13.11.2026, einundsechzigste Sitzung: FA-29 gebaut und geschlossen, TK v3.66 geschrieben)
+## STAND HEUTE (13.11.2026, zweiundsechzigste Sitzung: #475 zu, FA-30 gebaut)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-13-fa30-gebaut.md`](docs/agents/uebergabe-2026-11-13-fa30-gebaut.md).**
+
+- **#475 IST GESCHLOSSEN** (`completed`, 13.11.2026, GitHub-Schreiben auf Anweisung). TK **v3.66**
+  steht; der Kommentar von 15:59 UTC bleibt der einzige.
+- **#472 (FA-30) IST GEBAUT: Produktseite finden.** Stichwort -> Suchauftrag -> **Shops zuerst**
+  (hoechstens drei, in Reihenfolge), **danach** die allgemeine Websuche als **Notweg** ->
+  hoechstens **5 Treffer**. Die Wahl setzt `Aktion.produktUrl` **im Entwurf**; „Foto abrufen"
+  (FA-27) bleibt der **zweite** Klick. Kein Bild, kein Asset, kein Schreibvorgang.
+- **Vertrag:** `src/shared/contracts/produktsuche.ts` (`ProduktQuelleShop`, `ProduktQuellen`,
+  `ProduktSeiteTreffer`, `PRODUKTSUCHE_GRENZEN`), `src/shared/produkt-quellen.ts` (die EINE
+  Normalisierung: genau ein `{q}`, absolute http(s), acht Shops, Host als Pruefwert),
+  `AppKonfig.produktQuellen?` **ohne Migration**, sechste Auftragsart `produktseite-suche`,
+  Kanal `produkt:seiten-suchen` (ueber `reiheEin`, Fortschritt/Fehlergrund/Wiederholen geerbt).
+- **EINE Netzschicht:** `hole()` aus FA-27 wird wiederverwendet - keine zweite
+  Netzimplementierung. Grenzen: **20 s** gesamt, **2 MB** je Suchseite, 5 Treffer, 3 Shops.
+- **Fensterbeleg (Treiber `4w`, `EXIT=0`):** ohne Quelle steht **„Es sind keine Shops und keine
+  allgemeine Suche hinterlegt …"** VOR dem Klick und der Knopf ist **gesperrt**; mit einer
+  Loopback-Suchadresse laeuft der ganze Weg (Kanal -> Warteschlange -> Handler -> `hole()`) und
+  wird mit **„Diese Adresse zeigt in ein lokales Netz und wird nicht abgerufen."** abgewiesen;
+  danach ist der Knopf **wieder frei**, `produktUrlGeschrieben=false`.
+- **BEFUND in fremdem Code, behoben:** Der Auftrags-Nachlauf gab Fehlschlaege **nicht** an den
+  Editor weiter (der gemeinsame Fehlerzweig endete mit `return`) - der Knopf von FA-27 blieb auf
+  „Foto wird abgerufen …" stehen. Jetzt melden beide Netzarten; **am Fenster gemessen** (4t zeigt
+  jetzt den Hinweis, 4w `KnopfNachher=false`).
+- **Zweiter Fund, NICHT behoben (gemeldet):** der `lookup`-Haken in `produktfoto/netz.ts` ist von
+  **keinem** Test gedeckt - Zeile entfernt, 9/9 Tests bleiben gruen. Die Zusage „geprueft wird
+  die AUFGELOESTE Adresse" haengt aber genau daran.
+- **WIDERSPRUCH, gemeldet, nicht aufgeloest:** TK 9.20.3 sagt „Die Liste ist **bearbeitbar**",
+  #472 kennt aber **nur** `produkt:seiten-suchen` und verbietet einen zweiten Schreibkanal. Die
+  Shops stehen deshalb in `config.json` und sind **nur von Hand** pflegbar.
+- **Gegenproben:** 4, jede rot und byte-identisch zurueck (Host-Pruefung, Notweg-Rueckfall,
+  Startseiten-Regel, Loopback-Zeile `127` -> 3/9 Tests rot, `c2ce4b06…`).
+- **Gate:** Unit **5913/5913** (389 Dateien), Integration **66/66** (19), Typecheck 0, Lint 0,
+  Build 0, Treiber **0 Befunde** (`EXIT=0`), `npm run dist` **Exit 0**, Paket startet.
+- **Matrix:** **FA-30** jetzt `teilweise` (Schritt **4w**), Zaehlung **12 gemessen / 14 teilweise /
+  1 Luecke (FA-26) / 3 manuell**; 16 Muss, 13 Soll, 1 Kann.
+- **Ehrlich offen:** Erfolgsweg **nicht** am Fenster (Integrationstest mit gedoppelter
+  Netzschicht), **Notweg ungemessen** (9.20.6), Shops **nicht** ueber die Oberflaeche pflegbar,
+  `lookup`-Haken ungetestet.
+- **Offen:** **#466** (Referenzlauf, Phase 1 mit Stoppuhr), **#458** (ueberholt),
+  **die vier Messungen aus #474** (Renderweg, schwaechere Hardware, Fernseher, Ausfall am Fenster).
+  Sonst ist der Bau-Bestand leer.
+- **Naechster Schritt:** **#466 Phase 1** mit der Stoppuhr (Niklas' Zeit), danach die offenen
+  Messungen. Kein Bau-Issue offen.
+- **Nicht gepusht: 31 Commits vor `origin/main`**, Arbeitsbaum sauber. Zahl mit
+  `git log --oneline origin/main..HEAD` pruefen. **Push nur auf Anweisung.**
+
+## STAND HEUTE (13.11.2026, einundsechzigste Sitzung: FA-29 gebaut und geschlossen, TK v3.66 geschrieben) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-13-fa29-freigestellt.md`](docs/agents/uebergabe-2026-11-13-fa29-freigestellt.md).**
 

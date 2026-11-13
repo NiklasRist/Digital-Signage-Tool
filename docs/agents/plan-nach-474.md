@@ -32,6 +32,14 @@ veralteten Satz prüft (dieselbe Fehlerklasse wie die „Bezug: AD v1.13"-Zeile)
 
 ## 2. #472 — FA-30 Produktseite finden (der nächste Bau)
 
+**ERLEDIGT am 13.11.2026 (abends): #472 ist GEBAUT.** Der Auftrag steht in
+`src/main/produktsuche/`, der Kanal `produkt:seiten-suchen` reiht ihn über `reiheEin` ein, der
+Editor traegt das Feld im Schritt „Bild". Treiber-Schritt **4w** misst ohne Quelle die Sperre
+und mit einer Loopback-Suchadresse die Abweisung samt Klartext; der Erfolgsweg steht im
+Integrationstest `produktsuche-suchweg` (gedoppelte Netzschicht). Volltext:
+[`uebergabe-2026-11-13-fa30-gebaut.md`](uebergabe-2026-11-13-fa30-gebaut.md). Offen bleibt die
+Frage aus Abschnitt 6 dort: **TK 9.20.3 sagt „bearbeitbar", #472 kennt keinen Schreibkanal**.
+
 **ENTSCHIEDEN am 13.11.2026 (Niklas, auf die Frage nach den zwei Lücken):**
 
 1. **Form von `ProduktQuellen`: Muster je Shop.** Nicht `shops: string[]`, sondern ein Eintrag
