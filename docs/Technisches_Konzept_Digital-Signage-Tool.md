@@ -3,7 +3,7 @@
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
 **Bezug:** Anforderungsdokument v2.5 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.65 (13.11.2026: **9.21 Produktbild aufbereiten und freistellen (FA-28 / FA-29)** – die Einstellungen stehen an der Aktion (`Aktion.bildAufbereitung`, optional, ohne Migration); gerechnet wird **einmal je (Asset, Einstellungen)** beim Vorbereiten des Motivs, nicht je Frame – 2100 Bilder je 70-s-Segment stehen dagegen (Messung 4s). Der **Zuschnitt bleibt `bildAusschnitt`**, es entsteht KEIN zweites Feld. FA-29 läuft im **Renderer** über ein gebündeltes Modell (WASM, offline) – kein natives Modul, keine Bildbytes über IPC, keine dritte `herkunft`-Variante. AD v2.4. Vorher 3.64: **9.20 Produktseite finden (FA-30)** – Stichwortsuche, vorbelegt mit dem Aktions-Titel; zuerst in hinterlegten Shops (`ProduktQuellen` im config-store), danach eine allgemeine Websuche als ausdruecklicher NOTWEG ohne Schluessel. Trennt Finden (9.20) von Holen (9.19). Vorher 3.63: **9.19 Produktfoto-Abruf (FA-27)** – Abruf im **Main**, als Auftrag über `reiheEin`; Quelle sind die strukturierten Produktdaten (`Product.image`), ersatzweise `og:image`; höchstens 5 Kandidaten im Speicher, erst die Wahl legt ein Asset an; **`Asset.herkunft` wird Pflichtfeld** mit den Varianten `{art:'manuell'}` und `{art:'abruf', url, abgerufenAm}`; neues Feld `Aktion.produktUrl`; harte Grenzen gegen lokale Netze. AD v2.4. Vorher 3.62: 1.1/12.1/14: Die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, sechstes Angebot (AD v2.3). Vorher 3.61: 9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Version:** 3.66 (13.11.2026: **9.21.9 / 9.21.5 / 9.20.3 nachgezogen** – das Freistell-Modell ist **gewählt** (U-2-Net `u2netp`, 4 574 861 Bytes, SHA-256 `309c8469…`, Apache 2.0) und die Zaun-Zahlen sind gemessen; `modell://` liefert **drei** fest im Code benannte Dateien (Modell, WASM-Runtime, Lader) statt einer, weil ONNX Runtime Web Runtime und Lader nachzieht; WebAssembly braucht dafür `'wasm-unsafe-eval'` in der CSP. `ProduktQuellen` (9.20.3) trägt **ein Suchmuster je Shop** (`{q}`) statt einer Hostliste, und der Notweg ist eine **konfigurierbare Suchadresse** statt eines Anbieters im Code – damit ist die Lücke geschlossen, die 9.20.3 offen ließ. Keine Anforderung geändert (AD v2.5). Vorher 3.65: **9.21 Produktbild aufbereiten und freistellen (FA-28 / FA-29)** – die Einstellungen stehen an der Aktion (`Aktion.bildAufbereitung`, optional, ohne Migration); gerechnet wird **einmal je (Asset, Einstellungen)** beim Vorbereiten des Motivs, nicht je Frame – 2100 Bilder je 70-s-Segment stehen dagegen (Messung 4s). Der **Zuschnitt bleibt `bildAusschnitt`**, es entsteht KEIN zweites Feld. FA-29 läuft im **Renderer** über ein gebündeltes Modell (WASM, offline) – kein natives Modul, keine Bildbytes über IPC, keine dritte `herkunft`-Variante. AD v2.4. Vorher 3.64: **9.20 Produktseite finden (FA-30)** – Stichwortsuche, vorbelegt mit dem Aktions-Titel; zuerst in hinterlegten Shops (`ProduktQuellen` im config-store), danach eine allgemeine Websuche als ausdruecklicher NOTWEG ohne Schluessel. Trennt Finden (9.20) von Holen (9.19). Vorher 3.63: **9.19 Produktfoto-Abruf (FA-27)** – Abruf im **Main**, als Auftrag über `reiheEin`; Quelle sind die strukturierten Produktdaten (`Product.image`), ersatzweise `og:image`; höchstens 5 Kandidaten im Speicher, erst die Wahl legt ein Asset an; **`Asset.herkunft` wird Pflichtfeld** mit den Varianten `{art:'manuell'}` und `{art:'abruf', url, abgerufenAm}`; neues Feld `Aktion.produktUrl`; harte Grenzen gegen lokale Netze. AD v2.4. Vorher 3.62: 1.1/12.1/14: Die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, sechstes Angebot (AD v2.3). Vorher 3.61: 9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
 **Datum:** 13.11.2026
 **Status:** In Planung
 
@@ -3624,9 +3624,9 @@ Der **manuelle Import bleibt jederzeit möglich** (AD 4.12).
 - **Das Einfügen der URL ist zu aufwendig** (Niklas, 11.11.2026). v1 ist ein Eingabefeld; eine
   komfortablere Quelle — Produktliste, Mehrfach-Abruf, Übernahme aus einer Bestandsliste — ist
   **nicht** Teil von FA-27 und nicht gebaut.
-- **FA-28/FA-29** (Produktbild aufbereiten und freistellen, AD 4.13) sind **beschlossen, aber nicht
-  gebaut**. Sie sind **nicht** Teil dieses Abschnitts: der Abruf liefert ein Bild, er bearbeitet es
-  nicht.
+- **FA-28/FA-29** (Produktbild aufbereiten und freistellen, AD 4.13) sind **gebaut** — FA-28 in
+  9.21.3/9.21.4 (#473, 13.11.2026), FA-29 in 9.21.5 (#474, 13.11.2026). Sie bleiben **nicht** Teil
+  dieses Abschnitts: der Abruf liefert ein Bild, er bearbeitet es nicht.
 
 ---
 
@@ -3650,16 +3650,19 @@ zwei ausdrückliche Klicks — dieselbe Regel wie in 9.19.2.
 
 #### 9.20.2 Die zwei Quellen
 
-**Primär: hinterlegte Shops.** Eine app-weite Liste von Shop-Adressen (9.20.3). Je Shop wird dessen
-**eigene Produktsuche** befragt; Treffer werden wie in 9.19.3 aus dem Ergebnis gelesen (Titel,
+**Primär: hinterlegte Shops.** Eine app-weite Liste von Shops mit **Suchmuster** (9.20.3). Je Shop
+wird dessen **eigene Produktsuche** über **dieses Muster** befragt — die Adresse steht in der
+Konfiguration, nicht im Code; Treffer werden wie in 9.19.3 aus dem Ergebnis gelesen (Titel,
 Produktseite). Das ist der robuste Weg: die Suchseite eines Shops ist stabiler als eine
 Suchergebnisseite im offenen Netz.
 
 **Notweg: allgemeine Websuche ohne Schlüssel.** Nur, wenn die Shops nichts liefern. Sie liest die
-Trefferliste einer öffentlichen Suchseite. **Sie ist ausdrücklich fragil:** ändert der Anbieter sein
-Markup oder sperrt er automatisierte Anfragen, liefert sie nichts mehr — und dann steht im Protokoll
-ein Befund, kein Absturz. Ein Schlüssel wird **nicht** verlangt und **nicht** gespeichert; damit
-braucht das Werkzeug kein Konto und keine Kostenstelle.
+Trefferliste einer öffentlichen Suchseite — **welche, steht als Suchadresse in der Konfiguration**
+(9.20.3, `webSuche`). Ein Anbieter ist damit **nicht** Teil des Codes und lässt sich austauschen,
+ohne etwas neu zu bauen. **Sie ist ausdrücklich fragil:** ändert der Anbieter sein Markup oder
+sperrt er automatisierte Anfragen, liefert sie nichts mehr — und dann steht im Protokoll ein Befund,
+kein Absturz. Ein Schlüssel wird **nicht** verlangt und **nicht** gespeichert; damit braucht das
+Werkzeug kein Konto und keine Kostenstelle.
 
 **Ein Ausfall des Notwegs ist kein Fehler des Angebots.** Er meldet „nichts gefunden" und der Nutzer
 kann die Adresse immer noch selbst eintragen — dieser Weg bleibt bestehen (9.19.8).
@@ -3669,15 +3672,33 @@ kann die Adresse immer noch selbst eintragen — dieser Weg bleibt bestehen (9.1
 Neues app-weites Feld im `config-store` (9.5):
 
 ```ts
+interface ProduktQuelleShop {
+  host: string;           // nur Anzeige und Prüfwert, kein Pfadanteil
+  suchMuster: string;     // Suchadresse des Shops; {q} = kodiertes Stichwort
+}
+
 interface ProduktQuellen {
-  shops: string[];        // Hosts, z. B. ["best-body-shop.de", "all-stars.de"]
-  webSuche: boolean;      // Notweg erlaubt? Standard: true
+  shops: ProduktQuelleShop[];  // Prioritätsreihenfolge; höchstens drei werden befragt (9.20.4)
+  webSuche: string | null;     // Notweg-Suchadresse mit {q}; null = kein Notweg
 }
 ```
 
+**Warum ein Muster je Shop und nicht eine Hostliste** (ENTSCHIEDEN 13.11.2026): Ein Hostname sagt
+nicht, **wie** ein Shop sucht. Eine feste Vorlage `https://<host>/search?s={q}` im Code wäre eine
+Annahme über fremde Seiten, die niemand geprüft hat — und ein fester Notweg-Anbieter wäre eine
+Entscheidung über Markup und AGB eines Fremden. Mit zwei Mustern steht beides in der Konfiguration:
+sichtbar, änderbar, austauschbar.
+
+**Regeln (für `suchMuster` und `webSuche`):** absolute `http`/`https`-Adresse mit **genau einem**
+`{q}`. Unbrauchbare Einträge fallen beim **Lesen** weg — dieselbe Haltung wie bei
+`normalisiereProduktUrl` (9.19.7), kein Absturz. `{q}` wird mit `encodeURIComponent` eingesetzt: das
+Stichwort ist Nutzereingabe und darf die Adresse nicht umbauen. Höchstens **acht** Shops in der Liste
+— mehr als drei werden nie befragt, der Rest ist Vorrat. Fehlt das Feld ganz, gilt
+`{ shops: [], webSuche: null }`; es gibt **keine Config-Migration**.
+
 **App-weit, nicht je Projekt:** die Shops, bei denen eingekauft wird, ändern sich nicht mit dem
-Projekt — dasselbe Muster wie `marken.json` und `vorlagen.json`. Die Liste ist **bearbeitbar**; ohne
-sie bleibt der Notweg.
+Projekt — dasselbe Muster wie `marken.json` und `vorlagen.json`. Die Liste ist **bearbeitbar**: ohne
+Shops bleibt der Notweg, ohne `webSuche` bleibt die Handeingabe (9.19.8).
 
 #### 9.20.4 Grenzen
 
@@ -3803,6 +3824,21 @@ Originals — liegt danach im Motiv-Bestand unter `motivSchluessel(...)`. `zeich
 **Technik:** ONNX Runtime Web (WASM), Modell als **statische Datei im Bündel**, **lazy** geladen beim
 ersten Einschalten — nicht beim Start der App. **Kein Netz** (NFA-06): Das Modell reist mit dem Paket.
 
+**Auslieferung — drei feste Namen, kein Pfad aus der Anfrage.** Das gepackte Fenster lädt die Seite
+über `file://` (Abschnitt 3); dort ist `fetch` auf eine relative Datei blockiert. Deshalb dient das
+Protokoll **`modell://`** genau **drei** fest im Code benannten Dateien: `freistellen.onnx` (das
+Modell), `ort-wasm-simd-threaded.wasm` (die Runtime, 14 848 852 Bytes) und
+`ort-wasm-simd-threaded.mjs` (der Lader, 24 738 Bytes). **Kein Anfrageanteil wird zu einem Pfad**,
+es gibt keine Verzeichnisliste; alles andere beantwortet **404**. Runtime und Lader sind nicht
+optional: ONNX Runtime Web zieht beide nach, und ohne den Lader meldet das Fenster „cannot determine
+the script source URL". Sie als BASE64 in das Renderer-Bundle zu legen kostete rund 19 MB **Text**;
+ein zweiter IPC-Kanal ist in 9.21.8 ausgeschlossen.
+
+**Voraussetzung in der CSP.** Chromium kompiliert WebAssembly nur mit `'wasm-unsafe-eval'` in
+`script-src`; der Lader ist ein ES-Modul und braucht `modell:` in `script-src`. Beides ist eng:
+`'wasm-unsafe-eval'` erlaubt **ausschließlich** WebAssembly, `eval()` und `new Function()` bleiben
+verboten — die Alternative wäre `'unsafe-eval'`.
+
 **Der Zaun (harte Grenzen):** Zusatzgewicht im Paket **≤ 25 MB**, Ladezeit **≤ 2 s** auf dem
 Entwicklungsrechner, Laufzeit **≤ 5 s** je Bild. Werden die Zahlen gerissen, wird ein **kleineres Modell**
 gewählt — nicht der Zaun gebogen. Welches Modell, entscheidet der Bau und **nennt es im
@@ -3850,9 +3886,13 @@ gilt als erfüllt, wenn **drei** Dinge belegt sind:
 
 #### 9.21.9 Ehrlich offen
 
-- **Das Modell ist noch nicht gewählt.** Der Zaun steht (9.21.5), die Datei nicht. Es ist gut möglich,
-  dass ein Modell, das Produkte sauber von Weiß trennt, größer ist als 25 MB — dann ist **die Zahl** die
-  Entscheidung, nicht die Anforderung.
+- **Das Modell ist gewählt** (13.11.2026, #474): **U-2-Net, kleine Fassung (`u2netp`)** von Xuebin
+  Qin — **4 574 861 Bytes**, SHA-256 `309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8`,
+  **Apache License 2.0** (Volltext als `public/modell/LIZENZ-u2net.txt` im Projekt). Die große Fassung
+  (`u2net`, rund 176 MB) reißt den Zaun aus 9.21.5 — gewählt wurde deshalb das **kleinere Modell**,
+  nicht der größere Zaun. **Gemessen** am 13.11.2026 auf dem Entwicklungsrechner: Modell laden
+  **434/439 ms**, Bild rechnen **1998–2138 ms** bei 1920 × 1080, Zusatzgewicht im Paket
+  **19 719 516 Bytes (18,8 MiB)** — alle drei Zahlen im Zaun.
 - **Die Rechenzeit der Schärfe ist nicht gemessen.** 2100-mal wird nicht gerechnet (9.21.4), aber einmal
   je Bild sind es bei 1920 × 1080 rund zwei Millionen Pixel. Ist das zu langsam, wird die Faltung
   verkleinert gerechnet — das wäre eine Messung im Bau, keine Annahme hier.
