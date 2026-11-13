@@ -61,6 +61,8 @@ import { registriereMedienHandler } from "./media-service/handler-registrierung"
 import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
 import { registriereProduktfotoHandler } from "./produktfoto/handler-registrierung"; // #470
 import { verdrahteProduktAbrufIPC } from "./ipc-gateway/produkt-abruf-verdrahtung"; // #470
+import { registriereProduktsucheHandler } from "./produktsuche/handler-registrierung"; // #472
+import { verdrahteProduktsucheIPC } from "./ipc-gateway/produkt-suche-verdrahtung"; // #472
 import { MARKEN_SCHEMA, registriereMarkenProtokollHandler } from "./marken-store/marken-protokoll"; // #290
 import { MODELL_SCHEMA, registriereModellProtokollHandler } from "./modell-protokoll"; // #474
 import { flushBestand as flushMarkenBestand } from "./marken-store/schreibe-marken"; // #277, ALIAS-PFLICHT
@@ -510,6 +512,12 @@ void app.whenReady().then(async () => {
   //     MIT Fenster an.
   registriereProduktfotoHandler();
 
+  // 16. registriereProduktsucheHandler() - #472 (FA-30, TK 9.20).
+  //     Traegt beim Auftrags-Dispatcher den Handler fuer art: `produktseite-suche` ein.
+  //     Bewusst OHNE Abbrecher (FA-18: nur der Render ist abbrechbar) und ohne
+  //     Fensterreferenz - der eine Kanal wird in Schritt 7 angemeldet.
+  registriereProduktsucheHandler();
+
   // SCHRITT 6: Fenster erzeugen und Inhalt laden.
   const fenster = erstelleHauptfenster();
 
@@ -573,6 +581,13 @@ void app.whenReady().then(async () => {
   //    FA-27 nicht erreichbar, und ein Start, der das lautlos verschweigt, ist schlimmer
   //    als einer, der abbricht.
   verdrahteProduktAbrufIPC(fenster);
+
+  // 6. verdrahteProduktsucheIPC() - #472 (FA-30, TK 9.20).
+  //    Meldet den Kanal `produkt:seiten-suchen` an; er REIHT die Suche nur ein, der
+  //    Lauf gehoert dem Handler aus Position 16. Argumentlos - kein Fenster, kein
+  //    Zustand: Die Treffer reisen im Feld `Auftrag.ergebnis`, nicht ueber einen
+  //    zweiten Kanal. Kein try/catch - derselbe Grund wie bei 5.
+  verdrahteProduktsucheIPC();
 
   // SCHRITT 8: raeumeVerwaisteArbeitsbereiche() - #172,
   // src/main/render-service/arbeitsbereich.ts. Entfernt reel-*-Ordner, die ein

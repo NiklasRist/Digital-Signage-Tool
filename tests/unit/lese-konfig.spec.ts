@@ -36,6 +36,9 @@ describe("leseKonfig (#26)", () => {
       aktivesProjektId: null,
       letztesExportZiel: null,
       uiVoreinstellungen: {},
+      // #472 (FA-30, TK 9.20.3): Der Standard OHNE Feld ist keine Quelle - und er wird
+      // beim Lesen eingesetzt, damit kein Leser die Normalisierung selbst aufrufen muss.
+      produktQuellen: { shops: [], webSuche: null },
     });
   });
 

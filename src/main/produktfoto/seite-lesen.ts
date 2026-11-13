@@ -9,34 +9,14 @@
 //
 // KEIN HTML-Rendern und kein JavaScript (TK 9.19.4): Gelesen wird der ausgelieferte Text.
 
-/** Attribut-Werte einer HTML-Marke, klein geschrieben als Schluessel. */
-function attribute(marke: string): Map<string, string> {
-  const werte = new Map<string, string>()
-  const muster = /([a-zA-Z_:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g
-  for (const treffer of marke.matchAll(muster)) {
-    const name = (treffer[1] ?? '').toLowerCase()
-    const wert = treffer[2] ?? treffer[3] ?? treffer[4] ?? ''
-    if (name.length > 0) werte.set(name, wert)
-  }
-  return werte
-}
-
-/** Die kleinen Entities, die in `content`-Attributen real vorkommen. */
-function entschluessle(text: string): string {
-  return text
-    .replaceAll('&amp;', '&')
-    .replaceAll('&quot;', '"')
-    .replaceAll('&#39;', "'")
-    .replaceAll('&lt;', '<')
-    .replaceAll('&gt;', '>')
-}
+import { entschluessleEntities, htmlAttribute } from '../gemeinsam/html'
 
 /**
  * Loest eine Angabe gegen die Seitenadresse auf und laesst nur absolute http(s)-Ziele
  * ohne Fragment stehen. `data:`, `blob:`, `file:` und relative Reste fallen weg.
  */
 export function normalisiereBildAdresse(roh: string, seitenUrl: string): string | null {
-  const wert = entschluessle(roh).trim()
+  const wert = entschluessleEntities(roh).trim()
   if (wert.length === 0) return null
   let adresse: URL
   try {
@@ -115,7 +95,7 @@ function ogBilder(html: string): string[] {
   const gewoehnlich: string[] = []
   for (const treffer of html.matchAll(/<meta\b[^>]*>/gi)) {
     const marke = treffer[0] ?? ''
-    const werte = attribute(marke)
+    const werte = htmlAttribute(marke)
     const schluessel = (werte.get('property') ?? werte.get('name') ?? '').toLowerCase()
     const inhalt = werte.get('content')
     if (inhalt === undefined || inhalt.length === 0) continue

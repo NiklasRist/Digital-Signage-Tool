@@ -67,6 +67,7 @@ import { feldBedarf } from './feld-bedarf'
 import { BEISPIEL_INHALT, erstesBild, mitBeispielinhalt } from './beispiel-inhalt'
 import { ladeLetzteFarben, mitFarbe, speichereLetzteFarben } from './letzte-farben'
 import { pruefeBildWahl, starteBildImport, waehlbareBilder } from './bild-zuweisen'
+import { ProduktsucheFeld } from './produktsuche-feld'
 import {
   starteProduktfotoAbruf,
   verwirfProduktfoto,
@@ -1300,6 +1301,17 @@ function Inspector({
                 paddingTop: 6,
               }}
             >
+              {/* SEIT 13.11.2026 (FA-30 / TK 9.20): Stichwort suchen -> hoechstens fuenf
+                  Produktseiten. Die Wahl setzt NUR die Adresse darunter; geholt wird erst
+                  mit „Foto abrufen" (zwei Auswahlen, zwei Klicks, AD 4.14). */}
+              <ProduktsucheFeld
+                projektId={projekt.id}
+                aktionId={aktionId}
+                titel={entwurf.titel}
+                aufUebernehmen={(url) => {
+                  aufAenderung('produktUrl', url)
+                }}
+              />
               <label style={{ display: 'block' }}>Produkt-URL{' '}
                 <input
                   type="url"

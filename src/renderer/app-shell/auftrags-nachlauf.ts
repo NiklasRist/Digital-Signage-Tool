@@ -2,6 +2,7 @@
 
 import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { Asset } from '../../shared/contracts/asset'
+import type { ProduktSeiteTreffer } from '../../shared/contracts/produktsuche'
 import type { ProduktfotoKandidat } from '../../shared/contracts/produktabruf'
 import type { Project } from '../../shared/contracts/project'
 import type { Zeichenvoraussetzungen } from '../composer/zeichen-vorbereitung'
@@ -30,6 +31,9 @@ export interface NachlaufWirkungen {
    *  hier. `status: 'fehler'` dient allein dazu, die Sperre im Editor zu loesen; der
    *  sichtbare Grund kam bereits ueber `meldeFehler`. */
   meldeProduktfotoAbruf?: (meldung: ProduktfotoMeldung) => void
+  /** Optional: das Ergebnis einer Produktseiten-Suche (FA-30, #472). Dieselbe Aufteilung
+   *  wie beim Abruf: kein D1-Schreibweg, `status: 'fehler'` loest nur die Sperre. */
+  meldeProduktsuche?: (meldung: ProduktsucheMeldung) => void
   /** Meldeweg für Fehler, die beim Nachlauf selbst auftreten. LANDET in der anwendungsweiten
    *  meldungsFlaeche des Rahmens (#195), gehalten von #262 (App.tsx). */
   meldeFehler: (code: string, meldung: string) => void
@@ -38,6 +42,11 @@ export interface NachlaufWirkungen {
 /** Die Meldung, die der Nachlauf an den Editor weiterreicht (FA-27). */
 export type ProduktfotoMeldung =
   | { status: 'erfolg'; auftragId: string; abrufId: string; kandidaten: ProduktfotoKandidat[] }
+  | { status: 'fehler'; auftragId: string }
+
+/** Die Meldung, die der Nachlauf an den Editor weiterreicht (FA-30). */
+export type ProduktsucheMeldung =
+  | { status: 'erfolg'; auftragId: string; treffer: ProduktSeiteTreffer[] }
   | { status: 'fehler'; auftragId: string }
 
 /** Die drei terminalen Zustände (TK 9.3.3). */
@@ -79,6 +88,19 @@ export function starteAuftragsNachlauf(
     if (auftrag.status === 'fehlgeschlagen' || auftrag.status === 'abgebrochen') {
       if (auftrag.status === 'fehlgeschlagen' && auftrag.fehler !== null) {
         wirkungen.meldeFehler(auftrag.fehler.code, auftrag.fehler.meldung)
+      }
+      // BEFUND, BEHOBEN am 13.11.2026 (#472): Hier stand ein blankes `return`. Damit war
+      // die Fehlermeldung an den Editor (`status: 'fehler'`) UNERREICHBAR - der Editor
+      // haelt waehrend eines Auftrags eine Sperre und loest sie nur ueber diese Meldung.
+      // Am Fenster sichtbar: Nach einem fehlgeschlagenen Produktfoto-Abruf blieb der
+      // Knopf auf „Foto wird abgerufen …" stehen, bis der Editor neu montiert wurde.
+      // Der Befund stammt aus dem Bau von FA-30, betrifft aber FA-27 genauso; er wird im
+      // Abschluss von #472 gemeldet.
+      if (auftrag.art === 'produktfoto-abruf') {
+        wirkungen.meldeProduktfotoAbruf?.({ status: 'fehler', auftragId: auftrag.auftragId })
+      }
+      if (auftrag.art === 'produktseite-suche') {
+        wirkungen.meldeProduktsuche?.({ status: 'fehler', auftragId: auftrag.auftragId })
       }
       return
     }
@@ -145,6 +167,35 @@ export function starteAuftragsNachlauf(
         auftragId: auftrag.auftragId,
         abrufId: ergebnis.abrufId,
         kandidaten: ergebnis.kandidaten as ProduktfotoKandidat[],
+      })
+      return
+    }
+
+    // FA-30 (#472): Die Produktseiten-Suche aendert D1 ebenfalls NICHT. Ihre Treffer sind
+    // Zeichenketten; sie gehen an den Editor, und erst dessen Wahl setzt `produktUrl` im
+    // ENTWURF. Kein Rollback, kein `setzeProjekt`, kein Motiv-Bestand.
+    if (auftrag.art === 'produktseite-suche') {
+      // SAFETY: `rohErgebnis` ist `unknown` (IPC-Nutzlast); der Cast macht `treffer`
+      // lesbar, geprueft wird es in der Zeile darunter (`Array.isArray`). Die Elemente
+      // hat der Main als `ProduktSeiteTreffer` gebaut (9.20); der Editor benutzt nur
+      // `url`, `titel`, `host`.
+      const ergebnis = rohErgebnis as { treffer?: unknown }
+      if (!Array.isArray(ergebnis?.treffer)) {
+        wirkungen.meldeFehler(
+          'unbekannter_fehler',
+          `Die Suche ${auftrag.auftragId} meldet Erfolg ohne Trefferliste.`,
+        )
+        wirkungen.meldeProduktsuche?.({ status: 'fehler', auftragId: auftrag.auftragId })
+        return
+      }
+      // SAFETY: `Array.isArray` ist oben geprueft; die Elemente stammen aus dem Main,
+      // der sie als `ProduktSeiteTreffer` gebaut hat (9.20, Signaturblock 2). Der Editor
+      // benutzt nur `url`, `titel` und `host` - eine kaputte Form faellt dort als leere
+      // Zeile auf, nicht als Absturz.
+      wirkungen.meldeProduktsuche?.({
+        status: 'erfolg',
+        auftragId: auftrag.auftragId,
+        treffer: ergebnis.treffer as ProduktSeiteTreffer[],
       })
       return
     }

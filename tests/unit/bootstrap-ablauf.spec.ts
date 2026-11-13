@@ -422,11 +422,15 @@ describe('Alle acht Wirkungen sind verdrahtet (Kernnachweis 2)', () => {
     return { automat, zugaenge, leere, ausgaben, fehl, einImport }
   }
 
-  it('genau neun Schluessel; sechs ToBe-Faesser (setzeProjekt, verwirfMotivBestand, bereiteZeichnenVor, leere, ausgaben, fehl, import)', () => {
+  it('genau zehn Schluessel; sechs ToBe-Faesser (setzeProjekt, verwirfMotivBestand, bereiteZeichnenVor, leere, ausgaben, fehl, import)', () => {
     const { automat, zugaenge, leere, ausgaben, fehl, einImport } = baueZugaengeFuerWirkungen()
     const wirkungen = baueNachlaufWirkungen(zugaenge, leere, ausgaben, fehl, einImport)
-    // Neun seit 12.11.2026: `meldeProduktfotoAbruf` (FA-27, #470) ist dazugekommen.
-    expect(Object.keys(wirkungen)).toHaveLength(9)
+    // Zehn seit 13.11.2026: `meldeProduktsuche` (FA-30, #472) ist dazugekommen - nach
+    // `meldeProduktfotoAbruf` (FA-27, #470). Beide sind hier NICHT gesetzt, weil der
+    // Aufruf sie nicht uebergibt; der Schluessel steht trotzdem im Objekt (bewusst:
+    // `baueNachlaufWirkungen` legt ALLE Faecher an, auch die optionalen).
+    expect(Object.keys(wirkungen)).toHaveLength(10)
+    expect(wirkungen.meldeProduktsuche).toBeUndefined()
     expect(wirkungen.setzeProjekt).toBe(automat.zugangRoh.setzeProjekt)
     expect(wirkungen.verwirfMotivBestand).toBe(automat.zeichnen.verwirfMotivBestand)
     expect(wirkungen.bereiteZeichnenVor).toBe(automat.zeichnen.bereiteVor)

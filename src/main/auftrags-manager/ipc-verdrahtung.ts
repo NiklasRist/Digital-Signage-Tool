@@ -35,6 +35,7 @@ const ARTEN: Record<AuftragArt, true> = {
   render: true,
   export: true,
   'produktfoto-abruf': true,
+  'produktseite-suche': true,
 }
 
 /**
@@ -105,7 +106,7 @@ export function verdrahteQueueIPC(fenster: BrowserWindow): void {
       const payload = nutzlast.payload
       if (!istAuftragArt(art)) {
         return abgelehnt(
-          'reiheEin braucht eine art aus import, loeschen, render, export oder produktfoto-abruf.',
+          'reiheEin braucht eine art aus import, loeschen, render, export, produktfoto-abruf oder produktseite-suche.',
         )
       }
       // NICHT TIEFER (Pruef-Tabelle des Issues): Ob die Felder der Nutzlast zur Art passen,

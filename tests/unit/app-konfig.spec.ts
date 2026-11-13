@@ -13,11 +13,22 @@
 import { describe, expect, it } from "vitest";
 
 import type { AppKonfig } from "../../src/shared/contracts/app-konfig";
+import type { ProduktQuellen } from "../../src/shared/contracts/produktsuche";
 import type { Behaupte, Gleich } from "../typ-gleich";
 
-// --- DoD 1: genau die drei Felder --------------------------------------------
+// --- DoD 1: die Felder, und nur sie ------------------------------------------
+// GEÄNDERT am 13.11.2026 (#472, FA-30): `produktQuellen` ist als OPTIONALES Feld
+// dazugekommen (TK 9.20.3). Die drei Pflichtfelder bleiben genau diese drei - das
+// optional markierte Feld steht ausdrücklich daneben, damit niemand ein VIERTES
+// Pflichtfeld für dieselbe Sache hält.
 type T1 = Behaupte<
-  Gleich<keyof AppKonfig, "aktivesProjektId" | "letztesExportZiel" | "uiVoreinstellungen">
+  Gleich<
+    keyof AppKonfig,
+    "aktivesProjektId" | "letztesExportZiel" | "uiVoreinstellungen" | "produktQuellen"
+  >
+>;
+type T6 = Behaupte<
+  Gleich<AppKonfig["produktQuellen"], ProduktQuellen | undefined>
 >;
 
 // --- DoD 2 und 4: die Abwesenheiten ------------------------------------------
@@ -53,15 +64,26 @@ function nurTypebene(): void {
 }
 void nurTypebene;
 
-export type { T1, T2, T3, T4, T5 };
+export type { T1, T2, T3, T4, T5, T6 };
 
 describe("AppKonfig (#265)", () => {
-  it("erfuellt den Typ mit allen drei Feldern", () => {
+  it("erfuellt den Typ mit den drei Pflichtfeldern", () => {
     expect(Object.keys(vollstaendig).sort()).toEqual([
       "aktivesProjektId",
       "letztesExportZiel",
       "uiVoreinstellungen",
     ]);
+  });
+
+  it("nimmt die Produktquellen als OPTIONALES Feld auf (#472)", () => {
+    // Der Standard ohne Feld gilt beim Lesen - deshalb ist `undefined` hier ein
+    // gueltiger Zustand und kein Mangel.
+    expect(vollstaendig.produktQuellen).toBeUndefined();
+    const mitQuellen: AppKonfig = {
+      ...vollstaendig,
+      produktQuellen: { shops: [], webSuche: null },
+    };
+    expect(mitQuellen.produktQuellen).toEqual({ shops: [], webSuche: null });
   });
 
   it("unterscheidet 'noch nie' von 'leer'", () => {

@@ -280,5 +280,13 @@ export const KANAELE = {
     abrufen: 'produkt:abrufen',
     waehlen: 'produkt:waehlen',
     verwerfen: 'produkt:verwerfen',
+
+    // FA-30 (#472, TK 9.20): die Stichwortsuche. Ein Kanal, der den Auftrag EINREIHT -
+    // Fortschritt, Fehlergrund und Wiederholen erbt er von 9.3. Die Treffer reisen im
+    // Feld `Auftrag.ergebnis`; es gibt keinen zweiten Kanal fuer sie.
+    //
+    // SCHLUESSEL UND STRING SIND ZEICHENGLEICH (Vertragstest #25) - der Operationsname
+    // traegt hier einen Bindestrich, deshalb steht der Schluessel in Anfuehrungszeichen.
+    'seiten-suchen': 'produkt:seiten-suchen',
   },
 } as const

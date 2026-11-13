@@ -33,7 +33,11 @@ import type { Auftrag } from '../../shared/contracts/auftrag'
 import type { Sichten } from './sichten'
 import type { Reiterzugaenge } from './inhalte-zugaenge'
 import type { StartErgebnis, StartHinweis } from './start'
-import type { NachlaufWirkungen, ProduktfotoMeldung } from './auftrags-nachlauf'
+import type {
+  NachlaufWirkungen,
+  ProduktsucheMeldung as NachlaufProduktsucheMeldung,
+  ProduktfotoMeldung,
+} from './auftrags-nachlauf'
 
 /** Der Stand des Renderer-Bootstraps. Ein WERT – keine Funktion mutiert ihn. */
 export type BootstrapLage =
@@ -79,6 +83,8 @@ export interface BootstrapSchritte {
   meldeImportErgebnis: (assetId: string) => void
   /** FA-27 (#470): das Ergebnis eines Produktfoto-Abrufs – ebenfalls UNVERAENDERT gelegt. */
   meldeProduktfotoAbruf: (meldung: ProduktfotoMeldung) => void
+  /** FA-30 (#472): das Ergebnis einer Produktseiten-Suche – ebenfalls UNVERAENDERT gelegt. */
+  meldeProduktsuche?: (meldung: NachlaufProduktsucheMeldung) => void
   /** Meldeweg fuer Fehler des Nachlaufs und des Vorbereitens. Diese Datei zeigt NICHTS selbst an. */
   meldeFehler: (code: string, meldung: string) => void
   /** Rueckkanal in den Zustand des Aufrufers. Wird bei JEDEM Lagewechsel gerufen. */
@@ -97,6 +103,7 @@ export function baueNachlaufWirkungen(
   meldeFehler: (code: string, meldung: string) => void,
   meldeImportErgebnis: (assetId: string) => void,
   meldeProduktfotoAbruf?: (meldung: ProduktfotoMeldung) => void,
+  meldeProduktsuche?: (meldung: NachlaufProduktsucheMeldung) => void,
 ): NachlaufWirkungen {
   return {
     // Die einzige Umschliessung - sie rechnet NICHTS, sie liest zur
@@ -110,6 +117,7 @@ export function baueNachlaufWirkungen(
     aktualisiereAusgabenListe,
     meldeImportErgebnis,
     meldeProduktfotoAbruf,
+    meldeProduktsuche,
     meldeFehler,
   }
 }
@@ -187,6 +195,7 @@ export function starteRenderer(schritte: BootstrapSchritte): () => void {
             schritte.meldeFehler,
             schritte.meldeImportErgebnis,
             schritte.meldeProduktfotoAbruf,
+            schritte.meldeProduktsuche,
           ),
         ),
       )

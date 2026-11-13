@@ -19,7 +19,15 @@ vi.mock("../../src/renderer/ipc-client/rufe-auf", () => ({
 const { beschriftung, brauchtBestaetigung, fuehreQueueAktionAus, moeglicheAktion, rueckfrageText } =
   await import("../../src/renderer/queue-panel/entfernen");
 
-const ARTEN = ["import", "loeschen", "render", "export", "produktfoto-abruf"] as const;
+// #472 (FA-30): `produktseite-suche` ist die sechste Art (TK 9.20).
+const ARTEN = [
+  "import",
+  "loeschen",
+  "render",
+  "export",
+  "produktfoto-abruf",
+  "produktseite-suche",
+] as const;
 const STATUS = ["anstehend", "laeuft", "erfolg", "fehlgeschlagen", "abgebrochen"] as const;
 
 /** Eine vollwertige Auftrags-Attrappe je Art - der Rumpf liest nur status/art/label. */
@@ -63,6 +71,12 @@ function auftrag(art: AuftragArt, status: AuftragStatus, auftragId = "a-1"): Auf
         art,
         payload: { projektId: "p1", aktionId: "a1", produktUrl: "https://shop.example/x" },
       };
+    case "produktseite-suche":
+      return {
+        ...gemeinsam,
+        art,
+        payload: { projektId: "p1", aktionId: "a1", stichwort: "Proteinriegel" },
+      };
   }
 }
 
@@ -71,7 +85,7 @@ afterEach(() => {
 });
 
 describe("moeglicheAktion (#209)", () => {
-  it("beantwortet alle 20 Status/Art-Kombinationen - genau zwei Gruppen liefern einen Schalter", () => {
+  it("beantwortet alle 30 Status/Art-Kombinationen - genau zwei Gruppen liefern einen Schalter", () => {
     for (const status of STATUS) {
       for (const art of ARTEN) {
         const erwartet =

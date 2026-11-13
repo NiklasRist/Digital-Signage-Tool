@@ -27,7 +27,15 @@ vi.mock("../../src/renderer/ipc-client/rufe-auf", () => ({
 
 const ERSTELLT_AM = "2026-08-16T10:00:00.000Z";
 
-const ARTE: AuftragArt[] = ["import", "loeschen", "render", "export", "produktfoto-abruf"];
+// #472 (FA-30): `produktseite-suche` ist die sechste Art (TK 9.20).
+const ARTE: AuftragArt[] = [
+  "import",
+  "loeschen",
+  "render",
+  "export",
+  "produktfoto-abruf",
+  "produktseite-suche",
+];
 const STATI: AuftragStatus[] = ["anstehend", "laeuft", "erfolg", "fehlgeschlagen", "abgebrochen"];
 
 function auftrag(art: AuftragArt, status: AuftragStatus, versuche = 0): Auftrag {
@@ -72,6 +80,12 @@ function auftrag(art: AuftragArt, status: AuftragStatus, versuche = 0): Auftrag 
         ...basis,
         art,
         payload: { projektId: "p1", aktionId: "a1", produktUrl: "https://shop.example/x" },
+      };
+    case "produktseite-suche":
+      return {
+        ...basis,
+        art,
+        payload: { projektId: "p1", aktionId: "a1", stichwort: "Proteinriegel" },
       };
   }
 }

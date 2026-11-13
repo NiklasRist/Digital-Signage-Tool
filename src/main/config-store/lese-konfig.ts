@@ -4,6 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import { ermittleDatenOrt } from '../datenort'
+import { normalisiereProduktQuellen } from '../../shared/produkt-quellen' // #472
 
 import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import type { AppKonfig } from '../../shared/contracts/app-konfig'   // #265
@@ -15,9 +16,18 @@ const DATEI = 'config.json'
 /**
  * Die Vorbelegungen des ersten Starts. `null` heisst hier ausdruecklich "noch nie" - nicht "leer":
  * kein zuletzt geoeffnetes Projekt, noch nie exportiert.
+ *
+ * `produktQuellen` kommt aus DERSELBEN Normalisierung wie ein vorhandener Wert (#472): Der
+ * Standard ohne Feld ist `{ shops: [], webSuche: null }` (TK 9.20.3), und er soll nicht an
+ * zwei Stellen getippt werden.
  */
 function vorbelegungen(): AppKonfig {
-  return { aktivesProjektId: null, letztesExportZiel: null, uiVoreinstellungen: {} }
+  return {
+    aktivesProjektId: null,
+    letztesExportZiel: null,
+    uiVoreinstellungen: {},
+    produktQuellen: normalisiereProduktQuellen(undefined),
+  }
 }
 
 export async function leseKonfig(): Promise<Ergebnis<AppKonfig, ConfigFehlercode>> {
@@ -125,6 +135,12 @@ function alsAppKonfig(wert: unknown): AppKonfig | null {
       !Array.isArray(roh['uiVoreinstellungen'])
         ? (roh['uiVoreinstellungen'] as Record<string, unknown>)
         : {},
+    // #472 (FA-30, TK 9.20.3): Der Standard ohne Feld ist `{ shops: [], webSuche: null }`.
+    // Er wird hier EINGESETZT und nicht erst beim Leser: Sonst muesste jede Stelle, die
+    // `produktQuellen` liest, die Normalisierung selbst aufrufen - und eine vergisst es.
+    // Keine Config-Migration: Der Wert haengt an keinem Versionsschritt (9.5.5), und ein
+    // vorhandener Bestand bleibt gueltig.
+    produktQuellen: normalisiereProduktQuellen(roh['produktQuellen']),
   }
 }
 

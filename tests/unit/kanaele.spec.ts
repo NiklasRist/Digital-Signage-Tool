@@ -53,8 +53,8 @@ describe("Kanal-Registry (#25)", () => {
       render: ["fortschritt"],
       vorlagen: ["alsEigenstaendige", "autoSpeichernStatus", "erstelleVorlage", "listeArbeitskopien", "listeVorlagen", "löscheVorlage", "oeffneZurBearbeitung", "pruefeVorlagenReferenzen", "speichereArbeitskopie", "uebernehmeInParent", "verwerfeArbeitskopie"],
       marken: ["autoSpeichernStatus", "bearbeiteMarke", "entferneMarkenDatei", "erstelleMarke", "importiereMarkenDatei", "leseMarke", "listeMarken", "loescheMarke", "pruefeMarkenReferenzen", "öffneMarkenDateiDialog"],
-      // FA-27 (#470): der Produktfoto-Abruf.
-      produkt: ["abrufen", "verwerfen", "waehlen"],
+      // FA-27 (#470): der Produktfoto-Abruf. FA-30 (#472): die Produktseiten-Suche.
+      produkt: ["abrufen", "seiten-suchen", "verwerfen", "waehlen"],
     });
   });
 });

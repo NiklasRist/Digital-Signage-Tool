@@ -82,6 +82,15 @@ const h = vi.hoisted(() => {
     registriereProduktfotoHandler: vi.fn(() => {
       protokoll.push("registriereProduktfotoHandler");
     }),
+    // #472 (FA-30): der Handler der Produktseiten-Suche (Schritt 5, ohne Fenster).
+    registriereProduktsucheHandler: vi.fn(() => {
+      protokoll.push("registriereProduktsucheHandler");
+    }),
+    // #472: der eine Kanal der Suche (Schritt 7, ohne Fenster - die Treffer reisen im
+    // Auftragsergebnis).
+    verdrahteProduktsucheIPC: vi.fn(() => {
+      protokoll.push("verdrahteProduktsucheIPC");
+    }),
     meldeExportHandlerAn: vi.fn(() => {
       protokoll.push("meldeExportHandlerAn");
     }),
@@ -280,8 +289,16 @@ vi.mock("../../src/main/produktfoto/handler-registrierung", () => ({
   registriereProduktfotoHandler: h.registriereProduktfotoHandler,
 }));
 
+vi.mock("../../src/main/produktsuche/handler-registrierung", () => ({
+  registriereProduktsucheHandler: h.registriereProduktsucheHandler,
+}));
+
 vi.mock("../../src/main/ipc-gateway/produkt-abruf-verdrahtung", () => ({
   verdrahteProduktAbrufIPC: h.verdrahteProduktAbrufIPC,
+}));
+
+vi.mock("../../src/main/ipc-gateway/produkt-suche-verdrahtung", () => ({
+  verdrahteProduktsucheIPC: h.verdrahteProduktsucheIPC,
 }));
 
 vi.mock("../../src/main/export-service/handler-anmeldung", () => ({
@@ -400,12 +417,14 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       "verdrahteProjectStoreNachtrag3IPC",
       "verdrahteProjectStoreNachtrag5IPC",
       "registriereProduktfotoHandler",
+      "registriereProduktsucheHandler",
       "erstelleHauptfenster",
       "verdrahteQueueIPC",
       "verdrahteExportUndFortschrittIPC",
       "verdrahteSpeicherstatusIPC",
       "verdrahteMarkenSpeicherstatusIPC",
       "verdrahteProduktAbrufIPC",
+      "verdrahteProduktsucheIPC",
       "raeumeVerwaisteArbeitsbereiche",
     ]);
   });
@@ -431,10 +450,12 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
       h.verdrahteProjectStoreNachtrag3IPC,
       h.verdrahteProjectStoreNachtrag5IPC,
       h.registriereProduktfotoHandler,
+      h.registriereProduktsucheHandler,
       h.verdrahteQueueIPC,
       h.verdrahteExportUndFortschrittIPC,
       h.verdrahteMarkenSpeicherstatusIPC,
       h.verdrahteProduktAbrufIPC,
+      h.verdrahteProduktsucheIPC,
       h.raeumeVerwaisteArbeitsbereiche,
     ]) {
       expect(anmeldung).toHaveBeenCalledTimes(1);

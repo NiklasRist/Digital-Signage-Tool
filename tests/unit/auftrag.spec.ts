@@ -17,8 +17,13 @@ import type { Behaupte, Gleich } from "../typ-gleich";
 type T1 = Behaupte<
   Gleich<AuftragStatus, "anstehend" | "laeuft" | "erfolg" | "fehlgeschlagen" | "abgebrochen">
 >;
+// GEÄNDERT am 13.11.2026 (#472, FA-30): `produktseite-suche` ist die sechste Art
+// (TK 9.20). Die Union bleibt GESCHLOSSEN - das ist der Punkt dieses Tests.
 type T2 = Behaupte<
-  Gleich<AuftragArt, "import" | "loeschen" | "render" | "export" | "produktfoto-abruf">
+  Gleich<
+    AuftragArt,
+    "import" | "loeschen" | "render" | "export" | "produktfoto-abruf" | "produktseite-suche"
+  >
 >;
 
 // Geschlossen heisst: `string` ist NICHT dasselbe.

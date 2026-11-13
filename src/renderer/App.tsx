@@ -66,6 +66,7 @@ import { loescheAktion } from './action-editor/aktion-loeschen'
 import { ComposerWurzel } from './composer/index'
 import { ActionEditorWurzel } from './action-editor'
 import { meldeProduktfoto } from './action-editor/produktfoto-meldung'
+import { meldeProduktsuche } from './action-editor/produktsuche-meldung'
 import { VorlagenEditorWurzel } from './vorlagen-editor'
 import { ProjektVerwaltungWurzel } from './projekt-verwaltung'
 import { Vorschau } from './preview-player/vorschau'
@@ -265,6 +266,9 @@ export function App(): JSX.Element | null {
       // FA-27 (#470): Der Nachlauf legt das Ergebnis des Abrufs im Editor-Speicher ab;
       // der Editor liest es dort. Kein zweiter Auswerter von `queue:geaendert`.
       meldeProduktfotoAbruf: (meldung) => meldeProduktfoto(meldung),
+      // FA-30 (#472): dasselbe fuer die Produktseiten-Suche - eigener Speicher, eigener
+      // Leser im Editor; auch hier gibt es keinen zweiten Auswerter von `queue:geaendert`.
+      meldeProduktsuche: (meldung) => meldeProduktsuche(meldung),
       meldeFehler,
       setzeLage: (neu: BootstrapLage) => {
         if (neu.schritt === 'bereit') zugaengeRef.current = neu.zugaenge

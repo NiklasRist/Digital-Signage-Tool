@@ -137,6 +137,21 @@ function baueAuftrag<A extends AuftragArt>(art: A, payload: NutzlastVon<A>): Auf
     }
   }
 
+  if (art === 'produktseite-suche') {
+    if (!istProduktsucheNutzlast(payload)) {
+      return (
+        'Die Nutzlast einer Produktseiten-Suche braucht die Textfelder projektId, aktionId ' +
+        'und stichwort.'
+      )
+    }
+    return {
+      ...basis(),
+      art: 'produktseite-suche',
+      label: `Produktsuche: ${payload.stichwort.trim()}`,
+      payload,
+    }
+  }
+
   // Erreichbar, obwohl `art` typisiert ist: Der Aufruf kommt ueber #71 vom Renderer
   // herein, und die Nutzlast eines IPC-Aufrufs ist zur Laufzeit alles Moegliche.
   return `Unbekannte Auftragsart "${String(art)}".`
@@ -295,6 +310,19 @@ function istProduktAbrufNutzlast(wert: unknown): wert is NutzlastVon<'produktfot
     istText(wert['projektId']) &&
     typeof wert['aktionId'] === 'string' &&
     istText(wert['produktUrl'])
+  )
+}
+
+function istProduktsucheNutzlast(wert: unknown): wert is NutzlastVon<'produktseite-suche'> {
+  // Dieselbe Auslegung wie beim Abruf (9.20): `aktionId` darf leer sein, weil die Aktion
+  // im Modus „neu" noch nicht existiert und die Suche sie nicht schreibt. Das Stichwort
+  // ist die einzige fachliche Eingabe und darf nicht leer sein - eine leere Suche waere
+  // ein Netzaufruf ohne Frage.
+  return (
+    istObjekt(wert) &&
+    istText(wert['projektId']) &&
+    typeof wert['aktionId'] === 'string' &&
+    istText(wert['stichwort'])
   )
 }
 
