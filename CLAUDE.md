@@ -54,11 +54,10 @@
 - **Nächster Schritt ist geplant: [`docs/agents/plan-nach-474.md`](docs/agents/plan-nach-474.md).**
   (1) **Doku-Nachtrag TK v3.66 — geschnitten als [#475](https://github.com/NiklasRist/Digital-Signage-Tool/issues/475)**
   (9.21.9 „Modell nicht gewählt", 9.21.5 ein Ziel, CSP-Regel).
-  (2) **#472: zwei Entscheidungen sind GEFALLEN (13.11.2026, Niklas)** — `ProduktQuellen` bekommt
-  **ein Suchmuster je Shop** (`shops: Array<{host, suchMuster}>`) und der **Notweg ist eine
-  konfigurierbare Suchadresse** (`webSuche: string | null`), kein Anbieter im Code. TK **9.20.3**
-  ist damit überholt; der Nachtrag gehört nach #475 oder in ein eigenes `[doku]`-Issue, **erst
-  danach** die Signatur von #472.
+  (2) **#472: zwei Entscheidungen sind GEFALLEN (13.11.2026, Niklas) UND im Issue nachgezogen** —
+  `ProduktQuellen` trägt **ein Suchmuster je Shop** (`shops: ProduktQuelleShop[]`, `{q}`) und der
+  **Notweg ist eine konfigurierbare Suchadresse** (`webSuche: string | null`), kein Anbieter im
+  Code. TK **9.20.3** ist damit überholt und steht als vierte Änderung in **#475**.
   (3) **#466 Phase 1** mit der Stoppuhr.
 - **Nicht gepusht.** Zahl mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
 

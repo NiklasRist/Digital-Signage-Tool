@@ -22,9 +22,10 @@ sind in #474 **gemeldet** und im Code begründet, aber das TK sagt weiter das Ge
 ausschließt. **AD bleibt unverändert** — FA-29 sagt dort schon dasselbe.
 
 **GESCHNITTEN am 13.11.2026: [#475](https://github.com/NiklasRist/Digital-Signage-Tool/issues/475)**
-(`[doku] TK 9.21.5/9.21.9: das Freistell-Modell ist gewählt …`, Labels `documentation`,
-`ebene:main`, `ebene:renderer`, `modul:template-canvas`, `risiko:sicherheit`). Dort sind auch die
-drei Änderungen im Wortlaut hinterlegt (Modell mit Zahlen, drei feste Namen, CSP-Regel).
+— Titel `[doku] TK v3.66: Freistell-Modell gewählt (9.21) und ProduktQuellen mit Suchmuster
+(9.20.3)`, Labels `documentation`, `ebene:main`, `ebene:renderer`, `modul:template-canvas`,
+`risiko:sicherheit`. Dort stehen die **vier** Änderungen im Wortlaut (Modell mit Zahlen, drei
+feste Namen, CSP-Regel — und 9.20.3, s. Abschnitt 2).
 
 **Empfehlung:** zuerst, weil es billig ist und sonst der nächste Agent wieder gegen einen
 veralteten Satz prüft (dieselbe Fehlerklasse wie die „Bezug: AD v1.13"-Zeile).
@@ -40,7 +41,8 @@ veralteten Satz prüft (dieselbe Fehlerklasse wie die „Bezug: AD v1.13"-Zeile)
    Muster mit `{q}`; ohne Eintrag gibt es keinen Notweg. Kein Schlüssel, kein Konto, FA-30
    bleibt erfüllt, ohne einen Fremdanbieter festzuschreiben.
 
-**Vorgeschlagene Typen (noch NICHT im Issue — GitHub-Schreiben braucht Freigabe):**
+**Typen — so stehen sie seit 13.11.2026 in der Signatur von #472** (im Issue geändert, wie es die
+Regel verlangt; nicht in einer Datei):
 
 ```ts
 export interface ProduktQuelleShop {
@@ -66,13 +68,12 @@ wie `normalisiereProduktUrl`). `{q}` wird mit `encodeURIComponent` eingesetzt. E
 unverändert alle Netzgrenzen aus 9.19.4 (aufgelöste Adresse, keine lokalen Netze, 3
 Weiterleitungen, 20 s Budget).
 
-**Folge für den Vertrag:** TK **9.20.3** sagt heute `shops: string[]` und `webSuche: boolean` —
-das ist mit dieser Entscheidung überholt. Der Nachtrag gehört in **denselben Doku-Schritt** wie
-die 9.21-Korrekturen (Issue **#475**, dort zu ergänzen) **oder** in ein eigenes `[doku]`-Issue.
-Erst danach ist die Signatur von #472 dran (sie ist „verbindlich" und wird im Issue geändert,
-nicht in der Datei).
+**Folge für den Vertrag — erledigt am 13.11.2026:** TK **9.20.3** sagte `shops: string[]` und
+`webSuche: boolean`; das ist mit dieser Entscheidung überholt. Der Nachtrag ist in **#475**
+aufgenommen (vierte Änderung), und die **Signatur von #472 ist im Issue nachgezogen** (Abschnitt 1
+plus die zwei Stellen in Abschnitt 4 und die DoD). Damit stimmt die Kette wieder.
 
-**Erst danach** der Bau.
+**Reihenfolge:** #475 (TK) → #472 (Bau).
 
 ## 3. #466 — Referenzlauf (die Messung, die L-01 trägt)
 
