@@ -11,7 +11,41 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (13.11.2026, Nachtrag zur neunundfünfzigsten Sitzung: #470 ist geschlossen — FA-27 vom Produktfoto zum Asset)
+## STAND HEUTE (13.11.2026, sechzigste Sitzung: #470 zu, TK 9.21 geschrieben, FA-28 gebaut)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-13-fa28-gebaut.md`](docs/agents/uebergabe-2026-11-13-fa28-gebaut.md).**
+
+- **#470 IST KOMMENTIERT UND GESCHLOSSEN** (`completed`, 12.11.2026 22:54) — vorher das volle Gate
+  erneut gefahren (EXIT 0), `4t` wiederholt (Assets **4 -> 4**), `dist` Exit 0, Paket startet.
+  **Korrektur:** der in der Vorübergabe genannte Gegenproben-Wert `23f56fe7…` ist **nicht
+  reproduzierbar**; `netz.ts` ist seit `93db638` unverändert, es gilt `c2ce4b06…`.
+- **TK v3.65 / 9.21 (#471, `f21cf82`, geschlossen):** `Aktion.bildAufbereitung` und
+  `Aktion.freistellen` optional (keine Migration); gerechnet wird **einmal je (Asset,
+  Einstellungen)** beim Vorbereiten, nicht je Frame; der **Zuschnitt bleibt `bildAusschnitt`**;
+  FA-29 über ein gebündeltes WASM-Modell im Renderer mit Zaun (≤ 25 MB / ≤ 2 s / ≤ 5 s).
+- **Drei Bau-Issues geschnitten:** **#472** FA-30 (TK 9.20; zwei Lücken offen benannt),
+  **#473** FA-28, **#474** FA-29 (setzt #473 voraus, `modell://` nach dem Muster von `marken://`,
+  `onnxruntime-web` exakt gepinnt).
+- **#473 IST GEBAUT (`084b72b`, noch nicht kommentiert/geschlossen):** eine Regelquelle
+  `src/shared/aufbereitung.ts`, reine Byte-Rechnung `aufbereiten.ts` (**kein `ctx.filter`** — GPU und
+  CPU rechnen nicht garantiert gleich), **eine** Nachschlagestelle in `zeichne-segment`, Bestand auf
+  **6 Puffer / 256 MB** begrenzt. **Treiber `4u`:** Vorschau-Hash `586686025` -> Helligkeit 60 ->
+  `3312352303` -> zurück -> **`586686025`** (das ist zugleich der Beleg für „ohne Einstellungen
+  byte-gleich"). **Vier Gegenproben**, jede rot und byte-identisch zurück.
+- **Fehler im eigenen Code, behoben:** der Aufbereitungs-Bestand trug denselben Schlüssel mehrfach ein
+  und hätte beim Aufräumen das **gerade gezeigte** Bild verdrängt; zwei Tests decken es. Dazu eine
+  **Signatur-Korrektur in #473**: `wendeAufbereitungAn` braucht die Maße, sonst ist die 3×3-Faltung
+  nicht definiert — im Issue korrigiert, nicht in der Datei.
+- **Gate:** Unit **5833/5833** (382 Dateien), Integration **61/61** (17), Typecheck 0, Lint 0, Build 0,
+  Treiber **0 Befunde**, `dist` Exit 0, Paket startet. **Matrix:** FA-28 `teilweise` (`4u`), Zählung
+  **12/12/3/3**, 16 Muss, 13 Soll, 1 Kann.
+- **Zitatabgleich:** 8827 Zitate aus 472 Issues, A=1109, B=354 — unverändert; **sieben eigene Befunde**
+  in #471/#472 gefunden und korrigiert.
+- **Offen:** **#473 kommentieren/schließen**, **#472**, **#474**, **#466** (Phase 1 mit Stoppuhr),
+  **#458** überholt. `bereitschaft.py` meldet „0 bereit" (keine Meilensteine an den neuen Issues).
+- **Nicht gepusht:** **15 Commits** vor `origin/main`, Arbeitsbaum sauber. **Push nur auf Anweisung.**
+
+## STAND HEUTE (13.11.2026, Nachtrag zur neunundfünfzigsten Sitzung: #470 ist geschlossen — FA-27 vom Produktfoto zum Asset) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-12-fa27-gebaut.md`](docs/agents/uebergabe-2026-11-12-fa27-gebaut.md).**
 
