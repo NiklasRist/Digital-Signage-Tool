@@ -152,6 +152,16 @@ Angepasst (Vertragstests, weil Verträge wachsen): `app-konfig`, `auftrag`, `kan
 `lese-konfig`, `bootstrap-ablauf`, `bootstrap-verdrahtung`, `project-store-nachtrag-3`,
 `entfernen`, `wiederholen`.
 
+## 9a. #472 kommentiert und geschlossen (13.11.2026)
+
+**#472 IST KOMMENTIERT UND GESCHLOSSEN** (`completed`, GitHub-Schreiben auf Anweisung von
+Niklas). Der Abschlusskommentar
+([#472 (comment)](https://github.com/NiklasRist/Digital-Signage-Tool/issues/472#issuecomment-6860389501))
+nennt: den gebauten Weg, den Fensterbeleg 4w im Wortlaut, den **behobenen Befund** im
+Auftrags-Nachlauf, die **sieben** Abweichungen/Auslegungen, den **Widerspruch** zu TK 9.20.3,
+den **zweiten Fund** (`lookup`-Haken ungetestet), die vier Gegenproben mit Prüfsummen, das Gate
+und die ehrlichen Grenzen. Vorher wurde das Gate auf dem committeten Stand gefahren.
+
 ## 10. Ehrlich offen
 
 - **Der Erfolgsweg am Fenster fehlt** (s. Abschnitt 3). Der Integrationstest deckt ihn mit

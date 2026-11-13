@@ -17,7 +17,9 @@
 
 - **#475 IST GESCHLOSSEN** (`completed`, 13.11.2026, GitHub-Schreiben auf Anweisung). TK **v3.66**
   steht; der Kommentar von 15:59 UTC bleibt der einzige.
-- **#472 (FA-30) IST GEBAUT: Produktseite finden.** Stichwort -> Suchauftrag -> **Shops zuerst**
+- **#472 (FA-30) IST GEBAUT, KOMMENTIERT UND GESCHLOSSEN** (`completed`, 13.11.2026, GitHub-Schreiben
+  auf Anweisung). Der Abschlusskommentar nennt Messung, Abweichungen, beide Funde, den Widerspruch
+  zu TK 9.20.3 und die ehrlichen Grenzen. **Produktseite finden:** Stichwort -> Suchauftrag -> **Shops zuerst**
   (hoechstens drei, in Reihenfolge), **danach** die allgemeine Websuche als **Notweg** ->
   hoechstens **5 Treffer**. Die Wahl setzt `Aktion.produktUrl` **im Entwurf**; „Foto abrufen"
   (FA-27) bleibt der **zweite** Klick. Kein Bild, kein Asset, kein Schreibvorgang.
