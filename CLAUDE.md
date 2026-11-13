@@ -56,13 +56,18 @@
   **Assets 4 -> 4**).
 - **Matrix:** FA-27 `teilweise` (Schritt `4t`), FA-28/29/30 als `Luecke` nachgetragen; Zählung
   12/11/4/3, **16 Muss, 13 Soll, 1 Kann**.
-- **Offen (Stand 13.11.2026):** **#471** `[doku]` **TK 9.21** — FA-28/FA-29 ausschreiben (AD 4.13
-  nennt sie „offen für das Technische Konzept", ein Bau-Issue wäre geraten); **#472** `[bau]`
-  **FA-30** Produktseite finden (Vertrag steht in 9.20, Signatur steht im Issue — inklusive der zwei
-  offen benannten Lücken: `shops: string[]` drückt keinen Suchpfad aus, Notweg-Anbieter ist nicht
-  festgelegt); **#466** Referenzlauf (Phase 1 mit Stoppuhr); **#458** überholt.
-  **`bereitschaft.py` meldet „0 bereit"** — die neuen Issues haben keinen Meilenstein, und M0–M10
-  sind gebaut.
+- **#471 IST GEBAUT (13.11.2026): TK v3.65, Abschnitt 9.21.** Die Einstellungen stehen an der Aktion
+  (`Aktion.bildAufbereitung`, optional, ohne Migration); gerechnet wird **einmal je (Asset,
+  Einstellungen)** beim Vorbereiten des Motivs, nicht je Frame — **2100 Bilder je 70-s-Segment**
+  (Messung `4s`) stehen dagegen. Der **Zuschnitt bleibt `bildAusschnitt`** (kein zweites Feld), FA-29
+  läuft im Renderer über ein gebündeltes WASM-Modell (Zaun: ≤25 MB, ≤2 s Laden, ≤5 s je Bild).
+  Die zwei **Bau-Issues für FA-28/FA-29** sind der nächste Schnitt. Nebenbei: der **Bezug** im TK stand
+  seit Wochen auf **AD v2.3** und ist auf v2.5 gezogen.
+- **Offen (Stand 13.11.2026):** **#472** `[bau]` **FA-30** Produktseite finden (Vertrag steht in 9.20,
+  Signatur steht im Issue — inklusive der zwei offen benannten Lücken: `shops: string[]` drückt keinen
+  Suchpfad aus, Notweg-Anbieter ist nicht festgelegt); **#466** Referenzlauf (Phase 1 mit Stoppuhr);
+  **#458** überholt. **`bereitschaft.py` meldet „0 bereit"** — die neuen Issues haben keinen
+  Meilenstein, und M0–M10 sind gebaut.
 - **Nicht gepusht:** **9 Commits** vor `origin/main` (mit diesem Doku-Commit 10); Arbeitsbaum
   danach sauber. **Push nur auf Anweisung.**
 

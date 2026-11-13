@@ -1,10 +1,10 @@
 # Technisches Konzept – Digital-Signage-Tool
 
 **Projekt:** Digital-Signage-Tool für das Fitnessstudio der Baller Gruppe
-**Bezug:** Anforderungsdokument v2.3 (das „Was")
+**Bezug:** Anforderungsdokument v2.5 (das „Was")
 **Inhalt dieses Dokuments:** das „Wie" – Architektur, Datenbestand, Datenfluss, Module
-**Version:** 3.64 (12.11.2026: **9.20 Produktseite finden (FA-30)** – Stichwortsuche, vorbelegt mit dem Aktions-Titel; zuerst in hinterlegten Shops (`ProduktQuellen` im config-store), danach eine allgemeine Websuche als ausdruecklicher NOTWEG ohne Schluessel. Trennt Finden (9.20) von Holen (9.19). Vorher 3.63: **9.19 Produktfoto-Abruf (FA-27)** – Abruf im **Main**, als Auftrag über `reiheEin`; Quelle sind die strukturierten Produktdaten (`Product.image`), ersatzweise `og:image`; höchstens 5 Kandidaten im Speicher, erst die Wahl legt ein Asset an; **`Asset.herkunft` wird Pflichtfeld** mit den Varianten `{art:'manuell'}` und `{art:'abruf', url, abgerufenAm}`; neues Feld `Aktion.produktUrl`; harte Grenzen gegen lokale Netze. AD v2.4. Vorher 3.62: 1.1/12.1/14: Die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, sechstes Angebot (AD v2.3). Vorher 3.61: 9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
-**Datum:** 09.11.2026
+**Version:** 3.65 (13.11.2026: **9.21 Produktbild aufbereiten und freistellen (FA-28 / FA-29)** – die Einstellungen stehen an der Aktion (`Aktion.bildAufbereitung`, optional, ohne Migration); gerechnet wird **einmal je (Asset, Einstellungen)** beim Vorbereiten des Motivs, nicht je Frame – 2100 Bilder je 70-s-Segment stehen dagegen (Messung 4s). Der **Zuschnitt bleibt `bildAusschnitt`**, es entsteht KEIN zweites Feld. FA-29 läuft im **Renderer** über ein gebündeltes Modell (WASM, offline) – kein natives Modul, keine Bildbytes über IPC, keine dritte `herkunft`-Variante. AD v2.4. Vorher 3.64: **9.20 Produktseite finden (FA-30)** – Stichwortsuche, vorbelegt mit dem Aktions-Titel; zuerst in hinterlegten Shops (`ProduktQuellen` im config-store), danach eine allgemeine Websuche als ausdruecklicher NOTWEG ohne Schluessel. Trennt Finden (9.20) von Holen (9.19). Vorher 3.63: **9.19 Produktfoto-Abruf (FA-27)** – Abruf im **Main**, als Auftrag über `reiheEin`; Quelle sind die strukturierten Produktdaten (`Product.image`), ersatzweise `og:image`; höchstens 5 Kandidaten im Speicher, erst die Wahl legt ein Asset an; **`Asset.herkunft` wird Pflichtfeld** mit den Varianten `{art:'manuell'}` und `{art:'abruf', url, abgerufenAm}`; neues Feld `Aktion.produktUrl`; harte Grenzen gegen lokale Netze. AD v2.4. Vorher 3.62: 1.1/12.1/14: Die Vergleichsbasis ist ein **Allzweck-Werkzeug** (PowerPoint, Google Slides, Canva), nicht eine Präsentation; gemessen wird die **Arbeit** – fünf Angebote, Preisänderung, sechstes Angebot (AD v2.3). Vorher 3.61: 9.18: Die PowerPoint-Baseline wird **genommen, nicht gebaut** (AD 12.1, v2.1) – eine fertige, gute Präsentation, markenfremd, dieselben 5 Angebote hineingeschrieben. Der Startwert „PowerPoint ≤ 14/24" ist damit **vorläufig** und wird nach der ersten Messung abgeleitet, nicht verteidigt. Vorher 3.60: 9.17/9.18/9.8.2/9.12.1: **Varianten** je Aktion (FA-26) – benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewählt, Wechsel ≤ 1 Klick, Vorschau sofort; Auflösung an EINER Stelle, kein zweiter Zeichenweg, keine Rotation, Dauer und Bildrate unberührt. Die Vorlagen-Löschsperre kennt jetzt **drei** Referenzarten (`varianten[].vorlagenId` neu). **9.18** hält fest, was die Software für die L-01-Abnahme (AD 12.1/14) vorzeigen muss — ein Mess-Schritt, kein Bau-Auftrag; AD v2.0. Vorher 3.59: 9.11.1/9.15.1/9.15.3/9.10.10: Die eingebaute Marke bringt das **echte Fitnessworld24-Logo** gebündelt mit – die v3.11-Regel „auch die eingebaute Marke startet mit `logo: null`, ein Logo wird nicht mitgeliefert" ist **aufgehoben**; `herkunft: "gebuendelt"` hat für Logos wieder einen Erzeuger. Das weiße Trägerfeld steckt im Asset (840 × 240, Verhältnis unverändert 3,5), nicht in einer Zone – die Vorlagen bleiben markenneutral; #467, Entscheidung 10.11.2026. Vorher 3.58: 9.14.2: Undo/Redo folgt dem **WIRKSAMEN Bereich** – eine offene Vorlagen-Ansicht gewinnt über den Reiter, und Pfeile sowie Cmd/Strg+Z benutzen denselben Weg (FA-21). Vorher 3.57: 9.16.7: Fensterlänge **mindestens 0,3 s** statt 1 s – die Vorgaben aus Anforderungsdokument 4.10 (Preis-Pop 0,33 s, Text-Einblendung 0,4 s, Bild-Reveal 0,5 s, Glanz-Sweep 0,6 s) sind damit einstellbar; Entscheidung 09.11.2026, AD v1.14 unverändert. Vorher 3.56: 9.10.8: Motive werden als **Blob-URL** gebunden – die Bytes kommen über `media://`, ein direktes `<img src="media://…">` taintet aber das Canvas und ließ `toBlob` scheitern; gemessen 09.11.2026, #464. Vorher 3.55: 9.16: **Effekte** – zehn einzeln schaltbare Bewegungen je Ganzbild-Segment, als Bildplan gezeichnet und bildgenau verkettet; 09.11.2026. Vorher 3.54: 9.7.8: Aktions-Boxen der Zeitleiste tragen ihr Motiv, Auto-Scroll beim Ziehen; 06.11.2026. Vorher 3.53: 9.8.10: Abdunkelung je Zone in zwei Stoppen – Farbe und Deckkraft je Stopp; 05.11.2026. Vorher 3.52: 9.8.9: freie Farbwahl als beschrifteter Knopf; 05.11.2026. Vorher 3.51: freie Farbwahl im Popup. Vorher 3.50: Schriftart je Objekt, Farb-Popup, Richtungsfeld statt Prozent-Regler, Umbruch statt Abschneiden; 05.11.2026. Vorher 3.49: Objekte gruppiert, EIN Farbwähler, Bildausschnitt nur fuers Motiv; 05.11.2026. Vorher 3.48: Zonen-Gestaltung und Bildausschnitt, sechs neue Looks. Vorher 3.47: Farbauswahl — Markenpalette und die letzten 20 Farben. Vorher 3.46: Ergebnis zuerst — Beispielinhalt, Titel bei den Inhaltsfeldern, „Fertig & ins Video" entfällt)
+**Datum:** 13.11.2026
 **Status:** In Planung
 
 ---
@@ -327,7 +327,7 @@ Dieser Abschnitt übersetzt die Prozesse **P1–P7** in konkrete Module mit scha
 - **Main (Node):** `ipc-gateway`, `auftrags-manager` [P6] (zentraler serieller Ausführungspunkt + Speicher Q1–Q4, 9.3), `media-service` [P1] (9.4), `project-store` [D1] (besitzt das eine D1-Schreib-Lock **und** ist Pfad-Autorität + trägt das `media://`-Protokoll, 9.5.7), `config-store` [D3], `vorlagen-store` (app-weite Vorlagen-Bibliothek, 9.12.1), `marken-store` [V2] (app-weiter Marken-Bestand, **löst die Marken-Vererbung als einzige Stelle auf**, 9.15.1), `render-service` [P4] (9.2), `export-service`, `ffmpeg-adapter` (enthält den getesteten `buildReel`-Kern).
 - **Geteilt:** `contracts/types` (Project, Action, Asset, ListItem, Template, Brand, RenderRequest, Auftrag …). Die reine Bandgeometrie-Rechnung `berechneBandGeometrie` ist mit dem Split-Screen **entfallen** (v3.31, 9.2.8). Renderer ↔ Main reden **ausschließlich** über den typisierten IPC-Vertrag. **Die Effekt-Rechnung** (`shared/effekte.ts`) und **der Bildplan** (`shared/bildplan.ts`) liegen ebenfalls hier – rein, ohne DOM, von Renderer und Main lesbar (9.16).
 
-**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1), die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3), die **Marken-Verwaltung** `marken-store`/`marken-editor` (9.15), die **Effekte** (9.16) sowie der **Produktfoto-Abruf** (9.19) und die **Produktseiten-Suche** (9.20). **Speicher `V2`** (Marken-Bestand) tritt neben `V1` (Vorlagen). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
+**Stand der Verträge:** ausgearbeitet sind `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9), `template-canvas` (9.10), die geteilten Datenmodelle `Vorlage`, `Marke`, `Project`/`Listenelement` sowie ID-Schema und Konstanten (9.11) die **Vorlagen-Verwaltung** `vorlagen-store`/`vorlagen-editor` (9.12), **Undo/Redo** (9.13), die **IPC-Konventionen** (9.1.1), die **`app-shell`** (9.14) samt dem Modul **`projekt-verwaltung`** (9.14.3), die **Marken-Verwaltung** `marken-store`/`marken-editor` (9.15), die **Effekte** (9.16) sowie der **Produktfoto-Abruf** (9.19), die **Produktseiten-Suche** (9.20) und die **Bildaufbereitung** samt Freistellen (9.21). **Speicher `V2`** (Marken-Bestand) tritt neben `V1` (Vorlagen). **Noch offen:** die Punkte am Schluss von Abschnitt 9. *(Bis v2.1 stand hier auch das Datenmodell `Marke`; es ist seit 9.11.2 vollständig ausgeschrieben. Der Satz blieb stehen und hätte einen Agenten glauben lassen, die Marken-Rollen seien noch nicht festgelegt – woran u. a. die Füllfarbe der Split-Restflächen hängt, 9.2.8.)*
 
 ### 9.1 IPC-Vertrag: Granularität (Variante A) und Konventionen
 
@@ -3709,9 +3709,161 @@ Zusätzlich:
 
 ---
 
+### 9.21 Produktbild aufbereiten und freistellen (FA-28 / FA-29)
+
+**Kein eigenes Modul.** 9.21 sitzt zwischen der Ablage (9.4) und dem Zeichnen (9.10): Es verändert weder
+das Asset noch die Datei auf der Platte, sondern **was beim Zeichnen als Motiv vorliegt**. Deshalb steht
+der Abschnitt hier und nicht als eigenes Modul — ein Modul ohne Aufrufer wäre genau die Lücke, die
+dieses Projekt an anderen Stellen teuer bezahlt hat.
+
+#### 9.21.1 Die zwei Zusagen
+
+**FA-28 (Soll) — Aufbereiten.** Zuschnitt sowie **Helligkeit, Kontrast und Schärfe**. **Nicht
+destruktiv:** das Original-Asset bleibt unverändert, die Einstellungen stehen an der Aktion. Alles läuft
+**lokal**, ohne Netz (NFA-06).
+
+**FA-29 (Kann) — Freistellen.** Transparenter Hintergrund über ein **mitgeliefertes Modell**, offline
+und **optional**: ohne Freistellung bleibt das Bild, was es ist.
+
+**Reihenfolge ist Absicht (AD 4.13): FA-28 vor FA-29.** Der Zuschnitt ist bereits gebaut; FA-28 ergänzt
+die drei Tonwerte, FA-29 das Modell. Zwei Zusagen, zwei Bau-Issues — und die zweite braucht die erste
+nicht aufzuhalten.
+
+#### 9.21.2 Der Zuschnitt ist KEIN neues Feld
+
+AD 4.13 nennt als Teil von FA-28 den „Zuschnitt". Er ist seit dem 05.11.2026 gebaut: `bildAusschnitt`
+mit `zoom` (100–300) und `versatzX`/`versatzY` (±50 %, 9.8.8) **ist** der Zuschnitt — der Nutzer wählt,
+welcher Teil des Fotos in der Zone erscheint.
+
+**Es entsteht kein zweites Feld.** Ein Rechteck `zuschnitt` neben `zoom`/`versatz` wären **zwei
+Wahrheiten über dieselbe Absicht**: Wer beide setzt, bekommt je nach Reihenfolge ein anderes Bild, und
+niemand könnte sagen, welche gilt. 9.21 sagt damit ausdrücklich: **FA-28 ergänzt Helligkeit, Kontrast und
+Schärfe — nicht den Zuschnitt.**
+
+#### 9.21.3 Das Datenmodell
+
+```ts
+interface BildAufbereitung {
+  helligkeit?: number | null   // -100 … +100,  0 = unverändert
+  kontrast?: number | null     // -100 … +100,  0 = unverändert
+  schaerfe?: number | null     //    0 … 100,   0 = aus
+}
+```
+
+`Aktion.bildAufbereitung?: BildAufbereitung | null` und `Aktion.freistellen?: boolean | null`. Beide
+**optional** — jede bestehende `project.json` bleibt ohne Migration lesbar; dieselbe Regel wie bei
+`bildAusschnitt`, `zonenGestaltung` und `effekte`. `AktionsInhalt` trägt die Felder damit automatisch
+(es ist `Omit<Aktion,'id'>`), und der Entwurf im Editor kann sie führen, ohne gespeichert zu sein.
+
+**Grenzen, Normalisierung und der Bestands-Schlüssel liegen an EINER Stelle**
+(`src/shared/aufbereitung.ts`): `AUFBEREITUNG_GRENZEN`, `normalisiereAufbereitung` (fehlt oder
+unbrauchbar → neutral) und `motivSchluessel(bildRef, aufbereitung, freistellen)`. Eine zweite Zahlenliste
+im Formular wäre beim nächsten Umbau still falsch; ein Wert, den das Formular erlaubt und der Speicher
+kappt, wäre eine stille Datenlöschung — dieselbe Begründung wie bei `GESTALTUNG_GRENZEN` (9.8.8).
+
+| Wert | Grenze | Warum |
+|---|---|---|
+| `helligkeit` | −100 … +100 | 0 ist der unveränderte Zustand; ±100 ist „ganz schwarz" bzw. „ganz weiß" und damit die natürliche Grenze |
+| `kontrast` | −100 … +100 | 0 unverändert; −100 flacht auf eine Fläche ab, +100 reißt in Schwarz/Weiß |
+| `schaerfe` | 0 … 100 | 0 = **aus**, damit „kein Wert" und „Regler links" dasselbe bedeuten und keinen zusätzlichen Rechenweg eröffnen |
+
+#### 9.21.4 Wo gerechnet wird — einmal je Bild, NICHT je Frame
+
+Vorschau und Render laufen durch **denselben** Zeichenweg (`zeichneSegment`, 9.10). Ein Segment ist bis
+zu **2100 Bilder** lang (gemessen im Treiber `4s`: 70,022 s). Eine Aufbereitung **je Frame** wäre je
+Segment eine Faltung über zwei Millionen Pixel — 2100-mal.
+
+**Deshalb wird einmal gerechnet, je (Asset, Einstellungen), beim Vorbereiten des Motivs**
+(`bereiteMotiveVor` aus `template-canvas`): Das Ergebnis — ein `ImageBitmap` in der Größe des
+Originals — liegt danach im Motiv-Bestand unter `motivSchluessel(...)`. `zeichneSegment` bleibt
+**synchron und unverändert**; es zeichnet, was es findet, wie heute.
+
+- **Ohne Aufbereitung ist der Schlüssel genau die Asset-ID.** Dann entsteht **kein** zusätzlicher
+  Rechenweg, und das gezeichnete Segment ist **byte-gleich** zu vorher (Risiko `pixelgleichheit`).
+- **Die Reihenfolge ist fest** und steht in `shared/aufbereitung.ts`, nicht im Aufrufer:
+  **Freistellen → Helligkeit → Kontrast → Schärfe.** Der Zuschnitt (`bildAusschnitt`) greift danach beim
+  Zeichnen, unverändert.
+- **Der Puffer ist begrenzt:** höchstens **6** aufbereitete Bilder oder **256 MB**, das älteste fällt
+  zuerst heraus. Geleert wird mit `leereMotivBestand()` — also bei Projektwechsel und nach jedem Import,
+  aus demselben Grund wie dort: nach einem erneuten Import dürfen keine alten Bytes stehen bleiben.
+- **Kein neues Asset, keine dritte `herkunft`-Variante.** Das aufbereitete Bild existiert nur zur
+  Laufzeit; `Asset.herkunft` kennt weiterhin genau `{art:'manuell'}` und `{art:'abruf'}`.
+
+#### 9.21.5 FA-29: das Modell
+
+**Der Ort ist der Renderer, nicht der Main.** Drei Gründe, jeder für sich ausreichend:
+
+1. **Keine Bildbytes über IPC** (9.1.1, 9.19.2). Das Modell liest dieselben Bytes wie das Zeichnen — über
+   `mediaBlobUrl` (9.5.7).
+2. **Ein Zeichenweg.** Vorschau und Render liegen ohnehin hier; ein Main-Weg müsste das Ergebnis wieder
+   in den Renderer bringen.
+3. **Kein natives Modul im Paket.** `app.asar.unpacked` bleibt unverändert; die Verpackung ist seit dem
+   12.11.2026 (Dependabot, 5 Binaries) ohnehin ein geprüfter Punkt und soll es bleiben.
+
+**Technik:** ONNX Runtime Web (WASM), Modell als **statische Datei im Bündel**, **lazy** geladen beim
+ersten Einschalten — nicht beim Start der App. **Kein Netz** (NFA-06): Das Modell reist mit dem Paket.
+
+**Der Zaun (harte Grenzen):** Zusatzgewicht im Paket **≤ 25 MB**, Ladezeit **≤ 2 s** auf dem
+Entwicklungsrechner, Laufzeit **≤ 5 s** je Bild. Werden die Zahlen gerissen, wird ein **kleineres Modell**
+gewählt — nicht der Zaun gebogen. Welches Modell, entscheidet der Bau und **nennt es im
+Abschlusskommentar**.
+
+**Ein Ausfall ist ein Zustand, kein Absturz:** Fehlt das Modell, lädt es nicht oder scheitert die
+Berechnung, steht ein Klartext am Schalter („Freistellen ist auf diesem Rechner nicht verfügbar"), das
+Bild bleibt **unfreigestellt**, und jede andere Funktion läuft. Das ist die Kann-Anforderung: Sie darf
+nichts blockieren.
+
+**Ergebnis:** ein Bild mit **Alpha**; die Fläche der Vorlage scheint durch. Ein erneutes Einschalten
+rechnet neu, ein Ausschalten fällt auf das Original zurück — der Bestand trägt beides unter
+verschiedenen Schlüsseln, entschieden über `motivSchluessel(...)`.
+
+#### 9.21.6 Bedienung, Undo, Vergleich
+
+- **Editor, Schritt „Bild"** (9.8.3): Gruppe **„Aufbereitung"** mit drei Reglern (Helligkeit, Kontrast,
+  Schärfe) und **einem Schalter „Freistellen"** samt Fortschritt und dem Klartext aus 9.21.5.
+- **Ein Reglerzug = EIN Undo-Schritt** (9.13.1): geschrieben wird beim **Verlassen** des Reglers, nicht
+  bei jedem Zwischenwert — derselbe Weg wie beim Farbwähler (9.8.9). Ohne Änderung wird nichts
+  geschrieben.
+- **`unterschiede` vergleicht inhaltlich** (wie bei `zonenGestaltung`, #463): ein neues Objekt mit
+  gleichen Werten ist **keine** Änderung.
+- Die Aufbereitung gilt **nur für Zonen mit `bindung === 'bild'`**. Das Logo bleibt unberührt — dieselbe
+  Regel wie beim Bildausschnitt (9.8.8: „ein beschnittenes Logo ist ein Markenfehler").
+
+#### 9.21.7 Nicht-destruktiv — der Beleg
+
+Der Satz aus AD 4.13 („das Original-Asset bleibt unverändert") ist eine Zusage, die man prüfen kann. Sie
+gilt als erfüllt, wenn **drei** Dinge belegt sind:
+
+1. Nach dem Setzen trägt `project.json` **nur** `Aktion.bildAufbereitung` bzw. `Aktion.freistellen`;
+   `id`, `dateiname`, `maße`, `dauer` und `herkunft` des Assets sind unverändert.
+2. Die Datei im Medienordner ist **byte-gleich** (SHA-256 vorher = nachher).
+3. **Ohne Einstellungen** ist das gezeichnete Segment **byte-gleich** zu vorher — die Gegenprobe zur
+   Gegenprobe, weil sie den Vorschau- und den Renderweg zugleich abdeckt.
+
+#### 9.21.8 Was 9.21 NICHT ist
+
+- **Keine Bildbearbeitung:** keine Ebenen, Masken, Retusche, Farbprofile, Stapelverarbeitung (AD 4.13).
+- **Kein neues Modul, kein neuer IPC-Kanal, keine Änderung an Render oder Export.**
+- **Keine Änderung an `bildAusschnitt`** — der Zuschnitt bleibt, wo er ist (9.21.2).
+- **Keine Rotation, kein Zuschnitt auf ein anderes Seitenverhältnis**, kein Zurechtbiegen des Motivs über
+  die Zonengrenze hinaus.
+
+#### 9.21.9 Ehrlich offen
+
+- **Das Modell ist noch nicht gewählt.** Der Zaun steht (9.21.5), die Datei nicht. Es ist gut möglich,
+  dass ein Modell, das Produkte sauber von Weiß trennt, größer ist als 25 MB — dann ist **die Zahl** die
+  Entscheidung, nicht die Anforderung.
+- **Die Rechenzeit der Schärfe ist nicht gemessen.** 2100-mal wird nicht gerechnet (9.21.4), aber einmal
+  je Bild sind es bei 1920 × 1080 rund zwei Millionen Pixel. Ist das zu langsam, wird die Faltung
+  verkleinert gerechnet — das wäre eine Messung im Bau, keine Annahme hier.
+- **Am Fernseher ist nichts davon geprüft.** Feine Schärfe und ein transparenter Rand sind genau die
+  Dinge, die auf 85 Zoll anders aussehen als im Fenster (9.18).
+
+---
+
 > **Stand des High-Level-Designs.** **Ausgearbeitet:** `render-service` (9.2), `auftrags-manager` (9.3), `media-service` (9.4), `project-store`/`config-store` (9.5), `export-service` (9.6), `composer` (9.7), `action-editor` (9.8), `preview-player` (9.9).
 >
-> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**, **9.16**, **9.17**, **9.18**, **9.19**, **9.20**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
+> **Das High-Level-Design ist damit vollständig.** Alle Modul-Verträge (9.2–9.10, 9.12, 9.14, **9.15**, **9.16**, **9.17**, **9.18**, **9.19**, **9.20**, **9.21**), alle geteilten Datenmodelle (9.11), die Konventionen des IPC-Vertrags (9.1.1) und das Ausgabe-Profil (9.2.4) sind ausgearbeitet.
 >
 > Geschlossen sind: die Lücken des Prüfbefunds vom 03.07. (Einzel-Instanz 9.5.4, ID-Schema und Konstanten 9.11.4, `RenderProfile` 9.2.4 samt Audio-Entscheidung R-06); die Anforderungsänderung Split-Screen (FA-20: 9.2.8, 9.11.1); Vorlagen-Erstellung und -Bearbeitung (FA-13: 9.12 samt Arbeitskopie-Fluss); Undo/Redo (FA-21: 9.13); das Warteschlangen-Journal Q4 (9.3); und der Aufbau der Oberfläche (9.14).
 >
