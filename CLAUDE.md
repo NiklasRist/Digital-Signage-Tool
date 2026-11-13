@@ -26,7 +26,7 @@
 - **Drei Bau-Issues geschnitten:** **#472** FA-30 (TK 9.20; zwei Lücken offen benannt),
   **#473** FA-28, **#474** FA-29 (setzt #473 voraus, `modell://` nach dem Muster von `marken://`,
   `onnxruntime-web` exakt gepinnt).
-- **#473 IST GEBAUT (`084b72b`, noch nicht kommentiert/geschlossen):** eine Regelquelle
+- **#473 IST GEBAUT UND GESCHLOSSEN (`084b72b`, Kommentar + `completed` am 13.11.):** eine Regelquelle
   `src/shared/aufbereitung.ts`, reine Byte-Rechnung `aufbereiten.ts` (**kein `ctx.filter`** — GPU und
   CPU rechnen nicht garantiert gleich), **eine** Nachschlagestelle in `zeichne-segment`, Bestand auf
   **6 Puffer / 256 MB** begrenzt. **Treiber `4u`:** Vorschau-Hash `586686025` -> Helligkeit 60 ->
@@ -41,7 +41,7 @@
   **12/12/3/3**, 16 Muss, 13 Soll, 1 Kann.
 - **Zitatabgleich:** 8827 Zitate aus 472 Issues, A=1109, B=354 — unverändert; **sieben eigene Befunde**
   in #471/#472 gefunden und korrigiert.
-- **Offen:** **#473 kommentieren/schließen**, **#472**, **#474**, **#466** (Phase 1 mit Stoppuhr),
+- **Offen:** **#472**, **#474**, **#466** (Phase 1 mit Stoppuhr),
   **#458** überholt. `bereitschaft.py` meldet „0 bereit" (keine Meilensteine an den neuen Issues).
 - **Nicht gepusht:** **15 Commits** vor `origin/main`, Arbeitsbaum sauber. **Push nur auf Anweisung.**
 
