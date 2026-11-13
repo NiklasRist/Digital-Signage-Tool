@@ -49,6 +49,12 @@
   geprüft, **schwächere Hardware** nicht gemessen.
 - **TK 9.21.9 sagt weiter „Modell noch nicht gewählt"** - das Issue verbietet eine AD/TK-Änderung,
   deshalb **nicht angefasst** und im Abschlusskommentar zu melden.
+- **#475 IST GEBAUT (`aef8f5a`, 13.11.2026, gleiche Sitzung): TK v3.66.** 9.21.9 nennt das gewählte
+  Modell samt Zaun-Zahlen, 9.21.5 die **drei festen Namen** an `modell://` und die CSP-Voraussetzung
+  `'wasm-unsafe-eval'`, 9.20.3 die neuen `ProduktQuellen` (`ProduktQuelleShop[]` + `webSuche: string |
+  null`). Dazu ein Zusatzbefund: 9.19.12 führte FA-28/FA-29 noch als „nicht gebaut". `.docx` neu:
+  **3158 Absätze**, 0 Backticks, `unzip -t`, zwei Bilder. **Zitatabgleich A=1109, B=354 — unverändert**;
+  zwei eigene A-Befunde in #475 gefunden und behoben. Noch **nicht** kommentiert/geschlossen.
 - **Offen:** **#472** (FA-30, TK 9.20), **#466** (Referenzlauf, Phase 1 mit Stoppuhr), **#458**
   (überholt). `bereitschaft.py` meldet „0 bereit" (keine Meilensteine an den neuen Issues).
 - **Nächster Schritt ist geplant: [`docs/agents/plan-nach-474.md`](docs/agents/plan-nach-474.md).**

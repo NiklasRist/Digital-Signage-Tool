@@ -148,6 +148,29 @@ Neu: `tests/unit/modell-protokoll.spec.ts` (17), `tests/unit/freistellen.spec.ts
 - **`freistellen` ist im Entwurf nicht „rückgängig zu machen", ohne neu zu rechnen** – das
   Ausschalten fällt auf das rohe Motiv zurück (Bestand trägt beides unter zwei Schlüsseln).
 
+## 8a. #475 GEBaut (13.11.2026, gleiche Sitzung): TK v3.66
+
+**#475 ist geschrieben und committet** (`aef8f5a`), noch **nicht** kommentiert/geschlossen:
+
+- **9.21.9:** das Modell ist **gewählt** — U-2-Net `u2netp`, 4 574 861 Bytes, SHA-256 `309c8469…`,
+  Apache 2.0, samt der gemessenen Zaun-Zahlen (434/439 ms laden, 1998–2138 ms rechnen,
+  19 719 516 Bytes Zusatzgewicht). Die große Fassung und der Grund gegen sie stehen dabei.
+- **9.21.5:** Auslieferung über `modell://` mit **drei festen Namen** (Modell, WASM-Runtime, Lader,
+  mit Größen) — kein Anfrageanteil wird zu einem Pfad, alles andere 404; dazu die
+  **CSP-Voraussetzung** `'wasm-unsafe-eval'` und `modell:` in `script-src`, je mit Begründung.
+- **9.20.3:** `ProduktQuellen` trägt **`ProduktQuelleShop[]`** (`host`, `suchMuster` mit `{q}`) und
+  **`webSuche: string | null`** statt Hostliste und Boolean; Regeln (genau ein `{q}`, absolute
+  http(s)-Adresse, `encodeURIComponent`, höchstens acht Shops), Vorgabe `{ shops: [], webSuche: null }`,
+  keine Migration, **kein Anbieter im Code**. **9.20.2** sagt, woher die Adresse kommt.
+- **Zusatzbefund, mitkorrigiert:** 9.19.12 führte FA-28/FA-29 noch als „beschlossen, aber nicht
+  gebaut" — beides ist seit #473/#474 gebaut.
+- `.docx` im selben Commit: **3158 Absätze**, 0 Backticks, `unzip -t` heil, zwei Bilder.
+- **Zitatabgleich:** `python3 tools/zitate-pruefen.py --neu-laden` → 8857 Zitate, **A=1109, B=354**
+  (unverändert). Zwei eigene A-Befunde in **#475** (ein Zitat einer ersetzten Stelle, eine
+  `[…]`-Auslassung im AD-Zitat) gefunden und im Issue behoben.
+- Gate für den Doku-Schritt: Typecheck 0, Lint 0 (eine vorbestehende Warnung), Build 0,
+  Unit **5873/5873**. Kein Code angefasst.
+
 ## 9. Abschluss
 
 - **#474 IST KOMMENTIERT UND GESCHLOSSEN** (`completed`, 13.11.2026 14:53 UTC, GitHub-Schreiben
