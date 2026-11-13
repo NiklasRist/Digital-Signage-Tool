@@ -4250,3 +4250,21 @@ Ereignisse gesammelt: 327
 
 - **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
 - **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-13T17:08:13.965Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 311
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)
+
+## Nachlauf vom 2026-11-13T17:22:08.804Z (automatisiert durch scripts/durchlauf.mjs)
+
+Gemessene Reiter-Struktur: Reiter 4 (Zusammenstellen, Aktionen, Vorlagen, Projekte).
+Erlebte Fenster-Fehler (pageerror): keine
+Ereignisse gesammelt: 312
+
+- **MANUELL** Zusammenstellen: erwartet "export-dialog nach Klick auf Exportieren", erkannt "MANUELL (User-Entscheidung 13.10.2026): der Zielordner-Dialog ist NATIV - der Treiber bedient ihn NICHT und mocked ihn nicht; der Export-Weg bleibt Hand-Abgleich." (Ort: composer/index.tsx)
+- **Untersuchung** Mehrfachauswahl (#392): erwartet "mindestens zwei Bloecke fuer den Shift-Bereich", erkannt "Liste hat 1" (Ort: composer/mehrfachauswahl.ts)

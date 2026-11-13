@@ -4,15 +4,17 @@
 > (AD 1.1/12.1/14). Sie belegt nur, welche **FA** der Treiber am echten Fenster misst.
 > L-01 wird in **#466** gemessen; die technische Umsetzung von FA-26 steht in **#465**.
 
-**Stand:** 13.11.2026. Neu darin: **FA-29** hat einen Schritt (**4v**, Status `teilweise`) -
-das Freistellen (#474) ist gebaut. **FA-30** (Produktseite finden) bleibt `Luecke`, weil es
-beschlossen und **nicht gebaut** ist; FA-27 (Schritt **4t**) und FA-28 (Schritt **4u**)
-bleiben `teilweise`.
+**Stand:** 13.11.2026 (abends). Neu darin: **FA-30** hat einen Schritt (**4w**, Status
+`teilweise`) - die Produktseiten-Suche (#472) ist gebaut; gemessen ist die Abweisung einer
+Loopback-Suchadresse, die Ehrlichkeit ohne Quelle und das Loesen der Sperre, **nicht** der
+Erfolgsweg (er braucht eine erreichbare Suchseite, 9.20.6). FA-27 (Schritt **4t**), FA-28
+(Schritt **4u**) und FA-29 (Schritt **4v**) bleiben `teilweise`.
 Am 10.11. kam **FA-26** hinzu (AD v2.0). Die
 Zaehlung im Abschlussblock ist an diesen Tagen **neu gezaehlt** worden - sie stand vorher auf
 „9 x teilweise" und „4 teilweise" bei den Soll, waehrend die Tabelle 10 bzw. 5 Zeilen trug.
-Letzte Messung am Fenster: Lauf vom **13.11.2026** - neu darin ist **4v** (Freistellen: die
-Flaeche der Vorlage scheint durch, Ausschalten ist byte-gleich, der Zaun haelt).
+Letzte Messung am Fenster: Lauf vom **13.11.2026** - neu darin sind **4v** (Freistellen: die
+Flaeche der Vorlage scheint durch, Ausschalten ist byte-gleich, der Zaun haelt) und **4w**
+(Produktsuche: ohne Quelle gesperrt und benannt, Loopback abgewiesen, Knopf wieder frei).
 **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
 **Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-30),
 `scripts/durchlauf.mjs` (Treiber, echter Fensterlauf), `docs/agents/q4-test-audit.md` (Q4-3).
@@ -80,17 +82,17 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-27 | Produktfoto zu einer Produkt-URL abrufen, Nutzer waehlt aus; optional, ohne Internet entfaellt nur dieser Weg (Soll) | 4t | **4t (12.11.2026, #470):** Ueber die echte Oberflaeche eine Aktion im Editor geoeffnet, `http://127.0.0.1:9/produkt` eingetragen, "Foto abrufen" geklickt. Der Auftrag erscheint in der Warteschlange und scheitert mit dem Klartext **"Diese Adresse zeigt in ein lokales Netz und wird nicht abgerufen."**; die Asset-Zahl bleibt **gleich** - eine abgewiesene Adresse legt nichts an. **Nicht am Fenster gemessen:** der Erfolgsweg (Seite mit `Product.image` -> Kandidaten -> Wahl -> Asset mit `herkunft`), weil eine lokale Testseite genau das Ziel ist, das TK 9.19.4 verbietet; belegt durch die Integrationstests `produktfoto-abrufen`/`produktfoto-wahl`. NFA-06 bleibt Muss mit genau EINER benannten Ausnahme. | teilweise |
 | FA-28 | Produktbild aufbereiten: Zuschnitt, Helligkeit, Kontrast, Schaerfe, nicht destruktiv (Soll) | 4u | **4u (13.11.2026, #473):** Ueber die echte Oberflaeche eine Aktion im Editor geoeffnet, ein Projektbild gewaehlt und die **Pixel der Vorschau** gehasht: mit Helligkeit 60 ein **anderer** Hash, zurueck auf 0 **wieder derselbe**. Gerechnet wird einmal je (Asset, Einstellungen) beim Vorbereiten (TK 9.21.4), nicht je Frame. **Nicht am Fenster gemessen:** Kontrast und Schaerfe einzeln (gleicher Weg, gleiche Nachschlagestelle), der Bildausschnitt (bleibt `bildAusschnitt`, 9.8.8) und der Renderweg (70 s je Segment - belegt durch die gemeinsame Zeichenroutine und die Unit-Tests). | teilweise |
 | FA-29 | Produktbild freistellen ueber ein mitgeliefertes Modell, offline (Kann) | 4v | **4v (13.11.2026, #474):** Ein **1920 x 1080**-Produktbild (weisser Grund, blaues Rechteck) ueber `queue:reiheEin` importiert, im Editor gewaehlt und der Schalter „Freistellen" geklickt. Die **Ecke** der Vorschau wechselt von Weiss (255,255,255) auf die Flaeche der Vorlage (47,46,46), die **Mitte** bleibt das Produkt (46,79,161) - der Hintergrund ist durchsichtig. Ausschalten ergibt **byte-gleich** den Hash von vorher. Der **Zaun** ist gemessen: Modell **439 ms** geladen, Bild **2027 / 2138 ms** gerechnet (1920 x 1080, zweimal unabhaengig) - beide unter 2 s bzw. 5 s. `freistellen: true` steht danach in `project.json`, die Mediendatei ist SHA-256-gleich. **Nicht am Fenster gemessen:** der Renderweg (70 s je Segment; er laeuft durch dieselbe Nachschlagestelle) und ein **Ausfall** (das Modell liegt im Paket - der Ausfall ist durch die Unit-Tests und den gesperrten Schalter belegt, nicht am Fenster). | teilweise |
-| FA-30 | Produktseite finden: Stichwortsuche, zuerst hinterlegte Shops, allgemeine Websuche als Notweg (Soll) | - | Kein Treiber-Schritt. Beschlossen mit AD v2.5 (4.14 / TK 9.20), **nicht gebaut**; eigenes Issue nach #470. | Luecke |
+| FA-30 | Produktseite finden: Stichwortsuche, zuerst hinterlegte Shops, allgemeine Websuche als Notweg (Soll) | 4w | **4w (13.11.2026, #472):** Im Schritt „Bild" einer neuen Aktion steht das Feld „Stichwort suchen" (vorbelegt mit dem Titel). **Ohne Quelle** sagt es das VOR dem Klick („keine Shops und keine allgemeine Suche hinterlegt") und der Knopf ist **gesperrt**; mit einer Quelle (Loopback-Suchadresse `http://127.0.0.1:9/suche?q={q}`) laeuft der ganze Weg (Kanal -> Warteschlange -> Handler -> Netzschicht) und wird mit dem Klartext **„Diese Adresse zeigt in ein lokales Netz und wird nicht abgerufen."** abgewiesen; danach ist der Knopf **wieder frei** (Befund vom 13.11.2026, im Nachlauf behoben) und **nichts** in `project.json` geschrieben. **Nicht am Fenster gemessen:** der Erfolgsweg (Shop-Treffer -> Wahl -> `produktUrl`), weil eine lokale Testseite genau das verbotene Ziel ist und ein fremder Shop nicht vorausgesetzt wird (9.20.6); belegt durch den Integrationstest `produktsuche-suchweg` mit gedoppelter Netzschicht. | teilweise |
 
 **Zaehlung (13.11.2026 neu gezaehlt):** 12 x gemessen (FA-01, FA-03, FA-05, FA-08, FA-17,
-FA-18, FA-19, FA-21, FA-22, FA-23, FA-24, FA-25), **13 x teilweise**, **2 x Luecke (FA-26,
-FA-30)**, 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
+FA-18, FA-19, FA-21, FA-22, FA-23, FA-24, FA-25), **14 x teilweise**, **1 x Luecke (FA-26)**,
+0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
 
 Aufgeteilt nach Prioritaet (AD Abschnitt 4): **16 Muss**, **13 Soll**, **1 Kann**.
 - **Muss:** 9 gemessen (FA-01, FA-03, FA-05, FA-08, FA-17, FA-21, FA-22, FA-23, FA-24),
   5 teilweise, **1 Luecke (FA-26)**, 1 manuell (FA-09).
-- **Soll:** 3 gemessen (FA-18, FA-19, FA-25), **7 teilweise** (darunter FA-27 und FA-28), **1 Luecke
-  (FA-30)**, 2 manuell (FA-11/12).
+- **Soll:** 3 gemessen (FA-18, FA-19, FA-25), **8 teilweise** (darunter FA-27, FA-28 und
+  FA-30), **0 Luecken**, 2 manuell (FA-11/12).
 - **Kann:** **1 teilweise (FA-29)** - der Schalter ist am Fenster gemessen, der Ausfall nicht.
 
 Damit sind **9 von 16 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-01,
@@ -346,7 +348,7 @@ Reihenfolge nach MoSCoW: **Muss** zuerst. "Treiber" heisst: neuer oder erweitert
 | 9 | FA-26 | Varianten (Muss, AD 4.11): >= 3 benannte Varianten je Aktion, manuell gewaehlt, Wechsel <= 1 Klick | **Produkt zuerst** (#465 entscheidet Datenmodell, Auswahl, Speicherweg, Undo, Migration); danach ein Treiber-Schritt, der je Aktion drei Varianten anlegt, umschaltet und den Wechsel im `project.json` liest. **Heute kein Schritt - deshalb `Luecke`.** |
 | 10 | FA-27 | Produktfoto zu einer Produkt-URL abrufen (Soll, AD 4.12); optional, ohne Internet entfaellt nur dieser Weg | **Gebaut (#470).** Treiber **4t** misst die Netzgrenze (Loopback abgewiesen, kein Asset). Offen bleibt der Erfolgsweg am Fenster - er braucht eine oeffentliche Testseite, die der Lauf nicht voraussetzen darf; heute durch Integrationstests belegt. |
 | 11 | FA-29 | Produktbild freistellen (Kann), AD 4.13 | **Produkt zuerst** (#474, setzt #473 voraus); danach ein Treiber-Schritt, der den Schalter umlegt und die Vorschau prueft. **Heute kein Schritt - deshalb `Luecke`.** |
-| 12 | FA-30 | Produktseite finden (Soll, AD 4.14 / TK 9.20) | **Produkt zuerst** (eigenes Issue nach #470); danach ein Treiber-Schritt, der eine Stichwortsuche ausloest und die gefundene Adresse im Feld `produktUrl` liest. Der Notweg (allgemeine Websuche) bleibt fragil und wird nicht am Fenster gemessen. |
+| 12 | FA-30 | Produktseite finden (Soll, AD 4.14 / TK 9.20) | **Gebaut (#472), Schritt 4w.** Er misst die Ehrlichkeit ohne Quelle, die Netzgrenze auf dem neuen Weg und das Loesen der Sperre. Der Erfolgsweg am Fenster braucht eine erreichbare Suchseite - der Lauf setzt keinen fremden Shop voraus und darf keine lokale Testseite ansprechen (9.19.4); er steht im Integrationstest `produktsuche-suchweg`. |
 
 **Nicht als Treiber-Szenario sinnvoll:** FA-09 (nativer Zielordner-Dialog, User-Entscheidung),
 FA-11/FA-12 (optische Abnahme am gerenderten Bild). Beide bleiben **manuell** - wie die

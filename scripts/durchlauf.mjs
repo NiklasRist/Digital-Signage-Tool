@@ -7498,6 +7498,217 @@ const main = async () => {
       await schlafe(400);
     }
 
+    // Schritt 4w - FA-30 (#472): Die Produktseiten-Suche ist am echten Fenster
+    // erreichbar, sagt OHNE Quelle vor dem Klick Bescheid, und die NETZGRENZE greift
+    // auch auf diesem Weg (dieselbe `hole()`-Schicht wie 4t).
+    //
+    // WAS HIER NICHT GEMESSEN WIRD: der Erfolgsweg (Stichwort -> Shop-Treffer -> Wahl ->
+    // `produktUrl` in project.json). Er braucht eine erreichbare Suchseite; eine LOKALE
+    // Testseite ist genau das Ziel, das TK 9.19.4 verbietet, und einen fremden Shop
+    // setzt der Lauf nicht voraus (9.20.6). Der Erfolgsweg steht im Integrationstest
+    // `produktsuche-suchweg` mit gedoppelter Netzschicht - dieselbe Aufteilung wie bei
+    // #470 (4t).
+    {
+      const configPfad4w = path.join(WURZEL, "config.json");
+      const liesConfig4w = () => JSON.parse(fs.readFileSync(configPfad4w, "utf-8"));
+      const schreibeQuellen4w = (quellen) => {
+        const konfig = liesConfig4w();
+        if (quellen === null) delete konfig.produktQuellen;
+        else konfig.produktQuellen = quellen;
+        fs.writeFileSync(configPfad4w, `${JSON.stringify(konfig, null, 2)}\n`);
+      };
+
+      // (1) OHNE QUELLE: Der Standard `{ shops: [], webSuche: null }` muss VOR dem Klick
+      // sichtbar sein und den Knopf sperren (9.20.3).
+      schreibeQuellen4w({ shops: [], webSuche: null });
+      await klick('[data-testid="reiter-aktionen"]');
+      await schlafe(500);
+      await seite.evaluate(() => {
+        document.querySelector('[data-testid="aktion-neu"]')?.click();
+      });
+      let kachel4w = false;
+      const fristKachel4w = Date.now() + 10_000;
+      while (Date.now() < fristKachel4w && !kachel4w) {
+        kachel4w = await seite.evaluate(
+          () => document.querySelector('[data-testid="aktion-vorlage-vollbild"]') !== null,
+        );
+        if (!kachel4w) await schlafe(250);
+      }
+      if (kachel4w) {
+        await seite.evaluate(() => {
+          document.querySelector('[data-testid="aktion-vorlage-vollbild"]')?.click();
+        });
+      }
+      let feld4w = false;
+      const fristFeld4w = Date.now() + 10_000;
+      while (Date.now() < fristFeld4w && !feld4w) {
+        feld4w = await seite.evaluate(
+          () => document.querySelector('[data-testid="produkt-suche"]') !== null,
+        );
+        if (!feld4w) await schlafe(250);
+      }
+      await schlafe(300);
+
+      const liesSicht4w = () => seite.evaluate(() => ({
+        ohneQuelle: document.querySelector('[data-testid="produkt-suche-ohne-quelle"]')?.textContent ?? null,
+        gesperrt: document.querySelector('[data-testid="produkt-suche-knopf"]')?.disabled ?? null,
+        hinweis: document.querySelector('[data-testid="produkt-suche-hinweis"]')?.textContent ?? null,
+        meldung: document.querySelector('[data-testid="meldungs-flaeche"]')?.textContent ?? null,
+      }));
+
+      const ohneQuelle4w = await liesSicht4w();
+
+      // (2) MIT QUELLE, aber auf LOOPBACK: eine Shop-Suchadresse auf 127.0.0.1. Damit
+      // laeuft der ganze Weg (Kanal -> Warteschlange -> Handler -> Netzschicht), und die
+      // Grenze muss ihn mit Klartext abweisen (9.19.4, unveraendert).
+      schreibeQuellen4w({
+        shops: [{ host: '127.0.0.1', suchMuster: 'http://127.0.0.1:9/suche?q={q}' }],
+        webSuche: null,
+      });
+      // Die Quelle wird beim MONTIEREN gelesen. Ein Reiterwechsel baut die Ansicht neu auf;
+      // bleibt der Hinweis danach stehen, ist das ein Befund und wird gemeldet.
+      let neuMontiert4w = false;
+      for (const versuch of [1, 2]) {
+        if (versuch === 1) {
+          await klick('[data-testid="reiter-zusammenstellen"]');
+          await schlafe(500);
+          await klick('[data-testid="reiter-aktionen"]');
+          await schlafe(500);
+          await seite.evaluate(() => {
+            document.querySelector('[data-testid="aktion-neu"]')?.click();
+          });
+          const fristKachelVersuch4w = Date.now() + 10_000;
+          let kachelVersuch4w = false;
+          while (Date.now() < fristKachelVersuch4w && !kachelVersuch4w) {
+            kachelVersuch4w = await seite.evaluate(
+              () => document.querySelector('[data-testid="aktion-vorlage-vollbild"]') !== null,
+            );
+            if (!kachelVersuch4w) await schlafe(250);
+          }
+          if (kachelVersuch4w) {
+            await seite.evaluate(() => {
+              document.querySelector('[data-testid="aktion-vorlage-vollbild"]')?.click();
+            });
+          }
+          await schlafe(800);
+        } else {
+          // Zweiter Versuch: die Seite neu laden (die Konfiguration wird beim Start gelesen).
+          // Die Quelle wird VORHER NOCH EINMAL geschrieben: Ein Reiterwechsel loest einen
+          // Schreibvorgang auf `config.json` aus (aktiver Reiter), und der traegt den Stand
+          // aus dem Speicher der laufenden App - meine Aenderung von Hand waere sonst weg.
+          schreibeQuellen4w({
+            shops: [{ host: '127.0.0.1', suchMuster: 'http://127.0.0.1:9/suche?q={q}' }],
+            webSuche: null,
+          });
+          await seite.reload({ waitUntil: "networkidle0" });
+          await schlafe(1500);
+          await klick('[data-testid="reiter-aktionen"]');
+          await schlafe(600);
+          await seite.evaluate(() => {
+            document.querySelector('[data-testid="aktion-neu"]')?.click();
+          });
+          await schlafe(600);
+          await seite.evaluate(() => {
+            document.querySelector('[data-testid="aktion-vorlage-vollbild"]')?.click();
+          });
+          await schlafe(800);
+        }
+        const sicht = await liesSicht4w();
+        if (sicht.ohneQuelle === null) {
+          neuMontiert4w = true;
+          break;
+        }
+      }
+
+      const bereit4w = await seite.evaluate(() => ({
+        feld: document.querySelector('[data-testid="produkt-suche-stichwort"]') !== null,
+        gesperrt: document.querySelector('[data-testid="produkt-suche-knopf"]')?.disabled ?? null,
+      }));
+
+      // (3) Stichwort eintippen und suchen.
+      const eingabe4w = await seite.evaluate(() => {
+        const feld = document.querySelector('[data-testid="produkt-suche-stichwort"]');
+        if (feld === null) return false;
+        const setzeWert = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setzeWert.call(feld, "Proteinriegel");
+        feld.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      });
+      await schlafe(300);
+      const geklickt4w = !eingabe4w ? false : await seite.evaluate(() => {
+        const knopf = document.querySelector('[data-testid="produkt-suche-knopf"]');
+        if (knopf === null || knopf.disabled) return false;
+        knopf.click();
+        return true;
+      });
+
+      // Frist 25 s: 20 s Zeitbudget des Auftrags plus Nachlauf (9.20.4).
+      const frist4w = Date.now() + 25_000;
+      let sicht4w = { ohneQuelle: null, gesperrt: null, hinweis: null, meldung: null };
+      while (Date.now() < frist4w) {
+        sicht4w = await liesSicht4w();
+        const text = `${sicht4w.hinweis ?? ""} ${sicht4w.meldung ?? ""}`;
+        if (text.includes("lokales Netz") || text.includes("fehlgeschlagen")) break;
+        await schlafe(250);
+      }
+      await schlafe(500);
+      const nachher4w = await liesSicht4w();
+
+      const projektDatei4w = path.join(WURZEL, "projects", aktivesProjektId, "project.json");
+      const roh4w = fs.existsSync(projektDatei4w) ? fs.readFileSync(projektDatei4w, "utf-8") : "";
+      const produktUrl4w = roh4w.includes('"produktUrl"') && roh4w.includes("127.0.0.1");
+
+      const text4w = `${sicht4w.hinweis ?? ""} ${sicht4w.meldung ?? ""}`;
+      const abgewiesen4w = text4w.includes("lokales Netz");
+      const entsperrt4w = nachher4w.gesperrt === false;
+
+      let quelleInDatei4w = null;
+      try {
+        quelleInDatei4w = (liesConfig4w().produktQuellen ?? {}).shops?.length ?? null;
+      } catch {
+        quelleInDatei4w = null;
+      }
+      console.log(`[schritt-4w] Produktsuche: QuelleInDatei=${String(quelleInDatei4w)}, Kachel=${String(kachel4w)}, Feld=${String(feld4w)}, ` +
+        `ohneQuelle=${JSON.stringify(ohneQuelle4w.ohneQuelle)}, gesperrtOhneQuelle=${String(ohneQuelle4w.gesperrt)}, ` +
+        `neuMontiert=${String(neuMontiert4w)}, Klick=${String(geklickt4w)}, ` +
+        `Hinweis=${JSON.stringify(sicht4w.hinweis)}, Meldung=${JSON.stringify(sicht4w.meldung)}, ` +
+        `KnopfNachher=${String(nachher4w.gesperrt)}, produktUrlGeschrieben=${String(produktUrl4w)}.`);
+
+      if (!kachel4w || !feld4w) {
+        fund("Produktsuche", "die Suche steht im Schritt \"Bild\"",
+          `Kachel=${String(kachel4w)}, Feld=${String(feld4w)}`, "Befund", "action-editor/index.tsx");
+      } else if ((ohneQuelle4w.ohneQuelle ?? "").length === 0 || ohneQuelle4w.gesperrt !== true) {
+        fund("Produktsuche", "ohne Quelle sagt das Feld es VOR dem Klick und sperrt den Knopf (TK 9.20.3)",
+          `Hinweis=${JSON.stringify(ohneQuelle4w.ohneQuelle)}, gesperrt=${String(ohneQuelle4w.gesperrt)}`,
+          "Befund", "action-editor/produktsuche-feld.tsx");
+      } else if (!neuMontiert4w) {
+        fund("Produktsuche", "eine geaenderte Konfiguration wird beim Neuaufbau der Ansicht gelesen",
+          "der Hinweis \"keine Quelle\" blieb nach Reiterwechsel UND Neuladen stehen",
+          "Befund", "action-editor/produktsuche-feld.tsx");
+      } else if (!eingabe4w || !geklickt4w) {
+        fund("Produktsuche", "die Suche laesst sich mit Stichwort ausloesen",
+          `Eingabe=${String(eingabe4w)}, Klick=${String(geklickt4w)}`, "Befund", "action-editor/produktsuche-feld.tsx");
+      } else if (!abgewiesen4w) {
+        fund("Produktsuche", "eine Loopback-Suchadresse wird mit Klartext abgewiesen (TK 9.19.4)",
+          `Meldung=${JSON.stringify(text4w)}`, "Befund", "produktsuche/suchseite.ts");
+      } else if (!entsperrt4w) {
+        fund("Produktsuche", "nach einem Fehlschlag loest sich die Sperre des Knopfes",
+          `KnopfNachher=${String(nachher4w.gesperrt)}`, "Befund", "app-shell/auftrags-nachlauf.ts");
+      } else if (produktUrl4w) {
+        fund("Produktsuche", "eine abgewiesene Suche schreibt keine Produkt-URL",
+          "project.json enthaelt eine 127.0.0.1-Adresse", "Befund", "action-editor/produktsuche-feld.tsx");
+      } else {
+        console.log("[schritt-4w] PRODUKTSUCHE GEMESSEN: ohne Quelle gesperrt und benannt, " +
+          "Loopback-Adresse mit Klartext abgewiesen, Knopf wieder frei, nichts geschrieben (FA-30, TK 9.20).");
+      }
+
+      // Aufraeumen: die Quellen wieder entfernen (der Datenort gehoert dem naechsten Lauf,
+      // nicht dieser Messung) und den Entwurf stehen lassen wie 4t.
+      schreibeQuellen4w(null);
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(400);
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     // Aufräumblock (User-Entscheidung 14.10.2026, solange die App NICHT fertig ist):
     // Jeder Lauf loescht seine eigenen Projekte ("DurchlaufTest-*") ueber den ECHTEN
