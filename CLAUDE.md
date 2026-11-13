@@ -43,7 +43,8 @@
   in #471/#472 gefunden und korrigiert.
 - **Offen:** **#472**, **#474**, **#466** (Phase 1 mit Stoppuhr),
   **#458** überholt. `bereitschaft.py` meldet „0 bereit" (keine Meilensteine an den neuen Issues).
-- **Nicht gepusht:** **15 Commits** vor `origin/main`, Arbeitsbaum sauber. **Push nur auf Anweisung.**
+- **Nicht gepusht:** **17 Commits** vor `origin/main` (mit diesem Doku-Commit 18); zählen mit
+  `git log --oneline origin/main..HEAD`. Arbeitsbaum sauber. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (13.11.2026, Nachtrag zur neunundfünfzigsten Sitzung: #470 ist geschlossen — FA-27 vom Produktfoto zum Asset) – historisiert durch den Abschnitt darueber
 

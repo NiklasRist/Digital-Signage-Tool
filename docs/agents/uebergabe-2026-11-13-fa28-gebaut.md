@@ -107,9 +107,12 @@ zwei Einträge).
 
 ## 7. Stand am Sitzungsende
 
-- **15 Commits** vor `origin/main`, Arbeitsbaum sauber, **nicht gepusht**.
-- **Offen:** **#473** ist gebaut, aber **nicht kommentiert/geschlossen** (GitHub-Schreiben nur auf
-  Anweisung); **#472** (FA-30), **#474** (FA-29, setzt #473 voraus), **#466** (Referenzlauf,
+- **17 Commits** vor `origin/main` (der Übergabe-Commit dieser Datei ist der achtzehnte — die Zahl
+  wächst mit jedem Doku-Commit, mit `git log --oneline origin/main..HEAD` zählen), Arbeitsbaum
+  sauber, **nicht gepusht**.
+- **#473 IST KOMMENTIERT UND GESCHLOSSEN** (`completed`, 13.11.2026 11:56) — mit dem DoD-Beleg, den
+  Treiber-Zahlen, den vier Gegenproben und den drei offenen Punkten im Kommentar.
+- **Offen:** **#472** (FA-30), **#474** (FA-29, setzt #473 voraus), **#466** (Referenzlauf,
   Phase 1 mit Stoppuhr), **#458** (überholt).
 - **Ehrlich offen bei FA-28:** Kontrast und Schärfe sind **nicht einzeln** am Fenster gemessen (gleicher
   Weg, gleiche Nachschlagestelle); der **Renderweg** ist nicht am Fenster gemessen (70 s je Segment) —
@@ -117,3 +120,5 @@ zwei Einträge).
   steht nicht im Abschluss, weil sie noch nicht gemessen wurde.
 - **`bereitschaft.py`** meldet weiter „0 bereit": die neuen Issues haben keinen Meilenstein, M0–M10
   sind gebaut.
+- **Nächster Schritt:** **#474** (FA-29) bauen — es setzt #473 voraus und ist damit frei —, oder
+  **#472** (FA-30), dessen zwei Vertragslücken vorher entschieden werden müssen.
