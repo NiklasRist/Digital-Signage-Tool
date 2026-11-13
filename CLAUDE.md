@@ -11,7 +11,49 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (13.11.2026, sechzigste Sitzung: #470 zu, TK 9.21 geschrieben, FA-28 gebaut)
+## STAND HEUTE (13.11.2026, einundsechzigste Sitzung: FA-29 gebaut - Produktbilder sind freigestellt)
+
+**Volltext: [`docs/agents/uebergabe-2026-11-13-fa29-freigestellt.md`](docs/agents/uebergabe-2026-11-13-fa29-freigestellt.md).**
+
+- **#474 (FA-29) IST GEBAUT** (noch nicht kommentiert, noch nicht geschlossen - GitHub-Schreiben nur
+  auf Anweisung). Ein Produktbild bekommt einen **transparenten Hintergrund**: `Aktion.freistellen`
+  (optional, keine Migration), Schalter in der Editor-Gruppe „Aufbereitung", gerechnet **einmal je
+  (Asset, Einstellungen)** im Renderer über ONNX Runtime Web (WASM), offline, ohne IPC und ohne
+  natives Modul.
+- **Das Modell:** **U-2-Net `u2netp`**, 4 574 861 Bytes, SHA-256 `309c8469…`, **Apache 2.0**;
+  `public/modell/freistellen.onnx` samt Lizenztext. Die große Fassung (176 MB) reißt den Zaun.
+- **Der Zaun ist gemessen (nicht geschätzt):** Modell laden **434 / 439 ms**, Bild rechnen bei
+  **1920 × 1080** **1998 / 2014 / 2138 ms**, Zusatzgewicht im Paket **19 719 516 Bytes (18,8 MiB)**
+  gegen 25 MB - gemessen durch zwei Builds (mit/ohne ONNX).
+- **Fensterbeleg:** Ecke der Vorschau **weiß (255,255,255) → Fläche der Vorlage (47,46,46)**,
+  Mitte unverändert das Produkt (46,79,161); Ausschalten **byte-gleich** (Hash
+  `3428465122 → 754081738 → 3428465122`). Treiber **`4v`** wiederholt es (`1972816074 → 1374350399 →
+  1972816074`), misst **Laden+Rechnen 2436 ms / nur Rechnen 2015 ms** und belegt nicht-destruktiv:
+  `freistellen: true` in `project.json`, Medien **3 → 3 byte-gleich**.
+- **DREI Abweichungen vom Issue, gemeldet:** `modell://` bedient **drei feste Namen** (Modell, WASM,
+  Lader) statt einem; CSP braucht **`'wasm-unsafe-eval'`** (sonst startet gar kein WASM) und
+  `modell:` in `script-src`; Vite **löscht** das doppelt erzeugte `.wasm`-Asset (sonst 29,7 MB WASM
+  und der Zaun gerissen).
+- **Eigene Fehler, selbst gefunden und behoben:** (1) `aendere` schrieb den Entwurf aus der Closure
+  zurück - ein Titel, der **während** des Bildladens getippt wurde, war weg und „Anlegen" tat still
+  nichts (Funktions-Updater + Regressionstest). (2) Der Lazy-Test war **blind**, die Gegenprobe blieb
+  grün; der Zähler steht jetzt vor dem Import. (3) `app.getAppPath()` ist beim Start `dist/main` -
+  Pfade kommen aus `__dirname`. (4) Der Medienordner heißt **`media`**, nicht `medien`.
+- **Fünf Gegenproben**, jede rot und byte-identisch zurück (zweiter Name am Protokoll, leeres Bild
+  statt Zustand, Schlüssel ignoriert `freistellen`, Modell beim Import geladen, Closure-Rückschreiben).
+- **Gate:** Unit **5873/5873** (385 Dateien), Integration **63/63** (18), Typecheck 0, Lint 0, Build 0,
+  Treiber **0 Befunde** (`EXIT=0`), `npm run dist` Exit 0, **Paket liefert `modell://` 200/200/200
+  und 404 für Fremdes**. Arbeitssbaum danach sauber.
+- **Ehrlich offen:** der **Ausfall** ist nicht am Fenster gezeigt (Modell liegt im Paket; Unit-Tests +
+  gesperrter Schalter), der **Renderweg** nicht gemessen (70 s je Segment), **am Fernseher** nichts
+  geprüft, **schwächere Hardware** nicht gemessen.
+- **TK 9.21.9 sagt weiter „Modell noch nicht gewählt"** - das Issue verbietet eine AD/TK-Änderung,
+  deshalb **nicht angefasst** und im Abschlusskommentar zu melden.
+- **Offen:** **#472** (FA-30, TK 9.20), **#466** (Referenzlauf, Phase 1 mit Stoppuhr), **#458**
+  (überholt). `bereitschaft.py` meldet „0 bereit" (keine Meilensteine an den neuen Issues).
+- **Nicht gepusht.** Zahl mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
+
+## STAND HEUTE (13.11.2026, sechzigste Sitzung: #470 zu, TK 9.21 geschrieben, FA-28 gebaut) – historisiert durch den Abschnitt darueber
 
 **Volltext: [`docs/agents/uebergabe-2026-11-13-fa28-gebaut.md`](docs/agents/uebergabe-2026-11-13-fa28-gebaut.md).**
 

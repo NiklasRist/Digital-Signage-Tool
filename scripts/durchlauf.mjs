@@ -14,6 +14,7 @@
 // docs/agents/oberflaeche-durchlauf.md ergaenzt.
 
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import puppeteer from "puppeteer-core";
@@ -7191,6 +7192,308 @@ const main = async () => {
       }
 
       // Aufraeumen wie bei 4t: Entwurf verwerfen, Reiter wechseln.
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(400);
+    }
+
+    // Schritt 4v - FA-29 (#474): FREISTELLEN. Gemessen wird am echten Fenster:
+    //   (1) Das Modell reist im Paket mit und wird ueber `modell://` geladen.
+    //   (2) Freistellen aendert die VORSCHAU messbar (Ecke gegen Mitte).
+    //   (3) Ausschalten ist byte-gleich zu vorher (die Gegenprobe zur Gegenprobe).
+    //   (4) Der Zaun steht: Ladezeit und Laufzeit je Bild werden gestoppt.
+    //
+    // DAS BILD: 1920 x 1080, weisser Grund, farbiges Rechteck in der Mitte - genau die
+    // Groesse, gegen die TK 9.21.5 den Zaun stellt („Laufzeit je Bild <= 5 s (1920x1080)").
+    // Es wird ueber DENSELBEN Weg importiert wie das Testvideo in 4b (`queue:reiheEin`).
+    {
+      const HASH5 = `(() => {
+        const c = document.querySelector('[data-testid="aktion-vorschau-flaeche"] canvas');
+        if (!(c instanceof HTMLCanvasElement) || c.width === 0) return null;
+        const ctx = c.getContext('2d');
+        if (ctx === null) return null;
+        const d = ctx.getImageData(0, 0, c.width, c.height).data;
+        let h = 2166136261;
+        for (let i = 0; i < d.length; i += 1) { h ^= d[i]; h = Math.imul(h, 16777619); }
+        return h >>> 0;
+      })()`;
+      const hash5 = async () => seite.evaluate(HASH5);
+      const ecken5 = async () => seite.evaluate(() => {
+        const c = document.querySelector('[data-testid="aktion-vorschau-flaeche"] canvas');
+        if (!(c instanceof HTMLCanvasElement) || c.width === 0) return null;
+        const ctx = c.getContext('2d');
+        if (ctx === null) return null;
+        const mitte = ctx.getImageData(Math.floor(c.width / 2), Math.floor(c.height / 2), 1, 1).data;
+        const ecke = ctx.getImageData(3, 3, 1, 1).data;
+        return { mitte: [mitte[0], mitte[1], mitte[2], mitte[3]], ecke: [ecke[0], ecke[1], ecke[2], ecke[3]] };
+      });
+      const warteRuhig5 = async (fristMs) => {
+        const ende = Date.now() + fristMs;
+        let letzter = null;
+        while (Date.now() < ende) {
+          const jetzt = await hash5();
+          if (jetzt !== null && jetzt === letzter) return jetzt;
+          letzter = jetzt;
+          await schlafe(350);
+        }
+        return letzter;
+      };
+
+      // 1. Das 1920x1080-Produktbild erzeugen (weiss + blaues Rechteck) und importieren.
+      const produkt = path.join("/tmp", "durchlauf-produkt-1920.png");
+      const ffmpeg5 = path.join(WURZEL, "node_modules", "ffmpeg-static", "ffmpeg");
+      let bildErzeugt5 = false;
+      try {
+        await new Promise((f, r) => {
+          const p = spawn(ffmpeg5, ["-y", "-f", "lavfi", "-i", "color=c=white:s=1920x1080:d=1",
+            "-vf", "drawbox=x=660:y=290:w=600:h=500:color=0x2f6fdb@1:t=fill",
+            "-frames:v", "1", produkt], { stdio: "ignore" });
+          p.on("exit", (c) => (c === 0 ? f() : r(new Error("ffmpeg exit " + c))));
+        });
+        bildErzeugt5 = fs.existsSync(produkt);
+      } catch (fehler) {
+        fund("Freistellen", "1920x1080-Testbild erzeugt", String(fehler), "BLOCKER", "ffmpeg-static");
+      }
+
+      const projekt5 = JSON.parse(fs.readFileSync(path.join(WURZEL, "config.json"), "utf-8")).aktivesProjektId;
+      let importiert5 = false;
+      if (bildErzeugt5 && typeof projekt5 === "string") {
+        await klick('[data-testid="reiter-zusammenstellen"]');
+        await schlafe(400);
+        const seed5 = await seite.evaluate(async (pfad, projektId) => {
+          const antwort = await window.api.invoke("queue:reiheEin", {
+            art: "import",
+            payload: { projektId: projektId, quellPfad: pfad },
+          });
+          await new Promise((w) => setTimeout(w, 2500));
+          return antwort;
+        }, produkt, projekt5);
+        importiert5 = seed5?.ok === true;
+      }
+
+      // 2. Neue Aktion, Vorlage mit Bildzone, unser Bild waehlen.
+      await klick('[data-testid="reiter-aktionen"]');
+      await schlafe(500);
+      await seite.evaluate(() => {
+        document.querySelector('[data-testid="aktion-neu"]')?.click();
+      });
+      let kachel5 = false;
+      const fristKachel5 = Date.now() + 10_000;
+      while (Date.now() < fristKachel5 && !kachel5) {
+        kachel5 = await seite.evaluate(
+          () => document.querySelector('[data-testid="aktion-vorlage-vollbild"]') !== null,
+        );
+        if (!kachel5) await schlafe(250);
+      }
+      if (kachel5) {
+        await seite.evaluate(() => {
+          document.querySelector('[data-testid="aktion-vorlage-vollbild"]')?.click();
+        });
+      }
+      await schlafe(400);
+
+      const gewaehlt5 = await seite.evaluate(() => {
+        const titel = document.querySelector('[data-testid="aktion-titel"]');
+        const wahl = document.querySelector('[data-testid="aktion-bild-wahl"]');
+        if (titel === null || wahl === null) return null;
+        const setzeText = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setzeText.call(titel, `Durchlauf-Freistellen-${String(Date.now())}`);
+        titel.dispatchEvent(new Event("input", { bubbles: true }));
+        // Der Titel geht erst beim VERLASSEN in den Entwurf (onBlur, unkontrolliertes Feld).
+        titel.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+        const treffer = Array.from(wahl.querySelectorAll("option"))
+          .find((o) => o.textContent.includes("durchlauf-produkt-1920"));
+        if (treffer === undefined) return null;
+        const setzeWahl = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set;
+        setzeWahl.call(wahl, treffer.value);
+        wahl.dispatchEvent(new Event("change", { bubbles: true }));
+        return { id: treffer.value, titel: titel.value };
+      });
+
+      const vorher5 = gewaehlt5 === null ? null : await warteRuhig5(10_000);
+      const eckenVorher5 = gewaehlt5 === null ? null : await ecken5();
+
+      // 3. EINSCHALTEN - die Zeit laeuft ab dem Klick (Modell laden + rechnen + zeichnen).
+      const schalter5 = await seite.evaluate(() => {
+        const feld = document.querySelector('[data-testid="aktion-freistellen"]');
+        if (!(feld instanceof HTMLInputElement) || feld.disabled) return false;
+        feld.click();
+        return true;
+      });
+      const start5 = Date.now();
+      let mit5 = vorher5;
+      // FERTIG HEISST STABIL, nicht „erster anderer Wert": Zwischen dem Klick und dem
+      // Ergebnis zeichnet die Vorschau EINMAL den Platzhalter (das Motiv ist noch nicht
+      // vorbereitet). Ein einzelner anderer Hash waere dieser Zwischenstand - gemessen am
+      // 13.11.2026 im Beleg-Skript. Erst zwei GLEICHE Werte hintereinander sind das Bild.
+      let voriger5 = null;
+      const fristMit5 = Date.now() + 40_000;
+      let hinweis5 = null;
+      while (Date.now() < fristMit5) {
+        await schlafe(200);
+        const jetzt5 = await hash5();
+        if (jetzt5 !== null && jetzt5 !== vorher5 && jetzt5 === voriger5) {
+          mit5 = jetzt5;
+          break;
+        }
+        voriger5 = jetzt5;
+        hinweis5 = await seite.evaluate(
+          () => document.querySelector('[data-testid="aktion-freistellen-hinweis"]')?.textContent ?? null,
+        );
+        if (hinweis5 !== null) break;
+      }
+      const dauerMit5 = Date.now() - start5;
+      const eckenMit5 = mit5 === vorher5 ? null : await ecken5();
+
+      // 4. AUS, dann noch einmal AN: der zweite Lauf hat das Modell schon im Speicher -
+      //    die Differenz trennt „Modell laden" von „Bild rechnen".
+      await seite.evaluate(() => {
+        const feld = document.querySelector('[data-testid="aktion-freistellen"]');
+        if (feld instanceof HTMLInputElement && feld.checked) feld.click();
+      });
+      let zurueck5 = mit5;
+      const fristZurueck5 = Date.now() + 15_000;
+      while (Date.now() < fristZurueck5 && zurueck5 !== vorher5) {
+        await schlafe(200);
+        zurueck5 = await hash5();
+      }
+      const startZweit5 = Date.now();
+      await seite.evaluate(() => {
+        const feld = document.querySelector('[data-testid="aktion-freistellen"]');
+        if (feld instanceof HTMLInputElement && !feld.checked) feld.click();
+      });
+      let mitZweit5 = zurueck5;
+      let vorigerZweit5 = null;
+      const fristZweit5 = Date.now() + 30_000;
+      while (Date.now() < fristZweit5) {
+        await schlafe(100);
+        const jetzt5 = await hash5();
+        if (jetzt5 !== null && jetzt5 !== zurueck5 && jetzt5 === vorigerZweit5) {
+          mitZweit5 = jetzt5;
+          break;
+        }
+        vorigerZweit5 = jetzt5;
+      }
+      const dauerZweit5 = Date.now() - startZweit5;
+
+      // 5. Wieder AUS - und pruefen, dass der Hash EXAKT der von vorher ist.
+      await seite.evaluate(() => {
+        const feld = document.querySelector('[data-testid="aktion-freistellen"]');
+        if (feld instanceof HTMLInputElement && feld.checked) feld.click();
+      });
+      let ende5 = mitZweit5;
+      const fristEnde5 = Date.now() + 15_000;
+      while (Date.now() < fristEnde5 && ende5 !== vorher5) {
+        await schlafe(200);
+        ende5 = await hash5();
+      }
+
+      console.log(`[schritt-4v] Freistellen: Bild=${JSON.stringify(gewaehlt5?.titel ?? null)}, ` +
+        `Import=${String(importiert5)}, Schalter=${String(schalter5)}, ` +
+        `Hashes ${String(vorher5)} -> ${String(mit5)} -> ${String(zurueck5)} -> ${String(mitZweit5)} -> ${String(ende5)}, ` +
+        `Ecke vorher=${JSON.stringify(eckenVorher5?.ecke ?? null)} nachher=${JSON.stringify(eckenMit5?.ecke ?? null)}, ` +
+        `Mitte vorher=${JSON.stringify(eckenVorher5?.mitte ?? null)} nachher=${JSON.stringify(eckenMit5?.mitte ?? null)}, ` +
+        `Laden+Rechnen=${String(dauerMit5)} ms, nur Rechnen=${String(dauerZweit5)} ms, ` +
+        `Hinweis=${JSON.stringify(hinweis5)}.`);
+
+      const eckeAnders5 = eckenVorher5 !== null && eckenMit5 !== null &&
+        (eckenVorher5.ecke[0] !== eckenMit5.ecke[0] || eckenVorher5.ecke[1] !== eckenMit5.ecke[1] ||
+          eckenVorher5.ecke[2] !== eckenMit5.ecke[2] || eckenVorher5.ecke[3] !== eckenMit5.ecke[3]);
+
+      if (!importiert5 || gewaehlt5 === null) {
+        fund("Freistellen", "ein 1920x1080-Bild laesst sich importieren und im Editor waehlen",
+          `Import=${String(importiert5)}, Bild=${String(gewaehlt5 !== null)}`,
+          "Befund", "action-editor/index.tsx");
+      } else if (!schalter5) {
+        fund("Freistellen", "der Schalter ist am Fenster bedienbar (FA-29)",
+          `Schalter=${String(schalter5)}, Hinweis=${JSON.stringify(hinweis5)}`,
+          "Befund", "action-editor/freistellen-schalter.tsx");
+      } else if (hinweis5 !== null) {
+        fund("Freistellen", "das Modell laedt im gepackten Fenster (modell://)",
+          `Hinweis=${JSON.stringify(hinweis5)}`, "Befund", "main/modell-protokoll.ts");
+      } else if (mit5 === vorher5 || !eckeAnders5) {
+        fund("Freistellen", "Freistellen veraendert die Vorschau (Flaeche scheint durch)",
+          `Hash ${String(vorher5)} -> ${String(mit5)}, Ecke ${JSON.stringify(eckenMit5?.ecke ?? null)}`,
+          "Befund", "template-canvas/freistellen.ts");
+      } else if (ende5 !== vorher5) {
+        fund("Freistellen", "Ausschalten stellt die Vorschau byte-gleich wieder her",
+          `Hash ${String(vorher5)} -> ${String(ende5)}`, "Befund", "shared/aufbereitung.ts");
+      } else if (dauerMit5 > 2_000 + 5_000 || dauerZweit5 > 5_000) {
+        fund("Freistellen", "der Zaun aus TK 9.21.5 haelt (Laden <= 2 s, Rechnen <= 5 s)",
+          `Laden+Rechnen=${String(dauerMit5)} ms, nur Rechnen=${String(dauerZweit5)} ms`,
+          "Befund", "template-canvas/freistellen.ts");
+      } else {
+        console.log("[schritt-4v] FREISTELLEN GEMESSEN: Flaeche scheint durch, Ausschalten ist " +
+          "byte-gleich, Zaun gehalten (FA-29, TK 9.21.5).");
+      }
+
+      // 6. NICHT-DESTRUKTIV (9.21.7): abschliessen, dann in project.json und auf der
+      //    Platte nachsehen. Erwartet: `freistellen: true` an der Aktion, kein neues
+      //    Asset, Mediendatei byte-gleich.
+      if (gewaehlt5 !== null && typeof projekt5 === "string") {
+        // Wieder einschalten, damit der gespeicherte Zustand der geprueft wird.
+        await seite.evaluate(() => {
+          const feld = document.querySelector('[data-testid="aktion-freistellen"]');
+          if (feld instanceof HTMLInputElement && !feld.checked) feld.click();
+        });
+        await warteRuhig5(20_000);
+        // Der Ordner heisst `media` (9.4) - am 13.11.2026 nachgesehen, nachdem ein Lauf
+        // mit `medien` eine LEERE Liste verglich und damit gruen war, ohne etwas zu pruefen.
+        const medienOrdner5 = path.join(WURZEL, "projects", projekt5, "media");
+        const dateienVorher5 = fs.existsSync(medienOrdner5)
+          ? fs.readdirSync(medienOrdner5, { withFileTypes: true }).filter((d) => d.isFile()).map((d) => d.name)
+          : [];
+        const hashesVorher5 = new Map();
+        for (const name of dateienVorher5) {
+          hashesVorher5.set(name, createHash("sha256").update(fs.readFileSync(path.join(medienOrdner5, name))).digest("hex"));
+        }
+
+        const gespeichert5 = await klick('[data-testid="aktion-anlegen-bestaetigen"]');
+
+        // Der Schreibvorgang ist ENTPRELLT (D1): nicht nach fester Zeit nachsehen, sondern
+        // so lange warten, bis die Aktion in der DATEI steht (hoechstens 15 s).
+        const projektDatei5 = path.join(WURZEL, "projects", projekt5, "project.json");
+        let stand5 = null;
+        let aktion5;
+        const fristDatei5 = Date.now() + 30_000;
+        while (Date.now() < fristDatei5) {
+          try {
+            stand5 = JSON.parse(fs.readFileSync(projektDatei5, "utf-8"));
+          } catch {
+            stand5 = null;
+          }
+          aktion5 = stand5 === null || !Array.isArray(stand5.aktionen)
+            ? undefined
+            : stand5.aktionen.find((a) => a.titel === gewaehlt5.titel);
+          if (aktion5 !== undefined) break;
+          await schlafe(250);
+        }
+        const dateienNachher5 = fs.existsSync(medienOrdner5)
+          ? fs.readdirSync(medienOrdner5, { withFileTypes: true }).filter((d) => d.isFile()).map((d) => d.name)
+          : [];
+        const medienGleich5 = dateienVorher5.length === dateienNachher5.length &&
+          dateienVorher5.every((name) =>
+            hashesVorher5.get(name) === createHash("sha256")
+              .update(fs.readFileSync(path.join(medienOrdner5, name))).digest("hex"));
+        console.log(`[schritt-4v] Nicht-destruktiv: Gespeichert=${String(gespeichert5)}, ` +
+          `freistellen=${JSON.stringify(aktion5?.freistellen ?? null)}, ` +
+          `Assets=${String(Array.isArray(stand5?.assets) ? stand5.assets.length : -1)}, ` +
+          `Medien ${dateienVorher5.length} -> ${dateienNachher5.length}, byte-gleich=${String(medienGleich5)}.`);
+        if (!gespeichert5 || aktion5 === undefined) {
+          fund("Freistellen", "die Aktion laesst sich mit dem Schalter abschliessen",
+            `Gespeichert=${String(gespeichert5)}`, "Befund", "action-editor/index.tsx");
+        } else if (aktion5.freistellen !== true) {
+          fund("Freistellen", "`freistellen: true` steht in project.json (TK 9.21.5)",
+            JSON.stringify(aktion5.freistellen ?? null), "Befund", "project-store/erstelle-aktion.ts");
+        } else if (!medienGleich5) {
+          fund("Freistellen", "das Original-Asset bleibt byte-gleich (9.21.7)",
+            `Medien ${dateienVorher5.length} -> ${dateienNachher5.length}`,
+            "Befund", "template-canvas/freistellen.ts");
+        } else {
+          console.log("[schritt-4v] NICHT-DESTRUKTIV GEMESSEN: project.json traegt nur " +
+            "`freistellen`, Medien unveraendert (FA-29, TK 9.21.7).");
+        }
+      }
+
       await klick('[data-testid="reiter-zusammenstellen"]');
       await schlafe(400);
     }
