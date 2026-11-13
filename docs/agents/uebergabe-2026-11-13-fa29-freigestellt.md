@@ -1,4 +1,5 @@
-# Übergabe – 13.11.2026 (einundsechzigste Sitzung): FA-29 freigestellt, #474 gebaut
+# Übergabe – 13.11.2026 (einundsechzigste Sitzung): FA-29 freigestellt (#474) und TK v3.66
+geschrieben (#475)
 
 **Volltext der Sitzung.** Kurzfassung in [`CLAUDE.md`](../../CLAUDE.md), Abschnitt „STAND HEUTE".
 
@@ -8,6 +9,10 @@
 
 Niklas: „schau dir die übergabe an", dann auf die Rückfrage, womit angefangen werden soll:
 **#474 (FA-29) freistellen**. Das Issue setzt #473 (FA-28) voraus – der Stand war da.
+
+Im selben Lauf, jeweils auf Anweisung: **#474 kommentiert und geschlossen**, der **Plan für danach**
+geschrieben, die **zwei offenen Entscheidungen zu #472** eingeholt und im Issue nachgezogen, das
+**`[doku]`-Issue #475** geschnitten und gebaut (TK v3.66) und #475 kommentiert.
 
 ## 2. Was gebaut ist
 
@@ -173,7 +178,7 @@ Der Kommentar nennt die vier Änderungen, `.docx`-Zahlen, Zitatabgleich und die 
 - Gate für den Doku-Schritt: Typecheck 0, Lint 0 (eine vorbestehende Warnung), Build 0,
   Unit **5873/5873**. Kein Code angefasst.
 
-## 9. Abschluss
+## 9. Abschluss #474
 
 - **#474 IST KOMMENTIERT UND GESCHLOSSEN** (`completed`, 13.11.2026 14:53 UTC, GitHub-Schreiben
   auf Anweisung von Niklas). Vorher das **volle Gate** auf dem committeten Stand gefahren:
@@ -186,10 +191,10 @@ Der Kommentar nennt die vier Änderungen, `.docx`-Zahlen, Zitatabgleich und die 
 
 **Volltext: [`docs/agents/plan-nach-474.md`](plan-nach-474.md).** Kurz:
 
-1. **Doku-Nachtrag TK v3.66 — [#475](https://github.com/NiklasRist/Digital-Signage-Tool/issues/475)**
-   (geschnitten 13.11.2026): 9.21.9 („Modell noch nicht gewählt"), 9.21.5 (ein Ziel → drei Namen),
-   CSP-Regel **und** 9.20.3 (ProduktQuellen). Labels `documentation`, `ebene:main`,
-   `ebene:renderer`, `modul:template-canvas`, `risiko:sicherheit`.
+1. **Doku-Nachtrag TK v3.66 — [#475](https://github.com/NiklasRist/Digital-Signage-Tool/issues/475):
+   ERLEDIGT** (geschnitten, gebaut `aef8f5a`, kommentiert 15:59 UTC, **bleibt offen** bis zur
+   Anweisung). 9.21.9 (Modell gewählt), 9.21.5 (ein Ziel → drei Namen), CSP-Regel **und** 9.20.3
+   (ProduktQuellen).
 2. **#472 (FA-30)** — **ENTSCHIEDEN (13.11.2026, Niklas) und im Issue nachgezogen:**
    `ProduktQuellen` trägt **ein Suchmuster je Shop** (`shops: ProduktQuelleShop[]`, `{q}`) und der
    **Notweg ist eine konfigurierbare Suchadresse** (`webSuche: string | null`), kein Anbieter im
@@ -199,5 +204,15 @@ Der Kommentar nennt die vier Änderungen, `.docx`-Zahlen, Zitatabgleich und die 
 4. Nebenbei: die vier offenen Messungen aus #474 (Renderweg, schwächere Hardware, Fernseher,
    Ausfall am Fenster).
 
-**Offen im Bestand:** #472, #466, #458 (überholt). `bereitschaft.py` meldet „0 bereit" – die
-neuen Issues haben keinen Meilenstein.
+**Offen im Bestand:** #472, #466, #458 (überholt), **#475** (gebaut und kommentiert, nur nicht
+geschlossen). `bereitschaft.py` meldet „0 bereit" – die neuen Issues haben keinen Meilenstein.
+
+## 11. Stand beim Zusammentreten
+
+- **27 Commits** vor `origin/main` (`git log --oneline origin/main..HEAD`): `e2d0055` (FA-29 Code),
+  `a5c2142` (Treiber/Matrix/Übergabe), `2d22cd4` (Abschluss #474 + Plan), `41951a9` (Plan +
+  #472-Entscheidungen), `3932eaa` (#475 + #472 im Issue), `aef8f5a` (TK v3.66 + `.docx`),
+  `77cfabb` (Doku-Nachzug), `57eabd6` (Kommentar #475).
+- **Arbeitsbaum sauber. Nicht gepusht — Push nur auf Anweisung.**
+- **Nächster Schritt:** **#472 (FA-30) bauen.** Die Signatur ist entschieden und im Issue
+  nachgezogen, der Vertrag steht (TK 9.20.3, v3.66). Danach **#466** (Phase 1 mit der Stoppuhr).

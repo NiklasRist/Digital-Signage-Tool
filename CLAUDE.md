@@ -11,7 +11,7 @@
   bevor du weitergehst. Keine Sprünge nach vorn.
 - Ich hasse Ambiguität. Triff klare Annahmen, benenne sie offen und beseitige Unklarheiten aktiv.
 
-## STAND HEUTE (13.11.2026, einundsechzigste Sitzung: FA-29 gebaut - Produktbilder sind freigestellt)
+## STAND HEUTE (13.11.2026, einundsechzigste Sitzung: FA-29 gebaut und geschlossen, TK v3.66 geschrieben)
 
 **Volltext: [`docs/agents/uebergabe-2026-11-13-fa29-freigestellt.md`](docs/agents/uebergabe-2026-11-13-fa29-freigestellt.md).**
 
@@ -66,7 +66,11 @@
   **Notweg ist eine konfigurierbare Suchadresse** (`webSuche: string | null`), kein Anbieter im
   Code. TK **9.20.3** ist damit überholt und steht als vierte Änderung in **#475**.
   (3) **#466 Phase 1** mit der Stoppuhr.
-- **Nicht gepusht.** Zahl mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
+- **Nächster Schritt: [#472](https://github.com/NiklasRist/Digital-Signage-Tool/issues/472) (FA-30)
+  bauen** — Signatur entschieden und im Issue nachgezogen, Vertrag steht (TK 9.20.3, v3.66). Danach
+  **#466** (Phase 1 mit der Stoppuhr).
+- **Nicht gepusht: 27 Commits vor `origin/main`**, Arbeitsbaum sauber. Zahl mit
+  `git log --oneline origin/main..HEAD` prüfen. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (13.11.2026, sechzigste Sitzung: #470 zu, TK 9.21 geschrieben, FA-28 gebaut) – historisiert durch den Abschnitt darueber
 
