@@ -65,6 +65,12 @@ export function unterschiede(
   if (!gleicheGestaltung(entwurf.effekte, gespeichert.effekte)) {
     aenderungen.effekte = entwurf.effekte ?? null
   }
+  // SEIT 13.11.2026 (FA-28 / TK 9.21.6): Aufbereitung ebenso INHALTLICH. Ein `!==` waere
+  // immer wahr (nach jedem Reglerzug ein neues Objekt) und erzeugte fuer jedes „Fertig"
+  // einen Schreibvorgang samt Undo-Schritt.
+  if (!gleicheGestaltung(entwurf.bildAufbereitung, gespeichert.bildAufbereitung)) {
+    aenderungen.bildAufbereitung = entwurf.bildAufbereitung ?? null
+  }
   return aenderungen
 }
 

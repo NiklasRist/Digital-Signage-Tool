@@ -4,16 +4,15 @@
 > (AD 1.1/12.1/14). Sie belegt nur, welche **FA** der Treiber am echten Fenster misst.
 > L-01 wird in **#466** gemessen; die technische Umsetzung von FA-26 steht in **#465**.
 
-**Stand:** 12.11.2026. Neu darin: **FA-27** (Umsetzung #470, Schritt **4t**, Status
-`teilweise`), **FA-28** und
-**FA-29** (Bildaufbereitung/Freistellen, AD v2.4) sowie **FA-30** (Produktseite finden, AD v2.5) -
-alle drei mit Status `Luecke`, weil sie beschlossen und **nicht gebaut** sind.
+**Stand:** 13.11.2026. Neu darin: **FA-28** hat einen Schritt (**4u**, Status `teilweise`) -
+die Aufbereitung des Motivs (#473) ist gebaut. **FA-29** (Freistellen) und **FA-30**
+(Produktseite finden) bleiben `Luecke`, weil sie beschlossen und **nicht gebaut** sind;
+FA-27 (Schritt **4t**) bleibt `teilweise`.
 Am 10.11. kam **FA-26** hinzu (AD v2.0). Die
 Zaehlung im Abschlussblock ist an diesen Tagen **neu gezaehlt** worden - sie stand vorher auf
 „9 x teilweise" und „4 teilweise" bei den Soll, waehrend die Tabelle 10 bzw. 5 Zeilen trug.
-Letzte Messung am Fenster: Lauf vom **09.11.2026** - neu darin sind
-**4s** (Effekte, FA-25) und der Undo/Redo-Teil in **4n** (Vorlagen-Editor, FA-21); die
-uebrigen Messungen stammen aus den Laeufen vom 22.10., 28.10. und den Nachlaeufen bis 09.11.
+Letzte Messung am Fenster: Lauf vom **13.11.2026** - neu darin ist **4u** (Helligkeit wirkt auf
+die Vorschau und ist umkehrbar).
 **Art:** Bestandsaufnahme, **keine Verhaltensaenderung**.
 **Grundlage:** `docs/Anforderungsdokument_Digital-Signage-Tool.md` (FA-01 bis FA-30),
 `scripts/durchlauf.mjs` (Treiber, echter Fensterlauf), `docs/agents/q4-test-audit.md` (Q4-3).
@@ -79,19 +78,19 @@ als Randnotiz im Kommentar (FA-01 in `standbild-echt`), nicht als gepinnte Zusag
 | FA-25 | Effekte: zehn einzeln schaltbare Bewegungen je Ganzbild-Segment (Soll) | 4s | **4s (09.11.2026):** Ueber die echte Oberflaeche eine neue Aktion mit „Preis zählt" (Preis 199) angelegt, als Segment an die Abspielmarke (Frame 30) gelegt und **zweimal** gerendert. Mit und ohne Effekt **je 2100 Bilder / 70,022 s** - die Dauer aendert sich nicht. Die Preiszone zeigt in Bild 30 vs. 60 mit Effekt **2109 abweichende Bytes**, ohne Effekt **1 Byte** (Kodierrauschen): der Effekt steckt im Video, und die Gegenprobe traegt. Der Schritt belegt zugleich, dass `Aktion.effekte` den Speicherweg uebersteht (Befund 09.11.2026: der `project-store` verwarf das Feld - behoben). | gemessen |
 | FA-26 | Varianten: benannte Kombination aus Look, Effekt-Satz und optional Bildausschnitt/Akzentfarbe, manuell gewaehlt, >= 3 je Aktion, Wechsel <= 1 Klick (Muss) | - | Kein Treiber-Schritt. FA-26 ist nicht gebaut; die Entscheidung (Datenmodell, Auswahl, Speicherweg, Undo, Migration) steht in #465, die Abnahme der Leitforderung in #466. | Luecke |
 | FA-27 | Produktfoto zu einer Produkt-URL abrufen, Nutzer waehlt aus; optional, ohne Internet entfaellt nur dieser Weg (Soll) | 4t | **4t (12.11.2026, #470):** Ueber die echte Oberflaeche eine Aktion im Editor geoeffnet, `http://127.0.0.1:9/produkt` eingetragen, "Foto abrufen" geklickt. Der Auftrag erscheint in der Warteschlange und scheitert mit dem Klartext **"Diese Adresse zeigt in ein lokales Netz und wird nicht abgerufen."**; die Asset-Zahl bleibt **gleich** - eine abgewiesene Adresse legt nichts an. **Nicht am Fenster gemessen:** der Erfolgsweg (Seite mit `Product.image` -> Kandidaten -> Wahl -> Asset mit `herkunft`), weil eine lokale Testseite genau das Ziel ist, das TK 9.19.4 verbietet; belegt durch die Integrationstests `produktfoto-abrufen`/`produktfoto-wahl`. NFA-06 bleibt Muss mit genau EINER benannten Ausnahme. | teilweise |
-| FA-28 | Produktbild aufbereiten: Zuschnitt, Helligkeit, Kontrast, Schaerfe, nicht destruktiv (Soll) | - | Kein Treiber-Schritt. Beschlossen mit AD v2.4 (4.13), **nicht gebaut**; eigenes Issue nach #470. | Luecke |
+| FA-28 | Produktbild aufbereiten: Zuschnitt, Helligkeit, Kontrast, Schaerfe, nicht destruktiv (Soll) | 4u | **4u (13.11.2026, #473):** Ueber die echte Oberflaeche eine Aktion im Editor geoeffnet, ein Projektbild gewaehlt und die **Pixel der Vorschau** gehasht: mit Helligkeit 60 ein **anderer** Hash, zurueck auf 0 **wieder derselbe**. Gerechnet wird einmal je (Asset, Einstellungen) beim Vorbereiten (TK 9.21.4), nicht je Frame. **Nicht am Fenster gemessen:** Kontrast und Schaerfe einzeln (gleicher Weg, gleiche Nachschlagestelle), der Bildausschnitt (bleibt `bildAusschnitt`, 9.8.8) und der Renderweg (70 s je Segment - belegt durch die gemeinsame Zeichenroutine und die Unit-Tests). | teilweise |
 | FA-29 | Produktbild freistellen ueber ein mitgeliefertes Modell, offline (Kann) | - | Kein Treiber-Schritt. Beschlossen mit AD v2.4 (4.13), **nicht gebaut**; eigenes Issue nach FA-28. | Luecke |
 | FA-30 | Produktseite finden: Stichwortsuche, zuerst hinterlegte Shops, allgemeine Websuche als Notweg (Soll) | - | Kein Treiber-Schritt. Beschlossen mit AD v2.5 (4.14 / TK 9.20), **nicht gebaut**; eigenes Issue nach #470. | Luecke |
 
-**Zaehlung (12.11.2026 neu gezaehlt):** 12 x gemessen (FA-01, FA-03, FA-05, FA-08, FA-17,
-FA-18, FA-19, FA-21, FA-22, FA-23, FA-24, FA-25), **11 x teilweise**, **4 x Luecke (FA-26,
-FA-28, FA-29, FA-30)**, 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
+**Zaehlung (13.11.2026 neu gezaehlt):** 12 x gemessen (FA-01, FA-03, FA-05, FA-08, FA-17,
+FA-18, FA-19, FA-21, FA-22, FA-23, FA-24, FA-25), **12 x teilweise**, **3 x Luecke (FA-26,
+FA-29, FA-30)**, 0 x blockiert, 3 x manuell (FA-09, FA-11, FA-12).
 
 Aufgeteilt nach Prioritaet (AD Abschnitt 4): **16 Muss**, **13 Soll**, **1 Kann**.
 - **Muss:** 9 gemessen (FA-01, FA-03, FA-05, FA-08, FA-17, FA-21, FA-22, FA-23, FA-24),
   5 teilweise, **1 Luecke (FA-26)**, 1 manuell (FA-09).
-- **Soll:** 3 gemessen (FA-18, FA-19, FA-25), **6 teilweise** (darunter FA-27), **2 Luecken
-  (FA-28, FA-30)**, 2 manuell (FA-11/12).
+- **Soll:** 3 gemessen (FA-18, FA-19, FA-25), **7 teilweise** (darunter FA-27 und FA-28), **1 Luecke
+  (FA-30)**, 2 manuell (FA-11/12).
 - **Kann:** **1 Luecke (FA-29)**.
 
 Damit sind **9 von 16 Muss-Anforderungen** am echten Fenster vollstaendig gemessen (FA-01,
@@ -346,7 +345,7 @@ Reihenfolge nach MoSCoW: **Muss** zuerst. "Treiber" heisst: neuer oder erweitert
 | 8 | FA-06/14 | Standarddauer-Kette, Grenzen 10-45 s, Verlaengern | Treiber: Projekt-Standard setzen, Aktion ohne eigene Dauer platzieren -> Startwert; Grenze ziehen -> 10/45 s; Video-Trim gegen Quelllaenge. |
 | 9 | FA-26 | Varianten (Muss, AD 4.11): >= 3 benannte Varianten je Aktion, manuell gewaehlt, Wechsel <= 1 Klick | **Produkt zuerst** (#465 entscheidet Datenmodell, Auswahl, Speicherweg, Undo, Migration); danach ein Treiber-Schritt, der je Aktion drei Varianten anlegt, umschaltet und den Wechsel im `project.json` liest. **Heute kein Schritt - deshalb `Luecke`.** |
 | 10 | FA-27 | Produktfoto zu einer Produkt-URL abrufen (Soll, AD 4.12); optional, ohne Internet entfaellt nur dieser Weg | **Gebaut (#470).** Treiber **4t** misst die Netzgrenze (Loopback abgewiesen, kein Asset). Offen bleibt der Erfolgsweg am Fenster - er braucht eine oeffentliche Testseite, die der Lauf nicht voraussetzen darf; heute durch Integrationstests belegt. |
-| 11 | FA-28/FA-29 | Produktbild aufbereiten (Soll) und freistellen (Kann), AD 4.13 | **Produkt zuerst** (eigene Issues nach #470); danach ein Treiber-Schritt, der Zuschnitt und Helligkeit am Fenster aendert und das Ergebnis im Asset/Store liest. |
+| 11 | FA-29 | Produktbild freistellen (Kann), AD 4.13 | **Produkt zuerst** (#474, setzt #473 voraus); danach ein Treiber-Schritt, der den Schalter umlegt und die Vorschau prueft. **Heute kein Schritt - deshalb `Luecke`.** |
 | 12 | FA-30 | Produktseite finden (Soll, AD 4.14 / TK 9.20) | **Produkt zuerst** (eigenes Issue nach #470); danach ein Treiber-Schritt, der eine Stichwortsuche ausloest und die gefundene Adresse im Feld `produktUrl` liest. Der Notweg (allgemeine Websuche) bleibt fragil und wird nicht am Fenster gemessen. |
 
 **Nicht als Treiber-Szenario sinnvoll:** FA-09 (nativer Zielordner-Dialog, User-Entscheidung),

@@ -38,6 +38,7 @@ import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { ProduktfotoKandidat } from '../../shared/contracts/produktabruf'
 import { normalisiereProduktUrl } from '../../shared/produkt-url'
+import { motivSchluessel } from '../../shared/aufbereitung'
 import type { ZeichenZugang, VorlagenZugang, ProjektZugang, MarkenZugang } from '../app-shell/sichten'
 import { holeBereiteMarke } from '../gemeinsam/marken-bereitstellung'
 import { holeMotiv } from '../gemeinsam/aktions-motiv'
@@ -61,6 +62,7 @@ import { VorlagenWahl } from './vorlagen-wahl'
 import { ZonenGestaltung } from './zonen-gestaltung'
 import { FarbWahl, markenPalette } from './farb-wahl'
 import { BildAusschnittRegler } from './bild-ausschnitt'
+import { AufbereitungRegler } from './aufbereitung-regler'
 import { feldBedarf } from './feld-bedarf'
 import { BEISPIEL_INHALT, erstesBild, mitBeispielinhalt } from './beispiel-inhalt'
 import { ladeLetzteFarben, mitFarbe, speichereLetzteFarben } from './letzte-farben'
@@ -198,6 +200,27 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
       setzeVorbereitet((zaehler) => zaehler + 1)
     })()
   }, [projekt])
+
+  // 13.11.2026 (FA-28 / TK 9.21.4): Die Vorschau zeichnet den ENTWURF, das Motiv liegt
+  // aber im Bestand unter einem Schluessel, der die Aufbereitung traegt. Aendert sich ein
+  // Regler, muss das Motiv EINMAL neu gerechnet werden - sonst stuende die Vorschau still,
+  // obwohl der Entwurf schon anders ist.
+  //
+  // Der Effekt haengt am SCHLUESSEL, nicht am ganzen Entwurf: sonst rechnete jeder
+  // Tastendruck im Titel das Bild neu.
+  const motivKennung = motivSchluessel(entwurf?.bildRef ?? '', entwurf?.bildAufbereitung)
+  useEffect(() => {
+    if (projekt === null || entwurf === null || entwurf.bildRef === null) return
+    void (async () => {
+      await bereiteMotivVorFuer(
+        projekt.id,
+        entwurf.bildRef,
+        projekt.assets,
+        entwurf.bildAufbereitung,
+      )
+      setzeVorbereitet((zaehler) => zaehler + 1)
+    })()
+  }, [projekt, motivKennung])
 
   // 05.11.2026: Der Editor folgt dem PROJEKTBESTAND - wie der Vorlagen-Editor
   // (`vorlagen-editor/index.tsx`). Ohne dieses Abo blieb die Bildliste nach einem
@@ -476,7 +499,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
         setzeMeldung(fehler)
         return
       }
-      await bereiteMotivVorFuer(jetzt.id, bildRef, jetzt.assets)
+      await bereiteMotivVorFuer(jetzt.id, bildRef, jetzt.assets, entwurf?.bildAufbereitung)
     }
     // 05.11.2026: „– kein Bild –" ist eine Entscheidung; das Beispielbild darf danach
     // nicht wieder in der Vorschau auftauchen.
@@ -1309,6 +1332,15 @@ function Inspector({
               ausschnitt={entwurf.bildAusschnitt}
               aufAendern={(ausschnitt) => {
                 aufAenderung('bildAusschnitt', ausschnitt)
+              }}
+            />
+            {/* SEIT 13.11.2026 (FA-28 / TK 9.21.6): Helligkeit, Kontrast, Schaerfe.
+                Nicht destruktiv - die Werte stehen an der Aktion, gerechnet wird beim
+                Vorbereiten des Motivs. */}
+            <AufbereitungRegler
+              aufbereitung={entwurf.bildAufbereitung}
+              aufAendern={(aufbereitung) => {
+                aufAenderung('bildAufbereitung', aufbereitung)
               }}
             />
           </div>

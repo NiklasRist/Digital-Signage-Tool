@@ -8,6 +8,7 @@ import { planeAutoSpeicherung } from './auto-speichern'             // #47
 import { mitD1Lock } from './d1-lock'                               // #32
 import { normalisiereEffekte } from '../../shared/effekte'
 import { normalisiereProduktUrl } from '../../shared/produkt-url'
+import { normalisiereAufbereitung } from '../../shared/aufbereitung'
 import {
   normalisiereBildAusschnitt,
   normalisiereZonenGestaltung,
@@ -255,6 +256,13 @@ export async function bearbeiteAktion(
     }
     if (aktionsdaten.bildAusschnitt !== undefined) {
       aktion.bildAusschnitt = normalisiereBildAusschnitt(aktionsdaten.bildAusschnitt)
+    }
+
+    // SEIT 13.11.2026 (FA-28 / TK 9.21.3): die Aufbereitung. Wie die Gestaltung
+    // NORMALISIERT uebernommen; `null` LEERT sie (das ist der Weg zurueck auf
+    // "unveraendert"), ein nicht mitgeschicktes Feld laesst sie stehen.
+    if (aktionsdaten.bildAufbereitung !== undefined) {
+      aktion.bildAufbereitung = normalisiereAufbereitung(aktionsdaten.bildAufbereitung)
     }
 
     // SEIT 09.11.2026 (TK 9.16.1): Effekte. Wie die Gestaltung NORMALISIERT uebernommen;

@@ -175,3 +175,35 @@ describe('unterschiede - Effekte', () => {
     expect(unterschiede(entwurf, gespeichert)).toEqual({})
   })
 })
+
+// Aufbereitung (13.11.2026, FA-28 / TK 9.21.6): verscachtelt wie die Gestaltung. Ein
+// `!==` waere immer wahr (nach jedem Rendern ein neues Objekt) und erzeugte fuer jedes
+// "Fertig" einen Schreibvorgang samt Undo-Schritt.
+describe('unterschiede - Aufbereitung des Motivs', () => {
+  it('erkennt eine reine Aufbereitungs-Aenderung', () => {
+    const gespeichert = aktion()
+    const entwurf: AktionsInhalt = { ...gespeichert, bildAufbereitung: { helligkeit: 20 } }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({ bildAufbereitung: { helligkeit: 20 } })
+  })
+
+  it('gleicher Inhalt, neue Referenz -> KEINE Aenderung', () => {
+    const gespeichert = aktion({ bildAufbereitung: { kontrast: 15, schaerfe: 30 } })
+    const entwurf: AktionsInhalt = {
+      ...gespeichert,
+      bildAufbereitung: { schaerfe: 30, kontrast: 15 },
+    }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({})
+  })
+
+  it('null gegen ein eingestelltes Bild ist eine Aenderung', () => {
+    const gespeichert = aktion({ bildAufbereitung: { schaerfe: 10 } })
+    const entwurf: AktionsInhalt = { ...gespeichert, bildAufbereitung: null }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({ bildAufbereitung: null })
+  })
+
+  it('ein altes Projekt OHNE das Feld meldet keine Aenderung', () => {
+    const gespeichert = aktion()
+    delete (gespeichert as { bildAufbereitung?: unknown }).bildAufbereitung
+    expect(unterschiede(entwurfAus(gespeichert), gespeichert)).toEqual({})
+  })
+})

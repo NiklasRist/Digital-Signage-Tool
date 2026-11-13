@@ -73,7 +73,7 @@ describe('baueMotivEintraege', () => {
         [asset('bild-1')],
       ),
     )
-    expect(eintraege).toEqual([{ schluessel: 'bild-1', dateiname: 'bild-1.png' }])
+    expect(eintraege).toEqual([{ bildRef: 'bild-1', dateiname: 'bild-1.png' }])
   })
 
   it('laesst Aktionen ohne Bild und Bilder, die nicht mehr da sind, weg', () => {
@@ -83,7 +83,7 @@ describe('baueMotivEintraege', () => {
         [asset('kaputt', 'fehlt'), asset('gut')],
       ),
     )
-    expect(eintraege).toEqual([{ schluessel: 'gut', dateiname: 'gut.png' }])
+    expect(eintraege).toEqual([{ bildRef: 'gut', dateiname: 'gut.png' }])
   })
 })
 

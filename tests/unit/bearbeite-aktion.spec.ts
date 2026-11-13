@@ -331,3 +331,30 @@ describe("bearbeiteAktion - Gestaltung je Zone und Bildausschnitt (05.11.2026, T
     expect(antwort.wert.bildAusschnitt).toBeNull();
   });
 });
+
+describe("bearbeiteAktion - Aufbereitung des Motivs (13.11.2026, FA-28 / TK 9.21.3)", () => {
+  it("setzt die Werte normalisiert", async () => {
+    const antwort = await bearbeiteAktion("a1", {
+      bildAufbereitung: { helligkeit: -250, schaerfe: 40 },
+    });
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.bildAufbereitung).toEqual({ helligkeit: -100, schaerfe: 40 });
+  });
+
+  it("null nimmt die Aufbereitung zurueck", async () => {
+    await bearbeiteAktion("a1", { bildAufbereitung: { kontrast: 30 } });
+    const antwort = await bearbeiteAktion("a1", { bildAufbereitung: null });
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.bildAufbereitung).toBeNull();
+  });
+
+  it("ein NICHT mitgeschicktes Feld bleibt unangetastet", async () => {
+    await bearbeiteAktion("a1", { bildAufbereitung: { kontrast: 30 } });
+    const antwort = await bearbeiteAktion("a1", { titel: "Neuer Titel" });
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.bildAufbereitung).toEqual({ kontrast: 30 });
+  });
+});

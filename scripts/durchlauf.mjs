@@ -7061,6 +7061,140 @@ const main = async () => {
       await schlafe(400);
     }
 
+    // Schritt 4u - FA-28 (#473): Die Aufbereitung wirkt auf die VORSCHAU und ist
+    // umkehrbar. Gemessen wird der Pixel-Inhalt des Vorschau-Canvas:
+    //   vorher -> Helligkeit 60 (anders) -> wieder 0 (wieder gleich).
+    //
+    // WARUM DIE VORSCHAU UND NICHT DER RENDER: Beide laufen durch dieselbe Zeichenroutine
+    // (TK 9.10.1), der Render braucht aber 70 s je Segment. Der Beweis, dass der Regler
+    // ankommt, ist am Canvas exakt und in Sekunden zu haben; der Renderweg ist durch die
+    // gemeinsame Nachschlagestelle (zeichnet-segment) und die Unit-Tests gedeckt.
+    {
+      const HASH = `(() => {
+        const c = document.querySelector('[data-testid="aktion-vorschau-flaeche"] canvas');
+        if (!(c instanceof HTMLCanvasElement) || c.width === 0) return null;
+        const ctx = c.getContext('2d');
+        if (ctx === null) return null;
+        const d = ctx.getImageData(0, 0, c.width, c.height).data;
+        let h = 2166136261;
+        for (let i = 0; i < d.length; i += 1) { h ^= d[i]; h = Math.imul(h, 16777619); }
+        return h >>> 0;
+      })()`;
+
+      const hashVorschau = async () => seite.evaluate(HASH);
+
+      await klick('[data-testid="reiter-aktionen"]');
+      await schlafe(500);
+      await seite.evaluate(() => {
+        document.querySelector('[data-testid="aktion-neu"]')?.click();
+      });
+
+      // Eine Vorlage MIT Bildzone waehlen (dieselbe wie 4t).
+      let kachel4u = false;
+      const fristKachel4u = Date.now() + 10_000;
+      while (Date.now() < fristKachel4u && !kachel4u) {
+        kachel4u = await seite.evaluate(
+          () => document.querySelector('[data-testid="aktion-vorlage-vollbild"]') !== null,
+        );
+        if (!kachel4u) await schlafe(250);
+      }
+      if (kachel4u) {
+        await seite.evaluate(() => {
+          document.querySelector('[data-testid="aktion-vorlage-vollbild"]')?.click();
+        });
+      }
+
+      // Titel setzen und ein vorhandenes Bild waehlen - ohne Motiv gäbe es nichts zu
+      // heller zu machen, und der Schritt waere gruen ohne Aussage.
+      await schlafe(300);
+      const bildGewaehlt4u = await seite.evaluate(() => {
+        const titel = document.querySelector('[data-testid="aktion-titel"]');
+        const wahl = document.querySelector('[data-testid="aktion-bild-wahl"]');
+        if (titel === null || wahl === null) return false;
+        const setzeText = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setzeText.call(titel, `Durchlauf-Aufbereitung-${String(Date.now())}`);
+        titel.dispatchEvent(new Event("input", { bubbles: true }));
+        const optionen = Array.from(wahl.querySelectorAll("option")).filter((o) => o.value !== "");
+        const erste = optionen[0];
+        if (erste === undefined) return false;
+        const setzeWahl = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value").set;
+        setzeWahl.call(wahl, erste.value);
+        wahl.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+      });
+
+      // Auf eine RUHIGE Vorschau warten: zweimal derselbe Hash heisst "nichts rechnet mehr".
+      const warteRuhig = async (fristMs) => {
+        const ende = Date.now() + fristMs;
+        let letzter = null;
+        while (Date.now() < ende) {
+          const jetzt = await hashVorschau();
+          if (jetzt !== null && jetzt === letzter) return jetzt;
+          letzter = jetzt;
+          await schlafe(350);
+        }
+        return letzter;
+      };
+
+      const vorher4u = bildGewaehlt4u ? await warteRuhig(8_000) : null;
+
+      const regler4u = await seite.evaluate(() => {
+        const regler = document.querySelector('[data-testid="aktion-aufbereitung-helligkeit"]');
+        if (!(regler instanceof HTMLInputElement)) return false;
+        const setze = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setze.call(regler, "60");
+        regler.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      });
+
+      // Warten, bis die Vorschau wirklich anders ist (die Aufbereitung laeuft asynchron).
+      let mitRegler4u = vorher4u;
+      const fristMit4u = Date.now() + 8_000;
+      while (Date.now() < fristMit4u && mitRegler4u === vorher4u) {
+        await schlafe(250);
+        mitRegler4u = await hashVorschau();
+      }
+
+      const zurueck4u = await seite.evaluate(() => {
+        const regler = document.querySelector('[data-testid="aktion-aufbereitung-helligkeit"]');
+        if (!(regler instanceof HTMLInputElement)) return false;
+        const setze = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+        setze.call(regler, "0");
+        regler.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      });
+
+      let wieder4u = mitRegler4u;
+      const fristZurueck4u = Date.now() + 8_000;
+      while (Date.now() < fristZurueck4u && wieder4u !== vorher4u) {
+        await schlafe(250);
+        wieder4u = await hashVorschau();
+      }
+
+      console.log(`[schritt-4u] Aufbereitung: Bild=${String(bildGewaehlt4u)}, ` +
+        `vorher=${String(vorher4u)}, mitRegler=${String(mitRegler4u)}, zurueck=${String(wieder4u)}.`);
+      if (!bildGewaehlt4u || vorher4u === null) {
+        fund("Bildaufbereitung", "ein Bild laesst sich im Editor waehlen und erscheint in der Vorschau",
+          `Bild=${String(bildGewaehlt4u)}, vorher=${String(vorher4u)}`,
+          "Befund", "action-editor/index.tsx");
+      } else if (!regler4u || mitRegler4u === vorher4u) {
+        fund("Bildaufbereitung", "Helligkeit veraendert die Vorschau (FA-28)",
+          `vorher=${String(vorher4u)}, mitRegler=${String(mitRegler4u)}`,
+          "Befund", "template-canvas/aufbereiten.ts");
+      } else if (!zurueck4u || wieder4u !== vorher4u) {
+        fund("Bildaufbereitung", "Helligkeit 0 stellt das Bild wieder her (byte-gleich zu vorher)",
+          `vorher=${String(vorher4u)}, zurueck=${String(wieder4u)}`,
+          "Befund", "shared/aufbereitung.ts");
+      } else {
+        console.log("[schritt-4u] AUFBEREITUNG GEMESSEN: Helligkeit 60 aendert die Vorschau, " +
+          "zurueck auf 0 ist der Hash wieder gleich (FA-28, TK 9.21.4).");
+      }
+
+      // Aufraeumen wie bei 4t: Entwurf verwerfen, Reiter wechseln.
+      await klick('[data-testid="reiter-zusammenstellen"]');
+      await schlafe(400);
+    }
+
     // Schritt 5 - Abschluss: gesammelte Ereignisse und Fehler ablesen.
     // Aufräumblock (User-Entscheidung 14.10.2026, solange die App NICHT fertig ist):
     // Jeder Lauf loescht seine eigenen Projekte ("DurchlaufTest-*") ueber den ECHTEN

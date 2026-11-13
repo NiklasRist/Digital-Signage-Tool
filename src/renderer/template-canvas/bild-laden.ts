@@ -51,6 +51,12 @@ export type Motiv =
 // Die EINE Stelle fuer media://-Bytes als Blob-URL (#364) - hier keine zweite Kopie
 // des Wegs. Blob-URLs sind same-origin und tainen das Canvas nicht.
 import { gibMediaBlobUrlFrei, mediaBlobUrl } from '../gemeinsam/media-blob-url'
+// Die Aufbereitung (13.11.2026, FA-28 / TK 9.21) sitzt hier, weil das Motiv HIER entsteht:
+// einmal je (Asset, Einstellungen) rechnen, nicht je Frame. Die Regelquelle ist geteilt.
+import { istAufbereitungNeutral, motivSchluessel } from '../../shared/aufbereitung'
+import { bereiteAuf } from './aufbereiten'
+
+import type { BildAufbereitung } from '../../shared/contracts/aktion'
 // Das unterscheidende Feld heißt `zustand` (nicht `status`). Diese Datei ist für den Typ
 // DEFINIEREND; #115, #117 und #119 übernehmen ihn zeichengenau.
 // breite/höhe = naturalWidth/naturalHeight des dekodierten Bildes (native Pixelmaße).
@@ -72,6 +78,53 @@ import { gibMediaBlobUrlFrei, mediaBlobUrl } from '../gemeinsam/media-blob-url'
  * der Aufrufer (M5), der das Projekt und damit die Asset-Liste kennt.
  */
 const bestand = new Map<string, Motiv>()
+
+/**
+ * Wie viele AUFBEREITETE Bilder hoechstens gehalten werden (TK 9.21.4) und wie viel sie
+ * zusammen kosten duerfen. Nur aufbereitete Puffer zaehlen: ein rohes Motiv liegt ohnehin
+ * im Speicher, wenn es angezeigt wird; ein aufbereiteter Puffer ist ein ZWEITES Bild
+ * derselben Groesse und damit der Posten, der bei vielen Aktionen auffiele.
+ */
+const MAX_AUFBEREITETE = 6
+const MAX_AUFBEREITETE_BYTES = 256 * 1024 * 1024
+
+/** Schluessel in der Reihenfolge ihres Einfuegens – das aelteste faellt zuerst heraus. */
+const aufbereiteteReihenfolge: string[] = []
+/** Groesse je aufbereitetem Schluessel in Bytes (Breite × Hoehe × 4). */
+const aufbereiteteBytes = new Map<string, number>()
+
+/** Ein aufbereitetes Motiv ablegen und dabei die Obergrenzen einhalten. */
+function legeAufbereitetesAb(schluessel: string, motiv: Motiv, breite: number, hoehe: number): void {
+  const bytes = breite * hoehe * 4
+  aufbereiteteBytes.set(schluessel, bytes)
+  // EIN SCHLUESSEL STEHT NUR EINMAL IN DER REIHENFOLGE. Ohne diese Zeile traege jeder
+  // Reglerzug denselben Schluessel ein zweites Mal ein - die Obergrenze zaehlte doppelt,
+  // und beim Aufraeumen koennte GENAU DAS Bild verdrängt werden, das gerade gezeigt wird.
+  const vorhanden = aufbereiteteReihenfolge.indexOf(schluessel)
+  if (vorhanden >= 0) aufbereiteteReihenfolge.splice(vorhanden, 1)
+  aufbereiteteReihenfolge.push(schluessel)
+  while (
+    aufbereiteteReihenfolge.length > MAX_AUFBEREITETE ||
+    summeAufbereitet() > MAX_AUFBEREITETE_BYTES
+  ) {
+    const aeltester = aufbereiteteReihenfolge.shift()
+    if (aeltester === undefined) break
+    aufbereiteteBytes.delete(aeltester)
+    bestand.delete(aeltester)
+  }
+  bestand.set(schluessel, motiv)
+}
+
+/** Nur fuer Tests: wie viele aufbereitete Puffer der Bestand gerade haelt. */
+export function anzahlAufbereitete(): number {
+  return aufbereiteteReihenfolge.length
+}
+
+function summeAufbereitet(): number {
+  let summe = 0
+  for (const bytes of aufbereiteteBytes.values()) summe += bytes
+  return summe
+}
 
 /**
  * Generationszaehler (Festlegung 9).
@@ -184,7 +237,7 @@ export async function ladeMotiv(projektId: string, dateiname: string): Promise<M
 
 export async function bereiteMotiveVor(
   projektId: string,
-  eintraege: Array<{ schluessel: string; dateiname: string }>,
+  eintraege: MotivEintrag[],
 ): Promise<void> {
   pruefeNichtLeer('projektId', projektId)
 
@@ -193,29 +246,29 @@ export async function bereiteMotiveVor(
   // vorderen im Bestand abgelegt - ein halb vorbereiteter Bestand nach einem Wurf, den
   // der Aufrufer nach dem Abfangen nicht von einem vollstaendigen unterscheiden koennte.
   eintraege.forEach((eintrag, i) => {
-    pruefeNichtLeer(`eintraege[${i}].schluessel`, eintrag.schluessel)
+    pruefeNichtLeer(`eintraege[${i}].bildRef`, eintrag.bildRef)
     pruefeNichtLeer(`eintraege[${i}].dateiname`, eintrag.dateiname)
   })
 
   // Der Zaehlerstand BEI START (Festlegung 9). Alles Weitere haengt daran.
   const gestartetIn = generation
 
-  // GELADEN WIRD NEBENLAEUFIG, ABGELEGT WIRD DANACH IN EINGANGSREIHENFOLGE.
+  // GELADEN (UND GERECHNET) WIRD NEBENLAEUFIG, ABGELEGT WIRD DANACH IN EINGANGSREIHENFOLGE.
   //
   // Nebenlaeufig, weil die Ladevorgaenge voneinander unabhaengig sind und ein
   // Aktions-Editor mit einem Dutzend Motiven sonst ein Dutzend Mal nacheinander wartete.
   //
   // Abgelegt in Eingangsreihenfolge, weil `eintraege` denselben Schluessel zweimal
-  // enthalten kann (zwei Aktionen mit demselben Bild-Asset): Wer die Ergebnisse in der
-  // Reihenfolge ihres Eintreffens ablegte, liesse den ZUFALL entscheiden, welches
-  // gewinnt. So gewinnt immer das letzte - "ein bereits vorhandener Schluessel wird
-  // ueberschrieben" gilt damit auch innerhalb eines Aufrufs.
+  // enthalten kann (zwei Aktionen mit demselben Bild-Asset und denselben Einstellungen):
+  // Wer die Ergebnisse in der Reihenfolge ihres Eintreffens ablegte, liesse den ZUFALL
+  // entscheiden, welches gewinnt. So gewinnt immer das letzte - "ein bereits vorhandener
+  // Schluessel wird ueberschrieben" gilt damit auch innerhalb eines Aufrufs.
   //
   // `Promise.all` kann hier nicht ablehnen: `ladeMotiv` wirft nur bei leeren Argumenten,
   // und die sind oben schon ausgeschlossen. Ein einzelnes nicht ladbares Motiv wird zu
   // `{ zustand: 'fehlt' }` und haelt die uebrigen Eintraege nicht auf.
   const ergebnisse = await Promise.all(
-    eintraege.map((eintrag) => ladeMotiv(projektId, eintrag.dateiname)),
+    eintraege.map((eintrag) => bereiteEinenVor(projektId, eintrag)),
   )
 
   // Wurde zwischenzeitlich geleert (Projektwechsel, Import), wird NICHTS mehr abgelegt.
@@ -225,9 +278,8 @@ export async function bereiteMotiveVor(
     return
   }
 
-  eintraege.forEach((eintrag, i) => {
-    const motiv = ergebnisse[i]
-    if (motiv === undefined) {
+  ergebnisse.forEach((ergebnis) => {
+    if (ergebnis === null) {
       // Unerreichbar: `Promise.all` liefert genau so viele Ergebnisse wie Eingaben. Der
       // Zweig steht, weil `noUncheckedIndexedAccess` den Index-Zugriff als moeglicherweise
       // `undefined` fuehrt - und die Fluchttuer `ergebnisse[i]!` ist projektweit verboten
@@ -235,14 +287,70 @@ export async function bereiteMotiveVor(
       // nicht ist.
       return
     }
-    bestand.set(eintrag.schluessel, motiv)
+    if (ergebnis.aufbereitet) {
+      legeAufbereitetesAb(ergebnis.schluessel, ergebnis.motiv, ergebnis.breite, ergebnis.höhe)
+      return
+    }
+    bestand.set(ergebnis.schluessel, ergebnis.motiv)
   })
 }
-// Lädt jeden Eintrag über ladeMotiv(projektId, dateiname) und legt das Ergebnis unter seinem
-// `schluessel` im Motiv-Bestand ab. `schluessel` ist die ASSET-ID (aktion.bildRef), NICHT der
-// Dateiname – unter dieser ID schlägt das Zeichnen später nach. Wirft nie: ein nicht ladbares
+// Lädt jeden Eintrag über ladeMotiv(projektId, dateiname), rechnet — falls gesetzt — die
+// Aufbereitung EINMAL je (Asset, Einstellungen) und legt das Ergebnis unter
+// `motivSchluessel(...)` im Motiv-Bestand ab (TK 9.21.4). Ohne Aufbereitung ist der
+// Schlüssel die nackte Asset-ID; dann wird nichts gerechnet. Wirft nie: ein nicht ladbares
 // Motiv landet als { zustand: 'fehlt' } im Bestand. Ein bereits vorhandener Schlüssel wird
 // überschrieben.
+
+/**
+ * Ein Eintrag der Vorbereitung (TK 9.21.4).
+ *
+ * `bildRef` heisst wie das Feld der Aktion, und das ist Absicht: `schluessel` und
+ * `bildRef` waren zwei Namen fuer dieselbe Kennung, und genau solche Paare driften beim
+ * naechsten Umbau auseinander.
+ */
+export interface MotivEintrag {
+  bildRef: string
+  dateiname: string
+  aufbereitung?: BildAufbereitung | null
+}
+
+interface VorbereitetesMotiv {
+  schluessel: string
+  motiv: Motiv
+  aufbereitet: boolean
+  breite: number
+  höhe: number
+}
+
+/**
+ * Ein Motiv laden und - wenn noetig - einmal aufbereiten.
+ *
+ * DER RÜCKFALL IST ABSICHT: Kann die Umgebung nicht rechnen (kein Offscreen-Canvas,
+ * `createImageBitmap` fehlt), wird das ROHE Motiv unter dem abgeleiteten Schluessel
+ * abgelegt. Das Bild bleibt sichtbar, es fehlt nur die Aufbereitung. Ein Platzhalter waere
+ * die schlechtere Antwort: Ein optionaler Regler darf kein Bild verschwinden lassen.
+ */
+async function bereiteEinenVor(
+  projektId: string,
+  eintrag: MotivEintrag,
+): Promise<VorbereitetesMotiv | null> {
+  const schluessel = motivSchluessel(eintrag.bildRef, eintrag.aufbereitung)
+  const roh = await ladeMotiv(projektId, eintrag.dateiname)
+  if (roh.zustand !== 'geladen' || istAufbereitungNeutral(eintrag.aufbereitung)) {
+    return { schluessel, motiv: roh, aufbereitet: false, breite: 0, höhe: 0 }
+  }
+  const aufbereitet = await bereiteAuf(roh.bild, roh.breite, roh.höhe, eintrag.aufbereitung)
+  if (aufbereitet === null) {
+    return { schluessel, motiv: roh, aufbereitet: false, breite: 0, höhe: 0 }
+  }
+  return {
+    schluessel,
+    motiv: { zustand: 'geladen', bild: aufbereitet, breite: roh.breite, höhe: roh.höhe },
+    aufbereitet: true,
+    breite: roh.breite,
+    höhe: roh.höhe,
+  }
+}
 
 export function holeMotiv(schluessel: string): Motiv {
   // EINE ZEILE, UND DAS IST DER PUNKT: kein Nachladen, kein `await`, kein `new Image()`.
@@ -259,6 +367,10 @@ export function holeMotiv(schluessel: string): Motiv {
 
 export function leereMotivBestand(): void {
   bestand.clear()
+  // Die Aufbereitungs-Buchhaltung MUSS mit: Sonst zaehlten geloeschte Puffer weiter gegen
+  // die Obergrenzen, und ein Projektwechsel raeumte den Speicher nicht wirklich.
+  aufbereiteteReihenfolge.length = 0
+  aufbereiteteBytes.clear()
   // Der Zaehler steigt ZUSAETZLICH zum Leeren, nicht statt dessen: Ohne das Leeren
   // blieben die alten Motive nachschlagbar, ohne den Zaehler legten die noch laufenden
   // Vorbereitungen sie gleich wieder hinein (Festlegung 9).

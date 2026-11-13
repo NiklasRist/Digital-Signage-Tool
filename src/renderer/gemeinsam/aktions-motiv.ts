@@ -25,6 +25,8 @@ import type { Marke } from '../../shared/contracts/marke'
 import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import { zeichneSegment } from '../template-canvas/zeichne-segment'
+import { motivSchluessel as bildSchluessel } from '../../shared/aufbereitung'
+import type { MotivEintrag } from '../template-canvas/bild-laden'
 
 /** Hoehe des kleinen Bildes in einer Bibliothekszeile. Die Breite folgt dem Seitenverhaeltnis. */
 export const MOTIV_HOEHE = 40
@@ -104,18 +106,30 @@ export function holeMotiv(
  * fuer `bereiteMotiveVor` (template-canvas/bild-laden.ts): ohne sie fehlt das Bild IN der
  * Aktion, und das Motiv waere ein Rahmen ohne Inhalt.
  */
-export function baueMotivEintraege(
-  projekt: Project,
-): Array<{ schluessel: string; dateiname: string }> {
-  const eintraege: Array<{ schluessel: string; dateiname: string }> = []
+export function baueMotivEintraege(projekt: Project): MotivEintrag[] {
+  const eintraege: MotivEintrag[] = []
+  // ENTDOPPELT WIRD UEBER DEN BESTANDS-SCHLUESSEL, nicht ueber die Asset-ID (13.11.2026,
+  // FA-28 / TK 9.21.4): Dasselbe Foto kann in zwei Aktionen mit verschiedenen
+  // Aufbereitungen stehen - das sind zwei Motive, und beide muessen vorbereitet werden.
+  // Ueber die nackte `bildRef` entdoppelt, fehlte die zweite Fassung still.
   const gesehen = new Set<string>()
   for (const aktion of projekt.aktionen) {
     const bildRef = aktion.bildRef
-    if (bildRef === null || gesehen.has(bildRef)) continue
+    if (bildRef === null) continue
+    // Der Name kollidiert mit dem Merk-Schluessel dieser Datei (Zeile oben); hier ist
+    // eindeutig der geteilte Bestands-Schluessel gemeint.
+    const schluessel = bildSchluessel(bildRef, aktion.bildAufbereitung)
+    if (gesehen.has(schluessel)) continue
     const asset = projekt.assets.find((kandidat) => kandidat.id === bildRef)
     if (asset === undefined || asset.zustand === 'fehlt') continue
-    gesehen.add(bildRef)
-    eintraege.push({ schluessel: bildRef, dateiname: asset.dateiname })
+    gesehen.add(schluessel)
+    const eintrag: MotivEintrag = { bildRef, dateiname: asset.dateiname }
+    // Nur setzen, wenn es etwas zu setzen gibt: ein Feld mit `undefined` waere im
+    // Vergleich und in den Tests ein Wert, obwohl „keine Aufbereitung" gemeint ist.
+    if (aktion.bildAufbereitung !== undefined && aktion.bildAufbereitung !== null) {
+      eintrag.aufbereitung = aktion.bildAufbereitung
+    }
+    eintraege.push(eintrag)
   }
   return eintraege
 }

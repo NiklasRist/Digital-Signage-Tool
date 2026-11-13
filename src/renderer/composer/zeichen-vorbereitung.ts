@@ -7,6 +7,7 @@ import type { Ergebnis } from '../../shared/contracts/ergebnis'
 import { stelleMarkeBereit } from '../gemeinsam/marken-bereitstellung'
 import { stelleSchriftenBereit } from '../template-canvas/schriften'
 import { bereiteMotiveVor, leereMotivBestand, holeMotiv } from '../template-canvas/bild-laden'
+import type { MotivEintrag } from '../template-canvas/bild-laden'
 import { holeUebersicht, ladeUebersicht } from '../vorlagen-editor/vorlagen-uebersicht'
 
 /** Alles, was zeichnende Aufrufe des composer als Parameter brauchen.
@@ -72,13 +73,19 @@ export async function bereiteZeichnenVor(
   // Assets entfallen still - das Zeichnen behandelt sie als Platzhalter (TK 9.10.7) und der
   // Reparatur-Modus (9.7.5) macht sie sichtbar; die Vorbereitung redet nicht doppelt über
   // dieselbe Referenz.
-  const eintraege: Array<{ schluessel: string; dateiname: string }> = []
+  const eintraege: MotivEintrag[] = []
   const assets = new Map(projekt.assets.map((asset) => [asset.id, asset]))
   for (const aktion of projekt.aktionen) {
     if (aktion.bildRef === null) continue
     const asset = assets.get(aktion.bildRef)
     if (asset === undefined || asset.zustand === 'fehlt') continue
-    eintraege.push({ schluessel: aktion.bildRef, dateiname: asset.dateiname })
+    // 13.11.2026 (FA-28 / TK 9.21.4): Die Aufbereitung gehoert in den Eintrag - sonst
+    // zeichnete der Render das rohe Bild, waehrend die Vorschau aufbereitet zeigt.
+    const eintrag: MotivEintrag = { bildRef: aktion.bildRef, dateiname: asset.dateiname }
+    if (aktion.bildAufbereitung !== undefined && aktion.bildAufbereitung !== null) {
+      eintrag.aufbereitung = aktion.bildAufbereitung
+    }
+    eintraege.push(eintrag)
   }
 
   // Erst leeren caller-seitig (verwirfMotivBestand) - hier wird der BESTAND NICHT geleert:

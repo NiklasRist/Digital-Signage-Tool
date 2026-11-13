@@ -45,6 +45,8 @@ import { zeichneTextZone } from './zone-text'
 import { zeichneBildZone } from './zone-bild'
 import { holeMotiv } from './bild-laden'
 import { holeLogo } from './logo-laden'
+// 13.11.2026 (FA-28 / TK 9.21.4): Der Bestands-Schluessel traegt die Aufbereitung.
+import { motivSchluessel } from '../../shared/aufbereitung'
 import { sindSchriftenBereit } from './schriften'
 import { loeseFarbe } from './farben'
 
@@ -250,7 +252,19 @@ export function zeichneSegment(
       // SAFETY: Eine Zone mit Bindung `bild` zeigt das Motiv der Aktion; `bildRef` ist
       // laut Vertrag `string | null` (Aktion ohne Bild). `holeMotiv` liefert fuer einen
       // fehlenden Schluessel ein "nicht da"-Motiv - der Cast reicht nur den Wert durch.
-      zeichneBildZone(ctx, zone, holeMotiv(aktion.bildRef as string), markeDieserZone, aktion, wirksam)
+      zeichneBildZone(
+        ctx,
+        zone,
+        // SEIT 13.11.2026 (FA-28 / TK 9.21.4): EINE Nachschlagestelle. Der Bestands-Schluessel
+        // traegt die Aufbereitung; ohne Einstellung ist er die nackte Asset-ID - derselbe Weg
+        // wie vorher.
+        holeMotiv(
+          motivSchluessel(aktion.bildRef as string, aktion.bildAufbereitung),
+        ),
+        markeDieserZone,
+        aktion,
+        wirksam,
+      )
     } else if (zone.bindung === 'logo' && markeDieserZone.logo === null) {
       zeichneErsatzLogo(ctx, zone, markeDieserZone, aktion)
     } else if (zone.bindung === 'logo') {

@@ -17,7 +17,7 @@
 //    ("Skalierung geschieht NUR zur Darstellung", CSS). canvas.width/height
 //    bleiben NATIV (TK 9.10.3 Punkt 2).
 
-import type { AktionsInhalt } from '../../shared/contracts/aktion'
+import type { AktionsInhalt, BildAufbereitung } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
 import type { EffektZustand } from '../../shared/effekte'
 import type { Marke } from '../../shared/contracts/marke'
@@ -27,6 +27,7 @@ import type { SegmentBild } from '../template-canvas/zeichne-segment'
 import { stelleSchriftenBereit } from '../template-canvas/schriften'
 import { bereiteLogoVor } from '../template-canvas/logo-laden'
 import { bereiteMotiveVor } from '../template-canvas/bild-laden'
+import type { MotivEintrag } from '../template-canvas/bild-laden'
 import { findeBildAsset } from './bibliothek'
 import { zeichneSegment } from '../template-canvas/zeichne-segment'
 
@@ -51,7 +52,7 @@ export async function bereiteVorschauVor(
   //    über bereiteMotiveVor (#111) landet jedes ladbares Motiv unter seinem
   //    ASSET-Schlüssel im Bestand. Nicht-ladbare werden dort als { zustand: 'fehlt' }
   //    abgelegt - der PlatzhalterFall, nicht die Panne.
-  const eintraege: Array<{ schluessel: string; dateiname: string }> = []
+  const eintraege: MotivEintrag[] = []
   for (const aktion of aktionen) {
     if (aktion.bildRef === null) {
       continue
@@ -60,7 +61,11 @@ export async function bereiteVorschauVor(
     if (asset === null) {
       continue
     }
-    eintraege.push({ schluessel: aktion.bildRef, dateiname: asset.dateiname })
+    const eintrag: MotivEintrag = { bildRef: aktion.bildRef, dateiname: asset.dateiname }
+    if (aktion.bildAufbereitung !== undefined && aktion.bildAufbereitung !== null) {
+      eintrag.aufbereitung = aktion.bildAufbereitung
+    }
+    eintraege.push(eintrag)
   }
   await bereiteMotiveVor(projektId, eintraege)
 }
@@ -93,11 +98,12 @@ export async function bereiteMotivVorFuer(
   projektId: string,
   bildRef: string | null,
   assets: readonly Asset[],
+  aufbereitung?: BildAufbereitung | null,
 ): Promise<void> {
   if (bildRef === null) return
   const asset = findeBildAsset(bildRef, assets)
   if (asset === null) return
-  await bereiteMotiveVor(projektId, [{ schluessel: bildRef, dateiname: asset.dateiname }])
+  await bereiteMotiveVor(projektId, [{ bildRef, dateiname: asset.dateiname, aufbereitung }])
 }
 
 /** Hängt das Canvas in ein Anzeigeelement und skaliert es AUSSCHLIESSLICH per CSS.

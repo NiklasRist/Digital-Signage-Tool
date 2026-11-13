@@ -70,7 +70,7 @@ describe("bereiteVorschauVor (#140)", () => {
     expect(vi.mocked(stelleSchriftenBereit)).toHaveBeenCalledTimes(1)
     expect(vi.mocked(bereiteLogoVor)).toHaveBeenCalledWith(marke())
     expect(vi.mocked(bereiteMotiveVor)).toHaveBeenCalledWith('p-1', [
-      { schluessel: 'asset-1', dateiname: 'a.png' },
+      { bildRef: 'asset-1', dateiname: 'a.png' },
     ])
   })
 

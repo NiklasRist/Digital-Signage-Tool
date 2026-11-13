@@ -275,3 +275,32 @@ describe("erstelleAktion - Gestaltung je Zone und Bildausschnitt (05.11.2026, TK
     expect(antwort.wert.zonenGestaltung).toEqual({ preis: { textfarbe: "#123456" } });
   });
 });
+
+describe("erstelleAktion - Aufbereitung des Motivs (13.11.2026, FA-28 / TK 9.21.3)", () => {
+  it("uebernimmt die Werte NORMALISIERT und deckelt sie", async () => {
+    const antwort = await erstelleAktion(
+      entwurf({ bildAufbereitung: { helligkeit: 500, kontrast: 12.4, schaerfe: 0 } }),
+    );
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    // Der Regler darf nicht mehr erlauben, als der Speicher traegt - hier wird geklemmt
+    // und gerundet, und ein Nullwert faellt weg (er heisst "nichts tun").
+    expect(antwort.wert.bildAufbereitung).toEqual({ helligkeit: 100, kontrast: 12 });
+  });
+
+  it("ohne Angabe steht null - der Zustand vor dieser Fassung", async () => {
+    const antwort = await erstelleAktion(entwurf());
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.bildAufbereitung).toBeNull();
+  });
+
+  it("Fremdfelder und Unbrauchbares landen NICHT in der Aktion", async () => {
+    const antwort = await erstelleAktion(
+      entwurf({ bildAufbereitung: { helligkeit: "viel", kontrast: 20, geheim: 1 } as never }),
+    );
+    expect(antwort.ok).toBe(true);
+    if (!antwort.ok) return;
+    expect(antwort.wert.bildAufbereitung).toEqual({ kontrast: 20 });
+  });
+});

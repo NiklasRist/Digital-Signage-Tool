@@ -4,6 +4,7 @@ import type { Aktion } from '../../shared/contracts/aktion'
 import type { Asset } from '../../shared/contracts/asset'
 import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage } from '../../shared/contracts/vorlage'
+import type { MotivEintrag } from '../template-canvas/bild-laden'
 import { zeichneSegment, type SegmentBild } from '../template-canvas/zeichne-segment'
 import { bereiteMotiveVor } from '../template-canvas/bild-laden'
 import { bereiteLogoVor } from '../template-canvas/logo-laden'
@@ -76,13 +77,17 @@ export async function bereiteVorschauVor(
 
   if (projektId === null) return
 
-  const eintraege: Array<{ schluessel: string; dateiname: string }> = []
+  const eintraege: MotivEintrag[] = []
   for (const aktion of aktionen) {
     if (aktion.bildRef === null) continue
     const asset = assets.find((kandidat) => kandidat.id === aktion.bildRef)
     if (asset === undefined) continue
     if (asset.zustand === 'fehlt') continue
-    eintraege.push({ schluessel: aktion.bildRef, dateiname: asset.dateiname })
+    const eintrag: MotivEintrag = { bildRef: aktion.bildRef, dateiname: asset.dateiname }
+    if (aktion.bildAufbereitung !== undefined && aktion.bildAufbereitung !== null) {
+      eintrag.aufbereitung = aktion.bildAufbereitung
+    }
+    eintraege.push(eintrag)
   }
   if (eintraege.length === 0) return
 

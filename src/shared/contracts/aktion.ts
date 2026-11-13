@@ -73,6 +73,27 @@ export interface BildAusschnitt {
 }
 
 /**
+ * Die Aufbereitung des Motivs (13.11.2026, FA-28 / TK 9.21).
+ *
+ * WARUM DIE FELDER OPTIONAL SIND: Fehlt ein Wert oder ist er 0, gilt „unveraendert" –
+ * dieselbe Regel wie bei `BildAusschnitt`. `0` heisst in allen drei Feldern dasselbe:
+ * nichts tun. Die Grenzen stehen in `shared/aufbereitung.ts` (`AUFBEREITUNG_GRENZEN`),
+ * NICHT im Formular: Main, Editor und Zeichnen muessen dieselben Zahlen kennen.
+ *
+ * NICHT DESTRUKTIV: Diese Werte stehen an der Aktion; das Asset und seine Datei bleiben
+ * unveraendert (AD 4.13). Gerechnet wird einmal je (Asset, Einstellungen) beim
+ * Vorbereiten des Motivs, nicht je Frame (TK 9.21.4).
+ */
+export interface BildAufbereitung {
+  /** -100 … +100; 0 = unveraendert, +100 = weiss, −100 = schwarz. */
+  helligkeit?: number | null
+  /** -100 … +100; 0 = unveraendert, −100 = Flaeche, +100 = Schwarz/Weiss. */
+  kontrast?: number | null
+  /** 0 … 100; 0 = AUS (kein Rechenweg). */
+  schaerfe?: number | null
+}
+
+/**
  * Ein Effekt mit FENSTER (09.11.2026, FA-25 / TK 9.16). Er laeuft EINMAL innerhalb des
  * Segments; danach bleibt der Endzustand stehen.
  *
@@ -152,6 +173,11 @@ export interface Aktion {
   // Getrimmt, nur http/https; alles andere = null (normalisiereProduktUrl in
   // shared/produkt-url.ts). Optional, damit jede bestehende `project.json` lesbar bleibt.
   produktUrl?: string | null
+  // Aufbereitung des Motivs (13.11.2026, FA-28 / TK 9.21): Helligkeit, Kontrast, Schaerfe.
+  // Nicht destruktiv - das Asset bleibt unberuehrt, gerechnet wird beim Vorbereiten.
+  // Fehlt der Wert oder ist er neutral, ist der Bestands-Schluessel die nackte Asset-ID
+  // und das Segment byte-gleich zu vorher. Kein Pflichtfeld, keine Migration.
+  bildAufbereitung?: BildAufbereitung | null
 }
 
 /**

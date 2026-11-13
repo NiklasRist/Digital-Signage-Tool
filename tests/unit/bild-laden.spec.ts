@@ -2,6 +2,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  anzahlAufbereitete,
   bereiteMotiveVor,
   holeMotiv,
   ladeMotiv,
@@ -238,7 +239,7 @@ describe("bereiteMotiveVor und holeMotiv", () => {
   it("legt das Motiv unter seinem Schlüssel ab und gibt es synchron heraus", async () => {
     eintragen("media://p1/x.jpg", { art: "ok", breite: 800, höhe: 600 });
 
-    await bereiteMotiveVor("p1", [{ schluessel: "a1", dateiname: "x.jpg" }]);
+    await bereiteMotiveVor("p1", [{ bildRef: "a1", dateiname: "x.jpg" }]);
 
     // Kein `await`, kein Promise - genau darum gibt es diese Datei.
     const motiv = geladen(holeMotiv("a1"));
@@ -248,7 +249,7 @@ describe("bereiteMotiveVor und holeMotiv", () => {
   it("schlägt unter der Asset-ID nach, nicht unter dem Dateinamen", async () => {
     eintragen("media://p1/x.jpg", { art: "ok", breite: 1, höhe: 1 });
 
-    await bereiteMotiveVor("p1", [{ schluessel: "a1", dateiname: "x.jpg" }]);
+    await bereiteMotiveVor("p1", [{ bildRef: "a1", dateiname: "x.jpg" }]);
 
     expect(holeMotiv("x.jpg")).toEqual({ zustand: "fehlt" });
   });
@@ -260,7 +261,7 @@ describe("bereiteMotiveVor und holeMotiv", () => {
 
   it("lädt in holeMotiv auch dann nichts nach, wenn der Bestand gelehrt wurde", async () => {
     eintragen("media://p1/x.jpg", { art: "ok", breite: 1, höhe: 1 });
-    await bereiteMotiveVor("p1", [{ schluessel: "a1", dateiname: "x.jpg" }]);
+    await bereiteMotiveVor("p1", [{ bildRef: "a1", dateiname: "x.jpg" }]);
     const vorher = erzeugte.length;
 
     leereMotivBestand();
@@ -274,9 +275,9 @@ describe("bereiteMotiveVor und holeMotiv", () => {
     eintragen("media://p1/c.jpg", { art: "ok", breite: 3, höhe: 3 });
 
     await bereiteMotiveVor("p1", [
-      { schluessel: "a1", dateiname: "a.jpg" },
-      { schluessel: "a2", dateiname: "kaputt.jpg" },
-      { schluessel: "a3", dateiname: "c.jpg" },
+      { bildRef: "a1", dateiname: "a.jpg" },
+      { bildRef: "a2", dateiname: "kaputt.jpg" },
+      { bildRef: "a3", dateiname: "c.jpg" },
     ]);
 
     expect(geladen(holeMotiv("a1")).breite).toBe(2);
@@ -293,8 +294,8 @@ describe("bereiteMotiveVor und holeMotiv", () => {
     eintragen("media://p1/alt.jpg", { art: "ok", breite: 10, höhe: 10 });
     eintragen("media://p1/neu.jpg", { art: "ok", breite: 20, höhe: 20 });
 
-    await bereiteMotiveVor("p1", [{ schluessel: "a1", dateiname: "alt.jpg" }]);
-    await bereiteMotiveVor("p1", [{ schluessel: "a1", dateiname: "neu.jpg" }]);
+    await bereiteMotiveVor("p1", [{ bildRef: "a1", dateiname: "alt.jpg" }]);
+    await bereiteMotiveVor("p1", [{ bildRef: "a1", dateiname: "neu.jpg" }]);
 
     expect(geladen(holeMotiv("a1")).breite).toBe(20);
   });
@@ -306,22 +307,22 @@ describe("bereiteMotiveVor und holeMotiv", () => {
     eintragen("media://p1/neu.jpg", { art: "ok", breite: 20, höhe: 20 });
 
     await bereiteMotiveVor("p1", [
-      { schluessel: "a1", dateiname: "alt.jpg" },
-      { schluessel: "a1", dateiname: "neu.jpg" },
+      { bildRef: "a1", dateiname: "alt.jpg" },
+      { bildRef: "a1", dateiname: "neu.jpg" },
     ]);
 
     expect(geladen(holeMotiv("a1")).breite).toBe(20);
   });
 
   it.each([
-    [{ schluessel: "", dateiname: "x.jpg" }],
-    [{ schluessel: "  ", dateiname: "x.jpg" }],
-    [{ schluessel: "a1", dateiname: "" }],
+    [{ bildRef: "", dateiname: "x.jpg" }],
+    [{ bildRef: "  ", dateiname: "x.jpg" }],
+    [{ bildRef: "a1", dateiname: "" }],
   ])("wirft bei einem leeren Feld in eintraege (%o)", async (kaputt) => {
     eintragen("media://p1/gut.jpg", { art: "ok", breite: 1, höhe: 1 });
 
     await expect(
-      bereiteMotiveVor("p1", [{ schluessel: "a0", dateiname: "gut.jpg" }, kaputt]),
+      bereiteMotiveVor("p1", [{ bildRef: "a0", dateiname: "gut.jpg" }, kaputt]),
     ).rejects.toThrow();
 
     // Geprueft wird VOR dem ersten Laden: Ein Programmierfehler hinterlässt keinen halb
@@ -332,7 +333,7 @@ describe("bereiteMotiveVor und holeMotiv", () => {
 
   it("wirft bei leerer projektId", async () => {
     await expect(
-      bereiteMotiveVor(" ", [{ schluessel: "a1", dateiname: "x.jpg" }]),
+      bereiteMotiveVor(" ", [{ bildRef: "a1", dateiname: "x.jpg" }]),
     ).rejects.toThrow();
   });
 });
@@ -342,8 +343,8 @@ describe("leereMotivBestand", () => {
     eintragen("media://p1/a.jpg", { art: "ok", breite: 1, höhe: 1 });
     eintragen("media://p1/b.jpg", { art: "ok", breite: 1, höhe: 1 });
     await bereiteMotiveVor("p1", [
-      { schluessel: "a1", dateiname: "a.jpg" },
-      { schluessel: "a2", dateiname: "b.jpg" },
+      { bildRef: "a1", dateiname: "a.jpg" },
+      { bildRef: "a2", dateiname: "b.jpg" },
     ]);
 
     leereMotivBestand();
@@ -357,7 +358,7 @@ describe("leereMotivBestand", () => {
     // Bestand hier gleich wieder Motive des ALTEN Projekts.
     eintragen("media://p1/lang.jpg", { art: "haengt", breite: 7, höhe: 7 });
 
-    const lauf = bereiteMotiveVor("p1", [{ schluessel: "a1", dateiname: "lang.jpg" }]);
+    const lauf = bereiteMotiveVor("p1", [{ bildRef: "a1", dateiname: "lang.jpg" }]);
     await mikroschritte();
 
     leereMotivBestand();
@@ -372,8 +373,8 @@ describe("leereMotivBestand", () => {
     eintragen("media://p1/lang.jpg", { art: "haengt", breite: 7, höhe: 7 });
 
     const lauf = bereiteMotiveVor("p1", [
-      { schluessel: "a1", dateiname: "schnell.jpg" },
-      { schluessel: "a2", dateiname: "lang.jpg" },
+      { bildRef: "a1", dateiname: "schnell.jpg" },
+      { bildRef: "a2", dateiname: "lang.jpg" },
     ]);
     await mikroschritte();
 
@@ -389,8 +390,79 @@ describe("leereMotivBestand", () => {
     eintragen("media://p2/x.jpg", { art: "ok", breite: 9, höhe: 9 });
 
     leereMotivBestand();
-    await bereiteMotiveVor("p2", [{ schluessel: "b1", dateiname: "x.jpg" }]);
+    await bereiteMotiveVor("p2", [{ bildRef: "b1", dateiname: "x.jpg" }]);
 
     expect(geladen(holeMotiv("b1")).breite).toBe(9);
+  });
+});
+
+// Aufbereitung (13.11.2026, FA-28 / TK 9.21.4): Der Bestand fuehrt aufbereitete Puffer
+// unter einem eigenen Schluessel - und zwar JEDEN nur EINMAL. Ohne diese Deckelung
+// traege jeder Reglerzug denselben Schluessel ein weiteres Mal ein, die Obergrenze
+// zaehlte doppelt, und beim Aufraeumen koennte genau das Bild verdrängt werden, das
+// gerade gezeigt wird.
+describe("Aufbereitung im Motiv-Bestand", () => {
+  class Flaeche {
+    constructor(
+      public width: number,
+      public height: number,
+    ) {}
+    getContext(): {
+      drawImage: () => void;
+      getImageData: (x: number, y: number, w: number, h: number) => { data: Uint8ClampedArray };
+      putImageData: () => void;
+    } {
+      return {
+        drawImage: () => undefined,
+        getImageData: (_x: number, _y: number, w: number, h: number) => ({
+          data: new Uint8ClampedArray(w * h * 4),
+        }),
+        putImageData: () => undefined,
+      };
+    }
+  }
+
+  const globalMitCanvas = globalThis as unknown as {
+    OffscreenCanvas?: unknown;
+    createImageBitmap?: unknown;
+  };
+
+  beforeEach(() => {
+    globalMitCanvas.OffscreenCanvas = Flaeche;
+    globalMitCanvas.createImageBitmap = async () => ({ kuenstlich: true });
+  });
+
+  afterAll(() => {
+    delete globalMitCanvas.OffscreenCanvas;
+    delete globalMitCanvas.createImageBitmap;
+  });
+
+  it("legt dasselbe (Asset, Einstellungen) nur EINMAL ab - auch nach acht Vorbereitungen", async () => {
+    eintragen("media://p1/bild.jpg", { art: "ok", breite: 4, höhe: 4 });
+
+    for (let i = 0; i < 8; i += 1) {
+      await bereiteMotiveVor("p1", [
+        { bildRef: "a1", dateiname: "bild.jpg", aufbereitung: { helligkeit: 60 } },
+      ]);
+    }
+
+    expect(anzahlAufbereitete()).toBe(1);
+    // Und das Bild ist danach immer noch da - nicht verdrängt worden.
+    expect(holeMotiv("a1#h60").zustand).toBe("geladen");
+    // Ohne Aufbereitung liegt es unter der nackten ID - das ist der alte Weg.
+    expect(holeMotiv("a1").zustand).toBe("fehlt");
+  });
+
+  it("legt zwei VERSCHIEDENE Einstellungen als zwei Motive ab", async () => {
+    eintragen("media://p1/bild.jpg", { art: "ok", breite: 4, höhe: 4 });
+
+    await bereiteMotiveVor("p1", [
+      { bildRef: "a1", dateiname: "bild.jpg", aufbereitung: { helligkeit: 60 } },
+      { bildRef: "a1", dateiname: "bild.jpg", aufbereitung: { kontrast: 20 } },
+    ]);
+
+    expect(anzahlAufbereitete()).toBe(2);
+    expect(holeMotiv("a1#h60").zustand).toBe("geladen");
+    expect(holeMotiv("a1#k20").zustand).toBe("geladen");
   });
 });
