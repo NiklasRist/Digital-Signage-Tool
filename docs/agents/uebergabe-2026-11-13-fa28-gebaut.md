@@ -110,7 +110,7 @@ zwei Einträge).
 - **17 Commits** vor `origin/main` (der Übergabe-Commit dieser Datei ist der achtzehnte — die Zahl
   wächst mit jedem Doku-Commit, mit `git log --oneline origin/main..HEAD` zählen), Arbeitsbaum
   sauber, **nicht gepusht**.
-- **#473 IST KOMMENTIERT UND GESCHLOSSEN** (`completed`, 13.11.2026 11:56) — mit dem DoD-Beleg, den
+- **#473 IST KOMMENTIERT UND GESCHLOSSEN** (`completed`, 13.11.2026) — mit dem DoD-Beleg, den
   Treiber-Zahlen, den vier Gegenproben und den drei offenen Punkten im Kommentar.
 - **Offen:** **#472** (FA-30), **#474** (FA-29, setzt #473 voraus), **#466** (Referenzlauf,
   Phase 1 mit Stoppuhr), **#458** (überholt).
