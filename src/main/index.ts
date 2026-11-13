@@ -7,8 +7,9 @@
 //
 // STAND HEUTE (07.10.2026, nach #309): Verdrahtet ist alles, dessen Funktion einen
 // echten Rumpf hat - nachgeschlagen in der jeweils definierenden Datei, nicht im Issue:
-//   - der EINE Protokoll-Registrierungs-Aufruf mit [MEDIA_SCHEMA (#9/#321), MARKEN_SCHEMA (#290)],
-//     Schritt 1; plus die beiden Protokoll-Handler (#9, #290, Schritt 4 und 4b)
+//   - der EINE Protokoll-Registrierungs-Aufruf mit [MEDIA_SCHEMA (#9/#321), MARKEN_SCHEMA (#290),
+//     MODELL_SCHEMA (#474)], Schritt 1; plus die drei Protokoll-Handler (#9, #290, #474,
+//     Schritt 4, 4b und 4c)
 //   - Schritt 5, die Positionen 1 (#76), 2 (#153), 3 (#240, mit #274), 4 (#77),
 //     5 (#93), 6 (#92), 7 (#109), 8 (#255, mit #274), 9 (#189), 10 (#190), 11 (#334)
 //     und 12 (#304) sowie die dreizehnte Anmeldung 13 (#323, Nachzug 07.10.) -
@@ -61,6 +62,7 @@ import { verdrahteMedienIPC } from "./media-service/ipc-verdrahtung";
 import { registriereProduktfotoHandler } from "./produktfoto/handler-registrierung"; // #470
 import { verdrahteProduktAbrufIPC } from "./ipc-gateway/produkt-abruf-verdrahtung"; // #470
 import { MARKEN_SCHEMA, registriereMarkenProtokollHandler } from "./marken-store/marken-protokoll"; // #290
+import { MODELL_SCHEMA, registriereModellProtokollHandler } from "./modell-protokoll"; // #474
 import { flushBestand as flushMarkenBestand } from "./marken-store/schreibe-marken"; // #277, ALIAS-PFLICHT
 import { pruefeBeendenUndFlush, flushesBeimBeendenOhneDialogAus } from "./beenden-ablauf"; // #336, #427
 import { menueVorlage } from "./anwendungs-menue"; // #431
@@ -119,7 +121,17 @@ function devServerUrl(): string | undefined {
  */
 const CSP_GEMEINSAM = [
   "default-src 'self'",
-  "script-src 'self'",
+  // `modell:` in script-src (#474): ONNX Runtime Web laedt seinen WASM-Lader als
+  // ES-Modul ueber `modell://` (gemessen 13.11.2026). Es sind DREI feste Dateien, die
+  // dieses Schema ausliefert - ein Skript von dort ist so eng wie eines von `self`.
+  //
+  // `'wasm-unsafe-eval'` (#474): OHNE diesen Wert verweigert Chromium JEDE
+  // WebAssembly-Kompilierung ("Compiling or instantiating WebAssembly module violates
+  // the following Content Security policy directive ... 'unsafe-eval' is not allowed") -
+  // GEMESSEN am 13.11.2026. Der Wert erlaubt AUSSCHLIESSLICH WebAssembly; `eval()` und
+  // `new Function()` bleiben verboten. Die Alternative waere `'unsafe-eval'` - eine
+  // Erlaubnis fuer beliebigen dynamischen Code, also genau das Gegenteil dieser CSP.
+  "script-src 'self' modell: 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: media:",
   "media-src 'self' blob: media:",
@@ -163,8 +175,13 @@ const CSP_GEMEINSAM = [
 // freischaltet") gilt nicht mehr: Mit `corsEnabled` schaltet der Eintrag den Weg frei.
 // Die Buehne (`preview-player/video.tsx`) bleibt trotzdem bei der direkten URL - sie
 // zeigt nur an und braucht kein ungetaintetes Canvas.
-const CSP_DEV = [...CSP_GEMEINSAM, "connect-src 'self' media: marken: ws:"].join("; ");
-const CSP_PROD = [...CSP_GEMEINSAM, "connect-src 'self' media: marken:"].join("; ");
+// `modell:` in connect-src (#474, FA-29): Das Freistell-Modell und die WASM-Runtime
+// werden per `fetch("modell://…")` geholt (src/renderer/template-canvas/freistellen.ts).
+// Dieselbe Doppelung wie bei `media:`/`marken:`: Eintrag hier UND `corsEnabled` am
+// Schema (src/main/modell-protokoll.ts) - ohne das Privileg blockiert Chromium den
+// fetch vor dem Handler, ohne den Eintrag meldet es "Refused to connect".
+const CSP_DEV = [...CSP_GEMEINSAM, "connect-src 'self' media: marken: modell: ws:"].join("; ");
+const CSP_PROD = [...CSP_GEMEINSAM, "connect-src 'self' media: marken: modell:"].join("; ");
 
 /**
  * Haengt die CSP als Antwort-Header an jede geladene Ressource.
@@ -290,7 +307,9 @@ async function pruefeBinariesOderBrichAb(): Promise<boolean> {
 //
 // Die Konstanten werden UNVERAENDERT durchgereicht - kein Feld ergaenzt, keins
 // ueberschrieben (corsEnabled bleibt bewusst ungesetzt, Experiment in #290).
-protocol.registerSchemesAsPrivileged([MEDIA_SCHEMA, MARKEN_SCHEMA]);
+// MODELL_SCHEMA (#474, 13.11.2026) steht HINTEN: Jedes kuenftige Protokoll reiht sich
+// hinten ein, und `modell://` bedient zwei FESTE Dateien (Modell und WASM-Runtime).
+protocol.registerSchemesAsPrivileged([MEDIA_SCHEMA, MARKEN_SCHEMA, MODELL_SCHEMA]);
 
 // SCHRITT 2: erzwingeEinzelInstanz(datenOrt, beiZweitemStart) - #51,
 //            src/main/project-store/einzel-instanz.ts
@@ -371,6 +390,11 @@ void app.whenReady().then(async () => {
   // Signatur-Kommentar #290). Synchron, kein await, kein try/catch (wie alle
   // Anmeldungen hier).
   registriereMarkenProtokollHandler();
+
+  // SCHRITT 4c: `modell://` (#474) - das mitgelieferte Freistell-Modell und die
+  // WASM-Runtime von ONNX Runtime Web. Dieselbe Reihenfolge-Regel wie 4/4b: nach
+  // app.whenReady(), vor dem Laden des Fensters.
+  registriereModellProtokollHandler();
 
   setzeCspHeader();
 

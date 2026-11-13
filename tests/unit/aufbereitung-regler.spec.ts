@@ -22,25 +22,36 @@ const GERAETE: Array<{ wurzel: Root; behaelter: HTMLDivElement }> = []
 interface Geraet {
   behaelter: HTMLDivElement
   aenderungen: Array<BildAufbereitung | null>
+  /** SEIT 13.11.2026 (FA-29): was der Freistell-Schalter in den Entwurf gibt. */
+  freistellAenderungen: boolean[]
 }
 
-function montiere(aufbereitung: BildAufbereitung | null): Geraet {
+function montiere(
+  aufbereitung: BildAufbereitung | null,
+  freistellen: boolean | null = null,
+): Geraet {
   const behaelter = document.createElement('div')
   document.body.appendChild(behaelter)
   const wurzel = createRoot(behaelter)
   GERAETE.push({ wurzel, behaelter })
   const aenderungen: Array<BildAufbereitung | null> = []
+  const freistellAenderungen: boolean[] = []
   act(() => {
     wurzel.render(
       createElement(AufbereitungRegler, {
         aufbereitung,
+        freistellen,
+        rechnet: false,
         aufAendern: (wert) => {
           aenderungen.push(wert)
+        },
+        aufFreistellen: (wert) => {
+          freistellAenderungen.push(wert)
         },
       }),
     )
   })
-  return { behaelter, aenderungen }
+  return { behaelter, aenderungen, freistellAenderungen }
 }
 
 afterEach(() => {

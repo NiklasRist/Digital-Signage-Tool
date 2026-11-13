@@ -8,7 +8,7 @@ import { planeAutoSpeicherung } from './auto-speichern'             // #47
 import { mitD1Lock } from './d1-lock'                               // #32
 import { normalisiereEffekte } from '../../shared/effekte'
 import { normalisiereProduktUrl } from '../../shared/produkt-url'
-import { normalisiereAufbereitung } from '../../shared/aufbereitung'
+import { normalisiereAufbereitung, normalisiereFreistellen } from '../../shared/aufbereitung'
 import {
   normalisiereBildAusschnitt,
   normalisiereZonenGestaltung,
@@ -263,6 +263,13 @@ export async function bearbeiteAktion(
     // "unveraendert"), ein nicht mitgeschicktes Feld laesst sie stehen.
     if (aktionsdaten.bildAufbereitung !== undefined) {
       aktion.bildAufbereitung = normalisiereAufbereitung(aktionsdaten.bildAufbereitung)
+    }
+
+    // SEIT 13.11.2026 (FA-29 / TK 9.21.5): der Freistell-Schalter. Ein mitgeschicktes
+    // `false` LEERT ihn (`null`) - das ist der Weg zurueck auf "Rechteck"; ein nicht
+    // mitgeschicktes Feld laesst ihn stehen.
+    if (aktionsdaten.freistellen !== undefined) {
+      aktion.freistellen = normalisiereFreistellen(aktionsdaten.freistellen)
     }
 
     // SEIT 09.11.2026 (TK 9.16.1): Effekte. Wie die Gestaltung NORMALISIERT uebernommen;

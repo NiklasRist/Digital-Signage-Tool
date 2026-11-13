@@ -3,7 +3,7 @@
 import { erzeugeId } from '../../shared/contracts/id'
 import { normalisiereEffekte } from '../../shared/effekte'
 import { normalisiereProduktUrl } from '../../shared/produkt-url'
-import { normalisiereAufbereitung } from '../../shared/aufbereitung'
+import { normalisiereAufbereitung, normalisiereFreistellen } from '../../shared/aufbereitung'
 import {
   normalisiereBildAusschnitt,
   normalisiereZonenGestaltung,
@@ -197,6 +197,12 @@ export async function erstelleAktion(
       // vor dieser Fassung. Auch hier gilt die Lehre aus #464: Feld im Typ, im Store
       // vergessen - dann ist es gespeichert und trotzdem nie da.
       bildAufbereitung: normalisiereAufbereitung(aktionsdaten.bildAufbereitung),
+
+      // SEIT 13.11.2026 (FA-29 / TK 9.21.5): der Freistell-Schalter. Gespeichert wird
+      // `true` oder `null` - `false` waere derselbe Zustand mit einer zweiten Schreibweise
+      // (normalisiereFreistellen). Dieselbe Lehre wie bei `bildAufbereitung`: Feld im Typ,
+      // im Store vergessen - dann ist es gespeichert und trotzdem nie da.
+      freistellen: normalisiereFreistellen(aktionsdaten.freistellen),
 
       // SEIT 09.11.2026 (TK 9.16.1): der Effekt-Satz. NORMALISIERT uebernommen wie die
       // Gestaltung; `null` heisst "kein Effekt" und ist der Zustand von heute (9.16.4).

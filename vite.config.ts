@@ -1,4 +1,65 @@
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import path from "node:path";
+
 import { defineConfig } from "vite";
+
+import type { Plugin } from "vite";
+
+/**
+ * Kopiert die WASM-Runtime von ONNX Runtime Web in den Renderer-Ordner (#474, FA-29).
+ *
+ * WARUM EIN KOPIERSCHRITT UND KEIN `import …?url`: Das gepackte Fenster laedt die Seite
+ * ueber `file://` (#3). Ein `fetch` auf eine relative Datei ist dort blockiert - der
+ * Renderer holt Modell UND Runtime deshalb ueber `modell://`
+ * (src/main/modell-protokoll.ts). Der Main wiederum liest sie aus dem BEREITS GEBAUTEN
+ * Renderer-Ordner; also muss die Datei dort liegen.
+ *
+ * `onnxruntime-web` ist eine devDependency und wird NICHT von electron-builder in das
+ * Paket kopiert (`files: dist/**`). Genau deshalb landet hier nur die EINE Variante, die
+ * der Renderer braucht - das Paket enthaelt nicht die vier weiteren WASM-Fassungen des
+ * npm-Pakets.
+ */
+function onnxLaufzeitKopieren(): Plugin {
+  // ZWEI Dateien: die WASM-Runtime und ihr Lader (`.mjs`). ONNX Runtime Web holt beide
+  // ueber `modell://` (src/main/modell-protokoll.ts) - auch der Lader ist ein eigenes
+  // ES-Modul, das der Bundler NICHT einbettet (gemessen 13.11.2026).
+  const dateien = ["ort-wasm-simd-threaded.wasm", "ort-wasm-simd-threaded.mjs"];
+  return {
+    name: "onnx-laufzeit-kopieren",
+    apply: "build",
+    generateBundle(_optionen, buendel) {
+      // KEINE ZWEITE KOPIE DER WASM-DATEI IM BUENDEL.
+      //
+      // ONNX Runtime Web enthaelt `new URL('ort-wasm-simd-threaded.wasm', import.meta.url)`.
+      // Vite loest das statisch auf und legt die 14,8 MB als eigenes Asset unter `assets/`
+      // ab - GEMESSEN am 13.11.2026: Damit lagen 29,7 MB WASM im Paket statt 14,8 MB, und
+      // der Zaun aus TK 9.21.5 (<= 25 MB Zusatzgewicht) war gerissen.
+      //
+      // Die Kopie wird NICHT gebraucht: `wasmPaths` wird vor dem ersten Lauf auf
+      // `modell://` gesetzt (src/renderer/template-canvas/freistellen.ts), und dann holt
+      // ONNX Runtime Web die Datei ueber das Protokoll. Was hier liegt, wird nie geladen.
+      for (const name of Object.keys(buendel)) {
+        if (name.endsWith(".wasm")) delete buendel[name];
+      }
+    },
+    closeBundle() {
+      for (const name of dateien) {
+        const quelle = path.resolve("node_modules/onnxruntime-web/dist", name);
+        // Laut und frueh: Ohne diese Dateien scheitert das Freistellen erst im Fenster,
+        // und zwar als „nicht verfuegbar" - ein Zustand, den niemand als Buildfehler erkennt.
+        if (!existsSync(quelle)) {
+          throw new Error(
+            `onnx-laufzeit-kopieren: ${quelle} fehlt. "npm install" ausfuehren - ohne die ` +
+              "Runtime ist das Freistellen im gepackten Paket nicht verfuegbar.",
+          );
+        }
+        const ziel = path.resolve("dist/renderer", name);
+        mkdirSync(path.dirname(ziel), { recursive: true });
+        copyFileSync(quelle, ziel);
+      }
+    },
+  };
+}
 
 // Renderer-Build. Vite sieht AUSSCHLIESSLICH den Renderer - Main und Preload baut
 // esbuild in scripts/build-main.mjs.
@@ -22,6 +83,7 @@ import { defineConfig } from "vite";
 // Importe aus src/renderer/** auf ffmpeg-static und die Node-Bausteine verbietet -
 // vermerkt in #193 (ESLint-Setup). Bis dahin: nicht darauf verlassen.
 export default defineConfig({
+  plugins: [onnxLaufzeitKopieren()],
   // Relative Pfade, weil das gepackte Fenster die Seite ueber file:// laedt (#3).
   // Mit dem Standard "/" wuerde der Browser unter file:// im Wurzelverzeichnis des
   // Laufwerks suchen und nichts finden.

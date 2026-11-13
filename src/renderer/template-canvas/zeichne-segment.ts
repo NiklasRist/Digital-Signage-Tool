@@ -258,8 +258,11 @@ export function zeichneSegment(
         // SEIT 13.11.2026 (FA-28 / TK 9.21.4): EINE Nachschlagestelle. Der Bestands-Schluessel
         // traegt die Aufbereitung; ohne Einstellung ist er die nackte Asset-ID - derselbe Weg
         // wie vorher.
+        // SEIT 13.11.2026 (FA-29 / TK 9.21.5): Der Schalter gehoert in DENSELBEN Schluessel -
+        // `bereiteMotiveVor` legt das freigestellte Bild unter ebendiesem ab. Die
+        // Nachschlagestelle bleibt EINE; ein zweiter Zeichenweg entsteht nicht.
         holeMotiv(
-          motivSchluessel(aktion.bildRef as string, aktion.bildAufbereitung),
+          motivSchluessel(aktion.bildRef as string, aktion.bildAufbereitung, aktion.freistellen),
         ),
         markeDieserZone,
         aktion,

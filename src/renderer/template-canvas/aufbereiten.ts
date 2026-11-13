@@ -20,6 +20,7 @@
 //    Helligkeit nicht an den Raendern ausfransen.
 
 import { AUFBEREITUNG_SCHRITTE, normalisiereAufbereitung } from '../../shared/aufbereitung'
+import { stelleFrei } from './freistellen'
 
 import type { BildAufbereitung } from '../../shared/contracts/aktion'
 
@@ -131,6 +132,13 @@ export function wendeAufbereitungAn(
   if (daten.length !== breite * hoehe * 4) return
 
   for (const schritt of AUFBEREITUNG_SCHRITTE) {
+    if (schritt === 'freistellen') {
+      // HIER PASSIERT NICHTS, UND DAS IST ABSICHT: Der Schritt braucht ein Modell und ist
+      // asynchron (FA-29, 9.21.5). Er laeuft in `bereiteAuf` VOR dieser Funktion; die
+      // Reihenfolge steht trotzdem nur in `AUFBEREITUNG_SCHRITTE`. Ihn hier zu wiederholen,
+      // hiesse zwei Rechenwege fuer dieselbe Zusage.
+      continue
+    }
     if (schritt === 'helligkeit') {
       const h = sauber.helligkeit
       if (typeof h === 'number') helligkeitAnwenden(daten, h)
@@ -157,8 +165,12 @@ export async function bereiteAuf(
   breite: number,
   hoehe: number,
   aufbereitung: BildAufbereitung | null | undefined,
+  freistellen = false,
 ): Promise<ImageBitmap | null> {
-  if (normalisiereAufbereitung(aufbereitung) === null) return null
+  // NICHTS ZU TUN heisst: kein Durchlauf, kein Puffer, keine Gelegenheit fuer
+  // Rundungsunterschiede (die Zusage aus 9.21.4). Nur `freistellen === true` weckt die
+  // Rechnung auch ohne Tonwerte - sonst waere der Schalter wirkungslos.
+  if (!freistellen && normalisiereAufbereitung(aufbereitung) === null) return null
   if (!Number.isInteger(breite) || !Number.isInteger(hoehe) || breite <= 0 || hoehe <= 0) {
     return null
   }
@@ -166,11 +178,32 @@ export async function bereiteAuf(
     return null
   }
   try {
+    // SCHRITT 1 DER REIHENFOLGE (9.21.4): Freistellen. Faellt es aus, wird das ROHE Bild
+    // weiterverarbeitet - ein optionaler Schalter darf kein Bild verschwinden lassen
+    // (9.21.5: „ein Ausfall ist ein Zustand"). Der Editor sperrt den Schalter dann selbst.
+    let grundlage: CanvasImageSource = quelle
+    if (freistellen) {
+      const bitmap = await createImageBitmap(quelle)
+      const frei = await stelleFrei(bitmap, breite, hoehe)
+      bitmap.close()
+      if (frei.status === 'ok') {
+        grundlage = frei.bild
+      } else if (normalisiereAufbereitung(aufbereitung) === null) {
+        // NICHTS ZU TUN: Ohne Tonwerte war das Freistellen der EINZIGE Grund zu rechnen.
+        // Jetzt noch eine zweite Kopie des rohen Bildes anzulegen, waere ein Puffer ohne
+        // Wirkung - der Aufrufer legt das rohe Motiv unter demselben Schluessel ab
+        // (9.21.5: „das Bild bleibt unfreigestellt"). `null` heisst genau das.
+        return null
+      }
+    }
+
     const flaeche = new OffscreenCanvas(breite, hoehe)
     const zeichner = flaeche.getContext('2d')
     if (zeichner === null) return null
-    zeichner.drawImage(quelle, 0, 0, breite, hoehe)
+    zeichner.drawImage(grundlage, 0, 0, breite, hoehe)
     const bild = zeichner.getImageData(0, 0, breite, hoehe)
+    // SCHRITTE 2 BIS 4: Helligkeit, Kontrast, Schaerfe. Die Schleife ueberspringt
+    // `freistellen`, weil er oben schon gelaufen ist.
     wendeAufbereitungAn(bild.data, breite, hoehe, aufbereitung)
     zeichner.putImageData(bild, 0, 0)
     return await createImageBitmap(flaeche)

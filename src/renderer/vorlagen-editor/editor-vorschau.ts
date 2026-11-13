@@ -6,7 +6,7 @@ import type { Marke } from '../../shared/contracts/marke'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import type { MotivEintrag } from '../template-canvas/bild-laden'
 import { zeichneSegment, type SegmentBild } from '../template-canvas/zeichne-segment'
-import { bereiteMotiveVor } from '../template-canvas/bild-laden'
+import { bereiteMotiveVor, motivEintragFuer } from '../template-canvas/bild-laden'
 import { bereiteLogoVor } from '../template-canvas/logo-laden'
 import { stelleSchriftenBereit } from '../template-canvas/schriften'
 
@@ -83,11 +83,7 @@ export async function bereiteVorschauVor(
     const asset = assets.find((kandidat) => kandidat.id === aktion.bildRef)
     if (asset === undefined) continue
     if (asset.zustand === 'fehlt') continue
-    const eintrag: MotivEintrag = { bildRef: aktion.bildRef, dateiname: asset.dateiname }
-    if (aktion.bildAufbereitung !== undefined && aktion.bildAufbereitung !== null) {
-      eintrag.aufbereitung = aktion.bildAufbereitung
-    }
-    eintraege.push(eintrag)
+    eintraege.push(motivEintragFuer(aktion, asset.dateiname))
   }
   if (eintraege.length === 0) return
 

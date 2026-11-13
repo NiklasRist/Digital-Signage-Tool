@@ -26,7 +26,7 @@ import type { SegmentBild } from '../template-canvas/zeichne-segment'
 
 import { stelleSchriftenBereit } from '../template-canvas/schriften'
 import { bereiteLogoVor } from '../template-canvas/logo-laden'
-import { bereiteMotiveVor } from '../template-canvas/bild-laden'
+import { bereiteMotiveVor, motivEintragFuer } from '../template-canvas/bild-laden'
 import type { MotivEintrag } from '../template-canvas/bild-laden'
 import { findeBildAsset } from './bibliothek'
 import { zeichneSegment } from '../template-canvas/zeichne-segment'
@@ -61,11 +61,7 @@ export async function bereiteVorschauVor(
     if (asset === null) {
       continue
     }
-    const eintrag: MotivEintrag = { bildRef: aktion.bildRef, dateiname: asset.dateiname }
-    if (aktion.bildAufbereitung !== undefined && aktion.bildAufbereitung !== null) {
-      eintrag.aufbereitung = aktion.bildAufbereitung
-    }
-    eintraege.push(eintrag)
+    eintraege.push(motivEintragFuer(aktion, asset.dateiname))
   }
   await bereiteMotiveVor(projektId, eintraege)
 }
@@ -99,11 +95,16 @@ export async function bereiteMotivVorFuer(
   bildRef: string | null,
   assets: readonly Asset[],
   aufbereitung?: BildAufbereitung | null,
+  freistellen?: boolean,
 ): Promise<void> {
   if (bildRef === null) return
   const asset = findeBildAsset(bildRef, assets)
   if (asset === null) return
-  await bereiteMotiveVor(projektId, [{ bildRef, dateiname: asset.dateiname, aufbereitung }])
+  // Auch hier EINE Stelle fuer beide Felder (`motivEintragFuer`) - sonst vergisst der
+  // naechste Umbau das Freistellen, und die Vorschau zeigte das Rechteck.
+  await bereiteMotiveVor(projektId, [
+    motivEintragFuer({ bildRef, bildAufbereitung: aufbereitung, freistellen }, asset.dateiname),
+  ])
 }
 
 /** Hängt das Canvas in ein Anzeigeelement und skaliert es AUSSCHLIESSLICH per CSS.

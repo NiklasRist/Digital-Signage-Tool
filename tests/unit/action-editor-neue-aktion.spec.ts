@@ -573,6 +573,50 @@ describe('Anlegen mit Vorschau und Bild', () => {
 })
 
 // ---------------------------------------------------------------------------
+// BEFUND 13.11.2026 (vom Treiber aufgedeckt, #474): Der Entwurf ist EIN Zustand, aber
+// `waehleBild` ist asynchron. Es merkte sich den Entwurf VOR dem Warten und schrieb ihn
+// danach mit `{...entwurf, bildRef}` zurueck - ein Feld, das WAEHREND des Ladens gesetzt
+// wurde, war damit weg. Am Fenster sah das so aus: Titel tippen, Bild waehlen, „Anlegen"
+// - und der Knopf tat STILL nichts, weil der Entwurf wieder ohne Titel dastand.
+// ---------------------------------------------------------------------------
+describe('Befund 13.11.2026: ein Feld WAEHREND des Bildladens geht nicht verloren', () => {
+  it('der Titel ueberlebt eine Bildwahl, die im selben Takt ausgeloest wird', async () => {
+    doppel.antwort = { ok: true, wert: aktion('neu-1', 'Titel bleibt') }
+    const vorlagen = [vorlageMitZonen('ganz', null, [zone('bild')])]
+    vi.mocked(ladeWaehlbareVorlagen).mockResolvedValue({ ok: true, wert: vorlagen })
+    const { behaelter } = editor({ ...projekt([]), assets: [bildAsset('a1')] }, vorlagen)
+    await laufen()
+
+    await klicke(behaelter, 'aktion-neu')
+    await laufen()
+
+    const titel = behaelter.querySelector<HTMLInputElement>('[data-testid="aktion-titel"]')
+    const wahl = behaelter.querySelector<HTMLSelectElement>('[data-testid="aktion-bild-wahl"]')
+    if (titel === null || wahl === null) throw new Error('Felder fehlen')
+
+    // BEIDE Ereignisse in EINEM `act` und OHNE Neu-Rendern dazwischen: genau die Lage,
+    // in der die Bildwahl den Entwurf OHNE den Titel in der Hand haelt.
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(titel, 'Titel bleibt')
+      titel.dispatchEvent(new Event('input', { bubbles: true }))
+      titel.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(wahl, 'a1')
+      wahl.dispatchEvent(new Event('change', { bubbles: true }))
+      for (let i = 0; i < 6; i += 1) await Promise.resolve()
+    })
+
+    await klickeAnlegen(behaelter)
+
+    const aufrufe = projektAufrufe()
+    expect(aufrufe).toHaveLength(1)
+    const nutzlast = aufrufe[0]?.nutzlast as { aktionsdaten: { titel: string; bildRef: string | null } }
+    // Der Titel muss den Entwurf ueberlebt haben - und das Bild auch.
+    expect(nutzlast.aktionsdaten.titel).toBe('Titel bleibt')
+    expect(nutzlast.aktionsdaten.bildRef).toBe('a1')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // Felder richten sich nach der Vorlage / echter Farbwaehler (03.11.2026)
 // ---------------------------------------------------------------------------
 

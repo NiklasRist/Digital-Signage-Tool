@@ -88,9 +88,11 @@ describe('motivSchluessel (FA-28, TK 9.21.4)', () => {
   })
 })
 
-describe('die Reihenfolge ist EINE Quelle (FA-28, TK 9.21.4)', () => {
-  it('nennt die drei Schritte in der festgelegten Folge', () => {
-    expect(AUFBEREITUNG_SCHRITTE).toEqual(['helligkeit', 'kontrast', 'schaerfe'])
+describe('die Reihenfolge ist EINE Quelle (FA-28/FA-29, TK 9.21.4)', () => {
+  it('nennt die vier Schritte in der festgelegten Folge', () => {
+    // SEIT 13.11.2026 (FA-29): „Freistellen → Helligkeit → Kontrast → Schaerfe". Die
+    // drei anderen stehen unveraendert dahinter - der Schritt kam VORNE dazu.
+    expect(AUFBEREITUNG_SCHRITTE).toEqual(['freistellen', 'helligkeit', 'kontrast', 'schaerfe'])
   })
 
   it('haelt die Grenzen aus dem Vertrag', () => {

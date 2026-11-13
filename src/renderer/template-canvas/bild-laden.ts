@@ -312,6 +312,41 @@ export interface MotivEintrag {
   bildRef: string
   dateiname: string
   aufbereitung?: BildAufbereitung | null
+  /** Seit 13.11.2026 (FA-29 / TK 9.21.5): `true` rechnet das Modell EINMAL je Bild. */
+  freistellen?: boolean
+}
+
+/**
+ * Der Eintrag fuer `bereiteMotiveVor` aus einer Aktion – EINE Stelle fuer BEIDE Felder.
+ *
+ * WARUM ALS FUNKTION: Fuenf Aufrufer (Bibliothek, Zeitleiste, Live-Vorschau, Renderer-
+ * Vorbereitung, Vorlagen-Editor) bauen diesen Eintrag. Solange jeder die beiden Felder
+ * selbst anhaengt, vergisst der naechste Umbau genau eines davon – und das Bild ist dann
+ * gespeichert, aber nie aufbereitet. Der Parameter ist STRUKTURELL (`bildRef` +
+ * die zwei Felder), damit diese Datei weder `Aktion` noch den Editor kennen muss.
+ */
+export function motivEintragFuer(
+  aktion: {
+    bildRef: string | null
+    bildAufbereitung?: BildAufbereitung | null
+    freistellen?: boolean | null
+  },
+  dateiname: string,
+): MotivEintrag {
+  // Der Typ laesst `null` zu, weil `Aktion.bildRef` es zulaesst; die AUFRUFER pruefen
+  // vorher. Ein leerer Bestands-Schluessel waere ein Programmierfehler und kein Datenfall
+  // - dieselbe Regel wie bei `pruefeNichtLeer` darunter.
+  if (aktion.bildRef === null) {
+    throw new Error('motivEintragFuer: Aktions-Inhalt ohne bildRef.')
+  }
+  const eintrag: MotivEintrag = { bildRef: aktion.bildRef, dateiname }
+  // Nur setzen, wenn es etwas zu setzen gibt: ein Feld mit `undefined` waere im Vergleich
+  // und in den Tests ein Wert, obwohl „keine Aufbereitung" gemeint ist.
+  if (aktion.bildAufbereitung !== undefined && aktion.bildAufbereitung !== null) {
+    eintrag.aufbereitung = aktion.bildAufbereitung
+  }
+  if (aktion.freistellen === true) eintrag.freistellen = true
+  return eintrag
 }
 
 interface VorbereitetesMotiv {
@@ -334,12 +369,21 @@ async function bereiteEinenVor(
   projektId: string,
   eintrag: MotivEintrag,
 ): Promise<VorbereitetesMotiv | null> {
-  const schluessel = motivSchluessel(eintrag.bildRef, eintrag.aufbereitung)
+  // SEIT 13.11.2026 (FA-29): `freistellen` gehoert in den SCHLUESSEL (9.21.3) - sonst
+  // faende das Zeichnen das freigestellte Bild nicht und zeichnete still das Rechteck.
+  const freistellen = eintrag.freistellen === true
+  const schluessel = motivSchluessel(eintrag.bildRef, eintrag.aufbereitung, freistellen)
   const roh = await ladeMotiv(projektId, eintrag.dateiname)
-  if (roh.zustand !== 'geladen' || istAufbereitungNeutral(eintrag.aufbereitung)) {
+  if (roh.zustand !== 'geladen' || (!freistellen && istAufbereitungNeutral(eintrag.aufbereitung))) {
     return { schluessel, motiv: roh, aufbereitet: false, breite: 0, höhe: 0 }
   }
-  const aufbereitet = await bereiteAuf(roh.bild, roh.breite, roh.höhe, eintrag.aufbereitung)
+  const aufbereitet = await bereiteAuf(
+    roh.bild,
+    roh.breite,
+    roh.höhe,
+    eintrag.aufbereitung,
+    freistellen,
+  )
   if (aufbereitet === null) {
     return { schluessel, motiv: roh, aufbereitet: false, breite: 0, höhe: 0 }
   }

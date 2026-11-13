@@ -178,6 +178,12 @@ export interface Aktion {
   // Fehlt der Wert oder ist er neutral, ist der Bestands-Schluessel die nackte Asset-ID
   // und das Segment byte-gleich zu vorher. Kein Pflichtfeld, keine Migration.
   bildAufbereitung?: BildAufbereitung | null
+  // Freistellen (13.11.2026, FA-29 / TK 9.21.5): `true` heisst „transparenter Hintergrund
+  // ueber das mitgelieferte Modell". `false`, `null` und „Feld fehlt" bedeuten dasselbe:
+  // nicht freistellen - es gibt genau EINEN eingeschalteten Zustand, damit zwei Wahrheiten
+  // fuer „aus" nicht auseinanderlaufen. Optional, damit jede bestehende `project.json`
+  // ohne Migration lesbar bleibt; das Original-Asset bleibt unberuehrt (9.21.7).
+  freistellen?: boolean | null
 }
 
 /**

@@ -71,6 +71,13 @@ export function unterschiede(
   if (!gleicheGestaltung(entwurf.bildAufbereitung, gespeichert.bildAufbereitung)) {
     aenderungen.bildAufbereitung = entwurf.bildAufbereitung ?? null
   }
+  // SEIT 13.11.2026 (FA-29 / TK 9.21.6): der Freistell-Schalter. Verglichen wird der
+  // EINGESCHALTETE Zustand, nicht der Rohwert: `false`, `null` und „Feld fehlt" sind
+  // derselbe Zustand („nicht freistellen") und duerfen keinen Schreibvorgang erzeugen.
+  // Geschrieben wird `true` oder `null` - genau das, was der Speicher ablegt.
+  if ((entwurf.freistellen === true) !== (gespeichert.freistellen === true)) {
+    aenderungen.freistellen = entwurf.freistellen === true ? true : null
+  }
   return aenderungen
 }
 

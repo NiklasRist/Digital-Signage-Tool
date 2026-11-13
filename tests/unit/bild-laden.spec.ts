@@ -48,6 +48,26 @@ const blobs = vi.hoisted(() => ({
   nichtLadbar: new Set<string>(),
 }));
 
+// SEIT 13.11.2026 (FA-29): Das Freistellen wird GESTELLT. Ob das Modell richtig rechnet,
+// prueft der Treiber am echten Fenster; hier ist nur die Frage, ob der Bestand einen
+// freigestellten Puffer unter dem RICHTIGEN Schluessel ablegt - und was bei einem Ausfall
+// mit dem Bild passiert.
+const freiDoppel = vi.hoisted(() => ({
+  aufrufe: [] as string[],
+  ergebnis: "ok" as "ok" | "nicht_verfuegbar",
+}));
+
+vi.mock("../../src/renderer/template-canvas/freistellen", () => ({
+  FREISTELL_KLARTEXT: "Freistellen ist auf diesem Rechner nicht verfügbar.",
+  stelleFrei: async () => {
+    freiDoppel.aufrufe.push("stelleFrei");
+    if (freiDoppel.ergebnis === "nicht_verfuegbar") {
+      return { status: "nicht_verfuegbar", grund: "Freistellen ist auf diesem Rechner nicht verfügbar." };
+    }
+    return { status: "ok", bild: { kuenstlich: true }, breite: 4, hoehe: 4 };
+  },
+}));
+
 vi.mock("../../src/renderer/gemeinsam/media-blob-url", () => ({
   mediaBlobUrl: async (projektId: string, dateiname: string) => {
     const url = `media://${projektId}/${dateiname}`;
@@ -429,7 +449,10 @@ describe("Aufbereitung im Motiv-Bestand", () => {
 
   beforeEach(() => {
     globalMitCanvas.OffscreenCanvas = Flaeche;
-    globalMitCanvas.createImageBitmap = async () => ({ kuenstlich: true });
+    // `close()` gehoert dazu: `bereiteAuf` gibt die Zwischen-Bitmap nach dem
+    // Freistellen wieder frei (13.11.2026, FA-29). Ohne die Methode wirft der Weg
+    // und der Test faende den RUECKFALL statt des Ergebnisses - und waere gruen.
+    globalMitCanvas.createImageBitmap = async () => ({ kuenstlich: true, close: () => undefined });
   });
 
   afterAll(() => {
@@ -451,6 +474,50 @@ describe("Aufbereitung im Motiv-Bestand", () => {
     expect(holeMotiv("a1#h60").zustand).toBe("geladen");
     // Ohne Aufbereitung liegt es unter der nackten ID - das ist der alte Weg.
     expect(holeMotiv("a1").zustand).toBe("fehlt");
+  });
+
+  it("legt das freigestellte Bild unter `#f` ab - und rechnet genau EINMAL", async () => {
+    eintragen("media://p1/bild.jpg", { art: "ok", breite: 4, höhe: 4 });
+    freiDoppel.aufrufe.length = 0;
+    freiDoppel.ergebnis = "ok";
+
+    await bereiteMotiveVor("p1", [{ bildRef: "a1", dateiname: "bild.jpg", freistellen: true }]);
+
+    // Der Schluessel traegt den Schalter (TK 9.21.3/9.21.5): das Zeichnen schlaegt ihn
+    // nach, sonst faende es das Rechteck.
+    expect(holeMotiv("a1#f").zustand).toBe("geladen");
+    expect(holeMotiv("a1").zustand).toBe("fehlt");
+    expect(freiDoppel.aufrufe).toHaveLength(1);
+    expect(anzahlAufbereitete()).toBe(1);
+  });
+
+  it("legt `freistellen` und Tonwerte unter EINEM gemeinsamen Schluessel ab", async () => {
+    eintragen("media://p1/bild.jpg", { art: "ok", breite: 4, höhe: 4 });
+    freiDoppel.aufrufe.length = 0;
+    freiDoppel.ergebnis = "ok";
+
+    await bereiteMotiveVor("p1", [
+      { bildRef: "a1", dateiname: "bild.jpg", aufbereitung: { helligkeit: 30 }, freistellen: true },
+    ]);
+
+    expect(holeMotiv("a1#h30|f").zustand).toBe("geladen");
+    expect(freiDoppel.aufrufe).toHaveLength(1);
+  });
+
+  it("ein Ausfall ist ein Zustand: das Bild bleibt sichtbar, nur unfreigestellt", async () => {
+    eintragen("media://p1/bild.jpg", { art: "ok", breite: 4, höhe: 4 });
+    freiDoppel.aufrufe.length = 0;
+    freiDoppel.ergebnis = "nicht_verfuegbar";
+    // Frischer Bestand: sonst zaehlten die Puffer der vorigen Tests mit.
+    leereMotivBestand();
+
+    await bereiteMotiveVor("p1", [{ bildRef: "a1", dateiname: "bild.jpg", freistellen: true }]);
+
+    // UNTER DEM ANGEFRAGTEN SCHLUESSEL liegt das ROHE Bild - kein Platzhalter, kein
+    // fehlender Eintrag. Genau das ist die Zusage „jede andere Funktion laeuft" (9.21.5).
+    expect(holeMotiv("a1#f").zustand).toBe("geladen");
+    expect(anzahlAufbereitete()).toBe(0);
+    freiDoppel.ergebnis = "ok";
   });
 
   it("legt zwei VERSCHIEDENE Einstellungen als zwei Motive ab", async () => {

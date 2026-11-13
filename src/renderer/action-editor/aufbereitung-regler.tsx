@@ -16,16 +16,25 @@
 import type { JSX } from 'react'
 import type { BildAufbereitung } from '../../shared/contracts/aktion'
 import { AUFBEREITUNG_GRENZEN, normalisiereAufbereitung } from '../../shared/aufbereitung'
+import { FreistellSchalter } from './freistellen-schalter'
 
 /** Der Zustand ohne eigene Wahl – dieselbe Zahl in allen drei Reglern. */
 const NEUTRAL = 0
 
 export function AufbereitungRegler({
   aufbereitung,
+  freistellen,
+  rechnet,
   aufAendern,
+  aufFreistellen,
 }: {
   aufbereitung: BildAufbereitung | null | undefined
+  /** SEIT 13.11.2026 (FA-29 / TK 9.21.6): der Schalter gehoert in DIESE Gruppe. */
+  freistellen: boolean | null | undefined
+  /** Laeuft gerade eine Berechnung? Dann steht der Fortschritt am Schalter. */
+  rechnet: boolean
   aufAendern: (aufbereitung: BildAufbereitung | null) => void
+  aufFreistellen: (wert: boolean) => void
 }): JSX.Element {
   const sauber = normalisiereAufbereitung(aufbereitung)
   const helligkeit = sauber?.helligkeit ?? NEUTRAL
@@ -119,6 +128,11 @@ export function AufbereitungRegler({
         />
         <span style={{ color: '#9aa4b2', width: 42, textAlign: 'right' }}>{schaerfe}</span>
       </label>
+
+      {/* SEIT 13.11.2026 (FA-29): der vierte Schalter der Gruppe. Der Freistell-Schalter
+          steht UNTER den drei Reglern, weil er als letzter dazukam und ein eigener
+          Zustand ist (Modell statt Bytes). */}
+      <FreistellSchalter freistellen={freistellen} rechnet={rechnet} aufAendern={aufFreistellen} />
 
       {eigeneWahl && (
         <button

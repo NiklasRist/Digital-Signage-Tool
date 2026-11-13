@@ -11,7 +11,25 @@ import type { Marke } from '../../src/shared/contracts/marke'
 
 vi.mock('../../src/renderer/template-canvas/schriften', () => ({ stelleSchriftenBereit: vi.fn(async () => undefined) }))
 vi.mock('../../src/renderer/template-canvas/logo-laden', () => ({ bereiteLogoVor: vi.fn(async () => undefined) }))
-vi.mock('../../src/renderer/template-canvas/bild-laden', () => ({ bereiteMotiveVor: vi.fn(async () => undefined) }))
+// SEIT 13.11.2026 (FA-29): `motivEintragFuer` ist der EINE Weg, aus einer Aktion einen
+// Motiv-Eintrag zu bauen. Der Doppel bildet ihn nach - die ECHTE Funktion steht in
+// `tests/unit/bild-laden.spec.ts` auf dem Pruefstand.
+vi.mock('../../src/renderer/template-canvas/bild-laden', () => ({
+  bereiteMotiveVor: vi.fn(async () => undefined),
+  motivEintragFuer: vi.fn(
+    (
+      aktion: { bildRef: string | null; bildAufbereitung?: unknown; freistellen?: boolean },
+      dateiname: string,
+    ) => {
+      const eintrag: Record<string, unknown> = { bildRef: aktion.bildRef, dateiname };
+      if (aktion.bildAufbereitung !== undefined && aktion.bildAufbereitung !== null) {
+        eintrag['aufbereitung'] = aktion.bildAufbereitung;
+      }
+      if (aktion.freistellen === true) eintrag['freistellen'] = true;
+      return eintrag;
+    },
+  ),
+}))
 const bibliothekDoppel = vi.hoisted(() => ({ findeBildAsset: vi.fn() }))
 vi.mock('../../src/renderer/action-editor/bibliothek', () => ({ findeBildAsset: bibliothekDoppel.findeBildAsset }))
 vi.mock('../../src/renderer/template-canvas/zeichne-segment', () => ({ zeichneSegment: vi.fn(() => ENTWURFSBILD) }))

@@ -26,6 +26,7 @@ import type { Project } from '../../shared/contracts/project'
 import type { Vorlage } from '../../shared/contracts/vorlage'
 import { zeichneSegment } from '../template-canvas/zeichne-segment'
 import { motivSchluessel as bildSchluessel } from '../../shared/aufbereitung'
+import { motivEintragFuer } from '../template-canvas/bild-laden'
 import type { MotivEintrag } from '../template-canvas/bild-laden'
 
 /** Hoehe des kleinen Bildes in einer Bibliothekszeile. Die Breite folgt dem Seitenverhaeltnis. */
@@ -118,18 +119,14 @@ export function baueMotivEintraege(projekt: Project): MotivEintrag[] {
     if (bildRef === null) continue
     // Der Name kollidiert mit dem Merk-Schluessel dieser Datei (Zeile oben); hier ist
     // eindeutig der geteilte Bestands-Schluessel gemeint.
-    const schluessel = bildSchluessel(bildRef, aktion.bildAufbereitung)
+    // SEIT 13.11.2026 (FA-29): Auch `freistellen` gehoert in den Entdoppelungs-Schluessel -
+    // dasselbe Foto einmal freigestellt und einmal nicht sind ZWEI Motive (TK 9.21.5).
+    const schluessel = bildSchluessel(bildRef, aktion.bildAufbereitung, aktion.freistellen)
     if (gesehen.has(schluessel)) continue
     const asset = projekt.assets.find((kandidat) => kandidat.id === bildRef)
     if (asset === undefined || asset.zustand === 'fehlt') continue
     gesehen.add(schluessel)
-    const eintrag: MotivEintrag = { bildRef, dateiname: asset.dateiname }
-    // Nur setzen, wenn es etwas zu setzen gibt: ein Feld mit `undefined` waere im
-    // Vergleich und in den Tests ein Wert, obwohl „keine Aufbereitung" gemeint ist.
-    if (aktion.bildAufbereitung !== undefined && aktion.bildAufbereitung !== null) {
-      eintrag.aufbereitung = aktion.bildAufbereitung
-    }
-    eintraege.push(eintrag)
+    eintraege.push(motivEintragFuer(aktion, asset.dateiname))
   }
   return eintraege
 }

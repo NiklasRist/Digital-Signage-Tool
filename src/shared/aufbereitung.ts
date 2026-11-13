@@ -36,10 +36,16 @@ export const AUFBEREITUNG_GRENZEN = {
  * Die Reihenfolge der Schritte – EINE Quelle fuer Rechner und Tests (TK 9.21.4).
  *
  * WARUM SIE HIER STEHT UND NICHT IM RECHNER: Vorschau und Render rufen denselben Rechner,
- * aber ein Test, der die Reihenfolge prueft, soll nicht gegen eine Kopie laufen. FA-29
- * schiebt spaeter `freistellen` als ERSTEN Schritt davor, ohne die drei anderen anzufassen.
+ * aber ein Test, der die Reihenfolge prueft, soll nicht gegen eine Kopie laufen.
+ *
+ * SEIT 13.11.2026 (FA-29) STEHT `freistellen` VORNE – die Reihenfolge aus 9.21.4 lautet
+ * „Freistellen → Helligkeit → Kontrast → Schaerfe", und die drei anderen sind dabei
+ * unveraendert geblieben. Der Schritt ist der EINZIGE, der kein reiner Byteschritt ist:
+ * Er braucht ein Modell und ist damit asynchron. Deshalb rechnet ihn `bereiteAuf`
+ * (`template-canvas/aufbereiten.ts`) VOR diesem Rechner, und die Schleife darunter
+ * ueberspringt ihn – die Reihenfolge steht trotzdem nur an dieser einen Stelle.
  */
-export const AUFBEREITUNG_SCHRITTE = ['helligkeit', 'kontrast', 'schaerfe'] as const
+export const AUFBEREITUNG_SCHRITTE = ['freistellen', 'helligkeit', 'kontrast', 'schaerfe'] as const
 
 export type AufbereitungsSchritt = (typeof AUFBEREITUNG_SCHRITTE)[number]
 
@@ -104,6 +110,29 @@ export function istAufbereitungNeutral(wert: BildAufbereitung | null | undefined
 }
 
 /**
+ * Ist das FREISTELLEN eingeschaltet (FA-29, TK 9.21.5)?
+ *
+ * Nur `true` zaehlt. `false`, `null` und ein fehlendes Feld sind derselbe Zustand – es
+ * gibt genau EINEN eingeschalteten Zustand, damit „aus" nicht zwei Schreibweisen hat,
+ * die beim naechsten Umbau auseinanderlaufen.
+ */
+export function istFreistellenAn(wert: boolean | null | undefined): boolean {
+  return wert === true
+}
+
+/**
+ * Der zu SPEICHERNDE Wert des Schalters: `true` oder `null`.
+ *
+ * `null` heisst „nicht freistellen" und ist der Zustand vor dieser Fassung; ein `false`
+ * wird bewusst nicht geschrieben, weil es derselbe Zustand mit einer zweiten Schreibweise
+ * waere. Unbrauchbare Werte (Zeichenkette, Zahl, Objekt) landen ebenfalls auf `null`:
+ * Ein Feld, das nur einen Schalter ausdrueckt, kennt keinen dritten Zustand.
+ */
+export function normalisiereFreistellen(roh: unknown): boolean | null {
+  return roh === true ? true : null
+}
+
+/**
  * Der Schluessel im Motiv-Bestand (TK 9.21.3/9.21.4).
  *
  * NEUTRAL -> GENAU die Asset-ID: kein Praefix, kein Zusatz. Damit findet das Zeichnen
@@ -118,7 +147,7 @@ export function istAufbereitungNeutral(wert: BildAufbereitung | null | undefined
 export function motivSchluessel(
   bildRef: string,
   aufbereitung?: BildAufbereitung | null,
-  freistellen?: boolean,
+  freistellen?: boolean | null,
 ): string {
   const teile: string[] = []
   const sauber = normalisiereAufbereitung(aufbereitung)

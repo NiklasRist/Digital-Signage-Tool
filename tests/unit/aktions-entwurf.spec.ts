@@ -207,3 +207,34 @@ describe('unterschiede - Aufbereitung des Motivs', () => {
     expect(unterschiede(entwurfAus(gespeichert), gespeichert)).toEqual({})
   })
 })
+
+// Freistellen (13.11.2026, FA-29 / TK 9.21.6): EIN Schalten ist EIN Undo-Schritt. Der
+// Vergleich laeuft ueber den EINGESCHALTETEN Zustand, weil `false`, `null` und ein
+// fehlendes Feld dasselbe bedeuten ("nicht freistellen") - drei Schreibweisen fuer
+// "aus" duerfen keinen Schreibvorgang erzeugen.
+describe('unterschiede - Freistellen des Motivs', () => {
+  it('einschalten ist eine Aenderung - und schreibt `true`', () => {
+    const gespeichert = aktion()
+    const entwurf: AktionsInhalt = { ...gespeichert, freistellen: true }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({ freistellen: true })
+  })
+
+  it('ausschalten LEERT das Feld (`null`) - nicht `false`', () => {
+    const gespeichert = aktion({ freistellen: true })
+    const entwurf: AktionsInhalt = { ...gespeichert, freistellen: false }
+    expect(unterschiede(entwurf, gespeichert)).toEqual({ freistellen: null })
+  })
+
+  it('`false`, `null` und ein fehlendes Feld sind derselbe Zustand', () => {
+    const ohneFeld = aktion()
+    delete (ohneFeld as { freistellen?: unknown }).freistellen
+    expect(unterschiede(entwurfAus(ohneFeld), ohneFeld)).toEqual({})
+    expect(unterschiede({ ...ohneFeld, freistellen: null }, ohneFeld)).toEqual({})
+    expect(unterschiede({ ...ohneFeld, freistellen: false }, ohneFeld)).toEqual({})
+  })
+
+  it('ein eingeschaltetes Bild bleibt unveraendert, auch mit anderem Rohwert', () => {
+    const gespeichert = aktion({ freistellen: true })
+    expect(unterschiede({ ...gespeichert, freistellen: true }, gespeichert)).toEqual({})
+  })
+})

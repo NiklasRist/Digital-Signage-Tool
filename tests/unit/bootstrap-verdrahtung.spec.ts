@@ -162,6 +162,9 @@ vi.mock("electron", () => {
       }),
       quit: h.quit,
       exit: h.beende,
+      // SEIT 13.11.2026 (#474): `modell://` liest Modell und WASM-Runtime ueber
+      // `app.getAppPath()`. Der Doppel liefert das Projektverzeichnis.
+      getAppPath: () => process.cwd(),
     },
     ipcMain: {
       // #336: der Rueckkanal beenden:entscheidung - der Test ist die Renderer-Seite.
@@ -173,6 +176,11 @@ vi.mock("electron", () => {
     protocol: {
       registerSchemesAsPrivileged: vi.fn((schemata: unknown[]) => {
         h.schemataAnmeldungen.push(schemata);
+      }),
+      // SEIT 13.11.2026 (#474): der Handler von `modell://`. Ohne ihn braeche der
+      // Startablauf an Schritt 4c ab - und der Test saehe eine halbe Kette.
+      handle: vi.fn((_schema: string, _handler: unknown) => {
+        h.protokoll.push("modellHandler");
       }),
     },
     BrowserWindow: FensterDoppel,
@@ -376,6 +384,7 @@ describe("Main-Bootstrap - Startablauf: Reihenfolge der Schritte 5 bis 8", () =>
     // bis 4, mit #274/#304) danach, Schritt 8 zum Schluss; die Lueckenlosigkeit
     // stellt #331 fest (hinter #323, s. dessen index.ts-Verdrahtung).
     expect(h.protokoll).toEqual([
+      "modellHandler",
       "verdrahteProjectStoreIPC",
       "verdrahteProjectStoreNachtragIPC",
       "verdrahteProjectStoreNachtrag2IPC",
@@ -687,22 +696,25 @@ describe("Main-Bootstrap - Beenden-Ablauf (#47, #98, #277)", () => {
 });
 
 describe("Main-Bootstrap - #309: der EINE Schema-Registrier-Aufruf (Schritt 1)", () => {
-  it("ruft registerSchemesAsPrivileged GENAU EINMAL mit [MEDIA_SCHEMA, MARKEN_SCHEMA]", async () => {
+  it("ruft registerSchemesAsPrivileged GENAU EINMAL mit [MEDIA_SCHEMA, MARKEN_SCHEMA, MODELL_SCHEMA]", async () => {
     await starteBootstrap();
 
     // Electron erlaeutert in 43.2.0 wörtlich: "... can be called only once." Ein
     // zweiter Aufruf haette BEIDE Protokolle still gemacht - nicht nur marken://.
     expect(h.schemataAnmeldungen).toHaveLength(1);
     const schemata = h.schemataAnmeldungen[0] as unknown[];
-    expect(schemata).toHaveLength(2);
+    // DREI seit #474 (`modell://` fuers Freistell-Modell) - und weiterhin EIN Aufruf.
+    expect(schemata).toHaveLength(3);
     // UNVERAENDERT durchgereicht: Referenzvergleich gegen DIESELBEN Objekte, kein
     // neu zusammengesetztes Objekt und kein ergaenztes Feld.
-    const [{ MEDIA_SCHEMA }, { MARKEN_SCHEMA }] = [
+    const [{ MEDIA_SCHEMA }, { MARKEN_SCHEMA }, { MODELL_SCHEMA }] = [
       await import("../../src/main/media-protokoll"),
       await import("../../src/main/marken-store/marken-protokoll"),
+      await import("../../src/main/modell-protokoll"),
     ];
     expect(schemata[0]).toBe(MEDIA_SCHEMA);
     expect(schemata[1]).toBe(MARKEN_SCHEMA);
+    expect(schemata[2]).toBe(MODELL_SCHEMA);
   });
 });
 

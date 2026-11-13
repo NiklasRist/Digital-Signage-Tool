@@ -170,6 +170,10 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
   const [schreibt, setzeSchreibt] = useState(false)
   // Zaehler: steigt, sobald Schriften/Logo/Motive bereit sind (loest EINEN Zeichenlauf aus).
   const [vorbereitet, setzeVorbereitet] = useState(0)
+  // SEIT 13.11.2026 (FA-29): laeuft gerade eine Motiv-Berechnung (Modell oder Tonwerte)?
+  // Der Schalter „Freistellen" zeigt daran seinen Fortschritt; ohne diese Anzeige saehe
+  // der erste Klick wie ein verschluckter Klick aus (das Modell braucht Sekunden).
+  const [motivRechnet, setzeMotivRechnet] = useState(false)
   // Die zwei hiesigen Zustaende (ENTSCHIEDEN 4): Lage und Entwurf – sie MUESSEN
   // den Reiterwechsel nicht ueberleben (#195 baut besuchte Reiter nicht ab).
 
@@ -208,17 +212,38 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
   //
   // Der Effekt haengt am SCHLUESSEL, nicht am ganzen Entwurf: sonst rechnete jeder
   // Tastendruck im Titel das Bild neu.
-  const motivKennung = motivSchluessel(entwurf?.bildRef ?? '', entwurf?.bildAufbereitung)
+  //
+  // SEIT 13.11.2026 (FA-29): `freistellen` gehoert in DENSELBEN Schluessel - sonst
+  // zeichnete die Vorschau das Rechteck, waehrend der Entwurf schon freigestellt ist.
+  //
+  // UND DAS BEISPIELBILD ZAEHLT MIT: Die Vorschau zeichnet im Modus „neu" das erste
+  // Bild des Projekts (05.11.2026), aber mit den EINSTELLUNGEN des Entwurfs. Wird nur
+  // `entwurf.bildRef` vorbereitet, fehlt fuer `beispielId#h30|f` der Eintrag und die
+  // Vorschau faellt still auf den Platzhalter zurueck. Deshalb wird genau die Kennung
+  // vorbereitet, die auch gezeichnet wird.
+  const vorschauBildRef =
+    entwurf?.bildRef ??
+    (lage.modus === 'neu' && !keinBeispielBild && projekt !== null
+      ? (erstesBild(projekt.assets)?.id ?? null)
+      : null)
+  const motivKennung = motivSchluessel(
+    vorschauBildRef ?? '',
+    entwurf?.bildAufbereitung,
+    entwurf?.freistellen,
+  )
   useEffect(() => {
-    if (projekt === null || entwurf === null || entwurf.bildRef === null) return
+    if (projekt === null || entwurf === null || vorschauBildRef === null) return
+    setzeMotivRechnet(true)
     void (async () => {
       await bereiteMotivVorFuer(
         projekt.id,
-        entwurf.bildRef,
+        vorschauBildRef,
         projekt.assets,
         entwurf.bildAufbereitung,
+        entwurf.freistellen === true,
       )
       setzeVorbereitet((zaehler) => zaehler + 1)
+      setzeMotivRechnet(false)
     })()
   }, [projekt, motivKennung])
 
@@ -485,7 +510,13 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
     const aenderung = { [feld]: wert } as Partial<AktionsEntwurf>
     setzeBefunde(pruefeEntwurf(aenderung))
     setzeMeldung(null)
-    setzeEntwurf({ ...entwurf, ...aenderung })
+    // FUNKTIONAL, NICHT AUS DER CLOSURE (Befund 13.11.2026, vom Treiber aufgedeckt):
+    // `waehleBild` ist asynchron - es wartet auf das Motiv und ruft `aendere('bildRef')`
+    // erst DANACH. Mit `{ ...entwurf, ...aenderung }` schrieb das den Entwurfstand VON VOR
+    // dem Warten zurueck: ein Titel, der waehrend des Ladens gesetzt wurde, war weg - und
+    // „Anlegen" tat danach still nichts, weil der Entwurf wieder leer war. Der
+    // Funktions-Updater nimmt immer den AKTUELLEN Stand.
+    setzeEntwurf((vorher) => (vorher === null ? vorher : { ...vorher, ...aenderung }))
   }
 
   /** Die Bildwahl geht in den Entwurf - aber erst, wenn das Motiv geladen ist: sonst
@@ -499,7 +530,13 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
         setzeMeldung(fehler)
         return
       }
-      await bereiteMotivVorFuer(jetzt.id, bildRef, jetzt.assets, entwurf?.bildAufbereitung)
+      await bereiteMotivVorFuer(
+        jetzt.id,
+        bildRef,
+        jetzt.assets,
+        entwurf?.bildAufbereitung,
+        entwurf?.freistellen === true,
+      )
     }
     // 05.11.2026: „– kein Bild –" ist eine Entscheidung; das Beispielbild darf danach
     // nicht wieder in der Vorschau auftauchen.
@@ -675,6 +712,7 @@ function AktionenInterna(p: ActionEditorWurzelProps): JSX.Element | null {
               befunde={befunde}
               meldung={meldung}
               aufAenderung={aendere}
+              motivRechnet={motivRechnet}
               aufBild={(bildRef) => {
                 void waehleBild(bildRef)
               }}
@@ -926,6 +964,7 @@ function Inspector({
   befunde,
   meldung,
   aufAenderung,
+  motivRechnet,
   aufBild,
   aktionId,
   aufAssetGewaehlt,
@@ -939,6 +978,8 @@ function Inspector({
   befunde: EntwurfBefund[]
   meldung: string | null
   aufAenderung: <K extends keyof AktionsEntwurf>(feld: K, wert: AktionsEntwurf[K]) => void
+  /** SEIT 13.11.2026 (FA-29): laeuft im Editor gerade eine Motiv-Berechnung? */
+  motivRechnet: boolean
   aufBild: (bildRef: string | null) => void
   /** Die Aktion aus dem Bestand; leer im Modus „neu" (der Abruf legt sie nicht an). */
   aktionId: string
@@ -1337,10 +1378,17 @@ function Inspector({
             {/* SEIT 13.11.2026 (FA-28 / TK 9.21.6): Helligkeit, Kontrast, Schaerfe.
                 Nicht destruktiv - die Werte stehen an der Aktion, gerechnet wird beim
                 Vorbereiten des Motivs. */}
+            {/* FA-29 (13.11.2026): EIN Schalten ist EIN Undo-Schritt - geschrieben wird
+                wie bei jedem anderen Feld erst beim Abschluss (TK 9.21.6). */}
             <AufbereitungRegler
               aufbereitung={entwurf.bildAufbereitung}
+              freistellen={entwurf.freistellen}
+              rechnet={motivRechnet}
               aufAendern={(aufbereitung) => {
                 aufAenderung('bildAufbereitung', aufbereitung)
+              }}
+              aufFreistellen={(wert) => {
+                aufAenderung('freistellen', wert)
               }}
             />
           </div>

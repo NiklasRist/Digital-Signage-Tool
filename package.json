@@ -38,6 +38,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^9.39.5",
     "jsdom": "^30.0.1",
+    "onnxruntime-web": "1.31.1",
     "oxlint": "^1.79.0",
     "puppeteer-core": "^25.13.0",
     "typescript": "^5.7.2",
