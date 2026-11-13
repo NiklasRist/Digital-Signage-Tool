@@ -15,8 +15,8 @@
 
 **Volltext: [`docs/agents/uebergabe-2026-11-13-fa29-freigestellt.md`](docs/agents/uebergabe-2026-11-13-fa29-freigestellt.md).**
 
-- **#474 (FA-29) IST GEBAUT** (noch nicht kommentiert, noch nicht geschlossen - GitHub-Schreiben nur
-  auf Anweisung). Ein Produktbild bekommt einen **transparenten Hintergrund**: `Aktion.freistellen`
+- **#474 (FA-29) IST GEBAUT, KOMMENTIERT UND GESCHLOSSEN** (`completed`, 13.11.2026 14:53 UTC). Ein
+  Produktbild bekommt einen **transparenten Hintergrund**: `Aktion.freistellen`
   (optional, keine Migration), Schalter in der Editor-Gruppe „Aufbereitung", gerechnet **einmal je
   (Asset, Einstellungen)** im Renderer über ONNX Runtime Web (WASM), offline, ohne IPC und ohne
   natives Modul.
@@ -51,6 +51,11 @@
   deshalb **nicht angefasst** und im Abschlusskommentar zu melden.
 - **Offen:** **#472** (FA-30, TK 9.20), **#466** (Referenzlauf, Phase 1 mit Stoppuhr), **#458**
   (überholt). `bereitschaft.py` meldet „0 bereit" (keine Meilensteine an den neuen Issues).
+- **Nächster Schritt ist geplant: [`docs/agents/plan-nach-474.md`](docs/agents/plan-nach-474.md).**
+  Kurz: (1) **Doku-Nachtrag TK v3.66** — 9.21.9 sagt noch „Modell nicht gewählt", 9.21.5 noch „ein
+  Ziel"; braucht ein eigenes `[doku]`-Issue (das Bau-Issue schloss AD/TK-Änderungen aus).
+  (2) **#472 braucht zwei Entscheidungen VOR dem Bau** (Form von `ProduktQuellen` statt
+  `shops: string[]`; ob/welcher Notweg-Anbieter). (3) **#466 Phase 1** mit der Stoppuhr.
 - **Nicht gepusht.** Zahl mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (13.11.2026, sechzigste Sitzung: #470 zu, TK 9.21 geschrieben, FA-28 gebaut) – historisiert durch den Abschnitt darueber

@@ -148,11 +148,26 @@ Neu: `tests/unit/modell-protokoll.spec.ts` (17), `tests/unit/freistellen.spec.ts
 - **`freistellen` ist im Entwurf nicht „rückgängig zu machen", ohne neu zu rechnen** – das
   Ausschalten fällt auf das rohe Motiv zurück (Bestand trägt beides unter zwei Schlüsseln).
 
-## 9. Stand für den nächsten Schritt
+## 9. Abschluss
 
-- **Nicht gepusht.** `git log --oneline origin/main..HEAD` zählen.
-- Offen: **#472** (FA-30, TK 9.20), **#466** (Referenzlauf, Phase 1 mit Stoppuhr),
-  **#458** (überholt). `bereitschaft.py` meldet „0 bereit" (keine Meilensteine an den neuen
-  Issues).
-- **Nächster Schritt nach #474:** entweder **#472** (Produktseite finden) oder der
-  Referenzlauf **#466** – beides braucht eine Entscheidung, nicht nur Arbeit.
+- **#474 IST KOMMENTIERT UND GESCHLOSSEN** (`completed`, 13.11.2026 14:53 UTC, GitHub-Schreiben
+  auf Anweisung von Niklas). Vorher das **volle Gate** auf dem committeten Stand gefahren:
+  `EXIT=0`, 0 Befunde, `dist` Exit 0.
+- Der Abschlusskommentar nennt Modell, Größe, SHA-256, Lizenz, die drei Abweichungen (drei
+  Protokollnamen, CSP `'wasm-unsafe-eval'`, gelöschtes Vite-Duplikat), die vier eigenen Fehler,
+  die fünf Gegenproben und die ehrlichen Grenzen.
+
+## 10. Plan für danach
+
+**Volltext: [`docs/agents/plan-nach-474.md`](plan-nach-474.md).** Kurz:
+
+1. **Doku-Nachtrag TK v3.66** — 9.21.9 („Modell noch nicht gewählt"), 9.21.5 (ein Ziel → drei
+   Namen), CSP. Braucht ein eigenes `[doku]`-Issue, weil #474 AD/TK-Änderungen ausschließt.
+2. **#472 (FA-30)** — braucht **zwei Entscheidungen vor dem Bau**: Form von `ProduktQuellen`
+   (URL-Vorlage statt `shops: string[]`) und ob/welcher Notweg-Anbieter.
+3. **#466 (Referenzlauf)** — Phase 1 mit der Stoppuhr; Material und Vorlage liegen.
+4. Nebenbei: die vier offenen Messungen aus #474 (Renderweg, schwächere Hardware, Fernseher,
+   Ausfall am Fenster).
+
+**Offen im Bestand:** #472, #466, #458 (überholt). `bereitschaft.py` meldet „0 bereit" – die
+neuen Issues haben keinen Meilenstein.
