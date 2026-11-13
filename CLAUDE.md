@@ -56,7 +56,8 @@
   **Assets 4 -> 4**).
 - **Matrix:** FA-27 `teilweise` (Schritt `4t`), FA-28/29/30 als `Luecke` nachgetragen; Zählung
   12/11/4/3, **16 Muss, 13 Soll, 1 Kann**.
-- **#471 IST GEBAUT (13.11.2026): TK v3.65, Abschnitt 9.21.** Die Einstellungen stehen an der Aktion
+- **#471 IST GEBAUT (13.11.2026) UND GESCHLOSSEN: TK v3.65, Abschnitt 9.21.** Die Einstellungen
+  stehen an der Aktion
   (`Aktion.bildAufbereitung`, optional, ohne Migration); gerechnet wird **einmal je (Asset,
   Einstellungen)** beim Vorbereiten des Motivs, nicht je Frame — **2100 Bilder je 70-s-Segment**
   (Messung `4s`) stehen dagegen. Der **Zuschnitt bleibt `bildAusschnitt`** (kein zweites Feld), FA-29
