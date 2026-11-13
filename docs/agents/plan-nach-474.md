@@ -21,28 +21,58 @@ sind in #474 **gemeldet** und im Code begründet, aber das TK sagt weiter das Ge
 (kein Code). **Braucht:** ein eigenes `[doku]`-Issue, weil #474 eine AD/TK-Änderung ausdrücklich
 ausschließt. **AD bleibt unverändert** — FA-29 sagt dort schon dasselbe.
 
+**GESCHNITTEN am 13.11.2026: [#475](https://github.com/NiklasRist/Digital-Signage-Tool/issues/475)**
+(`[doku] TK 9.21.5/9.21.9: das Freistell-Modell ist gewählt …`, Labels `documentation`,
+`ebene:main`, `ebene:renderer`, `modul:template-canvas`, `risiko:sicherheit`). Dort sind auch die
+drei Änderungen im Wortlaut hinterlegt (Modell mit Zahlen, drei feste Namen, CSP-Regel).
+
 **Empfehlung:** zuerst, weil es billig ist und sonst der nächste Agent wieder gegen einen
 veralteten Satz prüft (dieselbe Fehlerklasse wie die „Bezug: AD v1.13"-Zeile).
 
 ## 2. #472 — FA-30 Produktseite finden (der nächste Bau)
 
-**Warum es nicht sofort losgeht:** Das Issue nennt **zwei Lücken** selbst:
+**ENTSCHIEDEN am 13.11.2026 (Niklas, auf die Frage nach den zwei Lücken):**
 
-1. `shops: string[]` drückt **keinen Suchpfad** aus. Eine Shop-Suche braucht mehr als einen
-   Namen: entweder eine URL-Vorlage (`https://shop/?s={stichwort}`) oder eine eigene
-   Suchadresse je Shop. Ohne diese Entscheidung ist der Vertrag nicht baubar.
-2. **Der Notweg-Anbieter ist nicht festgelegt.** „Allgemeine Websuche ohne Schlüssel" heißt
-   konkret: welche Seite, welches Format, welche Grenzen? Das ist eine Marktentscheidung
-   (und eine Datenschutzfrage), keine Implementierungsfrage.
+1. **Form von `ProduktQuellen`: Muster je Shop.** Nicht `shops: string[]`, sondern ein Eintrag
+   je Shop mit **Suchmuster** und `{q}`-Platzhalter. Der Suchpfad steht damit sichtbar in der
+   Konfiguration, statt geraten zu werden.
+2. **Notweg: konfigurierbare Suchadresse.** Kein Anbieter im Code. Der Notweg ist selbst ein
+   Muster mit `{q}`; ohne Eintrag gibt es keinen Notweg. Kein Schlüssel, kein Konto, FA-30
+   bleibt erfüllt, ohne einen Fremdanbieter festzuschreiben.
 
-**Was vor dem Bau zu entscheiden ist:**
+**Vorgeschlagene Typen (noch NICHT im Issue — GitHub-Schreiben braucht Freigabe):**
 
-- Form von `ProduktQuellen` (URL-Vorlage mit Platzhalter vs. feste Suchadresse je Shop)
-- Notweg: welcher Anbieter, darf er überhaupt angesprochen werden (NFA-06 gilt weiter —
-  FA-30 ist die **eine** benannte Ausnahme, 9.19.4 setzt die Grenzen)
-- Ob überhaupt ein Notweg gebaut wird oder die Shops reichen
+```ts
+export interface ProduktQuelleShop {
+  /** Host des Shops - nur Anzeige und Prüfwert, kein Pfadanteil. */
+  host: string
+  /** Suchadresse des Shops; `{q}` wird durch das kodierte Stichwort ersetzt. */
+  suchMuster: string
+}
 
-**Erst danach** ein Bau-Issue mit Signatur.
+export interface ProduktQuellen {
+  /** Shops in Prioritätsreihenfolge; höchstens drei werden befragt (9.20.4). */
+  shops: ProduktQuelleShop[]
+  /** Notweg: Suchadresse einer allgemeinen Websuche, `{q}` = Stichwort. `null` = kein Notweg. */
+  webSuche: string | null
+}
+```
+
+Vorgabe ohne Feld: `{ shops: [], webSuche: null }` — keine Config-Migration.
+
+**Regeln, die dazu gehören:** `suchMuster` und `webSuche` müssen **absolute http(s)-Adressen**
+sein und **genau ein** `{q}` enthalten; sonst fällt der Eintrag beim Lesen weg (dieselbe Haltung
+wie `normalisiereProduktUrl`). `{q}` wird mit `encodeURIComponent` eingesetzt. Es gelten
+unverändert alle Netzgrenzen aus 9.19.4 (aufgelöste Adresse, keine lokalen Netze, 3
+Weiterleitungen, 20 s Budget).
+
+**Folge für den Vertrag:** TK **9.20.3** sagt heute `shops: string[]` und `webSuche: boolean` —
+das ist mit dieser Entscheidung überholt. Der Nachtrag gehört in **denselben Doku-Schritt** wie
+die 9.21-Korrekturen (Issue **#475**, dort zu ergänzen) **oder** in ein eigenes `[doku]`-Issue.
+Erst danach ist die Signatur von #472 dran (sie ist „verbindlich" und wird im Issue geändert,
+nicht in der Datei).
+
+**Erst danach** der Bau.
 
 ## 3. #466 — Referenzlauf (die Messung, die L-01 trägt)
 

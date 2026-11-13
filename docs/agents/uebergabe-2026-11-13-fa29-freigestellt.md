@@ -162,9 +162,14 @@ Neu: `tests/unit/modell-protokoll.spec.ts` (17), `tests/unit/freistellen.spec.ts
 **Volltext: [`docs/agents/plan-nach-474.md`](plan-nach-474.md).** Kurz:
 
 1. **Doku-Nachtrag TK v3.66** — 9.21.9 („Modell noch nicht gewählt"), 9.21.5 (ein Ziel → drei
-   Namen), CSP. Braucht ein eigenes `[doku]`-Issue, weil #474 AD/TK-Änderungen ausschließt.
-2. **#472 (FA-30)** — braucht **zwei Entscheidungen vor dem Bau**: Form von `ProduktQuellen`
-   (URL-Vorlage statt `shops: string[]`) und ob/welcher Notweg-Anbieter.
+   Namen), CSP. **GESCHNITTEN: [#475](https://github.com/NiklasRist/Digital-Signage-Tool/issues/475)**
+   (`[doku]`, `documentation`/`ebene:main`/`ebene:renderer`/`modul:template-canvas`/`risiko:sicherheit`).
+2. **#472 (FA-30)** — **ENTSCHIEDEN (13.11.2026, Niklas):** `ProduktQuellen` bekommt **ein
+   Suchmuster je Shop** (`shops: Array<{host, suchMuster}>`, `{q}`-Platzhalter) und der **Notweg
+   ist eine konfigurierbare Suchadresse** (`webSuche: string | null`), kein Anbieter im Code.
+   Damit ist **TK 9.20.3 überholt** (`shops: string[]`, `webSuche: boolean`) — der Nachtrag
+   gehört in #475 oder ein eigenes `[doku]`-Issue, **erst danach** die Signatur von #472.
+   Die vorgeschlagenen Typen stehen in [`plan-nach-474.md`](plan-nach-474.md).
 3. **#466 (Referenzlauf)** — Phase 1 mit der Stoppuhr; Material und Vorlage liegen.
 4. Nebenbei: die vier offenen Messungen aus #474 (Renderweg, schwächere Hardware, Fernseher,
    Ausfall am Fenster).

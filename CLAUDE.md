@@ -52,10 +52,14 @@
 - **Offen:** **#472** (FA-30, TK 9.20), **#466** (Referenzlauf, Phase 1 mit Stoppuhr), **#458**
   (überholt). `bereitschaft.py` meldet „0 bereit" (keine Meilensteine an den neuen Issues).
 - **Nächster Schritt ist geplant: [`docs/agents/plan-nach-474.md`](docs/agents/plan-nach-474.md).**
-  Kurz: (1) **Doku-Nachtrag TK v3.66** — 9.21.9 sagt noch „Modell nicht gewählt", 9.21.5 noch „ein
-  Ziel"; braucht ein eigenes `[doku]`-Issue (das Bau-Issue schloss AD/TK-Änderungen aus).
-  (2) **#472 braucht zwei Entscheidungen VOR dem Bau** (Form von `ProduktQuellen` statt
-  `shops: string[]`; ob/welcher Notweg-Anbieter). (3) **#466 Phase 1** mit der Stoppuhr.
+  (1) **Doku-Nachtrag TK v3.66 — geschnitten als [#475](https://github.com/NiklasRist/Digital-Signage-Tool/issues/475)**
+  (9.21.9 „Modell nicht gewählt", 9.21.5 ein Ziel, CSP-Regel).
+  (2) **#472: zwei Entscheidungen sind GEFALLEN (13.11.2026, Niklas)** — `ProduktQuellen` bekommt
+  **ein Suchmuster je Shop** (`shops: Array<{host, suchMuster}>`) und der **Notweg ist eine
+  konfigurierbare Suchadresse** (`webSuche: string | null`), kein Anbieter im Code. TK **9.20.3**
+  ist damit überholt; der Nachtrag gehört nach #475 oder in ein eigenes `[doku]`-Issue, **erst
+  danach** die Signatur von #472.
+  (3) **#466 Phase 1** mit der Stoppuhr.
 - **Nicht gepusht.** Zahl mit `git log --oneline origin/main..HEAD` zählen. **Push nur auf Anweisung.**
 
 ## STAND HEUTE (13.11.2026, sechzigste Sitzung: #470 zu, TK 9.21 geschrieben, FA-28 gebaut) – historisiert durch den Abschnitt darueber
