@@ -64,10 +64,13 @@
   läuft im Renderer über ein gebündeltes WASM-Modell (Zaun: ≤25 MB, ≤2 s Laden, ≤5 s je Bild).
   Die zwei **Bau-Issues für FA-28/FA-29** sind der nächste Schnitt. Nebenbei: der **Bezug** im TK stand
   seit Wochen auf **AD v2.3** und ist auf v2.5 gezogen.
-- **Offen (Stand 13.11.2026):** **#472** `[bau]` **FA-30** Produktseite finden (Vertrag steht in 9.20,
-  Signatur steht im Issue — inklusive der zwei offen benannten Lücken: `shops: string[]` drückt keinen
-  Suchpfad aus, Notweg-Anbieter ist nicht festgelegt); **#466** Referenzlauf (Phase 1 mit Stoppuhr);
-  **#458** überholt. **`bereitschaft.py` meldet „0 bereit"** — die neuen Issues haben keinen
+- **Offen (Stand 13.11.2026):** **#472** `[bau]` **FA-30** Produktseite finden (Vertrag 9.20, Signatur
+  im Issue — samt der zwei offen benannten Lücken: `shops: string[]` drückt keinen Suchpfad aus,
+  Notweg-Anbieter nicht festgelegt); **#473** `[bau]` **FA-28** Produktbild aufbereiten (Signatur mit
+  **Rechenvorschrift** als Vertragsteil und **einer** Nachschlagestelle im Zeichenweg); **#474** `[bau]`
+  **FA-29** freistellen (setzt #473 voraus, `modell://` nach dem Muster von `marken://`,
+  `onnxruntime-web` exakt gepinnt, Zaun ≤ 25 MB / ≤ 2 s / ≤ 5 s); **#466** Referenzlauf (Phase 1 mit
+  Stoppuhr); **#458** überholt. **`bereitschaft.py` meldet „0 bereit"** — die neuen Issues haben keinen
   Meilenstein, und M0–M10 sind gebaut.
 - **Nicht gepusht:** **9 Commits** vor `origin/main` (mit diesem Doku-Commit 10); Arbeitsbaum
   danach sauber. **Push nur auf Anweisung.**
