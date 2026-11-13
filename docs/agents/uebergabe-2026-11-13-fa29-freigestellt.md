@@ -148,9 +148,11 @@ Neu: `tests/unit/modell-protokoll.spec.ts` (17), `tests/unit/freistellen.spec.ts
 - **`freistellen` ist im Entwurf nicht „rückgängig zu machen", ohne neu zu rechnen** – das
   Ausschalten fällt auf das rohe Motiv zurück (Bestand trägt beides unter zwei Schlüsseln).
 
-## 8a. #475 GEBaut (13.11.2026, gleiche Sitzung): TK v3.66
+## 8a. #475 GESCHRIEBEN UND KOMMENTIERT (13.11.2026, gleiche Sitzung): TK v3.66
 
-**#475 ist geschrieben und committet** (`aef8f5a`), noch **nicht** kommentiert/geschlossen:
+**#475 ist geschrieben (`aef8f5a`), kommentiert (13.11.2026 15:59 UTC) — und bleibt bewusst OPEN:**
+Niklas' Anweisung lautete „kommentieren", nicht „schließen". Ein Wort von ihm, dann ist es zu.
+Der Kommentar nennt die vier Änderungen, `.docx`-Zahlen, Zitatabgleich und die zwei eigenen Befunde.
 
 - **9.21.9:** das Modell ist **gewählt** — U-2-Net `u2netp`, 4 574 861 Bytes, SHA-256 `309c8469…`,
   Apache 2.0, samt der gemessenen Zaun-Zahlen (434/439 ms laden, 1998–2138 ms rechnen,

@@ -75,7 +75,8 @@ plus die zwei Stellen in Abschnitt 4 und die DoD). Damit stimmt die Kette wieder
 
 **Reihenfolge:** #475 (TK) → #472 (Bau).
 
-**ERLEDIGT am 13.11.2026: #475 ist geschrieben (`aef8f5a`) — TK v3.66.** Die vier Änderungen stehen,
+**ERLEDIGT am 13.11.2026: #475 ist geschrieben (`aef8f5a`) und kommentiert (15:59 UTC) — TK v3.66.**
+Das Issue bleibt **offen**, bis Niklas das Schließen anweist. Die vier Änderungen stehen,
 die `.docx` ist neu (3158 Absätze, 0 Backticks, `unzip -t`, zwei Bilder), der Zitatabgleich ist
 unverändert (A=1109, B=354). Damit ist der Weg für die **#472**-Signatur frei — sie ist bereits im
 Issue nachgezogen, der Bau kann beginnen.

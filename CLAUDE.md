@@ -54,7 +54,8 @@
   `'wasm-unsafe-eval'`, 9.20.3 die neuen `ProduktQuellen` (`ProduktQuelleShop[]` + `webSuche: string |
   null`). Dazu ein Zusatzbefund: 9.19.12 führte FA-28/FA-29 noch als „nicht gebaut". `.docx` neu:
   **3158 Absätze**, 0 Backticks, `unzip -t`, zwei Bilder. **Zitatabgleich A=1109, B=354 — unverändert**;
-  zwei eigene A-Befunde in #475 gefunden und behoben. Noch **nicht** kommentiert/geschlossen.
+  zwei eigene A-Befunde in #475 gefunden und behoben. **KOMMENTIERT am 13.11.2026 15:59 UTC — bleibt
+  OFFEN** (Anweisung war „kommentieren", nicht „schließen").
 - **Offen:** **#472** (FA-30, TK 9.20), **#466** (Referenzlauf, Phase 1 mit Stoppuhr), **#458**
   (überholt). `bereitschaft.py` meldet „0 bereit" (keine Meilensteine an den neuen Issues).
 - **Nächster Schritt ist geplant: [`docs/agents/plan-nach-474.md`](docs/agents/plan-nach-474.md).**
